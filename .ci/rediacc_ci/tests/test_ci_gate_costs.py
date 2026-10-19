@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import json
+import sys
 import zipfile
 from typing import TYPE_CHECKING, Any
 
@@ -809,7 +810,11 @@ def test_collect_captures_reads_a_capture_dispatched_on_the_pr_head(monkeypatch)
     monkeypatch.setattr(gc, "_local_branch", lambda: "1008-1")
     caps, sources, _w = collect()
     assert [s["id"] for s in sources] == [7]
+    calls.clear()
     monkeypatch.setattr(gc, "_local_branch", lambda: "")
+    caps, sources, _w = collect()
+    assert sources == []
+    assert all(branch != "1008-1" for _e, branch in calls)
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     for head in ("", "  ", "main"):
         calls.clear()
@@ -819,3 +824,26 @@ def test_collect_captures_reads_a_capture_dispatched_on_the_pr_head(monkeypatch)
         assert sources == []
         assert ("workflow_dispatch", "main") in calls
         assert len(calls) == len(gc.CAPTURE_EVENTS)
+
+
+def test_local_branch_reads_none_when_detached_failing_or_missing(tmp_path, monkeypatch):
+    """_local_branch answers "" for a detached HEAD, a non-zero git exit and a host with no git at all, and the branch name otherwise (review 5ceedb9a.1-.2)."""
+    fake = tmp_path / "bin" / "git"
+    fake.parent.mkdir()
+    fake.write_text(
+        "#!" + sys.executable + "\n"
+        "import os, sys\n"
+        "sys.stdout.write(os.environ.get('FAKE_BRANCH', '') + '\\n')\n"
+        "sys.exit(int(os.environ.get('FAKE_RC', '0')))\n"
+    )
+    fake.chmod(0o755)
+    monkeypatch.setenv("PATH", str(fake.parent))
+    monkeypatch.setenv("FAKE_BRANCH", "1008-1")
+    assert gc._local_branch() == "1008-1"
+    monkeypatch.setenv("FAKE_BRANCH", "HEAD")
+    assert gc._local_branch() == ""
+    monkeypatch.setenv("FAKE_BRANCH", "1008-1")
+    monkeypatch.setenv("FAKE_RC", "128")
+    assert gc._local_branch() == ""
+    monkeypatch.setenv("PATH", str(tmp_path / "nothing"))
+    assert gc._local_branch() == ""
