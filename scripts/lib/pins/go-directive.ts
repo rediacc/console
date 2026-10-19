@@ -3,8 +3,9 @@
  * (worklist #e023eb0d).
  *
  * On 2026-10-18 `npm run pins -- bump devcontainer:gopls` moved gopls 0.23.0 -> 0.24.0 and its
- * gate passed, but gopls 0.24.0's go.mod says `go 1.27.0` while the devcontainer builds Go
- * the image's Go (GO_VERSION in .devcontainer/toolchain.env, a 1.26.x release at the time) with GOTOOLCHAIN=local, so the image build
+ * gate passed, but gopls 0.24.0's go.mod says `go 1.27.0` while the devcontainer builds with
+ * GO_VERSION from .devcontainer/toolchain.env (a 1.26.x release then) and GOTOOLCHAIN=local, so
+ * the image build
  * failed (`gopls@v0.24.0 requires go >= 1.27.0 (running go 1.26.x; GOTOOLCHAIN=local)`). A
  * release like that is not a candidate: the devcontainer driver marks it ineligible (so a bump
  * takes the newest release that builds) and the freshness gate prints it as deferred, naming the
