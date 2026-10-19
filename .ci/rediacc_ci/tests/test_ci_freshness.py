@@ -624,11 +624,18 @@ def test_keyed_is_a_string_with_a_key_and_emit_refuses_a_bare_one():
 
 
 def test_the_carried_budget_freshness_entry_names_keys_not_a_wildcard():
-    """Review d21f5510.1, .3: the carry is a list of exact keys, each in the `lane-durations:no-unit-artifacts:<lane>` shape this module's producer emits, and no `"*"` remains for this gate."""
+    """Review d21f5510.1, .3: the carry is a list of exact keys, each in a `lane-durations:<kind>:<subject>` shape budget_report emits (no-unit-artifacts, drift, unpriced-unit), and no `"*"` remains for this gate."""
     carried = json.loads((REAL_ROOT / ".ci/config/carried-reds.json").read_text(encoding="utf-8"))
     entries = [e for e in carried["carried"] if e["gate"] == "check:ci-budget-freshness"]
     for e in entries:
         assert isinstance(e["findings"], list), "a wildcard carries every future budget or cost red"
         assert e["findings"], e
         for key in e["findings"]:
-            assert key.startswith("lane-durations:no-unit-artifacts:"), key
+            assert key.startswith(
+                (
+                    "lane-durations:no-unit-artifacts:",
+                    "lane-durations:drift:",
+                    "lane-durations:unpriced-unit:",
+                )
+            ), key
+            assert "*" not in key, key
