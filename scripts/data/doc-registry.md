@@ -230,7 +230,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-plan-boxes | quality-branch / Plan checkbox ledger | yes | no |
 | check:ci-plan-citations | quality-branch / Plan citations | yes | yes |
 | check:ci-plan-deps | quality-branch / Plan dependencies | yes | no |
-| check:ci-plan-folders | quality-branch / Plan folders and retention | yes | no |
+| check:ci-plan-folders | quality-branch / Plan folders and retention | yes | yes |
 | check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | yes |
 | check:ci-plan-implementation | quality-branch / Plan implementation clock | yes | yes |
 | check:ci-plan-record | quality-branch / Plan records | yes | yes |

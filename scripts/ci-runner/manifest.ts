@@ -2125,6 +2125,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-plan-folders',
     run: 'npm run check:ci-plan-folders',
     gate: true,
+    slow: true, // its CI step p90 rose from 18.0 s to 21.0 s in the 2026-10-19 lane-durations refresh (10.5 s on a dev host): it walks all 214 plans and the census, and a diff touching agent/plans/** still selects it through `paths`
     paths: [
       'agent/plans/**',
       'agent/INDEX.md',
