@@ -120,6 +120,9 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
+
       # Auto-derives from the latest green Console CI PUSH run on main that staged artifacts (a no-op duplicate or a nightly stages nothing) when ci_run_id is
       # empty; otherwise validates the supplied run. See the script header for
       # why "is this the latest green run" is deliberately NOT one of the checks.
@@ -352,6 +355,10 @@ jobs:
           filter: blob:none   # see the divergence-check checkout above
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
+      - name: Install the pinned aws CLI
+        if: needs.init.outputs.workers_only != 'true'
+        uses: ./.github/actions/setup-aws
+
       - uses: ./.github/actions/setup-node-npm
         if: needs.init.outputs.workers_only != 'true'
 
@@ -769,6 +776,10 @@ jobs:
           filter: blob:none   # see the divergence-check checkout above
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
+
+      - name: Install the pinned aws CLI
+        if: steps.owed.outputs.owed == 'true'
+        uses: ./.github/actions/setup-aws
 
       - name: Download release artifacts
         if: steps.owed.outputs.owed == 'true'

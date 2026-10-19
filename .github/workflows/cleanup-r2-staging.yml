@@ -39,6 +39,10 @@ jobs:
             .ci/config
             .github/actions
             .ci/rediacc_ci
+            .devcontainer
+
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
 
       - name: Load well-known
         run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"

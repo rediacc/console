@@ -1945,6 +1945,12 @@ jobs:
           account: 'true'
           build-packages: 'true'
 
+      - name: Install the pinned aws CLI
+        id: aws
+        uses: ./.github/actions/setup-aws
+        with:
+          export-env: 'false'
+
       # check:ci-i18n-media -> validate:content-media -> validate:tutorial-audio
       # asserts that every narration .mp3 referenced by a tutorial timeline
       # exists on disk. The audio cache is gitignored and lives in R2, so
@@ -1960,6 +1966,7 @@ jobs:
       - name: Restore tutorial-narration audio cache from R2
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
+          AWS_BIN: ${{ steps.aws.outputs.aws-bin }}
           CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_MEDIA_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_MEDIA_ENDPOINT }}

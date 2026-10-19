@@ -122,6 +122,9 @@ jobs:
           fetch-depth: 0
           filter: blob:none   # tag + commit topology only
           fetch-tags: true
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
+
       - name: Install jq
         run: command -v jq >/dev/null || sudo apt-get install -y -qq jq
 
