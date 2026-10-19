@@ -127,7 +127,7 @@ class Api:
             total = data.get("total_count")
             if isinstance(total, int) and len(jobs) >= total:
                 return jobs
-            if len(batch) < JOBS_PAGE_SIZE:
+            if len(rows) < JOBS_PAGE_SIZE:
                 # A short page is the end only when the API names no larger total (review 4cfc4023.4).
                 if isinstance(total, int):
                     raise ghx.GhBadOutputError(
