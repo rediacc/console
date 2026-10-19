@@ -2917,7 +2917,10 @@ const CASES: Record<string, Case> = {
         name: '@fx/web',
         devDependencies: { i18next: '^26.4.4' },
       }),
-      'packages/shared/package.json': json({ name: '@fx/plain', dependencies: { other: '^1.0.0' } }),
+      'packages/shared/package.json': json({
+        name: '@fx/plain',
+        dependencies: { other: '^1.0.0' },
+      }),
     };
     for (const [rel, text] of Object.entries(files)) {
       fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
