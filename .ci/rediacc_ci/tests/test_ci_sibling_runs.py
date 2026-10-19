@@ -308,3 +308,21 @@ def test_latest_jobs_refuses_a_broken_or_short_page(monkeypatch):
     monkeypatch.setattr(api, "_get", lambda _path: {"total_count": 141, "jobs": [{"id": 1}]})
     with pytest.raises(ghx.GhBadOutputError, match="short at 1 of 141"):
         api.latest_jobs(7)
+
+
+def test_a_full_page_with_a_stray_row_still_walks_on(monkeypatch):
+    """A full page is judged by its raw row count: one non-dict row among 50 does not make it short, so the walk reads the next page (review ac7616ac.1)."""
+    api = sr.Api(REPO, "ci.yml", runner=lambda *_a, **_k: None, sleep=lambda _s: None)
+    size = sr.JOBS_PAGE_SIZE
+
+    def fake_get(path: str):
+        page = int(path.rsplit("page=", 1)[1])
+        if page == 1:
+            return {
+                "total_count": size + 1,
+                "jobs": [{"id": i} for i in range(size - 1)] + ["stray"],
+            }
+        return {"total_count": size + 1, "jobs": [{"id": 99}, {"id": 100}]}
+
+    monkeypatch.setattr(api, "_get", fake_get)
+    assert [j["id"] for j in api.latest_jobs(7)][-2:] == [99, 100]
