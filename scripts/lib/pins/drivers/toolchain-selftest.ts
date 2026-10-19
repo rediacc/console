@@ -162,15 +162,33 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
     };
     const drv = createToolchainDriver(stubUpstream(answers), mutant);
     const i = await drv.inspect(entryOf('toolchain:go'), ctxOf(tree()));
+    // Red under line-not-breaking (the minor line comes back with no `breaking`, so a plain bump would take it).
     add(
-      'go inspect: the proxy dates the release, and another minor line is offered with an ineligible verdict',
+      'go inspect: the proxy dates the release, the same-line patch is plain, and another minor line is marked breaking naming every go.mod',
       i.releases.length === 2 &&
         i.releases[1].version === next &&
         i.releases[1].publishedMs === Date.parse('2026-10-02T20:28:03Z') &&
+        i.releases[1].breaking === undefined &&
         i.releases[1].verdict === undefined &&
         i.releases[0].version === minor &&
-        i.releases[0].verdict?.eligible === false,
+        i.releases[0].verdict === undefined &&
+        i.releases[0].breaking?.line === minor.split('.').slice(0, 2).join('.') &&
+        i.releases[0].breaking.why.includes('go directive of every go.mod') &&
+        i.releases[0].breaking.why.includes('private/renet/go.mod') &&
+        i.releases[0].breaking.why.includes('.ci/scripts/private/license-mint/go.mod'),
       JSON.stringify(i)
+    );
+    const rm = await plan('toolchain:go', minor, answers);
+    add(
+      'go bump of another minor line: both go.mod `go` directives move to it, and go mod tidy runs in both modules',
+      !!rm.plan &&
+        (textOf(rm.plan, 'private/renet/go.mod') ?? '').includes(`\ngo ${minor}\n`) &&
+        (textOf(rm.plan, '.ci/scripts/private/license-mint/go.mod') ?? '').includes(
+          `\ngo ${minor}\n`
+        ) &&
+        arg(textOf(rm.plan, DF) ?? '', 'GO_SHA256_AMD64') === hex('7') &&
+        rm.plan.steps.filter((x) => x.run === 'go mod tidy').length === 2,
+      rm.refused
     );
     const r = await plan('toolchain:go', next, answers);
     const p = r.plan;

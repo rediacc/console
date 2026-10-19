@@ -6,8 +6,10 @@
  *                   for the publish instant (go.dev carries none), then toolchain.env, the
  *                   Dockerfile ARG and its two hashes, both go.mod `go` lines, and `go mod tidy`
  *                   in each module. A release of ANOTHER minor line (1.26 -> 1.27) changes the
- *                   language version every go.mod declares, so it is reported with an ineligible
- *                   verdict and left to the operator.
+ *                   language version every go.mod declares, so it is marked BREAKING
+ *                   (Release.breaking): a plain bump, `bump --all` and `apply-soaked` leave it,
+ *                   `bump toolchain:go --major --reason "<why>"` takes it, and status ages the
+ *                   line as a newer major.
  *   toolchain:npm   the npm registry, the four NPM_VERSION sites, then the canonical lockfile pass
  *                   over EVERY lockfile of the npm family scope under the NEW npm, since a lockfile
  *                   written by any other npm is refused by check:ci-lockfile.
@@ -45,8 +47,8 @@ import {
   type Upstream,
 } from './toolchain-upstream.js';
 
-/** Selftest mutants: `half-hash` keeps an old hash when a digest is missing; `ambient-npm` runs the lockfile pass with the npm on PATH. */
-export const TOOLCHAIN_MUTANTS = ['half-hash', 'ambient-npm'] as const;
+/** Selftest mutants: `half-hash` keeps an old hash when a digest is missing; `ambient-npm` runs the lockfile pass with the npm on PATH; `line-not-breaking` offers another Go minor line as a plain release. */
+export const TOOLCHAIN_MUTANTS = ['half-hash', 'ambient-npm', 'line-not-breaking'] as const;
 export type ToolchainMutant = (typeof TOOLCHAIN_MUTANTS)[number];
 
 const GO_DL = `${WK_GO_DL_BASE}/?mode=json`;
@@ -74,8 +76,14 @@ function refusal(err: unknown): PlanRefused {
 
 interface Found extends Dated {
   digests: Map<string, string>;
-  verdict?: { eligible: boolean; why: string };
+  breaking?: { line: string; why: string };
 }
+
+/** The go.mod files whose `go` directive the toolchain:go entry rewrites, as repo-relative paths. */
+const goModSites = (entry: PinEntry): string[] =>
+  entry.sites
+    .filter((x) => x.file === 'go.mod' || x.file.endsWith('/go.mod'))
+    .map((x) => (x.repo === '.' ? x.file : `${x.repo}/${x.file}`));
 
 /** Expand a registry scope glob made of literal segments and single-segment `*` against the tree. */
 function expandScope(root: string, scope: PinScope): Array<{ repo: string; file: string }> {
@@ -132,10 +140,14 @@ export function createToolchainDriver(
         who
       )) as { Time?: string } | null;
       f.publishedMs = info?.Time ? Date.parse(info.Time) : null;
-      if (current !== null && goLine(f.version) !== goLine(current))
-        f.verdict = {
-          eligible: false,
-          why: `Go ${goLine(f.version)} is another minor line than the pinned ${goLine(current)}; it changes the language version in every go.mod, which is the operator's call`,
+      if (
+        current !== null &&
+        goLine(f.version) !== goLine(current) &&
+        mutant !== 'line-not-breaking'
+      )
+        f.breaking = {
+          line: goLine(f.version),
+          why: `Go ${goLine(f.version)} is another minor line than the pinned ${goLine(current)}; it changes the go directive of every go.mod (${goModSites(entry).join(', ') || 'none named'}), so it is a breaking move`,
         };
     }
     return newer;
@@ -163,7 +175,7 @@ export function createToolchainDriver(
         (r): Release => ({
           version: r.version,
           publishedMs: r.publishedMs,
-          ...((r as Found).verdict ? { verdict: (r as Found).verdict } : {}),
+          ...((r as Found).breaking ? { breaking: (r as Found).breaking } : {}),
         })
       ),
     };

@@ -1847,6 +1847,99 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  // A release a driver marks BREAKING (a Go minor line: same leading number, another `go` directive in every go.mod) is a major everywhere.
+  async breaking(m) {
+    const brk = {
+      line: '2.1',
+      why: 'Fixture 2.1 is another minor line; it changes the go directive of every go.mod',
+    };
+    const mixed = fixtureTree((fx) => {
+      fx.releases['embed:zed'] = [
+        { version: '2.1.0', published: '2026-10-01T00:00:00Z', breaking: brk },
+        { version: '2.0.1', published: '2026-10-01T00:00:00Z' },
+        { version: '2.0.0', published: '2026-09-01T00:00:00Z' },
+      ];
+    });
+    const only = fixtureTree((fx) => {
+      fx.releases['embed:zed'] = [
+        { version: '2.1.0', published: '2026-10-01T00:00:00Z', breaking: brk },
+        { version: '2.0.0', published: '2026-09-01T00:00:00Z' },
+      ];
+    });
+    type PlanJson = { plans: Array<{ id: string; to: string }> };
+    const plain = await runCli(['plan', 'embed:zed', '--json'], withMutant(mixed, m));
+    const named = await runCli(['plan', 'embed:zed', '--to', '2.1.0'], withMutant(mixed, m));
+    const major = await runCli(
+      ['plan', 'embed:zed', '--major', '--reason', 'operator ruling', '--json'],
+      withMutant(only, m)
+    );
+    const st = await runCli(['status', 'embed:zed', '--json'], withMutant(mixed, m));
+    const so = await runCli(['status', 'embed:zed', '--json'], withMutant(only, m));
+    const soaked = await runCli(
+      ['apply-soaked', '--json', '--out', path.join(only.root, 'out')],
+      withMutant(only, m)
+    );
+    const toOf = (r: { rc: number; out: string }): string | undefined =>
+      r.rc === 0
+        ? (JSON.parse(r.out) as PlanJson).plans.find((p) => p.id === 'embed:zed')?.to
+        : undefined;
+    const vs = st.rc === 0 ? (JSON.parse(st.out) as { pins: PinView[] }).pins[0] : null;
+    const vo = so.rc === 0 ? (JSON.parse(so.out) as { pins: PinView[] }).pins[0] : null;
+    return [
+      {
+        // Red under breaking-is-minor: the plain plan takes 2.1.0.
+        name: 'breaking: a plain plan takes the same-line patch, never the breaking line above it',
+        ok: toOf(plain) === '2.0.1',
+        detail: `rc=${plain.rc} ${plain.err} ${plain.out.slice(0, 400)}`,
+      },
+      {
+        // Red under breaking-is-minor: --to 2.1.0 plans without --major.
+        name: 'breaking: a plain bump naming the breaking release is refused, naming --major and the driver why',
+        ok:
+          named.rc === 1 &&
+          named.err.includes('REFUSED embed:zed') &&
+          named.err.includes('--major --reason') &&
+          named.err.includes('changes the go directive of every go.mod'),
+        detail: `rc=${named.rc} ${named.err}`,
+      },
+      {
+        // Red under breaking-is-minor: isMajor false makes takesMajor false, and --major is refused as taking no major.
+        name: 'breaking: --major --reason plans the breaking line',
+        ok: toOf(major) === '2.1.0',
+        detail: `rc=${major.rc} ${major.err} ${major.out.slice(0, 400)}`,
+      },
+      {
+        // Red under breaking-unlisted (majors empty) and breaking-is-minor (2.1.0 is the target, no eligible major).
+        name: 'breaking: status reports the breaking line as a pending major beside the plain patch',
+        ok:
+          vs !== null &&
+          vs.state === 'bumpable' &&
+          vs.target?.version === '2.0.1' &&
+          vs.eligibleMajors.join() === '2.1.0' &&
+          vs.majors.length === 1 &&
+          vs.majors[0].line === '2.1' &&
+          vs.majors[0].newest === '2.1.0',
+        detail: JSON.stringify(vs),
+      },
+      {
+        // Red under breaking-is-minor: the pin reads as bumpable.
+        name: 'breaking: with only the breaking line newer, status says major-only with the --major line and the why, not eligible',
+        ok:
+          vo !== null &&
+          vo.state === 'major-only' &&
+          vo.target === null &&
+          vo.detail.includes('--major --reason') &&
+          vo.detail.includes('changes the go directive of every go.mod'),
+        detail: JSON.stringify(vo),
+      },
+      {
+        // Red under breaking-is-minor: inRange reads 2.0 -> 2.1 as an in-range minor and apply-soaked moves it.
+        name: 'breaking: apply-soaked leaves the breaking line',
+        ok: soaked.rc === 0 && only.read('private/renet/Dockerfile').includes('ZED_VERSION=2.0.0'),
+        detail: `rc=${soaked.rc} ${soaked.err} ${only.read('private/renet/Dockerfile')}`,
+      },
+    ];
+  },
   async restoreDone(m) {
     const fx = fixtureTree();
     const r = await runCli(['bump', 'embed:tool', '--json'], withMutant(fx, m));
@@ -3060,6 +3153,8 @@ const MUTANT_CASES: Record<Mutant, string> = {
   'shared-message': 'drafts',
   'no-manifest-pin': 'pinmanifests',
   'no-version-gate': 'pinmanifests',
+  'breaking-is-minor': 'breaking',
+  'breaking-unlisted': 'breaking',
 };
 
 async function selftest(env: NodeJS.ProcessEnv): Promise<number> {

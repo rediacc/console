@@ -68,6 +68,8 @@ export type LineDatedRelease = Release & { lineFirstMs?: number | null };
 export interface NewerMajor {
   /** The line's leading number; null when a version on it carries none (it is its own line). */
   major: number | null;
+  /** The breaking line a driver named (Release.breaking.line, e.g. Go `1.27`); absent for a line of a new leading number. */
+  line?: string;
   /** The newest release on the line. */
   newest: string;
   /** The earliest instant the source dates on the line; null when it dates none. */
@@ -83,16 +85,27 @@ export function majorLineOf(v: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
-/** The major lines above `insp.current`, newest first. Pure. */
-export function newerMajors(insp: Inspection): NewerMajor[] {
+/**
+ * The major lines above `insp.current`, newest first: each new leading number, and each line a
+ * driver marks breaking (Release.breaking), keyed by the line it names. Pure; `ignoreBreaking`
+ * is the selftest's breaking-unlisted mutant.
+ */
+export function newerMajors(insp: Inspection, ignoreBreaking = false): NewerMajor[] {
   const cur = insp.current === null ? null : majorLineOf(insp.current);
   const lines = new Map<string, NewerMajor>();
   for (const r of insp.releases as LineDatedRelease[]) {
     const m = majorLineOf(r.version);
-    if (cur !== null && m !== null && m <= cur) continue;
-    const key = m === null ? `v:${r.version}` : `m:${m}`;
+    const brk = ignoreBreaking ? undefined : r.breaking;
+    if (!brk && cur !== null && m !== null && m <= cur) continue;
+    const key = brk ? `b:${brk.line}` : m === null ? `v:${r.version}` : `m:${m}`;
     const at = r.lineFirstMs !== undefined ? r.lineFirstMs : r.publishedMs;
-    const line = lines.get(key) ?? { major: m, newest: r.version, firstMs: null, partial: false };
+    const line = lines.get(key) ?? {
+      major: m,
+      ...(brk ? { line: brk.line } : {}),
+      newest: r.version,
+      firstMs: null,
+      partial: false,
+    };
     if (at === null || Number.isNaN(at)) line.partial = true;
     else if (line.firstMs === null || at < line.firstMs) line.firstMs = at;
     lines.set(key, line);
@@ -235,7 +248,7 @@ export async function viewOf(
     return base;
   }
   base.current = insp.current;
-  base.majors = newerMajors(insp);
+  base.majors = newerMajors(insp, w.mutant === 'breaking-unlisted');
   base.hold = holdOf(w, entry, drv.holdKey(entry));
   if (insp.releases.length === 0) return { ...base, state: 'current', detail: 'current' };
   if (base.hold && !base.hold.expired)
@@ -252,7 +265,11 @@ export async function viewOf(
         detail: `not compared: ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} not among the releases newer than ${insp.current} the source answered`,
       };
   }
+  // A release a driver marks breaking (a Go minor line) is a major whatever its leading number.
+  const breaking = (r: Release): boolean =>
+    r.breaking !== undefined && w.mutant !== 'breaking-is-minor';
   const isMajor = (r: Release): boolean => {
+    if (breaking(r)) return true;
     const a = insp.current === null ? null : majorOf(insp.current);
     const b = majorOf(r.version);
     return a === null || b === null || a !== b;
@@ -290,7 +307,11 @@ export async function viewOf(
     const taken: Release[] = [];
     for (const v of wanted) {
       const r = pool.find((x) => x.version === v) as Release;
-      if (!(sel.onlyInRange ? inRange(insp.current, r.version) : sel.allowMajor || !isMajor(r)))
+      if (
+        !(sel.onlyInRange
+          ? !breaking(r) && inRange(insp.current, r.version)
+          : sel.allowMajor || !isMajor(r))
+      )
         return {
           ...base,
           state: 'major-only',
@@ -310,7 +331,9 @@ export async function viewOf(
     return bumpable(taken, '');
   }
   const admitted = pool.filter((r) =>
-    sel.onlyInRange ? inRange(insp.current, r.version) : sel.allowMajor || !isMajor(r)
+    sel.onlyInRange
+      ? !breaking(r) && inRange(insp.current, r.version)
+      : sel.allowMajor || !isMajor(r)
   );
   for (const r of admitted) {
     const v = soak(r);
@@ -324,12 +347,14 @@ export async function viewOf(
       state: 'deferred',
       detail: `${insp.current} -> ${base.deferred.version} deferred: ${base.verdict?.why}`,
     };
+  const why =
+    pool[0].breaking && w.mutant !== 'breaking-is-minor' ? `: ${pool[0].breaking.why}` : '';
   return {
     ...base,
     state: 'major-only',
     detail:
       entry.safety.major === 'refuse'
-        ? `only a major or out-of-range release is newer (${pool[0].version}); this pin refuses a major bump by its registry safety, so it moves by hand in its own change`
-        : `only a major or out-of-range release is newer (${pool[0].version}); \`bump ${entry.id} --major --reason "<why>"\``,
+        ? `only a major or out-of-range release is newer (${pool[0].version}${why}); this pin refuses a major bump by its registry safety, so it moves by hand in its own change`
+        : `only a major or out-of-range release is newer (${pool[0].version}${why}); \`bump ${entry.id} --major --reason "<why>"\``,
   };
 }

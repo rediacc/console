@@ -40,6 +40,14 @@ export interface Release {
    * absent. `why` is printed beside a refusal.
    */
   verdict?: { eligible: boolean; why: string };
+  /**
+   * The driver's own rule says this release opens a BREAKING line though its leading number is
+   * the pinned one's (a Go minor line, 1.26 -> 1.27, changes the `go` directive of every go.mod).
+   * scripts/lib/pins/status.ts treats it exactly as a major: a plain bump, `bump --all` and
+   * `apply-soaked` never take it, `bump <id> --major --reason "<why>"` does, and the newer-majors
+   * report ages it as the line `line`. `why` is printed beside the refusal.
+   */
+  breaking?: { line: string; why: string };
 }
 
 export interface Inspection {
@@ -123,6 +131,10 @@ export interface PinDriver {
  *                  (the sync before 2026-10-19, 394935a1f)
  *   no-version-gate a plan that writes a manifest or .syncpackrc.json runs only its entry's own
  *                  gates, without check:version (the gate list before 2026-10-19)
+ *   breaking-is-minor a release a driver marks breaking (a Go minor line) is judged by its
+ *                  leading number alone, so a plain bump and apply-soaked take it
+ *   breaking-unlisted the newer-majors report leaves out a line a driver marks breaking, so
+ *                  status and check:ci-pin-freshness never age it
  */
 export const MUTANTS = [
   'skip-site',
@@ -140,6 +152,8 @@ export const MUTANTS = [
   'shared-message',
   'no-manifest-pin',
   'no-version-gate',
+  'breaking-is-minor',
+  'breaking-unlisted',
 ] as const;
 export type Mutant = (typeof MUTANTS)[number];
 
@@ -277,7 +291,12 @@ export interface Fixture {
   now: string;
   releases: Record<
     string,
-    Array<{ version: string; published: string | null; values?: Record<string, string> }>
+    Array<{
+      version: string;
+      published: string | null;
+      values?: Record<string, string>;
+      breaking?: { line: string; why: string };
+    }>
   >;
   /** Commands the stub runner answers: the first whose regex matches the command line wins; `out` is what it prints, and `events` the lines it writes to the file the command's `--events <file>` names. */
   commands: Array<{
@@ -351,6 +370,7 @@ function fixtureDriver(name: Driver): PinDriver {
         releases: newer.map((r) => ({
           version: r.version,
           publishedMs: r.published === null ? null : Date.parse(r.published),
+          ...(r.breaking ? { breaking: r.breaking } : {}),
         })),
       });
     },
