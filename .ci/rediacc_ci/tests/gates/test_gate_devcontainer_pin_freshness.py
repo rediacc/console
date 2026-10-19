@@ -532,7 +532,7 @@ def test_pins_driver_selftest_holds_the_version_and_hash_properties_upgrade_prov
 GOPLS_MODULE = "golang.org/x/tools/gopls"
 
 
-def run_gate_gomod(gate, directory, dockerfile, upstream: dict, gomods: dict):
+def run_gate_gomod(gate, directory, dockerfile, upstream: dict, gomods: dict, go: str = "1.26.9"):
     """The gate over an upstream map and a go.mod map (`DEVCONTAINER_GOMOD_FIXTURE`), for the `go install`ed pins (worklist #e023eb0d).
 
     Under a release fixture the gate reads go.mod files from this map only, never the network, so a key it lacks is a go.mod that was not obtained.
@@ -543,6 +543,9 @@ def run_gate_gomod(gate, directory, dockerfile, upstream: dict, gomods: dict):
     write_map(directory, "gomods.json", gomods)
     holds = directory / "blocklist-none"
     holds.write_text("# no holds; the cases do not read live policy\n", encoding="utf-8")
+    # The image's Go is the fixture's too, not the live .devcontainer/toolchain.env (review dcd54c44.3): a Go bump must not change what these cases mean.
+    toolchain = directory / "toolchain.env"
+    toolchain.write_text("GO_VERSION=%s\n" % go, encoding="utf-8")
     npx = harness.require_tool(
         "npx", "install node; the subject is a TypeScript program driven through tsx"
     )
@@ -552,6 +555,7 @@ def run_gate_gomod(gate, directory, dockerfile, upstream: dict, gomods: dict):
         env={
             "DEVCONTAINER_FRESHNESS_FIXTURE": str(directory / "gomod-upstream.json"),
             "DEVCONTAINER_GOMOD_FIXTURE": str(directory / "gomods.json"),
+            "DEVCONTAINER_TOOLCHAIN_ENV": str(toolchain),
             "DEVCONTAINER_BLOCKLIST_FILE": str(holds),
             "DEVCONTAINER_DOCKERFILE": str(dockerfile),
         },
@@ -603,6 +607,22 @@ def test_every_newer_release_needing_a_newer_go_is_not_behind(gate, tmp_path):
     gate.assert_contains(result.out, "needs go 1.999.0", "the deferral names the Go it needs")
     gate.assert_not_contains(result.err, "behind upstream", "the pin is not called behind")
     gate.log_pass("a pin whose newer releases all need a newer Go is deferred")
+
+
+def test_control_the_same_release_is_behind_once_the_image_has_its_go(gate, tmp_path):
+    """CONTROL for the case above: the identical upstream and go.mod on an image whose Go meets the directive make gopls behind, so that case's green comes from the go.mod judgement and from nothing else."""
+    dockerfile = build_fixtures(gate, tmp_path)
+    result = run_gate_gomod(
+        gate,
+        tmp_path,
+        dockerfile,
+        {"gopls": {"version": "999.0.0", "publishedAt": LONG_AGO}},
+        {"%s@999.0.0" % GOPLS_MODULE: gomod("1.999.0")},
+        go="9.999.0",
+    )
+    gate.assert_exit(1, result, "a release the image's Go can build makes the pin behind")
+    gate.assert_contains(result.err, "behind upstream", "the pin is called behind")
+    gate.log_pass("the same release is behind on an image with a new enough Go")
 
 
 def test_a_go_mod_that_was_not_obtained_is_red(gate, tmp_path):
