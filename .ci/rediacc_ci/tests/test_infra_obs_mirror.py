@@ -574,7 +574,7 @@ def test_serve_with_its_default_probe_reads_the_mirror_on_the_runners_own_addres
     pid = om.serve(_mirror_tree(tmp_path), port)
     try:
         url = "http://%s:%d/repodata/repomd.xml" % (om.primary_ipv4(), port)
-        assert om.mirror_probe(url) == b"<repomd/>"
+        assert om._mirror_probe(url) == b"<repomd/>"
     finally:
         os.kill(pid, signal.SIGTERM)
 

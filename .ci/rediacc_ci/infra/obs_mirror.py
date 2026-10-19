@@ -526,7 +526,7 @@ def http_get(url: str) -> bytes:
         return data
 
 
-def mirror_probe(url: str) -> bytes:
+def _mirror_probe(url: str) -> bytes:
     """GET from the mirror `serve` just started: plain http to the runner's own address as well as loopback.
 
     The readiness probe's second host is the runner's primary IPv4 (`serve` below), which `http_get`'s loopback-only funnel refuses before connecting, so the probe spent its whole 10 s window retrying a refusal and the mirror never read as up (Console CI run 39177571049, E2E Ceph Workers non-apt). Only `serve`'s own probe takes this; every fetch from OBS stays on `http_get`.
@@ -1115,7 +1115,7 @@ def primary_ipv4() -> str:
 def serve(
     directory: pathlib.Path,
     port: int,
-    probe: Callable[[str], bytes] = mirror_probe,
+    probe: Callable[[str], bytes] = _mirror_probe,
     hosts: Callable[[], Sequence[str]] = lambda: ("127.0.0.1", primary_ipv4()),
 ) -> int:
     """Start a detached http.server on every interface at port over directory and return its pid once every host in hosts() answers.
