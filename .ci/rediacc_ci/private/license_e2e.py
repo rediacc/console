@@ -24,7 +24,9 @@ SET -E SEMANTICS ARE KEPT. The bash ran `run_battery` inside `if`, where `set -e
 
 from __future__ import annotations
 
+import fcntl
 import glob
+import hashlib
 import json
 import os
 import pathlib
@@ -782,7 +784,11 @@ def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
         raise SystemExit(128 + signum)
 
     signal.signal(signal.SIGTERM, _terminate)
-    return battery.run()
+    # ONE BATTERY PER LICENSE STORE AT A TIME. The store is machine-global, and two runs interleave its backup, fixtures and restore: on 2026-10-19 one pre-push ran check:ci-proxy-license-e2e beside check:ci-pytest's real-tree port of the same subject, one run's cleanup removed the other's repo directory mid-battery (`chmod: cannot access .../repos/1ce1ce2e-...`), and S6b/S8d/S9c/S10b read 'missing'. A lock keyed by the store path serializes exactly the runs that share it, across processes and worktrees, and leaves a test's scratch store unblocked.
+    key = hashlib.sha256(os.path.realpath(license_root).encode()).hexdigest()[:16]
+    with open(os.path.join(tempfile.gettempdir(), f"rediacc-license-e2e-{key}.lock"), "a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return battery.run()
 
 
 def main(argv: list[str]) -> int:
