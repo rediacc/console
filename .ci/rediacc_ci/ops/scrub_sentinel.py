@@ -13,8 +13,8 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   1. AN UNANSWERED PROBE IS NOT AN ANSWER. `if rsv_sentinel_exists ...` treated the helper's exit 2 (could not tell) as false and printed `sentinel: absent`, and the object count ended `2>/dev/null || echo 0`, so expired credentials or an unreachable endpoint produced a plan reading "sentinel absent, objects: 0" for a release that may be fully sealed. The release-state validator already carries the three states (`Probe.YES/NO/UNKNOWN`); the plan now prints `UNKNOWN` for what it could not establish and the run exits 1, dry-run included, because a plan that could not be drawn is not a plan.
   2. THE DELETE IS VERIFIED. `aws s3 rm --recursive` exiting 0 was the whole proof; the prefix is listed again afterwards and a non-empty answer (or an unanswered one) is a failure rather than "scrubbed".
   3. END OF INPUT AT A PROMPT ABORTS WITH A MESSAGE. `read -r` returning non-zero under `set -e` exited silently.
-  5. THE LIVE-TAG CHECK ASKS ORIGIN. `git rev-parse --verify refs/tags/<v>` read the local clone, which keeps a tag the remote has deleted; `git ls-remote --exit-code --tags origin` answers for the remote (exit 2 is a definite no), and an origin that cannot answer is treated as a live tag.
   4. `--help` PRINTS THIS MODULE'S USAGE, not a `sed -n '2,30p'` window of the script's own comments.
+  5. THE LIVE-TAG CHECK ASKS ORIGIN. `git rev-parse --verify refs/tags/<v>` read the local clone, which keeps a tag the remote has deleted; `git ls-remote --exit-code --tags origin` answers for the remote (exit 2 is a definite no), and an origin that cannot answer is treated as a live tag.
 """
 
 from __future__ import annotations
@@ -84,20 +84,26 @@ def object_count(prefix: str, endpoint: str) -> int | None:
 
 def _tag_exists(repo_root, version: str) -> bool | None:
     """Whether ORIGIN holds the release tag: True, False, or None when origin could not answer. The local tag list is not asked: a clone keeps a tag the remote has since deleted (2026-10-19: this checkout held v1.3.2 while GitHub answered 404 for it, so the warning named a live tag that did not exist)."""
-    proc = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(repo_root),
-            "ls-remote",
-            "--exit-code",
-            "--tags",
-            "origin",
-            "refs/tags/%s" % version,
-        ],
-        capture_output=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "ls-remote",
+                "--exit-code",
+                "--tags",
+                "origin",
+                "refs/tags/%s" % version,
+            ],
+            capture_output=True,
+            check=False,
+            # Never a credential prompt mid-plan, and never a TCP-timeout stall: an origin that cannot answer quickly is "cannot tell".
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        return None
     if proc.returncode == 0:
         return True
     if proc.returncode == 2:
