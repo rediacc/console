@@ -12,6 +12,12 @@
  * publishes no independent trust root for these assets), found by the `asset` filename each
  * `sha256:<arch>` site names.
  *
+ * A pin installed with `go install` (its registry entry names a `goModule`) takes only a release
+ * whose go.mod `go` directive builds on the image's Go: GO_VERSION in .devcontainer/toolchain.env
+ * with GOTOOLCHAIN=local (worklist #e023eb0d, scripts/lib/pins/go-directive.ts). A newer release
+ * is answered with an ineligible verdict naming the Go it needs, so the core takes the newest one
+ * that builds; a go.mod the proxy does not answer refuses the pin (fail closed).
+ *
  * What the driver cannot do, it says: a `none` source (glab, published on gitlab.com) is not
  * compared, and the proving `docker build` stays the operator's, since the image only changes
  * when ci-build-docker.yml runs on the merge.
@@ -28,6 +34,7 @@ import {
   planLeafSites,
   type Release,
 } from '../driver.js';
+import { goNeeds, goTooNew, imageGoVersion, needsGoWhy, TOOLCHAIN_ENV } from '../go-directive.js';
 import { idName, type PinEntry, siteMatches } from '../registry.js';
 import { checkSites, digestFor, hashSites } from './toolchain-plan.js';
 import {
@@ -41,8 +48,11 @@ import {
   type Upstream,
 } from './toolchain-upstream.js';
 
-/** Selftest mutants: `half-hash` moves the version when a digest is missing and keeps the old hash. */
-export const DEVCONTAINER_MUTANTS = ['half-hash'] as const;
+/**
+ * Selftest mutants: `half-hash` moves the version when a digest is missing and keeps the old hash;
+ * `ignore-go` offers a goModule release whatever Go its go.mod needs (the driver before 2026-10-19).
+ */
+export const DEVCONTAINER_MUTANTS = ['half-hash', 'ignore-go'] as const;
 export type DevcontainerMutant = (typeof DEVCONTAINER_MUTANTS)[number];
 
 function refusal(err: unknown): PlanRefused {
@@ -68,6 +78,28 @@ async function releasesOf(
   throw new Error(`the devcontainer driver cannot read a ${s.type} source`);
 }
 
+/** The image's Go, read from the tree being bumped; a tree that names none refuses the pin. */
+function imageGo(entry: PinEntry, ctx: DriverContext): string {
+  const have = imageGoVersion(ctx.read({ repo: '.', file: TOOLCHAIN_ENV }));
+  if (have === null)
+    throw new PlanRefused(
+      `${entry.id}: ${TOOLCHAIN_ENV} names no GO_VERSION, so the Go a release needs cannot be compared with the image's`
+    );
+  return have;
+}
+
+/** Null when `version` of a goModule pin builds on Go `have`, else why it does not. Throws when the proxy does not answer. */
+async function goBlocker(
+  up: Upstream,
+  entry: PinEntry,
+  version: string,
+  have: string
+): Promise<string | null> {
+  const mod = entry.goModule as string;
+  const need = await goNeeds((url) => up.text(url, entry.name), mod, version);
+  return goTooNew(need, have) ? needsGoWhy(mod, version, need, have) : null;
+}
+
 export function createDevcontainerDriver(
   up: Upstream,
   mutant: DevcontainerMutant | null = null
@@ -75,18 +107,27 @@ export function createDevcontainerDriver(
   async function inspect(entry: PinEntry, ctx: DriverContext): Promise<Inspection> {
     const current = leafCurrent(entry, ctx);
     const all = await releasesOf(up, entry, current);
-    return {
-      current,
-      releases: newerThan(byNewest(all), current).map(
-        (r): Release => ({ version: r.version, publishedMs: r.publishedMs })
-      ),
-    };
+    const releases = newerThan(byNewest(all), current).map(
+      (r): Release => ({ version: r.version, publishedMs: r.publishedMs })
+    );
+    if (entry.goModule !== undefined && releases.length > 0) {
+      const have = imageGo(entry, ctx);
+      for (const r of releases) {
+        const why = mutant === 'ignore-go' ? null : await goBlocker(up, entry, r.version, have);
+        if (why !== null) r.verdict = { eligible: false, why };
+      }
+    }
+    return { current, releases };
   }
 
   async function plan(entry: PinEntry, to: Release, ctx: DriverContext): Promise<PinPlan> {
     try {
       checkSites(entry, entry.sites, ctx.read);
       const current = leafCurrent(entry, ctx);
+      if (entry.goModule !== undefined && mutant !== 'ignore-go') {
+        const why = await goBlocker(up, entry, to.version, imageGo(entry, ctx));
+        if (why !== null) throw new PlanRefused(`${entry.id}: ${why}`);
+      }
       const values: Record<string, string> = { version: to.version };
       const hashed = hashSites(entry);
       if (hashed.length > 0) {

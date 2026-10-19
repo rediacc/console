@@ -42,6 +42,16 @@
  *    that tool from then on.
  *  - BLOCKER-GATED HOLDS: .devcontainer-upgrade-blocklist, each entry carrying a
  *    substantive reason, validated like every other suppression list here.
+ *  - A RELEASE THE IMAGE CANNOT BUILD IS NOT "BEHIND" (worklist #e023eb0d). A
+ *    tool installed with `go install` (its pins.json entry names a `goModule`)
+ *    builds under the image's Go, GO_VERSION in .devcontainer/toolchain.env with
+ *    GOTOOLCHAIN=local, so a release whose go.mod `go` directive is newer cannot
+ *    be taken: gopls 0.24.0 (`go 1.27.0`) failed the image build on Go 1.26.9 on
+ *    2026-10-18. Each such release is printed as deferred, naming the Go it
+ *    needs, and the pin is judged against the newest release that builds. The
+ *    go.mod is read from proxy.golang.org (`/<module>/@v/v<version>.mod`), and
+ *    one the proxy does not answer, or one with no `go` line, is RED, never
+ *    eligible (scripts/lib/pins/go-directive.ts).
  *
  * WHAT IT DOES THAT THE EMBED GATE DOES NOT: it filters release TAGS by prefix.
  * bitwarden/clients is a monorepo, so /releases/latest answers with whichever of
@@ -92,10 +102,25 @@ import {
   type DevcontainerPinSource as Source,
 } from '../lib/devcontainer-pin-sources.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
+import {
+  goModUrl,
+  goNeeds,
+  goTooNew,
+  imageGoVersion,
+  needsGoWhy,
+  TOOLCHAIN_ENV,
+} from '../lib/pins/go-directive.js';
+import { entriesFor, loadRegistry } from '../lib/pins/registry.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
-import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
+import {
+  askUpstream,
+  githubAsker,
+  NotCompared,
+  PinTally,
+  UnreadableListing,
+} from '../lib/upstream.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
@@ -108,6 +133,8 @@ const DOCKERFILE =
 const BLOCKLIST =
   process.env.DEVCONTAINER_BLOCKLIST_FILE ||
   policyPath('.devcontainer-upgrade-blocklist', CONSOLE_ROOT);
+// The image's Go, which a `go install`ed tool's go.mod is judged against; a seam so a case can name another one without touching the tracked file.
+const TOOLCHAIN = process.env.DEVCONTAINER_TOOLCHAIN_ENV || path.join(CONSOLE_ROOT, TOOLCHAIN_ENV);
 // A third seam: another API base, so the gate's test can stand a real HTTP server in for GitHub and an offline run can be driven by hand. The token is never sent to it.
 const github = githubAsker('rediacc-devcontainer-pin-freshness', process.env.DEVCONTAINER_API_BASE);
 
@@ -147,6 +174,8 @@ let fixtureCache: Record<string, FixtureEntry> | null | undefined;
 interface FixtureEntry {
   version: string;
   publishedAt?: string;
+  /** Older releases under the prefix, newest first, for a case that needs more than the newest. */
+  older?: FixtureEntry[];
 }
 function loadFixture(): Record<string, FixtureEntry> | null {
   const cached = fixtureCache;
@@ -164,35 +193,103 @@ interface GithubRelease {
   prerelease?: boolean;
 }
 
-/** Newest stable release matching the source's tag prefix. Throws NotCompared when the listing was not obtained and UnreadableListing when it cannot be used. */
-async function latestFor(src: Source): Promise<Latest> {
+/**
+ * Test seam: DEVCONTAINER_GOMOD_FIXTURE points at a JSON map `{ "<module>@<version>": "<go.mod text>" }`.
+ * Under a release fixture the go.mod is read from this map and never from the network, so a key
+ * the map lacks is a go.mod that was not obtained, which is red.
+ */
+let gomodCache: Record<string, string> | undefined;
+function goModText(module: string, version: string, who: string): Promise<string> {
+  if (loadFixture()) {
+    if (gomodCache === undefined) {
+      const p = process.env.DEVCONTAINER_GOMOD_FIXTURE;
+      gomodCache = p ? (JSON.parse(fs.readFileSync(p, 'utf-8')) as Record<string, string>) : {};
+    }
+    const hit = gomodCache[`${module}@${version}`];
+    return hit === undefined
+      ? Promise.reject(NotCompared.absentFromFixture(`${module}@${version} go.mod`))
+      : Promise.resolve(hit);
+  }
+  return askUpstream({
+    url: goModUrl(module, version),
+    headers: { 'User-Agent': 'rediacc-devcontainer-pin-freshness' },
+    who,
+  }).then((a) => a.body);
+}
+
+/** The pins.json `goModule` of each devcontainer pin installed with `go install`, by registry id. */
+const GO_MODULES = new Map(
+  entriesFor(loadRegistry(), 'devcontainer').flatMap((e) =>
+    e.goModule ? [[e.id, e.goModule] as const] : []
+  )
+);
+
+/** Every stable release matching the source's tag prefix, newest first. Throws NotCompared when the listing was not obtained and UnreadableListing when it cannot be used. */
+async function releasesFor(src: Source): Promise<Latest[]> {
   const fixture = loadFixture();
   if (fixture) {
     const hit = fixture[src.base];
     if (!hit) throw NotCompared.absentFromFixture(src.base);
-    return {
-      version: hit.version,
-      publishedAt: hit.publishedAt ? new Date(hit.publishedAt) : null,
-    };
+    return [hit, ...(hit.older ?? [])].map((r) => ({
+      version: r.version,
+      publishedAt: r.publishedAt ? new Date(r.publishedAt) : null,
+    }));
   }
 
   // NOT /releases/latest. On a monorepo that endpoint answers with whichever COMPONENT shipped last -- for bitwarden/clients that is web-*, desktop-*, browser-* or cli-* depending on the week -- so it would compare the CLI pin against a browser-extension version and produce nonsense in both directions. The list endpoint is ordered newest-first, so the first prefix match is the
   // answer.
   const rels = await github(`/repos/${src.repo}/releases?per_page=100`, src.display);
   if (!Array.isArray(rels)) throw new UnreadableListing('the response is not a release list');
-  const hit = (rels as Array<GithubRelease | null>).find(
-    (r) => r && !r.draft && !r.prerelease && (r.tag_name ?? '').startsWith(src.tagPrefix)
+  const hits = (rels as Array<GithubRelease | null>).filter(
+    (r): r is GithubRelease =>
+      !!r && !r.draft && !r.prerelease && (r.tag_name ?? '').startsWith(src.tagPrefix)
   );
-  if (!hit?.tag_name) {
+  if (hits.length === 0) {
     throw new UnreadableListing(
       `no released tag starting with "${src.tagPrefix}" in the newest 100`
     );
   }
 
-  return {
-    version: hit.tag_name.slice(src.tagPrefix.length),
+  return hits.map((hit) => ({
+    version: (hit.tag_name as string).slice(src.tagPrefix.length),
     publishedAt: hit.published_at ? new Date(hit.published_at) : null,
-  };
+  }));
+}
+
+/** What one source answered: the newest release newer than the pin that the image can build (null when none is), and one line per newer release whose go.mod needs a newer Go. */
+interface Judged {
+  candidate: Latest | null;
+  needsGo: string[];
+}
+
+/**
+ * The releases newer than `pinned`, newest first, judged for a `go install`ed tool against the
+ * image's Go `have`: a release whose go.mod needs a newer Go is set aside with its reason, and the
+ * first one that builds is the candidate. A go.mod that was not obtained throws, so the pin is red.
+ */
+async function judge(src: Source, pinned: string, have: string | null): Promise<Judged> {
+  const newer = (await releasesFor(src))
+    .filter((r) => isNewer(r.version, pinned))
+    .sort((a, b) => (isNewer(a.version, b.version) ? -1 : isNewer(b.version, a.version) ? 1 : 0));
+  const mod = GO_MODULES.get(src.id);
+  const needsGo: string[] = [];
+  for (const r of newer) {
+    if (mod !== undefined && have !== null) {
+      const need = await goNeeds(
+        (url) => goModText(mod, r.version, `${src.display} go.mod (${url})`),
+        mod,
+        r.version
+      );
+      if (goTooNew(need, have)) {
+        needsGo.push(
+          `${src.display}: ${r.version} deferred: ${needsGoWhy(mod, r.version, need, have)}`
+        );
+        continue;
+      }
+    }
+    return { candidate: r, needsGo };
+  }
+  return { candidate: null, needsGo };
 }
 
 interface Finding {
@@ -225,13 +322,29 @@ async function main(): Promise<void> {
   }
   for (const c of conflicts) console.error(`${YELLOW}⚠ ${c}${NC}`);
 
+  // FAIL CLOSED: a `go install`ed tool is judged against the image's Go, so a tree that names none cannot judge it.
+  const have = imageGoVersion(
+    fs.existsSync(TOOLCHAIN) ? fs.readFileSync(TOOLCHAIN, 'utf-8') : null
+  );
+  if (have === null && SOURCES.some((src) => GO_MODULES.has(src.id))) {
+    console.error(
+      `${RED}✗ ${TOOLCHAIN} names no GO_VERSION, so the Go each \`go install\`ed pin's release needs (${SOURCES.filter(
+        (src) => GO_MODULES.has(src.id)
+      )
+        .map((src) => src.id)
+        .join(', ')}) cannot be compared with the image's${NC}`
+    );
+    process.exit(1);
+  }
+
   const stale: Finding[] = [];
   const deferred: string[] = [];
   const tally = new PinTally('devcontainer', SOURCES.length);
   // A held pin and a source with no ARG are not asked.
-  const answers = await tally.askAll(SOURCES, (src) =>
-    versions.has(src.base) && !held.has(src.base) ? latestFor(src) : null
-  );
+  const answers = await tally.askAll(SOURCES, (src) => {
+    const pinned = versions.get(src.base);
+    return pinned && !held.has(src.base) ? judge(src, pinned, have) : null;
+  });
 
   for (const [index, src] of SOURCES.entries()) {
     const pinned = versions.get(src.base);
@@ -252,8 +365,9 @@ async function main(): Promise<void> {
       continue;
     }
     tally.compared++;
-    const latest = answer.value;
-    if (!isNewer(latest.version, pinned)) continue;
+    deferred.push(...answer.value.needsGo);
+    const latest = answer.value.candidate;
+    if (latest === null) continue;
     if (
       latest.publishedAt !== null &&
       isWithinFreshnessWindow(latest.publishedAt.getTime(), nowMs, minReleaseAgeMs)

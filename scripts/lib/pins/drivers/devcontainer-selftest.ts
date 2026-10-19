@@ -20,6 +20,8 @@ import { type ControlCase, runControls } from '../../controls.js';
 import { githubApiHeaders } from '../../github-token.js';
 import { askUpstream } from '../../upstream.js';
 import { keyOf, type PinPlan, PlanRefused } from '../driver.js';
+import { goDirective, goModUrl, goTooNew } from '../go-directive.js';
+import { judge } from '../soak.js';
 import { loadRegistry, siteMatches } from '../registry.js';
 import {
   createDevcontainerDriver,
@@ -48,6 +50,7 @@ const tree = (): string =>
       '.ci/docker/web/Dockerfile',
       '.devcontainer/start-vscode.sh',
       'private/renet/.ci/scripts/quality/lint.sh',
+      '.devcontainer/toolchain.env',
     ],
     {}
   );
@@ -224,6 +227,8 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
         [`${base}/list`]: `v${sc}\nv${sv}\nv${sv}-rc1\nv2026.1.1\n`,
         [`${base}/v${sv}.info`]: { Time: '2026-10-05T00:00:00Z' },
         [`${base}/v2026.1.1.info`]: { Time: '2026-10-06T00:00:00Z' },
+        [goModUrl('honnef.co/go/tools', sv)]: 'module honnef.co/go/tools\n\ngo 1.20\n',
+        [goModUrl('honnef.co/go/tools', '2026.1.1')]: 'module honnef.co/go/tools\n\ngo 1.20.0\n',
       }),
       mutant
     );
@@ -240,6 +245,8 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
       [`${GH}/repos/golangci/golangci-lint/releases?per_page=100`]: [
         release(`v${gn}`, '2026-10-01T00:00:00Z'),
       ],
+      [goModUrl('github.com/golangci/golangci-lint/v2', gn)]:
+        'module github.com/golangci/golangci-lint/v2\n\ngo 1.26.0\n',
     });
     const lint = textOf(r.plan, 'private/renet/.ci/scripts/quality/lint.sh');
     add(
@@ -257,6 +264,95 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
         arg(textOf(web.plan, DF) ?? '', 'AGENT_BROWSER_VERSION') === abn &&
         arg(textOf(web.plan, '.ci/docker/web/Dockerfile') ?? '', 'AGENT_BROWSER_VERSION') === abn,
       web.refused
+    );
+  }
+
+  // -- a `go install`ed pin takes only a release whose go.mod builds on the image's Go (worklist #e023eb0d: gopls 0.24.0 says `go 1.27.0`, the image builds 1.26.9 with GOTOOLCHAIN=local). Mutant `ignore-go` offers every release whatever its go.mod needs, which turns the first, second and fourth controls red; with it the driver never reads a go.mod, so the third (a proxy failure refuses) goes red too.
+  {
+    const cur = arg(df, 'GOPLS_VERSION');
+    const fits = patchOf(cur);
+    const tooNew = '999.0.0';
+    const mod = 'golang.org/x/tools/gopls';
+    const list = `${GH}/repos/golang/tools/releases?per_page=100`;
+    const listing = [
+      release(`gopls/v${tooNew}`, '2026-10-02T00:00:00Z'),
+      release(`gopls/v${fits}`, '2026-10-01T00:00:00Z'),
+      release(`gopls/v${cur}`, '2026-09-01T00:00:00Z'),
+    ];
+    const gomods = {
+      [goModUrl(mod, tooNew)]: `module ${mod}\n\ngo 1.999.0\n`,
+      [goModUrl(mod, fits)]: `module ${mod}\n\ngo 1.20.0 // older than any image Go\n`,
+    };
+    const soak = (r: {
+      version: string;
+      publishedMs: number | null;
+      verdict?: { eligible: boolean; why: string };
+    }) =>
+      judge(entryOf('devcontainer:gopls'), r, Date.parse('2026-10-10T00:00:00Z'), 86_400_000, false)
+        .eligible;
+    const mixed = await createDevcontainerDriver(
+      stubUpstream({ [list]: listing, ...gomods }),
+      mutant
+    ).inspect(entryOf('devcontainer:gopls'), ctxOf(tree()));
+    const firstEligible = mixed.releases.find(soak)?.version;
+    add(
+      'gopls: a release whose go.mod needs a newer Go than the image is ineligible, naming the Go it needs, and the newest one that builds is taken',
+      mixed.releases.length === 2 &&
+        mixed.releases[0].verdict?.eligible === false &&
+        (mixed.releases[0].verdict?.why ?? '').includes('needs go 1.999.0') &&
+        firstEligible === fits,
+      JSON.stringify(mixed)
+    );
+    const onlyNew = await createDevcontainerDriver(
+      stubUpstream({ [list]: [listing[0], listing[2]], ...gomods }),
+      mutant
+    ).inspect(entryOf('devcontainer:gopls'), ctxOf(tree()));
+    add(
+      'gopls: when every newer release needs a newer Go, none is eligible (the pin waits, it is not behind)',
+      onlyNew.releases.length === 1 && !onlyNew.releases.some(soak),
+      JSON.stringify(onlyNew)
+    );
+    let failed = '';
+    try {
+      await createDevcontainerDriver(stubUpstream({ [list]: listing }), mutant).inspect(
+        entryOf('devcontainer:gopls'),
+        ctxOf(tree())
+      );
+    } catch (err) {
+      failed = (err as Error).message;
+    }
+    const failedPlan = await plan('devcontainer:gopls', fits, { [list]: listing });
+    add(
+      'gopls: a go.mod the proxy does not answer fails closed: inspect throws and the plan is refused, never eligible',
+      failed.includes('.mod') && (failedPlan.refused ?? '').includes('.mod'),
+      `inspect: ${failed || 'answered'}; plan: ${failedPlan.refused ?? 'a plan was returned'}`
+    );
+    const refused = await plan('devcontainer:gopls', tooNew, { [list]: listing, ...gomods });
+    add(
+      'gopls: a plan to a release whose go.mod needs a newer Go is refused by name',
+      (refused.refused ?? '').includes('needs go 1.999.0'),
+      refused.refused ?? 'a plan was returned'
+    );
+  }
+
+  // -- Go's own version order, as GOTOOLCHAIN=local applies it: the patch counts, and a prerelease sorts before its release.
+  {
+    const pairs: [string, string, boolean][] = [
+      ['1.27.0', '1.26.9', true],
+      ['1.26.0', '1.26.9', false],
+      ['1.26.10', '1.26.9', true],
+      ['1.26.9', '1.26.9', false],
+      ['1.27rc1', '1.26.9', true],
+      ['1.27rc1', '1.27.0', false],
+      ['1.27', '1.27.0', false],
+    ];
+    const wrong = pairs.filter(([need, have, want]) => goTooNew(need, have) !== want);
+    add(
+      'go directive: a go.mod newer than the image Go (patch and prerelease included) does not build, an older or equal one does',
+      wrong.length === 0 &&
+        goDirective('module x\n\ngo 1.27.0\n\ntoolchain go1.27.1\n') === '1.27.0' &&
+        goDirective('module x\n') === null,
+      JSON.stringify(wrong)
     );
   }
 
