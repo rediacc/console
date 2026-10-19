@@ -788,11 +788,16 @@ def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
 
     signal.signal(signal.SIGTERM, _terminate)
     # ONE BATTERY PER LICENSE STORE AT A TIME. The store is machine-global, and two runs interleave its backup, fixtures and restore: on 2026-10-19 one pre-push ran check:ci-proxy-license-e2e beside check:ci-pytest's real-tree port of the same subject, one run's cleanup removed the other's repo directory mid-battery (`chmod: cannot access .../repos/1ce1ce2e-...`), and S6b/S8d/S9c/S10b read 'missing'. A lock keyed by the store path serializes exactly the runs that share it, across processes and worktrees, and leaves a test's scratch store unblocked.
-    # The lock lives in /tmp itself, never TMPDIR, so every environment on the host names the same file; it is opened read-only (flock needs no write access, so another user's file still serves) and never through a symlink. The wait is bounded: a holder that hangs makes this run fail with its reason instead of stalling the gate.
+    # The lock lives in /tmp itself, never TMPDIR, so every environment on the host names the same file; it is opened read-only (flock needs no write access, so another user's readable file still serves; an unreadable one or a symlink fails the run with its reason) and never through a symlink. The wait is bounded: a holder that hangs makes this run fail with its reason instead of stalling the gate.
     key = hashlib.sha256(os.path.realpath(license_root).encode()).hexdigest()[:16]
-    fd = os.open(
-        f"/tmp/rediacc-license-e2e-{key}.lock", os.O_RDONLY | os.O_CREAT | os.O_NOFOLLOW, 0o644
-    )
+    lock_path = f"/tmp/rediacc-license-e2e-{key}.lock"
+    try:
+        fd = os.open(lock_path, os.O_RDONLY | os.O_CREAT | os.O_NOFOLLOW, 0o644)
+    except OSError as exc:
+        log.error(
+            f"cannot open the license-store lock {lock_path} ({exc.strerror}); a symlink or another user's unreadable file sits there"
+        )
+        return 1
     try:
         deadline = time.monotonic() + LOCK_WAIT_S
         while True:

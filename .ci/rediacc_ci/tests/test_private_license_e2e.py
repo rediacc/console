@@ -25,6 +25,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from typing import Any
 
 import pytest
@@ -780,7 +781,9 @@ def test_a_failed_chain_state_backup_inside_the_battery_records_no_backup(tmp_pa
     assert (tmp_path / "lic" / "chain-state.json").read_text() == "operator"
 
 
-def test_a_battery_holding_the_store_makes_a_second_run_fail_after_the_bound(tmp_path, monkeypatch):
+def test_a_battery_holding_the_store_makes_a_second_run_fail_after_the_bound(
+    tmp_path, monkeypatch, capsys
+):
     """Two runs on one license store never interleave (review 7e7a1ef7.1): while another process holds the store's lock, run() waits at most LOCK_WAIT_S and returns 1 without starting its battery."""
     started: list[bool] = []
 
@@ -805,8 +808,11 @@ def test_a_battery_holding_the_store_makes_a_second_run_fail_after_the_bound(tmp
         assert holder.stdout.readline().strip() == "held"
         monkeypatch.setattr(port_module, "LOCK_WAIT_S", 1)
         monkeypatch.setattr(port_module.Battery, "run", fake_run)
+        t0 = time.monotonic()
         assert port_module.run([], license_root=root) == 1
+        assert time.monotonic() - t0 >= 1
         assert started == []
+        assert root in capsys.readouterr().err
     finally:
         holder.kill()
         holder.wait()
@@ -818,3 +824,24 @@ def test_a_battery_holding_the_store_makes_a_second_run_fail_after_the_bound(tmp
         assert started == [True]
     finally:
         os.unlink(lock)
+
+
+def test_a_symlink_at_the_lock_path_fails_the_run_with_its_reason(tmp_path, monkeypatch, capsys):
+    """O_NOFOLLOW refuses a planted symlink at the lock path, and run() returns 1 naming it instead of raising (review 41af1678.1)."""
+    root = str(tmp_path / "store")
+    key = hashlib.sha256(os.path.realpath(root).encode()).hexdigest()[:16]
+    lock = f"/tmp/rediacc-license-e2e-{key}.lock"
+    os.symlink(tmp_path / "elsewhere", lock)
+    started: list[bool] = []
+
+    def fake_run(_self: object) -> int:
+        started.append(True)
+        return 0
+
+    monkeypatch.setattr(port_module.Battery, "run", fake_run)
+    try:
+        assert port_module.run([], license_root=root) == 1
+    finally:
+        os.unlink(lock)
+    assert started == []
+    assert lock in capsys.readouterr().err
