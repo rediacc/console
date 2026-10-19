@@ -63,8 +63,12 @@ def build_fixture_tree(gate, root: pathlib.Path) -> None:
     sub = root / "private" / "renet"
     harness.run([git, "-C", os.fspath(sub), "init", "-q", "."])
     # No detached maintenance after the commit: build_fixture_tree rmtree's this root and rebuilds it in a loop, and the child holds .git/objects/maintenance.lock past `commit` (see .claude/rediacc_hooks/tests/test_wl_scratch.py).
-    harness.run([git, "-C", os.fspath(sub), "config", "maintenance.auto", "false"])
-    harness.run([git, "-C", os.fspath(sub), "config", "gc.auto", "0"])
+    for key, value in (("maintenance.auto", "false"), ("gc.auto", "0")):
+        configured = harness.run([git, "-C", os.fspath(sub), "config", key, value])
+        if configured.rc != 0:
+            gate.log_fail(
+                "could not set %s in the fixture submodule: %s" % (key, configured.err.strip())
+            )
     harness.run([git, "-C", os.fspath(sub), "add", "-A"])
     result = harness.run(
         [git, "-C", os.fspath(sub), *GIT_IDENTITY, "commit", "-qm", "fixture"],

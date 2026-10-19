@@ -3319,7 +3319,7 @@ def test_a_long_option_value_is_not_a_url_ff2ccadb(bash, tmp_path):
 
 @functools.cache
 def _curl_takes_long_equals() -> bool:
-    """Whether this host's curl reads `--user=value`, the exact form the test drives (curl 8.5 on ubuntu-24.04 refuses it as an unknown option)."""
+    """Whether this host's curl reads `--user=value`, the exact form the test drives (curl 8.5 on ubuntu-24.04 refuses every `--long=value` spelling as an unknown option)."""
     try:
         done = subprocess.run(
             ["curl", "--user=probe", "--version"], capture_output=True, check=False
