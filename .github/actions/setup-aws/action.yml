@@ -65,6 +65,9 @@ runs:
           echo "AWS_REQUEST_CHECKSUM_CALCULATION=when_required" >> "$GITHUB_ENV"
           echo "AWS_RESPONSE_CHECKSUM_VALIDATION=when_required" >> "$GITHUB_ENV"
           # The classic S3 transfer client (.ci/config/aws-cli.cfg header says why), written outside the checkout so a sparse cone without .ci/config still gets it.
-          printf '[default]\ns3 =\n  preferred_transfer_client = classic\n' > "${RUNNER_TEMP}/aws-cli.cfg"
-          echo "AWS_CONFIG_FILE=${RUNNER_TEMP}/aws-cli.cfg" >> "$GITHUB_ENV"
+          # A config the runner or job already names is kept, as rediacc_ci.core.awscli.r2_env keeps it (review c06b2082.3).
+          if [[ -z "${AWS_CONFIG_FILE:-}" ]]; then
+            printf '[default]\ns3 =\n  preferred_transfer_client = classic\n' > "${RUNNER_TEMP}/aws-cli.cfg"
+            echo "AWS_CONFIG_FILE=${RUNNER_TEMP}/aws-cli.cfg" >> "$GITHUB_ENV"
+          fi
         fi

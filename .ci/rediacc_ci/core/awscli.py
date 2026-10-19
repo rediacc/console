@@ -167,8 +167,10 @@ def argv(args: list[str], env: Mapping[str, str] | None = None) -> list[str]:
 def run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[Any]:
     """`subprocess.run(argv(args), **kwargs)`, with `check=False` unless the caller says otherwise."""
     check = bool(kwargs.pop("check", False))
-    kwargs["env"] = r2_env(kwargs.get("env"))
-    return subprocess.run(argv(args, env=kwargs["env"]), check=check, **kwargs)
+    # Only an R2 call (every one names --endpoint-url) takes the R2 settings; a call to AWS itself (cf_auth's `aws iam delete-access-key`) keeps the caller's own config and profile (review c06b2082.1).
+    if "--endpoint-url" in args:
+        kwargs["env"] = r2_env(kwargs.get("env"))
+    return subprocess.run(argv(args, env=kwargs.get("env")), check=check, **kwargs)
 
 
 # R2 rejects the flexible checksums aws CLI v2 sends by default on multipart uploads: the first live CI run on the pinned 2.38.1 (run 39311676492, Stage Artifacts, 2026-10-19) failed `CompleteMultipartUpload` with InvalidPart on one attempt and AWS_ERROR_HTTP_RESPONSE_FIRST_BYTE_TIMEOUT on the other. Checksums are requested and validated only where an operation requires them; a caller's own value still wins.

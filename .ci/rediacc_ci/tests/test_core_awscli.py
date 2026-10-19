@@ -207,14 +207,29 @@ def test_run_asks_for_r2_checksums_only_where_required_unless_the_caller_says_ot
     monkeypatch.setattr(awscli.subprocess, "run", fake_run)
     monkeypatch.delenv("AWS_REQUEST_CHECKSUM_CALCULATION", raising=False)
     monkeypatch.delenv("AWS_RESPONSE_CHECKSUM_VALIDATION", raising=False)
-    awscli.run([awscli.AWS, "s3", "ls"])
+    monkeypatch.delenv("AWS_CONFIG_FILE", raising=False)
+    awscli.run([awscli.AWS, "s3", "ls", "--endpoint-url", "https://r2.example.invalid"])
     assert seen[-1]["AWS_REQUEST_CHECKSUM_CALCULATION"] == "when_required"
     assert seen[-1]["AWS_RESPONSE_CHECKSUM_VALIDATION"] == "when_required"
     awscli.run(
-        [awscli.AWS, "s3", "ls"],
+        [awscli.AWS, "s3", "ls", "--endpoint-url", "https://r2.example.invalid"],
         env={"AWS_REQUEST_CHECKSUM_CALCULATION": "when_supported", "PATH": "/usr/bin"},
     )
     assert seen[-1]["AWS_REQUEST_CHECKSUM_CALCULATION"] == "when_supported"
     assert seen[-1]["AWS_RESPONSE_CHECKSUM_VALIDATION"] == "when_required"
     assert seen[-1]["AWS_CONFIG_FILE"] == str(awscli.CONFIG_FILE)
     assert "preferred_transfer_client = classic" in awscli.CONFIG_FILE.read_text()
+
+
+def test_a_call_to_aws_itself_keeps_the_callers_config(monkeypatch) -> None:
+    """A call with no --endpoint-url (cf_auth's `aws iam delete-access-key`) is not an R2 call: run() passes the caller's environment through untouched, so ~/.aws/config and its profiles still apply (review c06b2082.1)."""
+    seen: list[object] = []
+
+    def fake_run(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if cmd[1:2] == ["iam"]:
+            seen.append(kwargs.get("env"))
+        return subprocess.CompletedProcess(cmd, 0, "aws-cli/2.0.0 Python/3", "")
+
+    monkeypatch.setattr(awscli.subprocess, "run", fake_run)
+    awscli.run([awscli.AWS, "iam", "delete-access-key", "--access-key-id", "AKIA"])
+    assert seen == [None]
