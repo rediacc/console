@@ -2178,6 +2178,9 @@
       "COMMIT_POLICY_OK",
       "GEN_DOCS_PRECOMMIT_VERBOSE"
     ],
+    ".claude/rediacc_hooks/guards/block_host_toolchain_run.py": [
+      "AWS_BIN"
+    ],
     ".claude/rediacc_hooks/guards/block_inline_python.py": [
       "TMPDIR"
     ],
