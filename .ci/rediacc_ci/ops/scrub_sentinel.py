@@ -82,6 +82,10 @@ def object_count(prefix: str, endpoint: str) -> int | None:
     return int(text) if text.isdigit() else None
 
 
+# How long the live-tag probe waits for origin before answering "cannot tell".
+ORIGIN_TIMEOUT_S = 30
+
+
 def _tag_exists(repo_root, version: str) -> bool | None:
     """Whether ORIGIN holds the release tag: True, False, or None when origin could not answer. The local tag list is not asked: a clone keeps a tag the remote has since deleted (2026-10-19: this checkout held v1.3.2 while GitHub answered 404 for it, so the warning named a live tag that did not exist)."""
     try:
@@ -98,9 +102,13 @@ def _tag_exists(repo_root, version: str) -> bool | None:
             ],
             capture_output=True,
             check=False,
-            # Never a credential prompt mid-plan, and never a TCP-timeout stall: an origin that cannot answer quickly is "cannot tell".
-            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
-            timeout=30,
+            # Never a prompt mid-plan, and never a TCP-timeout stall: GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt, BatchMode stops ssh's passphrase and host-key prompts, and an origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
+            env={
+                **os.environ,
+                "GIT_TERMINAL_PROMPT": "0",
+                "GIT_SSH_COMMAND": os.environ.get("GIT_SSH_COMMAND", "ssh") + " -o BatchMode=yes",
+            },
+            timeout=ORIGIN_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired:
         return None

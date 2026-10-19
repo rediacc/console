@@ -13,6 +13,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.ops import scrub_sentinel as port
 from rediacc_ci.tests import ops_cf_harness as h
 
 if typing.TYPE_CHECKING:
@@ -240,3 +241,27 @@ def test_delta_an_origin_that_cannot_answer_counts_as_a_live_tag(world: h.World)
     p = _port(world, ["v1.0.5"], FAKE_GIT_REMOTE_RC="128")
     assert "could not ask origin" in p[2]
     assert "git tag v1.0.5 exists" in p[2]
+
+
+def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monkeypatch) -> None:
+    """Rule T 5: the probe runs git with GIT_TERMINAL_PROMPT=0 and an ssh in BatchMode, and an origin slower than ORIGIN_TIMEOUT_S answers None (reviews b232b7b3.1, ada48848.1-.2)."""
+    seen = tmp_path / "env.json"
+    fake = tmp_path / "bin" / "git"
+    fake.parent.mkdir()
+    fake.write_text(
+        "#!" + sys.executable + "\n"
+        "import json, os, sys, time\n"
+        f"open({str(seen)!r}, 'w').write(json.dumps({{k: os.environ.get(k) for k in ('GIT_TERMINAL_PROMPT', 'GIT_SSH_COMMAND')}}))\n"
+        "time.sleep(float(os.environ.get('FAKE_GIT_SLEEP', '0')))\n"
+        "sys.exit(2)\n"
+    )
+    fake.chmod(0o755)
+    monkeypatch.setenv("PATH", str(fake.parent))
+    monkeypatch.delenv("GIT_SSH_COMMAND", raising=False)
+    assert port._tag_exists(tmp_path, "v1.0.5") is False
+    env = json.loads(seen.read_text())
+    assert env["GIT_TERMINAL_PROMPT"] == "0"
+    assert env["GIT_SSH_COMMAND"] == "ssh -o BatchMode=yes"
+    monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 0.5)
+    monkeypatch.setenv("FAKE_GIT_SLEEP", "5")
+    assert port._tag_exists(tmp_path, "v1.0.5") is None
