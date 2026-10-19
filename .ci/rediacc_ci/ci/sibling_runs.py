@@ -124,8 +124,19 @@ class Api:
                 )
             batch = [j for j in rows if isinstance(j, dict)]
             jobs.extend(batch)
-            total = data.get("total_count") if isinstance(data, dict) else None
-            if len(batch) < JOBS_PAGE_SIZE or (isinstance(total, int) and len(jobs) >= total):
+            total = data.get("total_count")
+            if isinstance(total, int) and len(jobs) >= total:
+                return jobs
+            if len(batch) < JOBS_PAGE_SIZE:
+                # A short page is the end only when the API names no larger total (review 4cfc4023.4).
+                if isinstance(total, int):
+                    raise ghx.GhBadOutputError(
+                        ["gh", "api", "jobs"],
+                        0,
+                        "jobs of run %d: page %d was short at %d of %d"
+                        % (run_id, page, len(jobs), total),
+                        ghx.FAILURE_FAILED,
+                    )
                 return jobs
             page += 1
 

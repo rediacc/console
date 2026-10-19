@@ -441,13 +441,20 @@ def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
                 ghx.FAILURE_FAILED,
             )
         page_jobs = data["jobs"]
-        if not page_jobs:
-            break
         jobs.extend(page_jobs)
         total_count = data.get("total_count")
         if isinstance(total_count, int) and len(jobs) >= total_count:
             break
         if len(page_jobs) < _JOBS_PAGE_SIZE:
+            # A short page is the end only when the API names no larger total (review 4cfc4023.2/.3).
+            if isinstance(total_count, int):
+                raise ghx.GhBadOutputError(
+                    [],
+                    0,
+                    "jobs of run %s: page %d was short at %d of %d"
+                    % (run_id, page, len(jobs), total_count),
+                    ghx.FAILURE_FAILED,
+                )
             break
         page += 1
     return jobs

@@ -230,7 +230,17 @@ def _failed_jobs(root, owner, name, run_id):
             if c and c not in ("success", "skipped", "neutral"):
                 out.append(str(job.get("name") or "?"))
         total = data.get("total_count")
-        if len(batch) < PAGE or (isinstance(total, int) and seen >= total):
+        if isinstance(total, int) and seen >= total:
+            return out, ""
+        if len(batch) < PAGE:
+            # A short page is the end only when the API names no larger total (review 4cfc4023.1).
+            if isinstance(total, int):
+                return [], "jobs of run %s: page %d was short at %d of %d" % (
+                    run_id,
+                    page,
+                    seen,
+                    total,
+                )
             return out, ""
     # The walk ran out of pages before the list did: a partial answer is an error, not a verdict (review a3aea1df.2).
     return [], "more than %d jobs in run %s; the walk stopped at %d pages" % (
