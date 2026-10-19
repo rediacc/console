@@ -95,3 +95,4 @@
 {"at":"2026-10-07T19:14:07Z","by":"d778be9d","id":"8ed364fe","title":"One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)","covers":["455d26a6"],"order":null}
 {"at":"2026-10-07T19:30:48Z","by":"d778be9d","id":"8ed364fe","title":"One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)","covers":["e32fe228"],"order":null}
 {"at":"2026-10-07T22:43:46Z","by":"d778be9d","id":"8ed364fe","title":"One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)","covers":["a072b246"],"order":null}
+{"at":"2026-10-15T13:31:27Z","by":"5cc33087","id":"4e9f05b6","title":"backup program: chunk store only, safe restore and retention, GUID identity, renet daemons, offline plane, gates, hostinger cutover","covers":[],"order":null,"plan":"agent/plans/PLAN-backup-program.md"}
