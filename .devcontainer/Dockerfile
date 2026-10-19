@@ -354,7 +354,7 @@ USER vscode
 # /^ARG\s+([A-Z0-9]+)_VERSION=/ -- the base carries no underscore, so a
 # GOLANGCI_LINT_VERSION would not match at all and the freshness gate would
 # silently watch nothing. Renaming it means widening the shared parser first.
-ARG GOPLS_VERSION=0.23.0
+ARG GOPLS_VERSION=0.24.0
 ARG DLV_VERSION=1.27.2
 # staticcheck ships TWO names for one build: the GitHub release is tagged
 # with a calendar version while the Go module version is STATICCHECK_VERSION below (written without the
