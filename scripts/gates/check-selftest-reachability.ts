@@ -530,17 +530,21 @@ function selftestCases(): ControlCase[] {
     name: 'regexAllowed reads backward: eight times the text costs far less than eight times squared',
     ok: (() => {
       // Linear cost scales ~8x from 5000 to 40000 lines, quadratic ~64x; a ratio holds on a loaded runner where a wall-clock limit would not.
-      const best = (n: number): number => {
-        const text = 'x = a / 2;\n'.repeat(n);
-        let min = Number.POSITIVE_INFINITY;
-        for (let k = 0; k < 3; k++) {
-          const t0 = process.hrtime.bigint();
-          stripJsComments(text);
-          min = Math.min(min, Number(process.hrtime.bigint() - t0) / 1e6);
-        }
-        return min;
+      // The two sizes are timed INTERLEAVED, best of 9 each: with best of 3 run back to back, a pre-push pool at 19 cores reddened this once (2026-10-19, rc=0 on three reruns alone) because the large size's three samples all landed in one contended stretch the small size never saw.
+      const small = 'x = a / 2;\n'.repeat(5000);
+      const large = 'x = a / 2;\n'.repeat(40000);
+      const time = (text: string): number => {
+        const t0 = process.hrtime.bigint();
+        stripJsComments(text);
+        return Number(process.hrtime.bigint() - t0) / 1e6;
       };
-      return best(40000) < 24 * Math.max(best(5000), 1);
+      let bestSmall = Number.POSITIVE_INFINITY;
+      let bestLarge = Number.POSITIVE_INFINITY;
+      for (let k = 0; k < 9; k++) {
+        bestSmall = Math.min(bestSmall, time(small));
+        bestLarge = Math.min(bestLarge, time(large));
+      }
+      return bestLarge < 24 * Math.max(bestSmall, 1);
     })(),
   });
   expect('scripts/lib/prose-selftest.ts', true, 'a selftest named only in parenthesised prose');
