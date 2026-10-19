@@ -46,6 +46,7 @@ import os
 import pathlib
 import re
 import subprocess
+import threading
 
 # Re-exported so a guard does not grow a second spelling of the character classes bash means by [[:space:]]. `shellscan` owns the definitions; a guard that needs them imports them from here, and there is exactly one copy.
 from rediacc_hooks.shellscan import (
@@ -601,7 +602,7 @@ def write_world_file(path, text):
 def ensure_world_symlink(target, link):
     """Create a differential fixture's directory symlink at a FIXED path, race-free.
 
-    The same shared-path hazard as write_world_file: two xdist workers both saw no link, both called os.symlink, and the loser raised FileExistsError (Pytest 3/4, Console CI run 39215455203, block_plan_without_tasks). The link is created once; a concurrent creator's identical link is accepted, and a link to anything else is replaced whole through os.replace.
+    The same shared-path hazard as write_world_file: two xdist workers both saw no link, both called os.symlink, and the loser raised FileExistsError (Pytest 3/4, Console CI run 39215455203, block_plan_without_tasks). The link is created once; a concurrent creator's identical link is accepted, and a link to anything else is replaced whole through os.replace. The temporary name carries the pid AND the thread, so threads of one process never share it, and a stale one a crashed process left under a reused pid is cleared before use.
     """
     target, link = str(target), str(link)
     try:
@@ -611,6 +612,7 @@ def ensure_world_symlink(target, link):
         pass
     if os.path.islink(link) and os.readlink(link) == target:
         return
-    tmp = "%s.%d.tmp" % (link, os.getpid())
+    tmp = "%s.%d.%d.tmp" % (link, os.getpid(), threading.get_ident())
+    pathlib.Path(tmp).unlink(missing_ok=True)
     os.symlink(target, tmp)
     os.replace(tmp, link)
