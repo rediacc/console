@@ -244,7 +244,7 @@ def test_delta_an_origin_that_cannot_answer_counts_as_a_live_tag(world: h.World)
 
 
 def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monkeypatch) -> None:
-    """Rule T 5: the probe runs git with GIT_TERMINAL_PROMPT=0, in a session of its own with stdin closed (no terminal for ssh to prompt on), leaves a caller's GIT_SSH_COMMAND untouched, and an origin slower than ORIGIN_TIMEOUT_S answers None (reviews b232b7b3.1, ada48848.1-.2, 4e8ed4db.1-.2, 32290b26.1, cc80defa.1-.2)."""
+    """Rule T 5: the probe runs git with GIT_TERMINAL_PROMPT=0, in a session of its own with stdin closed (no terminal for ssh to prompt on), passes `-c credential.helper=` to empty the unscoped helper list, drops DISPLAY and forces SSH_ASKPASS_REQUIRE=never, leaves a caller's GIT_SSH_COMMAND untouched, and an origin slower than ORIGIN_TIMEOUT_S answers None (reviews b232b7b3.1, ada48848.1-.2, 4e8ed4db.1-.2, 32290b26.1, cc80defa.1-.2, e94f58c2.1, 1c71291b.1-.3)."""
     seen = tmp_path / "env.json"
     fake = tmp_path / "bin" / "git"
     fake.parent.mkdir()
