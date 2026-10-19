@@ -704,7 +704,8 @@
     ".ci/rediacc_ci/ops/scrub_sentinel.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT",
-      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
+      "GIT_SSH_COMMAND"
     ],
     ".ci/rediacc_ci/paths.py": [
       "REDIACC_CI_ROOT"
