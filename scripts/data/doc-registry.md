@@ -30,7 +30,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:actions | quality-code / Action freshness | yes | no |
 | check:ci-account-config-auth | quality-go / Check config token auth requires org membership | yes | no |
 | check:ci-account-env-retired | quality-security / Account env files retired | yes | no |
-| check:ci-account-layer-isolation | quality-code / Check account route layer isolation | yes | yes |
+| check:ci-account-layer-isolation | quality-code / Check account route layer isolation | yes | no |
 | check:ci-account-no-admin-role | quality-go / Check no admin user role (must be root) | yes | no |
 | check:ci-account-no-node-env-routes | quality-go / Assert no NODE_ENV branching in account routes | yes | no |
 | check:ci-account-onboarding | quality-content / Validate account onboarding splash against canonical tutorials | yes | no |
@@ -74,7 +74,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-client-bundle-budget | quality-www-build / SEO | yes | yes |
 | check:ci-client-i18n | quality-i18n / i18n | yes | no |
 | check:ci-command-planes | quality-code / Command planes | yes | no |
-| check:ci-command-tree | quality-code / Command tree | yes | yes |
+| check:ci-command-tree | quality-code / Command tree | yes | no |
 | check:ci-compose-env | quality-static / Compose env | yes | no |
 | check:ci-config-migrations | quality-packages / Check config-migration runner + fixtures | yes | no |
 | check:ci-container-build-context | quality-static / Container build context | yes | no |
@@ -195,7 +195,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-lane-budget | local-only | no | no |
 | check:ci-language-policy | quality-static / Language policy | yes | no |
 | check:ci-layout-overflow | test: .ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py | yes | no |
-| check:ci-lint-rule-liveness | quality-content / Enabled lint rules can actually fire | yes | yes |
+| check:ci-lint-rule-liveness | quality-content / Enabled lint rules can actually fire | yes | no |
 | check:ci-lint-rule-units | quality-content / Lint rule unit specs | yes | no |
 | check:ci-lint-scope-coverage | quality-code / Every source file reaches a linter | yes | yes |
 | check:ci-literal-sources | quality-static / Literal sources | yes | no |
@@ -316,7 +316,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-skill-size | quality-content / Self-improving skill size | yes | no |
 | check:ci-solution-video-engine | quality-content / Validate solution narration engine is current | yes | no |
 | check:ci-solution-videos | quality-content / Validate localized solution videos exist | yes | no |
-| check:ci-source-rules | quality-code / Source-authored lint rules, host-run | yes | no |
+| check:ci-source-rules | quality-code / Source-authored lint rules, host-run | yes | yes |
 | check:ci-ssr-locale | quality-www-build / SSR locale | yes | yes |
 | check:ci-staging-tag-guard | quality-security / Staging tag guard | yes | no |
 | check:ci-standalone-selftests | quality-code / Standalone selftests | yes | no |

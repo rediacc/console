@@ -2783,7 +2783,6 @@
   {
     "id": "check:ci-lint-rule-liveness",
     "run": "npm run check:ci-lint-rule-liveness",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_lint_rule_liveness.py"
@@ -3387,7 +3386,6 @@
   {
     "id": "check:ci-command-tree",
     "run": "npm run check:ci-command-tree",
-    "slow": true,
     "gate": true,
     "needs": [
       "build:packages"
@@ -3835,7 +3833,6 @@
   {
     "id": "check:ci-account-layer-isolation",
     "run": "npm run check:ci-account-layer-isolation",
-    "slow": true,
     "gate": true,
     "leaves": [
       "biome"
@@ -5185,6 +5182,7 @@
   {
     "id": "check:ci-source-rules",
     "run": "npm run check:ci-source-rules",
+    "slow": true,
     "gate": true,
     "leaves": [
       "scripts/gates/check-source-rules.ts"

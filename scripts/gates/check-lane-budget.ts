@@ -202,8 +202,9 @@ export function unitExemption(
  * Check 2's job-level caps: a named job judged against its own p90 ceiling instead of the
  * 12-minute budget. The two jobs the 2026-09-28 ruling kept exempt (E2E Ceph, E2E Ceph
  * Workers and E2E K8s LEFT the list that day and are judged at 12 like every other job),
- * plus E2E Ceph Workers non-apt by ruling #fc4f34f8 (2026-09-30). Nothing is added without a
- * ruling. `timeoutMinutes` is the ruling's `timeout-minutes` for the job, read by check 7.
+ * plus E2E Ceph Workers non-apt by ruling #fc4f34f8 (2026-09-30), and Build (Renet), Renet
+ * embed assets and the non-apt cap raised by ruling #23e93715 (2026-10-19). Nothing is added
+ * without a ruling. `timeoutMinutes` is the ruling's `timeout-minutes` for the job, read by check 7.
  */
 export interface JobCap {
   job: string;
@@ -235,10 +236,10 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
   },
   {
     job: 'test-e2e-ceph-workers-rpm',
-    p90Minutes: 16,
+    p90Minutes: 18,
     timeoutMinutes: 20,
     ruling:
-      'Operator ruling #fc4f34f8 (ASKED 2026-09-30T10:38Z): E2E Ceph Workers non-apt p90 16 / timeout 20 (measured p90 fedora 13.6, opensuse 12.5, oracle 15.5)',
+      'Operator ruling #23e93715 (ASKED 2026-10-19T06:57Z, "Raise caps for now"): cold renet builds on branch 1008-1 (run 39177571049 embed assets 820 s cold, run 39188334570 23-29 s warm; cache key is the embed-assets lockfile hash only) put the refreshed p90 of E2E Ceph Workers non-apt (oracle-10) at 17.5 (runs 702-1089 s); p90 18 / timeout 20. Earlier: #fc4f34f8 (ASKED 2026-09-30T10:38Z) p90 16 / timeout 20',
   },
   {
     job: 'test-e2e-workers',
@@ -256,10 +257,17 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
   },
   {
     job: 'build-renet',
-    p90Minutes: 12,
+    p90Minutes: 15,
     timeoutMinutes: 20,
     ruling:
-      'Operator ruling #2847e1b3 (ASKED 2026-09-30T11:21Z): timeout 20, the cold main-push build took 16.7 (run 36670172984); p90 budget unchanged at 12',
+      'Operator ruling #23e93715 (ASKED 2026-10-19T06:57Z, "Raise caps for now"): cold renet builds on branch 1008-1 (run 39177571049 embed assets 820 s cold, run 39188334570 23-29 s warm; cache key is the embed-assets lockfile hash only) put the refreshed p90 of Build (Renet) at 14.2; p90 15 / timeout 20. Earlier: #2847e1b3 (ASKED 2026-09-30T11:21Z) timeout 20, p90 12',
+  },
+  {
+    job: 'renet-embed-assets',
+    p90Minutes: 13,
+    timeoutMinutes: 15,
+    ruling:
+      'Operator ruling #23e93715 (ASKED 2026-10-19T06:57Z, "Raise caps for now"): cold renet builds on branch 1008-1 (run 39177571049 embed assets 820 s cold, run 39188334570 23-29 s warm; cache key is the embed-assets lockfile hash only) put the refreshed p90 of Renet embed assets at 12.4 (12.3 in the E2E Dependency Probe); p90 13 / timeout 15 (its timeout-minutes in ct-tests.yml and ci-ops-test.yml)',
   },
 ];
 
@@ -3143,15 +3151,27 @@ async function selftest(): Promise<number> {
         ),
     },
     {
-      name: 'E2E Ceph Workers non-apt (#fc4f34f8): p90 16.1 is red naming the ruling, 16.0 is not; timeout 20 accepted, 21 red',
+      name: 'E2E Ceph Workers non-apt (#23e93715): p90 18.1 is red naming the ruling, 18.0 is not; timeout 20 accepted, 21 red',
       ok:
-        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 16.1 }).some(
-          (f) => f.includes('exemption cap of 16m') && f.includes('#fc4f34f8')
+        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 18.1 }).some(
+          (f) => f.includes('exemption cap of 18m') && f.includes('#23e93715')
         ) &&
-        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 16.0 }).length === 0 &&
+        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 18.0 }).length === 0 &&
         timeoutFindings([t7('test-e2e-ceph-workers-rpm', '20')]).length === 0 &&
         timeoutFindings([t7('test-e2e-ceph-workers-rpm', '21')]).some(
-          (f) => f.includes('over the 20m ceiling') && f.includes('#fc4f34f8')
+          (f) => f.includes('over the 20m ceiling') && f.includes('#23e93715')
+        ),
+    },
+    {
+      name: 'Renet embed assets (#23e93715): p90 13.1 is red naming the ruling, 13.0 is not; timeout 15 accepted, 16 red',
+      ok:
+        jobBudgetFindings({ 'renet-embed-assets': 13.1 }).some(
+          (f) => f.includes('exemption cap of 13m') && f.includes('#23e93715')
+        ) &&
+        jobBudgetFindings({ 'renet-embed-assets': 13.0 }).length === 0 &&
+        timeoutFindings([t7('renet-embed-assets', '15')]).length === 0 &&
+        timeoutFindings([t7('renet-embed-assets', '16')]).some(
+          (f) => f.includes('over the 15m ceiling') && f.includes('#23e93715')
         ),
     },
     {
