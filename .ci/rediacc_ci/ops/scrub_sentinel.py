@@ -102,8 +102,8 @@ def _tag_exists(repo_root, version: str) -> bool | None:
             ],
             capture_output=True,
             check=False,
-            # Never a prompt mid-plan, and never a TCP-timeout stall: GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt, and a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on, whatever core.sshCommand or GIT_SSH names. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
-            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            # Never a prompt mid-plan, and never a TCP-timeout stall: GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt, and a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on, SSH_ASKPASS_REQUIRE=never stops its graphical askpass fallback, whatever core.sshCommand or GIT_SSH names. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0", "SSH_ASKPASS_REQUIRE": "never"},
             stdin=subprocess.DEVNULL,
             start_new_session=True,
             timeout=ORIGIN_TIMEOUT_S,

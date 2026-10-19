@@ -244,14 +244,14 @@ def test_delta_an_origin_that_cannot_answer_counts_as_a_live_tag(world: h.World)
 
 
 def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monkeypatch) -> None:
-    """Rule T 5: the probe runs git with GIT_TERMINAL_PROMPT=0, in a session of its own with stdin closed (no terminal for ssh to prompt on), leaves a caller's GIT_SSH_COMMAND untouched, and an origin slower than ORIGIN_TIMEOUT_S answers None (reviews b232b7b3.1, ada48848.1-.2, 4e8ed4db.1-.2)."""
+    """Rule T 5: the probe runs git with GIT_TERMINAL_PROMPT=0, in a session of its own with stdin closed (no terminal for ssh to prompt on), leaves a caller's GIT_SSH_COMMAND untouched, and an origin slower than ORIGIN_TIMEOUT_S answers None (reviews b232b7b3.1, ada48848.1-.2, 4e8ed4db.1-.2, 32290b26.1)."""
     seen = tmp_path / "env.json"
     fake = tmp_path / "bin" / "git"
     fake.parent.mkdir()
     fake.write_text(
         "#!" + sys.executable + "\n"
         "import json, os, sys, time\n"
-        f"open({str(seen)!r}, 'w').write(json.dumps({{**{{k: os.environ.get(k) for k in ('GIT_TERMINAL_PROMPT', 'GIT_SSH_COMMAND')}}, 'leader': os.getsid(0) == os.getpid(), 'stdin': sys.stdin.read()}}))\n"
+        f"open({str(seen)!r}, 'w').write(json.dumps({{**{{k: os.environ.get(k) for k in ('GIT_TERMINAL_PROMPT', 'GIT_SSH_COMMAND', 'SSH_ASKPASS_REQUIRE')}}, 'leader': os.getsid(0) == os.getpid(), 'stdin': sys.stdin.read()}}))\n"
         "time.sleep(float(os.environ.get('FAKE_GIT_SLEEP', '0')))\n"
         "sys.exit(2)\n"
     )
@@ -262,6 +262,7 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
     env = json.loads(seen.read_text())
     assert env["GIT_TERMINAL_PROMPT"] == "0"
     assert env["GIT_SSH_COMMAND"] == "plink -batch"
+    assert env["SSH_ASKPASS_REQUIRE"] == "never"
     assert env["leader"] is True
     assert env["stdin"] == ""
     monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 0.5)
