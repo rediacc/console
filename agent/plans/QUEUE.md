@@ -69,10 +69,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (2 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1285 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1299 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
   - epic 4e9f05b6, plan agent/plans/PLAN-backup-program.md, outside the set, 6 commit(s) on the branch, 0 open item(s): backup program: chunk store only, safe restore and retention, GUID identity, renet daemons, offline plane, gates, hostinger cutover
 - Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 3: #1f230501 (worker:3577184, d778be9d), #6361fc5b (worker:bgjqh7g57, d778be9d), #6bc7c240 (worker:queue, d778be9d).
+- Leased items: 2: #1f230501 (worker:683821, d778be9d), #6361fc5b (worker:bemdyvq39, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
@@ -144,7 +144,7 @@ Promoted: 13 of 17 plans done, 194 of 204 boxes done (95%).
 19. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
 20. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 21. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-22. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, draft, not started
+22. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, not started
 23. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
 24. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
 25. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started

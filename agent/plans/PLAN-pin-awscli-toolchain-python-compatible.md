@@ -1,5 +1,5 @@
 # PLAN: one pinned aws CLI, resolved through one resolver, on every lane that calls R2
-Status: draft
+Status: executing
 Depends-On: no-dep -- the resolver, pins and bootstrap rungs it builds on already exist on main
 Priority: P2 -- local ops tools that need aws fail on every dev host; CI is unaffected today
 Owner: session d778be9d
@@ -31,6 +31,18 @@ Measured 2026-10-19 while scrubbing the v1.3.2 sentinel (operator ruling ASKED:2
 2. Pin the interpreter: `AWSCLI_PYTHON_VERSION=3.12` as a `none`-source leaf with a BLOCKER reason, installed with `UV_PYTHON_INSTALL_DIR=.ci/cache/toolchain/uv-python` and `UV_PYTHON_PREFERENCE=only-managed`, so neither the host's 3.14 nor ~/.local is involved.
 3. Resolver rungs (core/awscli.py, mirrored by bootstrap `resolve_aws`): `AWS_BIN` (set but not executable is a refusal), then `aws` on PATH taken as found with no version probe (36 test files put a fake `aws` on PATH, and a probe would add a call to their ledgers), then `.ci/cache/toolchain/uv-tools/bin/aws` at `AWSCLI_VERSION` only. The doctor shows PATH drift beside the pin.
 4. CI uses the pin: production R2 writes happen in CI, and the runner's aws changes with each image refresh. Exported `AWS_BIN` beats the runner's PATH aws; the aws jobs can then move to `ubuntu-slim`. Staged as B7, after B6.
+
+## Revision 2026-10-19: pin the latest v2 (operator ruling)
+
+Operator /ask ASKED:2026-10-19T13:30Z: "Ride PR #600 now", and on the version question ("why it pins? Isn't the new version better?") the ruling "Pin latest v2". This revision overrides Decisions 1 and 2 and the v1 wording inside the boxes below; the box text itself stays byte for byte, because check:ci-plan-boxes keys a box on its text.
+
+- The pin is awscli **v2**, the newest release past the 24 h release-age window, never v1 from PyPI and never a Python pin. `AWSCLI_PYTHON_VERSION` and the `toolchain:awscli-python` leaf are dropped.
+- Install source: AWS's versioned installers, verified 2026-10-19 to answer HTTP 200: `https://awscli.amazonaws.com/awscli-exe-linux-x86_64-<v>.zip`, `awscli-exe-linux-aarch64-<v>.zip` and `AWSCLIV2-<v>.pkg` (macOS). Each is pinned by a sha256 in `.devcontainer/toolchain.env` (`AWSCLI_SHA256_LINUX_X86_64`, `AWSCLI_SHA256_LINUX_AARCH64`, `AWSCLI_SHA256_DARWIN`), the shape `UV_SHA256_*` already uses (toolchain.env:156-159).
+- B1: the `toolchain:awscli` leaf takes its version from the aws/aws-cli release tags (2.x.y) and records one sha256 site per asset, like `toolchain:uv` (source github-release or tag, release-age, `sites` per asset). If the pins driver cannot fetch those assets, extend the toolchain driver in the same box rather than hand-editing the shas.
+- B3: `install_aws` downloads the platform's versioned installer, verifies its sha256, and installs into `.ci/cache/toolchain/aws-cli/<v>/` (Linux: `./aws/install --install-dir ... --bin-dir ...`; macOS: `pkgutil --expand-full` of the .pkg), so no root and no system path is touched. The resolver's cache rung is `.ci/cache/toolchain/aws-cli/<v>/bin/aws`.
+- B4: the Dockerfile installs the same pinned zip with its sha256 check.
+- B6: the probe that parses `aws --version` reads `aws-cli/2.x.y`. The simulate_promotion differential stays: it now checks the pinned v2 against the runner's v2 rather than v1 against v2.
+- B7: CI keeps v2 and runs the pinned one through `AWS_BIN`; moving the aws jobs to ubuntu-slim stays in scope.
 
 ## Boxes
 
