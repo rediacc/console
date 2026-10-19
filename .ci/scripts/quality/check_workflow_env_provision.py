@@ -103,7 +103,7 @@ def module_names(root: pathlib.Path, run: str) -> set[str]:
 
 
 def action_names(root: pathlib.Path, uses: object) -> set[str]:
-    """$GITHUB_ENV names a LOCAL composite action writes (`uses: ./.github/actions/<x>`): one hop into its action.yml run steps, the same hop SCRIPT takes into a script. Added 2026-10-19 when every R2 job gained `./.github/actions/setup-aws`, which exports AWS_BIN, and this gate reported ci.yml validate-promote as using AWS_BIN with no provider."""
+    """$GITHUB_ENV names a LOCAL composite action writes (`uses: ./.github/actions/<x>`): one hop into the `>> $GITHUB_ENV` lines of its action.yml run steps; unlike a run block, an action's run text is not followed further into scripts or modules. A malformed action.yml (a scalar document, a scalar `runs`, a non-list `steps`) provides nothing rather than crashing the gate. Added 2026-10-19 when every R2 job gained `./.github/actions/setup-aws`, which exports AWS_BIN, and this gate reported ci.yml validate-promote as using AWS_BIN with no provider."""
     if not isinstance(uses, str) or not uses.startswith("./"):
         return set()
     base = root / uses.removeprefix("./")
@@ -112,9 +112,10 @@ def action_names(root: pathlib.Path, uses: object) -> set[str]:
             doc = yaml.safe_load((base / name).read_text(encoding="utf-8"))
         except (OSError, yaml.YAMLError):
             continue
-        steps = ((doc or {}).get("runs") or {}).get("steps") or []
+        runs = doc.get("runs") if isinstance(doc, dict) else None
+        steps = runs.get("steps") if isinstance(runs, dict) else None
         out: set[str] = set()
-        for st in steps:
+        for st in steps if isinstance(steps, list) else []:
             if isinstance(st, dict) and isinstance(st.get("run"), str):
                 out |= set(GHENV.findall(st["run"]))
         return out
@@ -306,6 +307,14 @@ def selftest() -> int:
             "PLANT: a local action that does not exist provides nothing",
             "ACTION_NAME" not in per_job[("w.yml", "missing")][0],
             str(per_job),
+        )
+    with tempfile.TemporaryDirectory() as td:
+        malformed = pathlib.Path(td) / ".github" / "actions" / "bad"
+        malformed.mkdir(parents=True)
+        (malformed / "action.yml").write_text("just a scalar\n", encoding="utf-8")
+        check(
+            "PLANT: a malformed local action.yml provides nothing and does not crash",
+            action_names(pathlib.Path(td), "./.github/actions/bad") == set(),
         )
     # CONTROL on the MODULE half, which is the one the nine jobs now go through: the path form above survives only because the `.sh` file is still on disk, unreferenced, so it would keep passing after the module resolver had gone quiet.
     check(
