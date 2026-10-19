@@ -1012,7 +1012,7 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md": {
-      "status": "draft",
+      "status": "executing",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
