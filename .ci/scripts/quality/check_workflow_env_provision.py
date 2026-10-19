@@ -102,6 +102,25 @@ def module_names(root: pathlib.Path, run: str) -> set[str]:
     return out
 
 
+def action_names(root: pathlib.Path, uses: object) -> set[str]:
+    """$GITHUB_ENV names a LOCAL composite action writes (`uses: ./.github/actions/<x>`): one hop into its action.yml run steps, the same hop SCRIPT takes into a script. Added 2026-10-19 when every R2 job gained `./.github/actions/setup-aws`, which exports AWS_BIN, and this gate reported ci.yml validate-promote as using AWS_BIN with no provider."""
+    if not isinstance(uses, str) or not uses.startswith("./"):
+        return set()
+    base = root / uses.removeprefix("./")
+    for name in ("action.yml", "action.yaml"):
+        try:
+            doc = yaml.safe_load((base / name).read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            continue
+        steps = ((doc or {}).get("runs") or {}).get("steps") or []
+        out: set[str] = set()
+        for st in steps:
+            if isinstance(st, dict) and isinstance(st.get("run"), str):
+                out |= set(GHENV.findall(st["run"]))
+        return out
+    return set()
+
+
 def scan(root: pathlib.Path, tools: set[str]):
     """-> (per_job {(wf, job): (defined, used)}, provisioned_anywhere)."""
     per_job, anywhere = {}, set()
@@ -122,6 +141,7 @@ def scan(root: pathlib.Path, tools: set[str]):
                 if not isinstance(st, dict):
                     continue
                 defs |= set((st.get("env") or {}).keys())
+                defs |= action_names(root, st.get("uses"))
                 run = st.get("run")
                 if not isinstance(run, str):
                     continue
@@ -228,6 +248,63 @@ def selftest() -> int:
         check(
             "PLANT: without the hop the name is not provided",
             "HOPPED_NAME" not in per_job[("w.yml", "nohop")][0],
+            str(per_job),
+        )
+    # CONTROL on the composite-action hop: a job whose step `uses:` a local action that writes $GITHUB_ENV provides that name; a remote action or a missing one provides nothing.
+    with tempfile.TemporaryDirectory() as td:
+        fx = pathlib.Path(td)
+        (fx / ".github" / "actions" / "a").mkdir(parents=True)
+        (fx / ".github" / "actions" / "a" / "action.yml").write_text(
+            yaml.safe_dump(
+                {
+                    "runs": {
+                        "using": "composite",
+                        "steps": [
+                            {"shell": "bash", "run": 'echo "ACTION_NAME=${x}" >> "$GITHUB_ENV"'}
+                        ],
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        (fx / ".github" / "workflows").mkdir(parents=True)
+        (fx / ".github" / "workflows" / "w.yml").write_text(
+            yaml.safe_dump(
+                {
+                    "jobs": {
+                        "local": {
+                            "steps": [
+                                {"uses": "./.github/actions/a"},
+                                {"run": "use ${ACTION_NAME}"},
+                            ]
+                        },
+                        "remote": {
+                            "steps": [{"uses": "actions/a@v1"}, {"run": "use ${ACTION_NAME}"}]
+                        },
+                        "missing": {
+                            "steps": [
+                                {"uses": "./.github/actions/none"},
+                                {"run": "use ${ACTION_NAME}"},
+                            ]
+                        },
+                    }
+                }
+            )
+        )
+        per_job, _anywhere = scan(fx, set())
+        check(
+            "CONTROL: a local composite action's $GITHUB_ENV write provides the name",
+            "ACTION_NAME" in per_job[("w.yml", "local")][0],
+            str(per_job),
+        )
+        check(
+            "PLANT: a remote action provides nothing",
+            "ACTION_NAME" not in per_job[("w.yml", "remote")][0],
+            str(per_job),
+        )
+        check(
+            "PLANT: a local action that does not exist provides nothing",
+            "ACTION_NAME" not in per_job[("w.yml", "missing")][0],
             str(per_job),
         )
     # CONTROL on the MODULE half, which is the one the nine jobs now go through: the path form above survives only because the `.sh` file is still on disk, unreferenced, so it would keep passing after the module resolver had gone quiet.
