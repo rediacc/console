@@ -19,10 +19,12 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
 
 from __future__ import annotations
 
+import contextlib
 import io
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -89,7 +91,7 @@ ORIGIN_TIMEOUT_S = 30
 def _tag_exists(repo_root, version: str) -> bool | None:
     """Whether ORIGIN holds the release tag: True, False, or None when origin could not answer. The local tag list is not asked: a clone keeps a tag the remote has since deleted (2026-10-19: this checkout held v1.3.2 while GitHub answered 404 for it, so the warning named a live tag that did not exist)."""
     try:
-        proc = subprocess.run(
+        proc = subprocess.Popen(
             [
                 "git",
                 "-C",
@@ -102,9 +104,9 @@ def _tag_exists(repo_root, version: str) -> bool | None:
                 "origin",
                 "refs/tags/%s" % version,
             ],
-            capture_output=True,
-            check=False,
-            # Never a prompt mid-plan, and never a TCP-timeout stall. GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt; a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on; for the graphical askpass fallback, SSH_ASKPASS_REQUIRE=never covers OpenSSH 8.4 and later, and DISPLAY is dropped because older OpenSSH opens askpass only with one; `-c credential.helper=` empties the unscoped credential.helper list, so no globally configured helper on any platform (X11, Wayland, macOS, Windows) runs either. A URL-scoped `credential.<url>.helper` still runs (closing that would mean dropping the caller's git config, core.sshCommand included), and the ORIGIN_TIMEOUT_S bound ends it. A wrapper outside OpenSSH (core.sshCommand, GIT_SSH) keeps its own settings, and the 30 s bound still ends it. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            # Never a prompt mid-plan, and never a TCP-timeout stall. GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt; a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on; for the graphical askpass fallback, SSH_ASKPASS_REQUIRE=never covers OpenSSH 8.4 and later, and DISPLAY is dropped because older OpenSSH opens askpass only with one; `-c credential.helper=` empties the unscoped credential.helper list, so no globally configured helper on any platform (X11, Wayland, macOS, Windows) runs either. A URL-scoped `credential.<url>.helper` still runs (closing that would mean dropping the caller's git config, core.sshCommand included), and the ORIGIN_TIMEOUT_S bound ends it with the rest of git's process group. A wrapper outside OpenSSH (core.sshCommand, GIT_SSH) keeps its own settings, and the 30 s bound still ends it. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
             env={
                 **{k: v for k, v in os.environ.items() if k != "DISPLAY"},
                 "GIT_TERMINAL_PROMPT": "0",
@@ -112,13 +114,20 @@ def _tag_exists(repo_root, version: str) -> bool | None:
             },
             stdin=subprocess.DEVNULL,
             start_new_session=True,
-            timeout=ORIGIN_TIMEOUT_S,
         )
-    except subprocess.TimeoutExpired:
+    except OSError:
         return None
-    if proc.returncode == 0:
+    try:
+        rc = proc.wait(timeout=ORIGIN_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        # git leads its own session, so the group holds every helper and ssh it started: kill them all, not only git.
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(proc.pid, signal.SIGKILL)
+        proc.wait()
+        return None
+    if rc == 0:
         return True
-    if proc.returncode == 2:
+    if rc == 2:
         return False
     return None
 

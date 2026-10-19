@@ -6,8 +6,10 @@ Differentials compare stdout, stderr (ANSI stripped) and exit code, and the reco
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import sys
+import time
 import typing
 
 import pytest
@@ -244,7 +246,7 @@ def test_delta_an_origin_that_cannot_answer_counts_as_a_live_tag(world: h.World)
 
 
 def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monkeypatch) -> None:
-    """Rule T 5: the probe runs git with GIT_TERMINAL_PROMPT=0, in a session of its own with stdin closed (no terminal for ssh to prompt on), passes `-c credential.helper=` to empty the unscoped helper list, drops DISPLAY and forces SSH_ASKPASS_REQUIRE=never, leaves a caller's GIT_SSH_COMMAND untouched, and an origin slower than ORIGIN_TIMEOUT_S answers None (reviews b232b7b3.1, ada48848.1-.2, 4e8ed4db.1-.2, 32290b26.1, cc80defa.1-.2, e94f58c2.1, 1c71291b.1-.3)."""
+    """Rule T 5: the probe runs git with GIT_TERMINAL_PROMPT=0, in a session of its own with stdin closed (no terminal for ssh to prompt on), passes `-c credential.helper=` to empty the unscoped helper list, drops DISPLAY and forces SSH_ASKPASS_REQUIRE=never, leaves a caller's GIT_SSH_COMMAND untouched, and an origin slower than ORIGIN_TIMEOUT_S answers None (reviews b232b7b3.1, ada48848.1-.2, 4e8ed4db.1-.2, 32290b26.1, cc80defa.1-.2, e94f58c2.1, 1c71291b.1-.3, ed6787c8.1)."""
     seen = tmp_path / "env.json"
     fake = tmp_path / "bin" / "git"
     fake.parent.mkdir()
@@ -253,6 +255,10 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
         "import json, os, sys, time\n"
         f"open({str(seen)!r} + '.argv', 'w').write(json.dumps(sys.argv[1:]))\n"
         f"open({str(seen)!r}, 'w').write(json.dumps({{**{{k: os.environ.get(k) for k in ('GIT_TERMINAL_PROMPT', 'GIT_SSH_COMMAND', 'SSH_ASKPASS_REQUIRE', 'DISPLAY')}}, 'leader': os.getsid(0) == os.getpid(), 'stdin': sys.stdin.read()}}))\n"
+        "if os.environ.get('FAKE_GIT_SLEEP'):\n"
+        "    import subprocess\n"
+        "    helper = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+        f"    open({str(seen)!r} + '.helper', 'w').write(str(helper.pid))\n"
         "time.sleep(float(os.environ.get('FAKE_GIT_SLEEP', '0')))\n"
         "sys.exit(2)\n"
     )
@@ -274,3 +280,14 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
     monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 0.5)
     monkeypatch.setenv("FAKE_GIT_SLEEP", "5")
     assert port._tag_exists(tmp_path, "v1.0.5") is None
+    # The timeout ends the helper git started too, not only git (review ed6787c8.1).
+    helper = int((tmp_path / "env.json.helper").read_text())
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        try:
+            os.kill(helper, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.05)
+    else:
+        raise AssertionError(f"helper {helper} outlived the probe's timeout")
