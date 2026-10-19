@@ -191,12 +191,15 @@ def _is_not_found(exc: ghx.GhError) -> bool:
 
 def _local_branch() -> str:
     """The checkout's branch name, or "" when HEAD is detached or git cannot answer."""
-    proc = subprocess.run(
-        ["git", "-C", str(paths.repo_root()), "rev-parse", "--abbrev-ref", "HEAD"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(paths.repo_root()), "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
     name = proc.stdout.strip() if proc.returncode == 0 else ""
     return "" if name == "HEAD" else name
 
