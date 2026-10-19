@@ -21,7 +21,7 @@ Body-Sig: 7df42a25e6cc795d
 ### a6fcf5c6.1 [medium] .claude/rediacc_hooks/tests/test_bash_semantics.py:3325
 Anchor: in-diff
 Claim: The skip gate in _curl_takes_long_equals probes `--user-agent=probe`, not the `--user=bob` form that test_a_curl_long_equals_value_matches_real_curl runs and that the commit reproduced as refused on curl 8.5. On a curl that accepts `--user-agent=` but refuses `--user=`, the probe returns True, the test runs, and it fails on the same red CI condition the commit is meant to fix.
-Resolution: open
+Resolution: fixed 4ca8852631d8d6298f67fc0d5b79061e86cbc397 | d778be9d 2026-10-19T00:36:49Z
 
 ### a6fcf5c6.2 [low] .ci/rediacc_ci/tests/gates/test_gate_plan_folders.py:540
 Anchor: in-diff
