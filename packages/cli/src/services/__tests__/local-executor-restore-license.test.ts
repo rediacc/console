@@ -183,7 +183,8 @@ function storeReports(licensed: ReturnType<typeof installedLicence>[]) {
     if (command.includes('datastore list --json')) {
       return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
     }
-    const asked = /license-status .*--repo (\S+)/.exec(command)?.[1];
+    // The guid arrives shell-quoted; the fake strips the quotes the way the remote shell would.
+    const asked = /license-status .*--repo '?([^'\s]+)'?/.exec(command)?.[1];
     if (asked) {
       return Promise.resolve(
         JSON.stringify(licensed.filter((entry) => entry.repositoryGuid === asked))
@@ -383,8 +384,44 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense).not.toHaveBeenCalled();
     const probe = mockExec.mock.calls.map((c) => String(c[0])).find((c) => c.includes('--repo'));
     expect(probe).toContain(`repository license-status`);
-    expect(probe).toContain(`--repo ${SOURCE_GUID}`);
+    expect(probe).toContain(`--repo '${SOURCE_GUID}'`);
     expect(probe).toContain('--all-datastores');
+  });
+
+  // T5g, a guid recorded in UPPER case is still a guid. renet keys the store on the guid exactly as written, so the probe must accept it case-insensitively AND pass it through verbatim; a lowercase-only check skipped the probe and burned an issuance on every retry for such a repo.
+  it('skips issuance for an upper-case guid whose licence is in the store, asking renet for it verbatim', async () => {
+    const upper = SOURCE_GUID.toUpperCase();
+    mockGetRepository.mockResolvedValue({
+      repositoryGuid: upper,
+      tag: 'latest',
+      placement: { datastore: 'tier1' },
+    });
+    storeReports([installedLicence(upper, DATASTORE_ID)]);
+
+    const result = await localExecutorService.execute({
+      ...restoreOptions,
+      params: { ...restoreOptions.params, lineage: upper },
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+    const probe = mockExec.mock.calls.map((c) => String(c[0])).find((c) => c.includes('--repo'));
+    expect(probe).toContain(`--repo '${upper}'`);
+  });
+
+  // T5h, every word of the probes is shell-quoted, the renet path included: it is interpolated into a root shell command.
+  it('shell-quotes the renet path in the restore probes', async () => {
+    storeReports([installedLicence(SOURCE_GUID, DATASTORE_ID)]);
+
+    await localExecutorService.execute(restoreOptions);
+
+    const commands = mockExec.mock.calls.map((c) => String(c[0]));
+    expect(commands.find((c) => c.includes('--repo'))).toMatch(
+      /^sudo '\/usr\/bin\/renet' repository license-status /
+    );
+    expect(commands.find((c) => c.includes('datastore list'))).toMatch(
+      /^sudo '\/usr\/bin\/renet' datastore list --json$/
+    );
   });
 
   // T5f, an older renet that does not know `--repo` fails the probe, and a probe that cannot answer means "issue", never "refuse".

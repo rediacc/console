@@ -123,7 +123,9 @@ async function resolveProvisioningDatastoreId(
 
   let rows: RemoteDatastoreRow[];
   try {
-    const parsed: unknown = JSON.parse(await sftp.exec(`sudo ${renetPath} datastore list --json`));
+    const parsed: unknown = JSON.parse(
+      await sftp.exec(`sudo ${shellQuote(renetPath)} datastore list --json`)
+    );
     if (!Array.isArray(parsed)) throw new Error('expected a JSON array of datastore records');
     rows = parsed as RemoteDatastoreRow[];
   } catch (error) {
@@ -284,13 +286,13 @@ export async function restoreLicenseAlreadyInstalled(
   remoteRenetPath: string,
   sftp: SFTPClient
 ): Promise<boolean> {
-  // Interpolated into a root shell command, so it must be a guid and nothing else.
+  // Interpolated into a root shell command, so it must be a guid and nothing else. Case-insensitive, and passed through VERBATIM rather than lowercased: renet keys the store directory and the payload comparison on the guid exactly as written (validator.go compares with `!=`), and the licence writer uses `ctx.repositoryGuid` as is, so a normalised copy would look in a directory nothing wrote.
   if (!RESTORE_GUID_PATTERN.test(ctx.repositoryGuid)) return false;
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
   // `--all-datastores`, so a licence in a NAMED datastore is visible here; the scope comparison below is what keeps that breadth from being permissive.
   const command =
-    `sudo ${remoteRenetPath} repository license-status --datastore ${shellQuote(datastore)} ` +
-    `--all-datastores --repo ${ctx.repositoryGuid} --output json`;
+    `sudo ${shellQuote(remoteRenetPath)} repository license-status --datastore ${shellQuote(datastore)} ` +
+    `--all-datastores --repo ${shellQuote(ctx.repositoryGuid)} --output json`;
   const statuses = await sftp
     .exec(command)
     .then((output) => {
@@ -308,7 +310,7 @@ export async function restoreLicenseAlreadyInstalled(
   );
 }
 
-const RESTORE_GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const RESTORE_GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The size to request for a restore's licence, read from the SNAPSHOT the

@@ -892,7 +892,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       await localExecutorService.execute(datastoreCreate);
 
       expect(mockExec).toHaveBeenCalledWith(
-        expect.stringContaining('/usr/bin/renet datastore list --json')
+        expect.stringContaining("'/usr/bin/renet' datastore list --json")
       );
     });
 
