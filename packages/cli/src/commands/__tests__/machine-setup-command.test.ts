@@ -63,7 +63,18 @@ describe('machine setup command', () => {
     });
     expect(execCalls).toHaveLength(1);
     expect(execCalls[0]).toMatch(
-      /^sudo '\/opt\/my renet\/o'\\''brien;rm -rf x\/renet' setup --auto --datastore '\/mnt\/my data\/o'\\''x;y' --datastore-size /
+      /^sudo '\/opt\/my renet\/o'\\''brien;rm -rf x\/renet' setup --auto --datastore '\/mnt\/my data\/o'\\''x;y' --datastore-size '95%'$/
     );
+  });
+
+  it('quotes a hostile --datastore-size', async () => {
+    const program = new Command();
+    const machine = program.command('machine');
+    registerMachineRegistrationCommands(machine, program);
+    await program.parseAsync(['machine', 'setup', 'm1', '--datastore-size', '50%;touch x'], {
+      from: 'user',
+    });
+    expect(execCalls).toHaveLength(1);
+    expect(execCalls[0]).toMatch(/ --datastore-size '50%;touch x'$/);
   });
 });

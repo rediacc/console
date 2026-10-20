@@ -7,6 +7,7 @@ vi.mock('../config/config-resources.js', () => ({
     getLocalConfig: vi.fn().mockResolvedValue({
       sshPrivateKey: 'key',
       ssh: { privateKeyPath: '/k' },
+      datastoreSize: '50%;touch x',
       machines: { m1: { datastore: "/mnt/my data/o'x;y" } },
     }),
   },
@@ -45,7 +46,7 @@ describe('bootstrapMachine setup command', () => {
     await bootstrapMachine('m1', {});
     expect(execCalls).toHaveLength(1);
     expect(execCalls[0]).toMatch(
-      /^sudo '\/opt\/my renet\/o'\\''brien;rm -rf x\/renet' setup --auto --datastore '\/mnt\/my data\/o'\\''x;y' --datastore-size /
+      /^sudo '\/opt\/my renet\/o'\\''brien;rm -rf x\/renet' setup --auto --datastore '\/mnt\/my data\/o'\\''x;y' --datastore-size '50%;touch x'$/
     );
   });
 });
