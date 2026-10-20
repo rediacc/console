@@ -43,9 +43,9 @@ MIN_MODULES = 20
 
 PRESENCE_CALLS = ("require_cmd", "_require_cmd", "which")
 RESOLVER_CALLS = ("run", "argv", "require", "resolve")
-# `aws s3 ...` at command position: line start, a YAML `run:`, or after a pipe, `;`, `&&`, `||`, `(`, `$(` or a backtick, then optional `then`/`do`/`else`/`exec`/`!` keywords and VAR=value prefixes.
+# `aws s3 ...` at command position: line start, a YAML `run:`, or after a pipe, `;`, `&&`, `||`, `(`, `$(` or a backtick, then optional `if`/`elif`/`while`/`until`/`then`/`do`/`else`/`exec`/`!` keywords and VAR=value prefixes (the condition keywords added after the PR #600 review found `if aws s3 ...` passing).
 SHELL_RE = re.compile(
-    r"(?:^|[;&|(`]|\$\(|\brun:)\s*(?:(?:then|do|else|exec|!)\s+)*"
+    r"(?:^|[;&|(`]|\$\(|\brun:)\s*(?:(?:if|elif|while|until|then|do|else|exec|!)\s+)*"
     r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*aws\s+(?:s3api|s3|iam)\b"
 )
 
@@ -294,6 +294,14 @@ def selftest() -> bool:
         "PLANT shell: a bare aws s3api after `do` is a finding",
         _rules(shell_findings(planted, "f.sh")) == {"shell"},
     )
+    for keyword in ("if", "elif", "while", "until"):
+        planted = plant(
+            FIX_SHELL, '"$AWS" s3 cp a s3://b/a', f"{keyword} aws s3 ls s3://b/; then :; fi"
+        )
+        check(
+            f"PLANT shell: a bare aws s3 as an `{keyword}` condition is a finding",
+            _rules(shell_findings(planted, "f.sh")) == {"shell"},
+        )
     planted = plant(FIX_SHELL, '"$AWS" s3 cp a s3://b/a', "KEYS=$(aws iam list-access-keys)")
     check(
         "PLANT shell: a bare aws iam inside $( ) is a finding",
