@@ -496,5 +496,104 @@ test.describe
           await runner.repositoryUnmount(REPO_GUID, DS).catch(() => {});
         }
       });
+
+      test('11. regression: `backup browse` WITHOUT --at is unchanged, local and server-free', async () => {
+        // Box 8 put a remote path beside the local one. This pins that the local verb still answers from the mounted image alone: same listing shape as test 10, no storage session, no licence lookup, no passphrase. A browse that quietly started contacting the chunk store would exit 10 on an unlicensed fleet, or hang on one with no account server -- neither of which test 10 would catch if it merely kept passing on a licensed box.
+        const mounted = await runner.repositoryMount(REPO_GUID, TEST_PASSWORD, DS);
+        expect(
+          runner.isSuccess(mounted),
+          `could not mount ${REPO_GUID}: ${runner.getCombinedOutput(mounted).slice(-500)}`
+        ).toBe(true);
+        try {
+          const marker = `browse-noat-${stamp}.txt`;
+          await runner.executeViaBridge(
+            `sudo sh -c 'echo browse-noat > "${DS}/mounts/${REPO_GUID}/${marker}"'`
+          );
+
+          const result = await browseViaFunction(REPO_GUID);
+          expect(
+            result.code,
+            `backup_browse (no --at) exited ${result.code}:\n${result.stderr.slice(-800)}`
+          ).toBe(0);
+
+          const listing = parseBrowseListing(result.stdout + result.stderr);
+          expect(listing, `no browse listing:\n${result.stdout.slice(-800)}`).toBeTruthy();
+          // The shape test 10 reads, field by field: a change to it is a change to every consumer of the local verb.
+          expect(listing?.source ?? '').toContain(REPO_GUID);
+          expect(typeof listing?.truncated).toBe('boolean');
+          expect(typeof listing?.totalSize).toBe('number');
+          const entry = (listing?.entries ?? []).find((e) => e.path === `/${marker}`);
+          expect(entry, `browse did not list ${marker}`).toBeDefined();
+          expect(entry?.type).toBe('file');
+          expect(typeof entry?.size).toBe('number');
+          expect(typeof entry?.modTime).toBe('string');
+
+          // No server call: none of the remote verb's vocabulary appears. Lowercase literals, because getCombinedOutput() lowercases (TestHelpers.ts:15).
+          const text = runner.getCombinedOutput(result);
+          for (const remote of ['license_required', 'browse-at', 'storage session', 'no_listing']) {
+            expect(text, `the local browse showed remote-path output: ${remote}`).not.toContain(
+              remote
+            );
+          }
+        } finally {
+          await runner.repositoryUnmount(REPO_GUID, DS).catch(() => {});
+        }
+      });
+
+      // Tests 12 and 13 drive `renet backup browse-at` DIRECTLY through executeViaBridge rather than the backup_browse_at FunctionDef. Two reasons. The refusals under test are the VERB's, and the function layer would add its own (it demands a lineage, a snapshot and a passphrase before it builds an argv). And the passphrase must ride stdin, which a vault run does not let this suite shape. The verb is spelled with a hyphen on purpose: these legs prove the REFUSALS only (nothing here lists a snapshot, which needs an account server and lives in suite 26), so they must not read to check-e2e-coverage as live coverage of the function itself.
+      const browseAtDirect = (at: string, passphrase = TEST_PASSWORD) =>
+        runner.executeViaBridge(
+          `printf '%s\\n' '${passphrase}' | sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${REPO_GUID}" --lineage "${REPO_GUID}" --at '${at}' --password-stdin`
+        );
+
+      test('12. browse-at refuses a TIME by name, before any licence lookup or server call', async () => {
+        const at = '2026-01-01T00:00:00Z';
+        const result = await browseAtDirect(at);
+        // Exit 1 and not 10: a time must be refused BEFORE the licence is consulted, so the answer is identical on a licensed and an unlicensed machine. An exit 10 here would mean the refusal moved behind the server-facing steps, which is the order the verb's header promises against.
+        expect(result.code, 'a time-shaped --at did not fail with the plain exit 1').toBe(1);
+        const text = runner.getCombinedOutput(result);
+        // Lowercase expectations: getCombinedOutput() lowercases, and the RFC3339 literal carries a T and a Z.
+        expect(text, 'the refusal must quote what was asked for').toContain(at.toLowerCase());
+        expect(text).toContain('is a time');
+        expect(text, 'the refusal must say what to pass instead').toContain('snapshot id');
+        expect(text).not.toContain('license_required');
+        expect(result.stdout.trim(), 'a refused browse-at printed something on stdout').toBe('');
+      });
+
+      test('13. browse-at on a machine with no repository licence exits 10 LICENSE_REQUIRED', async () => {
+        // The licence store is machine-wide and this suite cannot make it empty: it must not delete a licence another suite or a person installed. So the state is PROBED. With none installed, exit 10 is the contract. With one installed, the verb legitimately gets past the licence step, and the leg falls back to the part that holds either way -- it must not succeed or print a listing for a snapshot that does not exist.
+        const status = await runner.executeViaBridge(
+          'sudo renet repository license-status --output json 2>&1 || true'
+        );
+        const rawStatus = status.stdout + status.stderr;
+        let rows: { installed?: boolean }[] = [];
+        try {
+          rows = JSON.parse((/\[.*\]/s.exec(rawStatus) ?? ['[]'])[0]) as { installed?: boolean }[];
+        } catch {
+          // Unparseable output reads as "no rows", which is the branch that asserts the strict contract.
+        }
+        const licensed = rows.some((row) => row.installed === true);
+
+        const result = await browseAtDirect('20260101T000000Z-0011223344556677');
+        const text = runner.getCombinedOutput(result);
+        if (licensed) {
+          test.info().annotations.push({
+            type: 'license-state',
+            description: `a licence is installed on ${runner.getTargetVM()}; exit 10 was not assertable, the no-listing invariant was`,
+          });
+          expect(result.code, 'browse-at of a nonexistent snapshot succeeded').not.toBe(0);
+        } else {
+          expect(
+            result.code,
+            `no licence installed but browse-at exited ${result.code}:\n${text}`
+          ).toBe(10);
+          expect(text, 'the exit-10 payload must name its code').toContain('license_required');
+        }
+        expect(
+          parseBrowseListing(result.stdout),
+          'a failed browse-at printed a listing'
+        ).toBeUndefined();
+      });
     }
   });
