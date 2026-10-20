@@ -152,7 +152,7 @@ Stage 3 depends on Stage 2's TOC object existing, so Stage 2 must land, be teste
 - Wire contract: write grants `indexKey`/`indexPutUrl`, read grants `indexKeys`/`indexGetUrls` for the requested snapshot, commit `hasIndex`. Retention and the orphan sweep collect `i/` with `m/`.
 - Stage 3 is the renet verb `backup browse-at` (FunctionDef `backup_browse_at`, tier none); a snapshot without a listing exits 18 `NO_LISTING`; the CLI half must add `backup_browse_at` to the restore license pre-flight and regenerate the functions contract.
 
-## Decision on the index pointer (settled 2026-10-20 by the rulings above)
+## Index pointer decision (settled 2026-10-20 by this plan's reading of the rulings above)
 
 Settled by this plan's reading of the operator answers of 2026-10-20T13:31Z (TOC sealing, key rollout), not by an operator answer to this framing itself. The column is the boolean `has_index`, and the server derives the object key, so no key string is stored. No new route is added, but the existing grant routes gain the `indexKey`/`indexPutUrl` and `indexKeys`/`indexGetUrls` fields, which goes further than the "opaque key string" the framing describes. The original framing follows for the record.
 

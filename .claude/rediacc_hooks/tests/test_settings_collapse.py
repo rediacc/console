@@ -439,6 +439,24 @@ def linked_identity_env():
     }
 
 
+def test_run_pair_fails_by_name_when_head_moves_on_every_attempt(monkeypatch):
+    heads = iter(str(i) for i in range(2 * PAIR_ATTEMPTS))
+    monkeypatch.setattr(sys.modules[__name__], "live_head", lambda: next(heads))
+    monkeypatch.setattr(sys.modules[__name__], "run_separately", lambda *_: (0, "", ""))
+    monkeypatch.setattr(sys.modules[__name__], "run_collapsed", lambda *_: (0, "", ""))
+    with pytest.raises(pytest.fail.Exception, match="HEAD moved during each of"):
+        run_pair([], "chain", "payload", {})
+
+
+def test_run_pair_returns_the_pair_taken_against_one_head(monkeypatch):
+    heads = iter(["a", "b", "c", "c"])
+    calls = iter(range(10))
+    monkeypatch.setattr(sys.modules[__name__], "live_head", lambda: next(heads))
+    monkeypatch.setattr(sys.modules[__name__], "run_separately", lambda *_: ("sep", next(calls)))
+    monkeypatch.setattr(sys.modules[__name__], "run_collapsed", lambda *_: ("col", next(calls)))
+    assert run_pair([], "chain", "payload", {}) == (("sep", 2), ("col", 3))
+
+
 def test_stale_index_is_pinned_out_of_the_verdict_env(tmp_path, monkeypatch):
     """Regression for the 2026-10-09 flake: the verdict env must not read the ambient index.
 
