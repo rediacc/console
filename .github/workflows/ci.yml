@@ -304,7 +304,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
             FULL_CI > BWS_FULL_CI
 
@@ -312,7 +312,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
 
@@ -694,14 +694,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           # pr-read, not cd: the two scripts below only READ review state.
           # check_resolved_threads.py / check_review_comments.py merely print
           # the resolve/reply commands for a human to run; they never call them.
@@ -771,14 +771,14 @@ jobs:
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             GITHUB_APP_ID > BWS_APP_ID
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
 
@@ -1310,14 +1310,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
 
@@ -1515,7 +1515,7 @@ jobs:
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
             AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
@@ -1530,7 +1530,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
 

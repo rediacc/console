@@ -717,7 +717,7 @@ def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
 def read_order_problems() -> tuple[list[str], int]:
     """Assertion 13: every `${{ env.BWS_X }}` read has a fetch of X EARLIER in its job.
 
-    THE CONVERSE OF ASSERTION 12, and the one the cutover can actually break. That one asks whether a job that reads a GitHub secret also fetches its twin; this asks whether a job that reads a BITWARDEN value ever fetched it. The failure it catches is silent by construction: `env.BWS_APP_PRIVATE_KEY` with no fetch is an EMPTY STRING, not an error, and app-token's complaint then
+    THE CONVERSE OF ASSERTION 12, and the one the cutover can actually break. That one asks whether a job that reads a GitHub secret also fetches its twin; this asks whether a job that reads a BITWARDEN value ever fetched it. The failure it catches is silent by construction: `env.BWS_GITHUB_APP_PRIVATE_KEY` with no fetch is an EMPTY STRING, not an error, and app-token's complaint then
     names the App rather than the key.
 
     ORDER, not just presence, because seven jobs on this branch had the fetch step AFTER app-token -- the shape that made the cutover a reordering rather than a substitution. A fetch that runs later supplies nothing to a read above it.
@@ -1330,10 +1330,10 @@ jobs:
         "      - uses: ./.github/actions/bws-secrets",
         "        with:",
         "          secrets: |",
-        "            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY",
+        "            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY",
         "      - uses: ./.github/actions/app-token",
         "        with:",
-        "          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}",
+        "          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}",
     ]
     r13 = [
         ("read order CONTROL: a fetch above its consumer is silent", good, None),
@@ -1360,7 +1360,7 @@ jobs:
                 "      - uses: ./.github/actions/x",
                 "        env:",
                 "          K: ${{ inputs.t == 'stable'",
-                "            && env.BWS_APP_PRIVATE_KEY",
+                "            && env.BWS_GITHUB_APP_PRIVATE_KEY",
                 "            || '' }}",
                 *good[3:7],
             ],

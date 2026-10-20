@@ -34,6 +34,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import bisect
 import datetime as dt
 import difflib
 import json
@@ -79,7 +80,71 @@ GENERATED = {
     ".ci/config/bws-secret-map.json": "scripts/ops/bws-map-refresh.py (already on the new names)",
 }
 # Never rewritten: history, session notes, this script, the plan that defines the table.
-SKIP_PREFIXES = ("agent/", "node_modules/", ".git/", "scripts/ops/secret-rename.py")
+SKIP_PREFIXES = (
+    "agent/",
+    "node_modules/",
+    ".git/",
+    "scripts/ops/secret-rename.py",
+    # Class C, whole file (plan Part 27): records of what was measured on a date, recorded CI output a golden or fixture compares byte for byte, and a test whose subject IS the retired spelling.
+    "docs/ci-overhaul/",
+    ".ci/rediacc_ci/tests/goldens/twins/quality.check-profiler-coverage.jsonl",
+    ".ci/rediacc_ci/tests/fixtures/ci_diagnose/job_110673642600.log",
+    ".ci/rediacc_ci/tests/fixtures/ci_diagnose/job_112158906504_budget_freshness.log",
+    "private/account/tests/integration/rotation-bitwarden-names.test.ts",
+)
+
+# Class C, line level (plan Part 27): single lines inside live files that name an OLD spelling on purpose (a real repo secret never renamed, dated history, a detector or control input). Two ways to keep a line:
+#   1. put the marker `secret-rename: keep` on it, in any comment form the file's language has;
+#   2. list it here, by a substring of the line, for lines where a trailing marker would alter the text a gate or a reader sees (prose inside a string, markdown, a regex).
+# The anchors are content, not line numbers, so an unrelated edit above does not move the protection.
+KEEP_MARKER = "secret-rename: keep"
+KEEP_LINES: dict[str, tuple[str, ...]] = {
+    ".ci/breakpoint/workflow/breakpoint.yml": (
+        "after `BREAKPOINT_TUNNEL_TOKEN`",
+        "# APP_PRIVATE_KEY org secret, deleted",
+        "minted from APP_PRIVATE_KEY",
+    ),
+    ".github/workflows/breakpoint.yml": (
+        "after `BREAKPOINT_TUNNEL_TOKEN`",
+        "# APP_PRIVATE_KEY org secret, deleted",
+        "minted from APP_PRIVATE_KEY",
+    ),
+    ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": ("CLAUDE_CODE_OAUTH_TOKEN",),
+    ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py": ("APP_PRIVATE_KEY",),
+    ".ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py": ("CLAUDE_CODE_OAUTH_TOKEN",),
+    ".ci/scripts/quality/check_bws_map.py": (
+        "That job's own read stays on GitHub deliberately",
+        "THE SCAN'S OWN PULSE",
+    ),
+    ".ci/scripts/quality/check_secret_reachability.py": (
+        "The single remaining non-BWS reference",
+        "Inside a reusable, `secrets.X` reads",
+        "A `#` COMMENT IS NOT A REFERENCE",
+    ),
+    ".github/actions/bws-secrets/action.yml": ("STRIPE_SECRET_KEY > STRIPE_SECRET_KEY_EU",),
+    ".github/workflows/cd-deploy-worker.yml": ("HEAD's STRIPE_SECRET_KEY_EU",),
+    ".github/workflows/watchdog-monitor.yml": (
+        "-> BREAKPOINT_TUNNEL_TOKEN, BWS_ACCESS_TOKEN",
+        "# CLAUDE_CODE_OAUTH_TOKEN is repo-scoped",
+    ),
+    "docs/agent-reference/ci-gates.md": ("**Bitwarden** by `./.github/actions/bws-secrets`",),
+    "private/account/scripts/rotation/consumers/bitwarden-sm.ts": (
+        "AUTOPILOT_PRIVATE_KEY leaked",
+        "`R2_ACCESS_KEY_ID` would have created",
+    ),
+    "private/account/scripts/rotation/lib/config.ts": ("RENAMED 2026-09-02:",),
+    "scripts/gates/check-secret-scope.ts": (
+        "BREAKPOINT_TUNNEL_TOKEN NOT because",
+        "CLAUDE_CODE_OAUTH_TOKEN repo-scoped",
+        "console holds BREAKPOINT_TUNNEL_TOKEN",
+        "'BREAKPOINT_TUNNEL_TOKEN',",
+        "'CLAUDE_CODE_OAUTH_TOKEN',",
+    ),
+    "scripts/gates/check-tracked-credentials.ts": (
+        "STRIPE_SECRET_KEY_ASIA",
+        "OTLP_CLIENT_CREDENTIALS_ASIA",
+    ),
+}
 SKIP_SUFFIXES = (
     ".png",
     ".jpg",
@@ -132,13 +197,32 @@ class Rules:
         self.pat = re.compile(rf"(?<![A-Za-z0-9_])(GH_|BWS_)?({alts})(?![A-Za-z0-9_])")
         self.stems = tuple({o.split("_")[0] for o, _ in RENAMES})
 
-    def apply(self, text: str) -> tuple[str, Counter, list[str], list[tuple[int, str, str]]]:
+    def apply(
+        self, text: str, rel: str = ""
+    ) -> tuple[str, Counter, list[str], list[tuple[int, str, str]]]:
+        anchors = KEEP_LINES.get(rel, ())
+        starts = [0]
+        for i, ch in enumerate(text):
+            if ch == "\n":
+                starts.append(i + 1)
+        kept_cache: dict[int, bool] = {}
+
+        def kept(pos: int) -> bool:
+            idx = bisect.bisect_right(starts, pos) - 1
+            if idx not in kept_cache:
+                end = text.find("\n", starts[idx])
+                line = text[starts[idx] : len(text) if end < 0 else end]
+                kept_cache[idx] = KEEP_MARKER in line or any(a in line for a in anchors)
+            return kept_cache[idx]
+
         counts: Counter = Counter()
         collapsed: list[str] = []
         variables: list[tuple[int, str, str]] = []
 
         def sub(m: re.Match[str]) -> str:
             old = m.group(2)
+            if kept(m.start()):
+                return m.group(0)
             # A `vars.NAME` reference is an Actions VARIABLE, and this table is GitHub org SECRETS. `gh secret set` does not touch a variable, so rewriting the reference points it at a variable that was never renamed and the expression silently evaluates to "". That is not hypothetical: AUTOPILOT_APP_ID is in this table and is read as `vars.AUTOPILOT_APP_ID` at four app-token mint
             # sites in autopilot.yml, whose own comment (:58-62) warns it is a variable NOT a secret -- and this script rewrote that warning too. Every autopilot token mint would have failed. Report, never rewrite.
             before = text[max(0, m.start() - 48) : m.start()]
@@ -198,10 +282,12 @@ def files() -> list[Path]:
     return out
 
 
-def rewrite(text: str, rs: Rules) -> tuple[str, Counter, list[str], list[tuple[int, str, str]]]:
+def rewrite(
+    text: str, rs: Rules, rel: str = ""
+) -> tuple[str, Counter, list[str], list[tuple[int, str, str]]]:
     if not any(s in text for s in rs.stems):
         return text, Counter(), [], []
-    return rs.apply(text)
+    return rs.apply(text, rel)
 
 
 def main() -> int:
@@ -241,6 +327,31 @@ def main() -> int:
         )
         return 1
 
+    # Control, exclusions: a marked line and an anchored line must survive, an unmarked neighbour must still be rewritten, and a skipped prefix must be skipped by files(). A pass that kept everything (or nothing) fails here.
+    kprobe = (
+        "R2_ENDPOINT  # secret-rename: keep\n"
+        "R2_ENDPOINT\n"
+        "see KEEPME R2_ENDPOINT\n"
+    )
+    KEEP_LINES["__control__"] = ("KEEPME",)
+    try:
+        kgot, kcounts, _, _ = rewrite(kprobe, rs, "__control__")
+    finally:
+        del KEEP_LINES["__control__"]
+    kwant = (
+        "R2_ENDPOINT  # secret-rename: keep\n"
+        "CLOUDFLARE_R2_ENDPOINT\n"
+        "see KEEPME R2_ENDPOINT\n"
+    )
+    if kgot != kwant or sum(kcounts.values()) != 1:
+        print(f"✗ instrument control failed: keep marker/anchor\n  got  {kgot!r}", file=sys.stderr)
+        return 1
+    walked = {q.relative_to(ROOT).as_posix() for q in files()}
+    leaked = [q for q in walked if q.startswith(SKIP_PREFIXES)]
+    if leaked or not any(q.startswith(".github/workflows/") for q in walked):
+        print(f"✗ instrument control failed: SKIP_PREFIXES walk, leaked {leaked[:3]}", file=sys.stderr)
+        return 1
+
     per_file: dict[str, Counter] = {}
     per_name: Counter = Counter()
     collapse_hits: list[str] = []
@@ -255,7 +366,7 @@ def main() -> int:
             text = p.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        new, counts, collapsed, variables = rewrite(text, rs)
+        new, counts, collapsed, variables = rewrite(text, rs, rel)
         for line, old, target in variables:
             variable_hits.append(f"{rel}:{line}: vars.{old}  (would have become vars.{target})")
         if not counts:

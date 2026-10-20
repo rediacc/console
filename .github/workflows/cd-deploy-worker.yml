@@ -70,7 +70,7 @@ jobs:
             AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_TURNSTILE_SECRET_KEY > BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             STRIPE_SANDBOX_WEBHOOK_SECRET > BWS_STRIPE_SANDBOX_WEBHOOK_SECRET
             STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
@@ -96,7 +96,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account
 

@@ -220,7 +220,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
@@ -228,7 +228,7 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: pr-read   # gh api reads in the pr-description gate
           repositories: console
 
@@ -727,14 +727,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: pr-read   # gh pr list in check_submodule_branches.py
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -786,7 +786,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - name: Block legacy-peer-deps workarounds
@@ -922,7 +922,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1439,7 +1439,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             GITHUB_APP_ID > BWS_APP_ID
 
@@ -1447,7 +1447,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1693,14 +1693,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1910,7 +1910,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID
             CLOUDFLARE_R2_MEDIA_ENDPOINT > BWS_CLOUDFLARE_R2_MEDIA_ENDPOINT
             CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY
@@ -1919,7 +1919,7 @@ jobs:
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           repositories: console,account
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -2081,14 +2081,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2222,14 +2222,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2456,14 +2456,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2623,14 +2623,14 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

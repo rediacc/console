@@ -28,7 +28,7 @@
     "the very rename the sentence describes, leaving it claiming the new name points at itself.",
     "",
     "SECOND KEY, `no_fetch_jobs`, and it exists because the first one cannot say this.",
-    "`exemptions` is keyed by SECRET NAME, so exempting APP_PRIVATE_KEY there would quiet",
+    "`exemptions` is keyed by SECRET NAME, so exempting GITHUB_APP_PRIVATE_KEY there would quiet",
     "the per-job coverage rule in all 20 workflow files at once. What is needed is the",
     "opposite: one named job, in one file, that must NEVER fetch a secret it reads. Keys",
     "are `<path>#<job>`, values carry a BLOCKER reason, and the gate REFUSES an entry",
