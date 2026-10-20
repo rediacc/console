@@ -54,7 +54,7 @@ def test_control_a_bare_word_in_prose_is_not_a_citation(tmp_path):
     assert not ok
 
 
-# Formats a line number cannot point into, plus root/nested dotfiles (their own CITE_RE branch covers them by name, not by extension).
+# Binary formats a line number cannot point into, and the empty `.gitkeep` placeholder (it has no lines). Root and nested dotfiles are covered by their own CITE_RE branch, by name.
 UNCITABLE = {
     "png",
     "jpg",
@@ -83,27 +83,30 @@ UNCITABLE = {
 }
 
 
-def _tracked_extensions():
-    root = pathlib.Path(__file__).resolve().parents[3]
-    repos = [root] + [root / s for s in ("private/renet", "private/account", "private/elite")]
+REPOS = ("", "private/renet", "private/account", "private/elite")
+ROOT = pathlib.Path(__file__).resolve().parents[3]
+
+
+def _tracked_extensions(rel_repo: str) -> set[str]:
+    out = subprocess.run(
+        ["git", "-C", str(ROOT / rel_repo), "ls-files"], capture_output=True, text=True, check=True
+    ).stdout
     exts = set()
-    for repo in repos:
-        if not (repo / ".git").exists():
-            continue
-        out = subprocess.run(
-            ["git", "-C", str(repo), "ls-files"], capture_output=True, text=True, check=True
-        ).stdout
-        for rel in out.splitlines():
-            name = rel.rsplit("/", 1)[-1]
-            if "." in name.lstrip("."):
-                exts.add(name.rsplit(".", 1)[1].lower())
+    for rel in out.splitlines():
+        name = rel.rsplit("/", 1)[-1]
+        if "." in name.lstrip("."):
+            # Case kept: CITE_RE is case-sensitive, so NOTES.TXT must be checked as TXT.
+            exts.add(name.rsplit(".", 1)[1])
     return exts
 
 
-def test_every_tracked_text_extension_is_citable(tmp_path):
-    """The completeness claim in wl_checks.CITE_RE's comment, checked against the live tree instead of trusted: a new text format anywhere in the console or its submodules fails here until it is citable or named uncitable above."""
+@pytest.mark.parametrize("rel_repo", REPOS, ids=lambda r: r or "console")
+def test_every_tracked_text_extension_is_citable(tmp_path, rel_repo):
+    """The completeness claim in wl_checks.CITE_RE's comment, checked against the live tree instead of trusted: a new text format anywhere in the console or its submodules fails here until it is citable or named uncitable above. A submodule that is not checked out is a visible skip, never a silent pass."""
+    if not (ROOT / rel_repo / ".git").exists():
+        pytest.skip("%s is not checked out here, so its extensions were not checked" % rel_repo)
     missing = []
-    for ext in sorted(_tracked_extensions() - UNCITABLE):
+    for ext in sorted(_tracked_extensions(rel_repo) - UNCITABLE):
         rel = "probe/file.%s" % ext
         path = tmp_path / rel
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -111,4 +114,7 @@ def test_every_tracked_text_extension_is_citable(tmp_path):
         ok, _ = C.citation_state(tmp_path, "see %s:1" % rel)
         if not ok:
             missing.append(ext)
-    assert missing == [], "tracked extensions that cannot be cited: %s" % missing
+    assert missing == [], "tracked extensions in %s that cannot be cited: %s" % (
+        rel_repo or "console",
+        missing,
+    )
