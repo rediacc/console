@@ -64,10 +64,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-pins-command.md -- 12 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-credential-isolation.md -- 7 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 19 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a968120b512751e0b, worker:a1c8cbf6121254736, worker:a933a92c315798e4d, worker:aeb131ef145252b0a.
-- Leased items: 4: #3b0fa70b (worker:a1c8cbf6121254736, d778be9d), #3f41a61c (worker:aeb131ef145252b0a, d778be9d), #5ef4661a (worker:a933a92c315798e4d, d778be9d), #a42f8448 (worker:a968120b512751e0b, d778be9d).
+- Work outside the PR's plans (2 epic(s)):
+  - epic b6b52721, plan agent/plans/PLAN-config-handoff-relay-only.md, outside the set, 0 commit(s) on the branch, 1 open item(s): Config handoff relay-only: the config-remote overlay fix (PLAN-config-handoff-relay-only)
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 36 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a109dd438d2a720fd, worker:a296816ea02be1e58, worker:a8b7c7ce9ce3bc0bf, worker:add60a63afa52c772.
+- Leased items: 5: #50cb9316 (worker:a8b7c7ce9ce3bc0bf, d778be9d), #8e513af2 (worker:a296816ea02be1e58, d778be9d), #95980422 (worker:a109dd438d2a720fd, d778be9d), #eaddeba0 (worker:a8b7c7ce9ce3bc0bf, d778be9d), #ef99c717 (worker:add60a63afa52c772, d778be9d).
 - Next plan: agent/plans/PLAN-vm-check.md, Generated entry 13 (no Promoted entry ahead of it has an open box); starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -128,7 +129,7 @@ Promoted: 13 of 17 plans done, 200 of 204 boxes done (98%).
 8. agent/plans/PLAN-shell-sandbox-readonly-view.md -- P1, active, in progress (4 of 7 boxes ticked)
 9. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
 10. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-11. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (152 of 154 boxes ticked)
+11. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (153 of 154 boxes ticked)
 12. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
 13. agent/plans/PLAN-vm-check.md -- P1, approved, in progress (5 of 8 boxes ticked)
 14. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
