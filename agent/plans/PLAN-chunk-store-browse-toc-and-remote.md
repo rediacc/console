@@ -3,7 +3,7 @@
 Status: proposed -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites only finished plans: PLAN-chunk-store-browse-DECISION.md, PLAN-chunk-store-browse-server.md, PLAN-backup-quota-delta-gc.md
 Owner: d778be9d
-Updated: 2026-09-23
+Updated: 2026-10-20
 Priority: P3 -- seed: Status proposed, 11 open box(es)
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/renet/cmd/renet/backup_browse.go, private/account/src, private/account/src/routes/backups.ts, private/account/src/db/schema.ts, private/renet/pkg/repodiff/browse.go, packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/backup-storage-parser.ts, private/renet/pkg/functions/commands/backup.go, private/renet/pkg/chunkstore, private/renet/pkg/chunkstore/*.go, private/account/src/services/backup-storage.service.ts, private/account/src/services/backup-chunk-store.ts, private/renet/cmd/renet/backup_restore.go, packages/cli/src/commands/backup.ts, private/renet/cmd/renet/backup_pull.go, private/renet/pkg/credentials/keyfile.go, private/renet/pkg/luks/luks.go, packages/e2e-tests/tests/25-backup-chunk-store.test.ts
@@ -130,6 +130,14 @@ Stage 3 depends on Stage 2's TOC object existing, so Stage 2 must land, be teste
 - [ ] i18n: every new user-facing string in both new Go and TS surfaces, matching Stage 1's convention.
 - [ ] Stage-3 tests: end-to-end round trip cross-checked against Stage 1's local `Browse` of the same content; tampered/wrong-key fail-closed negative; `hasIndex:false` honest refusal; Stage-1 regression control (no-`--at` path unchanged, zero new server calls).
 - [ ] CI registration: suite 25/26, `.e2e-coverage-allowlist`, command-plane/command-tree/i18n gates.
+
+## Rulings and corrections (2026-10-20)
+
+- Operator /ask ASKED:2026-10-20T13:31Z, box 3: "Public-key sealing (Default)". A scheduled snapshot runs renet with no passphrase (the systemd unit calls `renet backup snapshot` directly; BackupSnapshotCommand sends no stdin), so the listing is sealed to an X25519 public key derived from the passphrase (HKDF-SHA256, salt = lineage, info `rediacc-backup-toc-v1`), with an ephemeral ECDH + AES-256-GCM seal and associated data `lineage + "/" + snapshotId`. Only the passphrase reopens it.
+- Same ask, key rollout: "Next mount is enough (Recommended)". A password mount, up or create writes `{datastore}/.credentials/toc/{guid}.pub`; snapshots before that store no listing, and no CLI step provisions it.
+- The column is the boolean `has_index` (the server derives the object key `t/<sub>/l/<lineage>/i/<snapshotId>`), so the question below resolves to "a flag, not a key column".
+- Wire contract: write grants `indexKey`/`indexPutUrl`, read grants `indexKeys`/`indexGetUrls` for the requested snapshot, commit `hasIndex`. Retention and the orphan sweep collect `i/` with `m/`.
+- Stage 3 is the renet verb `backup browse-at` (FunctionDef `backup_browse_at`, tier none); a snapshot without a listing exits 18 `NO_LISTING`; the CLI half must add `backup_browse_at` to the restore license pre-flight and regenerate the functions contract.
 
 ## Operator decision needed
 
