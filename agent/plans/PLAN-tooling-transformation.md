@@ -1427,7 +1427,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **EM DASHES:** all 13 in `account.sh` (12 lines, 2 of them log output) became `--`, and the 14 `account.sh` ids drained from `scripts/data/em-dash-surfaces-baseline.json`; `check:ci-em-dash-surfaces` rc=0.
       **GATES:** `check:ci-dead-python`, `check:ci-no-inline-python`, `check:ci-python-control-plants`, `check:ci-python-gate-deps`, `check:ci-language-policy` and `check:ci-em-dash-surfaces` rc=0; all 16 `w7p5b-*` pairs assert at K>=5. `test_core_account.py` 82 collected, 80 passed and 2 skipped (the two `stop()` real runs skip while a devbox session's real account stack is up; with no stack up they passed earlier in this wave). With `test_core_local_common.py`, `test_core_service.py`, `test_core_common.py` and `test_quality_account_probes.py`: 497 passed, 2 skipped. The shell gates (`check:ci-account-probes`, `shell-lint`, `shell-format`, `shell-size`, `shell-commands`, `shell-declared-commands`, `dead-bash`, `pipefail-grep-q`) are rc=0 on the changed twin.
       `check:ci-python-lint` reds only on `.claude/hooks/stop/wl_roster.py` and its test; `test_canonical_sys_path_hop.py` reds only on pre-existing hops in `.claude/`. `check:ci-python-env-registry` reads the two new modules' registry entries as STALE until they are tracked; the gate's own `evaluate()` over the tracked corpus plus those two paths returns 0 findings.
-- [ ] **W7P5-c S** The deletion box, the only one that removes anything.
+- [x] **W7P5-c S** The deletion box, the only one that removes anything.
       **OPERATOR RULING 2026-09-21 ON THE HOOK ORACLES AND THE TOOLCHAIN BASH.** The 47 `.claude/oracles/**` bash
       files stay as a permanent language-policy exemption (`tree:.claude/oracles/`, abda9690f), chosen over goldens,
       history extraction, mutation tests and Python reference rewrites after scoring (4.65 of 5 against 3.50, 3.10
@@ -1547,6 +1547,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **So C1 for a gate-test twin reads: a green `test_port_and_twin_agree` row for that
       subject.** C2 and C3 are unchanged and still bind -- and C3 is the one that matters
       here, as the call site below proves.
+    (ticked) 2026-10-20T17:21:05Z by d778be9d: commit:edb25b581 language gate strict over the tracked tree outside private/: 133 bash files allowlisted across 39 entries, no baseline, twin dirs empty, w7p5c-* pairs K=5; acceptance amended per operator /ask 2026-10-20T11:31Z (#dccf10ab)
 
       **A LIVE BASH CALL SITE THE C3 SCAN WOULD MISS, found by the census and confirmed by
       the driver.** `.github/workflows/autopilot.yml line 252 (blob 1d3f9e6d878b27bb81d5f2b1edea0779e1a252f8)` still runs
@@ -1576,8 +1577,12 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       nothing (`covered` identical, no reseed possible); a deletion is a pure subtraction and is
       **the only legal reseed**; any new `.sh` is refused even if the total shrinks; a missing
       baseline is STRICT MODE, not "no debt". So: **delete a batch -> reseed in the same commit ->
-      repeat.** **Acceptance:** `baseline_before - baseline_after` equals exactly the files that
-      commit deleted, and `baseline_after - baseline_before` is empty. Checkable from the diff.
+      repeat.** **Acceptance (superseded 2026-10-20, operator /ask "Replace and widen the gate",
+      worklist #dccf10ab and #bc08ae89):** the baseline is retired (05e9225bb), so the drain rule
+      has nothing to measure. The box is accepted when `check:ci-language-policy` is rc 0 in strict
+      mode with every tracked bash file outside `private/` allowlisted under a checked BLOCKER, no
+      baseline file exists, the twin directories are empty, and the `w7p5c-*` shadow pairs hold at
+      K=5 under `--assert --k 5`.
       **PRECONDITION ADDED 2026-09-08, and it is not optional: sweep the estate for
       extension-shaped matchers first.** A tool that identifies a gate by `.sh` stops
       seeing it the instant the twin is deleted, and the failure is SILENT -- a matcher
@@ -2003,6 +2008,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `check:ci-python-lint` itself is rc=1 on ONE finding, an EXE001 mode on the peer-owned `.ci/rediacc_ci/core/devbox_shadow_driver.py`, with lint and format clean across all 1,117 files.
       `check:ci-plan-citations` adds nothing on this note's own lines, checked with `PLAN_CITATIONS_MAX_SHOWN=5000` rather than trusting the 40-row truncation, and `check:ci-prose-style` adds no blocking finding in any file this change touches.
       NOT ticked, because the box is the whole 16-file mandate and this retires ONE of it. Eleven of the sixteen remain, each blocked by what the audit above names; `check-python-lint.sh` is no longer among them.
+      **AUDIT: DONE 2026-10-20.** The 16-file twin mandate is finished: `.ci/scripts/quality/*.sh` and `.ci/scripts/test/gates/*.sh` are gone (3d027a717 deleted the last four, f7bda3902). The baseline is retired (05e9225bb). edb25b581 retired ci-env.sh, scripts/lib/well-known.sh and scripts/lib/env-file.sh with K=5 shadow ledgers (w7p5c-ci-start-elite-cutover, w7p5c-ci-start-account-cutover, w7p5c-well-known-projection) and widened the gate to the tracked tree outside private/: `python3 .ci/scripts/quality/check_language_policy.py` reports 133 bash files, all allowlisted across 39 entries, no baseline. scripts/pre-commit-check.sh stays allowlisted (.ci/policy/.language-policy-allowlist:201); deleting it remains the operator's decision (D2), which the ruling chose not to gate this box on.
 - [x] **W7P6 C, 3 writers** The 142 unnamed files (P-C). Port groups above; allowlist the 7-8
       named. Resolve the missing allowlist kind for `bootstrap.sh` before the strict flip.
       **STARTED 2026-09-09, 1 of ~37 free files ported, and the box's own numbers all moved.**
