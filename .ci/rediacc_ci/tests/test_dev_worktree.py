@@ -451,6 +451,15 @@ def test_create_names_the_worktree_after_the_seam_day(tmp_path: Path) -> None:
     assert "0229-1" in fx.branches()
 
 
+def test_create_refuses_a_seam_day_that_is_not_mmdd(tmp_path: Path) -> None:
+    fx = make_fixture(tmp_path)
+    result = fx.run_port(["create", "--no-devbox"], WORKTREE_TODAY="../x")
+    assert result.rc == 1
+    assert "WORKTREE_TODAY must be four digits" in result.err + result.out
+    assert not (fx.base / "..").resolve().joinpath("x-1").exists()
+    assert not any("x-1" in b for b in fx.branches())
+
+
 @pytest.mark.parametrize("flags", [[], ["--teams"], ["--no-devbox"]])
 def test_same_create_on_a_clean_main_checkout(tmp_path: Path, flags: list[str]) -> None:
     a, b, ra, rb, calls = diff_pair(tmp_path, _noop, ["create", *flags], tools=("tmux",))
