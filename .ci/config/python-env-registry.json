@@ -2232,6 +2232,9 @@
     ".claude/rediacc_hooks/tests/hooklabels.py": [
       "HOOK_LABEL_DIR"
     ],
+    ".claude/rediacc_hooks/tests/test_block_turbo_early_push_merge_phase.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/tests/test_guards_differential.py": [
       "GIT_DIR",
       "HOME",

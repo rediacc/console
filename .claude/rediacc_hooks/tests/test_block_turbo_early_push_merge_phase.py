@@ -175,6 +175,10 @@ def test_merge_phase_symlink_under_reviews_is_refused(world):
         "git push --force origin %s" % BRANCH,
         "git push --force-with-lease=%s origin %s" % (BRANCH, BRANCH),
         "git push --tags origin %s" % BRANCH,
+        "git push -f origin %s" % BRANCH,
+        "git push --force-if-includes origin %s" % BRANCH,
+        "git push --all origin",
+        "git push --mirror origin",
         "git push origin",  # no explicit refspec
         "git push origin HEAD",  # HEAD with no destination names no branch
     ],
@@ -185,6 +189,15 @@ def test_merge_phase_refuses_a_push_that_is_not_exactly_head(world, command):
     G._git(world["repo"], "branch", "other")
     rc, _err = _run(world, command)
     assert rc == 2, command
+    assert _ledger(world) == []
+
+
+def test_a_delete_push_stays_out_of_scope_not_merge_admitted(world):
+    # SCOPE: the guard never judges a delete push (the cleanup after a merge), so the merge phase has nothing to admit or ledger.
+    _phase(world, "merge")
+    _gitlink(world["repo"])
+    rc, err = _run(world, "git push --delete origin %s" % BRANCH)
+    assert rc == 0, err
     assert _ledger(world) == []
 
 
