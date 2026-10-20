@@ -23,8 +23,36 @@ vi.mock('../core/output.js', () => ({
   },
 }));
 
+const { execCalls, mockGetLocalConfig } = vi.hoisted(() => ({
+  execCalls: [] as string[],
+  mockGetLocalConfig: vi.fn(),
+}));
+
+vi.mock('../renet/renet-execution.js', () => ({
+  acquireRemoteRenet: vi.fn().mockResolvedValue({
+    remotePath: "/opt/my renet/o'brien;rm -rf x/renet",
+    uploaded: false,
+  }),
+  readSSHKey: vi.fn().mockResolvedValue('key'),
+}));
+
+vi.mock('../machine/machine-connection.js', () => ({
+  machineConnections: {
+    acquireFor: vi.fn().mockResolvedValue({
+      release: vi.fn(),
+      sftp: {
+        execStreaming: vi.fn((cmd: string) => {
+          execCalls.push(cmd);
+          return Promise.resolve(0);
+        }),
+      },
+    }),
+  },
+}));
+
 vi.mock('../config/config-resources.js', () => ({
   configService: {
+    getLocalConfig: mockGetLocalConfig,
     updateConfigFields: vi.fn(),
     applyDefaults: vi.fn().mockResolvedValue({ team: undefined }),
   },
@@ -40,6 +68,7 @@ import {
   buildInfraPayload,
   ensureClusterDnsRecords,
   ensureRepoDnsRecords,
+  pushInfraConfig,
   removeClusterDnsRecords,
 } from '../provision/infra-provision.js';
 
@@ -226,5 +255,19 @@ describe('buildInfraPayload team_name field', () => {
     });
     const parsed = JSON.parse(json) as Record<string, unknown>;
     expect(parsed.team_name).toBe('');
+  });
+});
+
+describe('pushInfraConfig proxy commands', () => {
+  it('quotes a renet path with spaces, a quote and `;` in configure and install', async () => {
+    execCalls.length = 0;
+    mockGetLocalConfig.mockResolvedValue({
+      ssh: { privateKeyPath: '/k' },
+      sshPrivateKey: 'key',
+      machines: { m1: { infra: { ...baseInfra, baseDomain: undefined } } },
+    });
+    await pushInfraConfig('m1');
+    const quoted = `'/opt/my renet/o'\\''brien;rm -rf x/renet'`;
+    expect(execCalls).toEqual([`sudo ${quoted} proxy configure`, `sudo ${quoted} proxy install`]);
   });
 });

@@ -159,3 +159,16 @@ describe('buildRemoteRenetCommand', () => {
     });
   });
 });
+
+describe('a renet path with shell metacharacters stays one word', () => {
+  it('quotes the path where `execute` is composed', () => {
+    const launch = buildRemoteRenetCommand({
+      remoteRenetPath: "/opt/my renet/o'brien;rm -rf x/renet",
+      isDevelopment: false,
+      telemetryDisabled: true,
+    });
+    expect(launch.command).toBe(
+      `sudo env REDIACC_TELEMETRY_DISABLED=1 '/opt/my renet/o'\\''brien;rm -rf x/renet' execute --executor local`
+    );
+  });
+});
