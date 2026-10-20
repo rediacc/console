@@ -20,7 +20,10 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   4. A FAILED RESTORE OF THE SUBSCRIPTION IS REPORTED. The bash teardown discarded both the output and the exit code of the patch that puts the cap and the status back (`>/dev/null 2>&1 || true`), so a drill that left the subscription suspended said nothing; the failure is a warning naming what was left behind.
   5. A TRANSPORT FAILURE ENDS THE DRILL WITH ITS CAUSE (`OSError` naming the method and URL) where a failed `curl` in a pipeline stage was swallowed and read as an empty field.
   6. CEPH IS ASKED OF THE WORKERS. The bash decided Ceph was available because VM .21 was running, which a default `ops up` satisfies with bare OS images that carry no client; leg a then died on `rbd: command not found`. `.21` running stays the first refusal, and `preflight_ceph` then requires `/etc/ceph/ceph.conf` and an `rbd` binary on each worker the selected legs use.
-  7. `--seed-repo` CREATES THE LICENSED REPO THE BASIC FLEET LACKS. Legs c, d and e need a licensed repo on the worker and only leg a creates one (it needs Ceph), so the bash could not run them on the basic fleet unless an earlier full-cluster run had left one. With legs a and b off and no licensed repo on `--vm`, `--seed-repo` runs leg a's issuance step (`repo create drill-repo -m drill-lic-1 --size 1G`) and asserts exit 0. It acts only when `--vm` is on the ops VM network (`vm_check.is_ops_vm_ip`, development-only machines per .claude/agents/ops-vms.md); any other worker keeps the refusal, flag or not. The repo persists on the worker afterwards.
+  7. LEGS C-E ASSERT ON A LICENCE THIS RUN ISSUED, AND `--seed-repo` ISSUES IT ON THE BASIC FLEET. Every run mints its own login and subscription, so a licence some earlier run left on the worker belongs to another (often deleted) subscription and was issued against whatever address that run used: suspending THIS run's subscription cannot refuse it, its machine never claims a slot on this subscription, and on 2026-10-20 every such blob carried `http://localhost:4800`, which the worker cannot reach (vm:check runs vmc-10201012-3423b9, vmc-10201020-c4d45a, vmc-10201024-439377: assertions 02, 05-07, 09, 10, 14, 16 and 17 failed on a reused grand). The bash reused "the licensed repo already on the machine"; the port never does. Leg a issues the licence in-run when it is selected; otherwise `--seed-repo` runs leg a's issuance step (`repo create drill-repo -m drill-lic-1 --size 1G`) against the bridge-advertised gateway and asserts exit 0. It acts only when `--vm` is on the ops VM network (`vm_check.is_ops_vm_ip`, development-only machines per .claude/agents/ops-vms.md); without either, legs c-e are refused by name.
+  8. EVERY MACHINE-SIDE READ IS SCOPED TO THIS RUN'S REPOSITORY GUID. The guid is the one entry `repository license-status` gains across the issuing create. The bash read `find ... | head -1` (ANY blob in the store) for the renewalUrl and `results[*]` across every blob for the renewal outcomes, so a stale blob of a deleted repo decided the leg. The installed blob is read by its exact path (`<store>/repos/<guid>/` or `<store>/datastores/*/repos/<guid>/`), it must be issued to THIS run's subscription, and the renewal assertions read only this guid's result; the other blobs' outcomes are printed as a note.
+  9. THE DRILL REMOVES WHAT IT SEEDED. At the end the seeded repo is deleted (`repo delete drill-repo -y`) and its licence state purged with `lib.purge_license_state_script`, which proves the guid is gone from renet's own enumeration first; both are assertions. Nothing outside this run's guid is touched. The bash left the repo and, through renet keeping a deleted repo's blobs, a blob that every later renewal retried.
+ 10. "NO RDC CONFIG" MEANS NO FILE. The bash tested `test ! -e ~/.config/rediacc`, so an empty directory (one sat on the ops worker since 2026-10-15) read as a config. The machine holds no config when no FILE exists under `/root/.config/rediacc` or `~/.config/rediacc`; the files found are printed.
 """
 
 from __future__ import annotations
@@ -58,6 +61,11 @@ MACHINE2_NAME = "drill-lic-2"
 DATASTORE_NAME = "drill-ds"
 FORK_TAG = "remeter"
 REPO_NAME = "drill-repo"
+# Exit 0 only when no FILE sits under either config home (Rule T 10); the files found are printed, so a failure names them.
+NO_CONFIG_PROBE = (
+    'found=$(sudo find /root/.config/rediacc "$HOME/.config/rediacc" -type f 2>/dev/null); '
+    'printf "%s\n" "$found"; test -z "$found"'
+)
 # Prints what is missing and exits 1, so a refusal names the gap rather than a bare exit code.
 CEPH_CLIENT_PROBE = (
     "test -f /etc/ceph/ceph.conf || { echo 'no /etc/ceph/ceph.conf'; exit 1; }; "
@@ -203,6 +211,10 @@ class License:
         self.ceph_available = False
         self.subscription_lapsed = False
         self.cap_lowered = False
+        # This run's licensed repository on --vm: set by leg a's create or by --seed-repo, and the scope of every machine-side read.
+        self.repo_guid = ""
+        self.seeded = False
+        self.seed_removed = False
 
     @property
     def work(self) -> pathlib.Path:
@@ -358,13 +370,9 @@ class License:
         raise SystemExit(1)
 
     def ensure_repo_present(self) -> None:
-        """Legs b-e operate on the licensed repository leg a creates. Selecting them without leg a is legitimate (the repo may survive from an earlier run), but it must be CHECKED."""
+        """Legs b-e operate on a licensed repository THIS run issued (Rule T 7): leg a creates it, `--seed-repo` creates it on an ops VM, and nothing else will do, since a repo an earlier run left belongs to another subscription."""
         o = self.o
         if o.enabled("a"):
-            return
-        guid = self.repo_status(o.vm_ip, "repositoryGuid")
-        if guid:
-            self.d.note("reusing the licensed repo already on %s (%s)" % (o.vm_ip, guid))
             return
         if o.seed_repo and not o.enabled("b"):
             if vm_check.is_ops_vm_ip(o.vm_ip):
@@ -374,17 +382,73 @@ class License:
                 "--seed-repo creates the repo only on an ops VM (%s.x); %s is not one, so it is left alone."
                 % (vm_check.OPS_VM_NETWORK, o.vm_ip)
             )
-        log.error("Legs b-e operate on a licensed repository, and %s has none." % o.vm_ip)
-        log.error("Leg a is what creates it, so there is nothing here to migrate, renew or meter.")
+        log.error(
+            "Legs b-e operate on a licensed repository this run issued, and %s has none." % o.vm_ip
+        )
+        log.error(
+            "Every run mints its own subscription, so a repo an earlier run left cannot stand in."
+        )
         log.error("Run leg a in the same invocation:  ./run.sh drill license --legs a,%s" % o.legs)
         raise SystemExit(1)
 
+    def status_entries(self, host: str) -> list[dict]:
+        """Every entry of `repository license-status --all-datastores` on `host` (stdout only); empty when it is not a JSON array."""
+        _, out = self.ssh_out(
+            host,
+            "sudo %s repository license-status --all-datastores --output json" % self.o.vm_renet,
+        )
+        parsed = wire.parse(out)
+        return [e for e in parsed if isinstance(e, dict)] if isinstance(parsed, list) else []
+
+    def status_guids(self, host: str) -> set[str]:
+        return {
+            wire.jstr(e["repositoryGuid"])
+            for e in self.status_entries(host)
+            if e.get("repositoryGuid")
+        }
+
+    def learn_repo_guid(self, before: set[str], desc: str) -> None:
+        """The issuing create added exactly one repository to the machine: its guid becomes the scope of every later machine-side read. Anything but exactly one new guid is a failed assertion, and the scope stays empty, so the legs after it fail rather than read a stranger's blob."""
+        d = self.d
+        added = sorted(self.status_guids(self.o.vm_ip) - before)
+        d.last_cmd = (
+            "renet repository license-status --all-datastores on %s (after the create)"
+            % self.o.vm_ip
+        )
+        d.assert_equal("1", str(len(added)), "%s (new: %s)" % (desc, ", ".join(added) or "none"))
+        self.repo_guid = added[0] if len(added) == 1 else ""
+        if self.repo_guid:
+            d.note("this run's licensed repository: %s" % self.repo_guid)
+
     def seed_licensed_repo(self) -> None:
-        """Leg a's issuance step on its own, for a basic fleet with no licensed repo (Rule T 7): the repo is created on the machine's default datastore, no Ceph."""
+        """Leg a's issuance step on its own, for a basic fleet (Rule T 7): the repo is created on the machine's default datastore, no Ceph, against the gateway address the machine can reach (`setup_gateway_address`)."""
         d = self.d
         d.step("Seeding the licensed repo on %s (--seed-repo)" % self.o.vm_ip)
+        before = self.status_guids(self.o.vm_ip)
         d.run([self.rdc, "repo", "create", REPO_NAME, "-m", MACHINE_NAME, "--size", "1G"])
         d.assert_exit(0, "a repo is created on the machine (issuance happens here)")
+        if d.code != 0:
+            return
+        self.seeded = True
+        self.learn_repo_guid(before, "the create added exactly one repository to the machine")
+
+    def remove_seeded_repo(self) -> None:
+        """Delete the repo `--seed-repo` created and purge its licence state (Rule T 9), both asserted; a no-op when nothing was seeded or it is already gone."""
+        d, o = self.d, self.o
+        if not self.seeded or self.seed_removed:
+            return
+        d.step("Removing the seeded repo and its licence state")
+        self.seed_removed = True
+        d.run([self.rdc, "repo", "delete", REPO_NAME, "-y"])
+        d.assert_exit(0, "the seeded repo is deleted")
+        if not self.repo_guid:
+            return
+        code, out = self.ssh_out(
+            o.vm_ip, "bash -s", stdin=lib.purge_license_state_script([self.repo_guid], o.vm_renet)
+        )
+        self.capture("purge the licence state of %s on %s" % (self.repo_guid, o.vm_ip), out)
+        d.code = code
+        d.assert_exit(0, "its licence state is purged once renet no longer lists it")
 
     def preflight_vms(self) -> None:
         """Which cluster is actually up, and therefore which legs can run."""
@@ -578,7 +642,30 @@ class License:
         d.note("renet provisioned on %s" % o.vm_ip)
 
     def teardown_hook(self) -> None:
-        """Restore anything the drill changed on the SUBSCRIPTION, because those edits outlive the work directory: a suspended subscription or a cap of 1 left behind makes the next run fail for a reason that has nothing to do with what it tests. The VMs are deliberately NOT torn down: they are the operator's."""
+        """Restore anything the drill changed on the SUBSCRIPTION, because those edits outlive the work directory: a suspended subscription or a cap of 1 left behind makes the next run fail for a reason that has nothing to do with what it tests. A repo `--seed-repo` created and the run did not get to remove (`remove_seeded_repo`) is deleted here too, with its licence state, and a failure is a warning. The VMs themselves are deliberately NOT torn down: they are the operator's."""
+        if self.seeded and not self.seed_removed:
+            # The run stopped before its own removal step; the fixture still goes, reported rather than asserted.
+            self.seed_removed = True
+            proc = subprocess.run(
+                [self.rdc, "repo", "delete", REPO_NAME, "-y"],
+                capture_output=True,
+                text=True,
+                env=self.d.cli_env(),
+                check=False,
+            )
+            if proc.returncode != 0:
+                log.warn("teardown: repo delete %s failed (exit %d)" % (REPO_NAME, proc.returncode))
+            elif self.repo_guid:
+                code, out = self.ssh_out(
+                    self.o.vm_ip,
+                    "bash -s",
+                    stdin=lib.purge_license_state_script([self.repo_guid], self.o.vm_renet),
+                )
+                if code != 0:
+                    log.warn(
+                        "teardown: purging the licence state of %s failed: %s"
+                        % (self.repo_guid, out.strip())
+                    )
         if self.admin_jar is None or not self.subscription_id:
             return
         if self.subscription_lapsed or self.cap_lowered:
@@ -595,15 +682,12 @@ class License:
     # ------------------------------------------------------------------ shared probes
 
     def repo_status(self, host: str, field: str) -> str:
-        """One field of the repo's licence status, read the way `rediacc_ci.private.license_e2e`'s `assert_status` reads it: the JSON array from `repository license-status`, first entry that has a repositoryGuid, stdout only."""
-        _, out = self.ssh_out(
-            host,
-            "sudo %s repository license-status --all-datastores --output json" % self.o.vm_renet,
-        )
-        parsed = wire.parse(out)
-        if not isinstance(parsed, list):
+        """One field of THIS run's repository's licence status (Rule T 8): the entry of `repository license-status` whose repositoryGuid is `repo_guid`, stdout only; empty when the guid is unknown or not listed. The bash took the first entry, which on a machine holding any other repository is a stranger's."""
+        if not self.repo_guid:
             return ""
-        entry = next((e for e in parsed if isinstance(e, dict) and e.get("repositoryGuid")), {})
+        entry = next(
+            (e for e in self.status_entries(host) if e.get("repositoryGuid") == self.repo_guid), {}
+        )
         return wire.jstr(entry.get(field, wire.MISSING))
 
     def meter_snapshot(self) -> str:
@@ -766,6 +850,7 @@ class License:
         d.assert_exit(0, "the datastore is attached to the machine")
 
         # Exactly ONE placement flag: --machine (docker, default datastore) XOR --datastore (named datastore).
+        existing = self.status_guids(o.vm_ip)
         d.run(
             [
                 self.rdc,
@@ -780,6 +865,7 @@ class License:
             ]
         )
         d.assert_exit(0, "a repo is created inside it (issuance happens here)")
+        self.learn_repo_guid(existing, "the create added exactly one repository to the machine")
 
         parent_status = self.repo_status(o.vm_ip, "status")
         parent_ds = self.repo_status(o.vm_ip, "datastoreId")
@@ -908,27 +994,79 @@ class License:
 
     # ------------------------------------------------------------------ leg c
 
-    def installed_renewal_url(self) -> str:
+    def installed_blobs(self) -> list[str]:
+        """The paths of this run's repository's installed blobs (Rule T 8): `<store>/repos/<guid>/*.json` and `<store>/datastores/*/repos/<guid>/*.json`, never any other repository's."""
+        if not self.repo_guid:
+            return []
         _, out = self.ssh_out(
             self.o.vm_ip,
-            "sudo find /var/lib/rediacc/license -name '*.json' -path '*/repos/*' | head -1 | xargs -r sudo cat",
+            "sudo find %s -type f -name '*.json' -path '*/repos/%s/*'"
+            % (lib.LICENSE_ROOT, self.repo_guid),
         )
-        parsed = wire.parse(out)
-        payload = wire.lookup(parsed, "payload")
+        return sorted(line.strip() for line in out.splitlines() if line.strip())
+
+    def installed_payload(self, path: str) -> dict:
+        """The decoded payload of the blob at `path`; empty when it cannot be read or decoded."""
+        _, out = self.ssh_out(self.o.vm_ip, "sudo cat '%s'" % path)
+        payload = wire.lookup(wire.parse(out), "payload")
         if not isinstance(payload, str):
-            return ""
+            return {}
         try:
-            return wire.jstr(json.loads(base64.b64decode(payload).decode()).get("renewalUrl"))
+            decoded = json.loads(base64.b64decode(payload).decode())
         except (ValueError, UnicodeDecodeError):
-            return ""
+            return {}
+        return decoded if isinstance(decoded, dict) else {}
+
+    def mine(self, results: object) -> list[dict]:
+        """This run's repository's entries among renewal results (Rule T 8)."""
+        if not isinstance(results, list) or not self.repo_guid:
+            return []
+        return [
+            r for r in results if isinstance(r, dict) and r.get("repositoryGuid") == self.repo_guid
+        ]
+
+    def note_others(self, results: object) -> None:
+        """The outcomes of every OTHER blob the renewal touched, said once so a machine full of stale blobs is visible without deciding the leg."""
+        if not isinstance(results, list):
+            return
+        others: dict[str, int] = {}
+        for r in results:
+            if isinstance(r, dict) and r.get("repositoryGuid") != self.repo_guid:
+                key = wire.jstr(r.get("outcome"))
+                others[key] = others.get(key, 0) + 1
+        if others:
+            self.d.note(
+                "other licences on the machine also answered (not this run's, not asserted): %s"
+                % ", ".join("%s=%d" % kv for kv in sorted(others.items()))
+            )
 
     def leg_c_credentialless_renewal(self) -> None:
         d, o = self.d, self.o
         d.step("Leg c: renewal driven only by the installed blob")
         # The blob is the credential AND the address book. If it carries no renewalUrl, or the machine cannot reach the one it carries, renewal cannot work: a finding about the deployment, asserted rather than worked around.
-        url = self.installed_renewal_url()
-        d.last_cmd = "read renewalUrl out of the installed blob on %s" % o.vm_ip
-        d.assert_not_equal("", url, "the installed blob carries a renewalUrl")
+        paths = self.installed_blobs()
+        d.last_cmd = "sudo find %s -path '*/repos/%s/*' on %s" % (
+            lib.LICENSE_ROOT,
+            self.repo_guid or "<no guid>",
+            o.vm_ip,
+        )
+        d.assert_equal(
+            "1",
+            str(len(paths)),
+            "this run's repository has exactly one installed blob (%s)"
+            % (", ".join(paths) or "none"),
+        )
+        payload = self.installed_payload(paths[0]) if len(paths) == 1 else {}
+        d.last_cmd = "read the installed blob %s on %s" % (paths[0] if paths else "<none>", o.vm_ip)
+        d.assert_equal(
+            self.subscription_id or "<no subscription>",
+            wire.jstr(payload.get("subscriptionId", "")),
+            "and it was issued to THIS run's subscription",
+        )
+        url = wire.jstr(payload.get("renewalUrl", ""))
+        d.assert_not_equal(
+            "", url, "the installed blob carries a renewalUrl (%s)" % (url or "none")
+        )
 
         health = url.removesuffix("/licenses/renew")
         self.ssh_run(
@@ -938,18 +1076,22 @@ class License:
         )
         d.assert_exit(0, "the machine can reach that URL (a localhost baseUrl would fail here)")
 
-        self.ssh_run(o.vm_ip, "test ! -e /root/.config/rediacc && test ! -e ~/.config/rediacc")
-        d.assert_exit(0, "the machine holds no rdc config and no account token")
+        self.ssh_run(o.vm_ip, NO_CONFIG_PROBE)
+        d.assert_exit(0, "the machine holds no rdc config and no account token (no file)")
 
         self.ssh_run(o.vm_ip, "sudo %s license renew --force --output json" % o.vm_renet)
         d.assert_exit(0, "renet license renew exits 0")
         results = self.stdout_field("results")
+        self.note_others(results)
+        mine = self.mine(results)
+        self.av(_result_any(mine, "outcome", "renewed"), True, "this run's licence was renewed")
         self.av(
-            _result_any(results, "outcome", "renewed"), True, "at least one licence was renewed"
+            bool(mine) and _result_none(mine, "outcome", "error"),
+            True,
+            "and its renewal did not error",
         )
-        self.av(_result_none(results, "outcome", "error"), True, "and nothing errored")
 
-        seq = renewed_sequence(results)
+        seq = renewed_sequence(mine)
         d.assert_not_equal("0", str(seq), "the renewed blob carries a fresh sequence (%d)" % seq)
 
     # ------------------------------------------------------------------ leg d
@@ -963,14 +1105,14 @@ class License:
 
         self.ssh_run(o.vm_ip, "sudo %s license renew --force --output json" % o.vm_renet)
         d.assert_exit(0, "renew still exits 0: one dead repo must not stop every other backup")
-        results = self.stdout_field("results")
+        mine = self.mine(self.stdout_field("results"))
         self.av(
-            _result_any(results, "outcome", "refused"),
+            _result_any(mine, "outcome", "refused"),
             True,
             "the refusal is reported per repository",
         )
         self.av(
-            _result_any(results, "code", "SUBSCRIPTION_LAPSED"),
+            _result_any(mine, "code", "SUBSCRIPTION_LAPSED"),
             True,
             "and carries the exact refusal code, not a generic failure",
         )
@@ -1012,7 +1154,7 @@ class License:
         self.ssh_run(o.vm_ip, "sudo %s license renew --force --output json" % o.vm_renet)
         d.assert_exit(0, "renew exits 0 while the subscription is over its cap")
         self.av(
-            _result_any(self.stdout_field("results"), "outcome", "renewed"),
+            _result_any(self.mine(self.stdout_field("results")), "outcome", "renewed"),
             True,
             "renewal SUCCEEDS over the cap (soft claim: meter honestly, never block)",
         )
@@ -1132,6 +1274,7 @@ class License:
         ):
             if o.enabled(leg):
                 fn()
+        self.remove_seeded_repo()
         return d.summary()
 
 

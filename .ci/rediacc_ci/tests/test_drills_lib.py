@@ -494,20 +494,55 @@ def test_restart_gateway_writes_to_log_path_and_the_log_outlives_the_work_dir(
     monkeypatch.setattr(drill, "note", lambda *_a: None)
     monkeypatch.setattr(drill, "step", lambda *_a: None)
     monkeypatch.setattr(drill, "wait_gateway_started", lambda *_a: None)
+    # The parent does not exist yet: restart_gateway creates it (review a0dabc98.3).
     log_path = tmp_path / "kept" / "gateway.log"
-    log_path.parent.mkdir()
     default_log = drill.gateway_log
     try:
         drill.restart_gateway(log_path=log_path)
         assert drill.gateway_proc is not None
         drill.gateway_proc.wait(timeout=30)
-        assert drill.gateway_log == log_path
+        assert drill.active_gateway_log == log_path
+        # The work-directory default is not overwritten by a one-call log_path (review a0dabc98.2).
+        assert drill.gateway_log == default_log
         drill.detach_gateway()
     finally:
         drill.teardown()
     assert "gateway-says-hello" in log_path.read_text()
     assert default_log is not None
     assert not default_log.exists()
+
+
+def test_a_bare_restart_after_a_log_path_restart_logs_to_the_work_dir_again(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review a0dabc98.2: `log_path` used to overwrite `gateway_log`, so the next bare restart wrote into the kept path."""
+    drill, _killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    kept = tmp_path / "kept" / "gateway.log"
+    try:
+        default_log = drill.gateway_log
+        drill.restart_gateway(log_path=kept)
+        drill.restart_gateway()
+        assert drill.active_gateway_log == default_log
+        assert drill.gateway_log == default_log
+    finally:
+        drill.teardown()
+
+
+def test_an_unwritable_log_path_fails_before_the_running_gateway_is_stopped(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review a0dabc98.3: the log is opened before `stop_gateway`, so a bad path leaves the old gateway up."""
+    drill, _killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    stopped: list[bool] = []
+    monkeypatch.setattr(drill, "stop_gateway", lambda: stopped.append(True))
+    blocker = tmp_path / "a-file"
+    blocker.write_text("")
+    try:
+        with pytest.raises(FileExistsError):
+            drill.restart_gateway(log_path=blocker / "gateway.log")
+        assert stopped == []
+    finally:
+        drill.teardown()
 
 
 def test_restart_gateway_without_log_path_keeps_the_work_dir_log(
@@ -794,3 +829,69 @@ def test_a_drill_request_does_not_follow_a_redirect_to_ftp():
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+# ---------------------------------------------------------------------- licence state purge
+
+PURGE_A = "0f3c5a52-1b2d-4c3e-9f40-5a6b7c8d9e0f"
+PURGE_B = "1f3c5a52-1b2d-4c3e-9f40-5a6b7c8d9e0f"
+
+
+def _run_purge(tmp_path: pathlib.Path, guids: list[str], listing: str, renet_rc: int = 0):
+    """Run the purge script under a fake `sudo` that answers `renet ...` with `listing` and records every `rm`."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    rm_log = tmp_path / "rm.log"
+    (bin_dir / "sudo").write_text(
+        "#!/bin/bash\n"
+        'if [ "$1" = renet ]; then printf "%%s" "$FAKE_LISTING"; exit %d; fi\n'
+        'if [ "$1" = rm ]; then shift; echo "$*" >> "%s"; exit 0; fi\n'
+        "exit 99\n" % (renet_rc, rm_log)
+    )
+    (bin_dir / "sudo").chmod(0o755)
+    env = {"PATH": "%s:/usr/bin:/bin" % bin_dir, "FAKE_LISTING": listing}
+    proc = subprocess.run(
+        ["bash", "-s"],
+        input=lib.purge_license_state_script(guids),
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    removed = rm_log.read_text().splitlines() if rm_log.exists() else []
+    return proc.returncode, proc.stdout, removed
+
+
+def test_purge_removes_an_unlisted_guid_by_its_exact_paths(tmp_path: pathlib.Path) -> None:
+    code, out, removed = _run_purge(tmp_path, [PURGE_A], '[{"repositoryGuid":"%s"}]' % PURGE_B)
+    assert code == 0
+    assert "PURGED %s" % PURGE_A in out
+    expected = (
+        f"-rf /var/lib/rediacc/license/repos/{PURGE_A} "
+        f"/var/lib/rediacc/license/datastores/*/repos/{PURGE_A} "
+        f"/var/lib/rediacc/license/failed/{PURGE_A}.json"
+    )
+    assert removed == [expected]
+
+
+def test_purge_keeps_a_guid_renet_still_lists(tmp_path: pathlib.Path) -> None:
+    code, out, removed = _run_purge(
+        tmp_path, [PURGE_A, PURGE_B], '[{"repositoryGuid":"%s"}]' % PURGE_A
+    )
+    assert code == 1
+    assert "KEPT %s" % PURGE_A in out
+    assert "PURGED %s" % PURGE_B in out
+    assert all(PURGE_A not in line for line in removed)
+
+
+def test_purge_removes_nothing_when_renet_cannot_enumerate(tmp_path: pathlib.Path) -> None:
+    code, out, removed = _run_purge(tmp_path, [PURGE_A], "", renet_rc=1)
+    assert code == 1
+    assert "nothing is proven dead" in out
+    assert removed == []
+
+
+@pytest.mark.parametrize("bad", ["", "../etc", "%s; rm -rf /" % PURGE_A, PURGE_A.upper(), "*"])
+def test_purge_refuses_anything_but_a_lowercase_guid(bad: str) -> None:
+    with pytest.raises(ValueError, match="not a repository guid"):
+        lib.purge_license_state_script([PURGE_A, bad])
