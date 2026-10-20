@@ -33,6 +33,14 @@
       "reason": "Concurrent unit-duration artifact zip downloads from the GitHub REST API (several hundred per ten-run sample); it matches VARIANT_LOG_WORKERS and bounds requests in flight, not cores."
     },
     {
+      "file": ".ci/rediacc_ci/ci/budget_report.py",
+      "match": "JOB_FETCH_WORKERS = 8",
+      "width": 8,
+      "kind": "io",
+      "limit": "GitHub REST API job-list reads, under GitHub's secondary rate limits on concurrent requests",
+      "reason": "Each sampled run's jobs are listed by a paged gh api call; fetched in parallel so budget-freshness fits its cap under load. The width bounds requests in flight against GitHub, not local cores."
+    },
+    {
       "file": ".ci/rediacc_ci/ci/gate_ledger.py",
       "match": "CI_FOLD_WORKERS = 6",
       "width": 6,
