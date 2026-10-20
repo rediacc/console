@@ -1,7 +1,6 @@
 # PLAN: one backup program: S3/R2 chunk store only, safe restores and retention, GUID-only repo identity, clean renet daemons, an offline plane, gated tests, and a live cutover of hostinger to rediacc-backups-eu
 
 Status: approved -- operator 2026-10-15 ("make a new plan file with boxes", "last steps should be real backup from hostinger to eu R2"); in ## Generated, promoted later by the operator
-Writers: none -- operator 2026-10-15: not on PR #600's round; delete this line to release the plan
 Depends-On: PLAN-shell-sandbox-readonly-view.md, PLAN-account-vm-check.md
 Priority: P1 -- hostinger has had no backup since 2026-08-14, and a restore can overwrite its own source
 Concurrency: exclusive -- one program across renet, account, CLI and shared; writers inside it take disjoint per-box Owns
