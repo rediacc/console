@@ -866,3 +866,27 @@ def test_the_default_asked_check_reads_the_lead_transcript(tmp_path, monkeypatch
     assert P.default_asked_ok("ASKED:2026-10-08T10:30Z") is False
     monkeypatch.setattr(roster, "session_subagents_dir", lambda *_a: None)
     assert P.default_asked_ok(ASKED) is False
+
+
+def test_duplicate_roots_needs_a_title_and_a_line():
+    """A finding with no title, or no line, has no identifiable copies: neither an empty title nor a pair of lineless roots counts as a duplicate (PR #600 review F1, F2)."""
+    finding = {
+        "path": "a.py",
+        "line": 2,
+        "severity": "high",
+        "title": "guard the empty list",
+        "body": "",
+    }
+    root = inline_root(900, finding)
+    other_same = dict(root, id=901)
+    other_unrelated = dict(inline_root(902, dict(finding, title="something else")), id=902)
+    assert [
+        c["id"] for c in P.duplicate_roots(finding, root, [root, other_same, other_unrelated])
+    ] == [901]
+    assert (
+        P.duplicate_roots(dict(finding, title=""), root, [root, other_same, other_unrelated]) == []
+    )
+    lineless = dict(finding, line=None)
+    outdated_a = dict(root, line=None, id=903)
+    outdated_b = dict(root, line=None, id=904)
+    assert P.duplicate_roots(lineless, outdated_a, [outdated_a, outdated_b]) == []

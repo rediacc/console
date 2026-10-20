@@ -351,6 +351,10 @@ def match_inline(findings: list[dict], inline: list[dict]) -> dict[int, dict]:
 def duplicate_roots(finding: dict, root: dict, inline: list[dict]) -> list[dict]:
     """The other github-actions root comments that mirror the same finding as `root`: same path, same line, and the finding's title in the body."""
     title = str(finding.get("title") or "")
+    line = finding.get("line")
+    # Without a title or a line nothing identifies a copy: an empty title would match every root at that path and line, and a lineless finding would match every outdated (lineless) root (PR #600 review F1, F2).
+    if not title or line in (None, ""):
+        return []
     return [
         c
         for c in inline
@@ -358,8 +362,9 @@ def duplicate_roots(finding: dict, root: dict, inline: list[dict]) -> list[dict]
         and c.get("in_reply_to_id") is None
         and BOT_LOGIN in _login(c)
         and c.get("path") == finding.get("path")
-        and str(_line_of(c)) == str(finding.get("line"))
-        and (not title or title in (c.get("body") or ""))
+        and _line_of(c) not in (None, "")
+        and str(_line_of(c)) == str(line)
+        and title in (c.get("body") or "")
     ]
 
 
