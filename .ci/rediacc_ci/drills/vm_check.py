@@ -97,6 +97,8 @@ OPS_VM_NETWORK = "192.168.111"
 GRAND_SIZE = "2G"
 # The CLI's refusal when the worker's datastore was never prepared ("Machine '<ip>' datastore at /mnt/rediacc is not BTRFS").
 NO_DATASTORE = "is not BTRFS"
+# The CLI's refusal when the config still lists the repo: `ops down` destroys the VMs (and the grand with them) but the local config keeps the entry (VC7(b), 2026-10-20).
+STALE_CONFIG_ENTRY = "already exists in config"
 
 TAG_PREFIX = "vmc"
 STALE_FORK_S = 3600
@@ -1636,6 +1638,46 @@ class VmCheck:
             )
         )
         res = self.rdc(*args, timeout=1800)
+        forgot = ""
+        if res.rc != 0 and STALE_CONFIG_ENTRY in rdc_failure(res):
+            # The grand is absent on the worker but the config still lists it. `repo delete --archive-config` converges to absent: with the image gone it skips the machine, archives the config entry (freeing the name) and removes the repo's SSH config entry and key.
+            first = res
+            forget_args = ("repo", "delete", self.opts.parent, "--archive-config", "-y")
+            self.say(
+                "        config still lists %s though %s has no such grand; forgetting it with ./rdc.sh %s"
+                % (self.opts.parent, self.machine, " ".join(forget_args))
+            )
+            forget = self.rdc(*forget_args, timeout=600)
+            if forget.rc != 0:
+                raise NotVerifiedError(
+                    "parent-grand-missing",
+                    "no grand %s on %s, the config lists it, and forgetting it failed: ./rdc.sh %s rc=%d: %s (after ./rdc.sh %s rc=%d: %s)"
+                    % (
+                        self.opts.parent,
+                        self.machine,
+                        " ".join(forget_args),
+                        forget.rc,
+                        rdc_failure(forget),
+                        " ".join(args),
+                        first.rc,
+                        rdc_failure(first),
+                    ),
+                )
+            forgot = "stale config entry forgotten with ./rdc.sh %s rc=0" % " ".join(forget_args)
+            res = self.rdc(*args, timeout=1800)
+            if res.rc != 0:
+                raise NotVerifiedError(
+                    "parent-grand-missing",
+                    "no grand %s on %s; ./rdc.sh %s rc=0 forgot the stale config entry, but creating it still failed: ./rdc.sh %s rc=%d: %s"
+                    % (
+                        self.opts.parent,
+                        self.machine,
+                        " ".join(forget_args),
+                        " ".join(args),
+                        res.rc,
+                        rdc_failure(res),
+                    ),
+                )
         if res.rc != 0 and NO_DATASTORE in rdc_failure(res):
             # A fresh ops VM has renet but no BTRFS datastore (2026-10-15 live run); preparing it is the same development-only step as the grand.
             self.say(
@@ -1672,7 +1714,11 @@ class VmCheck:
             res,
             evidence="; ".join(
                 e
-                for e in ("./rdc.sh %s rc=0 in %d s" % (" ".join(args), res.ms // 1000), sweep)
+                for e in (
+                    forgot,
+                    "./rdc.sh %s rc=0 in %d s" % (" ".join(args), res.ms // 1000),
+                    sweep,
+                )
                 if e
             ),
         )
