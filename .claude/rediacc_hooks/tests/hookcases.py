@@ -3634,6 +3634,28 @@ STATIC: list[Case] = [
         bash_json('echo "PR_BRANCH_DATE_OK=1 gh pr create" && gh pr create --head 0825-2 -t x'),
         "stale-pr-branch CONTROL: the hatch quoted as prose opens nothing",
     ),
+    # A QUOTED NEIGHBOUR ASSIGNMENT: the turbo push guard demands `TURBO_PUSH_REASON='<kind>: <why>'` on the same `gh pr create`, and a value with spaces made the hatch unmatchable, so the two guards could not both be satisfied (2026-10-21).
+    case(
+        "check 0 guards/block_stale_pr_branch_date.py",
+        bash_json(
+            "PR_BRANCH_DATE_OK=1 TURBO_PUSH_REASON='ci-cd: a reason with spaces' gh pr create --head 0825-2 -t x"
+        ),
+        "stale-pr-branch: the hatch holds beside a quoted assignment after it",
+    ),
+    case(
+        "check 0 guards/block_stale_pr_branch_date.py",
+        bash_json(
+            "TURBO_PUSH_REASON='ci-cd: a reason with spaces' PR_BRANCH_DATE_OK=1 gh pr create --head 0825-2 -t x"
+        ),
+        "stale-pr-branch: the hatch holds beside a quoted assignment before it",
+    ),
+    case(
+        "check 2 guards/block_stale_pr_branch_date.py",
+        bash_json(
+            "TURBO_PUSH_REASON='ci-cd: a reason with spaces' gh pr create --head 0825-2 -t x"
+        ),
+        "stale-pr-branch CONTROL: a quoted assignment without the hatch opens nothing",
+    ),
     case(
         "check 2 guards/block_nondraft_pr_create.py",
         bash_json("cd private/renet && gh pr create --draft --title x"),
