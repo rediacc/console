@@ -557,7 +557,7 @@ def cmd_create(args: list[str]) -> int:
             log.error("Unknown option: %s" % arg)
             return 1
 
-    # The day is read once, so a run that crosses midnight cannot name the worktree after one day and number it after the next. WORKTREE_TODAY is the tests' frozen-day seam, checked as a real MMDD before anything runs.
+    # The day is read once, so a run that crosses midnight cannot name the worktree after one day and number it after the next. WORKTREE_TODAY is the tests' frozen-day seam, checked as MMDD (month 01-12, day 01-31; impossible days such as 0231 pass) before anything runs.
     day = os.environ.get("WORKTREE_TODAY") or time.strftime("%m%d")
     if not re.fullmatch(r"(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])", day, re.ASCII):
         log.error("WORKTREE_TODAY must be a month and day as MMDD, got %r" % day)

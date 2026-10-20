@@ -449,6 +449,8 @@ def test_create_names_the_worktree_after_the_seam_day(tmp_path: Path) -> None:
     result = fx.run_port(["create", "--no-devbox"], WORKTREE_TODAY="0229")
     assert result.rc == 0, result.err
     assert "0229-1" in fx.branches()
+    # Positive control for the refusal test below: a valid create does log a fetch in the form it scans for.
+    assert any(" fetch " in line for line in fx.call_log("git"))
 
 
 @pytest.mark.parametrize("day", ["../x", "1399", "0000", "\u0660\u0661\u0662\u0663"])
