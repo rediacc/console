@@ -74,24 +74,22 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 6 plans done, 51 of 242 boxes done (21%).
+Promoted: 0 of 5 plans done, 45 of 235 boxes done (19%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-remove-cross-session-messaging.md | 12/13 | 1 open |
 | 2 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 3 | PLAN-pins-command.md | 12/13 | 1 open |
-| 4 | PLAN-account-vm-check.md | 6/7 | 1 open |
-| 5 | PLAN-shell-sandbox-readonly-view.md | 6/7 | 1 open |
-| 6 | PLAN-backup-program.md | 0/186 | 186 open |
+| 4 | PLAN-shell-sandbox-readonly-view.md | 6/7 | 1 open |
+| 5 | PLAN-backup-program.md | 0/186 | 186 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: last box is Step 13 (ci:quick and the live Stop check)
 2. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
 3. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it
-4. agent/plans/PLAN-account-vm-check.md -- operator /ask 2026-10-15 (#c5305ed9: "Account drills via one runner", "Widen to deployed renet code"; on return "You can continue for the rest."): one vm:check runner, receipt and push guard prove renet, the CLI remote paths and private/account before a push; wave 1 (AV1-AV3) is written as patches now and lands with AV4/AV5 after PR #600 merges, since a schema-2 receipt alone would refuse every push <!-- style-ok -->
-5. agent/plans/PLAN-shell-sandbox-readonly-view.md -- operator /ask 2026-10-20T15:14Z ("bring its deps to the promoted area to start them first"): prerequisite of entry 6 (PLAN-backup-program), with entry 4; closes the cross-repo integrity hole where a repo key holder can re-mode or re-time another repo's files
-6. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (entry 4); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
+4. agent/plans/PLAN-shell-sandbox-readonly-view.md -- operator /ask 2026-10-20T15:14Z ("bring its deps to the promoted area to start them first"): prerequisite of entry 5 (PLAN-backup-program), beside PLAN-account-vm-check (done 2026-10-20); closes the cross-repo integrity hole where a repo key holder can re-mode or re-time another repo's files
+5. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
 
 ## Generated
 
