@@ -2140,7 +2140,7 @@ const CASES: Record<string, Case> = {
   },
   async notchecked(m) {
     // The npm family has no fixture entry, so it is NOT COMPARED; whether that is a refusal or NOT-CHECKED turns on private/renet, which its scope now reaches, being checked out.
-    const build = (): Fx => {
+    const build = (declared = 'private/renet'): Fx => {
       const fx = fixtureTree(() => {}, true);
       const file = path.join(fx.root, '.ci/config/pins.json');
       const reg = JSON.parse(fs.readFileSync(file, 'utf8')) as {
@@ -2157,14 +2157,17 @@ const CASES: Record<string, Case> = {
       fs.writeFileSync(file, `${JSON.stringify(reg, null, 2)}\n`);
       fs.writeFileSync(
         path.join(fx.root, '.gitmodules'),
-        '[submodule "private/renet"]\n\tpath = private/renet\n\turl = x\n'
+        `[submodule "${declared}"]\n\tpath = ${declared}\n\turl = x\n`
       );
       return fx;
     };
     const present = build();
     const absent = build();
     const human = build();
-    for (const t of [absent, human]) {
+    // An undeclared registry path is a plain empty directory, not an absent submodule.
+    const undeclared = build('private/other');
+    const named = build();
+    for (const t of [absent, human, undeclared, named]) {
       fs.rmSync(path.join(t.root, 'private/renet'), { recursive: true });
       fs.mkdirSync(path.join(t.root, 'private/renet'));
     }
@@ -2178,7 +2181,25 @@ const CASES: Record<string, Case> = {
       };
     const jp = parse(rp.out);
     const ja = parse(ra.out);
+    const ru = await runCli(['apply-soaked', '--json'], withMutant(undeclared, m));
+    const ju = parse(ru.out);
+    const rn = await runCli(['bump', 'npm'], withMutant(named, m));
     return [
+      {
+        // Red when a registry path .gitmodules does not declare is treated as an absent submodule.
+        name: 'apply-soaked: a pin reading an empty directory that .gitmodules does not declare is refused, not not_checked',
+        ok:
+          ru.rc !== 0 &&
+          ju.refused.some((r) => r.id === 'npm') &&
+          (ju.not_checked ?? []).length === 0,
+        detail: `rc=${ru.rc} ${ru.err}`,
+      },
+      {
+        // Red when an explicitly named pin on an absent submodule is reported not-checked instead of refused.
+        name: 'bump: an explicitly named pin reading an absent submodule is refused and fails the run',
+        ok: rn.rc !== 0 && !/NOT-CHECKED/.test(rn.err),
+        detail: `rc=${rn.rc} ${rn.err}`,
+      },
       {
         // Red when an absent submodule still fails the run, or leaves the pin out of the report.
         name: 'apply-soaked: a pin reading an absent submodule is not_checked and leaves the exit code alone',

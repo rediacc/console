@@ -353,6 +353,17 @@ def main() -> int:
     if egot != "  R2_ENDPOINT,\nx CLOUDFLARE_R2_ENDPOINT, y\n":
         print(f"✗ instrument control failed: exact-line anchor\n  got  {egot!r}", file=sys.stderr)
         return 1
+    # Control: every `==` anchor of the real table still matches a line of its file. An anchor whose line changed form (a trailing comment, a reflow) would otherwise stop protecting it silently and the line would be rewritten.
+    stale = []
+    for rel, anchors in KEEP_LINES.items():
+        f = ROOT / rel
+        lines = (
+            [ln.strip() for ln in f.read_text(encoding="utf-8").splitlines()] if f.is_file() else []
+        )
+        stale += [f"{rel}: {a}" for a in anchors if a.startswith("==") and a[2:] not in lines]
+    if stale:
+        print(f"✗ instrument control failed: stale exact-line anchor(s) {stale}", file=sys.stderr)
+        return 1
     walked = {q.relative_to(ROOT).as_posix() for q in files()}
     leaked = [q for q in walked if q.startswith(SKIP_PREFIXES)]
     if leaked or not any(q.startswith(".github/workflows/") for q in walked):
