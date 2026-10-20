@@ -107,13 +107,13 @@ Promoted: 0 of 4 plans done, 45 of 49 boxes done (91%).
 13. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
 14. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 15. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, in progress (6 of 7 boxes ticked)
-16. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
-17. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-18. agent/plans/PLAN-backup-program.md -- P1, approved, not started, dep-blocked
-19. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-20. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-21. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-22. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+16. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, in progress (10 of 11 boxes ticked)
+17. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
+18. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+19. agent/plans/PLAN-backup-program.md -- P1, approved, not started, dep-blocked
+20. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+21. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+22. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
 23. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
 24. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
 25. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
