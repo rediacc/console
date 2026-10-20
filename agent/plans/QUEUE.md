@@ -56,24 +56,19 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 <!-- queue:inflight:begin -->
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: build.
-- Branch: 1008-1, PR #600 open.
-- Plans on the PR (10):
-  - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-cd-errors-in-ci.md -- 6 of 6 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-plan-dependencies.md -- 12 of 12 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-- Work outside the PR's plans (2 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1328 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-  - epic 4e9f05b6, plan agent/plans/PLAN-backup-program.md, outside the set, 6 commit(s) on the branch, 0 open item(s): backup program: chunk store only, safe restore and retention, GUID identity, renet daemons, offline plane, gates, hostinger cutover
+- Branch: 1020-1, no PR yet.
+- Plans on the PR (6):
+  - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-pins-command.md -- 12 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-credential-isolation.md -- 7 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Work outside the PR's plans (1 epic(s)):
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 7 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
 - Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 3: #1f230501 (worker:2327682, d778be9d), #6361fc5b (worker:buha0nvdx, d778be9d), #f6fe02a8 (worker:buha0nvdx, d778be9d).
-- Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
+- Leased items: 4: #6361fc5b (worker:b7sxk19mb, d778be9d), #be1f8010 (worker:348019, d778be9d), #c275adc4 (worker:b46b70qfz, d778be9d), #f6fe02a8 (worker:b7sxk19mb, d778be9d).
+- Next plan: agent/plans/PLAN-vm-check.md, Generated entry 13 (no Promoted entry ahead of it has an open box); starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
@@ -138,7 +133,7 @@ Promoted: 13 of 17 plans done, 194 of 204 boxes done (95%).
 13. agent/plans/PLAN-vm-check.md -- P1, approved, in progress (5 of 8 boxes ticked)
 14. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
 15. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-16. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, in progress (5 of 7 boxes ticked)
+16. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, in progress (6 of 7 boxes ticked)
 17. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
 18. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 19. agent/plans/PLAN-backup-program.md -- P1, approved, not started, dep-blocked
