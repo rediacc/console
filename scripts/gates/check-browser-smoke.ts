@@ -45,6 +45,36 @@ const ROUTES = [
   '/ja/',
 ];
 
+/**
+ * Open the language menu and wait for its options, instead of counting once.
+ *
+ * RACE FIXED: the island's click handler attaches at hydration and the options render a frame after the click. Under a loaded machine (the full `ci:quick`) a single immediate `count()` read 0 while the same gate alone read 2+. Poll up to `waitMs` for at least two options; if none appear, click once more (a click that landed before hydration is inert) and poll again. A menu that really has fewer than two options still returns that count, after the bounded wait, so the finding is kept.
+ */
+async function openLangMenu(
+  page: import('playwright').Page,
+  waitMs = 5_000,
+  triggerSel = '.language-trigger-icon',
+  optionSel = '.language-option'
+): Promise<number> {
+  const count = () => page.locator(optionSel).count();
+  const poll = async (): Promise<number> => {
+    const deadline = Date.now() + waitMs;
+    let n = await count();
+    while (n < 2 && Date.now() < deadline) {
+      await page.waitForTimeout(100);
+      n = await count();
+    }
+    return n;
+  };
+  await page.locator(triggerSel).first().click();
+  let n = await poll();
+  if (n < 2) {
+    await page.locator(triggerSel).first().click();
+    n = await poll();
+  }
+  return n;
+}
+
 interface Finding {
   route: string;
   kind: string;
@@ -183,8 +213,7 @@ async function main(): Promise<void> {
       // The language switcher is an island: if it fails to hydrate, the trigger is inert and the visitor is stranded in one locale. Assert the whole path, not its markup.
       const hasTrigger = await page.locator('.language-trigger-icon').count();
       if (hasTrigger > 0) {
-        await page.locator('.language-trigger-icon').first().click();
-        const opts = await page.locator('.language-option').count();
+        const opts = await openLangMenu(page);
         if (opts < 2) {
           findings.push({
             route,
@@ -210,6 +239,31 @@ async function main(): Promise<void> {
     }
 
     if (selftest) {
+      // CONTROLS for the language-menu wait. (a) options that render 700ms after the click must be SEEN; (b) a menu that truly has no options must still be REPORTED as fewer than two.
+      const late = await browser.newPage();
+      await late.setContent(
+        `<button class="language-trigger-icon" onclick="setTimeout(()=>{document.body.insertAdjacentHTML('beforeend','<a class=language-option>a</a><a class=language-option>b</a>')},700)">x</button>`
+      );
+      const lateN = await openLangMenu(late, 3_000);
+      await late.close();
+      const empty = await browser.newPage();
+      await empty.setContent('<button class="language-trigger-icon">x</button>');
+      const emptyN = await openLangMenu(empty, 600);
+      await empty.close();
+      const lateOk = lateN >= 2;
+      const emptyOk = emptyN < 2;
+      console.log(
+        `  ${lateOk ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  CONTROL: late-rendering lang options are waited for (${lateN})`
+      );
+      console.log(
+        `  ${emptyOk ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  CONTROL: an empty lang menu is still reported (${emptyN})`
+      );
+      if (!lateOk || !emptyOk) {
+        await browser.close();
+        await close();
+        process.exit(1);
+      }
+
       // CONTROL: a page whose island is deliberately broken must be REPORTED, or a green run here means nothing. Inject a throwing script and require a console finding.
       const page = await browser.newPage();
       const seen: string[] = [];
