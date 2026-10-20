@@ -2645,7 +2645,7 @@
       ]
     },
     "agent/plans/_done/PLAN-deferred-findings-block-merge.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-20",
@@ -3222,7 +3222,7 @@
       ]
     },
     "agent/plans/_done/PLAN-lessons-registry.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-20",
@@ -3472,7 +3472,7 @@
       ]
     },
     "agent/plans/_done/PLAN-plan-dependencies.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-20",
@@ -3834,7 +3834,7 @@
       ]
     },
     "agent/plans/_done/PLAN-retire-bash-oracles.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-20",
@@ -3896,7 +3896,7 @@
       ]
     },
     "agent/plans/_done/PLAN-scope-mirrors.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-20",
@@ -4138,7 +4138,7 @@
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-retro-20260924.md": {
-      "status": "ready",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-20",
