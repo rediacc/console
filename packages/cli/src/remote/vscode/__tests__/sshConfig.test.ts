@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,9 +12,12 @@ vi.mock('../../utils/platform.js', async () => {
 });
 
 // Now import the functions under test AFTER mock is registered.
-const { addMachineSSHConfigEntry, addSSHConfigEntry, removeMachineSSHConfigEntry } = await import(
-  '../sshConfig.js'
-);
+const {
+  addMachineSSHConfigEntry,
+  addSSHConfigEntry,
+  removeMachineSSHConfigEntry,
+  removeSSHConfigEntry,
+} = await import('../sshConfig.js');
 
 let tmpHome: string;
 
@@ -114,5 +117,70 @@ describe('addMachineSSHConfigEntry', () => {
     const content = readConfigFile();
     expect(content).toContain('Host rediacc-myteam-m1');
     expect(content).toContain('Host rediacc--m1');
+  });
+});
+
+describe('removeSSHConfigEntry key cleanup', () => {
+  const keysDir = () => join(tmpHome, '.ssh', 'rediacc_keys');
+  function writeKey(name: string, content = 'KEY'): string {
+    mkdirSync(keysDir(), { recursive: true });
+    const p = join(keysDir(), name);
+    writeFileSync(p, content);
+    return p;
+  }
+  function addHost(host: string, identityFile: string, known?: string): void {
+    addSSHConfigEntry({
+      host,
+      hostname: '1.2.3.4',
+      user: 'u',
+      port: 22,
+      identityFile,
+      userKnownHostsFile: known ?? '',
+    });
+  }
+
+  it('removes the per-repo key the removed block names', () => {
+    const key = writeKey('_ops-worker_vmcheck-base_vc0a');
+    addHost('rediacc--ops-worker-vc0a', key);
+    removeSSHConfigEntry('rediacc--ops-worker-vc0a');
+    expect(existsSync(key)).toBe(false);
+    expect(readConfigFile()).not.toContain('rediacc--ops-worker-vc0a');
+  });
+
+  it('keeps a key another remaining block still uses', () => {
+    const key = writeKey('shared_key');
+    addHost('rediacc-a', key);
+    addHost('rediacc-b', key);
+    removeSSHConfigEntry('rediacc-a');
+    expect(existsSync(key)).toBe(true);
+    removeSSHConfigEntry('rediacc-b');
+    expect(existsSync(key)).toBe(false);
+  });
+
+  it('never removes the shared known_hosts file', () => {
+    const key = writeKey('t_m_r');
+    const hosts = writeKey('t_m_known_hosts');
+    addHost('rediacc-t-m-r', key, hosts);
+    removeSSHConfigEntry('rediacc-t-m-r');
+    expect(existsSync(key)).toBe(false);
+    expect(existsSync(hosts)).toBe(true);
+  });
+
+  it('never removes a file outside rediacc_keys', () => {
+    const outside = join(tmpHome, 'id_ed25519');
+    writeFileSync(outside, 'USERKEY');
+    addHost('rediacc-x', outside);
+    removeSSHConfigEntry('rediacc-x');
+    expect(existsSync(outside)).toBe(true);
+  });
+
+  it('never removes a same-named file from a lookalike directory', () => {
+    const other = join(tmpHome, 'elsewhere', 'rediacc_keys');
+    mkdirSync(other, { recursive: true });
+    const file = join(other, 'k');
+    writeFileSync(file, 'X');
+    addHost('rediacc-y', file);
+    removeSSHConfigEntry('rediacc-y');
+    expect(existsSync(file)).toBe(true);
   });
 });

@@ -3,11 +3,12 @@
  * Ported from desktop/src/cli/core/vscode_shared.py
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { getSSHHome } from '../utils/platform.js';
 import { buildMachineEnvironment, buildRepositoryEnvironment } from './envCompose.js';
+import { getKeysDirectory, normalizePathForSSH } from './keyPersistence.js';
 import type { SSHConfigEntry } from './types.js';
 
 /**
@@ -158,10 +159,43 @@ export function removeSSHConfigEntry(host: string): void {
   const content = readFileSync(configPath, 'utf8');
   const hosts = parseSSHConfig(content);
 
-  if (hosts.has(host)) {
+  const removed = hosts.get(host);
+  if (removed !== undefined) {
     hosts.delete(host);
     const newContent = `${Array.from(hosts.values()).join('\n\n')}\n`;
     writeFileSync(configPath, newContent, { mode: 0o600 });
+    removeOrphanedIdentityKey(removed, Array.from(hosts.values()));
+  }
+}
+
+function readIdentityFile(block: string): string | undefined {
+  for (const line of block.split('\n')) {
+    const match = /^\s*IdentityFile\s+(.+?)\s*$/i.exec(line);
+    if (match) return match[1].replace(/^"(.*)"$/, '$1');
+  }
+  return undefined;
+}
+
+/**
+ * Deletes the per-repo key a removed block's IdentityFile named, only when it
+ * lives directly in the rediacc_keys directory, is not a known_hosts file, and
+ * no remaining block still references it.
+ */
+function removeOrphanedIdentityKey(removedBlock: string, remainingBlocks: string[]): void {
+  const identity = readIdentityFile(removedBlock);
+  if (!identity) return;
+  const normalized = identity.replaceAll('\\', '/');
+  const keysDir = normalizePathForSSH(getKeysDirectory()).replaceAll('\\', '/');
+  const name = basename(normalized);
+  if (!name || name.endsWith('_known_hosts') || dirname(normalized) !== keysDir) return;
+  const stillUsed = remainingBlocks.some(
+    (b) => readIdentityFile(b)?.replaceAll('\\', '/') === normalized
+  );
+  if (stillUsed) return;
+  try {
+    unlinkSync(join(getKeysDirectory(), name));
+  } catch {
+    // Missing or unremovable key: nothing to clean
   }
 }
 
