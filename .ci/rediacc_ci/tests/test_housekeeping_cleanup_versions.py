@@ -159,9 +159,51 @@ emit(answer("curl"))
 """
 )
 
+# THE PREFIX LISTINGS. The port lists with `aws s3api list-objects-v2 --bucket B --prefix P [--delimiter /]` (no `--query`), where the frozen twin ran `aws s3 ls s3://B/P [--recursive]`. The twin's goldens are keyed by the fixture, so the fixtures keep their `s3 ls` rules, and this fake answers the new call from them: it rebuilds the twin's argv for rule matching, ignores the matched rule's status (the twin discarded it with `|| true`) and turns the `s3 ls` text into the JSON `list-objects-v2` prints. A case that needs the NEW behaviour (an empty prefix, a 403, several pages) puts rules under the fixture key `aws_list`, matched against the new argv and emitted verbatim, which wins.
 FAKE_AWS = (
     _FAKE_HEAD
     + """
+def s3_ls_text_as_json(text, prefix, recursive):
+    base = prefix[: prefix.rfind("/") + 1]
+    prefixes, contents = [], []
+    for line in text.splitlines():
+        fields = line.split()
+        if len(fields) >= 2 and fields[0] == "PRE":
+            prefixes.append({"Prefix": base + fields[1]})
+        elif len(fields) >= 4:
+            key = fields[3]
+            if not recursive and not key.startswith(base):
+                key = base + key
+            contents.append(
+                {
+                    "Key": key,
+                    "LastModified": fields[0] + "T" + fields[1] + "+00:00",
+                    "Size": int(fields[2]),
+                }
+            )
+    doc = {}
+    if prefixes:
+        doc["CommonPrefixes"] = prefixes
+    if contents:
+        doc["Contents"] = contents
+    return json.dumps(doc) if doc else ""
+
+
+if ARGV[:2] == ["s3api", "list-objects-v2"] and "--query" not in ARGV:
+    for entry in FIXTURE.get("aws_list", []):
+        if all(needle in JOINED for needle in entry["match"]):
+            emit(entry)
+    bucket = ARGV[ARGV.index("--bucket") + 1]
+    prefix = ARGV[ARGV.index("--prefix") + 1]
+    recursive = "--delimiter" not in ARGV
+    twin_argv = ["s3", "ls", "s3://%s/%s" % (bucket, prefix)]
+    if recursive:
+        twin_argv.append("--recursive")
+    twin_argv += ["--endpoint-url", ARGV[ARGV.index("--endpoint-url") + 1]]
+    JOINED = " ".join(twin_argv)
+    rule = answer("aws")
+    emit({"rc": 0, "raw": s3_ls_text_as_json(rule.get("raw") or "", prefix, recursive)})
+
 emit(answer("aws"))
 """
 )
@@ -356,6 +398,20 @@ def _run_live(
     return proc.returncode, proc.stdout, proc.stderr, calls
 
 
+def _listing_call_as_s3_ls(call: str) -> str:
+    """The port's `aws s3api list-objects-v2 --bucket B --prefix P [--delimiter /] --endpoint-url E --output json` is the twin's `aws s3 ls s3://B/P [--recursive] --endpoint-url E`; every other call line is returned unchanged."""
+    parts = call.split("\t")
+    if parts[:3] != ["aws", "s3api", "list-objects-v2"] or "--query" in parts:
+        return call
+    bucket = parts[parts.index("--bucket") + 1]
+    prefix = parts[parts.index("--prefix") + 1]
+    endpoint = parts[parts.index("--endpoint-url") + 1]
+    out = ["aws", "s3", "ls", "s3://%s/%s" % (bucket, prefix)]
+    if "--delimiter" not in parts:
+        out.append("--recursive")
+    return "\t".join([*out, "--endpoint-url", endpoint])
+
+
 def sides(
     phase: str,
     *,
@@ -378,6 +434,7 @@ def sides(
             base.mkdir(parents=True)
             results.append(_run(side, phase, argv, fixture, dict(env or {}), base))
     old, new = results
+    new = (new[0], new[1], new[2], [_listing_call_as_s3_ls(c) for c in new[3]])
     if port_delta is not None:
         new = port_delta(new)
     assert new[0] == old[0], "%s: exit diverged: twin %r port %r\n twin err: %s\n port err: %s" % (
@@ -2604,7 +2661,148 @@ def test_phase_8e_reports_a_failed_upload_listing_instead_of_calling_it_idle() -
         "8e: could not list multipart uploads in bucket %s (aws exit 255)" % RELEASES_BUCKET in err
     )
     assert "no ongoing multipart uploads" not in err
-    # The latch is read at the single exit point (`run_all_phases`), not by a lone phase.
+    # The latch is read at the single exit point (`run_all_phases`), not by a lone phase, so the same fixture goes through it.
+    full = _port_only(
+        "run_all_phases",
+        fixture=r2_fixture(
+            rule("list-multipart-uploads", rc=255, stderr="An error occurred (403)"),
+        ),
+    )
+    assert full[0] == 1
+    assert "Housekeeping FAILED" in full[2].decode()
+
+
+def _listing_fixture(*list_rules: dict) -> dict:
+    """`r2_fixture` with `aws_list` rules (answers to the port's `list-objects-v2` listing, emitted verbatim)."""
+    fixture = r2_fixture()
+    fixture["aws_list"] = list(list_rules)
+    return fixture
+
+
+def _rm_calls(calls: list[str]) -> list[list[str]]:
+    return [
+        c for c in calls_of(calls, "aws") if c[:2] in (["s3", "rm"], ["s3api", "delete-object"])
+    ]
+
+
+def test_delta_phase_8_an_empty_prefix_is_empty_and_is_not_a_failure() -> None:
+    """`aws s3 ls` exited 1 on an empty prefix; `list-objects-v2` exits 0 with no `Contents`, which is an empty listing and fails nothing."""
+    result = _port_only(
+        "cleanup_r2",
+        fixture=_listing_fixture(rule("list-objects-v2", raw="")),
+    )
+    err = result[2].decode()
+    assert result[0] == 0
+    assert "could not list" not in err
+    assert _rm_calls(result[3]) == []
+
+
+def test_delta_phase_8_a_403_listing_latches_the_run_and_deletes_nothing() -> None:
+    """A listing that fails read as "empty" and housekeeping reported a clean sweep it never performed (worklist #42f586e2)."""
+    result = _port_only(
+        "run_all_phases",
+        fixture=_listing_fixture(
+            rule("list-objects-v2", rc=255, stderr="An error occurred (AccessDenied) 403\n")
+        ),
+    )
+    err = result[2].decode()
+    assert "Phase 8: could not list s3://%s/cli/ (aws exit 255" % RELEASES_BUCKET in err
+    assert "AccessDenied" in err
+    assert "8f: deleted 0 stale npm tarball(s)" in err
+    assert _rm_calls(result[3]) == []
+    assert "Housekeeping FAILED" in err
+    assert result[0] == 1
+
+
+def test_delta_phase_8_a_403_on_the_8f_recursive_listing_deletes_no_tarball() -> None:
+    root = "npm/stable/"
+    result = _port_only(
+        "cleanup_r2",
+        fixture=_listing_fixture(
+            rule(
+                "--prefix",
+                root,
+                "--delimiter",
+                raw=json.dumps(
+                    {
+                        "Contents": [
+                            {
+                                "Key": root + "x",
+                                "LastModified": "2026-01-01T00:00:00+00:00",
+                                "Size": 1,
+                            }
+                        ]
+                    }
+                ),
+            ),
+            rule("--prefix", root, rc=255, stderr="403\n"),
+        ),
+    )
+    err = result[2].decode()
+    assert "could not list s3://%s/%s (aws exit 255" % (RELEASES_BUCKET, root) in err
+    assert _rm_calls(result[3]) == []
+
+
+def test_delta_phase_8_a_failed_age_read_latches_and_holds_the_prefix() -> None:
+    result = _port_only(
+        "cleanup_r2",
+        fixture=r2_fixture(
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("dryrun-abc/")),
+            rule("--prefix cli/dryrun-abc/", rc=255, stderr="403\n"),
+        ),
+    )
+    err = result[2].decode()
+    assert (
+        "could not read the age of s3://%s/cli/dryrun-abc/ (aws exit 255)" % RELEASES_BUCKET in err
+    )
+    assert _rm_calls(result[3]) == []
+
+
+def test_delta_phase_8_a_paginated_listing_returns_every_key() -> None:
+    """Several JSON documents (one per page) are merged, and every key reaches the 8f retention window."""
+    root = "npm/stable/"
+
+    def page(*versions: str) -> str:
+        return json.dumps(
+            {
+                "Contents": [
+                    {
+                        "Key": "%srediacc-cli-%s.tgz" % (root, v),
+                        "LastModified": "2026-01-01T00:00:00+00:00",
+                        "Size": 12,
+                    }
+                    for v in versions
+                ]
+            }
+        )
+
+    versions = ["1.0.%d" % i for i in range(25)]
+    body = page(*versions[:10]) + "\n" + page(*versions[10:20]) + "\n" + page(*versions[20:]) + "\n"
+    result = _port_only(
+        "cleanup_r2",
+        argv=("--dry-run",),
+        fixture=_listing_fixture(rule("--prefix", root, raw=body)),
+    )
+    err = result[2].decode()
+    # 25 semvers, keep the top 20: 1.0.0 .. 1.0.4 are outside the window, wherever their page was.
+    for v in versions[:5]:
+        assert "rediacc-cli-%s.tgz" % v in err
+    assert "rediacc-cli-1.0.5.tgz (v1.0.5" not in err
+    assert "8f: would delete 5 stale npm tarball(s)" in err
+
+
+def test_delta_phase_8_the_listing_is_s3api_and_never_s3_ls() -> None:
+    result = _port_only("cleanup_r2", fixture=_listing_fixture())
+    aws = calls_of(result[3], "aws")
+    assert not [c for c in aws if c[:2] == ["s3", "ls"]]
+    assert next(c for c in aws if "--delimiter" in c)[:6] == [
+        "s3api",
+        "list-objects-v2",
+        "--bucket",
+        RELEASES_BUCKET,
+        "--prefix",
+        "cli/",
+    ]
 
 
 def test_phase_8_dry_run_summaries_say_would() -> None:
@@ -3751,7 +3949,7 @@ def test_run_all_phases_exits_1_once_at_the_end_when_a_phase_latched() -> None:
         env=dict(R2_ENV, GITHUB_ACTIONS="true"),
         port_delta=_phase_10_delta,
     )
-    # The latch is read at the single exit point (`run_all_phases`), not by a lone phase.
+    assert result[0] == 1
     err = result[2].decode()
     assert "drift: cli/v9.0.0/.released exists but git tag v9.0.0 missing" in err
     assert "Housekeeping FAILED: see the ::error annotations above." in err
@@ -3796,7 +3994,7 @@ def test_the_guards_refuse_in_the_twins_order() -> None:
 def test_an_unset_gh_token_refuses_before_any_phase_runs() -> None:
     result = sides("cleanup_releases", env={"GH_TOKEN": ""})
     assert b"Required environment variable 'GH_TOKEN' is not set" in result[2]
-    # The latch is read at the single exit point (`run_all_phases`), not by a lone phase.
+    assert result[0] == 1
     assert result[3] == []
 
 

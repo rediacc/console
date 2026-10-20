@@ -109,6 +109,7 @@ Exit: 0 on every path except a latched failure (1, from `run_all_phases` after e
 
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import re
@@ -915,6 +916,58 @@ def _awk_pre_field(line: str, pattern) -> str:
         return ""
     fields = line.split()
     return fields[1] if len(fields) > 1 else ""
+
+
+def _json_documents(raw: str) -> list[dict] | None:
+    """Every JSON document in `raw` (the CLI prints one; a paginated stream may print several). `None` when any of it is not JSON. Empty output and `null` are an empty listing."""
+    decoder = json.JSONDecoder()
+    docs: list[dict] = []
+    pos = 0
+    while True:
+        while pos < len(raw) and raw[pos].isspace():
+            pos += 1
+        if pos >= len(raw):
+            return docs
+        try:
+            value, pos = decoder.raw_decode(raw, pos)
+        except ValueError:
+            return None
+        if isinstance(value, dict):
+            docs.append(value)
+        elif value is not None:
+            return None
+
+
+def _render_s3_ls(pages: list[dict], prefix: str, *, recursive: bool) -> str:
+    """The pages as `aws s3 ls` text; see `Housekeeping.r2_list`."""
+    base = prefix[: prefix.rfind("/") + 1]
+    out: list[str] = []
+    seen: set[str] = set()
+    for page in pages:
+        for entry in page.get("CommonPrefixes") or []:
+            name = str(entry.get("Prefix", ""))
+            if name in seen:
+                continue
+            seen.add(name)
+            out.append("%sPRE %s\n" % (" " * 27, name.removeprefix(base)))
+    for page in pages:
+        for entry in page.get("Contents") or []:
+            key = str(entry.get("Key", ""))
+            stamp = _s3_ls_stamp(str(entry.get("LastModified", "")))
+            shown = key if recursive or not key.startswith(base) else key[len(base) :]
+            out.append("%s %10d %s\n" % (stamp, int(entry.get("Size", 0) or 0), shown))
+    return "".join(out)
+
+
+def _s3_ls_stamp(text: str) -> str:
+    """`YYYY-MM-DD HH:MM:SS` in UTC from an ISO-8601 `LastModified`; the text itself when it does not parse."""
+    try:
+        when = datetime.datetime.fromisoformat(text)
+    except ValueError:
+        return text
+    if when.tzinfo is not None:
+        when = when.astimezone(datetime.UTC)
+    return when.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _awk_channel_listing(raw: str) -> str:
@@ -2492,23 +2545,54 @@ class Housekeeping:
 
     # -- PHASE 8: R2 ORPHANS ------------------------------------------------
 
-    def r2_ls_prefix(self, prefix: str) -> str:
-        """`aws s3 ls "s3://$R2_BUCKET/$prefix" --endpoint-url ... 2>/dev/null || true`.
+    def r2_list(self, prefix: str, *, recursive: bool = False) -> str:
+        """`aws s3api list-objects-v2` rendered in `aws s3 ls` text, `""` when the prefix is empty OR the listing failed (a failure also latches the run).
 
-        Returns the RAW stdout, newlines included, because two callers want different things from it: `while read` over a process substitution (line by line, no trailing strip) and `[[ -n "$(...)" ]]` (which strips).
+        WHY NOT `aws s3 ls`: it exits 1 on an empty prefix, so an exit status cannot tell an empty prefix from a 403, and the twin's `|| true` read both as "nothing there" while housekeeping reported a clean sweep it never performed. `list-objects-v2` exits 0 with no `Contents` on an empty prefix and non-zero on a real error. The CLI follows the continuation tokens itself, and a stream of several documents is merged too.
+
+        The text keeps `aws s3 ls`'s shape so every caller parses what it always did: ` PRE <name>/` for a common prefix (non-recursive only), and `YYYY-MM-DD HH:MM:SS <size> <name>` for an object, where `<name>` is relative to the prefix's last `/` (the full key when `recursive`, as `s3 ls --recursive` prints it). Returned RAW, newlines included, because two callers want different things from it: `while read` over a process substitution (line by line, no trailing strip) and `[[ -n "$(...)" ]]` (which strips).
         """
-        _code, out = _capture_raw(
-            [
-                awscli.AWS,
-                "s3",
-                "ls",
-                "s3://%s/%s" % (self.r2_bucket, prefix),
-                "--endpoint-url",
-                os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
-            ]
-        )
-        # The status is DISCARDED, exactly as `|| true` discards it: an unreachable bucket and an empty prefix are the same empty listing to every caller. That is HAZARD 1's shape again, in R2 rather than GitHub.
-        return out
+        argv = [
+            awscli.AWS,
+            "s3api",
+            "list-objects-v2",
+            "--bucket",
+            self.r2_bucket,
+            "--prefix",
+            prefix,
+        ]
+        if not recursive:
+            argv += ["--delimiter", "/"]
+        argv += [
+            "--endpoint-url",
+            os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
+            "--output",
+            "json",
+        ]
+        sys.stdout.flush()
+        sys.stderr.flush()
+        try:
+            proc = awscli.run(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            code = proc.returncode
+            raw = proc.stdout.decode("utf-8", "replace")
+            detail = proc.stderr.decode("utf-8", "replace").strip()
+        except FileNotFoundError:
+            code, raw, detail = 127, "", "command not found"
+        pages = _json_documents(raw) if code == 0 else None
+        if pages is None:
+            if code == 0:
+                detail = "unparseable listing"
+            self.housekeeping_fail(
+                "R2 listing failed",
+                "Phase 8: could not list s3://%s/%s (aws exit %d%s); nothing under it was processed"
+                % (self.r2_bucket, prefix, code, ": " + detail if detail else ""),
+            )
+            return ""
+        return _render_s3_ls(pages, prefix, recursive=recursive)
+
+    def r2_ls_prefix(self, prefix: str) -> str:
+        """The non-recursive listing of `prefix` (see `r2_list`)."""
+        return self.r2_list(prefix)
 
     def r2_prefix_last_modified(self, prefix: str) -> str:
         """LastModified of the first object under a prefix; "" when empty/unreadable.
@@ -2535,7 +2619,12 @@ class Housekeeping:
             ]
         )
         if code != 0:
-            stamp = ""
+            self.housekeeping_fail(
+                "R2 listing failed",
+                "Phase 8: could not read the age of s3://%s/%s (aws exit %d); the prefix was held"
+                % (self.r2_bucket, prefix, code),
+            )
+            return ""
         if stamp in {"None", ""}:
             return ""
         return stamp
@@ -2809,18 +2898,7 @@ class Housekeeping:
             channel_root = "npm/%s/" % channel
             if self.r2_ls_prefix(channel_root).rstrip("\n") == "":
                 continue
-            code, raw = _capture_raw(
-                [
-                    awscli.AWS,
-                    "s3",
-                    "ls",
-                    "s3://%s/%s" % (self.r2_bucket, channel_root),
-                    "--recursive",
-                    "--endpoint-url",
-                    os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
-                ]
-            )
-            # Same discard as `r2_ls_prefix`: the twin pipes `aws ... 2>/dev/null` straight into awk and never looks at the status.
+            raw = self.r2_list(channel_root, recursive=True)
             listing = _awk_channel_listing(raw)
             if listing == "":
                 continue
