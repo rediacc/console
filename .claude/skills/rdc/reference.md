@@ -440,13 +440,14 @@ Verify a repository's backup anchor against the chunk store
 
 ### rdc backup browse <repo-ref>
 
-List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.
+List the files a repository contains. By default this is a local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. With --at <time|snapshot>, it lists the file listing stored with a chunk-store snapshot instead, without restoring it.
 
 **Options:**
 
 - `--path <subdir>`: Limit the listing to this subtree
 - `--depth <n>`: Limit descent to N levels (0 for unlimited)
 - `--limit <n>`: Maximum entries to return (0 for unlimited)
+- `--at <time|snapshot>`: List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)
 - `--debug`: Enable debug output
 
 > MCP tool
