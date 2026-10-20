@@ -139,7 +139,9 @@ Stage 3 depends on Stage 2's TOC object existing, so Stage 2 must land, be teste
 - Wire contract: write grants `indexKey`/`indexPutUrl`, read grants `indexKeys`/`indexGetUrls` for the requested snapshot, commit `hasIndex`. Retention and the orphan sweep collect `i/` with `m/`.
 - Stage 3 is the renet verb `backup browse-at` (FunctionDef `backup_browse_at`, tier none); a snapshot without a listing exits 18 `NO_LISTING`; the CLI half must add `backup_browse_at` to the restore license pre-flight and regenerate the functions contract.
 
-## Operator decision needed
+## Operator decision (resolved 2026-10-20)
+
+Resolved by the rulings above: the column is the boolean `has_index`, and the server derives the object key, so no key string is stored. The original framing follows for the record.
 
 Framed once, plainly: **is a nullable `indexKey`/`hasIndex` pointer column on the existing `backup_manifests` table -- filled by the same commit call that already writes `manifestKey`, surfaced only as an opaque key string through the existing `/read-grants` and `/manifests` routes, never TOC content, never a new route, never a decrypt capability in account-server code -- acceptable as the only server-side schema/route change for Stage 2/3?** If not, an alternative "which snapshots are browsable" discovery mechanism needs to be designed before Stage 2 starts.
 
