@@ -366,6 +366,13 @@ def test_move_retires_the_plans_promoted_entry_and_only_that_one(gate, tmp_path)
     )
     gate.assert_contains(text, "| 2 | PLAN-filler-01.md |", "the progress block is re-rendered")
     gate.assert_contains(result.out, "retired Promoted entry", "the retirement is printed")
+    staged = subprocess.run(
+        ["git", "-C", str(root), "diff", "--cached", "--name-only"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    gate.assert_eq("agent/plans/QUEUE.md" in staged, True, "the queue rewrite is staged with the move")
     gate.log_pass("--move retires the plan's Promoted entry and nothing else")
 
 

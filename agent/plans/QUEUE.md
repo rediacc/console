@@ -65,9 +65,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-backup-credential-isolation.md -- 8 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-vm-check.md -- 5 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 68 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:af9747944d16270ba.
-- Leased items: 2: #7b9fe4f1 (worker:af9747944d16270ba, d778be9d), #95980422 (worker:bsbn1hfii, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 69 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 1: #95980422 (worker:bsbn1hfii, d778be9d).
 - Next plan: agent/plans/PLAN-account-vm-check.md, Promoted entry 4; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -84,10 +84,10 @@ Promoted: 0 of 4 plans done, 45 of 49 boxes done (91%).
 | 4 | PLAN-account-vm-check.md | 6/7 | 1 open |
 <!-- queue:progress:end -->
 
-1. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: 1 open, Step 13 (ci:quick and the live Stop check)
-2. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: 1 open, R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
-3. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it; 12 of 13 boxes
-4. agent/plans/PLAN-account-vm-check.md -- operator /ask 2026-10-15 (#c5305ed9: "Account drills via one runner", "Widen to deployed renet code"; on return "You can continue for the rest."): one vm:check runner, receipt and push guard prove renet, the CLI remote paths and private/account before a push; wave 1 (AV1-AV3) is written as patches now and lands with AV4/AV5 after PR #600 merges, since a schema-2 receipt alone would refuse every push; 6 of 7 boxes <!-- style-ok -->
+1. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: last box is Step 13 (ci:quick and the live Stop check)
+2. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
+3. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it
+4. agent/plans/PLAN-account-vm-check.md -- operator /ask 2026-10-15 (#c5305ed9: "Account drills via one runner", "Widen to deployed renet code"; on return "You can continue for the rest."): one vm:check runner, receipt and push guard prove renet, the CLI remote paths and private/account before a push; wave 1 (AV1-AV3) is written as patches now and lands with AV4/AV5 after PR #600 merges, since a schema-2 receipt alone would refuse every push <!-- style-ok -->
 
 ## Generated
 

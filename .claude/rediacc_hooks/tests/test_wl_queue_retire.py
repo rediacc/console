@@ -156,3 +156,25 @@ def test_number_notes_names_a_kept_entry_whose_note_cites_an_entry_number():
     text = HAND.replace("operator pick, 1 open", "depends on entry 3")
     assert PQ.number_notes(text) == ["agent/plans/PLAN-live-a.md"]
     assert PQ.number_notes(RETIRED) == []
+
+
+def test_retire_promoted_raises_when_the_queue_changes_under_both_reads(root, monkeypatch):
+    """Review 5d1b9889.2: a write lost to contention twice is an error, never `[]`, so no caller prints "retired 0" over stub entries."""
+    path = root / PQ.QUEUE_REL
+    path.write_text(HAND, encoding="utf-8")
+    real = type(path).read_text
+    calls = {"n": 0}
+
+    def churning(self, *a, **k):
+        text = real(self, *a, **k)
+        if self == path:
+            calls["n"] += 1
+            if calls["n"] % 2 == 0:
+                return text + "\n<!-- another writer -->\n"
+        return text
+
+    monkeypatch.setattr(type(path), "read_text", churning)
+    with pytest.raises(PQ.QueueContendedError):
+        PQ.retire_promoted(root)
+    monkeypatch.undo()
+    assert path.read_text(encoding="utf-8") == HAND, "nothing was written"
