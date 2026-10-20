@@ -209,6 +209,34 @@ OWN_CASES = [
     ),
     ("an indirect expansion elsewhere", "P=D; D=plain; echo hi > ${!P}/y.md", False),
     ("an unknown indirect expansion outside agent", "echo hi > ${!P}/y.md", False),
+    # 2026-10-20: `git archive <rev> -- <review path>` streams a tar to stdout and writes no file it names; it was refused (rc 2) as "git naming <path>". The tar extract into /tmp writes nothing under the directory; the last four land a file there.
+    (
+        "git archive of a review path, extracted into /tmp",
+        "git archive HEAD -- agent/reviews/b/x.md | tar -x -C /tmp/r20x",
+        False,
+    ),
+    (
+        "git archive of a review directory, extracted into /tmp",
+        "git archive HEAD~1 -- agent/reviews/b | tar -x -C /tmp/r20x",
+        False,
+    ),
+    (
+        "git archive of a plain path, extracted into /tmp",
+        "git archive HEAD -- docs/a.md | tar -x -C /tmp/r20x",
+        False,
+    ),
+    (
+        "git archive extracted INTO the review directory",
+        "git archive HEAD~1 -- agent/reviews/b | tar -x -C agent/reviews/b",
+        True,
+    ),
+    ("git archive -o onto a review path", "git archive -o agent/reviews/b/x.tar HEAD", True),
+    (
+        "git archive --output= onto a review path",
+        "git archive HEAD --output=agent/reviews/x.tar",
+        True,
+    ),
+    ("git archive piped to tar -xf - into the directory", "git archive HEAD | tar -xf - -C agent/reviews/b", True),
 ]
 
 MUTANTS = [
@@ -271,6 +299,10 @@ MUTANTS = [
             "and not _programs_name_reviews(cmd, cwd)",
             'and not any("reviews" in t for t in shellscan.interpreter_scripts(cmd, cwd))',
         ),
+    ),
+    (
+        "git archive positionals read as files it writes (2026-10-20)",
+        ('    if verb == "archive":', "    if False:"),
     ),
     (
         "an indirect expansion read as $! (8ef78586.1)",

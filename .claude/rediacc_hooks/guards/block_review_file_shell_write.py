@@ -661,6 +661,9 @@ _GIT_VALUE_OPTIONS = frozenset(
 )
 
 
+_GIT_ARCHIVE_VALUE_OPTIONS = frozenset(("-o", "--output", "--remote", "--exec"))
+
+
 def _without_ref_operands(run, argv):
     """`argv` with the positional words of a git ref verb dropped, so only its options and its remote are read as possible file writes; any other command comes back unchanged."""
     if run.name.rsplit("/", 1)[-1] != "git":
@@ -669,6 +672,18 @@ def _without_ref_operands(run, argv):
     if at is None:
         return argv
     verb = argv[at]
+    if verb == "archive":
+        # `git archive <rev> -- <path>` streams a tar to stdout and writes no file it names; only `-o`/`--output` (and the `--remote`/`--exec` words, a repository and a program) take a path the verb can write or run. The positionals are a tree-ish and pathspecs: reading `git archive HEAD -- agent/reviews/b/x.md | tar -x -C /tmp/x` as a write to that pathspec refused a pure read (2026-10-20). `-o X` / `--output X` in the separate form keeps X.
+        out = list(argv[: at + 1])
+        takes_value = False
+        for word in argv[at + 1 :]:
+            value_of_option, takes_value = takes_value, False
+            if word.startswith("-") and len(word) > 1:
+                out.append(word)
+                takes_value = word in _GIT_ARCHIVE_VALUE_OPTIONS
+            elif value_of_option:
+                out.append(word)
+        return out
     if verb not in _GIT_REF_VERBS and verb not in _GIT_REMOTE_VERBS:
         return argv
     keep = 1 if verb in _GIT_REMOTE_VERBS else 0
