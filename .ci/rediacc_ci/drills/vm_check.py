@@ -8,7 +8,7 @@ Design 2 of agent/plans/PLAN-vm-check.md and Design 3 of agent/plans/PLAN-accoun
 PHASES. There are two sides, the trigger's `renet` and `account` (`vm_check_trigger.SIDES`). With `--changed` the sides of `Changed.sides` are required; with no `--changed`, or a push base that cannot be resolved, both are. The renet phase is P5 and V1.1-V1.7; the account phase is A1.1-A1.4, A0 and A2.1-A2.3. P0-P4 and T run on every run, P1 included, because the license drill deploys renet too and the receipt check needs `renet.built == renet.pointer` even on an account-only receipt. `phases.<side>.ran` is true only when every step of that phase recorded a row and every such row is ok. The steps, in run order:
 
   A1  account only, before P0, so the fleet lock is not held for the suites: A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED before any VM is touched.
-  P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`).
+  P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`). A run that gives up there judged nothing while a holder may still be running, so it writes neither `receipt.json` nor the tree archive: its record goes to `runs/<run id>/receipt.json` (`vm_check_receipt.write_run_record`), and the summary prints where.
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
   A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `vm_check_trigger.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
   P4  chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt, never in a suite's or a drill's environment. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it. The minted token names the gateway at this host's address on the VM network (`wire.bridge_host`, 192.168.111.254), never localhost: the CLI sends every licence request there and the account stamps each licence's renewalUrl from that request, so a localhost token left every fork's and the grand's blob unrenewable from the worker (2026-10-20). With no interface on that network yet (a cold fleet) the token is minted on localhost for the fleet steps and re-minted on the bridge address right after P2, before anything issues a licence. The subscription of ACCOUNT_LOGIN is kept across runs (`subscription_reuse_refusal` names when it is recreated instead), since `/test/ensure-subscription` deletes it and with it every licence an earlier run issued.
@@ -248,7 +248,7 @@ ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 DRILL_FAIL_ROW = re.compile(r"^\s*(\d{2,})\s+FAIL\s+(.+?)\s*$", re.MULTILINE)
 DRILL_SUMMARY_HEADER = " summary ==="
 # The per-run evidence directory under the receipt folder, and how many of them are kept.
-RUNS_DIR = "runs"
+RUNS_DIR = receipt_mod.RUNS_DIR
 RUNS_KEEP = 20
 DRILL_OK = "ok"
 DRILL_FAILED = "failed"
@@ -849,6 +849,8 @@ class VmCheck:
         self.machine_ip = ""
         self.grand_created = False
         self.locked = False
+        # True when P0 gave up on the fleet lock (`fleet-busy`): the run judged nothing and a holder may still be running, so `_finish` keeps its record under its run id and never touches receipt.json.
+        self.lock_lost = False
         self.fleet_mode = ""
         self.fleet_started = False
         self.fleet_os = ""
@@ -1228,7 +1230,11 @@ class VmCheck:
 
     def p0_lock(self) -> None:
         session = (self.environ.get("CLAUDE_CODE_SESSION_ID") or "-")[:8]
-        waited = self.lock.acquire(self.host, self.opts.wait_s, session)
+        try:
+            waited = self.lock.acquire(self.host, self.opts.wait_s, session)
+        except NotVerifiedError:
+            self.lock_lost = True
+            raise
         self.locked = True
         self.record("P0", "lock acquired (waited %d s)" % int(waited), True)
 
@@ -2379,10 +2385,16 @@ class VmCheck:
         status, reason = verdict(
             self.assertions, self.failures, self.reason, self.leftovers, self.phases
         )
-        receipt = self._receipt(status, reason)
         path: pathlib.Path | None = None
-        if self.tree:
-            path = receipt_mod.write(self.root, receipt)
+        if self.tree and self.lock_lost:
+            # A lock loser's record is for the record only (VC7(a)): the holder's receipt.json and tree archive stay as they are.
+            fresh = not self.run_dir().is_dir()
+            self.run_dir().mkdir(parents=True, exist_ok=True)
+            if fresh:
+                self._prune_runs()
+            path = receipt_mod.write_run_record(self.root, self._receipt(status, reason))
+        elif self.tree:
+            path = receipt_mod.write(self.root, self._receipt(status, reason))
         else:
             log.error("HEAD^{tree} is unreadable, so no receipt was written")
         self._summary(status, reason, path)
@@ -2478,6 +2490,11 @@ class VmCheck:
                     str(self.renet.get("built") or "")[:12] or "<none>",
                 )
             )
+            if self.lock_lost:
+                self.say(
+                    "  this run never held the fleet lock, so %s and the tree archives were left as they were"
+                    % receipt_mod.LATEST
+                )
 
 
 # --------------------------------------------------------------------------- selftest and entry

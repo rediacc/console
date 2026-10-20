@@ -1646,18 +1646,91 @@ def test_each_not_verified_class(tmp_path: pathlib.Path, cls: str) -> None:
         assert "agent mode" in receipt["reason"]["detail"]
 
 
-def test_fleet_busy_names_the_holder_and_creates_nothing(tmp_path: pathlib.Path) -> None:
+def run_busy(tmp_path: pathlib.Path) -> tuple[int, str, World]:
+    """One run that loses the fleet lock to a peer holding it (pid 4242, session peer0001)."""
     fd = hold_lock(tmp_path)
     try:
         world = make_world(tmp_path)
-        rc, out, receipt = run_check(tmp_path, world)
+        rc, out, _ = run_check(tmp_path, world)
     finally:
         os.close(fd)
+    return rc, out, world
+
+
+def run_record(world: World, out: str) -> tuple[pathlib.Path, dict[str, Any]]:
+    """The record a run archived under its own run id, found from the run id its banner printed."""
+    found = re.search(r"=== \S+ (vmc-\d{8}-[0-9a-f]{6}) ===", out)
+    assert found, out
+    path = receipt_mod.receipt_dir(world.root) / "runs" / found.group(1) / receipt_mod.LATEST
+    assert path.is_file(), out
+    record = json.loads(path.read_text())
+    assert receipt_mod.validate(record) == [], receipt_mod.validate(record)
+    return path, record
+
+
+def receipt_bytes(world: World) -> dict[str, bytes]:
+    """receipt.json and every tree archive, by name, as raw bytes."""
+    return {p.name: p.read_bytes() for p in receipt_mod.receipt_files(world.root)}
+
+
+def test_fleet_busy_names_the_holder_and_creates_nothing(tmp_path: pathlib.Path) -> None:
+    rc, out, world = run_busy(tmp_path)
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    _, receipt = run_record(world, out)
     assert receipt["reason"]["class"] == "fleet-busy"
     assert "pid 4242, session peer0001" in receipt["reason"]["detail"]
     assert world.rdc_calls() == []
     assert "nothing to tear down" in out
+
+
+def test_a_fleet_busy_run_leaves_a_verified_receipt_byte_identical(tmp_path: pathlib.Path) -> None:
+    """VC7(a), 2026-10-20: a busy loser (`--wait 5`, vmc-10201456-eec456) rewrote receipt.json while the holder still ran; had it finished last, the holder's VERIFIED receipt would have been replaced."""
+    rc, out, receipt = run_check(tmp_path, make_world(tmp_path))
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["status"] == receipt_mod.VERIFIED
+    before = receipt_bytes(make_world(tmp_path))
+    assert sorted(before) == sorted([receipt_mod.LATEST, TREE + ".json"])
+    rc, out, world = run_busy(tmp_path)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt_bytes(world) == before
+
+
+def test_a_fleet_busy_run_archives_its_own_record_under_its_run_id_and_says_where(
+    tmp_path: pathlib.Path,
+) -> None:
+    rc, out, world = run_busy(tmp_path)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    path, record = run_record(world, out)
+    assert record["status"] == receipt_mod.NOT_VERIFIED
+    assert record["reason"]["class"] == "fleet-busy"
+    assert record["tree"] == TREE
+    assert record["runDir"] == str(path.parent.relative_to(world.root))
+    assert str(path.relative_to(world.root)) in out
+    assert "never held the fleet lock" in out
+    # Nothing a later push is judged by: no receipt.json, no tree archive.
+    assert receipt_mod.receipt_files(world.root) == []
+
+
+def test_a_lock_holder_still_writes_receipt_json_after_a_busy_loser(tmp_path: pathlib.Path) -> None:
+    _, busy_out, _ = run_busy(tmp_path)
+    _, loser = run_record(make_world(tmp_path), busy_out)
+    rc, out, receipt = run_check(tmp_path, make_world(tmp_path))
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["status"] == receipt_mod.VERIFIED
+    assert receipt["runId"] != loser["runId"]
+    archived = receipt_mod.read_archive(make_world(tmp_path).root, TREE)
+    assert archived is not None
+    assert archived["runId"] == receipt["runId"]
+
+
+def test_the_guard_admits_the_push_after_a_busy_loser_ran_later(tmp_path: pathlib.Path) -> None:
+    rc, out, _ = run_check(tmp_path, make_world(tmp_path))
+    assert rc == vm_check.EXIT_VERIFIED, out
+    root = make_world(tmp_path).root
+    assert receipt_mod.admit(root, TREE, DIGEST, {"renet", "account"}).ok
+    run_busy(tmp_path)
+    got = receipt_mod.admit(root, TREE, DIGEST, {"renet", "account"})
+    assert (got.ok, got.code) == (True, "ok"), got.message
 
 
 def test_a_failed_cold_start_quotes_the_exit_and_downs_what_it_started(
