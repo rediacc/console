@@ -557,15 +557,16 @@ def cmd_create(args: list[str]) -> int:
             log.error("Unknown option: %s" % arg)
             return 1
 
+    # The day is read once, so a run that crosses midnight cannot name the worktree after one day and number it after the next. WORKTREE_TODAY is the tests' frozen-day seam, checked as a real MMDD before anything runs.
+    day = os.environ.get("WORKTREE_TODAY") or time.strftime("%m%d")
+    if not re.fullmatch(r"(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])", day, re.ASCII):
+        log.error("WORKTREE_TODAY must be a month and day as MMDD, got %r" % day)
+        return 1
+
     root = paths.repo_root()
     base = worktree_base()
     sync_main_repo(root)
 
-    # The day is read once, so a run that crosses midnight cannot name the worktree after one day and number it after the next. WORKTREE_TODAY is the tests' frozen-day seam.
-    day = os.environ.get("WORKTREE_TODAY") or time.strftime("%m%d")
-    if not re.fullmatch(r"\d{4}", day):
-        log.error("WORKTREE_TODAY must be four digits (MMDD), got %r" % day)
-        return 1
     wt_name = "%s-%d" % (day, next_sequence_number(base, day))
     wt_path = base / wt_name
     session = "%s-%s" % (TMUX_PREFIX, wt_name)
