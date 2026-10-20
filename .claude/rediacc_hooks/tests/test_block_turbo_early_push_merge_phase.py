@@ -167,6 +167,42 @@ def test_merge_phase_symlink_under_reviews_is_refused(world):
     assert _ledger(world) == []
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push origin other:%s" % BRANCH,  # sends a ref the range check never read
+        "git push origin +%s" % BRANCH,
+        "git push --force origin %s" % BRANCH,
+        "git push --force-with-lease=%s origin %s" % (BRANCH, BRANCH),
+        "git push --tags origin %s" % BRANCH,
+        "git push origin",  # no explicit refspec
+        "git push origin HEAD",  # HEAD with no destination names no branch
+    ],
+)
+def test_merge_phase_refuses_a_push_that_is_not_exactly_head(world, command):
+    _phase(world, "merge")
+    _gitlink(world["repo"])
+    G._git(world["repo"], "branch", "other")
+    rc, _err = _run(world, command)
+    assert rc == 2, command
+    assert _ledger(world) == []
+
+
+def test_merge_phase_admits_head_onto_the_branch(world):
+    _phase(world, "merge")
+    _gitlink(world["repo"])
+    rc, err = _run(world, "git push origin HEAD:%s" % BRANCH)
+    assert rc == 0, err
+
+
+def test_an_unreadable_phase_store_fails_closed(world):
+    (world["store"] / ("%s.jsonl" % ME)).write_text("{not json\n", encoding="utf-8")
+    _gitlink(world["repo"])
+    rc, _err = _run(world)
+    assert rc == 2
+    assert _ledger(world) == []
+
+
 def test_build_phase_gitlink_only_is_refused(world):
     _phase(world, "build")
     _gitlink(world["repo"])
