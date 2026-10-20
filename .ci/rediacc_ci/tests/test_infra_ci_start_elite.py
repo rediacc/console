@@ -3,9 +3,8 @@
 THE SEAM IS PATH AND THE FIXTURE ROOT, on the `test_infra_ci_stop_elite.py` precedent. Both subjects derive the console root from their own file location (`BASH_SOURCE[0]` / `__file__`), so each case COPIES both of them into a fresh tree at the right relative depth and runs the copies; driving the tracked files would point both at this checkout's real `private/elite` and its real
 `.ci/docker/ci`. `run.sh`, `curl` and `docker` are recording fakes, so the comparison asserts on the ARGV SEQUENCE both sides produced as well as on stdout: a port that printed "Starting Elite services via ./run.sh up" and never ran it would pass a stdout-only comparison.
 
-THE REAL `ci-env.sh` IS COPIED IN AND SOURCED FOR REAL. It is not stubbed, because the whole question this differential answers about the `source` on the twin's :23 is whether the port's `env -0` round trip delivers the same exported set that bash's `source` delivers into the caller's own shell. Every secret it would otherwise GENERATE is pre-set in the fixture environment so that
-both
-sides take its `${VAR:-...}` arms and the result is deterministic -- a generated
+THE CI ENVIRONMENT IS THE REAL ONE, NOT A STUB. The port calls `rediacc_ci.infra.ci_env.apply()` in-process (W7P5-c); the frozen twin answers were recorded when it still sourced the real `ci-env.sh`, so these cases check that the in-process call delivers the same exported set, the same `.env` and the same stdout that the `source` did. Every secret it would otherwise GENERATE is pre-set in the fixture environment so that both
+sides take the `${VAR:-...}` arms and the result is deterministic -- a generated
 Ed25519 pair differs on every run and would make byte comparison impossible. `test_generated_secrets_path_agrees_on_shape` covers the generating arm separately, on names rather than values.
 
 THE SLEEP IS NULLED IN THE COPIES, AND NOTHING ELSE IS. The health budget is 180s at a 2s interval, so waiting it out on both sides costs six minutes per
@@ -36,19 +35,18 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.tests.wkloader import copy_loader, docker_less_path
+from rediacc_ci.tests.wkloader import docker_less_path
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/infra/ci-start-elite.sh"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_start_elite.py"
-CI_ENV = ROOT / ".ci" / "scripts" / "infra" / "ci-env.sh"
 
 # The health budget as both files really carry it. The copies keep it.
 REAL_TIMEOUT = 180
 
-# Pre-set so `ci-env.sh` generates nothing: every generating arm is guarded by
+# Pre-set so the CI environment generates nothing: every generating arm is guarded by
 # `[[ -z "${VAR:-}" ]]` or `${VAR:-$(...)}`.
 DETERMINISTIC_SECRETS = {
     "ACCOUNT_ED25519_PRIVATE_KEY": "fixture-ed25519-private",
@@ -154,12 +152,6 @@ def _fixture(
         (root / ".ci" / "scripts" / "infra" / TWIN.name).write_text(
             _null_sleep_bash(TWIN.read_text(encoding="utf-8")), encoding="utf-8"
         )
-    shutil.copy2(CI_ENV, root / ".ci" / "scripts" / "infra" / CI_ENV.name)
-    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
-    )
-    copy_loader(root)
     (root / ".ci" / "rediacc_ci" / "infra" / PORT.name).write_text(
         _null_sleep_python(
             port_source if port_source is not None else PORT.read_text(encoding="utf-8")
@@ -275,6 +267,8 @@ def _live(
     env = dict(os.environ)
     env.update(DETERMINISTIC_SECRETS)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    # The subject imports `rediacc_ci.infra.ci_env` (W7P5-c); the copy runs by path, so the package comes from this checkout.
+    env["PYTHONPATH"] = str(ROOT / ".ci")
     # A docker-less fixture gets a PATH that really has none: the host's docker would otherwise sit behind the fixture bin and answer `docker-missing-entirely` (the account twin's golden recorded exactly that, 115f8bb0c).
     rest = (
         env.get("PATH", "")
@@ -356,7 +350,7 @@ def test_the_fakes_are_actually_reached() -> None:
         assert "docker" in verbs, "docker ps was never run: %r" % verbs
         assert written is not None, "no .env was written at all"
         assert ("DOCKER_REGISTRY=" + IMAGE_REGISTRY) in written, (
-            "the .env was not written from ci-env.sh's exported values: %r" % written
+            "the .env was not written from the CI environment's exported values: %r" % written
         )
 
 
@@ -426,6 +420,8 @@ def _generated_old(root: pathlib.Path) -> tuple[int, list[str], list[str]]:
         for key in DETERMINISTIC_SECRETS:
             env.pop(key, None)
         env["PYTHONDONTWRITEBYTECODE"] = "1"
+        # The subject imports `rediacc_ci.infra.ci_env` (W7P5-c); the copy runs by path, so the package comes from this checkout.
+        env["PYTHONPATH"] = str(ROOT / ".ci")
         env["PATH"] = "%s:%s" % (root / "fxbin", env.get("PATH", ""))
         env.pop("GITHUB_ACTIONS", None)
         env.pop("GITHUB_ENV", None)
@@ -442,9 +438,9 @@ def _generated_old(root: pathlib.Path) -> tuple[int, list[str], list[str]]:
 
 
 def test_generated_secrets_path_agrees_on_shape() -> None:
-    """The OTHER arm of ci-env.sh: with nothing pre-set it generates a fresh key pair per run, so the values cannot be compared -- but the NAMES written into `.env`, and the exit code, still must agree."""
+    """The OTHER arm of the CI environment: with nothing pre-set it generates a fresh key pair per run, so the values cannot be compared -- but the NAMES written into `.env`, and the exit code, still must agree."""
     if not all(shutil.which(t) for t in ("node", "jq", "openssl")):
-        pytest.skip("ci-env.sh's generating arm needs node, jq and openssl")
+        pytest.skip("the CI environment's generating arm needs node, jq and openssl")
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
         results = []
@@ -457,6 +453,8 @@ def test_generated_secrets_path_agrees_on_shape() -> None:
             for key in DETERMINISTIC_SECRETS:
                 env.pop(key, None)
             env["PYTHONDONTWRITEBYTECODE"] = "1"
+            # The subject imports `rediacc_ci.infra.ci_env` (W7P5-c); the copy runs by path, so the package comes from this checkout.
+            env["PYTHONPATH"] = str(ROOT / ".ci")
             env["PATH"] = "%s:%s" % (root / "fxbin", env.get("PATH", ""))
             env.pop("GITHUB_ACTIONS", None)
             env.pop("GITHUB_ENV", None)

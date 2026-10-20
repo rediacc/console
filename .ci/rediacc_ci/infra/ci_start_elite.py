@@ -13,24 +13,25 @@ LIVE CALLERS, one repointed at this module by W7P4-b and one still on the twin:
     `--services onprem` hook, which reads the twin's path from a variable. Left on
     the bash twin, which stays on disk.
 
-WHAT MOVES AND WHAT DOES NOT. The orchestration moves to Python: the `.env` write, the poll loop, the diagnostics, the exit codes. Two things stay bash and are still driven as bash, because a Python reimplementation of either would be a second instrument certifying itself:
+WHAT MOVES AND WHAT DOES NOT. The orchestration moves to Python: the `.env` write, the poll loop, the diagnostics, the exit codes.
 
-  * `.ci/scripts/infra/ci-env.sh` is SOURCED, not executed. It is on
-    `.ci/policy/.language-policy-allowlist` as a sourced-only file for exactly
-    that reason. `source_ci_env()` below runs the real file under a real bash
-    and imports the resulting exported environment; it does not re-derive a
-    single one of its 20-odd variables.
+  * THE CI ENVIRONMENT IS `rediacc_ci.infra.ci_env.apply()`, called in-process
+    (W7P5-c). Until then this module ran the sourced-only `ci-env.sh` under a
+    real bash and read its exported set back through `env -0`; that twin is
+    deleted, its answers are frozen in `goldens/twins/infra.ci-env.jsonl`, and
+    the cutover itself is licensed by
+    `.ci/shadow/w7p5c-ci-start-elite-cutover.observations.jsonl` (old side: this
+    module as it was, sourcing the bash; new side: this module).
   * `private/elite/run.sh` is a submodule's operator entry point and is invoked
     as a subprocess, argument for argument.
 
 PORT NOTES, each driven before it was written down.
 
-ONLY EXPORTED VARIABLES SURVIVE THE SOURCE, and that is exact rather than approximate. `env -0` lists the exported set; ci-env.sh's `WORKFLOW_TAG`, `WORKFLOW_CI_MODE`, `WORKFLOW_WEB_TAG`, `KEYS`, `X25519_KEYS` and `PERSISTED_ENV` are plain shell variables, and the twin reads none of them after the `source` on :23. The four names the twin does interpolate into `.env`
-(`DOCKER_REGISTRY`, `TAG`, `WEB_TAG`, `SYSTEM_DOMAIN`) are all `export`ed by ci-env.sh (:32, :44, :45, :106).
+ONLY THE EXPORTED SET IS MERGED BACK, which is what the `source` delivered. `ci_env.configure()` returns exactly the names the sourced bash left exported (its `WORKFLOW_*`, `KEYS` and `PERSISTED_ENV` were plain shell variables and never reached the caller). The four names the twin interpolates into `.env` (`DOCKER_REGISTRY`, `TAG`, `WEB_TAG`, `SYSTEM_DOMAIN`) are all among them.
 
-FOUR NAMES ARE DELIBERATELY NOT IMPORTED BACK: `_`, `SHLVL`, `PWD`, `OLDPWD`. Those describe the bash that did the sourcing, not the configuration it produced, and `SHLVL` in particular differs between a bash parent and a Python parent no matter how faithful the rest is.
+ONE NAME FAMILY NO LONGER ARRIVES, ON PURPOSE: `WK_*`. The sourced bash ran `well_known_load`, which exported the well-known registry into the caller as a side effect, and `env -0` carried it into this process and on to `./run.sh up`. Nothing on that path reads a `WK_*` name (`grep -rl WK_ private/elite .ci/docker/ci` finds none), and the port reads the registry through `rediacc_ci.well_known` instead. The cutover ledger compares the children's environment with `WK_*` filtered on both sides for that reason, and every other name is compared.
 
-A FAILING `source` KILLS THE SCRIPT, and the port reproduces the exit status rather than a status of its own. ci-env.sh runs `set -e`; sourced into a caller that also runs `set -e` (:9), any failing command inside it exits the whole script right there. `source_ci_env` therefore returns bash's own rc and `main` returns it unchanged.
+A FAILING CI ENVIRONMENT KILLS THE SCRIPT WITH THE TOOL'S OWN STATUS. ci-env.sh ran `set -e`, so a failing `node` or `jq` inside it exited the whole script with that status; `ci_env.ToolFailedError` carries the same code and `main` returns it unchanged. The one addition is a `ci_env: <tool> exited <n>` line on stderr, because a missing binary is 127 with no message from Python where bash printed `command not found`.
 
 THE `.env` REDIRECT IS THE FIRST THING THAT CAN DIE ON A HOST WITHOUT THE
 SUBMODULE. `{ ... } >"$ELITE_DIR/.env"` (:36-45) fails when `private/elite` is
@@ -60,16 +61,14 @@ import os
 import pathlib
 import subprocess
 import sys
-import tempfile
 import time
+
+from rediacc_ci.infra import ci_env
 
 # The twin's `local timeout=180` / `local interval=2` (:85-87). Named rather than
 # inlined so a test can assert the real file still carries the values the twin does. The differential does NOT shrink them -- it nulls the `sleep` call instead, so both sides keep the real arithmetic and still perform all 90 probes.
 TIMEOUT_SECONDS = 180
 INTERVAL_SECONDS = 2
-
-# Bash-internal names that describe the sourcing shell rather than the configuration it produced. See the module docstring.
-_SHELL_PRIVATE = frozenset({"_", "SHLVL", "PWD", "OLDPWD"})
 
 
 def _console_root() -> pathlib.Path:
@@ -80,47 +79,24 @@ def _console_root() -> pathlib.Path:
     return pathlib.Path(__file__).resolve().parents[3]
 
 
-def source_ci_env(ci_env_sh: pathlib.Path) -> tuple[int, dict[str, str]]:
-    """Run the real bash `ci-env.sh` and return `(rc, exported environment)`.
+def configure_ci_env(console_root: pathlib.Path) -> tuple[int, dict[str, str]]:
+    """`ci_env.apply()` against this tree: `(rc, exported environment)`.
 
-    stdout and stderr are INHERITED, not captured. ci-env.sh prints three summary lines (:172-175) and up to eight `::add-mask::` directives (:94-100, :109) that must land on this process's real streams, in order, exactly as they do when the twin sources it.
+    The `::add-mask::` directives and the three summary lines go to this process's stdout, in the order the sourced bash printed them, and the `.env` under `.ci/docker/ci` and the `$GITHUB_ENV` append happen exactly as they did. `console_root` is passed explicitly so the writes land in the tree this module sits in, never in whichever checkout `rediacc_ci` was imported from.
     """
-    with tempfile.TemporaryDirectory() as td:
-        dump = pathlib.Path(td) / "env.0"
-        rc = subprocess.run(
-            [
-                "bash",
-                "-c",
-                'set -e\n. "$1"\nenv -0 >"$2"\n',
-                "bash",
-                str(ci_env_sh),
-                str(dump),
-            ],
-            check=False,
-        ).returncode
-        if rc != 0:
-            return rc, {}
-        raw = dump.read_bytes()
-
-    exported: dict[str, str] = {}
-    for entry in raw.split(b"\0"):
-        if not entry:
-            continue
-        name, sep, value = entry.partition(b"=")
-        if not sep:
-            continue
-        key = name.decode("utf-8", "replace")
-        if key in _SHELL_PRIVATE:
-            continue
-        exported[key] = value.decode("utf-8", "replace")
-    return 0, exported
+    try:
+        config = ci_env.apply(dict(os.environ), console_root)
+    except ci_env.ToolFailedError as failed:
+        print("ci_env: %s" % failed, file=sys.stderr, flush=True)
+        return failed.code, {}
+    return 0, dict(config.exported)
 
 
 def env_file_body(env: dict[str, str]) -> str:
     """The exact 8 lines the twin's `{ ... } >"$ELITE_DIR/.env"` block writes.
 
     Unset names expand to the empty string: the twin runs `set -e` only, never
-    `set -u`, so `${DOCKER_REGISTRY}` on a host where ci-env.sh somehow did not
+    `set -u`, so `${DOCKER_REGISTRY}` on a host where the CI environment somehow did not
     export it produces `DOCKER_REGISTRY=` rather than an error.
     """
     return "".join(
@@ -187,18 +163,17 @@ def wait_for_web() -> bool:
 def main(argv: list[str]) -> int:
     del argv  # the twin takes no arguments
     console_root = _console_root()
-    script_dir = console_root / ".ci" / "scripts" / "infra"
     elite_dir = console_root / "private" / "elite"
 
     print("Starting Rediacc Elite CI services...", flush=True)
 
-    rc, env = source_ci_env(script_dir / "ci-env.sh")
+    rc, env = configure_ci_env(console_root)
     if rc != 0:
         return rc
     os.environ.update(env)
 
-    # The twin's :28-30, AFTER the source, so ci-env.sh's own
-    # `ENABLE_HTTPS=${ENABLE_HTTPS:-false}` on :141 has already been resolved
+    # The twin's :28-30, AFTER the CI environment, so its own
+    # `ENABLE_HTTPS=${ENABLE_HTTPS:-false}` heredoc line has already been resolved
     # with ENABLE_HTTPS unset.
     os.environ["ENABLE_HTTPS"] = "false"
     os.environ["HTTP_PORT"] = "80"

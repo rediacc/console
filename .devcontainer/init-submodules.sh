@@ -62,9 +62,9 @@ say() { [ "$QUIET" = true ] || printf '%s\n' "$*"; }
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
   echo "Not inside a git repository." >&2; exit 2; }
 cd "$REPO_ROOT" || exit 2
-# shellcheck source=/dev/null
-source "$REPO_ROOT/scripts/lib/well-known.sh"
-well_known_load
+# The WK_* facts, exported; the shell wins over the registry and nothing in the file executes.
+# shellcheck source=../.ci/config/well-known.generated.sh
+source "$REPO_ROOT/.ci/config/well-known.generated.sh"
 
 if [ ! -f .gitmodules ]; then
   say "No .gitmodules found, nothing to initialize."

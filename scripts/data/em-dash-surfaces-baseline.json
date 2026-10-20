@@ -4,8 +4,6 @@
   ".ci/rediacc_ci/quality/probe_parity.py:53743c8a3658",
   ".ci/rediacc_ci/quality/release_state.py:096e08ddd2a6",
   ".ci/rediacc_ci/quality/release_state.py:8ff725ed29c6",
-  ".ci/scripts/infra/ci-env.sh:09ff06ae7ca5",
-  ".ci/scripts/infra/ci-env.sh:505a330d25ef",
   "packages/cli/src/adapters/__tests__/remote-config-adapter.real-crypto.test.ts:1d4a18272d3e",
   "packages/cli/src/commands/__tests__/config-list-degrade.test.ts:5676876bf120",
   "packages/cli/src/commands/__tests__/datastore-relocate.test.ts:74500ce63519",

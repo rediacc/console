@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-language-policy.sh`, retired in W7 P5.
 
-Subject: `.ci/scripts/quality/check_language_policy.py` (RULING 7). Its claim, and therefore what has to be proven in BOTH directions: the set of tracked bash files under `.ci` and `.claude` may lose members and may never gain one, exemptions are named with a `BLOCKER:` reason and die when they stop suppressing anything, and a green produced by an enumeration that saw nothing is
+Subject: `.ci/scripts/quality/check_language_policy.py` (RULING 7). Its claim, and therefore what has to be proven in BOTH directions: the set of tracked bash files outside `private/` (since the 2026-10-20 widening; `.ci` and `.claude` before 2026-09-21) may lose members and may never gain one, exemptions are named with a `BLOCKER:` reason and die when they stop suppressing anything, and a green produced by an enumeration that saw nothing is
 refused rather than printed.
 
 HOW IT IS DRIVEN. Every case but the last builds a throwaway git repository and points the subject at it through `LANGUAGE_POLICY_ROOT` / `_BASELINE` / `_ALLOWLIST`, so no tracked baseline, allowlist or script is touched. `git ls-files` IS the subject's corpus, which is why the fixture has to be a real repository with a real index rather than a directory of files: a fixture that
@@ -153,6 +153,37 @@ def test_new_file_under_exempt_tree_is_silent(gate):
         gate.assert_exit(0, result, "a new file under an EXEMPT tree must be silent")
         gate.assert_contains(result.combined, "3 exempt", "counts it as exempt, and says so")
     gate.log_pass("CONTROL: a new file under an exempt tree does not fire")
+
+
+def test_new_bash_file_outside_the_old_roots_fires(gate):
+    """THE 2026-10-20 WIDENING (W7P5-c). The scope was `.ci`, `.claude`, `scripts/ops` and `scripts/dev`, so a new `.sh` under `.devcontainer/`, `packages/` or the repo root was refused by nothing. Each of the three is planted and each must be NAMED, not merely counted."""
+    planted = (".devcontainer/hook.sh", "packages/x/tool.sh", "top.sh")
+    with harness.temp_dir() as d:
+        fixture(d)
+        for rel in planted:
+            (d / rel).parent.mkdir(parents=True, exist_ok=True)
+            (d / rel).write_text("#!/usr/bin/env bash\necho new\n", encoding="utf-8")
+        git("-C", str(d), "add", "-A", "--", ".")
+        result = run_gate(d)
+        gate.assert_exit(1, result, "bash outside the four old roots must now be refused")
+        for rel in planted:
+            gate.assert_contains(result.combined, rel, "names %s" % rel)
+    gate.log_pass("a new bash file outside the old roots fires")
+
+
+def test_bash_under_private_is_silent(gate):
+    """THE CONTROL FOR THE CASE ABOVE. `private/` is the one exclusion (every entry under it is a submodule with its own rules), so a bash file there must neither fire nor be counted; without this, a gate that read the whole tree with no exclusion would pass the case above."""
+    with harness.temp_dir() as d:
+        fixture(d)
+        (d / "private/sub").mkdir(parents=True)
+        (d / "private/sub/inside.sh").write_text(
+            "#!/usr/bin/env bash\necho submodule\n", encoding="utf-8"
+        )
+        git("-C", str(d), "add", "-A", "--", ".")
+        result = run_gate(d)
+        gate.assert_exit(0, result, "bash under private/ is outside the scope")
+        gate.assert_contains(result.combined, "5 bash file(s)", "and is not counted")
+    gate.log_pass("CONTROL: bash under private/ does not fire and is not counted")
 
 
 def test_new_py_file_is_silent(gate):

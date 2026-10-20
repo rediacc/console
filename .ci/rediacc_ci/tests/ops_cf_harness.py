@@ -200,8 +200,6 @@ class World:
             "scripts/ops/lib/cf-auth.sh",
             ".ci/config/well-known.env",
             ".ci/config/well-known.generated.sh",
-            "scripts/lib/well-known.sh",
-            "scripts/lib/env-file.sh",
         ):
             if not (ROOT / rel).is_file():  # a retired twin: only a re-freeze from bash needs it
                 continue

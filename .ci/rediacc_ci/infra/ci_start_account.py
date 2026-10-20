@@ -9,23 +9,23 @@ LIVE CALLER, repointed at this module by W7P4-b:
     twin was deleted under PLAN-retire-bash-oracles B3; its answers are frozen in
     `.ci/rediacc_ci/tests/goldens/twins/infra.ci-start-account.jsonl`.
 
-WHAT MOVES AND WHAT DOES NOT. `.ci/scripts/infra/ci-env.sh` is SOURCED, not executed, and stays bash: `source_ci_env` (imported from the sibling elite port would create a package import in a file that must run standalone from a fixture, so it is duplicated deliberately -- see PORT NOTES) runs the real file under a real bash and imports its exported environment. Every `docker` call
-is shelled out to argument for argument.
+WHAT MOVES AND WHAT DOES NOT. THE CI ENVIRONMENT IS `rediacc_ci.infra.ci_env.apply()`, called in-process (W7P5-c). Until then this module ran the sourced-only `ci-env.sh` under a real bash and read its exported set back through `env -0`; that twin is deleted, its answers are frozen in `goldens/twins/infra.ci-env.jsonl`, and the cutover itself is licensed by
+`.ci/shadow/w7p5c-ci-start-account-cutover.observations.jsonl` (old side: this module as it was, sourcing the bash; new side: this module). Every `docker` call is shelled out to argument for argument.
 
 PORT NOTES, each driven before it was written down.
 
-`source_ci_env` IS DUPLICATED FROM `ci_start_elite.py` ON PURPOSE. Both modules are executed as plain scripts from a fixture tree that holds only the two subjects (`python3 .ci/rediacc_ci/infra/ci_start_account.py`), with no `rediacc_ci` package on `sys.path`; an import between them would make the differential's fixture a package problem instead of a behaviour comparison. The twin
-has the same duplication in the other direction -- both bash scripts `source` the same file rather than sharing a function.
+`configure_ci_env` IS DUPLICATED FROM `ci_start_elite.py` ON PURPOSE. Both modules are executed as plain scripts from a fixture tree (`python3 .ci/rediacc_ci/infra/ci_start_account.py`), with `rediacc_ci` reached through `PYTHONPATH`; an import between the two subjects would make the differential's fixture a package problem instead of a behaviour comparison. The twin had the same duplication in the other direction -- both bash scripts `source`d the same file rather than sharing a function.
+
+`WK_*` NO LONGER ARRIVES IN THIS PROCESS, ON PURPOSE. The sourced bash ran `well_known_load`, which exported the well-known registry as a side effect, and `env -0` carried it on to `docker compose`. `.ci/docker/ci/docker-compose*.yml` interpolates no `WK_*` name, so the cutover ledger compares the children's environment with `WK_*` filtered on both sides, and every other name is compared.
 
 THE THREE SECRET GUARDS RUN BEFORE ANYTHING ELSE AND BEFORE THE SOURCE (:29-43), which is why the port cannot hoist the `source` for convenience: on a host with no secrets the twin prints two lines and exits 1 having generated no keys, written no `.env` and started no container.
 
-CI-ENV.SH OVERWRITES THE PRODUCTION KEYS AND THE TWIN PUTS THEM BACK. ci-env.sh generates a throwaway Ed25519 pair (:51-62) only when `ACCOUNT_ED25519_PRIVATE_KEY` is empty -- which it never is here, since :29 already refused that case -- but
-it unconditionally re-exports `ACCOUNT_SERVER_API_KEY` (:83) from `${VAR:-...}`,
-so the value survives. The save/restore on :47-49 and :61-63 is therefore belt-and-braces in the current ci-env.sh and is reproduced exactly rather than
-reasoned away: a future ci-env.sh that stops honouring `${VAR:-}` would break
-the twin and the port identically.
+THE CI ENVIRONMENT COULD OVERWRITE THE PRODUCTION KEYS AND THE TWIN PUTS THEM BACK. `ci_env` generates a throwaway Ed25519 pair only when `ACCOUNT_ED25519_PRIVATE_KEY` is empty -- which it never is here, since :29 already refused that case -- but
+it unconditionally re-exports `ACCOUNT_SERVER_API_KEY` from its `${VAR:-...}` arm,
+so the value survives. The save/restore on :47-49 and :61-63 is therefore belt-and-braces and is reproduced exactly rather than
+reasoned away: a future `ci_env` that stops honouring a caller's value would break nothing here.
 
-`CI_DOCKER_DIR` IS READ BACK FROM THE SOURCED ENVIRONMENT, not recomputed. The twin sets it on :22 and ci-env.sh then `export`s its own on :122; the twin's `.env` write on :78 uses whichever value is live after the source, which is ci-env.sh's. Both derive from the same `SCRIPT_DIR/../../..`, so they agree today; taking the sourced one keeps them agreeing if that ever stops being
+`CI_DOCKER_DIR` IS READ BACK FROM THE CI ENVIRONMENT, not recomputed. The twin set it on :22 and the sourced ci-env.sh then `export`ed its own; the twin's `.env` write on :78 used whichever value was live after the source, which was ci-env.sh's. Both derive from the console root, so they agree today; taking the CI environment's keeps them agreeing if that ever stops being
 true.
 
 `grep -q "healthy"` MATCHES `unhealthy`, AND THIS PORT REPRODUCES THE MATCH.
@@ -59,9 +59,10 @@ import os
 import pathlib
 import subprocess
 import sys
-import tempfile
 import time
 from typing import TYPE_CHECKING
+
+from rediacc_ci.infra import ci_env
 
 if TYPE_CHECKING:
     from typing import Unpack
@@ -82,48 +83,23 @@ REQUIRED_SECRETS = (
     "ACCOUNT_SERVER_API_KEY",
 )
 
-_SHELL_PRIVATE = frozenset({"_", "SHLVL", "PWD", "OLDPWD"})
-
 
 def _console_root() -> pathlib.Path:
     """The twin's `SCRIPT_DIR/../../..`; see `ci_start_elite._console_root`."""
     return pathlib.Path(__file__).resolve().parents[3]
 
 
-def source_ci_env(ci_env_sh: pathlib.Path) -> tuple[int, dict[str, str]]:
-    """Run the real bash `ci-env.sh` and return `(rc, exported environment)`.
+def configure_ci_env(console_root: pathlib.Path) -> tuple[int, dict[str, str]]:
+    """`ci_env.apply()` against this tree: `(rc, exported environment)`.
 
-    stdout and stderr are INHERITED so ci-env.sh's `::add-mask::` directives and its three-line summary land on this process's real streams in order.
+    The `::add-mask::` directives and the three summary lines go to this process's stdout in order, and the `.env` under `.ci/docker/ci` and the `$GITHUB_ENV` append happen exactly as they did when the bash was sourced. `console_root` is passed explicitly so the writes land in the tree this module sits in. See `ci_start_elite.configure_ci_env`.
     """
-    with tempfile.TemporaryDirectory() as td:
-        dump = pathlib.Path(td) / "env.0"
-        rc = subprocess.run(
-            [
-                "bash",
-                "-c",
-                'set -e\n. "$1"\nenv -0 >"$2"\n',
-                "bash",
-                str(ci_env_sh),
-                str(dump),
-            ],
-            check=False,
-        ).returncode
-        if rc != 0:
-            return rc, {}
-        raw = dump.read_bytes()
-
-    exported: dict[str, str] = {}
-    for entry in raw.split(b"\0"):
-        if not entry:
-            continue
-        name, sep, value = entry.partition(b"=")
-        if not sep:
-            continue
-        key = name.decode("utf-8", "replace")
-        if key in _SHELL_PRIVATE:
-            continue
-        exported[key] = value.decode("utf-8", "replace")
-    return 0, exported
+    try:
+        config = ci_env.apply(dict(os.environ), console_root)
+    except ci_env.ToolFailedError as failed:
+        print("ci_env: %s" % failed, file=sys.stderr, flush=True)
+        return failed.code, {}
+    return 0, dict(config.exported)
 
 
 def env_file_body(env: dict[str, str]) -> str:
@@ -224,7 +200,6 @@ def wait_for_account_server() -> bool:
 def main(argv: list[str]) -> int:
     del argv  # the twin takes no arguments
     console_root = _console_root()
-    script_dir = console_root / ".ci" / "scripts" / "infra"
 
     print("Starting Rediacc Account Server CI services...", flush=True)
 
@@ -236,7 +211,7 @@ def main(argv: list[str]) -> int:
 
     saved = {name: os.environ[name] for name in REQUIRED_SECRETS}
 
-    rc, env = source_ci_env(script_dir / "ci-env.sh")
+    rc, env = configure_ci_env(console_root)
     if rc != 0:
         return rc
     os.environ.update(env)

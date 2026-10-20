@@ -45,7 +45,7 @@ step: Language policy
 needs: none
 lane: quality-static
 selftest: true
-why: ruling 7 makes .ci, .claude and the scripts/{ops,drills,dev} trees Python; the bash surface there may shrink, never grow
+why: ruling 7 makes the tracked tree outside private/ one language per folder (widened 2026-10-20); the bash surface may shrink, never grow, and what stays bash is named with a BLOCKER
 ---- end gate ----
 """
 
@@ -82,7 +82,14 @@ ALLOWLIST = pathlib.Path(
 # library whose only remaining consumers are un-scoped bash means either breaking them or granting the library a permanent exemption for a reason that is really "nothing scopes the caller". Naming the three directories here makes the callers debt, which is what a drain can reach. Their 17 files enter `.ci/config/language-policy-baseline.json` FROZEN in the same change, so this
 # widening refuses a NEW bash file under them from today while porting none of them.
 # `scripts/drills` left with its last bash file (882658c69).
-COVERED_ROOTS = (".ci", ".claude", "scripts/ops", "scripts/dev")
+#
+# WIDENED AGAIN 2026-10-20 BY OPERATOR RULING ("Replace and widen the gate", PLAN-tooling-transformation W7P5-c): the scope is now EVERY TRACKED PATH outside `private/`. Under the four-root scope a new `.sh` under `.devcontainer/`, `.github/`, `packages/` or the rest of `scripts/` was refused by nothing, and the repo root was only half closed by `.ci/policy/tree-shape.json`'s `root_files`.
+# The bash that stays bash outside the old roots (installer entrypoints, devcontainer hooks, composite-action steps, product Rediaccfiles and template helpers) entered `.ci/policy/.language-policy-allowlist` in the same change, each with its own BLOCKER; nothing was baselined.
+# `private/` stays out because every entry under it is a submodule (gitlinks to renet, account, elite, homebrew-tap) with its own CI and its own rules, the same reason the enumeration never recurses into submodules.
+EXCLUDED_ROOTS = ("private",)
+
+# How every message names the scope. One string, so the refusal text and the success line cannot drift apart.
+SCOPE_LABEL = "the tracked tree outside %s" % ", ".join("%s/" % r for r in EXCLUDED_ROOTS)
 
 KEY = "bashFiles"
 
@@ -150,13 +157,14 @@ def is_bash(root: pathlib.Path, rel: str) -> bool:
 
 
 def tracked_files(root: pathlib.Path) -> list[str]:
-    """Every tracked path under the covered roots, in git's own words.
+    """Every tracked path outside the excluded roots, in git's own words.
 
     `git ls-files` and not a filesystem walk, because the policy is about what the repository SHIPS. An untracked scratch script is not a language-policy problem, and counting one would make the gate red on a colleague's working tree.
 
-    NOT `--recurse-submodules`: ruling 7 is about `.ci` and `.claude`, which are in this repository. A submodule has its own CI and its own rules.
+    NOT `--recurse-submodules`: a submodule has its own CI and its own rules. A gitlink outside the excluded roots would be listed as a path that is a directory on disk; `is_bash` reads it as not bash (no extension, and the shebang probe cannot open a directory), so it is never judged.
     """
-    proc = git(["-C", str(root), "ls-files", "-z", "--", *COVERED_ROOTS])
+    pathspec = [".", *(":(exclude)%s" % r for r in EXCLUDED_ROOTS)]
+    proc = git(["-C", str(root), "ls-files", "-z", "--", *pathspec])
     if proc.returncode != 0:
         raise CannotRunError(
             "`git ls-files` failed in %s (exit %d). Without it there is no corpus, and a\n"
@@ -168,7 +176,7 @@ def tracked_files(root: pathlib.Path) -> list[str]:
 
 
 def bash_corpus(root: pathlib.Path) -> list[str]:
-    """Every tracked shell script under the covered roots, sorted."""
+    """Every tracked shell script outside the excluded roots, sorted."""
     return sorted(rel for rel in tracked_files(root) if is_bash(root, rel))
 
 
@@ -438,7 +446,7 @@ def selftest() -> int:
     for that reason and because five copies of the hand-rolled one had already drifted
     (see .ci/rediacc_ci/controls.py's header).
     """
-    controls = Controls("language policy", floor=32)
+    controls = Controls("language policy", floor=34)
     # THE TREE UNDER TEST, not the one this file happens to live in. Anchoring on __file__ here made the controls assert against the real repository even when the caller had pointed the gate at a fixture, which is a coupling in the one place that must not have one: it left a mutated COPY of this gate unable to reach its own controls at all.
     here = ROOT
 
@@ -622,21 +630,39 @@ def selftest() -> int:
     # the cause. The corpus floor belongs to the verdict; what belongs here is proof that the ENUMERATION can tell a tree with bash in it from one without.
     with tempfile.TemporaryDirectory() as tmp:
         repo = pathlib.Path(tmp)
-        (repo / ".ci").mkdir()
+        for sub in (".ci", ".devcontainer", "packages/x", "private/sub", "private-notes"):
+            (repo / sub).mkdir(parents=True)
         (repo / ".ci" / "x.sh").write_text("echo x\n", encoding="utf-8")
         (repo / ".ci" / "notes.md").write_text("prose\n", encoding="utf-8")
-        (repo / "elsewhere.sh").write_text("echo not covered\n", encoding="utf-8")
+        # THE 2026-10-20 WIDENING, both directions. These three sat outside the four old roots and were invisible; each must now be counted.
+        (repo / ".devcontainer" / "planted.sh").write_text("echo hook\n", encoding="utf-8")
+        (repo / "packages" / "x" / "planted.sh").write_text("echo pkg\n", encoding="utf-8")
+        (repo / "toplevel.sh").write_text("echo root\n", encoding="utf-8")
+        # ...and the one exclusion must hold, by DIRECTORY rather than by prefix: `private-notes/` is not `private/`.
+        (repo / "private" / "sub" / "inside.sh").write_text("echo submodule\n", encoding="utf-8")
+        (repo / "private-notes" / "kept.sh").write_text("echo kept\n", encoding="utf-8")
         git(["-C", str(repo), "init", "-q"])
         git(["-C", str(repo), "add", "-A", "--", "."])
+        found = bash_corpus(repo)
         controls.check(
-            "the enumeration finds tracked bash under a covered root",
-            bash_corpus(repo),
-            [".ci/x.sh"],
+            "the enumeration finds tracked bash under .ci",
+            ".ci/x.sh" in found,
+            True,
         )
         controls.check(
-            "CONTROL: and ignores bash OUTSIDE the covered roots, and prose inside them",
-            [rel for rel in bash_corpus(repo) if rel != ".ci/x.sh"],
+            "WIDENED: bash under .devcontainer/, packages/ and the repo root is counted",
+            [rel for rel in found if rel.endswith("planted.sh") or rel == "toplevel.sh"],
+            [".devcontainer/planted.sh", "packages/x/planted.sh", "toplevel.sh"],
+        )
+        controls.check(
+            "CONTROL: bash under private/ is NOT counted, and prose is not bash",
+            [rel for rel in found if rel.startswith("private/") or rel.endswith(".md")],
             [],
+        )
+        controls.check(
+            "CONTROL: the private/ exclusion is a directory, not a prefix: private-notes/ is counted",
+            "private-notes/kept.sh" in found,
+            True,
         )
     controls.check(
         "CONTROL: a directory that is not a checkout raises CannotRunError, it does not "
@@ -664,12 +690,12 @@ def run() -> int:
     corpus = bash_corpus(ROOT)
     if not corpus:
         print(
-            "✗ VACUOUS: the enumeration found ZERO bash files under %s in %s.\n"
-            "  Measured 2026-09-07 there were 584, and 296 after the 2026-09-21 widening\n"
-            "  and the drains between. Zero means the scan did not see the\n"
+            "✗ VACUOUS: the enumeration found ZERO bash files in %s of %s.\n"
+            "  Measured 2026-09-07 there were 584, 296 after the 2026-09-21 widening,\n"
+            "  and 133 after the 2026-10-20 one. Zero means the scan did not see the\n"
             "  tree, not that the port is finished, and its silence would mean nothing.\n"
             "  Check LANGUAGE_POLICY_ROOT and that this is a checkout of the console repo."
-            % (", ".join(COVERED_ROOTS), ROOT),
+            % (SCOPE_LABEL, ROOT),
             file=sys.stderr,
         )
         return 1
@@ -705,13 +731,13 @@ def run() -> int:
         # STRICT MODE. This is W1 P6, reached by DELETING the baseline file rather than by editing this gate, which is why the plan box can be executed as written.
         if covered:
             print(
-                "✗ STRICT: %d bash file(s) under %s are neither exempt nor baselined,\n"
+                "✗ STRICT: %d bash file(s) in %s are neither exempt nor baselined,\n"
                 "  and there is no baseline file. Ruling 7 makes these trees Python; the\n"
                 "  only bash that survives is an allowlisted shim with a BLOCKER reason.\n"
                 "  If the baseline was DELETED by accident, restore it. Do not reseed it to\n"
                 "  make this quiet -- a reseed with no previous set records everything as\n"
                 "  permanent debt with nothing checking what is among it."
-                % (len(covered), ", ".join(COVERED_ROOTS)),
+                % (len(covered), SCOPE_LABEL),
                 file=sys.stderr,
             )
             for rel in covered[:20]:
@@ -720,18 +746,18 @@ def run() -> int:
                 print("    ... and %d more" % (len(covered) - 20), file=sys.stderr)
             return 1
         print(
-            "✓ language policy STRICT: %d bash file(s) under %s, all %d of them "
-            "allowlisted with a stated reason. No baseline file exists, which is the "
-            "goal state." % (len(corpus), ", ".join(COVERED_ROOTS), len(exempt))
+            "✓ language policy STRICT: %d bash file(s) in %s, all %d of them "
+            "allowlisted with a stated reason across %d entr(ies). No baseline file "
+            "exists, which is the goal state."
+            % (len(corpus), SCOPE_LABEL, len(exempt), len(entries))
         )
         return 0
 
     added = baseline_additions(baseline, covered)
     if added:
         print(
-            "✗ %d NEW bash file(s) under %s. Ruling 7 (2026-09-06) makes these trees\n"
-            "  Python; the surface may shrink and may never grow:"
-            % (len(added), ", ".join(COVERED_ROOTS)),
+            "✗ %d NEW bash file(s) in %s. Ruling 7 (2026-09-06) makes these trees\n"
+            "  Python; the surface may shrink and may never grow:" % (len(added), SCOPE_LABEL),
             file=sys.stderr,
         )
         for rel in added:
@@ -767,9 +793,9 @@ def run() -> int:
         return 1
 
     print(
-        "✓ language policy: %d bash file(s) under %s -- %d frozen (shrink-only, "
+        "✓ language policy: %d bash file(s) in %s -- %d frozen (shrink-only, "
         "none added), %d exempt by name across %d allowlist entr(ies)."
-        % (len(corpus), ", ".join(COVERED_ROOTS), len(covered), len(exempt), len(entries))
+        % (len(corpus), SCOPE_LABEL, len(covered), len(exempt), len(entries))
     )
     for kind, value, _ in entries:
         n = len([rel for rel in corpus if exemption_for(rel, entries) == (kind, value)])

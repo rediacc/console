@@ -10,9 +10,9 @@
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$SCRIPT_DIR/../../scripts/lib/well-known.sh"
-well_known_load
+# The WK_* facts, exported; the shell wins over the registry and nothing in the file executes.
+# shellcheck source=../config/well-known.generated.sh
+source "$SCRIPT_DIR/../config/well-known.generated.sh"
 source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
 clear_screen

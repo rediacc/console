@@ -1,13 +1,11 @@
-"""`rediacc_ci.quality.compose_env` against the three shell pipelines it replaces.
+"""`rediacc_ci.quality.compose_env` against the shell pipelines it replaces, and its read of `ci_env.PERSISTED`.
 
-WHY EVERY CASE HERE IS A DIFFERENTIAL. This gate is three extraction pipelines and one set comparison, and all three pipelines are PCRE and sed:
+WHY THE COMPOSE CASES ARE DIFFERENTIALS. Two of the gate's three extractions are PCRE pipelines, and they are still compared against the real `grep`:
 
     grep -ohP '\\$\\{[A-Z0-9_]+'                             the references
     grep -ohP '...:-[^}]+\\}' | grep -vP ':-\\}$' | grep -oP  the safe defaults
-    sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p' | grep -oP            the persisted set
 
-sed's RANGE semantics are the part nobody reproduces correctly from memory: the start line never closes its own range, a range restarts, and an unterminated one runs to end of file. Asserting the Python against a table of expected lists would assert it against whatever the author believed sed does. Running sed is the only version of this test that can be wrong in the author's
-favour and still fail.
+THE THIRD, THE PERSISTED SET, IS NO LONGER A PIPELINE (W7P5-c). It was a `sed` range over the deleted `ci-env.sh` heredoc; it is now an `ast` read of the `PERSISTED` tuple in `.ci/rediacc_ci/infra/ci_env.py`, so its cases below are a table of literal sources with the answer each must produce, in both directions, plus the refusals.
 
 The whole gate is compared end to end by `.ci/shadow/w7p2-compose-env.observations.jsonl` over five distinct trees.
 """
@@ -18,6 +16,7 @@ import re
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.infra import ci_env
 from rediacc_ci.quality import compose_env as ce
 from rediacc_ci.tests import differential as diff
 
@@ -25,9 +24,6 @@ REFERENCE_PIPELINE = "grep -ohP '\\$\\{[A-Z0-9_]+' *.yml 2>/dev/null | sed 's/\\
 SAFE_PIPELINE = (
     "grep -ohP '\\$\\{[A-Z0-9_]+:-[^}]+\\}' *.yml 2>/dev/null | "
     "grep -vP ':-\\}$' | grep -oP '(?<=\\$\\{)[A-Z0-9_]+' | sort -u"
-)
-PERSISTED_PIPELINE = (
-    "sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p' ci-env.sh | grep -oP '^[A-Z0-9_]+(?==)' | sort -u"
 )
 
 COMPOSE_CASES = [
@@ -80,39 +76,75 @@ def test_the_compose_table_exercises_both_directions(tmp_path: pathlib.Path) -> 
     assert nonempty, "no case yields a safe default: the extractor may be dead"
 
 
-ENVBLOCK_CASES = [
-    ("ordinary block", "x=1\ncat <<ENVBLOCK\nA=1\nB=2\nENVBLOCK\nC=3\n"),
-    ("no block at all", "A=1\nB=2\n"),
-    ("unterminated block runs to EOF", "cat <<ENVBLOCK\nA=1\nB=2\n"),
+PERSISTED_CASES = [
     (
-        "two blocks restart the range",
-        "cat <<ENVBLOCK\nA=1\nENVBLOCK\nB=2\ncat <<ENVBLOCK\nC=3\nENVBLOCK\nD=4\n",
+        "annotated tuple",
+        'PERSISTED: tuple[tuple[str, str | None], ...] = (("B", None), ("A", "x"))\n',
+        ["A", "B"],
     ),
-    ("the terminator line itself is inside the range", "cat <<ENVBLOCK\nENVBLOCK\nA=1\n"),
-    ("an indented terminator does not close it", "cat <<ENVBLOCK\nA=1\n  ENVBLOCK\nB=2\n"),
-    ("assignments outside are ignored", "export A=1\ncat <<ENVBLOCK\nB=2\nENVBLOCK\nC=3\n"),
-    ("lowercase names are not assignments", "cat <<ENVBLOCK\nabc=1\nB=2\nENVBLOCK\n"),
-    ("an indented assignment is not at line start", "cat <<ENVBLOCK\n  A=1\nB=2\nENVBLOCK\n"),
-    ("an empty file", ""),
+    ("plain assignment", 'PERSISTED = (("ONE", None),)\n', ["ONE"]),
+    (
+        "other tables do not count",
+        'SYSTEM_DEFAULTS = (("X", "1"),)\nPERSISTED = (("ONE", None),)\nMASKED = ("Y",)\n',
+        ["ONE"],
+    ),
+    ("an empty table is read as empty", "PERSISTED = ()\n", []),
+    (
+        "a repeated name is reported once",
+        'PERSISTED = (("ONE", None), ("ONE", ""))\n',
+        ["ONE"],
+    ),
+    (
+        "a nested PERSISTED inside a function is not the module table",
+        'def f():\n    PERSISTED = (("INNER", None),)\nPERSISTED = (("OUTER", None),)\n',
+        ["OUTER"],
+    ),
 ]
 
 
-@pytest.mark.parametrize(("why", "content"), ENVBLOCK_CASES)
-def test_persisted_extraction_matches_sed(tmp_path: pathlib.Path, why: str, content: str) -> None:
-    (tmp_path / "ci-env.sh").write_text(content, encoding="utf-8")
-    assert ce.persisted_vars(tmp_path / "ci-env.sh") == _bash(PERSISTED_PIPELINE, tmp_path), why
+@pytest.mark.parametrize(("why", "content", "want"), PERSISTED_CASES)
+def test_persisted_extraction(
+    tmp_path: pathlib.Path, why: str, content: str, want: list[str]
+) -> None:
+    (tmp_path / "ci_env.py").write_text(content, encoding="utf-8")
+    assert ce.persisted_vars(tmp_path / "ci_env.py") == want, why
 
 
-def test_the_envblock_table_exercises_both_directions(tmp_path: pathlib.Path) -> None:
-    """Same anti-vacuity claim for the sed range."""
-    empty = []
-    nonempty = []
-    for why, content in ENVBLOCK_CASES:
-        (tmp_path / "ci-env.sh").write_text(content, encoding="utf-8")
-        found = ce.persisted_vars(tmp_path / "ci-env.sh")
-        (nonempty if found else empty).append(why)
-    assert empty, "every fixture persists something: the sed range may be too wide"
-    assert nonempty, "no fixture persists anything: the sed range may be dead"
+def test_the_persisted_table_exercises_both_directions() -> None:
+    """ANTI-VACUITY: the table holds a case that persists nothing and cases that persist something."""
+    wants = [want for _why, _content, want in PERSISTED_CASES]
+    assert [] in wants, (
+        "no case persists nothing: an extractor that always answers [] could not fail"
+    )
+    assert any(wants), "no case persists anything: the extractor may be dead"
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        pytest.param('SYSTEM_DEFAULTS = (("X", "1"),)\n', id="no table at all"),
+        pytest.param("PERSISTED = list()\n", id="the table is not a tuple"),
+        pytest.param("PERSISTED = (NAME,)\n", id="an entry is not a literal tuple"),
+        pytest.param("PERSISTED = ((1, None),)\n", id="an entry's name is not a string"),
+        pytest.param("PERSISTED = ((\n", id="the file does not parse"),
+    ],
+)
+def test_an_unreadable_table_is_refused(tmp_path: pathlib.Path, content: str) -> None:
+    """A table the gate cannot read is a refusal, never an empty persisted set: an empty set reads as "everything unpersisted", which is red for the wrong reason."""
+    (tmp_path / "ci_env.py").write_text(content, encoding="utf-8")
+    with pytest.raises(ce.PersistedUnreadableError):
+        ce.persisted_vars(tmp_path / "ci_env.py")
+
+
+def test_a_missing_file_is_refused(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(ce.PersistedUnreadableError):
+        ce.persisted_vars(tmp_path / "ci_env.py")
+
+
+def test_the_real_table_is_the_ports_own() -> None:
+    """The AST read and the import agree on the real file, so the gate sees exactly what `ci_env` writes."""
+    real = paths.repo_root() / ce.CI_ENV_SUBPATH
+    assert ce.persisted_vars(real) == sorted({name for name, _ in ci_env.PERSISTED}, key=str.encode)
 
 
 def test_the_safe_default_filter_is_dormant_not_dead() -> None:
@@ -133,8 +165,8 @@ def test_zero_references_is_a_refusal(tmp_path: pathlib.Path, monkeypatch) -> No
     """ZERO INPUTS IS A FAILURE. A parse that finds nothing has verified nothing."""
     (tmp_path / ".ci/docker/ci").mkdir(parents=True)
     (tmp_path / ".ci/docker/ci/docker-compose.yml").write_text("image: alpine\n", encoding="utf-8")
-    (tmp_path / ".ci/scripts/infra").mkdir(parents=True)
-    (tmp_path / ".ci/scripts/infra/ci-env.sh").write_text("\n", encoding="utf-8")
+    (tmp_path / ".ci/rediacc_ci/infra").mkdir(parents=True)
+    (tmp_path / ce.CI_ENV_SUBPATH).write_text('PERSISTED = (("ONE", None),)\n', encoding="utf-8")
     monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
     assert ce.main([]) == 1
 
@@ -143,10 +175,8 @@ def test_a_persisted_reference_passes(tmp_path: pathlib.Path, monkeypatch) -> No
     """The mirror. Without it the refusal above could be a gate that refuses everything."""
     (tmp_path / ".ci/docker/ci").mkdir(parents=True)
     (tmp_path / ".ci/docker/ci/docker-compose.yml").write_text("a: ${ONE}\n", encoding="utf-8")
-    (tmp_path / ".ci/scripts/infra").mkdir(parents=True)
-    (tmp_path / ".ci/scripts/infra/ci-env.sh").write_text(
-        "cat <<ENVBLOCK\nONE=1\nENVBLOCK\n", encoding="utf-8"
-    )
+    (tmp_path / ".ci/rediacc_ci/infra").mkdir(parents=True)
+    (tmp_path / ce.CI_ENV_SUBPATH).write_text('PERSISTED = (("ONE", None),)\n', encoding="utf-8")
     monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
     assert ce.main([]) == 0
 

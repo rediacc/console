@@ -8,7 +8,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   2. A leg that failed after the server had started left the server running (and the port bound) on any local run. The server's process group is terminated on every failure path; on success it is deliberately left alive.
   3. A stale server already answering `/health` on the port made the twin seed and mint against THAT server, whose keys it had never seen. A port that already answers is refused before anything starts.
   4. `--port` with no value was a raw bash `parameter null or not set` diagnostic and exit 1; it is a usage error, exit 2, like the unknown option next to it.
-  5. The throwaway secrets come from `secrets.token_hex` instead of `openssl rand -hex 32`, whose silent failure left them empty in the sibling `ci-env.sh` (see `infra/ci_env.py`). Same shape, 64 hex characters.
+  5. The throwaway secrets come from `secrets.token_hex` instead of `openssl rand -hex 32`, whose silent failure left them empty in the retired `ci-env.sh` (see `infra/ci_env.py`). Same shape, 64 hex characters.
   6. The cookie jar lives in memory; the twin wrote and removed `account-for-e2e-cookies.txt`.
 """
 

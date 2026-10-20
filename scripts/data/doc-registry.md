@@ -813,7 +813,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.embed-assets-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.go-deps-upgrade-blocklist | 3 | # comment |
 | .ci/policy/.host-toolchain-exceptions | 1 | prose only (no live entry) |
-| .ci/policy/.language-policy-allowlist | 21 | # comment |
+| .ci/policy/.language-policy-allowlist | 40 | # comment |
 | .ci/policy/.pins-upgrade-blocklist | 6 | inline |
 | .ci/policy/.plan-housekeeping-allowlist | 5 | # comment |
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
@@ -969,7 +969,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/shfmt | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/staging-tag-guard | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/standing-orders-brief | 16 | .golden 16 |
-| .ci/rediacc_ci/tests/goldens/twins | 123 | .jsonl 123 |
+| .ci/rediacc_ci/tests/goldens/twins | 124 | .jsonl 124 |
 | .ci/rediacc_ci/tests/goldens/validate-stage-artifacts | 3 | .golden 3 |
 | .ci/rediacc_ci/tests/goldens/verify-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/version-bump | 28 | .golden 28 |
@@ -984,7 +984,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/docker | 4 | .py 4 |
 | .ci/scripts/docs | 2 | .mjs 2 |
 | .ci/scripts/housekeeping | 1 | .py 1 |
-| .ci/scripts/infra | 4 | .sh 4 |
+| .ci/scripts/infra | 3 | .sh 3 |
 | .ci/scripts/lib | 1 | .sh 1 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
 | .ci/scripts/quality | 163 | .py 161, .json 1, .mjs 1 |
@@ -993,7 +993,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/test | 2 | .sh 1, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/lib | 1 | .sh 1 |
-| .ci/shadow | 284 | .jsonl 283, .json 1 |
+| .ci/shadow | 287 | .jsonl 286, .json 1 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/apps/heartbeat | 2 | (none) 1, .yaml 1 |

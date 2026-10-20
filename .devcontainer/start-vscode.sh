@@ -35,9 +35,9 @@
 
 set -euo pipefail
 
-# shellcheck source=/dev/null
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/lib/well-known.sh"
-well_known_load
+# The WK_* facts, exported; the shell wins over the registry and nothing in the file executes.
+# shellcheck source=../.ci/config/well-known.generated.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.ci/config/well-known.generated.sh"
 
 DEFAULT_VERSION="1.109.5"   # keep in sync with OPENVSCODE_VERSION in .devcontainer/Dockerfile
                             # `--version latest` resolves the newest release at run time

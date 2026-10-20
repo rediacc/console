@@ -10,8 +10,9 @@
 # 2026-09-07 were frozen in a generated, shrink-only baseline
 # (`.ci/config/language-policy-baseline.json`). PLAN-retire-bash-oracles drained
 # it to the survivors below and deleted it, which is the W1 P6 strict flip: the
-# gate now refuses every tracked bash file in the covered trees that this file
-# does not name. An entry HERE is a claim that the file stays bash, and adding
+# gate now refuses every tracked bash file it reads that this file does not name.
+# Since 2026-10-20 it reads every tracked path outside private/ (see the WIDENED
+# note before the last block of entries). An entry HERE is a claim that the file stays bash, and adding
 # one is a decision that needs a reason that survives the reading, never a way
 # past a red.
 #
@@ -83,7 +84,7 @@ file:.ci/bootstrap.sh
 # BLOCKER: a sourceable variable table whose consumers sit outside ruling 7's reach and stay bash for good -- .ci/media/media-entry.sh:49 sources it, as do two inline workflow run: steps (cd-deploy-account.yml:261, ct-tests.yml:179), and Python already reads it through the shell bridge at .ci/rediacc_ci/setup/bridge.py instead of reimplementing it
 file:.ci/config/constants.sh
 
-# BLOCKER: generated, sourceable variable table (check_literal_sources.py --write renders it from .ci/config/well-known.env and R4 holds it equal); its consumers are bash that run where python3 is not guaranteed: .ci/config/constants.sh, .ci/docker/service/env.sh:15 (sourced into the caller's shell) and .ci/media/tools/upload-r2.sh:63
+# BLOCKER: generated, sourceable variable table (check_literal_sources.py --write renders it from .ci/config/well-known.env and R4 holds it equal); its consumers are bash that run where python3 is not guaranteed: .ci/config/constants.sh, .ci/docker/service/env.sh:15 (sourced into the caller's shell), .ci/media/tools/upload-r2.sh:63, and since W7P5-c .devcontainer/init-submodules.sh, .devcontainer/start-vscode.sh and .ci/tutorials/tutorial-installation.sh
 file:.ci/config/well-known.generated.sh
 
 # BLOCKER: this is PID 1 of the published web image, copied to /docker-entrypoint.sh at Dockerfile:127 and named by ENTRYPOINT at Dockerfile:136, and the image is nginx on alpine with no Python interpreter in it; adding one to satisfy a repo-side language rule changes the shipped artifact rather than this repository
@@ -115,9 +116,6 @@ file:.ci/scripts/test/lib/git-fixture.sh
 # BLOCKER: driven by mutate_check.py, whose own docstring says a Python reimplementation "would be a second instrument and this gate would then certify the wrong one" -- same shape as git-fixture.sh above
 file:.ci/scripts/test/mutate-check.sh
 
-# BLOCKER: sourced only, through `bash -c '. "$1"; env -0'` by the ports ci_start_account.py and ci_start_elite.py (ci-start-elite.sh is now a one-line shim over the latter) and by hand per .ci/docker/ci/docker-compose.yml:7, to export variables into the CALLER's shell -- same contract as the already-exempted .ci/docker/service/env.sh, a child process cannot mutate its parent's environment in any language
-file:.ci/scripts/infra/ci-env.sh
-
 # BLOCKER: a bound fixture, not a standalone tool, doubly tied to bash -- .ci/rediacc_ci/quality/mutate_check.py:75 hardcodes SUITE_NAME as this exact basename and mutate-check.sh:166,171 invokes it as `bash "$SUITE"` explicitly; a Python rewrite would need edits to another gate's live contract plus the already-exempted mutate-check.sh, neither owned by this box
 file:.ci/scripts/test/fixtures/mutate-check/fixture-suite.sh
 
@@ -132,3 +130,72 @@ file:.ci/scripts/lib/toolchain.sh
 
 # BLOCKER: a two-line forwarder to .ci/media/tools/upload-r2.sh whose PATH is spelled by private/growth/video_pipeline/publish.py:38 (_R2_UPLOAD_SCRIPT), a gitignored repository (.gitignore:81) this checkout cannot commit to, so the name including its extension is frozen by a caller no change here can reach; test_gate_media_shims.py proves the forward, and deleting it is a cross-repo breaking change
 file:.ci/scripts/deploy/upload-media-to-r2.sh
+
+# WIDENED 2026-10-20 (operator ruling on PLAN-tooling-transformation W7P5-c, "Replace and
+# widen the gate"): the gate now reads every tracked path outside private/, so the bash
+# that lives outside .ci, .claude, scripts/ops and scripts/dev entered this file in the
+# same change. Each entry below was written after its citation was checked against the
+# tree. `file:` is used wherever one file is meant; the two `tree:` entries are product
+# template directories whose every bash file is shipped content. A `tree:.devcontainer/`
+# entry was rejected for the reason `tree:.ci/docker/` was: it would exempt a NEW script
+# there that has no reason of its own.
+
+# BLOCKER: a Rediaccfile is bash by product definition (renet sources it and calls its up/down/info functions, private/renet/pkg/orchestration), and the helper scripts beside them (postgres.sh, tool.sh, tunnel.sh) are called by name from their Rediaccfile and README (cloud-switch/Rediaccfile:11,24, docker-mailserver/Rediaccfile:73-82, postgresql/README.md:23-27); these are templates users deploy, not repository tooling
+tree:packages/json/templates/
+
+# BLOCKER: the Rediaccfiles `rdc` scaffolds new repositories from, bash by product definition because renet sources a Rediaccfile and calls its lifecycle functions; rewriting them would change what the CLI ships to users
+tree:packages/cli/templates/
+
+# BLOCKER: an e2e fixture whose BYTES are the input under test: 05-rediaccfiles-updown.test.ts:280 and 07-container-operations.test.ts:52,272,542 read it with readFixture and deploy it as a repository's Rediaccfile, which renet sources as bash
+file:packages/e2e-tests/fixtures/bridge/Rediaccfile.nginx
+
+# BLOCKER: an e2e fixture deployed as a repository's Rediaccfile by the bridge suite, the PostgreSQL sibling of Rediaccfile.nginx; renet sources it as bash, so its language is the product's, not this repository's
+file:packages/e2e-tests/fixtures/bridge/Rediaccfile.postgresql
+
+# BLOCKER: the public installer served as https://www.rediacc.com/install.sh and run as `curl -fsSL .../install.sh | bash` on a user's machine (header lines 9-14), where nothing but a POSIX shell can be assumed; ct-update-flow.yml and ci.yml:939 test it as shipped
+file:packages/www/public/install.sh
+
+# BLOCKER: the repository's front door and a pure router (header lines 2-13): it must be able to say that python3 is missing (run.sh:25-29) before handing every verb to python3 -m rediacc_ci, and it routes provision/www to .ci/media/media-entry.sh, which ruling 7 keeps bash; a Python router could not report its own interpreter's absence
+file:run.sh
+
+# BLOCKER: the CLI entry point people type (.ci/policy/tree-shape.json root_files), which must report a missing python3 (rdc.sh:31-35) before preparing the CLI through the Python CI package and then exec node on the bundle (rdc.sh:184); written in Python it could not report the one absence it checks for
+file:rdc.sh
+
+# BLOCKER: the operator's spelling of the growth media verb (header lines 2-16), an exec into .ci/media/media-entry.sh growth, which is exempt under tree:.ci/media/ because it drives the gitignored private/growth and private/generative repositories
+file:media.sh
+
+# BLOCKER: a POSIX sh login-shell hook bind-mounted to /etc/profile.d/zz-devbox-bws.sh (.ci/rediacc_ci/core/devbox.py:174); /etc/profile SOURCES it into every login shell, dash included (header line 8), and a sourced file can only be shell
+file:.devcontainer/devbox-bws.sh
+
+# BLOCKER: the devbox container's entrypoint (passed as --entrypoint at .ci/rediacc_ci/core/devbox.py:2020, bind-mounted at :171), whose contract ends in `exec su ... -c "exec openvscode-server ..."` (lines 157-163) so the user's server becomes the container's main process; a Python entrypoint would only wrap the same exec chain
+file:.devcontainer/devbox-entrypoint.sh
+
+# BLOCKER: a container-start hook the devbox entrypoint runs by path (devbox-entrypoint.sh:140-150, bind-mounted at .ci/rediacc_ci/core/devbox.py:172) that must never fail the container and only dispatches ./run.sh service verbs (header lines 13-17); every service it starts is already Python behind run.sh
+file:.devcontainer/devbox-autostart.sh
+
+# BLOCKER: a SHIPPED PRODUCT INTERFACE: renet's hub runs the published image without this repository and invokes it BY NAME as the container command and as CRIU checkpoint hooks (header lines 7-14, the rediacc.hub.* labels documented in packages/www/src/content/docs/*/hub.md), so its name and its shell contract are part of the image users run
+file:.devcontainer/start-desktop.sh
+
+# BLOCKER: a SHIPPED PRODUCT INTERFACE like start-desktop.sh: the hub invokes it by name through a compose label in an image that does not hold this repository (header lines 8-11), and it is also bind-mounted into the devbox (.ci/rediacc_ci/core/devbox.py:173); it must stay a self-contained file the image can run on its own
+file:.devcontainer/start-ttyd.sh
+
+# BLOCKER: copied into the image at .devcontainer/Dockerfile:776 and run by name from devcontainer.json:53 postStartCommand; the Dockerfile's build context is .devcontainer/, which cannot reach .ci/rediacc_ci, so a port could not use the repository's Python library and would be a standalone second implementation of the same service bring-up
+file:.devcontainer/start-kvm.sh
+
+# BLOCKER: an image build step, copied to /tmp and run by RUN at .devcontainer/Dockerfile:700-703, inside a build context (.devcontainer/) that cannot reach .ci/rediacc_ci; it is a download loop over an extension list the image bakes in, with nothing for the repository's Python library to own
+file:.devcontainer/download-extensions.sh
+
+# BLOCKER: the first command of devcontainer.json:52 postCreateCommand (`bash .devcontainer/init-submodules.sh || true`, before npm install) and of the setup phase in .ci/rediacc_ci/setup/machine.py:337-341; it fetches the private submodules on a fresh clone, best-effort, before any toolchain the repository installs exists
+file:.devcontainer/init-submodules.sh
+
+# BLOCKER: a host-side launcher that runs in three places, the devcontainer, a plain Linux host and ChromeOS/Crostini (header lines 4-7), started by hand (.ci/policy/.dead-bash-allowlist:30) and ending in exec of the openvscode-server binary; on a plain host it must run before any of the repository's toolchain is provisioned
+file:.devcontainer/start-vscode.sh
+
+# BLOCKER: one step of the app-token composite action (.github/actions/app-token/action.yml:136), whose every other step is inline `shell: bash` (:50, :122, :132) and which 17 workflows use; the action is the language boundary, so porting this file alone leaves the action exactly as much bash as it was
+file:.github/actions/app-token/probe-repos.sh
+
+# BLOCKER: one step of the bws-secrets composite action (.github/actions/bws-secrets/action.yml:225), whose other steps are inline `shell: bash` (:68, :140, :221, :260), used by 21 workflows including macOS and Windows runners (ci-build-renet.yml, ci-ops-test.yml); the action is the language boundary, so porting this file alone moves nothing
+file:.github/actions/bws-secrets/fetch.sh
+
+# BLOCKER: an operator-owned file: .claude/rediacc_hooks/guards/block_protected_files.py:29-31 refuses its deletion or restore from the assistant's shell, so retiring it (it has no tracked caller, .ci/policy/.dead-bash-allowlist:33) is the operator's decision (W7P5-c D2), and porting a file the operator may delete would be work against that decision
+file:scripts/pre-commit-check.sh

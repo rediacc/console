@@ -5,16 +5,14 @@ WHY THIS EXISTS. `set -a; source "$f"` does two things nobody at the call site a
 GITHUB_ENV append, `RUSTFS_PORT=9101 ./script` -- is discarded in favour of a line
 written to disk months ago, silently.
 
-`rediacc_ci.core.env` is the replacement and `scripts/lib/env-file.sh` is the bash shim over it.
+`rediacc_ci.core.env` is the replacement. A Python caller reads the file with `env_file_load`; a bash caller that cannot be ported yet evals the module's `export` verb, which prints one shell-quoted `export KEY=value` line for every key the environment does not already carry:
 
-WHY THE SHIM LIVES UNDER `scripts/lib/` AND NOT `.ci/lib/`, WHICH IS WHERE ITS SIBLINGS ARE. Ruling 7 makes `.ci` and `.claude` single-language: `check_language_policy.COVERED_ROOTS` is `(".ci", ".claude")` and its `baseline_additions` refuses a NEW tracked `.sh` under either. The first cut of this work put the shim at `.ci/lib/env-file.sh` beside `find-port.sh` and
-`age-check.sh`, and `check:ci-language-policy` went rc=1 with `2 NEW bash
-file(s)`; the registration was unwound rather than allowlisted.
+    out="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.env export "$f")" || exit 1
+    eval "$out"
 
-A bash shim for bash callers cannot itself be Python, so the choice was an allowlist entry or a different address. `scripts/` is not a covered root, and the shim already serves callers on both sides of the line -- `scripts/ops/deploy-bench.sh` and `programs/backup-storage/start-local-plane.sh` (both since ported to Python) were never under `.ci` at all -- so a shared location is the better description of what
-it is, not merely the legal one. No exemption was added to any allowlist for this gate or for the shim.
+THE BASH SHIM IS GONE (W7P5-c). `scripts/lib/env-file.sh` wrapped exactly that call as a function; its last bash caller was `scripts/lib/well-known.sh`, which went with it when its three consumers moved to `.ci/config/well-known.generated.sh` (equivalence: `.ci/shadow/w7p5c-well-known-projection.observations.jsonl`). The ADOPTED-SITES check that used to re-run each adopted bash site's own `env_file_load` line went too: it needed the shim's function to exist, and its list was already empty: every adopted site (the bench deploy, `start-local-plane.sh`, `.ci/lib/account.sh`) had been ported to Python and reads the file through `rediacc_ci.core.env` directly. A bash site that comes back needs no list to be held to the rule, because CHECK A refuses its `set -a` wherever it is.
 
-THREE CHECKS, because two of them can pass while the thing is broken:
+TWO CHECKS, because one of them can pass while the thing is broken:
 
   A. SWEEP. No shell file may run `set -a`, except the exemptions below, each of
      which is PRINTED with its reason on every run and is liveness-checked: an
@@ -30,17 +28,11 @@ THREE CHECKS, because two of them can pass while the thing is broken:
      purpose -- the wider set is the one worth sweeping, and the first thing the
      widened matcher found lived in `.claude/`, outside all three named roots.
 
-  B. PER-SITE ACCEPTANCE, and it RUNS the site's own line. For each adopted site
-     this extracts the literal `env_file_load` invocations out of the file, points
-     each one at a fixture, plants one of the fixture's own names in the
-     environment with a DIFFERENT value, and asserts the shell value survives
-     while an unplanted name is still filled from the file. A site that reverts to
-     `source` has no invocation to extract and fails here.
-
   C. DIFFERENTIAL. The same fixture, under a real `set -a; source`, must give the
-     OPPOSITE answer. Without this, B would pass just as happily against a helper
-     that did nothing at all, because "the variable still holds the value I
-     exported" is also what happens when nothing reads the file.
+     OPPOSITE answer to the one the `export` verb gives. Without this, the
+     selftest's "the shell wins" would pass just as happily against a loader that
+     did nothing at all, because "the variable still holds the value I exported"
+     is also what happens when nothing reads the file.
 
 ONE EXEMPTION DISAPPEARED IN THE PORT, and it is worth saying why rather than letting the list quietly shrink by one. The bash predecessor had to exempt ITSELF: it wrote `set -a` fixtures to prove its own matcher fired on all three spellings, and the sweep read those literals in its own source. This module has the same fixtures and needs no exemption, because the sweep scans `*.sh`
 and this is not one. That is a real reduction in exempted surface, not an accounting change -- the alternative the predecessor named was obfuscating the literal so the sweep could not see it, which would have disarmed the control that keeps the matcher honest.
@@ -59,13 +51,12 @@ import tempfile
 from rediacc_ci import log, paths, runtmp
 from rediacc_ci.controls import Controls, controls_first, git_isolated
 
-SHIM_REL = "scripts/lib/env-file.sh"
-
-# The sites that adopted the shim. Each must still call it; see CHECK B.
-# The bench deploy LEFT this list on 2026-09-24: it reads no env file at all, re-executing itself under the `deploy-bench` Bitwarden profile (PLAN-account-env-to-bws T17/T18). It is the Python module `rediacc_ci.ops.deploy_bench` since PLAN-retire-bash-oracles B3.
-# `programs/backup-storage/start-local-plane.sh` LEFT this list when it became the Python module `rediacc_ci.drills.backup_local_plane` (PLAN-retire-bash-oracles B5), which reads the file through `rediacc_ci.core.env` directly.
-# `.ci/lib/account.sh` LEFT it when that library was ported to Python (PLAN-retire-bash-oracles B3, W8); the Python callers read the file through `rediacc_ci.core.env`. No bash site is left that calls `env_file_load`, so CHECK B has nothing to run until one is adopted again, and CHECKS A and C (the sweep and the differential) carry the gate.
-ADOPTED: tuple[str, ...] = ()
+# The remedy every finding names: the module that parses an env file without executing it, and the bash spelling of a call to it.
+LOADER_MODULE = "rediacc_ci.core.env"
+# Two steps, never `eval "$(...)"`: the substitution's exit status is lost inside an eval, so an unreadable file would load nothing and say nothing.
+BASH_LOADER = (
+    'out="$(PYTHONPATH=.ci python3 -m %s export "$f")" || exit 1; eval "$out"' % LOADER_MODULE
+)
 
 # The sites that may still run `set -a`, reason first. These are PRINTED every run rather than being quietly skipped: an exemption nobody sees is how a gate stops meaning what its name says.
 EXEMPT = (
@@ -96,9 +87,6 @@ EXEMPT = (
 # So the boundary is now a lookahead over the shell separators as well as whitespace and end-of-line. It stays a LOOKAHEAD so a `;` cannot be consumed and hide a second command on the same line from a future clause.
 SET_A_RE = re.compile(r"(?:^|[;&|(]|&&)\s*set -a(?=\s|[;&|)]|$)")
 COMMENT_RE = re.compile(r"^\s*#")
-
-# The invocation shape CHECK B extracts and re-runs.
-INVOKE_RE = re.compile(r'(?:^|[;&|(]|&&)\s*env_file_load\s+"')
 
 SCAN_GLOBS = (".ci/**/*.sh", "scripts/**/*.sh", "programs/**/*.sh", "*.sh")
 
@@ -182,7 +170,7 @@ def check_sweep(root):
         for lineno, _text in hits:
             findings.append(
                 "%s:%d -- `set -a` executes the file and lets it overwrite the shell; "
-                "use env_file_load from %s" % (rel, lineno, SHIM_REL)
+                "read it with %s (in bash: %s)" % (rel, lineno, LOADER_MODULE, BASH_LOADER)
             )
     # Liveness: an exemption for a file that no longer runs `set -a` excuses nothing and would sit forever looking like coverage. The list may only shrink.
     for rel in sorted(reasons):
@@ -196,56 +184,16 @@ def check_sweep(root):
     return findings, len(scan)
 
 
-def check_sites(root, fixture, adopted=None):
-    """CHECK B. Returns (findings, n_invocations).
-
-    `adopted` defaults to the real list; the selftest passes its own so the anti-silencer plant needs no real file.
-    """
-    findings = []
-    invocations = 0
-    for site in adopted or ADOPTED:
-        path = root / site
-        if not path.is_file():
-            findings.append("%s: listed as an adopted site and not present" % site)
-            continue
-        lines = [
-            (i, line)
-            for i, line in enumerate(
-                path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
-            )
-            if INVOKE_RE.search(line) and not COMMENT_RE.match(line)
-        ]
-        if not lines:
-            findings.append(
-                '%s: no `env_file_load "..."` invocation -- adoption was reverted, or '
-                "the call moved and this gate went blind" % site
-            )
-            continue
-        for lineno, body in lines:
-            # Point the site's OWN line at the fixture, and neutralise a trailing `|| return 1` that only makes sense inside a function.
-            probe = re.sub(r'env_file_load "[^"]*"', 'env_file_load "%s"' % fixture, body)
-            probe = re.sub(r"\|\| *return [0-9]+", "|| exit 1", probe)
-            rc, out = _sh(
-                'source "$1/%s" || exit 9\nshift 2\neval "$@"\necho "$PLANTED/$FILLED"' % SHIM_REL,
-                root,
-                "x",
-                probe,
-                env={"PLANTED": "fromshell"},
-            )
-            if rc != 0:
-                findings.append("%s:%d: the invocation did not run: %s" % (site, lineno, out))
-                continue
-            invocations += 1
-            if out != "fromshell/fromfile":
-                findings.append(
-                    "%s:%d: expected fromshell/fromfile, got '%s' -- either the file "
-                    "overwrote the shell, or nothing read the file" % (site, lineno, out)
-                )
-    if invocations == 0 and (adopted or ADOPTED):
-        findings.append(
-            "ZERO invocations were exercised: this check asserted nothing about any site"
-        )
-    return findings, invocations
+def _load_with_verb(root, env_file, env=None):
+    """Load `env_file` the sanctioned bash way (the `export` verb, its status checked, then eval) and echo the two fixture names. Returns (rc, output)."""
+    full_env = {"PYTHONPATH": str(root / ".ci")}
+    full_env.update(env or {})
+    return _sh(
+        'out="$(python3 -m %s export "$1")" || exit 8\neval "$out"\necho "$PLANTED/$FILLED"'
+        % LOADER_MODULE,
+        env_file,
+        env=full_env,
+    )
 
 
 def check_differential(fixture):
@@ -273,22 +221,16 @@ def _write_fixture(d):
 @git_isolated
 def selftest():
     """Both directions on fixtures, before the real tree is touched."""
-    c = Controls("env file adoption", 8)
+    c = Controls("env file adoption", 7)
     root = paths.repo_root()
     tmp = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("env-file-adoption-")))
     try:
         fixture = _write_fixture(tmp)
 
-        # 1. the shim: the shell wins, the file fills the rest
-        _rc, out = _sh(
-            'source "$1/%s" || exit 9\nenv_file_load "$2" || exit 8\necho "$PLANTED/$FILLED"'
-            % SHIM_REL,
-            root,
-            fixture,
-            env={"PLANTED": "fromshell"},
-        )
+        # 1. the remedy the findings name: the shell wins, the file fills the rest
+        _rc, out = _load_with_verb(root, fixture, env={"PLANTED": "fromshell"})
         c.check(
-            "the shim lets the SHELL win and fills the rest from the file",
+            "the export verb lets the SHELL win and fills the rest from the file",
             out,
             "fromshell/fromfile",
         )
@@ -302,14 +244,14 @@ def selftest():
         )
 
         # 3. a missing file is normal, not an error
-        rc, _out = _sh('source "$1/%s" && env_file_load "$2"' % SHIM_REL, root, tmp / "absent.env")
+        rc, _out = _load_with_verb(root, tmp / "absent.env")
         c.check("a missing env file is a no-op, not a failure", rc, 0)
 
         # 4. an unreadable file is a defect, and must NOT be silently empty
         locked = tmp / "locked.env"
         locked.write_text("", encoding="utf-8")
         locked.chmod(0o000)
-        rc, _out = _sh('source "$1/%s" && env_file_load "$2"' % SHIM_REL, root, locked)
+        rc, _out = _load_with_verb(root, locked)
         if os.geteuid() == 0:
             # Running as root defeats mode 000; say so rather than reporting a pass.
             log.warn("selftest 4 skipped: running as uid 0, mode 000 does not deny")
@@ -365,35 +307,22 @@ def selftest():
             refused = True
         c.truthy("VACUITY: a tree with zero shell files is a REFUSAL, not a pass", refused)
 
-        # 8. ANTI-SILENCER: an adopted site that reverted to `source` is caught. Proven by PLANTING the reversion in a synthetic site, not by asking the matcher about a string. The site is written here so the control needs no real file: the real adopted sites come and go as they are ported.
-        planted = tmp / "planted"
-        planted.mkdir()
-        (planted / "reverted.sh").write_text(
-            'source "$1/scripts/lib/env-file.sh"\nset -a; . "/etc/example.env"; set +a\n',
-            encoding="utf-8",
-        )
-        site_findings, _n = check_sites(planted, fixture, adopted=("reverted.sh",))
-        c.truthy(
-            "ANTI-SILENCER: a site reverted to `set -a; source` is a finding",
-            any("reverted.sh" in f for f in site_findings),
-        )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return not c.report()
 
 
 def run(root=None):
-    """Measure the tree at `root` and return (findings, n_scanned, n_invocations)."""
+    """Measure the tree at `root` and return (findings, n_scanned)."""
     base = root or paths.repo_root()
     tmp = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("env-file-adoption-")))
     try:
         fixture = _write_fixture(tmp)
         sweep, n_scanned = check_sweep(base)
-        sites, n_invocations = check_sites(base, fixture)
         diff = check_differential(fixture)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-    return sweep + sites + diff, n_scanned, n_invocations
+    return sweep + diff, n_scanned
 
 
 def main(argv=None):
@@ -409,7 +338,7 @@ def main(argv=None):
         print("  %s" % rel)
         print("      %s" % reason)
     try:
-        findings, n_scanned, n_invocations = run()
+        findings, n_scanned = run()
     except RefusalError as exc:
         log.error("env file adoption: %s" % exc)
         return 2
@@ -417,15 +346,14 @@ def main(argv=None):
         for finding in findings:
             log.error("  %s" % finding)
         log.error(
-            "%d finding(s). Fix: source %s and call env_file_load; the shell must win "
+            "%d finding(s). Fix: read the file with %s (in bash: %s); the shell must win "
             "over the file. Do not add an exemption -- every entry in that list is a "
-            "dated decision with an owner." % (len(findings), SHIM_REL)
+            "dated decision with an owner." % (len(findings), LOADER_MODULE, BASH_LOADER)
         )
         return 1
     log.success(
-        "%d shell files scanned, %d exempt, 0 new `set -a`; %d adopted sites, %d "
-        "invocations run, the shell won every time; the differential holds"
-        % (n_scanned, len(EXEMPT), len(ADOPTED), n_invocations)
+        "%d shell files scanned, %d exempt, 0 new `set -a`; the export verb lets the "
+        "shell win and the `set -a` differential gives the file the win" % (n_scanned, len(EXEMPT))
     )
     return 0
 
