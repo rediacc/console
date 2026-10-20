@@ -98,6 +98,7 @@ const LEGS: Leg[] = [
     requestSchema: 'backupGrantRequest',
     responseSchema: 'backupGrantResponse',
     requestKeys: ['snapshotId', 'lineageGuid', 'declaredBytes', 'hashes'],
+    // The write grant's own fields (manifestKey, and indexKey/indexPutUrl for the listing object) live in a nested schema this leg's response check does not reach; the listing is pinned where it is read back (/read-grants) and committed (/commit).
     responseKeys: ['grant', 'leaseId'],
   },
   {
@@ -133,6 +134,10 @@ const LEGS: Leg[] = [
       // presigned-s3
       'getUrls',
       'manifestGetUrls',
+      // the snapshot's sealed listing, keyed by SNAPSHOT ID like the manifests,
+      // present only when the snapshot was committed with one
+      'indexKeys',
+      'indexGetUrls',
       // direct-https
       'baseUrl',
       'token',
@@ -142,7 +147,8 @@ const LEGS: Leg[] = [
     path: '/commit',
     requestSchema: 'backupCommitRequest',
     responseSchema: 'backupCommitResponse',
-    requestKeys: ['snapshotId', 'lineageGuid', 'streamId', 'cellSizeBytes'],
+    // hasIndex is the client's claim that the listing object is stored; the server refuses it when the object is absent.
+    requestKeys: ['snapshotId', 'lineageGuid', 'streamId', 'cellSizeBytes', 'hasIndex'],
     responseKeys: [],
   },
 ];
