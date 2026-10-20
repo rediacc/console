@@ -900,14 +900,7 @@ def _snapshot(root, ref, cache, allow_branch=False, seen=None):
     # Another workflow's cancelled jobs do not decide the Console CI verdict (wl_ci.ci_gate side_cancelled), and they stay named here.
     side = gate.get("side_cancelled") or []
     if side:
-        # Five named, the rest counted out loud: a capped list never reads as the whole list, and the line stays bounded (reviews cec1447f.3, 56e9c2fc.2). --json carries every one.
-        named = ", ".join("%s (run %s)" % (x["name"], x["run"]) for x in side[:5])
-        more = " (+%d more)" % (len(side) - 5) if len(side) > 5 else ""
-        detail += "; %d job(s) CANCELLED in another workflow's run, not Console CI: %s%s" % (
-            len(side),
-            named,
-            more,
-        )
+        detail += "; " + wl_ci.side_cancel_note(side)
     # A branch read judges only the runs OF that branch (wl_ci.branch_owns_context). Saying how many contexts on the SHA were set aside keeps a foreign PR run's failures visible as a count rather than silently absent.
     if info.get("foreign"):
         detail += "; %d context(s) on this SHA from another branch's run ignored" % info["foreign"]

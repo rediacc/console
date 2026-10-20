@@ -570,6 +570,35 @@ def _ctx_workflow(c):
     return (run.get("workflow") or {}).get("name")
 
 
+# How many side-cancelled jobs a detail line names, and how long one name may run, before the rest is counted.
+SIDE_CANCEL_NAMED = 5
+SIDE_CANCEL_NAME_MAX = 60
+
+
+def side_cancel_note(side):
+    """The detail clause for ci_gate's side_cancelled list, "" when it is empty.
+
+    Names at most SIDE_CANCEL_NAMED jobs, each cut to SIDE_CANCEL_NAME_MAX characters, and says "(+N more)" past that, so a capped list never reads as the whole one and the line stays bounded; ci-trace's --json carries every name.
+    """
+    if not side:
+        return ""
+
+    def one(x):
+        name = x["name"]
+        if len(name) > SIDE_CANCEL_NAME_MAX:
+            name = name[: SIDE_CANCEL_NAME_MAX - 3] + "..."
+        return "%s (run %s)" % (name, x["run"])
+
+    named = ", ".join(one(x) for x in side[:SIDE_CANCEL_NAMED])
+    rest = len(side) - SIDE_CANCEL_NAMED
+    more = " (+%d more)" % rest if rest > 0 else ""
+    return "%d job(s) CANCELLED in another workflow's run, not Console CI: %s%s" % (
+        len(side),
+        named,
+        more,
+    )
+
+
 def ci_gate(info, require_complete=True):
     """THE GREEN RULE, shared by ci-trace's branch/PR read, its --run read and ci_trouble below. Pure: no network.
 
@@ -1684,6 +1713,22 @@ def _selftest():
         "still red, never moved to side_cancelled",
         g["verdict"] == "red" and not g["side_cancelled"],
         "gate=%r" % (g,),
+    )
+    many = [{"name": "Job %d" % i, "run": 8} for i in range(7)]
+    note = side_cancel_note(many)
+    check(
+        "side_cancel_note: seven side cancels name five and count the other two out loud",
+        note.startswith("7 job(s)")
+        and "Job 4" in note
+        and "Job 5" not in note
+        and note.endswith("(+2 more)"),
+        note,
+    )
+    check(
+        "side_cancel_note: five or fewer name all with no '+more', and a long name is cut",
+        "more" not in side_cancel_note(many[:5])
+        and len(side_cancel_note([{"name": "x" * 500, "run": 1}])) < 200
+        and side_cancel_note([]) == "",
     )
     unnamed = dict(full, contexts=[*full_ctx, run_ctx("X", conclusion="CANCELLED", run=9)])
     check(
