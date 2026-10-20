@@ -642,34 +642,6 @@
         "f7d91e90"
       ]
     },
-    "agent/plans/PLAN-deferred-findings-block-merge.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 17,
-      "open_sigs": [],
-      "done_sigs": [
-        "02f04831",
-        "09b758d1",
-        "2802d853",
-        "3d43a568",
-        "3e40c2e9",
-        "531ee97c",
-        "545fa7e7",
-        "5789fd01",
-        "67a9f1a5",
-        "6edef2b1",
-        "7a098130",
-        "8d42baa3",
-        "9b5d7a01",
-        "b235b09e",
-        "bdf14dbb",
-        "df739172",
-        "e79aa82e"
-      ]
-    },
     "agent/plans/PLAN-deletion-budget.md": {
       "status": "draft",
       "owner": "d778be9d",
@@ -941,26 +913,6 @@
       ],
       "done_sigs": []
     },
-    "agent/plans/PLAN-lessons-registry.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 9,
-      "open_sigs": [],
-      "done_sigs": [
-        "15f3badd",
-        "1de18745",
-        "5df45c33",
-        "5f6fcaec",
-        "9bb8848a",
-        "beb18c04",
-        "c39f24c1",
-        "c5fee6fc",
-        "f2666cc1"
-      ]
-    },
     "agent/plans/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
       "owner": "e6500e92",
@@ -1072,29 +1024,6 @@
         "e6863976"
       ],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-plan-dependencies.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 12,
-      "open_sigs": [],
-      "done_sigs": [
-        "18cf4e21",
-        "1deb6b06",
-        "3ebe1a27",
-        "3f856ff4",
-        "66945bc7",
-        "6af8e266",
-        "8aaedd93",
-        "9308736d",
-        "95bfe222",
-        "98e8fe4f",
-        "99fbddd7",
-        "cd2f60ac"
-      ]
     },
     "agent/plans/PLAN-plan-per-pr-loop.md": {
       "status": "approved",
@@ -1405,32 +1334,6 @@
       ],
       "done_sigs": []
     },
-    "agent/plans/PLAN-retire-bash-oracles.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 15,
-      "open_sigs": [],
-      "done_sigs": [
-        "11d978d4",
-        "149372c9",
-        "169ff148",
-        "3d6bae40",
-        "4711b23b",
-        "c14e269f",
-        "c49d4542",
-        "ca00e010",
-        "d1884e0d",
-        "d6905e03",
-        "da8d5503",
-        "deedaf92",
-        "e8e6ee5e",
-        "f16cdba4",
-        "f2c1e8d4"
-      ]
-    },
     "agent/plans/PLAN-review-red-stop-hook-check.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1470,28 +1373,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-scope-mirrors.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 11,
-      "open_sigs": [],
-      "done_sigs": [
-        "122d9351",
-        "1a0d3473",
-        "251bc0c0",
-        "4151c3b5",
-        "7eae01bf",
-        "839fe455",
-        "99f2af33",
-        "9fd938a1",
-        "b33cfa20",
-        "e786de74",
-        "e95189bb"
-      ]
     },
     "agent/plans/PLAN-secret-namespace-migration.md": {
       "status": "executing",
@@ -1711,40 +1592,6 @@
         "ac6d7f0f",
         "bba54c8b",
         "d54e3a5b"
-      ]
-    },
-    "agent/plans/PLAN-stop-hook-retro-20260924.md": {
-      "status": "ready",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 23,
-      "open_sigs": [],
-      "done_sigs": [
-        "00e15331",
-        "0e756125",
-        "1f4e5e5c",
-        "2d41906f",
-        "39fccafe",
-        "3dec094e",
-        "45268745",
-        "56e79ec7",
-        "5d3a1128",
-        "6981d5e0",
-        "771fb0c2",
-        "874cd0d4",
-        "8d27f484",
-        "95685b6b",
-        "9c1023b5",
-        "a221c310",
-        "aa78a955",
-        "d41dc495",
-        "d589ce24",
-        "dd0a9bdf",
-        "de5d2b7c",
-        "ec7e1350",
-        "fe5f27ef"
       ]
     },
     "agent/plans/PLAN-stop-hook-rulings-campaign.md": {
@@ -2797,6 +2644,34 @@
         "6edb0ce2"
       ]
     },
+    "agent/plans/_done/PLAN-deferred-findings-block-merge.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-20",
+      "open": 0,
+      "done": 17,
+      "open_sigs": [],
+      "done_sigs": [
+        "02f04831",
+        "09b758d1",
+        "2802d853",
+        "3d43a568",
+        "3e40c2e9",
+        "531ee97c",
+        "545fa7e7",
+        "5789fd01",
+        "67a9f1a5",
+        "6edef2b1",
+        "7a098130",
+        "8d42baa3",
+        "9b5d7a01",
+        "b235b09e",
+        "bdf14dbb",
+        "df739172",
+        "e79aa82e"
+      ]
+    },
     "agent/plans/_done/PLAN-deflected-finding-check.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3346,6 +3221,26 @@
         "f66674d0"
       ]
     },
+    "agent/plans/_done/PLAN-lessons-registry.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-20",
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
+      "done_sigs": [
+        "15f3badd",
+        "1de18745",
+        "5df45c33",
+        "5f6fcaec",
+        "9bb8848a",
+        "beb18c04",
+        "c39f24c1",
+        "c5fee6fc",
+        "f2666cc1"
+      ]
+    },
     "agent/plans/_done/PLAN-local-ci-gate-prerequisites.md": {
       "status": "landed",
       "owner": "9d92d9b6",
@@ -3574,6 +3469,29 @@
         "eb7aa103",
         "f052b4a9",
         "f1533f2e"
+      ]
+    },
+    "agent/plans/_done/PLAN-plan-dependencies.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-20",
+      "open": 0,
+      "done": 12,
+      "open_sigs": [],
+      "done_sigs": [
+        "18cf4e21",
+        "1deb6b06",
+        "3ebe1a27",
+        "3f856ff4",
+        "66945bc7",
+        "6af8e266",
+        "8aaedd93",
+        "9308736d",
+        "95bfe222",
+        "98e8fe4f",
+        "99fbddd7",
+        "cd2f60ac"
       ]
     },
     "agent/plans/_done/PLAN-plan-file-lifecycle.md": {
@@ -3915,6 +3833,32 @@
         "d2157a79"
       ]
     },
+    "agent/plans/_done/PLAN-retire-bash-oracles.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-20",
+      "open": 0,
+      "done": 15,
+      "open_sigs": [],
+      "done_sigs": [
+        "11d978d4",
+        "149372c9",
+        "169ff148",
+        "3d6bae40",
+        "4711b23b",
+        "c14e269f",
+        "c49d4542",
+        "ca00e010",
+        "d1884e0d",
+        "d6905e03",
+        "da8d5503",
+        "deedaf92",
+        "e8e6ee5e",
+        "f16cdba4",
+        "f2c1e8d4"
+      ]
+    },
     "agent/plans/_done/PLAN-rotation-gh-removal.md": {
       "status": "done",
       "owner": "unowned",
@@ -3949,6 +3893,28 @@
         "cd141739",
         "dbc6918b",
         "f726703c"
+      ]
+    },
+    "agent/plans/_done/PLAN-scope-mirrors.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-20",
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
+        "122d9351",
+        "1a0d3473",
+        "251bc0c0",
+        "4151c3b5",
+        "7eae01bf",
+        "839fe455",
+        "99f2af33",
+        "9fd938a1",
+        "b33cfa20",
+        "e786de74",
+        "e95189bb"
       ]
     },
     "agent/plans/_done/PLAN-session-onboarding-marker.md": {
@@ -4169,6 +4135,40 @@
         "deae49d4",
         "e20ff464",
         "f2337abd"
+      ]
+    },
+    "agent/plans/_done/PLAN-stop-hook-retro-20260924.md": {
+      "status": "ready",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-20",
+      "open": 0,
+      "done": 23,
+      "open_sigs": [],
+      "done_sigs": [
+        "00e15331",
+        "0e756125",
+        "1f4e5e5c",
+        "2d41906f",
+        "39fccafe",
+        "3dec094e",
+        "45268745",
+        "56e79ec7",
+        "5d3a1128",
+        "6981d5e0",
+        "771fb0c2",
+        "874cd0d4",
+        "8d27f484",
+        "95685b6b",
+        "9c1023b5",
+        "a221c310",
+        "aa78a955",
+        "d41dc495",
+        "d589ce24",
+        "dd0a9bdf",
+        "de5d2b7c",
+        "ec7e1350",
+        "fe5f27ef"
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-retro-20260925.md": {
