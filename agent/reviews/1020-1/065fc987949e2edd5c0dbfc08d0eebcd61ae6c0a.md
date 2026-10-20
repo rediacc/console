@@ -21,4 +21,4 @@ Body-Sig: 44ef951d42a0d721
 ### 065fc987.1 [low] packages/e2e-tests/tests/01-system-checks.test.ts:137
 Anchor: in-diff
 Claim: The blanket `expect(output).not.toContain('not available')` fails the test whenever `renet sandbox-exec --detect` prints 'not available' for any other item, even when the Landlock status line is 'available'. The `status:\s*available` check already covers the Landlock status, so this negative check adds only a false-failure risk.
-Resolution: open
+Resolution: fixed 509e5b4b6a0cf2575838f223033e03bb8a308d7e | d778be9d 2026-10-20T16:07:24Z
