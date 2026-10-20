@@ -451,11 +451,15 @@ def test_create_names_the_worktree_after_the_seam_day(tmp_path: Path) -> None:
     assert "0229-1" in fx.branches()
 
 
-def test_create_refuses_a_seam_day_that_is_not_mmdd(tmp_path: Path) -> None:
+@pytest.mark.parametrize("day", ["../x", "1399", "0000", "\u0660\u0661\u0662\u0663"])
+def test_create_refuses_a_seam_day_that_is_not_mmdd(tmp_path: Path, day: str) -> None:
     fx = make_fixture(tmp_path)
-    result = fx.run_port(["create", "--no-devbox"], WORKTREE_TODAY="../x")
+    result = fx.run_port(["create", "--no-devbox"], WORKTREE_TODAY=day)
     assert result.rc == 1
-    assert "WORKTREE_TODAY must be four digits" in result.err + result.out
+    assert "WORKTREE_TODAY must be a month and day as MMDD" in result.err + result.out
+    assert not any(" fetch " in line for line in fx.call_log("git")), (
+        "refused before the main-repo sync"
+    )
     assert not (fx.base / "..").resolve().joinpath("x-1").exists()
     assert not any("x-1" in b for b in fx.branches())
 
