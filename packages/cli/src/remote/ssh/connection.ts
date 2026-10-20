@@ -374,6 +374,35 @@ export class SSHConnection {
   }
 
   /**
+   * The resources a handed-off process must remove when it finishes
+   * (temp key, known_hosts, agent pid), plus the agent socket it needs in its
+   * environment. Non-destructive: nothing is released until `release()`.
+   */
+  get handoffResources(): {
+    keyFilePath?: string;
+    knownHostsPath?: string;
+    agentPid?: string;
+    agentSocketPath?: string;
+  } {
+    const r = this.setupResult;
+    return {
+      keyFilePath: r?.keyFilePath,
+      knownHostsPath: r?.knownHostsPath,
+      agentPid: r?.agentPid,
+      agentSocketPath: r?.agentSocketPath,
+    };
+  }
+
+  /**
+   * Forgets the resources without removing them: ownership moved to another
+   * process, so a later `cleanup()` is a no-op.
+   */
+  release(): void {
+    this.setupResult = null;
+    this.isSetup = false;
+  }
+
+  /**
    * Gets the SSH options for command construction
    */
   get sshOptions(): string[] {

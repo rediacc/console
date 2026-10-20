@@ -3,6 +3,7 @@ import { t } from '../i18n/index.js';
 import { generateSetupCommand, generateSourceCommand } from '../remote/repository/index.js';
 import { SSHConnection, spawnSSH, testSSHConnectivity } from '../remote/ssh/index.js';
 import { getDefaultTerminalType, launchTerminal } from '../remote/terminal/index.js';
+import { getPlatform } from '../remote/utils/platform.js';
 import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
@@ -434,17 +435,20 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
   }
 }
 
-async function launchExternalTerminal(
+export async function launchExternalTerminal(
   sshConnection: SSHConnection,
   destination: string,
   remoteCommand: string | undefined,
   title: string,
   connectionDetails: ConnectionDetails
 ): Promise<void> {
-  const argv = ['ssh', ...sshConnection.sshOptions, destination];
+  const sshArgv = ['ssh', ...sshConnection.sshOptions, destination];
   if (remoteCommand) {
-    argv.push(remoteCommand);
+    sshArgv.push(remoteCommand);
   }
+  // The external terminal's ssh outlives this process's 500 ms wait, so on POSIX the credentials move to it: it gets the agent socket in its env and its shell removes the key and stops the agent when ssh ends. Windows shells cannot run that wrapper and keep parent-side cleanup.
+  const handoff = getPlatform() === 'windows' ? undefined : sshConnection.handoffResources;
+  const argv = handoff ? buildHandoffArgv(sshArgv, handoff) : sshArgv;
   const terminalType = getDefaultTerminalType();
 
   outputService.info(t('commands.term.launchingTerminal', { type: terminalType }));
@@ -453,7 +457,10 @@ async function launchExternalTerminal(
     argv,
     title,
     keepOpen: true,
-    environmentVariables: splitSecretEnv(connectionDetails.environment).plain,
+    environmentVariables: {
+      ...splitSecretEnv(connectionDetails.environment).plain,
+      ...(handoff?.agentSocketPath && { SSH_AUTH_SOCK: handoff.agentSocketPath }),
+    },
     workingDirectory: connectionDetails.workingDirectory,
   });
 
@@ -472,7 +479,30 @@ async function launchExternalTerminal(
     });
   }
 
+  // Launched: the terminal's shell now owns the credentials.
+  if (handoff) sshConnection.release();
+
   outputService.info(t('commands.term.launchSuccess'));
+}
+
+/**
+ * Wraps the ssh argv in `sh -c` so the launched terminal removes the temp key
+ * files and stops the agent when ssh exits or the terminal is hung up. Only
+ * paths and a numeric pid appear on argv, never key material.
+ */
+export function buildHandoffArgv(
+  sshArgv: string[],
+  res: { keyFilePath?: string; knownHostsPath?: string; agentPid?: string }
+): string[] {
+  const files = [res.keyFilePath, res.knownHostsPath].filter((f): f is string => !!f);
+  const pid = res.agentPid && /^\d+$/.test(res.agentPid) ? res.agentPid : undefined;
+  const steps = [
+    files.length > 0 ? `rm -f -- ${files.map(shellQuote).join(' ')}` : '',
+    pid ? `kill ${pid} 2>/dev/null` : '',
+  ].filter(Boolean);
+  if (steps.length === 0) return sshArgv;
+  const script = `cleanup() { ${steps.join('; ')}; }; trap cleanup EXIT; trap 'exit 129' HUP; trap 'exit 143' TERM; "$@"`;
+  return ['sh', '-c', script, 'sh', ...sshArgv];
 }
 
 const sshExitCodeMessages: Record<number, string> = {
