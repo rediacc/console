@@ -51,7 +51,7 @@ JQ = shutil.which("jq")
 GH_TOKEN = "fixture-gh-token"
 CF_TOKEN = "fixture-cf-token"
 CF_ACCOUNT = "fixture-account"
-R2_ENDPOINT = "https://fixture.r2.example/"
+CLOUDFLARE_R2_ENDPOINT = "https://fixture.r2.example/"
 
 # The 14 phases, in `run_all_phases` order. Used by the coverage control at the bottom of this file, which fails if a phase gains no case.
 PHASES = (
@@ -2261,7 +2261,7 @@ def test_the_two_sides_agree_on_ages_that_are_not_near_a_boundary() -> None:
 R2_ENV = {
     "CLOUDFLARE_R2_ACCESS_KEY_ID": "fixture-access-key",
     "CLOUDFLARE_R2_SECRET_ACCESS_KEY": "fixture-secret-key",
-    "CLOUDFLARE_R2_ENDPOINT": R2_ENDPOINT,
+    "CLOUDFLARE_R2_ENDPOINT": CLOUDFLARE_R2_ENDPOINT,
 }
 
 
@@ -2317,7 +2317,7 @@ def test_phase_8a_reaps_a_dryrun_prefix_older_than_the_window() -> None:
         ("s3://" + RELEASES_BUCKET + "/cli/dryrun-abc/"),
         "--recursive",
         "--endpoint-url",
-        R2_ENDPOINT,
+        CLOUDFLARE_R2_ENDPOINT,
         "--quiet",
     ]
 
@@ -2603,7 +2603,7 @@ def test_phase_8e_aborts_an_old_multipart_and_holds_a_young_one() -> None:
             "--upload-id",
             "old-id",
             "--endpoint-url",
-            R2_ENDPOINT,
+            CLOUDFLARE_R2_ENDPOINT,
         ]
     ]
 
