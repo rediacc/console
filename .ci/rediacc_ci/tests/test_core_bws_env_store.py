@@ -11,6 +11,7 @@ import base64
 import binascii
 import json
 import re
+import shlex
 import stat
 import time
 
@@ -213,9 +214,19 @@ def test_write_secret_never_relays_the_writers_stderr(tmp_path) -> None:
         assert failure.startswith("rc=1: ")
         assert echo not in failure
         assert "withheld" in failure
-        assert (
-            "run `npx --no tsx scripts/rotation/bws-write.ts` in %s" % (tmp_path / name) in failure
-        )
+        hint = "run `cd %s && npx --no tsx scripts/rotation/bws-write.ts`"
+        assert hint % shlex.quote(str(tmp_path / name)) in failure
+
+
+def test_write_secret_hint_quotes_a_directory_with_spaces(tmp_path) -> None:
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "dir with space",
+        "#!/bin/sh\ncat >/dev/null\nexit 1\n",
+        {"op": "edit", "id": ENTRY_ID, "value": VALUE},
+    )
+    assert failure is not None
+    assert "cd '%s' && " % (tmp_path / "dir with space") in failure
 
 
 def test_write_secret_survives_non_utf8_output(tmp_path) -> None:
