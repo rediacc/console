@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: ar
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # الحدود والحصص
@@ -201,9 +201,9 @@ rdc machine infra push server-1
 
 ### مصفوفة ميزات النواة
 
-اقرأ المصفوفة كنظرة سريعة على ما يوفره كل نظام تشغيل مختبر في CI بشكل افتراضي. جميع الأنظمة الخمسة تستوفي كل المتطلبات، لذا هذا مرجع للمشغلين وليس معيار قبول.
+اقرأ المصفوفة كنظرة سريعة على ما يوفره كل نظام تشغيل مختبر في CI بشكل افتراضي. جميع الأنظمة الخمسة تستوفي كل المتطلبات. Landlock مطلوب: يرفض renet أجهزة الصدفة (shell) والنقل بمفتاح المستودع إذا لم يُبلغ `renet sandbox-exec --detect` عن الحالة AVAILABLE.
 
-| نظام التشغيل | وحدة btrfs | cgroups v2 | Landlock (ABI 1 أو أعلى) | خطافات eBPF cgroup |
+| نظام التشغيل | وحدة btrfs | cgroups v2 | Landlock (ABI 1 أو أعلى، مطلوب) | خطافات eBPF cgroup |
 |-------------|------------|------------|--------------------------|-------------------|
 | Ubuntu 24.04 | مدمجة | unified hierarchy | نعم (5.13+) | نعم |
 | Debian 13 | مدمجة | unified hierarchy | نعم | نعم |

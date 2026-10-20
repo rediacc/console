@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: fr
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Limites et quotas
@@ -201,9 +201,9 @@ Les machines distantes doivent exécuter l'une des options suivantes pour répon
 
 ### Matrice des fonctionnalités du kernel
 
-Lisez cette matrice d'un coup d'oeil pour voir ce que chaque OS testé en CI fournit par défaut. Les cinq satisfont toutes les exigences, c'est donc une référence pour les opérateurs, pas un critère de sélection.
+Lisez cette matrice d'un coup d'oeil pour voir ce que chaque OS testé en CI fournit par défaut. Les cinq satisfont toutes les exigences. Landlock est obligatoire : renet refuse les shells et les transferts avec clé de dépôt lorsque `renet sandbox-exec --detect` n'indique pas AVAILABLE.
 
-| SE | Module btrfs | cgroups v2 | Landlock (ABI >= 1) | Hooks eBPF cgroup |
+| SE | Module btrfs | cgroups v2 | Landlock (ABI >= 1, obligatoire) | Hooks eBPF cgroup |
 |----|--------------|------------|---------------------|-------------------|
 | Ubuntu 24.04 | intégré | unified hierarchy | oui (5.13+) | oui |
 | Debian 13 | intégré | unified hierarchy | oui | oui |

@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: de
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Limits & Kontingente
@@ -201,9 +201,9 @@ Remote-Maschinen müssen eines der folgenden Systeme ausführen, um die Kernel-,
 
 ### Kernel-Feature-Matrix
 
-Die Matrix zeigt auf einen Blick, was jedes CI-getestete Betriebssystem out-of-the-box bereitstellt. Alle fünf erfüllen jede Anforderung, daher ist dies eine operatorbezogene Referenz, kein Auswahlkriterium.
+Die Matrix zeigt auf einen Blick, was jedes CI-getestete Betriebssystem out-of-the-box bereitstellt. Alle fünf erfüllen jede Anforderung. Landlock ist erforderlich: renet lehnt Repository-Key-Shells und -Übertragungen ab, wenn `renet sandbox-exec --detect` nicht AVAILABLE meldet.
 
-| Betriebssystem | btrfs-Modul | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup Hooks |
+| Betriebssystem | btrfs-Modul | cgroups v2 | Landlock (ABI >= 1, erforderlich) | eBPF cgroup Hooks |
 |----------------|-------------|------------|---------------------|-------------------|
 | Ubuntu 24.04 | im Kernel | unified hierarchy | ja (5.13+) | ja |
 | Debian 13 | im Kernel | unified hierarchy | ja | ja |

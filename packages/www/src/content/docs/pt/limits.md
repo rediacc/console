@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: pt
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Limites e Quotas
@@ -200,9 +200,9 @@ As máquinas remotas devem correr um dos seguintes para satisfazer os requisitos
 
 ### Matriz de funcionalidades do kernel
 
-Leia a matriz como uma vista rápida do que cada SO testado em CI fornece de origem. Os cinco satisfazem todos os requisitos, pelo que esta é uma referência para operadores, não um critério de bloqueio.
+Leia a matriz como uma vista rápida do que cada SO testado em CI fornece de origem. Os cinco satisfazem todos os requisitos. O Landlock é obrigatório: o renet recusa shells e transferências com chave de repositório quando `renet sandbox-exec --detect` não indica AVAILABLE.
 
-| SO | módulo btrfs | cgroups v2 | Landlock (ABI >= 1) | hooks eBPF cgroup |
+| SO | módulo btrfs | cgroups v2 | Landlock (ABI >= 1, obrigatório) | hooks eBPF cgroup |
 |----|--------------|------------|--------------------|-------------------|
 | Ubuntu 24.04 | in-tree | hierarquia unificada | sim (5.13+) | sim |
 | Debian 13 | in-tree | hierarquia unificada | sim | sim |

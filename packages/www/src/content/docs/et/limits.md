@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: et
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Piirangud ja kvoodid
@@ -201,9 +201,9 @@ Kaugmasinad peavad käitama üht järgmistest, et vastata Rediacc tuuma-, failis
 
 ### Tuumafunktsioonide maatriks
 
-Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele, seega on see operaatorile suunatud viide, mitte väravakriteerium.
+Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele. Landlock on kohustuslik: renet keeldub repositooriumivõtmega shellidest ja ülekannetest, kui `renet sandbox-exec --detect` ei teata olekut AVAILABLE.
 
-| OS | btrfs moodul | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup haagid |
+| OS | btrfs moodul | cgroups v2 | Landlock (ABI >= 1, kohustuslik) | eBPF cgroup haagid |
 |----|--------------|------------|--------------------|-------------------|
 | Ubuntu 24.04 | sees-puu | ühtne hierarhia | jah (5.13+) | jah |
 | Debian 13 | sees-puu | ühtne hierarhia | jah | jah |

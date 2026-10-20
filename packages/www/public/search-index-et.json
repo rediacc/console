@@ -4827,8 +4827,8 @@
   {
     "id": "search-7399",
     "content": "8.1 browse",
-    "body": "Loetle hoidla failid. Kohalik kirjutuskaitstud läbikäik hoidla kujutisest: ei kasuta kontoserverit ega võrku. Krüpteeritud hoidla peab olema haagitud või selle võtmefail peab olema juurutatud, enne kui seda saab avada; browse teatab sellest, selle asemel et näidata tühja loetelu. Ei saa loetleda hetktõmmist, mis on olemas ainult tükihoidlas; taasta see esmalt ja seejärel sirvi tulemust. rdc backup browse <repo-ref> [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --path <subdir> | Piira loetelu selle alampuuga | Ei | - | | --depth <n> | Piira laskumine N tasemega (0 piiramatuks) | Ei | - | | --limit <n> | Tagastatavate kirjete maksimaalne arv (0 piiramatuks) | Ei | - | | --debug | Luba silumisväljund | Ei | - | <a id=\"cli-local-backup-cancel\"></a>",
-    "excerpt": "Loetle hoidla failid. Kohalik kirjutuskaitstud läbikäik hoidla kujutisest: ei kasuta kontoserverit ega võrku. Krüpteeritud hoidla peab olema haagitud...",
+    "body": "Loetle hoidla failid. Vaikimisi on see hoidla pildi kohalik kirjutuskaitstud läbikäik: ilma konto serverita ja ilma võrguta. Krüptitud hoidla peab olema ühendatud või selle võtmefail paigaldatud, enne kui seda saab avada; browse ütleb seda, selle asemel et näidata tühja loendit. Valikuga --at <aeg|hetktõmmis> loetleb see hoopis tükihoidla hetktõmmisega salvestatud faililoendi, seda taastamata. rdc backup browse <repo-ref> [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --path <subdir> | Piira loetelu selle alampuuga | Ei | - | | --depth <n> | Piira laskumine N tasemega (0 piiramatuks) | Ei | - | | --limit <n> | Tagastatavate kirjete maksimaalne arv (0 piiramatuks) | Ei | - | | --at <time|snapshot> | Loetle sel ajal või enne seda tehtud hetktõmmis või see hetktõmmise ID (loeb tükihoidlat) | Ei | - | | --debug | Luba silumisväljund | Ei | - | <a id=\"cli-local-backup-cancel\"></a>",
+    "excerpt": "Loetle hoidla failid. Vaikimisi on see hoidla pildi kohalik kirjutuskaitstud läbikäik: ilma konto serverita ja ilma võrguta. Krüptitud hoidla peab ole...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
     "fragment": "81-browse",
@@ -9306,8 +9306,8 @@
   {
     "id": "search-7787",
     "content": "Tuumafunktsioonide maatriks",
-    "body": "Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele, seega on see operaatorile suunatud viide, mitte väravakriteerium. | OS | btrfs moodul | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup haagid | |----|--------------|------------|--------------------|-------------------| | Ubuntu 24.04 | sees-puu | ühtne hierarhia | jah (5.13+) | jah | | Debian 13 | sees-puu | ühtne hierarhia | jah | jah | | Fedora 43 | sees-puu | ühtne hierarhia | jah | jah | | openSUSE Leap 16.0 | sees-puu | ühtne hierarhia | jah | jah | | Oracle Linux 10 (UEK) | sees-puu (UEK kaudu) | ühtne hierarhia | jah | jah |",
-    "excerpt": "Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele, seega on see operaatoril...",
+    "body": "Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele. Landlock on kohustuslik: renet keeldub repositooriumivõtmega shellidest ja ülekannetest, kui renet sandbox-exec --detect ei teata olekut AVAILABLE. | OS | btrfs moodul | cgroups v2 | Landlock (ABI >= 1, kohustuslik) | eBPF cgroup haagid | |----|--------------|------------|--------------------|-------------------| | Ubuntu 24.04 | sees-puu | ühtne hierarhia | jah (5.13+) | jah | | Debian 13 | sees-puu | ühtne hierarhia | jah | jah | | Fedora 43 | sees-puu | ühtne hierarhia | jah | jah | | openSUSE Leap 16.0 | sees-puu | ühtne hierarhia | jah | jah | | Oracle Linux 10 (UEK) | sees-puu (UEK kaudu) | ühtne hierarhia | jah | jah |",
+    "excerpt": "Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele. Landlock on kohustuslik:...",
     "category": "Documentation",
     "page": "/et/docs/limits",
     "fragment": "kernel-feature-matrix",
