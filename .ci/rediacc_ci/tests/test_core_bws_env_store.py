@@ -213,6 +213,9 @@ def test_write_secret_never_relays_the_writers_stderr(tmp_path) -> None:
         assert failure.startswith("rc=1: ")
         assert echo not in failure
         assert "withheld" in failure
+        assert (
+            "run `npx --no tsx scripts/rotation/bws-write.ts` in %s" % (tmp_path / name) in failure
+        )
 
 
 def test_write_secret_survives_non_utf8_output(tmp_path) -> None:
