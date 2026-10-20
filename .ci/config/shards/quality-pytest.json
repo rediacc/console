@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-19T15:31:09.393Z",
+  "generatedAt": "2026-10-20T08:42:22.308Z",
   "legs": [
     {
       "index": 1,
@@ -675,6 +675,7 @@
         "pytest:.ci/rediacc_ci/tests/test_worklist_state_stdin.py",
         "pytest:.ci/rediacc_ci/tests/test_xdist_groups.py",
         "pytest:.claude/rediacc_hooks/tests/test_block_commit_meta_env_expand.py",
+        "pytest:.claude/rediacc_hooks/tests/test_block_turbo_early_push_merge_phase.py",
         "pytest:.claude/rediacc_hooks/tests/test_dispatch.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_gen_docs.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_wiring.py",
