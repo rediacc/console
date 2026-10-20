@@ -330,6 +330,84 @@ def test_move_leaves_a_stub_and_stamps_both_clocks(gate, tmp_path):
     gate.log_pass("--move renames, stubs, stamps First-Seen and re-keys the ledger row")
 
 
+_QUEUE = (
+    "# Plan queue\n\nHand prose.\n\n## Promoted\n\n"
+    "<!-- queue:progress:begin -->\n<!-- queue:progress:end -->\n\n"
+    "1. agent/plans/PLAN-filler-00.md -- operator pick\n"
+    "2. agent/plans/PLAN-closing.md -- done; leaves this list when its PR merges\n"
+    "3. agent/plans/PLAN-filler-01.md -- operator pick -- solo\n"
+    "\n## Generated\n\n<!-- queue:generated:begin -->\n<!-- queue:generated:end -->\n"
+)
+
+
+def test_move_retires_the_plans_promoted_entry_and_only_that_one(gate, tmp_path):
+    """Worklist #7b9fe4f1: a moved plan's numbered entry leaves `## Promoted`, the rest renumber, every other byte stays."""
+    root = _seed(
+        tmp_path,
+        {
+            "agent/plans/PLAN-closing.md": "# PLAN: closing\nStatus: done\n\n- [x] a box\n",
+            "agent/plans/QUEUE.md": _QUEUE,
+        },
+    )
+    _ledger(root, {"agent/plans/PLAN-closing.md": {"status": "done", "open": 0, "done": 1}})
+    result = _gate(root, "--move", "agent/plans/PLAN-closing.md")
+    gate.assert_exit(0, result, "the move must succeed")
+    text = (root / "agent/plans/QUEUE.md").read_text(encoding="utf-8")
+    gate.assert_eq("PLAN-closing.md --" in text, False, "the moved plan's entry is gone")
+    want = _QUEUE.replace(
+        "2. agent/plans/PLAN-closing.md -- done; leaves this list when its PR merges\n"
+        "3. agent/plans/PLAN-filler-01.md",
+        "2. agent/plans/PLAN-filler-01.md",
+    )
+    gate.assert_eq(
+        _strip_progress(text),
+        _strip_progress(want),
+        "only that entry left, the rest renumbered, bytes kept",
+    )
+    gate.assert_contains(text, "| 2 | PLAN-filler-01.md |", "the progress block is re-rendered")
+    gate.assert_contains(result.out, "retired Promoted entry", "the retirement is printed")
+    gate.log_pass("--move retires the plan's Promoted entry and nothing else")
+
+
+def test_retire_promoted_drains_stub_entries_left_by_an_earlier_move(gate, tmp_path):
+    """The repair verb for a queue that predates the retirement: every Promoted entry naming a stub leaves; a live one stays."""
+    stub = PL.stub_text("agent/plans/PLAN-closing.md", "agent/plans/_done/PLAN-closing.md", "c")
+    root = _seed(
+        tmp_path,
+        {
+            "agent/plans/PLAN-closing.md": stub,
+            "agent/plans/_done/PLAN-closing.md": "# PLAN: closing\nStatus: done\n\n- [x] a box\n",
+            "agent/plans/QUEUE.md": _QUEUE,
+        },
+    )
+    result = _gate(root, "--retire-promoted")
+    gate.assert_exit(0, result, "the drain must succeed")
+    entries = [
+        line
+        for line in (root / "agent/plans/QUEUE.md").read_text(encoding="utf-8").splitlines()
+        if line[:1].isdigit()
+    ]
+    gate.assert_eq(
+        entries,
+        [
+            "1. agent/plans/PLAN-filler-00.md -- operator pick",
+            "2. agent/plans/PLAN-filler-01.md -- operator pick -- solo",
+        ],
+        "the stub's entry left, the live ones stayed and renumbered",
+    )
+    again = _gate(root, "--retire-promoted")
+    gate.assert_exit(0, again, "a second drain is a no-op")
+    gate.assert_contains(again.out, "0 Promoted entr", "and says it retired nothing")
+    gate.log_pass("--retire-promoted drains stub entries and keeps live ones")
+
+
+def _strip_progress(text: str) -> str:
+    begin, end = "<!-- queue:progress:begin -->", "<!-- queue:progress:end -->\n\n"
+    if begin not in text:
+        return text
+    return text[: text.index(begin)] + text[text.index(end) + len(end) :]
+
+
 _GONE = "# PLAN: gone\nStatus: removed\nRemoved-Why: the work was dropped by the operator\n\n- [ ] a box\n"
 _WAITER = "# PLAN: waiter\nStatus: in-progress\nDepends-On: PLAN-gone.md\nOwner: cafe0000\n\n- [ ] a box\n"
 

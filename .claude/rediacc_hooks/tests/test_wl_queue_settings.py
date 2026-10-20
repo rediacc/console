@@ -435,14 +435,14 @@ def test_solo_marker():
     )  # CONTROL: the marker is the delta
 
 
-def test_the_live_queue_has_a_clean_block_and_marks_ci_consolidation_solo():
+def test_the_live_queue_has_a_clean_block():
     text = (REPO / PQ.QUEUE_REL).read_text(encoding="utf-8")
     got, problems = PQ.settings(text)
     assert problems == [], problems
     src = PQ.sources(text)
     assert src["effort"] == "QUEUE.md", src  # the live block names its level
     assert set(src.values()) <= {"QUEUE.md", "effort %s" % got.effort}, src
-    assert "agent/plans/PLAN-ci-consolidation.md" in PQ.solo_plans(text)
+    # No pin on which live entry is solo: PLAN-ci-consolidation's `-- solo` entry was retired with the plan (worklist #7b9fe4f1), and the solo parse is pinned on a fixture in test_wl_queue_progress.
     # NO PIN ON A SWITCH'S VALUE. The level is the operator's to turn, so asserting one here would turn check:ci-pytest red on an operator decision. The block parsing clean, with the level named in the file, is what this test owns.
     assert got.effort in E.LEVELS
 

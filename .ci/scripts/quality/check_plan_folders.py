@@ -25,7 +25,13 @@ THE VERBS.
     --check    (the default) the verdict
     --status   what is where, with no verdict at all
     --move P   git mv P into its folder, leave a stub, stamp First-Seen and moved_at, and
-               remap every commit citation a rebase-merge rewrote (refuses an unprovable one)
+               remap every commit citation a rebase-merge rewrote (refuses an unprovable one);
+               a move into _done/ or _removed/ also retires P's numbered entry from
+               `## Promoted` in agent/plans/QUEUE.md and renumbers the rest
+    --retire-promoted
+               retire every `## Promoted` entry whose plan is already a moved stub (the
+               repair for a queue that predates the retirement; check:ci-plan-record
+               RQ-MOVED names each one)
     --sweep    what the retention clocks would delete; REFUSES to act without --write
     --update   write the tombstone section of agent/INDEX.md
 
@@ -511,6 +517,44 @@ def _dependents(root: pathlib.Path, rel: str) -> list[str]:
     return list(graph.dependents(rel))
 
 
+def _planqueue():
+    """`wl_planqueue`, the one reader and writer of agent/plans/QUEUE.md's format, imported by name at call time like `_dependents`."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    return importlib.import_module("wl_planqueue")
+
+
+def _report_retired(pq, root: pathlib.Path, retired: list[tuple[str, str]]) -> None:
+    """One line per retired entry, then any kept entry whose note cites an entry number, since renumbering cannot rewrite prose."""
+    for rel, target in retired:
+        print("  retired Promoted entry %s (moved to %s) from %s" % (rel, target, pq.QUEUE_REL))
+    if retired:
+        text = (root / pq.QUEUE_REL).read_text(encoding="utf-8")
+        for rel in pq.number_notes(text):
+            print(
+                "  ⚠ the entries were renumbered and %s's note cites an entry by number; "
+                "check it still names the right one" % rel
+            )
+
+
+def retire_promoted(root: pathlib.Path) -> int:
+    """`--retire-promoted`: every Promoted entry naming a moved stub leaves the queue."""
+    pq = _planqueue()
+    if not (root / pq.QUEUE_REL).is_file():
+        print(
+            "✗ %s is absent, so there is no Promoted list to retire from" % pq.QUEUE_REL,
+            file=sys.stderr,
+        )
+        return 1
+    before = len(pq.promoted_numbered((root / pq.QUEUE_REL).read_text(encoding="utf-8")))
+    retired = pq.retire_promoted(root)
+    _report_retired(pq, root, retired)
+    print(
+        "✓ retired %d Promoted entr%s naming a moved stub, %d of %d kept"
+        % (len(retired), "y" if len(retired) == 1 else "ies", before - len(retired), before)
+    )
+    return 0
+
+
 def move(root: pathlib.Path, rel: str, config: dict) -> int:
     """`git mv` one plan into its folder, leave a stub, stamp both clocks."""
     source = root / rel
@@ -602,6 +646,10 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
     _record_move(root, rel, new_rel, target_dir)
     print("✓ %s -> %s (First-Seen: %s)" % (rel, new_rel, first_seen))
     _report_remap(remap)
+    if target_dir in PL.TERMINAL_DIRS:
+        # Worklist #7b9fe4f1: a plan that left for _done/ or _removed/ has nothing left to order, and before this line its Promoted entry stayed behind for good.
+        pq = _planqueue()
+        _report_retired(pq, root, pq.retire_promoted(root, {rel}))
     return 0
 
 
@@ -704,6 +752,8 @@ def main(argv: list[str]) -> int:
                 print("✗ --move needs a plan path", file=sys.stderr)
                 return 2
             return move(root, target, config)
+        if "--retire-promoted" in argv:
+            return retire_promoted(root)
         if "--sweep" in argv:
             return sweep(root, config, write="--write" in argv)
         if "--update" in argv:
