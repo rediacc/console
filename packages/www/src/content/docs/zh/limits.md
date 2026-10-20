@@ -9,8 +9,8 @@ tags:
 subcategory: platform
 order: 99
 language: zh
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 限制与配额
@@ -199,9 +199,9 @@ rdc machine infra push server-1
 
 ### 内核功能矩阵
 
-该矩阵提供每个经 CI 测试的操作系统在开箱即用情况下所提供功能的一览视图。五个系统均满足所有要求，因此这是面向运营人员的参考信息，而非门控标准。
+该矩阵提供每个经 CI 测试的操作系统在开箱即用情况下所提供功能的一览视图。五个系统均满足所有要求。Landlock 为必需项：当 `renet sandbox-exec --detect` 未报告 AVAILABLE 时，renet 会拒绝使用仓库密钥的 shell 和传输。
 
-| 操作系统 | btrfs 模块 | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup 钩子 |
+| 操作系统 | btrfs 模块 | cgroups v2 | Landlock (ABI >= 1, 必需) | eBPF cgroup 钩子 |
 |----------|------------|------------|---------------------|-----------------|
 | Ubuntu 24.04 | 内置 | unified hierarchy | 是 (5.13+) | 是 |
 | Debian 13 | 内置 | unified hierarchy | 是 | 是 |

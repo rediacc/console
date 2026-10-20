@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: ja
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 制限とクォータ
@@ -200,9 +200,9 @@ CRIU によるライブマイグレーションには以下の制約がありま
 
 ### カーネル機能マトリックス
 
-このマトリックスは、CI でテストされた各 OS がデフォルトで提供する機能を一目で確認できます。5 つすべてがすべての要件を満たしているため、これはオペレーター向けの参照情報であり、選択基準ではありません。
+このマトリックスは、CI でテストされた各 OS がデフォルトで提供する機能を一目で確認できます。5 つすべてがすべての要件を満たしています。Landlock は必須です。`renet sandbox-exec --detect` が AVAILABLE を報告しない場合、renet はリポジトリキーのシェルと転送を拒否します。
 
-| OS | btrfs モジュール | cgroups v2 | Landlock (ABI 1 以上) | eBPF cgroup フック |
+| OS | btrfs モジュール | cgroups v2 | Landlock (ABI 1 以上、必須) | eBPF cgroup フック |
 |----|----------------|------------|----------------------|-------------------|
 | Ubuntu 24.04 | 組み込み | unified hierarchy | あり (5.13+) | あり |
 | Debian 13 | 組み込み | unified hierarchy | あり | あり |

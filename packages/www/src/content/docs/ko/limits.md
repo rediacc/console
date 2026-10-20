@@ -9,8 +9,8 @@ tags:
 subcategory: platform
 order: 99
 language: ko
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 제한 및 할당량
@@ -199,9 +199,9 @@ CRIU를 통한 라이브 마이그레이션에는 다음과 같은 제약이 있
 
 ### 커널 기능 매트릭스
 
-이 매트릭스를 통해 각 CI 테스트 OS가 기본적으로 제공하는 기능을 한눈에 확인할 수 있습니다. 다섯 가지 모두 모든 요구사항을 충족하므로, 이는 운영자 참고용 자료이지 게이팅 기준이 아닙니다.
+이 매트릭스를 통해 각 CI 테스트 OS가 기본적으로 제공하는 기능을 한눈에 확인할 수 있습니다. 다섯 가지 모두 모든 요구사항을 충족합니다. Landlock은 필수입니다. `renet sandbox-exec --detect`가 AVAILABLE을 보고하지 않으면 renet은 저장소 키 셸과 전송을 거부합니다.
 
-| OS | btrfs 모듈 | cgroups v2 | Landlock(ABI >= 1) | eBPF cgroup 훅 |
+| OS | btrfs 모듈 | cgroups v2 | Landlock(ABI >= 1, 필수) | eBPF cgroup 훅 |
 |----|--------------|------------|--------------------|-------------------|
 | Ubuntu 24.04 | in-tree | 통합 계층 | 예(5.13+) | 예 |
 | Debian 13 | in-tree | 통합 계층 | 예 | 예 |

@@ -4827,8 +4827,8 @@
   {
     "id": "search-18879",
     "content": "8.1 browse",
-    "body": "列出仓库包含的文件。这是对仓库镜像的本地只读遍历：不联系账户服务器，也不联网。加密仓库必须已挂载，或已部署其密钥文件，才能被打开；browse 会报告这一点，而不是显示空列表。它无法列出仅存在于块存储中的快照；请先恢复该快照，再浏览结果。 rdc backup browse <repo-ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --path <subdir> | 将列表限制在此子目录内 | 否 | - | | --depth <n> | 将遍历深度限制为 N 层（0 表示不限） | 否 | - | | --limit <n> | 返回的最大条目数（0 表示不限） | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | <a id=\"cli-local-backup-cancel\"></a>",
-    "excerpt": "列出仓库包含的文件。这是对仓库镜像的本地只读遍历：不联系账户服务器，也不联网。加密仓库必须已挂载，或已部署其密钥文件，才能被打开；browse 会报告这一点，而不是显示空列表。它无法列出仅存在于块存储中的快照；请先恢复该快照，再浏览结果。 rdc backup browse <repo-ref> [...",
+    "body": "列出仓库包含的文件。默认在本地以只读方式遍历仓库镜像，不需要账户服务器，也不需要网络。加密仓库必须先挂载，或先部署其密钥文件才能打开；browse 会给出提示，而不是返回空列表。指定 --at <时间|快照> 时，改为列出块存储快照所保存的文件列表，无需恢复。 rdc backup browse <repo-ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --path <subdir> | 将列表限制在此子目录内 | 否 | - | | --depth <n> | 将遍历深度限制为 N 层（0 表示不限） | 否 | - | | --limit <n> | 返回的最大条目数（0 表示不限） | 否 | - | | --at <time|snapshot> | 列出在此时间或之前创建的快照，或指定快照 ID（读取块存储） | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | <a id=\"cli-local-backup-cancel\"></a>",
+    "excerpt": "列出仓库包含的文件。默认在本地以只读方式遍历仓库镜像，不需要账户服务器，也不需要网络。加密仓库必须先挂载，或先部署其密钥文件才能打开；browse 会给出提示，而不是返回空列表。指定 --at <时间|快照> 时，改为列出块存储快照所保存的文件列表，无需恢复。 rdc backup browse <...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "81-browse",
@@ -9306,8 +9306,8 @@
   {
     "id": "search-19267",
     "content": "内核功能矩阵",
-    "body": "该矩阵提供每个经 CI 测试的操作系统在开箱即用情况下所提供功能的一览视图。五个系统均满足所有要求，因此这是面向运营人员的参考信息，而非门控标准。 | 操作系统 | btrfs 模块 | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup 钩子 | |----------|------------|------------|---------------------|-----------------| | Ubuntu 24.04 | 内置 | unified hierarchy | 是 (5.13+) | 是 | | Debian 13 | 内置 | unified hierarchy | 是 | 是 | | Fedora 43 | 内置 | unified hierarchy | 是 | 是 | | openSUSE Leap 16.0 | 内置 | unified hierarchy | 是 | 是 | | Oracle Linux 10 (UEK) | 内置 (经 UEK) | unified hierarchy | 是 | 是 |",
-    "excerpt": "该矩阵提供每个经 CI 测试的操作系统在开箱即用情况下所提供功能的一览视图。五个系统均满足所有要求，因此这是面向运营人员的参考信息，而非门控标准。 | 操作系统 | btrfs 模块 | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup 钩子 | |---...",
+    "body": "该矩阵提供每个经 CI 测试的操作系统在开箱即用情况下所提供功能的一览视图。五个系统均满足所有要求。Landlock 为必需项：当 renet sandbox-exec --detect 未报告 AVAILABLE 时，renet 会拒绝使用仓库密钥的 shell 和传输。 | 操作系统 | btrfs 模块 | cgroups v2 | Landlock (ABI >= 1, 必需) | eBPF cgroup 钩子 | |----------|------------|------------|---------------------|-----------------| | Ubuntu 24.04 | 内置 | unified hierarchy | 是 (5.13+) | 是 | | Debian 13 | 内置 | unified hierarchy | 是 | 是 | | Fedora 43 | 内置 | unified hierarchy | 是 | 是 | | openSUSE Leap 16.0 | 内置 | unified hierarchy | 是 | 是 | | Oracle Linux 10 (UEK) | 内置 (经 UEK) | unified hierarchy | 是 | 是 |",
+    "excerpt": "该矩阵提供每个经 CI 测试的操作系统在开箱即用情况下所提供功能的一览视图。五个系统均满足所有要求。Landlock 为必需项：当 renet sandbox-exec --detect 未报告 AVAILABLE 时，renet 会拒绝使用仓库密钥的 shell 和传输。 | 操作系统 | btr...",
     "category": "Documentation",
     "page": "/zh/docs/limits",
     "fragment": "kernel-feature-matrix",

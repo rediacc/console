@@ -4982,8 +4982,8 @@
   {
     "id": "search-4516",
     "content": "8.1 browse",
-    "body": "List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result. rdc backup browse <repo-ref> [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --path <subdir> | Limit the listing to this subtree | No | - | | --depth <n> | Limit descent to N levels (0 for unlimited) | No | - | | --limit <n> | Maximum entries to return (0 for unlimited) | No | - | | --debug | Enable debug output | No | - | <a id=\"cli-local-backup-cancel\"></a>",
-    "excerpt": "List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must b...",
+    "body": "List the files a repository contains. By default this is a local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. With --at <time|snapshot>, it lists the file listing stored with a chunk-store snapshot instead, without restoring it. rdc backup browse <repo-ref> [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --path <subdir> | Limit the listing to this subtree | No | - | | --depth <n> | Limit descent to N levels (0 for unlimited) | No | - | | --limit <n> | Maximum entries to return (0 for unlimited) | No | - | | --at <time|snapshot> | List the snapshot taken at or before this time, or this snapshot id (reads the chunk store) | No | - | | --debug | Enable debug output | No | - | <a id=\"cli-local-backup-cancel\"></a>",
+    "excerpt": "List the files a repository contains. By default this is a local read-only walk of the repository image: no account server and no network. An encrypte...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
     "fragment": "81-browse",
@@ -9461,8 +9461,8 @@
   {
     "id": "search-4904",
     "content": "Kernel feature matrix",
-    "body": "Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. All five satisfy every requirement, so this is an operator-facing reference, not a gating criterion. | OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1) | eBPF cgroup hooks | |----|--------------|------------|--------------------|-------------------| | Ubuntu 24.04 | in-tree | unified hierarchy | yes (5.13+) | yes | | Debian 13 | in-tree | unified hierarchy | yes | yes | | Fedora 43 | in-tree | unified hierarchy | yes | yes | | openSUSE Leap 16.0 | in-tree | unified hierarchy | yes | yes | | Oracle Linux 10 (UEK) | in-tree (via UEK) | unified hierarchy | yes | yes |",
-    "excerpt": "Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. All five satisfy every requirement, so this is an operator-...",
+    "body": "Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. All five satisfy every requirement. Landlock is required: renet refuses repo-key shells and transfers when renet sandbox-exec --detect does not report AVAILABLE. | OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1, required) | eBPF cgroup hooks | |----|--------------|------------|--------------------|-------------------| | Ubuntu 24.04 | in-tree | unified hierarchy | yes (5.13+) | yes | | Debian 13 | in-tree | unified hierarchy | yes | yes | | Fedora 43 | in-tree | unified hierarchy | yes | yes | | openSUSE Leap 16.0 | in-tree | unified hierarchy | yes | yes | | Oracle Linux 10 (UEK) | in-tree (via UEK) | unified hierarchy | yes | yes |",
+    "excerpt": "Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. All five satisfy every requirement. Landlock is required: r...",
     "category": "Documentation",
     "page": "/en/docs/limits",
     "fragment": "kernel-feature-matrix",

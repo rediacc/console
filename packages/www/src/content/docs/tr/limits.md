@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: tr
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Limitler ve Kotalar
@@ -200,9 +200,9 @@ Uzak makinelerin, Rediacc'ın çekirdek, dosya sistemi ve ağ izolasyonu gereksi
 
 ### Çekirdek özellik matrisi
 
-Matrisi, CI'da test edilen her işletim sisteminin kutudan çıktığında neler sağladığına tek bakışta görmek için okuyun. Beşinin tümü her gereksinimi karşılar; bu nedenle matris operatör odaklı bir referanstır, bir seçim kriteri değildir.
+Matrisi, CI'da test edilen her işletim sisteminin kutudan çıktığında neler sağladığına tek bakışta görmek için okuyun. Beşinin tümü her gereksinimi karşılar. Landlock zorunludur: `renet sandbox-exec --detect` AVAILABLE bildirmezse renet, depo anahtarlı kabukları ve aktarımları reddeder.
 
-| İşletim Sistemi | btrfs modülü | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup kancaları |
+| İşletim Sistemi | btrfs modülü | cgroups v2 | Landlock (ABI >= 1, zorunlu) | eBPF cgroup kancaları |
 |-----------------|-------------|------------|---------------------|----------------------|
 | Ubuntu 24.04 | yerleşik | unified hierarchy | evet (5.13+) | evet |
 | Debian 13 | yerleşik | unified hierarchy | evet | evet |

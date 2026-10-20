@@ -9,8 +9,8 @@ tags:
 subcategory: platform
 order: 99
 language: ru
-sourceHash: "2c014598b66bdeb7"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "fef2e6b43b4a24c3"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Ограничения и квоты
@@ -199,9 +199,9 @@ rdc machine infra push server-1
 
 ### Матрица функций ядра
 
-Читайте матрицу как однозначный обзор того, что каждая протестированная в CI операционная система предоставляет из коробки. Все пять удовлетворяют каждому требованию, поэтому это справочник для операторов, а не критерий отсеивания.
+Читайте матрицу как однозначный обзор того, что каждая протестированная в CI операционная система предоставляет из коробки. Все пять удовлетворяют каждому требованию. Landlock обязателен: renet отказывает в запуске shell и передаче данных по ключу репозитория, если `renet sandbox-exec --detect` не сообщает AVAILABLE.
 
-| OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1) | eBPF cgroup hooks |
+| OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1, обязателен) | eBPF cgroup hooks |
 |----|--------------|------------|--------------------|-------------------|
 | Ubuntu 24.04 | встроено | unified hierarchy | да (5.13+) | да |
 | Debian 13 | встроено | unified hierarchy | да | да |

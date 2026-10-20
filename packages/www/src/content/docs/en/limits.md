@@ -199,9 +199,9 @@ Remote machines must run one of the following to meet Rediacc's kernel, filesyst
 
 ### Kernel feature matrix
 
-Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. All five satisfy every requirement, so this is an operator-facing reference, not a gating criterion.
+Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. All five satisfy every requirement. Landlock is required: renet refuses repo-key shells and transfers when `renet sandbox-exec --detect` does not report AVAILABLE.
 
-| OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1) | eBPF cgroup hooks |
+| OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1, required) | eBPF cgroup hooks |
 |----|--------------|------------|--------------------|-------------------|
 | Ubuntu 24.04 | in-tree | unified hierarchy | yes (5.13+) | yes |
 | Debian 13 | in-tree | unified hierarchy | yes | yes |
