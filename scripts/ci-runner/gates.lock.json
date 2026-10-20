@@ -5378,13 +5378,15 @@
   {
     "id": "check:ci-lane-budget",
     "run": "npm run check:ci-lane-budget",
-    "gate": false,
+    "gate": true,
     "leaves": [
       "scripts/gates/check-lane-budget.ts"
     ],
     "ci": {
-      "kind": "local-only",
-      "blocker": "BLOCKER: the real run has one finding, check 2 UNCHECKED on the E2E Probe jobs aggregate, list-files and probe-file, which ci.yml now runs whenever E2E Workers runs (the e2e-dependency-probe label was retired 2026-10-14) and which no sampled run has measured yet. A budget_report.py --refresh --branch <PR branch> after the first green probe run of that PR gives them a p90; the flip to gate: true and the quality-code step lands with it."
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Lane budget"
     }
   },
   {

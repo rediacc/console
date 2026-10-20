@@ -90,7 +90,8 @@ def record_epic(me, epic_id, title, covers, order=None, plan=None, uncovers=None
         rec["plan"] = str(plan)
     if uncovers:
         rec["uncovers"] = sorted({c for c in uncovers if c})[:EPIC_MAX_COVERS]
-    S._append_lines(epics_path(), str(epics_path()) + ".lock", [rec])
+    # Through the store's write path, so the checkout journal mirrors it: epics.jsonl is tracked and a branch switch swaps it like any store file (worklist #8e513af2).
+    S.append_store_lines(epics_path(), str(epics_path()) + ".lock", [rec])
 
 
 def load_epics():
@@ -98,14 +99,11 @@ def load_epics():
 
     A torn or malformed line is SKIPPED, never fatal: the same rule the event reader follows, because a crash mid-append must not make the whole file unreadable.
     """
-    p = epics_path()
-    if not p.exists():
+    # The tracked copy unioned with the checkout journal's lines it lacks (wl_store THE CHECKOUT JOURNAL).
+    rows = S.store_file_text(epics_path()).splitlines()
+    if not rows:
         return {}
     out, seen = {}, []
-    try:
-        rows = p.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
-        return {}
     for line in rows:
         try:
             rec = json.loads(line)

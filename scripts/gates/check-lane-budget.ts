@@ -105,8 +105,6 @@
  * lane: quality-code
  * needs: node
  * selftest: true
- * emit: false
- * blocker: the live run's one remaining finding is check 2 UNCHECKED on the three E2E Probe jobs (aggregate, list-files, probe-file), which now run on every run that runs E2E Workers and have no measured p90 yet; a budget_report --refresh --branch <PR branch> after that PR's first run measures them, and then this line, the manifest's gate: true and the quality-code step land together
  * why: a CI leg that quietly grows past 12 minutes is invisible until the pipeline as a
  *   whole misses its 35-minute target (D-W1); this asserts the committed duration estimates
  *   against both ceilings before that happens on a real runner
