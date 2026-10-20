@@ -48,7 +48,7 @@ const ROUTES = [
 /**
  * Open the language menu and wait for its options, instead of counting once.
  *
- * RACE FIXED: the island's click handler attaches at hydration and the options render a frame after the click. Under a loaded machine (the full `ci:quick`) a single immediate `count()` read 0 while the same gate alone read 2+. Poll up to `waitMs` for at least two options; if none appear, click once more (a click that landed before hydration is inert) and poll again. A menu that really has fewer than two options still returns that count, after the bounded wait, so the finding is kept.
+ * RACE FIXED: the island's click handler attaches at hydration and the options render a frame after the click. Under a loaded machine (the full `ci:quick`) a single immediate `count()` read 0 while the same gate alone read 2+. Poll up to `waitMs` for at least two options; if fewer than two appear (none, or one), click once more (a click that landed before hydration is inert) and poll again, so the worst case is two polls, about `2 * waitMs`. The retry click toggles a menu that did open but rendered slowly back closed, so the larger of the two counts is returned: a menu that really has fewer than two options still returns that count, after the bounded wait, so the finding is kept.
  */
 async function openLangMenu(
   page: import('playwright').Page,
@@ -70,7 +70,7 @@ async function openLangMenu(
   let n = await poll();
   if (n < 2) {
     await page.locator(triggerSel).first().click();
-    n = await poll();
+    n = Math.max(n, await poll());
   }
   return n;
 }
@@ -252,13 +252,24 @@ async function main(): Promise<void> {
       await empty.close();
       const lateOk = lateN >= 2;
       const emptyOk = emptyN < 2;
+      // (c) a first click that lands before hydration is inert: the handler only acts once `ready` flips at 300ms, so only the retry click can open the menu.
+      const inert = await browser.newPage();
+      await inert.setContent(
+        `<button class="language-trigger-icon" id="t">x</button><script>let ready=false;setTimeout(()=>{ready=true},300);document.getElementById('t').onclick=()=>{if(ready)document.body.insertAdjacentHTML('beforeend','<a class=language-option>a</a><a class=language-option>b</a>')}</script>`
+      );
+      const retryN = await openLangMenu(inert, 600);
+      await inert.close();
+      const retryOk = retryN >= 2;
       console.log(
         `  ${lateOk ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  CONTROL: late-rendering lang options are waited for (${lateN})`
       );
       console.log(
         `  ${emptyOk ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  CONTROL: an empty lang menu is still reported (${emptyN})`
       );
-      if (!lateOk || !emptyOk) {
+      console.log(
+        `  ${retryOk ? '\x1b[32mPASS\x1b[0m' : '\x1b[31mFAIL\x1b[0m'}  CONTROL: a click lost before hydration is retried (${retryN})`
+      );
+      if (!lateOk || !emptyOk || !retryOk) {
         await browser.close();
         await close();
         process.exit(1);

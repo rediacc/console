@@ -1,7 +1,7 @@
 """`check:ci-plan-folders`, driven as a process against real git trees.
 
 WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. Those controls plant into fixture TEXT and call the pure functions; they prove the DETECTOR works and nothing else. Everything between the detector and a verdict is untested by them: the enumeration, the git clocks, the ledger read, the exit code, and the two verbs that write. So every case here runs the entry point as a subprocess
-against a tree it built, and reads the exit code rather than a return value.
+against a tree it built, and reads the exit code rather than a return value; the one exception, `test_a_contended_retirement_keeps_the_moves_success`, drives `move()` in-process because a queue that stays busy cannot be arranged from outside.
 
 THE FIXTURE IS A REAL GIT REPOSITORY because three of the four things under test are git: `enumerate_plans` shells `ls-files`, the clocks shell `log`, and `--move` shells `mv`. A directory of files would pass an enumeration that had stopped working.
 """
@@ -740,7 +740,7 @@ def test_move_spares_a_fenced_quote_and_a_commit_still_on_this_branch(gate, tmp_
     gate.log_pass("--move spares fenced quotes and commits still reachable from HEAD")
 
 
-def test_a_contended_retirement_keeps_the_moves_success(tmp_path, monkeypatch, capsys):
+def test_a_contended_retirement_keeps_the_moves_success(gate, tmp_path, monkeypatch, capsys):
     """Review 5fceaed6.2: the move is done and staged before the queue is touched, so a queue that stays busy is a warning and exit 0, never a failed move that a retry would then refuse."""
     root = _seed(
         tmp_path,
@@ -765,9 +765,12 @@ def test_a_contended_retirement_keeps_the_moves_success(tmp_path, monkeypatch, c
     monkeypatch.setenv("PLAN_FOLDERS_ROOT", str(root))
     rc = mod.move(root, "agent/plans/PLAN-closing.md", PL.load_config(root))
     err = capsys.readouterr().err
-    assert rc == 0, err
-    assert "the move stands" in err
-    assert (root / "agent/plans/_done/PLAN-closing.md").is_file(), "the plan moved"
-    assert "PLAN-closing.md --" in (root / "agent/plans/QUEUE.md").read_text(encoding="utf-8"), (
-        "the entry stayed, for RQ-MOVED and --retire-promoted"
+    gate.assert_eq(rc, 0, "a contended retirement keeps the move's success: %s" % err)
+    gate.assert_contains(err, "the move stands", "the warning names that the move stands")
+    gate.assert_eq((root / "agent/plans/_done/PLAN-closing.md").is_file(), True, "the plan moved")
+    gate.assert_contains(
+        (root / "agent/plans/QUEUE.md").read_text(encoding="utf-8"),
+        "PLAN-closing.md --",
+        "the entry stayed, for RQ-MOVED and --retire-promoted",
     )
+    gate.log_pass("a contended queue retirement leaves the move done, with a warning and exit 0")

@@ -1899,7 +1899,7 @@
     "check:ci-aws-resolver": 4.8
   },
   "job_max_seconds": {
-    "refreshed_at": "2026-10-13T17:19:13Z",
+    "refreshed_at": "2026-10-20T18:11:20Z",
     "jobs": {
       "Validate Promotion": {
         "observed_max_seconds": 473,

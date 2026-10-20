@@ -735,8 +735,12 @@ export function workflowJobs(text: string): WorkflowJob[] {
       );
       inNeedsBlock = v === '';
     } else if (inNeedsBlock) {
-      const item = /^ {6}-\s*(\S+)/.exec(raw);
-      if (item) last.needs.push(item[1] as string);
+      // Any other job-level key ends the block, so a later `steps:` item is not read as a need.
+      if (/^ {4}\S/.test(raw)) inNeedsBlock = false;
+      else {
+        const item = /^ {6}-\s*(\S+)/.exec(raw);
+        if (item) last.needs.push(item[1] as string);
+      }
     }
     if (/^ {4}\S/.test(raw)) inWith = /^ {4}with:\s*$/.test(raw);
     else if (inWith) {
@@ -838,6 +842,8 @@ export function evalIf(expr: string, inputs: Readonly<Record<string, string>>): 
     if (cmp) {
       const v = inputs[cmp[1] as string];
       if (v === undefined) return null;
+      // A caller's `with: web: true` reaches a boolean input, and Actions compares a boolean with the string 'true' by numeric coercion (never equal), whereas a string input compares as text. The literal alone cannot tell the two apart, so a boolean-looking value against a boolean-looking string is unknown (live), never a proof the job is dead.
+      if ((v === 'true' || v === 'false') && (cmp[3] === 'true' || cmp[3] === 'false')) return null;
       return cmp[2] === '==' ? v === cmp[3] : v !== cmp[3];
     }
     return null;
@@ -3322,6 +3328,31 @@ async function selftest(): Promise<number> {
           part.neverRun[0]?.startsWith('a (X / A)') === true &&
           part.judged.length === 1 &&
           JSON.stringify(part.unchecked) === JSON.stringify(['e (X / E)'])
+        );
+      })(),
+    },
+    {
+      name: 'a needs: block ends at the next job key, and a boolean-looking input compared with a string is unknown',
+      ok: (() => {
+        const jobs = workflowJobs(
+          [
+            'jobs:',
+            '  a:',
+            '    name: A',
+            '  b:',
+            '    name: B',
+            '    needs:',
+            '      - a',
+            '    steps:',
+            '      - name: x',
+            "    if: inputs.web != 'true'",
+          ].join('\n')
+        );
+        const b = jobs.find((j) => j.id === 'b');
+        return (
+          JSON.stringify(b?.needs) === JSON.stringify(['a']) &&
+          evalIf("inputs.web != 'true'", { web: 'true' }) === null &&
+          evalIf("inputs.mode == 'x'", { mode: 'x' }) === true
         );
       })(),
     },

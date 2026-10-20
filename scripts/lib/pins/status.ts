@@ -207,7 +207,7 @@ function checkoutAbsent(root: string, repo: string): boolean {
 }
 
 /** The submodule paths `.gitmodules` declares; a registry repo outside this set is a typo or a plain directory, never an absent submodule. */
-function declaredSubmodules(root: string): Set<string> {
+export function declaredSubmodules(root: string): Set<string> {
   const f = path.join(root, '.gitmodules');
   if (!fs.existsSync(f)) return new Set();
   const paths = [...fs.readFileSync(f, 'utf8').matchAll(/^\s*path\s*=\s*(.+?)\s*$/gm)];

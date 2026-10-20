@@ -655,7 +655,12 @@ class License:
             )
             if proc.returncode != 0:
                 log.warn("teardown: repo delete %s failed (exit %d)" % (REPO_NAME, proc.returncode))
-            elif self.repo_guid:
+            elif not self.repo_guid:
+                log.warn(
+                    "teardown: the seeded repo is deleted but its guid was never isolated, so its licence state was NOT purged; the blob stays on %s until `renet license` state is cleaned by hand"
+                    % self.o.vm_ip
+                )
+            else:
                 code, out = self.ssh_out(
                     self.o.vm_ip,
                     "bash -s",
@@ -997,6 +1002,8 @@ class License:
     def installed_blobs(self) -> list[str]:
         """The paths of this run's repository's installed blobs (Rule T 8): `<store>/repos/<guid>/*.json` and `<store>/datastores/*/repos/<guid>/*.json`, never any other repository's."""
         if not self.repo_guid:
+            return []
+        if not lib.is_repo_guid(self.repo_guid):
             return []
         _, out = self.ssh_out(
             self.o.vm_ip,
