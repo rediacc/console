@@ -97,7 +97,7 @@
     "'job_p90_minutes' 'Renet pkg scope', 'Renet pkg matrix (<distro>)' and 'E2E Ceph Workers non-apt (<distro>)' are SEEDED, not measured (box P6 of PLAN-renet-ceph-gpu-non-apt.md; P7 replaces them with 5 nightly runs):",
     "the matrix legs from one local Docker run of renet_pkg_matrix.py per distro (95-147 s, 2026-09-29) plus about 3 minutes of runner setup and the renet build, the Ceph Workers legs from plan section 4 (ubuntu's 12.5 plus the rpm download and Docker CE on 2 Ceph nodes, 13-15)."
   ],
-  "refreshed_at": "2026-10-20T10:29:33Z",
+  "refreshed_at": "2026-10-20T18:11:20Z",
   "concurrency": 20,
   "jobs": {
     "quality-pytest": 1.2,
@@ -1364,7 +1364,7 @@
     "Check Release State": 0.5,
     "Build (Devcontainer) / Devcontainer Manifest": 0.5,
     "Finalize Release Sentinel": 0.6,
-    "Pipeline Sentinel": 0.2,
+    "Pipeline Sentinel": 0.3,
     "PR Labels": 0.7,
     "OPS Tests / OPS Provision (linux-amd64, 4/5)": 12.1,
     "OPS Tests / OPS Provision (linux-amd64, 2/5)": 8.8,
@@ -1902,8 +1902,8 @@
     "refreshed_at": "2026-10-13T17:19:13Z",
     "jobs": {
       "Validate Promotion": {
-        "observed_max_seconds": 316,
-        "samples": 2
+        "observed_max_seconds": 473,
+        "samples": 3
       },
       "Stage Artifacts": {
         "observed_max_seconds": 668,
