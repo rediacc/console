@@ -122,6 +122,22 @@ test.describe('System Functions @bridge @smoke', () => {
     expect(result.code).toBe(0);
   });
 
+  // Repo-key shells and transfers refuse to run without Landlock, so every supported OS leg must report it. getCombinedOutput lowercases, so the patterns are lowercase; "status: not available" cannot match the first.
+  test('sandbox-exec --detect reports Landlock AVAILABLE and records the ABI', async () => {
+    const result = await runner.executeOnWorker('renet sandbox-exec --detect');
+    const output = runner.getCombinedOutput(result);
+
+    const abi = output.match(/landlock abi version:\s*(\d+)/)?.[1] ?? 'unreported';
+    test.info().annotations.push({
+      type: 'landlock-abi',
+      description: `ABI ${abi} on ${runner.getTargetVM()}`,
+    });
+
+    expect(result.code, output).toBe(0);
+    expect(output).toMatch(/status:\s*available/);
+    expect(output).not.toContain('not available');
+  });
+
   test('check_btrfs should verify btrfs availability', async () => {
     const result = await runner.checkBtrfs();
 
