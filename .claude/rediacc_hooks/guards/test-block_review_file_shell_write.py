@@ -253,6 +253,12 @@ OWN_CASES = [
         "git archive -o/tmp/logo HEAD -- agent/reviews/b/x.md",
         False,
     ),
+    # review 95e276da.1: `-oo` is `-o` with the attached value `o`, never a bundle that takes the next word.
+    (
+        "git archive -oo (attached value o) then a review pathspec, into /tmp",
+        "git archive -oo HEAD -- agent/reviews/b/x.md | tar -x -C /tmp/r20x",
+        False,
+    ),
     (
         "git archive -v (no value) then a review pathspec, into /tmp",
         "git archive -v HEAD -- agent/reviews/b/x.md | tar -x -C /tmp/r20x",
