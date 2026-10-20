@@ -489,13 +489,18 @@ class Drill:
         port = self.gateway_port()
         return bool(port) and self._health(port)
 
-    def restart_gateway(self) -> None:
-        """Stop what this run started and start a fresh `./run.sh account dev`, waiting until it is healthy."""
+    def restart_gateway(self, log_path: pathlib.Path | None = None) -> None:
+        """Stop what this run started and start a fresh `./run.sh account dev`, waiting until it is healthy.
+
+        `log_path` puts the gateway log there instead of in the work directory, so the log of a gateway that outlives the run (`detach_gateway`) survives the teardown.
+        """
         self.step(
             "Restarting the dev gateway (tsx does not hot-reload, so a long-running gateway serves stale server code)"
         )
         self.stop_gateway()
         started = int(time.time())
+        if log_path is not None:
+            self.gateway_log = pathlib.Path(log_path)
         if self.gateway_log is None:
             raise RuntimeError("self.gateway_log is not set")
         # Its own process group (setsid): the tsx child must not survive a kill of the run.sh wrapper and keep the port bound.
@@ -575,6 +580,10 @@ class Drill:
                 for pid in listed.stdout.split():
                     with contextlib.suppress(ProcessLookupError, PermissionError, ValueError):
                         os.kill(int(pid), signal.SIGKILL)
+
+    def detach_gateway(self) -> None:
+        """Hand the gateway this run started over to whoever runs next: forget the process group without stopping it, so `teardown` leaves it running and its port bound."""
+        self.gateway_proc = None
 
     def wait_gateway_down(self) -> None:
         """Wait for the recorded port to stop answering, so the offline leg cannot race a draining socket."""

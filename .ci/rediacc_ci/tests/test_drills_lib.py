@@ -425,6 +425,105 @@ def test_stop_gateway_kills_the_whole_process_group(
         drill.teardown()
 
 
+class _FakePopen:
+    """Records the launch and answers like a live child; `pid` is never a real process group."""
+
+    launched: typing.ClassVar[list[dict[str, object]]] = []
+
+    def __init__(self, argv: list[str], **kwargs: object) -> None:
+        self.pid = 424242
+        self.launched.append({"argv": argv, **kwargs})
+
+    def wait(self, timeout: float | None = None) -> int:
+        del timeout
+        return 0
+
+    def poll(self) -> int | None:
+        return None
+
+
+def _fake_gateway_drill(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[lib.Drill, list[tuple[int, int]]]:
+    """A drill whose gateway start is a `_FakePopen` and whose `os.killpg` only records."""
+    _FakePopen.launched = []
+    killed: list[tuple[int, int]] = []
+    root = _fake_root(tmp_path, "#!/bin/bash\nexit 0\n")
+    monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
+    monkeypatch.setattr(lib.subprocess, "Popen", _FakePopen)
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: killed.append((pid, sig)))
+    drill = lib.Drill("t")
+    drill.init()
+    monkeypatch.setattr(drill, "note", lambda *_a: None)
+    monkeypatch.setattr(drill, "step", lambda *_a: None)
+    monkeypatch.setattr(drill, "wait_gateway_started", lambda *_a: None)
+    return drill, killed
+
+
+def test_teardown_stops_a_gateway_this_run_started(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The control for the detach case: without `detach_gateway` the teardown signals the process group."""
+    drill, killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    drill.restart_gateway()
+    drill.teardown()
+    assert killed
+    assert {pid for pid, _sig in killed} == {424242}
+    assert drill.gateway_proc is None
+
+
+def test_a_detached_gateway_survives_teardown(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    drill, killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    drill.restart_gateway()
+    assert drill.gateway_proc is not None
+    drill.detach_gateway()
+    assert drill.gateway_proc is None
+    drill.teardown()
+    assert killed == []
+
+
+def test_restart_gateway_writes_to_log_path_and_the_log_outlives_the_work_dir(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _fake_root(tmp_path, "#!/bin/bash\necho gateway-says-hello\nexit 0\n")
+    monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
+    drill = lib.Drill("t")
+    drill.init()
+    monkeypatch.setattr(drill, "note", lambda *_a: None)
+    monkeypatch.setattr(drill, "step", lambda *_a: None)
+    monkeypatch.setattr(drill, "wait_gateway_started", lambda *_a: None)
+    log_path = tmp_path / "kept" / "gateway.log"
+    log_path.parent.mkdir()
+    default_log = drill.gateway_log
+    try:
+        drill.restart_gateway(log_path=log_path)
+        assert drill.gateway_proc is not None
+        drill.gateway_proc.wait(timeout=30)
+        assert drill.gateway_log == log_path
+        drill.detach_gateway()
+    finally:
+        drill.teardown()
+    assert "gateway-says-hello" in log_path.read_text()
+    assert default_log is not None
+    assert not default_log.exists()
+
+
+def test_restart_gateway_without_log_path_keeps_the_work_dir_log(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    drill, _killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    try:
+        default_log = drill.gateway_log
+        drill.restart_gateway()
+        assert drill.gateway_log == default_log
+        assert default_log is not None
+        assert default_log.parent == drill.work
+    finally:
+        drill.teardown()
+
+
 def test_wait_started_names_a_gateway_that_exited(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
