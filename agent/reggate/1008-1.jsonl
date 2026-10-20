@@ -40,3 +40,12 @@
 {"kind":"charge","sig":"61f0ee5272fb","why":"proven","at":"2026-10-13T02:08:47Z","br":"1008-1"}
 {"kind":"debt","sig":"6151464bf02a","blind_spot":"Tests compare expected values with a date computed from the wall clock at run time, so the link between expected value and the day the test runs is never checked at a fixed instant. CI is green every day except rollover.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/hookcases.py","charged":32,"at":"2026-10-13T02:15:51Z","br":"1008-1"}
 {"kind":"charge","sig":"6151464bf02a","why":"capped","at":"2026-10-13T02:15:51Z","br":"1008-1"}
+{"kind":"charge","sig":"437159874d62","why":"proven","at":"2026-10-13T06:05:43Z","br":"1008-1"}
+{"kind":"charge","sig":"f2e5c22ddc95","why":"proven","at":"2026-10-13T07:23:11Z","br":"1008-1"}
+{"kind":"debt","sig":"bda7508f0230","blind_spot":"The awk redirect detector was checked only against the output forms it already knew. No check compares its parse against gawk's option grammar, where -o, -p and -d take a file argument.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/test_output_landings.py","charged":35,"at":"2026-10-13T08:49:41Z","br":"1008-1"}
+{"kind":"charge","sig":"bda7508f0230","why":"capped","at":"2026-10-13T08:49:41Z","br":"1008-1"}
+{"kind":"charge","sig":"0f15c65fe7a9","why":"proven","at":"2026-10-14T04:12:19Z","br":"1008-1"}
+{"kind":"charge","sig":"9d8894ba4491","why":"proven","at":"2026-10-14T04:40:36Z","br":"1008-1"}
+{"kind":"debt","sig":"720175a69555","blind_spot":"The defect is per-distro package behaviour (rocky-10, centos-stream-10, opensuse-16.0, oracle-1). Every check:* key compares source text, workflow shape, or single-host Go output, never the installed package on each distro image. Only the matrix job observes that relationship.","surface":"none","artifact":"","charged":38,"at":"2026-10-14T04:55:17Z","br":"1008-1"}
+{"kind":"charge","sig":"720175a69555","why":"capped","at":"2026-10-14T04:55:17Z","br":"1008-1"}
+{"kind":"charge","sig":"8b739e082d6c","why":"proven","at":"2026-10-14T05:32:37Z","br":"1008-1"}

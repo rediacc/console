@@ -1,15 +1,15 @@
-## SESSION d778be9d 2026-10-19T08:59:35Z
+## SESSION d778be9d 2026-10-20T07:46:49Z
 
-# STATE d778be9d, paused by the operator 2026-10-19T09:30Z
+# STATE d778be9d (2026-10-20 ~08:00Z)
 
-Branch 1008-1, PR #600 (draft). Operator: "pause ... Stop the background task(s) after they finish. Do not start new one". Heartbeat cron deleted; nothing new started.
+## Where
+Branch 1020-1 (cut from main d35df2ab1 after PR #600 merged 07:42Z by guarded FF push 3ce2c1994..d35df2ab1; rebase refused at 1352 commits). Submodules renet 647b45d, account aa2c04b detached at their main; 1008-1 deleted locally + remote in all three repos. Phase: build. No PR open yet for 1020-1.
 
-Pushed head 27849014b: run 39215455203 red (budget freshness, Pytest 3/4 symlink race). Local committed and reviewed: caps 51d8c613a, symlink 0279aff2f, Go 1.27 (2c69f85e7, 6799d5015, renet 7f14299/00b9e90/42a2777), gopls 0.24.0 0ab26bba4, watchdog cap f99e6a2cb.
-
-UNCOMMITTED (verified, 47 tests pass, ruff clean): .ci/rediacc_ci/ci/gate_costs.py + tests/test_ci_gate_costs.py: collect_captures also reads housekeeping captures DISPATCHED on the PR head (GITHUB_HEAD_REF). Why: main's nightly capture times out (fix 5d5d88247/f6fbdfd30 lives only on this branch), so gate-costs:no-capture reds budget freshness on every PR.
+## In flight
+- Console CI + release on main @ d35df2ab1: watch bg b7sxk19mb (#6361fc5b, #f6fe02a8 leased to it).
+- Writers (cap 4 full): #a17a5ba7 detect_pointer_bump admits agent/reviews; #8aad9216 block_turbo_early_push merge-phase admission; #2cd60cfd hook-cross-os scan-root + plant in a copy; #32e82a74 term.ts external-terminal credential ownership.
 
 ## Next action
-1. Commit the gate_costs change (message: why above; PR-TASK 8ed364fe).
-2. Rebuild the receipt (ci:quick, then the 3 dropped slow gates), push renet then console (TURBO_PUSH_REASON='red-fix: ...'), sync the PR body.
-3. Dispatch housekeeping on 1008-1 (`gh workflow run housekeeping.yml --ref 1008-1`) so a capture exists; then watch CI.
-4. Open: #2cd60cfd (cross-OS test plants into the real tree).
+1. When main CI+release finish: git fetch origin main; local main re-sync (git fetch origin main:main), rebase 1020-1 if CD pushed commits (branch has none yet -> `git merge --ff-only origin/main` on 1020-1 is enough while it has no commits); GitLab mirror: git push gitlab refs/heads/main:refs/heads/main --follow-tags; late-review sweep; tick #6361fc5b.
+2. Spot-check each writer, commit by pathspec with PR-TASK trailer, tick items.
+3. Turbo: remaining Promoted plans (messaging step 13, per-pr-loop R1, pins T11, account-vm-check 7 boxes) per turbo-next; #3b0fa70b secret-rename residue.
