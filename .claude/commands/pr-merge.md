@@ -133,6 +133,8 @@ Rebase means the branch-tip commits are **not literally on** the submodule's `ma
 
 Then in the console repo: `git add private/renet private/account …` (only the merged pointers), commit (`chore(submodules): bump pointers to merged main commits`), and push to the branch. This re-runs console CI; the `Submodule Branches` gate now passes via the **ancestor-of-main (pointer-bump-only)** path in `.ci/scripts/quality/check-submodule-branches.sh`.
 
+Under turbo the push needs no `TURBO_PUSH_REASON`: while `worklist.py --phase <me> merge --branch <b>` is set for this branch, `block_turbo_early_push` admits a push whose unpushed range changes only submodule gitlinks and `agent/reviews/` records, and ledgers it as `merge-pointer-bump`.
+
 Refresh the console PR body before pushing (staleness gate reads `updatedAt`; the body must actually change): summarize the merges + pointer bump.
 
 ### 3. Wait for the fast-path run, then auto-merge the console PR
