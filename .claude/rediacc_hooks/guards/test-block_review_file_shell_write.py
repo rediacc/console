@@ -231,12 +231,32 @@ OWN_CASES = [
         True,
     ),
     ("git archive -o onto a review path", "git archive -o agent/reviews/b/x.tar HEAD", True),
+    # review 58be8bbc.1: parse-options takes a unique long-option prefix and a short bundle ending in a value flag.
+    (
+        "git archive --outp (unique prefix) onto a review path",
+        "git archive --outp agent/reviews/b/x.tar HEAD",
+        True,
+    ),
+    (
+        "git archive -vo (short bundle) onto a review path",
+        "git archive -vo agent/reviews/b/x.tar HEAD",
+        True,
+    ),
+    (
+        "git archive -v (no value) then a review pathspec, into /tmp",
+        "git archive -v HEAD -- agent/reviews/b/x.md | tar -x -C /tmp/r20x",
+        False,
+    ),
     (
         "git archive --output= onto a review path",
         "git archive HEAD --output=agent/reviews/x.tar",
         True,
     ),
-    ("git archive piped to tar -xf - into the directory", "git archive HEAD | tar -xf - -C agent/reviews/b", True),
+    (
+        "git archive piped to tar -xf - into the directory",
+        "git archive HEAD | tar -xf - -C agent/reviews/b",
+        True,
+    ),
 ]
 
 MUTANTS = [

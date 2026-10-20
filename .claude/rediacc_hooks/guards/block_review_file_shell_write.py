@@ -664,6 +664,20 @@ _GIT_VALUE_OPTIONS = frozenset(
 _GIT_ARCHIVE_VALUE_OPTIONS = frozenset(("-o", "--output", "--remote", "--exec"))
 
 
+def _archive_takes_value(word):
+    """Does this `git archive` option word take the NEXT word as its value?
+
+    git's parse-options accepts a unique prefix of a long option (`--outp` is `--output`) and a bundle of short flags whose last one takes a value (`-vo X` is `-v -o X`), so exact membership let `git archive --outp agent/reviews/... HEAD` through (review 58be8bbc.1). A `--name=value` word carries its value and takes nothing more.
+    """
+    if word.startswith("--"):
+        if "=" in word or len(word) < 3:
+            return False
+        return any(
+            full.startswith(word) for full in _GIT_ARCHIVE_VALUE_OPTIONS if full.startswith("--")
+        )
+    return word.startswith("-") and word.endswith("o")
+
+
 def _without_ref_operands(run, argv):
     """`argv` with the positional words of a git ref verb dropped, so only its options and its remote are read as possible file writes; any other command comes back unchanged."""
     if run.name.rsplit("/", 1)[-1] != "git":
@@ -680,7 +694,7 @@ def _without_ref_operands(run, argv):
             value_of_option, takes_value = takes_value, False
             if word.startswith("-") and len(word) > 1:
                 out.append(word)
-                takes_value = word in _GIT_ARCHIVE_VALUE_OPTIONS
+                takes_value = _archive_takes_value(word)
             elif value_of_option:
                 out.append(word)
         return out
