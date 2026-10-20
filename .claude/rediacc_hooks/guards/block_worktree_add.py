@@ -1174,9 +1174,9 @@ SCRIPT_MESSAGE = (
     "or `create`, and the script is untracked or differs from HEAD. Such a script is refused "
     "whatever it does with the words, because no reading of what a file can execute is "
     "complete. A script whose file only QUOTES the words (a fixture table, a docstring, a "
-    "selftest) has a safe path: commit it, then run it, because a tracked script unchanged from "
-    "HEAD is reviewed code and is not read at all (`git status --porcelain -- <script>` must "
-    "print nothing for it). Otherwise hand the command to the operator to run with the `!` "
+    "selftest) has a safe path: commit it, then run it, because the hook does not read a tracked "
+    "script unchanged from HEAD (`git status --porcelain -- <script>` must print nothing for "
+    "it); a commit is not a review, so commit only a script whose text you have judged yourself. Otherwise hand the command to the operator to run with the `!` "
     "prefix, or drop the phrase from a script that does not need it."
 )
 

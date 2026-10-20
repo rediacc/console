@@ -242,6 +242,17 @@ OWN_CASES = [
         "git archive -vo agent/reviews/b/x.tar HEAD",
         True,
     ),
+    # review 5884f513.1/.2: the attached short form carries its own value; a path ending in `o` is not a bundle.
+    (
+        "git archive -oPATH (attached) onto a review path",
+        "git archive -oagent/reviews/b/x.tar HEAD",
+        True,
+    ),
+    (
+        "git archive -o/tmp/logo (attached, ends in o) then a review pathspec",
+        "git archive -o/tmp/logo HEAD -- agent/reviews/b/x.md",
+        False,
+    ),
     (
         "git archive -v (no value) then a review pathspec, into /tmp",
         "git archive -v HEAD -- agent/reviews/b/x.md | tar -x -C /tmp/r20x",

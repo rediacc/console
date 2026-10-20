@@ -673,7 +673,7 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "only `not-runtime` or `deadline` admits it",
+        "escape-blind: `vm-unavailable` names a NOT_VERIFIED attempt for one tree",
     ),
     (
         "--mirror, an ASKED matching no answer",
@@ -682,7 +682,7 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "matches no AskUserQuestion answer",
+        "escape-unproven: its ASKED: minute matches no AskUserQuestion answer",
     ),
     (
         "vm-unavailable with no receipt at all",
@@ -691,7 +691,7 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "no NOT_VERIFIED receipt exists for these inputs",
+        "escape-no-attempt: `vm-unavailable`, but no NOT_VERIFIED receipt exists for these inputs",
     ),
     (
         "vm-unavailable over another tree's NOT_VERIFIED",
@@ -700,7 +700,7 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "no NOT_VERIFIED receipt exists for these inputs",
+        "escape-no-attempt: `vm-unavailable`, but no NOT_VERIFIED receipt exists for these inputs",
     ),
     (
         "an unknown kind",
@@ -709,7 +709,7 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "must be one of",
+        "escape-kind: `VM_CHECK_PUSH_REASON=",
     ),
     (
         "a short why",
@@ -718,7 +718,7 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "at least 40",
+        "escape-why: `deadline: soon",
     ),
     (
         "no ASKED",
@@ -727,7 +727,7 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "carries no ASKED",
+        "escape-asked: `",
     ),
     (
         "a malformed ASKED",
@@ -736,7 +736,7 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "carries no ASKED",
+        "escape-asked: `",
     ),
     (
         "an ASKED matching no answer",
@@ -745,9 +745,17 @@ CASES = [
         ANSWERED,
         None,
         True,
-        "matches no AskUserQuestion answer",
+        "escape-unproven: its ASKED: minute matches no AskUserQuestion answer",
     ),
-    ("an ASKED with no transcript", NR, CLI_NONE, None, None, True, "matches no AskUserQuestion"),
+    (
+        "an ASKED with no transcript",
+        NR,
+        CLI_NONE,
+        None,
+        None,
+        True,
+        "escape-unproven: its ASKED: minute matches no AskUserQuestion",
+    ),
     (
         "the reason in prose only",
         "echo \"VM_CHECK_PUSH_REASON='not-runtime: %s%s'\"; %s" % (FILES, ASK, PUSH),
