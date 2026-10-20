@@ -14,7 +14,7 @@ permissions: {}
 jobs:
   cleanup:
     name: Delete PR Channel
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     # Checkout only. The delete is against R2 with Bitwarden credentials;
     # no GitHub API call in this job.
