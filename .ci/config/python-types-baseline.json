@@ -1066,13 +1066,6 @@
       "message": "Unsupported right operand type for in (\"str | None\")"
     },
     {
-      "id": "8813701d56a77d08",
-      "file": ".ci/rediacc_ci/tests/test_infra_ci_env.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, None]\"; expected \"tuple[str, str]\""
-    },
-    {
       "id": "f390e08f07c241b3",
       "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
       "code": "arg-type",
@@ -1363,14 +1356,14 @@
       "id": "730744f0a6c503ac",
       "file": ".ci/rediacc_ci/tests/test_quality_compose_env.py",
       "code": "var-annotated",
-      "count": 2,
+      "count": 1,
       "message": "Need type annotation for \"empty\" (hint: \"empty: list[<type>] = ...\")"
     },
     {
       "id": "e760a83832c1b33b",
       "file": ".ci/rediacc_ci/tests/test_quality_compose_env.py",
       "code": "var-annotated",
-      "count": 2,
+      "count": 1,
       "message": "Need type annotation for \"nonempty\" (hint: \"nonempty: list[<type>] = ...\")"
     },
     {

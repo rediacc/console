@@ -24,7 +24,7 @@ import typing
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import paths, well_known
 from rediacc_ci.core import run_verbs
 from rediacc_ci.drills import backup, lib, vm_ssh, wire
 from rediacc_ci.drills import license as license_drill
@@ -1438,7 +1438,7 @@ def test_leg_c_fails_when_its_own_renewal_errors_even_if_a_foreign_one_renewed()
 def test_leg_c_fails_on_a_blob_issued_to_another_subscription() -> None:
     drill = _leg_c(
         [{"repositoryGuid": NEW_GUID, "outcome": "renewed", "newSequence": 2}],
-        blob=_blob("sub-of-an-earlier-run", "http://localhost:4800/x"),
+        blob=_blob("sub-of-an-earlier-run", "http://localhost:%d/x" % well_known.ACCOUNT_DEV_PORT),
     )
     try:
         failed = [desc for _n, status, desc in drill.rows if status == "FAIL"]

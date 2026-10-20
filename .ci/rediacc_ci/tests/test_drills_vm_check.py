@@ -3024,7 +3024,9 @@ def test_the_gateway_record_is_not_counted_as_an_old_receipt(tmp_path: pathlib.P
     world = make_world(tmp_path)
     folder = world.root / receipt_mod.CACHE_DIR
     folder.mkdir(parents=True)
-    (folder / vm_check.GATEWAY_RECORD).write_text(json.dumps({"port": "4800", "started": "1"}))
+    (folder / vm_check.GATEWAY_RECORD).write_text(
+        json.dumps({"port": str(well_known.ACCOUNT_DEV_PORT), "started": "1"})
+    )
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert "earlier schema" not in out, out

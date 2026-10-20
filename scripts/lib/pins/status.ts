@@ -197,7 +197,13 @@ export function repoReach(entry: PinEntry): string[] {
 function checkoutAbsent(root: string, repo: string): boolean {
   const dir = path.join(root, repo);
   if (!fs.existsSync(dir)) return true;
-  return fs.statSync(dir).isDirectory() && fs.readdirSync(dir).length === 0;
+  if (!fs.statSync(dir).isDirectory()) return false;
+  const handle = fs.opendirSync(dir);
+  try {
+    return handle.readSync() === null;
+  } finally {
+    handle.closeSync();
+  }
 }
 
 /** The submodule paths `.gitmodules` declares; a registry repo outside this set is a typo or a plain directory, never an absent submodule. */

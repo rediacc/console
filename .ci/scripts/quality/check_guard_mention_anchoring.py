@@ -692,7 +692,7 @@ def fires_many(
             "payloads": [payload_for(kind, t, file_path) for t in texts],
         }
     )
-    codes: object = None
+    codes: Any = None
     reason = ""
     try:
         result = _batch_run(request, len(texts))

@@ -226,6 +226,8 @@ def plant_receipt(
     if pointer is None:
         pointer = _git(root, "rev-parse", "%s:%s" % (tree, RENET))
     account_pointer = _git(root, "rev-parse", "%s:%s" % (tree, ACCOUNT))
+    if not account_pointer:
+        raise RuntimeError("fixture has no account pointer to key the receipt on")
     reason = None
     steps = [{"id": "V1.1", "desc": "deploy renet", "rc": 0, "verdict": "PASS", "ms": 1}]
     if status == "NOT_VERIFIED":

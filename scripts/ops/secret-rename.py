@@ -98,7 +98,7 @@ SKIP_PREFIXES = (
 #   2. list it here, by a substring of the line, for lines where a trailing marker would alter the text a gate or a reader sees (prose inside a string, markdown, a regex).
 # An anchor starting with `==` matches only a line whose stripped text IS the rest (a list entry that must not exempt other lines quoting the same name).
 # The anchors are content, not line numbers, so an unrelated edit above does not move the protection.
-KEEP_MARKER = "secret-rename: keep"
+LINE_MARKER = "secret-rename: keep"
 KEEP_LINES: dict[str, tuple[str, ...]] = {
     ".ci/breakpoint/workflow/breakpoint.yml": (
         "after `BREAKPOINT_TUNNEL_TOKEN`",
@@ -216,7 +216,7 @@ class Rules:
             if idx not in kept_cache:
                 end = text.find("\n", starts[idx])
                 line = text[starts[idx] : len(text) if end < 0 else end]
-                kept_cache[idx] = KEEP_MARKER in line or any(
+                kept_cache[idx] = LINE_MARKER in line or any(
                     line.strip() == a[2:] if a.startswith("==") else a in line for a in anchors
                 )
             return kept_cache[idx]
