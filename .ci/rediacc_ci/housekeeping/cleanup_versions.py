@@ -2614,8 +2614,8 @@ class Housekeeping:
             if budget_out:
                 break
         log.info(
-            "  8a: processed %d format dirs, deleted %d dryrun prefix(es)"
-            % (len(R2_FORMAT_DIRS), dryrun_deleted)
+            "  8a: processed %d format dirs, %s %d dryrun prefix(es)"
+            % (len(R2_FORMAT_DIRS), "would delete" if self.dry_run else "deleted", dryrun_deleted)
         )
 
         # -- 8b. PR channel reaper -----------------------------------------
@@ -2657,7 +2657,10 @@ class Housekeeping:
                     pr_deleted += 1
             if budget_out:
                 break
-        log.info("  8b: deleted %d PR channel prefix(es)" % pr_deleted)
+        log.info(
+            "  8b: %s %d PR channel prefix(es)"
+            % ("would delete" if self.dry_run else "deleted", pr_deleted)
+        )
 
         # -- 8c. Legacy dead prefixes --------------------------------------
         log.step("  8c: legacy dead prefixes")
@@ -2784,8 +2787,8 @@ class Housekeeping:
             drift_count += 1
 
         log.info(
-            "  8d: deleted %d orphan versioned prefix(es); found %d drift finding(s)"
-            % (orphan_ver_deleted, drift_count)
+            "  8d: %s %d orphan versioned prefix(es); found %d drift finding(s)"
+            % ("would delete" if self.dry_run else "deleted", orphan_ver_deleted, drift_count)
         )
         if drift_count > 0:
             self.housekeeping_fail(
@@ -2853,7 +2856,10 @@ class Housekeeping:
                 pkg_deleted += 1
             if budget_out:
                 break
-        log.info("  8f: deleted %d stale npm tarball(s)" % pkg_deleted)
+        log.info(
+            "  8f: %s %d stale npm tarball(s)"
+            % ("would delete" if self.dry_run else "deleted", pkg_deleted)
+        )
 
         # -- 8e. Abort abandoned multipart uploads --------------------------
         log.step("  8e: abort multipart uploads older than 24h")
@@ -2873,7 +2879,13 @@ class Housekeeping:
             ]
         )
         if code != 0:
-            uploads = "[]"
+            # A failed list is not an empty one: a 403 here once printed "no ongoing multipart uploads".
+            self.housekeeping_fail(
+                "Housekeeping 8e",
+                "  8e: could not list multipart uploads in bucket %s (aws exit %d); "
+                "nothing was aborted" % (self.r2_bucket, code),
+            )
+            return
         # SOFT `jq 'length'`: this is inside the twin's `set +e` region, and the `--query` above renders `null` when there are no uploads, which jq cannot take a length of. The twin's variable ends up EMPTY and the `-eq 0` below reads it as zero.
         mpu_count = _soft_length_text(uploads)
         if arith_cmp(mpu_count, "eq", 0):
@@ -2929,8 +2941,13 @@ class Housekeeping:
                 log.info("  Aborted multipart: %s" % key)
                 mpu_aborted += 1
             log.info(
-                "  8e: aborted %d of %s (held %d under 24h grace)"
-                % (mpu_aborted, mpu_count, arith(mpu_count) - mpu_aborted)
+                "  8e: %s %d of %s (held %d under 24h grace)"
+                % (
+                    "would abort" if self.dry_run else "aborted",
+                    mpu_aborted,
+                    mpu_count,
+                    arith(mpu_count) - mpu_aborted,
+                )
             )
 
     def _r2_rm_object(self, key: str, tag: str) -> None:

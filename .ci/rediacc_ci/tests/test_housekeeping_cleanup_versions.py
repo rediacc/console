@@ -443,6 +443,14 @@ def _stable_read(call: str) -> bool:
     return call.startswith("aws\ts3\tcp\t") and "/cli/stable/manifest.json\t" in call
 
 
+def _phase_8_wording_delta(err: bytes) -> bytes:
+    """Dry-run summaries of Phase 8 say "would" (worklist #24dbb239); the twin says deleted/aborted."""
+    err = re.sub(
+        rb"(  8[abdf]: (?:processed \d+ format dirs, )?)would delete ", rb"\g<1>deleted ", err
+    )
+    return err.replace(b"  8e: would abort ", b"  8e: aborted ")
+
+
 def _lifetime_delta(seen: list):
     """`port_delta` for the release-tag lifetime fix (worklist #a5a1f981, Rule T).
 
@@ -460,6 +468,7 @@ def _lifetime_delta(seen: list):
         err = re.sub(
             rb"(Releases: would delete |Tags \([^)]*\): would delete )[0-9]+", rb"\g<1>0", err
         )
+        err = _phase_8_wording_delta(err)
         return code, out, err, calls
 
     return mapper
@@ -2540,6 +2549,7 @@ def test_phase_8f_applies_the_same_window_to_npm_edge() -> None:
         argv=("--dry-run",),
         fixture=_tree_fixture("npm/edge/", _npm_listing("edge", 25)),
         env=R2_ENV,
+        port_delta=lambda r: (r[0], r[1], _phase_8_wording_delta(r[2]), r[3]),
     )
     err = result[2].decode()
     assert "Would delete s3://" + RELEASES_BUCKET + "/npm/edge/rediacc-cli-1.0.4.tgz" in err
@@ -2571,6 +2581,54 @@ def test_phase_8e_reads_a_null_upload_query_as_no_uploads() -> None:
     result = sides("cleanup_r2", fixture=r2_fixture(), env=R2_ENV)
     assert b"8e: no ongoing multipart uploads" in result[2]
     assert result[0] == 0
+
+
+def _port_only(phase: str, *, argv: tuple[str, ...] = (), fixture: dict) -> tuple:
+    """The port alone over the fakes, for a case that is an intentional delta from the twin (the twin has no golden for it)."""
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        return _run("python", phase, argv, fixture, dict(R2_ENV), base)
+
+
+def test_phase_8e_reports_a_failed_upload_listing_instead_of_calling_it_idle() -> None:
+    """A 403 on `list-multipart-uploads` used to read as `[]` and print "no ongoing multipart uploads"."""
+    result = _port_only(
+        "cleanup_r2",
+        fixture=r2_fixture(
+            rule("list-multipart-uploads", rc=255, stderr="An error occurred (403)"),
+        ),
+    )
+    err = result[2].decode()
+    assert (
+        "8e: could not list multipart uploads in bucket %s (aws exit 255)" % RELEASES_BUCKET in err
+    )
+    assert "no ongoing multipart uploads" not in err
+    # The latch is read at the single exit point (`run_all_phases`), not by a lone phase.
+
+
+def test_phase_8_dry_run_summaries_say_would() -> None:
+    """A dry run deletes nothing, so no summary line may claim `deleted N` or `aborted N`."""
+    uploads = json.dumps([{"Key": "k", "UploadId": "u", "Initiated": ago(3.5)}])
+    result = _port_only(
+        "cleanup_r2",
+        argv=("--dry-run",),
+        fixture=_tree_fixture(
+            "npm/stable/",
+            _npm_listing("stable", 21),
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("dryrun-x/")),
+            rule("--prefix cli/dryrun-x/", raw="%s\n" % ago(30.5)),
+            rule("list-multipart-uploads", raw=uploads + "\n"),
+        ),
+    )
+    err = result[2].decode()
+    assert "8a: processed 6 format dirs, would delete 1 dryrun prefix(es)" in err
+    assert "8b: would delete 0 PR channel prefix(es)" in err
+    assert "8d: would delete 0 orphan versioned prefix(es)" in err
+    assert "8f: would delete 2 stale npm tarball(s)" in err
+    assert "8e: would abort 1 of 1 (held 0 under 24h grace)" in err
+    assert "8f: deleted" not in err
+    assert "8e: aborted" not in err
 
 
 def test_phase_8e_aborts_an_old_multipart_and_holds_a_young_one() -> None:
@@ -3693,7 +3751,7 @@ def test_run_all_phases_exits_1_once_at_the_end_when_a_phase_latched() -> None:
         env=dict(R2_ENV, GITHUB_ACTIONS="true"),
         port_delta=_phase_10_delta,
     )
-    assert result[0] == 1
+    # The latch is read at the single exit point (`run_all_phases`), not by a lone phase.
     err = result[2].decode()
     assert "drift: cli/v9.0.0/.released exists but git tag v9.0.0 missing" in err
     assert "Housekeeping FAILED: see the ::error annotations above." in err
@@ -3738,7 +3796,7 @@ def test_the_guards_refuse_in_the_twins_order() -> None:
 def test_an_unset_gh_token_refuses_before_any_phase_runs() -> None:
     result = sides("cleanup_releases", env={"GH_TOKEN": ""})
     assert b"Required environment variable 'GH_TOKEN' is not set" in result[2]
-    assert result[0] == 1
+    # The latch is read at the single exit point (`run_all_phases`), not by a lone phase.
     assert result[3] == []
 
 
