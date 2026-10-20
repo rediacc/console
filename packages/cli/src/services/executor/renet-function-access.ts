@@ -16,6 +16,7 @@ import type { RenetAccess } from '../renet/renet-execution.js';
 
 export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   backup_browse: 'read-only',
+  backup_browse_at: 'provision',
   backup_delete: 'provision',
   backup_list: 'read-only',
   backup_pull: 'provision',
