@@ -172,6 +172,27 @@ function installedLicence(repositoryGuid: string, datastoreId?: string) {
   };
 }
 
+/**
+ * What the skip probe reads: renet's `repository license-status --repo <guid>`,
+ * which answers from the LICENSE STORE. `licensed` are the entries that command
+ * reports for the guid it was asked about; the image listing (no `--repo`) is
+ * answered separately by `mockReadRuntimeRepoLicenseStatuses`.
+ */
+function storeReports(licensed: ReturnType<typeof installedLicence>[]) {
+  mockExec.mockImplementation((command: string) => {
+    if (command.includes('datastore list --json')) {
+      return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
+    }
+    const asked = /license-status .*--repo (\S+)/.exec(command)?.[1];
+    if (asked) {
+      return Promise.resolve(
+        JSON.stringify(licensed.filter((entry) => entry.repositoryGuid === asked))
+      );
+    }
+    return Promise.resolve('');
+  });
+}
+
 describe('backup restore: licensing the target machine', () => {
   const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
   let warnSpy: MockInstance<typeof outputService.warn>;
@@ -310,9 +331,7 @@ describe('backup restore: licensing the target machine', () => {
 
   // T5, the cost control. `claimRepoLicenseIssuanceSlot` dedupes by nothing: not by repo, not by machine. Without the skip probe a DR session that fails three times on an unrelated error spends four monthly issuances.
   it('skips issuance when the target already holds a valid licence for the source guid', async () => {
-    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
-      installedLicence(SOURCE_GUID, DATASTORE_ID),
-    ]);
+    storeReports([installedLicence(SOURCE_GUID, DATASTORE_ID)]);
 
     const result = await localExecutorService.execute(restoreOptions);
 
@@ -324,9 +343,7 @@ describe('backup restore: licensing the target machine', () => {
 
   // T5b, the probe must NOT be "any licence on the machine". That reading reproduces the carrier-repo bug from the other direction: issuance skipped, restore passes through renet's any-repo fallback, and the `--up` that follows fails for want of a licence for THIS guid.
   it('still issues when the machine holds only an unrelated repo licence', async () => {
-    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
-      installedLicence(CARRIER_GUID, DATASTORE_ID),
-    ]);
+    storeReports([installedLicence(CARRIER_GUID, DATASTORE_ID)]);
 
     await localExecutorService.execute(restoreOptions);
 
@@ -336,9 +353,7 @@ describe('backup restore: licensing the target machine', () => {
 
   // T5c, nor is it "the right guid, anywhere". A blob in a different datastore population is one renet will not read for this restore.
   it('still issues when the right guid is licensed in the WRONG datastore scope', async () => {
-    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
-      installedLicence(SOURCE_GUID, OTHER_DATASTORE_ID),
-    ]);
+    storeReports([installedLicence(SOURCE_GUID, OTHER_DATASTORE_ID)]);
 
     await localExecutorService.execute(restoreOptions);
 
@@ -347,13 +362,69 @@ describe('backup restore: licensing the target machine', () => {
 
   // T5d, and an installed-but-invalid blob is not a licence. `runtimeValid` is the field that distinguishes "present" from "usable".
   it('still issues when the installed licence for the guid is not runtime-valid', async () => {
-    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
+    storeReports([
       { ...installedLicence(SOURCE_GUID, DATASTORE_ID), status: 'expired', runtimeValid: false },
     ]);
 
     await localExecutorService.execute(restoreOptions);
 
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
+  });
+
+  // T5e, the probe reads the LICENSE STORE, not the image listing. On a restore target the image is exactly what does not exist yet, so the plain `license-status` listing never mentions the source guid even with its licence installed; a probe built on it answered "not installed" every time, and every DR retry burned another issuance.
+  it('skips issuance when the licence is in the store and the image does not exist yet', async () => {
+    // The real listing on a restore target: no image, so no entry, whatever the store holds.
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([]);
+    storeReports([installedLicence(SOURCE_GUID, DATASTORE_ID)]);
+
+    const result = await localExecutorService.execute(restoreOptions);
+
+    expect(result.success).toBe(true);
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+    const probe = mockExec.mock.calls.map((c) => String(c[0])).find((c) => c.includes('--repo'));
+    expect(probe).toContain(`repository license-status`);
+    expect(probe).toContain(`--repo ${SOURCE_GUID}`);
+    expect(probe).toContain('--all-datastores');
+  });
+
+  // T5f, an older renet that does not know `--repo` fails the probe, and a probe that cannot answer means "issue", never "refuse".
+  it('issues when the store probe fails', async () => {
+    mockExec.mockImplementation((command: string) => {
+      if (command.includes('datastore list --json')) {
+        return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
+      }
+      if (command.includes('license-status')) {
+        return Promise.reject(new Error('unknown flag: --repo'));
+      }
+      return Promise.resolve('');
+    });
+
+    const result = await localExecutorService.execute(restoreOptions);
+
+    expect(result.success).toBe(true);
+    expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
+  });
+
+  // T6, renet's restore exits LICENSE_REQUIRED (reason=missing) when the machine holds no licence at all. Recovery must answer it with a RESTORE issuance and retry; the batch refresh scans images, and a restore target has none to scan.
+  it('answers a LICENSE_REQUIRED restore with a restore issuance, then retries', async () => {
+    mockRefreshRepoLicensesBatch.mockResolvedValue({ recoveryFailureMode: null });
+    mockExecStreaming
+      .mockImplementationOnce((_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"missing","message":"no license data"}\n'
+        );
+        return Promise.resolve(10);
+      })
+      .mockResolvedValueOnce(0);
+
+    const result = await localExecutorService.execute(restoreOptions);
+
+    expect(result.success).toBe(true);
+    expect(mockExecStreaming).toHaveBeenCalledTimes(2);
+    // Once in the pre-flight, once in recovery: both for the SOURCE guid.
+    expect(mockIssueRepoLicense).toHaveBeenCalledTimes(2);
+    expect(mockIssueRepoLicense.mock.calls[1][2]).toMatchObject({ repositoryGuid: SOURCE_GUID });
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
   // The bypass must stay honoured: nolicense/CI builds have no subscription server to mint against.

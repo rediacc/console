@@ -28,6 +28,7 @@ import { outputService } from '../core/output.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import {
   isRepoProvisioningFunction,
+  isRestoreLicenseFunction,
   RENET_LICENSE_REQUIRED_EXIT_CODE,
   type RenetLicenseFailure,
 } from '../renet/renet-license-contract.js';
@@ -135,6 +136,15 @@ function buildRecoveryFailureResult(
   };
 }
 
+/** The single-repo issuance a recovery re-runs for this verb, or null when the batch refresh is the answer. */
+function singleRepoReissueFor(
+  functionName: string
+): typeof ensureRepoLicenseForProvisioning | typeof ensureRepoLicenseForRestore | null {
+  if (isRepoProvisioningFunction(functionName)) return ensureRepoLicenseForProvisioning;
+  if (isRestoreLicenseFunction(functionName)) return ensureRepoLicenseForRestore;
+  return null;
+}
+
 async function maybeIssueLicense(
   options: ExecuteOptions,
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
@@ -148,16 +158,11 @@ async function maybeIssueLicense(
   // LICENSE_REQUIRED (reason=missing) for the repo on the target machine.
   // The repo image exists on disk there, so refreshRepoLicensesBatch can scan it and issue. Skipping recovery for deny-listed functions is the root cause of rediacc/console#482: `repo push --up` to a fresh machine fails because the license was issued for the source, not the destination, and the destination's repository_up recovery never tried to issue.
 
-  // For provisioning verbs (create-tier, per renet's tier map), re-issue the pre-provisioning repo license
-  if (isRepoProvisioningFunction(options.functionName)) {
+  // For provisioning verbs (create-tier, per renet's tier map), re-issue the pre-provisioning repo license. A restore is the same shape: renet's `backup restore` exits LICENSE_REQUIRED (reason=missing) when the machine holds no licence at all, and the batch refresh below cannot answer it, because it scans images and a restore target has none yet.
+  const reissue = singleRepoReissueFor(options.functionName);
+  if (reissue) {
     try {
-      await ensureRepoLicenseForProvisioning(
-        options,
-        machine,
-        sshPrivateKey,
-        remoteRenetPath,
-        sftp
-      );
+      await reissue(options, machine, sshPrivateKey, remoteRenetPath, sftp);
       return { kind: 'success' };
     } catch (err) {
       telemetryService.trackError(err, { operation: 'executor.repo_license_recovery' });
@@ -323,7 +328,9 @@ export async function ensureRepoLicenseForProvisioning(
  *
  * This is the disaster-recovery case, and it is the whole point: the target
  * of a real restore is a fresh replacement box. renet's `resolveRestoreLicense`
- * accepts ANY installed blob on the machine, so the pre-existing remedy was
+ * prefers the target's own blob, then one from the same lineage, then any
+ * installed blob, and exits LICENSE_REQUIRED on a machine holding none (which
+ * `maybeIssueLicense` answers with this same function), so the pre-existing remedy was
  * to create a throwaway carrier repo first, which no operator in a DR
  * situation would know, and which is precisely what this removes. The licence
  * is issued silently, as one timed step, exactly as provisioning renders one.
@@ -377,7 +384,7 @@ export async function ensureRepoLicenseForRestore(
     throw new Error(t('errors.subscription.activationFailed'));
   }
 
-  if (await restoreLicenseAlreadyInstalled(base, machine, sshPrivateKey, remoteRenetPath, sftp)) {
+  if (await restoreLicenseAlreadyInstalled(base, machine, remoteRenetPath, sftp)) {
     return;
   }
 
