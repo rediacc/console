@@ -84,5 +84,8 @@ describe('external terminal credential handoff', () => {
     expect(opts.argv[0]).toBe('ssh');
     expect(opts.environmentVariables.SSH_AUTH_SOCK).toBeUndefined();
     expect(conn.handoffResources.agentPid).toBe('not-a-pid');
+    // the parent still owns the connection, so its cleanup still releases it
+    await conn.cleanup();
+    expect(conn.handoffResources.agentPid).toBeUndefined();
   });
 });
