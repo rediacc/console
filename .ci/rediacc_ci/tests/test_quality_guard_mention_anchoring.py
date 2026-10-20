@@ -359,6 +359,7 @@ TEXTS = ["git commit --allow-empty -m x", "echo hello", "true; git commit --allo
         (_Done(stdout="[2, 0]"), "answered 2 for 3"),
         (_Done(stdout="not json at all"), "not JSON"),
         (_Done(stdout='{"a": 1}'), "non-list"),
+        (_Done(stdout="null"), "a non-list for 3"),
     ],
 )
 def test_every_fallback_branch_gives_the_per_probe_verdicts_and_warns(
@@ -371,6 +372,20 @@ def test_every_fallback_branch_gives_the_per_probe_verdicts_and_warns(
     err = capsys.readouterr().err
     assert "block_git_empty_commit.py" in err
     assert reason in err
+
+
+def test_the_outer_batch_timeout_is_the_startup_plus_every_probe_bound(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_run(*_a: object, **kw: object) -> _Done:
+        seen.update(kw)
+        return _Done(stdout="[]")
+
+    monkeypatch.setattr(gma.ci_proc, "run", fake_run)
+    gma._batch_run("{}", 7)
+    assert seen["timeout"] == 30 + gma.PER_PROBE_TIMEOUT * 7
 
 
 def test_a_child_that_cannot_start_falls_back_and_warns(
