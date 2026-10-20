@@ -171,6 +171,34 @@ def run_collapsed(key, payload, env):
     return proc.returncode, proc.stdout, proc.stderr
 
 
+def live_head():
+    """The checkout's HEAD commit, which the push guard keys its verdict on (`HEAD^{tree}`) and the pinned index does not hold still."""
+    return subprocess.run(
+        ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    ).stdout.strip()
+
+
+PAIR_ATTEMPTS = 3
+
+
+def run_pair(members, chain, payload, env):
+    """`(separate, collapsed)` verdicts for one payload, taken against ONE HEAD.
+
+    ROOT CAUSE OF THE LOAD FLAKE (2026-10-20, `test_verdict_set_is_unchanged[pre-bash-11]`, payload `check@1445`, a `git push`). `block_unverified_push` names `HEAD^{tree}` in its refusal, and `GIT_INDEX_FILE` does not pin HEAD. A chunk takes minutes under load (448 s alone), so another session committing in the shared checkout between the separate pass and the collapsed pass made the two refusals name different trees. Both sides were right about the HEAD each saw. A pair that straddled a HEAD move compares two different worlds, so it is re-taken; the comparison itself is unchanged, and a pair that still differs with HEAD held still is reported.
+    """
+    for _ in range(PAIR_ATTEMPTS):
+        before = live_head()
+        old = run_separately(members, payload, env)
+        new = run_collapsed(chain, payload, env)
+        if live_head() == before:
+            break
+    return old, new
+
+
 def corpus_by_chain():
     """`{chain: {payload: label}}` for the driven patterns, deduplicated by payload.
 
@@ -508,8 +536,7 @@ def test_verdict_set_is_unchanged(chain, chunk):
     wrong = []
     pool = dict(verdict_chunks(chain)[chunk])
     for payload, label in sorted(pool.items()):
-        old = run_separately(members, payload, env)
-        new = run_collapsed(chain, payload, env)
+        old, new = run_pair(members, chain, payload, env)
         if old != new:
             wrong.append("%s %s\n  separate: %r\n  collapsed: %r" % (chain, label, old, new))
     assert not wrong, "%d of %d payload(s) decided differently:\n%s" % (
