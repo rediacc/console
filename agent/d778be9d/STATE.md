@@ -19,5 +19,5 @@ Operator pushed the five ci-trace hotfixes (309ea45fc..db96dd025) with COMMIT_PO
 - #ba1a4207 pins-soaked readonly token vs the artifact-only invariant (DEFAULT: report not-checked, keep the ruling).
 
 ## Next action
-1. Commit the review-finding fixes (plan-boxes ledger, Part 27 counts, record-paths reason, CLAUDE.md hotfix-push spelling, this file).
+1. Done: review-finding fixes 177111780, gate-costs refresh 5dcde2ca4 (housekeeping nightly red on main).
 2. Work the post-merge items with writers (disjoint Owns), then the rename and #a42f8448.
