@@ -1,6 +1,6 @@
 """The files a fixture root needs so a script that loads the well-known registry can run in it.
 
-Bash scripts read the WK_* facts through `well_known_load` (scripts/lib/well-known.sh), which goes through `env_file_load` (scripts/lib/env-file.sh), which runs `python3 -m rediacc_ci.core.env`. `scripts/lib/common.sh` also sources `.ci/config/well-known.generated.sh` (the bash projection of the registry), so that file rides in the chain. A fixture that copies a script and `.ci/config/well-known.env` and nothing else dies at the `source` line, so each fixture calls `copy_loader` beside the registry copy. The list is the whole dependency chain and nothing more: the fixture must not become a second copy of the repository.
+Bash scripts read the WK_* facts by sourcing `.ci/config/well-known.generated.sh`, the bash projection `check:ci-literal-sources` renders from `.ci/config/well-known.env` (the shell wins, every value is exported, nothing executes). The `well_known_load` / `env_file_load` pair under `scripts/lib/` that used to sit in front of it was deleted in W7P5-c, its equivalence recorded by `.ci/shadow/w7p5c-well-known-projection.observations.jsonl`. A fixture that copies a script and `.ci/config/well-known.env` and nothing else dies at the `source` line, so each fixture calls `copy_loader` beside the registry copy. The list is the whole dependency chain and nothing more: the fixture must not become a second copy of the repository.
 """
 
 from __future__ import annotations
@@ -13,8 +13,6 @@ from rediacc_ci import paths
 
 LOADER_FILES = (
     ".ci/config/well-known.generated.sh",
-    "scripts/lib/well-known.sh",
-    "scripts/lib/env-file.sh",
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/env.py",

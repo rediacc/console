@@ -41,8 +41,6 @@ FIXTURE_FILES = (
     ".ci/config/constants.sh",
     ".ci/config/well-known.env",
     ".ci/config/well-known.generated.sh",
-    "scripts/lib/well-known.sh",
-    "scripts/lib/env-file.sh",
     ".ci/rediacc_ci/core/env.py",
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/well_known.py",

@@ -192,7 +192,7 @@ const CLOSURES = {
       'Renet (integration, 3/3)',
     ],
     submodules: ['private/renet'],
-    // Steps at ct-tests.yml:1516 / :1544 / :1550 / :1556 / :1560, plus renet's own private/renet/.ci/scripts/test/run-tests.sh:15-26, which sources the CONSOLE-side infra/ci-env.sh, which is why this job is not submodule-only however much it looks like it.
+    // Steps at ct-tests.yml:1516 / :1544 / :1550 / :1556 / :1560, and renet's own private/renet/.ci/scripts/test/run-tests.sh:15-26 used to source the CONSOLE-side infra/ci-env.sh. That file was deleted in W7P5-c (its port is rediacc_ci.infra.ci_env, under '.ci/rediacc_ci' below), and run-tests.sh guards the source with `-f`, so it no longer reads anything console-side; the job is still not submodule-only because of the console-side runner and shard manifests listed here.
     paths: [
       '.ci/rediacc_ci',
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
@@ -203,7 +203,6 @@ const CLOSURES = {
       // T2.14's own shard manifests: each leg's `--shard-manifest`/`jq` argument picks its file list straight from these, so a manifest edit that moves work between legs is exactly the kind of console-side input rule 3 exists to catch.
       '.ci/config/shards/test-renet-go.json',
       '.ci/config/shards/test-renet-integration.json',
-      '.ci/scripts/infra/ci-env.sh',
       // ADDED 2026-08-08, and it was a real hole rather than a tidy-up: this job mints its submodule-capable token through the composite action (ct-tests.yml:1473) exactly as account_e2e does, but only account_e2e declared it. An edit to the action would not have withdrawn a renet greenlight. Found by test_gate_greenlight_closure_trace.py on its first run, which is the case
       // that gate
       // exists for.
@@ -373,8 +372,6 @@ const CLOSURES = {
       '.ci/scripts/infra/ci-pull-images.sh',
       '.ci/scripts/infra/ci-start-elite.sh',
       '.ci/scripts/infra/ci-stop-elite.sh',
-      // ci-start-elite.sh:23 sources it.
-      '.ci/scripts/infra/ci-env.sh',
       '.github/actions/app-token',
       'package.json',
       'package-lock.json',

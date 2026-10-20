@@ -85,7 +85,7 @@ type config struct {
 func run() error {
 	var cfg config
 	flag.BoolVar(&cfg.genKey, "gen-key", false,
-		"print a fresh Ed25519 keypair as JSON {private,public} (base64 PKCS8 / SPKI, byte-identical to .ci/scripts/infra/ci-env.sh) and exit")
+		"print a fresh Ed25519 keypair as JSON {private,public} (base64 PKCS8 / SPKI, byte-identical to .ci/rediacc_ci/infra/ci_env.py) and exit")
 	flag.BoolVar(&cfg.printMachineID, "print-machine-id", false,
 		"print this machine's license.GetMachineID() and exit")
 

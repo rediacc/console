@@ -39,7 +39,6 @@
     "private/account/tests/integration/rotation-bitwarden-names.test.ts": 1,
     "scripts/dev/bws-rotate.py": 1,
     "scripts/gates/check-env-credential-drift.ts": 1,
-    "scripts/lib/env-file.sh": 2,
     "scripts/ops/secret-rename.py": 2
   }
 }

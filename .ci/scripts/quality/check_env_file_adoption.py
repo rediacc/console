@@ -10,11 +10,11 @@ lane: quality-static
 selftest: true
 why: `set -a; source <envfile>` both EXECUTES the file and lets it overwrite the
      shell, and the files it is used on hold ACCOUNT_ED25519_PRIVATE_KEY and
-     ACCOUNT_JWT_SECRET. Three call sites adopted env_file_load instead; this
-     sweeps for the pattern coming back, RUNS each adopted site's own invocation
-     against a planted override to prove the shell still wins, and drives a real
-     `set -a; source` on the same fixture demanding the opposite answer so the
-     second check cannot pass against a helper that reads nothing
+     ACCOUNT_JWT_SECRET. The replacement is rediacc_ci.core.env; this sweeps for
+     the pattern coming back, proves the module's export verb lets a planted shell
+     value win, and drives a real `set -a; source` on the same fixture demanding
+     the opposite answer so that proof cannot pass against a loader that reads
+     nothing
 ---- end gate ----
 """
 

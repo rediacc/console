@@ -1,6 +1,9 @@
-"""Differential: `rediacc_ci.infra.ci_env` against its twin `.ci/scripts/infra/ci-env.sh`.
+"""Differential: `rediacc_ci.infra.ci_env` against the frozen answers of its retired twin `.ci/scripts/infra/ci-env.sh`.
 
-THE TWIN IS SOURCED, NEVER EXECUTED, so "run both and compare stdout" is not the comparison. Sourcing it leaves FOUR observables behind and this file compares all four on every case:
+THE TWIN IS DELETED (PLAN-tooling-transformation W7P5-c). Every `old` answer below comes out of `goldens/twins/infra.ci-env.jsonl` through `differential.twin_tuple`, recorded from the real bash with `--source bash` while the file still existed. The golden header's `twin_blob` (`TWIN_BLOB` here) is the git blob of the bash that produced them, so `git cat-file -p <blob>` still yields
+the program. Retiring a sourced-only twin by freezing its outputs is the 2026-09-21 operator ruling for a licensed script whose differential executes the twin.
+
+THE TWIN WAS SOURCED, NEVER EXECUTED, so "run both and compare stdout" was never the comparison. Sourcing it left FOUR observables behind and this file compares all four on every case:
 
   1. the exported environment (`env` after sourcing, versus the port's `env`
      verb), with the four shell-private names dropped from BOTH SIDES by the
@@ -10,8 +13,7 @@ THE TWIN IS SOURCED, NEVER EXECUTED, so "run both and compare stdout" is not the
   3. the bytes appended to `$GITHUB_ENV`;
   4. stdout: the `::add-mask::` directives and the three summary lines.
 
-ONE TREE, TWO SEQUENTIAL RUNS, and that is deliberate. `CONSOLE_ROOT` is derived from the script's own location on both sides, so giving each side its own copy of the tree would make `CI_DOCKER_DIR` and `CI_COMPOSE_FILE` legitimately differ and every case would need those two values normalised away. Sharing one tree makes them identical and keeps the comparison exact; the artifacts
-are captured after each run, before the other side overwrites them.
+ONE TREE, TWO SEQUENTIAL RUNS, and that is deliberate. `CONSOLE_ROOT` is derived from the subject's own location on both sides, so one tree keeps `CI_DOCKER_DIR` and `CI_COMPOSE_FILE` identical; the scratch root is folded to a token in the golden and unfolded to this run's root on read, so the frozen answer compares against a live port exactly as the live bash did.
 
 `node` AND `openssl` ARE RECORDING FAKES ON A PREPENDED PATH, for two reasons and only the first is speed. The second is that both real programs are RANDOM: a differential against the real ones can only ever compare shapes, and shapes are what a port gets right while producing a key that does not verify. With canned generators the comparison is byte-exact, and the ARGV the two
 sides hand to `node` -- a 300-character program whose curve name is the only thing that varies -- is compared too.
@@ -29,12 +31,12 @@ THREE TWIN BEHAVIOURS PINNED BY NAME, all measured against the live bash on 2026
     the openssl case: a PLAIN assignment propagates, an `export VAR=$(...)`
     does not.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ci-env.observations.jsonl`, recorded in a
-disposable scratch git repository outside this checkout.
+K=5 LEDGER: `.ci/shadow/w7p6-ci-env.observations.jsonl`, recorded in a disposable scratch git repository outside this checkout. The two callers' cutover from sourcing the bash to calling this module is licensed separately by `w7p5c-ci-start-elite-cutover` and `w7p5c-ci-start-account-cutover`.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
@@ -43,15 +45,45 @@ import subprocess
 import sys
 import tempfile
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.infra import ci_env
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import ADMIN_EMAIL_DEFAULT, IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-env.sh"
+TWIN_REL = ".ci/scripts/infra/ci-env.sh"
+# `git hash-object .ci/scripts/infra/ci-env.sh` at the freeze. The golden header must carry the same value.
+TWIN_BLOB = "e476e4af4dc58ced2e27f7978576756d0fce7768"
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_env.py"
 BASH = shutil.which("bash") or "/bin/bash"
+
+# The twin's `<<ENVBLOCK` heredoc at TWIN_BLOB, extracted from its text at the freeze and written out here because the text is gone. `(name, default)` with the default only for the two `${NAME:-<default>}` lines. The order is the file's content.
+FROZEN_PERSISTED = (
+    ("DOCKER_REGISTRY", None),
+    ("TAG", None),
+    ("WEB_TAG", None),
+    ("SYSTEM_DOMAIN", None),
+    ("ENABLE_HTTPS", "false"),
+    ("SYSTEM_ADMIN_EMAIL", None),
+    ("SYSTEM_ADMIN_PASSWORD", None),
+    ("SYSTEM_ORGANIZATION_NAME", None),
+    ("SYSTEM_ORGANIZATION_VAULT_DEFAULTS", ""),
+    ("SYSTEM_DEFAULT_BRIDGE_NAME", None),
+    ("SYSTEM_DEFAULT_REGION_NAME", None),
+    ("SYSTEM_DEFAULT_TEAM_NAME", None),
+    ("CI_MODE", None),
+    ("ACCOUNT_SERVER_URL", None),
+    ("ACCOUNT_SERVER_API_KEY", None),
+    ("ACCOUNT_ED25519_PRIVATE_KEY", None),
+    ("ACCOUNT_ED25519_PUBLIC_KEY", None),
+    ("ACCOUNT_X25519_PRIVATE_KEY", None),
+    ("ACCOUNT_X25519_PUBLIC_KEY", None),
+    ("STRIPE_WEBHOOK_SECRET", None),
+    ("ACCOUNT_JWT_SECRET", None),
+)
 
 # Canned, so the comparison is byte-exact rather than shape-exact.
 FAKE_NODE = """#!/usr/bin/python3
@@ -105,37 +137,38 @@ STUB_WEBHOOK_VALUE = "whsec_test_"
 
 
 class Side:
-    """One run's four observables."""
+    """One run's four observables, plus the generator calls it made."""
 
-    __slots__ = ("chatter", "env", "env_file", "exit", "github_env", "stderr")
+    __slots__ = ("calls", "chatter", "env", "env_file", "exit", "github_env", "stderr")
 
-    def __init__(self, code, chatter, environ, env_file, github_env, stderr) -> None:
+    def __init__(self, code, chatter, environ, env_file, github_env, stderr, calls) -> None:
         self.exit = code
         self.chatter = chatter
         self.env = environ
         self.env_file = env_file
         self.github_env = github_env
         self.stderr = stderr
+        self.calls = calls
 
     def as_tuple(self):
         return (self.exit, self.chatter, self.env, self.env_file, self.github_env)
 
 
 def _tree(base: pathlib.Path) -> pathlib.Path:
-    """A checkout-shaped tree holding BOTH implementations at their real depths.
+    """A checkout-shaped tree holding the port at its real depth, and the twin only while it is being frozen.
 
-    The depth is what matters: each side computes `CONSOLE_ROOT` from its own file's location, the twin as `<dir>/../../..` and the port as `parents[3]`, and both must land on `base`.
+    The depth is what matters: the port computes `CONSOLE_ROOT` as `parents[3]` of its own file, and the twin computed `<dir>/../../..`; both must land on `base`.
     """
-    (base / ".ci" / "scripts" / "infra").mkdir(parents=True)
-    (base / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (base / ".ci" / "rediacc_ci" / "infra").mkdir(parents=True)
     (base / ".ci" / "docker" / "ci").mkdir(parents=True)
-    shutil.copy2(TWIN, base / ".ci" / "scripts" / "infra" / "ci-env.sh")
-    (base / ".ci" / "config").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        ROOT / ".ci" / "config" / "well-known.env", base / ".ci" / "config" / "well-known.env"
-    )
-    copy_loader(base)
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        (base / ".ci" / "scripts" / "infra").mkdir(parents=True)
+        shutil.copy2(ROOT / TWIN_REL, base / TWIN_REL)
+        (base / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(
+            ROOT / ".ci" / "config" / "well-known.env", base / ".ci" / "config" / "well-known.env"
+        )
+        copy_loader(base)
     shutil.copy2(PORT, base / ".ci" / "rediacc_ci" / "infra" / "ci_env.py")
     return base
 
@@ -148,6 +181,23 @@ def _stub_bin(base: pathlib.Path) -> str:
         fake.write_text(body, encoding="utf-8")
         fake.chmod(0o755)
     return "%s:%s" % (stub, os.environ.get("PATH", "/usr/bin:/bin"))
+
+
+def _curated_bin(base: pathlib.Path) -> str:
+    """A PATH with the fakes, NO node, and only what the subject needs before it reaches node.
+
+    The real PATH has a real node on it, and the point of the case that uses this is that there is none. `dirname` and `uname` are what the twin needed for its own SCRIPT_DIR and at source time; `python3` is the registry loader and the port's interpreter.
+    """
+    _stub_bin(base)
+    (base / "bin" / "node").unlink()
+    for name in ("dirname", "uname", "python3"):
+        real = shutil.which(name)
+        assert real is not None, name
+        link = base / "bin" / name
+        # Both sides run over one tree, so the second call finds the first call's links.
+        if not link.is_symlink():
+            link.symlink_to(real)
+    return str(base / "bin")
 
 
 def _split(stdout: bytes, environ_out: bool):
@@ -164,7 +214,7 @@ def _split(stdout: bytes, environ_out: bool):
             continue
         if environ_out and NAME_VALUE.match(line):
             name, _, value = line.partition("=")
-            # `WK_*` is the well-known registry the twin exports through .ci/config/well-known.generated.sh; it is not part of what ci-env hands its caller.
+            # `WK_*` is the well-known registry the twin exported through scripts/lib/well-known.sh; it is not part of what ci-env hands its caller, and no caller reads it.
             if name not in ci_env.SHELL_PRIVATE and not name.startswith("WK_"):
                 found[name] = value
             continue
@@ -172,31 +222,41 @@ def _split(stdout: bytes, environ_out: bool):
     return chatter, found
 
 
-def _run(base: pathlib.Path, which: str, env_extra: dict[str, str], *, dump: bool) -> Side:
+def _run_live(
+    base: pathlib.Path,
+    which: str,
+    env_extra: dict[str, str],
+    *,
+    dump: bool,
+    curated_path: bool = False,
+    github_env: bool = True,
+) -> Side:
     log = base / "calls.log"
     log.write_text("", encoding="utf-8")
     env_file = base / ".ci" / "docker" / "ci" / ".env"
     if env_file.exists():
         env_file.unlink()
     # ONE path for both sides, truncated before each run: the value lands in the environment dump, so two different paths would read as a divergence in the thing under test.
-    github_env = base / "github-env"
-    github_env.write_text("", encoding="utf-8")
+    github_env_path = base / "github-env"
+    if github_env:
+        github_env_path.write_text("", encoding="utf-8")
 
     env = {
-        "PATH": _stub_bin(base),
+        "PATH": _curated_bin(base) if curated_path else _stub_bin(base),
         "HOME": str(base),
         "LC_ALL": "C",
         "LANG": "C",
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
         "FAKE_LOG": str(log),
-        "GITHUB_ENV": str(github_env),
     }
+    if github_env:
+        env["GITHUB_ENV"] = str(github_env_path)
     env.update(env_extra)
 
     if which == "old":
         script = '. "$1"' + ("; env" if dump else "")
-        argv = [BASH, "-c", script, "bash", str(base / ".ci/scripts/infra/ci-env.sh")]
+        argv = [BASH, "-c", script, "bash", str(base / TWIN_REL)]
     else:
         argv = [
             sys.executable,
@@ -212,8 +272,61 @@ def _run(base: pathlib.Path, which: str, env_extra: dict[str, str], *, dump: boo
         chatter,
         environ,
         env_file.read_bytes() if env_file.exists() else None,
-        github_env.read_bytes(),
+        github_env_path.read_bytes() if github_env else None,
         proc.stderr,
+        log.read_text(encoding="utf-8").splitlines(),
+    )
+
+
+def _run(
+    base: pathlib.Path,
+    which: str,
+    env_extra: dict[str, str],
+    *,
+    dump: bool,
+    curated_path: bool = False,
+    github_env: bool = True,
+) -> Side:
+    """The port runs live; the twin answers from the golden (or, during the freeze, from the live bash).
+
+    Every input that distinguishes one call from another is a key part, so two calls in one test with different inputs are different records rather than the n-th repeat of one.
+    """
+    kw = {"dump": dump, "curated_path": curated_path, "github_env": github_env}
+    if which != "old":
+        return _run_live(base, which, env_extra, **kw)
+
+    def live():
+        side = _run_live(base, "old", env_extra, **kw)
+        return (
+            side.exit,
+            "",
+            "",
+            side.chatter,
+            side.env,
+            side.env_file,
+            side.github_env,
+            side.stderr.decode("utf-8", "surrogateescape"),
+            side.calls,
+        )
+
+    parts = [
+        "old",
+        "dump=%d" % dump,
+        "curated_path=%d" % curated_path,
+        "github_env=%d" % github_env,
+        *("%s=%s" % kv for kv in sorted(env_extra.items())),
+    ]
+    rc, _out, _err, chatter, environ, env_bytes, gh_bytes, stderr, calls = diff.twin_tuple(
+        TWIN_REL, parts, live, work=(str(base),)
+    )
+    return Side(
+        rc,
+        chatter,
+        environ,
+        env_bytes,
+        gh_bytes,
+        stderr.encode("utf-8", "surrogateescape"),
+        calls,
     )
 
 
@@ -222,9 +335,7 @@ def _sides(name: str, env_extra: dict[str, str] | None = None, *, dump: bool = T
     with tempfile.TemporaryDirectory() as td:
         base = _tree(pathlib.Path(td))
         old = _run(base, "old", dict(env_extra or {}), dump=dump)
-        old_calls = (base / "calls.log").read_text(encoding="utf-8").splitlines()
         new = _run(base, "new", dict(env_extra or {}), dump=dump)
-        new_calls = (base / "calls.log").read_text(encoding="utf-8").splitlines()
     labels = ("exit", "chatter", "environment", ".env file", "GITHUB_ENV")
     for i, label in enumerate(labels):
         assert new.as_tuple()[i] == old.as_tuple()[i], "%s: %s diverged:\n twin: %r\n port: %r" % (
@@ -233,25 +344,38 @@ def _sides(name: str, env_extra: dict[str, str] | None = None, *, dump: bool = T
             old.as_tuple()[i],
             new.as_tuple()[i],
         )
-    assert new_calls == old_calls, "%s: generator calls diverged:\n twin: %r\n port: %r" % (
+    assert new.calls == old.calls, "%s: generator calls diverged:\n twin: %r\n port: %r" % (
         name,
-        old_calls,
-        new_calls,
+        old.calls,
+        new.calls,
     )
-    return old, new, old_calls
+    return old, new, old.calls
 
 
 # --------------------------------------------------------------------------- Controls: a comparison against a file that is not there proves nothing. ---------------------------------------------------------------------------
 
 
-def test_both_files_exist_where_this_file_says_they_do() -> None:
-    for path in (TWIN, PORT):
-        assert path.is_file(), path
+def test_the_port_exists_where_this_file_says_it_does() -> None:
+    assert PORT.is_file(), PORT
 
 
-def test_the_twin_parses_under_bash() -> None:
-    proc = subprocess.run([BASH, "-n", str(TWIN)], capture_output=True, check=False)
-    assert proc.returncode == 0, proc.stderr
+@pytest.fixture
+def compare_only():
+    """The freeze runs against the live bash, before a golden exists and while the twin is still on disk."""
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        pytest.skip("freezing from the original bash")
+
+
+@pytest.mark.usefixtures("compare_only")
+def test_the_golden_names_the_frozen_twin() -> None:
+    """The provenance the 2026-09-21 ruling asks for: the golden says WHICH bash it was recorded from, and that it was recorded from bash at all."""
+    header, _silent, records = diff.load_golden(TWIN_REL)
+    assert header["twin"] == TWIN_REL, header
+    assert header["twin_blob"] == TWIN_BLOB, header
+    assert header["source"] == "bash", header
+    assert len(records) >= 15, (
+        "the golden holds %d records; the freeze did not cover the file" % len(records)
+    )
 
 
 def test_the_fakes_are_what_resolves() -> None:
@@ -262,57 +386,52 @@ def test_the_fakes_are_what_resolves() -> None:
         assert shutil.which("openssl", path=path) == str(base / "bin" / "openssl")
 
 
-def test_the_twin_is_sourced_by_one_script_and_executed_by_none() -> None:
-    """THE REASON THIS PORT IS A LIBRARY, re-checked rather than inherited from the allowlist. If something ever starts EXECUTING the twin, this goes red and the port needs a real CLI."""
+SOURCE_OR_RUN_RE = re.compile(r"""(^|[\s;&|(])(source|\.|bash|sh)\s+["']?[^\s"']*ci-env\.sh""")
+
+
+@pytest.mark.usefixtures("compare_only")
+def test_nothing_in_the_tree_sources_or_runs_the_twin_any_more() -> None:
+    """THE DELETION'S OWN GUARD. A caller that still sources or runs `ci-env.sh` would now fail at run time, and in a `-f` guarded caller it would be silently skipped. The two Python callers (`ci_start_elite`, `ci_start_account`) call `ci_env.apply()`; a reappearance of the sourcing shape anywhere tracked is a regression."""
+    assert not (ROOT / TWIN_REL).exists(), "the twin is back on disk at %s" % TWIN_REL
     hits = subprocess.run(
-        ["git", "grep", "-n", "ci-env.sh", "--", "*.sh"],
+        ["git", "grep", "-n", "-I", "-e", "ci-env.sh"],
         capture_output=True,
         text=True,
         check=False,
         cwd=str(ROOT),
     ).stdout.splitlines()
     assert hits, "git grep found nothing at all; this control is not looking at the tree"
-    sourcing: list[str] = []
-    executed: list[str] = []
+    live = []
     for hit in hits:
-        path, _, rest = hit.split(":", 2)
-        text = rest.strip()
-        if text.startswith("#"):
+        path, _, rest = hit.partition(":")
+        _lineno, _, text = rest.partition(":")
+        if path.startswith((".ci/shadow/", "agent/", "docs/")) or path.endswith(".md"):
             continue
-        if re.match(r'^(source|\.)\s+"?[^\s"]*ci-env\.sh', text):
-            sourcing.append(path)
-        elif re.search(r'(bash|sh|\./)\s*"?[^\s"]*ci-env\.sh', text):
-            executed.append(hit)
-    # ci-start-account.sh was retired under PLAN-retire-bash-oracles B3 and ci-start-elite.sh is a one-line shim over its port (W11-C): nothing sources the twin, and the port reads it through an `env -0` round trip.
-    assert sorted(set(sourcing)) == [], sourcing
-    assert executed == [], executed
+        stripped = text.strip()
+        if stripped.startswith(("#", "//", "*", '"', "'")):
+            continue
+        if SOURCE_OR_RUN_RE.search(stripped):
+            live.append(hit)
+    assert live == [], live
 
 
-# --------------------------------------------------------------------------- The constants are the twin's own text, not a paraphrase of it. ---------------------------------------------------------------------------
+def test_the_source_or_run_shape_fires_and_stays_quiet() -> None:
+    """CONTROL for the guard above, in both directions, so its empty list means the pattern is live."""
+    assert SOURCE_OR_RUN_RE.search('source "$CONSOLE_ROOT/.ci/scripts/infra/ci-env.sh"')
+    assert SOURCE_OR_RUN_RE.search(". .ci/scripts/infra/ci-env.sh")
+    assert SOURCE_OR_RUN_RE.search("bash .ci/scripts/infra/ci-env.sh")
+    assert not SOURCE_OR_RUN_RE.search(
+        "ENV_HEADER = '# Auto-generated by ci-env.sh -- do not edit'"
+    )
+    assert not SOURCE_OR_RUN_RE.search("the retired ci-env.sh twin")
 
 
-def test_the_node_programs_are_the_twins_own_text() -> None:
-    source = TWIN.read_text(encoding="utf-8")
-    for curve in ("ed25519", "x25519"):
-        assert ci_env.KEYGEN_PROGRAM % curve in source, curve
+# --------------------------------------------------------------------------- The constants are the twin's own text, frozen. ---------------------------------------------------------------------------
 
 
-def test_the_persisted_block_matches_the_twins_heredoc() -> None:
-    """`check-compose-env.sh` parses this same heredoc out of the twin to decide whether a compose variable is persisted, so a name dropped from the port's table is a variable that silently arrives empty in a later workflow step."""
-    source = TWIN.read_text(encoding="utf-8")
-    body = source.split("<<ENVBLOCK\n", 1)[1].split("\nENVBLOCK", 1)[0]
-    expected = []
-    for line in body.split("\n"):
-        name, _, expansion = line.partition("=")
-        if ":-" in expansion:
-            expected.append((name, expansion.split(":-", 1)[1].rstrip("}")))
-        else:
-            expected.append((name, None))
-    assert list(ci_env.PERSISTED) == expected
-
-
-def test_the_env_file_header_is_the_twins_byte_sequence() -> None:
-    assert ci_env.ENV_HEADER in TWIN.read_text(encoding="utf-8")
+def test_the_persisted_block_matches_the_twins_frozen_heredoc() -> None:
+    """`check:ci-compose-env` reads this table to decide whether a compose variable is persisted, so a name dropped from it is a variable that silently arrives empty in a later workflow step."""
+    assert list(ci_env.PERSISTED) == list(FROZEN_PERSISTED)
 
 
 def _bash_pipeline(text: str) -> str:
@@ -356,20 +475,21 @@ def test_the_supplied_everything_case_agrees_on_all_four_observables() -> None:
     assert old.env["CI_MODE"] == "true"
     assert old.env["SYSTEM_PLAN_CODE"] == "COMMUNITY"
     assert old.env_file is not None
-    assert old.env_file.startswith(b"# Auto-generated by ci-env.sh")
+    assert old.env_file.startswith((ci_env.ENV_HEADER + "\n").encode("utf-8"))
     assert b"ACCOUNT_SERVER_API_KEY=given-api-key\n" in old.env_file
+    assert old.github_env is not None
     assert old.github_env.endswith(b"ACCOUNT_JWT_SECRET=given-jwt\n")
     assert b"DOCKER_REGISTRY_USERNAME" not in old.github_env
 
 
 def test_the_generators_run_with_identical_argv_when_nothing_is_supplied() -> None:
-    """The node program is 300 characters of JavaScript; the ARGV is compared, not merely the fact that node was called."""
+    """The node program is 300 characters of JavaScript; the ARGV is compared, not merely the fact that node was called. The frozen argv is also what pins `KEYGEN_PROGRAM` to the twin's own text now that the text is gone."""
     old, _, calls = _sides("generated", {})
     assert old.exit == 0
     verbs = [line.split("\t", 1)[0] for line in calls]
     assert verbs == ["node", "node", "openssl", "openssl", "openssl"], calls
-    assert "ed25519" in calls[0]
-    assert "x25519" in calls[1]
+    for i, curve in enumerate(("ed25519", "x25519")):
+        assert calls[i] == "node\t-e\t" + (ci_env.KEYGEN_PROGRAM % curve).replace("\n", "\\n")
     assert calls[2] == "openssl\trand\t-base64\t48"
     assert calls[3] == "openssl\trand\t-base64\t48"
     assert calls[4] == "openssl\trand\t-hex\t32"
@@ -399,8 +519,8 @@ def test_a_private_key_without_its_public_leaves_the_public_unexported() -> None
 def test_a_failing_openssl_yields_empty_secrets() -> None:
     """THE DEFECT, reproduced rather than repaired. Measured against the live twin on 2026-09-13: exit 0, two empty secrets and a stub webhook secret, all three written to the `.env` file and appended to `$GITHUB_ENV`.
 
-    Two things have to be true at once for `set -e` to miss it: there is no
-    `set -o pipefail`, and the three assignments are `export VAR=$(...)`, whose
+    Two things had to be true at once for `set -e` to miss it: there was no
+    `set -o pipefail`, and the three assignments were `export VAR=$(...)`, whose
     status is `export`'s own. See the port's module docstring.
     """
     old, _, _ = _sides(
@@ -411,7 +531,7 @@ def test_a_failing_openssl_yields_empty_secrets() -> None:
             "ACCOUNT_X25519_PRIVATE_KEY": "p2",
         },
     )
-    assert old.exit == 0, "the twin started refusing; the defect is fixed, update the port"
+    assert old.exit == 0, "the frozen twin refuses; the golden no longer records the defect"
     assert old.env["ACCOUNT_SERVER_API_KEY"] == ""
     assert old.env["ACCOUNT_JWT_SECRET"] == ""
     assert old.env["STRIPE_WEBHOOK_SECRET"] == STUB_WEBHOOK_VALUE
@@ -419,51 +539,22 @@ def test_a_failing_openssl_yields_empty_secrets() -> None:
     assert b"\nACCOUNT_SERVER_API_KEY=\n" in old.env_file
     assert b"\nACCOUNT_JWT_SECRET=\n" in old.env_file
     assert b"\nSTRIPE_WEBHOOK_SECRET=whsec_test_\n" in old.env_file
+    assert old.github_env is not None
     assert b"\nACCOUNT_JWT_SECRET=\n" in old.github_env
 
 
 def test_a_missing_node_ends_the_sourcing_shell_at_127() -> None:
-    """THE ASYMMETRY WITH THE CASE ABOVE. `KEYS=$(node -e ...)` is a plain
-    assignment, so its status IS the substitution's and `set -e` fires."""
+    """THE ASYMMETRY WITH THE CASE ABOVE. `KEYS=$(node -e ...)` was a plain
+    assignment, so its status IS the substitution's and `set -e` fired."""
     with tempfile.TemporaryDirectory() as td:
         base = _tree(pathlib.Path(td))
-        _stub_bin(base)
-        (base / "bin" / "node").unlink()
-        # A CURATED PATH, because the real one has a real node on it and the point of this case is that there is none. `dirname`, `uname` and `python3` (the registry loader) are what the twin needs before it reaches node: its own SCRIPT_DIR, and common.sh's detect_os/detect_arch, which run at SOURCE time.
-        for name in ("dirname", "uname", "python3"):
-            real = shutil.which(name)
-            assert real is not None, name
-            (base / "bin" / name).symlink_to(real)
-        results = []
-        for which in ("old", "new"):
-            log = base / "calls.log"
-            log.write_text("", encoding="utf-8")
-            github_env = base / "github-env"
-            github_env.write_text("", encoding="utf-8")
-            env = {
-                "PATH": str(base / "bin"),
-                "HOME": str(base),
-                "LC_ALL": "C",
-                "LANG": "C",
-                "PYTHONPATH": str(ROOT / ".ci"),
-                "PYTHONDONTWRITEBYTECODE": "1",
-                "FAKE_LOG": str(log),
-                "GITHUB_ENV": str(github_env),
-            }
-            argv = (
-                [BASH, "-c", '. "$1"', "bash", str(base / ".ci/scripts/infra/ci-env.sh")]
-                if which == "old"
-                else [sys.executable, str(base / ".ci/rediacc_ci/infra/ci_env.py"), "apply"]
-            )
-            results.append(
-                subprocess.run(
-                    argv, capture_output=True, env=env, check=False, cwd=str(base), timeout=60
-                )
-            )
-        old, new = results
-    assert old.returncode == new.returncode == 127
-    assert old.stdout == new.stdout == b""
-    assert not (base / ".ci" / "docker" / "ci" / ".env").exists()
+        old = _run(base, "old", {}, dump=False, curated_path=True)
+        new = _run(base, "new", {}, dump=False, curated_path=True)
+        written = (base / ".ci" / "docker" / "ci" / ".env").exists()
+    assert old.exit == new.exit == 127
+    assert old.chatter == new.chatter == []
+    assert old.env_file is None
+    assert not written
 
 
 def test_a_failing_node_propagates_its_own_exit_code() -> None:
@@ -545,7 +636,7 @@ def test_ci_mode_is_preserved_when_the_workflow_sets_it() -> None:
 
 
 def test_the_two_defaulted_heredoc_names_come_from_the_caller() -> None:
-    """`ENABLE_HTTPS` and `SYSTEM_ORGANIZATION_VAULT_DEFAULTS` are never exported by this script; they are read straight out of the caller's environment when the block is expanded."""
+    """`ENABLE_HTTPS` and `SYSTEM_ORGANIZATION_VAULT_DEFAULTS` are never exported by the subject; they are read straight out of the caller's environment when the block is expanded."""
     old, _, _ = _sides(
         "heredoc-defaults",
         {**SUPPLIED, "ENABLE_HTTPS": "true", "SYSTEM_ORGANIZATION_VAULT_DEFAULTS": "{}"},
@@ -569,40 +660,22 @@ def test_the_system_defaults_are_overridable_one_at_a_time() -> None:
 def test_no_github_env_means_nothing_is_appended_anywhere() -> None:
     with tempfile.TemporaryDirectory() as td:
         base = _tree(pathlib.Path(td))
-        results = []
-        for which in ("old", "new"):
-            log = base / "calls.log"
-            log.write_text("", encoding="utf-8")
-            env = {
-                "PATH": _stub_bin(base),
-                "HOME": str(base),
-                "LC_ALL": "C",
-                "LANG": "C",
-                "PYTHONPATH": str(ROOT / ".ci"),
-                "PYTHONDONTWRITEBYTECODE": "1",
-                "FAKE_LOG": str(log),
-                **SUPPLIED,
-            }
-            argv = (
-                [BASH, "-c", '. "$1"', "bash", str(base / ".ci/scripts/infra/ci-env.sh")]
-                if which == "old"
-                else [sys.executable, str(base / ".ci/rediacc_ci/infra/ci_env.py"), "apply"]
-            )
-            results.append(
-                subprocess.run(
-                    argv, capture_output=True, env=env, check=False, cwd=str(base), timeout=60
-                )
-            )
-        old, new = results
-        assert old.returncode == new.returncode == 0
-        assert old.stdout == new.stdout
-        assert sorted(p.name for p in base.iterdir()) == sorted(
-            [".ci", "bin", "calls.log", "scripts"]
-        ), "something was written outside the tree"
+        _stub_bin(base)
+        before = sorted(p.name for p in base.iterdir())
+        old = _run(base, "old", dict(SUPPLIED), dump=False, github_env=False)
+        new = _run(base, "new", dict(SUPPLIED), dump=False, github_env=False)
+        after = sorted(p.name for p in base.iterdir())
+    assert old.exit == new.exit == 0
+    assert old.chatter == new.chatter
+    assert old.env_file == new.env_file
+    # `calls.log` is the harness's own record, written before every run; anything else new is a write outside the tree.
+    assert sorted(set(after) - {"calls.log"}) == sorted(set(before) - {"calls.log"}), (
+        "something was written outside the tree: %r -> %r" % (before, after)
+    )
 
 
 def test_an_unwritable_env_directory_stops_the_run_after_the_masks() -> None:
-    """A NAMED DIVERGENCE, and the only one in this file. bash reports a failed redirection as `<script>: line 165: <path>: No such file or directory`; the port names the same path in its own words. Exit code, stdout and the absence of the file are identical, and that is what is asserted."""
+    """A NAMED DIVERGENCE, and the only one in this file. bash reported a failed redirection as `<script>: line 165: <path>: No such file or directory`; the port names the same path in its own words. Exit code, stdout and the absence of the file are identical, and that is what is asserted."""
     with tempfile.TemporaryDirectory() as td:
         base = _tree(pathlib.Path(td))
         shutil.rmtree(base / ".ci" / "docker" / "ci")
@@ -636,11 +709,18 @@ def test_the_persisted_verb_writes_nothing() -> None:
             check=False,
             cwd=str(base),
         )
+        written = (base / ".ci" / "docker" / "ci" / ".env").exists()
     assert proc.returncode == 0
     assert proc.stdout.startswith(b"DOCKER_REGISTRY=\n"), proc.stdout[:60]
-    assert not (base / ".ci" / "docker" / "ci" / ".env").exists()
+    assert not written
 
 
 def test_an_unknown_verb_and_no_verb_both_print_the_usage() -> None:
     for argv in ([], ["--help"], ["nonsense"]):
         assert ci_env.main(argv) == 2
+
+
+def test_the_golden_round_trips_bytes_and_none() -> None:
+    """The `.env` file and `$GITHUB_ENV` are recorded as bytes or None; a JSON round trip that turned None into "" or bytes into str would make two different answers compare equal."""
+    assert json.loads(json.dumps(diff._to_json([None, b"x"]))) == [None, {"__bytes__": "eA=="}]
+    assert diff._from_json([None, {"__bytes__": "eA=="}]) == [None, b"x"]

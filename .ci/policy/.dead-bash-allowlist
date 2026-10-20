@@ -29,7 +29,7 @@ glob:.ci/tutorials/
 # BLOCKER: starts OpenVSCode Server for self-hosted browser access and refuses to run inside Codespaces; invoked by the operator on a self-hosted box, not by the devcontainer lifecycle
 manual:.devcontainer/start-vscode.sh
 
-# BLOCKER: pre-commit quality gate wired through the operator's local Claude Code hook settings rather than tracked config, and explicitly protected from deletion by .claude/hooks/pre-bash/block-protected-files.sh
+# BLOCKER: pre-commit quality gate wired through the operator's local Claude Code hook settings rather than tracked config, and explicitly protected from deletion by .claude/rediacc_hooks/guards/block_protected_files.py:29-31
 manual:scripts/pre-commit-check.sh
 
 # BLOCKER: downstream re-vendor helper for the copyable .ci/breakpoint/ folder, run by the operator in a repo that vendored breakpoint when check-breakpoint-drift.sh reports the copy has fallen behind rediacc/console

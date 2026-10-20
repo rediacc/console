@@ -25,7 +25,7 @@ log_info() { echo -e "${_green}✓${_nc} $*" >&2; }
 log_step() { echo -e "${_blue}→${_nc} $*" >&2; }
 
 # =============================================================================
-# SECRET GENERATION (same patterns as ci-env.sh)
+# SECRET GENERATION (same patterns as .ci/rediacc_ci/infra/ci_env.py)
 # =============================================================================
 
 # Generate Ed25519 key pair for subscription signing

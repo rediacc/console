@@ -4,7 +4,7 @@
 # thing: the account server CI talks to (:3000, SQLite at /data/account.db).
 #
 # Usage:
-#   source .ci/scripts/infra/ci-env.sh
+#   PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_env apply   # writes .ci/docker/ci/.env
 #   docker compose -f .ci/docker/ci/docker-compose.yml up -d account-server
 #
 # Driven by rediacc_ci.infra.ci_start_account (invoked from ci.yml) and torn
@@ -25,8 +25,8 @@
 #     what elite standalone creates with an empty INSTANCE_NAME, so whichever
 #     project came second failed to come up.
 # The surviving network is namespaced `rediacc_ci_intranet` for the same reason.
-# The in-network ALIAS stays `account-server`, which is load-bearing: ci-env.sh
-# sets ACCOUNT_SERVER_URL=http://account-server:3000.
+# The in-network ALIAS stays `account-server`, which is load-bearing:
+# rediacc_ci.infra.ci_env sets ACCOUNT_SERVER_URL=http://account-server:3000.
 
 services:
   account-server:

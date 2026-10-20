@@ -1830,8 +1830,8 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // W8 P4. `set -a; source <envfile>` EXECUTES the file and lets it overwrite the shell, on files holding ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET. Three sites adopted env_file_load; this sweeps for the pattern returning, RUNS each adopted site's own line against a planted override, and drives a real `set -a; source` on the same fixture demanding the OPPOSITE answer --
-    // without which the per-site check would pass just as happily against a helper that read nothing at all.
+    // W8 P4. `set -a; source <envfile>` EXECUTES the file and lets it overwrite the shell, on files holding ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET. The replacement is rediacc_ci.core.env (the bash shim scripts/lib/env-file.sh left in W7P5-c); this sweeps for the pattern returning, proves the module's export verb lets a planted shell value win, and drives a real `set -a; source` on the same fixture demanding the OPPOSITE answer --
+    // without which that proof would pass just as happily against a loader that read nothing at all.
     id: 'check:ci-env-file-adoption',
     run: 'npm run check:ci-env-file-adoption',
     gate: true,

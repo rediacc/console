@@ -3,8 +3,8 @@
 Same seam and same discipline as `test_infra_ci_start_elite.py`: both subjects derive the console root from their own file location, so every case copies both into a fresh tree at the right relative depth, runs the copies, and asserts on the DOCKER ARGV SEQUENCE as well as on both streams, the written `.env` and `$GITHUB_OUTPUT`. A port that printed "Account server is healthy"
 without ever inspecting anything would pass a stdout-only comparison.
 
-THE REAL `ci-env.sh` IS COPIED IN AND SOURCED FOR REAL, with every secret it
-would otherwise generate pre-set so both sides take its `${VAR:-...}` arms and
+THE CI ENVIRONMENT IS THE REAL ONE: the port calls `rediacc_ci.infra.ci_env.apply()` in-process (W7P5-c) where the frozen twin sourced `ci-env.sh`, with every secret it
+would otherwise generate pre-set so both sides take the `${VAR:-...}` arms and
 the result is byte-deterministic.
 
 ONLY THE SLEEPS ARE REWRITTEN IN THE COPIES. The twin polls for 180s at a 3s interval and then sleeps a further 2s; nulling those three sleeps keeps every constant, so both sides still perform all 60 probes, still print the progress line on the same multiples of 15, and the comparison is over the real arithmetic instead of a miniature of it.
@@ -36,13 +36,12 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.tests.wkloader import copy_loader, docker_less_path
+from rediacc_ci.tests.wkloader import docker_less_path
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/infra/ci-start-account.sh"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_start_account.py"
-CI_ENV = ROOT / ".ci" / "scripts" / "infra" / "ci-env.sh"
 
 REAL_TIMEOUT = 180
 REAL_INTERVAL = 3
@@ -169,12 +168,6 @@ def _fixture(
         (root / ".ci" / "scripts" / "infra" / TWIN.name).write_text(
             _null_sleep_bash(TWIN.read_text(encoding="utf-8")), encoding="utf-8"
         )
-    shutil.copy2(CI_ENV, root / ".ci" / "scripts" / "infra" / CI_ENV.name)
-    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
-    )
-    copy_loader(root)
     (root / ".ci" / "rediacc_ci" / "infra" / PORT.name).write_text(
         _null_sleep_python(
             port_source if port_source is not None else PORT.read_text(encoding="utf-8")
@@ -277,6 +270,8 @@ def _live(
         if env.get(key) == "":
             env.pop(key)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    # The subject imports `rediacc_ci.infra.ci_env` (W7P5-c); the copy runs by path, so the package comes from this checkout.
+    env["PYTHONPATH"] = str(ROOT / ".ci")
     # PREPENDED, not replaced: the subjects need the system's real bash, env and grep (a case without docker swaps the host's PATH for `docker_less_path`). The fake docker comes first, so this host's real daemon is never reached -- asserted by `test_the_fake_docker_is_actually_reached`.
     # A docker-less fixture gets a PATH that really has none: the host's docker would otherwise sit behind the empty fixture bin and answer.
     rest = (
@@ -407,7 +402,7 @@ def test_the_fake_docker_is_actually_reached() -> None:
         assert "inspect" in verbs, "health was never inspected: %r" % verbs
         assert written is not None, "no .env was written at all"
         assert "ACCOUNT_JWT_SECRET=fixture-jwt-secret" in written, (
-            "the .env was not written from ci-env.sh's exported values: %r" % written
+            "the .env was not written from the CI environment's exported values: %r" % written
         )
         assert gho == "account_server_url=http://localhost:3000\n", (
             "$GITHUB_OUTPUT was not written: %r" % gho

@@ -1,23 +1,15 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/infra/ci-env.sh`, as a LIBRARY, because the twin is sourced and never executed.
+"""The CI environment: the port of the retired, sourced-only `.ci/scripts/infra/ci-env.sh`, as a LIBRARY.
 
 -----------------------------------------------------------------------------
-WHY THERE IS NO CLI TWIN HERE, AND WHY THAT IS NOT A GAP
+THE TWIN IS DELETED; THIS MODULE IS THE ONLY IMPLEMENTATION (W7P5-c)
 -----------------------------------------------------------------------------
-`.ci/scripts/infra/ci-env.sh` is on the language-policy allowlist with this reason, and it is still true:
+The bash was SOURCED, never executed, to export variables into the caller's shell. Its two callers are Python now and call `apply()` in-process: `ci_start_elite.py` and `ci_start_account.py`, whose cutover from `bash -c '. ci-env.sh; env -0'` is licensed by `.ci/shadow/w7p5c-ci-start-elite-cutover.observations.jsonl` and `w7p5c-ci-start-account-cutover.observations.jsonl`
+(K=5 each, old side sourcing the real bash). The twin's answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/infra.ci-env.jsonl` (header `twin_blob` e476e4af4dc5), which `test_infra_ci_env.py` compares this module against, so `git cat-file -p <blob>` still yields the program every behaviour below was measured against.
 
-    BLOCKER: sourced only, by ci-start-account.sh and ci-start-elite.sh, to
-    export variables into the CALLER's shell -- same contract as the already-
-    exempted inject-env.sh and .ci/docker/service/env.sh, a child process
-    cannot mutate its parent's environment in any language
+By hand: `PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_env apply` writes `.ci/docker/ci/.env`, which `docker compose -f .ci/docker/ci/docker-compose.yml` then reads. A child process cannot export into its parent, so there is no verb that reproduces `source`; the `.env` file is what a later shell or step reads instead.
 
-Checked again for this port rather than taken from the allowlist: the `source`/`.` call sites in the tree were `ci-start-account.sh:31` (retired under PLAN-retire-bash-oracles B3) and `ci-start-elite.sh:29`, and the two ports of THOSE scripts (`infra/ci_start_account.py`, `infra/ci_start_elite.py:123-158`) run the real bash file through `bash -c '. "$1"; env -0'` and read the exported set back. Nothing runs it as a
-program.
-
-So this module follows what the tree already does with a sourced-only twin: `.ci/scripts/test/proxies/proxy-lib.sh` is ported as the `core.proxyx` library, and `.ci/scripts/lib/common.sh` as `core.common` -- pure functions plus a small verb CLI whose only job is to give the shadow differential a surface to drive. `configure()` is the whole contract;
-`apply()` performs the two writes and the printing; the verbs below exist so a differential can compare the RESULT of sourcing the twin against the result of calling this.
-
-THE CUTOVER THIS ENABLES, stated so nobody mistakes the shape for a dead end: `ci_start_elite.py` and `ci_start_account.py` currently shell out to bash to get this environment. When the cutover box lands they can call `configure()` and drop the `bash -c` hop; that is not this box's call.
+`configure()` is the whole contract; `apply()` performs the two writes and the printing; the verbs below give a differential a surface to drive.
 
 -----------------------------------------------------------------------------
 WHAT "EQUIVALENT" MEANS FOR A SOURCED SCRIPT: FOUR OBSERVABLES, NOT ONE
@@ -29,7 +21,7 @@ WHAT "EQUIVALENT" MEANS FOR A SOURCED SCRIPT: FOUR OBSERVABLES, NOT ONE
   4. stdout: up to eight `::add-mask::` directives and the three summary lines,
      in order.
 
-All four are compared by `test_infra_ci_env.py`. Comparing only the exit code would compare nothing at all: this script has no verdict.
+All four are compared by `test_infra_ci_env.py`, against the frozen twin. Comparing only the exit code would compare nothing at all: this module has no verdict.
 
 -----------------------------------------------------------------------------
 `node`, `openssl` AND `jq` ARE SPAWNED, NOT REIMPLEMENTED
@@ -76,8 +68,9 @@ THREE THINGS THE TWIN DOES THAT LOOK LIKE BUGS. ONE IS.
     NOT REPAIRED HERE. The fix is a one-line `set -o pipefail` plus splitting
     the three `export VAR=$(...)` into assign-then-export, and it changes what a
     live CI job does when openssl hiccups: today it proceeds with junk, after
-    the fix it stops. That is the cutover box's call, not this one's. Reproduced
-    faithfully and pinned by `test_a_failing_openssl_yields_empty_secrets`.
+    the fix it stops. W7P5-c cut the callers over without changing it, so the
+    cutover ledgers compare like with like; the repair is its own change.
+    Reproduced faithfully and pinned by `test_a_failing_openssl_yields_empty_secrets`.
 
 (c) `node` OR `jq` FAILING IS **NOT** SILENT, and the asymmetry with (b) is
     worth naming: `KEYS=$(node -e ...)` and `PRIV=$(echo "$KEYS" | jq -r ...)`
@@ -88,11 +81,13 @@ THREE THINGS THE TWIN DOES THAT LOOK LIKE BUGS. ONE IS.
 -----------------------------------------------------------------------------
 TWO SMALLER FAITHFULNESS NOTES
 -----------------------------------------------------------------------------
-`set -e` LEAKS INTO THE CALLER. The twin's line 15 runs in the sourcing shell and stays set after it returns. `ci_start_elite.py` already documents that; a Python caller of `configure()` has no such side effect, which is a difference in the port's favour and is listed here rather than hidden.
+`set -e` LEAKED INTO THE CALLER. The twin's line 15 ran in the sourcing shell and stayed set after it returned; a Python caller of `configure()` has no such side effect, which is a difference in the port's favour and is listed here rather than hidden.
 
-THE `.env` HEADER LINE IS COPIED WITH ITS PUNCTUATION AS FOUND. It reads `# Auto-generated by ci-env.sh - do not edit` in the twin with an em dash where the hyphen is here; the byte sequence is reproduced verbatim in `ENV_HEADER` because docker compose reads that file and a differential compares it. It is quoted, not authored.
+`WK_*` IS NOT EXPORTED. The twin ran `well_known_load` before anything else, which exported the whole well-known registry into the caller as a side effect. This module reads the two values it needs through `rediacc_ci.well_known` and exports neither them nor the rest of the registry; neither caller, nor anything they spawn, reads a `WK_*` name (re-checked for the cutover, see the callers' docstrings).
 
-K=5 LEDGER: `.ci/shadow/w7p6-ci-env.observations.jsonl`.
+THE `.env` HEADER LINE IS COPIED AS FOUND. The twin wrote `# Auto-generated by ci-env.sh -- do not edit` (its :166, two hyphens); the byte sequence is reproduced verbatim in `ENV_HEADER` because docker compose reads that file and the frozen goldens compare it. It is quoted, not authored. (Corrected 2026-10-20: this note used to claim the twin carried an em dash, which its text at the frozen blob does not.)
+
+K=5 LEDGERS: `.ci/shadow/w7p6-ci-env.observations.jsonl` (this module against the twin), and the two `w7p5c-ci-start-*-cutover` ledgers above (the callers' cutover).
 """
 
 from __future__ import annotations
@@ -152,9 +147,9 @@ MASKED = (
     "STRIPE_WEBHOOK_SECRET",
 )
 
-# The `<<ENVBLOCK` heredoc (:136-158). `(name, expansion)` where the expansion
+# The twin's `<<ENVBLOCK` heredoc (:136-158). `(name, expansion)` where the expansion
 # is the name itself for a plain `${NAME}` and a `(name, default)` pair for the
-# two that carry one. THE ORDER IS THE FILE'S CONTENT and is asserted against the twin's own heredoc by the tests, because `check-compose-env.sh` parses this same block out of the twin to decide whether a compose variable is persisted -- a name dropped here is a variable that silently arrives empty in a later workflow step.
+# two that carry one. THE ORDER IS THE FILE'S CONTENT and is asserted against the twin's frozen heredoc by the tests. `check:ci-compose-env` reads this tuple (as source, with `ast`) to decide whether a compose variable is persisted -- a name dropped here is a variable that silently arrives empty in a later workflow step. Keep it a literal tuple of literal pairs: the gate refuses anything else.
 PERSISTED: tuple[tuple[str, str | None], ...] = (
     ("DOCKER_REGISTRY", None),
     ("TAG", None),
@@ -179,7 +174,7 @@ PERSISTED: tuple[tuple[str, str | None], ...] = (
     ("ACCOUNT_JWT_SECRET", None),
 )
 
-# QUOTED, NOT AUTHORED: the twin's own first line of the .env file, em dash and all. See the module docstring.
+# QUOTED, NOT AUTHORED: the twin's own first line of the .env file, byte for byte, still naming the retired script because the frozen goldens and the cutover ledgers compare these bytes. Renaming it is a Rule-T change recorded with `regolden --source port`.
 ENV_HEADER = "# Auto-generated by ci-env.sh -- do not edit"
 
 SUMMARY = (
@@ -438,19 +433,18 @@ def apply(env: dict[str, str] | None = None, root: pathlib.Path | None = None) -
     return config
 
 
-# --------------------------------------------------------------------------- CLI -- the surface the shadow differential drives. See the module docstring
-# for why this is not a cutover target.
+# --------------------------------------------------------------------------- CLI -- the surface the differential drives, and `apply` by hand. See the module docstring.
 # ---------------------------------------------------------------------------
 
-USAGE = """ci_env -- .ci/scripts/infra/ci-env.sh, which is SOURCED, as a library.
+USAGE = """ci_env -- the CI environment (port of the retired, sourced-only ci-env.sh).
 
   apply         configure, write the .env file and $GITHUB_ENV, print the summary
   env           apply, then print the resulting environment as NAME=value, sorted
   persisted     print the ENVBLOCK heredoc for the CURRENT environment (no writes)
 
 A child process cannot export into its parent, so there is no verb that
-reproduces the twin's actual contract. `env` exists so a differential can
-compare `. ci-env.sh; env` against this.
+reproduces `source`; `apply` writes .ci/docker/ci/.env, which a later shell
+or docker compose reads. `env` exists for the differential.
 """
 
 # THE SHELL-PRIVATE NAMES ARE NOT FILTERED HERE, ON PURPOSE. `_`, `SHLVL`, `PWD` and `OLDPWD` describe the SHELL rather than the configuration (`ci_start_elite.py:107` carries the same set), and comparing them would compare bash against python3. But a filter inside the port is a filter the twin has no equivalent of, which is exactly the shape that lets a port drop a name and still

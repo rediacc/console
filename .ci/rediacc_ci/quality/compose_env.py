@@ -5,8 +5,10 @@ see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin
 
 THE BUG CLASS, from the twin's header. This "prevents silent failures when env vars are added to docker-compose.yml but not exported in ci-env.sh (or its .env / GITHUB_ENV blocks). This catches the class of bugs where a new variable works on first docker compose invocation (same shell) but breaks on subsequent invocations (new shell) because the variable isn't persisted."
 
-That is the whole subtlety, and it is worth restating in the port because it explains why the gate reads a heredoc rather than an `export`: a variable that is exported in ci-env.sh is present for the rest of THAT shell and gone in the next workflow step. Only the `<<ENVBLOCK` block, which is written to the `.env` file and to `$GITHUB_ENV`, survives a step boundary. A gate that
-grepped for `export` would pass the exact configuration this one exists to catch.
+That is the whole subtlety, and it explains why the gate reads ONE TABLE rather than every assignment: a variable the CI environment merely sets is present for the rest of THAT process and gone in the next workflow step. Only the names in `PERSISTED`, which `rediacc_ci.infra.ci_env` writes to the `.env` file and to `$GITHUB_ENV`, survive a step boundary. A gate that accepted any
+name the module mentions would pass the exact configuration this one exists to catch.
+
+THE PERSISTED SET IS `ci_env.PERSISTED`, READ AS SOURCE (W7P5-c). Until the sourced-only `ci-env.sh` was deleted, this gate parsed that file's `<<ENVBLOCK` heredoc with a `sed` range. The port of that file, `.ci/rediacc_ci/infra/ci_env.py`, carries the same block as the `PERSISTED` tuple (pinned to the twin's frozen heredoc by `test_infra_ci_env.py`), and this gate reads the tuple's first elements with `ast` from the file under the root it is pointed at. It does NOT import the module: an import would read the checkout `rediacc_ci` was loaded from, so a fixture root (`$REDIACC_CI_ROOT`, the selftest's plants) could never change the answer and every plant would pass. A name in any OTHER table of that file (`SYSTEM_DEFAULTS`, `MASKED`) does not count, which is the same near miss the heredoc range guarded against.
 
 WHAT COUNTS AS SAFE. A reference with a NON-EMPTY default, `${ENABLE_HTTPS:-false}`,
 needs no persistence: "Vars with non-empty defaults (e.g., ${ENABLE_HTTPS:-false})
@@ -38,11 +40,7 @@ THE NESTED-DEFAULT CASE IS REAL AND SURPRISING. `${FOO:-${BAR}}` matches the
 first pattern as `${FOO:-${BAR}` and the final `grep -oP '(?<=\\$\\{)[A-Z0-9_]+'`
 then extracts BOTH `FOO` and `BAR`, so an inner variable used only as a default is recorded as having a safe default itself. That is the twin's behaviour, it is reproduced exactly, and it is why the extraction runs over the MATCHED TEXT rather than over the variable name the outer pattern captured.
 
-THE sed RANGE IS NOT A REGION SEARCH. `sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p'` is a line RANGE: it starts at the first line containing `<<ENVBLOCK`, and looks for the terminator starting at the NEXT line, so a line matching both never closes its own range. It also RESTARTS: a second `<<ENVBLOCK` later in the file opens a second range. And an unterminated range runs to end of file. All
-three are reproduced by an explicit state machine rather than by a regex over the whole text, because a regex would get the restart and the off-by-one both wrong and neither wrongness would be visible on today's ci-env.sh.
-
-A MISSING ci-env.sh IS NOT A REFUSAL, and that is the twin's behaviour rather than a choice made here. `sed` fails, its complaint goes to stderr because a process substitution inherits the script's stderr, the loop reads nothing, and every non-defaulted compose var is then reported as unpersisted. The gate goes red, loudly, for a reason that is one line away from the true one. The
-port prints the same complaint so a reader gets the same clue.
+A MISSING ci_env.py, OR ONE WITHOUT A LITERAL `PERSISTED` TABLE, IS A REFUSAL NAMING THE FILE. The bash-era gate printed `sed`'s complaint and then reported every compose variable as unpersisted, which was red for a reason one line away from the true one. Reading an empty persisted set now fails on its own line first, so the reader is told the table could not be read rather than that nine variables were forgotten.
 
 BOTH `\\u2014` CHARACTERS THE TWIN EMITS ARE WRITTEN AS ESCAPES HERE. The twin's "No env var references found in compose files \\u2014 check parse logic" carries an em dash, which the house rule forbids in authored text while the differential requires the port to emit the same bytes. The escape satisfies both. The em dash in the twin is a finding reported rather than repaired,
 because editing the twin is what invariant 5 forbids.
@@ -50,6 +48,7 @@ because editing the twin is what invariant 5 forbids.
 THE ANTI-VACUITY REFUSAL IS ALREADY THERE, and it is the reason this gate is worth porting carefully: zero compose vars is a FAILURE, not a pass, and the success line prints the count so a reader can see the day it collapses. Both are carried unchanged.
 """
 
+import ast
 import os
 import pathlib
 import re
@@ -60,7 +59,9 @@ from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
 
 # The two subjects, relative to the repository root.
-CI_ENV_SUBPATH = ".ci/scripts/infra/ci-env.sh"
+CI_ENV_SUBPATH = ".ci/rediacc_ci/infra/ci_env.py"
+# The module-level table in that file whose first elements are the persisted names.
+PERSISTED_NAME = "PERSISTED"
 COMPOSE_SUBDIR = ".ci/docker/ci"
 COMPOSE_GLOB = "docker-compose*.yml"
 
@@ -79,13 +80,6 @@ EMPTY_DEFAULT_RE = re.compile(r":-\}$")
 # `grep -oP '(?<=\$\{)[A-Z0-9_]+'`: every name that follows a `${`, applied to
 # the MATCHED TEXT, which is what picks up a nested default's inner name.
 NAME_AFTER_BRACE_RE = re.compile(r"(?<=\$\{)[A-Z0-9_]+")
-
-# The heredoc that persists variables past a step boundary.
-ENVBLOCK_START = "<<ENVBLOCK"
-ENVBLOCK_END = "ENVBLOCK"
-
-# `grep -oP '^[A-Z0-9_]+(?==)'`: an assignment at the very start of a line.
-ASSIGNMENT_RE = re.compile(r"^[A-Z0-9_]+(?==)")
 
 # The em dash the twin emits, as an escape. See the port notes.
 PARSE_LOGIC_ERROR = "No env var references found in compose files \u2014 check parse logic"
@@ -133,36 +127,49 @@ def safe_default_vars(files: list[pathlib.Path]) -> list[str]:
     return sorted(names, key=str.encode)
 
 
-def envblock_lines(text: str) -> list[str]:
-    """`sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p'` over `text`.
-
-    An explicit state machine; see the port notes for the three sed behaviours a regex would get wrong (the start line never closes its own range, ranges restart, an unterminated range runs to EOF).
-    """
-    out: list[str] = []
-    inside = False
-    for line in text.split("\n"):
-        if not inside:
-            if ENVBLOCK_START in line:
-                out.append(line)
-                inside = True
-            continue
-        out.append(line)
-        if line.startswith(ENVBLOCK_END):
-            inside = False
-    return out
+class PersistedUnreadableError(Exception):
+    """The persisted table could not be read: the file is missing, does not parse, or holds no literal `PERSISTED` tuple."""
 
 
 def persisted_vars(ci_env: pathlib.Path) -> list[str]:
-    """Every `VAR=` assigned inside the ENVBLOCK heredoc, sorted and unique.
+    """The first element of every entry of the module-level `PERSISTED` tuple in `ci_env`, sorted and unique.
 
-    A missing file yields an empty list AND the complaint sed would have made, on stderr, because that complaint is the only thing that tells a reader why every variable suddenly looks unpersisted.
+    Read with `ast`, never imported; see the module docstring for why an import would make every plant pass. Each entry must be a literal `("NAME", <default>)` tuple whose first element is a string; anything else is refused rather than skipped, because a skipped entry is a persisted name this gate silently stopped seeing.
     """
     if not ci_env.is_file():
-        print("sed: can't read %s: No such file or directory" % ci_env, file=sys.stderr)
-        return []
+        raise PersistedUnreadableError("%s does not exist" % ci_env)
+    try:
+        tree = ast.parse(_read(ci_env), filename=str(ci_env))
+    except SyntaxError as exc:
+        raise PersistedUnreadableError("%s does not parse: %s" % (ci_env, exc)) from None
+    value: ast.expr | None = None
+    for node in tree.body:
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == PERSISTED_NAME
+        ) or (
+            isinstance(node, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == PERSISTED_NAME for t in node.targets)
+        ):
+            value = node.value
+    if not isinstance(value, ast.Tuple):
+        raise PersistedUnreadableError(
+            "%s has no module-level `%s = (...)` tuple" % (ci_env, PERSISTED_NAME)
+        )
     names: set[str] = set()
-    for line in envblock_lines(_read(ci_env)):
-        names.update(ASSIGNMENT_RE.findall(line))
+    for entry in value.elts:
+        if (
+            not isinstance(entry, ast.Tuple)
+            or not entry.elts
+            or not isinstance(entry.elts[0], ast.Constant)
+            or not isinstance(entry.elts[0].value, str)
+        ):
+            raise PersistedUnreadableError(
+                '%s:%d: a `%s` entry is not a literal ("NAME", default) tuple'
+                % (ci_env, getattr(entry, "lineno", 0), PERSISTED_NAME)
+            )
+        names.add(entry.elts[0].value)
     return sorted(names, key=str.encode)
 
 
@@ -189,31 +196,45 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     safe = set(safe_default_vars(files))
-    persisted = set(persisted_vars(ci_env))
+    try:
+        persisted = set(persisted_vars(ci_env))
+    except PersistedUnreadableError as exc:
+        log.error("cannot read the persisted set: %s" % exc)
+        print("  Every compose variable would read as unpersisted, so no verdict is reported.")
+        print("  Fix: restore the `%s` tuple in %s" % (PERSISTED_NAME, CI_ENV_SUBPATH))
+        return 1
 
-    log.step("Checking compose vars without safe defaults are persisted in ci-env.sh...")
+    log.step("Checking compose vars without safe defaults are persisted by ci_env.py...")
     for var in compose_vars:
         if var in safe:
             continue
         if var in persisted:
             continue
         log.error(
-            "docker-compose references ${%s} (no safe default) but ci-env.sh does not "
+            "docker-compose references ${%s} (no safe default) but ci_env.py does not "
             "persist it" % var
         )
         # STDOUT, as in the twin: these two are bare `echo`, not log_error, so they land on the data stream while the finding lands on stderr.
-        print("  This variable will be empty in workflow steps that don't source ci-env.sh")
-        print("  Fix: Add it to the .env file AND GITHUB_ENV blocks in ci-env.sh")
+        print(
+            "  This variable will be empty in every workflow step after the one that set up the CI environment"
+        )
+        print(
+            "  Fix: Add it to %s in %s (it is written to the .env file AND to GITHUB_ENV)"
+            % (PERSISTED_NAME, CI_ENV_SUBPATH)
+        )
         errors += 1
 
     if errors > 0:
         print()
         log.error("Found %d compose env var issue(s)" % errors)
-        print("See: .ci/scripts/infra/ci-env.sh (.env file + GITHUB_ENV blocks)")
+        print("See: %s (%s)" % (CI_ENV_SUBPATH, PERSISTED_NAME))
         return 1
 
     # THE SHAPE, NOT JUST THE VERDICT: the count is in the success line so a reader notices the day the parse collapses from 9 to 1.
-    log.info("All compose env vars are properly defined (%d vars checked)" % len(compose_vars))
+    log.info(
+        "All compose env vars are properly defined (%d vars checked, %d persisted by %s)"
+        % (len(compose_vars), len(persisted), CI_ENV_SUBPATH)
+    )
     return 0
 
 
@@ -227,13 +248,15 @@ _COMPOSE = """services:
       C: ${EMPTY_DEFAULTED:-}
 """
 
-_CI_ENV = """#!/bin/bash
-export NOT_PERSISTED_AT_ALL=1
-cat <<ENVBLOCK
-PERSISTED_ONE=yes
-EMPTY_DEFAULTED=yes
-ENVBLOCK
-OUTSIDE_THE_BLOCK=no
+# A `ci_env.py` in miniature: the persisted table, plus two decoy tables whose names must NOT count.
+_CI_ENV = """SYSTEM_DEFAULTS = (
+    ("NOT_PERSISTED_AT_ALL", "1"),
+)
+PERSISTED: tuple[tuple[str, str | None], ...] = (
+    ("PERSISTED_ONE", None),
+    ("EMPTY_DEFAULTED", ""),
+)
+MASKED = ("OUTSIDE_THE_BLOCK",)
 """
 
 
@@ -291,18 +314,18 @@ def selftest() -> int:
             ["DEFAULTED_ONE"],
         )
         ctl.check(
-            "PARSE: only assignments INSIDE the heredoc are persisted",
+            "PARSE: only the names in the PERSISTED table are persisted",
             persisted_vars(root / CI_ENV_SUBPATH),
             ["EMPTY_DEFAULTED", "PERSISTED_ONE"],
         )
-        # ITS MIRROR: the two assignments outside the block must be absent, or the range is not a range and the gate would accept an `export`.
+        # ITS MIRROR: the names in the two decoy tables must be absent, or the gate is reading the whole file and would accept a name that is merely set.
         found = persisted_vars(root / CI_ENV_SUBPATH)
         ctl.falsy(
-            "PARSE MIRROR: an export above the block is not persisted",
+            "PARSE MIRROR: a name in a table above PERSISTED is not persisted",
             "NOT_PERSISTED_AT_ALL" in found,
         )
         ctl.falsy(
-            "PARSE MIRROR: an assignment below the block is not persisted",
+            "PARSE MIRROR: a name in a table below PERSISTED is not persisted",
             "OUTSIDE_THE_BLOCK" in found,
         )
 
@@ -331,19 +354,20 @@ def selftest() -> int:
         # -- THE VERDICT -------------------------------------------------------
         ctl.check("CONTROL: a fully persisted compose passes", run(_COMPOSE, _CI_ENV), 0)
 
-        # THE PLANT: drop the variable from the heredoc while leaving the reference. Exactly the shape the gate exists for.
-        unpersisted = plant(_CI_ENV, "PERSISTED_ONE=yes\n", "")
+        # THE PLANT: drop the variable from PERSISTED while leaving the reference. Exactly the shape the gate exists for.
+        persisted_one = '    ("PERSISTED_ONE", None),\n'
+        unpersisted = plant(_CI_ENV, persisted_one, "")
         ctl.check("PLANT: an unpersisted reference is caught", run(_COMPOSE, unpersisted), 1)
 
-        # AND THE NEAR MISS: the same assignment moved OUTSIDE the heredoc. It is exported, it works in that shell, and it is gone in the next step. A gate that grepped the whole file would pass this.
-        exported_only = plant(
-            plant(_CI_ENV, "PERSISTED_ONE=yes\n", ""),
-            "OUTSIDE_THE_BLOCK=no\n",
-            "PERSISTED_ONE=yes\nOUTSIDE_THE_BLOCK=no\n",
+        # AND THE NEAR MISS: the same name moved into ANOTHER table. The CI environment sets it, it works in that step, and it is gone in the next. A gate that read every string in the file would pass this.
+        set_only = plant(
+            plant(_CI_ENV, persisted_one, ""),
+            '    ("NOT_PERSISTED_AT_ALL", "1"),\n',
+            '    ("NOT_PERSISTED_AT_ALL", "1"),\n    ("PERSISTED_ONE", "x"),\n',
         )
         ctl.check(
-            "PLANT: an assignment outside the heredoc does not count",
-            run(_COMPOSE, exported_only),
+            "PLANT: a name in another table does not count",
+            run(_COMPOSE, set_only),
             1,
         )
 
@@ -365,8 +389,21 @@ def selftest() -> int:
         )
         ctl.check("VACUITY: no compose file at all is refused", run(None, _CI_ENV), 1)
 
-        # A MISSING ci-env.sh reddens rather than passing, which is the twin's behaviour. Asserted so nobody "fixes" it into a silent pass.
-        ctl.check("VACUITY: a missing ci-env.sh reddens", run(_COMPOSE, None), 1)
+        # A MISSING ci_env.py, one with no PERSISTED tuple, and one whose entry is not a literal all REFUSE. An empty persisted set must never be read as "nothing to persist".
+        ctl.check("VACUITY: a missing ci_env.py reddens", run(_COMPOSE, None), 1)
+        ctl.check(
+            "VACUITY: a ci_env.py without a PERSISTED tuple reddens",
+            run(_COMPOSE, plant(_CI_ENV, "PERSISTED: tuple", "RENAMED: tuple")),
+            1,
+        )
+        ctl.check(
+            "VACUITY: a non-literal PERSISTED entry reddens",
+            run(
+                _COMPOSE,
+                plant(_CI_ENV, '    ("EMPTY_DEFAULTED", ""),\n', "    NAME_FROM_ELSEWHERE,\n"),
+            ),
+            1,
+        )
 
         # THE FLOOR MIRROR for the refusal: exactly one reference, persisted, is enough to pass. Without this the vacuity checks above could be passing because the gate refuses everything.
         one_var = "services:\n  app:\n    environment:\n      A: ${PERSISTED_ONE}\n"
