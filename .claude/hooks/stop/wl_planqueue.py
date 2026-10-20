@@ -968,7 +968,13 @@ def retire_promoted(root, rels=None) -> list[tuple[str, str]]:
         if path.read_text(encoding="utf-8") == got:
             R.write_atomic(path, new)
             return list(dict.fromkeys(moved))
-    return []
+    raise QueueContendedError(
+        "%s changed under both reads; no Promoted entry was retired" % QUEUE_REL
+    )
+
+
+class QueueContendedError(RuntimeError):
+    """retire_promoted gave up: another writer changed the queue file between its read and its write, twice. Raised rather than returning [] so a caller cannot report "retired 0" while stub entries remain (review 5d1b9889.2)."""
 
 
 def moved_problems(root) -> list[str]:

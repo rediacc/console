@@ -546,7 +546,11 @@ def retire_promoted(root: pathlib.Path) -> int:
         )
         return 1
     before = len(pq.promoted_numbered((root / pq.QUEUE_REL).read_text(encoding="utf-8")))
-    retired = pq.retire_promoted(root)
+    try:
+        retired = pq.retire_promoted(root)
+    except pq.QueueContendedError as exc:
+        print("✗ %s" % exc, file=sys.stderr)
+        return 1
     _report_retired(pq, root, retired)
     print(
         "✓ retired %d Promoted entr%s naming a moved stub, %d of %d kept"
@@ -649,7 +653,15 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
     if target_dir in PL.TERMINAL_DIRS:
         # Worklist #7b9fe4f1: a plan that left for _done/ or _removed/ has nothing left to order, and before this line its Promoted entry stayed behind for good.
         pq = _planqueue()
-        _report_retired(pq, root, pq.retire_promoted(root, {rel}))
+        try:
+            retired = pq.retire_promoted(root, {rel})
+        except pq.QueueContendedError as exc:
+            print("✗ %s; run --retire-promoted once the queue is quiet" % exc, file=sys.stderr)
+            return 1
+        _report_retired(pq, root, retired)
+        if retired:
+            # Review 5d1b9889.1: the queue rewrite rides the move's own staging, so a commit of the move never leaves HEAD's Promoted pointing at a stub.
+            gitx.git(["add", "--", pq.QUEUE_REL], root=root)
     return 0
 
 
