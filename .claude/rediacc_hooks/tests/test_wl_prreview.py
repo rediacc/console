@@ -890,3 +890,6 @@ def test_duplicate_roots_needs_a_title_and_a_line():
     outdated_a = dict(root, line=None, id=903)
     outdated_b = dict(root, line=None, id=904)
     assert P.duplicate_roots(lineless, outdated_a, [outdated_a, outdated_b]) == []
+    # A finding with a line never matches a root without one (review 44d7a883.1), and a whitespace-only title is no title (44d7a883.2).
+    assert P.duplicate_roots(finding, root, [root, dict(root, line=None, id=905)]) == []
+    assert P.duplicate_roots(dict(finding, title="  "), root, [root, other_same]) == []
