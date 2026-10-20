@@ -273,6 +273,46 @@ const restoreVerdict: PrerequisiteVerdict = resolvePrerequisites({
   ],
 });
 
+/**
+ * The BROWSE-AT tier (Stage 3 of the chunk-store browse plan): `rdc backup browse
+ * --at <snapshot>` lists a snapshot from its sealed listing in the chunk store.
+ *
+ * Its own tier because it needs one thing the others do not: the local renet
+ * must register `backup browse-at`, which is newer than the run and restore
+ * verbs. Folding it into a tier that is otherwise green would let an older
+ * binary hide this proof behind the rest.
+ *
+ * NOT LIVE. Like the whole file, this tier runs from
+ * `playwright.backup-storage.config.ts`, which no workflow runs, so it confers
+ * no coverage to `backup_browse_at` and the verb stays on
+ * `.ci/policy/.e2e-coverage-allowlist`. The legs are real and runnable by hand
+ * (the command is in the declared-skip banner); suite 25 carries the refusals
+ * that need no account server.
+ */
+const browseAtVerbPresent = verbIsRegistered(localHelp, 'browse-at');
+const browseAtVerdict: PrerequisiteVerdict = resolvePrerequisites({
+  label: 'snapshot browse from the chunk store (BROWSE-AT tier)',
+  declareVar: 'E2E_EXPECT_NO_CHUNK_BROWSE_AT',
+  prerequisites: [
+    ...accountPrereqs,
+    {
+      name: 'VM_WORKERS (one worker VM)',
+      satisfied: workers.length >= 1,
+      how: 'bring the fleet up: `./rdc.sh ops up --basic`',
+    },
+    {
+      name: `the local renet registers \`${chunkVerbs().run}\``,
+      satisfied: engineVerbPresent,
+      how: 'build renet (`cd private/renet && ./build.sh dev`). Check: `private/renet/bin/renet backup --help`',
+    },
+    {
+      name: 'the local renet registers `browse-at`',
+      satisfied: browseAtVerbPresent,
+      how: 'rebuild renet from a tree that has cmd/renet/backup_browse_at.go. Check: `private/renet/bin/renet backup --help`',
+    },
+  ],
+});
+
 /** Both channels: the CLI's refusals arrive on stderr. */
 const bothChannels = (r: { stdout: string; stderr: string }): string => r.stdout + r.stderr;
 
@@ -997,6 +1037,199 @@ test.describe
           await imageSha(w2, repo.guid),
           'the restored image is not byte-identical to the source'
         ).toBe(sourceSha);
+      });
+    }
+  });
+
+// --------------------------------------------------------------------------- BROWSE-AT tier — a stored snapshot lists without being restored ---------------------------------------------------------------------------
+
+test.describe
+  .serial('snapshot browse from the chunk store @cli @backup @browse-at', () => {
+    if (browseAtVerdict.kind === 'undeclared') {
+      test('BROWSE-AT tier prerequisites are missing and undeclared', () => {
+        expect(() => announcePrerequisites(browseAtVerdict)).not.toThrow();
+      });
+    } else {
+      const gate = announcePrerequisites(browseAtVerdict);
+      if (gate.skip) {
+        process.stderr.write(
+          [
+            '',
+            '  Declared skip, and NOT LIVE: no workflow runs this config. To run by hand:',
+            '',
+            '    ./run.sh account dev     # note the gateway URL it prints',
+            '    BACKUP_STORAGE_SUITE=1 REDIACC_ACCOUNT_SERVER=http://<host>:<port> \\',
+            '      E2E_ACCOUNT_API_TOKEN=<token with backup:read> VM_WORKERS="11" \\',
+            '      npx playwright test --config playwright.backup-storage.config.ts --grep @browse-at',
+            '',
+          ].join('\n')
+        );
+      }
+      test.skip(gate.skip, gate.reason);
+      test.setTimeout(1_800_000);
+
+      const verbs = chunkVerbs();
+      const REPO_NAME = `e2ebk-browse-${String(stamp).slice(-8)}`;
+
+      let cli: CliRunner;
+      let w1: BridgeTestRunner;
+      let repo: ProvisionedRepo;
+      let subscriptionId = '';
+      /** Taken while the repository's TOC key was absent: carries no listing. */
+      let bareSnapshotId = '';
+      /** Taken after a password mount wrote the key: carries a sealed listing. */
+      let listedSnapshotId = '';
+
+      const tocKeyPath = (): string => `${DS}/.credentials/toc/${repo.guid}.pub`;
+
+      const snapshot = async (): Promise<string> => {
+        const run = await w1.executeViaBridge(
+          `sudo renet ${verbs.run} --repo "${repo.guid}" --datastore "${DS}"`
+        );
+        expect(run.code, `snapshot run: ${w1.getCombinedOutput(run).slice(-800)}`).toBe(0);
+        const record = run.stdout
+          .split('\n')
+          .map((line) => parseSnapshotRecord(line))
+          .find((r): r is SnapshotRecord => r !== undefined);
+        expect(
+          record?.snapshotId,
+          `no snapshot record on stdout:\n${run.stdout.slice(-800)}`
+        ).toBeTruthy();
+        return record?.snapshotId ?? '';
+      };
+
+      /** Mount with the password (this is what writes the TOC key), write through the filesystem, unmount. */
+      const mountWriteUnmount = async (fileName: string): Promise<void> => {
+        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
+        const write = await w1.executeViaBridge(
+          `sudo sh -c 'echo ${fileName} > "${DS}/mounts/${repo.guid}/${fileName}"' && sync`
+        );
+        expect(write.code, `planting ${fileName}: ${w1.getCombinedOutput(write)}`).toBe(0);
+        const unmounted = await w1.repositoryUnmount(repo.guid, DS);
+        expect(unmounted.code, `unmounting: ${w1.getCombinedOutput(unmounted).slice(-800)}`).toBe(
+          0
+        );
+      };
+
+      /** Rows of an `-o json` browse, reduced to what a local and a remote listing must agree on. */
+      const comparable = (rows: unknown): string[] =>
+        (Array.isArray(rows) ? (rows as { name: string; type: string }[]) : [])
+          .map((row) => `${row.type} ${row.name}`)
+          .sort();
+
+      test.beforeAll(async () => {
+        w1 = BridgeTestRunner.forWorker(1);
+        cli = await loginCli();
+        await w1.ensureDatastoreReady(DS);
+        await ensureDatastore(w1, M1);
+        await registerMachines(cli);
+        repo = await provisionRepo(cli, w1, REPO_NAME, M1);
+        const usage = await cli.runJson<CliEnvelope<BackupUsage>>(['backup', 'usage']);
+        subscriptionId = usage.json?.data?.subscriptionId ?? '';
+      });
+
+      test.afterAll(async () => {
+        await restoreLedger(cli, subscriptionId);
+        await cli.run(['repo', 'delete', REPO_NAME, '-y']).catch(() => undefined);
+      });
+
+      test('1. a snapshot taken before the key exists answers exit 18 NO_LISTING', async () => {
+        // `repo create` already password-mounted the repo, which wrote the TOC key. Removing it recreates the state of a repository whose key was never written (an older machine, a repo restored without a password mount), the one in which the snapshot stores without a listing.
+        const removed = await w1.executeViaBridge(`sudo rm -f "${tocKeyPath()}"`);
+        expect(removed.code, `removing the TOC key: ${w1.getCombinedOutput(removed)}`).toBe(0);
+        bareSnapshotId = await snapshot();
+
+        const browse = await cli.run([
+          'backup',
+          'browse',
+          `${REPO_NAME}@${M1}`,
+          '--at',
+          bareSnapshotId,
+        ]);
+        // The CLI propagates the verb's 18 verbatim and says WHY, so a script can tell "no listing there" from "it broke" (exit 1).
+        expect(browse.code, `browse --at (no listing): ${bothChannels(browse).slice(-800)}`).toBe(
+          18
+        );
+        expect(bothChannels(browse), 'the refusal must name the snapshot').toContain(
+          bareSnapshotId
+        );
+        expect(browse.stdout.trim(), 'a snapshot with no listing printed rows').toBe('');
+      });
+
+      test('2. `rdc backup browse --at <id>` equals a local `backup browse` of the same content', async () => {
+        // A password mount writes the key, so this snapshot carries a sealed listing.
+        await mountWriteUnmount(`browse-at-${stamp}.txt`);
+        expect(
+          (
+            await w1.executeViaBridge(
+              `sudo test -f "${tocKeyPath()}" && echo present || echo absent`
+            )
+          ).stdout,
+          'the password mount did not write the TOC key'
+        ).toContain('present');
+        listedSnapshotId = await snapshot();
+        expect(listedSnapshotId, 'the second snapshot reused the first id').not.toBe(
+          bareSnapshotId
+        );
+
+        // Local listing of the SAME content: mount, read, and write nothing between the snapshot and this read.
+        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        expect(
+          mounted.code,
+          `mounting for the local read: ${w1.getCombinedOutput(mounted).slice(-800)}`
+        ).toBe(0);
+        let local: string[];
+        try {
+          const l = await cli.runJson<CliEnvelope<unknown>>([
+            'backup',
+            'browse',
+            `${REPO_NAME}@${M1}`,
+          ]);
+          expect(l.result.code, `local browse: ${bothChannels(l.result).slice(-800)}`).toBe(0);
+          local = comparable(l.json?.data);
+        } finally {
+          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+        }
+
+        const r = await cli.runJson<CliEnvelope<unknown>>([
+          'backup',
+          'browse',
+          `${REPO_NAME}@${M1}`,
+          '--at',
+          listedSnapshotId,
+        ]);
+        expect(r.result.code, `browse --at: ${bothChannels(r.result).slice(-800)}`).toBe(0);
+        const remote = comparable(r.json?.data);
+
+        expect(local, 'the local listing is empty; the comparison would pass vacuously').toContain(
+          `file /browse-at-${stamp}.txt`
+        );
+        expect(remote, 'the stored listing differs from the image it was taken from').toEqual(
+          local
+        );
+      });
+
+      test('3. a wrong passphrase fails closed: no listing, no hint of the content', async () => {
+        // The CLI always sends the config's credential, so the wrong one is driven through the verb on the machine. Same arguments as the CLI's call; only the passphrase differs.
+        const lineage = repo.guid;
+        const wrong = await w1.executeViaBridge(
+          `printf '%s\\n' 'not-the-passphrase' | sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`
+        );
+        expect(wrong.code, 'a wrong passphrase opened the listing').not.toBe(0);
+        expect(wrong.code, 'a wrong passphrase must not read as NO_LISTING').not.toBe(18);
+        expect(wrong.stdout.trim(), 'a failed open printed something on stdout').toBe('');
+        const text = w1.getCombinedOutput(wrong);
+        expect(text, 'the refusal leaked a file name').not.toContain(`browse-at-${stamp}`);
+
+        // Control: the right passphrase opens the same snapshot, so test 3 refused on the passphrase and not on a broken fixture.
+        const right = await w1.executeViaBridge(
+          `printf '%s\\n' '${repo.credential}' | sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`
+        );
+        expect(right.code, `right passphrase: ${w1.getCombinedOutput(right).slice(-800)}`).toBe(0);
+        expect(right.stdout).toContain(`browse-at-${stamp}.txt`);
       });
     }
   });

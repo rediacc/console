@@ -55,6 +55,25 @@ repository_up_all
 # covered, so the day suite 26 goes live this line fails until it is deleted.
 backup_restore
 
+# BLOCKER: `backup browse --at` (backup_browse_at) reads a snapshot's listing from
+# the chunk store, so a real listing needs a real account server, a real chunk store
+# and a machine holding a snapshot. The only suite that carries that round trip
+# (snapshot with a listing, `rdc backup browse --at <id>` equal to a local browse, a
+# wrong passphrase failing closed, exit 18 NO_LISTING), the BROWSE-AT tier of
+# `packages/e2e-tests/tests/26-backup-storage-cli.test.ts` under
+# `packages/e2e-tests/playwright.backup-storage.config.ts`, is run by NO workflow,
+# so it is not in LIVE_CONFIG_REGISTRY and cannot confer coverage.
+# Suite 25 (live, a worker VM and no account server) does run the verb's refusals
+# that need neither (a time-shaped --at, exit 10 LICENSE_REQUIRED) and the unchanged
+# local `backup browse`, but it spells the verb `renet backup browse-at` and never
+# names the function: those legs prove refusals, not a listing, and counting them as
+# coverage of the function would overstate what runs. Wiring the BROWSE-AT tier is
+# box 11 of PLAN-chunk-store-browse-toc-and-remote (#4b28fc97).
+#
+# This entry expires itself: the gate REJECTS an allowlisted name that becomes
+# covered, so the day suite 26 goes live this line fails until it is deleted.
+backup_browse_at
+
 # BLOCKER: machine_uninstall tears the renet install off a machine, so exercising
 # it means sacrificing the very VM the rest of the suite runs on. No live config
 # provisions a throwaway machine for it, and adding one is fleet work this wave

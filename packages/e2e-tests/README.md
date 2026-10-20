@@ -59,7 +59,7 @@ predates the verb skips loudly rather than going green on a variable. The projec
    # prerequisite.
    ```
 
-All three tiers fail CLOSED: absent prerequisites with no declaration are a RED, not a skip. Declare an intentional omission with `E2E_EXPECT_NO_ACCOUNT_SERVER`, `E2E_EXPECT_NO_CHUNK_ENGINE` or `E2E_EXPECT_NO_CHUNK_RESTORE`.
+All four tiers fail CLOSED: absent prerequisites with no declaration are a RED, not a skip. Declare an intentional omission with `E2E_EXPECT_NO_ACCOUNT_SERVER`, `E2E_EXPECT_NO_CHUNK_ENGINE`, `E2E_EXPECT_NO_CHUNK_RESTORE` or `E2E_EXPECT_NO_CHUNK_BROWSE_AT` (the BROWSE-AT tier: a snapshot's sealed listing read back with `rdc backup browse --at`).
 
 8. **Suite 23 (CLI migrate routing) — pending local validation.** Authored and
 tsc-green, but the E2E Workers `ubuntu-24.04` leg does NOT set `CLI_SUITE=1` yet. Before enabling it, transcribe the exact `repo create`/datastore argv + the `beforeAll` machine-registration/SSH wiring from the wave round-log transcript and validate on a local two-worker fleet (`VM_WORKERS="11 12"`). To enable: add `cli-suite: '1'` to the `ubuntu-24.04` matrix leg in
