@@ -13,7 +13,8 @@ import type { RepositoryConfig } from '../../types/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { accountServerFetch } from '../account/account-client.js';
-import { isDatastoreScopedId, readRuntimeRepoLicenseStatuses } from '../account/license.js';
+import { isDatastoreScopedId } from '../account/license.js';
+import type { RuntimeRepoLicenseStatus } from '../account/license-types.js';
 import { namedDatastoreMount } from '../cluster/cluster-target.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
@@ -268,21 +269,35 @@ export async function resolveRestoreLicenseContext(
  * Best-effort: a scan that cannot answer means "issue", never "refuse". The
  * cost of a redundant issuance is one slot; the cost of a refused pre-flight is
  * a failed disaster recovery.
+ *
+ * It reads the LICENSE STORE (`repository license-status --repo <guid>`), never
+ * the plain status listing. The listing walks each datastore's `repositories/`
+ * directory, and on a restore target the image is exactly what does not exist
+ * yet, so the listing never mentioned the source guid and this probe answered
+ * "not installed" every time: every DR retry burned another issuance, the cost
+ * the probe exists to prevent. An older renet without `--repo` fails the call,
+ * which lands in the best-effort "issue" branch.
  */
 export async function restoreLicenseAlreadyInstalled(
   ctx: Omit<RepoLicenseContext, 'requestedSizeGb'>,
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
-  sshPrivateKey: string,
   remoteRenetPath: string,
   sftp: SFTPClient
 ): Promise<boolean> {
+  // Interpolated into a root shell command, so it must be a guid and nothing else.
+  if (!RESTORE_GUID_PATTERN.test(ctx.repositoryGuid)) return false;
+  const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
   // `--all-datastores`, so a licence in a NAMED datastore is visible here; the scope comparison below is what keeps that breadth from being permissive.
-  const statuses = await readRuntimeRepoLicenseStatuses(
-    machine,
-    sshPrivateKey,
-    remoteRenetPath,
-    sftp
-  ).catch(() => []);
+  const command =
+    `sudo ${remoteRenetPath} repository license-status --datastore ${shellQuote(datastore)} ` +
+    `--all-datastores --repo ${ctx.repositoryGuid} --output json`;
+  const statuses = await sftp
+    .exec(command)
+    .then((output) => {
+      const parsed = JSON.parse(output) as unknown;
+      return Array.isArray(parsed) ? (parsed as RuntimeRepoLicenseStatus[]) : [];
+    })
+    .catch((): RuntimeRepoLicenseStatus[] => []);
   // Both sides normalised through the same predicate the licence WRITER uses, so an empty string, a missing field and a malformed id all collapse to the unscoped population, which is the population they would actually be written to.
   const wanted = isDatastoreScopedId(ctx.datastoreId) ? ctx.datastoreId : undefined;
   return statuses.some(
@@ -292,6 +307,8 @@ export async function restoreLicenseAlreadyInstalled(
       (isDatastoreScopedId(entry.datastoreId) ? entry.datastoreId : undefined) === wanted
   );
 }
+
+const RESTORE_GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /**
  * The size to request for a restore's licence, read from the SNAPSHOT the
