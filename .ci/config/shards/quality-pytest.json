@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-20T08:42:22.308Z",
+  "generatedAt": "2026-10-20T10:37:15.876Z",
   "legs": [
     {
       "index": 1,
@@ -695,6 +695,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_retro.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_state_document.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_store_journal.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_turbo_ci_red.py"
       ]
     }

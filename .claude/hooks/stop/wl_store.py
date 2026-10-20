@@ -724,6 +724,126 @@ def writer_path(writer, root=None):
     return store_dir(root) / ("%s.jsonl" % agent_session_slug(writer))
 
 
+# --------------------------------------------------------------------------- THE CHECKOUT JOURNAL. <git-dir>/rediacc-worklist-journal/<name>.jsonl, an UNTRACKED twin of every tracked store file, appended with the same bytes on every write.
+#
+# WHY IT EXISTS, measured 2026-10-20 (worklist #8e513af2). The tracked store is a file in the working tree, so `git switch main` swapped in main's stale committed copy: the Stop hook listed items as open that had been ticked hours earlier on 1020-1, and any verb run there appended to the wrong history. Committed state is a SNAPSHOT that moves with HEAD; the history this
+# checkout wrote must not.
+#
+# THE READ IS A UNION. Every tracked file is read as before, then each journal line that no tracked file carries byte-for-byte is added. Both copies come from one dict through one encoder, so the line text IS the event identity: a branch switch can neither hide an event this checkout wrote nor double one. The journal is never compacted: compaction writes a snapshot whose
+# events sort before the raw events they summarise (no `ns`, file order), so snapshot + raw history folds to the same state, whereas snapshot + a stale branch's partial history would not.
+#
+# PER CHECKOUT, `--git-dir` and not `--git-common-dir`: each worktree is its own working tree and its own branch, and the defect is a branch switch inside one of them. DISABLED under $WORKLIST_STORE_DIR, which points the store at a fixture or at another tree (retired_terms --root); a journal there would be this checkout's, not that store's. CI checkouts have no journal
+# and read exactly the committed files, which is what a commit-range judgement wants.
+JOURNAL_DIR_NAME = "rediacc-worklist-journal"
+_GITDIR_CACHE = {}
+
+
+def _git_dir(root):
+    """The checkout's git dir, read from `.git` without a subprocess (a worktree's `.git` is a `gitdir:` file). None when there is none."""
+    key = str(root)
+    if key not in _GITDIR_CACHE:
+        found = None
+        dotgit = pathlib.Path(root) / ".git"
+        with contextlib.suppress(OSError):
+            if dotgit.is_dir():
+                found = dotgit
+            elif dotgit.is_file():
+                m = re.match(r"gitdir:\s*(.+)", dotgit.read_text(encoding="utf-8").strip())
+                if m:
+                    cand = pathlib.Path(m.group(1).strip())
+                    if not cand.is_absolute():
+                        cand = pathlib.Path(root) / cand
+                    if cand.is_dir():
+                        found = cand.resolve()
+        _GITDIR_CACHE[key] = found
+    return _GITDIR_CACHE[key]
+
+
+def journal_dir(root=None):
+    """This checkout's journal directory, or None (no git dir, or the store is overridden)."""
+    if os.environ.get("WORKLIST_STORE_DIR"):
+        return None
+    if root is None:
+        root = C.project_root(C.project_start())
+    gd = _git_dir(root)
+    return gd / JOURNAL_DIR_NAME if gd is not None else None
+
+
+def journal_twin(path, root=None):
+    """The journal file mirroring tracked store file `path`, or None when `path` is not in the store or there is no journal."""
+    jd = journal_dir(root)
+    if jd is None:
+        return None
+    try:
+        if pathlib.Path(path).parent.resolve() != store_dir(root).resolve():
+            return None
+    except OSError:
+        return None
+    return jd / pathlib.Path(path).name
+
+
+def _journal_append(path, payloads, root=None):
+    """Mirror an append to `path` into its journal twin. Best effort: the tracked write is the verb's contract, and a journal that cannot be written leaves exactly the pre-journal behaviour."""
+    twin = journal_twin(path, root)
+    if twin is None:
+        return
+    with contextlib.suppress(OSError):
+        twin.parent.mkdir(parents=True, exist_ok=True)
+        _jsonl_append().append_lines(twin, twin.parent / ".lock", payloads, lock=_flock)
+
+
+def append_store_lines(path, lock_path, payloads, root=None):
+    """Append JSONL to a tracked store file AND its journal twin. The one write path for any sidecar living in store_dir (epics.jsonl)."""
+    _append_lines(path, lock_path, payloads)
+    _journal_append(path, payloads, root)
+
+
+def _read_text(path):
+    try:
+        return pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def store_file_text(path, root=None):
+    """One store file's lines, unioned with its journal twin's lines the tracked copy lacks (appended after, in journal order)."""
+    text = _read_text(path) or ""
+    twin = journal_twin(path, root)
+    extra = _read_text(twin) if twin is not None else None
+    if not extra:
+        return text
+    have = set(text.splitlines())
+    more = [ln for ln in extra.splitlines() if ln.strip() and ln not in have]
+    if not more:
+        return text
+    return text + ("" if not text or text.endswith("\n") else "\n") + "\n".join(more) + "\n"
+
+
+def _store_texts(root=None):
+    """Texts of every tracked store file, then ONE text of the journal lines no tracked file carries. Tracked first, so on a tie in (at, ns) a journal event sorts after its snapshot."""
+    seen = set()
+    texts = []
+    with contextlib.suppress(OSError):
+        for f in sorted(store_dir(root).glob("*.jsonl")):
+            text = _read_text(f)
+            if text is None:
+                continue
+            texts.append(text)
+            seen.update(text.splitlines())
+    jd = journal_dir(root)
+    if jd is not None:
+        more = []
+        with contextlib.suppress(OSError):
+            for f in sorted(jd.glob("*.jsonl")):
+                for ln in (_read_text(f) or "").splitlines():
+                    if ln.strip() and ln not in seen:
+                        seen.add(ln)
+                        more.append(ln)
+        if more:
+            texts.append("\n".join(more))
+    return texts
+
+
 # Writer names that are not session identities. They get their own file rather than being forced onto whichever session happened to trigger them, so a machine-level write never lands in a person's file.
 _NON_SESSION_WRITERS = frozenset({"compact", "unknown", "md", "import"})
 
@@ -813,6 +933,7 @@ def append_events(worklist, payloads, writer=None, root=None):
     with contextlib.suppress(OSError):
         target.parent.mkdir(parents=True, exist_ok=True)
     _append_lines(target, events_lock_path(worklist), payloads)
+    _journal_append(target, payloads, root)
 
 
 def _parse_events(text):
@@ -835,14 +956,9 @@ def _read_events(worklist, root=None):
     THE SORT IS LOAD-BEARING. File name order is not time order, and after a merge one file can hold events older than another's first line. Sorting by the stamp (which is `%Y-%m-%dT%H:%M:%SZ`, so lexical order is chronological) is what makes a union of histories fold to the same state as one history.
     """
     out = []
-    try:
-        for f in sorted(store_dir(root).glob("*.jsonl")):
-            try:
-                out.extend(_parse_events(f.read_text(encoding="utf-8", errors="replace")))
-            except OSError:
-                continue
-    except OSError:
-        pass
+    # Tracked files, then the checkout journal's lines they lack (see THE CHECKOUT JOURNAL).
+    for text in _store_texts(root):
+        out.extend(_parse_events(text))
     legacy = events_path(worklist)
     if legacy.exists():
         with contextlib.suppress(OSError):
@@ -859,17 +975,13 @@ _PHASE_LINE = re.compile(r'"ev":\s*"(?:phase|lineage)"')
 def phase_fold(worklist, root=None):
     """A Fold carrying only the `phase` and `lineage` events: the spawn guard's read (guards/block_focus_spawn.py), which runs on every Agent call and must not pay for a full fold of the log. Same files and same order as _read_events; lines of any other kind are never parsed."""
     out = []
-    paths = []
-    with contextlib.suppress(OSError):
-        paths.extend(sorted(store_dir(root).glob("*.jsonl")))
+    texts = _store_texts(root)
     legacy = events_path(worklist)
     if legacy.exists():
-        paths.append(legacy)
-    for f in paths:
-        try:
-            text = f.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
+        text = _read_text(legacy)
+        if text is not None:
+            texts.append(text)
+    for text in texts:
         out.extend(
             _parse_events("\n".join(ln for ln in text.splitlines() if _PHASE_LINE.search(ln)))
         )
@@ -1236,6 +1348,7 @@ def load(worklist, sync=True):
                         os.write(fd, blob)
                     finally:
                         os.close(fd)
+                    _journal_append(_md_target, [ev])
                     records, md_keys, cli_ids, last_h, lineage = build(_read_events(worklist))
         else:
             # Read-only view: overlay the parsed markdown without writing.
@@ -1864,6 +1977,8 @@ def import_legacy(worklist, again=False, root=None):
     with open(target, "w", encoding="utf-8") as f:
         for ev in payload:
             f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+    # Journalled too: the legacy log is renamed below, so a branch without this file would otherwise hold no copy of it at all.
+    _journal_append(target, payload, root)
     moved = legacy.with_suffix(".jsonl.imported-%s" % re.sub(r"[^0-9A-Za-z]", "", C.stamp_now()))
     try:
         legacy.rename(moved)

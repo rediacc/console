@@ -5027,15 +5027,16 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // T3.1 (PLAN-ci-time-budget, spec W). No leg should cost more than 12 minutes and the pipeline should not exceed 20; this asserts the committed duration estimates (.ci/config/lane-durations.json, .ci/config/shards/*.json) against both ceilings before either is measured on a real runner. Registered in quality-code per the box; the workflow step and gates.lock entry come from the lead's `gate-bind --write` regeneration.
+    // T3.1 (PLAN-ci-time-budget, spec W). No leg should cost more than 12 minutes and the pipeline should not exceed 20; this asserts the committed duration estimates (.ci/config/lane-durations.json, .ci/config/shards/*.json) against both ceilings before either is measured on a real runner. Registered in quality-code per the box and on in CI since the operator's 2026-10-14 "Turn it on in CI now" (the E2E Probe jobs that were its one UNCHECKED finding are measured by the 2026-10-20 main-push runs).
     id: 'check:ci-lane-budget',
     run: 'npm run check:ci-lane-budget',
-    gate: false,
+    gate: true,
     leaves: ['scripts/gates/check-lane-budget.ts'],
     ci: {
-      kind: 'local-only',
-      blocker:
-        'BLOCKER: the real run has one finding, check 2 UNCHECKED on the E2E Probe jobs aggregate, list-files and probe-file, which ci.yml now runs whenever E2E Workers runs (the e2e-dependency-probe label was retired 2026-10-14) and which no sampled run has measured yet. A budget_report.py --refresh --branch <PR branch> after the first green probe run of that PR gives them a p90; the flip to gate: true and the quality-code step lands with it.',
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Lane budget',
     },
   },
   {
