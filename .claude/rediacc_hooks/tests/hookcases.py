@@ -3657,6 +3657,13 @@ STATIC: list[Case] = [
         "stale-pr-branch CONTROL: a quoted assignment without the hatch opens nothing",
     ),
     case(
+        "check 0 guards/block_stale_pr_branch_date.py",
+        bash_json(
+            'TURBO_PUSH_REASON="ci-cd: a reason with spaces" PR_BRANCH_DATE_OK=1 gh pr create --head 0825-2 -t x'
+        ),
+        "stale-pr-branch: the hatch holds beside a double-quoted assignment",
+    ),
+    case(
         "check 2 guards/block_nondraft_pr_create.py",
         bash_json("cd private/renet && gh pr create --draft --title x"),
         "nondraft-create: draft on private submodule",
