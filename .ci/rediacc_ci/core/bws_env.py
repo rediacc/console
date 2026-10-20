@@ -1190,7 +1190,8 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
     except OSError as exc:
         return "cannot run %s: %s" % (WRITER_ARGV[0], type(exc).__name__)
     try:
-        raw_out, raw_err = proc.communicate(json.dumps(request).encode(), timeout=WRITER_TIMEOUT_S)
+        # stderr is drained so the writer never blocks on a full pipe, and then dropped (see below).
+        raw_out, _ = proc.communicate(json.dumps(request).encode(), timeout=WRITER_TIMEOUT_S)
     except subprocess.TimeoutExpired:
         with contextlib.suppress(OSError):
             os.killpg(proc.pid, signal.SIGKILL)
@@ -1203,13 +1204,10 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
         return "cannot run %s: %s" % (WRITER_ARGV[0], type(exc).__name__)
     if proc.returncode != 0:
         # The writer's stderr is never relayed: its error path may echo the request, and no masking of a value (multi-line, short or partly echoed) is complete. The exit code is the whole report.
-        del raw_err
         return (
-            "rc=%d: the writer failed; its stderr is withheld because it may echo the value (run %s by hand to see it)"
-            % (
-                proc.returncode,
-                WRITER_SCRIPT_REL,
-            )
+            "rc=%d: the writer failed; its stderr is withheld because it may echo the value "
+            "(to see it, run `%s` in private/account with the same request JSON on stdin)"
+            % (proc.returncode, " ".join(WRITER_ARGV))
         )
     answered = raw_out.decode(errors="replace").strip()
     wanted = request.get("id")
