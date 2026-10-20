@@ -65,9 +65,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-pins-command.md -- 12 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-credential-isolation.md -- 7 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 14 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 4: #57f0604c (worker:bmz52oedb, d778be9d), #66e2e0ef (worker:bmz52oedb, d778be9d), #c275adc4 (worker:b46b70qfz, d778be9d), #fe2d3ad2 (worker:bmz52oedb, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 19 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a968120b512751e0b, worker:a1c8cbf6121254736, worker:a933a92c315798e4d, worker:aeb131ef145252b0a.
+- Leased items: 4: #3b0fa70b (worker:a1c8cbf6121254736, d778be9d), #3f41a61c (worker:aeb131ef145252b0a, d778be9d), #5ef4661a (worker:a933a92c315798e4d, d778be9d), #a42f8448 (worker:a968120b512751e0b, d778be9d).
 - Next plan: agent/plans/PLAN-vm-check.md, Generated entry 13 (no Promoted entry ahead of it has an open box); starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
