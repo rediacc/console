@@ -188,6 +188,10 @@
         {
           "id": "check:deps",
           "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-release-bump-skip",
+          "reason": "It reaches .ci/rediacc_ci/ci/detect_pointer_bump.py, whose agent/reviews/ cite is REVIEW_PATH_PREFIX, a prefix matched against `git diff-tree` path strings to admit review-record commits beside a pointer bump; no file under agent/reviews/ is opened, so none changes this gate's verdict."
         }
       ]
     },
