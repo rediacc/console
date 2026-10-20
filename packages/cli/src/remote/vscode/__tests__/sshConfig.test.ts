@@ -5,10 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // getSSHHome is called at module load time via getSSHConfigPath, so we must mock the platform module before importing sshConfig.
 const mockGetSSHHome = vi.fn<() => string>();
+const mockIsWSL = vi.fn<() => boolean>(() => false);
+const mockWslToWindows = vi.fn<(p: string) => string>((p) => p);
 
 vi.mock('../../utils/platform.js', async () => {
   const actual = await vi.importActual<Record<string, unknown>>('../../utils/platform.js');
-  return { ...actual, getSSHHome: () => mockGetSSHHome() };
+  return {
+    ...actual,
+    getSSHHome: () => mockGetSSHHome(),
+    isWSL: () => mockIsWSL(),
+    wslPathToWindows: (p: string) => mockWslToWindows(p),
+  };
 });
 
 // Now import the functions under test AFTER mock is registered.
@@ -29,6 +36,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  mockIsWSL.mockReturnValue(false);
+  mockWslToWindows.mockImplementation((p) => p);
 });
 
 function readConfigFile(): string {
@@ -182,5 +191,33 @@ describe('removeSSHConfigEntry key cleanup', () => {
     addHost('rediacc-y', file);
     removeSSHConfigEntry('rediacc-y');
     expect(existsSync(file)).toBe(true);
+  });
+
+  it('never removes the rediacc_keys directory or its parent via a dot basename', () => {
+    const key = writeKey('k');
+    for (const dot of ['.', '..']) {
+      addHost(`rediacc-dot${dot.length}`, `${keysDir()}/${dot}`);
+      removeSSHConfigEntry(`rediacc-dot${dot.length}`);
+    }
+    expect(existsSync(key)).toBe(true);
+    expect(existsSync(keysDir())).toBe(true);
+  });
+
+  it('removes the key when the config names it in the WSL Windows-path form', () => {
+    const key = writeKey('t_m_r');
+    mockIsWSL.mockReturnValue(true);
+    mockWslToWindows.mockImplementation((p) => p.replace(tmpHome, 'C:\\Users\\dev'));
+    addHost('rediacc-wsl', 'C:/Users/dev/.ssh/rediacc_keys/t_m_r');
+    removeSSHConfigEntry('rediacc-wsl');
+    expect(existsSync(key)).toBe(false);
+  });
+
+  it('keeps a key whose Windows-path form lives in another directory under WSL', () => {
+    const key = writeKey('t_m_r');
+    mockIsWSL.mockReturnValue(true);
+    mockWslToWindows.mockImplementation((p) => p.replace(tmpHome, 'C:\\Users\\dev'));
+    addHost('rediacc-wsl2', 'C:/Users/other/.ssh/rediacc_keys/t_m_r');
+    removeSSHConfigEntry('rediacc-wsl2');
+    expect(existsSync(key)).toBe(true);
   });
 });

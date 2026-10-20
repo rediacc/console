@@ -40,7 +40,7 @@ RUNS_DIR = "runs"
 EVIDENCE_MAX = 200
 ARCHIVE_SCAN_MAX = 50
 _TREE = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
-_RUN_ID = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9_.-]*$")
+_RUN_ID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*")
 _REQUIRED = (
     "schema",
     "status",
@@ -230,7 +230,7 @@ def write_run_record(root: pathlib.Path, receipt: dict[str, Any]) -> pathlib.Pat
     """Keep the record of a run that never held the fleet lock at `runs/<runId>/receipt.json`, and nothing else: `receipt.json` and every `<tree>.json` archive stay byte-identical, so a busy loser finishing after the holder cannot replace the holder's receipt. Raises ValueError on a receipt that fails `validate` or a `runId` that is not a plain directory name."""
     errors = validate(receipt)
     run_id = receipt.get("runId")
-    if not (isinstance(run_id, str) and _RUN_ID.match(run_id)):
+    if not (isinstance(run_id, str) and _RUN_ID.fullmatch(run_id)):
         errors.append(f"runId {run_id!r} is not a plain directory name")
     if errors:
         raise ValueError("invalid vm-check run record: " + "; ".join(errors))

@@ -558,7 +558,7 @@ def test_the_guard_never_reads_a_lock_losers_record(tmp_path: pathlib.Path) -> N
     assert rc.read_archive(alone, TREE) is None
 
 
-@pytest.mark.parametrize("run_id", ["", ".", "..", "../x", "a/b", "run 1"])
+@pytest.mark.parametrize("run_id", ["", ".", "..", "../x", "a/b", "run 1", "vmc-1-ab\n"])
 def test_write_run_record_refuses_a_run_id_that_is_no_directory_name(
     tmp_path: pathlib.Path, run_id: str
 ) -> None:
