@@ -813,7 +813,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.host-toolchain-exceptions | 1 | prose only (no live entry) |
 | .ci/policy/.language-policy-allowlist | 21 | # comment |
 | .ci/policy/.pins-upgrade-blocklist | 6 | inline |
-| .ci/policy/.plan-housekeeping-allowlist | 1 | prose only (no live entry) |
+| .ci/policy/.plan-housekeeping-allowlist | 5 | # comment |
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
 | .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.unverified-download-allowlist | 4 | # comment |

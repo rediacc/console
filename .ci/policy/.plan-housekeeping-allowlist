@@ -15,3 +15,12 @@
 # EMPTY IS THE CORRECT STATE and it is safe: the floor (30 tracked plans) and the
 # rules above mean an empty list cannot make the gate vacuous. Measured
 # 2026-09-03, nothing needs an entry -- no plan in this tree is over 33 days.
+
+# BLOCKER: unowned draft (6 open boxes) that crossed 33 days on 2026-10-20 while PR #600 sits in its babysit wind-down, where queue work is parked and writer spawns are refused; it can only be worked or compacted after that merge.
+2026-11-03  agent/plans/PLAN-ci-watch-enforcement.md
+# BLOCKER: draft (8 open boxes) owned by a housekeeping writer that crossed 33 days on 2026-10-20 during PR #600's babysit wind-down, which parks queue work; it needs a queue slot after that merge.
+2026-11-03  agent/plans/PLAN-renet-fetch-hardening.md
+# BLOCKER: executing plan with 3 open boxes (29 done) whose remaining steps rename production secrets (worklist #3b0fa70b), crossed 33 days on 2026-10-20 during PR #600's babysit wind-down; the renames wait for that merge and an operator-cleared run.
+2026-11-03  agent/plans/PLAN-secret-namespace-migration.md
+# BLOCKER: draft owned by session d778be9d (14 open boxes) that crossed 33 days on 2026-10-20 while the same session babysits PR #600, where new plan work is parked; it resumes after that merge.
+2026-11-03  agent/plans/PLAN-stop-hook-rulings-campaign.md
