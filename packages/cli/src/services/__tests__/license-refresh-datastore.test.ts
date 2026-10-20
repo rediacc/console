@@ -151,7 +151,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
 
     const scan = exec.mock.calls.map((c) => String(c[0])).find((c) => c.includes('license-scan'));
     expect(scan).toBe(
-      `sudo /usr/bin/renet repository license-scan --datastore '${DEFAULT_MOUNT}' --all-datastores --output json`
+      `sudo '/usr/bin/renet' repository license-scan --datastore '${DEFAULT_MOUNT}' --all-datastores --output json`
     );
   });
 

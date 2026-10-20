@@ -11,6 +11,7 @@ import { t } from '../../i18n/index.js';
 import { parentRepoName } from '../../remote/repository/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { InfraConfig } from '../../types/index.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
@@ -286,15 +287,18 @@ async function executeProxySetup(
   remoteRenetPath: string,
   options: PushInfraOptions
 ): Promise<void> {
-  const configExitCode = await sftp.execStreaming(`sudo ${remoteRenetPath} proxy configure`, {
-    stdin: infraJSON,
-    onStdout: (data) => {
-      if (options.debug) writeStdout(data);
-    },
-    onStderr: (data) => {
-      writeStderr(data);
-    },
-  });
+  const configExitCode = await sftp.execStreaming(
+    `sudo ${shellQuote(remoteRenetPath)} proxy configure`,
+    {
+      stdin: infraJSON,
+      onStdout: (data) => {
+        if (options.debug) writeStdout(data);
+      },
+      onStderr: (data) => {
+        writeStderr(data);
+      },
+    }
+  );
 
   if (configExitCode !== 0) {
     throw new Error(`renet proxy configure exited with code ${configExitCode}`);
@@ -319,14 +323,17 @@ async function executeProxySetup(
     outputService.info(t('commands.machine.infra.push.installingProxy'));
   }
 
-  const installExitCode = await sftp.execStreaming(`sudo ${remoteRenetPath} proxy install`, {
-    onStdout: (data) => {
-      if (options.debug) writeStdout(data);
-    },
-    onStderr: (data) => {
-      writeStderr(data);
-    },
-  });
+  const installExitCode = await sftp.execStreaming(
+    `sudo ${shellQuote(remoteRenetPath)} proxy install`,
+    {
+      onStdout: (data) => {
+        if (options.debug) writeStdout(data);
+      },
+      onStderr: (data) => {
+        writeStderr(data);
+      },
+    }
+  );
 
   if (installExitCode !== 0) {
     outputService.warn(

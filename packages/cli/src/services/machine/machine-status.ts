@@ -9,6 +9,7 @@ import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isDevBuild } from '../../utils/platform.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import {
   type RuntimeRepoLicenseStatus,
   readRuntimeRepoLicenseStatuses,
@@ -43,7 +44,7 @@ export function buildListCommand(params: {
     params.sections && params.sections.length > 0 ? ` --sections ${params.sections.join(',')}` : '';
   return sudoRenet(
     params.env,
-    `${params.remoteRenetPath} list all --datastore ${params.datastore} --json${sectionsFlag}`
+    `${shellQuote(params.remoteRenetPath)} list all --datastore ${shellQuote(params.datastore)} --json${sectionsFlag}`
   );
 }
 

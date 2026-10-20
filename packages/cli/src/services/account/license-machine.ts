@@ -10,6 +10,7 @@ import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { isValidPublicKeyId } from '@rediacc/shared/subscription';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
 import type { RemoteRepoLicenseScanEntry, RuntimeRepoLicenseStatus } from './license-types.js';
 
@@ -57,7 +58,7 @@ export async function readRemoteMachineId(
   remoteRenetPath?: string
 ): Promise<string> {
   const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
-  const command = `sudo -n ${renetPath} machine-id`;
+  const command = `sudo -n ${shellQuote(renetPath)} machine-id`;
   let output: string;
   try {
     output = await sftp.exec(command);
@@ -186,7 +187,7 @@ function licenseScanCommand(
   renetPath: string,
   datastore: string
 ): string {
-  return `sudo ${renetPath} repository ${verb} --datastore '${datastore}' --all-datastores --output json`;
+  return `sudo ${shellQuote(renetPath)} repository ${verb} --datastore ${shellQuote(datastore)} --all-datastores --output json`;
 }
 
 export async function scanRemoteLicenseStatuses(
