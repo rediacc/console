@@ -43,14 +43,7 @@ from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 # An assignment's value may be bare or quoted with spaces inside (`TURBO_PUSH_REASON='ci-cd: ...'` is the form the turbo push guard demands on this same command), and the hatch may sit anywhere among the leading assignments.
-_ASSIGN = r"""[A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|"[^"]*"|[^ \t'"])*[ \t]+"""
-PREFIX_HATCH = (
-    r"(^|[;&|(][ \t]*)("
-    + _ASSIGN
-    + r")*PR_BRANCH_DATE_OK=1[ \t]+("
-    + _ASSIGN
-    + r")*gh[ \t]+pr[ \t]+create"
-)
+PREFIX_HATCH = r"""(^|[;&|(][ \t]*)([A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|"[^"]*"|[^ \t'"])*[ \t]+)*PR_BRANCH_DATE_OK=1[ \t]+([A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|"[^"]*"|[^ \t'"])*[ \t]+)*gh[ \t]+pr[ \t]+create"""
 ORDER = 23
 
 # The escape hatch. Without it a deliberately long-lived branch (resuming a multi-day wave onto its existing PR) can never file its PR, which is the shape that gets a guard bypassed rather than obeyed.
