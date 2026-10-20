@@ -21,6 +21,8 @@ A COMPLETE BATCH NEEDS NO REASON (operator ruling ASKED:2026-10-08T10:25Z, on "h
 
 SCOPE. Every `git push` (any remote or refspec, `-C`/`cd` included) in this checkout or a submodule under it, and every `gh pr create`. NOT judged: a `--dry-run` push (publishes nothing); a delete push (`--delete`, `:<branch>`: the M6 cleanup after a merge); a push whose every destination is `main` (the fast-forward fallback and the GitLab mirror push, which `block_push_to_protected_branch` admits only on a merged-ready PR); a repository outside this checkout.
 
+THE MERGE PHASE'S POINTER BUMP NEEDS NO REASON (worklist item #8aad9216). `/pr-merge` step 2 pushes the console's submodule pointer bump (and the review records committed for it) to the PR branch, and under turbo that push was refused (`ci-cd` names no open Promoted plan) until a `deadline:` reason was borrowed for it. A plain push is now admitted, ledger kind `merge-pointer-bump`, when BOTH hold: the pushing session's newest phase event (`wl_store.phase_fold` and `wl_standdown.active_phase`, the read `block_focus_spawn` uses, lineage included, the 24-hour cap applied) is `merge` with `branch` equal to the checkout's branch; and every commit of the unpushed range (`origin/<branch>..HEAD`, or `origin/main..HEAD` before the first push), none of them a merge, changes only submodule gitlinks (mode 160000) and paths under `agent/reviews/`. Every destination of the push must be that branch. It FAILS CLOSED: a phase or range that cannot be read admits nothing and the push meets the rules above. Never `gh pr create`.
+
 THE OPERATOR. There is no override token, the convention of every pre-bash guard (`block_second_branch`, `block_git_hook_bypass`): the operator's own `!` command bypasses PreToolUse hooks entirely, so it never reaches this guard.
 
 FAILS OPEN, LOUDLY, when QUEUE.md or a plan cannot be read, or `wl_planqueue` cannot import: a note on stderr, the push allowed, like the sibling guards. `gh` failing on a `red-fix` admits with a note. A `backup` whose age cannot be read is REFUSED: the age is the claim, and an unread claim is not a checked one.
@@ -46,6 +48,11 @@ REASON_ENV = "TURBO_PUSH_REASON"
 KINDS = ("ci-cd", "red-fix", "deadline", "backup")
 # The ledger kind of a push or PR the hooks released because the local batch is complete; never a TURBO_PUSH_REASON kind, since it needs no reason.
 BATCH_KIND = "batch-complete"
+# The ledger kind of a `/pr-merge` pointer-bump push the merge phase released (see THE MERGE PHASE above); never a TURBO_PUSH_REASON kind.
+MERGE_KIND = "merge-pointer-bump"
+MERGE_PATH_PREFIX = "agent/reviews/"
+GITLINK_MODES = ("160000", "000000")
+REVIEW_MODES = {"100644", "100755", "000000"}
 MIN_WHY = 20
 DEFAULT_BACKUP_H = 4
 LEDGER_REL = "agent/ledgers/turbo-push-reasons.jsonl"
@@ -215,12 +222,14 @@ def _acts(cmd, root, base):
         repo = commit_policy.scoped_repo(run, base, root, created)
         if repo and not commit_policy.is_inside(repo, root):
             continue
-        out.append(("push", repo or root, run.env.get(REASON_ENV), " ".join(["git push", *args])))
+        out.append(
+            ("push", repo or root, run.env.get(REASON_ENV), " ".join(["git push", *args]), args)
+        )
     for run in shellscan.gh_pr_runs(cmd, "create"):
         repo = commit_policy.toplevel(commit_policy.run_dir(run, base)) or root
         if not commit_policy.is_inside(repo, root):
             continue
-        out.append(("pr-create", repo, run.env.get(REASON_ENV), " ".join(["gh", *run.argv])))
+        out.append(("pr-create", repo, run.env.get(REASON_ENV), " ".join(["gh", *run.argv]), []))
     return out
 
 
@@ -262,8 +271,8 @@ def _open_promoted(ev, root):
 # --------------------------------------------------------------------------- the reason
 
 
-def _oldest_unpushed_age_h(repo):
-    """(hours, range) of the oldest commit not yet on the remote, or (None, why)."""
+def _unpushed_span(repo):
+    """(span, "") for the commits not yet on the remote (`origin/<branch>..HEAD`, or `origin/main..HEAD` before the first push), or (None, why)."""
     branch = commit_policy.current_branch(repo)
     if not branch:
         return None, "the checkout is on no branch"
@@ -275,7 +284,14 @@ def _oldest_unpushed_age_h(repo):
             is None
         ):
             return None, "neither origin/%s nor origin/main exists here" % branch
-    span = "%s..HEAD" % base
+    return "%s..HEAD" % base, ""
+
+
+def _oldest_unpushed_age_h(repo):
+    """(hours, range) of the oldest commit not yet on the remote, or (None, why)."""
+    span, why = _unpushed_span(repo)
+    if span is None:
+        return None, why
     out = commit_policy.git(["log", "--format=%ct", span], cwd=repo)
     if out is None:
         return None, "`git log %s` failed" % span
@@ -360,6 +376,99 @@ def _judge(ev, act, repo, reason, open_plans, backup_h):
                 ),
             )
     return kind, why
+
+
+# --------------------------------------------------------------------------- the merge phase
+
+
+def _merge_phase(ev, root, session_id):
+    """The session's live `merge` phase event, or None (no phase, another mode, expired, or unreadable: fails closed)."""
+    if not session_id:
+        return None
+    syspath.on_sys_path(plan_gate.STOP_DIR)
+    try:
+        import wl_core
+        import wl_standdown
+        import wl_store
+
+        worklist = wl_core.worklist_for(wl_core.project_start({"cwd": str(root)}))
+        light = wl_store.phase_fold(worklist, pathlib.Path(root))
+        wl_core.bind_lineage(session_id, light.aliases_of(session_id))
+        focus = wl_standdown.active_phase(light.phase, lambda o: wl_core.owned_by_me(o, session_id))
+        if focus is None or focus.get("mode") != "merge" or wl_standdown.expired(focus):
+            return None
+        return focus
+    except Exception as exc:
+        ev.warn(
+            "block-turbo-early-push: the session phase could not be read (%s: %s); the merge-phase "
+            "pointer-bump admission is not applied." % (type(exc).__name__, str(exc)[:160])
+        )
+        return None
+
+
+def _bump_only(repo):
+    """("", span) when every commit of the unpushed range changes only gitlinks and agent/reviews/ paths, else (why not, span)."""
+    span, why = _unpushed_span(repo)
+    if span is None:
+        return why, ""
+    parents = commit_policy.git(["rev-list", "--parents", span], cwd=repo)
+    if parents is None:
+        return "`git rev-list %s` failed" % span, span
+    commits = [ln.split() for ln in parents.splitlines() if ln.strip()]
+    if not commits:
+        return "%s holds no commit" % span, span
+    if any(len(c) > 2 for c in commits):
+        return "%s holds a merge commit" % span, span
+    for c in commits:
+        raw = commit_policy.git(
+            ["diff-tree", "-r", "--no-commit-id", "--no-renames", "--no-abbrev", "--root", c[0]],
+            cwd=repo,
+        )
+        if raw is None:
+            return "`git diff-tree %s` failed" % c[0][:12], span
+        for line in raw.splitlines():
+            if not line.startswith(":"):
+                continue
+            meta, _tab, path = line.partition("\t")
+            fields = meta[1:].split()
+            if len(fields) < 2 or not path:
+                return "an unreadable diff line in %s" % c[0][:12], span
+            if fields[0] in GITLINK_MODES and fields[1] in GITLINK_MODES:
+                continue
+            # A review record is a regular file, as in detect_pointer_bump: a symlink or gitlink under agent/reviews/ is not one.
+            if path.startswith(MERGE_PATH_PREFIX) and {fields[0], fields[1]} <= REVIEW_MODES:
+                continue
+            return "%s changes `%s`, which is neither a gitlink nor under %s" % (
+                c[0][:12],
+                path,
+                MERGE_PATH_PREFIX,
+            ), span
+    return "", span
+
+
+def _merge_bump(ev, act, repo, args, focus):
+    """The ledger why when the merge phase admits this act, else None."""
+    if focus is None or act != "push":
+        return None
+    branch = commit_policy.current_branch(repo)
+    if not branch or str(focus.get("branch") or "") != branch:
+        return None
+    dests = commit_policy.push_destinations(args)
+    if any(dst != branch for _src, dst in dests):
+        return None
+    why_not, span = _bump_only(repo)
+    if why_not:
+        ev.warn(
+            "block-turbo-early-push: merge phase on %s, but the pointer-bump admission does not "
+            "apply: %s." % (branch, why_not)
+        )
+        return None
+    return "merge phase on %s (PR %s): %s changes only gitlinks and %s" % (
+        branch,
+        focus.get("pr") or "?",
+        span,
+        MERGE_PATH_PREFIX,
+    )
 
 
 # --------------------------------------------------------------------------- the batch
@@ -539,6 +648,7 @@ An operational reason goes on the command itself, `<kind>: <why, %(min)d+ chars>
     TURBO_PUSH_REASON='ci-cd: %(example)s needs the VM E2E matrix, box <id>' git push -u origin <branch>
 
 Each admitted reason is appended to %(ledger)s. Otherwise keep committing locally.
+A `/pr-merge` pointer bump needs no reason: in the session's `merge` phase for this branch, a push whose unpushed range changes only submodule gitlinks and agent/reviews/ is admitted.
 When to push is decided here and by the Stop hook, so it is never asked of the operator.
 The operator's own `!` command does not pass through this guard.
 """
@@ -574,8 +684,15 @@ def run(ev):
 
     rows = []
     refusals = []
-    for act, repo, reason, spelling in acts:
+    focus = False  # read once, only when a push would be refused
+    for act, repo, reason, spelling, args in acts:
         kind, why = _judge(ev, act, repo, reason, open_plans, backup_h)
+        if kind is None and act == "push":
+            if focus is False:
+                focus = _merge_phase(ev, root, str(ev.field("session_id") or ""))
+            bump = _merge_bump(ev, act, repo, args, focus)
+            if bump:
+                kind, why = MERGE_KIND, bump
         if kind is None:
             refusals.append("  %s\n    refused: %s\n" % (spelling, why))
             continue
@@ -594,7 +711,7 @@ def run(ev):
                 ", ".join(r[0].rsplit("/", 1)[-1] for r in batch.rows),
             )
             rows = [
-                _row(root, act, repo, BATCH_KIND, why, open_plans) for act, repo, _r, _s in acts
+                _row(root, act, repo, BATCH_KIND, why, open_plans) for act, repo, _r, _s, _a in acts
             ]
             refusals = []
     if refusals:
