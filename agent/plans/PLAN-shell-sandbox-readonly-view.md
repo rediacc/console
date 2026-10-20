@@ -93,16 +93,19 @@ CI runs renet's go tests as root (`private/renet/.ci/scripts/test/run-tests.sh:4
   - Measure the default image first: `./rdc.sh ops up --basic`, then `ssh 192.168.111.11 renet sandbox-exec --detect`.
   - A leg that shows `NOT AVAILABLE` holds S3; the box becomes `[?]` with DEFAULT: document `lsm=...,landlock` for that OS and keep the refusal.
   - Acceptance: `npx tsc --noEmit -p packages/e2e-tests` rc 0; `npx biome lint packages/e2e-tests --error-on-warnings` rc 0; the PR's bridge-workers legs for ubuntu-24.04, debian-13, fedora-43, opensuse-16.0 and oracle-10 green with the new test passing.
-- [ ] D1: the docs stop calling Landlock non-gating.
+- [x] D1: the docs stop calling Landlock non-gating.
   - `packages/www/src/content/docs/en/limits.md:202` calls the kernel matrix "not a gating criterion"; Landlock is now required for repo-key shells and transfers. Rewrite that sentence and the Landlock column heading (`:204`) in all 13 locales.
   - Acceptance: the www docs and i18n parity gates rc 0.
-- [ ] V1: live verification on ops VMs with the S2 and S3 renet.
+    (ticked) 2026-10-20T15:40:13Z by d778be9d: commit:67c6bbef2 limits.md in 13 locales; www docs and i18n parity gates rc 0
+- [x] V1: live verification on ops VMs with the S2 and S3 renet.
   - `./rdc.sh ops up --basic`; fork `sbxa` and `sbxb` on the worker; `./rdc.sh repo up` both, which deploys the new renet.
   - From an sbxa shell, `chmod 0777` and `touch -d @0` on `/mnt/rediacc/mounts/<guidB>/.rediacc.json` both report `Read-only file system`, and a machine-level `stat` shows mode and mtime unchanged.
   - Inside sbxa: writes to `~`, `/tmp`, `/dev/shm` and the mount, `chmod 600` in the mount, `docker ps`, `renet compose -- ps`, a git commit, `vi -c wq ~/v`, all rc 0; sbxb's `ls /dev/shm` does not show sbxa's file; `cat /proc/self/cgroup` names `renet-exec-<networkId of sbxa>`.
   - `./rdc.sh repo sync upload` then `download` round trip for sbxa, followed by a diff.
   - VS Code: `./rdc.sh vscode check` and the `ensureVSCodeEnvSetup` run through the repo key print "Environment setup complete"; a desktop `vscode connect` is the operator's.
   - Acceptance: every command's output is pasted in the round log; the cross-repo step shows EROFS; the rest rc 0.
+  - (evidence 2026-10-20) `npm run vm:check` run vmc-10201403-2d9ea5 (PLAN-vm-check VC6, renet 0eaf033 carrying S2 and S3) rc 0 VERIFIED: V1.1 forks a and b up on the worker; V1.2 from A, `chmod` and `touch` on B's `.rediacc.json` fail read-only and B's stat is unchanged; V1.3 writes to ~, /tmp, /dev/shm and the mount, chmod 600 in the mount, docker ps, `renet compose -- ps`, a git commit, all ok (the image has no vi, so the edit leg rewrites ~/v with sed -i by temp file and rename); V1.4 B's /dev/shm does not show A's marker and A's cgroup names renet-exec-5440; `renet sandbox-exec --detect` AVAILABLE (Landlock ABI 4).
+    (ticked) 2026-10-20T15:40:10Z by d778be9d: commit:67c6bbef2 vmc-10201403-2d9ea5 V1.1-V1.4 ok: cross-repo chmod/touch refused read-only, own-mount writes and tools ok, /dev/shm isolated, cgroup named, Landlock ABI 4
 
 ## Follow-ups (worklist items to open, not in this plan)
 

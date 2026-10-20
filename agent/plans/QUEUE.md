@@ -65,16 +65,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-backup-credential-isolation.md -- 8 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-vm-check.md -- 6 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 96 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a3c52d5951fa402a8.
-- Leased items: 1: #2753da5c (worker:a3c52d5951fa402a8, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 100 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a7438f9e6faedfec8.
+- Leased items: 1: #d92ccc2a (worker:a7438f9e6faedfec8, d778be9d).
 - Next plan: agent/plans/PLAN-account-vm-check.md, Promoted entry 4; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 6 plans done, 49 of 242 boxes done (20%).
+Promoted: 0 of 6 plans done, 51 of 242 boxes done (21%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -82,7 +82,7 @@ Promoted: 0 of 6 plans done, 49 of 242 boxes done (20%).
 | 2 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 3 | PLAN-pins-command.md | 12/13 | 1 open |
 | 4 | PLAN-account-vm-check.md | 6/7 | 1 open |
-| 5 | PLAN-shell-sandbox-readonly-view.md | 4/7 | 3 open |
+| 5 | PLAN-shell-sandbox-readonly-view.md | 6/7 | 1 open |
 | 6 | PLAN-backup-program.md | 0/186 | 186 open |
 <!-- queue:progress:end -->
 
