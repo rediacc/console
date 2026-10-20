@@ -165,7 +165,8 @@ def test_a_failed_write_is_refused_without_the_value(tmp_path) -> None:
     code, out, err = _run(root, extra={"FAKE_WRITER_FAIL": "1"})
     assert code == 1
     assert out == ""
-    assert "editing DEMO_KEY_DEV failed (rc=1: bws-api: edit x failed (HTTP 500): fake)" in err
+    assert "editing DEMO_KEY_DEV failed (rc=1: the writer failed; its stderr is withheld" in err
+    assert "HTTP 500" not in err
     assert not carries_secret(err, VALUE)
     assert [s["prog"] for s in _spawns(root)] == ["bws", "npx"], "no read-back after a failure"
 
@@ -195,51 +196,23 @@ def _write_with_fake_npx(tmp_path, name: str, script: str, request: dict) -> str
     return bws_env.write_secret(str(root), request, env)
 
 
-def test_write_secret_redacts_a_value_the_writer_echoes(tmp_path) -> None:
-    failure = _write_with_fake_npx(
-        tmp_path,
-        "echo",
-        '#!/bin/sh\nread req\necho "bad request: %s" >&2\nexit 1\n' % VALUE,
-        {"op": "edit", "id": ENTRY_ID, "value": VALUE},
-    )
-    assert failure is not None
-    assert VALUE not in failure
-    assert "<redacted>" in failure
-
-
-def test_write_secret_redacts_a_multi_line_value_the_writer_echoes(tmp_path) -> None:
-    value = "first-line-secret\nsecond-line-secret"
-    failure = _write_with_fake_npx(
-        tmp_path,
-        "multiline",
-        '#!/bin/sh\ncat >/dev/null\nprintf "bad: first-line-secret\\nsecond-line-secret\\n" >&2\nexit 1\n',
-        {"op": "edit", "id": ENTRY_ID, "value": value},
-    )
-    assert failure is not None
-    assert "second-line-secret" not in failure
-    assert "first-line-secret" not in failure
-
-
-def test_write_secret_withholds_a_line_echoing_a_short_fragment(tmp_path) -> None:
-    failure = _write_with_fake_npx(
-        tmp_path,
-        "shortline",
-        '#!/bin/sh\ncat >/dev/null\necho "bad: zq7" >&2\nexit 1\n',
-        {"op": "edit", "id": ENTRY_ID, "value": "long-first-line-secret\nzq7"},
-    )
-    assert failure is not None
-    assert "zq7" not in failure
-    assert "withheld" in failure
-
-
-def test_write_secret_keeps_a_diagnostic_that_echoes_nothing(tmp_path) -> None:
-    failure = _write_with_fake_npx(
-        tmp_path,
-        "plain",
-        '#!/bin/sh\ncat >/dev/null\necho "network unreachable" >&2\nexit 1\n',
-        {"op": "edit", "id": ENTRY_ID, "value": "long-first-line-secret\nzq7"},
-    )
-    assert failure == "rc=1: network unreachable"
+def test_write_secret_never_relays_the_writers_stderr(tmp_path) -> None:
+    for name, value, echo in (
+        ("whole", VALUE, VALUE),
+        ("multiline", "first-line-secret\nsecond-line-secret", "second-line-secret"),
+        ("short", "zq7\n", "zq7"),
+        ("prefix", "a-long-secret-value-here", "a-long-se"),
+    ):
+        failure = _write_with_fake_npx(
+            tmp_path,
+            name,
+            '#!/bin/sh\ncat >/dev/null\necho "bad: %s" >&2\nexit 1\n' % echo,
+            {"op": "edit", "id": ENTRY_ID, "value": value},
+        )
+        assert failure is not None
+        assert failure.startswith("rc=1: ")
+        assert echo not in failure
+        assert "withheld" in failure
 
 
 def test_write_secret_survives_non_utf8_output(tmp_path) -> None:

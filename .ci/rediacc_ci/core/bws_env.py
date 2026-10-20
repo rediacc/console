@@ -1171,12 +1171,6 @@ WRITER_ARGV = ("npx", "--no", "tsx", WRITER_SCRIPT_REL)
 WRITER_TIMEOUT_S = 120
 
 
-def _request_secrets(request: dict) -> list[str]:
-    """The string values of a writer request that must never be relayed, longest first so a value that contains another is masked whole."""
-    found = [v for k, v in request.items() if k == "value" and isinstance(v, str) and v]
-    return sorted(found, key=len, reverse=True)
-
-
 def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
     """Run bws-write.ts with REQUEST as JSON on stdin. None on success, else a value-free reason.
 
@@ -1208,21 +1202,15 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
         proc.communicate()
         return "cannot run %s: %s" % (WRITER_ARGV[0], type(exc).__name__)
     if proc.returncode != 0:
-        text = raw_err.decode(errors="replace")
-        # The value must not reach a log even if the writer's error path echoes its request. It is masked across the whole stream first, then by each line of a multi-line value. A line under 8 characters is not masked, since that would erase unrelated text; if one still appears in the relayed line, the line is withheld whole (fail closed).
-        short: set[str] = set()
-        for secret in _request_secrets(request):
-            text = text.replace(secret, "<redacted>")
-            parts = {p.strip() for p in secret.splitlines() if p.strip()}
-            for part in sorted((p for p in parts if len(p) >= 8), key=len, reverse=True):
-                text = text.replace(part, "<redacted>")
-            if len(parts) > 1:
-                short |= {p for p in parts if len(p) < 8}
-        detail = text.strip().splitlines()
-        line = detail[-1] if detail else ""
-        if any(part in line for part in short):
-            line = "<stderr withheld: it may echo part of the value>"
-        return "rc=%d%s" % (proc.returncode, ": " + line[:300] if line else "")
+        # The writer's stderr is never relayed: its error path may echo the request, and no masking of a value (multi-line, short or partly echoed) is complete. The exit code is the whole report.
+        del raw_err
+        return (
+            "rc=%d: the writer failed; its stderr is withheld because it may echo the value (run %s by hand to see it)"
+            % (
+                proc.returncode,
+                WRITER_SCRIPT_REL,
+            )
+        )
     answered = raw_out.decode(errors="replace").strip()
     wanted = request.get("id")
     if not answered or "\n" in answered or not wanted or answered != wanted:
