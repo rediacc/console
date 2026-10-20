@@ -6,9 +6,11 @@ degrades
 to `pointer_bump_only=false`.
 
 THE PROOF, in order (every step fail-safe to `pointer_bump_only=false`), carried over from the retired twin's header:
-  1. Walk HEAD backwards (single-parent commits only, cap WALK_CAP): every commit on the way must change ONLY gitlinks (mode 160000 -> 160000). The first non-pointer commit is the BASELINE.
+  1. Walk HEAD backwards (single-parent commits only, cap WALK_CAP): every commit on the way must change ONLY gitlinks (mode 160000 -> 160000), or regular files under `agent/reviews/` (per-commit review records; see below). The first other commit is the BASELINE.
   2. The baseline must carry a successful "CI Complete" check run.
-  3. For the NET gitlink diff baseline..HEAD, each move old->new must be tree-identical (commit tree SHAs equal => byte-identical content) AND new must be an ancestor of the submodule's main (compare NEW...main => main is 'ahead' of or 'identical' to NEW).
+  3. The NET diff baseline..HEAD must be gitlink-only (review records again admitted). For each net gitlink move each move old->new must be tree-identical (commit tree SHAs equal => byte-identical content) AND new must be an ancestor of the submodule's main (compare NEW...main => main is 'ahead' of or 'identical' to NEW).
+
+REVIEW RECORDS ARE ADMITTED beside gitlinks, in the walk and in the net diff. `/pr-merge` commits the pointer bump and then that commit's review record (`agent/reviews/<branch>/<sha>.md`, `clean.jsonl`) on top; before this, the review commit was the first non-pointer commit, became the baseline, and every merge ran the full CI (run 39381207152). Review records are not product content and the quality job still runs and reads them. Anything else (another path, `agent/reviewsX/`, a mode change, a symlink, a rename) still means `pointer_bump_only=false`.
 
 ENVIRONMENT: `GITHUB_EVENT_NAME` (only `pull_request` can fast-path), `GITHUB_REPOSITORY` (the console slug, for the check-runs lookup), `CHECKS_TOKEN` (plain GITHUB_TOKEN; checks:read on console), `GITHUB_PAT` (app token; contents:read on the submodule repos), `GITHUB_STEP_SUMMARY` (optional; receives the proof line). Every `gh` call exports the token it uses as `GH_TOKEN`.
 
@@ -124,6 +126,10 @@ WALK_CAP = 5
 # The gitlink mode pair `git diff-tree -r --raw` prints for a submodule pointer that moved (twin :136, :158). `-r` is load-bearing in the twin's own words: without it a nested gitlink change reports as its parent TREE (`:040000 040000 ... private`) and never matches this prefix.
 GITLINK_PREFIX = ":160000 160000 "
 
+# Review records admitted beside gitlinks (see `is_review_record_line`): the path prefix and the regular-file modes (`000000` is the absent side of an add or delete).
+REVIEW_PATH_PREFIX = "agent/reviews/"
+REVIEW_MODES = ("000000", "100644", "100755")
+
 # `check_name='CI Complete'` and the reducing `--jq` (twin :149-152).
 CHECK_NAME = "CI Complete"
 GREEN_JQ = '[.check_runs[] | select(.conclusion == "success")] | length'
@@ -229,8 +235,26 @@ def gh_api(args: list[str], token: str) -> tuple[int, str]:
     return result.returncode, result.stdout_raw.rstrip("\n")
 
 
+def is_review_record_line(line: str) -> bool:
+    """A `diff-tree -r --raw` line that adds, edits or deletes a regular file under `agent/reviews/`.
+
+    DELIBERATE EXTENSION OF THE TWIN. `/pr-merge` commits the pointer bump and then the per-commit review record of that commit (`agent/reviews/<branch>/<sha>.md`, `clean.jsonl`) on top, so without this the review commit becomes the baseline and the fast path can never fire (Console CI run 39381207152 ran in full). Review records are bookkeeping, not product content, and the quality job still runs under the fast path and reads them.
+
+    Fail-closed: the path must start with `agent/reviews/` exactly (`agent/reviewsX/` and `agent/plans/` do not), the line must have exactly one tab (so a rename or copy with two paths is refused), and both modes must be a regular file or absent (`100644`, `100755`, `000000`), so a symlink, gitlink or tree is refused.
+    """
+    meta, sep, path = line.partition("\t")
+    if not sep or "\t" in path or not path.startswith(REVIEW_PATH_PREFIX):
+        return False
+    fields = meta.split()
+    if len(fields) != 5 or not fields[0].startswith(":"):
+        return False
+    return (
+        fields[0][1:] in REVIEW_MODES and fields[1] in REVIEW_MODES and fields[4] in ("A", "M", "D")
+    )
+
+
 def has_non_gitlink(raw: str) -> bool:
-    """`grep -vE '^:160000 160000 ' <<<"$raw" | grep -q .` (twin :136, :158).
+    """`grep -vE '^:160000 160000 ' <<<"$raw" | grep -q .` (twin :136, :158), plus `is_review_record_line` (see it: a deliberate extension).
 
     THREE BASH FACTS, none of them regex:
 
@@ -242,7 +266,10 @@ def has_non_gitlink(raw: str) -> bool:
         an anchor ALTERNATED with a negated class; there is no alternation
         here, and both sides run the same binary in the twin anyway.)
     """
-    return any(line and not line.startswith(GITLINK_PREFIX) for line in raw.split("\n"))
+    return any(
+        line and not line.startswith(GITLINK_PREFIX) and not is_review_record_line(line)
+        for line in raw.split("\n")
+    )
 
 
 def awk_field(text: str, index: int) -> str:
@@ -422,6 +449,8 @@ def verify_moves(net: str, pat_token: str) -> str:
     """
     proof = ""
     for line in net.split("\n"):
+        if is_review_record_line(line):
+            continue  # a review record rides along; it is not a pointer move
         meta, sm_path = read_tab_pair(line)
         if not meta:
             continue

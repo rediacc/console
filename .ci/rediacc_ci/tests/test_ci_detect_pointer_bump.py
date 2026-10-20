@@ -748,6 +748,68 @@ def test_defect_c_control_a_gitmodules_naming_another_path_does_reach_the_guard(
     )
 
 
+# --------------------------------------------------------------------------- Review records ride along with the pointer bump ---------------------------------------------------------------------------
+
+
+def _with_top_commit(repo: Repo, files: dict[str, str]) -> str:
+    """One more commit on top of the pointer-bump tip that adds `files`, with the event and branch moved to it (the `/pr-merge` shape: bump, then its review record)."""
+    root = repo.root
+    for rel, body in files.items():
+        target = root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(body, encoding="utf-8")
+        _git(root, "add", "--", rel)
+    top = _commit(root, "top", (repo.tip,))
+    _git(root, "update-ref", "refs/heads/main", top)
+    (root / "event.json").write_text(
+        json.dumps({"pull_request": {"head": {"sha": top}}}), encoding="utf-8"
+    )
+    return top
+
+
+def _top_reason(tmp_path, files: dict[str, str]):
+    repo = fixture(tmp_path, merge_head=False)
+    _with_top_commit(repo, files)
+    proc, _calls_log = _live(repo, "new")
+    return repo, proc
+
+
+def test_a_review_record_commit_on_top_of_the_bump_still_fires(tmp_path) -> None:
+    repo, proc = _top_reason(
+        tmp_path,
+        {"agent/reviews/1008-1/abc.md": "x\n", "agent/reviews/1008-1/clean.jsonl": "{}\n"},
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout == "pointer_bump_only=true\nbaseline_sha=%s\n" % repo.base
+
+
+def test_a_commit_mixing_review_and_other_files_does_not_fire(tmp_path) -> None:
+    _repo, proc = _top_reason(
+        tmp_path, {"agent/reviews/1008-1/abc.md": "x\n", "readme2.md": "product\n"}
+    )
+    assert proc.stdout == "pointer_bump_only=false\nbaseline_sha=\n"
+
+
+def test_lookalike_and_other_agent_paths_do_not_fire(tmp_path) -> None:
+    for rel in ("agent/reviewsX/foo", "agent/plans/x.md", "agent/review/x.md"):
+        sub = tmp_path / rel.replace("/", "_")
+        sub.mkdir()
+        _repo, proc = _top_reason(sub, {rel: "x\n"})
+        assert proc.stdout == "pointer_bump_only=false\nbaseline_sha=\n", rel
+
+
+def test_is_review_record_line_is_strict() -> None:
+    ok = ":000000 100644 0000000 abc A\tagent/reviews/b/x.md"
+    assert port.is_review_record_line(ok)
+    assert port.is_review_record_line(ok.replace("000000 100644", "100644 100644").replace("A", "M"))
+    assert not port.is_review_record_line(ok.replace("100644", "120000"))
+    assert not port.is_review_record_line(ok.replace("100644", "160000"))
+    assert not port.is_review_record_line(ok + "\tagent/reviews/b/y.md")
+    assert not port.is_review_record_line(ok.replace("agent/reviews/", "agent/reviewsX/"))
+    assert port.has_non_gitlink(ok + "\n:100644 100644 a b M\treadme.md")
+    assert not port.has_non_gitlink(ok + "\n:160000 160000 a b M\tprivate/x")
+
+
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
