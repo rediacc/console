@@ -15,6 +15,7 @@ import type { MachineConfig, OutputFormat } from '../../types/index.js';
 import { assertResourceName, MachineConfigSchema, parseConfig } from '../../utils/config-schema.js';
 import { handleError } from '../../utils/errors.js';
 import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 
 async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
   // Deploy all per-repo SSH keys to the newly set up machine
@@ -298,7 +299,7 @@ function registerSetup(machine: Command): void {
             options.datastoreSize === NETWORK_DEFAULTS.DATASTORE_SIZE
               ? (localConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE)
               : options.datastoreSize;
-          const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${options.datastorePath} --datastore-size ${datastoreSize}`;
+          const cmd = `sudo ${shellQuote(remoteRenetPath)} setup --auto --datastore ${shellQuote(options.datastorePath)} --datastore-size ${datastoreSize}`;
 
           if (options.debug) {
             outputService.info(`[setup] Running: ${cmd}`);

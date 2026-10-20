@@ -79,7 +79,7 @@ describe('buildRemoteRenetCommand — envSecrets', () => {
       envSecrets: { REDIACC_SECRET_FOO: 'bar' },
     });
     expect(launch.command).toBe(
-      `sudo bash -c ${shellQuote(`${STDIN_ENV_READER}env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local`)}`
+      `sudo bash -c ${shellQuote(`${STDIN_ENV_READER}env REDIACC_TELEMETRY_DISABLED=1 '/usr/bin/renet' execute --executor local`)}`
     );
     expect(launch.stdinPrefix).toBe('REDIACC_SECRET_FOO=bar\0\0');
     // The reader text itself is pinned here too (review 978aa3f1.2): the root shell exports only REDIACC_SECRET_*/REDIACC_OTLP_* names and refuses any other with exit 97.
@@ -94,7 +94,7 @@ describe('buildRemoteRenetCommand — envSecrets', () => {
       telemetryDisabled: true,
     });
     expect(launch).toEqual({
-      command: 'sudo env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local',
+      command: "sudo env REDIACC_TELEMETRY_DISABLED=1 '/usr/bin/renet' execute --executor local",
       stdinPrefix: '',
     });
   });

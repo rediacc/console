@@ -134,13 +134,19 @@ describe('readRemoteMachineId reads the id as root only', () => {
   it('runs renet under non-interactive sudo, once, and returns the root id', async () => {
     const { sftp, commands } = fakeRemote('ok');
     await expect(readRemoteMachineId(sftp, '/usr/bin/renet')).resolves.toBe(ROOT_ID);
-    expect(commands).toEqual(['sudo -n /usr/bin/renet machine-id']);
+    expect(commands).toEqual(["sudo -n '/usr/bin/renet' machine-id"]);
+  });
+
+  it('quotes a renet path with shell metacharacters', async () => {
+    const { sftp, commands } = fakeRemote('ok');
+    await readRemoteMachineId(sftp, "/opt/a b/o'x");
+    expect(commands).toEqual([`sudo -n '/opt/a b/o'\\''x' machine-id`]);
   });
 
   it('defaults to renet on PATH, still under sudo', async () => {
     const { sftp, commands } = fakeRemote('ok');
     await expect(readRemoteMachineId(sftp)).resolves.toBe(ROOT_ID);
-    expect(commands).toEqual(['sudo -n renet machine-id']);
+    expect(commands).toEqual(["sudo -n 'renet' machine-id"]);
   });
 
   it('fails loudly with the cause when sudo is refused, never falling back to the non-root id', async () => {

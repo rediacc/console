@@ -26,6 +26,7 @@
  */
 
 import { z } from 'zod';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { writeStdout } from '../core/request-context.js';
 import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
@@ -305,7 +306,7 @@ export function buildJobStartCommand(params: {
   const debugFlag = debug ? ' --debug' : '';
   return sudoRenet(
     env,
-    `${remoteRenetPath} job start --executor local --json${timeoutFlag}${debugFlag}`
+    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}`
   );
 }
 
@@ -327,22 +328,22 @@ export function buildJobLogsCommand(params: {
 }): string {
   const jobId = assertJobId(params.jobId);
   const followFlag = params.follow ? ' --follow' : '';
-  return `sudo ${params.remoteRenetPath} job logs --id ${jobId} --since-line ${params.sinceLine}${followFlag}`;
+  return `sudo ${shellQuote(params.remoteRenetPath)} job logs --id ${jobId} --since-line ${params.sinceLine}${followFlag}`;
 }
 
 /** Build the `renet job status` command. */
 export function buildJobStatusCommand(params: { remoteRenetPath: string; jobId: string }): string {
-  return `sudo ${params.remoteRenetPath} job status --id ${assertJobId(params.jobId)} --json`;
+  return `sudo ${shellQuote(params.remoteRenetPath)} job status --id ${assertJobId(params.jobId)} --json`;
 }
 
 /** Build the `renet job cancel` command. */
 export function buildJobCancelCommand(params: { remoteRenetPath: string; jobId: string }): string {
-  return `sudo ${params.remoteRenetPath} job cancel --id ${assertJobId(params.jobId)} --json`;
+  return `sudo ${shellQuote(params.remoteRenetPath)} job cancel --id ${assertJobId(params.jobId)} --json`;
 }
 
 /** Build the `renet job list` command. */
 export function buildJobListCommand(params: { remoteRenetPath: string }): string {
-  return `sudo ${params.remoteRenetPath} job list --json`;
+  return `sudo ${shellQuote(params.remoteRenetPath)} job list --json`;
 }
 
 /**
@@ -355,7 +356,7 @@ export function buildJobGcCommand(params: {
   remoteRenetPath: string;
   olderThanHours: number;
 }): string {
-  return `sudo ${params.remoteRenetPath} job gc --older-than ${params.olderThanHours}h --json`;
+  return `sudo ${shellQuote(params.remoteRenetPath)} job gc --older-than ${params.olderThanHours}h --json`;
 }
 
 // --- NDJSON stream reader ----------------------------------------------------

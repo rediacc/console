@@ -9,6 +9,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { scanHostKeys } from '../../utils/host-keys.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStdout } from '../core/request-context.js';
@@ -59,7 +60,7 @@ export async function bootstrapMachine(
   try {
     const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
     const datastoreSize = updatedConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE;
-    const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${datastorePath} --datastore-size ${datastoreSize}`;
+    const cmd = `sudo ${shellQuote(remoteRenetPath)} setup --auto --datastore ${shellQuote(datastorePath)} --datastore-size ${datastoreSize}`;
     // renet's setup narrates itself at info level, and those lines are 121+ columns. Withhold them and replay only if setup actually failed, so the terminal (and the tutorial recording) shows the steps, not the logrus.
     const stderrPump = createQuietStderrPump({ echoAll: options.debug });
     const exitCode = await lease.sftp.execStreaming(cmd, {

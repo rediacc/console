@@ -63,7 +63,7 @@ function stdinLaunch(invocation: string): string {
 describe('buildJobStartCommand', () => {
   it('bare: no env prefix', () => {
     expect(startCommand({ isDevelopment: false, telemetryDisabled: false })).toBe(
-      `sudo /usr/bin/renet job start --executor local --json`
+      `sudo '/usr/bin/renet' job start --executor local --json`
     );
   });
 
@@ -71,7 +71,7 @@ describe('buildJobStartCommand', () => {
     expect(
       startLaunch({ isDevelopment: false, telemetryDisabled: false, otlpCreds: CREDS })
     ).toEqual({
-      command: stdinLaunch('/usr/bin/renet job start --executor local --json'),
+      command: stdinLaunch(`'/usr/bin/renet' job start --executor local --json`),
       stdinPrefix: 'REDIACC_OTLP_USER=otlp-eu-abc123\0REDIACC_OTLP_PASS=base64url-pass_-_\0\0',
     });
   });
@@ -159,7 +159,7 @@ describe('buildJobStartCommand', () => {
       })
     ).toEqual({
       command: stdinLaunch(
-        `env REDIACC_ENVIRONMENT=development KUBECONFIG='/k' /usr/bin/renet job start --executor local --json`
+        `env REDIACC_ENVIRONMENT=development KUBECONFIG='/k' '/usr/bin/renet' job start --executor local --json`
       ),
       stdinPrefix:
         'REDIACC_OTLP_USER=otlp-eu-abc123\0REDIACC_OTLP_PASS=base64url-pass_-_\0REDIACC_SECRET_A=a\0\0',
@@ -171,13 +171,13 @@ describe('buildJobLogsCommand', () => {
   it('a fresh attach asks for everything', () => {
     expect(
       buildJobLogsCommand({ remoteRenetPath: RENET, jobId: JOB_ID, sinceLine: 0, follow: true })
-    ).toBe(`sudo /usr/bin/renet job logs --id ${JOB_ID} --since-line 0 --follow`);
+    ).toBe(`sudo '/usr/bin/renet' job logs --id ${JOB_ID} --since-line 0 --follow`);
   });
 
   it('a resume asks only for what it has not seen', () => {
     expect(
       buildJobLogsCommand({ remoteRenetPath: RENET, jobId: JOB_ID, sinceLine: 42, follow: true })
-    ).toBe(`sudo /usr/bin/renet job logs --id ${JOB_ID} --since-line 42 --follow`);
+    ).toBe(`sudo '/usr/bin/renet' job logs --id ${JOB_ID} --since-line 42 --follow`);
   });
 
   it('can replay without following', () => {
@@ -206,25 +206,25 @@ describe('buildJobLogsCommand', () => {
 describe('buildJobStatusCommand / buildJobCancelCommand / buildJobListCommand / buildJobGcCommand', () => {
   it('status asks for JSON', () => {
     expect(buildJobStatusCommand({ remoteRenetPath: RENET, jobId: JOB_ID })).toBe(
-      `sudo /usr/bin/renet job status --id ${JOB_ID} --json`
+      `sudo '/usr/bin/renet' job status --id ${JOB_ID} --json`
     );
   });
 
   it('cancel asks for JSON', () => {
     expect(buildJobCancelCommand({ remoteRenetPath: RENET, jobId: JOB_ID })).toBe(
-      `sudo /usr/bin/renet job cancel --id ${JOB_ID} --json`
+      `sudo '/usr/bin/renet' job cancel --id ${JOB_ID} --json`
     );
   });
 
   it('list asks for JSON', () => {
     expect(buildJobListCommand({ remoteRenetPath: RENET })).toBe(
-      `sudo /usr/bin/renet job list --json`
+      `sudo '/usr/bin/renet' job list --json`
     );
   });
 
   it('gc renders the age as a Go duration in hours', () => {
     expect(buildJobGcCommand({ remoteRenetPath: RENET, olderThanHours: 168 })).toBe(
-      `sudo /usr/bin/renet job gc --older-than 168h --json`
+      `sudo '/usr/bin/renet' job gc --older-than 168h --json`
     );
   });
 });
@@ -252,6 +252,26 @@ describe('job id validation in the builders', () => {
   it('job cancel refuses an injected id', () => {
     expect(() => buildJobCancelCommand({ remoteRenetPath: RENET, jobId: injected })).toThrow(
       InvalidJobIdError
+    );
+  });
+});
+
+describe('a renet path with shell metacharacters stays one word', () => {
+  const HOSTILE = "/opt/my renet/o'brien;rm -rf x/renet";
+  const QUOTED = `'/opt/my renet/o'\\''brien;rm -rf x/renet'`;
+
+  it('quotes the path in every job subcommand', () => {
+    expect(buildJobStatusCommand({ remoteRenetPath: HOSTILE, jobId: JOB_ID })).toBe(
+      `sudo ${QUOTED} job status --id ${JOB_ID} --json`
+    );
+    expect(buildJobListCommand({ remoteRenetPath: HOSTILE })).toBe(
+      `sudo ${QUOTED} job list --json`
+    );
+    expect(buildJobGcCommand({ remoteRenetPath: HOSTILE, olderThanHours: 1 })).toBe(
+      `sudo ${QUOTED} job gc --older-than 1h --json`
+    );
+    expect(buildJobCancelCommand({ remoteRenetPath: HOSTILE, jobId: JOB_ID })).toBe(
+      `sudo ${QUOTED} job cancel --id ${JOB_ID} --json`
     );
   });
 });

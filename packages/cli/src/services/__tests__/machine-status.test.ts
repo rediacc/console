@@ -62,16 +62,16 @@ describe('buildListCommand', () => {
 
   it('omits --sections when no filter is given', () => {
     expect(buildListCommand(base).command).toBe(
-      `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json`
+      `sudo '/usr/lib/rediacc/renet/current/renet' list all --datastore '${WK_DATASTORE_PATH}' --json`
     );
   });
 
   it('propagates a caller-provided sections filter', () => {
     expect(buildListCommand({ ...base, sections: ['containers'] }).command).toBe(
-      `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json --sections containers`
+      `sudo '/usr/lib/rediacc/renet/current/renet' list all --datastore '${WK_DATASTORE_PATH}' --json --sections containers`
     );
     expect(buildListCommand({ ...base, sections: ['system', 'repositories'] }).command).toBe(
-      `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json --sections system,repositories`
+      `sudo '/usr/lib/rediacc/renet/current/renet' list all --datastore '${WK_DATASTORE_PATH}' --json --sections system,repositories`
     );
   });
 

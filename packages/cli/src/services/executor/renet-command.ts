@@ -80,7 +80,7 @@ export function buildRemoteRenetCommand(
   const eventsFlag = eventsMode ? ' --events' : '';
   return sudoRenet(
     buildRenetEnv(envParams),
-    `${remoteRenetPath} execute --executor local${eventsFlag}`
+    `${shellQuote(remoteRenetPath)} execute --executor local${eventsFlag}`
   );
 }
 

@@ -41,7 +41,7 @@ describe('buildRemoteRenetCommand', () => {
         telemetryDisabled: false,
         otlpCreds: CREDS,
       });
-      expect(launch.command).toBe(stdinLaunch('/usr/bin/renet execute --executor local'));
+      expect(launch.command).toBe(stdinLaunch(`'/usr/bin/renet' execute --executor local`));
       expect(launch.stdinPrefix).toBe(CREDS_STDIN);
       expect(launch.command).not.toContain('otlp-eu-abc123');
       expect(launch.command).not.toContain('base64url-pass');
@@ -54,7 +54,7 @@ describe('buildRemoteRenetCommand', () => {
         telemetryDisabled: false,
         otlpCreds: null,
       });
-      expect(launch.command).toBe(`sudo /usr/bin/renet execute --executor local`);
+      expect(launch.command).toBe(`sudo '/usr/bin/renet' execute --executor local`);
       expect(launch.stdinPrefix).toBe('');
       expect(launch.command).not.toContain('REDIACC_TELEMETRY_DISABLED');
     });
@@ -67,7 +67,7 @@ describe('buildRemoteRenetCommand', () => {
         otlpCreds: CREDS,
       });
       expect(launch.command).toBe(
-        stdinLaunch('env REDIACC_ENVIRONMENT=development /usr/bin/renet execute --executor local')
+        stdinLaunch(`env REDIACC_ENVIRONMENT=development '/usr/bin/renet' execute --executor local`)
       );
       expect(launch.stdinPrefix).toBe(CREDS_STDIN);
     });
@@ -82,7 +82,7 @@ describe('buildRemoteRenetCommand', () => {
         otlpCreds: CREDS,
       });
       expect(launch.command).toBe(
-        `sudo env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local`
+        `sudo env REDIACC_TELEMETRY_DISABLED=1 '/usr/bin/renet' execute --executor local`
       );
       // Critical: no OTLP credentials leak into the remote env, by either channel
       expect(launch.stdinPrefix).toBe('');
@@ -99,7 +99,7 @@ describe('buildRemoteRenetCommand', () => {
         otlpCreds: null,
       });
       expect(launch.command).toBe(
-        `sudo env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local`
+        `sudo env REDIACC_TELEMETRY_DISABLED=1 '/usr/bin/renet' execute --executor local`
       );
     });
 
@@ -111,7 +111,7 @@ describe('buildRemoteRenetCommand', () => {
         otlpCreds: CREDS,
       });
       expect(launch.command).toBe(
-        `sudo env REDIACC_ENVIRONMENT=development REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local`
+        `sudo env REDIACC_ENVIRONMENT=development REDIACC_TELEMETRY_DISABLED=1 '/usr/bin/renet' execute --executor local`
       );
       expect(launch.stdinPrefix).toBe('');
     });
@@ -126,7 +126,7 @@ describe('buildRemoteRenetCommand', () => {
         telemetryDisabled: false,
         otlpCreds: null,
       });
-      expect(launch.command).toBe(`sudo /usr/bin/renet execute --executor local --events`);
+      expect(launch.command).toBe(`sudo '/usr/bin/renet' execute --executor local --events`);
     });
 
     it('combines with other flags correctly', () => {
@@ -138,7 +138,7 @@ describe('buildRemoteRenetCommand', () => {
         otlpCreds: CREDS,
       });
       expect(launch.command).toBe(
-        `sudo env REDIACC_ENVIRONMENT=development REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local --events`
+        `sudo env REDIACC_ENVIRONMENT=development REDIACC_TELEMETRY_DISABLED=1 '/usr/bin/renet' execute --executor local --events`
       );
     });
   });
