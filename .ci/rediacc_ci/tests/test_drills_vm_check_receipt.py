@@ -469,3 +469,54 @@ def test_a_not_verified_receipt_may_leave_a_required_phase_unrun() -> None:
 
 def test_a_phase_that_ran_without_being_required_is_valid() -> None:
     assert rc.validate(make(phases=phases((False, True), (False, False)))) == []
+
+
+# --------------------------------------------------------------------------- the evidence fields
+
+
+def test_the_evidence_fields_are_optional_and_accepted_when_well_formed() -> None:
+    good = make(runDir=".ci/cache/vm-check/runs/vmc-1")
+    good["steps"] = [
+        {
+            "id": "A2.3",
+            "desc": "drill license",
+            "rc": 1,
+            "verdict": "ok",
+            "ms": 1,
+            "evidence": "",
+            "log": ".ci/cache/vm-check/runs/vmc-1/A2.3-license.log",
+            "failedAssertions": ["02 the machine can reach that URL"],
+        }
+    ]
+    assert rc.validate(good) == []
+    assert rc.validate(make(runDir=None)) == []
+    assert rc.validate(make()) == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("log", 3, "log is not a string"),
+        ("failedAssertions", "02 x", "failedAssertions is not a list of strings"),
+        ("failedAssertions", [2], "failedAssertions is not a list of strings"),
+    ],
+)
+def test_a_malformed_evidence_field_is_refused(field: str, value: object, message: str) -> None:
+    bad = make()
+    bad["steps"] = [{"id": "A2.3", "evidence": "", field: value}]
+    assert any(message in e for e in rc.validate(bad)), rc.validate(bad)
+
+
+def test_a_non_string_run_dir_is_refused() -> None:
+    assert "runDir is not a string or null" in rc.validate(make(runDir=7))
+
+
+def test_receipt_files_names_only_receipts(tmp_path: pathlib.Path) -> None:
+    """Review 2fa7d53d.1: A0's gateway.json sat beside the receipts and was counted as one."""
+    folder = rc.receipt_dir(tmp_path)
+    folder.mkdir(parents=True)
+    for name in (rc.LATEST, TREE + ".json", "gateway.json", "gateway.log", "notes.json"):
+        (folder / name).write_text("{}")
+    (folder / "runs").mkdir()
+    assert [p.name for p in rc.receipt_files(tmp_path)] == sorted([TREE + ".json", rc.LATEST])
+    assert rc.receipt_files(tmp_path / "absent") == []

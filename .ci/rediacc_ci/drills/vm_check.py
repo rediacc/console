@@ -14,14 +14,16 @@ PHASES. There are two sides, the trigger's `renet` and `account` (`vm_check_trig
   P4  chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt, never in a suite's or a drill's environment. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`). Under the dev config a worker absent from it is registered as OPS_WORKER_NAME (`machine add`), and a `--machine` name absent from it is `worker-not-in-config` naming the command; a dev config that cannot be listed ("Decryption failed") is `account-unavailable`.
   P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
-  A2  account only, against the worker: A2.1 `python3 -m rediacc_ci.drills.universe --no-restart`, A2.2 `python3 -m rediacc_ci.drills.transfer --no-restart`, A2.3 `python3 -m rediacc_ci.drills.license --legs c,d,e,f --no-restart --seed-repo --vm <worker ip>`. Each drill is judged by its summary line (`%d assertions: %d passed, %d failed`, `classify_drill`): a failed assertion is a failed row naming the drill; rc 0 with a positive count and the PASSED line is ok; a SKIPPED line, or 0 assertions, is `account-drill-skipped`; anything else, such as a non-zero rc with no summary (a preflight `SystemExit`), is `account-drill-setup`. All three run; a failed row ends the run FAILED, otherwise the first could-not-judge class ends it NOT_VERIFIED. A2 runs before P5 because the license drill deploys its enforcing renet build to the worker, and the first plain `./rdc.sh` of P5 deploys the default build of the same commit back before the V-steps.
+  A2  account only, against the worker: A2.1 `python3 -m rediacc_ci.drills.universe --no-restart`, A2.2 `python3 -m rediacc_ci.drills.transfer --no-restart`, A2.3 `python3 -m rediacc_ci.drills.license --legs c,d,e,f --no-restart --seed-repo --vm <worker ip>`. Each drill is judged by its summary line (`%d assertions: %d passed, %d failed`, `classify_drill`): a failed assertion is a failed row naming the drill and the failed assertions by number and description (the row's `failedAssertions`, and the head of its evidence); rc 0 with a positive count and the PASSED line is ok; a SKIPPED line, 0 assertions, or rc 0 with no summary line at all is `account-drill-skipped`; anything else, such as a non-zero rc with no summary (a preflight `SystemExit`), is `account-drill-setup`. All three run; a failed row ends the run FAILED, otherwise the first could-not-judge class ends it NOT_VERIFIED. A2 runs before P5 because the license drill deploys its enforcing renet build to the worker, and the first plain `./rdc.sh` of P5 deploys the default build of the same commit back before the V-steps.
   P5  renet only. The parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted on every path once `repo list` answers, before the grand is judged (a missing grand that is then created included), nothing else is touched.
   V1.1-V1.7  renet only: two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
-  T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, `ops down` only for a fleet this run started, then the lock. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them. A gateway A0 started is detached and stays up.
+  T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, the purge of the deleted forks' licence state (`lib.purge_license_state_script` through `term connect <worker> -c`, which first proves renet no longer lists the guid: renet keeps a deleted repo's blobs and `license renew` retries every one), `ops down` only for a fleet this run started, then the lock. The P5 sweep purges the licence state of the stale forks it deletes the same way. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them. A gateway A0 started is detached and stays up.
 
 THE RULES. Every VM action goes through `./rdc.sh`. Nothing here sets or clears REDIACC_AGENT, CLAUDECODE or REDIACC_ALLOW_*: a verb the CLI's agent guard refuses ends the run NOT_VERIFIED `agent-policy-refused` with the refusal's first line. The one guard variable set is REDIACC_SKIP_FILE_WRITE_GUARD=1, and only on the child of a V1.3 write row: the CLI's file-write guard (packages/cli/src/utils/repo-context-guard.ts) refuses `echo x > f` through `term connect` in an agent session with "File write detected", and that variable is its documented usability override (docs/environment-variables.md), not a security boundary. The raw `ssh` probes and the `sftp -b` leg are built from the constants below, the leg under `-F` with a config built from the alias block `vscode connect` wrote. Nothing is uploaded with scp. Suites and drills run under this process's environment with DRILL_ENV_SCRUB removed, never under `child_env()`, so a declared keyring skip (DRILL_EXPECT_NO_KEYRING) cannot turn into a pass and the minted token never reaches a drill.
 
 VERDICTS. VERIFIED exit 0 (assertions ran, none failed, every required phase ran, teardown clean); FAILED exit 1 (an assertion failed); NOT_VERIFIED exit 77 (the check could not judge). A required phase whose steps did not all run ok, with no other finding, is NOT_VERIFIED `phase-not-run`. A run that recorded no assertion is never VERIFIED. `--selftest` touches no machine: it feeds one planted failing assertion through the same `verdict` the real run uses and exits non-zero, printing "selftest fired as designed" only when that verdict came out FAILED.
+
+EVIDENCE. Each A1 suite's and A2 drill's full stdout and stderr is kept in `.ci/cache/vm-check/runs/<run id>/<step>-<name>.log` (the newest RUNS_KEEP run directories are kept), its row carries that path as `log`, and the receipt carries the directory as `runDir`. A row's `evidence` stays clipped to 200 bytes, so the log is where a failure is read in full.
 
 `--changed` evaluates `vm_check_trigger` against the push base in worktree mode; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 2 (`vm_check_receipt`): `phases`, `account` (`pointer`, `checkout`, `modified`, `gateway`) and `trigger.sides` beside the renet fields. Receipts of an earlier schema no longer count, and a run that finds some says so once.
 
@@ -238,6 +240,12 @@ DRILL_SUMMARY = re.compile(r"(\d+) assertions: (\d+) passed, (\d+) failed")
 DRILL_SKIPPED = re.compile(r"\bSKIPPED\b")
 DRILL_PASSED = re.compile(r"drill \S+ PASSED\b")
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+# A failed row of `lib.Drill.summary`'s table (`  02   FAIL   <description>`), read only after the summary header.
+DRILL_FAIL_ROW = re.compile(r"^\s*(\d{2,})\s+FAIL\s+(.+?)\s*$", re.MULTILINE)
+DRILL_SUMMARY_HEADER = " summary ==="
+# The per-run evidence directory under the receipt folder, and how many of them are kept.
+RUNS_DIR = "runs"
+RUNS_KEEP = 20
 DRILL_OK = "ok"
 DRILL_FAILED = "failed"
 DRILL_SKIP = "skipped"
@@ -638,13 +646,28 @@ def rdc_failure(res: Result) -> str:
     return last_lines(res.err) or last_lines(res.out)
 
 
+def failed_assertions(text: str) -> list[str]:
+    """`<number> <description>` of every FAIL row in the drill's summary table; empty when there is no summary. The live assertion lines above the summary are not read, so a row is counted once."""
+    clean = ANSI_ESCAPE.sub("", text)
+    start = clean.rfind(DRILL_SUMMARY_HEADER)
+    if start < 0:
+        return []
+    return ["%s %s" % row for row in DRILL_FAIL_ROW.findall(clean[start:])]
+
+
 def classify_drill(res: Result) -> tuple[str, str]:
     """(outcome, detail) of one account drill, read from its last summary line: DRILL_FAILED when an assertion failed, DRILL_SKIP for a SKIPPED line or 0 assertions or rc 0 with no summary, DRILL_OK for rc 0 with a positive count and the PASSED line, DRILL_SETUP for anything else (a non-zero rc with no summary is a preflight that stopped the drill)."""
     text = ANSI_ESCAPE.sub("", res.text())
     counts = DRILL_SUMMARY.findall(text)
     total, passed, failed = (int(n) for n in counts[-1]) if counts else (-1, -1, -1)
     if failed > 0:
-        return DRILL_FAILED, "%d of %d assertions failed: %s" % (failed, total, last_lines(text))
+        # The assertion names, not the tail: the tail is the last failure dump, which on 2026-10-20 was a base64 licence payload.
+        names = failed_assertions(text)
+        return DRILL_FAILED, "%d of %d assertions failed: %s" % (
+            failed,
+            total,
+            "; ".join(names) if names else last_lines(text),
+        )
     if DRILL_SKIPPED.search(text) or total == 0:
         return DRILL_SKIP, "rc=%d, a SKIPPED line or 0 assertions: %s" % (res.rc, last_lines(text))
     if total < 0:
@@ -829,8 +852,10 @@ class VmCheck:
         evidence: str = "",
         *,
         assertion: bool = False,
+        log_path: str = "",
+        failed: Sequence[str] = (),
     ) -> bool:
-        """One ledger row. `ok` None is a skip; `assertion` counts it towards the verdict's ledger."""
+        """One ledger row. `ok` None is a skip; `assertion` counts it towards the verdict's ledger. `log_path` (the kept full output) and `failed` (a drill's failed assertions) are added to the row only when given."""
         verdict_text = "skip" if ok is None else ("ok" if ok else "FAIL")
         row = {
             "id": step_id,
@@ -840,6 +865,10 @@ class VmCheck:
             "ms": res.ms if res is not None else 0,
             "evidence": self._clean(evidence or (res.text() if res is not None and not ok else "")),
         }
+        if log_path:
+            row["log"] = log_path
+        if failed:
+            row["failedAssertions"] = [self.scrub(f) for f in failed]
         self.steps.append(row)
         if assertion and ok is not None:
             self.assertions += 1
@@ -849,9 +878,55 @@ class VmCheck:
         return bool(ok)
 
     def check(
-        self, step_id: str, desc: str, ok: bool, res: Result | None = None, evidence: str = ""
+        self,
+        step_id: str,
+        desc: str,
+        ok: bool,
+        res: Result | None = None,
+        evidence: str = "",
+        *,
+        log_path: str = "",
+        failed: Sequence[str] = (),
     ) -> bool:
-        return self.record(step_id, desc, ok, res, evidence, assertion=True)
+        return self.record(
+            step_id, desc, ok, res, evidence, assertion=True, log_path=log_path, failed=failed
+        )
+
+    # ------------------------------------------------------------------ evidence
+
+    def run_dir(self) -> pathlib.Path:
+        return receipt_mod.receipt_dir(self.root) / RUNS_DIR / self.run_id
+
+    def keep_log(self, step_id: str, name: str, argv: Sequence[str], res: Result) -> str:
+        """Write `res`'s full stdout and stderr (scrubbed) to the run directory and return its path relative to the repo root; empty when it cannot be written, which is said."""
+        folder = self.run_dir()
+        path = folder / ("%s-%s.log" % (step_id, re.sub(r"[^A-Za-z0-9_.-]+", "-", name)))
+        body = "$ %s\nrc=%d ms=%d\n--- stdout\n%s\n--- stderr\n%s\n" % (
+            " ".join(argv),
+            res.rc,
+            res.ms,
+            res.out,
+            res.err,
+        )
+        try:
+            fresh = not folder.is_dir()
+            folder.mkdir(parents=True, exist_ok=True)
+            path.write_text(self.scrub(body), encoding="utf-8")
+            if fresh:
+                self._prune_runs()
+        except OSError as exc:
+            self.say("        could not keep the output of %s: %s" % (step_id, exc))
+            return ""
+        return str(path.relative_to(self.root)) if path.is_relative_to(self.root) else str(path)
+
+    def _prune_runs(self) -> None:
+        """Keep the newest RUNS_KEEP run directories."""
+        runs = self.run_dir().parent
+        dirs = sorted(
+            (d for d in runs.iterdir() if d.is_dir()), key=lambda d: d.stat().st_mtime, reverse=True
+        )
+        for old in dirs[RUNS_KEEP:]:
+            shutil.rmtree(old, ignore_errors=True)
 
     # ------------------------------------------------------------------ commands
 
@@ -1034,9 +1109,8 @@ class VmCheck:
 
     def _note_old_receipts(self) -> None:
         """One line when the receipt folder holds receipts of an earlier schema, which no longer count."""
-        folder = receipt_mod.receipt_dir(self.root)
         old = 0
-        for path in folder.glob("*.json") if folder.is_dir() else ():
+        for path in receipt_mod.receipt_files(self.root):
             with contextlib.suppress(OSError, ValueError):
                 doc = json.loads(path.read_text(encoding="utf-8"))
                 if isinstance(doc, dict) and doc.get("schema") != receipt_mod.SCHEMA:
@@ -1341,7 +1415,9 @@ class VmCheck:
             )
         names = [str(e.get("name", "")) for e in entries]
         # The sweep runs before the grand is judged, so stale forks beside a missing grand go too (review 8b3374e0.2: the create path returned before it).
-        swept, sweep = self._sweep_stale_forks(names)
+        swept, sweep = self._sweep_stale_forks(
+            names, {str(e.get("name", "")): str(e.get("guid", "")) for e in entries}
+        )
         if self.opts.parent not in names:
             grands = sorted(n for n in names if n and ":" not in n)
             ip = self._machine_ip()
@@ -1375,8 +1451,10 @@ class VmCheck:
             evidence=sweep,
         )
 
-    def _sweep_stale_forks(self, names: Sequence[str]) -> tuple[list[str], str]:
-        """Delete the parent's `vmc-` forks older than STALE_FORK_S, nothing else; returns the deleted names and the evidence line, which is also said when it is not empty."""
+    def _sweep_stale_forks(
+        self, names: Sequence[str], guids: Mapping[str, str] | None = None
+    ) -> tuple[list[str], str]:
+        """Delete the parent's `vmc-` forks older than STALE_FORK_S, nothing else, and purge the licence state of the ones deleted (`guids` maps a listed name to its guid); returns the deleted names and the evidence line, which is also said when it is not empty."""
         swept: list[str] = []
         kept: list[str] = []
         for name in names:
@@ -1392,10 +1470,43 @@ class VmCheck:
         evidence = "swept %s" % ", ".join(swept) if swept else ""
         if kept:
             evidence += "; could not delete %s" % ", ".join(kept)
+        unpurged = self.purge_licences(
+            [(guids or {}).get(name, "") for name in swept], "the swept forks"
+        )
+        if unpurged:
+            evidence += "; %s" % unpurged
         evidence = evidence.strip("; ")
         if evidence:
             self.say("        stale forks: %s" % evidence)
         return swept, evidence
+
+    def purge_licences(self, guids: Sequence[str], what: str) -> str:
+        """Purge the licence state of deleted repositories on the worker through `term connect <worker> -c` (`lib.purge_license_state_script`, which proves renet no longer lists each guid first). Returns "" when every guid was purged, else the leftover line. A value that is not a repository guid is said and left alone."""
+        valid = [g for g in guids if lib.is_repo_guid(g)]
+        odd = [g for g in guids if g and not lib.is_repo_guid(g)]
+        if odd:
+            self.say(
+                "        licence state of %s left alone: %s is not a repository guid"
+                % (what, ", ".join(repr(g) for g in odd))
+            )
+        if not valid or not self.machine:
+            return ""
+        res = self.rdc(
+            "term",
+            "connect",
+            self.machine,
+            "-c",
+            lib.purge_license_state_script(valid),
+            refuse=False,
+        )
+        if res.rc == 0:
+            return ""
+        return "licence state of %s (%s; purge rc=%d: %s)" % (
+            what,
+            ", ".join(valid),
+            res.rc,
+            last_lines(res.out) or last_lines(res.err) or "no output",
+        )
 
     def _machine_ip(self) -> str:
         """The worker's configured address: known from P2 when the worker was found by its ip, read from `machine list` when `--machine` named it."""
@@ -1483,6 +1594,7 @@ class VmCheck:
                 ok,
                 res,
                 "" if ok else "rc=%d: %s" % (res.rc, last_lines(res.text())),
+                log_path=self.keep_log(step_id, script, ["npm", "run", script], res),
             )
             green = green and ok
         if not green:
@@ -1636,12 +1748,29 @@ class VmCheck:
             res = self.host.run(argv, env=env, timeout=DRILL_TIMEOUT_S)
             outcome, detail = classify_drill(res)
             desc = "drill %s (%d s): %s" % (name, res.ms // 1000, outcome)
+            kept = self.keep_log(step_id, name, argv, res)
+            where = " (full output: %s)" % kept if kept else ""
             if outcome in (DRILL_OK, DRILL_FAILED):
                 ok = outcome == DRILL_OK
-                self.check(step_id, desc, ok, res, "" if ok else "drill %s: %s" % (name, detail))
+                self.check(
+                    step_id,
+                    desc,
+                    ok,
+                    res,
+                    "" if ok else "drill %s: %s%s" % (name, detail, where),
+                    log_path=kept,
+                    failed=failed_assertions(res.text()),
+                )
+                if not ok:
+                    for line in failed_assertions(res.text()):
+                        self.say("          FAIL %s" % line)
+                    if kept:
+                        self.say("          full output: %s" % kept)
                 green = green and ok
                 continue
-            self.record(step_id, desc, False, res, "drill %s: %s" % (name, detail))
+            self.record(
+                step_id, desc, False, res, "drill %s: %s%s" % (name, detail, where), log_path=kept
+            )
             if pending is None:
                 pending = (DRILL_CLASSES[outcome], "%s drill %s: %s" % (step_id, name, detail))
         if not green:
@@ -2130,6 +2259,10 @@ class VmCheck:
                     leftovers.append("fork %s (%s)" % (self.ref(fork["tag"]), why))
                 elif res.rc == 0:
                     fork["deleted"] = True
+            gone = [str(f.get("guid") or "") for f in self.forks if f.get("deleted")]
+            leftover = self.purge_licences(gone, "this run's forks")
+            if leftover:
+                leftovers.append(leftover)
         if self.fleet_mode == COLD and self.fleet_started:
             res = self.rdc("ops", "down", refuse=False, timeout=600)
             if res.rc != 0:
@@ -2182,6 +2315,11 @@ class VmCheck:
             "steps": [dict(s) for s in self.steps],
             "teardown": {"ok": not self.leftovers, "leftovers": list(self.leftovers)},
             "runId": self.run_id,
+            "runDir": (
+                str(self.run_dir().relative_to(self.root))
+                if self.run_id and self.run_dir().is_dir()
+                else None
+            ),
             "startedAt": _iso(self.started_at),
             "finishedAt": _iso(finished),
             "wallMs": int((self.host.monotonic() - self.started_mono) * 1000),

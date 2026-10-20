@@ -4,6 +4,10 @@ The latest receipt is `.ci/cache/vm-check/receipt.json`. Every write also archiv
 
 Schema 2 is a clean break. `SCHEMA` is 2, `validate` rejects any other schema, `_load` returns None for such a file, and `admit` reports `no-receipt` when only schema 1 receipts exist, so an old receipt (VERIFIED or NOT_VERIFIED) neither admits a push nor backs an escape. Old files stay on disk, unread.
 
+The receipt folder also holds files that are not receipts (A0's `gateway.json` record and `gateway.log`, the per-run evidence under `runs/`); `receipt_files` names only `receipt.json` and the `<tree>.json` archives.
+
+A step row may carry `log` (the path of the kept full output) and `failedAssertions` (a drill's failed assertions, `<number> <description>`); the receipt may carry `runDir`, the directory of that evidence. All three are optional, and checked for shape when present.
+
 A schema 2 receipt records two phases (`phases.renet`, `phases.account`, each `{required, ran}`), the account submodule state (`account`: `pointer`, `checkout`, `modified`, `gateway`) and the sides the trigger found (`trigger.sides`). A VERIFIED receipt needs at least one phase that ran and every required phase ran.
 
 `admit` is the rule the push guard applies. A receipt admits a push when its status is VERIFIED, its `tree` equals the pushed tree or its `inputs` digest equals the digest of the pushed tree, the renet it deployed (`renet.built`) is the renet the tree points at (`renet.pointer`), that build was not modified, every side the push touches (`sides`) had its phase run, and for the account side the checkout is the pointer and unmodified. A later commit outside the trigger paths keeps the `inputs` digest, so it costs no new VM run; any trigger blob or pointer move changes it.
@@ -57,6 +61,16 @@ _REQUIRED = (
 
 def receipt_dir(root: pathlib.Path) -> pathlib.Path:
     return root / CACHE_DIR
+
+
+def receipt_files(root: pathlib.Path) -> list[pathlib.Path]:
+    """`receipt.json` and every `<tree>.json` archive in the receipt folder, nothing else (review 2fa7d53d.1: `gateway.json` was counted as a receipt of an earlier schema)."""
+    folder = receipt_dir(root)
+    if not folder.is_dir():
+        return []
+    return sorted(
+        p for p in folder.glob("*.json") if p.name == LATEST or _TREE.match(p.name[: -len(".json")])
+    )
 
 
 def clip_evidence(text: str) -> str:
@@ -149,14 +163,33 @@ def validate(receipt: object) -> list[str]:
     errors.extend(_sides_errors(receipt.get("trigger")))
     if "forks" in receipt and not isinstance(receipt["forks"], list):
         errors.append("forks is not a list")
+    if "runDir" in receipt and not (
+        receipt["runDir"] is None or isinstance(receipt["runDir"], str)
+    ):
+        errors.append("runDir is not a string or null")
     steps = receipt.get("steps")
     if not isinstance(steps, list):
         errors.append("steps is not a list")
     else:
         for step in steps:
-            ev = step.get("evidence", "") if isinstance(step, dict) else ""
-            if isinstance(ev, str) and len(ev.encode()) > EVIDENCE_MAX:
-                errors.append(f"step {step.get('id')} evidence exceeds {EVIDENCE_MAX} bytes")
+            errors.extend(_step_errors(step))
+    return errors
+
+
+def _step_errors(step: object) -> list[str]:
+    if not isinstance(step, dict):
+        return []
+    errors: list[str] = []
+    ev = step.get("evidence", "")
+    if isinstance(ev, str) and len(ev.encode()) > EVIDENCE_MAX:
+        errors.append(f"step {step.get('id')} evidence exceeds {EVIDENCE_MAX} bytes")
+    if "log" in step and not isinstance(step["log"], str):
+        errors.append(f"step {step.get('id')} log is not a string")
+    failed = step.get("failedAssertions")
+    if "failedAssertions" in step and not (
+        isinstance(failed, list) and all(isinstance(f, str) for f in failed)
+    ):
+        errors.append(f"step {step.get('id')} failedAssertions is not a list of strings")
     return errors
 
 

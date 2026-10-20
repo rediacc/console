@@ -18,6 +18,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import uuid
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -176,9 +177,18 @@ class World(vm_check.Host):
         self.os_release = over.pop("os_release", "ubuntu 24.04")
         self.stored_ok = over.pop("stored_ok", False)
         self.repos: dict[str, str] = {g: "guid-" + g for g in over.pop("grands", (PARENT,))}
+        # True: forks (made here or listed as extra repos) get real UUID guids (renet's shape), so T and the P5 sweep purge their licence state; `purge_rc` and `purge_out` are that purge's answer, and `purges` the scripts it was sent.
+        self.uuid_forks = over.pop("uuid_forks", False)
         for name in over.pop("extra_repos", ()):
-            self.repos[name] = "guid-" + name.replace(":", "-")
+            self.repos[name] = (
+                str(uuid.uuid5(uuid.NAMESPACE_OID, name))
+                if self.uuid_forks
+                else "guid-" + name.replace(":", "-")
+            )
         self.ro_breach = over.pop("ro_breach", False)
+        self.purge_rc = over.pop("purge_rc", 0)
+        self.purge_out = over.pop("purge_out", "PURGED\n")
+        self.purges: list[str] = []
         self.vscode = over.pop("vscode", True)
         self.refuse_fork = over.pop("refuse_fork", False)
         self.undeletable_suffix = over.pop("undeletable_suffix", "")
@@ -433,7 +443,11 @@ class World(vm_check.Host):
                     1, "", 'Cannot create a new grand repository "x" in agent mode.\nmore'
                 )
             name = "%s:%s" % (args[2], args[4])
-            self.repos[name] = "guid-" + args[4]
+            self.repos[name] = (
+                str(uuid.uuid5(uuid.NAMESPACE_OID, args[4]))
+                if self.uuid_forks
+                else "guid-" + args[4]
+            )
             self.forked.append(args[4])
             return ok
         if head == ("repo", "delete"):
@@ -445,6 +459,10 @@ class World(vm_check.Host):
             self.repos.pop(args[2], None)
             return ok
         if head == ("term", "connect"):
+            if ":" not in args[2]:
+                # A machine-level shell: only the licence purge goes there.
+                self.purges.append(args[4])
+                return vm_check.Result(self.purge_rc, self.purge_out)
             return self._shell(args[2], args[4], env)
         if args[:3] == ["repo", "sync", "upload"]:
             local = pathlib.Path(args[args.index("--local") + 1])
@@ -604,7 +622,7 @@ class World(vm_check.Host):
             )
         line = pathlib.Path(argv[argv.index("-b") + 1]).read_text().strip()
         echo = "sftp> %s\n" % line
-        a = "guid-" + next(t for t in self.forked if t.endswith("-a"))
+        a = self.guid(next(t for t in self.forked if t.endswith("-a")))
         if line.startswith("put") and "/%s/" % a in line:
             return vm_check.Result(0, echo)
         if self.sftp_refusal is not None:
@@ -2519,3 +2537,136 @@ def test_alias_block_reads_only_the_named_host() -> None:
     assert vm_check.alias_block(text, "want") == ["HostName 2", "Port 22"]
     assert vm_check.alias_block(text, "missing") is None
     assert vm_check.alias_block(text, "z") == ["X 1"]
+
+
+# --------------------------------------------------------------------------- licence state of deleted forks
+
+
+def test_teardown_purges_the_licence_state_of_this_runs_deleted_forks(
+    tmp_path: pathlib.Path,
+) -> None:
+    """renet keeps a deleted repo's blobs and `license renew` retries every one: on 2026-10-20 21 of 22 blobs on the ops worker were vm:check forks deleted days before."""
+    world = make_world(tmp_path, uuid_forks=True, extra_repos=[STALE_FORK])
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    stale = world.repos.get(STALE_FORK) or str(uuid.uuid5(uuid.NAMESPACE_OID, STALE_FORK))
+    forks = [f["guid"] for f in receipt["forks"]]
+    assert len(world.purges) == 2, world.purges
+    # The P5 sweep purges the stale fork it deleted; T purges this run's two forks, and nothing else.
+    assert stale in world.purges[0]
+    assert all(g in world.purges[1] for g in forks)
+    assert world.repos["%s" % PARENT] not in "".join(world.purges)
+    assert receipt["teardown"] == {"ok": True, "leftovers": []}
+
+
+def test_a_purge_that_keeps_a_guid_is_a_teardown_leftover(tmp_path: pathlib.Path) -> None:
+    world = make_world(
+        tmp_path, uuid_forks=True, purge_rc=1, purge_out="KEPT x: renet still lists it\n"
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "teardown-failed"
+    assert "licence state of this run's forks" in receipt["reason"]["detail"]
+    assert "KEPT x" in receipt["reason"]["detail"]
+
+
+def test_a_fork_guid_that_is_not_a_uuid_is_left_alone_and_said(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert world.purges == []
+    assert "is not a repository guid" in out
+
+
+# --------------------------------------------------------------------------- drill evidence
+
+LICENSE_FAILED_OUT = (
+    "  01  PASS  the installed blob carries a renewalUrl\n"
+    "  02  FAIL  the machine can reach that URL (a localhost baseUrl would fail here)\n"
+    "\n=== drill license summary ===\n"
+    "  ##   RESULT ASSERTION\n"
+    "  01   PASS   the installed blob carries a renewalUrl\n"
+    "  02   \x1b[0;31mFAIL\x1b[0m   the machine can reach that URL (a localhost baseUrl would fail here)\n"
+    "  03   FAIL   the machine holds no rdc config and no account token\n"
+    "  -------------------------------------------------------------\n"
+    "  3 assertions: 1 passed, 2 failed  (41s)\n"
+    "  drill license FAILED\n"
+)
+PAYLOAD_TAIL = '    | {"license":{"payload":"eyJ2ZXJzaW9uIjoyLCJzdWJzY3JpcHRpb25JZCI6IjFm"}}\n'
+
+
+def test_failed_assertions_reads_only_the_summary_table() -> None:
+    assert vm_check.failed_assertions(LICENSE_FAILED_OUT) == [
+        "02 the machine can reach that URL (a localhost baseUrl would fail here)",
+        "03 the machine holds no rdc config and no account token",
+    ]
+    assert vm_check.failed_assertions("  02  FAIL  x\n") == []
+
+
+def test_a_failed_drill_names_its_assertions_not_the_last_dump() -> None:
+    """2026-10-20: the detail was the tail of the last failure dump, a base64 licence payload."""
+    outcome, detail = vm_check.classify_drill(vm_check.Result(1, LICENSE_FAILED_OUT, PAYLOAD_TAIL))
+    assert outcome == vm_check.DRILL_FAILED
+    assert detail.startswith("2 of 3 assertions failed: 02 the machine can reach that URL")
+    assert "03 the machine holds no rdc config" in detail
+    assert "payload" not in detail
+
+
+def test_a_failed_drill_keeps_its_full_output_and_the_receipt_names_the_assertions(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, drills={"license": (1, LICENSE_FAILED_OUT)})
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    row = next(r for r in receipt["steps"] if r["id"] == "A2.3")
+    assert row["failedAssertions"] == [
+        "02 the machine can reach that URL (a localhost baseUrl would fail here)",
+        "03 the machine holds no rdc config and no account token",
+    ]
+    log_file = world.root / row["log"]
+    assert log_file.is_file()
+    assert "drill license summary" in log_file.read_text()
+    assert row["log"].startswith(receipt["runDir"] + "/")
+    assert receipt["runDir"] == "%s/runs/%s" % (receipt_mod.CACHE_DIR, receipt["runId"])
+    assert "FAIL 02 the machine can reach that URL" in out
+    assert "02 the machine can reach that URL" in receipt["reason"]["detail"]
+    # Every suite and drill keeps its log, green ones included.
+    assert all(r.get("log") for r in receipt["steps"] if r["id"] in ("A1.1", "A2.1", "A2.2"))
+
+
+def test_the_kept_log_is_scrubbed_of_the_minted_token(tmp_path: pathlib.Path) -> None:
+    world = make_world(
+        tmp_path, drills={"universe": (0, "echo %s\n" % TOKEN + drill_passed("universe")[1])}
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    row = next(r for r in receipt["steps"] if r["id"] == "A2.1")
+    text = (world.root / row["log"]).read_text()
+    assert TOKEN not in text
+    assert "<token>" in text
+
+
+def test_only_the_newest_run_directories_are_kept(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    runs = world.root / receipt_mod.CACHE_DIR / vm_check.RUNS_DIR
+    for i in range(vm_check.RUNS_KEEP + 5):
+        old = runs / ("vmc-old-%02d" % i)
+        old.mkdir(parents=True)
+        os.utime(old, (1000 + i, 1000 + i))
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    kept = sorted(d.name for d in runs.iterdir())
+    assert len(kept) == vm_check.RUNS_KEEP
+    assert receipt["runId"] in kept
+    assert "vmc-old-00" not in kept
+
+
+def test_the_gateway_record_is_not_counted_as_an_old_receipt(tmp_path: pathlib.Path) -> None:
+    """Review 2fa7d53d.1: gateway.json has no schema key and was counted as an earlier-schema receipt."""
+    world = make_world(tmp_path)
+    folder = world.root / receipt_mod.CACHE_DIR
+    folder.mkdir(parents=True)
+    (folder / vm_check.GATEWAY_RECORD).write_text(json.dumps({"port": "4800", "started": "1"}))
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert "earlier schema" not in out, out

@@ -7,6 +7,7 @@ DIFFERENTIALS run the real `scripts/drills/backup.sh` and `license.sh` and the p
 
 from __future__ import annotations
 
+import base64
 import datetime
 import hashlib
 import http.cookiejar
@@ -1145,13 +1146,27 @@ class _RecordingDrill(lib.Drill):
 
 
 class _SeedLicense(license_drill.License):
-    """A License with no licensed repo on the worker unless `guid` says otherwise."""
+    """A License whose worker answers `repository license-status` from `listings`, one guid set per call (the last one repeats), and whose purge answers `purge`."""
 
-    guid = ""
+    listings: list[set[str]]
+    purge: tuple[int, str] = (0, "PURGED")
 
-    def repo_status(self, host: str, field: str) -> str:
-        del host, field
-        return self.guid
+    def __init__(self, drill: lib.Drill, opts: license_drill.Options) -> None:
+        super().__init__(drill, opts)
+        self.listings = [{"old-guid"}, {"old-guid", NEW_GUID}]
+        self.ssh_calls: list[tuple[str, str | None]] = []
+
+    def status_guids(self, host: str) -> set[str]:
+        del host
+        return set(self.listings.pop(0) if len(self.listings) > 1 else self.listings[0])
+
+    def ssh_out(self, host: str, command: str, stdin: str | None = None) -> tuple[int, str]:
+        del host
+        self.ssh_calls.append((command, stdin))
+        return self.purge
+
+
+NEW_GUID = "0f3c5a52-1b2d-4c3e-9f40-5a6b7c8d9e0f"
 
 
 def _seed_subject(
@@ -1195,6 +1210,63 @@ def test_seed_repo_issues_the_create_argv_on_an_ops_vm_worker() -> None:
             "1G",
         ]
         assert drill.failures == 0
+        # The guid the create added is the scope of every later machine-side read (Rule T 8).
+        assert lic.repo_guid == NEW_GUID
+        assert lic.seeded is True
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+@pytest.mark.parametrize(
+    "after", [{"old-guid"}, {"old-guid", NEW_GUID, "1f3c5a52-1b2d-4c3e-9f40-5a6b7c8d9e0f"}]
+)
+def test_a_create_that_adds_no_or_two_repositories_fails_and_leaves_no_scope(
+    after: set[str],
+) -> None:
+    """Anything but exactly one new guid is a failed assertion, and the scope stays empty so the legs fail rather than read a stranger's blob."""
+    drill, lic = _seed_subject("192.168.111.11", seed=True)
+    lic.listings = [{"old-guid"}, after]
+    try:
+        lic.ensure_repo_present()
+        assert drill.failures == 1
+        assert lic.repo_guid == ""
+        assert lic.repo_status("192.168.111.11", "status") == ""
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_the_seeded_repo_is_deleted_and_only_its_guid_purged() -> None:
+    drill, lic = _seed_subject("192.168.111.11", seed=True)
+    try:
+        lic.ensure_repo_present()
+        lic.remove_seeded_repo()
+        deletes = [a for a in drill.argvs if a[1:3] == ["repo", "delete"]]
+        assert [a[1:] for a in deletes] == [["repo", "delete", "drill-repo", "-y"]]
+        purges = [stdin for cmd, stdin in lic.ssh_calls if cmd == "bash -s"]
+        assert len(purges) == 1
+        assert purges[0] is not None
+        assert NEW_GUID in purges[0]
+        assert "old-guid" not in purges[0]
+        assert drill.failures == 0
+        # Idempotent: the teardown fallback does not delete twice.
+        lic.remove_seeded_repo()
+        lic.teardown_hook()
+        assert len([a for a in drill.argvs if a[1:3] == ["repo", "delete"]]) == 1
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_a_purge_that_keeps_the_guid_is_a_failed_assertion() -> None:
+    drill, lic = _seed_subject("192.168.111.11", seed=True)
+    lic.purge = (1, "KEPT %s: renet still lists it" % NEW_GUID)
+    try:
+        lic.ensure_repo_present()
+        lic.remove_seeded_repo()
+        assert drill.failures == 1
+        assert "KEPT" in drill.stdout_text()
     finally:
         drill.teardown()
 
@@ -1206,6 +1278,7 @@ def test_seed_repo_asserts_the_create_exit_code() -> None:
         lic.ensure_repo_present()
         assert len(_creates(drill)) == 1
         assert drill.failures == 1
+        assert lic.seeded is False
     finally:
         drill.teardown()
 
@@ -1222,7 +1295,10 @@ def test_seed_repo_refuses_on_a_worker_outside_the_ops_vm_network(
         assert exc.value.code == 1
         assert _creates(drill) == []
         err = capsys.readouterr().err
-        assert "Legs b-e operate on a licensed repository, and %s has none." % vm_ip in err
+        assert (
+            "Legs b-e operate on a licensed repository this run issued, and %s has none." % vm_ip
+            in err
+        )
         assert "--seed-repo creates the repo only on an ops VM" in err
     finally:
         drill.teardown()
@@ -1230,7 +1306,7 @@ def test_seed_repo_refuses_on_a_worker_outside_the_ops_vm_network(
 
 @pytest.mark.usefixtures("drill_root")
 @pytest.mark.parametrize("vm_ip", ["192.168.111.11", "10.0.0.5"])
-def test_without_seed_repo_the_refusal_text_is_unchanged(
+def test_without_seed_repo_legs_c_to_e_are_refused_by_name(
     vm_ip: str, capsys: pytest.CaptureFixture[str]
 ) -> None:
     drill, lic = _seed_subject(vm_ip, seed=False)
@@ -1241,8 +1317,8 @@ def test_without_seed_repo_the_refusal_text_is_unchanged(
         assert _creates(drill) == []
         lines = [ln for ln in capsys.readouterr().err.splitlines() if ln.strip()]
         expected = [
-            "Legs b-e operate on a licensed repository, and %s has none." % vm_ip,
-            "Leg a is what creates it, so there is nothing here to migrate, renew or meter.",
+            "Legs b-e operate on a licensed repository this run issued, and %s has none." % vm_ip,
+            "Every run mints its own subscription, so a repo an earlier run left cannot stand in.",
             "Run leg a in the same invocation:  ./run.sh drill license --legs a,c,d,e,f",
         ]
         assert len(lines) == len(expected)
@@ -1252,12 +1328,13 @@ def test_without_seed_repo_the_refusal_text_is_unchanged(
 
 
 @pytest.mark.usefixtures("drill_root")
-def test_seed_repo_leaves_an_existing_licensed_repo_alone() -> None:
+def test_an_older_licensed_repo_never_stands_in_for_this_runs() -> None:
+    """2026-10-20: the drill reused the vm:check grand, whose blob belonged to a deleted subscription and named localhost:4800; legs c-e then failed 9 assertions for reasons that had nothing to do with renewal."""
     drill, lic = _seed_subject("192.168.111.11", seed=True)
-    lic.guid = "guid-1"
     try:
         lic.ensure_repo_present()
-        assert _creates(drill) == []
+        assert len(_creates(drill)) == 1
+        assert lic.repo_guid == NEW_GUID
     finally:
         drill.teardown()
 
@@ -1273,3 +1350,171 @@ def test_seed_repo_does_not_act_when_leg_b_is_selected(capsys: pytest.CaptureFix
         assert "has none" in capsys.readouterr().err
     finally:
         drill.teardown()
+
+
+# ---------------------------------------------------------------------- leg c reads only this run's guid (Rule T 8, 10)
+
+FOREIGN_GUID = "9e3c5a52-1b2d-4c3e-9f40-5a6b7c8d9e0f"
+
+
+def _blob(subscription: str, url: str) -> str:
+    payload = base64.b64encode(
+        json.dumps({"subscriptionId": subscription, "renewalUrl": url}).encode()
+    ).decode()
+    return json.dumps({"payload": payload, "signature": "s"})
+
+
+class _LegCLicense(license_drill.License):
+    """Leg c against a scripted worker: `find` answers `blob_paths`, `cat` answers `blob`, renew answers `results`, and every other remote command exits `remote_rc`."""
+
+    blob_paths: list[str]
+    blob = ""
+    results: list[dict]
+    remote_rc = 0
+
+    def ssh_out(self, host: str, command: str, stdin: str | None = None) -> tuple[int, str]:
+        del host, stdin
+        if command.startswith("sudo find "):
+            return 0, "".join(p + "\n" for p in self.blob_paths)
+        if command.startswith("sudo cat "):
+            return 0, self.blob
+        return 0, ""
+
+    def ssh_run(self, host: str, command: str) -> None:
+        del host
+        body = json.dumps({"results": self.results}) if "license renew" in command else ""
+        self.capture(command, body)
+        self.d.code = 0 if "license renew" in command else self.remote_rc
+
+
+def _leg_c(results: list[dict], **kw: object) -> lib.Drill:
+    drill = lib.Drill("license", selftest=False, keep_work=False)
+    drill.init()
+    lic = _LegCLicense(drill, license_drill.Options())
+    lic.repo_guid = NEW_GUID
+    lic.subscription_id = "sub-this-run"
+    lic.blob_paths = ["/var/lib/rediacc/license/repos/%s/k.json" % NEW_GUID]
+    lic.blob = _blob("sub-this-run", "http://192.168.111.254:4800/account/api/v1/licenses/renew")
+    lic.results = results
+    for key, value in kw.items():
+        setattr(lic, key, value)
+    lic.leg_c_credentialless_renewal()
+    return drill
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_leg_c_passes_on_its_own_renewal_beside_foreign_errors() -> None:
+    """The 2026-10-20 store: 21 stale blobs erroring on localhost. They are noted, never asserted."""
+    drill = _leg_c(
+        [
+            {"repositoryGuid": FOREIGN_GUID, "outcome": "error", "message": "connection refused"},
+            {"repositoryGuid": NEW_GUID, "outcome": "renewed", "newSequence": 4},
+        ]
+    )
+    try:
+        assert drill.failures == 0, drill.rows
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_leg_c_fails_when_its_own_renewal_errors_even_if_a_foreign_one_renewed() -> None:
+    drill = _leg_c(
+        [
+            {"repositoryGuid": FOREIGN_GUID, "outcome": "renewed", "newSequence": 9},
+            {"repositoryGuid": NEW_GUID, "outcome": "error", "message": "x"},
+        ]
+    )
+    try:
+        failed = [desc for _n, status, desc in drill.rows if status == "FAIL"]
+        assert any("this run's licence was renewed" in d for d in failed)
+        assert any("did not error" in d for d in failed)
+        assert any("fresh sequence" in d for d in failed)
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_leg_c_fails_on_a_blob_issued_to_another_subscription() -> None:
+    drill = _leg_c(
+        [{"repositoryGuid": NEW_GUID, "outcome": "renewed", "newSequence": 2}],
+        blob=_blob("sub-of-an-earlier-run", "http://localhost:4800/x"),
+    )
+    try:
+        failed = [desc for _n, status, desc in drill.rows if status == "FAIL"]
+        assert failed == ["and it was issued to THIS run's subscription"]
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+@pytest.mark.parametrize("paths", [[], ["/a/repos/g/k1.json", "/a/repos/g/k2.json"]])
+def test_leg_c_needs_exactly_one_installed_blob(paths: list[str]) -> None:
+    drill = _leg_c(
+        [{"repositoryGuid": NEW_GUID, "outcome": "renewed", "newSequence": 2}], blob_paths=paths
+    )
+    try:
+        failed = [desc for _n, status, desc in drill.rows if status == "FAIL"]
+        assert failed[0].startswith("this run's repository has exactly one installed blob")
+    finally:
+        drill.teardown()
+
+
+def test_the_installed_blob_find_is_scoped_to_the_guid() -> None:
+    drill = lib.Drill("license", selftest=False, keep_work=False)
+    seen: list[str] = []
+
+    class _Probe(license_drill.License):
+        def ssh_out(self, host: str, command: str, stdin: str | None = None) -> tuple[int, str]:
+            del host, stdin
+            seen.append(command)
+            return 0, ""
+
+    lic = _Probe(drill, license_drill.Options())
+    assert lic.installed_blobs() == []
+    assert seen == []
+    lic.repo_guid = NEW_GUID
+    lic.installed_blobs()
+    assert seen == [
+        "sudo find /var/lib/rediacc/license -type f -name '*.json' -path '*/repos/%s/*'" % NEW_GUID
+    ]
+    assert "head" not in seen[0]
+
+
+def _no_config(tmp_path: pathlib.Path, setup) -> tuple[int, str]:
+    home = tmp_path / "home"
+    home.mkdir()
+    setup(home)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "sudo").write_text('#!/bin/bash\nexec "$@"\n')
+    (bin_dir / "sudo").chmod(0o755)
+    proc = subprocess.run(
+        ["bash", "-c", license_drill.NO_CONFIG_PROBE],
+        capture_output=True,
+        text=True,
+        env={"PATH": "%s:/usr/bin:/bin" % bin_dir, "HOME": str(home)},
+        check=False,
+    )
+    return proc.returncode, proc.stdout
+
+
+def test_an_empty_config_directory_is_not_a_config(tmp_path: pathlib.Path) -> None:
+    """The ops worker has held an empty ~/.config/rediacc since 2026-10-15; `test ! -e` read it as a config."""
+    code, _ = _no_config(tmp_path, lambda h: (h / ".config" / "rediacc").mkdir(parents=True))
+    assert code == 0
+
+
+def test_a_config_file_or_token_is_found_and_named(tmp_path: pathlib.Path) -> None:
+    def plant(home: pathlib.Path) -> None:
+        (home / ".config" / "rediacc").mkdir(parents=True)
+        (home / ".config" / "rediacc" / "api-token-rediacc.json").write_text("{}")
+
+    code, out = _no_config(tmp_path, plant)
+    assert code == 1
+    assert "api-token-rediacc.json" in out
+
+
+def test_no_config_home_at_all_is_no_config(tmp_path: pathlib.Path) -> None:
+    code, _ = _no_config(tmp_path, lambda _h: None)
+    assert code == 0

@@ -76,6 +76,42 @@ def running_ips(status_json: str) -> list[str]:
     return [str(v.get("ip")) for v in vms if isinstance(v, dict) and v.get("status") == "running"]
 
 
+LICENSE_ROOT = "/var/lib/rediacc/license"
+_GUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+
+
+def is_repo_guid(value: str) -> bool:
+    """True only for a lowercase UUID, the shape renet gives every repository."""
+    return bool(_GUID.match(value))
+
+
+def purge_license_state_script(guids: list[str], renet: str = "renet") -> str:
+    """The machine-side script that removes the installed licence state of repositories a drill created and has deleted: `<root>/repos/<guid>`, `<root>/datastores/*/repos/<guid>` and the blocked-backup marker `<root>/failed/<guid>.json`.
+
+    WHY A DRILL HAS TO. renet keeps a repo's licence blobs after the repo is deleted (no code under private/renet/pkg/license removes a store entry), and `renet license renew` renews every blob in the store, so each deleted fixture left a blob that the next renewal tried, and failed, to renew (2026-10-20: 21 of 22 blobs on the ops worker belonged to vm:check forks deleted days earlier).
+
+    PROOF BEFORE DELETION. A guid is purged only when `renet repository license-status --all-datastores`, renet's own enumeration of the repositories on every datastore, exits 0 and does not list it. A listed guid prints `KEPT <guid>` and the script exits 1; a failing enumeration purges nothing and exits 1. Each purged guid prints `PURGED <guid>`. Raises ValueError for anything that is not a lowercase UUID, so no caller can splice a path or a shell word in."""
+    bad = [g for g in guids if not is_repo_guid(g)]
+    if bad:
+        raise ValueError("not a repository guid: %s" % ", ".join(repr(g) for g in bad))
+    lines = [
+        "set -u",
+        "listed=$(sudo %s repository license-status --all-datastores --output json 2>/dev/null) "
+        "|| { echo 'KEPT all: renet repository license-status failed, so nothing is proven dead'; exit 1; }"
+        % renet,
+        "fail=0",
+    ]
+    lines.extend(
+        'case "$listed" in *\'"%(g)s"\'*) echo "KEPT %(g)s: renet still lists it"; fail=1 ;; '
+        "*) sudo rm -rf %(root)s/repos/%(g)s %(root)s/datastores/*/repos/%(g)s %(root)s/failed/%(g)s.json "
+        '&& echo "PURGED %(g)s" || { echo "KEPT %(g)s: rm failed"; fail=1; } ;; esac'
+        % {"g": guid, "root": LICENSE_ROOT}
+        for guid in guids
+    )
+    lines.append("exit $fail")
+    return "\n".join(lines) + "\n"
+
+
 def json_get(raw: str, path: str) -> str:
     """The field at `path` in the JSON text `raw`, stringified the way node's `String(v)` did.
 
@@ -194,6 +230,8 @@ class Drill:
         self.stdout_file: pathlib.Path | None = None
         self.stderr_file: pathlib.Path | None = None
         self.gateway_log: pathlib.Path | None = None
+        # The log the CURRENT gateway writes: `gateway_log`, or the `log_path` its `restart_gateway` named.
+        self.active_gateway_log: pathlib.Path | None = None
         self.gateway_proc: subprocess.Popen | None = None
         self.gateway_port_cached = ""
         self.shim: Shim | None = None
@@ -492,19 +530,21 @@ class Drill:
     def restart_gateway(self, log_path: pathlib.Path | None = None) -> None:
         """Stop what this run started and start a fresh `./run.sh account dev`, waiting until it is healthy.
 
-        `log_path` puts the gateway log there instead of in the work directory, so the log of a gateway that outlives the run (`detach_gateway`) survives the teardown.
+        `log_path` puts THIS start's log there instead of in the work directory, so the log of a gateway that outlives the run (`detach_gateway`) survives the teardown. It applies to this call only: `gateway_log` (the work-directory default) is left as it was, so a later bare `restart_gateway()` logs to the work directory again (review a0dabc98.2). Its parent directory is created, and the log opened, BEFORE the running gateway is stopped, so an unwritable path fails with the old gateway still up (review a0dabc98.3).
         """
         self.step(
             "Restarting the dev gateway (tsx does not hot-reload, so a long-running gateway serves stale server code)"
         )
+        target = pathlib.Path(log_path) if log_path is not None else self.gateway_log
+        if target is None:
+            raise RuntimeError("self.gateway_log is not set")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        log_file = target.open("wb")
+        self.active_gateway_log = target
         self.stop_gateway()
         started = int(time.time())
-        if log_path is not None:
-            self.gateway_log = pathlib.Path(log_path)
-        if self.gateway_log is None:
-            raise RuntimeError("self.gateway_log is not set")
         # Its own process group (setsid): the tsx child must not survive a kill of the run.sh wrapper and keep the port bound.
-        with self.gateway_log.open("wb") as log_file:
+        with log_file:
             self.gateway_proc = subprocess.Popen(
                 [str(self.root / "run.sh"), "account", "dev"],
                 stdout=log_file,
@@ -512,7 +552,7 @@ class Drill:
                 env=self.gateway_env(),
                 start_new_session=True,
             )
-        self.note("gateway log: %s" % self.gateway_log)
+        self.note("gateway log: %s" % self.active_gateway_log)
         self.wait_gateway_started(started)
 
     def wait_gateway_started(self, since: int) -> None:
@@ -533,7 +573,8 @@ class Drill:
                 return
             if self.gateway_proc is not None and self.gateway_proc.poll() is not None:
                 log.error(
-                    "The dev gateway exited during startup. Last 40 lines of %s:" % self.gateway_log
+                    "The dev gateway exited during startup. Last 40 lines of %s:"
+                    % self.active_gateway_log
                 )
                 self._tail_gateway_log()
                 raise GatewayError("the dev gateway exited during startup")
@@ -541,14 +582,15 @@ class Drill:
             waited += GATEWAY_POLL_SECONDS
         log.error(
             "Dev gateway did not become healthy within %ds. Last 40 lines of %s:"
-            % (waited, self.gateway_log)
+            % (waited, self.active_gateway_log)
         )
         self._tail_gateway_log()
         raise GatewayError("the dev gateway did not become healthy")
 
     def _tail_gateway_log(self) -> None:
-        if self.gateway_log and self.gateway_log.is_file():
-            for line in self.gateway_log.read_text(errors="replace").splitlines()[-40:]:
+        current = self.active_gateway_log or self.gateway_log
+        if current and current.is_file():
+            for line in current.read_text(errors="replace").splitlines()[-40:]:
                 sys.stderr.write(line + "\n")
 
     def stop_gateway(self) -> None:
