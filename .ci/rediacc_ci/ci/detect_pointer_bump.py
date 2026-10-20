@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/detect-pointer-bump.sh` (208 lines), retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.detect-pointer-bump.jsonl`, and the `twin :NN` citations below are to that blob.
 
-Detect a "pointer bump only" PR head: content provably identical to a commit that already passed full CI, differing only in submodule gitlinks that moved to tree-identical commits now on the submodules' main. When it fires, `ci.yml` skips the expensive jobs and the run goes green in minutes, honestly, because the proof is content identity rather than trust. Any doubt on any step
+Detect a "pointer bump only" PR head: content provably identical to a commit that already passed full CI, differing only in submodule gitlinks that moved to tree-identical commits now on the submodules' main. When it fires, `ci.yml` skips the expensive jobs and the run goes green in minutes, honestly, because the proof is content identity rather than trust (outside `agent/reviews/`, whose review records are bookkeeping the quality job still runs on; see REVIEW RECORDS ARE ADMITTED below). Any doubt on any step
 degrades
 to `pointer_bump_only=false`.
 
@@ -248,8 +248,15 @@ def is_review_record_line(line: str) -> bool:
     fields = meta.split()
     if len(fields) != 5 or not fields[0].startswith(":"):
         return False
-    return (
-        fields[0][1:] in REVIEW_MODES and fields[1] in REVIEW_MODES and fields[4] in ("A", "M", "D")
+    old_mode, new_mode, status = fields[0][1:], fields[1], fields[4]
+    if old_mode not in REVIEW_MODES or new_mode not in REVIEW_MODES:
+        return False
+    # An edit keeps its mode: a 100644 -> 100755 flip is a mode change, and a mode change is never admitted.
+    if status == "M":
+        return old_mode == new_mode and old_mode != "000000"
+    return (status, old_mode == "000000", new_mode == "000000") in (
+        ("A", True, False),
+        ("D", False, True),
     )
 
 

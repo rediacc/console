@@ -447,7 +447,10 @@ export async function launchExternalTerminal(
     sshArgv.push(remoteCommand);
   }
   // The external terminal's ssh outlives this process's 500 ms wait, so on POSIX the credentials move to it: it gets the agent socket in its env and its shell removes the key and stops the agent when ssh ends. Windows shells cannot run that wrapper and keep parent-side cleanup.
-  const handoff = getPlatform() === 'windows' ? undefined : sshConnection.handoffResources;
+  const resources = getPlatform() === 'windows' ? undefined : sshConnection.handoffResources;
+  // Hand off only what the wrapper can clean up: an agent pid it cannot put in the script stays with the parent, or nothing would ever stop that agent.
+  const handoff =
+    resources && (!resources.agentPid || isNumericPid(resources.agentPid)) ? resources : undefined;
   const argv = handoff ? buildHandoffArgv(sshArgv, handoff) : sshArgv;
   const terminalType = getDefaultTerminalType();
 
@@ -485,6 +488,10 @@ export async function launchExternalTerminal(
   outputService.info(t('commands.term.launchSuccess'));
 }
 
+function isNumericPid(pid: string): boolean {
+  return /^\d+$/.test(pid);
+}
+
 /**
  * Wraps the ssh argv in `sh -c` so the launched terminal removes the temp key
  * files and stops the agent when ssh exits or the terminal is hung up. Only
@@ -495,7 +502,7 @@ export function buildHandoffArgv(
   res: { keyFilePath?: string; knownHostsPath?: string; agentPid?: string }
 ): string[] {
   const files = [res.keyFilePath, res.knownHostsPath].filter((f): f is string => !!f);
-  const pid = res.agentPid && /^\d+$/.test(res.agentPid) ? res.agentPid : undefined;
+  const pid = res.agentPid && isNumericPid(res.agentPid) ? res.agentPid : undefined;
   const steps = [
     files.length > 0 ? `rm -f -- ${files.map(shellQuote).join(' ')}` : '',
     pid ? `kill ${pid} 2>/dev/null` : '',

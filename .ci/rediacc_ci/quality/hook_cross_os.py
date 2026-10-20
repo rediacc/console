@@ -366,12 +366,15 @@ def main(argv=None):
         return 1 if selftest() else 0
     # `--root <dir>` scans another tree: the gate test plants into a copy, so no test writes into the tree a concurrent run of this gate is scanning.
     root = None
-    if "--root" in argv:
-        i = argv.index("--root")
-        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
-            log.error("hook cross-OS seams: --root needs a directory")
-            return 2
-        root = pathlib.Path(argv[i + 1])
+    for i, arg in enumerate(argv):
+        if arg == "--root" or arg.startswith("--root="):
+            value = (
+                arg[len("--root=") :] if "=" in arg else (argv[i + 1] if i + 1 < len(argv) else "")
+            )
+            if not value or value.startswith("--") or not pathlib.Path(value).is_dir():
+                log.error("hook cross-OS seams: --root needs an existing directory, got %r" % value)
+                return 2
+            root = pathlib.Path(value)
     rc = controls_first("hook cross-OS seams", selftest)
     if rc:
         return rc

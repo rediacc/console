@@ -30,9 +30,7 @@ PLANTED = (
 def _copy_tree(tmp_path):
     """Copy the scanned hook package to `<tmp>/.claude/rediacc_hooks`; return the root."""
     dst = tmp_path.joinpath(*HOOKS_REL)
-    shutil.copytree(
-        paths.from_root(*HOOKS_REL), dst, ignore=shutil.ignore_patterns("__pycache__")
-    )
+    shutil.copytree(paths.from_root(*HOOKS_REL), dst, ignore=shutil.ignore_patterns("__pycache__"))
     return tmp_path
 
 
@@ -97,6 +95,31 @@ def test_a_planted_platform_read_reds_on_a_copy(gate, tmp_path):
         paths.from_root(*HOOKS_REL, PLANT_NAME).exists(), False, "nothing planted in the real tree"
     )
     gate.log_pass("red with the plant, green without it, real tree untouched")
+
+
+def test_a_bad_root_is_refused_not_scanned(gate, tmp_path):
+    gate.log_test("--root without an existing directory exits 2 instead of scanning the real tree")
+    for args in (
+        ["--root"],
+        ["--root", "--selftest-x"],
+        ["--root", str(tmp_path / "missing")],
+        ["--root="],
+    ):
+        gate.assert_exit(
+            2,
+            harness.run([sys.executable, str(GATE), *args], cwd=paths.repo_root()),
+            " ".join(args),
+        )
+    gate.log_test("--root=<dir> is the same flag")
+    root = _copy_tree(tmp_path)
+    gate.assert_exit(
+        0,
+        harness.run([sys.executable, str(GATE), "--root=%s" % root], cwd=paths.repo_root()),
+        "--root=<copy>",
+    )
+    gate.log_pass(
+        "a missing, flag-like or non-directory root exits 2, and --root=<dir> is accepted"
+    )
 
 
 def test_the_selftest_covers_both_directions(gate):
