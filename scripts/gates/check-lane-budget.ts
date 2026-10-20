@@ -674,6 +674,12 @@ export interface WorkflowJob {
    * reds either way: a timeout nobody can read is not a timeout under 15.
    */
   timeoutMinutes: number | null;
+  /** The job-level `if:` as written (quotes and `${{ }}` stripped), or null. */
+  ifExpr: string | null;
+  /** Its `needs:` ids (inline list, scalar or block list). */
+  needs: string[];
+  /** A caller job's `with:` entries whose value is a literal (not a `${{ }}` expression), quotes stripped. */
+  withLiterals: Record<string, string>;
 }
 
 /** A workflow's jobs, in order, each with its `name:`, its `uses:`, whether it has a matrix, and its job-level `timeout-minutes`. Hand-parsed for the same reason `laneCapabilities` is. */
@@ -683,6 +689,8 @@ export function workflowJobs(text: string): WorkflowJob[] {
   const strategyNumbers: Map<string, number[]>[] = [];
   let inJobs = false;
   let inStrategy = false;
+  let inWith = false;
+  let inNeedsBlock = false;
   for (const raw of text.split('\n')) {
     if (/^jobs:\s*$/.test(raw)) {
       inJobs = true;
@@ -699,13 +707,43 @@ export function workflowJobs(text: string): WorkflowJob[] {
         hasMatrix: false,
         timeoutRaw: null,
         timeoutMinutes: null,
+        ifExpr: null,
+        needs: [],
+        withLiterals: {},
       });
       strategyNumbers.push(new Map());
       inStrategy = false;
+      inWith = false;
+      inNeedsBlock = false;
       continue;
     }
     const last = out[out.length - 1];
     if (last === undefined) continue;
+    const ifm = /^ {4}if:\s*(.*?)\s*$/.exec(raw);
+    if (ifm)
+      last.ifExpr = (ifm[1] as string)
+        .replace(/^(['"])(.*)\1$/, '$2')
+        .replace(/^\$\{\{\s*(.*?)\s*\}\}$/, '$1');
+    const needsm = /^ {4}needs:\s*(.*?)\s*(?:#.*)?$/.exec(raw);
+    if (needsm) {
+      const v = needsm[1] as string;
+      const inner = /^\[(.*)\]$/.exec(v);
+      last.needs.push(
+        ...(inner ? (inner[1] as string).split(',') : v === '' ? [] : [v])
+          .map((x) => x.trim())
+          .filter((x) => x !== '')
+      );
+      inNeedsBlock = v === '';
+    } else if (inNeedsBlock) {
+      const item = /^ {6}-\s*(\S+)/.exec(raw);
+      if (item) last.needs.push(item[1] as string);
+    }
+    if (/^ {4}\S/.test(raw)) inWith = /^ {4}with:\s*$/.test(raw);
+    else if (inWith) {
+      const kv = /^ {6}([A-Za-z0-9_-]+):\s*(.*?)\s*(?:#.*)?$/.exec(raw);
+      if (kv && !(kv[2] as string).includes('${{') && kv[2] !== '')
+        last.withLiterals[kv[1] as string] = (kv[2] as string).replace(/^(['"])(.*)\1$/, '$2');
+    }
     const uses = /^ {4}uses:\s*\.\/(\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml)/.exec(raw);
     if (uses) last.uses = uses[1] as string;
     const name = /^ {4}name:\s*(.+?)\s*$/.exec(raw);
@@ -778,24 +816,116 @@ export function samplesForJob(
 }
 
 /**
- * Which runner jobs check 2 judges: not a priced lane (its matrix legs are judged per leg in
- * the lane); every other job by each display-name sample it has, and a job with none is
- * UNCHECKED.
+ * Three-valued evaluation of a job `if:` against the literal `with:` inputs its caller passes: true, false, or
+ * null (unknown). Understands `inputs.X`, `!inputs.X`, `inputs.X ==|!= 'v'`, `always()`, `&&` and `||`; any other
+ * atom (`needs.*`, `github.*`, an input the caller does not pass as a literal) is unknown, so unknown stays live.
+ */
+export function evalIf(expr: string, inputs: Readonly<Record<string, string>>): boolean | null {
+  const atom = (a: string): boolean | null => {
+    const t = a.trim();
+    if (t === 'always()') return true;
+    const neg = /^!\s*inputs\.([A-Za-z0-9_-]+)$/.exec(t);
+    if (neg) {
+      const v = inputs[neg[1] as string];
+      return v === undefined ? null : v !== 'true';
+    }
+    const pos = /^inputs\.([A-Za-z0-9_-]+)$/.exec(t);
+    if (pos) {
+      const v = inputs[pos[1] as string];
+      return v === undefined ? null : v === 'true';
+    }
+    const cmp = /^inputs\.([A-Za-z0-9_-]+)\s*(==|!=)\s*'([^']*)'$/.exec(t);
+    if (cmp) {
+      const v = inputs[cmp[1] as string];
+      if (v === undefined) return null;
+      return cmp[2] === '==' ? v === cmp[3] : v !== cmp[3];
+    }
+    return null;
+  };
+  const and = (part: string): boolean | null => {
+    const vals = part.split('&&').map(atom);
+    if (vals.includes(false)) return false;
+    return vals.every((v) => v === true) ? true : null;
+  };
+  const vals = expr.split('||').map(and);
+  if (vals.includes(true)) return true;
+  return vals.every((v) => v === false) ? false : null;
+}
+
+/**
+ * The jobs of one workflow that can never run for the literal inputs its caller passes, each with the proof: its
+ * own `if:` evaluates false, or it `needs:` a job that never runs and its `if:` has no `always()` (Actions adds
+ * an implicit `success()`). Unknown conditions are live. Pure, derived from the workflow text only.
+ */
+export function staticallySkippedJobs(
+  jobs: readonly WorkflowJob[],
+  inputs: Readonly<Record<string, string>>
+): Map<string, string> {
+  const dead = new Map<string, string>();
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const j of jobs) {
+      if (dead.has(j.id)) continue;
+      const alwaysRuns = j.ifExpr?.includes('always()') === true;
+      const cond = j.ifExpr === null ? null : evalIf(j.ifExpr, inputs);
+      if (cond === false) {
+        dead.set(j.id, `if: ${j.ifExpr} is false for the caller's with: ${JSON.stringify(inputs)}`);
+        changed = true;
+      } else if (!alwaysRuns) {
+        const gone = j.needs.find((n) => dead.has(n));
+        if (gone !== undefined) {
+          dead.set(j.id, `needs ${gone}, which never runs (${dead.get(gone)})`);
+          changed = true;
+        }
+      }
+    }
+  }
+  return dead;
+}
+
+/** One call site of a runner job: the job id, the caller chain plus its own name as Actions displays it (`site`, "Tests + Infra / Renet embed assets"), and the pattern that maps measured display names to it. */
+export interface CallSite {
+  id: string;
+  site: string;
+  pattern: RegExp;
+  /** Why this call site can never run (see `staticallySkippedJobs`), or undefined when it can. */
+  neverRuns?: string;
+}
+
+/** The measured display names ONE call site reports under: its own pattern only, never a sibling call site of the same job id. */
+export function samplesForSite(
+  site: CallSite,
+  measured: Readonly<Record<string, number>>
+): JobSample[] {
+  const out: JobSample[] = [];
+  for (const [label, minutes] of Object.entries(measured)) {
+    if (site.pattern.test(label)) out.push({ job: site.id, label, minutes });
+  }
+  return out;
+}
+
+/**
+ * Which runner call sites check 2 judges: not a priced lane (its matrix legs are judged per leg in
+ * the lane); every other call site by each display-name sample IT has. A job id reached through
+ * several callers (renet-embed-assets: Tests + Infra, OPS Tests, E2E Dependency Probe) is judged
+ * per call site, so a site with no p90 is UNCHECKED even when a sibling site of the same id has one.
  */
 export function checkTwoPartition(
-  runnerJobs: readonly string[],
+  callSites: readonly CallSite[],
   priced: ReadonlySet<string>,
-  samplesFor: (job: string) => JobSample[]
-): { judged: JobSample[]; unchecked: string[] } {
+  samplesFor: (site: CallSite) => JobSample[]
+): { judged: JobSample[]; unchecked: string[]; neverRun: string[] } {
   const judged: JobSample[] = [];
   const unchecked: string[] = [];
-  for (const job of runnerJobs) {
-    if (priced.has(job)) continue;
-    const samples = samplesFor(job);
-    if (samples.length === 0) unchecked.push(job);
-    else judged.push(...samples);
+  const neverRun: string[] = [];
+  for (const cs of callSites) {
+    if (priced.has(cs.id)) continue;
+    const samples = samplesFor(cs);
+    if (samples.length > 0) judged.push(...samples);
+    else if (cs.neverRuns !== undefined) neverRun.push(`${cs.id} (${cs.site}): ${cs.neverRuns}`);
+    else unchecked.push(`${cs.id} (${cs.site})`);
   }
-  return { judged, unchecked };
+  return { judged, unchecked, neverRun };
 }
 
 /** The matrix leg index a display name carries: "(3/3)", "(ubuntu-24.04, 2/8)", "(1)". 1 when there is none (an unsharded job is a leg of one). */
@@ -2223,7 +2353,7 @@ async function main(): Promise<number> {
   // Every job that occupies a runner: ci.yml's own, plus every job of every reusable workflow it calls, transitively. A caller job (`uses:`) is not a runner itself.
   // Walked PER CALL SITE, not per file: ci-build-docker.yml is called three times under three caller names, and each call reports under its own display name.
   const runnerJobSet = new Set<string>();
-  const sites: { id: string; pattern: RegExp }[] = [];
+  const sites: CallSite[] = [];
   // Check 7 reads each runner job once per DEFINING file, not per call site: ci-build-docker.yml's three callers share one timeout-minutes line.
   const timeoutSites = new Map<string, TimeoutSite>();
   // Check 8 reads each workflow once, like check 7: every file the walk reaches, ci.yml included.
@@ -2232,13 +2362,23 @@ async function main(): Promise<number> {
     file: string,
     text: string,
     chain: readonly string[],
-    stack: readonly string[]
+    stack: readonly string[],
+    inputs: Readonly<Record<string, string>> = {},
+    parentDead?: string
   ): boolean => {
     walkedTexts.set(file, text);
-    for (const j of workflowJobs(text)) {
+    const jobsHere = workflowJobs(text);
+    const deadHere = staticallySkippedJobs(jobsHere, inputs);
+    for (const j of jobsHere) {
+      const neverRuns = parentDead ?? deadHere.get(j.id);
       if (j.uses === null) {
         runnerJobSet.add(j.id);
-        sites.push({ id: j.id, pattern: displayNamePattern(chain, j.name, j.hasMatrix) });
+        sites.push({
+          id: j.id,
+          site: [...chain, j.name].join(' / '),
+          pattern: displayNamePattern(chain, j.name, j.hasMatrix),
+          ...(neverRuns === undefined ? {} : { neverRuns }),
+        });
         timeoutSites.set(`${file}\0${j.id}`, {
           file,
           job: j.id,
@@ -2251,7 +2391,8 @@ async function main(): Promise<number> {
       const callee = workflows[j.uses] ?? readOr(ROOT, j.uses, `the ${j.uses} workflow`);
       if (callee === null) return false;
       workflows[j.uses] = callee;
-      if (!walk(j.uses, callee, [...chain, j.name], [...stack, file])) return false;
+      if (!walk(j.uses, callee, [...chain, j.name], [...stack, file], j.withLiterals, neverRuns))
+        return false;
     }
     return true;
   };
@@ -2260,8 +2401,14 @@ async function main(): Promise<number> {
   const runnerJobs = [...runnerJobSet];
   const measured = durations.job_p90_minutes ?? {};
   const matchedLabels = new Set<string>();
+  // Job-level (every call site of the id together): the priced-lane leg lookups. Check 2 judges per call site instead, `samplesForCallSite`.
   const samplesFor = (job: string): JobSample[] => {
     const out = samplesForJob(sites, measured, job);
+    for (const x of out) matchedLabels.add(x.label);
+    return out;
+  };
+  const samplesForCallSite = (site: CallSite): JobSample[] => {
+    const out = samplesForSite(site, measured);
     for (const x of out) matchedLabels.add(x.label);
     return out;
   };
@@ -2566,14 +2713,22 @@ async function main(): Promise<number> {
   }
 
   // Check 2 over every runner job that is not a priced lane, by the display names budget_report measured it under. A priced lane's matrix legs were judged above, per leg, and are skipped here.
-  const { judged: judgedSamples, unchecked } = checkTwoPartition(runnerJobs, priced, samplesFor);
-  const judgedJobs = new Set(judgedSamples.map((x) => x.job));
+  const {
+    judged: judgedSamples,
+    unchecked,
+    neverRun,
+  } = checkTwoPartition(sites, priced, samplesForCallSite);
+  for (const n of neverRun)
+    console.log(`  never runs (unmeasured by construction, check 2 skips it): ${n}`);
+  const judgedSiteCount = sites.filter(
+    (x) => !priced.has(x.id) && judgedSamples.some((j) => x.pattern.test(j.label))
+  ).length;
   findings.push(...judgeJobSamples(judgedSamples));
   if (unchecked.length > 0) {
     const shown = [...unchecked].sort();
     findings.push(
-      `check 2: ${unchecked.length} job(s) in ${CI_WORKFLOW} and its callees are UNCHECKED: no ` +
-        `job_p90_minutes entry in ${DURATIONS_PATH} matches their display name. A job that ` +
+      `check 2: ${unchecked.length} call site(s) in ${CI_WORKFLOW} and its callees are UNCHECKED: no ` +
+        `job_p90_minutes entry in ${DURATIONS_PATH} matches their display name (judged per call site, so a measured sibling call site of the same job does not cover them). A job that ` +
         'never ran successfully in the sampled runs has no p90, and unknown is not within ' +
         `budget: ${shown.join(', ')}.`
     );
@@ -2653,7 +2808,7 @@ async function main(): Promise<number> {
     `parallel: ${parallelLanes.join(', ') || 'none'}, ` +
     `gate-step priced: ${gateStepNotes.join('; ') || 'none'}, ` +
     `measured under a plan that no longer ships, set aside until the next refresh: ${setAside.join(', ') || 'none'}, ` +
-    `${judgedJobs.size}/${runnerJobs.length - priced.size} other job(s) judged ` +
+    `${judgedSiteCount}/${sites.filter((x) => !priced.has(x.id)).length} other call site(s) judged (${neverRun.length} never run for their caller's literal with: inputs) ` +
     `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
     `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s), ` +
     `${timeoutList.length} job timeout-minutes read (check 7), ` +
@@ -2910,6 +3065,9 @@ async function selftest(): Promise<number> {
               hasMatrix: false,
               timeoutRaw: null,
               timeoutMinutes: null,
+              ifExpr: null,
+              needs: [],
+              withLiterals: {},
             },
             {
               id: 'b',
@@ -2918,6 +3076,9 @@ async function selftest(): Promise<number> {
               hasMatrix: true,
               timeoutRaw: null,
               timeoutMinutes: null,
+              ifExpr: null,
+              needs: [],
+              withLiterals: {},
             },
             {
               id: 'c',
@@ -2926,6 +3087,9 @@ async function selftest(): Promise<number> {
               hasMatrix: false,
               timeoutRaw: null,
               timeoutMinutes: null,
+              ifExpr: null,
+              needs: [],
+              withLiterals: {},
             },
           ])
         );
@@ -3047,34 +3211,117 @@ async function selftest(): Promise<number> {
     {
       name: 'check 2: a capped job is judged through its display name; a priced matrix lane is skipped; an unmatched job is UNCHECKED',
       ok: (() => {
+        const mk = (id: string, chain: string[], name: string, matrix: boolean): CallSite => ({
+          id,
+          site: [...chain, name].join(' / '),
+          pattern: displayNamePattern(chain, name, matrix),
+        });
         const sites = [
-          {
-            id: 'test-e2e-k8s-ceph',
-            pattern: displayNamePattern(['Tests + Infra'], 'E2E K8s Ceph', false),
-          },
-          { id: 'quality-code', pattern: displayNamePattern(['Quality'], 'Code', true) },
-          {
-            id: 'test-e2e-ceph',
-            pattern: displayNamePattern(['Tests + Infra'], 'E2E Ceph', false),
-          },
-          { id: 'never-ran', pattern: displayNamePattern([], 'Never Ran', false) },
+          mk('test-e2e-k8s-ceph', ['Tests + Infra'], 'E2E K8s Ceph', false),
+          mk('quality-code', ['Quality'], 'Code', true),
+          mk('test-e2e-ceph', ['Tests + Infra'], 'E2E Ceph', false),
+          mk('never-ran', [], 'Never Ran', false),
         ];
         const measured = {
           'Tests + Infra / E2E K8s Ceph': 19.8,
           'Quality / Code (1)': 30,
           'Tests + Infra / E2E Ceph': 14.3,
         };
-        const part = checkTwoPartition(
-          sites.map((x) => x.id),
-          new Set(['quality-code']),
-          (job) => samplesForJob(sites, measured, job)
+        const part = checkTwoPartition(sites, new Set(['quality-code']), (cs) =>
+          samplesForSite(cs, measured)
         );
         const f = judgeJobSamples(part.judged);
         return (
           part.judged.every((x) => x.job !== 'quality-code') &&
-          JSON.stringify(part.unchecked) === JSON.stringify(['never-ran']) &&
+          JSON.stringify(part.unchecked) === JSON.stringify(['never-ran (Never Ran)']) &&
           f.length === 1 &&
           (f[0] ?? '').includes('test-e2e-ceph ("Tests + Infra / E2E Ceph")')
+        );
+      })(),
+    },
+    {
+      name: 'FIRES: check 2 judges a reusable job per call site; the unmeasured call site is UNCHECKED though a sibling has a p90',
+      ok: (() => {
+        const mk = (chain: string[]): CallSite => ({
+          id: 'renet-embed-assets',
+          site: [...chain, 'Renet embed assets'].join(' / '),
+          pattern: displayNamePattern(chain, 'Renet embed assets', false),
+        });
+        const sites = [mk(['Tests + Infra']), mk(['OPS Tests']), mk(['E2E Dependency Probe'])];
+        const run = (measured: Record<string, number>) =>
+          checkTwoPartition(sites, new Set(), (cs) => samplesForSite(cs, measured));
+        const partial = run({
+          'Tests + Infra / Renet embed assets': 0.6,
+          'OPS Tests / Renet embed assets': 0.5,
+        });
+        const full = run({
+          'Tests + Infra / Renet embed assets': 0.6,
+          'OPS Tests / Renet embed assets': 0.5,
+          'E2E Dependency Probe / Renet embed assets': 0.5,
+        });
+        return (
+          JSON.stringify(partial.unchecked) ===
+            JSON.stringify(['renet-embed-assets (E2E Dependency Probe / Renet embed assets)']) &&
+          partial.judged.length === 2 &&
+          full.unchecked.length === 0 &&
+          full.judged.length === 3
+        );
+      })(),
+    },
+    {
+      name: 'check 2: a call site dead by its callee if: and the caller literal with: is neverRun; a live one with no p90 stays UNCHECKED; a measured dead one is still judged',
+      ok: (() => {
+        const callee = workflowJobs(
+          [
+            'jobs:',
+            '  a:',
+            '    name: A',
+            '    if: "!inputs.only_dc"',
+            '  b:',
+            '    name: B',
+            '    needs: [a]',
+            "    if: inputs.web != 'true'",
+            '  c:',
+            '    name: C',
+            '    if: inputs.only_dc',
+            '  d:',
+            '    name: D',
+            '    needs: [a]',
+            "    if: always() && inputs.web != 'true'",
+            '  e:',
+            '    name: E',
+            "    if: inputs.unset_by_caller == 'x'",
+          ].join('\n')
+        );
+        const dead = staticallySkippedJobs(callee, { only_dc: 'true' });
+        const live = staticallySkippedJobs(callee, { only_dc: 'false' });
+        const mk = (id: string, name: string, neverRuns?: string): CallSite => ({
+          id,
+          site: `X / ${name}`,
+          pattern: displayNamePattern(['X'], name, false),
+          ...(neverRuns === undefined ? {} : { neverRuns }),
+        });
+        const part = checkTwoPartition(
+          [
+            mk('a', 'A', dead.get('a')),
+            mk('c', 'C', 'forced dead but measured'),
+            mk('e', 'E', dead.get('e')),
+          ],
+          new Set(),
+          (cs) => samplesForSite(cs, { 'X / C': 1 })
+        );
+        return (
+          dead.has('a') &&
+          dead.has('b') &&
+          !dead.has('c') &&
+          !dead.has('d') &&
+          !dead.has('e') &&
+          live.size === 1 &&
+          live.has('c') &&
+          part.neverRun.length === 1 &&
+          part.neverRun[0]?.startsWith('a (X / A)') === true &&
+          part.judged.length === 1 &&
+          JSON.stringify(part.unchecked) === JSON.stringify(['e (X / E)'])
         );
       })(),
     },
