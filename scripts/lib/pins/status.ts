@@ -184,6 +184,27 @@ export function holdOf(w: StatusWorld, entry: PinEntry, key: string | null): Hol
   return found;
 }
 
+/** Every repo (`.` or a submodule path) an entry reads or writes: its sites, family scopes and derive outputs. */
+export function repoReach(entry: PinEntry): string[] {
+  const repos = new Set<string>();
+  for (const s of entry.sites) repos.add(s.repo);
+  for (const sc of entry.scope ?? []) repos.add(sc.repo);
+  for (const d of entry.derive) for (const wr of d.writes) repos.add(wr.repo);
+  return [...repos].sort();
+}
+
+/** A submodule checkout is absent when its directory is missing or empty (what a CI checkout without `submodules:` leaves of a gitlink). */
+function checkoutAbsent(root: string, repo: string): boolean {
+  const dir = path.join(root, repo);
+  if (!fs.existsSync(dir)) return true;
+  return fs.statSync(dir).isDirectory() && fs.readdirSync(dir).length === 0;
+}
+
+/** The submodules the entry reaches whose checkout is absent from `root`; empty for a pin whose every repo is present. */
+export function absentSubmodules(root: string, entry: PinEntry): string[] {
+  return repoReach(entry).filter((r) => r !== '.' && checkoutAbsent(root, r));
+}
+
 export interface PinView {
   id: string;
   name: string;
@@ -204,6 +225,8 @@ export interface PinView {
   /** The major lines above the pin, newest first, read whatever the state (empty when not compared). */
   majors: NewerMajor[];
   detail: string;
+  /** Set when the pin could not be compared AND it reaches a submodule absent from the checkout: the paths, so the run reports it NOT-CHECKED instead of refusing it. */
+  notChecked: string[];
 }
 
 export interface SelectOpts {
@@ -234,10 +257,12 @@ export async function viewOf(
     hold: null,
     majors: [],
     detail: '',
+    notChecked: [],
   };
   const drv = driverFor(entry, ctx);
   if (!drv) {
     base.detail = `not compared: the ${entry.driver} driver has not landed (agent/plans/PLAN-pins-command.md T4-T8)`;
+    base.notChecked = absentSubmodules(w.root, entry);
     return base;
   }
   let insp: Inspection;
@@ -245,6 +270,7 @@ export async function viewOf(
     insp = await drv.inspect(entry, ctx);
   } catch (err) {
     base.detail = `not compared: ${(err as Error).message}`;
+    base.notChecked = absentSubmodules(w.root, entry);
     return base;
   }
   base.current = insp.current;

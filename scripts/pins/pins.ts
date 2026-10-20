@@ -610,6 +610,8 @@ interface Selected {
   views: Map<string, PinView>;
   refused: Array<{ id: string; why: string }>;
   skipped: Array<{ id: string; why: string }>;
+  /** Pins that could not be compared because a submodule they read is not checked out: reported, never counted toward the exit code. */
+  notChecked: Array<{ id: string; submodules: string[]; why: string }>;
 }
 
 /** Inspect and plan every selected pin over one overlay, so two pins sharing a file compose. */
@@ -625,12 +627,17 @@ async function selectAndPlan(
     views: new Map(),
     refused: [],
     skipped: [],
+    notChecked: [],
   };
   for (const entry of entries) {
     const v = await viewOf(w, ctx, entry, sel);
     out.views.set(entry.id, v);
     if (v.state !== 'bumpable' || !v.target) {
       const why = v.state === 'not-compared' ? v.detail : `${v.state}: ${v.detail}`;
+      if (v.state === 'not-compared' && v.notChecked.length > 0) {
+        out.notChecked.push({ id: entry.id, submodules: v.notChecked, why });
+        continue;
+      }
       if (explicit || v.state === 'not-compared') out.refused.push({ id: entry.id, why });
       else out.skipped.push({ id: entry.id, why });
       continue;
@@ -678,6 +685,7 @@ async function cmdPlan(w: World, f: Flags): Promise<number> {
           })),
           refused: s.refused,
           skipped: s.skipped,
+          not_checked: s.notChecked,
         },
         null,
         2
@@ -693,8 +701,15 @@ async function cmdPlan(w: World, f: Flags): Promise<number> {
         w.out.push(`  gates: npm run ci -- --only ${p.entry.gates.join(',')}`);
     }
     for (const r of s.refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
+    noteNotChecked(w, s);
   }
   return s.refused.length ? 1 : 0;
+}
+
+/** The human lines for the pins no submodule checkout let the run compare; they never change the exit code. */
+function noteNotChecked(w: World, s: Selected): void {
+  for (const n of s.notChecked)
+    w.err.push(`NOT-CHECKED ${n.id}: ${n.submodules.join(', ')} not checked out (${n.why})`);
 }
 
 function report(
@@ -718,6 +733,7 @@ function report(
     })),
     refused: s.refused,
     skipped: s.skipped,
+    not_checked: s.notChecked,
     failure: res?.failure ?? null,
     commands: res?.commands ?? [],
     gates: res?.gates ?? null,
@@ -742,6 +758,7 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
     if (f.json) w.out.push(JSON.stringify(report(w, f, s, null, []), null, 2));
     else {
       for (const r of s.refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
+      noteNotChecked(w, s);
       w.out.push(s.refused.length ? 'nothing written.' : 'nothing to bump.');
     }
     return s.refused.length ? 1 : 0;
@@ -795,6 +812,7 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
     return res.ok && s.refused.length === 0 ? 0 : 1;
   }
   for (const r of s.refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
+  noteNotChecked(w, s);
   if (regenFailure !== null) {
     w.err.push(`FAILED: ${regenFailure}`);
     w.err.push(`journal: ${res.dir}`);
@@ -929,6 +947,7 @@ async function cmdHold(w: World, f: Flags): Promise<number> {
     views: new Map(),
     refused: [],
     skipped: [],
+    notChecked: [],
   };
   return apply(w, f, s, `chore(pins): hold ${entry.name} at ${cur}`);
 }
@@ -956,6 +975,7 @@ function cmdNpmPlan(w: World, f: Flags, verb: 'remove' | 'lockfiles'): number {
     views: new Map(),
     refused: [],
     skipped: [],
+    notChecked: [],
   };
   return apply(
     w,
@@ -2115,6 +2135,70 @@ const CASES: Record<string, Case> = {
             .readFileSync(path.join(fx.root, 'out/private-renet.patch'), 'utf8')
             .includes('+ARG ZED_VERSION=2.1.0'),
         detail: `rc=${r.rc} ${r.err}`,
+      },
+    ];
+  },
+  async notchecked(m) {
+    // The npm family has no fixture entry, so it is NOT COMPARED; whether that is a refusal or NOT-CHECKED turns on private/renet, which its scope now reaches, being checked out.
+    const build = (): Fx => {
+      const fx = fixtureTree(() => {}, true);
+      const file = path.join(fx.root, '.ci/config/pins.json');
+      const reg = JSON.parse(fs.readFileSync(file, 'utf8')) as {
+        entries: Array<{ id: string; scope?: object[] }>;
+      };
+      reg.entries = reg.entries.filter((e) => e.id !== 'embed:zed');
+      reg.entries
+        .find((e) => e.id === 'npm')
+        ?.scope?.push({
+          scanner: 'npm-lockfile',
+          repo: 'private/renet',
+          files: ['package-lock.json'],
+        });
+      fs.writeFileSync(file, `${JSON.stringify(reg, null, 2)}\n`);
+      return fx;
+    };
+    const present = build();
+    const absent = build();
+    const human = build();
+    for (const t of [absent, human]) {
+      fs.rmSync(path.join(t.root, 'private/renet'), { recursive: true });
+      fs.mkdirSync(path.join(t.root, 'private/renet'));
+    }
+    const rh = await runCli(['apply-soaked'], withMutant(human, m));
+    const rp = await runCli(['apply-soaked', '--json'], withMutant(present, m));
+    const ra = await runCli(['apply-soaked', '--json'], withMutant(absent, m));
+    const parse = (o: string) =>
+      JSON.parse(o) as {
+        refused: Array<{ id: string }>;
+        not_checked?: Array<{ id: string; submodules: string[] }>;
+      };
+    const jp = parse(rp.out);
+    const ja = parse(ra.out);
+    return [
+      {
+        // Red when an absent submodule still fails the run, or leaves the pin out of the report.
+        name: 'apply-soaked: a pin reading an absent submodule is not_checked and leaves the exit code alone',
+        ok:
+          ra.rc === 0 &&
+          ja.refused.length === 0 &&
+          ja.not_checked?.length === 1 &&
+          ja.not_checked[0].id === 'npm' &&
+          ja.not_checked[0].submodules[0] === 'private/renet',
+        detail: `rc=${ra.rc} ${ra.err} ${JSON.stringify([ja.refused, ja.not_checked])}`,
+      },
+      {
+        name: 'apply-soaked: the human output names the NOT-CHECKED pin and its submodule, and exits 0',
+        ok: rh.rc === 0 && /NOT-CHECKED npm: private\/renet not checked out/.test(rh.err),
+        detail: `rc=${rh.rc} ${rh.err}`,
+      },
+      {
+        // Red when the submodule being present stops mattering: the same refusal must still fail the run.
+        name: 'apply-soaked: the same pin with its submodule checked out is still refused and fails the run',
+        ok:
+          rp.rc !== 0 &&
+          jp.refused.some((r) => r.id === 'npm') &&
+          (jp.not_checked ?? []).length === 0,
+        detail: `rc=${rp.rc} ${rp.err}`,
       },
     ];
   },

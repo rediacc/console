@@ -88,6 +88,7 @@ jobs:
             (.pins[] | "| \(.id) | \(.from) | \(.to) | \(.published) |"),
             (if (.pins | length) == 0 then "| (none soaked) | | | |" else empty end),
             (.refused[] | "\nREFUSED \(.id): \(.why)"),
+            (.not_checked[]? | "\nNOT-CHECKED \(.id): \(.submodules | join(", ")) not checked out"),
             (if .failure then "\nFAILED: \(.failure)" else empty end)
           ' pins-soaked/stdout.json >> "$GITHUB_STEP_SUMMARY" || echo "apply-soaked printed no JSON report (exit ${APPLY_RC})" >> "$GITHUB_STEP_SUMMARY"
 
