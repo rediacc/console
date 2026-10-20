@@ -1437,18 +1437,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 4,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
-        "35a8734b",
-        "88c84d61",
-        "fe8a544f"
+        "88c84d61"
       ],
       "done_sigs": [
+        "35a8734b",
         "a344b11a",
         "a7ba8046",
         "ce1f9881",
-        "fdd7c9d0"
+        "fdd7c9d0",
+        "fe8a544f"
       ]
     },
     "agent/plans/PLAN-skip-release-gates-r2-manifest.md": {
