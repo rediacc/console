@@ -151,7 +151,8 @@ CI_CACHE_LIVE_S = int(os.environ.get("WORKLIST_CI_CACHE_LIVE_S", "180"))
 CI_CACHE_FINAL_S = int(os.environ.get("WORKLIST_CI_CACHE_FINAL_S", "900"))
 # THE DEADLOCK CEILING. See ci_trouble()'s docstring.
 CI_MAX_BLOCKS = int(os.environ.get("WORKLIST_CI_MAX_BLOCKS", "2"))
-CI_MAX_PAGES = 3
+# 3 pages (300 contexts) truncated main @ d35df2ab on 2026-10-20: a merged head carries its PR run's ~200 contexts beside main's own ~120, so CI Complete sat on the unread page and read as absent.
+CI_MAX_PAGES = 10
 CI_STEP_LOOKUPS = 2
 
 
@@ -607,11 +608,15 @@ def ci_gate(info, require_complete=True):
         ci_complete = (complete.get("conclusion") or "").lower() or "pending"
     # The Console CI run: the one carrying CI Complete, else the run with the most contexts (Console CI's ~170 against a side workflow's one or two).
     run = _ctx_run(complete) if complete else (max(runs, key=lambda r: runs[r]) if runs else None)
+    # A CANCELLED JOB OF ANOTHER WORKFLOW is not a Console CI gate that failed to report. On 2026-10-20 main @ d35df2ab read RED for a `VM Bake (oracle-10)` timeout-kill in the VM-bake run 39388259580, while Console CI run 39388260085 had succeeded. It stays visible as `side_cancelled`, and the caller names it.
+    side_cancelled = [x for x in cancelled if run and x["run"] and x["run"] != run]
+    cancelled = [x for x in cancelled if x not in side_cancelled]
     gate = {
         "live": live,
         "hard": hard,
         "soft": soft,
         "cancelled": cancelled,
+        "side_cancelled": side_cancelled,
         "waiting": waiting,
         "ci_complete": ci_complete,
         "run": run,
@@ -1613,6 +1618,26 @@ def _selftest():
     check(
         "CONTROL: a truncated read is no-verdict, never green",
         ci_gate(dict(full, truncated=True, total=400))["verdict"] == "no-verdict",
+    )
+    side = dict(
+        full,
+        contexts=[
+            *full_ctx,
+            run_ctx("VM Bake (oracle-10)", conclusion="CANCELLED", run=39388259580),
+        ],
+    )
+    g = ci_gate(side)
+    check(
+        "THE 2026-10-20 FALSE RED: a cancelled job of another workflow's run beside a green "
+        "Console CI run -> green, and the cancelled job is named in side_cancelled",
+        g["verdict"] == "green"
+        and [x["name"] for x in g["side_cancelled"]] == ["VM Bake (oracle-10)"],
+        "gate=%r" % (g,),
+    )
+    own = dict(full, contexts=[*full_ctx, run_ctx("Build (Renet)", conclusion="CANCELLED")])
+    check(
+        "CONTROL: a cancelled job of the Console CI run itself is still red",
+        ci_gate(own)["verdict"] == "red",
     )
     verdict_live = dict(
         full,
