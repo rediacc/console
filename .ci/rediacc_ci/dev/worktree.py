@@ -563,6 +563,9 @@ def cmd_create(args: list[str]) -> int:
 
     # The day is read once, so a run that crosses midnight cannot name the worktree after one day and number it after the next. WORKTREE_TODAY is the tests' frozen-day seam.
     day = os.environ.get("WORKTREE_TODAY") or time.strftime("%m%d")
+    if not re.fullmatch(r"\d{4}", day):
+        log.error("WORKTREE_TODAY must be four digits (MMDD), got %r" % day)
+        return 1
     wt_name = "%s-%d" % (day, next_sequence_number(base, day))
     wt_path = base / wt_name
     session = "%s-%s" % (TMUX_PREFIX, wt_name)
