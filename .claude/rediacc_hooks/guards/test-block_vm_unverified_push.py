@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Control harness for block_vm_unverified_push (OWN_SUITE: never bash, so no golden), box VC4 of agent/plans/PLAN-vm-check.md.
+"""Control harness for block_vm_unverified_push (OWN_SUITE: never bash, so no golden), box VC4 of agent/plans/PLAN-vm-check.md and box AV5 of agent/plans/PLAN-account-vm-check.md.
 
-REAL REPOSITORIES, one per world, built under a `rediacc_ci.runtmp` run directory by the guard's own `world()` and `plant_receipt()` (the builders its differential `FIXTURES` use, so the suite and the differential judge one shape): a console-shaped checkout on `1008-1` with a real `private/renet` gitlink, `origin/main` at the seed and one unpushed commit, and receipts written through `vm_check_receipt.write`, so a receipt shape the module would refuse can never be planted here.
+REAL REPOSITORIES, one per world, built under a `rediacc_ci.runtmp` run directory by the guard's own `world()` and `plant_receipt()` (the builders its differential `FIXTURES` use, so the suite and the differential judge one shape): a console-shaped checkout on `1008-1` with real `private/renet` and `private/account` gitlinks, `origin/main` at the seed and one unpushed commit, and schema 2 receipts written through `vm_check_receipt.write`, so a receipt shape the module would refuse can never be planted here. The one exception is the retired schema 1 receipt, written raw by `plant_schema_1` because the point of that world is that the module refuses to read it.
 
-BOTH DIRECTIONS. Every refusal has an allow twin that differs by one planted fact: a docs-only range, a test-only renet range, a VERIFIED receipt, a receipt carried by a docs commit, a valid escape of each kind against a transcript holding one AskUserQuestion answer. Every escape kind is refused in its invalid case (an unknown kind, a short why, no ASKED, a malformed ASKED, an ASKED matching no answer, `vm-unavailable` with no NOT_VERIFIED receipt for these inputs).
+BOTH DIRECTIONS. Every refusal has an allow twin that differs by one planted fact: a docs-only range, a test-only renet or account range, a VERIFIED receipt, a receipt that ran the touched side's phase, a receipt carried by a docs commit, a valid escape of each kind against a transcript holding one AskUserQuestion answer. Every escape kind is refused in its invalid case (an unknown kind, a short why, no ASKED, a malformed ASKED, an ASKED matching no answer, `vm-unavailable` with no NOT_VERIFIED receipt for these inputs).
+
+EACH SIDE ON ITS OWN. A private/account range charges the account side and a renet range the renet side: a renet-only VERIFIED receipt is refused `phase-missing` on an account range, an account-only one on a range touching both sides, and an account receipt whose checkout is not the pointer or is modified is refused. The widened renet trigger (pkg/license/x.go, go.mod) is refused without a receipt and admitted with one.
 
 THE LEDGER. An admitted escape appends one line per push to agent/ledgers/vm-check-push-reasons.jsonl in the world; a refused command, a command whose second push is refused, and a push a VERIFIED receipt admits append nothing. All three are read back from the file.
 
-THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and both `MUTANTS` (`inputs-always-equal`, `asked-always-true`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
+THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and every one of its `MUTANTS` (`inputs-always-equal`, `asked-always-true`, `phases-ignored`, `account-side-dropped`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
 """
 
 import importlib.util
@@ -86,6 +88,43 @@ ESC_MIRROR = built("vmc-docs-only")
 # `G.TIP_BRANCH` touched but already pushed: its remote-tracking ref names its tip, so `--all` sends nothing of it.
 SYNCED_TIP = built("vmc-reverted")
 G._git(SYNCED_TIP, "update-ref", "refs/remotes/origin/%s" % G.TIP_BRANCH, G.TIP_BRANCH)
+# ---- the account side and the widened renet trigger
+ACCOUNT_SRC = built("vmc-account-src")
+ACCOUNT_TESTS = built("vmc-account-tests-only")
+ACCOUNT_RENET_RECEIPT = built("vmc-account-renet-receipt")
+ACCOUNT_VERIFIED = built("vmc-account-verified")
+ACCOUNT_MISSING_OLD = built("vmc-account-missing-old")
+RENET_WIDE = built("vmc-renet-wide")
+RENET_GOMOD = built("vmc-renet-gomod")
+SCHEMA_1 = built("vmc-schema-1")
+RENET_WIDE_VERIFIED = G.plant_receipt(built("vmc-renet-wide"))
+RENET_GOMOD_VERIFIED = G.plant_receipt(built("vmc-renet-gomod"))
+# Both sides touched (the CLI remote path and the account source): one phase is not enough.
+BOTH_ACCOUNT_ONLY = G.plant_receipt(
+    G.world(new_dir("both-account-only-"), cli=True, account_files=(G.ACCOUNT_SRC,)),
+    ran=("account",),
+)
+BOTH_VERIFIED = G.plant_receipt(
+    G.world(new_dir("both-verified-"), cli=True, account_files=(G.ACCOUNT_SRC,)),
+    ran=("renet", "account"),
+)
+ACCOUNT_MISMATCH = G.plant_receipt(
+    G.world(new_dir("account-mismatch-"), account_files=(G.ACCOUNT_SRC,)),
+    ran=("account",),
+    account_checkout=G.FAKE_ACCOUNT,
+)
+ACCOUNT_MODIFIED = G.plant_receipt(
+    G.world(new_dir("account-modified-"), account_files=(G.ACCOUNT_SRC,)),
+    ran=("account",),
+    account_modified=True,
+)
+# The account phase could not start its gateway: the NOT_VERIFIED attempt the `vm-unavailable` escape names.
+ESC_GATEWAY = G.plant_receipt(
+    G.world(new_dir("esc-gateway-"), account_files=(G.ACCOUNT_SRC,)),
+    "NOT_VERIFIED",
+    reason_class="account-gateway",
+)
+ACCOUNT_HIT = "private/account/%s" % G.ACCOUNT_SRC
 TIP = G.TIP_BRANCH
 TIP_PUSH = "git push origin %s:refs/heads/x" % TIP
 
@@ -178,7 +217,106 @@ CASES = [
         True,
         "private/renet/cmd/renet/sandbox_exec.go",
     ),
-    ("the old renet object missing", PUSH, MISSING_OLD, None, None, True, "(unknown) renet range"),
+    (
+        "the old renet object missing",
+        PUSH,
+        MISSING_OLD,
+        None,
+        None,
+        True,
+        "(unknown) private/renet %s" % G.FAKE_RENET,
+    ),
+    (
+        "renet range touching pkg/license/x.go",
+        PUSH,
+        RENET_WIDE,
+        None,
+        None,
+        True,
+        "pkg/license/x.go",
+    ),
+    ("renet range touching go.mod", PUSH, RENET_GOMOD, None, None, True, "private/renet/go.mod"),
+    ("pkg/license/x.go, VERIFIED", PUSH, RENET_WIDE_VERIFIED, None, None, False, ""),
+    ("go.mod, VERIFIED", PUSH, RENET_GOMOD_VERIFIED, None, None, False, ""),
+    # ---- the account side
+    ("account range, tests only", PUSH, ACCOUNT_TESTS, None, None, False, ""),
+    ("account src touched, no receipt", PUSH, ACCOUNT_SRC, None, None, True, ACCOUNT_HIT),
+    (
+        "account src touched: the side named",
+        PUSH,
+        ACCOUNT_SRC,
+        None,
+        None,
+        True,
+        "touches: account",
+    ),
+    ("account src touched: its cost named", PUSH, ACCOUNT_SRC, None, None, True, "account phase"),
+    (
+        "account src touched: no renet cost",
+        PUSH,
+        ACCOUNT_SRC,
+        None,
+        None,
+        True,
+        "!renet phase",
+    ),
+    (
+        "the old account object missing",
+        PUSH,
+        ACCOUNT_MISSING_OLD,
+        None,
+        None,
+        True,
+        "(unknown) private/account %s" % G.FAKE_ACCOUNT,
+    ),
+    (
+        "account range, a renet-only VERIFIED receipt",
+        PUSH,
+        ACCOUNT_RENET_RECEIPT,
+        None,
+        None,
+        True,
+        "did not run the account phase",
+    ),
+    ("account range, an account VERIFIED receipt", PUSH, ACCOUNT_VERIFIED, None, None, False, ""),
+    (
+        "both sides, an account-only VERIFIED receipt",
+        PUSH,
+        BOTH_ACCOUNT_ONLY,
+        None,
+        None,
+        True,
+        "did not run the renet phase",
+    ),
+    ("both sides: both costs named", PUSH, BOTH_ACCOUNT_ONLY, None, None, True, "renet phase"),
+    ("both sides, both phases VERIFIED", PUSH, BOTH_VERIFIED, None, None, False, ""),
+    (
+        "account checkout is not the pointer",
+        PUSH,
+        ACCOUNT_MISMATCH,
+        None,
+        None,
+        True,
+        "the account checkout",
+    ),
+    (
+        "account checkout modified",
+        PUSH,
+        ACCOUNT_MODIFIED,
+        None,
+        None,
+        True,
+        "account checkout had uncommitted changes",
+    ),
+    (
+        "a schema 1 VERIFIED receipt",
+        PUSH,
+        SCHEMA_1,
+        None,
+        None,
+        True,
+        "no vm:check receipt exists",
+    ),
     # ---- every pushed commit, not only HEAD
     ("HEAD reverts the change: a bare push", PUSH, REVERTED, None, None, False, ""),
     (
@@ -432,6 +570,15 @@ CASES = [
         "",
     ),
     (
+        "vm-unavailable over an account-gateway NOT_VERIFIED",
+        (R % ("vm-unavailable: " + UNAVAIL + ASK)) + PUSH,
+        ESC_GATEWAY,
+        ANSWERED,
+        None,
+        False,
+        "",
+    ),
+    (
         "not-runtime for the other commit",
         (R % ("not-runtime: " + FILES + ASK)) + TIP_PUSH,
         ESC_TIP,
@@ -627,7 +774,10 @@ for name, command, root, tr, cwd, want, needle in CASES:
     got, err = run(command, root, tr, cwd)
     grew = len(ledger_lines(root)) - before
     blocked += got
-    ok = got == want and (not needle or needle in err)
+    if needle.startswith("!"):
+        ok = got == want and needle[1:] not in err
+    else:
+        ok = got == want and (not needle or needle in err)
     escaped = "VM_CHECK_PUSH_REASON='" in command and not command.startswith("echo")
     if got and grew:
         ok = False
@@ -652,13 +802,39 @@ for name, command, root, tr, cwd, want, needle in CASES:
         print("    needle %r; stderr: %s" % (needle, err.strip().splitlines()[:8]))
 
 # The shape of the ledger lines, read back.
-want_keys = {"ts", "branch", "head", "tree", "renet", "kind", "why", "asked", "hits", "receipt"}
+want_keys = {
+    "ts",
+    "branch",
+    "head",
+    "tree",
+    "renet",
+    "account",
+    "sides",
+    "kind",
+    "why",
+    "asked",
+    "hits",
+    "receipt",
+}
 checks = (
-    (ESC_NR, "not-runtime", None),
-    (ESC_DL, "deadline", None),
-    (ESC_NV, "vm-unavailable", {"status": "NOT_VERIFIED", "class": "fleet-unavailable"}),
+    (ESC_NR, "not-runtime", None, [G.CLI_FILE], ["renet"]),
+    (ESC_DL, "deadline", None, [G.CLI_FILE], ["renet"]),
+    (
+        ESC_NV,
+        "vm-unavailable",
+        {"status": "NOT_VERIFIED", "class": "fleet-unavailable"},
+        [G.CLI_FILE],
+        ["renet"],
+    ),
+    (
+        ESC_GATEWAY,
+        "vm-unavailable",
+        {"status": "NOT_VERIFIED", "class": "account-gateway"},
+        [ACCOUNT_HIT],
+        ["account"],
+    ),
 )
-for root, kind, receipt in checks:
+for root, kind, receipt, hits, sides in checks:
     rows = [json.loads(line) for line in ledger_lines(root)]
     if not rows:
         print("*** FAIL *** no ledger line was written for kind %s" % kind)
@@ -674,8 +850,10 @@ for root, kind, receipt in checks:
             ("head", len(last.get("head", "")) == 40),
             ("tree", len(last.get("tree", "")) == 40),
             ("renet", len(last.get("renet", "")) == 40),
+            ("account", len(last.get("account", "")) == 40),
+            ("sides", last.get("sides") == sides),
             ("asked", last.get("asked") == "2026-01-01T00:00Z"),
-            ("hits", last.get("hits") == [G.CLI_FILE]),
+            ("hits", last.get("hits") == hits),
             ("receipt", last.get("receipt") == receipt),
             ("why", "ASKED" not in last.get("why", "") and len(last.get("why", "")) >= G.MIN_WHY),
         )
@@ -706,7 +884,19 @@ if [(r.get("head"), r.get("tree"), r.get("kind"), r.get("hits")) for r in mirror
     fails += 1
 else:
     print("ledger: the --mirror escape is recorded with no head and its mirror hit")
-for quiet in (CLI_NONE, CLI_VERIFIED, ADVANCED, STALE_NV, DOCS, REVERTED, REVERTED_VERIFIED):
+for quiet in (
+    CLI_NONE,
+    CLI_VERIFIED,
+    ADVANCED,
+    STALE_NV,
+    DOCS,
+    REVERTED,
+    REVERTED_VERIFIED,
+    ACCOUNT_SRC,
+    ACCOUNT_VERIFIED,
+    ACCOUNT_RENET_RECEIPT,
+    SCHEMA_1,
+):
     if ledger_lines(quiet):
         print("*** FAIL *** a world with no admitted escape wrote %r" % ledger_lines(quiet))
         fails += 1
@@ -717,6 +907,9 @@ CONTROLS = [("DEFECT", G.DEFECT), *sorted(G.MUTANTS.items())]
 MUST_FLIP = {
     "inputs-always-equal": "vm-unavailable over another tree's NOT_VERIFIED",
     "asked-always-true": "an ASKED matching no answer",
+    # Only the empty-sides call admits it: with the account side dropped, the renet phase is still missing.
+    "phases-ignored": "both sides, an account-only VERIFIED receipt",
+    "account-side-dropped": "account range, a renet-only VERIFIED receipt",
 }
 for label, mutant in CONTROLS:
     flipped = [
