@@ -158,7 +158,7 @@ async function maybeIssueLicense(
   // LICENSE_REQUIRED (reason=missing) for the repo on the target machine.
   // The repo image exists on disk there, so refreshRepoLicensesBatch can scan it and issue. Skipping recovery for deny-listed functions is the root cause of rediacc/console#482: `repo push --up` to a fresh machine fails because the license was issued for the source, not the destination, and the destination's repository_up recovery never tried to issue.
 
-  // For provisioning verbs (create-tier, per renet's tier map), re-issue the pre-provisioning repo license. A restore is the same shape: renet's `backup restore` exits LICENSE_REQUIRED (reason=missing) when the machine holds no licence at all, and the batch refresh below cannot answer it, because it scans images and a restore target has none yet.
+  // For provisioning verbs (create-tier, per renet's tier map), re-issue the pre-provisioning repo license. A restore (and `backup_browse_at`, the other chunk-store read verb) is the same shape: renet's `backup restore` exits LICENSE_REQUIRED (reason=missing) when the machine holds no licence at all, and the batch refresh below cannot answer it, because it scans images and a restore target has none yet.
   const reissue = singleRepoReissueFor(options.functionName);
   if (reissue) {
     try {
@@ -322,7 +322,7 @@ export async function ensureRepoLicenseForProvisioning(
 }
 
 /**
- * Pre-flight for `backup_restore` (isRestoreLicenseFunction): install the
+ * Pre-flight for `backup_restore` and `backup_browse_at` (isRestoreLicenseFunction): install the
  * repo licence the restore needs as its chunk-store credential, on a machine
  * that may hold none at all.
  *

@@ -372,7 +372,7 @@ class LocalExecutorService {
       await Promise.all([runVerify(), runLicense()]);
     } else if (isRestoreLicenseFunction(options.functionName)) {
       // Sequential, unlike the provisioning arm above, and the difference is not stylistic. That arm's concurrency is safe because its pre-flight only needs the renet binary; this one runs a licence SCAN on the target (the skip probe) over the same shared SFTP session `verifyMachineSetup` is using, and a restore target is by construction a machine nobody has verified yet. Verify
-      // first, then license: a DR restore is not a path where a second of wall clock is worth an interleaving hazard.
+      // first, then license: a DR restore or chunk-store browse (backup_restore, backup_browse_at) is not a path where a second of wall clock is worth an interleaving hazard.
       await runVerify();
       const licStart = Date.now();
       await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>

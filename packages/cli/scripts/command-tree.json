@@ -1269,6 +1269,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--at <time|snapshot>",
+              "descriptionKey": "commands.backup.browse.optionAt",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,

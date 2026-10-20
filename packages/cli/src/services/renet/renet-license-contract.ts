@@ -143,11 +143,17 @@ export function isRepoProvisioningFunction(functionName: string): boolean {
   );
 }
 
+/** The chunk-store read verbs: restore, and browse of a stored snapshot. */
+const RESTORE_LICENSE_FUNCTIONS: ReadonlySet<string> = new Set([
+  'backup_restore',
+  'backup_browse_at',
+]);
+
 /**
- * The disaster-recovery verb that needs a repo licence installed on the target
+ * The chunk-store read verbs (`backup_restore`, `backup_browse_at`) that need a repo licence installed on the target
  * machine BEFORE it runs, without being a repo-provisioning verb.
  *
- * `renet backup restore` opens a chunk-store session, and the licence blob is
+ * `renet backup restore` and `renet backup browse-at` open a chunk-store session, and the licence blob is
  * what it exchanges for one (cmd/renet/backup_restore.go's
  * `resolveRestoreLicense`): it is the bearer credential AND the address book,
  * since the session URL is derived from the blob's `RenewalURL`. On a fresh DR
@@ -173,7 +179,7 @@ export function isRepoProvisioningFunction(functionName: string): boolean {
  * become, a tier lookup.
  */
 export function isRestoreLicenseFunction(functionName: string): boolean {
-  return functionName === 'backup_restore';
+  return RESTORE_LICENSE_FUNCTIONS.has(functionName);
 }
 
 /**

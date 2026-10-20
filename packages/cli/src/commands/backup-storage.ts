@@ -134,6 +134,11 @@ async function resolveLineage(repoRef: string): Promise<string> {
   if (!repo) {
     throw new Error(`Repository "${repoKey}" not found in this config.`);
   }
+  return lineageOf(repo);
+}
+
+/** The lineage (grand) GUID of a repo record: a fork shares its parent's lineage. */
+function lineageOf(repo: { grandGuid?: string; repositoryGuid: string }): string {
   return repo.grandGuid ?? repo.repositoryGuid;
 }
 
@@ -194,9 +199,59 @@ function registerBackupManifests(backup: Command): void {
 }
 
 /**
- * `backup browse <repo-ref> [--path]` -- list what a repository contains.
+ * `backup browse --at`: list a stored snapshot from the chunk store instead of the
+ * mounted image. Resolves the time or snapshot id to a snapshot id first, then runs
+ * the renet `backup_browse_at` verb, which reads the snapshot's listing object.
+ */
+async function runBrowseAt(
+  repoKey: string,
+  machineName: string,
+  at: string,
+  options: { path?: string; depth?: string; limit?: string; debug?: boolean }
+): Promise<{ result: Awaited<ReturnType<typeof executeRepoFunction>>; snapshotId: string }> {
+  const repo = await configService.getRepository(repoKey);
+  if (!repo) {
+    throw new Error(`Repository "${repoKey}" not found in this config.`);
+  }
+  if (!repo.credential) {
+    throw new ValidationError(t('commands.backup.browse.atNeedsCredential', { name: repoKey }));
+  }
+  const lineage = lineageOf(repo);
+  // Dynamic: backup.ts statically imports this file.
+  const { resolveSnapshotAt } = await import('./backup.js');
+  const snapshotId = await resolveSnapshotAt(lineage, at);
+  const result = await executeRepoFunction(
+    'backup_browse_at',
+    repoKey,
+    machineName,
+    {
+      lineage,
+      at: snapshotId,
+      path: options.path ?? '',
+      depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
+      limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
+    },
+    { debug: options.debug, captureOutput: true },
+    {
+      starting: t('commands.backup.browse.startingAt', { name: repoKey, snapshot: snapshotId }),
+      completed: t('commands.backup.browse.completed', { name: repoKey }),
+      failed: t('commands.backup.browse.failed', { name: repoKey }),
+    }
+  );
+  return { result, snapshotId };
+}
+
+/**
+ * The renet `backup browse-at` verb exits 18 when the snapshot has no stored
+ * listing. Propagated verbatim, like the quota refusal's 16.
+ */
+const RENET_NO_LISTING_EXIT = 18;
+
+/**
+ * `backup browse <repo-ref> [--path] [--at <time|snapshot>]` -- list what a repository
+ * contains. With `--at`, the listing comes from the chunk store (`backup_browse_at`).
  *
- * A LOCAL read on the machine holding the image. The chunk store cannot answer
+ * Without `--at`, a LOCAL read on the machine holding the image. The chunk store cannot answer
  * this question at all: a manifest maps grid cells to the hash of their
  * CIPHERTEXT, so it carries no filesystem information and no listing is
  * derivable from it. The only way to list files is to open the image and walk
@@ -216,31 +271,53 @@ function registerBackupBrowse(backup: Command): void {
     .option('--path <subdir>', t('commands.backup.browse.optionPath'))
     .option('--depth <n>', t('commands.backup.browse.optionDepth'))
     .option('--limit <n>', t('commands.backup.browse.optionLimit'))
+    .option('--at <time|snapshot>', t('commands.backup.browse.optionAt'))
     .option('--debug', t('options.debug'))
     .action(
       async (
         repoRef: string,
-        options: { path?: string; depth?: string; limit?: string; debug?: boolean }
+        options: {
+          path?: string;
+          depth?: string;
+          limit?: string;
+          at?: string;
+          debug?: boolean;
+        }
       ) => {
         try {
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
-          const result = await executeRepoFunction(
-            'backup_browse',
-            repoKey,
-            machineName,
-            {
-              path: options.path ?? '',
-              depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
-              limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
-            },
-            // captureOutput for the same reason as backup verify: the listing IS the answer, and without it the step detector drops the verb's JSON and browse exits 0 with EMPTY stdout.
-            { debug: options.debug, captureOutput: true },
-            {
-              starting: t('commands.backup.browse.starting', { name: repoKey }),
-              completed: t('commands.backup.browse.completed', { name: repoKey }),
-              failed: t('commands.backup.browse.failed', { name: repoKey }),
-            }
-          );
+          let snapshotId = '';
+          let result: Awaited<ReturnType<typeof executeRepoFunction>>;
+          if (options.at) {
+            ({ result, snapshotId } = await runBrowseAt(repoKey, machineName, options.at, options));
+          } else {
+            result = await executeRepoFunction(
+              'backup_browse',
+              repoKey,
+              machineName,
+              {
+                path: options.path ?? '',
+                depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
+                limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
+              },
+              // captureOutput for the same reason as backup verify: the listing IS the answer, and without it the step detector drops the verb's JSON and browse exits 0 with EMPTY stdout.
+              { debug: options.debug, captureOutput: true },
+              {
+                starting: t('commands.backup.browse.starting', { name: repoKey }),
+                completed: t('commands.backup.browse.completed', { name: repoKey }),
+                failed: t('commands.backup.browse.failed', { name: repoKey }),
+              }
+            );
+          }
+
+          // Exit 18: the snapshot has no stored listing (an older snapshot, or one taken without a listing). A distinct code, as with 16, so a script can tell "no listing there" from "it broke".
+          if (options.at && result.exitCode === RENET_NO_LISTING_EXIT) {
+            outputService.warn(
+              t('commands.backup.browse.noListing', { name: repoKey, snapshot: snapshotId })
+            );
+            setExitCode(RENET_NO_LISTING_EXIT);
+            return;
+          }
 
           const listing = parseBrowseResult(result.stdout);
           if (!listing) {
