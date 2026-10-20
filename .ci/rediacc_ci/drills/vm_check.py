@@ -1,26 +1,31 @@
-"""`npm run vm:check`: drive the repo shell, sync, SFTP and VS Code paths of `rdc` against the ops VMs, and write the receipt the push guard reads.
+"""`npm run vm:check`: prove the renet side (the repo shell, sync, SFTP and VS Code paths of `rdc` on the ops VMs) and the account side (private/account's suites and the account drills against a fresh dev gateway), and write the receipt the push guard reads.
 
     npm run vm:check [-- --changed] [--os <image>] [--parent <grand>] [--machine <name>] [--wait <s>] [--selftest] [--keep-work]
     ./run.sh drill vmcheck [same flags]
 
-Design 2 of agent/plans/PLAN-vm-check.md is the specification; each step below carries its id there.
+Design 2 of agent/plans/PLAN-vm-check.md and Design 3 of agent/plans/PLAN-account-vm-check.md are the specification; each step below carries its id there.
 
+PHASES. There are two sides, the trigger's `renet` and `account` (`vm_check_trigger.SIDES`). With `--changed` the sides of `Changed.sides` are required; with no `--changed`, or a push base that cannot be resolved, both are. The renet phase is P5 and V1.1-V1.7; the account phase is A1.1-A1.4, A0 and A2.1-A2.3. P0-P4 and T run on every run, P1 included, because the license drill deploys renet too and the receipt check needs `renet.built == renet.pointer` even on an account-only receipt. `phases.<side>.ran` is true only when every step of that phase recorded a row and every such row is ok. The steps, in run order:
+
+  A1  account only, before P0, so the fleet lock is not held for the suites: A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED before any VM is touched.
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`).
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
-  P4  runs right after P1, because it chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it.
+  A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `vm_check_trigger.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
+  P4  chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt, never in a suite's or a drill's environment. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`). Under the dev config a worker absent from it is registered as OPS_WORKER_NAME (`machine add`), and a `--machine` name absent from it is `worker-not-in-config` naming the command; a dev config that cannot be listed ("Decryption failed") is `account-unavailable`.
   P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
-  P5  the parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted on every path once `repo list` answers, before the grand is judged (a missing grand that is then created included), nothing else is touched.
-  V1.1-V1.7  two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
-  T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, `ops down` only for a fleet this run started, then the lock. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them.
+  A2  account only, against the worker: A2.1 `python3 -m rediacc_ci.drills.universe --no-restart`, A2.2 `python3 -m rediacc_ci.drills.transfer --no-restart`, A2.3 `python3 -m rediacc_ci.drills.license --legs c,d,e,f --no-restart --seed-repo --vm <worker ip>`. Each drill is judged by its summary line (`%d assertions: %d passed, %d failed`, `classify_drill`): a failed assertion is a failed row naming the drill; rc 0 with a positive count and the PASSED line is ok; a SKIPPED line, or 0 assertions, is `account-drill-skipped`; anything else, such as a non-zero rc with no summary (a preflight `SystemExit`), is `account-drill-setup`. All three run; a failed row ends the run FAILED, otherwise the first could-not-judge class ends it NOT_VERIFIED. A2 runs before P5 because the license drill deploys its enforcing renet build to the worker, and the first plain `./rdc.sh` of P5 deploys the default build of the same commit back before the V-steps.
+  P5  renet only. The parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted on every path once `repo list` answers, before the grand is judged (a missing grand that is then created included), nothing else is touched.
+  V1.1-V1.7  renet only: two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
+  T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, `ops down` only for a fleet this run started, then the lock. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them. A gateway A0 started is detached and stays up.
 
-THE RULES. Every VM action goes through `./rdc.sh`. Nothing here sets or clears REDIACC_AGENT, CLAUDECODE or REDIACC_ALLOW_*: a verb the CLI's agent guard refuses ends the run NOT_VERIFIED `agent-policy-refused` with the refusal's first line. The one guard variable set is REDIACC_SKIP_FILE_WRITE_GUARD=1, and only on the child of a V1.3 write row: the CLI's file-write guard (packages/cli/src/utils/repo-context-guard.ts) refuses `echo x > f` through `term connect` in an agent session with "File write detected", and that variable is its documented usability override (docs/environment-variables.md), not a security boundary. The raw `ssh` probes and the `sftp -b` leg are built from the constants below, the leg under `-F` with a config built from the alias block `vscode connect` wrote. Nothing is uploaded with scp.
+THE RULES. Every VM action goes through `./rdc.sh`. Nothing here sets or clears REDIACC_AGENT, CLAUDECODE or REDIACC_ALLOW_*: a verb the CLI's agent guard refuses ends the run NOT_VERIFIED `agent-policy-refused` with the refusal's first line. The one guard variable set is REDIACC_SKIP_FILE_WRITE_GUARD=1, and only on the child of a V1.3 write row: the CLI's file-write guard (packages/cli/src/utils/repo-context-guard.ts) refuses `echo x > f` through `term connect` in an agent session with "File write detected", and that variable is its documented usability override (docs/environment-variables.md), not a security boundary. The raw `ssh` probes and the `sftp -b` leg are built from the constants below, the leg under `-F` with a config built from the alias block `vscode connect` wrote. Nothing is uploaded with scp. Suites and drills run under this process's environment with DRILL_ENV_SCRUB removed, never under `child_env()`, so a declared keyring skip (DRILL_EXPECT_NO_KEYRING) cannot turn into a pass and the minted token never reaches a drill.
 
-VERDICTS. VERIFIED exit 0 (assertions ran, none failed, teardown clean); FAILED exit 1 (a V-step assertion failed); NOT_VERIFIED exit 77 (the check could not judge). A run that recorded no assertion is never VERIFIED. `--selftest` touches no machine: it feeds one planted failing assertion through the same `verdict` the real run uses and exits non-zero, printing "selftest fired as designed" only when that verdict came out FAILED.
+VERDICTS. VERIFIED exit 0 (assertions ran, none failed, every required phase ran, teardown clean); FAILED exit 1 (an assertion failed); NOT_VERIFIED exit 77 (the check could not judge). A required phase whose steps did not all run ok, with no other finding, is NOT_VERIFIED `phase-not-run`. A run that recorded no assertion is never VERIFIED. `--selftest` touches no machine: it feeds one planted failing assertion through the same `verdict` the real run uses and exits non-zero, printing "selftest fired as designed" only when that verdict came out FAILED.
 
-`--changed` evaluates `vm_check_trigger` against the push base in worktree mode; with no hit it prints the no-op line, writes no receipt and exits 0.
+`--changed` evaluates `vm_check_trigger` against the push base in worktree mode; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 2 (`vm_check_receipt`): `phases`, `account` (`pointer`, `checkout`, `modified`, `gateway`) and `trigger.sides` beside the renet fields. Receipts of an earlier schema no longer count, and a run that finds some says so once.
 
-The whole flow runs through `Host`, so the tests drive it with a fake host and a fake account and never reach a VM.
+The whole flow runs through `Host` and `Account`, so the tests drive it with a fake host and a fake account and never reach a VM, a gateway or a suite.
 """
 
 from __future__ import annotations
@@ -207,6 +212,44 @@ CRASHES = (
 # The image names `ops up --os` accepts are `<distro>-<version>`; /etc/os-release spells a few distros differently.
 OS_ALIASES = {"oracle": "ol", "opensuse": "opensuse-leap"}
 
+# --------------------------------------------------------------------------- the two phases
+
+SIDE_RENET = trigger.SIDE_RENET
+SIDE_ACCOUNT = trigger.SIDE_ACCOUNT
+# Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
+PHASE_STEPS: dict[str, tuple[str, ...]] = {
+    SIDE_RENET: ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7"),
+    SIDE_ACCOUNT: ("A1.1", "A1.2", "A1.3", "A1.4", "A0", "A2.1", "A2.2", "A2.3"),
+}
+# The account suites of A1: (step id, npm script, the package that holds it, None for the console root).
+ACCOUNT_SUITES: tuple[tuple[str, str, str | None], ...] = (
+    ("A1.1", "check:ci-account-server", None),
+    ("A1.2", "check:ci-test-account-web", None),
+    ("A1.3", "typecheck", trigger.ACCOUNT_SUBMODULE),
+    ("A1.4", "typecheck:web", trigger.ACCOUNT_SUBMODULE),
+)
+SUITE_TIMEOUT_S = 1800
+DRILL_TIMEOUT_S = 1800
+LICENSE_LEGS = "c,d,e,f"
+# Removed from every suite's and drill's environment: a minted or inherited credential, the dev-config switch, and the declared keyring skip that would turn the transfer drill's red into a SKIPPED exit 0.
+DRILL_ENV_SCRUB = ("REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER", "RDC_DEV", "DRILL_EXPECT_NO_KEYRING")
+# `lib.Drill.summary`'s count line and verdict words; colour escapes are stripped before either is read.
+DRILL_SUMMARY = re.compile(r"(\d+) assertions: (\d+) passed, (\d+) failed")
+DRILL_SKIPPED = re.compile(r"\bSKIPPED\b")
+DRILL_PASSED = re.compile(r"drill \S+ PASSED\b")
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+DRILL_OK = "ok"
+DRILL_FAILED = "failed"
+DRILL_SKIP = "skipped"
+DRILL_SETUP = "setup"
+DRILL_CLASSES = {DRILL_SKIP: "account-drill-skipped", DRILL_SETUP: "account-drill-setup"}
+# The A0 record of the last gateway this runner started, and that gateway's log; both outlive the run.
+GATEWAY_RECORD = "gateway.json"
+GATEWAY_LOG = "gateway.log"
+GATEWAY_REUSED = "reused"
+GATEWAY_STARTED = "started"
+GATEWAY_RESTARTED = "restarted"
+
 
 # --------------------------------------------------------------------------- outcomes
 
@@ -240,8 +283,9 @@ def verdict(
     failures: list[str],
     reason: tuple[str, str] | None,
     leftovers: Sequence[str],
+    phases: Mapping[str, Mapping[str, bool]] | None = None,
 ) -> tuple[str, dict[str, str] | None]:
-    """(status, reason) of a run. A failed assertion is the strongest finding, then a could-not-judge class, then an empty ledger, then the teardown."""
+    """(status, reason) of a run. A failed assertion is the strongest finding, then a could-not-judge class, then a required phase that did not run, then an empty ledger, then the teardown."""
     if failures:
         detail = failures[0]
         if leftovers:
@@ -252,6 +296,20 @@ def verdict(
         if leftovers:
             detail += "; teardown left: " + ", ".join(leftovers)
         return receipt_mod.NOT_VERIFIED, {"class": cls, "detail": detail}
+    missing = [
+        side
+        for side, phase in sorted((phases or {}).items())
+        if phase.get("required") and not phase.get("ran")
+    ]
+    if missing:
+        return receipt_mod.NOT_VERIFIED, {
+            "class": "phase-not-run",
+            "detail": "the required %s phase did not run every step to an ok row (steps %s)"
+            % (
+                " and ".join(missing),
+                "; ".join("%s: %s" % (s, ", ".join(PHASE_STEPS.get(s, ()))) for s in missing),
+            ),
+        }
     if assertions == 0:
         return receipt_mod.NOT_VERIFIED, {
             "class": "no-assertions",
@@ -335,19 +393,44 @@ class Host:
 class Account(Protocol):
     def gateway_healthy(self) -> bool: ...
 
+    def gateway_state(self) -> dict[str, Any]: ...
+
+    def restart(self, log_path: pathlib.Path) -> None: ...
+
+    def detach(self) -> None: ...
+
     def mint(self, password: str) -> str: ...
 
     def server_url(self) -> str: ...
 
 
 class DrillAccount:
-    """The dev gateway through `lib.Drill`'s helpers. Never starts or restarts the gateway: every start re-randomizes the dev passwords."""
+    """The dev gateway through `lib.Drill`'s helpers. Only A0 starts or restarts it (`restart`), since every start re-randomizes the dev passwords, and a gateway it started is detached so that it outlives the run."""
 
     def __init__(self, drill: lib.Drill) -> None:
         self.drill = drill
 
     def gateway_healthy(self) -> bool:
         return self.drill.gateway_alive()
+
+    def gateway_state(self) -> dict[str, Any]:
+        """`healthy`, plus the `gateway_port=` and `started=` lines of `.account-state` (the last of each, as rdc.sh reads them)."""
+        try:
+            text = (self.drill.root / ".account-state").read_text(errors="replace")
+        except OSError:
+            text = ""
+        return {
+            "healthy": self.drill.gateway_alive(),
+            "port": state_value(text, "gateway_port"),
+            "started": state_value(text, "started"),
+        }
+
+    def restart(self, log_path: pathlib.Path) -> None:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        self.drill.restart_gateway(log_path=log_path)
+
+    def detach(self) -> None:
+        self.drill.detach_gateway()
 
     def mint(self, password: str) -> str:
         d = self.drill
@@ -555,6 +638,39 @@ def rdc_failure(res: Result) -> str:
     return last_lines(res.err) or last_lines(res.out)
 
 
+def classify_drill(res: Result) -> tuple[str, str]:
+    """(outcome, detail) of one account drill, read from its last summary line: DRILL_FAILED when an assertion failed, DRILL_SKIP for a SKIPPED line or 0 assertions or rc 0 with no summary, DRILL_OK for rc 0 with a positive count and the PASSED line, DRILL_SETUP for anything else (a non-zero rc with no summary is a preflight that stopped the drill)."""
+    text = ANSI_ESCAPE.sub("", res.text())
+    counts = DRILL_SUMMARY.findall(text)
+    total, passed, failed = (int(n) for n in counts[-1]) if counts else (-1, -1, -1)
+    if failed > 0:
+        return DRILL_FAILED, "%d of %d assertions failed: %s" % (failed, total, last_lines(text))
+    if DRILL_SKIPPED.search(text) or total == 0:
+        return DRILL_SKIP, "rc=%d, a SKIPPED line or 0 assertions: %s" % (res.rc, last_lines(text))
+    if total < 0:
+        if res.rc == 0:
+            return DRILL_SKIP, "rc=0 with no summary line, so nothing was proven"
+        return DRILL_SETUP, "rc=%d with no summary line: %s" % (res.rc, last_lines(text))
+    if res.rc != 0 or not DRILL_PASSED.search(text):
+        return DRILL_SETUP, "rc=%d, %d assertions and 0 failed, but no PASSED line: %s" % (
+            res.rc,
+            total,
+            last_lines(text),
+        )
+    return DRILL_OK, "%d assertions passed" % passed
+
+
+def state_value(text: str, key: str) -> str:
+    """The LAST `<key>=` value of a `.account-state` text, as rdc.sh reads it (`grep ... | tail -1`); empty when absent."""
+    values = [ln.split("=", 1)[1].strip() for ln in text.splitlines() if ln.startswith(key + "=")]
+    return values[-1] if values else ""
+
+
+def _as_int(value: object) -> int | None:
+    text = str(value).strip() if value is not None else ""
+    return int(text) if text.isdigit() else None
+
+
 # --------------------------------------------------------------------------- options
 
 
@@ -609,6 +725,8 @@ class VmCheck:
         out=None,
         environ: Mapping[str, str] | None = None,
         inputs_fn: Callable[[pathlib.Path], str | None] = trigger.inputs,
+        account_modified_fn: Callable[[pathlib.Path], bool | None] = trigger.account_modified,
+        account_digest_fn: Callable[[pathlib.Path], str | None] = trigger.account_worktree_digest,
     ) -> None:
         self.root = root
         self.opts = opts
@@ -619,6 +737,8 @@ class VmCheck:
         self.out = out if out is not None else sys.stdout
         self.environ = dict(os.environ if environ is None else environ)
         self.inputs_fn = inputs_fn
+        self.account_modified_fn = account_modified_fn
+        self.account_digest_fn = account_digest_fn
         self.rdc_sh = str(root / "rdc.sh")
         self.renet_bin = root / trigger.RENET_SUBMODULE / "bin" / "renet"
         self.ssh_user = vm_ssh.default_user(self.environ)
@@ -657,7 +777,22 @@ class VmCheck:
             "modified": None,
             "deployed": None,
         }
-        self.trigger_info: dict[str, Any] = {"base": None, "via": "always", "hits": []}
+        self.trigger_info: dict[str, Any] = {
+            "base": None,
+            "via": "always",
+            "hits": [],
+            "sides": sorted(trigger.SIDES),
+        }
+        # Both phases unless `--changed` narrows them.
+        self.phases: dict[str, dict[str, bool]] = {
+            side: {"required": True, "ran": False} for side in trigger.SIDES
+        }
+        self.account_info: dict[str, Any] = {
+            "pointer": "",
+            "checkout": "",
+            "modified": None,
+            "gateway": {"mode": None, "port": None, "started": None},
+        }
         self.tree = ""
         self.head = ""
         self.inputs: str | None = None
@@ -729,6 +864,14 @@ class VmCheck:
             env["RDC_DEV"] = "1"
         return env
 
+    def drill_env(self) -> dict[str, str]:
+        """The environment of an A1 suite or an A2 drill: this process's, never `child_env()`, with DRILL_ENV_SCRUB removed and `.ci` on PYTHONPATH by absolute path."""
+        env = {k: v for k, v in self.environ.items() if k not in DRILL_ENV_SCRUB}
+        ci = str(self.root / ".ci")
+        rest = [p for p in (env.get("PYTHONPATH") or "").split(os.pathsep) if p and p != ci]
+        env["PYTHONPATH"] = os.pathsep.join([ci, *rest])
+        return env
+
     def git(self, *args: str, cwd: pathlib.Path | None = None) -> str:
         res = self.host.run(["git", "-C", str(cwd or self.root), *args], env=self.environ)
         return res.out.strip() if res.rc == 0 else ""
@@ -794,6 +937,8 @@ class VmCheck:
         if self.opts.changed and not self._evaluate_trigger():
             return EXIT_VERIFIED
         self.inputs = self.inputs_fn(self.root)
+        self._read_account()
+        self._note_old_receipts()
         previous = self._install_signals()
         try:
             self._steps()
@@ -822,16 +967,24 @@ class VmCheck:
             self.say("vm:check: %s" % warning)
         if base.merge_base is None:
             self.say(
-                "vm:check: no push base resolved (tried %s); running the full check"
+                "vm:check: no push base resolved (tried %s); running the full check, both phases"
                 % ", ".join(base.tried)
             )
-            self.trigger_info = {"base": None, "via": "unresolved", "hits": []}
+            self.trigger_info = {
+                "base": None,
+                "via": "unresolved",
+                "hits": [],
+                "sides": sorted(trigger.SIDES),
+            }
             return True
         changed = trigger.changed_paths(self.root, base.merge_base, "worktree")
+        # A touched change always names a side (a hit carries its side, an unknown range its submodule's); none at all would be a trigger defect, so it costs both phases rather than none.
+        sides = set(changed.sides) or set(trigger.SIDES)
         self.trigger_info = {
             "base": base.ref,
             "via": base.via,
             "hits": [*changed.hits, *("unknown " + u for u in changed.unknown)],
+            "sides": sorted(sides),
         }
         if not changed.touched:
             self.say(
@@ -839,21 +992,87 @@ class VmCheck:
                 % (base.ref, base.via)
             )
             return False
+        for side in trigger.SIDES:
+            self.phases[side]["required"] = side in sides
         self.say(
-            "vm:check: %d trigger path(s) changed since %s (via %s):"
-            % (len(self.trigger_info["hits"]), base.ref, base.via)
+            "vm:check: %d trigger path(s) changed since %s (via %s), sides %s:"
+            % (len(self.trigger_info["hits"]), base.ref, base.via, ", ".join(sorted(sides)))
         )
         for hit in self.trigger_info["hits"][:10]:
             self.say("  %s" % hit)
         return True
 
+    def _read_account(self) -> None:
+        """The account pointer, checkout and worktree state the receipt records; an account phase on a checkout that is not the pointer, or modified, is said up front, since its receipt cannot admit a push."""
+        info = self.account_info
+        info["pointer"] = self.git("rev-parse", "HEAD:%s" % trigger.ACCOUNT_SUBMODULE)
+        sub = self.root / trigger.ACCOUNT_SUBMODULE
+        # An uninitialized submodule is an empty directory, and git would walk up and answer the console's HEAD.
+        info["checkout"] = (
+            self.git("rev-parse", "HEAD", cwd=sub) if self.host.exists(str(sub / ".git")) else ""
+        )
+        info["modified"] = self.account_modified_fn(self.root)
+        if not self.phases[SIDE_ACCOUNT]["required"]:
+            return
+        if not info["checkout"] or info["checkout"] != info["pointer"]:
+            self.say(
+                "vm:check: the %s checkout %s is not the pointer %s, so this receipt cannot admit a push of the account side (account-mismatch)"
+                % (
+                    trigger.ACCOUNT_SUBMODULE,
+                    info["checkout"][:12] or "<none>",
+                    info["pointer"][:12] or "<none>",
+                )
+            )
+        if info["modified"] is not False:
+            self.say(
+                "vm:check: the %s worktree is %s, so this receipt cannot admit a push of the account side (modified-account)"
+                % (
+                    trigger.ACCOUNT_SUBMODULE,
+                    "unreadable" if info["modified"] is None else "modified",
+                )
+            )
+
+    def _note_old_receipts(self) -> None:
+        """One line when the receipt folder holds receipts of an earlier schema, which no longer count."""
+        folder = receipt_mod.receipt_dir(self.root)
+        old = 0
+        for path in folder.glob("*.json") if folder.is_dir() else ():
+            with contextlib.suppress(OSError, ValueError):
+                doc = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(doc, dict) and doc.get("schema") != receipt_mod.SCHEMA:
+                    old += 1
+        if old:
+            self.say(
+                "vm:check: %d receipt(s) of an earlier schema in %s no longer count; this run writes schema %d"
+                % (old, receipt_mod.CACHE_DIR, receipt_mod.SCHEMA)
+            )
+
     def _steps(self) -> None:
+        renet = self.phases[SIDE_RENET]["required"]
+        account = self.phases[SIDE_ACCOUNT]["required"]
+        self.say(
+            "vm:check: phases %s"
+            % ", ".join(
+                "%s %s" % (side, "required" if self.phases[side]["required"] else "not required")
+                for side in trigger.SIDES
+            )
+        )
+        # A1 before P0: the suites hold no fleet lock, and a red suite stops the run before any VM is touched.
+        if account and not self.a1_suites():
+            return
         self.p0_lock()
         self.p1_renet()
+        if account:
+            self.a0_gateway()
         # P4 before P2: the account decides which config the fleet, machine and key steps read and write.
         self.p4_account()
         self.p2_fleet()
         self.p3_keys()
+        # A2 before P5: the license drill deploys its enforcing renet build, and P5's first plain ./rdc.sh deploys the default one back.
+        if account and not self.a2_drills():
+            return
+        if not renet:
+            return
         self.p5_parent()
         if not self.v1_1_forks():
             return
@@ -1244,6 +1463,192 @@ class VmCheck:
                 if e
             ),
         )
+
+    # ------------------------------------------------------------------ A
+
+    def a1_suites(self) -> bool:
+        """The four account suites, each an assertion row; True when all four exited 0."""
+        env = self.drill_env()
+        green = True
+        for step_id, script, package in ACCOUNT_SUITES:
+            prefix = self.root / package if package else self.root
+            res = self.host.run(
+                ["npm", "--prefix", str(prefix), "run", script], env=env, timeout=SUITE_TIMEOUT_S
+            )
+            ok = res.rc == 0
+            spelled = "npm %srun %s" % ("--prefix %s " % package if package else "", script)
+            self.check(
+                step_id,
+                "%s (%d s)" % (spelled, res.ms // 1000),
+                ok,
+                res,
+                "" if ok else "rc=%d: %s" % (res.rc, last_lines(res.text())),
+            )
+            green = green and ok
+        if not green:
+            self.say("        an account suite is red; no VM is touched")
+        return green
+
+    def _gateway_paths(self) -> tuple[pathlib.Path, pathlib.Path]:
+        folder = receipt_mod.receipt_dir(self.root)
+        return folder / GATEWAY_RECORD, folder / GATEWAY_LOG
+
+    def _read_gateway_record(self, path: pathlib.Path) -> dict[str, Any] | None:
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        return doc if isinstance(doc, dict) else None
+
+    @staticmethod
+    def gateway_stale(
+        state: Mapping[str, Any], record: Mapping[str, Any] | None, account: str
+    ) -> str:
+        """Why the running gateway cannot be reused, or "" when it can: it answers, it is the one the record names (same `started` and port), and it was started on the account worktree digest `account`."""
+        if not state.get("healthy"):
+            return "no healthy dev gateway answers"
+        if record is None:
+            return "no record of a gateway this runner started"
+        now = (str(state.get("started") or ""), str(state.get("port") or ""))
+        then = (str(record.get("started") or ""), str(record.get("port") or ""))
+        if not now[0] or now != then:
+            return (
+                "the running gateway (started=%s, port %s) is not the recorded one (started=%s, port %s)"
+                % (now[0] or "?", now[1] or "?", then[0] or "?", then[1] or "?")
+            )
+        if record.get("account") != account:
+            return "private/account changed since the recorded gateway started"
+        return ""
+
+    def a0_gateway(self) -> None:
+        """Reuse the dev gateway only when its record matches the account worktree; otherwise start it, record it and leave it running."""
+        record_path, log_path = self._gateway_paths()
+        digest = self.account_digest_fn(self.root)
+        if digest is None:
+            raise NotVerifiedError(
+                "account-gateway",
+                "the %s worktree is unreadable (not checked out, or git failed), so the gateway's freshness cannot be judged"
+                % trigger.ACCOUNT_SUBMODULE,
+            )
+        state = self.account.gateway_state()
+        stale = self.gateway_stale(state, self._read_gateway_record(record_path), digest)
+        if not stale:
+            mode = GATEWAY_REUSED
+            desc = "dev gateway reused on port %s (started=%s; its record matches the account worktree)"
+        else:
+            mode = GATEWAY_RESTARTED if state.get("healthy") else GATEWAY_STARTED
+            self.say(
+                "        dev gateway: %s; %s it with ./run.sh account dev (log %s)"
+                % (stale, "restarting" if mode == GATEWAY_RESTARTED else "starting", log_path)
+            )
+            state = self._start_gateway(log_path, state)
+            self._write_gateway_record(record_path, state, digest)
+            self.say(
+                "        dev gateway %s on port %s (was %s): every dev password rotated, and configs pinned to the old port lose their writes"
+                % (mode, state.get("port") or "?", state.get("port_before") or "none")
+            )
+            desc = "dev gateway %s on port %%s (started=%%s), recorded and left running" % mode
+        self.account_info["gateway"] = {
+            "mode": mode,
+            "port": _as_int(state.get("port")),
+            "started": _as_int(state.get("started")),
+        }
+        self.record("A0", desc % (state.get("port") or "?", state.get("started") or "?"), True)
+
+    def _start_gateway(self, log_path: pathlib.Path, before: Mapping[str, Any]) -> dict[str, Any]:
+        """Start the gateway, detach it, and return its new state; `account-gateway` with the log tail when it does not come up healthy."""
+        try:
+            self.account.restart(log_path)
+        except (lib.GatewayError, OSError, RuntimeError, subprocess.SubprocessError) as exc:
+            raise NotVerifiedError(
+                "account-gateway",
+                "./run.sh account dev did not bring a healthy gateway up: %s; log tail: %s"
+                % (exc, self._log_tail(log_path)),
+            ) from None
+        # Detached before anything else can fail, so the next run reuses it rather than this run's teardown killing it.
+        self.account.detach()
+        state = dict(self.account.gateway_state())
+        if not state.get("healthy") or not state.get("port") or not state.get("started"):
+            raise NotVerifiedError(
+                "account-gateway",
+                "the dev gateway started but does not answer (port %s, started=%s); log tail: %s"
+                % (state.get("port") or "?", state.get("started") or "?", self._log_tail(log_path)),
+            )
+        state["port_before"] = before.get("port") or ""
+        return state
+
+    @staticmethod
+    def _log_tail(path: pathlib.Path) -> str:
+        try:
+            return last_lines(path.read_text(errors="replace")) or "<empty log>"
+        except OSError as exc:
+            return "<no log at %s: %s>" % (path, exc.strerror or exc)
+
+    @staticmethod
+    def _write_gateway_record(path: pathlib.Path, state: Mapping[str, Any], account: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(".%s.%d" % (path.name, os.getpid()))
+        tmp.write_text(
+            json.dumps(
+                {
+                    "port": str(state.get("port") or ""),
+                    "started": str(state.get("started") or ""),
+                    "account": account,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        os.replace(tmp, path)
+
+    def drill_argvs(self) -> tuple[tuple[str, str, list[str]], ...]:
+        """(step id, drill, argv) of A2, in run order."""
+        python = sys.executable or "python3"
+        worker = self.machine_ip or self.worker_ip
+        return (
+            ("A2.1", "universe", [python, "-m", "rediacc_ci.drills.universe", "--no-restart"]),
+            ("A2.2", "transfer", [python, "-m", "rediacc_ci.drills.transfer", "--no-restart"]),
+            (
+                "A2.3",
+                "license",
+                [
+                    python,
+                    "-m",
+                    "rediacc_ci.drills.license",
+                    "--legs",
+                    LICENSE_LEGS,
+                    "--no-restart",
+                    "--seed-repo",
+                    "--vm",
+                    worker,
+                ],
+            ),
+        )
+
+    def a2_drills(self) -> bool:
+        """The three account drills, each judged by `classify_drill`. False after a failed row; a could-not-judge drill raises once all three ran."""
+        env = self.drill_env()
+        pending: tuple[str, str] | None = None
+        green = True
+        for step_id, name, argv in self.drill_argvs():
+            res = self.host.run(argv, env=env, timeout=DRILL_TIMEOUT_S)
+            outcome, detail = classify_drill(res)
+            desc = "drill %s (%d s): %s" % (name, res.ms // 1000, outcome)
+            if outcome in (DRILL_OK, DRILL_FAILED):
+                ok = outcome == DRILL_OK
+                self.check(step_id, desc, ok, res, "" if ok else "drill %s: %s" % (name, detail))
+                green = green and ok
+                continue
+            self.record(step_id, desc, False, res, "drill %s: %s" % (name, detail))
+            if pending is None:
+                pending = (DRILL_CLASSES[outcome], "%s drill %s: %s" % (step_id, name, detail))
+        if not green:
+            return False
+        if pending is not None:
+            raise NotVerifiedError(*pending)
+        return True
 
     # ------------------------------------------------------------------ V
 
@@ -1733,8 +2138,18 @@ class VmCheck:
 
     # ------------------------------------------------------------------ summary and receipt
 
+    def phase_ran(self, side: str) -> bool:
+        """True only when every step of the phase recorded a row and every such row is ok."""
+        wanted = PHASE_STEPS[side]
+        rows = [r for r in self.steps if r["id"] in wanted]
+        return {r["id"] for r in rows} == set(wanted) and all(r["verdict"] == "ok" for r in rows)
+
     def _finish(self) -> int:
-        status, reason = verdict(self.assertions, self.failures, self.reason, self.leftovers)
+        for side in trigger.SIDES:
+            self.phases[side]["ran"] = self.phase_ran(side)
+        status, reason = verdict(
+            self.assertions, self.failures, self.reason, self.leftovers, self.phases
+        )
         receipt = self._receipt(status, reason)
         path: pathlib.Path | None = None
         if self.tree:
@@ -1755,6 +2170,8 @@ class VmCheck:
             "inputs": self.inputs,
             "renet": dict(self.renet),
             "trigger": dict(self.trigger_info),
+            "phases": {side: dict(phase) for side, phase in self.phases.items()},
+            "account": {**self.account_info, "gateway": dict(self.account_info["gateway"])},
             "fleet": {
                 "mode": self.fleet_mode or None,
                 "os": self.fleet_os or None,
@@ -1777,9 +2194,33 @@ class VmCheck:
         self.say("  %-5s %-6s %s" % ("##", "RESULT", "STEP"))
         for row in self.steps:
             self.say("  %-5s %-6s %s" % (row["id"], row["verdict"], row["desc"]))
+        if not any(r["id"].startswith("A") for r in self.steps):
+            self.say("  %-5s %-6s %s" % ("--", "skip", "A1-A2 not run"))
         if not any(r["id"].startswith("V") for r in self.steps):
             self.say("  %-5s %-6s %s" % ("--", "skip", "V1.1-V1.7 not run"))
-        self.say("  %d assertion(s), %d failed" % (self.assertions, len(self.failures)))
+        self.say(
+            "  %d assertion(s), %d failed; phases: %s"
+            % (
+                self.assertions,
+                len(self.failures),
+                ", ".join(
+                    "%s %s"
+                    % (
+                        side,
+                        ("ran" if phase["ran"] else "NOT RUN")
+                        if phase["required"]
+                        else "not required",
+                    )
+                    for side, phase in sorted(self.phases.items())
+                ),
+            )
+        )
+        gateway = self.account_info["gateway"]
+        if gateway["mode"]:
+            self.say(
+                "  dev gateway: %s on port %s, left running for the next run"
+                % (gateway["mode"], gateway["port"])
+            )
         if status == receipt_mod.VERIFIED:
             self.say("  vm:check VERIFIED")
         elif reason is not None:
@@ -1834,6 +2275,8 @@ def main(
     out=None,
     environ: Mapping[str, str] | None = None,
     inputs_fn: Callable[[pathlib.Path], str | None] = trigger.inputs,
+    account_modified_fn: Callable[[pathlib.Path], bool | None] = trigger.account_modified,
+    account_digest_fn: Callable[[pathlib.Path], str | None] = trigger.account_worktree_digest,
 ) -> int:
     opts = parse_args(argv, environ)
     if opts.selftest:
@@ -1850,6 +2293,8 @@ def main(
         out=out,
         environ=environ,
         inputs_fn=inputs_fn,
+        account_modified_fn=account_modified_fn,
+        account_digest_fn=account_digest_fn,
     )
     try:
         return check.run()
