@@ -628,6 +628,7 @@ def fires(guard: Path, command: str, kind: str = "command", file_path: str = "")
 
 # THE BATCH CHILD. One process per guard loads the guard module once and answers every payload in turn, instead of one interpreter start (~0.15 s, mostly imports) per probe sentence: 1459 sentences made the gate ~60 s wall on 24 cores. Each payload still gets its own fresh `Event`, exactly as `dispatch.run_one` builds it.
 # THE RESULT CHANNEL IS PRIVATE. The child saves the real stdout on a duplicated fd and points fd 1 at stderr before any guard runs, so a guard that prints (or a subprocess it starts) cannot corrupt the JSON, which is written to the saved fd only at the very end.
+# WORST CASE, STATED: a guard whose every probe hangs costs the child PER_PROBE_TIMEOUT per probe (its alarm fires, the child still answers), then the caller re-judges each hung probe alone for up to PER_PROBE_TIMEOUT more, so about twice the old per-process cost, 2 * PER_PROBE_TIMEOUT per probe; `_batch_run`'s outer timeout is pinned by a test.
 # THE HANG BOUND. Each payload runs under its own SIGALRM of PER_PROBE_TIMEOUT seconds (the old per-probe timeout), so one hanging probe is detected after the same 30 s a per-process run allowed, reported as null, and re-judged alone by the caller. The outer ceiling is only the backstop for a child stuck where a signal cannot reach: startup plus the sum of every payload's bound.
 PER_PROBE_TIMEOUT = 30
 _BATCH_CHILD = """
@@ -705,7 +706,7 @@ def fires_many(
         reason = f"the child could not start: {exc}"
     except ValueError:
         reason = "the child's answer was not JSON"
-    if codes is not None and (not isinstance(codes, list) or len(codes) != len(texts)):
+    if not reason and (not isinstance(codes, list) or len(codes) != len(texts)):
         reason = f"the child answered {len(codes) if isinstance(codes, list) else 'a non-list'} for {len(texts)} payloads"
         codes = None
     if codes is None:
@@ -963,7 +964,7 @@ def assess(
         every = [text for inst in instances for text in probes.texts(inst)]
         hits = [t for t, hit in zip(every, fires_many(guard, every, kind, fp), strict=True) if hit]
         return ("prose", PROSE_SEP.join(hits)) if hits else ("clean", "")
-    # The batch answers every probe up front, so the first-refusal early return no longer saves probe work; acceptable because a clean guard (the common case) was always probed in full and a refusing one is a red run anyway.
+    # The batch answers every probe up front, so the loop below stops at the first refusal for reporting only and saves no probe work; acceptable because a clean guard (the common case) is probed in full anyway and a refusing one is a red run.
     every = [text for inst in instances for text in probes.texts(inst)]
     for text, hit in zip(every, fires_many(guard, every, kind, fp), strict=True):
         if hit:
