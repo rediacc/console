@@ -592,7 +592,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       tests whose flip is W7P5's twin-retirement, `claude-review-gate` and `epic-context` are a
       scratch-wrapper ledger and a `Bash(...)` permission pattern, and `tutorials/run-sequence`
       and `profiler/sampler-linux.sh` are spawned by path from a composite action.
-- [ ] **W7P5-a S** `deploy/` 27 + `release/` 21 = **48 files, 5,440 lines**, 46 workflow call
+- [x] **W7P5-a S** `deploy/` 27 + `release/` 21 = **48 files, 5,440 lines**, 46 workflow call
       sites, zero Python, zero ledgers. Golden dry-run parity plus **one real run each**, K=5
       ledger before any deletion. Each specimen its own committed git repo; new side under
       `PYTHONDONTWRITEBYTECODE=1` (`__pycache__` dirties the tree before `treeIdentity`).
@@ -885,6 +885,7 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       | `release/reprobe-r2-sentinel.sh` | none found | none | .github/workflows/backfill-release-sentinel.yml:182 |
       | `release/tag-submodules.sh` | git push | push credential for the target repo | .github/workflows/cd-v2.yml:673 |
       | `release/update-homebrew-tap.sh` | curl, git push | none unless the URL is private; push credential for the target repo | .github/workflows/cd-v2.yml:680 |
+    (ticked) 2026-10-20T10:25:52Z by d778be9d: commit:912f2bf27 W7P5-a met: the deploy and release twins are gone (frozen to goldens and deleted on 2026-09-21) except .ci/scripts/deploy/upload-media-to-r2.sh, which carries a checked BLOCKER at .ci/policy/.language-policy-allowlist:134 and a K=5 ledger (shadow-gate --pair w7p5a-upload-media-to-r2 --assert --k 5 rc 0); 29 w7p5a ledgers hold at least 5 rows each, w7p5a-status.json lists 12 paths all ledger; 912f2bf27 retired the real-run blocklist and its gate once no twin remained
     (ticked) 2026-10-09T01:31:28Z by d778be9d: commit:50ebe57f1 commit:0c05c1622 -- 48 of 48 paths carry a K=5 EQUIVALENT ledger (16 w7p5a- only, 19 w7p6- only, 13 both; 842 rows, 0 non-EQUIVALENT), so the ledger leg of the acceptance is met for every path and no third state exists; twins deleted; the one-real-run-each clause is NOT met for 19 M-live paths and assert-artifact-version, owned by PLAN-w7p5a-real-run-dispatch boxes at :75-76
      (tick withdrawn 2026-10-09, review 07060999.1: the ledger leg is met for all 48 paths, but the box title requires one real run each, unmet for 19 M-live paths and assert-artifact-version; it closes with PLAN-w7p5a-real-run-dispatch:75-76)
 - [x] **W7P5-b S, the true long pole** The 13 real bash libs, **6,840 lines**. `common.sh` has
