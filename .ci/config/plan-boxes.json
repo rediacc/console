@@ -1872,25 +1872,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-vm-check.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 8,
-      "open_sigs": [],
-      "done_sigs": [
-        "316afc69",
-        "3b82dd28",
-        "750fd87e",
-        "ad35f490",
-        "b3a3c89c",
-        "be38aa52",
-        "d89e1dc8",
-        "dcdf6c1e"
-      ]
-    },
     "agent/plans/PLAN-w7p4w-docker-cutover.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
@@ -4368,6 +4349,25 @@
         "80bd0b71",
         "8959a3b8",
         "c7cf8d2c"
+      ]
+    },
+    "agent/plans/_done/PLAN-vm-check.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-20",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "316afc69",
+        "3b82dd28",
+        "750fd87e",
+        "ad35f490",
+        "b3a3c89c",
+        "be38aa52",
+        "d89e1dc8",
+        "dcdf6c1e"
       ]
     },
     "agent/plans/_done/PLAN-w9p2-script-relocation.md": {

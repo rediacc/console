@@ -122,8 +122,4 @@ Promoted: 0 of 6 plans done, 51 of 242 boxes done (21%).
 24. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
 25. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
 26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-
-### Not queued
-
-- agent/plans/PLAN-vm-check.md -- all boxes ticked: close it
 <!-- queue:generated:end -->
