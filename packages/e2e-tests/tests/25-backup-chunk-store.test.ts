@@ -5,6 +5,7 @@ import {
   dryRunViolations,
   type SnapshotRecord,
   snapshotRecordViolations,
+  verbIsRegistered,
 } from '../src/utils/backupStorage';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import {
@@ -541,6 +542,15 @@ test.describe
       });
 
       // Tests 12 and 13 drive `renet backup browse-at` DIRECTLY through executeViaBridge rather than the backup_browse_at FunctionDef. Two reasons. The refusals under test are the VERB's, and the function layer would add its own (it demands a lineage, a snapshot and a passphrase before it builds an argv). And the passphrase must ride stdin, which a vault run does not let this suite shape. The verb is spelled with a hyphen on purpose: these legs prove the REFUSALS only (nothing here lists a snapshot, which needs an account server and lives in suite 26), so they must not read to check-e2e-coverage as live coverage of the function itself.
+      // A worker whose renet predates the verb would turn tests 12 and 13 red with an unknown-command error; this names the cause instead.
+      const requireBrowseAtVerb = async () => {
+        const help = await runner.executeViaBridge('sudo renet backup --help');
+        expect(
+          verbIsRegistered(help.stdout + help.stderr, 'browse-at'),
+          'the worker renet has no `backup browse-at`: it predates this tree; redeploy renet before this suite'
+        ).toBe(true);
+      };
+
       const browseAtDirect = (at: string, passphrase = TEST_PASSWORD) =>
         runner.executeViaBridge(
           `printf '%s\\n' '${passphrase}' | sudo renet backup browse-at --datastore "${DS}" ` +
@@ -548,6 +558,7 @@ test.describe
         );
 
       test('12. browse-at refuses a TIME by name, before any licence lookup or server call', async () => {
+        await requireBrowseAtVerb();
         const at = '2026-01-01T00:00:00Z';
         const result = await browseAtDirect(at);
         // Exit 1 and not 10: a time must be refused BEFORE the licence is consulted, so the answer is identical on a licensed and an unlicensed machine. An exit 10 here would mean the refusal moved behind the server-facing steps, which is the order the verb's header promises against.
@@ -562,16 +573,20 @@ test.describe
       });
 
       test('13. browse-at on a machine with no repository licence exits 10 LICENSE_REQUIRED', async () => {
+        await requireBrowseAtVerb();
         // The licence store is machine-wide and this suite cannot make it empty: it must not delete a licence another suite or a person installed. So the state is PROBED. With none installed, exit 10 is the contract. With one installed, the verb legitimately gets past the licence step, and the leg falls back to the part that holds either way -- it must not succeed or print a listing for a snapshot that does not exist.
+        // stdout only: the verb prints its JSON array there and its log lines on stderr, so a bracket in a log line cannot be mistaken for the listing. A probe that does not answer JSON is a broken probe, reported as one, never read as "no licence".
         const status = await runner.executeViaBridge(
-          'sudo renet repository license-status --output json 2>&1 || true'
+          'sudo renet repository license-status --output json'
         );
-        const rawStatus = status.stdout + status.stderr;
-        let rows: { installed?: boolean }[] = [];
+        expect(status.code, `license-status probe failed:\n${status.stderr.slice(-800)}`).toBe(0);
+        let rows: { installed?: boolean }[];
         try {
-          rows = JSON.parse((/\[.*\]/s.exec(rawStatus) ?? ['[]'])[0]) as { installed?: boolean }[];
+          rows = JSON.parse(status.stdout.trim()) as { installed?: boolean }[];
         } catch {
-          // Unparseable output reads as "no rows", which is the branch that asserts the strict contract.
+          throw new Error(
+            `license-status did not print JSON on stdout:\n${status.stdout.slice(-800)}`
+          );
         }
         const licensed = rows.some((row) => row.installed === true);
 
