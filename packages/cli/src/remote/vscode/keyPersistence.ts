@@ -11,7 +11,7 @@ import { getPlatform, getSSHHome, isWSL, wslPathToWindows } from '../utils/platf
  * Normalizes a path for SSH config usage
  * Converts Windows backslashes to forward slashes
  */
-function normalizePathForSSH(path: string): string {
+export function normalizePathForSSH(path: string): string {
   if (getPlatform() === 'windows') {
     return path.replaceAll('\\', '/');
   }
@@ -25,7 +25,7 @@ function normalizePathForSSH(path: string): string {
 /**
  * Gets the directory for persisted rediacc keys
  */
-function getKeysDirectory(): string {
+export function getKeysDirectory(): string {
   const home = getSSHHome();
   return join(home, '.ssh', 'rediacc_keys');
 }
