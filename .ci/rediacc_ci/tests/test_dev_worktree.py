@@ -108,6 +108,8 @@ class Fixture:
             "GH_MERGED": str(self.merged),
             "GH_STALE": str(self.stale),
             "FX_ROOT": str(self.root),
+            # The port's day is frozen to the TODAY this module computed, so a suite that crosses midnight still names its branches as the assertions expect.
+            "WORKTREE_TODAY": TODAY,
             "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_CONFIG_GLOBAL": "/dev/null",
             "GIT_CONFIG_COUNT": "1",
@@ -439,6 +441,14 @@ def test_same_no_worktrees_and_list_with_one(tmp_path: Path) -> None:
     a, b, ra, rb, calls = diff_pair(tmp_path / "second", setup, ["list"])
     assert_same(a, b, ra, rb, calls)
     assert "0101-1" in rb.out
+
+
+def test_create_names_the_worktree_after_the_seam_day(tmp_path: Path) -> None:
+    # Control for the frozen-day seam: a day no clock produces today proves the port reads WORKTREE_TODAY, so a suite that crosses midnight is pinned rather than lucky.
+    fx = make_fixture(tmp_path)
+    result = fx.run_port(["create", "--no-devbox"], WORKTREE_TODAY="0229")
+    assert result.rc == 0, result.err
+    assert "0229-1" in fx.branches()
 
 
 @pytest.mark.parametrize("flags", [[], ["--teams"], ["--no-devbox"]])

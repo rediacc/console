@@ -728,6 +728,7 @@
       "WORKLIST_EPICS_LEDGER",
       "WORKLIST_REGISTRY_OVERRIDE_FILE",
       "WORKLIST_SOURCE_OVERRIDE_FILE",
+      "WORKTREE_TODAY",
       "X"
     ],
     "toolchain": [
