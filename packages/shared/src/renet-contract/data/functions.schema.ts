@@ -16,6 +16,15 @@ export const BackupBrowseParamsSchema = z.object({
   limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
 });
 
+/** List the files a chunk-store snapshot contains, without restoring it */
+export const BackupBrowseAtParamsSchema = z.object({
+  lineage: z.string().min(1).describe('Lineage (grand) GUID the snapshot belongs to'),
+  at: z.string().min(1).describe('Snapshot id to list (a TIME is resolved by the CLI, never here)'),
+  path: z.string().optional().describe('Limit the listing to this subtree'),
+  depth: z.string().default('0').optional().describe('Limit descent to N levels (0 = unlimited)'),
+  limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
+});
+
 /** Delete one or more backups from storage or machine */
 export const BackupDeleteParamsSchema = z.object({
   sourceType: z
@@ -626,6 +635,7 @@ export const SetupParamsSchema = z.object({
 
 export const FUNCTION_SCHEMAS = {
   backup_browse: BackupBrowseParamsSchema,
+  backup_browse_at: BackupBrowseAtParamsSchema,
   backup_delete: BackupDeleteParamsSchema,
   backup_list: BackupListParamsSchema,
   backup_pull: BackupPullParamsSchema,

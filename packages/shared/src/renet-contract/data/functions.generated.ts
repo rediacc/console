@@ -16,6 +16,20 @@ export interface BackupBrowseParams {
   limit?: string;
 }
 
+/** List the files a chunk-store snapshot contains, without restoring it */
+export interface BackupBrowseAtParams {
+  /** Lineage (grand) GUID the snapshot belongs to */
+  lineage: string;
+  /** Snapshot id to list (a TIME is resolved by the CLI, never here) */
+  at: string;
+  /** Limit the listing to this subtree */
+  path?: string;
+  /** Limit descent to N levels (0 = unlimited) */
+  depth?: string;
+  /** Maximum entries to return (0 = unlimited) */
+  limit?: string;
+}
+
 /** Delete one or more backups from storage or machine */
 export interface BackupDeleteParams {
   /** Target type: machine (SSH); storage is retired */
@@ -810,6 +824,7 @@ export interface SetupParams {
 
 export const RENET_FUNCTIONS = [
   'backup_browse',
+  'backup_browse_at',
   'backup_delete',
   'backup_list',
   'backup_pull',
@@ -903,6 +918,7 @@ export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
 export const RENET_BRIDGE_FUNCTIONS = [
   'backup_browse',
+  'backup_browse_at',
   'backup_delete',
   'backup_list',
   'backup_pull',
@@ -1075,6 +1091,7 @@ export type RenetBridgeFunctionName = (typeof RENET_BRIDGE_FUNCTIONS)[number];
 
 export type FunctionParamsMap = {
   backup_browse: BackupBrowseParams;
+  backup_browse_at: BackupBrowseAtParams;
   backup_delete: BackupDeleteParams;
   backup_list: BackupListParams;
   backup_pull: BackupPullParams;
@@ -1165,6 +1182,9 @@ export type FunctionParamsMap = {
 export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Partial<Record<'machine' | 'team' | 'repository' | 'storage' | 'organization' | 'network_id', boolean>> }> = {
   'backup_browse': {
     requirements: { machine: true, team: true, repository: true },
+  },
+  'backup_browse_at': {
+    requirements: { machine: true, team: true, repository: true, storage: true },
   },
   'backup_delete': {
     requirements: { machine: true, team: true, repository: true, storage: true },
@@ -1499,6 +1519,40 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     showInMenu: true,
     requirements: { machine: true, team: true, repository: true },
     params: {
+      path: {
+        type: 'string',
+        help: 'Limit the listing to this subtree',
+      },
+      depth: {
+        type: 'string',
+        default: '0',
+        help: 'Limit descent to N levels (0 = unlimited)',
+      },
+      limit: {
+        type: 'string',
+        default: '10000',
+        help: 'Maximum entries to return (0 = unlimited)',
+      },
+    },
+  },
+  'backup_browse_at': {
+    name: 'backup_browse_at',
+    category: 'backup',
+    showInMenu: true,
+    requirements: { machine: true, team: true, repository: true, storage: true },
+    params: {
+      lineage: {
+        type: 'string',
+        required: true,
+        help: 'Lineage (grand) GUID the snapshot belongs to',
+        placeholder: 'the repo\'s grand GUID',
+      },
+      at: {
+        type: 'string',
+        required: true,
+        help: 'Snapshot id to list (a TIME is resolved by the CLI, never here)',
+        placeholder: 'e.g., 20260814T120000Z-0011223344556677',
+      },
       path: {
         type: 'string',
         help: 'Limit the listing to this subtree',
@@ -3377,6 +3431,7 @@ export type QueueFunctionsType = {
 
 export const queueFunctions: QueueFunctionsType = {
   backup_browse: (params) => ({ functionName: 'backup_browse', params }),
+  backup_browse_at: (params) => ({ functionName: 'backup_browse_at', params }),
   backup_delete: (params) => ({ functionName: 'backup_delete', params }),
   backup_list: (params) => ({ functionName: 'backup_list', params }),
   backup_pull: (params) => ({ functionName: 'backup_pull', params }),
