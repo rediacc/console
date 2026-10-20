@@ -5,7 +5,7 @@ WHY A SECOND LAYER (the commit-policy plan in agent/plans, section 5.3; operator
 WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bash guards):
 
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
-  reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
+  reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
   pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
   pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one.
 
@@ -123,6 +123,10 @@ def commit_msg(argv: list[str]) -> int:
 
 
 def _created_heads(stdin: str) -> list[str]:
+    """The `refs/heads/*` names a `prepared` transaction CREATES.
+
+    An all-zero old value does not by itself mean a creation. Git writes zeros for a forced update too, one that does not check the current value (`git branch -f <existing> <sha>`, `git update-ref <ref> <sha>`); measured on git 2.53, 2026-10-20, a forced move of an existing `1020-1` from a detached HEAD arrived as `0000... <new> refs/heads/1020-1` and was refused as "creating branch". In the `prepared` state the ref still holds its pre-transaction value, so a name that already resolves is a MOVE of an existing branch, which the one-branch rule does not judge (the branch count is unchanged).
+    """
     out = []
     for line in stdin.split("\n"):
         fields = line.split()
@@ -131,8 +135,11 @@ def _created_heads(stdin: str) -> list[str]:
         old, new, ref = fields
         if old != cp.ZERO_OID or new == cp.ZERO_OID or new.startswith("ref:"):
             continue
-        if ref.startswith("refs/heads/"):
-            out.append(ref[len("refs/heads/") :])
+        if not ref.startswith("refs/heads/"):
+            continue
+        if cp.git(["rev-parse", "--verify", "--quiet", ref]) is not None:
+            continue
+        out.append(ref[len("refs/heads/") :])
     return out
 
 

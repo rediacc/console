@@ -78,8 +78,8 @@ Recorded SHAs are enough, and they are the DEFAULT here: `git reflog` keeps them
 below matches a submodule branch against the console branch name EXACTLY, and a suffixed name matches nothing while looking like it belongs to the wave.
 
 These SHAs are the recovery path (`git reset --hard <sha>` by the operator, or `git reflog`). A rebase that goes wrong is recoverable ONLY while they are known.
-- **Working tree clean except `.claude/settings.local.json`.** Rebase refuses to start
-on a dirty tree, and that refusal is correct. Do not clear it for it.
+- **Working tree clean except `.claude/settings.local.json`.** `git rebase` refuses to start
+over ANY modified tracked file (`error: cannot rebase: You have unstaged changes.`), settings.local.json included. That one file is the harness's permission file, rewritten on every granted permission and never committed or stashed, so step 3 carries it across the rebase with its skip-worktree bit. Every other modified path is a refusal that is correct. Do not clear it for it.
 
 **If it is NOT clean, identify whose work it is first.** This tree is shared and a concurrent session may hold uncommitted work here. **Never** `git add`, `stash`, `restore` or `checkout` those paths to make the precondition pass. That destroys another session's work and is banned by CLAUDE.md. Report what is dirty and stop; the operator or the owning session decides.
 - **Submodules clean too.** `git submodule status` must show no `+`/`-`/`U`. A dirty
@@ -137,13 +137,22 @@ submodule before console. Note it for step 5; nothing pushes before step 4 verif
 
 ### 3. Rebase the console branch
 
+The rebase runs inside a skip-worktree window on `.claude/settings.local.json`: the bit is set just before it, stays set while the rebase is stopped, and is cleared as soon as no rebase is in progress. `git rebase --continue` refuses over the modified file exactly as the start does (measured 2026-10-20, git 2.53: rc 1, with the misleading `You must edit all merge conflicts`), and the harness can rewrite the file while a conflict waits, so clearing the bit at the first stop breaks the next `--continue`.
+
 ```bash
+git update-index --skip-worktree .claude/settings.local.json
 git rebase "origin/${BASE:-main}"
+# THE RELEASE LINE: clears the bit once no rebase is in progress, a no-op while one is stopped.
+test -d "$(git rev-parse --git-path rebase-merge)" || git update-index --no-skip-worktree .claude/settings.local.json
 ```
+
+The release line runs after EVERY command that can end the rebase: this first `git rebase`, each `git rebase --continue` below, and `git rebase --abort`. It is one self-contained line rather than a shell function because each agent Bash call starts a fresh shell, so a function defined at the start would be gone by the first `--continue`. A finished or aborted rebase clears the bit; a stopped one keeps it. `.claude/hooks/stop/worklist.py --git rebase-continue --execute` keeps the same window by itself: it sets the bit before each `--continue` when the file is modified, and clears it when the rebase finishes. A bit left set hides every later edit of the file from `git status`, which step 4 checks.
+
+If the base itself changed settings.local.json, the rebase does not start: git refuses with `Your local changes to the following files would be overwritten by checkout: .claude/settings.local.json`, keeps the local file, and leaves no rebase in progress, so the release line clears the bit. Report it and stop; taking the base's version discards the local permissions, which is the operator's call.
 
 Every conflict falls into one of two kinds and they are resolved differently.
 
-**a. Ordinary file conflicts.** Resolve normally, `git add <paths>`, `git rebase --continue`. Keep edits surgical; `git add -A` is banned by `block-blanket-git-add.sh`.
+**a. Ordinary file conflicts.** Resolve normally, `git add <paths>`, `git rebase --continue`, then the release line. Keep edits surgical; `git add -A` is banned by `block-blanket-git-add.sh`.
 
 **b. Gitlink conflicts (`UU <submodule>`).** Never `--ours`/`--theirs` (see the table above). Pick by which case the submodule is in:
 
@@ -168,7 +177,7 @@ git -C <sm> merge-base --is-ancestor "$mine" "$rec" && echo "base is NEWER (take
 #
 # No correct resolution for this case has ever been executed in this repo, so
 # there is no procedure to follow and inventing one here would be worse than
-# stopping. `git rebase --abort`, restore the step-0 SHAs, and hand it to the
+# stopping. `git rebase --abort` and the release line, restore the step-0 SHAs, and hand it to the
 # operator with both candidate SHAs and what each contains.
 #
 # wl_git.py's resolve_gitlink_target refuses this same case rather than guessing.
@@ -180,15 +189,17 @@ Then stage the **path**, which is how a gitlink is marked resolved, and continue
 ```bash
 git add <sm>
 git rebase --continue
+# then the release line from the top of this step
 ```
 
-**Never `git rebase --skip`.** It drops the commit outright, and `.claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py` refuses it in this checkout and its submodules, pointing to `--abort`. If the branch is unrecoverable, `git rebase --abort` returns to the pre-rebase state recorded in step 0.
+**Never `git rebase --skip`.** It drops the commit outright, and `.claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py` refuses it in this checkout and its submodules, pointing to `--abort`. If the branch is unrecoverable, `git rebase --abort` returns to the pre-rebase state recorded in step 0, and the release line follows it.
 
 ### 4. Verify: a rebase that "succeeded" can still be wrong
 
 The failure mode this command exists to prevent produces a **clean tree and a green rebase**, so the tree state alone proves nothing. Check the content:
 
 - `git status --short` → nothing but `.claude/settings.local.json`.
+- `git ls-files -v .claude/settings.local.json` → tagged `H`, not `S`: the step-3 window is closed.
 - `git submodule status` → no `+`/`-`/`U`.
 - **Every gitlink points at a commit that contains both sides.** For each submodule the
 rebase touched, confirm the base's work is actually reachable from the recorded tip:

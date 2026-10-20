@@ -163,7 +163,9 @@ def rebase_state(root):
     Returns None when no rebase is in progress -- which is not an error, it is the normal case, and the caller must not report it as a halt.
     """
     for d in ("rebase-merge", "rebase-apply"):
-        base = os.path.join(root, ".git", d)
+        # ASK GIT WHERE ITS STATE LIVES. `<root>/.git` is a FILE in a submodule and in a linked checkout, so the old `os.path.join(root, ".git", d)` read "no rebase in progress" there while one was stopped. `--git-path` answers for all three shapes; the bare join stays only as the answer when git itself cannot run (a nonexistent root).
+        rc, out, _ = run_git(["rev-parse", "--git-path", d], cwd=root)
+        base = os.path.join(root, out) if rc == 0 and out else os.path.join(root, ".git", d)
         if os.path.isdir(base):
             # `base` is bound as a DEFAULT, not captured. The closure is correct today only because this function returns inside the same iteration; binding it makes that independent of control flow.
             def read(name, base=base):
@@ -532,6 +534,38 @@ HOOK_STATE_RE = re.compile(
 
 # The harness's own permission file, tracked and rewritten whenever a permission is granted. /branch-rebase and /pr-merge both read "nothing but `.claude/settings.local.json`" as a clean tree.
 SETTINGS_LOCAL = ".claude/settings.local.json"
+
+
+def settings_local_dirty(repo):
+    """Whether the harness's settings.local.json differs from the index, the one modification `git rebase` and every `git rebase --continue` refuse over that is never committed and never stashed."""
+    rc, out, _ = run_git(["diff", "--name-only", "--", SETTINGS_LOCAL], cwd=repo)
+    return rc == 0 and bool(out)
+
+
+def settings_local_skipped(repo):
+    """Whether settings.local.json carries the skip-worktree bit (`git ls-files -v` tags it `S`)."""
+    rc, out, _ = run_git(["ls-files", "-v", "--", SETTINGS_LOCAL], cwd=repo)
+    return rc == 0 and out[:1] in ("S", "s")
+
+
+def release_settings_local(plan, root):
+    """Clear settings.local.json's skip-worktree bit once no rebase is in progress, the end of the window /branch-rebase step 3 opens.
+
+    A bit left set hides every later edit of the file from `git status` and `git diff`, so the window closes as soon as the rebase is over, however it ended. Executed inline: rebase-continue's tail runs nothing.
+    """
+    if not settings_local_skipped(root):
+        return
+    plan.cmd(["update-index", "--no-skip-worktree", SETTINGS_LOCAL], root)
+    if not plan.execute:
+        return
+    _done, failed = plan.run()
+    plan.steps = [s for s in plan.steps if s[0] != "cmd" and s[0] != "write"]
+    if failed:
+        raise RefusalError(
+            "the rebase is over but `git update-index --no-skip-worktree %s` failed -- %s"
+            % (SETTINGS_LOCAL, failed[2])
+        )
+    plan.note("%s: skip-worktree cleared, the rebase is over" % SETTINGS_LOCAL)
 
 
 def is_session_state(path):
@@ -1089,9 +1123,12 @@ def main(argv):
             # It stops on the FIRST halt it cannot decide and hands back the report, which is the whole shape the operator asked for: not "a conflict needs a human, therefore refuse", but "resolve what is decidable and say precisely what is left".
             #
             # `--skip` appears nowhere, at any point. It drops the commit entirely, and a rebase that quietly loses a commit is the failure this module's verify-rebase exists to detect after the fact.
+            #
+            # SETTINGS.LOCAL.JSON. `--continue` refuses over a modified tracked file exactly as the rebase's start does (measured 2026-10-20, git 2.53: rc 1, with a misleading message that blames unresolved merge conflicts), and the harness rewrites that file on every granted permission. So each --continue runs with its skip-worktree bit set, and the bit is cleared once the rebase is over: the same window /branch-rebase step 3 opens.
             st = rebase_state(root)
             if st is None:
                 plan.note("no rebase in progress -- nothing to continue")
+                release_settings_local(plan, root)
             else:
                 steps = 0
                 while True:
@@ -1104,6 +1141,7 @@ def main(argv):
                     st = rebase_state(root)
                     if st is None:
                         plan.note("rebase finished after %d resolved halt(s)" % (steps - 1))
+                        release_settings_local(plan, root)
                         break
                     plan.note(
                         "halt %d: step %s of %s, replaying %s"
@@ -1128,6 +1166,8 @@ def main(argv):
                         label = "gitlink " + payload[:12] if how == "gitlink" else "registry union"
                         plan.check("%s -> %s" % (path, label), True, ruling)
                     stage_resolution(plan, root, resolved)
+                    if settings_local_dirty(root):
+                        plan.cmd(["update-index", "--skip-worktree", SETTINGS_LOCAL], root)
                     plan.cmd(["rebase", "--continue"], root)
                     if not plan.execute:
                         plan.note("")
@@ -1872,6 +1912,72 @@ def selftest():
         )
     finally:
         shutil.rmtree(_dirt_root, ignore_errors=True)
+
+    # SETTINGS.LOCAL.JSON ACROSS A STOPPED REBASE (#a42f8448). The harness rewrites the file while a rebase sits on a conflict; a real `git rebase --continue` then refuses (the CONTROL, so the fixture is proven to reproduce the defect), and rebase-continue --execute must finish the rebase with the file's local bytes intact and its skip-worktree bit cleared afterwards.
+    _sl_root = tempfile.mkdtemp()
+    try:
+        _sl = os.path.join(_sl_root, "r")
+        _sl_env = dict(os.environ, GIT_EDITOR="true")
+        _sl_g = ["git", "-c", "core.hooksPath=/dev/null", "-c", "core.excludesFile=/dev/null"]
+
+        def _slg(*argv):
+            return subprocess.run(
+                [*_sl_g, *argv], cwd=_sl, capture_output=True, check=False, env=_sl_env
+            ).returncode
+
+        def _slw(rel, text):
+            os.makedirs(os.path.dirname(os.path.join(_sl, rel)), exist_ok=True)
+            with open(os.path.join(_sl, rel), "w", encoding="utf-8") as fh:
+                fh.write(text)
+
+        os.makedirs(_sl)
+        _slg("init", "-q", "-b", "main")
+        _slg("config", "user.email", "s@example.invalid")
+        _slg("config", "user.name", "selftest")
+        _slg("config", "commit.gpgsign", "false")
+        _slw(SETTINGS_LOCAL, "{}\n")
+        _slw("f", "base\n")
+        _slg("add", "--", SETTINGS_LOCAL, "f")
+        _slg("commit", "-qm", "seed")
+        _slg("checkout", "-q", "-b", "feat")
+        _slw("f", "mine\n")
+        _slg("commit", "-qam", "mine")
+        _slg("checkout", "-q", "main")
+        _slw("f", "theirs\n")
+        _slg("commit", "-qam", "theirs")
+        _slg("checkout", "-q", "feat")
+        _sl_started = _slg("rebase", "main")
+        _slw(SETTINGS_LOCAL, '{"granted": 1}\n')
+        _slw("f", "resolved\n")
+        _slg("add", "--", "f")
+        _sl_raw = _slg("rebase", "--continue")
+        check(
+            "CONTROL: the fixture stopped on a conflict and a raw `git rebase --continue` refuses "
+            "over a rewritten settings.local.json (start rc %d, continue rc %d)"
+            % (_sl_started, _sl_raw),
+            _sl_started != 0 and _sl_raw != 0 and rebase_state(_sl) is not None,
+        )
+        real_repo_root = globals()["repo_root"]
+        globals()["repo_root"] = lambda: _sl
+        try:
+            _sl_rc, _sl_err = _run(["rebase-continue", "--execute"])
+        finally:
+            globals()["repo_root"] = real_repo_root
+        with open(os.path.join(_sl, SETTINGS_LOCAL), encoding="utf-8") as fh:
+            _sl_bytes = fh.read()
+        check(
+            "rebase-continue --execute finishes the rebase over a rewritten settings.local.json "
+            "(rc %d, %s)" % (_sl_rc, _sl_err.strip()[:120] or "no stderr"),
+            _sl_rc == 0 and rebase_state(_sl) is None,
+        )
+        check(
+            "and keeps the file's local bytes and clears its skip-worktree bit",
+            _sl_bytes == '{"granted": 1}\n'
+            and not settings_local_skipped(_sl)
+            and settings_local_dirty(_sl),
+        )
+    finally:
+        shutil.rmtree(_sl_root, ignore_errors=True)
     return 0 if fail == 0 else 1
 
 
