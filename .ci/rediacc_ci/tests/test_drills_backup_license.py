@@ -143,6 +143,8 @@ def _norm(text: str) -> str:
     text = re.sub(r"\(\d+s\)", "(Ns)", text)
     # The tools line differs on purpose (Rule T 1/2: the port needs neither curl nor node).
     text = re.sub(r"   curl [^\n]*\n", "   <TOOLS>\n", text)
+    # `--seed-repo` is a port-only flag (Rule T 7), so the usage line the bash twin prints lacks it.
+    text = text.replace(" [--seed-repo]", "")
     return re.sub(r"   python [^\n]*\n", "   <TOOLS>\n", text)
 
 
@@ -1120,3 +1122,154 @@ def test_the_license_drill_ssh_is_the_shared_one_identity_argv() -> None:
     opts.ssh_user, opts.ssh_key = "alice", "/k/id_rsa"
     lic = license_drill.License(lib.Drill("license"), opts)
     assert lic.ssh_argv(W11, "true") == vm_ssh.ssh_argv("alice", "/k/id_rsa", W11, "true")
+
+
+# ---------------------------------------------------------------------- --seed-repo (Rule T 7)
+
+
+class _RecordingDrill(lib.Drill):
+    """A Drill whose `run` records the argv and answers a fixed exit code instead of starting a process."""
+
+    def __init__(self, code: int = 0) -> None:
+        super().__init__("license", selftest=False, keep_work=False)
+        self.argvs: list[list[str]] = []
+        self.answer = code
+
+    def run(
+        self, argv: list[str], env: dict[str, str] | None = None, stdin_text: str | None = None
+    ) -> None:
+        del env, stdin_text
+        self.argvs.append(argv)
+        self.last_cmd = " ".join(argv)
+        self.code = self.answer
+
+
+class _SeedLicense(license_drill.License):
+    """A License with no licensed repo on the worker unless `guid` says otherwise."""
+
+    guid = ""
+
+    def repo_status(self, host: str, field: str) -> str:
+        del host, field
+        return self.guid
+
+
+def _seed_subject(
+    vm_ip: str, *, seed: bool, legs: str = "c,d,e,f", code: int = 0
+) -> tuple[_RecordingDrill, _SeedLicense]:
+    drill = _RecordingDrill(code)
+    drill.init()
+    opts = license_drill.Options()
+    opts.legs, opts.vm_ip, opts.seed_repo = legs, vm_ip, seed
+    return drill, _SeedLicense(drill, opts)
+
+
+def _creates(drill: _RecordingDrill) -> list[list[str]]:
+    return [a for a in drill.argvs if a[1:3] == ["repo", "create"]]
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_parse_args_reads_seed_repo_and_it_defaults_off() -> None:
+    opts = license_drill.Options()
+    assert opts.seed_repo is False
+    assert license_drill.parse_args(["--legs", "c", "--seed-repo", "--no-restart"], opts) is None
+    assert opts.seed_repo is True
+    assert opts.restart_gateway is False
+    assert "--seed-repo" in license_drill.USAGE
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_seed_repo_issues_the_create_argv_on_an_ops_vm_worker() -> None:
+    drill, lic = _seed_subject("192.168.111.11", seed=True)
+    try:
+        lic.ensure_repo_present()
+        creates = _creates(drill)
+        assert len(creates) == 1
+        assert creates[0][1:] == [
+            "repo",
+            "create",
+            "drill-repo",
+            "-m",
+            "drill-lic-1",
+            "--size",
+            "1G",
+        ]
+        assert drill.failures == 0
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_seed_repo_asserts_the_create_exit_code() -> None:
+    drill, lic = _seed_subject("192.168.111.11", seed=True, code=1)
+    try:
+        lic.ensure_repo_present()
+        assert len(_creates(drill)) == 1
+        assert drill.failures == 1
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+@pytest.mark.parametrize("vm_ip", ["10.0.0.5", "192.168.112.11", "192.168.111.11.example.com"])
+def test_seed_repo_refuses_on_a_worker_outside_the_ops_vm_network(
+    vm_ip: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    drill, lic = _seed_subject(vm_ip, seed=True)
+    try:
+        with pytest.raises(SystemExit) as exc:
+            lic.ensure_repo_present()
+        assert exc.value.code == 1
+        assert _creates(drill) == []
+        err = capsys.readouterr().err
+        assert "Legs b-e operate on a licensed repository, and %s has none." % vm_ip in err
+        assert "--seed-repo creates the repo only on an ops VM" in err
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+@pytest.mark.parametrize("vm_ip", ["192.168.111.11", "10.0.0.5"])
+def test_without_seed_repo_the_refusal_text_is_unchanged(
+    vm_ip: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    drill, lic = _seed_subject(vm_ip, seed=False)
+    try:
+        with pytest.raises(SystemExit) as exc:
+            lic.ensure_repo_present()
+        assert exc.value.code == 1
+        assert _creates(drill) == []
+        lines = [ln for ln in capsys.readouterr().err.splitlines() if ln.strip()]
+        expected = [
+            "Legs b-e operate on a licensed repository, and %s has none." % vm_ip,
+            "Leg a is what creates it, so there is nothing here to migrate, renew or meter.",
+            "Run leg a in the same invocation:  ./run.sh drill license --legs a,c,d,e,f",
+        ]
+        assert len(lines) == len(expected)
+        assert all(line.endswith(want) for line, want in zip(lines, expected, strict=True))
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_seed_repo_leaves_an_existing_licensed_repo_alone() -> None:
+    drill, lic = _seed_subject("192.168.111.11", seed=True)
+    lic.guid = "guid-1"
+    try:
+        lic.ensure_repo_present()
+        assert _creates(drill) == []
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_seed_repo_does_not_act_when_leg_b_is_selected(capsys: pytest.CaptureFixture[str]) -> None:
+    """Leg b needs the second worker's datastore too, so a bare create on .11 is not enough for it: the refusal stays."""
+    drill, lic = _seed_subject("192.168.111.11", seed=True, legs="b,c")
+    try:
+        with pytest.raises(SystemExit):
+            lic.ensure_repo_present()
+        assert _creates(drill) == []
+        assert "has none" in capsys.readouterr().err
+    finally:
+        drill.teardown()

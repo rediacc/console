@@ -1,6 +1,6 @@
 """Port of `scripts/drills/license.sh` (1071 lines): the live licensing battery, on real machines.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.drills.license [--legs a,b,c,d,e,f] [--selftest] [--no-restart] [--vm <ip>] [--vm2 <ip>] [--ssh-user <u>] [--ssh-key <p>] [--keep-work]
+    PYTHONPATH=.ci python3 -m rediacc_ci.drills.license [--legs a,b,c,d,e,f] [--selftest] [--no-restart] [--seed-repo] [--vm <ip>] [--vm2 <ip>] [--ssh-user <u>] [--ssh-key <p>] [--keep-work]
 
 THIS ONE COSTS REAL RESOURCES, so it says so before it does anything and refuses to start when the machines are not already there. It never provisions them: bringing up VMs is minutes of the operator's hardware.
 
@@ -20,6 +20,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   4. A FAILED RESTORE OF THE SUBSCRIPTION IS REPORTED. The bash teardown discarded both the output and the exit code of the patch that puts the cap and the status back (`>/dev/null 2>&1 || true`), so a drill that left the subscription suspended said nothing; the failure is a warning naming what was left behind.
   5. A TRANSPORT FAILURE ENDS THE DRILL WITH ITS CAUSE (`OSError` naming the method and URL) where a failed `curl` in a pipeline stage was swallowed and read as an empty field.
   6. CEPH IS ASKED OF THE WORKERS. The bash decided Ceph was available because VM .21 was running, which a default `ops up` satisfies with bare OS images that carry no client; leg a then died on `rbd: command not found`. `.21` running stays the first refusal, and `preflight_ceph` then requires `/etc/ceph/ceph.conf` and an `rbd` binary on each worker the selected legs use.
+  7. `--seed-repo` CREATES THE LICENSED REPO THE BASIC FLEET LACKS. Legs c, d and e need a licensed repo on the worker and only leg a creates one (it needs Ceph), so the bash could not run them on the basic fleet unless an earlier full-cluster run had left one. With legs a and b off and no licensed repo on `--vm`, `--seed-repo` runs leg a's issuance step (`repo create drill-repo -m drill-lic-1 --size 1G`) and asserts exit 0. It acts only when `--vm` is on the ops VM network (`vm_check.is_ops_vm_ip`, development-only machines per .claude/agents/ops-vms.md); any other worker keeps the refusal, flag or not. The repo persists on the worker afterwards.
 """
 
 from __future__ import annotations
@@ -38,7 +39,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
-from rediacc_ci.drills import lib, vm_ssh, wire
+from rediacc_ci.drills import lib, vm_check, vm_ssh, wire
 
 if TYPE_CHECKING:
     import pathlib
@@ -46,7 +47,7 @@ if TYPE_CHECKING:
 KNOWN_LEGS = ["a", "b", "c", "d", "e", "f"]
 USAGE = (
     "Usage: ./run.sh drill license [--legs a,b,c,d,e,f] [--selftest] "
-    "[--no-restart] [--vm <ip>] [--vm2 <ip>] [--ssh-user <u>] [--ssh-key <p>]"
+    "[--no-restart] [--seed-repo] [--vm <ip>] [--vm2 <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
 DRILL_PASSWORD = "DrillLicense123!"
 # The activation cap this drill starts from, seeded explicitly rather than inherited from the dev server's default, so leg e asserts against a number this file owns and teardown restores that same number.
@@ -67,6 +68,7 @@ CEPH_CLIENT_PROBE = (
 class Options:
     def __init__(self) -> None:
         self.restart_gateway = True
+        self.seed_repo = False
         self.legs = "a,b,c,d,e,f"
         self.net_base = os.environ.get("VM_NET_BASE") or "192.168.111"
         self.vm_ip = self.net_base + ".11"
@@ -91,6 +93,8 @@ def parse_args(argv: list[str], opts: Options) -> int | None:
         arg = argv[i]
         if arg == "--no-restart":
             opts.restart_gateway = False
+        elif arg == "--seed-repo":
+            opts.seed_repo = True
         elif arg in ("--legs", "--vm", "--vm2", "--ssh-user", "--ssh-key"):
             i += 1
             value = argv[i] if i < len(argv) else ""
@@ -362,10 +366,25 @@ class License:
         if guid:
             self.d.note("reusing the licensed repo already on %s (%s)" % (o.vm_ip, guid))
             return
+        if o.seed_repo and not o.enabled("b"):
+            if vm_check.is_ops_vm_ip(o.vm_ip):
+                self.seed_licensed_repo()
+                return
+            log.error(
+                "--seed-repo creates the repo only on an ops VM (%s.x); %s is not one, so it is left alone."
+                % (vm_check.OPS_VM_NETWORK, o.vm_ip)
+            )
         log.error("Legs b-e operate on a licensed repository, and %s has none." % o.vm_ip)
         log.error("Leg a is what creates it, so there is nothing here to migrate, renew or meter.")
         log.error("Run leg a in the same invocation:  ./run.sh drill license --legs a,%s" % o.legs)
         raise SystemExit(1)
+
+    def seed_licensed_repo(self) -> None:
+        """Leg a's issuance step on its own, for a basic fleet with no licensed repo (Rule T 7): the repo is created on the machine's default datastore, no Ceph."""
+        d = self.d
+        d.step("Seeding the licensed repo on %s (--seed-repo)" % self.o.vm_ip)
+        d.run([self.rdc, "repo", "create", REPO_NAME, "-m", MACHINE_NAME, "--size", "1G"])
+        d.assert_exit(0, "a repo is created on the machine (issuance happens here)")
 
     def preflight_vms(self) -> None:
         """Which cluster is actually up, and therefore which legs can run."""
