@@ -364,11 +364,19 @@ def main(argv=None):
     argv = list(argv or [])
     if "--selftest" in argv:
         return 1 if selftest() else 0
+    # `--root <dir>` scans another tree: the gate test plants into a copy, so no test writes into the tree a concurrent run of this gate is scanning.
+    root = None
+    if "--root" in argv:
+        i = argv.index("--root")
+        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
+            log.error("hook cross-OS seams: --root needs a directory")
+            return 2
+        root = pathlib.Path(argv[i + 1])
     rc = controls_first("hook cross-OS seams", selftest)
     if rc:
         return rc
     try:
-        findings, unclaimed, dead, seam_problems, file_count = run()
+        findings, unclaimed, dead, seam_problems, file_count = run(root)
     except RefusalError as exc:
         log.error("hook cross-OS seams: %s" % exc)
         return 1
