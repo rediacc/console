@@ -453,9 +453,21 @@ def _merge_bump(ev, act, repo, args, focus):
     branch = commit_policy.current_branch(repo)
     if not branch or str(focus.get("branch") or "") != branch:
         return None
-    dests = commit_policy.push_destinations(args)
-    if any(dst != branch for _src, dst in dests):
+    # The range check reads HEAD, so the push must send HEAD and nothing else: every refspec is explicit, unforced, and maps HEAD or the branch onto the branch (review b87d9c12.1, .3).
+    from rediacc_hooks import shellscan
+
+    parsed = shellscan.git_push_args(args)
+    flags = ("force", "force-with-lease", "force-if-includes", "delete", "all", "mirror", "tags")
+    if any(parsed.values(f) for f in flags):  # present at all, any value: fails closed
         return None
+    specs = parsed.operands[1:]
+    if not specs:
+        return None
+    mine = (branch, "refs/heads/%s" % branch)
+    for raw in specs:
+        src, colon, dst = raw.partition(":")
+        if raw.startswith("+") or src not in (*mine, "HEAD") or (dst if colon else src) not in mine:
+            return None
     why_not, span = _bump_only(repo)
     if why_not:
         ev.warn(
