@@ -4,6 +4,8 @@ The latest receipt is `.ci/cache/vm-check/receipt.json`. Every write also archiv
 
 Schema 2 is a clean break. `SCHEMA` is 2, `validate` rejects any other schema, `_load` returns None for such a file, and `admit` reports `no-receipt` when only schema 1 receipts exist, so an old receipt (VERIFIED or NOT_VERIFIED) neither admits a push nor backs an escape. Old files stay on disk, unread.
 
+A run that lost the fleet lock (P0's `fleet-busy`) judged nothing, and a holder may still be running on the same tree, so its record never replaces `receipt.json` or a `<tree>.json` archive: `write_run_record` keeps it at `runs/<runId>/receipt.json` only, which no lookup here reads (VC7(a), 2026-10-20: a busy loser rewrote `receipt.json` while the holder ran, and had it finished last it would have replaced the holder's VERIFIED receipt).
+
 The receipt folder also holds files that are not receipts (A0's `gateway.json` record and `gateway.log`, the per-run evidence under `runs/`); `receipt_files` names only `receipt.json` and the `<tree>.json` archives.
 
 A step row may carry `log` (the path of the kept full output) and `failedAssertions` (a drill's failed assertions, `<number> <description>`); the receipt may carry `runDir`, the directory of that evidence. All three are optional, and checked for shape when present.
@@ -34,9 +36,11 @@ STATUSES = (VERIFIED, FAILED, NOT_VERIFIED)
 SIDES = ("renet", "account")
 CACHE_DIR = ".ci/cache/vm-check"
 LATEST = "receipt.json"
+RUNS_DIR = "runs"
 EVIDENCE_MAX = 200
 ARCHIVE_SCAN_MAX = 50
 _TREE = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
+_RUN_ID = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9_.-]*$")
 _REQUIRED = (
     "schema",
     "status",
@@ -216,6 +220,23 @@ def write(root: pathlib.Path, receipt: dict[str, Any]) -> pathlib.Path:
     _atomic(out / f"{receipt['tree']}.json", data)
     _atomic(out / LATEST, data)
     return out / LATEST
+
+
+def run_record_path(root: pathlib.Path, run_id: str) -> pathlib.Path:
+    return receipt_dir(root) / RUNS_DIR / run_id / LATEST
+
+
+def write_run_record(root: pathlib.Path, receipt: dict[str, Any]) -> pathlib.Path:
+    """Keep the record of a run that never held the fleet lock at `runs/<runId>/receipt.json`, and nothing else: `receipt.json` and every `<tree>.json` archive stay byte-identical, so a busy loser finishing after the holder cannot replace the holder's receipt. Raises ValueError on a receipt that fails `validate` or a `runId` that is not a plain directory name."""
+    errors = validate(receipt)
+    run_id = receipt.get("runId")
+    if not (isinstance(run_id, str) and _RUN_ID.match(run_id)):
+        errors.append(f"runId {run_id!r} is not a plain directory name")
+    if errors:
+        raise ValueError("invalid vm-check run record: " + "; ".join(errors))
+    path = run_record_path(root, run_id)
+    _atomic(path, json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    return path
 
 
 def _load(path: pathlib.Path) -> dict[str, Any] | None:

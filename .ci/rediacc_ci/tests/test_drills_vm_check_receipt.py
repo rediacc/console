@@ -520,3 +520,56 @@ def test_receipt_files_names_only_receipts(tmp_path: pathlib.Path) -> None:
     (folder / "runs").mkdir()
     assert [p.name for p in rc.receipt_files(tmp_path)] == sorted([TREE + ".json", rc.LATEST])
     assert rc.receipt_files(tmp_path / "absent") == []
+
+
+# ------------------------------------------------------------------ a run that lost the fleet lock
+
+
+def busy(**over: object) -> dict[str, Any]:
+    fields: dict[str, Any] = {
+        "status": rc.NOT_VERIFIED,
+        "reason": {"class": "fleet-busy", "detail": "another vm:check holds the lock"},
+        "runId": "vmc-10201456-eec456",
+    }
+    fields.update(over)
+    return make(**fields)
+
+
+def test_a_lock_losers_record_leaves_the_receipts_byte_identical(tmp_path: pathlib.Path) -> None:
+    rc.write(tmp_path, make())
+    before = {p.name: p.read_bytes() for p in rc.receipt_files(tmp_path)}
+    assert sorted(before) == sorted([rc.LATEST, f"{TREE}.json"])
+    out = rc.write_run_record(tmp_path, busy())
+    assert out == tmp_path / ".ci/cache/vm-check/runs/vmc-10201456-eec456/receipt.json"
+    assert json.loads(out.read_text()) == busy()
+    assert {p.name: p.read_bytes() for p in rc.receipt_files(tmp_path)} == before
+
+
+def test_the_guard_never_reads_a_lock_losers_record(tmp_path: pathlib.Path) -> None:
+    rc.write(tmp_path, make())
+    rc.write_run_record(tmp_path, busy())
+    got = rc.admit(tmp_path, TREE, DIGEST, RENET)
+    assert (got.ok, got.code) == (True, "ok")
+    # Alone, the record is no receipt at all: neither an admission nor a refusal source.
+    alone = tmp_path / "alone"
+    rc.write_run_record(alone, busy())
+    assert rc.admit(alone, TREE, DIGEST, RENET).code == "no-receipt"
+    assert rc.read_latest(alone) is None
+    assert rc.read_archive(alone, TREE) is None
+
+
+@pytest.mark.parametrize("run_id", ["", ".", "..", "../x", "a/b", "run 1"])
+def test_write_run_record_refuses_a_run_id_that_is_no_directory_name(
+    tmp_path: pathlib.Path, run_id: str
+) -> None:
+    with pytest.raises(ValueError, match="runId"):
+        rc.write_run_record(tmp_path, busy(runId=run_id))
+    assert not rc.receipt_dir(tmp_path).exists()
+
+
+def test_write_run_record_refuses_a_malformed_record(tmp_path: pathlib.Path) -> None:
+    bad = busy()
+    del bad["inputs"]
+    with pytest.raises(ValueError, match="missing field inputs"):
+        rc.write_run_record(tmp_path, bad)
+    assert not rc.receipt_dir(tmp_path).exists()
