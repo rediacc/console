@@ -191,7 +191,7 @@
         },
         {
           "id": "check:ci-release-bump-skip",
-          "reason": "It reaches .ci/rediacc_ci/ci/detect_pointer_bump.py, whose agent/reviews/ cite is REVIEW_PATH_PREFIX, a prefix matched against `git diff-tree` path strings to admit review-record commits beside a pointer bump; no file under agent/reviews/ is opened, so none changes this gate's verdict."
+          "reason": "It reaches .ci/rediacc_ci/ci/detect_pointer_bump.py, whose agent/reviews/ cite is REVIEW_PATH_PREFIX, a prefix matched against the path strings of `git diff-tree` output to admit review-record commits beside a pointer bump. No file under agent/reviews/ is opened, so no file's content reaches the verdict, and this gate's verdict on a receipt is computed over its own fixture repositories, not the checkout's agent/reviews/ tree."
         }
       ]
     },
