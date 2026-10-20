@@ -180,7 +180,7 @@ def ci_query(owner, name, ref, cursor):
         "{nodes{number url isDraft commits(last:1){nodes{commit{oid statusCheckRollup{state "
         "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename "
         "... on CheckRun{name status conclusion databaseId detailsUrl "
-        "checkSuite{workflowRun{databaseId}}} "
+        "checkSuite{workflowRun{databaseId workflow{name}}}} "
         "... on StatusContext{context state targetUrl}}}}}}}}}}}"
     ) % (owner, name, ref, after)
 
@@ -202,7 +202,7 @@ def ci_branch_query(owner, name, ref, cursor):
 _BRANCH_CONTEXTS = (
     "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename"
     " ... on CheckRun{name status conclusion databaseId detailsUrl"
-    " checkSuite{branch{name} workflowRun{databaseId event}}}"
+    " checkSuite{branch{name} workflowRun{databaseId event workflow{name}}}}"
     " ... on StatusContext{context state targetUrl}}}"
 )
 
@@ -564,6 +564,12 @@ def _ctx_run(c):
     return ((c.get("checkSuite") or {}).get("workflowRun") or {}).get("databaseId")
 
 
+def _ctx_workflow(c):
+    """The workflow name of a check run's run, or None when the read did not carry it."""
+    run = (c.get("checkSuite") or {}).get("workflowRun") or {}
+    return (run.get("workflow") or {}).get("name")
+
+
 def ci_gate(info, require_complete=True):
     """THE GREEN RULE, shared by ci-trace's branch/PR read, its --run read and ci_trouble below. Pure: no network.
 
@@ -593,7 +599,12 @@ def ci_gate(info, require_complete=True):
             waiting += 1
         if (c.get("conclusion") or "").upper() == "CANCELLED":
             cancelled.append(
-                {"name": c.get("name") or "?", "run": _ctx_run(c), "job": c.get("databaseId")}
+                {
+                    "name": c.get("name") or "?",
+                    "run": _ctx_run(c),
+                    "job": c.get("databaseId"),
+                    "workflow": _ctx_workflow(c),
+                }
             )
         rid = _ctx_run(c)
         if rid:
@@ -609,7 +620,12 @@ def ci_gate(info, require_complete=True):
     # The Console CI run: the one carrying CI Complete, else the run with the most contexts (Console CI's ~170 against a side workflow's one or two).
     run = _ctx_run(complete) if complete else (max(runs, key=lambda r: runs[r]) if runs else None)
     # A CANCELLED JOB OF ANOTHER WORKFLOW is not a Console CI gate that failed to report. On 2026-10-20 main @ d35df2ab read RED for a `VM Bake (oracle-10)` timeout-kill in the VM-bake run 39388259580, while Console CI run 39388260085 had succeeded. It stays visible as `side_cancelled`, and the caller names it.
-    side_cancelled = [x for x in cancelled if run and x["run"] and x["run"] != run]
+    # Keyed on the WORKFLOW NAME, not the run: a cancelled Console CI run has no CI Complete to name it, and a second Console CI run on the SHA is still Console CI (review cec1447f.1, .2). A context whose workflow the read did not carry stays counted, and so does every context of a read of another workflow's own run (require_complete=False).
+    side_cancelled = [
+        x
+        for x in cancelled
+        if require_complete and x["workflow"] and x["workflow"] != CONSOLE_CI_WORKFLOW
+    ]
     cancelled = [x for x in cancelled if x not in side_cancelled]
     gate = {
         "live": live,
@@ -1588,14 +1604,17 @@ def _selftest():
     )
 
     # ---- ci_gate: the GREEN rule (PLAN-ci-verdict box A).
-    def run_ctx(name, status="COMPLETED", conclusion="SUCCESS", run=36953549081):
+    def run_ctx(name, status="COMPLETED", conclusion="SUCCESS", run=36953549081, workflow=None):
+        wr = {"databaseId": run}
+        if workflow:
+            wr["workflow"] = {"name": workflow}
         return {
             "__typename": "CheckRun",
             "name": name,
             "status": status,
             "conclusion": conclusion,
             "databaseId": abs(hash(name)) % 10**9,
-            "checkSuite": {"workflowRun": {"databaseId": run}},
+            "checkSuite": {"workflowRun": wr},
         }
 
     false_green = {
@@ -1623,7 +1642,12 @@ def _selftest():
         full,
         contexts=[
             *full_ctx,
-            run_ctx("VM Bake (oracle-10)", conclusion="CANCELLED", run=39388259580),
+            run_ctx(
+                "VM Bake (oracle-10)",
+                conclusion="CANCELLED",
+                run=39388259580,
+                workflow="CI - VM Bake",
+            ),
         ],
     )
     g = ci_gate(side)
@@ -1634,10 +1658,41 @@ def _selftest():
         and [x["name"] for x in g["side_cancelled"]] == ["VM Bake (oracle-10)"],
         "gate=%r" % (g,),
     )
-    own = dict(full, contexts=[*full_ctx, run_ctx("Build (Renet)", conclusion="CANCELLED")])
+    own = dict(
+        full,
+        contexts=[
+            *full_ctx,
+            run_ctx("Build (Renet)", conclusion="CANCELLED", workflow=CONSOLE_CI_WORKFLOW),
+        ],
+    )
     check(
         "CONTROL: a cancelled job of the Console CI run itself is still red",
         ci_gate(own)["verdict"] == "red",
+    )
+    # review cec1447f.1: a cancelled Console CI run has no CI Complete, and a side workflow with MORE contexts must not turn its cancel into a side one.
+    no_complete = {
+        "rollup": "FAILURE",
+        "truncated": False,
+        "contexts": [
+            run_ctx("Build (Renet)", conclusion="CANCELLED", run=7, workflow=CONSOLE_CI_WORKFLOW),
+            *[run_ctx("VM Bake (%d)" % i, run=8, workflow="CI - VM Bake") for i in range(3)],
+        ],
+    }
+    g = ci_gate(no_complete)
+    check(
+        "CONTROL: a cancelled Console CI job without CI Complete beside a larger side run is "
+        "still red, never moved to side_cancelled",
+        g["verdict"] == "red" and not g["side_cancelled"],
+        "gate=%r" % (g,),
+    )
+    unnamed = dict(full, contexts=[*full_ctx, run_ctx("X", conclusion="CANCELLED", run=9)])
+    check(
+        "CONTROL: a cancelled context whose workflow the read did not carry stays red",
+        ci_gate(unnamed)["verdict"] == "red",
+    )
+    check(
+        "CONTROL: a read of another workflow's own run (require_complete=False) counts its cancel",
+        ci_gate(side, require_complete=False)["verdict"] == "red",
     )
     verdict_live = dict(
         full,
