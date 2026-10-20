@@ -101,10 +101,10 @@ def _tracked_extensions(rel_repo: str) -> set[str]:
 
 @pytest.mark.parametrize("rel_repo", REPOS, ids=lambda r: r or "console")
 def test_every_tracked_text_extension_is_citable(tmp_path, rel_repo):
-    """The completeness claim in wl_checks.CITE_RE's comment, checked against the live tree instead of trusted: a new text format anywhere in the console or its submodules fails here until it is citable or named uncitable above. A submodule that is not checked out is a visible skip, never a silent pass."""
+    """The completeness claim in wl_checks.CITE_RE's comment, checked against the live tree instead of trusted: a new text format anywhere in the console or its submodules fails here until it is citable or named uncitable above. A submodule that is not checked out is a visible skip locally and a failure on CI, never a silent pass."""
     if not (ROOT / rel_repo / ".git").exists():
         # CI's pytest lane checks out with `submodules: true` (.github/workflows/ci-quality.yml, quality-pytest), so a missing submodule there is a broken checkout and fails; only a local tree without submodules skips, and says which.
-        if os.environ.get("CI"):
+        if os.environ.get("CI", "").strip().lower() in ("1", "true", "yes"):
             pytest.fail(
                 "%s is not checked out on CI, so its extensions cannot be checked" % rel_repo
             )

@@ -1986,7 +1986,7 @@
       ]
     },
     "agent/plans/_done/PLAN-account-vm-check.md": {
-      "status": "direction",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-20",
@@ -4351,7 +4351,7 @@
       ]
     },
     "agent/plans/_done/PLAN-vm-check.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-20",
