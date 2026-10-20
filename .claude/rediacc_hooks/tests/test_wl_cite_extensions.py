@@ -4,6 +4,7 @@ CITE_RE's extension alternation was found one format short seven times, each by 
 
 from __future__ import annotations
 
+import os
 import pathlib
 import subprocess
 
@@ -75,10 +76,8 @@ UNCITABLE = {
     "webm",
     "mp3",
     "wav",
-    "map",
     "o",
     "native",
-    "lock",
     "gitkeep",
 }
 
@@ -104,9 +103,15 @@ def _tracked_extensions(rel_repo: str) -> set[str]:
 def test_every_tracked_text_extension_is_citable(tmp_path, rel_repo):
     """The completeness claim in wl_checks.CITE_RE's comment, checked against the live tree instead of trusted: a new text format anywhere in the console or its submodules fails here until it is citable or named uncitable above. A submodule that is not checked out is a visible skip, never a silent pass."""
     if not (ROOT / rel_repo / ".git").exists():
+        # CI's pytest lane checks out with `submodules: true` (.github/workflows/ci-quality.yml, quality-pytest), so a missing submodule there is a broken checkout and fails; only a local tree without submodules skips, and says which.
+        if os.environ.get("CI"):
+            pytest.fail(
+                "%s is not checked out on CI, so its extensions cannot be checked" % rel_repo
+            )
         pytest.skip("%s is not checked out here, so its extensions were not checked" % rel_repo)
     missing = []
-    for ext in sorted(_tracked_extensions(rel_repo) - UNCITABLE):
+    # UNCITABLE is matched case-insensitively (LOGO.PNG is a binary too); the probe keeps the case, since CITE_RE does.
+    for ext in sorted(e for e in _tracked_extensions(rel_repo) if e.lower() not in UNCITABLE):
         rel = "probe/file.%s" % ext
         path = tmp_path / rel
         path.parent.mkdir(parents=True, exist_ok=True)
