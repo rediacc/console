@@ -561,7 +561,9 @@ def cmd_create(args: list[str]) -> int:
     base = worktree_base()
     sync_main_repo(root)
 
-    wt_name = "%s-%d" % (time.strftime("%m%d"), next_sequence_number(base, time.strftime("%m%d")))
+    # The day is read once, so a run that crosses midnight cannot name the worktree after one day and number it after the next. WORKTREE_TODAY is the tests' frozen-day seam.
+    day = os.environ.get("WORKTREE_TODAY") or time.strftime("%m%d")
+    wt_name = "%s-%d" % (day, next_sequence_number(base, day))
     wt_path = base / wt_name
     session = "%s-%s" % (TMUX_PREFIX, wt_name)
 

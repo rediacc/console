@@ -469,6 +469,9 @@
     ".ci/rediacc_ci/dev/measure_page_density.py": [
       "XDG_RUNTIME_DIR"
     ],
+    ".ci/rediacc_ci/dev/worktree.py": [
+      "WORKTREE_TODAY"
+    ],
     ".ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py": [
       "RUNNER_TEMP",
       "TMPDIR"
