@@ -999,7 +999,7 @@ jobs:
     permissions:
       contents: read
     needs: [initialize]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     if: >-
       always() &&
