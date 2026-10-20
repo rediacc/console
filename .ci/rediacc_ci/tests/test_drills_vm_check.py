@@ -223,6 +223,10 @@ class World(vm_check.Host):
         # The `repo create` answer: rc and the CLI's JSON error message when it fails.
         self.create_rc = over.pop("create_rc", 0)
         self.create_err = over.pop("create_err", "")
+        # True: the local config still lists the grand although the worker has none (`ops down` destroyed the VM); `repo create` then refuses "already exists in config" until `repo delete --archive-config` archives the entry. `forget_rc` is that delete's answer.
+        self.config_has_parent = over.pop("config_has_parent", False)
+        self.forget_rc = over.pop("forget_rc", 0)
+        self.forget_keeps = over.pop("forget_keeps", False)
         # False: the worker has no BTRFS datastore until `machine setup` runs; `setup_rc` is that command's answer.
         self.datastore = over.pop("datastore", True)
         self.setup_rc = over.pop("setup_rc", 0)
@@ -403,6 +407,8 @@ class World(vm_check.Host):
                 return self._json_error(1, "Decryption failed")
             if not (self.stored_ok or self._minted(env)):
                 return self._json_error(2, TOKEN_REQUIRED)
+            if self.config_has_parent and args[2] == PARENT:
+                return self._json_error(1, 'Repository "%s" already exists in config' % args[2])
             if not self.datastore:
                 return self._json_error(
                     1,
@@ -461,6 +467,11 @@ class World(vm_check.Host):
                 else "guid-" + args[4]
             )
             self.forked.append(args[4])
+            return ok
+        if head == ("repo", "delete") and "--archive-config" in args:
+            if self.forget_rc:
+                return vm_check.Result(self.forget_rc, "", "forget refused")
+            self.config_has_parent = self.forget_keeps
             return ok
         if head == ("repo", "delete"):
             self.deleted_any = True
@@ -2394,6 +2405,67 @@ def test_a_failed_grand_create_is_not_verified_and_names_the_cli_error(
     assert "Creating repository..." not in detail, detail
     assert world.forks_left() == []
     assert not [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+
+
+def _forgets(world: World) -> list[list[str]]:
+    return [c for c in world.rdc_calls() if c[:2] == ["repo", "delete"] and "--archive-config" in c]
+
+
+def test_a_grand_only_in_config_is_forgotten_then_created(tmp_path: pathlib.Path) -> None:
+    """VC7(b), 2026-10-20: `ops down` destroyed the VM, the config kept the grand, and `repo create` refused 'already exists in config'."""
+    world = make_world(tmp_path, grands=(), config_has_parent=True)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _forgets(world) == [["repo", "delete", PARENT, "--archive-config", "-y"]]
+    assert len(_creates(world)) == 2
+    assert PARENT in world.repos
+    row = next(r for r in receipt["steps"] if r["id"] == "P5")
+    assert row["verdict"] == "ok"
+    assert "stale config entry forgotten" in row["evidence"], row
+
+
+def test_a_grand_present_on_the_worker_is_never_forgotten(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, config_has_parent=True)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _forgets(world) == []
+    assert _creates(world) == []
+
+
+def test_a_missing_grand_absent_from_config_is_created_without_a_forget(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, grands=())
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _forgets(world) == []
+
+
+def test_a_failed_forget_is_not_verified_and_names_both_commands(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, grands=(), config_has_parent=True, forget_rc=1)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "parent-grand-missing"
+    detail = receipt["reason"]["detail"]
+    assert "forgetting it failed" in detail, detail
+    assert "--archive-config" in detail, detail
+    assert "forget refused" in detail, detail
+    assert "already exists in config" in detail, detail
+    assert "repo create" in detail, detail
+    assert len(_creates(world)) == 1
+
+
+def test_a_create_still_failing_after_the_forget_names_both_commands(
+    tmp_path: pathlib.Path,
+) -> None:
+    # The archive answers rc 0 but the entry stays: the second create refuses again.
+    world = make_world(tmp_path, grands=(), config_has_parent=True, forget_keeps=True)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    detail = receipt["reason"]["detail"]
+    assert "forgot the stale config entry, but creating it still failed" in detail, detail
+    assert "--archive-config" in detail, detail
+    assert "already exists in config" in detail, detail
 
 
 def test_a_worker_without_a_datastore_is_set_up_then_the_grand_is_created(
