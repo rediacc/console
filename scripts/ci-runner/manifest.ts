@@ -2478,6 +2478,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-workflow-submodule-deps',
     run: 'npm run check:ci-workflow-submodule-deps',
+    slow: true,
     gate: true,
     leaves: ['.ci/scripts/quality/check_workflow_submodule_deps.py'],
     ci: {

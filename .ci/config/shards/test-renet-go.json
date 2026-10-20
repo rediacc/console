@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-10-07T19:54:10.520Z",
+  "generatedAt": "2026-10-20T17:02:07.738Z",
   "legs": [
     {
       "index": 1,
@@ -56,6 +56,7 @@
       "ids": [
         "github.com/rediacc/renet/pkg/atomicjson",
         "github.com/rediacc/renet/pkg/chunkstore",
+        "github.com/rediacc/renet/pkg/chunkstore/toccrypt",
         "github.com/rediacc/renet/pkg/compose",
         "github.com/rediacc/renet/pkg/credentials",
         "github.com/rediacc/renet/pkg/datastore",

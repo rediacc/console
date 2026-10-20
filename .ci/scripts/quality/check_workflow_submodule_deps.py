@@ -16,6 +16,7 @@ WHAT IT DOES NOT DO. It does not check that a submodule checkout is NEEDED -- an
 step: Workflow submodule deps
 needs: python-yaml
 selftest: true
+slow: true
 ---- end gate ----
 """
 

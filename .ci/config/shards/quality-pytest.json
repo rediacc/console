@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-20T10:37:15.876Z",
+  "generatedAt": "2026-10-20T17:02:05.471Z",
   "legs": [
     {
       "index": 1,
@@ -589,6 +589,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_advisory.py",
         "pytest:.ci/rediacc_ci/tests/test_core_awscli.py",
         "pytest:.ci/rediacc_ci/tests/test_core_bws_env.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_bws_env_store.py",
         "pytest:.ci/rediacc_ci/tests/test_core_dockerx.py",
         "pytest:.ci/rediacc_ci/tests/test_core_ghx.py",
         "pytest:.ci/rediacc_ci/tests/test_core_lease.py",
@@ -685,11 +686,13 @@
         "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_checklists.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_cite_extensions.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_effort.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_loopspeed.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_migrate.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_prreview.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_queue_retire.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_regression_gate.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_inbox.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_scope.py",
