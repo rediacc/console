@@ -197,7 +197,9 @@ def run_pair(members, chain, payload, env):
         if live_head() == before:
             return old, new
     # Every attempt straddled a HEAD move, so no pair compares one world; that is reported as what it is, never as a verdict mismatch.
-    pytest.fail(f"HEAD moved during each of {PAIR_ATTEMPTS} attempts; the separate and collapsed verdicts were never taken against one HEAD")
+    pytest.fail(
+        f"HEAD moved during each of {PAIR_ATTEMPTS} attempts; the separate and collapsed verdicts were never taken against one HEAD"
+    )
 
 
 def corpus_by_chain():

@@ -12,6 +12,7 @@ import binascii
 import json
 import re
 import stat
+import time
 
 from rediacc_ci.core import bws_env
 from rediacc_ci.tests import differential as diff
@@ -185,3 +186,57 @@ def test_write_secret_refuses_an_answer_that_is_not_the_id(tmp_path) -> None:
     env = diff.env_for(PATH="%s:/usr/bin:/bin" % (root / "bin"))
     failure = bws_env.write_secret(str(root), {"op": "edit", "id": ENTRY_ID, "value": VALUE}, env)
     assert failure == "the writer answered an unexpected id"
+
+
+def _write_with_fake_npx(tmp_path, name: str, script: str, request: dict) -> str | None:
+    root = _fixture(tmp_path / name)
+    (root / "bin" / "npx").write_text(script, encoding="utf-8")
+    env = diff.env_for(PATH="%s:/usr/bin:/bin" % (root / "bin"))
+    return bws_env.write_secret(str(root), request, env)
+
+
+def test_write_secret_redacts_a_value_the_writer_echoes(tmp_path) -> None:
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "echo",
+        '#!/bin/sh\nread req\necho "bad request: %s" >&2\nexit 1\n' % VALUE,
+        {"op": "edit", "id": ENTRY_ID, "value": VALUE},
+    )
+    assert failure is not None
+    assert VALUE not in failure
+    assert "<redacted>" in failure
+
+
+def test_write_secret_survives_non_utf8_output(tmp_path) -> None:
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "binary",
+        "#!/bin/sh\ncat >/dev/null\nprintf '\\377\\376' >&2\nexit 1\n",
+        {"op": "edit", "id": ENTRY_ID, "value": VALUE},
+    )
+    assert failure is not None
+    assert failure.startswith("rc=1")
+
+
+def test_write_secret_refuses_a_request_without_an_id(tmp_path) -> None:
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "noid",
+        "#!/bin/sh\ncat >/dev/null\necho anything\n",
+        {"op": "edit", "value": VALUE},
+    )
+    assert failure == "the writer answered an unexpected id"
+
+
+def test_write_secret_timeout_kills_the_writer_group(tmp_path, monkeypatch) -> None:
+    marker = tmp_path / "late-write"
+    monkeypatch.setattr(bws_env, "WRITER_TIMEOUT_S", 1)
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "slow",
+        "#!/bin/sh\ncat >/dev/null\n(sleep 3; echo late > %s) &\nwait\n" % marker,
+        {"op": "edit", "id": ENTRY_ID, "value": VALUE},
+    )
+    assert failure == "cannot run npx: TimeoutExpired"
+    time.sleep(3.5)
+    assert not marker.exists(), "the grandchild outlived the timeout and wrote late"

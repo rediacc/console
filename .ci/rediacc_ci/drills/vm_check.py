@@ -840,6 +840,8 @@ class VmCheck:
         self.failures: list[str] = []
         self.reason: tuple[str, str] | None = None
         self.leftovers: list[str] = []
+        # Licence state a P5 sweep could not purge: carried into the T row like a teardown purge, so the run cannot reach VERIFIED over a dead blob.
+        self.sweep_leftovers: list[str] = []
         # Run state
         self.token: str | None = None
         self.account_server = ""
@@ -1579,6 +1581,7 @@ class VmCheck:
         )
         if unpurged:
             evidence += "; %s" % unpurged
+            self.sweep_leftovers.append(unpurged)
         evidence = evidence.strip("; ")
         if evidence:
             self.say("        stale forks: %s" % evidence)
@@ -1665,7 +1668,7 @@ class VmCheck:
                 )
             forgot = "stale config entry forgotten with ./rdc.sh %s rc=0" % " ".join(forget_args)
             res = self.rdc(*args, timeout=1800)
-            if res.rc != 0:
+            if res.rc != 0 and NO_DATASTORE not in rdc_failure(res):
                 raise NotVerifiedError(
                     "parent-grand-missing",
                     "no grand %s on %s; ./rdc.sh %s rc=0 forgot the stale config entry, but creating it still failed: ./rdc.sh %s rc=%d: %s"
@@ -2348,16 +2351,16 @@ class VmCheck:
                 signal.signal(sig, old)
 
     def _teardown(self) -> None:
-        leftovers: list[str] = []
+        leftovers: list[str] = list(self.sweep_leftovers)
         try:
-            leftovers = self._teardown_steps()
+            leftovers.extend(self._teardown_steps())
         except CRASHES as exc:
             leftovers.append(self.scrub("teardown crashed: %s: %s" % (type(exc).__name__, exc)))
         finally:
             self.lock.release()
             self.locked = False
         self.leftovers = leftovers
-        if not self.forks and not self.fleet_started and not self.connection:
+        if not self.forks and not self.fleet_started and not self.connection and not leftovers:
             self.record("T", "nothing to tear down (no fork created, no fleet started)", True)
         elif leftovers:
             self.record(

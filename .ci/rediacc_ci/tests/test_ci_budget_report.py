@@ -2124,6 +2124,31 @@ def test_compute_lane_durations_reports_job_p90_minutes_by_display_name(tmp_path
     assert computed["job_p90_minutes"] == {"Tests + Infra / E2E K8s Ceph": pytest.approx(14.0)}
 
 
+def test_compute_lane_durations_cancels_unstarted_job_fetches_on_a_gh_error(tmp_path, monkeypatch):
+    """A listing that raises GhError reaches the caller without the runs not yet started being fetched."""
+    root = _write_fixture_workflows(tmp_path)
+    monkeypatch.setattr(br, "JOB_FETCH_WORKERS", 1)
+    runs = [{"id": i, "created_at": "2026-09-27T00:00:00Z"} for i in range(1, 9)]
+    started: list[int] = []
+
+    def fake_fetch_runs(_repo, _workflow, event, _branch, _status, _limit):
+        return runs if event == "pull_request" else []
+
+    def fake_fetch_jobs(_repo, run_id):
+        started.append(run_id)
+        if run_id == 1:
+            raise br.ghx.GhBadOutputError([], 1, "boom", br.ghx.FAILURE_FAILED)
+        return []
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "fetch_jobs", fake_fetch_jobs)
+    with pytest.raises(br.ghx.GhError):
+        br.compute_lane_durations(
+            root=root, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+        )
+    assert len(started) < len(runs), started
+
+
 def test_compute_lane_durations_job_p90_minutes_is_success_only(tmp_path, monkeypatch):
     root = _write_fixture_workflows(tmp_path)
 

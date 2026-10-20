@@ -2482,6 +2482,19 @@ def test_a_worker_without_a_datastore_is_set_up_then_the_grand_is_created(
     assert PARENT in world.repos
 
 
+def test_a_stale_config_entry_on_a_worker_without_a_datastore_is_forgotten_set_up_and_created(
+    tmp_path: pathlib.Path,
+) -> None:
+    """After the forget, the second create's NO_DATASTORE refusal still reaches `machine setup` instead of ending the run."""
+    world = make_world(tmp_path, grands=(), config_has_parent=True, datastore=False)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert len(_forgets(world)) == 1
+    setups = [c for c in world.rdc_calls() if c[:2] == ["machine", "setup"]]
+    assert setups == [["machine", "setup", vm_check.OPS_WORKER_NAME]], setups
+    assert PARENT in world.repos
+
+
 def test_a_failed_datastore_setup_is_not_verified_and_names_it(tmp_path: pathlib.Path) -> None:
     world = make_world(tmp_path, grands=(), datastore=False, setup_rc=1)
     rc, out, receipt = run_check(tmp_path, world)
@@ -2926,6 +2939,21 @@ def test_a_purge_that_keeps_a_guid_is_a_teardown_leftover(tmp_path: pathlib.Path
     assert receipt["reason"]["class"] == "teardown-failed"
     assert "licence state of this run's forks" in receipt["reason"]["detail"]
     assert "KEPT x" in receipt["reason"]["detail"]
+
+
+def test_a_sweep_purge_that_fails_is_a_teardown_leftover(tmp_path: pathlib.Path) -> None:
+    """A stale fork whose licence blob the P5 sweep could not purge keeps the run off VERIFIED, as a teardown purge does."""
+    world = make_world(
+        tmp_path,
+        uuid_forks=True,
+        extra_repos=[STALE_FORK],
+        purge_rc=1,
+        purge_out="KEPT x: renet still lists it\n",
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "teardown-failed"
+    assert "licence state of the swept forks" in receipt["reason"]["detail"]
 
 
 def test_a_fork_guid_that_is_not_a_uuid_is_left_alone_and_said(tmp_path: pathlib.Path) -> None:

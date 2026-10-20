@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,6 +16,12 @@ vi.mock('../../utils/platform.js', async () => {
     isWSL: () => mockIsWSL(),
     wslPathToWindows: (p: string) => mockWslToWindows(p),
   };
+});
+
+// Call-through spy: unlinkSync on a directory throws and the production catch swallows it, so only the call itself proves a guard held.
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
+  return { ...actual, unlinkSync: vi.fn(actual.unlinkSync) };
 });
 
 // Now import the functions under test AFTER mock is registered.
@@ -201,6 +207,7 @@ describe('removeSSHConfigEntry key cleanup', () => {
     }
     expect(existsSync(key)).toBe(true);
     expect(existsSync(keysDir())).toBe(true);
+    expect(vi.mocked(unlinkSync)).not.toHaveBeenCalled();
   });
 
   it('removes the key when the config names it in the WSL Windows-path form', () => {

@@ -83,11 +83,13 @@ THE `STRIPE_WEBHOOK_SECRET` GUARD THAT PART 4 ASKED FOR IS DELIBERATELY ABSENT. 
 D3 HAS landed: the local key is `STRIPE_E2E_WEBHOOK_SECRET`, a committed fixture in `private/account/dev.defaults.env`, and no profile in `.ci/config/secret-supply.json` binds a `STRIPE_*` name at all. A hardcoded refusal for a collision that no longer exists is dead code whose expiry has already passed, and it would refuse a caller that legitimately wants the production secret.
 """
 
+import contextlib
 import hashlib
 import json
 import os
 import re
 import shutil
+import signal
 import stat
 import subprocess
 import sys
@@ -1169,30 +1171,52 @@ WRITER_ARGV = ("npx", "--no", "tsx", WRITER_SCRIPT_REL)
 WRITER_TIMEOUT_S = 120
 
 
+def _request_secrets(request: dict) -> list[str]:
+    """The string values of a writer request that must never be relayed, longest first so a value that contains another is masked whole."""
+    found = [v for k, v in request.items() if k == "value" and isinstance(v, str) and v]
+    return sorted(found, key=len, reverse=True)
+
+
 def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
     """Run bws-write.ts with REQUEST as JSON on stdin. None on success, else a value-free reason.
 
     argv is the constant WRITER_ARGV and nothing else: no field of the request, the value least of all, is ever an argument. Success is exit 0 AND stdout being exactly the id asked for, so a writer that printed anything more is a failure too, and its stdout is never relayed.
     """
+    # Its own process group, so a timeout kills the node/tsx grandchild npx spawned and no late write lands after the verb reported failure.
     try:
-        proc = subprocess.run(
+        proc = subprocess.Popen(
             list(WRITER_ARGV),
-            input=json.dumps(request),
-            capture_output=True,
-            text=True,
-            check=False,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             cwd=account_dir,
             env=env,
-            timeout=WRITER_TIMEOUT_S,
+            start_new_session=True,
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except OSError as exc:
+        return "cannot run %s: %s" % (WRITER_ARGV[0], type(exc).__name__)
+    try:
+        raw_out, raw_err = proc.communicate(json.dumps(request).encode(), timeout=WRITER_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        with contextlib.suppress(OSError):
+            os.killpg(proc.pid, signal.SIGKILL)
+        proc.communicate()
+        return "cannot run %s: TimeoutExpired" % WRITER_ARGV[0]
+    except OSError as exc:
+        with contextlib.suppress(OSError):
+            os.killpg(proc.pid, signal.SIGKILL)
+        proc.communicate()
         return "cannot run %s: %s" % (WRITER_ARGV[0], type(exc).__name__)
     if proc.returncode != 0:
-        detail = proc.stderr.strip().splitlines()
-        return "rc=%d%s" % (proc.returncode, ": " + detail[-1][:300] if detail else "")
-    answered = proc.stdout.strip()
+        detail = raw_err.decode(errors="replace").strip().splitlines()
+        line = detail[-1] if detail else ""
+        # The value must not reach a log even if the writer's error path echoes its request.
+        for secret in _request_secrets(request):
+            line = line.replace(secret, "<redacted>")
+        return "rc=%d%s" % (proc.returncode, ": " + line[:300] if line else "")
+    answered = raw_out.decode(errors="replace").strip()
     wanted = request.get("id")
-    if not answered or "\n" in answered or (wanted and answered != wanted):
+    if not answered or "\n" in answered or not wanted or answered != wanted:
         return "the writer answered an unexpected id"
     return None
 

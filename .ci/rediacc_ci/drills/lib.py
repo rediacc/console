@@ -539,9 +539,11 @@ class Drill:
         if target is None:
             raise RuntimeError("self.gateway_log is not set")
         target.parent.mkdir(parents=True, exist_ok=True)
-        log_file = target.open("wb")
+        # Append mode: opening is the writability check, and nothing is truncated while the old gateway may still write to this same file.
+        log_file = target.open("ab")
         self.active_gateway_log = target
         self.stop_gateway()
+        log_file.truncate(0)
         started = int(time.time())
         # Its own process group (setsid): the tsx child must not survive a kill of the run.sh wrapper and keep the port bound.
         with log_file:

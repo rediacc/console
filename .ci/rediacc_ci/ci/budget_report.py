@@ -1614,9 +1614,15 @@ def compute_lane_durations(
         limit,
         **bound,
     )
-    # Fetched JOB_FETCH_WORKERS at a time: the walk was serial and, at 10 to 15 runs of 150+ jobs (3 pages each), was ~250 s of the ~430 s a `--check` took (measured 2026-10-20). `map` yields in run order, so every consumer below sees the same list the serial loop built, and a GhError still propagates from the first failing run.
+    # Fetched JOB_FETCH_WORKERS at a time: the walk was serial and, at 10 to 15 runs of 150+ jobs (3 pages each), was ~250 s of the ~430 s a `--check` took (measured 2026-10-20). Results are read in run order, so every consumer below sees the same list the serial loop built, and a GhError propagates from the first failing run in that order; the fetches not yet started are cancelled first, so the error does not wait for the remaining runs' job pages (only the calls already in flight finish).
     with ThreadPoolExecutor(max_workers=JOB_FETCH_WORKERS) as pool:
-        pr_jobs_by_run = list(pool.map(lambda run: fetch_jobs(repo, run["id"]), pr_runs))
+        futures = [pool.submit(fetch_jobs, repo, run["id"]) for run in pr_runs]
+        try:
+            pr_jobs_by_run = [f.result() for f in futures]
+        except BaseException:
+            for f in futures:
+                f.cancel()
+            raise
 
     patterns = lane_display_patterns(tree_root, workflow)
     jobs_minutes: dict[str, float] = {}

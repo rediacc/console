@@ -80,6 +80,7 @@ import { loadRegistry, type PinEntry, type RepoPath, siteMatches } from '../lib/
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
 import {
   contextOf,
+  declaredSubmodules,
   holdOf,
   type PinView,
   type SelectOpts,
@@ -2184,7 +2185,21 @@ const CASES: Record<string, Case> = {
     const ru = await runCli(['apply-soaked', '--json'], withMutant(undeclared, m));
     const ju = parse(ru.out);
     const rn = await runCli(['bump', 'npm'], withMutant(named, m));
+    // A declared submodule path may contain a space: `path = <value>` is read whole, not up to the first blank.
+    const spacedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-gitmodules-'));
+    fs.writeFileSync(
+      path.join(spacedRoot, '.gitmodules'),
+      '[submodule "a"]\n\tpath = private/re net\n\turl = x\n[submodule "b"]\n\tpath = private/other\n\turl = y\n'
+    );
+    const spaced = [...declaredSubmodules(spacedRoot)].sort();
+    fs.rmSync(spacedRoot, { recursive: true });
     return [
+      {
+        // Red when the `path =` pattern stops at the first whitespace, cutting `private/re net` to `private/re`.
+        name: 'gitmodules: a declared submodule path containing a space is read whole',
+        ok: JSON.stringify(spaced) === JSON.stringify(['private/other', 'private/re net']),
+        detail: JSON.stringify(spaced),
+      },
       {
         // Red when a registry path .gitmodules does not declare is treated as an absent submodule.
         name: 'apply-soaked: a pin reading an empty directory that .gitmodules does not declare is refused, not not_checked',
