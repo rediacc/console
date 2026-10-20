@@ -19,7 +19,7 @@ import subprocess
 import sys
 import tempfile
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -63,7 +63,9 @@ FILE_WRITE = re.compile(r"\b(cat|echo|printf|base64)\b[^|;&]*>>?\s*(?!/dev/null\
 BRIDGE = NET + ".1"
 WORKER = NET + ".11"
 PROD_IP = "203.0.113.7"
-GATEWAY = "http://localhost:48123"
+# This host's address on the VM network (wire.bridge_host), the one the worker reaches the gateway at; the minted token must name it.
+HOST_ADDR = NET + ".254"
+GATEWAY = "http://%s:48123" % HOST_ADDR
 TOKEN_REQUIRED = (
     "Subscription token required. Either set REDIACC_SUBSCRIPTION_TOKEN env var, "
     "or run `rdc subscription login` in your terminal."
@@ -169,6 +171,9 @@ class World(vm_check.Host):
         self.modified = over.pop("modified", False)
         self.rebuild_fixes = over.pop("rebuild_fixes", True)
         self.ops_up_rc = over.pop("ops_up_rc", 0)
+        # This host's address on the VM network, None while no interface sits on it; `vm_net_after_up` is the address once `ops up` ran (a cold fleet creates the bridge).
+        self.vm_net_addr = over.pop("vm_net_addr", HOST_ADDR)
+        self.vm_net_after_up = over.pop("vm_net_after_up", HOST_ADDR)
         # Two configs, as on the host: the operator's default one and the dev one `./rdc.sh` selects under RDC_DEV=1. `machines` and `cli_key` describe the default config; the dev config starts as a freshly seeded dev.json (no machine, no key) unless `dev_machines` and `dev_key` say otherwise.
         self.machines = over.pop("machines", [{"name": "vm11", "ip": WORKER}])
         self.dev_machines = list(over.pop("dev_machines", ()))
@@ -222,6 +227,8 @@ class World(vm_check.Host):
         self.datastore = over.pop("datastore", True)
         self.setup_rc = over.pop("setup_rc", 0)
         self.gateway = over.pop("gateway", GATEWAY)
+        # Further addresses the same gateway answers at (its loopback one), for the cold-fleet path that mints on localhost first.
+        self.gateways = {self.gateway, *over.pop("also_gateways", ())}
         # "yes" (the config holds a key the VMs authorize), "no" (empty credentials) or "wrong" (a key they reject).
         self.cli_key = over.pop("cli_key", "yes")
         self.dev_key = over.pop("dev_key", "no")
@@ -262,6 +269,10 @@ class World(vm_check.Host):
 
     def drive_root(self) -> str:
         return str(self.mnt)
+
+    def vm_net_address(self, net_base: str) -> str | None:
+        assert net_base == NET
+        return self.vm_net_addr
 
     def now(self) -> float:
         return NOW
@@ -356,6 +367,7 @@ class World(vm_check.Host):
                     self.ops_up_rc, "", "booting\nlibvirt: domain failed to start"
                 )
             self.running = [BRIDGE, WORKER]
+            self.vm_net_addr = self.vm_net_after_up
             return ok
         if head == ("ops", "down"):
             self.running = []
@@ -508,7 +520,7 @@ class World(vm_check.Host):
         """The minted token counts only on the gateway that minted it, read under the dev config that carries that gateway's E2E key."""
         return (
             env.get("REDIACC_TOKEN") == TOKEN
-            and env.get("REDIACC_ACCOUNT_SERVER") == self.gateway
+            and env.get("REDIACC_ACCOUNT_SERVER") in self.gateways
             and self.config_of(env) == "dev"
         )
 
@@ -659,7 +671,7 @@ class FakeAccount:
         healthy: bool = True,
         token: str = TOKEN,
         mint_error: str = "",
-        server: str = GATEWAY,
+        server: str | None = None,
         started: str = GATEWAY_STARTED,
         restart_error: str = "",
         healthy_after_restart: bool = True,
@@ -670,6 +682,9 @@ class FakeAccount:
         self.healthy = healthy
         self.token = token
         self.minted = 0
+        # Every host `server_url` was asked for, in order.
+        self.hosts: list[str] = []
+        self.note = "subscription kept (3 of 2000 issuances used this month)"
         # The A0 side: `.account-state`'s started= and gateway_port=, and what restart and detach were asked.
         self.port = GATEWAY_PORT
         self.started = started
@@ -705,8 +720,15 @@ class FakeAccount:
             raise OSError(self.mint_error % password)
         return self.token
 
-    def server_url(self) -> str:
-        return self.server
+    def subscription_note(self) -> str:
+        return self.note
+
+    def server_url(self, host: str) -> str:
+        """The gateway at `host`, as DrillAccount spells it; `server` replaces the answer."""
+        self.hosts.append(host)
+        if self.server is not None:
+            return self.server
+        return "http://%s:%s" % (host, GATEWAY_PORT)
 
 
 @pytest.fixture(autouse=True)
@@ -2343,6 +2365,197 @@ def test_the_minted_token_rides_with_its_gateway(tmp_path: pathlib.Path) -> None
     minted = [e for e in rdc_envs if e.get("REDIACC_TOKEN") == TOKEN]
     assert minted
     assert all(e.get("REDIACC_ACCOUNT_SERVER") == GATEWAY for e in minted)
+
+
+LOOPBACK_GATEWAY = "http://localhost:%s" % GATEWAY_PORT
+
+
+def _issuing_envs(world: World) -> list[dict[str, str]]:
+    """The environment of every call that makes the CLI issue a licence: the grand's create and the forks."""
+    return [e for c, e in _rdc_envs(world) if c[:2] in (["repo", "create"], ["repo", "fork"])]
+
+
+def test_the_token_names_the_gateway_at_the_address_the_worker_reaches(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Worklist #efddc775: minted over localhost, every fork's and the grand's blob carried a renewalUrl the worker cannot reach. The token names the gateway at this host's VM-network address, so that address is what the account stamps."""
+    world = make_world(tmp_path, grands=())
+    account = FakeAccount()
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.hosts == [HOST_ADDR]
+    assert account.minted == 1
+    issuing = _issuing_envs(world)
+    assert len(issuing) == 3, [c for c, _e in _rdc_envs(world)]
+    assert {e.get("REDIACC_ACCOUNT_SERVER") for e in issuing} == {GATEWAY}
+    p4 = [r for r in receipt["steps"] if r["id"] == "P4"]
+    assert len(p4) == 1
+    assert GATEWAY in p4[0]["desc"]
+    assert "subscription kept" in p4[0]["desc"]
+
+
+def test_a_cold_fleet_mints_on_localhost_then_on_the_bridge_before_any_issuance(
+    tmp_path: pathlib.Path,
+) -> None:
+    """No interface on the VM network before `ops up`: the token P4 mints on localhost serves the fleet steps only, and is replaced by one minted on the bridge address right after P2."""
+    world = make_world(
+        tmp_path, running=(), vm_net_addr=None, also_gateways=(LOOPBACK_GATEWAY,), grands=()
+    )
+    account = FakeAccount()
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.hosts == ["localhost", HOST_ADDR]
+    assert account.minted == 2
+    assert "re-minted on this host's VM-network address" in out
+    issuing = _issuing_envs(world)
+    assert issuing
+    assert {e.get("REDIACC_ACCOUNT_SERVER") for e in issuing} == {GATEWAY}
+    p4 = [r["desc"] for r in receipt["steps"] if r["id"] == "P4"]
+    assert len(p4) == 2
+    assert LOOPBACK_GATEWAY in p4[0]
+    assert GATEWAY in p4[1]
+
+
+def test_a_fleet_up_with_no_vm_network_address_never_issues(tmp_path: pathlib.Path) -> None:
+    world = make_world(
+        tmp_path,
+        running=(),
+        vm_net_addr=None,
+        vm_net_after_up=None,
+        also_gateways=(LOOPBACK_GATEWAY,),
+        grands=(),
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "fleet-unavailable"
+    assert "no licence this run issues could renew" in receipt["reason"]["detail"]
+    assert _issuing_envs(world) == []
+
+
+def _subscription(**over: Any) -> dict[str, Any]:
+    body: dict[str, Any] = {
+        "id": "sub-1",
+        "planCode": vm_check.ACCOUNT_PLAN,
+        "status": "inactive",
+        "expiresAt": None,
+        "repoLicenseIssuances": {"used": 12, "limit": 2000},
+        "maxActivations": 5,
+        "machineSlots": {"active": 1, "max": 5},
+    }
+    body.update(over)
+    return body
+
+
+@pytest.mark.parametrize(
+    ("over", "why"),
+    [
+        ({}, ""),
+        ({"status": "active"}, ""),
+        ({"expiresAt": "2027-01-01T00:00:00Z"}, ""),
+        ({"id": ""}, "no subscription"),
+        ({"planCode": "COMMUNITY"}, "plan COMMUNITY"),
+        ({"status": "suspended"}, "status suspended"),
+        ({"status": "grace"}, "status grace"),
+        ({"expiresAt": "2026-01-01T00:00:00Z"}, "expired at"),
+        ({"expiresAt": "soon"}, "unreadable expiresAt"),
+        ({"repoLicenseIssuances": {"used": 1960, "limit": 2000}}, "1960 of 2000"),
+        ({"repoLicenseIssuances": None}, "no repoLicenseIssuances"),
+        ({"machineSlots": {"active": 5, "max": 5}}, "machine slots full (5 of 5)"),
+    ],
+)
+def test_subscription_reuse_refusal(over: dict[str, Any], why: str) -> None:
+    got = vm_check.subscription_reuse_refusal(_subscription(**over), NOW)
+    assert (got == "") if not why else (why in got), got
+
+
+def test_a_404_answer_is_no_subscription() -> None:
+    assert vm_check.subscription_reuse_refusal({"error": "No subscription linked"}, NOW)
+    assert vm_check.subscription_reuse_refusal(None, NOW) == "no subscription"
+
+
+class _MintDrill:
+    """The lib.Drill surface DrillAccount uses, answering `/portal/subscription` with `body`."""
+
+    def __init__(self, body: Any, port: str = GATEWAY_PORT) -> None:
+        self.body = body
+        self.port = port
+        self.gateway_port_cached = ""
+        self.ensured: list[str] = []
+        self.minted_for: list[str] = []
+
+    def gateway_port(self) -> str:
+        return self.port
+
+    def api_base(self) -> str:
+        return "http://127.0.0.1:%s/account/api/v1" % GATEWAY_PORT
+
+    def account_ensure_login(self, email: str, password: str) -> None:
+        assert email == vm_check.ACCOUNT_LOGIN
+        assert password
+
+    def account_session(self, _email: str, _password: str, _jar: Any) -> bool:
+        return True
+
+    def _request(self, method: str, url: str, data: Any, _jar: Any) -> str:
+        assert (method, url, data) == ("GET", self.api_base() + "/portal/subscription", None)
+        return json.dumps(self.body)
+
+    def account_ensure_subscription(self, email: str, plan: str) -> None:
+        assert email == vm_check.ACCOUNT_LOGIN
+        self.ensured.append(plan)
+        self.body = _subscription(id="sub-new", repoLicenseIssuances={"used": 0, "limit": 2000})
+
+    def account_subscription_id(self, _jar: Any) -> str:
+        return str(self.body["id"])
+
+    def account_mint_token(self, _jar: Any, subscription: str, name: str, scopes: list[str]) -> str:
+        assert name == vm_check.MINT_LABEL
+        assert scopes == list(vm_check.TOKEN_SCOPES)
+        self.minted_for.append(subscription)
+        return "tok"
+
+
+def _drill_account(drill: _MintDrill) -> vm_check.DrillAccount:
+    return vm_check.DrillAccount(cast("vm_check.lib.Drill", drill))
+
+
+def test_mint_keeps_a_subscription_that_can_carry_the_run() -> None:
+    drill = _MintDrill(_subscription())
+    account = _drill_account(drill)
+    assert account.mint("p" * 24) == "tok"
+    assert drill.ensured == []
+    assert drill.minted_for == ["sub-1"]
+    assert account.subscription_note() == "subscription kept (12 of 2000 issuances used this month)"
+
+
+def test_mint_recreates_a_subscription_short_of_issuances() -> None:
+    drill = _MintDrill(_subscription(repoLicenseIssuances={"used": 1999, "limit": 2000}))
+    account = _drill_account(drill)
+    assert account.mint("p" * 24) == "tok"
+    assert drill.ensured == [vm_check.ACCOUNT_PLAN]
+    assert drill.minted_for == ["sub-new"]
+    assert account.subscription_note().startswith("subscription recreated (1999 of 2000")
+
+
+def test_mint_creates_the_subscription_a_login_lacks() -> None:
+    drill = _MintDrill({"error": "No subscription linked"})
+    account = _drill_account(drill)
+    account.mint("p" * 24)
+    assert drill.ensured == [vm_check.ACCOUNT_PLAN]
+    assert drill.minted_for == ["sub-new"]
+
+
+@pytest.mark.parametrize(
+    ("host", "port", "want"),
+    [
+        (HOST_ADDR, GATEWAY_PORT, GATEWAY),
+        ("localhost", GATEWAY_PORT, LOOPBACK_GATEWAY),
+        ("", GATEWAY_PORT, ""),
+        (HOST_ADDR, "", ""),
+    ],
+)
+def test_drill_account_server_url_names_the_host(host: str, port: str, want: str) -> None:
+    assert _drill_account(_MintDrill(None, port=port)).server_url(host) == want
 
 
 def test_an_unknown_gateway_address_is_account_unavailable(tmp_path: pathlib.Path) -> None:

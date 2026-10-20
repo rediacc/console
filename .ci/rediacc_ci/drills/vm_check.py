@@ -11,7 +11,7 @@ PHASES. There are two sides, the trigger's `renet` and `account` (`vm_check_trig
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`).
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
   A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `vm_check_trigger.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
-  P4  chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt, never in a suite's or a drill's environment. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it.
+  P4  chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt, never in a suite's or a drill's environment. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it. The minted token names the gateway at this host's address on the VM network (`wire.bridge_host`, 192.168.111.254), never localhost: the CLI sends every licence request there and the account stamps each licence's renewalUrl from that request, so a localhost token left every fork's and the grand's blob unrenewable from the worker (2026-10-20). With no interface on that network yet (a cold fleet) the token is minted on localhost for the fleet steps and re-minted on the bridge address right after P2, before anything issues a licence. The subscription of ACCOUNT_LOGIN is kept across runs (`subscription_reuse_refusal` names when it is recreated instead), since `/test/ensure-subscription` deletes it and with it every licence an earlier run issued.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`). Under the dev config a worker absent from it is registered as OPS_WORKER_NAME (`machine add`), and a `--machine` name absent from it is `worker-not-in-config` naming the command; a dev config that cannot be listed ("Decryption failed") is `account-unavailable`.
   P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
   A2  account only, against the worker: A2.1 `python3 -m rediacc_ci.drills.universe --no-restart`, A2.2 `python3 -m rediacc_ci.drills.transfer --no-restart`, A2.3 `python3 -m rediacc_ci.drills.license --legs c,d,e,f --no-restart --seed-repo --vm <worker ip>`. Each drill is judged by its summary line (`%d assertions: %d passed, %d failed`, `classify_drill`): a failed assertion is a failed row naming the drill and the failed assertions by number and description (the row's `failedAssertions`, and the head of its evidence); rc 0 with a positive count and the PASSED line is ok; a SKIPPED line, 0 assertions, or rc 0 with no summary line at all is `account-drill-skipped`; anything else, such as a non-zero rc with no summary (a preflight `SystemExit`), is `account-drill-setup`. All three run; a failed row ends the run FAILED, otherwise the first could-not-judge class ends it NOT_VERIFIED. A2 runs before P5 because the license drill deploys its enforcing renet build to the worker, and the first plain `./rdc.sh` of P5 deploys the default build of the same commit back before the V-steps.
@@ -87,6 +87,10 @@ MINT_LABEL = "vm-check"
 # The name the worker is registered under in the dev config when that config does not hold it yet.
 OPS_WORKER_NAME = "ops-worker"
 TOKEN_SCOPES = ("license:read", "license:activate", "subscription:read")
+# Issuances a kept ACCOUNT_LOGIN subscription must still have this month (`maxRepoLicenseIssuancesPerMonth` minus `repoLicenseIssuances.used`, private/account subscription.service.ts claimRepoLicenseIssuanceSlot) before P4 reuses it: a run issues its two forks' licences and at most a reissue of the grand, so 50 covers many runs, and a subscription short of it is recreated rather than left to refuse a fork mid-run.
+ISSUANCE_HEADROOM = 50
+# The statuses the account's issuance path (resolveEntitledSubscription) entitles at the subscription's own plan; `grace` falls back to COMMUNITY, `suspended` and `expired` refuse.
+REUSABLE_STATUSES = ("active", "inactive")
 
 # The development-only ops VM network, the /24 packages/cli/src/utils/ops-vm.ts exempts from the agent-mode grand guards (VM_NETWORK.BRIDGE_IP in @rediacc/shared). Like that predicate it ignores VM_NET_BASE: an environment variable cannot widen what counts as disposable.
 OPS_VM_NETWORK = "192.168.111"
@@ -380,6 +384,10 @@ class Host:
         """Where WSL mounts the Windows drives."""
         return "/mnt"
 
+    def vm_net_address(self, net_base: str) -> str | None:
+        """This host's own address on the ops VM network (`wire.bridge_host`), None while no interface sits on it."""
+        return wire.bridge_host(net_base)
+
     def alias_configs(self, environ: Mapping[str, str]) -> list[pathlib.Path]:
         """Every file `vscode connect` may have written its alias to: the Windows home's under the drive mounts first (getSSHHome() on WSL), then $HOME's."""
         found = sorted(pathlib.Path(self.drive_root()).glob("*/Users/*/.ssh/" + ALIAS_CONFIG))
@@ -409,7 +417,43 @@ class Account(Protocol):
 
     def mint(self, password: str) -> str: ...
 
-    def server_url(self) -> str: ...
+    def subscription_note(self) -> str: ...
+
+    def server_url(self, host: str) -> str: ...
+
+
+def subscription_reuse_refusal(body: Any, now: float) -> str:
+    """Why the ACCOUNT_LOGIN subscription `GET /portal/subscription` answered cannot be kept for this run, or "" when it can.
+
+    KEEPING IT IS THE DEFAULT. `/test/ensure-subscription` deletes the customer's subscriptions and creates a new one, so every licence an earlier run issued (the grand's above all) then belongs to a deleted subscription and its renewal is refused. It is still called when the subscription is absent or cannot carry a run: another plan, a status the issuance path does not entitle at that plan, an `expiresAt` in the past, fewer than ISSUANCE_HEADROOM repo-licence issuances left this month, or a machine-slot meter that is full (a new issuance blocks hard at `maxActivations`)."""
+    if not isinstance(body, dict) or not body.get("id"):
+        return "no subscription"
+    if body.get("planCode") != ACCOUNT_PLAN:
+        return "plan %s, not %s" % (body.get("planCode"), ACCOUNT_PLAN)
+    if body.get("status") not in REUSABLE_STATUSES:
+        return "status %s" % body.get("status")
+    expires = body.get("expiresAt")
+    if expires:
+        try:
+            ends = datetime.datetime.fromisoformat(str(expires)).timestamp()
+        except ValueError:
+            return "unreadable expiresAt %r" % expires
+        if ends <= now:
+            return "expired at %s" % expires
+    usage = body.get("repoLicenseIssuances")
+    if not isinstance(usage, dict):
+        return "no repoLicenseIssuances usage"
+    used, limit = usage.get("used"), usage.get("limit")
+    if not isinstance(used, int) or not isinstance(limit, int):
+        return "unreadable issuance usage %r" % usage
+    if limit - used < ISSUANCE_HEADROOM:
+        return "%d of %d repo-licence issuances used this month" % (used, limit)
+    slots = body.get("machineSlots")
+    if isinstance(slots, dict) and isinstance(slots.get("active"), int):
+        cap = body.get("maxActivations")
+        if isinstance(cap, int) and slots["active"] >= cap:
+            return "machine slots full (%d of %d)" % (slots["active"], cap)
+    return ""
 
 
 class DrillAccount:
@@ -417,6 +461,7 @@ class DrillAccount:
 
     def __init__(self, drill: lib.Drill) -> None:
         self.drill = drill
+        self.note = ""
 
     def gateway_healthy(self) -> bool:
         return self.drill.gateway_alive()
@@ -441,22 +486,41 @@ class DrillAccount:
         self.drill.detach_gateway()
 
     def mint(self, password: str) -> str:
+        """A token for ACCOUNT_LOGIN on the subscription it already holds, recreated only when `subscription_reuse_refusal` says so (`subscription_note` names which). The session calls go over loopback; the token's first use, and with it its IP binding, is the CLI's."""
         d = self.drill
         d.gateway_port_cached = d.gateway_port()
         d.account_ensure_login(ACCOUNT_LOGIN, password)
-        d.account_ensure_subscription(ACCOUNT_LOGIN, ACCOUNT_PLAN)
         jar = http.cookiejar.CookieJar()
         if not d.account_session(ACCOUNT_LOGIN, password, jar):
             raise lib.GatewayError("no session for %s" % ACCOUNT_LOGIN)
-        subscription = d.account_subscription_id(jar)
+        raw = d._request("GET", d.api_base() + "/portal/subscription", None, jar)
+        try:
+            body = json.loads(raw)
+        except ValueError:
+            body = None
+        refusal = subscription_reuse_refusal(body, time.time())
+        if refusal:
+            d.account_ensure_subscription(ACCOUNT_LOGIN, ACCOUNT_PLAN)
+            subscription = d.account_subscription_id(jar)
+            self.note = "subscription recreated (%s)" % refusal
+        else:
+            subscription = str(body["id"])
+            usage = body["repoLicenseIssuances"]
+            self.note = "subscription kept (%d of %d issuances used this month)" % (
+                usage["used"],
+                usage["limit"],
+            )
         if not subscription:
             raise lib.GatewayError("no subscription for %s" % ACCOUNT_LOGIN)
         return d.account_mint_token(jar, subscription, MINT_LABEL, list(TOKEN_SCOPES))
 
-    def server_url(self) -> str:
-        """The gateway that minted the token, spelled as `./rdc.sh --dev` spells it; empty when no port is recorded."""
+    def subscription_note(self) -> str:
+        return self.note
+
+    def server_url(self, host: str) -> str:
+        """The minting gateway at `host`; empty when no port is recorded. A licence's renewalUrl is stamped from the Host of the request that issued it (private/account src/app.ts baseUrl, routes/license.ts renewalUrlFor), so `host` must be an address the worker reaches."""
         port = self.drill.gateway_port_cached or self.drill.gateway_port()
-        return "http://localhost:%s" % port if port else ""
+        return "http://%s:%s" % (host, port) if port and host else ""
 
 
 # --------------------------------------------------------------------------- the lock
@@ -777,6 +841,8 @@ class VmCheck:
         # Run state
         self.token: str | None = None
         self.account_server = ""
+        # True while the token was minted on localhost because no interface sat on the VM network yet (a cold fleet): P2 re-mints it on the bridge address once the fleet is up (`p4_rebind`).
+        self.minted_on_loopback = False
         # True once P4 minted on the dev gateway: every later `./rdc.sh` call then runs with RDC_DEV=1.
         self.dev_config = False
         self.password: str | None = None
@@ -1141,6 +1207,7 @@ class VmCheck:
         # P4 before P2: the account decides which config the fleet, machine and key steps read and write.
         self.p4_account()
         self.p2_fleet()
+        self.p4_rebind()
         self.p3_keys()
         # A2 before P5: the license drill deploys its enforcing renet build, and P5's first plain ./rdc.sh deploys the default one back.
         if account and not self.a2_drills():
@@ -1362,6 +1429,17 @@ class VmCheck:
                 "account-unavailable",
                 "the stored token is refused and no healthy dev gateway answers; start one with ./run.sh account dev",
             )
+        addr = self.host.vm_net_address(self.opts.net_base) or ""
+        self.minted_on_loopback = not addr
+        if not addr:
+            self.say(
+                "        no interface on %s.0/24 yet, so the token is minted on localhost for the fleet steps and re-minted on this host's VM-network address once P2 has the fleet up"
+                % self.opts.net_base
+            )
+        self._mint_on(addr or "localhost")
+
+    def _mint_on(self, host: str) -> None:
+        """Mint a token, check it, and route every later CLI call to the gateway at `host`. The CLI names that server on every licence request, and the account stamps the licence's renewalUrl from it, so `host` is the address the worker reaches it at (wire.bridge_host: measured 2026-10-20, the worker reaches http://192.168.111.254:<port> and every blob minted over localhost carried a renewalUrl it could not)."""
         password = secrets.token_urlsafe(24)
         self.password = password
         try:
@@ -1370,7 +1448,7 @@ class VmCheck:
             raise NotVerifiedError(
                 "account-unavailable", "minting a token for %s failed: %s" % (ACCOUNT_LOGIN, exc)
             ) from None
-        server = self.account.server_url()
+        server = self.account.server_url(host)
         if not server:
             raise NotVerifiedError(
                 "account-unavailable",
@@ -1391,10 +1469,28 @@ class VmCheck:
             )
         self.record(
             "P4",
-            "token minted for %s on %s, passed as REDIACC_TOKEN only; later CLI calls run under the dev config"
-            % (ACCOUNT_LOGIN, server),
+            "token minted for %s on %s (%s), passed as REDIACC_TOKEN only; later CLI calls run under the dev config"
+            % (
+                ACCOUNT_LOGIN,
+                server,
+                self.account.subscription_note() or "subscription unreported",
+            ),
             True,
         )
+
+    def p4_rebind(self) -> None:
+        """After P2: a token P4 minted on localhost is replaced by one minted on the VM-network address, before anything issues a licence. A fleet that is up with no such address is `fleet-unavailable`, since every licence the run issued would carry a renewalUrl the worker cannot reach."""
+        if not self.minted_on_loopback:
+            return
+        addr = self.host.vm_net_address(self.opts.net_base)
+        if not addr:
+            raise NotVerifiedError(
+                "fleet-unavailable",
+                "the fleet is up but this host has no address on %s.0/24, so no licence this run issues could renew from the worker"
+                % self.opts.net_base,
+            )
+        self.minted_on_loopback = False
+        self._mint_on(addr)
 
     def p5_parent(self) -> None:
         res, entries = self.repo_list()
