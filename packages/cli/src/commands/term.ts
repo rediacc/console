@@ -448,7 +448,7 @@ export async function launchExternalTerminal(
   }
   // The external terminal's ssh outlives this process's 500 ms wait, so on POSIX the credentials move to it: it gets the agent socket in its env and its shell removes the key and stops the agent when ssh ends. Windows shells cannot run that wrapper and keep parent-side cleanup.
   const resources = getPlatform() === 'windows' ? undefined : sshConnection.handoffResources;
-  // Hand off only what the wrapper can clean up: an agent pid it cannot put in the script stays with the parent, or nothing would ever stop that agent.
+  // All or nothing: with an agent pid the wrapper cannot put in its script, everything stays with the parent, whose cleanup stops that agent. Handing off only the files would not help, since the parent would still stop the agent the external ssh authenticates through.
   const handoff =
     resources && (!resources.agentPid || isNumericPid(resources.agentPid)) ? resources : undefined;
   const argv = handoff ? buildHandoffArgv(sshArgv, handoff) : sshArgv;
