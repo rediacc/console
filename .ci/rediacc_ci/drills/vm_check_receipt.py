@@ -232,7 +232,7 @@ def write_run_record(root: pathlib.Path, receipt: dict[str, Any]) -> pathlib.Pat
     run_id = receipt.get("runId")
     if not (isinstance(run_id, str) and _RUN_ID.fullmatch(run_id)):
         errors.append(f"runId {run_id!r} is not a plain directory name")
-    if errors:
+    if errors or not isinstance(run_id, str):
         raise ValueError("invalid vm-check run record: " + "; ".join(errors))
     path = run_record_path(root, run_id)
     _atomic(path, json.dumps(receipt, indent=2, sort_keys=True) + "\n")

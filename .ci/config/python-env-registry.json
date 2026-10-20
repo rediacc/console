@@ -2267,6 +2267,9 @@
     ".claude/rediacc_hooks/tests/test_shellscan_differential.py": [
       "CI"
     ],
+    ".claude/rediacc_hooks/tests/test_wl_cite_extensions.py": [
+      "CI"
+    ],
     ".claude/rediacc_hooks/tests/test_wl_commit_remind.py": [
       "TMPDIR"
     ],

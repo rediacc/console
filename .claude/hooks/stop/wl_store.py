@@ -735,7 +735,7 @@ def writer_path(writer, root=None):
 # PER CHECKOUT, `--git-dir` and not `--git-common-dir`: each worktree is its own working tree and its own branch, and the defect is a branch switch inside one of them. DISABLED under $WORKLIST_STORE_DIR, which points the store at a fixture or at another tree (retired_terms --root); a journal there would be this checkout's, not that store's. CI checkouts have no journal
 # and read exactly the committed files, which is what a commit-range judgement wants.
 JOURNAL_DIR_NAME = "rediacc-worklist-journal"
-_GITDIR_CACHE = {}
+_GITDIR_CACHE: dict[str, pathlib.Path | None] = {}
 
 
 def _git_dir(root):

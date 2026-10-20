@@ -752,6 +752,8 @@ def test_a_contended_retirement_keeps_the_moves_success(tmp_path, monkeypatch, c
     _ledger(root, {"agent/plans/PLAN-closing.md": {"status": "done", "open": 0, "done": 1}})
     monkeypatch.syspath_prepend(str(GATE.parent))  # its `import _cipath` sits beside it
     spec = importlib.util.spec_from_file_location("cpf_under_test", GATE)
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     pq = mod._planqueue()
