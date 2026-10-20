@@ -187,7 +187,11 @@ function removeOrphanedIdentityKey(removedBlock: string, remainingBlocks: string
   const normalized = identity.replaceAll('\\', '/');
   const keysDir = normalizePathForSSH(getKeysDirectory()).replaceAll('\\', '/');
   const name = basename(normalized);
-  if (!name || name.endsWith('_known_hosts') || dirname(normalized) !== keysDir) return;
+  // '.' and '..' pass the dirname test but name a directory, never a key.
+  if (!name || name === '.' || name === '..') return;
+  // A repo named `known_hosts` yields the same file name as the per-machine
+  // known_hosts file, so that name is never removed here.
+  if (name.endsWith('_known_hosts') || dirname(normalized) !== keysDir) return;
   const stillUsed = remainingBlocks.some(
     (b) => readIdentityFile(b)?.replaceAll('\\', '/') === normalized
   );
