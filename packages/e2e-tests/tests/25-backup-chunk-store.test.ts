@@ -545,6 +545,11 @@ test.describe
       // A worker whose renet predates the verb would turn tests 12 and 13 red with an unknown-command error; this names the cause instead.
       const requireBrowseAtVerb = async () => {
         const help = await runner.executeViaBridge('sudo renet backup --help');
+        // A help call that failed (sudo, the bridge) is that failure, not a missing verb.
+        expect(
+          help.code,
+          `renet backup --help failed:\n${runner.getCombinedOutput(help).slice(-800)}`
+        ).toBe(0);
         expect(
           verbIsRegistered(help.stdout + help.stderr, 'browse-at'),
           'the worker renet has no `backup browse-at`: it predates this tree; redeploy renet before this suite'
