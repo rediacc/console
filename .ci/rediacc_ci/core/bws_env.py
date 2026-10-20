@@ -1207,8 +1207,8 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
         # The writer's stderr is never relayed: its error path may echo the request, and no masking of a value (multi-line, short or partly echoed) is complete. The exit code is the whole report.
         return (
             "rc=%d: the writer failed; its stderr is withheld because it may echo the value "
-            "(to see it, run `%s` in %s with the same request JSON on stdin)"
-            % (proc.returncode, shlex.join(WRITER_ARGV), account_dir)
+            "(to see it, run `cd %s && %s` with the same request JSON on stdin)"
+            % (proc.returncode, shlex.quote(account_dir), shlex.join(WRITER_ARGV))
         )
     answered = raw_out.decode(errors="replace").strip()
     wanted = request.get("id")
