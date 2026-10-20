@@ -96,6 +96,7 @@ SKIP_PREFIXES = (
 # Class C, line level (plan Part 27): single lines inside live files that name an OLD spelling on purpose (a real repo secret never renamed, dated history, a detector or control input). Two ways to keep a line:
 #   1. put the marker `secret-rename: keep` on it, in any comment form the file's language has;
 #   2. list it here, by a substring of the line, for lines where a trailing marker would alter the text a gate or a reader sees (prose inside a string, markdown, a regex).
+# An anchor starting with `==` matches only a line whose stripped text IS the rest (a list entry that must not exempt other lines quoting the same name).
 # The anchors are content, not line numbers, so an unrelated edit above does not move the protection.
 KEEP_MARKER = "secret-rename: keep"
 KEEP_LINES: dict[str, tuple[str, ...]] = {
@@ -110,7 +111,10 @@ KEEP_LINES: dict[str, tuple[str, ...]] = {
         "minted from APP_PRIVATE_KEY",
     ),
     ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": ("CLAUDE_CODE_OAUTH_TOKEN",),
-    ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py": ("APP_PRIVATE_KEY",),
+    ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py": (
+        "rewrote `APP_PRIVATE_KEY` to",
+        "(?:GITHUB_)?APP_PRIVATE_KEY",
+    ),
     ".ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py": ("CLAUDE_CODE_OAUTH_TOKEN",),
     ".ci/scripts/quality/check_bws_map.py": (
         "That job's own read stays on GitHub deliberately",
@@ -137,8 +141,8 @@ KEEP_LINES: dict[str, tuple[str, ...]] = {
         "BREAKPOINT_TUNNEL_TOKEN NOT because",
         "CLAUDE_CODE_OAUTH_TOKEN repo-scoped",
         "console holds BREAKPOINT_TUNNEL_TOKEN",
-        "'BREAKPOINT_TUNNEL_TOKEN',",
-        "'CLAUDE_CODE_OAUTH_TOKEN',",
+        "=='BREAKPOINT_TUNNEL_TOKEN',",
+        "=='CLAUDE_CODE_OAUTH_TOKEN',",
     ),
     "scripts/gates/check-tracked-credentials.ts": (
         "STRIPE_SECRET_KEY_ASIA",
@@ -212,7 +216,9 @@ class Rules:
             if idx not in kept_cache:
                 end = text.find("\n", starts[idx])
                 line = text[starts[idx] : len(text) if end < 0 else end]
-                kept_cache[idx] = KEEP_MARKER in line or any(a in line for a in anchors)
+                kept_cache[idx] = KEEP_MARKER in line or any(
+                    line.strip() == a[2:] if a.startswith("==") else a in line for a in anchors
+                )
             return kept_cache[idx]
 
         counts: Counter = Counter()
@@ -328,28 +334,31 @@ def main() -> int:
         return 1
 
     # Control, exclusions: a marked line and an anchored line must survive, an unmarked neighbour must still be rewritten, and a skipped prefix must be skipped by files(). A pass that kept everything (or nothing) fails here.
-    kprobe = (
-        "R2_ENDPOINT  # secret-rename: keep\n"
-        "R2_ENDPOINT\n"
-        "see KEEPME R2_ENDPOINT\n"
-    )
+    kprobe = "R2_ENDPOINT  # secret-rename: keep\nR2_ENDPOINT\nsee KEEPME R2_ENDPOINT\n"
     KEEP_LINES["__control__"] = ("KEEPME",)
     try:
         kgot, kcounts, _, _ = rewrite(kprobe, rs, "__control__")
     finally:
         del KEEP_LINES["__control__"]
-    kwant = (
-        "R2_ENDPOINT  # secret-rename: keep\n"
-        "CLOUDFLARE_R2_ENDPOINT\n"
-        "see KEEPME R2_ENDPOINT\n"
-    )
+    kwant = "R2_ENDPOINT  # secret-rename: keep\nCLOUDFLARE_R2_ENDPOINT\nsee KEEPME R2_ENDPOINT\n"
     if kgot != kwant or sum(kcounts.values()) != 1:
         print(f"✗ instrument control failed: keep marker/anchor\n  got  {kgot!r}", file=sys.stderr)
+        return 1
+    # Control: an exact-line `==` anchor keeps its own line only, never a longer line quoting the same name.
+    KEEP_LINES["__control__"] = ("==R2_ENDPOINT,",)
+    try:
+        egot, _, _, _ = rewrite("  R2_ENDPOINT,\nx R2_ENDPOINT, y\n", rs, "__control__")
+    finally:
+        del KEEP_LINES["__control__"]
+    if egot != "  R2_ENDPOINT,\nx CLOUDFLARE_R2_ENDPOINT, y\n":
+        print(f"✗ instrument control failed: exact-line anchor\n  got  {egot!r}", file=sys.stderr)
         return 1
     walked = {q.relative_to(ROOT).as_posix() for q in files()}
     leaked = [q for q in walked if q.startswith(SKIP_PREFIXES)]
     if leaked or not any(q.startswith(".github/workflows/") for q in walked):
-        print(f"✗ instrument control failed: SKIP_PREFIXES walk, leaked {leaked[:3]}", file=sys.stderr)
+        print(
+            f"✗ instrument control failed: SKIP_PREFIXES walk, leaked {leaked[:3]}", file=sys.stderr
+        )
         return 1
 
     per_file: dict[str, Counter] = {}
