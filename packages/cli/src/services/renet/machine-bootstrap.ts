@@ -60,7 +60,7 @@ export async function bootstrapMachine(
   try {
     const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
     const datastoreSize = updatedConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE;
-    const cmd = `sudo ${shellQuote(remoteRenetPath)} setup --auto --datastore ${shellQuote(datastorePath)} --datastore-size ${datastoreSize}`;
+    const cmd = `sudo ${shellQuote(remoteRenetPath)} setup --auto --datastore ${shellQuote(datastorePath)} --datastore-size ${shellQuote(datastoreSize)}`;
     // renet's setup narrates itself at info level, and those lines are 121+ columns. Withhold them and replay only if setup actually failed, so the terminal (and the tutorial recording) shows the steps, not the logrus.
     const stderrPump = createQuietStderrPump({ echoAll: options.debug });
     const exitCode = await lease.sftp.execStreaming(cmd, {
