@@ -2790,7 +2790,7 @@ async function selftest(): Promise<number> {
         from === 'T0' && to === 'T1' ? paths : undefined;
     const plan = (receipt: unknown, paths: string[]) =>
       planAdvance({ receipt, headTree: 'T1', policy, diff: at(paths), known });
-    const ok = plan(whole, ['agent/reviews/1004-2/clean.jsonl', 'agent/worklist/d.jsonl']);
+    const ok = plan(whole, ['agent/reviews/main/clean.jsonl', 'agent/worklist/d.jsonl']);
     require_(
       ok.kind === 'advance' && ok.from === 'T0' && ok.readers.join() === 'g:plan,g:tree',
       `a record-only diff must advance with the union of its readers, got ${JSON.stringify(ok)}`

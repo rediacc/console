@@ -91,7 +91,7 @@ def test_a_real_listed_width_dropped_is_reported(tmp_path):
 
 
 GLOB_CORPUS = [
-    ("agent/reviews/**", "agent/reviews/1004-2/clean.jsonl"),
+    ("agent/reviews/**", "agent/reviews/main/clean.jsonl"),
     ("agent/reviews/**", "agent/reviews/x.md"),
     ("agent/reviews/**", "agent/reviewsx/a.md"),
     ("agent/reviews/**", "agent/plans/a.md"),

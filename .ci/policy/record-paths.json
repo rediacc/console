@@ -15,8 +15,8 @@
       "glob": "agent/reviews/**",
       "except": [],
       "probes": [
-        "agent/reviews/1004-2/clean.jsonl",
-        "agent/reviews/1004-2/056a783a9655367ab0c7ed99697cc56facd6cb49.md"
+        "agent/reviews/main/clean.jsonl",
+        "agent/reviews/main/0000000000000000000000000000000000000000.md"
       ],
       "readers": [
         {
