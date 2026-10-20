@@ -42,7 +42,7 @@ Operator /ask ASKED:2026-10-19T13:30Z: "Ride PR #600 now", and on the version qu
 - B3: `install_aws` downloads the platform's versioned installer, verifies its sha256, and installs into `.ci/cache/toolchain/aws-cli/<v>/` (Linux: `./aws/install --install-dir ... --bin-dir ...`; macOS: `pkgutil --expand-full` of the .pkg), so no root and no system path is touched. The resolver's cache rung is `.ci/cache/toolchain/aws-cli/<v>/bin/aws`.
 - B4: the Dockerfile installs the same pinned zip with its sha256 check.
 - B6: the probe that parses `aws --version` reads `aws-cli/2.x.y`. The simulate_promotion differential stays: it now checks the pinned v2 against the runner's v2 rather than v1 against v2.
-- B7: CI keeps v2 and runs the pinned one through `AWS_BIN`; moving the aws jobs to ubuntu-slim stays in scope.
+- B7: CI keeps v2 and runs the pinned one through `AWS_BIN` (done in ca717bcf8; the classic transfer client and when_required checksums R2 needs landed in c06b20821, green on run 39337486837). The ubuntu-slim move is NARROWED (2026-10-20): GitHub documents ubuntu-slim as 1 CPU, 5 GB RAM, an unprivileged container (no Docker-in-Docker), a 15-minute job timeout, and "not suitable for typical heavyweight CI/CD builds" (docs.github.com/en/actions/reference/runners/github-hosted-runners). Only short R2-only jobs are candidates: ci.yml check-release-state and finalize-release-sentinel, cleanup-r2-staging.yml cleanup, backfill-release-sentinel.yml backfill; each moves only after its measured duration on ubuntu-latest sits well under 15 minutes. housekeeping cleanup (60-minute budget), cd-v2 publish/tag-and-release, cd-stage stage and every Docker-using job stay on ubuntu-latest. Tracked as #63840312.
 
 ## Boxes
 
