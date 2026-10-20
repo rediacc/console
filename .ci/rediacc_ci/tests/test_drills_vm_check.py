@@ -1,6 +1,6 @@
 """`rediacc_ci.drills.vm_check`: the whole flow driven through a fake host and a fake account, so no case reaches a VM.
 
-`World` answers every command the check issues (git, go, `./rdc.sh`, the ssh probes, `sftp -b`) from an in-memory fleet. Each verdict class is produced by bending one thing in that world. The four MUTANTS are source edits of the module; each one must turn its scenario red, which proves the scenario can fail.
+`World` answers every command the check issues (git, go, `./rdc.sh`, the ssh probes, `sftp -b`, the four A1 npm suites and the three A2 drills) from an in-memory fleet and scripted `(rc, stdout)` answers. `FakeAccount` is the dev gateway, with the A0 verbs `gateway_state`, `restart` and `detach`; the A0 record lives under tmp_path. Each verdict class is produced by bending one thing in that world. The MUTANTS are source edits of the module; each one must turn its scenario red, which proves the scenario can fail, and each scenario also passes on the real module.
 """
 
 from __future__ import annotations
@@ -33,8 +33,28 @@ if TYPE_CHECKING:
 TREE = "a" * 40
 HEAD = "e" * 40
 PTR = "c" * 40
+APTR = "b" * 40
 HASH = "f" * 64
 DIGEST = "d" * 64
+ADIGEST = "9" * 64
+OTHER_ADIGEST = "8" * 64
+GATEWAY_PORT = "48123"
+GATEWAY_STARTED = "1792000000"
+DRILL_ENV_SCRUB = ("REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER", "RDC_DEV", "DRILL_EXPECT_NO_KEYRING")
+DRILL_NAMES = ("universe", "transfer", "license")
+A_STEPS = ("A1.1", "A1.2", "A1.3", "A1.4", "A0", "A2.1", "A2.2", "A2.3")
+V_STEPS = ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7")
+
+
+def drill_passed(name: str, count: int = 12) -> tuple[int, str]:
+    """A drill's real PASSED tail, colour escapes included (lib.Drill.summary on a tty)."""
+    return (
+        0,
+        "  %d assertions: %d passed, 0 failed  (3s)\n  \x1b[0;32mdrill %s PASSED\x1b[0m\n"
+        % (count, count, name),
+    )
+
+
 TOKEN = "tok-PLANTED-7f3a9c2e1b5d4a60"
 NET = "192.168.111"
 # The CLI's redirect pattern (packages/cli/src/utils/repo-context-guard.ts FILE_WRITE_PATTERNS).
@@ -112,6 +132,27 @@ MUTANTS = {
         "    if True:\n        return False\n",
     ),
     "file-write-refusal-unknown": ('    "File write detected",\n', ""),
+    # PLAN-account-vm-check.md AV4: one mutant per account-phase rule.
+    "skip-account-phase": (
+        '        account = self.phases[SIDE_ACCOUNT]["required"]\n',
+        "        account = False\n",
+    ),
+    "skipped-drill-passes": (
+        '        return DRILL_SKIP, "rc=%d, a SKIPPED line or 0 assertions: %s" % (res.rc, last_lines(text))\n',
+        '        return DRILL_OK, "rc=%d, a SKIPPED line or 0 assertions: %s" % (res.rc, last_lines(text))\n',
+    ),
+    "reuse-stale-gateway": (
+        '        if record.get("account") != account:\n',
+        "        if False:\n",
+    ),
+    "drill-env-leaks-token": (
+        "        env = {k: v for k, v in self.environ.items() if k not in DRILL_ENV_SCRUB}\n",
+        "        env = self.child_env()\n",
+    ),
+    "renet-steps-on-account-only": (
+        '        renet = self.phases[SIDE_RENET]["required"]\n',
+        "        renet = True\n",
+    ),
 }
 
 
@@ -180,6 +221,12 @@ class World(vm_check.Host):
         self.add_rc = over.pop("add_rc", 0)
         # "ok", "fail" (show exits non-zero), "nodata" (show exits 0 with no data.embedded), "notjson", or the JSON of the wrong shape "array" ([]) and "datastr" ({"data": "x"}).
         self.key_show = over.pop("key_show", "ok")
+        # The A1 suites by step id and the A2 drills by name: scripted (rc, stdout); absent is a green answer.
+        self.suites: dict[str, tuple[int, str]] = dict(over.pop("suites", {}))
+        self.drills: dict[str, tuple[int, str]] = dict(over.pop("drills", {}))
+        # The private/account checkout: initialized or not, and its HEAD.
+        self.account_checked_out = over.pop("account_checked_out", True)
+        self.account_checkout = over.pop("account_checkout", APTR)
         assert not over, over
         self.store = root / "remote-store"
         self.mnt = root / "mnt"
@@ -191,7 +238,11 @@ class World(vm_check.Host):
     # ------------------------------------------------------------------ Host
 
     def exists(self, path: str) -> bool:
-        return self.kvm if path == "/dev/kvm" else os.path.exists(path)
+        if path == "/dev/kvm":
+            return self.kvm
+        if path.endswith("private/account/.git"):
+            return self.account_checked_out
+        return os.path.exists(path)
 
     def which(self, name: str) -> str | None:
         return "/usr/bin/virsh" if name == "virsh" and self.kvm else None
@@ -225,7 +276,17 @@ class World(vm_check.Host):
         if argv[0] == "git":
             if argv[2].endswith("private/renet"):
                 return vm_check.Result(0, PTR + "\n")
+            if argv[2].endswith("private/account"):
+                return vm_check.Result(0, self.account_checkout + "\n")
             return self._git(argv[3:])
+        if argv[0] == "npm":
+            step = next(s for s, script, _p in vm_check.ACCOUNT_SUITES if script == argv[4])
+            rc, out = self.suites.get(step, (0, "suite %s green\n" % argv[4]))
+            return vm_check.Result(rc, out, "", 61000)
+        if argv[1:2] == ["-m"] and argv[2].startswith("rediacc_ci.drills."):
+            name = argv[2].rsplit(".", 1)[1]
+            rc, out = self.drills.get(name, drill_passed(name))
+            return vm_check.Result(rc, out, "", 42000)
         if argv[0] == "go":
             text = "\tbuild\tvcs.revision=%s\n\tbuild\tvcs.modified=%s\n" % (
                 self.built,
@@ -251,6 +312,7 @@ class World(vm_check.Host):
             ("rev-parse", "HEAD^{tree}"): TREE,
             ("rev-parse", "HEAD"): HEAD,
             ("rev-parse", "HEAD:private/renet"): PTR,
+            ("rev-parse", "HEAD:private/account"): APTR,
         }
         return vm_check.Result(0, answers.get(tuple(args), PTR) + "\n")
 
@@ -555,6 +617,20 @@ class World(vm_check.Host):
     def rdc_calls(self) -> list[list[str]]:
         return [c[1:] for c in self.calls if c[0] == self.rdc_path]
 
+    def suite_calls(self) -> list[tuple[list[str], dict[str, str]]]:
+        """Every A1 npm argv and A2 drill argv, with its environment."""
+        return [
+            (c, e)
+            for c, e in zip(self.calls, self.envs, strict=True)
+            if c[0] == "npm" or (c[1:2] == ["-m"] and c[2].startswith("rediacc_ci.drills."))
+        ]
+
+    def drill_calls(self) -> list[list[str]]:
+        return [c for c, _e in self.suite_calls() if c[0] != "npm"]
+
+    def npm_calls(self) -> list[list[str]]:
+        return [c for c, _e in self.suite_calls() if c[0] == "npm"]
+
     def forks_left(self) -> list[str]:
         return [n for n in self.repos if ":vmc-" in n]
 
@@ -566,6 +642,9 @@ class FakeAccount:
         token: str = TOKEN,
         mint_error: str = "",
         server: str = GATEWAY,
+        started: str = GATEWAY_STARTED,
+        restart_error: str = "",
+        healthy_after_restart: bool = True,
     ) -> None:
         self.mint_error = mint_error
         self.server = server
@@ -573,9 +652,32 @@ class FakeAccount:
         self.healthy = healthy
         self.token = token
         self.minted = 0
+        # The A0 side: `.account-state`'s started= and gateway_port=, and what restart and detach were asked.
+        self.port = GATEWAY_PORT
+        self.started = started
+        self.restart_error = restart_error
+        self.healthy_after_restart = healthy_after_restart
+        self.restarts: list[pathlib.Path] = []
+        self.detached = 0
 
     def gateway_healthy(self) -> bool:
         return self.healthy
+
+    def gateway_state(self) -> dict[str, Any]:
+        return {"healthy": self.healthy, "port": self.port, "started": self.started}
+
+    def restart(self, log_path: pathlib.Path) -> None:
+        self.restarts.append(log_path)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text("> account dev\nstarting gateway\nlistening on %s\n" % self.port)
+        if self.restart_error:
+            log_path.write_text("> account dev\nError: CRYPTO_KEYS is not set\nexit 1\n")
+            raise vm_check.lib.GatewayError(self.restart_error)
+        self.started = str(int(self.started or "0") + 600)
+        self.healthy = self.healthy_after_restart
+
+    def detach(self) -> None:
+        self.detached += 1
 
     def mint(self, password: str) -> str:
         assert len(password) >= 24
@@ -603,12 +705,16 @@ def run_check(
     *argv: str,
     m: types.ModuleType = vm_check,
     account: FakeAccount | None = None,
+    env: dict[str, str] | None = None,
+    modified: bool | None = False,
+    digest: str | None = ADIGEST,
 ) -> tuple[int, str, dict[str, Any]]:
     out = io.StringIO()
     environ = {
         "HOME": str(tmp_path / "home"),
         "PATH": os.environ.get("PATH", ""),
         "VM_NET_BASE": NET,
+        **(env or {}),
     }
     rc = m.main(
         [*argv, "--keep-work", "--wait", "0"],
@@ -619,9 +725,14 @@ def run_check(
         out=out,
         environ=environ,
         inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: modified,
+        account_digest_fn=lambda _root: digest,
     )
     latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
     receipt = json.loads(latest.read_text()) if latest.exists() else {}
+    # Case 12: every receipt a run leaves is one the guard can read.
+    if receipt:
+        assert receipt_mod.validate(receipt) == [], receipt_mod.validate(receipt)
     return rc, out.getvalue(), receipt
 
 
@@ -862,7 +973,142 @@ def scenario_an_unhonoured_write_override_is_agent_policy_refused(
     assert world.forks_left() == []
 
 
+def account_only_world(tmp_path: pathlib.Path, **over: Any) -> World:
+    """A real git tree whose only change is an account-side console path (D5: license.py selects the account phase)."""
+    root = fixture_repo(tmp_path)
+    drills = root / ".ci/rediacc_ci/drills"
+    drills.mkdir(parents=True)
+    (drills / "license.py").write_text("# changed\n")
+    return World(root, **over)
+
+
+def renet_only_world(tmp_path: pathlib.Path, **over: Any) -> World:
+    """A real git tree whose only change is a renet-side console path."""
+    root = fixture_repo(tmp_path)
+    remote = root / "packages/cli/src/remote"
+    remote.mkdir(parents=True)
+    (remote / "sync.ts").write_text("export {};\n")
+    return World(root, **over)
+
+
+def _ids(receipt: dict[str, Any]) -> list[str]:
+    return [s["id"] for s in receipt["steps"]]
+
+
+def scenario_account_only_runs_the_account_phase_and_no_renet_step(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """Case 2: an account-only `--changed` runs A1, A0 and A2, creates and forks nothing, and its receipt admits the account side."""
+    world = account_only_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, "--changed", m=m)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["trigger"]["sides"] == ["account"], receipt["trigger"]
+    assert receipt["phases"] == {
+        "account": {"required": True, "ran": True},
+        "renet": {"required": False, "ran": False},
+    }, receipt["phases"]
+    calls = world.rdc_calls()
+    assert not [c for c in calls if c[:2] in (["repo", "fork"], ["repo", "create"])], calls
+    ids = _ids(receipt)
+    for step in A_STEPS:
+        assert [r["verdict"] for r in _rows(receipt, step)] == ["ok"], (step, ids)
+    assert not [i for i in ids if i in V_STEPS], ids
+    # P1 still ran, so the receipt's renet build is the pointer.
+    assert receipt["renet"]["built"] == receipt["renet"]["pointer"] == PTR
+    assert receipt["account"]["pointer"] == receipt["account"]["checkout"] == APTR
+    assert receipt["account"]["modified"] is False
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).ok
+    refused = receipt_mod.admit(world.root, TREE, DIGEST, {"renet", "account"})
+    assert refused.code == "phase-missing", refused
+
+
+def scenario_a_skipped_drill_is_not_verified(m: types.ModuleType, tmp_path: pathlib.Path) -> None:
+    """Case 7: universe exits 0 with SKIPPED, which proved nothing."""
+    tail = "  \x1b[1;33mdrill universe SKIPPED\x1b[0m (0 assertions ran, so nothing was proven)\n"
+    skipped = (0, "  0 assertions: 0 passed, 0 failed  (0s)\n" + tail)
+    world = make_world(tmp_path, drills={"universe": skipped})
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-drill-skipped", receipt["reason"]
+    assert "A2.1 drill universe" in receipt["reason"]["detail"], receipt["reason"]
+    assert receipt["phases"]["account"]["ran"] is False
+    # All three drills ran before the run stopped, and no renet step followed.
+    assert len(world.drill_calls()) == 3, world.drill_calls()
+    assert not [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+
+
+def write_gateway_record(root: pathlib.Path, account: str, started: str = GATEWAY_STARTED) -> None:
+    folder = root / receipt_mod.CACHE_DIR
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / vm_check.GATEWAY_RECORD).write_text(
+        json.dumps({"port": GATEWAY_PORT, "started": started, "account": account})
+    )
+
+
+def read_gateway_record(root: pathlib.Path) -> dict[str, Any]:
+    return json.loads((root / receipt_mod.CACHE_DIR / vm_check.GATEWAY_RECORD).read_text())
+
+
+def scenario_a_gateway_older_than_the_account_worktree_is_restarted(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """Case 8, restarted: the running gateway is the recorded one, but private/account changed since it started, so it serves old code."""
+    world = make_world(tmp_path)
+    write_gateway_record(world.root, OTHER_ADIGEST)
+    account = FakeAccount()
+    rc, out, receipt = run_check(tmp_path, world, m=m, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert len(account.restarts) == 1, account.restarts
+    assert account.restarts[0] == world.root / receipt_mod.CACHE_DIR / vm_check.GATEWAY_LOG
+    assert account.detached == 1
+    gateway = receipt["account"]["gateway"]
+    assert gateway["mode"] == "restarted", gateway
+    assert gateway["started"] == int(GATEWAY_STARTED) + 600, gateway
+    assert gateway["port"] == int(GATEWAY_PORT), gateway
+    assert "private/account changed since the recorded gateway started" in out, out
+    assert "every dev password rotated" in out, out
+    assert read_gateway_record(world.root) == {
+        "port": GATEWAY_PORT,
+        "started": str(int(GATEWAY_STARTED) + 600),
+        "account": ADIGEST,
+    }
+
+
+def scenario_no_drill_or_suite_env_carries_a_credential(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """Case 9: an inherited credential, the dev-config switch and a declared keyring skip are planted in the parent environment; none reaches a suite or a drill, and the minted token is in no byte written."""
+    planted = {
+        "REDIACC_TOKEN": "inherited-planted-token",
+        "REDIACC_ACCOUNT_SERVER": "http://elsewhere.invalid:1",
+        "RDC_DEV": "1",
+        "DRILL_EXPECT_NO_KEYRING": "declared by the parent",
+    }
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, m=m, env=planted)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    children = world.suite_calls()
+    assert len(children) == 7, [c for c, _e in children]
+    for argv, env in children:
+        leaked = [k for k in DRILL_ENV_SCRUB if k in env]
+        assert not leaked, (argv, leaked)
+        assert TOKEN not in json.dumps(env), argv
+        assert env["PYTHONPATH"].split(os.pathsep)[0] == str(world.root / ".ci"), env["PYTHONPATH"]
+    # The minted token still reached rdc, and nowhere else.
+    assert any(e.get("REDIACC_TOKEN") == TOKEN for _a, e in _rdc_envs(world))
+    assert TOKEN not in out
+    assert TOKEN not in json.dumps(receipt)
+    for path in tmp_path.rglob("*"):
+        if path.is_file() and not path.is_symlink():
+            assert TOKEN.encode() not in path.read_bytes(), path
+
+
 SCENARIOS = {
+    "skip-account-phase": scenario_account_only_runs_the_account_phase_and_no_renet_step,
+    "renet-steps-on-account-only": scenario_account_only_runs_the_account_phase_and_no_renet_step,
+    "skipped-drill-passes": scenario_a_skipped_drill_is_not_verified,
+    "reuse-stale-gateway": scenario_a_gateway_older_than_the_account_worktree_is_restarted,
+    "drill-env-leaks-token": scenario_no_drill_or_suite_env_carries_a_credential,
     "skip-write-guard-globally": scenario_only_write_rows_skip_the_file_write_guard,
     "write-guard-not-passed": scenario_only_write_rows_skip_the_file_write_guard,
     "evidence-stdout-first": scenario_remote_stderr_reaches_the_evidence,
@@ -928,24 +1174,19 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
     }
     assert receipt["fleet"]["landlock"] == {"status": "enforced", "abi": "6"}
     assert receipt["teardown"] == {"ok": True, "leftovers": []}
-    assert receipt_mod.admit(world.root, TREE, DIGEST).ok
-    ids = {s["id"] for s in receipt["steps"]}
-    assert {
-        "P0",
-        "P1",
-        "P2",
-        "P3",
-        "P4",
-        "P5",
-        "V1.1",
-        "V1.2",
-        "V1.3",
-        "V1.4",
-        "V1.5",
-        "V1.6",
-        "V1.7",
-        "T",
-    } <= ids
+    # Case 3: no --changed runs both phases, and the receipt admits either side and both.
+    assert receipt["trigger"]["sides"] == ["account", "renet"]
+    assert receipt["phases"] == {
+        "account": {"required": True, "ran": True},
+        "renet": {"required": True, "ran": True},
+    }
+    for sides in ({"renet"}, {"account"}, {"renet", "account"}):
+        assert receipt_mod.admit(world.root, TREE, DIGEST, sides).ok, sides
+    ids = _ids(receipt)
+    assert {"P0", "P1", "P2", "P3", "P4", *A_STEPS, *V_STEPS, "T"} <= set(ids)
+    # Run order: A1 before P0, A0 after P1 and before P4, A2 after P3 and before P5.
+    order = [ids.index(s) for s in ("A1.4", "P0", "P1", "A0", "P4", "P2", "P3", "A2.3", "P5")]
+    assert order == sorted(order), ids
     # P5 swept only the parent's stale fork; the fresh one, the other parent's and a non-vmc tag stay.
     deleted = [c[2] for c in world.rdc_calls() if c[:2] == ["repo", "delete"]]
     assert deleted[0] == "%s:vmc-10141500-abcdef-a" % PARENT
@@ -971,7 +1212,7 @@ def test_a_writable_neighbour_fails_v12_and_still_tears_down(tmp_path: pathlib.P
     assert receipt["reason"]["class"] == "step-failed"
     assert receipt["reason"]["detail"].startswith("V1.2")
     assert world.forks_left() == []
-    assert not receipt_mod.admit(world.root, TREE, DIGEST).ok
+    assert not receipt_mod.admit(world.root, TREE, DIGEST, {"renet"}).ok
 
 
 def test_an_exception_mid_v13_still_deletes_both_forks_and_releases_the_lock(
@@ -1340,7 +1581,8 @@ def test_each_not_verified_class(tmp_path: pathlib.Path, cls: str) -> None:
     if cls == "fleet-os-mismatch":
         argv = ["--os", "ubuntu-24.04"]
     if cls == "account-unavailable":
-        account = FakeAccount(healthy=False)
+        # A0 heals an unhealthy gateway on a both-phase run, so the refusal comes from the mint; the renet-only path with no gateway is its own test.
+        account = FakeAccount(mint_error="login refused (%s)")
     if cls == "parent-grand-missing":
         argv = ["--machine", "prod-1"]
     world = make_world(tmp_path, **over)
@@ -1456,6 +1698,358 @@ def test_changed_with_a_hit_runs_and_records_the_hits(tmp_path: pathlib.Path) ->
     assert rc == vm_check.EXIT_VERIFIED, out
     assert receipt["trigger"]["base"] == "origin/main"
     assert receipt["trigger"]["hits"] == ["packages/cli/src/remote/sync.ts"]
+    assert receipt["trigger"]["sides"] == ["renet"]
+
+
+# --------------------------------------------------------------------------- the account phase (PLAN-account-vm-check.md AV4)
+
+
+def test_a_renet_only_change_runs_no_suite_and_no_drill(tmp_path: pathlib.Path) -> None:
+    """Case 1."""
+    world = renet_only_world(tmp_path)
+    account = FakeAccount()
+    rc, out, receipt = run_check(tmp_path, world, "--changed", account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert world.suite_calls() == []
+    assert receipt["phases"] == {
+        "account": {"required": False, "ran": False},
+        "renet": {"required": True, "ran": True},
+    }
+    assert not [i for i in _ids(receipt) if i.startswith("A")], _ids(receipt)
+    assert receipt["account"]["gateway"] == {"mode": None, "port": None, "started": None}
+    assert account.restarts == []
+    assert "A1-A2 not run" in out
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"renet"}).ok
+    refused = receipt_mod.admit(world.root, TREE, DIGEST, {"account"})
+    assert refused.code == "phase-missing", refused
+
+
+def test_a_renet_only_run_with_no_gateway_and_no_stored_token_is_account_unavailable(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The renet phase alone never starts a gateway; P4 still says it needs one."""
+    world = renet_only_world(tmp_path)
+    account = FakeAccount(healthy=False)
+    rc, out, receipt = run_check(tmp_path, world, "--changed", account=account)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-unavailable", receipt["reason"]
+    assert account.restarts == []
+
+
+def test_an_account_only_change_is_verified_with_the_account_phase_alone(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Case 2."""
+    scenario_account_only_runs_the_account_phase_and_no_renet_step(vm_check, tmp_path)
+
+
+def test_a_red_suite_stops_the_run_before_any_vm_is_touched(tmp_path: pathlib.Path) -> None:
+    """Case 4."""
+    world = make_world(
+        tmp_path, suites={"A1.1": (1, "running 412 tests\nFAIL src/licenses.test.ts\n3 failed\n")}
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    assert receipt["status"] == receipt_mod.FAILED
+    detail = receipt["reason"]["detail"]
+    assert detail.startswith("A1.1: npm run check:ci-account-server (61 s)"), detail
+    assert "rc=1: running 412 tests | FAIL src/licenses.test.ts | 3 failed" in detail, detail
+    # All four suites ran, then nothing else: no lock row, no fleet, no drill.
+    assert [r["verdict"] for r in receipt["steps"] if r["id"].startswith("A1")] == [
+        "FAIL",
+        "ok",
+        "ok",
+        "ok",
+    ]
+    assert world.rdc_calls() == []
+    assert ["ops", "status", "-o", "json"] not in world.rdc_calls()
+    assert world.drill_calls() == []
+    assert "P0" not in _ids(receipt)
+    assert receipt["phases"]["account"]["ran"] is False
+    assert lock_is_free(tmp_path)
+
+
+def test_the_suites_run_from_their_packages(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    root = str(world.root)
+    account = str(world.root / "private/account")
+    assert world.npm_calls() == [
+        ["npm", "--prefix", root, "run", "check:ci-account-server"],
+        ["npm", "--prefix", root, "run", "check:ci-test-account-web"],
+        ["npm", "--prefix", account, "run", "typecheck"],
+        ["npm", "--prefix", account, "run", "typecheck:web"],
+    ]
+
+
+def test_a_failed_license_assertion_is_failed_naming_the_drill(tmp_path: pathlib.Path) -> None:
+    """Case 5."""
+    failed = (1, "  10 assertions: 9 passed, 1 failed  (40s)\n  drill license FAILED\n")
+    world = make_world(tmp_path, drills={"license": failed})
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    detail = receipt["reason"]["detail"]
+    assert detail.startswith("A2.3: drill license"), detail
+    assert "1 of 10 assertions failed" in detail, detail
+    # A red account phase stops before the renet steps.
+    assert not [i for i in _ids(receipt) if i in V_STEPS], _ids(receipt)
+    assert world.forks_left() == []
+
+
+def test_a_drill_that_stops_in_its_preflight_is_account_drill_setup(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Case 6: transfer's missing keyring is a SystemExit(1) before any summary."""
+    world = make_world(
+        tmp_path,
+        drills={"transfer": (1, "-- Setup: two isolated config directories\n   keyring probe\n")},
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-drill-setup", receipt["reason"]
+    assert "A2.2 drill transfer: rc=1 with no summary line" in receipt["reason"]["detail"]
+    # The license drill still ran after it; nothing was asserted against the renet side.
+    assert len(world.drill_calls()) == 3
+    assert not [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+
+
+def test_a_skipped_drill_is_account_drill_skipped(tmp_path: pathlib.Path) -> None:
+    """Case 7."""
+    scenario_a_skipped_drill_is_not_verified(vm_check, tmp_path)
+
+
+def test_a_failed_drill_outranks_a_skipped_one(tmp_path: pathlib.Path) -> None:
+    world = make_world(
+        tmp_path,
+        drills={
+            "universe": (0, "  0 assertions: 0 passed, 0 failed  (0s)\n  drill universe SKIPPED\n"),
+            "license": (1, "  4 assertions: 3 passed, 1 failed  (9s)\n"),
+        },
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    assert receipt["reason"]["detail"].startswith("A2.3"), receipt["reason"]
+
+
+def test_with_no_record_the_gateway_is_started_recorded_and_left_running(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Case 8, started: nothing answers and no record exists."""
+    world = make_world(tmp_path)
+    account = FakeAccount(healthy=False)
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert len(account.restarts) == 1
+    assert account.detached == 1
+    assert receipt["account"]["gateway"]["mode"] == "started"
+    assert read_gateway_record(world.root)["account"] == ADIGEST
+    assert "no healthy dev gateway answers; starting it" in out, out
+    assert "dev gateway: started on port %s, left running" % GATEWAY_PORT in out, out
+
+
+def test_a_matching_record_reuses_the_gateway(tmp_path: pathlib.Path) -> None:
+    """Case 8, reused: the running gateway is the recorded one and the account worktree is unchanged."""
+    world = make_world(tmp_path)
+    write_gateway_record(world.root, ADIGEST)
+    account = FakeAccount()
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.restarts == []
+    assert account.detached == 0
+    assert receipt["account"]["gateway"] == {
+        "mode": "reused",
+        "port": int(GATEWAY_PORT),
+        "started": int(GATEWAY_STARTED),
+    }
+    assert [r["desc"] for r in _rows(receipt, "A0")] == [
+        "dev gateway reused on port %s (started=%s; its record matches the account worktree)"
+        % (GATEWAY_PORT, GATEWAY_STARTED)
+    ]
+
+
+def test_a_gateway_another_writer_restarted_is_restarted_once(tmp_path: pathlib.Path) -> None:
+    """Case 8, restarted: the record names an earlier start, so the running gateway is not provably fresh (D4)."""
+    world = make_world(tmp_path)
+    write_gateway_record(world.root, ADIGEST, started="1791999000")
+    account = FakeAccount()
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert len(account.restarts) == 1
+    assert receipt["account"]["gateway"]["mode"] == "restarted"
+    assert "is not the recorded one (started=1791999000" in out, out
+
+
+def test_a_gateway_older_than_the_account_worktree_is_restarted(tmp_path: pathlib.Path) -> None:
+    """Case 8, restarted (the reuse-stale-gateway scenario)."""
+    scenario_a_gateway_older_than_the_account_worktree_is_restarted(vm_check, tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("account_kwargs", "digest", "says"),
+    [
+        (
+            {"restart_error": "the dev gateway exited during startup"},
+            ADIGEST,
+            "CRYPTO_KEYS is not set",
+        ),
+        ({"healthy": False, "healthy_after_restart": False}, ADIGEST, "does not answer"),
+        ({}, None, "worktree is unreadable"),
+    ],
+)
+def test_a_gateway_that_cannot_be_proven_fresh_is_account_gateway(
+    tmp_path: pathlib.Path, account_kwargs: dict[str, Any], digest: str | None, says: str
+) -> None:
+    """Case 8, account-gateway: a failed start (with the log tail), a start that never answers, and an account worktree the freshness key cannot read."""
+    world = make_world(tmp_path)
+    account = FakeAccount(**account_kwargs)
+    rc, out, receipt = run_check(tmp_path, world, account=account, digest=digest)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-gateway", receipt["reason"]
+    assert says in receipt["reason"]["detail"], receipt["reason"]
+    assert "NOT VERIFIED (account-gateway)" in out
+    # Stopped before any fleet step, and no record names a gateway that is not fresh.
+    assert not [c for c in world.rdc_calls() if c[:2] == ["ops", "status"]]
+    assert not (world.root / receipt_mod.CACHE_DIR / vm_check.GATEWAY_RECORD).exists()
+    assert lock_is_free(tmp_path)
+
+
+def test_no_drill_or_suite_env_carries_a_credential(tmp_path: pathlib.Path) -> None:
+    """Case 9."""
+    scenario_no_drill_or_suite_env_carries_a_credential(vm_check, tmp_path)
+
+
+def test_the_drill_argvs_are_exact(tmp_path: pathlib.Path) -> None:
+    """Case 10."""
+    world = make_world(tmp_path)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    calls = world.drill_calls()
+    assert [c[1:] for c in calls] == [
+        ["-m", "rediacc_ci.drills.universe", "--no-restart"],
+        ["-m", "rediacc_ci.drills.transfer", "--no-restart"],
+        [
+            "-m",
+            "rediacc_ci.drills.license",
+            "--legs",
+            "c,d,e,f",
+            "--no-restart",
+            "--seed-repo",
+            "--vm",
+            "192.168.111.11",
+        ],
+    ]
+    assert calls[0][0] == sys.executable
+
+
+def test_a_required_phase_whose_steps_never_ran_is_phase_not_run(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Case 11: A2 planted to do nothing and report success, so the account phase never reaches its drills."""
+    monkeypatch.setattr(vm_check.VmCheck, "a2_drills", lambda _self: True)
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "phase-not-run", receipt["reason"]
+    assert "account" in receipt["reason"]["detail"], receipt["reason"]
+    assert receipt["phases"]["account"] == {"required": True, "ran": False}
+    assert receipt["phases"]["renet"] == {"required": True, "ran": True}
+    assert "account NOT RUN" in out, out
+
+
+def _class_of(verdict: tuple[str, dict[str, str] | None]) -> str:
+    reason = verdict[1]
+    assert reason is not None, verdict
+    return reason["class"]
+
+
+def test_verdict_orders_phase_not_run_after_reason_and_before_no_assertions() -> None:
+    both = {"renet": {"required": True, "ran": True}, "account": {"required": True, "ran": False}}
+    assert _class_of(vm_check.verdict(3, [], None, [], both)) == "phase-not-run"
+    assert _class_of(vm_check.verdict(0, [], None, [], both)) == "phase-not-run"
+    assert _class_of(vm_check.verdict(3, [], ("fleet-busy", "x"), [], both)) == "fleet-busy"
+    assert vm_check.verdict(3, ["V1.2: x"], None, [], both)[0] == receipt_mod.FAILED
+    # A phase that is not required may stay unrun; one that ran needs nothing more.
+    renet_only = {
+        "renet": {"required": True, "ran": True},
+        "account": {"required": False, "ran": False},
+    }
+    assert vm_check.verdict(3, [], None, [], renet_only) == (receipt_mod.VERIFIED, None)
+    assert _class_of(vm_check.verdict(0, [], None, [], renet_only)) == "no-assertions"
+
+
+@pytest.mark.parametrize(
+    ("rc", "out", "outcome"),
+    [
+        (0, drill_passed("universe")[1], vm_check.DRILL_OK),
+        (0, "  3 assertions: 3 passed, 0 failed  (1s)\n  drill x PASSED\n", vm_check.DRILL_OK),
+        (1, "  3 assertions: 2 passed, 1 failed  (1s)\n  drill x FAILED\n", vm_check.DRILL_FAILED),
+        # A failed count wins even over an rc 0 that should not happen.
+        (0, "  3 assertions: 2 passed, 1 failed  (1s)\n", vm_check.DRILL_FAILED),
+        (
+            0,
+            "  0 assertions: 0 passed, 0 failed  (0s)\n  drill x SKIPPED (0 ran)\n",
+            vm_check.DRILL_SKIP,
+        ),
+        (0, "  0 assertions: 0 passed, 0 failed  (0s)\n", vm_check.DRILL_SKIP),
+        (0, "config-storage enrollment: SKIPPED BY DECLARATION\n", vm_check.DRILL_SKIP),
+        (0, "", vm_check.DRILL_SKIP),
+        (1, "No usable OS keyring\n", vm_check.DRILL_SETUP),
+        (2, "", vm_check.DRILL_SETUP),
+        (1, "  3 assertions: 3 passed, 0 failed  (1s)\n  drill x PASSED\n", vm_check.DRILL_SETUP),
+        (0, "  3 assertions: 3 passed, 0 failed  (1s)\n", vm_check.DRILL_SETUP),
+        # The last summary is the drill's own; an earlier one quoted in its output is not.
+        (
+            0,
+            "  1 assertions: 0 passed, 1 failed\n  5 assertions: 5 passed, 0 failed\n  drill x PASSED\n",
+            vm_check.DRILL_OK,
+        ),
+    ],
+)
+def test_classify_drill(rc: int, out: str, outcome: str) -> None:
+    assert vm_check.classify_drill(vm_check.Result(rc, out))[0] == outcome
+
+
+def test_an_account_checkout_off_its_pointer_is_said_and_its_receipt_does_not_admit(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = account_only_world(tmp_path, account_checkout="1" * 40)
+    rc, out, receipt = run_check(tmp_path, world, "--changed", modified=True)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert "is not the pointer %s" % APTR[:12] in out, out
+    assert "worktree is modified" in out, out
+    assert receipt["account"] == {
+        "pointer": APTR,
+        "checkout": "1" * 40,
+        "modified": True,
+        "gateway": receipt["account"]["gateway"],
+    }
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "account-mismatch"
+
+
+def test_an_uninitialized_account_submodule_records_no_checkout(tmp_path: pathlib.Path) -> None:
+    """git -C on an empty submodule directory would answer the console's HEAD."""
+    world = make_world(tmp_path, account_checked_out=False)
+    rc, out, receipt = run_check(tmp_path, world, modified=None)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["account"]["checkout"] == ""
+    assert receipt["account"]["modified"] is None
+    assert not [c for c in world.calls if c[0] == "git" and c[2].endswith("private/account")]
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "account-mismatch"
+
+
+def test_receipts_of_an_earlier_schema_are_said_to_no_longer_count(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    folder = world.root / receipt_mod.CACHE_DIR
+    folder.mkdir(parents=True)
+    (folder / ("0" * 40 + ".json")).write_text(json.dumps({"schema": 1, "status": "VERIFIED"}))
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert "1 receipt(s) of an earlier schema in .ci/cache/vm-check no longer count" in out, out
+    (tmp_path / "again").mkdir()
+    world2 = make_world(tmp_path / "again")
+    rc, out, _receipt = run_check(tmp_path / "again", world2)
+    assert "earlier schema" not in out, out
 
 
 # --------------------------------------------------------------------------- mutants
