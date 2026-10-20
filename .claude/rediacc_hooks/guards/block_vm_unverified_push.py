@@ -670,35 +670,36 @@ def _operator_answered(ev, reason):
 def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
     """(kind, why, receipt-or-None) when the escape is admitted, else (None, the refusal line, None)."""
     if reason is None:
-        return None, "no `%s=` on it" % REASON_ENV, None
+        return None, "escape-missing: no `%s=` on it" % REASON_ENV, None
     m = REASON_RE.match(reason)
     kind, rest = (m.group(1).lower(), m.group(2)) if m else ("", reason)
     if kind not in KINDS:
         return (
             None,
-            "`%s=%r`: the kind must be one of %s" % (REASON_ENV, reason, ", ".join(KINDS)),
+            "escape-kind: `%s=%r`: the kind must be one of %s"
+            % (REASON_ENV, reason, ", ".join(KINDS)),
             None,
         )
     why = ASKED_TOKEN_RE.sub("", rest).strip()
     if len(why) < MIN_WHY:
         return (
             None,
-            "`%s`: the why is %d characters; at least %d name the files or the deadline"
+            "escape-why: `%s`: the why is %d characters; at least %d name the files or the deadline"
             % (reason, len(why), MIN_WHY),
             None,
         )
     if not ASKED_STRICT_RE.search(reason):
-        return None, "`%s` carries no ASKED:<YYYY-MM-DDTHH:MM>Z" % reason, None
+        return None, "escape-asked: `%s` carries no ASKED:<YYYY-MM-DDTHH:MM>Z" % reason, None
     if not _operator_answered(ev, reason):
         unproven = (
-            "its ASKED: minute matches no AskUserQuestion answer in this session's transcript "
+            "escape-unproven: its ASKED: minute matches no AskUserQuestion answer in this session's transcript "
             "(within 300 s)"
         )
         return None, unproven, None
     attempt = None
     if kind == "vm-unavailable" and tree is None:
         blind = (
-            "`vm-unavailable` names a NOT_VERIFIED attempt for one tree, and this push sends "
+            "escape-blind: `vm-unavailable` names a NOT_VERIFIED attempt for one tree, and this push sends "
             "refs no single tree describes; only `not-runtime` or `deadline` admits it"
         )
         return None, blind, None
@@ -706,7 +707,7 @@ def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
         attempt = _not_verified_attempt(receipt_mod, root, tree, digest)
         if attempt is None:
             missing = (
-                "`vm-unavailable`, but no NOT_VERIFIED receipt exists for these inputs; "
+                "escape-no-attempt: `vm-unavailable`, but no NOT_VERIFIED receipt exists for these inputs; "
                 "run `npm run vm:check -- --changed` so the attempt is on record"
             )
             return None, missing, None
@@ -768,7 +769,7 @@ PHASE_COST = {
 
 REFUSAL = """BLOCKED: this push touches the VM trigger paths and no VERIFIED vm:check receipt covers tree %(tree)s (commit %(commit)s, pushed as `%(src)s`) on the side(s) it touches: %(sides)s.
 
-Receipt: %(verdict)s
+Receipt: [%(code)s] %(verdict)s
 Touched (%(n)d, base %(base)s):
 %(hits)s
 Prove it on the ops VMs; `--changed` runs the phase of each touched side:
@@ -883,6 +884,7 @@ def run(ev):
                 "commit": commit[:12],
                 "src": src,
                 "verdict": verdict.message,
+                "code": verdict.code,
                 "sides": ", ".join(sorted(sides)) or "none",
                 "costs": "".join(
                     "    %-14s %s\n" % ("%s phase" % side, PHASE_COST.get(side, "unmeasured"))

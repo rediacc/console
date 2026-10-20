@@ -98,6 +98,29 @@ RENET_WIDE = built("vmc-renet-wide")
 RENET_GOMOD = built("vmc-renet-gomod")
 SCHEMA_1 = built("vmc-schema-1")
 RENET_WIDE_VERIFIED = G.plant_receipt(built("vmc-renet-wide"))
+# A renet-only VERIFIED receipt on a renet range, but the push base cannot be resolved: every side is charged, so the account phase is missing.
+NO_BASE = G.plant_receipt(built("vmc-renet-wide"))
+G._git(NO_BASE, "update-ref", "-d", "refs/remotes/origin/main")
+# origin/main an unrelated root: no base shares a merge base with HEAD, so the base stays unresolved.
+UNRELATED_BASE = G.plant_receipt(built("vmc-renet-wide"))
+G._git(
+    UNRELATED_BASE,
+    "update-ref",
+    "refs/remotes/origin/main",
+    G._git(
+        UNRELATED_BASE, "commit-tree", "-m", "unrelated", "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+    ),
+)
+# A resolvable base, but the pushed `orphan` branch shares no merge base with it: every side is charged.
+NO_MERGE_BASE = G.plant_receipt(built("vmc-renet-wide"))
+G._git(
+    NO_MERGE_BASE,
+    "update-ref",
+    "refs/heads/orphan",
+    G._git(
+        NO_MERGE_BASE, "commit-tree", "-m", "orphan", "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+    ),
+)
 RENET_GOMOD_VERIFIED = G.plant_receipt(built("vmc-renet-gomod"))
 # Both sides touched (the CLI remote path and the account source): one phase is not enough.
 BOTH_ACCOUNT_ONLY = G.plant_receipt(
@@ -279,6 +302,52 @@ CASES = [
         "did not run the account phase",
     ),
     ("account range, an account VERIFIED receipt", PUSH, ACCOUNT_VERIFIED, None, None, False, ""),
+    (
+        "no push base: a renet-only receipt is refused",
+        PUSH,
+        NO_BASE,
+        None,
+        None,
+        True,
+        "did not run the account phase",
+    ),
+    ("no push base: names the unresolved base", PUSH, NO_BASE, None, None, True, "no push base"),
+    (
+        "unrelated base: a renet-only receipt is refused",
+        PUSH,
+        UNRELATED_BASE,
+        None,
+        None,
+        True,
+        "no push base",
+    ),
+    (
+        "no merge base: a renet-only receipt is refused",
+        "git push origin orphan",
+        NO_MERGE_BASE,
+        None,
+        None,
+        True,
+        "no merge base",
+    ),
+    (
+        "refusal names its receipt code",
+        PUSH,
+        ACCOUNT_RENET_RECEIPT,
+        None,
+        None,
+        True,
+        "Receipt: [phase-missing]",
+    ),
+    (
+        "an escape refusal names its code",
+        PUSH,
+        CLI_NONE,
+        None,
+        None,
+        True,
+        "escape-missing: no `VM_CHECK_PUSH_REASON=` on it",
+    ),
     (
         "both sides, an account-only VERIFIED receipt",
         PUSH,
@@ -774,7 +843,7 @@ for name, command, root, tr, cwd, want, needle in CASES:
     got, err = run(command, root, tr, cwd)
     grew = len(ledger_lines(root)) - before
     blocked += got
-    if needle.startswith("!"):
+    if needle and needle.startswith("!"):
         ok = got == want and needle[1:] not in err
     else:
         ok = got == want and (not needle or needle in err)
