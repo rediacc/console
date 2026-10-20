@@ -801,11 +801,18 @@ def test_lookalike_and_other_agent_paths_do_not_fire(tmp_path) -> None:
 def test_is_review_record_line_is_strict() -> None:
     ok = ":000000 100644 0000000 abc A\tagent/reviews/b/x.md"
     assert port.is_review_record_line(ok)
-    assert port.is_review_record_line(ok.replace("000000 100644", "100644 100644").replace("A", "M"))
+    assert port.is_review_record_line(
+        ok.replace("000000 100644", "100644 100644").replace("A", "M")
+    )
     assert not port.is_review_record_line(ok.replace("100644", "120000"))
     assert not port.is_review_record_line(ok.replace("100644", "160000"))
     assert not port.is_review_record_line(ok + "\tagent/reviews/b/y.md")
     assert not port.is_review_record_line(ok.replace("agent/reviews/", "agent/reviewsX/"))
+    # a mode change is never admitted, and the add/delete sides must match their status
+    assert not port.is_review_record_line(":100644 100755 a b M\tagent/reviews/b/x.md")
+    assert not port.is_review_record_line(":100644 100644 a b A\tagent/reviews/b/x.md")
+    assert not port.is_review_record_line(":000000 100644 a b D\tagent/reviews/b/x.md")
+    assert port.is_review_record_line(":100644 000000 a 0000000 D\tagent/reviews/b/x.md")
     assert port.has_non_gitlink(ok + "\n:100644 100644 a b M\treadme.md")
     assert not port.has_non_gitlink(ok + "\n:160000 160000 a b M\tprivate/x")
 

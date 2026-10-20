@@ -76,4 +76,13 @@ describe('external terminal credential handoff', () => {
   it('a non-numeric pid is never put in the shell script', () => {
     expect(buildHandoffArgv(['ssh', 'h'], { agentPid: '1; rm -rf /' })).toEqual(['ssh', 'h']);
   });
+
+  it('an agent the wrapper cannot stop stays with the parent', async () => {
+    const conn = fakeConnection({ agentPid: 'not-a-pid', agentSocketPath: '/tmp/agent.sock' });
+    await launchExternalTerminal(conn, 'u@h', undefined, 't', details);
+    const opts = launchTerminal.mock.calls[0][1];
+    expect(opts.argv[0]).toBe('ssh');
+    expect(opts.environmentVariables.SSH_AUTH_SOCK).toBeUndefined();
+    expect(conn.handoffResources.agentPid).toBe('not-a-pid');
+  });
 });
