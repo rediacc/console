@@ -464,7 +464,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
-| `agent/plans/PLAN-account-vm-check.md` | direction | 130 | 7 | 0 | 23532 |
+| `agent/plans/PLAN-account-vm-check.md` | direction | 136 | 1 | 6 | 25684 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5643 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
