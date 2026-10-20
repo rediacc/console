@@ -1,8 +1,8 @@
-"""Refuse a `git push` whose range touches the VM trigger paths unless a VERIFIED `npm run vm:check` receipt covers the pushed tree, or the operator answered for it.
+"""Refuse a `git push` whose range touches the VM trigger paths (the CLI remote paths, the deployed renet binary's inputs in private/renet, the served code in private/account) unless a VERIFIED `npm run vm:check` receipt covers the pushed tree and every side it touches, or the operator answered for it.
 
-THE ORDER (operator /ask ASKED:2026-10-14T17:19Z, option (c) "Script plus a push guard"; box VC4 of agent/plans/PLAN-vm-check.md). No CI suite drives `rdc` against a VM for the repo shell, sync, SFTP, repo-key shells or VS Code, so a change there is proven on the ops VMs by `npm run vm:check` before it leaves this machine.
+THE ORDER (operator /ask ASKED:2026-10-14T17:19Z, option (c) "Script plus a push guard"; box VC4 of agent/plans/PLAN-vm-check.md). No CI suite drives `rdc` against a VM for the repo shell, sync, SFTP, repo-key shells or VS Code, so a change there is proven on the ops VMs by `npm run vm:check` before it leaves this machine. The account side was added by operator /ask #c5305ed9 ("Account drills via one runner"; box AV5 of agent/plans/PLAN-account-vm-check.md): a private/account change is proven against a live dev gateway and the ops VMs by the same runner and the same receipt.
 
-WHAT IS TOUCHED is never decided here. `rediacc_ci.drills.vm_check_trigger.changed_paths(root, base, "push", tip)` is the only definition of the trigger, shared with the script, and is imported through `syspath.import_from_ci` (`.ci` on sys.path only for the import). The base is `push_base` (`@{push}`, `origin/<branch>`, `@{upstream}`, then `origin/main`, merged with the pushed tip). A renet range that cannot be computed (an old gitlink commit missing from the local private/renet) is UNKNOWN, and unknown counts as touched: it is listed among the hits, never dropped. A push base that cannot be resolved is unknown in the same way.
+WHAT IS TOUCHED is never decided here. `rediacc_ci.drills.vm_check_trigger.changed_paths(root, base, "push", tip)` is the only definition of the trigger, shared with the script, and is imported through `syspath.import_from_ci` (`.ci` on sys.path only for the import). The base is `push_base` (`@{push}`, `origin/<branch>`, `@{upstream}`, then `origin/main`, merged with the pushed tip). Both submodules are diffed: a private/renet or private/account gitlink move is diffed inside that submodule, and each side counts on its own. `Changed.sides` names the sides the hits reach (renet, account, or both), and the receipt must have run the phase of every one. A submodule range that cannot be computed (an old gitlink commit missing from the local checkout) is UNKNOWN, listed as `(unknown) <submodule> <sha>: <why>`, adds that submodule's side and counts as touched: it is never dropped. A push base that cannot be resolved is unknown in the same way and charges both sides.
 
 EVERY PUSHED COMMIT IS JUDGED ON ITS OWN. A command can send several commits: two pushes with different sources, or one push naming several refspecs. Each refspec's source (a bare ref is its own source, `+` dropped, no refspec at all reads as HEAD) is resolved to a commit, and each distinct commit gets its own range, tree and receipt. Judging only HEAD would admit a pushed commit carrying a trigger change that HEAD reverts. A source git cannot resolve is named on stderr and skipped, since git refuses to push it as well.
 
@@ -10,19 +10,19 @@ EVERY PUSHED COMMIT IS JUDGED ON ITS OWN. A command can send several commits: tw
 
 `--mirror` IS REFUSED OUTRIGHT, touched or not. It sends every ref, deletes each remote ref missing here and forces each diverged one, so no receipt for one tree can speak for it. Only the escape admits it, and only as `not-runtime` or `deadline`: `vm-unavailable` names a NOT_VERIFIED attempt for one tree, which a push of every ref has none of. An unenumerable ref set is judged the same way.
 
-THE RECEIPT is judged by `vm_check_receipt.admit(root, tree, inputs(root, tree))`: the pushed tree's archive, then `receipt.json`, then the newest archives. VERIFIED with the same tree or the same trigger digest, a renet build equal to the pointer and not modified, admits. A later commit outside the trigger keeps the digest, so it costs no new VM run.
+THE RECEIPT is judged by `vm_check_receipt.admit(root, tree, inputs(root, tree), sides)`: the pushed tree's archive, then `receipt.json`, then the newest archives. VERIFIED with the same tree or the same trigger digest, a renet build equal to the pointer and not modified, and the phase of every touched side run (`phase-missing` otherwise: a renet-only receipt does not admit an account range), admits. On the account side the receipt's account checkout must equal the pointer (`account-mismatch`) and be unmodified (`modified-account`). The digest (version 2) covers both submodule pointers. A later commit outside the trigger keeps the digest, so it costs no new VM run. Schema 1 receipts are a clean break: the receipt module does not read them, so one admits nothing and backs no escape (`no-receipt`).
 
 THE ESCAPE is an environment assignment on the push itself, read from the shared lexer's walk (`run.env`) exactly as `TURBO_PUSH_REASON` is, so a prefix, an earlier `export` and `env NAME=value` count, and prose naming it does not:
 
     VM_CHECK_PUSH_REASON='<kind>: <why, 40+ chars> ASKED:<YYYY-MM-DDTHH:MM>Z' git push origin <branch>
 
-    vm-unavailable  a NOT_VERIFIED receipt for these inputs exists, so the attempt was made
-    not-runtime     the touched change cannot alter what runs on a VM; the why names the files
+    vm-unavailable  a NOT_VERIFIED receipt for these inputs exists (such as `account-gateway`), so the attempt was made
+    not-runtime     the touched change cannot alter what runs on a VM or the gateway; the why names the account or renet files
     deadline        production or CD state that cannot wait; the why names it
 
   Every kind needs the `ASKED:` minute, matched against an AskUserQuestion answer in the payload's `transcript_path` within 300 s by `wl_checks._asked_in_transcript`, the evidence rule of the review waiver. That proves an operator answer exists at that minute, not that it answered this question: it narrows the escape to the operator's own turn. A transcript that cannot be read proves nothing, so the escape is refused then.
 
-THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the console checkout (ts, branch, head (the pushed commit, not the checkout's HEAD), tree, renet, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 62 is the last pre-bash slot, so every other guard has already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
+THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the console checkout (ts, branch, head (the pushed commit, not the checkout's HEAD), tree, renet, account (the two gitlinks of that tree), sides, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 62 is the last pre-bash slot, so every other guard has already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
 
 SCOPE, as `block_unverified_push` draws it: a command-position `git push` in this checkout. NOT judged: a `--dry-run` push (a `--mirror` or `--all` one too, since it publishes nothing); a delete push (`--delete`, `:<ref>`); a push whose source is exactly `origin/main` (the GitLab mirror push of /pr-merge step 6b, `block_unverified_push.pushes_only_origin_main`), which a `--mirror` push never is; a submodule push (the console pointer push carries the range); another repository, by `-C`, `cd` or the payload's `cwd`.
 
@@ -46,8 +46,18 @@ ORDER = 62
 
 # The touched test, inverted: planted, every push reads as untouched and passes without a receipt.
 DEFECT = ("if not hits:", "if True:")
-# The two further mutants the own suite plants; each must flip at least one refusal to allowed.
+# The further mutants the own suite plants; each must flip at least one refusal to allowed.
 MUTANTS = {
+    # The judge stops passing the touched sides, so a receipt that skipped a phase admits.
+    "phases-ignored": (
+        "verdict = receipt_mod.admit(root_path, tree, digest, sides)",
+        "verdict = receipt_mod.admit(root_path, tree, digest, ())",
+    ),
+    # `_hits` loses the account side, so a renet-only receipt admits an account range.
+    "account-side-dropped": (
+        "return via, found, frozenset(changed.sides)",
+        "return via, found, frozenset(changed.sides) - {'account'}",
+    ),
     "inputs-always-equal": (
         'return receipt.get("tree") == tree or (bool(digest) and receipt.get("inputs") == digest)',
         "return True",
@@ -110,51 +120,102 @@ def _commit(root, message):
 
 
 RENET = "private/renet"
+ACCOUNT = "private/account"
 CLI_FILE = "packages/cli/src/remote/sftp.ts"
 FAKE_RENET = "0123456789abcdef0123456789abcdef01234567"
+FAKE_ACCOUNT = "89abcdef0123456789abcdef0123456789abcdef"
+ACCOUNT_SRC = "src/routes/licenses.ts"
+ACCOUNT_TEST = "tests/routes/licenses.test.ts"
 
 
-def world(path, renet_files=(), cli=False, docs=True, missing_old=False):
-    """A console-shaped repository on `1008-1` with a real `private/renet` gitlink.
-
-    The seed (`origin/main`) holds a renet commit A as the gitlink, or a commit absent from the local renet when `missing_old`. The branch adds one commit: a docs file when `docs`, `CLI_FILE` when `cli`, and a renet commit B touching `renet_files` (paths relative to private/renet) with the gitlink moved to it when any are named. Returns the console path.
-    """
-    root = pathlib.Path(path)
-    sub = root / RENET
+def _submodule(sub, files):
     sub.mkdir(parents=True)
     _git(sub, "init", "-q", "--initial-branch=main")
-    _put(sub, "README.md", "renet\n")
-    _put(sub, "cmd/renet/sandbox_exec.go", "package main\n")
-    _put(sub, "pkg/sandbox/sandbox_test.go", "package sandbox\n")
-    _commit(sub, "renet A")
+    for rel, text in files:
+        _put(sub, rel, text)
+    _commit(sub, "%s A" % sub.name)
+
+
+def _gitlink(root, sub, missing, fake):
+    if missing:
+        _git(root, "update-index", "--add", "--cacheinfo", "160000,%s,%s" % (fake, sub))
+    else:
+        _git(root, "add", sub)
+
+
+def world(
+    path,
+    renet_files=(),
+    cli=False,
+    docs=True,
+    missing_old=False,
+    account_files=(),
+    account_missing_old=False,
+):
+    """A console-shaped repository on `1008-1` with real `private/renet` and `private/account` gitlinks.
+
+    The seed (`origin/main`) holds a renet commit A and an account commit A as the gitlinks, or a commit absent from the local submodule when `missing_old` (renet) or `account_missing_old` (account). The branch adds one commit: a docs file when `docs`, `CLI_FILE` when `cli`, a renet commit B touching `renet_files` (relative to private/renet) and an account commit B touching `account_files` (relative to private/account), each gitlink moved to its B when files are named. Returns the console path.
+    """
+    root = pathlib.Path(path)
+    renet = root / RENET
+    account = root / ACCOUNT
+    _submodule(
+        renet,
+        (
+            ("README.md", "renet\n"),
+            ("cmd/renet/sandbox_exec.go", "package main\n"),
+            ("pkg/sandbox/sandbox_test.go", "package sandbox\n"),
+        ),
+    )
+    _submodule(
+        account,
+        (
+            ("README.md", "account\n"),
+            (ACCOUNT_SRC, "export const licenses = 1;\n"),
+            (ACCOUNT_TEST, "test('licenses', () => {});\n"),
+        ),
+    )
     _git(root, "init", "-q", "--initial-branch=main")
     _git(root, "remote", "add", "origin", "https://github.com/fixture/console.git")
     _put(root, ".gitignore", ".ci/cache/\nagent/ledgers/\n")
     _put(root, "docs/guide.md", "guide\n")
     _put(root, CLI_FILE, "export const sftp = 1;\n")
     _git(root, "add", ".gitignore", "docs", "packages")
-    if missing_old:
-        _git(root, "update-index", "--add", "--cacheinfo", "160000,%s,%s" % (FAKE_RENET, RENET))
-    else:
-        _git(root, "add", RENET)
+    _gitlink(root, RENET, missing_old, FAKE_RENET)
+    _gitlink(root, ACCOUNT, account_missing_old, FAKE_ACCOUNT)
     _git(root, "commit", "-q", "-m", "seed")
     _git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
     _git(root, "checkout", "-q", "-b", "1008-1")
-    if renet_files:
-        for rel in renet_files:
-            _put(sub, rel, "// changed\n")
-        _commit(sub, "renet B")
+    for sub, files in ((renet, renet_files), (account, account_files)):
+        if files:
+            for rel in files:
+                _put(sub, rel, "// changed\n")
+            _commit(sub, "%s B" % sub.name)
     if docs:
         _put(root, "docs/guide.md", "guide, edited\n")
     if cli:
         _put(root, CLI_FILE, "export const sftp = 2;\n")
-    _git(root, "add", "docs", "packages", RENET)
+    _git(root, "add", "docs", "packages", RENET, ACCOUNT)
     _git(root, "commit", "-q", "--allow-empty", "-m", "work")
     return root
 
 
-def plant_receipt(root, status="VERIFIED", tree=None, inputs=None, pointer=None, built=None):
-    """Write a schema-valid receipt into `root`'s cache through the receipt module's own `write`, keyed on `tree` (HEAD's by default) with the trigger digest the guard will compute for it unless `inputs` overrides it."""
+def plant_receipt(
+    root,
+    status="VERIFIED",
+    tree=None,
+    inputs=None,
+    pointer=None,
+    built=None,
+    ran=("renet",),
+    reason_class=None,
+    account_checkout=None,
+    account_modified=False,
+):
+    """Write a schema 2 receipt into `root`'s cache through the receipt module's own `write`, keyed on `tree` (HEAD's by default) with the trigger digest the guard will compute for it unless `inputs` overrides it.
+
+    `ran` names the phases a VERIFIED receipt ran (each also required); a FAILED or NOT_VERIFIED one ran none and required both. `reason_class` overrides the NOT_VERIFIED or FAILED class, `account_checkout` the account checkout (the pointer by default) and `account_modified` its modified flag.
+    """
     trigger = syspath.import_from_ci(TRIGGER_MOD)
     receipt_mod = syspath.import_from_ci(RECEIPT_MOD)
     root = pathlib.Path(root)
@@ -164,13 +225,17 @@ def plant_receipt(root, status="VERIFIED", tree=None, inputs=None, pointer=None,
         raise RuntimeError("fixture has no HEAD commit to key the receipt on")
     if pointer is None:
         pointer = _git(root, "rev-parse", "%s:%s" % (tree, RENET))
+    account_pointer = _git(root, "rev-parse", "%s:%s" % (tree, ACCOUNT))
     reason = None
     steps = [{"id": "V1.1", "desc": "deploy renet", "rc": 0, "verdict": "PASS", "ms": 1}]
     if status == "NOT_VERIFIED":
-        reason = {"class": "fleet-unavailable", "detail": "ops up --basic exited 1"}
+        reason = {
+            "class": reason_class or "fleet-unavailable",
+            "detail": "ops up --basic exited 1",
+        }
         steps = []
     elif status == "FAILED":
-        reason = {"class": "step-failed", "detail": "V1.3 sftp put"}
+        reason = {"class": reason_class or "step-failed", "detail": "V1.3 sftp put"}
         steps.append(
             {
                 "id": "V1.3",
@@ -181,6 +246,11 @@ def plant_receipt(root, status="VERIFIED", tree=None, inputs=None, pointer=None,
                 "evidence": "permission denied",
             }
         )
+    verified = status == "VERIFIED"
+    phases = {
+        side: {"required": side in ran if verified else True, "ran": verified and side in ran}
+        for side in receipt_mod.SIDES
+    }
     receipt = {
         "schema": receipt_mod.SCHEMA,
         "status": status,
@@ -195,8 +265,20 @@ def plant_receipt(root, status="VERIFIED", tree=None, inputs=None, pointer=None,
             "modified": False,
             "deployed": True,
         },
-        "trigger": {"base": "origin/main", "via": "origin/main", "hits": []},
+        "trigger": {
+            "base": "origin/main",
+            "via": "origin/main",
+            "hits": [],
+            "sides": sorted(side for side, phase in phases.items() if phase["required"]),
+        },
         "fleet": {"mode": "reused", "os": "ubuntu-24.04", "ips": [], "landlock": {}},
+        "phases": phases,
+        "account": {
+            "pointer": account_pointer,
+            "checkout": account_pointer if account_checkout is None else account_checkout,
+            "modified": account_modified,
+            "gateway": {"mode": "reused", "port": 8787, "started": 1767225600},
+        },
         "forks": [],
         "steps": steps,
         "teardown": {"ok": True, "leftovers": []},
@@ -206,6 +288,45 @@ def plant_receipt(root, status="VERIFIED", tree=None, inputs=None, pointer=None,
         "wallMs": 60000,
     }
     receipt_mod.write(root, receipt)
+    return root
+
+
+def plant_schema_1(root):
+    """A VERIFIED receipt in the retired schema 1 shape for HEAD's tree, written raw (the receipt module's `write` refuses it): the guard must read it as no receipt at all."""
+    trigger = syspath.import_from_ci(TRIGGER_MOD)
+    receipt_mod = syspath.import_from_ci(RECEIPT_MOD)
+    root = pathlib.Path(root)
+    tree = _git(root, "rev-parse", "HEAD^{tree}")
+    pointer = _git(root, "rev-parse", "%s:%s" % (tree, RENET))
+    receipt = {
+        "schema": 1,
+        "status": "VERIFIED",
+        "reason": None,
+        "tree": tree,
+        "head": _git(root, "rev-parse", "HEAD"),
+        "inputs": trigger.inputs(root, tree),
+        "renet": {
+            "pointer": pointer,
+            "checkout": pointer,
+            "built": pointer,
+            "modified": False,
+            "deployed": True,
+        },
+        "trigger": {"base": "origin/main", "via": "origin/main", "hits": []},
+        "fleet": {"mode": "reused", "os": "ubuntu-24.04", "ips": [], "landlock": {}},
+        "forks": [],
+        "steps": [{"id": "V1.1", "desc": "deploy renet", "rc": 0, "verdict": "PASS", "ms": 1}],
+        "teardown": {"ok": True, "leftovers": []},
+        "runId": "fixture-run-schema-1",
+        "startedAt": "2026-01-01T00:00:00Z",
+        "finishedAt": "2026-01-01T00:01:00Z",
+        "wallMs": 60000,
+    }
+    folder = receipt_mod.receipt_dir(root)
+    folder.mkdir(parents=True, exist_ok=True)
+    data = json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+    for name in ("%s.json" % tree, receipt_mod.LATEST):
+        (folder / name).write_text(data, encoding="utf-8")
     return root
 
 
@@ -266,6 +387,16 @@ FIXTURES = {
     "vmc-missing-old": lambda p: world(p, missing_old=True),
     "vmc-stale-not-verified": _stale_not_verified,
     "vmc-reverted": _reverted,
+    "vmc-account-src": lambda p: world(p, account_files=(ACCOUNT_SRC,)),
+    "vmc-account-tests-only": lambda p: world(p, account_files=(ACCOUNT_TEST,)),
+    "vmc-account-renet-receipt": lambda p: plant_receipt(world(p, account_files=(ACCOUNT_SRC,))),
+    "vmc-account-verified": lambda p: plant_receipt(
+        world(p, account_files=(ACCOUNT_SRC,)), ran=("account",)
+    ),
+    "vmc-account-missing-old": lambda p: world(p, account_missing_old=True),
+    "vmc-renet-wide": lambda p: world(p, renet_files=("pkg/license/x.go",)),
+    "vmc-renet-gomod": lambda p: world(p, renet_files=("go.mod",)),
+    "vmc-schema-1": lambda p: plant_schema_1(world(p, cli=True)),
 }
 
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
@@ -485,18 +616,21 @@ def _tips(root, pushes):
 
 
 def _hits(trigger, root, tip):
-    """The touched trigger paths plus every unknown range, each spelled so the refusal can name it."""
+    """(base, hits, sides): the touched trigger paths plus every unknown range, each spelled so the refusal can name it (an unknown submodule range as `(unknown) <submodule> <sha>: <why>`), and the sides they reach. A base that cannot be resolved charges every side."""
     git = trigger.make_git(root)
     branch = commit_policy.current_branch(str(root))
     resolved = trigger.push_base(git, branch or None)
+    every = frozenset(trigger.SIDES)
     if not resolved.ref:
-        return "", ["(unknown) no push base: tried %s" % ", ".join(resolved.tried)]
+        return "", ["(unknown) no push base: tried %s" % ", ".join(resolved.tried)], every
     base = git(["merge-base", tip, resolved.ref])
     if not base:
-        return resolved.ref, ["(unknown) no merge base of %s and %s" % (tip, resolved.ref)]
+        unknown = "(unknown) no merge base of %s and %s" % (tip, resolved.ref)
+        return resolved.ref, [unknown], every
     changed = trigger.changed_paths(root, base, "push", tip)
-    found = list(changed.hits) + ["(unknown) renet range %s" % u for u in changed.unknown]
-    return "%s via %s" % (base[:12], resolved.via or resolved.ref), found
+    found = list(changed.hits) + ["(unknown) %s" % u for u in changed.unknown]
+    via = "%s via %s" % (base[:12], resolved.via or resolved.ref)
+    return via, found, frozenset(changed.sides)
 
 
 # --------------------------------------------------------------------------- the escape
@@ -582,7 +716,11 @@ def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
 # --------------------------------------------------------------------------- the ledger
 
 
-def _row(root, commit, tree, kind, why, reason, hits, attempt):
+def _pointer(root, tree, sub):
+    return (tree and commit_policy.git(["rev-parse", "%s:%s" % (tree, sub)], cwd=root)) or ""
+
+
+def _row(root, commit, tree, kind, why, reason, hits, attempt, sides=()):
     asked = ASKED_STRICT_RE.search(reason or "")
     receipt = None
     if attempt is not None:
@@ -595,8 +733,9 @@ def _row(root, commit, tree, kind, why, reason, hits, attempt):
         "branch": commit_policy.current_branch(root),
         "head": commit,
         "tree": tree,
-        "renet": (tree and commit_policy.git(["rev-parse", "%s:%s" % (tree, RENET)], cwd=root))
-        or "",
+        "renet": _pointer(root, tree, RENET),
+        "account": _pointer(root, tree, ACCOUNT),
+        "sides": sorted(sides),
         "kind": kind,
         "why": why,
         "asked": asked.group(0)[len("ASKED:") :] if asked else "",
@@ -618,22 +757,34 @@ def _record(ev, root, rows):
         )
 
 
-REFUSAL = """BLOCKED: this push touches the VM trigger paths and no VERIFIED vm:check receipt covers tree %(tree)s (commit %(commit)s, pushed as `%(src)s`).
+# What each phase costs, as the refusal shows it (agent/plans/PLAN-account-vm-check.md *Cost*; AV7 measures it live).
+PHASE_COST = {
+    "renet": "about 1 min on a warm fleet, about 2.5 min cold",
+    "account": (
+        "about 8-11 min with a reused dev gateway, 45-90 s more when the gateway restarts "
+        "(a restart rotates the dev passwords and may move its port)"
+    ),
+}
+
+REFUSAL = """BLOCKED: this push touches the VM trigger paths and no VERIFIED vm:check receipt covers tree %(tree)s (commit %(commit)s, pushed as `%(src)s`) on the side(s) it touches: %(sides)s.
 
 Receipt: %(verdict)s
 Touched (%(n)d, base %(base)s):
 %(hits)s
-Prove it on the ops VMs (about 1 min on a warm fleet, about 2.5 min cold):
+Prove it on the ops VMs; `--changed` runs the phase of each touched side:
 
     npm run vm:check -- --changed
 
+%(costs)s
 %(lines)sWhen the VMs cannot answer, the operator decides, and the escape names the minute of
 that answer (an AskUserQuestion in this session, matched within 300 s):
 
     %(env)s='<kind>: <why, %(min)d+ chars> ASKED:<YYYY-MM-DDTHH:MM>Z' git push ...
 
-    vm-unavailable  a NOT_VERIFIED receipt for these inputs exists (the attempt was made)
-    not-runtime     the change cannot alter what runs on a VM; name the files
+    vm-unavailable  a NOT_VERIFIED receipt for these inputs exists (the attempt was made,
+                    such as `account-gateway`)
+    not-runtime     the change cannot alter what runs on a VM or the gateway; name the
+                    account or renet files
     deadline        production or CD state that cannot wait; name it
 
 Each admitted escape is appended to %(ledger)s.
@@ -705,11 +856,11 @@ def run(ev):
         if not tree:
             ev.warn(UNEXAMINED % ("git could not name the pushed tree of %s" % src))
             continue
-        base_name, hits = _hits(trigger, root_path, commit)
+        base_name, hits, sides = _hits(trigger, root_path, commit)
         if not hits:
             continue
         digest = trigger.inputs(root_path, tree)
-        verdict = receipt_mod.admit(root_path, tree, digest)
+        verdict = receipt_mod.admit(root_path, tree, digest, sides)
         if verdict.ok:
             continue
         refusals = []
@@ -719,7 +870,7 @@ def run(ev):
             if kind is None:
                 refusals.append("  %s\n    escape refused: %s\n" % (line, why))
                 continue
-            rows.append(_row(root, commit, tree, kind, why, reason, hits, attempt))
+            rows.append(_row(root, commit, tree, kind, why, reason, hits, attempt, sides))
         if not refusals:
             continue
         shown = "".join("  %s\n" % h for h in hits[:HITS_SHOWN])
@@ -732,6 +883,11 @@ def run(ev):
                 "commit": commit[:12],
                 "src": src,
                 "verdict": verdict.message,
+                "sides": ", ".join(sorted(sides)) or "none",
+                "costs": "".join(
+                    "    %-14s %s\n" % ("%s phase" % side, PHASE_COST.get(side, "unmeasured"))
+                    for side in sorted(sides)
+                ),
                 "n": len(hits),
                 "base": base_name or "unresolved",
                 "hits": shown,
