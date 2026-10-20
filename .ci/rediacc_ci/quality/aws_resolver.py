@@ -294,10 +294,13 @@ def selftest() -> bool:
         "PLANT shell: a bare aws s3api after `do` is a finding",
         _rules(shell_findings(planted, "f.sh")) == {"shell"},
     )
-    for keyword in ("if", "elif", "while", "until"):
-        planted = plant(
-            FIX_SHELL, '"$AWS" s3 cp a s3://b/a', f"{keyword} aws s3 ls s3://b/; then :; fi"
-        )
+    for keyword, body in (
+        ("if", "if aws s3 ls s3://b/; then :; fi"),
+        ("elif", "if false; then :; elif aws s3 ls s3://b/; then :; fi"),
+        ("while", "while aws s3 ls s3://b/; do break; done"),
+        ("until", "until aws s3 ls s3://b/; do sleep 1; done"),
+    ):
+        planted = plant(FIX_SHELL, '"$AWS" s3 cp a s3://b/a', body)
         check(
             f"PLANT shell: a bare aws s3 as an `{keyword}` condition is a finding",
             _rules(shell_findings(planted, "f.sh")) == {"shell"},
