@@ -65,7 +65,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-pins-command.md -- 12 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-credential-isolation.md -- 7 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 12 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 14 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
 - Writers: 0 live of writer_cap 15 (session d778be9d).
 - Leased items: 4: #57f0604c (worker:bmz52oedb, d778be9d), #66e2e0ef (worker:bmz52oedb, d778be9d), #c275adc4 (worker:b46b70qfz, d778be9d), #fe2d3ad2 (worker:bmz52oedb, d778be9d).
 - Next plan: agent/plans/PLAN-vm-check.md, Generated entry 13 (no Promoted entry ahead of it has an open box); starts after this branch's PR merges.
@@ -140,12 +140,12 @@ Promoted: 13 of 17 plans done, 194 of 204 boxes done (95%).
 20. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
 21. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 22. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-23. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-24. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-25. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-26. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-27. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-28. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-29. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+23. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+24. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+25. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+26. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+27. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+28. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+29. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
 30. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
