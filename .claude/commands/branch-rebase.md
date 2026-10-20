@@ -142,13 +142,13 @@ The rebase runs inside a skip-worktree window on `.claude/settings.local.json`: 
 ```bash
 git update-index --skip-worktree .claude/settings.local.json
 git rebase "origin/${BASE:-main}"
-# THE RELEASE LINE: clears the bit once no rebase is in progress, a no-op while one is stopped.
-test -d "$(git rev-parse --git-path rebase-merge)" || git update-index --no-skip-worktree .claude/settings.local.json
+# THE RELEASE LINE: clears the bit once no rebase is in progress, a no-op while one is stopped, under either backend.
+test -d "$(git rev-parse --git-path rebase-merge)" || test -d "$(git rev-parse --git-path rebase-apply)" || git update-index --no-skip-worktree .claude/settings.local.json
 ```
 
 The release line runs after EVERY command that can end the rebase: this first `git rebase`, each `git rebase --continue` below, and `git rebase --abort`. It is one self-contained line rather than a shell function because each agent Bash call starts a fresh shell, so a function defined at the start would be gone by the first `--continue`. A finished or aborted rebase clears the bit; a stopped one keeps it. `.claude/hooks/stop/worklist.py --git rebase-continue --execute` keeps the same window by itself: it sets the bit before each `--continue` when the file is modified, and clears it when the rebase finishes. A bit left set hides every later edit of the file from `git status`, which step 4 checks.
 
-If the base itself changed settings.local.json, the rebase does not start: git refuses with `Your local changes to the following files would be overwritten by checkout: .claude/settings.local.json`, keeps the local file, and leaves no rebase in progress, so the release line clears the bit. Report it and stop; taking the base's version discards the local permissions, which is the operator's call.
+If the base itself changed settings.local.json, the rebase does not start: git refuses with `Your local changes to the following files would be overwritten by checkout: .claude/settings.local.json`, keeps the local file, and leaves no rebase in progress, so the release line clears the bit (measured 2026-10-20, git 2.53, with the bit set: rc 1, local bytes kept, no `rebase-merge` directory). Report it and stop; taking the base's version discards the local permissions, which is the operator's call.
 
 Every conflict falls into one of two kinds and they are resolved differently.
 
