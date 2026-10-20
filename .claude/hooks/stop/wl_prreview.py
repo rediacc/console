@@ -348,6 +348,21 @@ def match_inline(findings: list[dict], inline: list[dict]) -> dict[int, dict]:
     return out
 
 
+def duplicate_roots(finding: dict, root: dict, inline: list[dict]) -> list[dict]:
+    """The other github-actions root comments that mirror the same finding as `root`: same path, same line, and the finding's title in the body."""
+    title = str(finding.get("title") or "")
+    return [
+        c
+        for c in inline
+        if c.get("id") != root.get("id")
+        and c.get("in_reply_to_id") is None
+        and BOT_LOGIN in _login(c)
+        and c.get("path") == finding.get("path")
+        and str(_line_of(c)) == str(finding.get("line"))
+        and (not title or title in (c.get("body") or ""))
+    ]
+
+
 def inline_answered(inline: list[dict], root: dict) -> bool:
     return any(
         r.get("in_reply_to_id") == root.get("id") and not is_low_effort_reply(r.get("body") or "")
@@ -914,7 +929,13 @@ def cmd_answer(
         print("wl_prreview --answer: %s; threads not resolved" % exc, file=sys.stderr)
         threads = {}
         failures += 1
-    for n, root in sorted(matched.items()):
+    # A review that ran twice mirrors the same finding twice; every copy is a thread --check counts, so each gets the reply and the resolve, not only the newest one match_inline picked (PR #600, 2026-10-20: roots 4320129613 and 4320131249 for one F1).
+    targets = [
+        (n, r)
+        for n, root in sorted(matched.items())
+        for r in [root, *duplicate_roots(findings[n - 1], root, view.inline)]
+    ]
+    for n, root in targets:
         cite = (
             "#issuecomment-%s" % reply_id
             if reply_id

@@ -778,6 +778,20 @@ def test_answer_replies_in_each_inline_thread_and_resolves_it(repo):
     assert low_effort == []
 
 
+def test_answer_resolves_a_duplicate_thread_for_the_same_finding(repo):
+    """A review that ran twice mirrors F1 twice; both copies get the reply and the resolve, and --check is clean (PR #600, 2026-10-20: 4320129613 stayed open while 4320131249 was answered)."""
+    gh = FakeGh()
+    dup = dict(gh.inline[0], id=890)
+    dup["created_at"] = "2026-10-03T09:00:00Z"
+    gh.inline.append(dup)
+    gh.threads[890] = ["THREAD_890", False]
+    assert answer(repo, gh, good_lines(repo["fix"])) == 0
+    replies = sorted(c[3] for c in gh.posts() if c[3].endswith("/replies"))
+    assert "repos/%s/pulls/%d/comments/890/replies" % (REPO, PR) in replies
+    assert all(t[1] for t in gh.threads.values())
+    assert P.cmd_check(None, gh) == 0
+
+
 def test_answer_partial_api_failure_is_rc2(repo):
     gh = FakeGh()
     gh.fail = ["/replies"]
