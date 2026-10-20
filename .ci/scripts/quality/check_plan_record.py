@@ -41,6 +41,12 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       second fence or the section below `## Promoted` is a finding, because
       the reader silently falls back to the default of that key. A missing
       section is all defaults and no finding. `--update` leaves the block alone.
+  RQ-MOVED  NO `## Promoted` ENTRY OF `agent/plans/QUEUE.md` NAMES A MOVED STUB
+      (`wl_planqueue.moved_problems`, worklist #7b9fe4f1). A plan moved into
+      `_done/` or `_removed/` has nothing left to order; `check_plan_folders.py
+      --move` retires its entry, and `--retire-promoted` is the repair for a
+      queue that predates that. `--update` does not retire: the entries are the
+      operator's, and the one write a tool makes to them is the mover's.
   RE  THE EFFORT TABLE IS HONEST (agent/plans/PLAN-stop-hook-effort.md E1).
       `.claude/config/effort.json` gives every check key the Stop hook can
       produce exactly one threshold: the keys are DERIVED by AST
@@ -1262,6 +1268,8 @@ def rendered_problems(root, recs=None, update=False):
     problems.extend(PQ.problems(root, update=update))
     # RQ-SETTINGS. Every problem the settings reader found in the `## Settings` block is a finding; `--update` never rewrites the block, it is the operator's.
     problems.extend("RQ-SETTINGS: %s" % p for p in PQ.settings_for(root)[1])
+    # RQ-MOVED. A Promoted entry naming a moved stub is a finished plan still sitting in the operator's list (13 of 17 entries before worklist #7b9fe4f1); the mover retires it, so one left here was moved before that or by hand.
+    problems.extend(PQ.moved_problems(root))
     return recs, problems, len(PI.parse_census(census))
 
 
@@ -1333,6 +1341,15 @@ def committed_problems(root, floor=None):
         )
     out = []
     for p in found:
+        if p.startswith("RQ-MOVED"):
+            out.append(
+                "RC: in the COMMITTED tree (HEAD), %s\n"
+                "      Retire it in the working tree if it is still there, then commit the queue:\n"
+                "      %s\n"
+                "      git commit -F <msg> -- %s"
+                % (p.split("\n", 1)[0], PQ.RETIRE_VERB, PQ.QUEUE_REL)
+            )
+            continue
         first = p.split("\n", 1)[0].replace(" Regenerate and commit it:", "")
         out.append(
             "RC: in the COMMITTED tree (HEAD), %s\n"
@@ -1846,6 +1863,19 @@ def selftest():
             "RQ-SETTINGS CONTROL: --update keeps the block byte for byte",
             "turbo: onn" in queue_path.read_text(encoding="utf-8"),
             f"{queue_path.read_text(encoding='utf-8')[:200]!r}",
+        )
+        # RQ-MOVED, red first: the same entry is silent while its plan is live, and a finding once the file is a moved stub. The live half comes first so a moved_problems that fired on everything cannot pass.
+        R.write_atomic(queue_path, promoted)
+        ck("RQ-MOVED CONTROL: a live plan's entry is silent", PQ.moved_problems(root) == [])
+        picked.write_text(
+            "# Picked (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-hand-picked.md\n",
+            encoding="utf-8",
+        )
+        moved_found = PQ.moved_problems(root)
+        ck(
+            "RQ-MOVED: an entry naming a moved stub is reported, with the retire verb",
+            len(moved_found) == 1 and PQ.RETIRE_VERB in moved_found[0],
+            f"got {moved_found}",
         )
         queue_path.unlink()
         picked.unlink()

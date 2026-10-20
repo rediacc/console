@@ -2,7 +2,7 @@
 
 The ordered queue of plans the plan-per-PR loop pulls from (box L2 of agent/plans/PLAN-plan-per-pr-loop.md). <!-- scope: pr.one-plan-per-pr -->One plan per PR by default; <!-- scope: pr.turbo-batch-end -->with `turbo: on` in `## Settings` the live PR keeps taking queued plans (agent/plans/PLAN-stop-hook-turbo.md), and with `turbo_push: batch-end` (the default) that batch is built and verified locally, then pushed once with one PR when it completes (agent/plans/PLAN-turbo-local-first.md); before then a push needs a `TURBO_PUSH_REASON` that `block_turbo_early_push` admits, and a `backup_push_h` backup push opens no PR. The first entry is the plan the live `MMDD-N` branch works: `.claude/hooks/post-bash/refresh_pr_body.py` writes it as the PR body's `Plan:` line once, and `rediacc_hooks.plan_gate.plan_merge_refusal` refuses the merge while that plan has an open box, unless the body carries an `Operational-Reason:` line.
 
-Two lists, read in this order. `## Promoted` is hand-ordered by the operator and wins; no tool writes its entries, and an entry leaves it by hand when its PR merges. `## Generated` is rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` from live tracked plans with at least one open box: prerequisites first (`Depends-On:`, task refs and sub-plans like `PLAN-x.A0.md`, each prerequisite pulled ahead to the rank of what needs it), then held plans after unheld ones, prerequisites excepted, then in-progress plans before not-started ones, then operator Priority, AI Priority and path. Plans with no open box are listed under `### Not queued` with the reason, never as entries. Regenerate with `npm run check:ci-plan-record -- --update`; the same gate fails while the section is stale.
+Two lists, read in this order. `## Promoted` is hand-ordered by the operator and wins; no tool adds, reorders or edits its entries; an entry leaves when its plan moves (`check_plan_folders.py --move` retires it, and check:ci-plan-record RQ-MOVED refuses an entry that points at a moved stub). `## Generated` is rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` from live tracked plans with at least one open box: prerequisites first (`Depends-On:`, task refs and sub-plans like `PLAN-x.A0.md`, each prerequisite pulled ahead to the rank of what needs it), then held plans after unheld ones, prerequisites excepted, then in-progress plans before not-started ones, then operator Priority, AI Priority and path. Plans with no open box are listed under `### Not queued` with the reason, never as entries. Regenerate with `npm run check:ci-plan-record -- --update`; the same gate fails while the section is stale.
 
 `## In flight`, between `## Settings` and `## Promoted`, says what the loop is working on now: the effective switches, every session's wind-down phase, the live branch and its PR, each plan in the PR's plan set with its box progress and how it joined (the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite), the branch's epics outside that set, live writers, leased items, and the next plan with its reason. The Stop hook and the `--queue-set` and `--phase` verbs render it between its markers from runtime state; no gate compares it, and no number in it is a list entry.
 
@@ -57,8 +57,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: build.
 - Branch: 1020-1, no PR yet.
-- Plans on the PR (7):
-  - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Plans on the PR (6):
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
@@ -66,55 +65,29 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-backup-credential-isolation.md -- 8 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-vm-check.md -- 5 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 53 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a0496de12fc11e695, worker:afaafde87d4e1bfb0, worker:a8a84332d2e9022ca, worker:a6f26ec6965ecd88c.
-- Leased items: 7: #0af77447 (worker:afaafde87d4e1bfb0, d778be9d), #31c84fe2 (worker:afaafde87d4e1bfb0, d778be9d), #4c238a8e (worker:a8a84332d2e9022ca, d778be9d), #95980422 (worker:a6f26ec6965ecd88c, d778be9d), #bc08ae89 (worker:a0496de12fc11e695, d778be9d), #eb5642c0 (worker:byq14fmc1, d778be9d), #efddc775 (worker:a6f26ec6965ecd88c, d778be9d).
-- Next plan: agent/plans/PLAN-account-vm-check.md, Promoted entry 17; starts after this branch's PR merges.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 68 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:af9747944d16270ba.
+- Leased items: 2: #7b9fe4f1 (worker:af9747944d16270ba, d778be9d), #95980422 (worker:bsbn1hfii, d778be9d).
+- Next plan: agent/plans/PLAN-account-vm-check.md, Promoted entry 4; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 13 of 17 plans done, 200 of 204 boxes done (98%).
+Promoted: 0 of 4 plans done, 45 of 49 boxes done (91%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-retire-bash-oracles.md | 15/15 | done |
-| 2 | PLAN-deferred-findings-block-merge.md | 17/17 | done |
-| 3 | PLAN-ci-consolidation.md | 22/22 | done |
-| 4 | PLAN-config-team-scoping.md | 11/11 | done |
-| 5 | PLAN-plan-dependencies.md | 12/12 | done |
-| 6 | PLAN-remove-cross-session-messaging.md | 12/13 | 1 open |
-| 7 | PLAN-config-passkey-optional.md | 4/4 | done |
-| 8 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
-| 9 | PLAN-stop-hook-retro-20260924.md | 23/23 | done |
-| 10 | PLAN-cd-errors-in-ci.md | 6/6 | done |
-| 11 | PLAN-scope-mirrors.md | 11/11 | done |
-| 12 | PLAN-lessons-registry.md | 9/9 | done |
-| 13 | PLAN-inline-suppressions.md | 11/11 | done |
-| 14 | PLAN-stop-hook-effort.md | 7/7 | done |
-| 15 | PLAN-stop-hook-effort-tuning.md | 7/7 | done |
-| 16 | PLAN-pins-command.md | 12/13 | 1 open |
-| 17 | PLAN-account-vm-check.md | 6/7 | 1 open |
+| 1 | PLAN-remove-cross-session-messaging.md | 12/13 | 1 open |
+| 2 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
+| 3 | PLAN-pins-command.md | 12/13 | 1 open |
+| 4 | PLAN-account-vm-check.md | 6/7 | 1 open |
 <!-- queue:progress:end -->
 
-1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
-2. agent/plans/PLAN-deferred-findings-block-merge.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 17 of 17 boxes (M3 closed on PR #600 run 38451759370); leaves this list when PR #600 merges
-3. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; done, 22 of 22 boxes; leaves this list when PR #600 merges -- solo
-4. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: done, 11 of 11 boxes (T10 closed on the bench smoke of 2026-10-13 and PR #600 run 38451759370); leaves this list when PR #600 merges
-5. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: done, 12 of 12 boxes; leaves this list when PR #600 merges
-6. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: 4 open, Step 9 (full hook suite), Step 10 (registries), the --poll box of Step 12 through the plan verbs, Step 13 (ci:quick and the live Stop check)
-7. agent/plans/PLAN-config-passkey-optional.md -- operator 2026-10-08 melt-the-list: done, 4 of 4 boxes (T4 closed on CI spec 20-12 against the real Bitwarden extension, green on a hosted runner in PR #600 run 38451759370); leaves this list when PR #600 merges
-8. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: 1 open, R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
-9. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: done, 23 of 23 boxes; leaves this list when PR #600 merges
-10. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; done, 6 of 6 boxes (the 10-07 replay is green in Quality / Pytest (1/3) of PR #600 run 38451759370); leaves this list when PR #600 merges
-11. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): done, 11 of 11 boxes; leaves this list when PR #600 merges
-12. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): done, 9 of 9 boxes; leaves this list when PR #600 merges
-13. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; 3 of 11 boxes ticked (WC1 e2e, WC2 account, WD1 renet); WD2 waits on run_renet.py validating BLOCKER comments; the config and sweep patches (P0), the .claude and .ci Python patches (WA, WB) and the shell markers are delivered and not yet landed; P2 and F follow them
-14. agent/plans/PLAN-stop-hook-effort.md -- operator /ask 2026-10-14 (#d5506fb8): one effort level (quiet/low/smart/high/ultra) replaces the stop_hook, focus and turbo switches, with check thresholds in .claude/config/effort.json; "implement PLAN-stop-hook-effort.md now"; 0 of 7 boxes, writer on E1-E6
-15. agent/plans/PLAN-stop-hook-effort-tuning.md -- operator 2026-10-14 (asked to plan it and then ask the implementation questions; /ask: tuner runs near compaction at about 85% through a sub-agent, demotions by one batched /ask, work = a commit or tick within 3 stops, promotions auto-apply): the effort table tunes itself from measured outcomes; depends on entry 14; 0 of 7 boxes
-16. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it; 0 of 13 boxes
-17. agent/plans/PLAN-account-vm-check.md -- operator /ask 2026-10-15 (#c5305ed9: "Account drills via one runner", "Widen to deployed renet code"; on return "You can continue for the rest."): one vm:check runner, receipt and push guard prove renet, the CLI remote paths and private/account before a push; wave 1 (AV1-AV3) is written as patches now and lands with AV4/AV5 after PR #600 merges, since a schema-2 receipt alone would refuse every push; 0 of 7 boxes <!-- style-ok -->
+1. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: 1 open, Step 13 (ci:quick and the live Stop check)
+2. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: 1 open, R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
+3. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it; 12 of 13 boxes
+4. agent/plans/PLAN-account-vm-check.md -- operator /ask 2026-10-15 (#c5305ed9: "Account drills via one runner", "Widen to deployed renet code"; on return "You can continue for the rest."): one vm:check runner, receipt and push guard prove renet, the CLI remote paths and private/account before a push; wave 1 (AV1-AV3) is written as patches now and lands with AV4/AV5 after PR #600 merges, since a schema-2 receipt alone would refuse every push; 6 of 7 boxes <!-- style-ok -->
 
 ## Generated
 

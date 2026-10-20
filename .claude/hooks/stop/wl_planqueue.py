@@ -1,7 +1,7 @@
 """wl_planqueue: the format of `agent/plans/QUEUE.md` and the render of its generated half (operator rulings, /ask 2026-10-02, worklist #0f45b81d).
 
 THE FILE HAS TWO LISTS.
-`## Promoted` is the operator's hand-ordered list: it comes first, in its own order, and no tool ever writes its entries. The one generated part of that section is the progress block between PROGRESS_BEGIN and PROGRESS_END directly under its heading (operator 2026-10-08, worklist #1420d4b8): an overall line and a done/total box ratio per entry, keyed by the entry's own number, so the hand-written lines are never touched and `entries` never reads a progress row. `## Generated` sits between GEN_BEGIN and GEN_END and is rendered here from the canonical plan order, so the loop always has a next plan even when nobody has promoted one. `rediacc_hooks.plan_gate.queue` reads Promoted, then Generated, through `entries`; this module is the one place that
+`## Promoted` is the operator's hand-ordered list: it comes first, in its own order, and no tool adds, reorders or edits its entries. The ONE exception is retirement (worklist #7b9fe4f1): when `check_plan_folders.py --move` moves a plan into `_done/` or `_removed/`, `retire_promoted` removes that plan's entry and renumbers the rest, and `--retire-promoted` does the same for every entry already naming a moved stub; nothing else in the section changes. The one generated part of that section is the progress block between PROGRESS_BEGIN and PROGRESS_END directly under its heading (operator 2026-10-08, worklist #1420d4b8): an overall line and a done/total box ratio per entry, keyed by the entry's own number, so the hand-written lines are never touched and `entries` never reads a progress row. `## Generated` sits between GEN_BEGIN and GEN_END and is rendered here from the canonical plan order, so the loop always has a next plan even when nobody has promoted one. `rediacc_hooks.plan_gate.queue` reads Promoted, then Generated, through `entries`; this module is the one place that
 knows the headings, the markers and the entry shape.
 
 THE RENDER REPLACES ONLY THE MARKED BLOCK. Every byte outside GEN_BEGIN..GEN_END is copied through unchanged, which is how the Promoted list and the header prose survive every regeneration. A file without the markers gets a `## Generated` section appended, never a rewrite of what is already there.
@@ -864,6 +864,126 @@ def with_fresh_progress(root, text: str) -> str:
     if not re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text):
         return text
     return with_progress(text, render_progress(promoted_progress(root, text)))
+
+
+# ------------------------------------------------------------ retiring a moved plan's Promoted entry
+# Worklist #7b9fe4f1: `check_plan_folders.py --move` moved finished plans into `_done/` and left their numbered entries behind, so 13 of 17 Promoted entries named stubs, their notes still promising to leave "when PR #600 merges" after it had. A plan that has moved is finished or withdrawn, so its entry has nothing left to order. This is the ONE write any tool makes to the Promoted entries: an entry whose plan file is a moved stub (`wl_store.plan_stub_target`, both halves of
+# the stub header) is removed, its indented continuation lines with it, and the entries left are renumbered 1..n in file order. Every other byte stays. `--move` calls it for the one plan it moved, `check_plan_folders.py --retire-promoted` for every stub entry, and check:ci-plan-record RQ-MOVED (`moved_problems`) refuses a queue that still holds one.
+
+RETIRE_VERB = "python3 .ci/scripts/quality/check_plan_folders.py --retire-promoted"
+_CONTINUATION = re.compile(r"^[ \t]+\S")
+_NUMBER_NOTE = re.compile(r"\bentr(?:y|ies)[ \t]+\d+", re.IGNORECASE)
+
+
+def _promoted_bounds(text: str) -> tuple[int, int] | None:
+    """(start, end) of the Promoted section's body in `text` itself (the progress block included), None without the heading. The same stops as `promoted_text`: the next `## ` heading or the generated block."""
+    m = re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text)
+    if not m:
+        return None
+    rest = text[m.end() :]
+    stops = [s.start() for s in (_HEADING.search(rest), re.search(re.escape(GEN_BEGIN), rest)) if s]
+    return m.end(), m.end() + (min(stops) if stops else len(rest))
+
+
+def without_promoted(text: str, rels) -> tuple[str, list[str]]:
+    """(text, removed): `text` with every numbered Promoted entry whose plan path is in `rels` removed, with any indented continuation line directly under it, and the remaining entries renumbered 1..n. The progress block, prose lines and everything outside the section are copied through byte for byte; with nothing to remove the text comes back unchanged and unrenumbered."""
+    rels = set(rels or ())
+    bounds = _promoted_bounds(text) if rels else None
+    if not bounds:
+        return text, []
+    start, end = bounds
+    out: list[str] = []
+    removed: list[str] = []
+    kept = 0
+    in_block = dropping = False
+    for line in text[start:end].splitlines(keepends=True):
+        bare = line.rstrip("\r\n")
+        if bare.rstrip() == PROGRESS_BEGIN:
+            in_block = True
+        if in_block:
+            out.append(line)
+            in_block = bare.rstrip() != PROGRESS_END
+            continue
+        m = ENTRY.match(bare)
+        if m and m.group(1) in rels:
+            removed.append(m.group(1))
+            dropping = True
+            continue
+        if m:
+            kept += 1
+            num = _ENTRY_NUM.match(line)
+            out.append(line[: num.start(1)] + str(kept) + line[num.end(1) :] if num else line)
+            dropping = False
+            continue
+        if dropping and _CONTINUATION.match(bare):
+            continue
+        dropping = False
+        out.append(line)
+    if not removed:
+        return text, []
+    return text[:start] + "".join(out) + text[end:], removed
+
+
+def moved_entries(root, text: str) -> list[tuple[str, str, str]]:
+    """[(number as written, plan path, Moved-To target)] of the Promoted entries whose plan file under `root` is a moved stub. A missing file is not a stub: the progress block already names it unreadable."""
+    import wl_store
+
+    out = []
+    for num, rel in promoted_numbered(text):
+        target = wl_store.plan_stub_target(pathlib.Path(root) / rel)
+        if target:
+            out.append((num, rel, target))
+    return out
+
+
+def number_notes(text: str) -> list[str]:
+    """The Promoted plan paths whose note cites an entry by number ("depends on entry 14"): renumbering cannot fix prose, so a retirement names them for a reader to check."""
+    out = []
+    for m in ENTRY.finditer(promoted_text(text)):
+        note = m.group(0).split(NOTE_SEP, 1)[1] if NOTE_SEP in m.group(0) else ""
+        if _NUMBER_NOTE.search(note):
+            out.append(m.group(1))
+    return out
+
+
+def retire_promoted(root, rels=None) -> list[tuple[str, str]]:
+    """Remove the Promoted entries of an EXISTING queue file whose plan is a moved stub, renumber the rest and re-render the progress block; [(plan path, Moved-To target)] retired, [] when nothing was written. `rels` limits it to those plan paths (a named plan that is not a stub stays); None retires every stub entry. Re-reads the file just before replacing it and starts over (once) when another writer changed it in between, as `refresh_inflight` does, so a concurrent in-flight render is not undone by a stale copy."""
+    path = pathlib.Path(root) / QUEUE_REL
+    if not path.is_file():
+        return []
+    import wl_planrec as R
+
+    for _attempt in range(2):
+        got = path.read_text(encoding="utf-8")
+        moved = [
+            (rel, target)
+            for _num, rel, target in moved_entries(root, got)
+            if rels is None or rel in rels
+        ]
+        if not moved:
+            return []
+        new, _removed = without_promoted(got, {rel for rel, _t in moved})
+        if progress_text(new) is not None:
+            new = with_fresh_progress(root, new)
+        if path.read_text(encoding="utf-8") == got:
+            R.write_atomic(path, new)
+            return list(dict.fromkeys(moved))
+    return []
+
+
+def moved_problems(root) -> list[str]:
+    """check:ci-plan-record RQ-MOVED: one finding per Promoted entry whose plan is a moved stub. [] without a queue file (RQ already names that)."""
+    try:
+        text = (pathlib.Path(root) / QUEUE_REL).read_text(encoding="utf-8")
+    except OSError:
+        return []
+    return [
+        "RQ-MOVED: %s Promoted entry %s names %s, a stub moved to %s; a moved plan has nothing "
+        "left to order, so its entry leaves the list. Retire it (the rest renumber, the progress "
+        "block re-renders):\n      %s\n      git add %s"
+        % (QUEUE_REL, num, rel, target, RETIRE_VERB, QUEUE_REL)
+        for num, rel, target in moved_entries(root, text)
+    ]
 
 
 # ------------------------------------------------------------ the in-flight block
