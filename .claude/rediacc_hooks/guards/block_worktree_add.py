@@ -377,7 +377,7 @@ def _python_code_view(code):
         if tok.type == tokenize.COMMENT:
             continue
         if tok.type == tokenize.STRING:
-            # An f-string carries code in its {...} parts, and before Python 3.12 it is ONE STRING token, so blanking it would hide `f"{eval(...)}"` (review c032227c.1). Keep any string whose prefix has an f, so every word in it counts (fail closed).
+            # An f-string carries code in its {...} parts, and before Python 3.12 it is ONE STRING token, so blanking it would hide `f"{eval(...)}"`. Keep any string whose prefix has an f, so every word in it counts (fail closed).
             prefix = tok.string[: len(tok.string) - len(tok.string.lstrip("rRbBuUfF"))]
             out.append(tok.string if "f" in prefix.lower() else '""')
         elif tok.type in _PY_STRING_PARTS:
@@ -1216,8 +1216,9 @@ SCRIPT_MESSAGE = (
     "complete. A script whose file only QUOTES the words (a fixture table, a docstring, a "
     "selftest) has a safe path: commit it, then run it, because the hook does not read a tracked "
     "script unchanged from HEAD (`git status --porcelain -- <script>` must print nothing for "
-    "it); a commit is not a review, so commit only a script whose text you have judged yourself. Otherwise hand the command to the operator to run with the `!` "
-    "prefix, or drop the phrase from a script that does not need it."
+    "it); a commit is not a review, so commit only a script whose text you have judged "
+    "yourself. Otherwise hand the command to the operator to run with the `!` prefix, or "
+    "drop the phrase from a script that does not need it."
 )
 
 UNJUDGEABLE_MESSAGE = (
