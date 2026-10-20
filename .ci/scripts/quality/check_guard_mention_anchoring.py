@@ -626,6 +626,54 @@ def fires(guard: Path, command: str, kind: str = "command", file_path: str = "")
     return result.returncode == 2
 
 
+# THE BATCH CHILD. One process per guard loads the guard module once and answers every payload in turn, instead of one interpreter start (~0.15 s, mostly imports) per probe sentence: 1459 sentences made the gate ~60 s wall on 24 cores. Each payload still gets its own fresh `Event`, exactly as `dispatch.run_one` builds it. Prints JSON: one return code per payload, null when the guard raised.
+_BATCH_CHILD = """
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import dispatch
+req = json.load(sys.stdin)
+out = []
+for payload in req["payloads"]:
+    try:
+        out.append(dispatch.run_one(req["stem"], payload)[0])
+    except SystemExit as exc:
+        out.append(exc.code if isinstance(exc.code, int) else 1)
+    except Exception:
+        out.append(None)
+sys.stdout.write(json.dumps(out))
+"""
+
+
+def fires_many(
+    guard: Path, texts: list[str], kind: str = "command", file_path: str = ""
+) -> list[bool]:
+    """`fires` for each text, in order. A live guard runs in ONE child; anything else, and any batch that does not return a clean answer, falls back to one process per text, so a hung or crashing probe is judged alone, as before."""
+    if not texts:
+        return []
+    try:
+        guard.relative_to(GUARDS)
+    except ValueError:
+        return [fires(guard, t, kind, file_path) for t in texts]
+    request = json.dumps(
+        {"stem": guard.stem, "payloads": [payload_for(kind, t, file_path) for t in texts]}
+    )
+    codes: object = None
+    try:
+        result = ci_proc.run(
+            [sys.executable, "-c", _BATCH_CHILD, str(DISPATCH.parent)],
+            input_text=request,
+            timeout=min(30 + 2 * len(texts), 300),
+            cwd=str(REPO_ROOT),
+        )
+        if not result.timed_out and result.returncode == 0:
+            codes = json.loads(result.stdout)
+    except (OSError, ValueError):
+        codes = None
+    if not isinstance(codes, list) or len(codes) != len(texts) or None in codes:
+        return [fires(guard, t, kind, file_path) for t in texts]
+    return [c == 2 for c in codes]
+
+
 def chain_of(path: Path) -> str | None:
     """This guard module's own `CHAIN = "..."` constant, without importing it.
 
@@ -866,17 +914,13 @@ def assess(
     # NO CAP. This read `instances[:40]`, a silent cut: block_settled_questions alone renders 137 instances once every alternative is expanded, and the 41st is as able to refuse prose as the first.
     # A PROSE TARGET IS PROBED IN FULL. Its exemption is per guard, so stopping at the first refused sentence would let every later one ride on it unseen, including a genuine mention-matcher added to the same module next month. Every refused sentence comes back, joined by PROSE_SEP, and each is printed.
     if guard.name in PROSE_TARGETS:
-        hits = [
-            text
-            for inst in instances
-            for text in probes.texts(inst)
-            if fires(guard, text, kind, fp)
-        ]
+        every = [text for inst in instances for text in probes.texts(inst)]
+        hits = [t for t, hit in zip(every, fires_many(guard, every, kind, fp), strict=True) if hit]
         return ("prose", PROSE_SEP.join(hits)) if hits else ("clean", "")
-    for inst in instances:
-        for text in probes.texts(inst):
-            if fires(guard, text, kind, fp):
-                return "prose", text
+    every = [text for inst in instances for text in probes.texts(inst)]
+    for text, hit in zip(every, fires_many(guard, every, kind, fp), strict=True):
+        if hit:
+            return "prose", text
     # PROSE FIRST, THEN THE UNDECLARED FRAGMENT: a guard refusing a sentence is the more urgent finding, and reporting "unprobed" alone would hide it.
     if missing:
         return "unprobed", ", ".join(missing)
