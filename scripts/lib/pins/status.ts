@@ -200,9 +200,18 @@ function checkoutAbsent(root: string, repo: string): boolean {
   return fs.statSync(dir).isDirectory() && fs.readdirSync(dir).length === 0;
 }
 
-/** The submodules the entry reaches whose checkout is absent from `root`; empty for a pin whose every repo is present. */
+/** The submodule paths `.gitmodules` declares; a registry repo outside this set is a typo or a plain directory, never an absent submodule. */
+function declaredSubmodules(root: string): Set<string> {
+  const f = path.join(root, '.gitmodules');
+  if (!fs.existsSync(f)) return new Set();
+  const paths = [...fs.readFileSync(f, 'utf8').matchAll(/^\s*path\s*=\s*(\S+)\s*$/gm)];
+  return new Set(paths.map((m) => m[1]));
+}
+
+/** The declared submodules the entry reaches whose checkout is absent from `root`; empty for a pin whose every repo is present. */
 export function absentSubmodules(root: string, entry: PinEntry): string[] {
-  return repoReach(entry).filter((r) => r !== '.' && checkoutAbsent(root, r));
+  const declared = declaredSubmodules(root);
+  return repoReach(entry).filter((r) => r !== '.' && declared.has(r) && checkoutAbsent(root, r));
 }
 
 export interface PinView {
@@ -269,7 +278,9 @@ export async function viewOf(
   try {
     insp = await drv.inspect(entry, ctx);
   } catch (err) {
-    base.detail = `not compared: ${(err as Error).message}`;
+    const message = (err as Error).message;
+    base.detail = `not compared: ${message}`;
+    // Decided from the checkout, never from the message: drivers word a missing submodule differently (go_deps says "the scan lost private/", check-deps names every path), so a filter on the text refused go-mod in run 39392415656's case. A pin whose declared submodule is absent cannot be compared whatever the error says, and its message stays in `why`.
     base.notChecked = absentSubmodules(w.root, entry);
     return base;
   }

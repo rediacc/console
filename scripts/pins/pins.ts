@@ -634,7 +634,7 @@ async function selectAndPlan(
     out.views.set(entry.id, v);
     if (v.state !== 'bumpable' || !v.target) {
       const why = v.state === 'not-compared' ? v.detail : `${v.state}: ${v.detail}`;
-      if (v.state === 'not-compared' && v.notChecked.length > 0) {
+      if (!explicit && v.state === 'not-compared' && v.notChecked.length > 0) {
         out.notChecked.push({ id: entry.id, submodules: v.notChecked, why });
         continue;
       }
@@ -2155,6 +2155,10 @@ const CASES: Record<string, Case> = {
           files: ['package-lock.json'],
         });
       fs.writeFileSync(file, `${JSON.stringify(reg, null, 2)}\n`);
+      fs.writeFileSync(
+        path.join(fx.root, '.gitmodules'),
+        '[submodule "private/renet"]\n\tpath = private/renet\n\turl = x\n'
+      );
       return fx;
     };
     const present = build();
