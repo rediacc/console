@@ -656,8 +656,12 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
         try:
             retired = pq.retire_promoted(root, {rel})
         except pq.QueueContendedError as exc:
-            print("✗ %s; run --retire-promoted once the queue is quiet" % exc, file=sys.stderr)
-            return 1
+            # The move itself is done and staged (review 5fceaed6.2): only the entry stayed, which RQ-MOVED names until the repair verb runs.
+            print(
+                "⚠ %s; the move stands, run --retire-promoted once the queue is quiet" % exc,
+                file=sys.stderr,
+            )
+            return 0
         _report_retired(pq, root, retired)
         if retired:
             # Review 5d1b9889.1: the queue rewrite rides the move's own staging, so a commit of the move never leaves HEAD's Promoted pointing at a stub.

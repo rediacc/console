@@ -6,6 +6,7 @@ against a tree it built, and reads the exit code rather than a return value.
 THE FIXTURE IS A REAL GIT REPOSITORY because three of the four things under test are git: `enumerate_plans` shells `ls-files`, the clocks shell `log`, and `--move` shells `mv`. A directory of files would pass an enumeration that had stopped working.
 """
 
+import importlib.util
 import json
 import pathlib
 import shutil
@@ -372,7 +373,9 @@ def test_move_retires_the_plans_promoted_entry_and_only_that_one(gate, tmp_path)
         text=True,
         check=True,
     ).stdout.split()
-    gate.assert_eq("agent/plans/QUEUE.md" in staged, True, "the queue rewrite is staged with the move")
+    gate.assert_eq(
+        "agent/plans/QUEUE.md" in staged, True, "the queue rewrite is staged with the move"
+    )
     gate.log_pass("--move retires the plan's Promoted entry and nothing else")
 
 
@@ -735,3 +738,34 @@ def test_move_spares_a_fenced_quote_and_a_commit_still_on_this_branch(gate, tmp_
     gate.assert_contains(moved, "%s feat: a quoted log line" % lost, "the fenced quote is kept")
     gate.assert_contains(result.out, pending, "and the kept branch commit is named")
     gate.log_pass("--move spares fenced quotes and commits still reachable from HEAD")
+
+
+def test_a_contended_retirement_keeps_the_moves_success(tmp_path, monkeypatch, capsys):
+    """Review 5fceaed6.2: the move is done and staged before the queue is touched, so a queue that stays busy is a warning and exit 0, never a failed move that a retry would then refuse."""
+    root = _seed(
+        tmp_path,
+        {
+            "agent/plans/PLAN-closing.md": "# PLAN: closing\nStatus: done\n\n- [x] a box\n",
+            "agent/plans/QUEUE.md": _QUEUE,
+        },
+    )
+    _ledger(root, {"agent/plans/PLAN-closing.md": {"status": "done", "open": 0, "done": 1}})
+    monkeypatch.syspath_prepend(str(GATE.parent))  # its `import _cipath` sits beside it
+    spec = importlib.util.spec_from_file_location("cpf_under_test", GATE)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    pq = mod._planqueue()
+
+    def busy(_root, _rels=None):
+        raise pq.QueueContendedError("agent/plans/QUEUE.md changed under both reads")
+
+    monkeypatch.setattr(pq, "retire_promoted", busy)
+    monkeypatch.setenv("PLAN_FOLDERS_ROOT", str(root))
+    rc = mod.move(root, "agent/plans/PLAN-closing.md", PL.load_config(root))
+    err = capsys.readouterr().err
+    assert rc == 0, err
+    assert "the move stands" in err
+    assert (root / "agent/plans/_done/PLAN-closing.md").is_file(), "the plan moved"
+    assert "PLAN-closing.md --" in (root / "agent/plans/QUEUE.md").read_text(encoding="utf-8"), (
+        "the entry stayed, for RQ-MOVED and --retire-promoted"
+    )
