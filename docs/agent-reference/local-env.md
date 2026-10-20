@@ -58,6 +58,8 @@ there are no `.rdc-dev/` or `.rdc-bench/` token files.
 Local development against the dev gateway is an explicit opt-in: `./rdc.sh --dev <command>` (or `RDC_DEV=1 ./rdc.sh <command>`). `--dev` reads the gateway port from `.account-state` and the X25519 public key from the running gateway's `/.well-known/server-info`, seeds or patches `~/.config/rediacc/dev.json` with them, runs with `REDIACC_CONFIG=dev`, and fails fast if `./run.sh account dev` isn't running. Bench is just
 another config now: `./rdc.sh --config bench <command>` replaces the old `RDC_BENCH=1`. There is no `RDC_PROD` or `RDC_BENCH` any more. The renet build stays `--nolicense` in all wrapper modes; `RDC_RENET_LICENSE=1` is the independent enforcement opt-in (below).
 
+`npm run vm:check` records the dev gateway it starts in `.ci/cache/vm-check/gateway.json` (port, start time and an account worktree digest) and writes the gateway log to `.ci/cache/vm-check/gateway.log`; the gateway stays running after the run and is reused only while the record matches `.account-state` and the account worktree.
+
 ### Iterating on a local SEA (`./rdc.sh --native`)
 
 `./rdc.sh --native` builds the real single-executable binary (Node SEA) from local source and installs it over `~/.local/share/rediacc/bin/rdc`, instead of running via the dev bundle. Use it when iterating on SEA-only behaviors (embedded renet, auto-update gating) that the dev-mode `cli-bundle.cjs` path doesn't exercise. It cross-builds renet for BOTH linux arches into

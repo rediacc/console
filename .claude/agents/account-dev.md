@@ -17,6 +17,8 @@ you know no other session owns one; the drills instead re-read the port per conn
 
 THE tsx RULE: tsx does NOT hot-reload. A long-running gateway serves the code from when it started; after any src change under private/account, RESTART the gateway or you will debug phantom old behavior. Drills restart it unconditionally for this reason, and re-read the printed credentials each time (dev passwords are random per start).
 
+`npm run vm:check` runs its account phase against this gateway and follows the same rule: it reuses a gateway only when the record `.ci/cache/vm-check/gateway.json` matches the account worktree, and otherwise restarts it and leaves it running for the next run (a restart rotates the dev passwords and may move the port, so re-read both from the startup output).
+
 ## Credentials and seeding (all TEST_MODE, printed at startup)
 
 account_dev_credentials provisions three logins with fresh random passwords: the root user (ROOT_EMAIL, default root@rediacc.dev), dev-user@rediacc.io (given a PROFESSIONAL subscription so paid surfaces like the web console are reachable), and dev-partner@rediacc.io (seeded partner demo data). The dev user's config store is seeded with the CONSTANT password DevConsole123! (never
