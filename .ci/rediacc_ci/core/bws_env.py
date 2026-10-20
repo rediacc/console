@@ -1209,17 +1209,19 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
         return "cannot run %s: %s" % (WRITER_ARGV[0], type(exc).__name__)
     if proc.returncode != 0:
         text = raw_err.decode(errors="replace")
-        # The value must not reach a log even if the writer's error path echoes its request. It is masked across the whole stream first, then line by line, so a multi-line value is caught whole or in its fragments; a fragment under 8 characters is left alone, because masking it would erase unrelated diagnostic text.
+        # The value must not reach a log even if the writer's error path echoes its request. It is masked across the whole stream first, then by each line of a multi-line value. A line under 8 characters is not masked, since that would erase unrelated text; if one still appears in the relayed line, the line is withheld whole (fail closed).
+        short: set[str] = set()
         for secret in _request_secrets(request):
             text = text.replace(secret, "<redacted>")
-            for part in sorted(
-                {p.strip() for p in secret.splitlines() if len(p.strip()) >= 8},
-                key=len,
-                reverse=True,
-            ):
+            parts = {p.strip() for p in secret.splitlines() if p.strip()}
+            for part in sorted((p for p in parts if len(p) >= 8), key=len, reverse=True):
                 text = text.replace(part, "<redacted>")
+            if len(parts) > 1:
+                short |= {p for p in parts if len(p) < 8}
         detail = text.strip().splitlines()
         line = detail[-1] if detail else ""
+        if any(part in line for part in short):
+            line = "<stderr withheld: it may echo part of the value>"
         return "rc=%d%s" % (proc.returncode, ": " + line[:300] if line else "")
     answered = raw_out.decode(errors="replace").strip()
     wanted = request.get("id")

@@ -220,6 +220,28 @@ def test_write_secret_redacts_a_multi_line_value_the_writer_echoes(tmp_path) -> 
     assert "first-line-secret" not in failure
 
 
+def test_write_secret_withholds_a_line_echoing_a_short_fragment(tmp_path) -> None:
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "shortline",
+        '#!/bin/sh\ncat >/dev/null\necho "bad: zq7" >&2\nexit 1\n',
+        {"op": "edit", "id": ENTRY_ID, "value": "long-first-line-secret\nzq7"},
+    )
+    assert failure is not None
+    assert "zq7" not in failure
+    assert "withheld" in failure
+
+
+def test_write_secret_keeps_a_diagnostic_that_echoes_nothing(tmp_path) -> None:
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "plain",
+        '#!/bin/sh\ncat >/dev/null\necho "network unreachable" >&2\nexit 1\n',
+        {"op": "edit", "id": ENTRY_ID, "value": "long-first-line-secret\nzq7"},
+    )
+    assert failure == "rc=1: network unreachable"
+
+
 def test_write_secret_survives_non_utf8_output(tmp_path) -> None:
     failure = _write_with_fake_npx(
         tmp_path,
