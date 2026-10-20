@@ -28,5 +28,16 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-plan-implementation",
+      "findings": [
+        "P-A1:agent/plans/PLAN-chunk-store-browse-toc-and-remote.md",
+        "P-A1:agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md",
+        "P-A1:agent/plans/PLAN-remove-cross-session-messaging.md",
+        "P-A1:agent/plans/PLAN-shell-sandbox-readonly-view.md"
+      ],
+      "reason": "Each named plan's one open box can only close after this branch is pushed or merged, so the local verdict, which has no PR body, cannot go green first: chunk-store box 10 runs the e2e suites on the fleet against the pushed CLI; pins-command T11 is two pins-soaked workflow dispatches with --ref 1020-1; shell-sandbox E1 is the five bridge-workers CI legs; pin-awscli B7 measures the aws jobs' added time in CI; remove-cross-session-messaging Step 13 is this ci:quick plus the live Stop check on the open PR. The PR body carries an Operational-Reason line naming them, which check:ci-plan-implementation admits in CI (check_plan_implementation.py:260, operator ruling 2026-10-02); remove this entry when those boxes tick."
+    }
+  ]
 }
