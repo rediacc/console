@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: low -- operator 2026-10-20: "let us make effort low"
+effort: low -- operator 2026-10-20: "let's make effort low", agent/plans/PLAN-stop-hook-effort.md
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -66,9 +66,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-vm-check.md -- 8 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-shell-sandbox-readonly-view.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 122 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a538af5d058125bbb.
-- Leased items: 0.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 140 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4c6d8ca541c945c3.
+- Leased items: 1: #0707f67f (worker:a4c6d8ca541c945c3, d778be9d).
 - Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -120,8 +120,4 @@ Promoted: 0 of 5 plans done, 45 of 235 boxes done (19%).
 23. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
 24. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
 25. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-
-### Not queued
-
-- agent/plans/PLAN-tooling-transformation.md -- all boxes ticked: close it
 <!-- queue:generated:end -->

@@ -2,6 +2,7 @@
 
 Status: done -- 2026-10-20, every box ticked (8 of 8); B8 closed in c2d074a5c (cf-r2 bucket-scoped, the old account-wide token deleted)
 First-Seen: 2026-10-15
+Authorized-By: operator order 2026-10-15 (worklist #f70e2876): "Mint separate R2 tokens, each limited to object read/write on its own buckets ... Push them to the workers, then revoke today's shared token"
 Owner: d778be9d
 Depends-On: no-dep -- independent of the config key-layout fix (#3ce08e91), which touches private/account/src and its own migration script
 Priority: P0 -- operator-ordered security fix (high): an account-wide R2 key can reach the public bench worker's ACCOUNT_BACKUP_S3_* secrets, and one backup key serves every environment
@@ -51,4 +52,4 @@ Each token: no account or zone permission; `Workers R2 Storage Bucket Item Read`
 
 ## Rollback
 
-B5: delete the new token by the id `rotate` logged (nothing uses it yet; `deactivate` acts only on a grace version, so it does nothing for a first mint). B6: push the old pair back to that worker (the shared token stays valid until B7). B7 cannot be rolled back, so it runs only after B6's evidence is complete. B8: before deactivation, restore the archived `CLOUDFLARE_R2_*__ROTATED_<ts>` values.
+B5: delete the new token by the id `rotate` logged (nothing uses it yet; `deactivate` acts only on a grace version, so it does nothing for a first mint). B6: push the old pair back to that worker (the shared token stays valid until B7). B7 cannot be rolled back, so it runs only after B6's evidence is complete. B8: before deactivation, restore the archived `CLOUDFLARE_R2_*__ROTATED_<ts>` values. B8's deactivation ran on 2026-10-20 and deleted the old token, so that path is gone; a rollback now is a fresh `rotate` with the wider policy.
