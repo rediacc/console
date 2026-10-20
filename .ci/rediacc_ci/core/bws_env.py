@@ -1162,10 +1162,47 @@ def _exec_verb(argv: list[str]) -> int:
     return 0  # pragma: no cover -- execvpe does not return
 
 
+# The value-carrying write, done by the account submodule's REST client so the value rides stdin rather than argv (store-from-env).
+WRITER_DIR_PARTS = ("private", "account")
+WRITER_SCRIPT_REL = os.path.join("scripts", "rotation", "bws-write.ts")
+WRITER_ARGV = ("npx", "--no", "tsx", WRITER_SCRIPT_REL)
+WRITER_TIMEOUT_S = 120
+
+
+def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
+    """Run bws-write.ts with REQUEST as JSON on stdin. None on success, else a value-free reason.
+
+    argv is the constant WRITER_ARGV and nothing else: no field of the request, the value least of all, is ever an argument. Success is exit 0 AND stdout being exactly the id asked for, so a writer that printed anything more is a failure too, and its stdout is never relayed.
+    """
+    try:
+        proc = subprocess.run(
+            list(WRITER_ARGV),
+            input=json.dumps(request),
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=account_dir,
+            env=env,
+            timeout=WRITER_TIMEOUT_S,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return "cannot run %s: %s" % (WRITER_ARGV[0], type(exc).__name__)
+    if proc.returncode != 0:
+        detail = proc.stderr.strip().splitlines()
+        return "rc=%d%s" % (proc.returncode, ": " + detail[-1][:300] if detail else "")
+    answered = proc.stdout.strip()
+    wanted = request.get("id")
+    if not answered or "\n" in answered or (wanted and answered != wanted):
+        return "the writer answered an unexpected id"
+    return None
+
+
 def _store_verb(raw_specs: list[str]) -> int:
     """`store-from-env STORE > LOCAL ...`: overwrite existing store entries from the environment, then read back.
 
-    Only EXISTING entries are edited; a store name that is not there is refused, because creating one is a decision about which project it belongs to. `bws secret edit` takes the value on argv (bws 2.1.0 has no other input), so the child's output is discarded with `--output none` and nothing it prints is relayed.
+    Only EXISTING entries are edited; a store name that is not there is refused, because creating one is a decision about which project it belongs to.
+
+    THE VALUE NEVER REACHES ARGV. `bws secret edit --value <VALUE>` is the only edit bws 2.1.0 offers, and argv is world-readable through /proc/<pid>/cmdline. The write goes through `private/account/scripts/rotation/bws-write.ts` instead, which encrypts client-side and speaks the Secrets Manager REST API (its `lib/bws-api.ts`); the request, value included, travels on its STDIN, the token in its environment. The REST edit replaces key, note and project together, so the request carries the ones `bws secret list` reported for the entry. The child prints only the id; its stderr is relayed because bws-write's errors name the operation and HTTP status and never a value.
     """
     specs = parse_specs(raw_specs)
     missing_local = [local for _n, local in specs if not os.environ.get(local)]
@@ -1195,30 +1232,39 @@ def _store_verb(raw_specs: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
-    for name, local in specs:
-        proc = subprocess.run(
-            [
-                bws,
-                "secret",
-                "edit",
-                "--value",
-                os.environ[local],
-                "--output",
-                "none",
-                "--color",
-                "no",
-                ids[name],
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-            env=environ,
-            timeout=LIST_TIMEOUT_S,
+    by_key = {r.get("key"): r for r in rows}
+    account = os.path.join(root(environ), *WRITER_DIR_PARTS)
+    if not os.path.isfile(os.path.join(account, WRITER_SCRIPT_REL)):
+        print(
+            "rediacc_ci.core.bws_env: store-from-env: %s is missing; the private/account submodule is needed to write"
+            % os.path.join(account, WRITER_SCRIPT_REL),
+            file=sys.stderr,
         )
-        if proc.returncode != 0:
+        return 1
+    for name, local in specs:
+        row = by_key[name]
+        if not row.get("projectId"):
             print(
-                "rediacc_ci.core.bws_env: store-from-env: editing %s failed (rc=%d)"
-                % (name, proc.returncode),
+                "rediacc_ci.core.bws_env: store-from-env: %s has no projectId in the listing"
+                % name,
+                file=sys.stderr,
+            )
+            return 1
+        failure = write_secret(
+            account,
+            {
+                "op": "edit",
+                "id": ids[name],
+                "key": name,
+                "value": os.environ[local],
+                "note": row.get("note") or "",
+                "projectIds": [row["projectId"]],
+            },
+            environ,
+        )
+        if failure is not None:
+            print(
+                "rediacc_ci.core.bws_env: store-from-env: editing %s failed (%s)" % (name, failure),
                 file=sys.stderr,
             )
             return 1

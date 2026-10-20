@@ -92,12 +92,14 @@ If the rule is ever removed or disabled, `Validate Install Methods` on CI will f
 
 ## 6. Bitwarden Secret for the Zone ID
 
-The zone id is the `CLOUDFLARE_ZONE_ID` secret in the Bitwarden `ci-shared` project (it left GitHub Actions variables on 2026-09-24), and every consuming job fetches it through `./.github/actions/bws-secrets`. To change it:
+The zone id is the `CLOUDFLARE_ZONE_ID` secret in the Bitwarden `ci-shared` project (it left GitHub Actions variables on 2026-09-24), and every consuming job fetches it through `./.github/actions/bws-secrets`. To change it, from the console root (the value travels in the environment and on the writer's stdin, never on argv, which `bws secret edit --value` would put it on):
 
 ```bash
-bws secret edit <CLOUDFLARE_ZONE_ID uuid from .ci/config/bws-secret-map.json> \
-  --value "9e802649c143c9cefd811d8fd671d31c"
+CLOUDFLARE_ZONE_ID="9e802649c143c9cefd811d8fd671d31c" \
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env store-from-env CLOUDFLARE_ZONE_ID
 ```
+
+`store-from-env` edits the existing entry and reads it back, printing `CLOUDFLARE_ZONE_ID MATCH` on success.
 
 Used by `rediacc_ci.deploy.cf_purge_urls` (belt-and-suspenders cache purge after every upload in cd-stage / cd-v2 / promote-stable / ci.yml Validate Promotion). With the Cache Rule active the purge is a no-op, but kept so that if someone disables the Cache Rule we still evict stale entries.
 
