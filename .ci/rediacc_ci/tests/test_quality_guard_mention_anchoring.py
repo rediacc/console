@@ -10,6 +10,8 @@ three-way rule (anchored, worded and silent, or a declared FRAGMENTS entry that 
 import importlib.util
 import pathlib
 import re
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -251,3 +253,196 @@ def test_a_stale_or_malformed_fragments_entry_is_red(
 
 def test_the_live_fragments_declarations_are_not_stale() -> None:
     assert gma.fragment_findings(gma.FRAGMENTS) == []
+
+
+# ---- fires_many: the batch child must agree with one process per probe -----------------------------
+
+
+def _live_guards() -> list[tuple[pathlib.Path, str, str]]:
+    out = []
+    for path in sorted(gma.GUARDS.glob("*.py")):
+        if not path.stem.startswith(("block_", "warn_", "require_")):
+            continue
+        kind = gma.CHAINS.get(gma.chain_of(path) or "")
+        if kind is not None:
+            out.append((path, kind, gma.file_path_for(path)))
+    return out
+
+
+def _sample(path: pathlib.Path, kind: str, fp: str) -> list[str]:
+    probes = gma.probes_of(gma.patterns_of(path))
+    texts = [t for inst in probes.instances for t in probes.texts(inst)]
+    verdicts = gma.fires_many(path, texts, kind, fp)
+    positives = [t for t, v in zip(texts, verdicts, strict=True) if v]
+    negatives = [t for t, v in zip(texts, verdicts, strict=True) if not v]
+    # Every positive, plus a fixed slice of negatives from both ends, so a batch that wrongly answers False cannot hide by being the only source of the positives.
+    return [*positives, *negatives[:1], *negatives[-1:]]
+
+
+def test_fires_many_agrees_with_fires_on_every_live_guard() -> None:
+    guards = _live_guards()
+    assert len(guards) > 30, "the gate is not seeing the guard package"
+
+    def check(item: tuple[pathlib.Path, str, str]) -> tuple[int, int, list[str]]:
+        path, kind, fp = item
+        texts = [*_sample(path, kind, fp), "ls"]
+        batch = gma.fires_many(path, texts, kind, fp)
+        single = [gma.fires(path, t, kind, fp) for t in texts]
+        bad = [
+            f"{path.name}: {t!r}" for t, a, b in zip(texts, batch, single, strict=True) if a != b
+        ]
+        return len(texts), sum(single), bad
+
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        rows = list(pool.map(check, guards))
+    assert [b for _, _, bad in rows for b in bad] == []
+    assert sum(n for n, _, _ in rows) > 100
+    assert sum(p for _, p, _ in rows) > 0, "no guard refused anything: the comparison is vacuous"
+
+
+def _fake_world(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, dispatch: str
+) -> pathlib.Path:
+    """A fake guard package and dispatcher, so the live path runs against a guard this test controls."""
+    guards = tmp_path / "guards"
+    guards.mkdir()
+    guard = guards / "block_fake.py"
+    guard.write_text("CHAIN = 'pre-bash'\n")
+    (tmp_path / "dispatch.py").write_text(dispatch)
+    monkeypatch.setattr(gma, "GUARDS", guards)
+    monkeypatch.setattr(gma, "DISPATCH", tmp_path / "dispatch.py")
+    return guard
+
+
+# Refuses only on its 2nd call IN ONE PROCESS: a fresh process per probe never sees a 2nd call.
+STATEFUL = """
+import sys
+calls = 0
+def run_one(stem, payload, cwd=None, env=None):
+    global calls
+    calls += 1
+    return (2 if calls == 2 else 0, '', '')
+if __name__ == '__main__':
+    sys.stdin.read()
+    sys.exit(run_one(sys.argv[1], '')[0])
+"""
+
+
+def test_a_guard_holding_state_between_payloads_is_caught(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    guard = _fake_world(tmp_path, monkeypatch, STATEFUL)
+    texts = ["a", "b", "c"]
+    single = [gma.fires(guard, t) for t in texts]
+    batch = gma.fires_many(guard, texts)
+    assert single == [False, False, False]
+    assert batch == [False, True, False]
+    assert batch != single, "the equivalence comparison cannot see state shared between payloads"
+
+
+class _Done:
+    def __init__(self, stdout: str = "", returncode: int = 0, timed_out: bool = False) -> None:
+        self.stdout = stdout
+        self.returncode = returncode
+        self.timed_out = timed_out
+
+
+LIVE = gma.GUARDS / "block_git_empty_commit.py"
+TEXTS = ["git commit --allow-empty -m x", "echo hello", "true; git commit --allow-empty -m y"]
+
+
+@pytest.mark.parametrize(
+    ("answer", "reason"),
+    [
+        (_Done(timed_out=True), "timed out"),
+        (_Done(returncode=1, stdout="[]"), "exited 1"),
+        (_Done(stdout="[2, 0]"), "answered 2 for 3"),
+        (_Done(stdout="not json at all"), "not JSON"),
+        (_Done(stdout='{"a": 1}'), "non-list"),
+    ],
+)
+def test_every_fallback_branch_gives_the_per_probe_verdicts_and_warns(
+    answer: _Done, reason: str, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    want = [gma.fires(LIVE, t) for t in TEXTS]
+    assert want == [True, False, True], "the control guard no longer refuses its own command"
+    monkeypatch.setattr(gma, "_batch_run", lambda _request, _count: answer)
+    assert gma.fires_many(LIVE, TEXTS) == want
+    err = capsys.readouterr().err
+    assert "block_git_empty_commit.py" in err
+    assert reason in err
+
+
+def test_a_child_that_cannot_start_falls_back_and_warns(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def boom(_request: str, _count: int) -> _Done:
+        raise OSError("no interpreter")
+
+    monkeypatch.setattr(gma, "_batch_run", boom)
+    assert gma.fires_many(LIVE, TEXTS) == [True, False, True]
+    assert "could not start" in capsys.readouterr().err
+
+
+def test_a_non_live_guard_is_judged_per_process(tmp_path: pathlib.Path) -> None:
+    guard = tmp_path / "bad.py"
+    guard.write_text(gma._COMMAND_FIXTURE.format(pattern=r"frobnicate[ \t]+widgets", extra=""))
+    texts = ["frobnicate widgets", "nothing here"]
+    got = gma.fires_many(guard, texts)
+    assert got == [gma.fires(guard, t) for t in texts]
+    assert got[0] is True
+
+
+def test_the_happy_path_neither_warns_nor_falls_back(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def no_single(*_a: object, **_k: object) -> bool:
+        raise AssertionError("fell back to one process per probe")
+
+    monkeypatch.setattr(gma, "fires", no_single)
+    assert gma.fires_many(LIVE, TEXTS) == [True, False, True]
+    assert capsys.readouterr().err == ""
+
+
+PRINTING = """
+def run_one(stem, payload, cwd=None, env=None):
+    print('noise on stdout')
+    return (2 if 'x' in payload else 0, '', '')
+"""
+
+
+def test_a_guard_that_prints_cannot_corrupt_the_batch_answer(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    guard = _fake_world(tmp_path, monkeypatch, PRINTING)
+    assert gma.fires_many(guard, ["x", "y"]) == [True, False]
+    assert "fell back" not in capsys.readouterr().err
+
+
+HANGING = """
+import sys, threading
+def run_one(stem, payload, cwd=None, env=None):
+    if 'hang' in payload:
+        threading.Event().wait(60)
+    return (2 if 'x' in payload else 0, '', '')
+"""
+
+
+def test_one_hanging_probe_is_bounded_per_probe_and_judged_alone(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    guard = _fake_world(tmp_path, monkeypatch, HANGING)
+    monkeypatch.setattr(gma, "PER_PROBE_TIMEOUT", 1)
+    # The caller re-judges the hung probe alone with `fires`, which would wait the full 60 s here, so stand it in.
+    real_fires = gma.fires
+    monkeypatch.setattr(
+        gma,
+        "fires",
+        lambda g, text, kind="command", file_path="": (
+            False if "hang" in text else real_fires(g, text, kind, file_path)
+        ),
+    )
+    start = time.monotonic()
+    assert gma.fires_many(guard, ["x", "hang", "y"]) == [True, False, False]
+    assert time.monotonic() - start < 20
+    assert "1 probe(s) raised or hung" in capsys.readouterr().err

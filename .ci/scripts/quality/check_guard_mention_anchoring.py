@@ -626,28 +626,58 @@ def fires(guard: Path, command: str, kind: str = "command", file_path: str = "")
     return result.returncode == 2
 
 
-# THE BATCH CHILD. One process per guard loads the guard module once and answers every payload in turn, instead of one interpreter start (~0.15 s, mostly imports) per probe sentence: 1459 sentences made the gate ~60 s wall on 24 cores. Each payload still gets its own fresh `Event`, exactly as `dispatch.run_one` builds it. Prints JSON: one return code per payload, null when the guard raised.
+# THE BATCH CHILD. One process per guard loads the guard module once and answers every payload in turn, instead of one interpreter start (~0.15 s, mostly imports) per probe sentence: 1459 sentences made the gate ~60 s wall on 24 cores. Each payload still gets its own fresh `Event`, exactly as `dispatch.run_one` builds it.
+# THE RESULT CHANNEL IS PRIVATE. The child saves the real stdout on a duplicated fd and points fd 1 at stderr before any guard runs, so a guard that prints (or a subprocess it starts) cannot corrupt the JSON, which is written to the saved fd only at the very end.
+# THE HANG BOUND. Each payload runs under its own SIGALRM of PER_PROBE_TIMEOUT seconds (the old per-probe timeout), so one hanging probe is detected after the same 30 s a per-process run allowed, reported as null, and re-judged alone by the caller. The outer ceiling is only the backstop for a child stuck where a signal cannot reach: startup plus the sum of every payload's bound.
+PER_PROBE_TIMEOUT = 30
 _BATCH_CHILD = """
-import json, sys
+import json, os, signal, sys
+real = os.dup(1)
+os.dup2(2, 1)
 sys.path.insert(0, sys.argv[1])
 import dispatch
 req = json.load(sys.stdin)
+
+def _alarm(signum, frame):
+    raise TimeoutError("probe exceeded %d s" % req["timeout"])
+
+signal.signal(signal.SIGALRM, _alarm)
 out = []
 for payload in req["payloads"]:
+    signal.alarm(req["timeout"])
     try:
         out.append(dispatch.run_one(req["stem"], payload)[0])
     except SystemExit as exc:
         out.append(exc.code if isinstance(exc.code, int) else 1)
-    except Exception:
+    except BaseException:
         out.append(None)
-sys.stdout.write(json.dumps(out))
+    finally:
+        signal.alarm(0)
+os.write(real, json.dumps(out).encode())
 """
+
+
+def _batch_run(request: str, count: int) -> Any:
+    """Run the batch child once. Split out so a test can stand in for it."""
+    return ci_proc.run(
+        [sys.executable, "-c", _BATCH_CHILD, str(DISPATCH.parent)],
+        input_text=request,
+        timeout=30 + PER_PROBE_TIMEOUT * count,
+        cwd=str(REPO_ROOT),
+    )
+
+
+def _fallback_warning(guard: Path, reason: str) -> None:
+    print(
+        f"WARNING: guard-mention-anchoring batch probe of {guard.name} fell back to one process per probe ({reason}); the speedup is lost for this guard",
+        file=sys.stderr,
+    )
 
 
 def fires_many(
     guard: Path, texts: list[str], kind: str = "command", file_path: str = ""
 ) -> list[bool]:
-    """`fires` for each text, in order. A live guard runs in ONE child; anything else, and any batch that does not return a clean answer, falls back to one process per text, so a hung or crashing probe is judged alone, as before."""
+    """`fires` for each text, in order. A live guard runs in ONE child. Anything else, and any text the child did not answer cleanly, is judged by one process per text, so a hung or crashing probe is judged alone, as before. Every fallback of a live guard warns on stderr with the reason."""
     if not texts:
         return []
     try:
@@ -655,23 +685,39 @@ def fires_many(
     except ValueError:
         return [fires(guard, t, kind, file_path) for t in texts]
     request = json.dumps(
-        {"stem": guard.stem, "payloads": [payload_for(kind, t, file_path) for t in texts]}
+        {
+            "stem": guard.stem,
+            "timeout": PER_PROBE_TIMEOUT,
+            "payloads": [payload_for(kind, t, file_path) for t in texts],
+        }
     )
     codes: object = None
+    reason = ""
     try:
-        result = ci_proc.run(
-            [sys.executable, "-c", _BATCH_CHILD, str(DISPATCH.parent)],
-            input_text=request,
-            timeout=min(30 + 2 * len(texts), 300),
-            cwd=str(REPO_ROOT),
-        )
-        if not result.timed_out and result.returncode == 0:
+        result = _batch_run(request, len(texts))
+        if result.timed_out:
+            reason = "the child timed out"
+        elif result.returncode != 0:
+            reason = f"the child exited {result.returncode}"
+        else:
             codes = json.loads(result.stdout)
-    except (OSError, ValueError):
+    except OSError as exc:
+        reason = f"the child could not start: {exc}"
+    except ValueError:
+        reason = "the child's answer was not JSON"
+    if codes is not None and (not isinstance(codes, list) or len(codes) != len(texts)):
+        reason = f"the child answered {len(codes) if isinstance(codes, list) else 'a non-list'} for {len(texts)} payloads"
         codes = None
-    if not isinstance(codes, list) or len(codes) != len(texts) or None in codes:
+    if codes is None:
+        _fallback_warning(guard, reason)
         return [fires(guard, t, kind, file_path) for t in texts]
-    return [c == 2 for c in codes]
+    unanswered = [i for i, c in enumerate(codes) if not isinstance(c, int)]
+    if unanswered:
+        _fallback_warning(guard, f"{len(unanswered)} probe(s) raised or hung in the child")
+    return [
+        fires(guard, texts[i], kind, file_path) if i in unanswered else codes[i] == 2
+        for i in range(len(texts))
+    ]
 
 
 def chain_of(path: Path) -> str | None:
@@ -917,6 +963,7 @@ def assess(
         every = [text for inst in instances for text in probes.texts(inst)]
         hits = [t for t, hit in zip(every, fires_many(guard, every, kind, fp), strict=True) if hit]
         return ("prose", PROSE_SEP.join(hits)) if hits else ("clean", "")
+    # The batch answers every probe up front, so the first-refusal early return no longer saves probe work; acceptable because a clean guard (the common case) was always probed in full and a refusing one is a red run anyway.
     every = [text for inst in instances for text in probes.texts(inst)]
     for text, hit in zip(every, fires_many(guard, every, kind, fp), strict=True):
         if hit:
