@@ -5,15 +5,19 @@
   "commands": {
     "backup": {
       "browse": {
+        "atNeedsCredential": "Hoidlal {{name}} pole selles konfiguratsioonis salvestatud mandaati, seega ei saa selle hetktõmmiseid tükihoidlast loetleda.",
         "completed": "{{name}} loetletud",
-        "description": "Loetle hoidla failid. Kohalik kirjutuskaitstud läbikäik hoidla kujutisest: ei kasuta kontoserverit ega võrku. Krüpteeritud hoidla peab olema haagitud või selle võtmefail peab olema juurutatud, enne kui seda saab avada; browse teatab sellest, selle asemel et näidata tühja loetelu. Ei saa loetleda hetktõmmist, mis on olemas ainult tükihoidlas; taasta see esmalt ja seejärel sirvi tulemust.",
-        "descriptionShort": "Loetle hoidla failid (kohalik, kirjutuskaitstud)",
+        "description": "Loetle hoidla failid. Vaikimisi on see hoidla pildi kohalik kirjutuskaitstud läbikäik: ilma konto serverita ja ilma võrguta. Krüptitud hoidla peab olema ühendatud või selle võtmefail paigaldatud, enne kui seda saab avada; browse ütleb seda, selle asemel et näidata tühja loendit. Valikuga --at <aeg|hetktõmmis> loetleb see hoopis tükihoidla hetktõmmisega salvestatud faililoendi, seda taastamata.",
+        "descriptionShort": "Loetle hoidla või valikuga --at salvestatud hetktõmmise failid",
         "empty": "{{name}} ei sisalda faile.",
         "failed": "{{name}} loetlemine ebaõnnestus",
+        "noListing": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud faililoendit, seega ei saa seda sirvida. Failide vaatamiseks taasta see.",
+        "optionAt": "Loetle sel ajal või enne seda tehtud hetktõmmis või see hetktõmmise ID (loeb tükihoidlat)",
         "optionDepth": "Piira laskumine N tasemega (0 piiramatuks)",
         "optionLimit": "Tagastatavate kirjete maksimaalne arv (0 piiramatuks)",
         "optionPath": "Piira loetelu selle alampuuga",
         "starting": "{{name}} loetlemine...",
+        "startingAt": "{{name}} loetlemine hetktõmmise {{snapshot}} järgi...",
         "truncated": "Loetelu katkestati {{limit}} kirje juures. Kitsenda seda --path abil või tõsta --limit väärtust."
       },
       "cancel": {
@@ -41,7 +45,7 @@
         "fetching": "Varukoopia manifestide toomine..."
       },
       "restore": {
-        "atNoSnapshot": "Ajal {{at}} või enne seda ei tehtud ühtegi hetktõmmist, seega pole ajahetke, mille juurde taastada.",
+        "atNoSnapshot": "Ajal {{at}} või enne seda ei tehtud ühtegi hetktõmmist.",
         "atResolved": "{{at}} lahendati hetktõmmiseks {{snapshot}} (tehtud {{created}}).",
         "atUnparsable": "--at \"{{at}}\" ei ole hetktõmmise ID ega ajahetk. Kasuta hetktõmmise ID-d käsust `rdc backup manifests` või RFC3339 aega, näiteks 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "Andmehoidla \"{{datastore}}\" ei ole ühegi masinaga ühendatud. Ühenda see esmalt: rdc datastore attach {{datastore}} --to <machine>.",

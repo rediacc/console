@@ -258,6 +258,17 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
   });
 
+  // T1 for the other chunk-store read verb: `backup browse --at` opens the same session with the same licence, so it takes the same pre-flight.
+  it('issues a repo licence before backup_browse_at runs, on a machine holding none', async () => {
+    const result = await localExecutorService.execute({
+      ...restoreOptions,
+      functionName: 'backup_browse_at',
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
+  });
+
   // T2, T1 alone is satisfied by ANY implementation that calls the mint with anything at all. This pins WHICH licence, and it is the assertion that fails if the carrier-repo workaround is ever shipped as the product.
   it('licenses the SOURCE guid, in the TARGET datastore scope', async () => {
     await localExecutorService.execute(restoreOptions);
@@ -464,6 +475,30 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
+  // T6 for backup_browse_at: the same LICENSE_REQUIRED answer, the same restore issuance, then a retry.
+  it('answers a LICENSE_REQUIRED backup_browse_at with a restore issuance, then retries', async () => {
+    mockRefreshRepoLicensesBatch.mockResolvedValue({ recoveryFailureMode: null });
+    mockExecStreaming
+      .mockImplementationOnce((_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"missing","message":"no license data"}\n'
+        );
+        return Promise.resolve(10);
+      })
+      .mockResolvedValueOnce(0);
+
+    const result = await localExecutorService.execute({
+      ...restoreOptions,
+      functionName: 'backup_browse_at',
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockExecStreaming).toHaveBeenCalledTimes(2);
+    expect(mockIssueRepoLicense).toHaveBeenCalledTimes(2);
+    expect(mockIssueRepoLicense.mock.calls[1][2]).toMatchObject({ repositoryGuid: SOURCE_GUID });
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+  });
+
   // The bypass must stay honoured: nolicense/CI builds have no subscription server to mint against.
   it('honours REDIACC_SKIP_MACHINE_ACTIVATION', async () => {
     process.env.REDIACC_SKIP_MACHINE_ACTIVATION = '1';
@@ -495,7 +530,10 @@ describe('backup_restore is licensed as a restore, never as a provisioning verb'
 
   it('is the restore-licence function, and nothing else is', () => {
     expect(isRestoreLicenseFunction('backup_restore')).toBe(true);
+    expect(isRestoreLicenseFunction('backup_browse_at')).toBe(true);
+    expect(isRepoProvisioningFunction('backup_browse_at')).toBe(false);
     for (const name of [
+      'backup_browse',
       'backup_list',
       'backup_pull',
       'backup_push',

@@ -5,15 +5,19 @@
   "commands": {
     "backup": {
       "browse": {
+        "atNeedsCredential": "{{name}} n'a pas d'identifiants enregistrés dans cette configuration, ses instantanés ne peuvent donc pas être listés depuis le magasin de blocs.",
         "completed": "{{name}} listé",
-        "description": "Liste les fichiers que contient un dépôt. Un parcours local en lecture seule de l'image du dépôt : aucun serveur de compte et aucun réseau. Un dépôt chiffré doit être monté, ou avoir son fichier de clé déployé, avant de pouvoir être ouvert ; browse le signale au lieu d'afficher une liste vide. Ne peut pas lister un instantané qui n'existe que dans le magasin de blocs ; restaurez-le d'abord, puis parcourez le résultat.",
-        "descriptionShort": "Lister les fichiers d'un dépôt (local, lecture seule)",
+        "description": "Liste les fichiers d'un dépôt. Par défaut, il s'agit d'un parcours local en lecture seule de l'image du dépôt : sans serveur de compte ni réseau. Un dépôt chiffré doit être monté, ou avoir son fichier de clé déployé, avant de pouvoir être ouvert ; browse le signale au lieu de ne rien lister. Avec --at <date|instantané>, il liste à la place la liste de fichiers enregistrée avec un instantané du magasin de blocs, sans le restaurer.",
+        "descriptionShort": "Lister les fichiers d'un dépôt, ou d'un instantané enregistré avec --at",
         "empty": "{{name}} ne contient aucun fichier.",
         "failed": "Impossible de lister {{name}}",
+        "noListing": "L'instantané {{snapshot}} de {{name}} n'a pas de liste de fichiers enregistrée, il ne peut donc pas être parcouru. Restaurez-le pour consulter ses fichiers.",
+        "optionAt": "Lister l'instantané pris à cette date ou avant, ou cet identifiant d'instantané (lit le magasin de blocs)",
         "optionDepth": "Limiter la descente à N niveaux (0 pour illimité)",
         "optionLimit": "Nombre maximal d'entrées à renvoyer (0 pour illimité)",
         "optionPath": "Limiter le listage à ce sous-arbre",
         "starting": "Listage de {{name}}...",
+        "startingAt": "Listage de {{name}} à l'instantané {{snapshot}}...",
         "truncated": "Listage tronqué à {{limit}} entrées. Restreignez avec --path, ou augmentez --limit."
       },
       "cancel": {
@@ -41,7 +45,7 @@
         "fetching": "Récupération des manifestes de sauvegarde..."
       },
       "restore": {
-        "atNoSnapshot": "Aucun instantané n'a été pris à la date {{at}} ou avant, il n'y a donc aucun instant vers lequel restaurer.",
+        "atNoSnapshot": "Aucun instantané n'a été pris à la date {{at}} ou avant.",
         "atResolved": "{{at}} a été résolu vers l'instantané {{snapshot}} (pris le {{created}}).",
         "atUnparsable": "--at \"{{at}}\" n'est ni un identifiant d'instantané ni une date. Indiquez un identifiant d'instantané issu de `rdc backup manifests`, ou une date RFC3339 telle que 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "Le datastore \"{{datastore}}\" n'est attaché à aucune machine. Attachez-le d'abord : rdc datastore attach {{datastore}} --to <machine>.",

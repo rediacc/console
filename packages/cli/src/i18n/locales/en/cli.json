@@ -1542,15 +1542,19 @@
     },
     "backup": {
       "browse": {
+        "atNeedsCredential": "{{name}} has no stored credential in this config, so its snapshots cannot be listed from the chunk store.",
         "completed": "Listed {{name}}",
-        "description": "List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
-        "descriptionShort": "List the files a repository contains (local, read-only)",
+        "description": "List the files a repository contains. By default this is a local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. With --at <time|snapshot>, it lists the file listing stored with a chunk-store snapshot instead, without restoring it.",
+        "descriptionShort": "List the files a repository, or a stored snapshot with --at, contains",
         "empty": "{{name}} contains no files.",
         "failed": "Could not list {{name}}",
+        "noListing": "Snapshot {{snapshot}} of {{name}} has no stored file listing, so it cannot be browsed. Restore it to inspect its files.",
+        "optionAt": "List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)",
         "optionDepth": "Limit descent to N levels (0 for unlimited)",
         "optionLimit": "Maximum entries to return (0 for unlimited)",
         "optionPath": "Limit the listing to this subtree",
         "starting": "Listing {{name}}...",
+        "startingAt": "Listing {{name}} at snapshot {{snapshot}}...",
         "truncated": "Listing truncated at {{limit}} entries. Narrow it with --path, or raise --limit."
       },
       "cancel": {
@@ -1578,7 +1582,7 @@
         "empty": "No backup manifests found."
       },
       "restore": {
-        "atNoSnapshot": "No snapshot was taken at or before {{at}}, so there is no point in time to restore.",
+        "atNoSnapshot": "No snapshot was taken at or before {{at}}.",
         "atResolved": "Resolved {{at}} to snapshot {{snapshot}} (taken {{created}}).",
         "atUnparsable": "--at \"{{at}}\" is neither a snapshot id nor a time. Pass a snapshot id from `rdc backup manifests`, or an RFC3339 time such as 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "Datastore \"{{datastore}}\" is not attached to any machine. Attach it first: rdc datastore attach {{datastore}} --to <machine>.",

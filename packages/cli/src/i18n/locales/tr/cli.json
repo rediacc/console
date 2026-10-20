@@ -5,15 +5,19 @@
   "commands": {
     "backup": {
       "browse": {
+        "atNeedsCredential": "Bu yapılandırmada {{name}} için kayıtlı kimlik bilgisi yok, bu yüzden anlık görüntüleri parça deposundan listelenemiyor.",
         "completed": "{{name}} listelendi",
-        "description": "Bir deponun içerdiği dosyaları listeler. Depo imajının yerel, salt okunur bir taraması: hesap sunucusu yok, ağ bağlantısı yok. Şifreli bir depo, açılabilmesi için bağlı olmalı veya anahtar dosyası dağıtılmış olmalıdır; browse boş bir liste göstermek yerine bunu bildirir. Yalnızca parça deposunda bulunan bir anlık görüntüyü listeleyemez; önce onu geri yükleyin, ardından sonucu inceleyin.",
-        "descriptionShort": "Bir deponun dosyalarını listele (yerel, salt okunur)",
+        "description": "Bir deponun içerdiği dosyaları listeler. Varsayılan olarak depo imajında yerel, salt okunur bir gezinti yapar: hesap sunucusu da ağ da gerekmez. Şifreli bir depo açılmadan önce bağlanmış olmalı ya da anahtar dosyası dağıtılmış olmalıdır; browse boş liste göstermek yerine bunu söyler. --at <zaman|anlık görüntü> ile bunun yerine, geri yüklemeden, parça deposundaki bir anlık görüntüyle saklanan dosya listesini gösterir.",
+        "descriptionShort": "Bir deponun ya da --at ile saklanan bir anlık görüntünün dosyalarını listele",
         "empty": "{{name}} hiç dosya içermiyor.",
         "failed": "{{name}} listelenemedi",
+        "noListing": "{{name}} deposunun {{snapshot}} anlık görüntüsü için kayıtlı dosya listesi yok, bu yüzden gezilemiyor. Dosyalarına bakmak için geri yükleyin.",
+        "optionAt": "Bu zamanda veya öncesinde alınan anlık görüntüyü ya da bu anlık görüntü kimliğini listele (parça deposunu okur)",
         "optionDepth": "İnişi N seviyeyle sınırla (sınırsız için 0)",
         "optionLimit": "Döndürülecek maksimum girdi sayısı (sınırsız için 0)",
         "optionPath": "Listelemeyi bu alt ağaçla sınırla",
         "starting": "{{name}} listeleniyor...",
+        "startingAt": "{{name}}, {{snapshot}} anlık görüntüsüyle listeleniyor...",
         "truncated": "Listeleme {{limit}} girdide kesildi. --path ile daraltın veya --limit değerini artırın."
       },
       "cancel": {
@@ -41,7 +45,7 @@
         "fetching": "Yedek manifestleri alınıyor..."
       },
       "restore": {
-        "atNoSnapshot": "{{at}} anında veya öncesinde alınmış bir anlık görüntü yok, bu yüzden geri yüklenebilecek bir zaman noktası bulunmuyor.",
+        "atNoSnapshot": "{{at}} anında veya öncesinde alınmış bir anlık görüntü yok.",
         "atResolved": "{{at}}, anlık görüntü {{snapshot}} olarak çözümlendi ({{created}} tarihinde alındı).",
         "atUnparsable": "--at \"{{at}}\" ne bir anlık görüntü kimliği ne de bir zaman. `rdc backup manifests` çıktısından bir anlık görüntü kimliği ya da 2026-08-14T12:00:00Z gibi bir RFC3339 zamanı geçirin.",
         "datastoreUnattached": "\"{{datastore}}\" veri deposu hiçbir makineye bağlı değil. Önce bağlayın: rdc datastore attach {{datastore}} --to <machine>.",

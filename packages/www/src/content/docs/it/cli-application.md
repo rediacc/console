@@ -7,7 +7,7 @@ order: 2
 language: it
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/it/cli.json
-sourceHash: "743a1b08b3b11067"
+sourceHash: "7c4501e854a86ff0"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2179,6 +2179,7 @@ rdc backup browse <repo-ref> [options]
 | `--path <subdir>` | {{t:cli.commands.backup.browse.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--depth <n>` | {{t:cli.commands.backup.browse.optionDepth}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--limit <n>` | {{t:cli.commands.backup.browse.optionLimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--at <time|snapshot>` | {{t:cli.commands.backup.browse.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
