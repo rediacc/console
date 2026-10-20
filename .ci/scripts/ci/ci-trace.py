@@ -902,7 +902,7 @@ def _snapshot(root, ref, cache, allow_branch=False, seen=None):
     if side:
         detail += "; %d job(s) CANCELLED in another workflow's run, not Console CI: %s" % (
             len(side),
-            ", ".join("%s (run %s)" % (x["name"], x["run"]) for x in side[:3]),
+            ", ".join("%s (run %s)" % (x["name"], x["run"]) for x in side),
         )
     # A branch read judges only the runs OF that branch (wl_ci.branch_owns_context). Saying how many contexts on the SHA were set aside keeps a foreign PR run's failures visible as a count rather than silently absent.
     if info.get("foreign"):
