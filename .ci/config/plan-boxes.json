@@ -6,18 +6,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 0,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
+        "aab436c1"
+      ],
+      "done_sigs": [
         "0fdadd60",
         "15af6135",
         "2f3dd449",
         "89116574",
-        "aab436c1",
         "b50d5e8e",
         "b66c4ca4"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-add-chunkstore-backup-verb.md": {
       "status": "compacted",

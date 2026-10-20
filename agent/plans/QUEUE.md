@@ -74,7 +74,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 13 of 17 plans done, 194 of 204 boxes done (95%).
+Promoted: 13 of 17 plans done, 200 of 204 boxes done (98%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -94,7 +94,7 @@ Promoted: 13 of 17 plans done, 194 of 204 boxes done (95%).
 | 14 | PLAN-stop-hook-effort.md | 7/7 | done |
 | 15 | PLAN-stop-hook-effort-tuning.md | 7/7 | done |
 | 16 | PLAN-pins-command.md | 12/13 | 1 open |
-| 17 | PLAN-account-vm-check.md | 0/7 | 7 open |
+| 17 | PLAN-account-vm-check.md | 6/7 | 1 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
