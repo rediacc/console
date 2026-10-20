@@ -251,11 +251,11 @@ const RENET_NO_LISTING_EXIT = 18;
  * `backup browse <repo-ref> [--path] [--at <time|snapshot>]` -- list what a repository
  * contains. With `--at`, the listing comes from the chunk store (`backup_browse_at`).
  *
- * Without `--at`, a LOCAL read on the machine holding the image. The chunk store cannot answer
- * this question at all: a manifest maps grid cells to the hash of their
- * CIPHERTEXT, so it carries no filesystem information and no listing is
- * derivable from it. The only way to list files is to open the image and walk
- * it, which is what renet does here.
+ * Without `--at`, a LOCAL read on the machine holding the image. A manifest maps grid
+ * cells to the hash of their CIPHERTEXT, so it carries no filesystem information and no
+ * listing is derivable from it; the only way to list files from an image is to open
+ * it and walk it, which is what renet does here. A chunk-store listing exists only
+ * when the snapshot stored one at snapshot time, and that is the `--at` path.
  *
  * Uses resolveRepoRef, not resolveRepoRefLocal: unlike `backup manifests`,
  * which reads the server index, this must reach a machine to read an image.
