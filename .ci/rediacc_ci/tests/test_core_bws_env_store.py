@@ -207,6 +207,19 @@ def test_write_secret_redacts_a_value_the_writer_echoes(tmp_path) -> None:
     assert "<redacted>" in failure
 
 
+def test_write_secret_redacts_a_multi_line_value_the_writer_echoes(tmp_path) -> None:
+    value = "first-line-secret\nsecond-line-secret"
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "multiline",
+        '#!/bin/sh\ncat >/dev/null\nprintf "bad: first-line-secret\\nsecond-line-secret\\n" >&2\nexit 1\n',
+        {"op": "edit", "id": ENTRY_ID, "value": value},
+    )
+    assert failure is not None
+    assert "second-line-secret" not in failure
+    assert "first-line-secret" not in failure
+
+
 def test_write_secret_survives_non_utf8_output(tmp_path) -> None:
     failure = _write_with_fake_npx(
         tmp_path,

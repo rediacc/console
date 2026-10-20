@@ -1004,7 +1004,10 @@ class License:
         if not self.repo_guid:
             return []
         if not lib.is_repo_guid(self.repo_guid):
-            return []
+            # A guid that is not one would be spliced into a remote `find`; an empty answer here would read as "no blobs", so it is refused by name.
+            raise RuntimeError(
+                "installed_blobs: repo guid %r is not a repository guid" % self.repo_guid
+            )
         _, out = self.ssh_out(
             self.o.vm_ip,
             "sudo find %s -type f -name '*.json' -path '*/repos/%s/*'"

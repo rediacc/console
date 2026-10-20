@@ -1481,6 +1481,14 @@ def test_the_installed_blob_find_is_scoped_to_the_guid() -> None:
     assert "head" not in seen[0]
 
 
+def test_an_invalid_guid_is_refused_rather_than_read_as_no_blobs() -> None:
+    drill = lib.Drill("license", selftest=False, keep_work=False)
+    lic = license_drill.License(drill, license_drill.Options())
+    lic.repo_guid = "x'; rm -rf /; '"
+    with pytest.raises(RuntimeError, match="not a repository guid"):
+        lic.installed_blobs()
+
+
 def _no_config(tmp_path: pathlib.Path, setup) -> tuple[int, str]:
     home = tmp_path / "home"
     home.mkdir()

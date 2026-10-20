@@ -1208,11 +1208,16 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
         proc.communicate()
         return "cannot run %s: %s" % (WRITER_ARGV[0], type(exc).__name__)
     if proc.returncode != 0:
-        detail = raw_err.decode(errors="replace").strip().splitlines()
-        line = detail[-1] if detail else ""
-        # The value must not reach a log even if the writer's error path echoes its request.
+        text = raw_err.decode(errors="replace")
+        # The value must not reach a log even if the writer's error path echoes its request. It is masked across the whole stream first, then line by line, so a multi-line value is caught whole or in its fragments.
         for secret in _request_secrets(request):
-            line = line.replace(secret, "<redacted>")
+            text = text.replace(secret, "<redacted>")
+            for part in sorted(
+                {p.strip() for p in secret.splitlines() if p.strip()}, key=len, reverse=True
+            ):
+                text = text.replace(part, "<redacted>")
+        detail = text.strip().splitlines()
+        line = detail[-1] if detail else ""
         return "rc=%d%s" % (proc.returncode, ": " + line[:300] if line else "")
     answered = raw_out.decode(errors="replace").strip()
     wanted = request.get("id")
