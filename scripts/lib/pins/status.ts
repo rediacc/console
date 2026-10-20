@@ -204,7 +204,7 @@ function checkoutAbsent(root: string, repo: string): boolean {
 function declaredSubmodules(root: string): Set<string> {
   const f = path.join(root, '.gitmodules');
   if (!fs.existsSync(f)) return new Set();
-  const paths = [...fs.readFileSync(f, 'utf8').matchAll(/^\s*path\s*=\s*(\S+)\s*$/gm)];
+  const paths = [...fs.readFileSync(f, 'utf8').matchAll(/^\s*path\s*=\s*(.+?)\s*$/gm)];
   return new Set(paths.map((m) => m[1]));
 }
 
