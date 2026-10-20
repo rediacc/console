@@ -445,8 +445,53 @@ for name, deleted, want in GIT_CASES:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
-# A count, not a concatenation: the two case lists carry different tuple shapes.
-TOTAL = len(CASES) + len(GIT_CASES)
+
+
+# A forced MOVE of an existing branch is not a creation. Git hands `reference-transaction` an all-zero old value for `git branch -f <existing> <sha>` exactly as for a new branch (measured, git 2.53, 2026-10-20), and on 2026-10-20 /branch-rebase's `git branch -f 1020-1 <sha>` from a detached HEAD was refused as "creating branch `1020-1` from `(detached)`". The creation arm stays: a NEW branch cut from a detached HEAD is still refused, with the from-`main` message.
+def detached_world(existing):
+    repo = make_repo("main", extra=(NEXT,) if existing else ())
+    git(repo, "commit", "-q", "--allow-empty", "-m", "second")
+    git(repo, "checkout", "-q", "--detach", "HEAD~1")
+    git(repo, "config", "core.hooksPath", str(HOOKS))
+    return repo
+
+
+DETACHED_CASES = [
+    ("git-level: new branch cut from a detached HEAD", False, ["branch", NEXT, "HEAD"], True),
+    (
+        "git-level: force-move of an existing branch, detached",
+        True,
+        ["branch", "-f", NEXT, "main"],
+        False,
+    ),
+    (
+        "git-level: update-ref of an existing branch, detached",
+        True,
+        ["update-ref", "refs/heads/" + NEXT, "main"],
+        False,
+    ),
+]
+for name, existing, args, want in DETACHED_CASES:
+    got, err = git_level(detached_world(existing), *args)
+    if want and got and "from `(detached)`" not in err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+        got = False
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-56s want=%-8s got=%-8s %s"
+        % (
+            name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+# A count, not a concatenation: the case lists carry different tuple shapes.
+TOTAL = len(CASES) + len(GIT_CASES) + len(DETACHED_CASES)
 
 if blocked in (0, TOTAL):
     print("*** FAIL *** the guard answered the same way on every case")
