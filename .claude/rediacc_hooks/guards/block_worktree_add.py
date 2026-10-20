@@ -16,11 +16,13 @@ create and easy to forget, and each one is a place uncommitted work can silently
 """
 
 import ast
+import io
 import itertools
 import os
 import re
 import shlex
 import stat
+import tokenize
 import zipfile
 from typing import Any
 
@@ -320,6 +322,11 @@ STDIN_REDIRECTS = ("<", "<>")
 # OUT OF REACH, stated: a child process that inherits the stdin and reads it as its program (`python3 -c 'import os; os.system("sh")'` behind a pipe), and an evaluator spelled from pieces this text does not hold.
 STDIN_DEPTH = 16
 DUP_TARGET = re.compile(r"^(\d+)-?$")
+_PY_STRING_PARTS = tuple(
+    getattr(tokenize, name)
+    for name in ("FSTRING_MIDDLE", "TSTRING_MIDDLE")
+    if hasattr(tokenize, name)
+)
 _JS_FAMILIES = ("node", "deno", "bun", "tsx")
 # A DESCRIPTOR HELD IN A NAME IS STDIN UNTIL SHOWN OTHERWISE (review db1e9409.1). `const fd=0; eval(require("fs").readFileSync(fd,"utf8"))` read the pipe and ran it with rc 0 at bd4ead963: the touch list held `fd` bound to 0 for python alone, and no list of names is complete. So a read that takes a descriptor or a path, called with a first argument that is not a literal (a name, an expression, `null` with `{fd: 0}`), counts as touching stdin, in both languages.
 # That over-reads on purpose: such a program is only judged when it also names an evaluator and is fed something, and then its stdin is read as a program, which refuses an unreadable producer. A read given a literal path (`readFileSync("x.json")`, `open('x')`) is not a touch.
@@ -353,11 +360,42 @@ _EVALUATOR = {
 }
 
 
+# A string literal that spells a module or a lookup able to run a child on the inherited stdin stays visible to the evaluator list: `sys.modules["subprocess"].run(["sh"])` names no evaluator outside its strings. `sys.modules` itself counts, the over-reading direction.
+_PY_MODULE_REACH = re.compile(
+    r"""\bmodules\b|['"](?:subprocess|pty|ctypes|cffi|pickle|marshal|builtins|importlib|runpy|zipimport|pdb|doctest|timeit)['"]"""
+)
+
+
+def _python_code_view(code):
+    """`code` with its comments and string literals blanked, so the evaluator list reads names and calls and not the words in a JSON key or a message. A program that does not tokenize is returned whole (fail closed: every word counts)."""
+    try:
+        toks = list(tokenize.generate_tokens(io.StringIO(code).readline))
+    except (tokenize.TokenError, SyntaxError, IndentationError):
+        return code
+    out = []
+    for tok in toks:
+        if tok.type == tokenize.COMMENT:
+            continue
+        if tok.type == tokenize.STRING:
+            out.append('""')
+        elif tok.type in _PY_STRING_PARTS:
+            continue
+        else:
+            out.append(tok.string)
+    return " ".join(out)
+
+
 def _evaluates_stdin(family, code):
     """Can the inline program `code` read its stdin and run what it reads, as code or as a command line? Errs towards yes (see `_EVALUATOR`)."""
     key = "js" if family in _JS_FAMILIES else family
     evaluator = _EVALUATOR.get(key)
-    if evaluator is None or not evaluator.search(code):
+    if evaluator is None:
+        return False
+    # A WORD IN A STRING OR A COMMENT RUNS NOTHING (#14aadab3): `curl URL | python3 -c 'import json,sys; print(json.load(sys.stdin).get("code"))'` was refused because the key `"code"` is an evaluator word. The python evaluator list is read over the program with its comments and string literals blanked (`_python_code_view`); a string that names a module able to run a child on the inherited stdin stays visible.
+    if key == "python":
+        if not (evaluator.search(_python_code_view(code)) or _PY_MODULE_REACH.search(code)):
+            return False
+    elif not evaluator.search(code):
         return False
     touch = _STDIN_TOUCH.get(key)
     return touch is None or bool(touch.search(code))
