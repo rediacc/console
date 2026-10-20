@@ -1876,18 +1876,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 5,
+      "open": 2,
+      "done": 6,
       "open_sigs": [
         "b3a3c89c",
-        "be38aa52",
-        "d89e1dc8"
+        "be38aa52"
       ],
       "done_sigs": [
         "316afc69",
         "3b82dd28",
         "750fd87e",
         "ad35f490",
+        "d89e1dc8",
         "dcdf6c1e"
       ]
     },

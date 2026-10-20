@@ -103,7 +103,7 @@ Promoted: 0 of 4 plans done, 45 of 49 boxes done (91%).
 9. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
 10. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (153 of 154 boxes ticked)
 11. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
-12. agent/plans/PLAN-vm-check.md -- P1, approved, in progress (5 of 8 boxes ticked)
+12. agent/plans/PLAN-vm-check.md -- P1, approved, in progress (6 of 8 boxes ticked)
 13. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
 14. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 15. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, in progress (6 of 7 boxes ticked)
