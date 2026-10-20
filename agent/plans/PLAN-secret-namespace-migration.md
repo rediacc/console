@@ -1712,3 +1712,66 @@ citations, is at `agent/archive/plans/PLAN-github-secrets-removal.md line 551 (b
     (ticked) 2026-09-22T19:56:54Z by d778be9d: commit ef31d98b3: OTLP fetched from Bitwarden now; .github/workflows/cd-deploy-account.yml:197-199,317-319 fetch OBS_OTLP_CREDENTIALS_{EU,US,ASIA} from Bitwarden; bws-unrequested.json has zero deferred-kind entries repo-wide
 - [x] **(operator, irreversible)** Delete 44 GitHub secrets; keep `BWS_ACCESS_TOKEN` in `console`, `account`, `renet`
     (ticked) 2026-09-22T19:56:54Z by d778be9d: same evidence as GitHub org secrets deletion: secret-reachability.json confirms only BWS_ACCESS_TOKEN remains reachable per repo
+
+## Part 27 — classification of the 223 dry-run hits of `scripts/ops/secret-rename.py` (2026-10-20, worklist #3b0fa70b)
+
+Measured with `python3 scripts/ops/secret-rename.py` (223 replacements, 41 files, 4 `vars.` reports, 8 COLLAPSE lines) plus a per-line listing built from the script's own `Rules` and `files()`. Per-hit classes: A = live, moves in lockstep; B = stale spelling rewritable today; C = intended residue, never rewritten.
+
+### The premise of the brief does not hold, and changes what class A means
+
+Part 26 and `docs/agent-reference/ci-gates.md:608` record that the GitHub org-secret store is EMPTY (`gh api orgs/rediacc/actions/secrets` returns `total_count: 0`); `.ci/config/secret-reachability.json` shows only `BWS_ACCESS_TOKEN` (every repo) and the console repo secret `BREAKPOINT_TUNNEL_TOKEN`. No live workflow reads `secrets.<OLD>` for any renamed name any more (`grep -rnE 'secrets\.(R2_|TURNSTILE_SECRET|BREAKPOINT_TUNNEL|SES_AK|STRIPE_SECRET_KEY_|OTLP_CLIENT|APP_PRIVATE_KEY|AUTOPILOT_|CLAUDE_CODE_OAUTH|GPG_P)' .github .ci/scripts scripts` is empty outside `.ci/cache/` and the script itself); `breakpoint.yml` and `watchdog-monitor.yml` already read `env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN` / `env.BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. The script also skips every `secrets.NAME` and `vars.NAME` reference by design (`SECRETS_CTX`, `VARS_CTX`), so none of the 223 hits is a `secrets.X` read. There is therefore no "rename day" that depends on creating org secrets by copy: nothing reads them. The surviving hits are (1) the workflow-local env alias `BWS_APP_PRIVATE_KEY`, which no GitHub store knows about, and (2) prose, fixtures and tests that name the old spellings on purpose.
+
+### Per-name table
+
+| Old name -> new name | Hits | Class A | Class B | Class C |
+|---|---|---|---|---|
+| `APP_PRIVATE_KEY` -> `GITHUB_APP_PRIVATE_KEY` (only as `BWS_APP_PRIVATE_KEY` -> `BWS_GITHUB_APP_PRIVATE_KEY` and prose) | 147 | 122 | 1 | 24 |
+| `CLAUDE_CODE_OAUTH_TOKEN` -> `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` | 21 | 0 | 0 | 21 |
+| `BREAKPOINT_TUNNEL_TOKEN` -> `CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN` | 18 | 0 | 0 | 18 |
+| `R2_ACCESS_KEY_ID` -> `CLOUDFLARE_R2_ACCESS_KEY_ID` | 7 | 0 | 0 | 7 |
+| `TURNSTILE_SECRET_KEY` -> `CLOUDFLARE_TURNSTILE_SECRET_KEY` | 5 | 0 | 0 | 5 |
+| `R2_ENDPOINT` -> `CLOUDFLARE_R2_ENDPOINT` | 4 | 0 | 4 | 0 |
+| `R2_SECRET_ACCESS_KEY` -> `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | 4 | 0 | 0 | 4 |
+| `OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA}` -> `OBS_OTLP_CREDENTIALS_*` | 3+3+2 | 0 | 0 | 8 |
+| `STRIPE_SECRET_KEY_{EU,ASIA}` -> `STRIPE_SECRET_KEY` (COLLAPSE) | 2+2 | 0 | 0 | 4 |
+| `R2_MEDIA_ACCESS_KEY_ID`, `R2_MEDIA_SECRET_ACCESS_KEY` | 2+2 | 0 | 0 | 4 |
+| `AUTOPILOT_PRIVATE_KEY` -> `GITHUB_AUTOPILOT_PRIVATE_KEY` | 1 | 0 | 0 | 1 |
+| Totals | 223 | 122 | 5 | 96 |
+
+The class split of `APP_PRIVATE_KEY` is 122 + 1 + 24 and not the 147 first reported per name only because the prose hits in the same name are C.
+
+### Class A (122): the `BWS_APP_PRIVATE_KEY` env alias, lockstep between workflows and the two gates that hardcode it
+
+Every site is the pair `GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY` (bws-secrets `secrets:` map line; the left side is already the new Bitwarden name and is NOT touched by the script) and `private-key: ${{ env.BWS_APP_PRIVATE_KEY }}` (app-token consumer). The script rewrites both to `BWS_GITHUB_APP_PRIVATE_KEY`, consistent with the already-landed `BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN` and `BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. The alias is an env var name local to the job, so the change depends on no GitHub or Bitwarden state; it must move in ONE commit with the gates that carry the same literal, or `check_bws_map.py` assertion 13 and the submodule-deps print-out disagree with the workflows.
+
+- Workflows, 116 hits: `ct-tests.yml` 38, `ci-quality.yml` 20, `ci.yml` 10, `ci-build-renet.yml` 8, `cd-v2.yml` 6, `ci-build-docker.yml` 6, `cd-deploy-account.yml` 4, `ci-ops-test.yml` 4, `ct-e2e-probe.yml` 4, `housekeeping.yml` 4, and 2 each in `backfill-release-sentinel.yml`, `cd-deploy-worker.yml` (:73, :99), `ci-obs-mirror.yml`, `ci-vm-bake.yml`, `cleanup-preview.yml`, `promote-stable.yml`. Lines are the map line and the `private-key:` line of each app-token site, e.g. `cd-deploy-worker.yml:73,99`, `cd-v2.yml:98,110,334,347,756,768`, `ci.yml:307,315,697,704,774,781,1313,1320,1518,1533`; full list: `grep -n BWS_APP_PRIVATE_KEY .github/workflows/*.yml`.
+- Gates and docstring, 6 hits that must change in the same commit: `.ci/scripts/quality/check_bws_map.py:1333,1336,1363` (embedded workflow fixtures), `:720` (docstring of assertion 13 naming `env.BWS_APP_PRIVATE_KEY`), `.ci/scripts/quality/check_workflow_submodule_deps.py:603,609` (printed remedy text). A total: 116 + 6 = 122.
+
+This class does NOT need to wait for any org rename; it can be applied alone (restricted to these files) today. Verification after such a commit: `check_bws_map.py`, `check_workflow_submodule_deps.py`, `check-workflows.sh`, and the `ci:quick` receipt.
+
+### Class B (5): stale spelling rewritable today, independent of everything
+
+- `.ci/config/bws-unrequested.json:31` (`exempting APP_PRIVATE_KEY there`): prose naming the secret whose Bitwarden name is now `GITHUB_APP_PRIVATE_KEY`; the `exemptions` key it explains is keyed by that map name. Rewrite to `GITHUB_APP_PRIVATE_KEY`.
+- `.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py:54,2264,2320,2606`: `R2_ENDPOINT` here is a Python module constant (`R2_ENDPOINT = "https://fixture.r2.example/"`, used as `"CLOUDFLARE_R2_ENDPOINT": R2_ENDPOINT`), not a secret reference. The script's rewrite is a harmless cosmetic rename of the identifier at all four sites; skipping it is equally safe. Not compared against GitHub.
+
+### Class C (96): intended residue, never rewrite
+
+- `docs/ci-overhaul/` progress and context logs, 23 hits: `09-env-residue.md` 14 (:22,226 x2,235,238,250,257,261,269,330,332 x2,333,334), `06-progress.md` 4 (:3220,3392,3434,3451), `01-verified-context.md` 3 (:281,282,285), `05-execution-guide.md` 2 (:165,167). Records of what was measured on a date; the arrow text in `01-verified-context.md:285` even documents that the rewritten name "exists nowhere on GitHub".
+- Frozen goldens and fixtures recording past output, 15 hits: `.ci/rediacc_ci/tests/goldens/twins/quality.check-profiler-coverage.jsonl:10,12,35,41` (8), `.ci/rediacc_ci/tests/fixtures/ci_diagnose/job_110673642600.log:49,79,451,480,522,544` (6), `.../job_112158906504_budget_freshness.log:5` (1). Recorded CI output of workflows that used the alias; rewriting breaks the golden/fixture comparison.
+- `private/account/tests/integration/rotation-bitwarden-names.test.ts`, 27 hits (:10-13, :244-255, :381-389, :543, :547, :567): the test's subject IS the retired spelling (`RETIRED` set, "does not declare a pre-rename spelling", old -> new pairs). A rewrite turns the assertions into `NEW -> NEW` and inverts their meaning.
+- Names of REAL GitHub repo secrets that were never renamed, plus the gate that allowlists them, 17 hits: `scripts/gates/check-secret-scope.ts:36,49,51,85,86` (`ALLOWED` set matches `secrets.NAME` in workflows; the repo secret `BREAKPOINT_TUNNEL_TOKEN` and the renet/account/elite repo secret `CLAUDE_CODE_OAUTH_TOKEN` exist under these spellings), `docs/agent-reference/ci-gates.md:608`, `.github/workflows/watchdog-monitor.yml:244,246`, `.ci/scripts/quality/check_bws_map.py:145,961`, `.ci/scripts/quality/check_secret_reachability.py:46,128`, `.ci/rediacc_ci/ops/derive_shadow_pass_list.py:211`, `.ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py:452`. Note `private/account/scripts/rotation/lib/config.ts:153` (`vars.BREAKPOINT_TUNNEL_TOKEN`) is one of the 4 `vars.` reports, which the script leaves alone.
+- Dated history of a deleted secret or a rename, 10 hits: `.github/workflows/breakpoint.yml:207,259,272` and its template copy `.ci/breakpoint/workflow/breakpoint.yml:207,259,272`, `.ci/scripts/quality/check_secret_reachability.py:98`, `private/account/scripts/rotation/consumers/bitwarden-sm.ts:25,208` (incident and counterfactual), `private/account/scripts/rotation/lib/config.ts:246` ("RENAMED: old -> new"), `.github/workflows/cd-deploy-worker.yml:238` ("HEAD's STRIPE_SECRET_KEY_EU no longer exists").
+- Detector and control inputs whose rewrite would break them, 5 hits: `.ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py:301,304` (regex `(?:GITHUB_)?APP_PRIVATE_KEY`: the script yields `(?:GITHUB_)?GITHUB_APP_PRIVATE_KEY`, which no longer matches the bare old spelling the detector exists for), `scripts/gates/check-tracked-credentials.ts:268,271` (negative control `AWS_RE.test('STRIPE_SECRET_KEY_ASIA')` needs the ASIA suffix; 3 hits), `.github/actions/bws-secrets/action.yml:59` (the example `STRIPE_SECRET_KEY > STRIPE_SECRET_KEY_EU` illustrates the `>` syntax and would become `STRIPE_SECRET_KEY > STRIPE_SECRET_KEY`).
+- COLLAPSE lines (8) are not extra hits: they are lines already in the classes above (`action.yml:59`, `cd-deploy-worker.yml:76,237,238,241,253`, `check-tracked-credentials.ts:268,271`); none needs the by-hand duplicate removal once the C lines stay unrewritten.
+
+### Exclusion support
+
+The script has NO per-file, per-line or marker-based exclusion. What exists: `SKIP_PREFIXES = ("agent/", "node_modules/", ".git/", "scripts/ops/secret-rename.py")` (path prefix; a `startswith`, so full file paths work too), `SKIP_SUFFIXES` (binary types), `GENERATED` (reported, skipped), and the automatic skip of `secrets.NAME` / `vars.NAME` references. The `docs/ci-overhaul/`, goldens, fixtures and the rotation test (65 of the 96 C hits) can be excluded by adding their paths to `SKIP_PREFIXES`; the other 31 are single comment or code lines inside live files that a path prefix cannot protect (they would need a `secret-rename: keep` line marker added to `Rules.apply`, or a restore of those lines after `--apply`). An unexcluded `--apply` today would rewrite all 96 and break the C tests and gates above.
+
+### Checklist (replaces the old "rename day")
+
+1. No org secret has to be created: the org store is empty and nothing reads it. Do not run `gh secret set` or `gh variable` for this list.
+2. Class A: one commit applying the `BWS_APP_PRIVATE_KEY` -> `BWS_GITHUB_APP_PRIVATE_KEY` change to the 116 workflow hits and the 6 gate hits (including the `:720` docstring) (restrict the script to these files, or extend `SKIP_PREFIXES`/add the line marker first so C stays put). Run `check_bws_map.py`, `check_workflow_submodule_deps.py`, `check-workflows.sh`, `check_secret_reachability.py`.
+3. Class B: `bws-unrequested.json:31` to `GITHUB_APP_PRIVATE_KEY`; the four `R2_ENDPOINT` identifier hits are optional.
+4. Class C: excluded as in the Exclusion section; nothing else to do.
+5. After steps 2-3 and the exclusion change, the script's dry run should report only the C lines, and the script has served its purpose (a candidate for deletion with its dry-run gate).

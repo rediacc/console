@@ -547,7 +547,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
 | `agent/plans/PLAN-scope-mirrors.md` | approved | 272 | 0 | 11 | 31287 |
-| `agent/plans/PLAN-secret-namespace-migration.md` | executing | 1714 | 5 | 29 | 187836 |
+| `agent/plans/PLAN-secret-namespace-migration.md` | executing | 1777 | 5 | 29 | 198794 |
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
