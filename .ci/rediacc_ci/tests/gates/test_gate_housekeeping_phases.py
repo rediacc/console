@@ -72,6 +72,31 @@ case "$svc/$op" in
         case "$query" in
             *ends_with*) fixture "sentinels" ;;
             *LastModified*) echo "None" ;;
+            "")
+                # The prefix listing (no --query): the `s3 ls` fixture rendered as the JSON list-objects-v2 prints.
+                recursive=1
+                case " $* " in *" --delimiter "*) recursive=0 ;; esac
+                fixture_text="$(fixture "ls.$(printf '%s' "$prefix" | tr '/' '~')")"
+                FIXTURE_TEXT="$fixture_text" PREFIX="$prefix" RECURSIVE="$recursive" python3 -c '
+import json, os
+prefix = os.environ["PREFIX"]
+base = prefix[: prefix.rfind("/") + 1]
+prefixes, contents = [], []
+for line in os.environ["FIXTURE_TEXT"].splitlines():
+    f = line.split()
+    if len(f) >= 2 and f[0] == "PRE":
+        prefixes.append({"Prefix": base + f[1]})
+    elif len(f) >= 4:
+        key = f[3] if os.environ["RECURSIVE"] == "1" or f[3].startswith(base) else base + f[3]
+        contents.append({"Key": key, "LastModified": f[0] + "T" + f[1] + "+00:00", "Size": int(f[2])})
+doc = {}
+if prefixes:
+    doc["CommonPrefixes"] = prefixes
+if contents:
+    doc["Contents"] = contents
+print(json.dumps(doc))
+'
+                ;;
             *) echo "None" ;;
         esac
         ;;
