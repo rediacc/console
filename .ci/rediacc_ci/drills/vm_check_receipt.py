@@ -2,7 +2,11 @@
 
 The latest receipt is `.ci/cache/vm-check/receipt.json`. Every write also archives it as `<tree>.json`, so a later run on another tree does not hide the receipt of an earlier push. `.ci/cache/` is gitignored.
 
-`admit` is the rule the push guard applies. A receipt admits a push when its status is VERIFIED, its `tree` equals the pushed tree or its `inputs` digest equals the digest of the pushed tree, the renet it deployed (`renet.built`) is the renet the tree points at (`renet.pointer`), and that build was not modified. A later commit outside the trigger paths keeps the `inputs` digest, so it costs no new VM run; any trigger blob or pointer move changes it.
+Schema 2 is a clean break. `SCHEMA` is 2, `validate` rejects any other schema, `_load` returns None for such a file, and `admit` reports `no-receipt` when only schema 1 receipts exist, so an old receipt (VERIFIED or NOT_VERIFIED) neither admits a push nor backs an escape. Old files stay on disk, unread.
+
+A schema 2 receipt records two phases (`phases.renet`, `phases.account`, each `{required, ran}`), the account submodule state (`account`: `pointer`, `checkout`, `modified`, `gateway`) and the sides the trigger found (`trigger.sides`). A VERIFIED receipt needs at least one phase that ran and every required phase ran.
+
+`admit` is the rule the push guard applies. A receipt admits a push when its status is VERIFIED, its `tree` equals the pushed tree or its `inputs` digest equals the digest of the pushed tree, the renet it deployed (`renet.built`) is the renet the tree points at (`renet.pointer`), that build was not modified, every side the push touches (`sides`) had its phase run, and for the account side the checkout is the pointer and unmodified. A later commit outside the trigger paths keeps the `inputs` digest, so it costs no new VM run; any trigger blob or pointer move changes it.
 """
 
 from __future__ import annotations
@@ -16,12 +20,14 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import pathlib
+    from collections.abc import Collection
 
-SCHEMA = 1
+SCHEMA = 2
 VERIFIED = "VERIFIED"
 FAILED = "FAILED"
 NOT_VERIFIED = "NOT_VERIFIED"
 STATUSES = (VERIFIED, FAILED, NOT_VERIFIED)
+SIDES = ("renet", "account")
 CACHE_DIR = ".ci/cache/vm-check"
 LATEST = "receipt.json"
 EVIDENCE_MAX = 200
@@ -37,6 +43,8 @@ _REQUIRED = (
     "renet",
     "trigger",
     "fleet",
+    "phases",
+    "account",
     "forks",
     "steps",
     "teardown",
@@ -57,6 +65,59 @@ def clip_evidence(text: str) -> str:
     if len(raw) <= EVIDENCE_MAX:
         return text
     return raw[:EVIDENCE_MAX].decode(errors="ignore")
+
+
+def _phase_errors(receipt: dict[str, Any], status: object) -> list[str]:
+    phases = receipt.get("phases")
+    if not isinstance(phases, dict):
+        return []
+    errors: list[str] = []
+    flags: dict[str, tuple[bool, bool]] = {}
+    for side in SIDES:
+        entry = phases.get(side)
+        if not isinstance(entry, dict) or not all(
+            isinstance(entry.get(k), bool) for k in ("required", "ran")
+        ):
+            errors.append(f"phases.{side} needs boolean required and ran")
+        else:
+            flags[side] = (entry["required"], entry["ran"])
+    if status == VERIFIED and len(flags) == len(SIDES):
+        if not any(ran for _, ran in flags.values()):
+            errors.append("a VERIFIED receipt needs at least one phase that ran")
+        errors.extend(
+            f"a VERIFIED receipt needs the required phase {side} to have run"
+            for side, (required, ran) in flags.items()
+            if required and not ran
+        )
+    return errors
+
+
+def _account_errors(account: object) -> list[str]:
+    if not isinstance(account, dict):
+        return []
+    errors = [
+        f"account is missing {k}"
+        for k in ("pointer", "checkout", "modified", "gateway")
+        if k not in account
+    ]
+    if (
+        "modified" in account
+        and account["modified"] is not None
+        and not isinstance(account["modified"], bool)
+    ):
+        errors.append("account.modified is not a boolean or null")
+    if "gateway" in account and not isinstance(account["gateway"], dict):
+        errors.append("account.gateway is not an object")
+    return errors
+
+
+def _sides_errors(trigger: object) -> list[str]:
+    if not isinstance(trigger, dict):
+        return []
+    sides = trigger.get("sides")
+    if not isinstance(sides, list) or not all(s in SIDES for s in sides):
+        return [f"trigger.sides is not a list of {', '.join(SIDES)}"]
+    return []
 
 
 def validate(receipt: object) -> list[str]:
@@ -80,9 +141,12 @@ def validate(receipt: object) -> list[str]:
     # admit reads these with .get, so a truthy non-object would raise instead of refusing.
     errors.extend(
         f"{key} is not an object"
-        for key in ("renet", "trigger", "fleet", "teardown")
+        for key in ("renet", "trigger", "fleet", "teardown", "phases", "account")
         if key in receipt and not isinstance(receipt[key], dict)
     )
+    errors.extend(_phase_errors(receipt, status))
+    errors.extend(_account_errors(receipt.get("account")))
+    errors.extend(_sides_errors(receipt.get("trigger")))
     if "forks" in receipt and not isinstance(receipt["forks"], list):
         errors.append("forks is not a list")
     steps = receipt.get("steps")
@@ -162,7 +226,7 @@ def _candidates(root: pathlib.Path, tree: str) -> list[dict[str, Any]]:
 
 @dataclasses.dataclass(frozen=True)
 class Verdict:
-    """`ok` admits the push. `code` is one of ok, no-receipt, not-verified, failed, other-inputs, build-mismatch, modified-build. `message` is the sentence the guard shows."""
+    """`ok` admits the push. `code` is one of ok, no-receipt, not-verified, failed, other-inputs, build-mismatch, modified-build, phase-missing, account-mismatch, modified-account. `message` is the sentence the guard shows."""
 
     ok: bool
     code: str
@@ -178,7 +242,39 @@ def _failed_step(receipt: dict[str, Any]) -> str:
     return f"{reason.get('class')}: {reason.get('detail', '')}"
 
 
-def _judge(receipt: dict[str, Any], tree: str, inputs_digest: str | None) -> Verdict:
+def _judge_sides(receipt: dict[str, Any], sides: Collection[str]) -> Verdict | None:
+    phases = receipt.get("phases") or {}
+    for side in SIDES:
+        if side in sides and not (phases.get(side) or {}).get("ran"):
+            return Verdict(
+                False,
+                "phase-missing",
+                f"the VERIFIED receipt did not run the {side} phase this push touches; run `npm run vm:check -- --changed`",
+                receipt,
+            )
+    if "account" not in sides:
+        return None
+    account = receipt.get("account") or {}
+    if not account.get("pointer") or account.get("checkout") != account.get("pointer"):
+        return Verdict(
+            False,
+            "account-mismatch",
+            f"the account checkout {str(account.get('checkout'))[:12]} is not the pointer {str(account.get('pointer'))[:12]}",
+            receipt,
+        )
+    if account.get("modified") is not False:
+        return Verdict(
+            False,
+            "modified-account",
+            "the receipt's account checkout had uncommitted changes",
+            receipt,
+        )
+    return None
+
+
+def _judge(
+    receipt: dict[str, Any], tree: str, inputs_digest: str | None, sides: Collection[str]
+) -> Verdict:
     status = receipt["status"]
     reason = receipt.get("reason") or {}
     if status == NOT_VERIFIED:
@@ -213,20 +309,25 @@ def _judge(receipt: dict[str, Any], tree: str, inputs_digest: str | None) -> Ver
         return Verdict(
             False, "modified-build", "the receipt's renet build had uncommitted changes", receipt
         )
+    sided = _judge_sides(receipt, sides)
+    if sided is not None:
+        return sided
     return Verdict(
         True, "ok", f"VERIFIED receipt {receipt['runId']} covers tree {tree[:12]}", receipt
     )
 
 
-def admit(root: pathlib.Path, tree: str, inputs_digest: str | None) -> Verdict:
-    """The guard's verdict for pushing `tree` whose trigger digest is `inputs_digest`.
+def admit(
+    root: pathlib.Path, tree: str, inputs_digest: str | None, sides: Collection[str]
+) -> Verdict:
+    """The guard's verdict for pushing `tree` whose trigger digest is `inputs_digest` and whose trigger hits fall on `sides`.
 
     Any candidate that admits wins. Otherwise the refusal comes from the first candidate: the tree's own archive, then the latest receipt, then the newest other archives.
     """
     candidates = _candidates(root, tree)
     if not candidates:
         return Verdict(False, "no-receipt", f"no vm:check receipt exists for tree {tree[:12]}")
-    verdicts = [_judge(c, tree, inputs_digest) for c in candidates]
+    verdicts = [_judge(c, tree, inputs_digest, sides) for c in candidates]
     for verdict in verdicts:
         if verdict.ok:
             return verdict
