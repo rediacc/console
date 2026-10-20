@@ -104,25 +104,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-backup-credential-isolation.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 8,
-      "open_sigs": [],
-      "done_sigs": [
-        "0d7d3859",
-        "3be4a295",
-        "40d16d85",
-        "71542b3f",
-        "738b8555",
-        "84a24b2f",
-        "e5d46d41",
-        "e644e195"
-      ]
-    },
     "agent/plans/PLAN-backup-list-executor-fix.md": {
       "status": "compacted",
       "owner": "97604f47",
@@ -2107,6 +2088,25 @@
         "d4905d66",
         "ee72707e",
         "f2c3441f"
+      ]
+    },
+    "agent/plans/_done/PLAN-backup-credential-isolation.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-20",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "0d7d3859",
+        "3be4a295",
+        "40d16d85",
+        "71542b3f",
+        "738b8555",
+        "84a24b2f",
+        "e5d46d41",
+        "e644e195"
       ]
     },
     "agent/plans/_done/PLAN-bgsweep-orphan-shells.md": {

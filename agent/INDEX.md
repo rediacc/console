@@ -472,7 +472,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12106 |
 | `agent/plans/PLAN-app-wide-org-selection.md` | approved | 257 | 1 | 2 | 25015 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
-| `agent/plans/PLAN-backup-credential-isolation.md` | approved | 54 | 0 | 8 | 11778 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-program.md` | approved | 348 | 186 | 0 | 63851 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5576 |
@@ -576,6 +575,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-agent-session-archival.md` | done | 141 | 0 | 6 | 18555 |
 | `agent/plans/_done/PLAN-archival-tests-python-compliance.md` | done | 231 | 0 | 15 | 32101 |
 | `agent/plans/_done/PLAN-b2-emit-matrix.md` | done | 305 | 0 | 13 | 34443 |
+| `agent/plans/_done/PLAN-backup-credential-isolation.md` | done | 54 | 0 | 8 | 11703 |
 | `agent/plans/_done/PLAN-bgsweep-orphan-shells.md` | done | 186 | 0 | 6 | 26092 |
 | `agent/plans/_done/PLAN-biome-only-lint.md` | done | 317 | 0 | 29 | 54095 |
 | `agent/plans/_done/PLAN-breakpoint-secret-shape.md` | done | 61 | 2 | 2 | 5448 |
