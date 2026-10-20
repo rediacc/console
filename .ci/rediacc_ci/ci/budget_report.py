@@ -1233,6 +1233,7 @@ VARIANT_LOG_MAX_JOBS = 600
 VARIANT_LOG_WORKERS = 8
 # The unit-duration artifacts of a 10-run sample are several hundred zips; fetched one after another with no output, a `--refresh` ran past 15 minutes (2026-09-29, interrupted inside download_artifact_zip). The pool matches VARIANT_LOG_WORKERS.
 ARTIFACT_DOWNLOAD_WORKERS = 8
+JOB_FETCH_WORKERS = 8
 # CACHED: a completed job's log never changes, so each is fetched once per machine. Only the lines the derivation reads are kept (a few KB instead of ~200 KB), under the untracked `.ci/cache`.
 VARIANT_LOG_CACHE_REL_PATH = ".ci/cache/budget-report/job-logs"
 
@@ -1613,7 +1614,9 @@ def compute_lane_durations(
         limit,
         **bound,
     )
-    pr_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in pr_runs]
+    # Fetched JOB_FETCH_WORKERS at a time: the walk was serial and, at 10 to 15 runs of 150+ jobs (3 pages each), was ~250 s of the ~430 s a `--check` took (measured 2026-10-20). `map` yields in run order, so every consumer below sees the same list the serial loop built, and a GhError still propagates from the first failing run.
+    with ThreadPoolExecutor(max_workers=JOB_FETCH_WORKERS) as pool:
+        pr_jobs_by_run = list(pool.map(lambda run: fetch_jobs(repo, run["id"]), pr_runs))
 
     patterns = lane_display_patterns(tree_root, workflow)
     jobs_minutes: dict[str, float] = {}

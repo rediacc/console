@@ -37,7 +37,7 @@ REGISTRY_REL_PATH = ".ci/config/freshness.json"
 CADENCES = ("pr", "nightly")
 TOP_KEYS = frozenset({"$comment", "artifacts"})
 ENTRY_KEYS = frozenset({"artifact", "producers", "check", "network", "cadence"})
-# ONE deadline for every check of a run, not one per check: housekeeping's budget-check job has 10 minutes, and its report step only runs if this returns before the job is killed. Measured 2026-10-07 from a dev box: budget_report --check 280 s, gate_costs --check 17 s.
+# ONE deadline for every check of a run, not one per check: housekeeping's budget-check job has 10 minutes, and its report step only runs if this returns before the job is killed. Measured 2026-10-07 from a dev box: budget_report --check 280 s, gate_costs --check 17 s. Measured 2026-10-20 alone: gate_costs --check 20 s; budget_report --check 462 s with its per-run job listing serial, 170 s with it on JOB_FETCH_WORKERS threads (the 480 s cap was being hit by budget_report, not gate_costs, under load).
 CHECK_BUDGET_S = 480
 REFUSED = 2
 
