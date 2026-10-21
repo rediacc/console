@@ -1261,10 +1261,34 @@ def main(argv):
                     else "",
                 )
                 if missing:
+                    # The refusal names each commit: it is raised before the plan renders, so the MISSING row above never reaches the reader. A commit whose change the base already partly made is replayed with a different patch, so a new-range commit with the same subject is named beside it as the place to look (2026-10-21: a gate-costs refresh overlapping main's hotfix).
+                    _rc_n, new_subjects, _ = run_git(
+                        ["log", "--format=%h %s", "%s..%s" % (base, new_tip)], cwd=repo
+                    )
+                    by_subject = {}
+                    for line in new_subjects.splitlines():
+                        short, _sep, subject = line.partition(" ")
+                        by_subject.setdefault(subject, short)
+                    rows = []
+                    for sha in missing:
+                        _rc_s, subject, _ = run_git(["log", "-1", "--format=%s", sha], cwd=repo)
+                        twin = by_subject.get(subject.strip())
+                        rows.append(
+                            "  %s %s%s"
+                            % (
+                                sha[:12],
+                                subject.strip(),
+                                " (same subject in the new range: %s; compare `git diff %s %s`)"
+                                % (twin, sha[:12], twin)
+                                if twin
+                                else "",
+                            )
+                        )
                     raise RefusalError(
                         "%s: %d commit(s) reached neither the new range nor a patch-equivalent. "
                         "That is what a `git rebase --skip` looks like, and a COUNT cannot "
-                        "distinguish it from a legitimate rebase-merge drop." % (name, len(missing))
+                        "distinguish it from a legitimate rebase-merge drop.\n%s"
+                        % (name, len(missing), "\n".join(rows))
                     )
 
         else:
