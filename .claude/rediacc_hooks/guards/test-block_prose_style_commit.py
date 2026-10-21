@@ -46,7 +46,7 @@ R18_VIOLATION = "This starts with one short sentence. " + ("word " * 150)
 R19_VIOLATION = "This is a line that is deliberately\nkept narrow so that joining works\nas the paragraph intent shows here."
 
 
-# A PR body whose only first-person line sits inside the generated epic block (a verbatim operator quote the worklist renders), and its controls: the same line outside the block, and an unterminated begin marker, which hides nothing.
+# A PR body whose only first-person line sits inside the generated epic block (a verbatim operator quote the worklist renders), and its controls: the same line outside the block, an unterminated begin marker, and a stray begin before a real block, none of which hides anything.
 def _body_file_with(text):
     with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as fh:
         fh.write(text)
