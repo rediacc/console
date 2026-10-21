@@ -500,7 +500,7 @@ def turbo_named(root: str, branch: str) -> list[str]:
 
 
 def _moved_to(root: str, rel: str) -> str:
-    """The `Moved-To:` path of a moved-plan stub at `rel`, or "" when `rel` is no such stub."""
+    """The `Moved-To:` path of a moved-plan stub at `rel`, or "" when `rel` is no such stub, cannot be read, or points at a target that is not a readable file."""
     try:
         head = (pathlib.Path(root) / rel).read_text(encoding="utf-8").splitlines()[:6]
     except (OSError, UnicodeDecodeError):
@@ -511,11 +511,12 @@ def _moved_to(root: str, rel: str) -> str:
         if line.startswith("Moved-To:"):
             target = line[len("Moved-To:") :].strip()
             # A stub whose target is gone keeps its own path: a pick never points at a file that is not there.
-            return (
-                target
-                if PLAN_PATH.match(target) and (pathlib.Path(root) / target).is_file()
-                else ""
-            )
+            if not PLAN_PATH.match(target):
+                return ""
+            try:
+                return target if (pathlib.Path(root) / target).is_file() else ""
+            except OSError:
+                return ""
     return ""
 
 
