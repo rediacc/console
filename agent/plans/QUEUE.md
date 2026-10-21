@@ -69,25 +69,25 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 13 of 13 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/_done/PLAN-remove-cross-session-messaging.md -- 13 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-backup-program.md -- 0 of 186 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-e2e-browse-at-ci.md -- 0 of 8 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 232 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a5894c1f60a6f829c.
-- Leased items: 2: #1a07399b (worker:a0e5991d10870b076, d778be9d), #86b5992c (worker:a5894c1f60a6f829c, d778be9d).
-- Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 4; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 235 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a3b61ac5999f37304.
+- Leased items: 1: #a6e84035 (worker:a3b61ac5999f37304, d778be9d).
+- Next plan: agent/plans/PLAN-e2e-browse-at-ci.md, Promoted entry 4; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 5 plans done, 33 of 230 boxes done (14%).
+Promoted: 0 of 5 plans done, 40 of 230 boxes done (17%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-pins-command.md | 12/13 | 1 open |
 | 3 | PLAN-shell-sandbox-readonly-view.md | 6/7 | 1 open |
-| 4 | PLAN-e2e-browse-at-ci.md | 0/8 | 8 open |
+| 4 | PLAN-e2e-browse-at-ci.md | 7/8 | 1 open |
 | 5 | PLAN-backup-program.md | 0/186 | 186 open |
 <!-- queue:progress:end -->
 
