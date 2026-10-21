@@ -118,31 +118,31 @@ Stage 3 depends on Stage 2's TOC object existing, so Stage 2 must land, be teste
 
 **Stage 2 -- TOC writer (must land and be provably round-trippable before Stage 3 starts):**
 - [x] `repodiff`: factor `Browse`'s walk body into `ListEntries(root, opts) (*BrowseResult, error)`, called unchanged by both the interactive command and the new snapshot-time writer.
-    (ticked) 2026-10-20T14:42:31Z by d778be9d: commit:657a8923b renet 1b2712e ListEntries/FilterEntries
+    (ticked) 2026-10-20T14:42:31Z by d778be9d: commit:64547bb24 renet 1b2712e ListEntries/FilterEntries
 - [x] `chunkstore`: add `IndexKey`/`IndexKeys` (write/read) parallel to `ManifestKey`/`ManifestKeys` in `grants.go`/`session.go`; `PutIndex`/`GetIndex` parallel to `PutManifest`/`GetManifest` in `uploader.go`/`download.go`'s interfaces.
-    (ticked) 2026-10-20T14:42:33Z by d778be9d: commit:657a8923b renet 461eb0f index seams + 4a028ca FetchIndex
+    (ticked) 2026-10-20T14:42:33Z by d778be9d: commit:64547bb24 renet 461eb0f index seams + 4a028ca FetchIndex
 - [x] `chunkstore`: TOC encryption helper -- HKDF(passphrase, info=`rediacc-backup-toc-v1`) -> AES-256-GCM seal/open over the `ListEntries` JSON.
   - (correction 2026-10-20, review dac1829c) as landed: `chunkstore`: TOC encryption helper -- public-key sealing (ruling ASKED:2026-10-20T13:31Z): an X25519 public key derived from the passphrase (HKDF-SHA256, salt = lineage, info `rediacc-backup-toc-v1`), ephemeral ECDH + AES-256-GCM seal/open over the `ListEntries` JSON, associated data `lineage/snapshotId`.
-    (ticked) 2026-10-20T14:42:36Z by d778be9d: commit:657a8923b renet ae57c54 public-key sealing (ruling ASKED:2026-10-20T13:31Z)
+    (ticked) 2026-10-20T14:42:36Z by d778be9d: commit:64547bb24 renet ae57c54 public-key sealing (ruling ASKED:2026-10-20T13:31Z)
 - [x] `backup_snapshot.go` / `pipeline_linux.go`: best-effort mount+walk+encrypt+`PutIndex` step, strictly non-blocking on failure, recording success/failure in the commit call.
-    (ticked) 2026-10-20T14:42:38Z by d778be9d: commit:657a8923b renet 467013f + 8f6b965
+    (ticked) 2026-10-20T14:42:38Z by d778be9d: commit:64547bb24 renet 467013f + 8f6b965
 - [x] Account server: nullable `indexKey` (or `hasIndex`) column on `backup_manifests` (migration mirroring `manifestKey`'s shape); commit route accepts and stores it; `listManifests`/`GET /backups/manifests` and `mintReadGrant`/`POST /read-grants` surface it (`hasIndex` on list, `indexKeys` map on read-grant).
-    (ticked) 2026-10-20T14:42:40Z by d778be9d: commit:2ebd703d6 account 966b3f5 has_index, grant fields, GC
+    (ticked) 2026-10-20T14:42:40Z by d778be9d: commit:9e323c432 account 966b3f5 has_index, grant fields, GC
 - [x] Stage-2 tests: TOC round-trips through `PutIndex`/`GetIndex`+decrypt for a fixture repo; `hasIndex:false` path when mount/key unavailable; snapshot-without-key regression control (backup still succeeds, still listed).
-  - (correction 2026-10-20, review dac1829c) as landed: Stage-2 tests: TOC round-trips through `PutIndex`/`GetIndex`+decrypt for a fixture repo; `hasIndex:false` path when mount/key unavailable; snapshot-without-key regression control (backup still succeeds, still listed). Renet legs (round trip, no key, failed put, aad) are on renet fe9ce67; the `GET /backups/manifests` `hasIndex:false` listing leg is served by the account commit 2ebd703d6 (has_index column) and has no test of its own yet.
-    (ticked) 2026-10-20T14:42:43Z by d778be9d: commit:657a8923b renet fe9ce67 round trip, both grant kinds
+  - (correction 2026-10-20, review dac1829c) as landed: Stage-2 tests: TOC round-trips through `PutIndex`/`GetIndex`+decrypt for a fixture repo; `hasIndex:false` path when mount/key unavailable; snapshot-without-key regression control (backup still succeeds, still listed). Renet legs (round trip, no key, failed put, aad) are on renet fe9ce67; the `GET /backups/manifests` `hasIndex:false` listing leg is served by the account commit 9e323c432 (has_index column) and has no test of its own yet.
+    (ticked) 2026-10-20T14:42:43Z by d778be9d: commit:64547bb24 renet fe9ce67 round trip, both grant kinds
 
 **Stage 3 -- remote `--at` browse (depends on Stage 2):**
 - [x] Renet: new FunctionDef `backup_browse_at` (`backup.go`, beside `BackupRestoreCommand`), `BackupBrowseAtCommand`, and the cobra-level implementation reusing `resolveRestoreLicense`+`MintSession`+the new read-grant/`GetIndex`+decrypt path, emitting the same `BrowseResult` JSON.
   - (correction 2026-10-20, review dac1829c) as landed: Renet: new FunctionDef `backup_browse_at` (`backup.go`, beside `BackupRestoreCommand`), `BackupBrowseAtCommand`, and the cobra-level `backup browse-at` verb (renet 4a028ca: FunctionDef plus verb, exit 18 `NO_LISTING` when the snapshot stores no listing). Its decrypt path and `BrowseResult` output are pinned by the renet index-seam and public-key sealing commits above, not by a test of the verb itself.
-    (ticked) 2026-10-20T14:42:45Z by d778be9d: commit:657a8923b renet 4a028ca backup_browse_at
+    (ticked) 2026-10-20T14:42:45Z by d778be9d: commit:64547bb24 renet 4a028ca backup_browse_at
 - [x] CLI: `--at <time>` on `registerBackupBrowse` (`backup-storage.ts`), reusing `resolveSnapshotAt` and `deployRepoKeyIfNeeded`, dispatching to `backup_browse_at` only when `--at` is given.
-    (ticked) 2026-10-20T14:42:48Z by d778be9d: commit:a75c76731 rdc backup browse --at
+    (ticked) 2026-10-20T14:42:48Z by d778be9d: commit:548129481 rdc backup browse --at
 - [x] i18n: every new user-facing string in both new Go and TS surfaces, matching Stage 1's convention.
-    (ticked) 2026-10-20T14:42:50Z by d778be9d: commit:a75c76731 CLI keys x13; renet 17aedbd 51 keys x13 pinned by 657a8923b
+    (ticked) 2026-10-20T14:42:50Z by d778be9d: commit:548129481 CLI keys x13; renet 17aedbd 51 keys x13 pinned by 64547bb24
 - [ ] Stage-3 tests: end-to-end round trip cross-checked against Stage 1's local `Browse` of the same content; tampered/wrong-key fail-closed negative; `hasIndex:false` honest refusal; Stage-1 regression control (no-`--at` path unchanged, zero new server calls).
 - [x] CI registration: suite 25/26, `.e2e-coverage-allowlist`, command-plane/command-tree/i18n gates.
-    (ticked) 2026-10-20T14:42:52Z by d778be9d: commit:a75c76731 allowlist, command-tree, cli-contract, i18n gates rc 0
+    (ticked) 2026-10-20T14:42:52Z by d778be9d: commit:548129481 allowlist, command-tree, cli-contract, i18n gates rc 0
 
 ## Rulings and corrections (2026-10-20)
 

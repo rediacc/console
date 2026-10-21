@@ -1,6 +1,6 @@
 # PLAN: one bucket-scoped backup credential per environment, and the shared one revoked
 
-Status: done -- 2026-10-20, every box ticked (8 of 8); B8 closed in c2d074a5c (cf-r2 bucket-scoped, the old account-wide token deleted)
+Status: done -- 2026-10-20, every box ticked (8 of 8); B8 closed in e5a2da977 (cf-r2 bucket-scoped, the old account-wide token deleted)
 First-Seen: 2026-10-15
 Authorized-By: operator order 2026-10-15 (worklist #f70e2876): "Mint separate R2 tokens, each limited to object read/write on its own buckets ... Push them to the workers, then revoke today's shared token"
 Owner: d778be9d
