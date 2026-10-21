@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: tr
-sourceHash: "fef2e6b43b4a24c3"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "9dd121af7aed1c6c"
+sourceCommit: "cb91651e4061b0a77c3454d728f739d8b6927d8e"
 ---
 
 # Limitler ve Kotalar
@@ -200,7 +200,7 @@ Uzak makinelerin, Rediacc'ın çekirdek, dosya sistemi ve ağ izolasyonu gereksi
 
 ### Çekirdek özellik matrisi
 
-Matrisi, CI'da test edilen her işletim sisteminin kutudan çıktığında neler sağladığına tek bakışta görmek için okuyun. Beşinin tümü her gereksinimi karşılar. Landlock zorunludur: `renet sandbox-exec --detect` AVAILABLE bildirmezse renet, depo anahtarlı kabukları ve aktarımları reddeder.
+Matrisi, CI'da test edilen her işletim sisteminin kutudan çıktığında neler sağladığına tek bakışta görmek için okuyun. Beşten dördünde Landlock kutudan çıktığı gibi etkindir; Oracle Linux 10'da Landlock'un önyükleme LSM listesine eklenmesi gerekir ([Gereksinimler](/tr/docs/requirements) sayfasına bakın). Landlock zorunludur: `renet sandbox-exec --detect` AVAILABLE bildirmezse renet, depo anahtarlı kabukları ve aktarımları reddeder.
 
 | İşletim Sistemi | btrfs modülü | cgroups v2 | Landlock (ABI >= 1, zorunlu) | eBPF cgroup kancaları |
 |-----------------|-------------|------------|---------------------|----------------------|
@@ -208,4 +208,4 @@ Matrisi, CI'da test edilen her işletim sisteminin kutudan çıktığında neler
 | Debian 13 | yerleşik | unified hierarchy | evet | evet |
 | Fedora 43 | yerleşik | unified hierarchy | evet | evet |
 | openSUSE Leap 16.0 | yerleşik | unified hierarchy | evet | evet |
-| Oracle Linux 10 (UEK) | yerleşik (UEK aracılığıyla) | unified hierarchy | evet | evet |
+| Oracle Linux 10 (UEK) | yerleşik (UEK aracılığıyla) | unified hierarchy | yerleşik, ancak varsayılan olarak etkin değil (`lsm=` ile etkinleştirilir) | evet |

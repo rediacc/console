@@ -9,8 +9,8 @@ tags:
 subcategory: platform
 order: 99
 language: ko
-sourceHash: "fef2e6b43b4a24c3"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "9dd121af7aed1c6c"
+sourceCommit: "cb91651e4061b0a77c3454d728f739d8b6927d8e"
 ---
 
 # 제한 및 할당량
@@ -199,7 +199,7 @@ CRIU를 통한 라이브 마이그레이션에는 다음과 같은 제약이 있
 
 ### 커널 기능 매트릭스
 
-이 매트릭스를 통해 각 CI 테스트 OS가 기본적으로 제공하는 기능을 한눈에 확인할 수 있습니다. 다섯 가지 모두 모든 요구사항을 충족합니다. Landlock은 필수입니다. `renet sandbox-exec --detect`가 AVAILABLE을 보고하지 않으면 renet은 저장소 키 셸과 전송을 거부합니다.
+이 매트릭스를 통해 각 CI 테스트 OS가 기본적으로 제공하는 기능을 한눈에 확인할 수 있습니다. 다섯 가지 중 네 가지는 Landlock이 기본으로 활성화되어 있습니다. Oracle Linux 10은 부팅 시 LSM 목록에 Landlock을 추가해야 합니다([요구사항](/ko/docs/requirements) 참조). Landlock은 필수입니다. `renet sandbox-exec --detect`가 AVAILABLE을 보고하지 않으면 renet은 저장소 키 셸과 전송을 거부합니다.
 
 | OS | btrfs 모듈 | cgroups v2 | Landlock(ABI >= 1, 필수) | eBPF cgroup 훅 |
 |----|--------------|------------|--------------------|-------------------|
@@ -207,4 +207,4 @@ CRIU를 통한 라이브 마이그레이션에는 다음과 같은 제약이 있
 | Debian 13 | in-tree | 통합 계층 | 예 | 예 |
 | Fedora 43 | in-tree | 통합 계층 | 예 | 예 |
 | openSUSE Leap 16.0 | in-tree | 통합 계층 | 예 | 예 |
-| Oracle Linux 10(UEK) | in-tree(UEK 통해) | 통합 계층 | 예 | 예 |
+| Oracle Linux 10(UEK) | in-tree(UEK 통해) | 통합 계층 | 내장되어 있으나 기본 비활성(`lsm=`으로 활성화) | 예 |

@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: es
-sourceHash: "fef2e6b43b4a24c3"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "9dd121af7aed1c6c"
+sourceCommit: "cb91651e4061b0a77c3454d728f739d8b6927d8e"
 ---
 
 # Límites y cuotas
@@ -201,7 +201,7 @@ Las máquinas remotas deben ejecutar uno de los siguientes sistemas para cumplir
 
 ### Matriz de características del kernel
 
-Usa la tabla como una vista de un solo vistazo de lo que cada SO probado en CI proporciona por defecto. Los cinco satisfacen todos los requisitos. Landlock es obligatorio: renet rechaza las shells y las transferencias con clave de repositorio si `renet sandbox-exec --detect` no informa AVAILABLE.
+Usa la tabla como una vista de un solo vistazo de lo que cada SO probado en CI proporciona por defecto. Cuatro de los cinco traen Landlock activo de fábrica; Oracle Linux 10 necesita que se añada Landlock a la lista de LSM del arranque (consulta [Requisitos](/es/docs/requirements)). Landlock es obligatorio: renet rechaza las shells y las transferencias con clave de repositorio si `renet sandbox-exec --detect` no informa AVAILABLE.
 
 | SO | Módulo btrfs | cgroups v2 | Landlock (ABI ≥ 1, obligatorio) | Hooks eBPF cgroup |
 |----|--------------|------------|---------------------|-------------------|
@@ -209,4 +209,4 @@ Usa la tabla como una vista de un solo vistazo de lo que cada SO probado en CI p
 | Debian 13 | integrado | unified hierarchy | sí | sí |
 | Fedora 43 | integrado | unified hierarchy | sí | sí |
 | openSUSE Leap 16.0 | integrado | unified hierarchy | sí | sí |
-| Oracle Linux 10 (UEK) | integrado (via UEK) | unified hierarchy | sí | sí |
+| Oracle Linux 10 (UEK) | integrado (via UEK) | unified hierarchy | integrado, pero no activo por defecto (se activa con `lsm=`) | sí |

@@ -7,8 +7,8 @@ tags:
 subcategory: setup
 order: 0
 language: zh
-sourceHash: "a605c6b2fac9bea2"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "6f8d0e423a4f4171"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 系统要求
@@ -54,6 +54,14 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 Rediacc 的加密存储后端需要树内 `btrfs` 内核模块。**RHEL 10 的原生内核不包含该模块**：`modprobe btrfs` 会提示 "Module btrfs not found"，`dnf search btrfs` 也不返回任何结果。Rocky Linux 10 和 AlmaLinux 10 继承了相同的内核，因此无法作为 Rediacc 服务器运行。
 
 Oracle Linux 10 默认使用 **Unbreakable Enterprise Kernel (UEK)**，该内核保留了内置的 btrfs。这是支持列表中唯一兼容 RHEL 的目标。如果必须运行 RHEL 系列服务器，请使用带有 UEK 的 Oracle Linux 10。（此决策的真实依据位于 `.github/workflows/ct-tests.yml` 中，作为 CI Bridge Workers 矩阵。）
+
+在 Oracle Linux 10 上，Landlock 已内置于 UEK，但不在默认的启动 LSM 列表中。使用仓库密钥的 shell 和传输需要它，因此请在启动时启用，然后重启：
+
+```bash
+sudo grubby --update-kernel=ALL --args="lsm=$(cat /sys/kernel/security/lsm),landlock"
+```
+
+重启后，`renet sandbox-exec --detect` 会报告 AVAILABLE。
 
 #### 仅限工作站（CLI 安装目标）
 

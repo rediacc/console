@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: ja
-sourceHash: "fef2e6b43b4a24c3"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "9dd121af7aed1c6c"
+sourceCommit: "cb91651e4061b0a77c3454d728f739d8b6927d8e"
 ---
 
 # 制限とクォータ
@@ -200,7 +200,7 @@ CRIU によるライブマイグレーションには以下の制約がありま
 
 ### カーネル機能マトリックス
 
-このマトリックスは、CI でテストされた各 OS がデフォルトで提供する機能を一目で確認できます。5 つすべてがすべての要件を満たしています。Landlock は必須です。`renet sandbox-exec --detect` が AVAILABLE を報告しない場合、renet はリポジトリキーのシェルと転送を拒否します。
+このマトリックスは、CI でテストされた各 OS がデフォルトで提供する機能を一目で確認できます。5 つのうち 4 つは Landlock が最初から有効です。Oracle Linux 10 では、起動時の LSM リストに Landlock を追加する必要があります（[要件](/ja/docs/requirements)を参照）。Landlock は必須です。`renet sandbox-exec --detect` が AVAILABLE を報告しない場合、renet はリポジトリキーのシェルと転送を拒否します。
 
 | OS | btrfs モジュール | cgroups v2 | Landlock (ABI 1 以上、必須) | eBPF cgroup フック |
 |----|----------------|------------|----------------------|-------------------|
@@ -208,4 +208,4 @@ CRIU によるライブマイグレーションには以下の制約がありま
 | Debian 13 | 組み込み | unified hierarchy | あり | あり |
 | Fedora 43 | 組み込み | unified hierarchy | あり | あり |
 | openSUSE Leap 16.0 | 組み込み | unified hierarchy | あり | あり |
-| Oracle Linux 10 (UEK) | 組み込み (UEK 経由) | unified hierarchy | あり | あり |
+| Oracle Linux 10 (UEK) | 組み込み (UEK 経由) | unified hierarchy | 組み込み済みだが既定では無効（`lsm=` で有効化） | あり |

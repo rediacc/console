@@ -9,8 +9,8 @@ tags:
 subcategory: platform
 order: 99
 language: ru
-sourceHash: "fef2e6b43b4a24c3"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "9dd121af7aed1c6c"
+sourceCommit: "cb91651e4061b0a77c3454d728f739d8b6927d8e"
 ---
 
 # Ограничения и квоты
@@ -199,7 +199,7 @@ rdc machine infra push server-1
 
 ### Матрица функций ядра
 
-Читайте матрицу как однозначный обзор того, что каждая протестированная в CI операционная система предоставляет из коробки. Все пять удовлетворяют каждому требованию. Landlock обязателен: renet отказывает в запуске shell и передаче данных по ключу репозитория, если `renet sandbox-exec --detect` не сообщает AVAILABLE.
+Читайте матрицу как однозначный обзор того, что каждая протестированная в CI операционная система предоставляет из коробки. В четырёх из пяти Landlock активен из коробки; в Oracle Linux 10 Landlock нужно добавить в список LSM при загрузке (см. [Требования](/ru/docs/requirements)). Landlock обязателен: renet отказывает в запуске shell и передаче данных по ключу репозитория, если `renet sandbox-exec --detect` не сообщает AVAILABLE.
 
 | OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1, обязателен) | eBPF cgroup hooks |
 |----|--------------|------------|--------------------|-------------------|
@@ -207,4 +207,4 @@ rdc machine infra push server-1
 | Debian 13 | встроено | unified hierarchy | да | да |
 | Fedora 43 | встроено | unified hierarchy | да | да |
 | openSUSE Leap 16.0 | встроено | unified hierarchy | да | да |
-| Oracle Linux 10 (UEK) | встроено (через UEK) | unified hierarchy | да | да |
+| Oracle Linux 10 (UEK) | встроено (через UEK) | unified hierarchy | встроен, но по умолчанию не активен (включается через `lsm=`) | да |

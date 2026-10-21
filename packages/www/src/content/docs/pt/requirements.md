@@ -7,8 +7,8 @@ tags:
 subcategory: setup
 order: 0
 language: pt
-sourceHash: "a605c6b2fac9bea2"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "6f8d0e423a4f4171"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Requisitos
@@ -54,6 +54,14 @@ Todas as entradas são `x86_64`. `arm64` é compilado mas não continuamente tes
 O backend de armazenamento encriptado do Rediacc requer o módulo de kernel `btrfs` em árvore. **O kernel de série do RHEL 10 não o inclui**: `modprobe btrfs` falha com "Module btrfs not found" e `dnf search btrfs` não devolve nada. Rocky Linux 10 e AlmaLinux 10 herdam o mesmo kernel e, portanto, não podem funcionar como servidores Rediacc.
 
 Oracle Linux 10 usa o **Unbreakable Enterprise Kernel (UEK)** por padrão, que mantém o btrfs integrado. É o único alvo compatível com RHEL na lista suportada. Se precisar de um servidor da família RHEL, use Oracle Linux 10 com UEK. (A fonte de verdade para esta decisão está em `.github/workflows/ct-tests.yml` como a matriz CI Bridge Workers.)
+
+No Oracle Linux 10, o Landlock está integrado ao UEK, mas não consta da lista de LSM padrão do arranque. Shells e transferências com chave de repositório precisam dele, então ative-o no arranque e reinicie:
+
+```bash
+sudo grubby --update-kernel=ALL --args="lsm=$(cat /sys/kernel/security/lsm),landlock"
+```
+
+Depois de reiniciar, `renet sandbox-exec --detect` indica AVAILABLE.
 
 #### Apenas para o computador de trabalho (alvos de instalação do CLI)
 
