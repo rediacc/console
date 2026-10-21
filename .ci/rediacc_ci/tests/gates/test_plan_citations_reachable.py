@@ -75,8 +75,20 @@ def test_an_unfetched_committed_blob_in_a_blob_none_clone_is_reachable(tmp_path,
     assert not mod.content_object_is_reachable(clone, "0123456789ab")
 
 
-def test_a_failed_listing_does_not_refuse_a_present_object(tmp_path, monkeypatch):
+def test_a_failed_listing_defers_to_the_callers_presence_check(tmp_path, monkeypatch):
+    """When git cannot list objects the reachability answer is True by design, because `unresolved` asks only after proving presence; the caller still refuses an object that is not there."""
     mod = _gate_module(monkeypatch)
     not_a_repo = pathlib.Path(tmp_path)
     assert mod._reachable_objects(not_a_repo) is None
     assert mod.content_object_is_reachable(not_a_repo, "0123456789ab")
+    bad, _why = mod.unresolved(not_a_repo, "object", "0123456789ab")
+    assert bad, "an object that is not present is refused even when the listing failed"
+
+
+def test_an_ambiguous_prefix_is_not_reachable(tmp_path, monkeypatch):
+    mod = _gate_module(monkeypatch)
+    monkeypatch.setattr(
+        mod, "_reachable_objects", lambda _root: ["abcd1111" + "0" * 32, "abcd2222" + "0" * 32]
+    )
+    assert not mod.content_object_is_reachable(tmp_path, "abcd")
+    assert mod.content_object_is_reachable(tmp_path, "abcd1111")
