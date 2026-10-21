@@ -46,9 +46,10 @@ GATES_LOCK = (
 DERIVED_JOBS: frozenset[str] = frozenset({"CI Complete", "CI Verdict", "Publish CI Verdict"})
 
 # Jobs derived from ONE sharded job: `Quality / Shard receipts` fails when a `Quality / Code (n)` shard reported anything but success (run 39551246836). Skipped only when such a shard really failed, since the same job also fails when a shard never reported at all, which is a wiring defect and never drift.
-SHARD_DERIVED_JOBS: Mapping[str, str] = {"Quality / Shard receipts": "Quality / Code ("}
-# The one step of each derived job whose failure only echoes a failed source shard; any OTHER failed step in that job is judged like a step of any job.
-SHARD_DERIVED_STEPS: Mapping[str, str] = {"Quality / Shard receipts": "Quality shard receipts"}
+# Each entry is (the source job prefix, the one step whose failure only echoes a failed source shard). Any OTHER failed step of the derived job is judged against the drift set like a step of any job.
+SHARD_DERIVED_JOBS: Mapping[str, tuple[str, str]] = {
+    "Quality / Shard receipts": ("Quality / Code (", "Quality shard receipts"),
+}
 
 # Test lanes that must have RUN on a scheduled nightly. ci.yml's `package-tests` used to skip whenever Quality failed, so a drift-only red never tested the Linux packages; it now runs on `schedule` regardless of Quality's result. A skip here therefore means the lane did not run for some other reason, and skipped is not passed: the waiver refuses.
 MUST_RUN_TEST_LANES: frozenset[str] = frozenset({"Tests + Infra / Linux Packages"})
@@ -161,31 +162,23 @@ def nightly_failures_are_drift_only(
             continue
         if conclusion != "failure":
             return False, f"job {name!r} concluded {conclusion}, which is not a pass"
-        source = SHARD_DERIVED_JOBS.get(name)
-        if source is not None:
-            if any(other.startswith(source) for other in failed_jobs):
-                echo = SHARD_DERIVED_STEPS[name]
-                stray = [
-                    str(step.get("name", ""))
-                    for step in job.get("steps") or []
-                    if step.get("conclusion") not in _PASSING_STEP
-                    and str(step.get("name", "")) != echo
-                ]
-                if stray:
-                    return (
-                        False,
-                        f"step {name!r} / {stray[0]!r} failed beside the shard echo and is not a drift gate",
-                    )
-                continue
-            unreported = (
-                f"job {name!r} failed while no {source}...) shard did, so a shard did not report"
-            )
-            return False, unreported + ": a wiring defect, not drift"
+        echo = ""
+        derived = SHARD_DERIVED_JOBS.get(name)
+        if derived is not None:
+            source, echo = derived
+            if not any(other.startswith(source) for other in failed_jobs):
+                unreported = f"job {name!r} failed while no {source}...) shard did, so a shard did not report"
+                return False, unreported + ": a wiring defect, not drift"
         failed_steps = 0
+        echoed = False
         for step in job.get("steps") or []:
             step_name = str(step.get("name", ""))
             step_conclusion = step.get("conclusion")
             if step_conclusion in _PASSING_STEP:
+                continue
+            if echo and step_name == echo and step_conclusion == "failure":
+                # Only echoes a source shard already judged above; every other step of this job is judged below.
+                echoed = True
                 continue
             if step_conclusion != "failure":
                 return (
@@ -196,7 +189,7 @@ def nightly_failures_are_drift_only(
                 return False, f"step {name!r} / {step_name!r} failed and is not a drift gate"
             failed_steps += 1
             found.append(f"{name} / {step_name}")
-        if failed_steps == 0:
+        if failed_steps == 0 and not echoed:
             return (
                 False,
                 f"job {name!r} failed with no failed step, so the failure is not a drift gate's",
