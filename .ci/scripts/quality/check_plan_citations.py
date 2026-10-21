@@ -632,7 +632,7 @@ def _reachable_objects(root):
 def content_object_is_reachable(root, token):
     """Whether a cited blob or tree, whose presence the CALLER has already proven, is also held by a fresh clone of HEAD (or origin/main).
 
-    Existence alone passed locally for an object only this clone had (a tree a tool wrote while hashing an uncommitted state), and CI then refused it as naming nothing (PR #601, PLAN-vm-check.md:137, 2026-10-21). The prefix is matched against the listed ids directly, never expanded with rev-parse first, because CI's blob:none checkout cannot expand the id of a blob it has not fetched; it must match exactly one id, as rev-parse would demand. When git cannot list the objects at all the answer is True, deferring to the presence check the caller ran: a listing failure must not refuse every citation, and `unresolved` never asks before that check passes.
+    Existence alone passed locally for an object only this clone had (a tree a tool wrote while hashing an uncommitted state), and CI then refused it as naming nothing (PR #601, PLAN-vm-check.md:137, 2026-10-21). The prefix is matched against the listed ids directly, never expanded with rev-parse first, because CI's blob:none checkout cannot expand the id of a blob it has not fetched; it must match exactly one reachable id (rev-parse counts every object in the clone, so a prefix it calls ambiguous over an unreachable local object can pass here; the reachable set is the one CI can see). When git cannot list the objects at all the answer is True, deferring to the presence check the caller ran: a listing failure must not refuse every citation, and `unresolved` never asks before that check passes.
     """
     reachable = _reachable_objects(root)
     if reachable is None:

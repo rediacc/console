@@ -500,7 +500,7 @@ def turbo_named(root: str, branch: str) -> list[str]:
 
 
 def _moved_to(root: str, rel: str) -> str:
-    """The `Moved-To:` path of a moved-plan stub at `rel`, or "" when `rel` is no such stub, cannot be read, or points at a target that is not a readable file."""
+    """The `Moved-To:` path of a moved-plan stub at `rel`, or "" when `rel` is no such stub, cannot be read, or points at a target that is not a file the hook can stat (a missing path, or one under a directory it cannot traverse)."""
     try:
         head = (pathlib.Path(root) / rel).read_text(encoding="utf-8").splitlines()[:6]
     except (OSError, UnicodeDecodeError):
