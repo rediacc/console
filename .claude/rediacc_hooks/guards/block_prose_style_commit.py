@@ -374,16 +374,23 @@ GENERATED_BLOCKS = (
 
 
 def without_generated_blocks(text):
-    """`text` with each generated begin/end region dropped, markers included; a begin with no end drops nothing, so an unterminated marker cannot hide the prose after it."""
+    """`text` with each generated begin/end region dropped, markers included.
+
+    A region is a begin whose matching end comes before any later begin of the same kind. A begin with no such end (unterminated, or followed by another begin first) drops nothing, so a stray marker can never stretch to a later block's end and hide the prose between them.
+    """
     for begin, end in GENERATED_BLOCKS:
+        cursor = 0
         while True:
-            start = text.find(begin)
+            start = text.find(begin, cursor)
             if start < 0:
                 break
             stop = text.find(end, start + len(begin))
-            if stop < 0:
-                break
+            again = text.find(begin, start + len(begin))
+            if stop < 0 or (0 <= again < stop):
+                cursor = start + len(begin)
+                continue
             text = text[:start] + text[stop + len(end) :]
+            cursor = start
     return text
 
 
@@ -428,9 +435,8 @@ def run(ev):
         return hookio.ALLOW
 
     findings = []
-    for label, text in bodies:
-        if _scope_for(label) == "pr":
-            text = without_generated_blocks(text)
+    for label, raw in bodies:
+        text = without_generated_blocks(raw) if _scope_for(label) == "pr" else raw
         for finding in engine.lint_message(text, rules, globals_, _scope_for(label)):
             finding.path = label
             findings.append(finding)
