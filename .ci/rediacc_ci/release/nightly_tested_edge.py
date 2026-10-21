@@ -6,38 +6,77 @@ An edge built from anything the nightly did not contain (a later push, a hotfix 
 "COULD NOT TELL" IS NEVER A YES. A tag that does not resolve, a malformed SHA, a SHA the checkout does not hold, or any git error returns `False` with the reason, and the caller falls back to the ordinary soak rule. The waiver exists only where the ancestry was positively proven. The checkout must hold full history and tags (`fetch-depth: 0`) for the proof to be possible at all.
 
 A DRIFT-RED NIGHTLY STILL TESTED ITS COMMIT (PLAN-plan-per-pr-loop R1). The scheduled Console CI on main went red every night from 2026-09-07 on, mostly because upstream published something (an npm/OSV advisory, a newer dependency release), which says nothing about whether the tests passed on the commit. `nightly_failures_are_drift_only` reads the run's jobs and steps and accepts a `failure` run only when every failed
-step is in `DRIFT_STEPS`, no job ended in anything but a pass or such a failure, and no test lane was skipped because of the drift failure. The drift gates keep failing the run, so the nightly-red issue still opens; they only stop vetoing the waiver.
+step is a drift step (`drift_steps()`), no job ended in anything but a pass or such a failure, and no test lane was skipped because of the drift failure. The drift gates keep failing the run, so the nightly-red issue still opens; they only stop vetoing the waiver.
+
+THE DRIFT SET IS DERIVED, NOT LISTED, AND KEYED ON THE STEP NAME ALONE. Until 2026-10-21 it was a hand list of two (job, step) pairs, so the waiver never fired: nine more steps ask upstream (`ci_workflow_invariants.UPSTREAM_GATES`), and gate-bind moves a step between `Quality / Code (n)` shards, which re-keys a pair on the job name. Now it is every step of `UPSTREAM_GATES` plus the audit (`DRIFT_GATE_IDS`), mapped to its step name through `scripts/ci-runner/gates.lock.json`, plus the two steps split out of mixed ones for this purpose (`SPLIT_DRIFT_STEPS`: govulncheck out of `Run renet quality`, the OBS upstream check out of `Run the package matrix`). A lock that cannot be read, or a drift id it does not carry as a step, refuses the waiver: could not tell is never a yes. The tests hold the set equal to the workflows' own external steps, each name unique across `.github/workflows`, and every step after one guarded by `!cancelled()`, so a drift failure can never skip a real check into a "skipped" the waiver reads as a pass.
 """
 
 from __future__ import annotations
 
+import json
+import pathlib
 import re
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from rediacc_ci.core import gh_retry
+from rediacc_ci.security.ci_workflow_invariants import UPSTREAM_GATES
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 VERSION_RE = re.compile(r"^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$")
 
 Runner = Callable[[Sequence[str]], "subprocess.CompletedProcess[str]"]
 
-# THE DRIFT SET: (job name, step name) pairs whose failure reports that UPSTREAM moved, not that the commit's tests failed. Chosen from the nightlies that actually failed (runs 36677534431, 36827121342, 36974916837: these two steps failed every night, beside genuine test failures).
-DRIFT_STEPS: frozenset[tuple[str, str]] = frozenset(
-    {
-        # `npm audit` / OSV against advisories published AFTER the commit landed; the same commit goes red overnight with no change of its own.
-        ("Quality / Security", "Audit"),
-        # The dependency-freshness window: a new upstream release makes a pinned version "must upgrade" with no change to the commit.
-        ("Quality / Content", "External dependency freshness"),
-    }
+# THE DRIFT SET, by gate id: every gate that asks a host outside the repository (the single list `ci_workflow_invariants` holds fail-closed on every cadence), plus `npm audit`/OSV, whose advisories are published after the commit landed.
+DRIFT_GATE_IDS: tuple[str, ...] = (*UPSTREAM_GATES, "check:ci-security-audit")
+
+# Steps that exist only to separate drift from defects, each split out of a step that mixed the two (PLAN-plan-per-pr-loop R1 B). By name, because neither is reached through the lock: the first is a hand-registered gate, the second a test-job step. The tests pin both names to their workflows.
+GOVULNCHECK_STEP = "Renet govulncheck"  # ci-quality.yml quality-go, out of `Run renet quality`
+OBS_UPSTREAM_STEP = (
+    "OBS upstream serves the pin"  # ct-tests.yml renet-pkg-matrix, out of `Run the package matrix`
+)
+SPLIT_DRIFT_STEPS: frozenset[str] = frozenset({GOVULNCHECK_STEP, OBS_UPSTREAM_STEP})
+
+GATES_LOCK = (
+    pathlib.Path(__file__).resolve().parents[3] / "scripts" / "ci-runner" / "gates.lock.json"
 )
 
 # Jobs whose verdict is a function of the other jobs, each of which is judged here on its own: `CI Complete` fails whenever any job fails, and the `ci-verdict.yml` observers can appear in a run's job list after the fact (see `rediacc_ci.ci.budget_report.CRITICAL_PATH_EXCLUDE`).
 DERIVED_JOBS: frozenset[str] = frozenset({"CI Complete", "CI Verdict", "Publish CI Verdict"})
 
+# Jobs derived from ONE sharded job: `Quality / Shard receipts` fails when a `Quality / Code (n)` shard reported anything but success (run 39551246836). Skipped only when such a shard really failed, since the same job also fails when a shard never reported at all, which is a wiring defect and never drift.
+SHARD_DERIVED_JOBS: Mapping[str, str] = {"Quality / Shard receipts": "Quality / Code ("}
+
 # Test lanes that must have RUN on a scheduled nightly. ci.yml's `package-tests` used to skip whenever Quality failed, so a drift-only red never tested the Linux packages; it now runs on `schedule` regardless of Quality's result. A skip here therefore means the lane did not run for some other reason, and skipped is not passed: the waiver refuses.
 MUST_RUN_TEST_LANES: frozenset[str] = frozenset({"Tests + Infra / Linux Packages"})
+
+# One page of a run's jobs. 100 made GitHub time out (502/504 at ~55 s) on a re-run 205-job run, which refused promote run 119123448102; 30 answered in ~4 s. `--paginate` still reads every page.
+JOBS_PER_PAGE = 30
+
+
+class DriftSetError(Exception):
+    """The drift set could not be derived, so no failed step can be shown to be drift."""
+
+
+def drift_steps(lock_path: pathlib.Path = GATES_LOCK) -> frozenset[str]:
+    """Every step name whose failure says upstream moved: the lock's step for each `DRIFT_GATE_IDS` id, plus `SPLIT_DRIFT_STEPS`. Raises DriftSetError when the lock cannot be read or does not carry one of the ids as a CI step."""
+    try:
+        entries = json.loads(lock_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise DriftSetError(f"{lock_path} cannot be read: {exc}") from exc
+    steps: dict[str, str] = {}
+    for entry in entries if isinstance(entries, list) else []:
+        ci = entry.get("ci") if isinstance(entry, dict) else None
+        if isinstance(ci, dict) and ci.get("kind") == "step" and isinstance(ci.get("step"), str):
+            steps[str(entry.get("id"))] = ci["step"]
+    missing = [gate for gate in DRIFT_GATE_IDS if gate not in steps]
+    if missing:
+        raise DriftSetError(
+            f"{lock_path} carries no CI step for drift gate(s) {', '.join(missing)}"
+        )
+    return frozenset(steps[gate] for gate in DRIFT_GATE_IDS) | SPLIT_DRIFT_STEPS
+
 
 _PASSING_JOB = frozenset({"success", "skipped", "neutral"})
 _PASSING_STEP = frozenset({"success", "skipped", "neutral", None})
@@ -82,14 +121,27 @@ def edge_tested_by_nightly(version: str, head_sha: str, run: Runner = _git) -> t
     return False, f"git merge-base failed (exit {ancestry.returncode}): {ancestry.stderr.strip()}"
 
 
-def nightly_failures_are_drift_only(jobs: Sequence[Mapping[str, Any]]) -> tuple[bool, str]:
-    """Return (accepted, reason) for a FAILED nightly's jobs: accepted only when its failures are all drift (`DRIFT_STEPS`).
+def nightly_failures_are_drift_only(
+    jobs: Sequence[Mapping[str, Any]], drift: frozenset[str] | None = None
+) -> tuple[bool, str]:
+    """Return (accepted, reason) for a FAILED nightly's jobs: accepted only when its failures are all drift steps (`drift_steps()` unless `drift` is given).
 
-    Judged at STEP level, because one job (Quality / Security) mixes drift steps with real checks. A cancelled or timed-out job or step is never a pass, a failed job with no failed step (a runner loss, a timeout) is never drift, and a run with no failed drift step at all is not this case.
+    Judged at STEP level and by step NAME, because one job mixes drift steps with real checks (Quality / Security) and gate-bind moves a step between shards of one lane. A cancelled or timed-out job or step is never a pass, a failed job with no failed step (a runner loss, a timeout) is never drift, and a run with no failed drift step at all is not this case.
     """
     if not jobs:
         return False, "the run's job list is empty"
-    drift: list[str] = []
+    if drift is None:
+        try:
+            drift = drift_steps()
+        except DriftSetError as exc:
+            return (
+                False,
+                f"the drift set could not be derived, so no failure can be shown to be drift: {exc}",
+            )
+    failed_jobs = {
+        str(job.get("name", "")) for job in jobs if job.get("conclusion") not in _PASSING_JOB
+    }
+    found: list[str] = []
     for job in jobs:
         name = str(job.get("name", ""))
         if name in DERIVED_JOBS:
@@ -107,6 +159,14 @@ def nightly_failures_are_drift_only(jobs: Sequence[Mapping[str, Any]]) -> tuple[
             continue
         if conclusion != "failure":
             return False, f"job {name!r} concluded {conclusion}, which is not a pass"
+        source = SHARD_DERIVED_JOBS.get(name)
+        if source is not None:
+            if any(other.startswith(source) for other in failed_jobs):
+                continue
+            unreported = (
+                f"job {name!r} failed while no {source}...) shard did, so a shard did not report"
+            )
+            return False, unreported + ": a wiring defect, not drift"
         failed_steps = 0
         for step in job.get("steps") or []:
             step_name = str(step.get("name", ""))
@@ -118,18 +178,18 @@ def nightly_failures_are_drift_only(jobs: Sequence[Mapping[str, Any]]) -> tuple[
                     False,
                     f"step {name!r} / {step_name!r} concluded {step_conclusion}, which is not a pass",
                 )
-            if (name, step_name) not in DRIFT_STEPS:
+            if step_name not in drift:
                 return False, f"step {name!r} / {step_name!r} failed and is not a drift gate"
             failed_steps += 1
-            drift.append(f"{name} / {step_name}")
+            found.append(f"{name} / {step_name}")
         if failed_steps == 0:
             return (
                 False,
                 f"job {name!r} failed with no failed step, so the failure is not a drift gate's",
             )
-    if not drift:
+    if not found:
         return False, "the run failed without any failed drift step"
-    return True, "the only failures are drift gates: " + ", ".join(drift)
+    return True, "the only failures are drift gates: " + ", ".join(found)
 
 
 def _api_json(
@@ -149,7 +209,7 @@ def _api_json(
 def fetch_run_jobs(repo: str, run_id: str, api: ApiJson = _api_json) -> list[dict[str, Any]]:
     """Every job (with its steps) of the latest attempt of `run_id`, across all pages. Raises `ghx.GhError` on a failed read, after the transient retries."""
     pages = api(
-        f"repos/{repo}/actions/runs/{run_id}/jobs?filter=latest&per_page=100",
+        f"repos/{repo}/actions/runs/{run_id}/jobs?filter=latest&per_page={JOBS_PER_PAGE}",
         paginate=True,
         attempts=3,
     )

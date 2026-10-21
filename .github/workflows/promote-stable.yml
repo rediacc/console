@@ -16,7 +16,7 @@ on:
   # when that nightly's head provably contains the edge tag's commit
   # (rediacc_ci.release.nightly_tested_edge). A FAILED nightly counts as tested
   # only when every failed step is a drift gate (upstream advisories, dependency
-  # freshness: nightly_tested_edge.DRIFT_STEPS, PLAN-plan-per-pr-loop R1); any
+  # freshness: nightly_tested_edge.drift_steps(), PLAN-plan-per-pr-loop R1); any
   # other failure decides ready=false, as before.
   workflow_run:
     workflows: ["Console CI"]

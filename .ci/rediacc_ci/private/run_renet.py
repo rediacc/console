@@ -17,7 +17,7 @@ THE SUBMODULE GUARD IS THE ONLY DECISION IN THE FILE, AND IT HAS THREE ARMS
   absent, `CI` == true  -> three `log_error` lines and EXIT 1
   absent, otherwise     -> one `log_warn` and EXIT 0
 
-The middle arm is the whole reason the guard is not a bare `[[ -e ]] || exit 0`, and `common.sh` says why in its own comment: this gate carries govulncheck, deadcode and golangci-lint, and all three would report success while checking nothing. The third arm keeps a fresh clone without `--recursive` workable, and it is a REAL HOLE IN THE LOCAL GATE that is documented rather than
+The middle arm is the whole reason the guard is not a bare `[[ -e ]] || exit 0`, and `common.sh` says why in its own comment: these gates carry govulncheck, deadcode and golangci-lint, and all three would report success while checking nothing. The third arm keeps a fresh clone without `--recursive` workable, and it is a REAL HOLE IN THE LOCAL GATE that is documented rather than
 closed (the retired `.ci/scripts/test/gates/test-gate-anti-vacuity.sh:317`, now ported to `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`, recorded that this script used to exit 0 silently in CI too). `npm run check:ci-renet` on a machine with no submodule prints one warning and exits 0.
 
 `CI` is tested as the LITERAL `"${CI:-false}" == "true"`, not through an
@@ -45,6 +45,8 @@ WHAT IS SHELLED OUT TO
 -----------------------------------------------------------------------------
 Exactly one thing: `private/renet/.ci/ci.sh <stage>`, with the parent's cwd, stdout and stderr, and its exit status returned unchanged. NO `cd` HAPPENS FIRST, in either implementation, so the stage inherits whatever directory the caller was in; `ci.sh` locates itself. The differential (`.ci/rediacc_ci/tests/test_private_run_renet.py`) puts a recording `ci.sh` in the fixture and
 compares its argv, cwd and inherited `GOTOOLCHAIN`, because a port that printed the same banner while never invoking the stage would satisfy a stdout-only comparison and run no Go tests at all.
+
+TWO GATES RUN THROUGH IT. `check:ci-renet` hands over `quality`; `check:ci-renet-govulncheck` (step `Renet govulncheck`, hand-registered, so it carries no header of its own) hands over `govulncheck`, the stage `ci.sh` split out of quality on 2026-10-21 (PLAN-plan-per-pr-loop R1 B): an advisory published after the commit landed is upstream drift, and inside `quality` it both stopped `i18n.sh` under `set -e` and left the nightly soak waiver (`rediacc_ci.release.nightly_tested_edge`) unable to tell it from a lint failure in the same step.
 
 EXTRA ARGUMENTS ARE DROPPED IN SILENCE. `run-renet.sh quality test` runs `quality` and says nothing about `test`; so does this. Reproduced deliberately, not endorsed.
 
