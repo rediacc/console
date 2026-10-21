@@ -123,13 +123,16 @@ export async function resolveAndSyncServer(options: { server?: string }): Promis
   let info: Awaited<ReturnType<typeof fetchServerInfo>> | undefined;
   try {
     info = await fetchServerInfo(serverUrl);
-  } catch {
+  } catch (error) {
     info = undefined;
+    outputService.warn(
+      `server-info unreachable at ${serverUrl}; the saved channel and e2e key are kept: ${(error as Error).message}`
+    );
   }
   if (info) {
     await patchActiveAccount({
       updateChannel: info.updateChannel,
-      e2ePublicKey: info.e2e.keys[0]?.publicKeySpki,
+      e2ePublicKey: info.e2e?.keys?.[0]?.publicKeySpki,
     });
     if (info.updateChannel) {
       outputService.info(
