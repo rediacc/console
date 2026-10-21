@@ -444,6 +444,18 @@ def test_an_old_format_stamp_is_rebuilt(tmp_path):
     assert str(out["raw_stamp"]).count("|") == 2
 
 
+def test_an_unreadable_binary_under_an_empty_digest_stamp_is_not_skipped(tmp_path):
+    """The skip decision itself: `<identity>|` beside a binary that cannot be read must not read as "already built"."""
+    root = _fixture(tmp_path / "e", binary="renet", stamp="default|%s|" % EMPTY_KEY_DIGEST)
+    binary = root / "private" / "renet" / "bin" / "renet"
+    binary.chmod(0)
+    try:
+        out = _run(PORT_REL, root)
+    finally:
+        binary.chmod(0o755)
+    assert "already built the same way" not in out["stderr"], out
+
+
 def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):
     """The twin's Step 5 comment is the whole reason the stamp exists; a stamp written ahead of a failed build makes the NEXT run skip and hand back nothing."""
     for subject in (TWIN_REL, PORT_REL):
