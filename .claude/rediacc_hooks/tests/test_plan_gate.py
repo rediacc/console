@@ -960,6 +960,43 @@ def test_turbo_named_round_trip(tmp_path, monkeypatch):
     assert plan_gate.turbo_named(root, "1004-2") == [_t("z")]
 
 
+def test_turbo_named_reads_a_moved_plan_at_its_new_path_once(tmp_path, monkeypatch):
+    """A plan named before it moved is recorded at its old path; the stub there points at _done/, and the pick lists the plan once, at the new path."""
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    root = tmp_path / "repo"
+    plans = root / "agent" / "plans"
+    (plans / "_done").mkdir(parents=True)
+    (plans / "PLAN-moved.md").write_text(
+        "# PLAN: moved (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-moved.md\n",
+        encoding="utf-8",
+    )
+    (plans / "_done" / "PLAN-moved.md").write_text(
+        "# PLAN: moved\nStatus: done\n", encoding="utf-8"
+    )
+    plan_gate.record_turbo_named(
+        str(root),
+        "1004-1",
+        ["agent/plans/_done/PLAN-moved.md", "agent/plans/PLAN-moved.md", _t("b")],
+    )
+    assert plan_gate.turbo_named(str(root), "1004-1") == [
+        "agent/plans/_done/PLAN-moved.md",
+        _t("b"),
+    ]
+
+
+def test_a_stub_without_moved_status_is_read_as_itself(tmp_path, monkeypatch):
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    root = tmp_path / "repo"
+    plans = root / "agent" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "PLAN-live.md").write_text(
+        "# PLAN: live\nStatus: in-progress\nMoved-To: agent/plans/_done/PLAN-live.md\n",
+        encoding="utf-8",
+    )
+    plan_gate.record_turbo_named(str(root), "1004-1", ["agent/plans/PLAN-live.md"])
+    assert plan_gate.turbo_named(str(root), "1004-1") == ["agent/plans/PLAN-live.md"]
+
+
 def _refresh_turbo(tmp_path, monkeypatch, body, settings, present=None):
     if present is None:
         present = ("agent/plans/PLAN-a.md", _t("b"), _t("c"))

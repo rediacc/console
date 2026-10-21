@@ -488,7 +488,30 @@ def turbo_named(root: str, branch: str) -> list[str]:
     except Exception:
         return []
     got = doc.get(branch) if isinstance(doc, dict) else None
-    return [p for p in got or [] if isinstance(p, str) and PLAN_PATH.match(p)]
+    out: list[str] = []
+    for p in got or []:
+        if not (isinstance(p, str) and PLAN_PATH.match(p)):
+            continue
+        # A plan named before it moved is recorded at its old path, which is now a `Status: moved` stub; it is read at the `Moved-To:` it points at, so a pick never lists one plan twice (PR #601's `Plan:` line gained the two stubs of plans it already named under _done/, 2026-10-21).
+        rel = _moved_to(root, p) or p
+        if rel not in out:
+            out.append(rel)
+    return out
+
+
+def _moved_to(root: str, rel: str) -> str:
+    """The `Moved-To:` path of a moved-plan stub at `rel`, or "" when `rel` is no such stub."""
+    try:
+        head = (pathlib.Path(root) / rel).read_text(encoding="utf-8").splitlines()[:6]
+    except OSError:
+        return ""
+    if not any(line.strip() == "Status: moved" for line in head):
+        return ""
+    for line in head:
+        if line.startswith("Moved-To:"):
+            target = line[len("Moved-To:") :].strip()
+            return target if PLAN_PATH.match(target) else ""
+    return ""
 
 
 def batch_body(root: str, branch: str) -> str:
