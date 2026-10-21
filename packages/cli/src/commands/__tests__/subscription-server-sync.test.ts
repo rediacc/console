@@ -69,10 +69,19 @@ describe('resolveAndSyncServer', () => {
     await expect(resolveAndSyncServer({})).rejects.toThrow('lock timeout on drill.json');
   });
 
-  it('keeps going when server-info cannot be fetched', async () => {
+  it('keeps going, and says so, when server-info cannot be fetched', async () => {
     mockFetchServerInfo.mockRejectedValue(new Error('offline'));
     await expect(resolveAndSyncServer({})).resolves.toBe('http://gateway.test:4800');
     expect(writtenPointers()).toEqual(['/account/accountServer']);
+    expect(mockWarn).toHaveBeenCalledWith(
+      'server-info unreachable at http://gateway.test:4800; the saved channel and e2e key are kept: offline'
+    );
+  });
+
+  it('saves the channel and skips the key when server-info carries no e2e block', async () => {
+    mockFetchServerInfo.mockResolvedValue({ updateChannel: 'stable' });
+    await expect(resolveAndSyncServer({})).resolves.toBe('http://gateway.test:4800');
+    expect(writtenPointers()).toEqual(['/account/accountServer', '/account/updateChannel']);
   });
 
   it('warns and continues when only the synced channel cannot be saved', async () => {
