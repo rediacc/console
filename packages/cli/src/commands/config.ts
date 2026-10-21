@@ -1,7 +1,10 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
+import {
+  getSubscriptionServerUrl,
+  normalizeServerUrl,
+} from '../services/account/subscription-auth.js';
 import type { ReconcileDeps } from '../services/config/config-reconcile.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -128,7 +131,7 @@ export async function buildInitAccountUpdate(
   server: string | undefined
 ): Promise<Partial<NonNullable<RdcConfig['account']>> | undefined> {
   if (!server) return undefined;
-  const accountServer = server.replace(/\/+$/, '');
+  const accountServer = normalizeServerUrl(server);
   try {
     const { fetchServerInfo } = await import('../services/account/account-client.js');
     const info = await fetchServerInfo(accountServer);
@@ -167,7 +170,7 @@ export function mergeInitUpdates(
     parts.accountUpdate?.accountServer !== undefined &&
     parts.accountUpdate.e2ePublicKey === undefined &&
     previousServer !== undefined &&
-    previousServer.replace(/\/+$/, '') !== parts.accountUpdate.accountServer
+    normalizeServerUrl(previousServer) !== normalizeServerUrl(parts.accountUpdate.accountServer)
   ) {
     delete account.e2ePublicKey;
   }

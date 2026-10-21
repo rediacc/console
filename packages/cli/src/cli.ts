@@ -32,7 +32,7 @@ import {
   assertProxyCapable,
   runCommandThroughProxy,
 } from './services/executor/proxy-command.js';
-import { fetchOtlpCredentials } from './services/telemetry/otlp-credentials.js';
+import { fetchOtlpCredentials, serverOptionOf } from './services/telemetry/otlp-credentials.js';
 import { isTelemetryDisabled, telemetryService } from './services/telemetry/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
@@ -253,7 +253,7 @@ export function createCli(): Command {
       telemetryReady = (async () => {
         if (!isTelemetryDisabled()) {
           try {
-            const otlpCreds = await fetchOtlpCredentials();
+            const otlpCreds = await fetchOtlpCredentials(serverOptionOf(actionCommand));
             telemetryService.setRuntimeOtlpCredentials(otlpCreds);
           } catch {
             // Any failure (network, malformed response) leaves the token null and telemetry disabled. Never blocks the actual command.

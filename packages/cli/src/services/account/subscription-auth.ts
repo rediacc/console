@@ -55,6 +55,21 @@ function loadStoredSubscriptionToken(): StoredSubscriptionToken | null {
   }
 }
 
+/**
+ * The account server this config universe names, with no default: REDIACC_ACCOUNT_SERVER, the
+ * active config's `account.accountServer`, or the server its stored token was issued by. Unlike
+ * getSubscriptionServerUrl it never falls back to the production default, so a caller that must not
+ * contact production on a config that names no server yet (the startup telemetry fetch, while
+ * `config init --server <dev>` is still writing the config) can tell "none" apart.
+ */
+export function getConfiguredServerUrl(): string | undefined {
+  const server =
+    process.env.REDIACC_ACCOUNT_SERVER ??
+    readAccountPointer().accountServer ??
+    loadStoredSubscriptionToken()?.serverUrl;
+  return server ? normalizeServerUrl(server) : undefined;
+}
+
 export function loadEnvSubscriptionToken(): StoredSubscriptionToken | null {
   const token = process.env[SUBSCRIPTION_TOKEN_ENV]?.trim();
   if (!token) return null;

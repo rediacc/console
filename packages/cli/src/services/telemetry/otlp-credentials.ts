@@ -28,7 +28,9 @@
  * env vars of a spawned renet process (which is also memory-only).
  */
 
+import type { Command } from 'commander';
 import { accountServerFetch } from '../account/account-client.js';
+import { getConfiguredServerUrl, normalizeServerUrl } from '../account/subscription-auth.js';
 
 export interface OtlpCredentials {
   endpoint: string;
@@ -53,7 +55,12 @@ let inflight: Promise<OtlpCredentials | null> | undefined;
 /**
  * Fetch the current OTLP credentials from the account server.
  *
+ * `serverUrl` is the server the running command names (`config init --server`,
+ * `subscription login --server`); without one, the server the active config
+ * universe names (getConfiguredServerUrl).
+ *
  * Returns `null` when:
+ *   - No server is named and the config names none (nothing is fetched)
  *   - The endpoint returns `{otlp: null}` (region has no credential configured)
  *   - The request fails (network error, 4xx, 5xx, account server unreachable)
  *   - The response is malformed
@@ -62,13 +69,19 @@ let inflight: Promise<OtlpCredentials | null> | undefined;
  * actual command, the CLI must always degrade to "telemetry disabled"
  * rather than surfacing an error.
  */
-export function fetchOtlpCredentials(): Promise<OtlpCredentials | null> {
+export function fetchOtlpCredentials(serverUrl?: string): Promise<OtlpCredentials | null> {
   if (cached !== undefined) return Promise.resolve(cached);
   inflight ??= (async () => {
+    // The server the command is about: the one it names (`--server`), else the one its config universe names. With neither, nothing is fetched: the production default is never asked on a config that names no server yet, so a dev universe never contacts production.
     try {
+      const target = serverUrl ? normalizeServerUrl(serverUrl) : getConfiguredServerUrl();
+      if (!target) {
+        cached = null;
+        return cached;
+      }
       const resp = await accountServerFetch<TelemetryConfigResponse>(
         '/account/api/v1/telemetry/config',
-        { noAuth: true }
+        { noAuth: true, serverUrl: target }
       );
       cached = resp.otlp ?? null;
     } catch {
@@ -77,6 +90,12 @@ export function fetchOtlpCredentials(): Promise<OtlpCredentials | null> {
     return cached;
   })();
   return inflight;
+}
+
+/** The `--server` a command was given, if it takes one: telemetry for that command goes to that server. */
+export function serverOptionOf(command: Command): string | undefined {
+  const server: unknown = command.opts().server;
+  return typeof server === 'string' && server !== '' ? server : undefined;
 }
 
 /**

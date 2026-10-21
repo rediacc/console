@@ -146,7 +146,8 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
         const c = JSON.parse(fs.readFileSync(p, "utf8"));
         const account = { ...(c.account ?? {}), accountServer: server, ...(key ? { e2ePublicKey: key } : {}) };
         // A key belongs to the server it came from: a moved gateway that advertised none keeps no key of the old one.
-        if (!key && c.account?.accountServer !== server) delete account.e2ePublicKey;
+        const bare = (url) => String(url ?? "").replace(/\/+$/, "");
+        if (!key && bare(c.account?.accountServer) !== bare(server)) delete account.e2ePublicKey;
         if (JSON.stringify(account) !== JSON.stringify(c.account ?? {})) {
           const tmp = `${p}.tmp.${process.pid}.${randomUUID()}`;
           fs.writeFileSync(tmp, JSON.stringify({ ...c, account }, null, 2) + "\n", { mode: 0o600 });

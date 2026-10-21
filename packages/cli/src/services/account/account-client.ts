@@ -44,24 +44,33 @@ type ServerKeyMaterial = {
 };
 
 /**
- * No E2E key is known for the server a request goes to: the active config saved none for it and
- * its server-info could not be read. Raised instead of sealing with the baked-in key, which only
- * the production regions hold: against any other server that request fails as a bare "Decryption
- * failed" naming nothing (vm:check license drill, 2026-10-21). `cause` keeps the discovery failure,
- * so a network error still classifies as unreachable.
+ * No E2E key is known for the server a request goes to: the active config saved none for it, and
+ * its server-info either could not be read (`unreachable`, `cause` keeps the failure, so a network
+ * error still classifies as unreachable) or was read and advertised no key (`no-key`). Raised
+ * instead of sealing with the baked-in key, which only the production regions hold: against any
+ * other server that request fails as a bare "Decryption failed" naming nothing (vm:check license
+ * drill, 2026-10-21).
  */
 export class ServerE2eKeyUnavailableError extends Error {
   readonly serverUrl: string;
-  constructor(serverUrl: string, options?: { cause?: unknown }) {
+  readonly reason: 'unreachable' | 'no-key';
+  constructor(serverUrl: string, reason: 'unreachable' | 'no-key', options?: { cause?: unknown }) {
     const cause = options?.cause;
-    const detail =
-      cause === undefined ? '' : `: ${cause instanceof Error ? cause.message : String(cause)}`;
+    const why =
+      reason === 'no-key'
+        ? 'its server-info advertises no E2E key'
+        : `its server-info could not be read${cause === undefined ? '' : `: ${cause instanceof Error ? cause.message : String(cause)}`}`;
+    const remedy =
+      reason === 'no-key'
+        ? 'the server is misconfigured; check its X25519 key'
+        : `run "rdc subscription login --server ${serverUrl}" once the server answers`;
     super(
-      `No E2E key for account server ${serverUrl}: the active config holds none for it and its server-info could not be read${detail}. The baked-in key belongs to the production regions only; run "rdc subscription login --server ${serverUrl}" once the server answers.`,
+      `No E2E key for account server ${serverUrl}: the active config holds none for it and ${why}. The baked-in key belongs to the production regions only; ${remedy}.`,
       options
     );
     this.name = 'ServerE2eKeyUnavailableError';
     this.serverUrl = serverUrl;
+    this.reason = reason;
   }
 }
 
@@ -126,10 +135,9 @@ export async function getServerKeyMaterial(serverUrl: string): Promise<ServerKey
       keyId: CURRENT_SERVER_E2E_KEY.keyId,
     };
   }
-  throw new ServerE2eKeyUnavailableError(
-    target,
-    failure === undefined ? undefined : { cause: failure }
-  );
+  throw failure === undefined
+    ? new ServerE2eKeyUnavailableError(target, 'no-key')
+    : new ServerE2eKeyUnavailableError(target, 'unreachable', { cause: failure });
 }
 
 /**
@@ -141,7 +149,11 @@ async function discoverServerKey(serverUrl: string): Promise<{
   publicKeySpki: string;
 } | null> {
   const known = discoveredKeys.get(serverUrl);
-  if (known) return known;
+  if (known) {
+    // The config may name this server only now (a login saved it after an earlier call discovered the key), so a remembered key is offered for saving too.
+    await saveDiscoveredKey(serverUrl, known.publicKeySpki);
+    return known;
+  }
 
   const resp = await fetch(`${serverUrl}/account/api/v1/.well-known/server-info`, {
     signal: AbortSignal.timeout(5000),
