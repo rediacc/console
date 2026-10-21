@@ -449,11 +449,32 @@ def test_an_unreadable_binary_under_an_empty_digest_stamp_is_not_skipped(tmp_pat
     root = _fixture(tmp_path / "e", binary="renet", stamp="default|%s|" % EMPTY_KEY_DIGEST)
     binary = root / "private" / "renet" / "bin" / "renet"
     binary.chmod(0)
+    # Root reads a mode-000 file, which would digest it and pass this test with the guard removed: the premise is asserted, not assumed.
+    with pytest.raises(PermissionError):
+        binary.read_bytes()
     try:
         out = _run(PORT_REL, root)
     finally:
         binary.chmod(0o755)
     assert "already built the same way" not in out["stderr"], out
+
+
+def test_a_build_whose_output_cannot_be_read_is_not_stamped(tmp_path):
+    """A stamp `<identity>|` would vouch for bytes nobody hashed, so a build whose output cannot be read exits 1 and writes none."""
+    root = _fixture(tmp_path / "w")
+    script = root / "private" / "renet" / "build.sh"
+    script.write_text(
+        script.read_text("utf-8").replace("sys.exit(RC)", "out.chmod(0)\nsys.exit(RC)"),
+        encoding="utf-8",
+    )
+    out = _run(PORT_REL, root)
+    built = root / "private" / "renet" / "bin" / "renet"
+    with pytest.raises(PermissionError):
+        built.read_bytes()
+    built.chmod(0o755)
+    assert out["exit"] == 1, out
+    assert "cannot be read to stamp it" in out["stderr"]
+    assert out["stamp"] is None
 
 
 def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):

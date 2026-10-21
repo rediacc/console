@@ -48,7 +48,17 @@ SUBJECT_NAME = "renet_tier_map.py"
 # CASE 1. A genuine converted plant, put back the way it was written before the harness existed.
 REAL_PLANT = 'listed_from(plant(_LISTING, "TestTierProbeMatchesTheMap\\n", ""))'
 REAL_PLANT_RAW = 'listed_from(_LISTING.replace("TestTierProbeMatchesTheMap\\n", ""))'
-REAL_PLANT_LINE = "line 271"
+
+
+def _real_plant_line() -> str:
+    """The line the gate must name, read from the subject itself: a constant went stale every time the subject gained a line above the plant (271 became 274 on 2026-10-21)."""
+    for number, text in enumerate(
+        paths.from_root(SUBJECT).read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        if REAL_PLANT in text:
+            return "line %d" % number
+    raise AssertionError("%s no longer holds the plant %r" % (SUBJECT, REAL_PLANT))
+
 
 # CASE 2. The shape of f8af6d092:.ci/rediacc_ci/quality/review_turn_capacity.py:480, an identity `.replace` chained ahead of a live one, planted over the subject's nested plant. The indentation and the trailing argument line are carried with it: the historical shape is a chain, and the chain is the point.
 HISTORICAL_PLANT = """            plant(
@@ -197,7 +207,7 @@ def test_rewriting_a_real_plant_back_to_a_raw_substitution_reds(gate):
         result = _run(root)
         gate.assert_exit(1, result, "a raw substitution in a control region is a finding")
         gate.assert_contains(result.combined, SUBJECT_NAME, "names the file")
-        gate.assert_contains(result.combined, REAL_PLANT_LINE, "and the line")
+        gate.assert_contains(result.combined, _real_plant_line(), "and the line")
         gate.assert_contains(result.combined, "raw substitution", "says what is wrong")
         gate.assert_contains(result.combined, "plant() from rediacc_ci.controls", "and the fix")
         # ONE finding and not seven. The other six sites in the same `selftest()` are untouched plants, so a gate that reported them too would be flagging the harness it is asking for.
