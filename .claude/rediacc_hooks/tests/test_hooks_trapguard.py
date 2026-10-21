@@ -680,7 +680,7 @@ def test_verify_rebase_names_a_commit_the_base_partly_made(tmp_path):
 
 
 def test_verify_rebase_names_every_same_subject_candidate(tmp_path):
-    """Review c83c1814.1: when several new-range commits share the missing one's subject, every one is named rather than the newest."""
+    """When several new-range commits share the missing one's subject, every one is named, since the newest need not be the replay."""
     repo = str(tmp_path / "r")
     os.makedirs(repo)
     _git_in(repo, "init", "-q", "-b", "main")
