@@ -20,7 +20,7 @@ const ACCOUNT_TOKEN = (process.env.E2E_ACCOUNT_API_TOKEN ?? '').trim();
 export const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
 export const DS = DEFAULT_DATASTORE_PATH;
 
-// The key `ops up` stages for the fleet. getSSHPrivateKeyPath resolves the renet data dir exactly as the bridge's SSH executor does (RENET_DATA_DIR, then $RUNNER_TEMP/renet under CI, then ~/.renet), so the CLI config names the same key the bridge calls use. A hand-built `~/.renet` fallback ignored the CI autodetect: the browse-at job stages the key under $RUNNER_TEMP/renet, `config init --ssh-key` pointed at a missing file, and `repo create` failed with "has no SSH key configured" (run 39673666688). Suite 23 still carries its own hand-built path.
+// The key `ops up` stages for the fleet. getSSHPrivateKeyPath resolves the renet data dir exactly as the bridge's SSH executor does (RENET_DATA_DIR, then $RUNNER_TEMP/renet under CI, then ~/.renet), so the CLI config names the same key the bridge calls use. A hand-built `~/.renet` fallback ignored the CI autodetect: the browse-at job stages the key under $RUNNER_TEMP/renet, `config init --ssh-key` pointed at a missing file, and `repo create` failed with "has no SSH key configured" (run 39673666688). Suites 23 and 24 use the same resolver.
 const SSH_KEY = process.env.E2E_SSH_KEY ?? getSSHPrivateKeyPath();
 
 // Machine registration for the CLI, same wiring suite 23 uses. The CLI needs its own machine entries: the bridge runners SSH straight through, but `rdc repo create` (the only thing that installs a repository license) addresses a machine BY NAME out of the config.
