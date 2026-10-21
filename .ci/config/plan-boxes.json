@@ -357,14 +357,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 10,
-      "open_sigs": [
-        "2b7fdc6c"
-      ],
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
       "done_sigs": [
         "217bb9ee",
         "22cf9fc3",
+        "2b7fdc6c",
         "38831edc",
         "59e2de3a",
         "68bb5192",
