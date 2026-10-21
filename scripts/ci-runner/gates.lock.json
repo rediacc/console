@@ -3974,6 +3974,30 @@
     }
   },
   {
+    "id": "check:ci-renet-govulncheck",
+    "run": "npm run check:ci-renet-govulncheck",
+    "gate": true,
+    "paths": [
+      "private/renet",
+      ".ci/rediacc_ci/private/run_renet.py",
+      ".ci/rediacc_ci/core/common.py"
+    ],
+    "pathsOrigin": "declared",
+    "slow": true,
+    "mutex": [
+      "renet-bin"
+    ],
+    "leaves": [
+      ".ci/rediacc_ci/private/run_renet.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Renet govulncheck"
+    }
+  },
+  {
     "id": "check:ci-go-deps",
     "run": "npm run check:ci-go-deps",
     "gate": true,

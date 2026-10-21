@@ -1,0 +1,2224 @@
+{
+ "source": "rediacc/console Actions run 39551246836 (scheduled Console CI on main, 2026-10-21), attempt 1, read with .ci/scripts/ci/ci-trace.py --run 39551246836 --jobs --attempt 1 --json and --job <id> --steps --json; steps kept for the failed jobs only, since the waiver reads no step of a passing job.",
+ "jobs": [
+  {
+   "name": "Duplicate Run Check",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Initialize",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "CI Watchdog",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Entry Point (run.sh)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Breakpoint Lifecycle",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Renet) / Renet (cross-compile smoke)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Renet) / Renet (cached, cross-compile)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Renet) / Renet (cached, linux)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Code (3)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Static",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Devcontainer (amd64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Go",
+   "status": "completed",
+   "conclusion": "failure",
+   "steps": [
+    {
+     "name": "Set up job",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Fetch secrets from Bitwarden",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run ./.github/actions/app-token",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "conclusion": "success"
+    },
+    {
+     "name": "Install clang",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run ./.github/actions/setup-workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run renet quality",
+     "conclusion": "failure"
+    },
+    {
+     "name": "Check Go dependency freshness",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check Go module sync against the renet worktree",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check renet types freshness",
+     "conclusion": "success"
+    },
+    {
+     "name": "Shard manifest coverage",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check subscription schema consistency",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check embed credits consistency",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check embed arch parity",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check recovery functions get an uncancellable context",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check embedded asset versions match their pins",
+     "conclusion": "success"
+    },
+    {
+     "name": "Announce external gates held by label",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check embed-asset upstream freshness",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check devcontainer pin upstream freshness",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check real-provider pin upstream freshness",
+     "conclusion": "success"
+    },
+    {
+     "name": "Verify BPF objects are up-to-date",
+     "conclusion": "success"
+    },
+    {
+     "name": "Verify BPF verifier accepts program",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run eBPF unit tests",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check config token auth requires org membership",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check no admin user role (must be root)",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check scope registry audit",
+     "conclusion": "success"
+    },
+    {
+     "name": "Assert no NODE_ENV branching in account routes",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run account integration tests",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run Go cross-language signature tests",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run ./.github/actions/setup-workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run ./.github/actions/app-token",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "name": "Quality / Wiring",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Quick Lane",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Code (2)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Code (1)",
+   "status": "completed",
+   "conclusion": "failure",
+   "steps": [
+    {
+     "name": "Set up job",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Fetch secrets from Bitwarden",
+     "conclusion": "success"
+    },
+    {
+     "name": "Block legacy-peer-deps workarounds",
+     "conclusion": "success"
+    },
+    {
+     "name": "Setup workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Devcontainer script stderr visibility",
+     "conclusion": "success"
+    },
+    {
+     "name": "Setup path idempotency",
+     "conclusion": "success"
+    },
+    {
+     "name": "Shell file size",
+     "conclusion": "success"
+    },
+    {
+     "name": "Devbox exec invocation",
+     "conclusion": "success"
+    },
+    {
+     "name": "Toolchain pins",
+     "conclusion": "success"
+    },
+    {
+     "name": "Toolchain env/Dockerfile sync",
+     "conclusion": "success"
+    },
+    {
+     "name": "Host toolchain runtime coverage",
+     "conclusion": "success"
+    },
+    {
+     "name": "Git-op conditional guards",
+     "conclusion": "success"
+    },
+    {
+     "name": "Go tool PATH",
+     "conclusion": "success"
+    },
+    {
+     "name": "Gate prerequisites",
+     "conclusion": "success"
+    },
+    {
+     "name": "PR_HEAD_REF completeness",
+     "conclusion": "success"
+    },
+    {
+     "name": "Guard mention anchoring",
+     "conclusion": "success"
+    },
+    {
+     "name": "Hook integrity",
+     "conclusion": "success"
+    },
+    {
+     "name": "Gate manifest self-consistency",
+     "conclusion": "success"
+    },
+    {
+     "name": "Trap registry dispositions",
+     "conclusion": "success"
+    },
+    {
+     "name": "CI runner selftest",
+     "conclusion": "success"
+    },
+    {
+     "name": "CI-watch recipe has one source",
+     "conclusion": "success"
+    },
+    {
+     "name": "No racing pipefail/grep -q detectors",
+     "conclusion": "success"
+    },
+    {
+     "name": "Control-first gates prove their plant landed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Block non-executable invoked scripts",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run ./.github/actions/app-token",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Apply version bump",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Run ./.github/actions/setup-workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Install worker project deps",
+     "conclusion": "success"
+    },
+    {
+     "name": "Action freshness",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "App admin permission",
+     "conclusion": "success"
+    },
+    {
+     "name": "AWS credential bridge",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Backup bucket conformance",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Backup manifest shape parity",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Backup protocol conformance",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Bootstrap paths install through the dependency stamp",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Builder env contract",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Ceph image pin freshness",
+     "conclusion": "success"
+    },
+    {
+     "name": "Changed-file selection contract",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "CI fetch integrity",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "CI job aggregation",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "CLI docs stay in sync with their scripts' real flags",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "CLI examples",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Command tree",
+     "conclusion": "success"
+    },
+    {
+     "name": "Controls are not written inside string literals",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Design tree",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Dockerfile npm pins",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Enumeration vacuity",
+     "conclusion": "success"
+    },
+    {
+     "name": "Every source file reaches a linter",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Fetch retry",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Fixture event timestamps",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Format command covers its config's scope",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Gate binding",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Gate cwd independence",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Gate-test real-file plants",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Gates that write the real tree declare it",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Generated artifacts registry",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Generated manifest regions",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Greenlight closure paths",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Inline suppression markers",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Inner kill timers are reachable",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Instruction files do not prescribe a rejected merge method",
+     "conclusion": "success"
+    },
+    {
+     "name": "jq boolean defaults",
+     "conclusion": "success"
+    },
+    {
+     "name": "Judged rule wiring",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "knip BLOCKER reasons",
+     "conclusion": "success"
+    },
+    {
+     "name": "Lockfile",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Mediated git tool stays lease-only and dry-run by default",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Model-invocable commands",
+     "conclusion": "success"
+    },
+    {
+     "name": "Native modules rebuilt after every root install",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Naturalization model policy",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "No client-side key composition",
+     "conclusion": "success"
+    },
+    {
+     "name": "No source file exceeds the line-count budget",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Package key budget",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Paths-origin provenance",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Pin registry covers every pin",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Pin upstream freshness",
+     "conclusion": "failure"
+    },
+    {
+     "name": "Retention knob parity",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Rubric calibration",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Runtime imports are dependencies",
+     "conclusion": "success"
+    },
+    {
+     "name": "Schema coverage",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "scripts/ domain partition",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Selftest entry points are CI-reachable",
+     "conclusion": "success"
+    },
+    {
+     "name": "Shape duplication",
+     "conclusion": "success"
+    },
+    {
+     "name": "Shared constant duplication",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Source-authored lint rules, host-run",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Standalone selftests",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Step env parity",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Swallowed failures",
+     "conclusion": "success"
+    },
+    {
+     "name": "syncpack source coverage",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Test suites are CI-reachable",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Tmpfs health",
+     "conclusion": "success"
+    },
+    {
+     "name": "Typecheck scope coverage",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Unused exports (knip)",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Verify no peer dependency conflicts",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Versions",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Worker secret names",
+     "conclusion": "success"
+    },
+    {
+     "name": "Workflow banned patterns",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Workflow lint (actionlint)",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Workflow orphan step keys",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Worklist event builders",
+     "conclusion": "success"
+    },
+    {
+     "name": "Worklist path resolution",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "www build token",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Write shard receipt",
+     "conclusion": "success"
+    },
+    {
+     "name": "Upload shard receipt",
+     "conclusion": "success"
+    },
+    {
+     "name": "Gates lock",
+     "conclusion": "success"
+    },
+    {
+     "name": "Doc region parity",
+     "conclusion": "success"
+    },
+    {
+     "name": "PR epic block matches the published worklist",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Every commit names its epic",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Format",
+     "conclusion": "success"
+    },
+    {
+     "name": "Lint",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check account route layer isolation",
+     "conclusion": "success"
+    },
+    {
+     "name": "Dead bash",
+     "conclusion": "success"
+    },
+    {
+     "name": "TypeScript",
+     "conclusion": "success"
+    },
+    {
+     "name": "Command planes",
+     "conclusion": "success"
+    },
+    {
+     "name": "Workflow structural gates",
+     "conclusion": "success"
+    },
+    {
+     "name": "Breakpoint drift",
+     "conclusion": "success"
+    },
+    {
+     "name": "Announce external gates held by label",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run ./.github/actions/setup-workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run ./.github/actions/app-token",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Setup workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "name": "Quality / Built-www Gates",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Content",
+   "status": "completed",
+   "conclusion": "failure",
+   "steps": [
+    {
+     "name": "Set up job",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Fetch secrets from Bitwarden",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run ./.github/actions/app-token",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run ./.github/actions/setup-workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Agent hints can actually fire",
+     "conclusion": "success"
+    },
+    {
+     "name": "Agent model roster matches its documented reasons",
+     "conclusion": "success"
+    },
+    {
+     "name": "Baseline key semantics",
+     "conclusion": "success"
+    },
+    {
+     "name": "Behavioral hints can actually fire",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check content for AI slop patterns",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check E2E skip hygiene (no collected-then-skipped suites)",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check E2E test coverage for all renet functions",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check prose style (the work, not the person)",
+     "conclusion": "success"
+    },
+    {
+     "name": "CSS DOM references",
+     "conclusion": "success"
+    },
+    {
+     "name": "Dead service methods",
+     "conclusion": "success"
+    },
+    {
+     "name": "DKIM notify DNS",
+     "conclusion": "success"
+    },
+    {
+     "name": "Docker image freshness",
+     "conclusion": "success"
+    },
+    {
+     "name": "Docs browse invariants",
+     "conclusion": "success"
+    },
+    {
+     "name": "Docs code-block copy units",
+     "conclusion": "success"
+    },
+    {
+     "name": "Docs thumbnail coverage",
+     "conclusion": "success"
+    },
+    {
+     "name": "E2E case-blind assertions",
+     "conclusion": "success"
+    },
+    {
+     "name": "Enabled lint rules can actually fire",
+     "conclusion": "success"
+    },
+    {
+     "name": "External dependency freshness",
+     "conclusion": "failure"
+    },
+    {
+     "name": "External links",
+     "conclusion": "success"
+    },
+    {
+     "name": "i18n value types match English",
+     "conclusion": "success"
+    },
+    {
+     "name": "Lint rule unit specs",
+     "conclusion": "success"
+    },
+    {
+     "name": "PR scope rules agree with their CLAUDE.md source",
+     "conclusion": "success"
+    },
+    {
+     "name": "Pricing consistency",
+     "conclusion": "success"
+    },
+    {
+     "name": "Retired commands in docs",
+     "conclusion": "success"
+    },
+    {
+     "name": "Self-improving skill size",
+     "conclusion": "success"
+    },
+    {
+     "name": "Sentence wrapping",
+     "conclusion": "success"
+    },
+    {
+     "name": "SVG theme reach",
+     "conclusion": "success"
+    },
+    {
+     "name": "Test-gate wiring",
+     "conclusion": "success"
+    },
+    {
+     "name": "Tutorial CLI validity",
+     "conclusion": "success"
+    },
+    {
+     "name": "Tutorials cannot skip themselves",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate account onboarding splash against canonical tutorials",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate parity between the local gate set and the CI quality surface",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate tutorial commands are non-interactive",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate tutorial storyboard commands against the live CLI",
+     "conclusion": "success"
+    },
+    {
+     "name": "Verify NIS2 directive quotations match the official source",
+     "conclusion": "success"
+    },
+    {
+     "name": "Video player invariants",
+     "conclusion": "success"
+    },
+    {
+     "name": "Dead CSS",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate per-locale tutorial video assets exist",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate tutorial card fonts cover every locale",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate localized solution videos exist",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate solution narration engine is current",
+     "conclusion": "success"
+    },
+    {
+     "name": "Block fallback hacks and error output in tutorial recordings",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate published tutorial word-timing sync (real ASR alignment, not estimated)",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate tutorial cast/storyboard/transcript/mdx parity",
+     "conclusion": "success"
+    },
+    {
+     "name": "Announce external gates held by label",
+     "conclusion": "success"
+    },
+    {
+     "name": "Announce media gates held by label",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run ./.github/actions/setup-workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run ./.github/actions/app-token",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "name": "Quality / i18n",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Code (4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Security",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet embed assets",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Migration Test",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Devcontainer (arm64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Submodule Branches",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Packages",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Pytest (1/4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Account E2E (3/4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Secure Storage (keyctl)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet pkg scope",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Unit",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Secure Storage (keychain)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet (integration, 1/3)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Account E2E (4/4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Pytest (3/4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Secure Storage (dpapi)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Account E2E (2/4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Account E2E (1/4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet (integration, 3/3)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet (integration, 2/3)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / License Enforcement",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Pytest (4/4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Pytest (2/4)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet (go, 2/2)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe / List Files",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet (go, 1/2)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / Renet embed assets",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Check Release State",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "CD Preflight",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / CLI",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Renet) / Renet (Full)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Label Guide",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Renet) / Procwalk (${{ matrix.os }})",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / CLI Docker",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / WWW",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Server Docker (cached)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / CLI Docker (cached)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Renet (cached)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Server Docker (${{ matrix.variant }} arm64)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Renet Docker",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Quality / Branch",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / JSON",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Server Docker (${{ matrix.variant }} amd64)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Server Docker Manifest (${{ matrix.variant }})",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Ceph Workers",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Ceph",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E K8s Ceph",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E K8s",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Drills",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Migrate",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Concurrent Fork Isolation",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E K8s Multinode",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (opensuse-16.0, 2/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (opensuse-16.0, 1/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (ubuntu-24.04, 3/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (oracle-10, 3/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (debian-13, 1/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (oracle-10, 2/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (opensuse-16.0, 5/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (debian-13, 6/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (ubuntu-24.04, 8/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (fedora-43, 5/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (debian-13, 5/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (ubuntu-24.04, 7/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (oracle-10, 6/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (debian-13, 4/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (fedora-43, 3/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (ubuntu-24.04, 2/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (ubuntu-24.04, 1/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (fedora-43, 8/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (oracle-10, 5/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (debian-13, 8/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (fedora-43, 7/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (ubuntu-24.04, 4/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (opensuse-16.0, 7/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (debian-13, 3/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (fedora-43, 1/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (fedora-43, 4/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (fedora-43, 6/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (fedora-43, 2/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (ubuntu-24.04, 5/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (debian-13, 2/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (opensuse-16.0, 3/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (ubuntu-24.04, 6/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (oracle-10, 7/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (debian-13, 7/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (oracle-10, 4/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (opensuse-16.0, 4/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (opensuse-16.0, 8/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (oracle-10, 8/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (opensuse-16.0, 6/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Workers (oracle-10, 1/8)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Ceph Workers non-apt (opensuse-16.0)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet pkg matrix (opensuse-16.0)",
+   "status": "completed",
+   "conclusion": "failure",
+   "steps": [
+    {
+     "name": "Set up job",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run ./.github/actions/profiler",
+     "conclusion": "success"
+    },
+    {
+     "name": "Fetch secrets from Bitwarden",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run ./.github/actions/app-token",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "conclusion": "success"
+    },
+    {
+     "name": "Login to Docker Hub",
+     "conclusion": "success"
+    },
+    {
+     "name": "Login to GHCR",
+     "conclusion": "success"
+    },
+    {
+     "name": "OBS mirror unavailable on a fork PR",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Build renet",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run the package matrix",
+     "conclusion": "failure"
+    },
+    {
+     "name": "Post Login to GHCR",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Login to Docker Hub",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run ./.github/actions/app-token",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run ./.github/actions/profiler",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "name": "Tests + Infra / Renet pkg matrix (fedora-43)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet pkg matrix (oracle-10)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet pkg matrix (centos-stream-10)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Renet pkg matrix (rocky-10)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Ceph Workers non-apt (fedora-43)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / E2E Ceph Workers non-apt (oracle-10)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (03-datastore-lifecycle.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (01-system-checks.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (06-daemon-operations.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (18-ops-workflow.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (13-postgres-fork-isolation.test.ts#part2)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (04-repository-lifecycle.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (15-storage-backup.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (16-setup-installation-params.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (17-repo-branching.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (07-container-operations.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (11-multi-machine.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (13-postgres-fork-isolation.test.ts#part3)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (14-vault-builder.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (25-backup-chunk-store.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (13-postgres-fork-isolation.test.ts#part1)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (02-machine-setup.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (21-local-executor.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (19-rustfs-operations.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (22-setup-command.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (05-rediaccfiles-updown.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe (10-backup-checkpoint.test.ts)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Renet) / Renet (cached)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Quality / Shard receipts",
+   "status": "completed",
+   "conclusion": "failure",
+   "steps": [
+    {
+     "name": "Set up job",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run ./.github/actions/setup-workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Download shard receipts",
+     "conclusion": "success"
+    },
+    {
+     "name": "Quality shard receipts",
+     "conclusion": "failure"
+    },
+    {
+     "name": "Post Run ./.github/actions/setup-workspace",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "name": "OPS Tests / OPS Check (windows-amd64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / WWW",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / Renet embed assets",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / CLI",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (CLI) / CLI (linux-arm64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / OPS Check (macos-arm64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (CLI) / CLI (mac-x64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / OPS Check (linux-arm64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (CLI) / CLI (win-arm64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (CLI) / CLI (mac-arm64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (CLI) / CLI (linux-musl-x64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (CLI) / CLI (win-x64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Renet (cached)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (CLI) / CLI (linux-musl-arm64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (CLI) / CLI (linux-x64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / JSON",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / CLI Docker",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Devcontainer (amd64)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / CLI Docker (cached)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Devcontainer (arm64)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Renet Docker",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Server Docker (cached)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Devcontainer Manifest",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Devcontainer) / Devcontainer Manifest",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / OPS Provision (linux-amd64, 3/6)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / OPS Provision (linux-amd64, 1/6)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / OPS Provision (linux-amd64, 5/6)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / OPS Provision (linux-amd64, 4/6)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / OPS Provision (linux-amd64, 2/6)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "OPS Tests / OPS Provision (linux-amd64, 6/6)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Server Docker (onprem amd64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Server Docker (${{ matrix.variant }} arm64)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Update Flow / Update flow (Linux x64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / CLI Docker",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Renet (cached)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / WWW",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / JSON",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / CLI",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Server Docker (cached)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Renet Docker",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / CLI Docker (cached)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Devcontainer (amd64)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Devcontainer (arm64)",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Devcontainer Manifest",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Elite Run",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker Fast) / Server Docker Manifest (${{ matrix.variant }})",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Tests + Infra / Linux Packages",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Stripe Sandbox",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Review Gate",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "E2E Dependency Probe / E2E Probe / Aggregate",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Server Docker (onprem arm64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Server Docker (onprem amd64)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Build (Docker) / Server Docker Manifest (onprem)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": []
+  },
+  {
+   "name": "Stage Artifacts",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Validate Promotion",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Deploy Preview",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Smoke Test Preview",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Validate Install Methods",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "CI Complete",
+   "status": "completed",
+   "conclusion": "failure",
+   "steps": []
+  },
+  {
+   "name": "Finalize Release Sentinel",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "PR Labels",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "name": "Pipeline Sentinel",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  }
+ ]
+}

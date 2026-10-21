@@ -8,6 +8,7 @@ Every case drives the module with captured command output (dnf5, dnf4 and zypper
   * the pin comparison ignores an epoch the pin does not state (Fedora) and enforces one it does (el10);
   * scope runs every non-PR event, and on a PR only a watched console path, a watched path inside the renet submodule, or the full-ci label.
   * OBS moved past the pin is a FAIL on the nightly with or without `--obs-mirror` (plan Q5); under `--obs-mirror` every other event reads upstream too and reports the move as a warning on a passing leg, whose installs come from the captured tree (the control: OBS serving the pin is a plain pass on every event).
+  * that check is its own subcommand and its own step (`upstream`, PLAN-plan-per-pr-loop R1 B): `run` never asks OBS, so an OBS rebuild leaves the install verdict green and reds only the upstream step, which the nightly soak waiver names as drift; `upstream` refuses a dnf leg (the control).
   * `run --obs-mirror` mounts the fetched tree read-only at /srv/obs-mirror and writes /etc/rediacc/ceph-zypper-mirror before any check, a fetch miss is a FAIL naming the pin and the dispatch that fixes it (no container starts), and without the flag nothing is fetched, mounted or written (the control).
 """
 
@@ -473,31 +474,63 @@ def test_upstream_failure_to_read_obs_is_a_failure_not_a_pass(exc: BaseException
     assert m.report("opensuse-16.0", [v]) == 1
 
 
-def test_upstream_rides_the_zypper_leg_only() -> None:
-    pins = m.read_pins(PIN_TEXT)
-    moved = FakeUpstream(MOVED)
+def test_run_checks_never_ask_obs() -> None:
+    """The split: the install checks of a Leap leg carry no upstream verdict, so OBS moving cannot red them."""
     leap = m.run_checks(
-        "opensuse-16.0",
-        _distro("opensuse-16.0"),
-        pins,
-        FakeExec([]),
-        event="schedule",
-        upstream=moved,
+        "opensuse-16.0", _distro("opensuse-16.0"), m.read_pins(PIN_TEXT), FakeExec([])
     )
-    names = [v.name for v in leap]
-    assert "upstream: OBS still serves the pin" in names
-    assert (
-        names.index("upstream: OBS still serves the pin")
-        == names.index("mirror serves the pin") + 1
+    assert "upstream: OBS still serves the pin" not in [v.name for v in leap]
+    assert "mirror serves the pin" in [v.name for v in leap]
+
+
+def _upstream_args(
+    tmp_path: pathlib.Path, event: str, *, mirrored: bool, distro: str = "opensuse-16.0"
+) -> argparse.Namespace:
+    pin_file = tmp_path / ".ceph-image-pin"
+    pin_file.write_text(PIN_TEXT, encoding="utf-8")
+    return argparse.Namespace(
+        distro=distro, pin_file=str(pin_file), event=event, obs_mirror=mirrored
     )
+
+
+def test_upstream_subcommand_reds_the_nightly_on_its_own(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    moved = FakeUpstream(MOVED)
+    rc = m.cmd_upstream(_upstream_args(tmp_path, "schedule", mirrored=True), upstream=moved)
+    out = capsys.readouterr().out
+    assert rc == 1
     assert moved.calls == 1
-    # Control: a dnf leg on the same schedule never calls it.
-    other = FakeUpstream("x")
-    fedora = m.run_checks(
-        "fedora-43", _distro("fedora-43"), pins, FakeExec([]), event="schedule", upstream=other
+    errors = [line for line in out.splitlines() if line.startswith("::error::")]
+    assert len(errors) == 1
+    assert errors[0].startswith(
+        "::error::opensuse-16.0: upstream: OBS still serves the pin: OBS REBUILT"
     )
-    assert other.calls == 0
-    assert "upstream: OBS still serves the pin" not in [v.name for v in fedora]
+    assert "opensuse-16.0: 0/1 checks passed" in out
+
+
+def test_upstream_subcommand_passes_when_obs_serves_the_pin(tmp_path: pathlib.Path) -> None:
+    # Control for the red above: the same call with OBS serving the pin exits 0.
+    rc = m.cmd_upstream(
+        _upstream_args(tmp_path, "schedule", mirrored=True), upstream=FakeUpstream(LEAP_PIN)
+    )
+    assert rc == 0
+
+
+def test_upstream_subcommand_refuses_a_dnf_leg(tmp_path: pathlib.Path) -> None:
+    up = FakeUpstream(MOVED)
+    rc = m.cmd_upstream(
+        _upstream_args(tmp_path, "schedule", mirrored=False, distro="fedora-43"), upstream=up
+    )
+    assert rc == 2
+    assert up.calls == 0
+
+
+def test_upstream_cli_takes_only_a_zypper_distro() -> None:
+    # The parser refuses a dnf leg before any network (argparse exits 2).
+    with pytest.raises(SystemExit) as exc:
+        m.main(["upstream", "--distro", "fedora-43", "--event", "schedule"])
+    assert exc.value.code == 2
 
 
 # With --obs-mirror the leg installs the pin from the captured tree, so OBS moving is a FAIL only on the
@@ -561,18 +594,21 @@ def test_upstream_equal_with_the_mirror_is_a_plain_pass_on_every_event(event: st
     assert not v.skipped
 
 
-def test_run_cli_passes_the_event_through() -> None:
-    parser_args = [
-        "run",
-        "--distro",
-        "opensuse-16.0",
-        "--renet",
-        "/nonexistent/renet",
-        "--event",
-        "schedule",
-    ]
-    # A missing renet stops before any container or network: rc 2, and the parser accepted --event.
-    assert m.main(parser_args) == 2
+def test_run_cli_no_longer_takes_an_event() -> None:
+    # `run` never asks OBS any more, so it has no event to be told; the flag is refused rather than ignored.
+    with pytest.raises(SystemExit) as exc:
+        m.main(
+            [
+                "run",
+                "--distro",
+                "opensuse-16.0",
+                "--renet",
+                "/nonexistent/renet",
+                "--event",
+                "schedule",
+            ]
+        )
+    assert exc.value.code == 2
 
 
 # ---------------------------------------------------------------------------
@@ -633,21 +669,14 @@ def _run_args(tmp_path: pathlib.Path, distro: str, *, obs_mirror_flag: bool) -> 
         distro=distro,
         renet=str(renet),
         pin_file=str(pin_file),
-        event="pull_request",
         obs_mirror=obs_mirror_flag,
         mirror_dir=str(tmp_path / "mirror-base"),
     )
 
 
 def _drive(args: argparse.Namespace, fetch: FakeFetch, docker: FakeDocker) -> int:
-    # OBS serving the pin: under --obs-mirror the upstream check reads OBS on every event, never the network here.
     return m.cmd_run(
-        args,
-        fetch=fetch,
-        start=docker.start,
-        exec_factory=docker.factory,
-        stop=docker.stop,
-        upstream=FakeUpstream(LEAP_PIN),
+        args, fetch=fetch, start=docker.start, exec_factory=docker.factory, stop=docker.stop
     )
 
 
@@ -741,53 +770,45 @@ def _healthy_leap_leg(pin: str) -> list[tuple[tuple[str, ...], m.Result]]:
 def test_pin_absent_upstream_installs_from_the_mirror_and_warns_off_schedule(
     event: str, tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    # OBS has moved past the pin: the leg mounts the mirror, installs every profile from it, reports the
-    # move as a warning, and exits 0.
+    # OBS has moved past the pin: the leg mounts the mirror and installs every profile from it (exit 0), and the
+    # upstream step reports the move as a warning and exits 0 too.
     args = _run_args(tmp_path, "opensuse-16.0", obs_mirror_flag=True)
-    args.event = event
     fetch, docker = FakeFetch(), FakeDocker(_healthy_leap_leg(LEAP_PIN))
-    moved = FakeUpstream(MOVED)
-    rc = m.cmd_run(
-        args,
-        fetch=fetch,
-        start=docker.start,
-        exec_factory=docker.factory,
-        stop=docker.stop,
-        upstream=moved,
-    )
+    rc = _drive(args, fetch, docker)
     out = capsys.readouterr().out
     assert rc == 0, out
-    assert moved.calls == 1
     assert fetch.calls
     assert fetch.calls[0][0] == LEAP_PIN
     for profile in ("admin", "client", "fork-dest"):
         assert ["renet", "ceph", "install", "--profile", profile] in docker.exec.calls
     assert docker.exec.calls[0] == ["sh", "-c", MIRROR_WRITE]
     assert "[PASS] opensuse-16.0: mirror serves the pin" in out
+    moved = FakeUpstream(MOVED)
+    assert m.cmd_upstream(_upstream_args(tmp_path, event, mirrored=True), upstream=moved) == 0
+    out = capsys.readouterr().out
+    assert moved.calls == 1
     assert "::warning::opensuse-16.0: upstream: OBS still serves the pin: OBS REBUILT" in out
     assert "::error::" not in out
 
 
-def test_pin_absent_upstream_installs_from_the_mirror_and_reds_the_nightly(
+def test_pin_absent_upstream_installs_from_the_mirror_and_reds_only_the_upstream_step(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    # The same leg on the nightly: every install still succeeds from the mirror, and the only FAIL is the
-    # upstream check, which is the signal that customers on OBS are broken until the pin moves.
-    args = _run_args(tmp_path, "opensuse-16.0", obs_mirror_flag=True)
-    args.event = "schedule"
+    # The same leg on the nightly: every install still succeeds from the mirror and the matrix step is GREEN;
+    # the only FAIL is the upstream step's, which is the signal that customers on OBS are broken until the pin
+    # moves, and which the nightly soak waiver can now name as drift by its step.
     docker = FakeDocker(_healthy_leap_leg(LEAP_PIN))
-    rc = m.cmd_run(
-        args,
-        fetch=FakeFetch(),
-        start=docker.start,
-        exec_factory=docker.factory,
-        stop=docker.stop,
-        upstream=FakeUpstream(MOVED),
-    )
+    rc = _drive(_run_args(tmp_path, "opensuse-16.0", obs_mirror_flag=True), FakeFetch(), docker)
     out = capsys.readouterr().out
-    assert rc == 1
+    assert rc == 0, out
     for profile in ("admin", "client", "fork-dest"):
         assert f"[PASS] opensuse-16.0: ceph install --profile {profile}" in out
+    assert "::error::" not in out
+    up_rc = m.cmd_upstream(
+        _upstream_args(tmp_path, "schedule", mirrored=True), upstream=FakeUpstream(MOVED)
+    )
+    out = capsys.readouterr().out
+    assert up_rc == 1
     errors = [line for line in out.splitlines() if line.startswith("::error::")]
     assert len(errors) == 1
     assert errors[0].startswith(
@@ -798,17 +819,9 @@ def test_pin_absent_upstream_installs_from_the_mirror_and_reds_the_nightly(
 def test_pin_absent_upstream_without_the_mirror_is_still_red_on_the_nightly(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    # Control: without the mirror the leg's installs come from OBS, which no longer serves the pin.
-    args = _run_args(tmp_path, "opensuse-16.0", obs_mirror_flag=False)
-    args.event = "schedule"
-    docker = FakeDocker(_healthy_leap_leg(LEAP_PIN))
-    rc = m.cmd_run(
-        args,
-        fetch=FakeFetch(),
-        start=docker.start,
-        exec_factory=docker.factory,
-        stop=docker.stop,
-        upstream=FakeUpstream(MOVED),
+    # Control: without the mirror (a fork PR's leg) the nightly upstream verdict is the same FAIL.
+    rc = m.cmd_upstream(
+        _upstream_args(tmp_path, "schedule", mirrored=False), upstream=FakeUpstream(MOVED)
     )
     out = capsys.readouterr().out
     assert rc == 1

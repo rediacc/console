@@ -1308,7 +1308,11 @@ jobs:
         run: npm run check:ci-doc-region-parity
 
 
+      # `!cancelled()` on this step and the next since 2026-10-21: without it a
+      # failed external step earlier in the job (Pin upstream freshness) SKIPPED
+      # both on nightly 39551246836, and the soak waiver reads skipped as passed.
       - name: PR epic block matches the published worklist
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-pr-epic-block
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -1335,6 +1339,7 @@ jobs:
       # The local hook cannot read a -F message, so this is where the trailer
       # rule is actually enforced, against the commits that really landed.
       - name: Every commit names its epic
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-pr-task-trailers
         env:
           # `|| github.ref_name` for the same reason as the step above, and it
@@ -2687,6 +2692,14 @@ jobs:
       - name: Run renet quality
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
+
+      # Its own step since 2026-10-21 (PLAN-plan-per-pr-loop R1 B): an advisory
+      # published after the commit landed is drift, and the nightly soak waiver
+      # (rediacc_ci.release.nightly_tested_edge GOVULNCHECK_STEP) judges by step
+      # name. Fails closed on every cadence and is held by no label.
+      - name: Renet govulncheck
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet govulncheck
 
       # Hard on every cadence and fails closed, like the pin gates below: a
       # module proxy or an OSV that did not answer after three tries is red,

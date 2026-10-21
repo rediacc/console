@@ -3726,6 +3726,27 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // govulncheck, split out of check:ci-renet's `quality` stage on 2026-10-21 (PLAN-plan-per-pr-loop R1 B). An advisory published after the commit landed is upstream drift: as its own step the nightly soak waiver can name it as drift (rediacc_ci.release.nightly_tested_edge GOVULNCHECK_STEP), and a new advisory no longer stops renet's i18n check. Fails closed on every cadence, like the external gates.
+    id: 'check:ci-renet-govulncheck',
+    run: 'npm run check:ci-renet-govulncheck',
+    gate: true,
+    paths: [
+      'private/renet',
+      '.ci/rediacc_ci/private/run_renet.py',
+      '.ci/rediacc_ci/core/common.py',
+    ],
+    pathsOrigin: 'declared',
+    slow: true,
+    mutex: ['renet-bin'],
+    leaves: ['.ci/rediacc_ci/private/run_renet.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Renet govulncheck',
+    },
+  },
+  {
     id: 'check:ci-go-deps',
     run: 'npm run check:ci-go-deps',
     gate: true,

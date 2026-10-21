@@ -1044,9 +1044,9 @@ jobs:
   # renet_pkg_matrix.py runs `renet ceph install` for three profiles, the
   # installed-version, podman and lock checks, the drift check (the pinned
   # build still resolves from its repository: OBS keeps only its latest build,
-  # plan D2), on the nightly the OBS upstream check (opensuse-16.0 only), and
-  # the GPU resolve-only installs. Rocky 10 and CentOS Stream 10 have no btrfs,
-  # so this is the only CI proof they get. The opensuse-16.0 leg installs from
+  # plan D2) and the GPU resolve-only installs; a separate last step runs the
+  # OBS upstream check (opensuse-16.0 only). Rocky 10 and CentOS Stream 10
+  # have no btrfs, so this is the only CI proof they get. The opensuse-16.0 leg installs from
   # the captured OBS mirror (--obs-mirror, PLAN-renet-obs-mirror.md), since OBS
   # keeps only its latest build.
   renet-pkg-matrix:
@@ -1126,19 +1126,26 @@ jobs:
       - name: Build renet
         working-directory: private/renet
         run: CGO_ENABLED=0 go build -o "$RUNNER_TEMP/renet" ./cmd/renet
-      # EVENT_NAME is the CALLER's event (a reusable workflow inherits ci.yml's
-      # github context). The zypper leg's upstream check (OBS origin primary vs
-      # the Leap pin) can fail only on `schedule`, so an OBS rebuild reddens the
-      # nightly and never an unrelated PR. Under --obs-mirror every other event
-      # reports the move as a warning (installs come from the captured tree);
-      # without it every other event prints a SKIP line.
       # The Leap leg outside fork PRs adds --obs-mirror: it pulls the obs-mirror
       # tag for the pin and installs from it, and a missing tag is a FAIL naming
       # the pin and the ci-obs-mirror dispatch.
       - name: Run the package matrix
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_pkg_matrix run --distro "${{ matrix.distro }}" --renet "$RUNNER_TEMP/renet" ${{ (matrix.distro == 'opensuse-16.0' && !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork)) && '--obs-mirror' || '' }}
+      # Its own step since 2026-10-21 (PLAN-plan-per-pr-loop R1 B), LAST in the
+      # job and behind `!cancelled()`, so it neither skips nor is skipped by
+      # the install checks: an OBS rebuild is upstream drift, and the nightly
+      # soak waiver (rediacc_ci.release.nightly_tested_edge OBS_UPSTREAM_STEP)
+      # judges by step name. EVENT_NAME is the CALLER's event (a reusable
+      # workflow inherits ci.yml's github context): OBS origin primary vs the
+      # Leap pin fails only on `schedule`, so an OBS rebuild reddens the
+      # nightly and never an unrelated PR. With --obs-mirror (the same leg
+      # condition as above) every other event reports the move as a warning;
+      # without it every other event prints a SKIP line.
+      - name: OBS upstream serves the pin
+        if: ${{ !cancelled() && matrix.distro == 'opensuse-16.0' }}
         env:
           EVENT_NAME: ${{ github.event_name }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_pkg_matrix run --distro "${{ matrix.distro }}" --renet "$RUNNER_TEMP/renet" --event "$EVENT_NAME" ${{ (matrix.distro == 'opensuse-16.0' && !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork)) && '--obs-mirror' || '' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_pkg_matrix upstream --distro "${{ matrix.distro }}" --event "$EVENT_NAME" ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork) && '--obs-mirror' || '' }}
 
   # E2E Ceph Workers on the three non-apt distros with btrfs kernels: Ceph-only
   # node prep, Docker CE on the Ceph-only nodes, the client install on the

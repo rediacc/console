@@ -10,9 +10,15 @@ Subcommands, one per workflow step, so each `run:` stays one line:
           runs them when it touches a WATCHED path: one of CONSOLE_PATHS, or one of RENET_PATHS inside the
           private/renet submodule (read by diffing the submodule between the pointer the PR's base carries
           and the one its head carries), or when it carries the `full-ci` label. Writes `hit=true|false`.
-  run     (job `Renet pkg matrix (<distro>)`) start the distro's container with the given renet mounted,
-          and execute, in order, every check in the module's CHECKS list. All checks run even after one
-          fails, so a red leg reports every broken rule at once, and the leg exits 1 when any failed.
+  run     (job `Renet pkg matrix (<distro>)`, step `Run the package matrix`) start the distro's container
+          with the given renet mounted, and execute, in order, every check in the module's CHECKS list. All
+          checks run even after one fails, so a red leg reports every broken rule at once, and the leg exits 1
+          when any failed.
+  upstream (same job, step `OBS upstream serves the pin`, zypper legs) the UPSTREAM check below, on its own.
+          It asks a host outside the repository and goes red when OBS publishes a rebuild, with no change to
+          the commit. Inside `run` that drift shared one step verdict with the install checks, so the nightly
+          soak waiver (rediacc_ci.release.nightly_tested_edge, OBS_UPSTREAM_STEP) could not tell an OBS
+          rebuild from a broken install; split out on 2026-10-21 (PLAN-plan-per-pr-loop R1 B).
 
 WHAT `run` PROVES, per distro:
 
@@ -27,15 +33,6 @@ WHAT `run` PROVES, per distro:
     the mirror is what keeps the pinned build installable. A fetch miss is a FAIL naming the pin and the fix
     (dispatch ci-obs-mirror while OBS still serves it), and no other check runs: against OBS they would prove
     nothing about the mirror;
-  * UPSTREAM (zypper legs, SCHEDULED RUNS ONLY; PLAN-renet-obs-mirror.md section 5): the ceph-common/cephadm
-    EVR the OBS origin's gpg-verified `primary` lists (obs_mirror's `upstream` logic, imported) equals the
-    host.opensuse-16.0 pin. OBS keeps only its latest build, so a mismatch means the pinned build is gone and
-    customer Leap installs fail until the one-line pin bump ships. The check runs from the runner, not the
-    container, and only when `--event schedule`: an OBS rebuild must never redden an unrelated pull request.
-    Without `--obs-mirror` every other event prints `[SKIP] ... skipped: nightly-only` instead of passing
-    silently. Under `--obs-mirror` the leg installs the pin from the captured tree whatever OBS serves, so
-    upstream is read on every event: a moved or unreadable upstream is still a FAIL on the nightly (plan Q5)
-    and a `::warning::` on a passing check on every other event;
   * `rpm -q ceph-common cephadm` equals the host.<target> pin in private/renet/.ceph-image-pin, and
     `rbd --version` reports its host-version;
   * the sqlite CLI answers `sqlite3 --version`, and podman is neither installed nor on PATH (cephadm prefers
@@ -48,6 +45,18 @@ WHAT `run` PROVES, per distro:
     the repository has no newer build yet;
   * `renet setup --gpu-resolve-only` for AMD and for Nvidia (box P5): the GPU repository setup for real,
     then a resolve-only install.
+
+WHAT `upstream` PROVES:
+
+  * UPSTREAM (zypper legs, SCHEDULED RUNS ONLY; PLAN-renet-obs-mirror.md section 5): the ceph-common/cephadm
+    EVR the OBS origin's gpg-verified `primary` lists (obs_mirror's `upstream` logic, imported) equals the
+    host.opensuse-16.0 pin. OBS keeps only its latest build, so a mismatch means the pinned build is gone and
+    customer Leap installs fail until the one-line pin bump ships. The check runs from the runner, not the
+    container, and only when `--event schedule`: an OBS rebuild must never redden an unrelated pull request.
+    Without `--obs-mirror` every other event prints `[SKIP] ... skipped: nightly-only` instead of passing
+    silently. Under `--obs-mirror` the leg installs the pin from the captured tree whatever OBS serves, so
+    upstream is read on every event: a moved or unreadable upstream is still a FAIL on the nightly (plan Q5)
+    and a `::warning::` on a passing check on every other event.
 """
 
 from __future__ import annotations
@@ -530,10 +539,6 @@ def run_checks(
     d: Distro,
     pins: Pins,
     run: Callable[[Sequence[str]], Result],
-    event: str = "",
-    upstream: Callable[[], str] = obs_upstream_evr,
-    *,
-    mirrored: bool = False,
 ) -> list[Verdict]:
     pin = pins.hosts.get(d.target)
     if not pin:
@@ -544,8 +549,6 @@ def run_checks(
         )
     ]
     out.append(check_drift(distro_name, d, pin, run))
-    if d.manager == "zypper":
-        out.append(check_upstream(pin, event, upstream, mirrored=mirrored))
     out.extend(
         check_command(
             f"ceph install --profile {profile}",
@@ -681,7 +684,6 @@ def cmd_run(
     start: Callable[[Sequence[str]], int] = _docker,
     exec_factory: Callable[[str], Callable[[Sequence[str]], Result]] = docker_exec,
     stop: Callable[[str], None] = _docker_rm,
-    upstream: Callable[[], str] = obs_upstream_evr,
 ) -> int:
     d = DISTROS[args.distro]
     renet = pathlib.Path(args.renet).resolve()
@@ -716,18 +718,26 @@ def cmd_run(
             pre.append(configure_mirror(run))
             if not pre[-1].ok:
                 return report(args.distro, pre)
-        verdicts = run_checks(
-            args.distro,
-            d,
-            pins,
-            run,
-            event=args.event,
-            upstream=upstream,
-            mirrored=mirror is not None,
-        )
+        verdicts = run_checks(args.distro, d, pins, run)
         return report(args.distro, [*pre, *verdicts])
     finally:
         stop(container)
+
+
+def cmd_upstream(args: argparse.Namespace, upstream: Callable[[], str] = obs_upstream_evr) -> int:
+    """The `upstream` subcommand: check_upstream for one zypper leg, reported as its own verdict and exit code."""
+    d = DISTROS[args.distro]
+    if d.manager != "zypper":
+        log.error(f"upstream is the OBS check of the zypper legs only, not {args.distro}")
+        return 2
+    pin = read_pins(pathlib.Path(args.pin_file).read_text(encoding="utf-8")).hosts.get(d.target)
+    if not pin:
+        return report(
+            args.distro, [Verdict("pin", False, f"no host.{d.target} line in {args.pin_file}")]
+        )
+    return report(
+        args.distro, [check_upstream(pin, args.event, upstream, mirrored=args.obs_mirror)]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -791,11 +801,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_run.add_argument("--renet", required=True, help="path of the renet binary to mount")
     p_run.add_argument("--pin-file", default=str(PIN_FILE))
     p_run.add_argument(
-        "--event",
-        default="",
-        help="github.event_name; the zypper upstream check runs only on `schedule`",
-    )
-    p_run.add_argument(
         "--obs-mirror",
         action="store_true",
         help="zypper legs: pull the obs-mirror tag for the pin, mount it at /srv/obs-mirror and point renet at it",
@@ -805,11 +810,31 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="",
         help="where --obs-mirror unpacks the tree (default $RUNNER_TEMP, else the system temp dir)",
     )
+    zypper = sorted(name for name, d in DISTROS.items() if d.manager == "zypper")
+    p_up = sub.add_parser(
+        "upstream", help="the OBS upstream check of one zypper leg, as its own step"
+    )
+    p_up.add_argument("--distro", required=True, choices=zypper)
+    p_up.add_argument("--pin-file", default=str(PIN_FILE))
+    p_up.add_argument(
+        "--event",
+        default="",
+        help="github.event_name; a moved or unreadable upstream fails only on `schedule`",
+    )
+    p_up.add_argument(
+        "--obs-mirror",
+        action="store_true",
+        help="the leg installs from the OBS mirror, so upstream is read on every event and a move off schedule is a warning",
+    )
     p_scope = sub.add_parser("scope", help="decide whether this event runs the matrix")
     p_scope.add_argument("--event", required=True)
     p_scope.add_argument("--labels", default="", help="comma-separated PR labels")
     args = parser.parse_args(argv)
-    return cmd_run(args) if args.cmd == "run" else cmd_scope(args)
+    if args.cmd == "run":
+        return cmd_run(args)
+    if args.cmd == "upstream":
+        return cmd_upstream(args)
+    return cmd_scope(args)
 
 
 if __name__ == "__main__":
