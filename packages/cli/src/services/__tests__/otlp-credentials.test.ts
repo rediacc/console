@@ -4,11 +4,20 @@ vi.mock('../account/account-client.js', () => ({
   accountServerFetch: vi.fn(),
 }));
 
+const CONFIGURED = 'https://config.example.com';
+const mockConfiguredServer = vi.hoisted(() => vi.fn<() => string | undefined>());
+vi.mock('../account/subscription-auth.js', () => ({
+  getConfiguredServerUrl: mockConfiguredServer,
+  normalizeServerUrl: (url: string) => url.replace(/\/+$/, ''),
+}));
+
+import { Command } from 'commander';
 import { accountServerFetch } from '../account/account-client.js';
 import {
   credentialsToBasicAuthToken,
   fetchOtlpCredentials,
   resetOtlpCredentialsCache,
+  serverOptionOf,
 } from '../telemetry/otlp-credentials.js';
 
 const mockedFetch = vi.mocked(accountServerFetch);
@@ -17,6 +26,7 @@ describe('fetchOtlpCredentials', () => {
   beforeEach(() => {
     resetOtlpCredentialsCache();
     vi.resetAllMocks();
+    mockConfiguredServer.mockReturnValue(CONFIGURED);
   });
 
   afterEach(() => {
@@ -33,6 +43,25 @@ describe('fetchOtlpCredentials', () => {
     expect(mockedFetch).toHaveBeenCalledTimes(1);
     expect(mockedFetch).toHaveBeenCalledWith('/account/api/v1/telemetry/config', {
       noAuth: true,
+      serverUrl: CONFIGURED,
+    });
+  });
+
+  it('fetches nothing, and never asks the production default, when no server is named and the config names none', async () => {
+    mockConfiguredServer.mockReturnValue(undefined);
+
+    expect(await fetchOtlpCredentials()).toBeNull();
+    expect(mockedFetch).not.toHaveBeenCalled();
+  });
+
+  it('asks the server the command names (`config init --server <dev>`) over the configured one', async () => {
+    mockedFetch.mockResolvedValue({ otlp: null });
+
+    await fetchOtlpCredentials('http://192.168.111.254:4800/');
+
+    expect(mockedFetch).toHaveBeenCalledWith('/account/api/v1/telemetry/config', {
+      noAuth: true,
+      serverUrl: 'http://192.168.111.254:4800',
     });
   });
 
@@ -64,6 +93,15 @@ describe('fetchOtlpCredentials', () => {
     const result = await fetchOtlpCredentials();
 
     expect(result).toBeNull();
+  });
+
+  it('never throws when resolving the server itself fails', async () => {
+    mockConfiguredServer.mockImplementation(() => {
+      throw new Error('config unreadable');
+    });
+
+    expect(await fetchOtlpCredentials()).toBeNull();
+    expect(mockedFetch).not.toHaveBeenCalled();
   });
 
   it('caches the result across calls within one process', async () => {
@@ -130,5 +168,36 @@ describe('credentialsToBasicAuthToken', () => {
       pass: 'p@ss:word!',
     });
     expect(Buffer.from(encoded, 'base64').toString()).toBe('u:p@ss:word!');
+  });
+});
+
+describe('serverOptionOf', () => {
+  function parsed(argv: string[]): Command {
+    const program = new Command().exitOverride();
+    let action: Command | undefined;
+    const config = program.command('config');
+    config
+      .command('init [name]')
+      .option('--server <url>')
+      .action((_name, _opts, cmd: Command) => {
+        action = cmd;
+      });
+    config.command('current').action((_opts, cmd: Command) => {
+      action = cmd;
+    });
+    program.parse(argv, { from: 'user' });
+    if (!action) throw new Error('no action ran');
+    return action;
+  }
+
+  it('returns the --server a command was given', () => {
+    expect(
+      serverOptionOf(parsed(['config', 'init', 'dev', '--server', 'http://dev.test:4800']))
+    ).toBe('http://dev.test:4800');
+  });
+
+  it('returns nothing for a command without one', () => {
+    expect(serverOptionOf(parsed(['config', 'init', 'dev']))).toBeUndefined();
+    expect(serverOptionOf(parsed(['config', 'current']))).toBeUndefined();
   });
 });

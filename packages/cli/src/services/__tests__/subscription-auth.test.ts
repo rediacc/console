@@ -7,6 +7,7 @@ import {
 } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  getConfiguredServerUrl,
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
   getSubscriptionTokenFile,
@@ -87,6 +88,29 @@ describe('subscription-auth', () => {
       delete process.env.REDIACC_ACCOUNT_SERVER;
       writeConfig('rediacc', { accountServer: 'https://config.example.com///' });
       expect(getSubscriptionServerUrl()).toBe('https://config.example.com');
+    });
+  });
+
+  describe('getConfiguredServerUrl()', () => {
+    beforeEach(() => {
+      delete process.env.REDIACC_ACCOUNT_SERVER;
+      delete process.env.REDIACC_CONFIG;
+    });
+
+    it('names no server, never the production default, when nothing names one', () => {
+      // no config file written: the moment `config init --server <dev>` starts
+      expect(getConfiguredServerUrl()).toBeUndefined();
+      writeConfig('rediacc', {});
+      expect(getConfiguredServerUrl()).toBeUndefined();
+    });
+
+    it('reads env first, then the config, then the stored token, normalized', () => {
+      saveStoredSubscriptionToken({ token: 'rdt_x', serverUrl: 'https://token.example.com' });
+      expect(getConfiguredServerUrl()).toBe('https://token.example.com');
+      writeConfig('rediacc', { accountServer: 'https://config.example.com/' });
+      expect(getConfiguredServerUrl()).toBe('https://config.example.com');
+      process.env.REDIACC_ACCOUNT_SERVER = 'https://env.example.com';
+      expect(getConfiguredServerUrl()).toBe('https://env.example.com');
     });
   });
 

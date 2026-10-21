@@ -240,10 +240,50 @@ describe('getServerKeyMaterial tiers', () => {
     const refusal = await getServerKeyMaterial(server).catch((error: unknown) => error);
     expect(refusal).toBeInstanceOf(ServerE2eKeyUnavailableError);
     expect((refusal as ServerE2eKeyUnavailableError).serverUrl).toBe(server);
+    expect((refusal as ServerE2eKeyUnavailableError).reason).toBe('unreachable');
+    expect((refusal as Error).message).toContain('could not be read');
     expect((refusal as Error).message).toContain(`No E2E key for account server ${server}`);
     expect((refusal as Error).message).toContain('fetch failed');
     // The network failure stays reachable through `cause`, so remote-config reads still classify it as unreachable.
     expect((refusal as Error).cause).toBeInstanceOf(TypeError);
+  });
+
+  it('names a server that answers without a key apart from one that cannot be read', async () => {
+    const server = devServer();
+    mockReadAccountPointer.mockReturnValue({ accountServer: server });
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ e2e: { keys: [] } }), { status: 200 })
+      ) as typeof fetch;
+
+    const refusal = await getServerKeyMaterial(server).catch((error: unknown) => error);
+    expect(refusal).toBeInstanceOf(ServerE2eKeyUnavailableError);
+    expect((refusal as ServerE2eKeyUnavailableError).reason).toBe('no-key');
+    expect((refusal as Error).message).toContain('advertises no E2E key');
+    expect((refusal as Error).message).not.toContain('could not be read');
+    expect((refusal as Error).cause).toBeUndefined();
+  });
+
+  it('saves a key discovered earlier in the process once the config comes to name its server', async () => {
+    const server = devServer();
+    const discovered = freshSpki();
+    globalThis.fetch = vi.fn().mockResolvedValue(serverInfoResponse(discovered)) as typeof fetch;
+
+    // First call: the config still names another server, so the key is used but not saved.
+    mockReadAccountPointer.mockReturnValue({ accountServer: 'http://elsewhere.test' });
+    await getServerKeyMaterial(server);
+    expect(mockConfigUpdate).not.toHaveBeenCalled();
+
+    // A login then saves this server with no key: the remembered key is saved on the next call, with no second fetch.
+    mockReadAccountPointer.mockReturnValue({ accountServer: server });
+    await getServerKeyMaterial(server);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(mockConfigUpdate).toHaveBeenCalledTimes(1);
+    const edit = mockConfigUpdate.mock.calls[0][1] as (cfg: Record<string, unknown>) => {
+      account?: Record<string, unknown>;
+    };
+    expect(edit({ account: { accountServer: server } }).account?.e2ePublicKey).toBe(discovered);
   });
 
   it('falls back to the baked-in key for a production region whose server-info cannot be read', async () => {
