@@ -113,6 +113,16 @@ describe('subscription-auth', () => {
       process.env.REDIACC_ACCOUNT_SERVER = 'https://env.example.com';
       expect(getConfiguredServerUrl()).toBe('https://env.example.com');
     });
+
+    it('treats an empty or blank REDIACC_ACCOUNT_SERVER as unset, falling through to the config and the stored token', () => {
+      process.env.REDIACC_ACCOUNT_SERVER = '';
+      saveStoredSubscriptionToken({ token: 'rdt_x', serverUrl: 'https://token.example.com' });
+      expect(getConfiguredServerUrl()).toBe('https://token.example.com');
+      writeConfig('rediacc', { accountServer: 'https://config.example.com' });
+      process.env.REDIACC_ACCOUNT_SERVER = '   ';
+      expect(getConfiguredServerUrl()).toBe('https://config.example.com');
+      expect(getSubscriptionServerUrl()).toBe('https://config.example.com');
+    });
   });
 
   describe('getNamedTokenServerUrl()', () => {
@@ -135,6 +145,14 @@ describe('subscription-auth', () => {
       process.env.REDIACC_TOKEN = 'rdt_env';
       writeConfig('rediacc', { accountServer: 'https://config.example.com/' });
       expect(getNamedTokenServerUrl()).toBe('https://config.example.com');
+    });
+
+    it("never names the stored token's server for an env token: that server issued a different token", () => {
+      process.env.REDIACC_TOKEN = 'rdt_env';
+      saveStoredSubscriptionToken({ token: 'rdt_stored', serverUrl: DEFAULT_SERVER });
+      expect(getNamedTokenServerUrl()).toBeUndefined();
+      process.env.REDIACC_ACCOUNT_SERVER = 'https://env.example.com/';
+      expect(getNamedTokenServerUrl()).toBe('https://env.example.com');
     });
 
     it('names the issuing server for a stored token, and nothing without a token', () => {

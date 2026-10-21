@@ -92,6 +92,17 @@ export function fetchOtlpCredentials(serverUrl?: string): Promise<OtlpCredential
   return inflight;
 }
 
+/**
+ * The OTLP credentials for the command about to run, as the CLI's preAction hook fetches them: from
+ * the server the command names with `--server` (`config init`, `subscription login`), else from the
+ * server the config names. The command's arguments, anonymized by telemetry.ts, then go to the
+ * OTLP endpoint that server hands out: the operator named that server for this command, and a dev
+ * universe's telemetry stays off production.
+ */
+export function fetchCommandOtlpCredentials(command: Command): Promise<OtlpCredentials | null> {
+  return fetchOtlpCredentials(serverOptionOf(command));
+}
+
 /** The `--server` a command was given, if it takes one: telemetry for that command goes to that server. */
 export function serverOptionOf(command: Command): string | undefined {
   const server: unknown = command.opts().server;

@@ -138,13 +138,18 @@ class AuditService {
   }
 
   /**
-   * The server a flush goes to: the one the command named (`--server`), else the one the token
-   * belongs to as named by the config or the stored token. Never the production default: a
-   * REDIACC_TOKEN on a config that names no server flushes nothing.
+   * The server a flush goes to: the one the token belongs to as named by the config or the stored
+   * token (getNamedTokenServerUrl), never the production default, so a REDIACC_TOKEN on a config
+   * that names no server flushes nothing. The flush carries that token as its bearer, so a command's
+   * `--server` only confirms the target: when it names another host, the batch is dropped rather
+   * than sending the token to a server that did not issue it.
    */
   private flushTarget(serverUrl: string | undefined): string | undefined {
     try {
-      return serverUrl ? normalizeServerUrl(serverUrl) : getNamedTokenServerUrl();
+      const tokenServer = getNamedTokenServerUrl();
+      if (!tokenServer) return undefined;
+      if (serverUrl && normalizeServerUrl(serverUrl) !== tokenServer) return undefined;
+      return tokenServer;
     } catch {
       return undefined;
     }

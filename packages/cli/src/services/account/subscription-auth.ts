@@ -30,14 +30,28 @@ export function getSubscriptionTokenFile(configName = getEffectiveConfigName()):
   return join(getConfigDir(), `api-token-${configName}.json`);
 }
 
+/** A server URL that names something: an empty or blank value (`REDIACC_ACCOUNT_SERVER=`) counts as unset. */
+function named(serverUrl: string | undefined): string | undefined {
+  return serverUrl?.trim() ? serverUrl.trim() : undefined;
+}
+
 export function getSubscriptionServerUrl(preferredServerUrl?: string): string {
   // Precedence (highest first): 1. preferredServerUrl, runtime override (--server flag) 2. REDIACC_ACCOUNT_SERVER, env override 3. config account.accountServer, the active config's server pointer 4. SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL, hardcoded default
   return normalizeServerUrl(
-    preferredServerUrl ??
-      process.env.REDIACC_ACCOUNT_SERVER ??
-      readAccountPointer().accountServer ??
+    named(preferredServerUrl) ??
+      getConfigNamedServerUrl() ??
       SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL
   );
+}
+
+/**
+ * The server the config universe itself names: REDIACC_ACCOUNT_SERVER, else the active config's
+ * `account.accountServer`. No stored token and no default; an empty value counts as unset.
+ */
+function getConfigNamedServerUrl(): string | undefined {
+  const server =
+    named(process.env.REDIACC_ACCOUNT_SERVER) ?? named(readAccountPointer().accountServer);
+  return server ? normalizeServerUrl(server) : undefined;
 }
 
 function loadStoredSubscriptionToken(): StoredSubscriptionToken | null {
@@ -63,23 +77,19 @@ function loadStoredSubscriptionToken(): StoredSubscriptionToken | null {
  * `config init --server <dev>` is still writing the config) can tell "none" apart.
  */
 export function getConfiguredServerUrl(): string | undefined {
-  const server =
-    process.env.REDIACC_ACCOUNT_SERVER ??
-    readAccountPointer().accountServer ??
-    loadStoredSubscriptionToken()?.serverUrl;
-  return server ? normalizeServerUrl(server) : undefined;
+  return getConfigNamedServerUrl() ?? named(loadStoredSubscriptionToken()?.serverUrl);
 }
 
 /**
  * The server the active token belongs to, as something named it: for a REDIACC_TOKEN env token the
- * server the config universe names (getConfiguredServerUrl), else the server the stored token was
- * issued by. Never the production default, unlike the `serverUrl` of getSubscriptionTokenState,
+ * server REDIACC_ACCOUNT_SERVER or the config's `account.accountServer` names (never the stored
+ * token's server, which issued a different token), else the server the stored token was issued by. Never the production default, unlike the `serverUrl` of getSubscriptionTokenState,
  * which for an env token falls back to it. Background traffic (the audit flush) uses this, so a
  * token on a config that names no server sends nothing rather than reaching production.
  */
 export function getNamedTokenServerUrl(): string | undefined {
-  if (process.env[SUBSCRIPTION_TOKEN_ENV]?.trim()) return getConfiguredServerUrl();
-  return loadStoredSubscriptionToken()?.serverUrl;
+  if (process.env[SUBSCRIPTION_TOKEN_ENV]?.trim()) return getConfigNamedServerUrl();
+  return named(loadStoredSubscriptionToken()?.serverUrl);
 }
 
 export function loadEnvSubscriptionToken(): StoredSubscriptionToken | null {
