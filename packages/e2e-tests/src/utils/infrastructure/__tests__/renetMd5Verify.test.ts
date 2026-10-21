@@ -1,0 +1,77 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { InfrastructureManager } from '../InfrastructureManager';
+
+const LOCAL = 'a'.repeat(32);
+const OTHER = 'b'.repeat(32);
+
+const { IP, executeOnVM, waitForHost } = vi.hoisted(() => ({
+  IP: '192.168.111.22',
+  executeOnVM:
+    vi.fn<
+      (ip: string, command: string) => Promise<{ stdout: string; stderr: string; code: number }>
+    >(),
+  waitForHost: vi.fn<(host: string, timeoutMs?: number, intervalMs?: number) => Promise<boolean>>(),
+}));
+
+vi.mock('../../bridge/OpsManager', () => ({
+  getOpsManager: () => ({
+    getBridgeVMIp: () => IP,
+    getWorkerVMIps: () => [IP],
+    getAllVMIps: () => [IP],
+    executeOnVM,
+  }),
+}));
+vi.mock('../../RenetResolver', () => ({ getRenetResolver: () => ({}) }));
+vi.mock('../../ssh', () => ({ getSSHExecutor: () => ({ waitForHost }) }));
+
+const REFUSED = {
+  stdout: '',
+  stderr: `ssh: connect to host ${IP} port 22: Connection refused`,
+  code: 255,
+};
+
+type Verifier = { verifyRemoteRenetMD5(ip: string, md5: string): Promise<void> };
+const verify = (): Promise<void> =>
+  (new InfrastructureManager() as unknown as Verifier).verifyRemoteRenetMD5(IP, LOCAL);
+
+describe('InfrastructureManager post-deploy renet MD5 verification', () => {
+  beforeEach(() => {
+    executeOnVM.mockReset();
+    waitForHost.mockReset();
+    waitForHost.mockResolvedValue(true);
+  });
+
+  it('passes after one SSH refusal once the host answers again', async () => {
+    executeOnVM
+      .mockResolvedValueOnce(REFUSED)
+      .mockResolvedValueOnce({ stdout: `${LOCAL}\n`, stderr: '', code: 0 });
+    await expect(verify()).resolves.toBeUndefined();
+    expect(waitForHost).toHaveBeenCalledTimes(1);
+    expect(executeOnVM).toHaveBeenCalledTimes(2);
+  });
+
+  it('names the transport failure and its stderr when the refusal persists', async () => {
+    executeOnVM.mockResolvedValue(REFUSED);
+    const error = await verify().catch((e: Error) => e);
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toContain('SSH transport failure');
+    expect(message).toContain('exit 255');
+    expect(message).toContain('Connection refused');
+    expect(message).not.toContain('remote=null');
+    expect(waitForHost.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it('fails at once on a real mismatch without retrying', async () => {
+    executeOnVM.mockResolvedValue({ stdout: `${OTHER}\n`, stderr: '', code: 0 });
+    await expect(verify()).rejects.toThrow(`local=${LOCAL}, remote=${OTHER}`);
+    expect(executeOnVM).toHaveBeenCalledTimes(1);
+    expect(waitForHost).not.toHaveBeenCalled();
+  });
+
+  it('fails at once when the binary is missing and ssh itself worked', async () => {
+    executeOnVM.mockResolvedValue({ stdout: '', stderr: '', code: 0 });
+    await expect(verify()).rejects.toThrow('remote=null');
+    expect(executeOnVM).toHaveBeenCalledTimes(1);
+  });
+});
