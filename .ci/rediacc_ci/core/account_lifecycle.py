@@ -703,6 +703,9 @@ def start_rustfs() -> None:
         docker_ghost_clean()
         os.environ["CONFIG_RUSTFS_PORT"] = str(RUSTFS_PORT)
         directory = account.account_dir()
+        # Public since start_backup_plane calls it on a fresh CI checkout, where nothing has made the log directory
+        # yet (run 39658436875: FileNotFoundError on .account-logs/rustfs.log); _serve used to make it first.
+        os.makedirs(account.log_directory(), exist_ok=True)
         with open(os.path.join(account.log_directory(), "rustfs.log"), "wb") as handle:
             message = local_common.cd_error(directory)
             if message is not None:
