@@ -1603,6 +1603,57 @@ def test_a_teardown_leftover_names_the_delete_error_and_the_run_says_it_judged(
     assert "Nothing on the VMs was judged" not in out, out
 
 
+class _GatewayDiesBeforeTeardown(FakeAccount):
+    """P4 asks `gateway_healthy` once; the second ask is teardown's, by which time a stopped run's gateway is gone (2026-10-21)."""
+
+    def __init__(self, *, revive_error: str = "") -> None:
+        super().__init__()
+        self.revive_error = revive_error
+        self.healthy_calls = 0
+
+    def gateway_healthy(self) -> bool:
+        self.healthy_calls += 1
+        if self.healthy_calls == 2:
+            self.healthy = False
+            self.restart_error = self.revive_error
+        return self.healthy
+
+
+def test_teardown_revives_a_gateway_that_died_and_deletes_the_forks(tmp_path: pathlib.Path) -> None:
+    account = _GatewayDiesBeforeTeardown()
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.healthy_calls == 2, account.healthy_calls
+    assert len(account.restarts) >= 1, account.restarts
+    assert account.minted == 2, (
+        "the token is re-minted after the revival, never trusted across a restart"
+    )
+    assert "teardown: the dev gateway was gone" in out, out
+    assert receipt["teardown"] == {"ok": True, "leftovers": []}
+
+
+def test_a_gateway_teardown_cannot_revive_is_a_named_leftover(tmp_path: pathlib.Path) -> None:
+    account = _GatewayDiesBeforeTeardown(revive_error="gateway did not come up")
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "teardown-failed"
+    assert any(
+        "dev gateway gone before teardown and not revived (gateway did not come up)" in x
+        for x in receipt["teardown"]["leftovers"]
+    ), receipt["teardown"]
+
+
+def test_a_live_gateway_is_not_restarted_by_teardown(tmp_path: pathlib.Path) -> None:
+    account = FakeAccount()
+    world = make_world(tmp_path)
+    rc, out, _receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.minted == 1, account.minted
+    assert "teardown: the dev gateway was gone" not in out, out
+
+
 def test_a_delete_that_answers_rc0_and_stays_listed_is_named(tmp_path: pathlib.Path) -> None:
     """Review a6e93fb9.2: a fork the delete reported gone but the list still shows is a leftover with its own wording."""
     world = make_world(tmp_path, sticky_suffix="-b")

@@ -849,6 +849,8 @@ class VmCheck:
         self.minted_on_loopback = False
         # True once P4 minted on the dev gateway: every later `./rdc.sh` call then runs with RDC_DEV=1.
         self.dev_config = False
+        # The host `_mint_on` last routed the token to, so a teardown that has to revive the gateway re-mints on the same address.
+        self.mint_host = ""
         self.password: str | None = None
         self.machine_ip = ""
         self.grand_created = False
@@ -1467,6 +1469,7 @@ class VmCheck:
         self.token = token
         self.account_server = server
         self.dev_config = True
+        self.mint_host = host
         self.say(
             "        "
             + "minted a token for %s (scopes %s)" % (ACCOUNT_LOGIN, ",".join(TOKEN_SCOPES))
@@ -2372,8 +2375,39 @@ class VmCheck:
         else:
             self.record("T", "teardown clean", True)
 
+    def _revive_gateway_for_teardown(self) -> str | None:
+        """Bring the dev gateway back when teardown needs it and it is gone; a leftover note when that fails, else None.
+
+        A stopped run can lose the gateway it started detached: the harness kills by process tree, the `run.sh account dev` wrapper then removes `.account-state`, and every `repo delete` under RDC_DEV=1 fails "no running dev gateway recorded" (2026-10-21, forks vmc-10210020-1b0ebe-a/-b left behind). A restart rotates the dev passwords and may move the port, so the token is minted again on the same host rather than trusted.
+        """
+        if not (self.dev_config and self.forks) or self.account.gateway_healthy():
+            return None
+        record_path, log_path = self._gateway_paths()
+        try:
+            self.account.restart(log_path)
+            self.account.detach()
+            digest = self.account_digest_fn(self.root)
+            if digest is not None:
+                self._write_gateway_record(record_path, self.account.gateway_state(), digest)
+            self._mint_on(self.mint_host or "localhost")
+        except (
+            NotVerifiedError,
+            lib.GatewayError,
+            OSError,
+            RuntimeError,
+            subprocess.SubprocessError,
+        ) as exc:
+            return "dev gateway gone before teardown and not revived (%s)" % exc
+        self.say(
+            "        teardown: the dev gateway was gone, so it was restarted and the token re-minted before the deletes"
+        )
+        return None
+
     def _teardown_steps(self) -> list[str]:
         leftovers: list[str] = []
+        revive_failure = self._revive_gateway_for_teardown()
+        if revive_failure:
+            leftovers.append(revive_failure)
         if self.connection:
             res = self.rdc("vscode", "cleanup", "-c", self.connection, refuse=False)
             if res.rc != 0:
