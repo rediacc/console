@@ -70,6 +70,10 @@ BANDS = (("early", 0.75), ("late", 0.98))
 # THE EFFORT TUNER'S MOMENT (agent/plans/PLAN-stop-hook-effort-tuning.md T4, operator 2026-10-14: "at the end of each context when we detect the session is close to compaction (i.e. 85% is full?)"). Not a band: it announces nothing here. The Stop hook reads the fraction band-notice already saves (`usage` over `threshold`) and asks for the `effort-tuner` sub-agent once per epoch.
 TUNE_FRACTION = 0.85
 
+# THE /wisdom MOMENT (operator 2026-10-21: near compaction the session hands its important in-flight work to sub-agents with full briefs, so the next context does not rediscover it). Not a band either: the Stop hook reads the same saved fraction and blocks with `wisdom-due` until STATE.md carries a `## Delegated` section written past this point. NOT the late band: 98% of a
+# 967,000 threshold leaves 19,340 tokens, which one `worklist.py --state` rewrite at its p99 fits and a round of sub-agent briefs does not. 92% leaves about 77,000 on a 1M window. The operator asked by hand at 935,224 of 967,000 (96.7%) on 2026-10-21, because nothing had asked.
+WISDOM_FRACTION = 0.92
+
 
 def used_fraction(state):
     """`usage / threshold` from a band state file, or None when either is missing."""

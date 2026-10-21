@@ -506,6 +506,10 @@
     },
     "soaked-pins": {
       "advise": "smart"
+    },
+    "wisdom-due": {
+      "block": "low",
+      "advise": "quiet"
     }
   },
   "tuned": {
