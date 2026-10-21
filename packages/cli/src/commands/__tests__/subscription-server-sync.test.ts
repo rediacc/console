@@ -95,6 +95,19 @@ describe('resolveAndSyncServer', () => {
     expect(writtenPointers()).toContain('/account/e2ePublicKey');
   });
 
+  it('keeps the cause of a rejection that is not an Error in both warnings', async () => {
+    mockFetchServerInfo.mockRejectedValueOnce('socket hang up');
+    await resolveAndSyncServer({});
+    expect(mockWarn).toHaveBeenCalledWith(
+      'server-info unreachable at http://gateway.test:4800; the saved channel and e2e key are kept: socket hang up'
+    );
+    mockUpdateConfigAtPointer.mockImplementation((_name: string, pointer: string) =>
+      pointer === '/account/updateChannel' ? Promise.reject('quota') : Promise.resolve()
+    );
+    await resolveAndSyncServer({});
+    expect(mockWarn).toHaveBeenCalledWith('update channel not saved: quota');
+  });
+
   it('skips the writes for a config that does not exist yet', async () => {
     mockExists.mockResolvedValue(false);
     await expect(resolveAndSyncServer({})).resolves.toBe('http://gateway.test:4800');
