@@ -128,7 +128,7 @@ const GREENLIGHT_REASON_RE = /^greenlight:\d+$/;
 
 // planCoverageIsFull(plan) -> did that run cover every key, by execution or by evidence? THE MODE LABEL IS NOT THE ANSWER, and reading it as one is what kept this engine from ever reducing a round.
 //
-// scope-shadow.sh flips `mode` to 'reduced' whenever the cross-PR greenlight skips a single key, and it is right to: the plan no longer describes a round that executed everything. But `renet` and `account_e2e` closures change rarely, so on this repo the flip fires on nearly every run, and a run that executed sixteen of eighteen keys and held greenlight EVIDENCE for the other two
+// scope-shadow.sh flips `mode` to 'reduced' whenever the cross-PR greenlight skips a single key, and it is right to: the plan no longer describes a round that executed everything. But `renet` and `account_e2e` closures change rarely, so on this repo the flip fires on nearly every run, and a run that executed seventeen of nineteen keys and held greenlight EVIDENCE for the other two
 // was refused as a baseline exactly like a run that skipped its way to green. Measured over the 14 console PR runs from 30944973190 to 30983418337: every single walk died at the merge parent, and no job was ever skipped with reason 'out-of-scope'.
 //
 // So the question is asked per key instead of per label. A key covers if it was planned to RUN (the reconciler, which every caller of this predicate runs afterwards, then proves it actually ran) or if it was skipped on a greenlight, whose evidence is a DIFFERENT run in which that job's exact input closure executed green (greenlight.cjs's rule 1: "asks whether the job RAN, not what

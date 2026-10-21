@@ -12,7 +12,7 @@
 // exact failure it exists to catch (a skip nobody attested) read as green.
 //
 // PRE-EXISTING SKIPS ARE NOT SCOPE DECISIONS, and conflating them is what would have made this gate unshippable. Long before the scope engine existed, ci.yml skipped whole columns for reasons of its own: `full_suite` is false on every push-to-main, `pointer_bump_only` cuts the entire expensive pipeline on a submodule-pointer PR, and `is_bot` cuts the staging chain. A plan that
-// says only "scope wants unit to run" is therefore an incomplete prediction: on a pointer-bump PR every one of the 19 keys is planned `run: true` and every one of them skips, so a live gate would report eighteen `planned-run-but-skipped` failures on a run where nothing whatsoever went wrong. The plan now carries the observed condition values (`plan.conditions`) and the reconciler
+// says only "scope wants unit to run" is therefore an incomplete prediction: on a pointer-bump PR every one of the 19 keys is planned `run: true` and every one of them skips, so a live gate would report nineteen `planned-run-but-skipped` failures on a run where nothing whatsoever went wrong. The plan now carries the observed condition values (`plan.conditions`) and the reconciler
 // derives the exemption itself, per PREEXISTING_CONDITIONS below.
 //
 // Usage: skip-plan-reconcile.cjs --plan <plan.json> --jobs <jobs.json> --run-id <id> plan.json: the attested skip-plan artifact (run_id, mode, conditions,
@@ -96,7 +96,7 @@ const FLAT_JOB_KEYS = new Set(['package_tests']);
 //       install_methods (ci.yml:1083); build-docker-fast -> elite_run
 // (ci.yml:741) - ops and package_tests carry their own explicit clause (ci.yml:719, ci.yml:584), which is load-bearing: neither `if:` references its build need, so under always() they would otherwise RUN and die fetching a missing artifact (the comment at ci.yml:712-714).
 //
-// is_bot ci.yml:105 <- rediacc_ci.ci.initialize (is_bot_commit). TRUE only for a push authored by github-actions[bot] or dependabot[bot]. - install_methods ONLY, via stage-artifacts (ci.yml:658). The other seventeen need no entry: is_bot can only be true on a `push`, where full_suite is already false and already exempts them. Listing them would be a second, redundant reason for the same skip and would
+// is_bot ci.yml:105 <- rediacc_ci.ci.initialize (is_bot_commit). TRUE only for a push authored by github-actions[bot] or dependabot[bot]. - install_methods ONLY, via stage-artifacts (ci.yml:658). The other eighteen need no entry: is_bot can only be true on a `push`, where full_suite is already false and already exempts them. Listing them would be a second, redundant reason for the same skip and would
 // make the annotation order load-bearing for no gain.
 //
 // NOT MODELLED, and the omission is deliberate: a planned job can also skip because an upstream job FAILED (quality failing skips package_tests,
