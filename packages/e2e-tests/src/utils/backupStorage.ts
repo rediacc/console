@@ -49,6 +49,8 @@ export interface BackupManifest {
   totalBytes: number;
   addedBytes: number;
   addedChunkCount: number;
+  /** The snapshot stores a sealed browse listing (`rdc backup browse --at` can open it). */
+  hasIndex?: boolean;
   createdAt: string;
 }
 

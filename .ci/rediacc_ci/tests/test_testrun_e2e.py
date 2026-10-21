@@ -9,6 +9,7 @@ INTENTIONAL DELTAS (Rule T), each pinned by a test that fails on the bash behavi
 from __future__ import annotations
 
 import json
+import os
 import typing
 
 import pytest
@@ -224,3 +225,27 @@ def test_shard_spec_must_be_index_over_of() -> None:
     with pytest.raises(shard.ShardError):
         shard.parse_spec("1/x")
     assert shard.parse_spec("3/8") == (3, 8)
+
+
+def test_delta_a_local_run_pins_the_renet_data_dir_that_ops_up_staged(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """`CI=true` from the generated .env sends renet to /tmp/renet; the VMs' key is under ~/.renet."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.delenv("RENET_DATA_DIR", raising=False)
+    e2e.pin_local_renet_data_dir()
+    assert os.environ["RENET_DATA_DIR"] == str(tmp_path / ".renet")
+
+
+def test_delta_the_data_dir_pin_leaves_actions_and_an_explicit_value_alone(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.delenv("RENET_DATA_DIR", raising=False)
+    e2e.pin_local_renet_data_dir()
+    assert "RENET_DATA_DIR" not in os.environ
+    monkeypatch.delenv("GITHUB_ACTIONS")
+    monkeypatch.setenv("RENET_DATA_DIR", "/elsewhere")
+    e2e.pin_local_renet_data_dir()
+    assert os.environ["RENET_DATA_DIR"] == "/elsewhere"

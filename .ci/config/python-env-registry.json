@@ -1240,6 +1240,10 @@
       "STRIPE_SANDBOX_SECRET_KEY",
       "TMPDIR"
     ],
+    ".ci/rediacc_ci/testrun/e2e.py": [
+      "GITHUB_ACTIONS",
+      "RENET_DATA_DIR"
+    ],
     ".ci/rediacc_ci/testrun/install_methods.py": [
       "DOCKER_TAG",
       "RELEASES_BASE_URL",
@@ -1791,6 +1795,9 @@
     ],
     ".ci/rediacc_ci/tests/test_setup_install_deps.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_testrun_e2e.py": [
+      "RENET_DATA_DIR"
     ],
     ".ci/rediacc_ci/tests/wkloader.py": [
       "PATH"

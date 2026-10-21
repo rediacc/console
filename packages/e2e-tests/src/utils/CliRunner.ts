@@ -107,7 +107,7 @@ export class CliRunner {
 
   /**
    * Resolve the CLI. CI installs it globally (rediacc_ci.setup.install_cli_global runs in
-   * every e2e job), so prefer `rdc` on PATH there; locally fall back to the
+   * every e2e job), so prefer `rdc` on PATH there (GITHUB_ACTIONS); anywhere else use the
    * built bundle via node. `E2E_CLI_BIN` overrides both.
    */
   static create(options: CliRunnerOptions = {}): CliRunner {
@@ -142,7 +142,8 @@ export class CliRunner {
       env.PATH = `${path.dirname(devRenetPath)}${path.delimiter}${env.PATH ?? ''}`;
     }
 
-    if (process.env.CI) {
+    // GITHUB_ACTIONS, not CI: the generated .env carries CI=true for every local run too (create_e2e_env), and keying on it sent a local run to whatever stale `rdc` the PATH held (a 1.3.12 without `--at`) instead of this checkout's bundle. Only a runner that ran install_cli_global has a PATH `rdc` built from this commit.
+    if (process.env.GITHUB_ACTIONS === 'true') {
       return new CliRunner('rdc', [], env, devRenetPath, configName);
     }
     // packages/e2e-tests/src/utils -> packages/cli/dist/cli-bundle.cjs
