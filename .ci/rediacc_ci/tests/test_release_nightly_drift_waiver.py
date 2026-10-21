@@ -302,6 +302,22 @@ def test_shard_receipts_without_a_failed_shard_is_refused() -> None:
     assert "Shard receipts" in reason
 
 
+def test_a_stray_failure_inside_shard_receipts_is_refused() -> None:
+    """Only the receipts echo is derived: another failed step in the same job is judged like any step, beside a drift-failed shard too."""
+    jobs = [
+        *green_jobs(),
+        job("Quality / Code (1)", "failure", [step("Pin upstream freshness", "failure")]),
+        job(
+            "Quality / Shard receipts",
+            "failure",
+            [step("Download shard receipts", "failure"), step("Quality shard receipts", "failure")],
+        ),
+    ]
+    accepted, reason = nightly_failures_are_drift_only(jobs)
+    assert not accepted
+    assert "Download shard receipts" in reason
+
+
 def test_an_unreadable_lock_refuses(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
