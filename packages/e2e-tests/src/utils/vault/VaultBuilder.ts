@@ -117,6 +117,15 @@ export class VaultBuilder {
   }
 
   /**
+   * Supply a repository's LUKS passphrase, keyed by GUID, the way the CLI's vault carries it.
+   */
+  withRepositoryCredential(guid: string, credential: string): this {
+    this.vault.repository_credentials ??= {};
+    this.vault.repository_credentials[guid] = credential;
+    return this;
+  }
+
+  /**
    * Set the primary machine configuration.
    */
   withMachine(ip: string, user: string, datastore?: string, port?: number): this {
