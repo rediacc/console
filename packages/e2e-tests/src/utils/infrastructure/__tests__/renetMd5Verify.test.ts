@@ -81,6 +81,37 @@ type Retrier = { retryOnceOnTransportFailure(ip: string, run: () => Promise<Step
 const retry = (run: () => Promise<Step>): Promise<Step> =>
   (new InfrastructureManager() as unknown as Retrier).retryOnceOnTransportFailure(IP, run);
 
+describe('InfrastructureManager post-deploy MD5 check on an unreachable network', () => {
+  beforeEach(() => {
+    executeOnVM.mockReset();
+    waitForHost.mockReset();
+    waitForHost.mockResolvedValue(true);
+  });
+
+  it('waits and reads again when ssh reports the network unreachable', async () => {
+    executeOnVM
+      .mockResolvedValueOnce({
+        stdout: '',
+        stderr: `ssh: connect to host ${IP} port 22: Network is unreachable`,
+        code: 1,
+      })
+      .mockResolvedValueOnce({ stdout: `${LOCAL}\n`, stderr: '', code: 0 });
+    await expect(verify()).resolves.toBeUndefined();
+    expect(waitForHost).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not read a remote message that merely says "host is down" as a transport failure', async () => {
+    executeOnVM.mockResolvedValue({
+      stdout: '',
+      stderr: 'md5sum: the host is down for maintenance',
+      code: 1,
+    });
+    const error = await verify().catch((e: Error) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(waitForHost).not.toHaveBeenCalled();
+  });
+});
+
 describe('InfrastructureManager install step retry', () => {
   beforeEach(() => {
     waitForHost.mockReset();

@@ -31,7 +31,7 @@ const VERIFY_TRANSPORT_ATTEMPTS = 4;
 const VERIFY_WAIT_MS = 45000;
 const VERIFY_WAIT_INTERVAL_MS = 3000;
 const SSH_TRANSPORT_FAILURE_PATTERN =
-  /connection (refused|timed out|reset|closed)|no route to host|network is unreachable|host is down|could not resolve|broken pipe|kex_exchange_identification/i;
+  /connection (refused|timed out|reset|closed)|no route to host|ssh: connect to host \S+ port \d+: (network is unreachable|host is down)|could not resolve|broken pipe|kex_exchange_identification/i;
 
 /** ssh itself failed (exit 255 or a connect error), as opposed to the remote command failing. */
 function isSSHTransportFailure(code: number, stderr: string): boolean {
