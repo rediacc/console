@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
+import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import { CliRunner } from '../src/utils/CliRunner';
 
@@ -21,10 +22,8 @@ const M1 = 'machine-11';
 const M2 = 'machine-12';
 const M1_IP = `${NET_BASE}.${workers[0] ?? '11'}`;
 const M2_IP = `${NET_BASE}.${workers[1] ?? '12'}`;
-// SSH into the ops VMs: same key the bridge harness's outer hop uses (RENET_DATA_DIR/staging/.ssh/id_rsa), overridable for a non-default layout.
-const SSH_KEY =
-  process.env.E2E_SSH_KEY ??
-  `${process.env.RENET_DATA_DIR ?? `${process.env.HOME}/.rediacc`}/staging/.ssh/id_rsa`;
+// SSH into the ops VMs: the key the bridge harness's outer hop uses, resolved by the same function (RENET_DATA_DIR, then $RUNNER_TEMP/renet under CI, then ~/.renet), overridable for a non-default layout.
+const SSH_KEY = process.env.E2E_SSH_KEY ?? getSSHPrivateKeyPath();
 // The ops VMs are cloud-inited with the INVOKING user (the whole bridge harness connects as process.env.USER — see BridgeTestRunner/ InfrastructureManager), and the staged key authenticates that user, not root. TRANSCRIPT-CONFIRMED live: as root, auth fails ("all configured authentication methods failed") before anything else can run.
 const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
 

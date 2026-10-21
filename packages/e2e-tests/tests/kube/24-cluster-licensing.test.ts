@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
+import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import { CliRunner } from '../../src/utils/CliRunner';
@@ -133,9 +134,8 @@ const vmVerdict: PrerequisiteVerdict = resolvePrerequisites({
 /** Own config namespace: suite 23's `e2e-cli` must not see these mutations. */
 const CFG = 'e2e-cluster';
 
-const SSH_KEY =
-  process.env.E2E_SSH_KEY ??
-  `${process.env.RENET_DATA_DIR ?? `${process.env.HOME}/.rediacc`}/staging/.ssh/id_rsa`;
+// The key the bridge harness uses, resolved by the same function (RENET_DATA_DIR, then $RUNNER_TEMP/renet under CI, then ~/.renet).
+const SSH_KEY = process.env.E2E_SSH_KEY ?? getSSHPrivateKeyPath();
 
 /**
  * Cluster verbs are gate class D: `assertCommandPolicy` refuses them in an
