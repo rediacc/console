@@ -1,23 +1,17 @@
-## SESSION d778be9d 2026-10-20T09:25:00Z
+## SESSION d778be9d 2026-10-20T19:21:49Z
 
-# STATE d778be9d (2026-10-20 ~09:50Z)
+# STATE d778be9d (2026-10-20 ~19:40Z)
 
-## Where
-Branch 1020-1, rebased onto origin/main db96dd025 (verify-rebase: 14 carried, 0 missing); local only, no PR yet; turbo on, batch-end push. PR #600 merged 07:42Z, v2.3.0 released to edge, GitLab mirror at db96dd025. Phase: build. Writers: none live.
-
-## main
-Operator pushed the five ci-trace hotfixes (309ea45fc..db96dd025) with COMMIT_POLICY_OK=1; Console CI on db96dd025 is watched by bg bm2oogch3; wake timer btqvqb50h.
-
-## Open, local, mine
-- #3b0fa70b secret rename: Part 27 classifies A=122/B=5/C=96; no operator door (org store empty). Next: line-level exclusion in scripts/ops/secret-rename.py, then --apply A+B with check_bws_map.py and check_workflow_submodule_deps.py.
-- #a42f8448 /branch-rebase precondition vs settings.local.json, and reference-transaction reading a branch move as a creation.
-- #c275adc4 messaging step 13: ci:quick rc 0 after the PR snapshot exists.
-- #f6fe02a8 awscli B7 timing: first CI run of 1020-1.
-- the ~20 post-merge items #6361fc5b unblocked (account-vm-check AV1-AV7 #c5305ed9 #bbd2e72c #5a6d9af6, #e82daa63, #ef99c717, #eaddeba0, #173c5f08, #f8a3f7c8, #5f43e8c8, #cba857c9, #ab92320e, #a5a1f981, #5c40caec, #d606a877, #3f17f69c, #dccf10ab, #ae671b8f, #24017fa4).
-
-## Operator
-- #ba1a4207 pins-soaked readonly token vs the artifact-only invariant (DEFAULT: report not-checked, keep the ruling).
+Branch 1020-1 (console, renet, account) local only; ~140 unpushed commits; turbo batch-end. PR-TASK 8ed364fe on every commit, no Co-Authored-By. Effort is low (operator). Main hotfix pushed by operator (8499d19af..1dd724036).
 
 ## Next action
-1. Done: review-finding fixes 177111780, gate-costs refresh 5dcde2ca4 (housekeeping nightly red on main).
-2. Work the post-merge items with writers (disjoint Owns), then the rename and #a42f8448.
+1. Writers running: #fd102e58 budget-freshness timeout (agent a71bd4e92fde3378f: gate_costs/freshness), #f6c74045 two pytest flakes under load (agent a35699a240aa8b6cb). Verify each (re-run its gate/tests), commit by explicit path with PR-TASK, tick.
+2. Then on a still HEAD run in parallel: `npm run vm:check -- --changed` (last run FAILED at A1.1 before account 431662b fixed the conformance test; renet 9a3590f changed) and `npm run ci:quick`. Expected only red: check:ci-plan-implementation P-A1 x4, carried in .ci/config/carried-reds.json (6d12af0df). Step 13 ee4a3a4a = that ci:quick rc (carry) + `worklist.py --list --open` unchanged.
+3. Push: renet 1020-1, account 1020-1, then console (`git push -u origin 1020-1` per repo); open PRs, console body with `Plan:` lines and an `Operational-Reason:` naming the 4 open boxes (chunk-store 2b7fdc6c box10 fleet e2e, pins T11 52effe0e, shell-sandbox E1 88c84d61 bridge-workers legs, pin-awscli B7 CI timing). Then pins-soaked dispatch twice with --ref 1020-1 (plain green, PINS_FIXTURE_FAIL=1 red) for T11.
+4. Before merge: #0707f67f the ~70 open below-threshold review findings (wl_review.py --check lists them).
+
+## Facts
+- Promoted: 1 remove-cross-session-messaging, 2 plan-per-pr-loop (R1 after merge), 3 pins-command, 4 shell-sandbox (E1), 5 backup-program (released to writers, operator 15:14Z).
+- Closed today: PLAN-vm-check, PLAN-account-vm-check (moved to _done), tooling-transformation all ticked (W7P5-c S 454268f9f).
+- Scratch clones /tmp/d778m/cs/{renet,account,console} are now stale; live tree is authoritative.
+- Load-flaky gates under ci:quick: browser-smoke fixed 550403dd3; budget-freshness and two pytest cases in hand.

@@ -66,9 +66,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-vm-check.md -- 8 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-shell-sandbox-readonly-view.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 140 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4c6d8ca541c945c3.
-- Leased items: 1: #0707f67f (worker:a4c6d8ca541c945c3, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 177 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 0.
 - Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
