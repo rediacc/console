@@ -116,6 +116,25 @@ def test_w4_a_new_epoch_asks_again(wl):
     assert NEEDLE in stop(wl, band(wl, 900_000, epoch=2, written=40_000), "after compaction").out
 
 
+def test_w6_a_rewrite_past_the_line_carrying_the_earlier_section_does_not_clear_it(wl):
+    """The section that cleared epoch 1, carried unchanged by a `--state` rewrite at 98% of epoch 2, is not a hand-over for epoch 2."""
+    wl.plant_state(UNDELEGATED)
+    assert NEEDLE in stop(wl, band(wl, 920_000, epoch=1)).out
+    wl.plant_state(DELEGATED)
+    wl.newturn()
+    assert NEEDLE not in stop(wl, band(wl, 925_000, epoch=1), "handed over").out
+    wl.newturn()
+    wl.plant_state(DELEGATED.replace("three writers out", "one writer out"))
+    got = stop(wl, band(wl, 950_000, epoch=2, written=948_000), "rewrote STATE.md")
+    assert NEEDLE in got.out, got.out[:1500]
+    wl.plant_state(
+        DELEGATED.replace("#1a07399b owns start_backup_plane.py", "#86b5992c owns tests/27")
+    )
+    wl.newturn()
+    got = stop(wl, band(wl, 955_000, epoch=2, written=953_000), "delegated again")
+    assert NEEDLE not in got.out, got.out[:1500]
+
+
 def test_w5_the_cap_saturated_wait_keeps_it(wl):
     """Every writer slot live and the rest queued stands the battery down (test_wl_cap_wait c1); wisdom-due is in wl_standdown.CORE, so it still blocks."""
     saturated(wl)

@@ -1,7 +1,7 @@
 ---
 description: Near compaction, hand the session's important in-flight work to sub-agents with self-contained briefs, record each brief on its worklist item and in STATE.md, commit verified work and arm the wake timer, so the next context continues the work instead of rediscovering it. The Stop hook orders it (`wisdom-due`) once the context passes 92% of auto-compact; running it earlier is safe.
 argument-hint: "[focus: the threads to hand over first; omit to judge from the open worklist]"
-allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git status:*), Bash(git log:*), Bash(git branch:*), Bash(date:*)
+allowed-tools: Bash(.claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/wl_wake.py:*), Bash(git add:*), Bash(git commit:*), Bash(git status:*), Bash(git log:*), Bash(git branch:*), Bash(date:*), Agent, SendMessage
 ---
 
 ## In flight, gathered
@@ -29,6 +29,6 @@ The summary that replaces this context keeps a fraction of what the context know
    - the acceptance check: the command whose rc 0 proves the work done;
    - the rules: writers never commit (the lead commits each spot-checked report by path); no `git checkout`, `restore`, `stash`, `clean`, `reset` or `add`; no regenerate or sync script (the report names one for the lead); the report lists the changed files and every command run with its exit code.
 4. **Record each hand-over** once the agent's real id is back, never a placeholder: `worklist.py --lease <me> <id> +120 worker:<agent-id>`, then `worklist.py --update <me> <id> 'BRIEF: <goal>; owns <files>; accept <command>; agent <agent-id>'`. A thread with no item gets one first (`worklist.py --add <me> '(<me8>) <text>'`).
-5. **Rewrite STATE.md** through `worklist.py --state <me>` (body on stdin, 250 to 4000 characters) with a `## Delegated` section, one line per agent (agent id, item id, files owned, acceptance check), and a `## Next action` naming what the lead does as each report lands (spot-check against the artifact, commit by path, tick with the sha). This rewrite is what clears the Stop hook's `wisdom-due`. Commit STATE.md by path.
+5. **Rewrite STATE.md** through `worklist.py --state <me>` (body on stdin, 250 to 4000 characters) with a `## Delegated` section, one line per agent (agent id, item id, files owned, acceptance check), and a `## Next action` naming what the lead does as each report lands (spot-check against the artifact, commit by path, tick with the sha). This rewrite is what clears the Stop hook's `wisdom-due`, provided the section is written for this context: a section carried over unchanged from the previous context does not count. Commit STATE.md by path.
 6. **Arm the wake timer**: `python3 .claude/hooks/stop/wl_wake.py <me>` as a background Bash call with `timeout: 2400000`. A second start prints ALREADY ARMED.
 7. **Report** one line per handed-over thread (item, agent, acceptance check) and one line for what stays with the lead.
