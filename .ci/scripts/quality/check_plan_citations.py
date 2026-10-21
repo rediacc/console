@@ -592,6 +592,46 @@ def commit_exists(root, token) -> bool:
     return r.returncode == 0 and bool(r.stdout.strip())
 
 
+_REACHABLE_OBJECTS: dict[str, frozenset[str]] = {}
+
+
+def _reachable_objects(root):
+    """Every object id reachable from HEAD and origin/main (when present), computed once per root.
+
+    `--missing=print` lists a promisor object CI's `blob:none` checkout has not fetched (prefixed `?`) instead of fetching it, so the set is the same locally and in CI.
+    """
+    key = str(root)
+    if key not in _REACHABLE_OBJECTS:
+        refs = ["HEAD", "origin/main"] if "origin/main" in reachability_refs(root) else ["HEAD"]
+        r = subprocess.run(
+            ["git", "-C", key, "rev-list", "--objects", "--missing=print", *refs],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+        )
+        _REACHABLE_OBJECTS[key] = frozenset(
+            line.split(" ", 1)[0].lstrip("?") for line in r.stdout.splitlines() if line
+        )
+    return _REACHABLE_OBJECTS[key]
+
+
+def content_object_is_reachable(root, token):
+    """A cited blob or tree that a fresh clone of HEAD (or origin/main) also holds.
+
+    Existence alone passed locally for an object only this clone had (a tree a tool wrote while hashing an uncommitted state), and CI then refused it as naming nothing (PR #601, PLAN-vm-check.md:137, 2026-10-21). Content addressing is why a cited blob survives a rebase-merge; it does not make an object that was never committed reachable.
+    """
+    r = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", token + "^{object}"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+    full = r.stdout.strip()
+    return r.returncode == 0 and full in _reachable_objects(root)
+
+
 def unresolved(root, kind, token):
     """(bad, why) -- False means the pointer lands somewhere real.
 
@@ -601,12 +641,17 @@ def unresolved(root, kind, token):
     A COMMIT MUST ALSO BE REACHABLE FROM HEAD; a blob or tree need only exist. See `commit_is_reachable` for why the two differ.
     """
     if kind == "object":
-        if (
-            R.resolve(root, "blob", token)[0]
-            or commit_is_reachable(root, token)
-            or R.resolve(root, "tree", token)[0]
-        ):
+        if commit_is_reachable(root, token):
             return False, ""
+        if R.resolve(root, "blob", token)[0] or R.resolve(root, "tree", token)[0]:
+            if content_object_is_reachable(root, token):
+                return False, ""
+            return True, (
+                "is a blob or tree that exists only in this clone, reachable from neither HEAD "
+                "nor origin/main, so a fresh checkout (CI's) does not have it: a tree or blob "
+                "a tool wrote while hashing an uncommitted state. Cite what it was, or the "
+                "committed file's blob (`git hash-object` of the committed content)"
+            )
         if commit_exists(root, token):
             return True, orphan_message(root)
         return True, (

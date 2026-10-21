@@ -344,3 +344,37 @@ def test_an_orphan_commit_kind_gets_the_orphan_message_naming_only_existing_refs
     _bad2, why2 = unresolved(root, "commit", sha)
     gate.assert_contains(why2, "HEAD or origin/main", "with the ref present both are named")
     gate.log_pass("commit kind: orphan message, refs named only when they exist")
+
+
+def test_a_cited_tree_only_this_clone_holds_reds_and_a_committed_one_passes(gate, tmp_path):
+    """PR #601: a tree a tool wrote while hashing an uncommitted state existed locally, so the gate passed, and CI refused it as naming nothing. A cited blob or tree must be reachable from HEAD."""
+    root = _init(tmp_path)
+    _write(root, "agent/PLAN-trees.md", "# PLAN: trees\nStatus: in-progress\n")
+    _write(root, "src/kept.txt", "kept\n")
+    base_sha = _commit(root, "base")
+    committed_tree = _git(root, "rev-parse", "HEAD^{tree}").strip()
+    _write(root, "src/scratch.txt", "never committed\n")
+    _git(root, "add", "src/scratch.txt")
+    loose_tree = _git(root, "write-tree").strip()
+    _git(root, "rm", "-q", "--cached", "src/scratch.txt")
+    (root / "src" / "scratch.txt").unlink()
+    _write(
+        root,
+        "agent/PLAN-trees.md",
+        "# PLAN: trees\nStatus: in-progress\n\nThe receipt ran on `%s`.\n" % loose_tree[:12],
+    )
+    _commit(root, "cite a tree only this clone holds")
+    result = _gate(root, base_sha)
+    gate.assert_exit(1, result, "a loose tree citation reds locally, as it does in CI")
+    gate.assert_contains(
+        result.out + result.err, "exists only in this clone", "the refusal names why"
+    )
+    _write(
+        root,
+        "agent/PLAN-trees.md",
+        "# PLAN: trees\nStatus: in-progress\n\nThe base tree is `%s`.\n" % committed_tree[:12],
+    )
+    _commit(root, "cite the committed tree instead")
+    ok = _gate(root, base_sha)
+    gate.assert_exit(0, ok, "a committed tree citation still passes")
+    gate.log_pass("a cited tree is judged by reachability, not presence")
