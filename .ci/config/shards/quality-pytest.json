@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-20T17:02:05.471Z",
+  "generatedAt": "2026-10-21T05:10:43.870Z",
   "legs": [
     {
       "index": 1,
@@ -140,6 +140,7 @@
         "pytest:.ci/rediacc_ci/tests/test_wl_proc.py",
         "pytest:.ci/rediacc_ci/tests/test_workflow_called_permissions.py",
         "pytest:.claude/rediacc_hooks/tests/test_bash_semantics.py",
+        "pytest:.claude/rediacc_hooks/tests/test_bulk_review_records.py",
         "pytest:.claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
         "pytest:.claude/rediacc_hooks/tests/test_goldenio_idempotent_mark.py",
         "pytest:.claude/rediacc_hooks/tests/test_hookio_world_symlink.py",
