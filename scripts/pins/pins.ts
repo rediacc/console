@@ -640,7 +640,7 @@ async function selectAndPlan(
         out.notChecked.push({ id: entry.id, submodules: v.notChecked, why });
         continue;
       }
-      // AN UNNAMED SELECTION (`bump --all`, `apply-soaked`) skips a pin it could never compare for a reason already on record, the same leaves check:ci-pin-freshness leaves alone: a `source: none` leaf (its BLOCKER is in the registry) and a leaf no driver serves whose own family gate judges it. Unknown upstream stays a refusal (fail closed); a pin named on the command line is always refused when not compared.
+      // AN UNNAMED SELECTION (`bump --all`, `apply-soaked`) skips a pin it could never compare for a reason already on record: a `source: none` leaf (its BLOCKER is in the registry, as check:ci-pin-freshness counts it) and a leaf no driver serves whose own family gate judges it (check:ci-pin-freshness leaves every family-gated leaf to its gate; a family-gated leaf a driver does serve is still bumped here). Unknown upstream stays a refusal (fail closed); a pin named on the command line is always refused when not compared.
       if (!explicit && v.state === 'not-compared') {
         const family = familyGateOf(entry.gates);
         if (entry.source.type === 'none' || (family && !driverFor(entry, ctx))) {
@@ -2160,7 +2160,7 @@ const CASES: Record<string, Case> = {
       const fx = fixtureTree();
       const file = path.join(fx.root, '.ci/config/pins.json');
       const reg = JSON.parse(fs.readFileSync(file, 'utf8')) as {
-        entries: Array<Record<string, unknown>>;
+        entries: Record<string, unknown>[];
       };
       const base = reg.entries.find((e) => e.id === 'embed:tool') as Record<string, unknown>;
       reg.entries.push({
