@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { expect } from '@playwright/test';
+import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { DEFAULT_DATASTORE_PATH } from '../../constants';
 import {
   type BackupUsage,
@@ -19,10 +20,8 @@ const ACCOUNT_TOKEN = (process.env.E2E_ACCOUNT_API_TOKEN ?? '').trim();
 export const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
 export const DS = DEFAULT_DATASTORE_PATH;
 
-// `~/.renet`, NOT `~/.rediacc`: the fallback is the harness's own renet data dir (packages/provisioning getRenetDataDir), which is where `ops up` stages the fleet key. The `.rediacc` spelling this file carried resolves to a path that does not exist on a default box, so every bridge call fell back to whatever ~/.ssh happened to hold. Suite 23 still carries the same typo.
-const SSH_KEY =
-  process.env.E2E_SSH_KEY ??
-  `${process.env.RENET_DATA_DIR ?? `${process.env.HOME}/.renet`}/staging/.ssh/id_rsa`;
+// The key `ops up` stages for the fleet. getSSHPrivateKeyPath resolves the renet data dir exactly as the bridge's SSH executor does (RENET_DATA_DIR, then $RUNNER_TEMP/renet under CI, then ~/.renet), so the CLI config names the same key the bridge calls use. A hand-built `~/.renet` fallback ignored the CI autodetect: the browse-at job stages the key under $RUNNER_TEMP/renet, `config init --ssh-key` pointed at a missing file, and `repo create` failed with "has no SSH key configured" (run 39673666688). Suite 23 still carries its own hand-built path.
+const SSH_KEY = process.env.E2E_SSH_KEY ?? getSSHPrivateKeyPath();
 
 // Machine registration for the CLI, same wiring suite 23 uses. The CLI needs its own machine entries: the bridge runners SSH straight through, but `rdc repo create` (the only thing that installs a repository license) addresses a machine BY NAME out of the config.
 const NET_BASE = process.env.VM_NET_BASE ?? '192.168.111';
