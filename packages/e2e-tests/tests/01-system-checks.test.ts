@@ -133,11 +133,18 @@ test.describe('System Functions @bridge @smoke', () => {
 
   // Repo-key shells and transfers refuse to run without Landlock, so every supported OS leg must report it, except where the measured default boot leaves it out of `lsm=`. getCombinedOutput lowercases, so the patterns are lowercase; "status: not available" cannot match `status:\s*available`.
   test('sandbox-exec --detect reports Landlock as measured for this OS and records the ABI', async () => {
-    const release = runner.getCombinedOutput(
-      await runner.executeOnWorker('. /etc/os-release && echo "os=$ID-${VERSION_ID%%.*}"')
-    );
-    const os = release.match(/os=([a-z0-9-]+)/)?.[1];
-    expect(os, `could not read the worker's OS from /etc/os-release: ${release}`).toBeTruthy();
+    // Read the file plainly and parse it here: a `$ID` in the remote command is expanded by the runner's own shell
+    // before it reaches the VM (run 39658436875 printed `os=-`), so no shell variable may carry the answer.
+    const release = runner.getCombinedOutput(await runner.executeOnWorker('cat /etc/os-release'));
+    const field = (name: string) =>
+      release.match(new RegExp(`^${name}="?([^"\\n]*)"?$`, 'm'))?.[1]?.trim() ?? '';
+    const id = field('id');
+    const major = field('version_id').split('.')[0];
+    expect(
+      id && major,
+      `could not read the worker's OS from /etc/os-release: ${release}`
+    ).toBeTruthy();
+    const os = `${id}-${major}`;
     // The kernel's own list of active LSMs: Landlock is usable only when it is in it.
     const lsmRead = await runner.executeOnWorker('cat /sys/kernel/security/lsm');
     const lsm = runner.getCombinedOutput(lsmRead).trim();
@@ -157,7 +164,7 @@ test.describe('System Functions @bridge @smoke', () => {
     expect(lsm.split(',').includes('landlock'), `lsm=${lsm} vs detect: ${output}`).toBe(
       /status:\s*available/.test(output)
     );
-    if (LANDLOCK_INACTIVE_BY_DEFAULT.has(os ?? '')) {
+    if (LANDLOCK_INACTIVE_BY_DEFAULT.has(os)) {
       // Repo-key shells refuse on this OS until Landlock is added to lsm= (PLAN-shell-sandbox-readonly-view E1). A pass here
       // after an image or kernel change means Landlock became active: move the OS out of the set.
       expect(
