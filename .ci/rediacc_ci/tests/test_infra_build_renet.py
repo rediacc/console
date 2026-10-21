@@ -444,6 +444,10 @@ def test_an_old_format_stamp_is_rebuilt(tmp_path):
     assert str(out["raw_stamp"]).count("|") == 2
 
 
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="root reads a mode-000 file, so an unreadable binary cannot be built; CI runs pytest as the runner user",
+)
 def test_an_unreadable_binary_under_an_empty_digest_stamp_is_not_skipped(tmp_path):
     """The skip decision itself: `<identity>|` beside a binary that cannot be read must not read as "already built"."""
     root = _fixture(tmp_path / "e", binary="renet", stamp="default|%s|" % EMPTY_KEY_DIGEST)
@@ -459,6 +463,10 @@ def test_an_unreadable_binary_under_an_empty_digest_stamp_is_not_skipped(tmp_pat
     assert "already built the same way" not in out["stderr"], out
 
 
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="root reads a mode-000 file, so an unreadable binary cannot be built; CI runs pytest as the runner user",
+)
 def test_a_build_whose_output_cannot_be_read_is_not_stamped(tmp_path):
     """A stamp `<identity>|` would vouch for bytes nobody hashed, so a build whose output cannot be read exits 1 and writes none."""
     root = _fixture(tmp_path / "w")
