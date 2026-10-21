@@ -28,5 +28,11 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-external-links",
+      "findings": "*",
+      "reason": "BLOCKER: this devbox reaches no TCP port of gdpr-info.eu (116.202.167.127 resolves, curl HTTP 000 and EHOSTUNREACH 3/3 on 2026-10-21) while CI does: the 2026-10-21 nightly run 39551246836 failed Quality / Content only on dependency freshness, its External links step passed. CI still judges this gate on every run. Remove once this network reaches the host again (rule 2 then refuses the entry)."
+    }
+  ]
 }
