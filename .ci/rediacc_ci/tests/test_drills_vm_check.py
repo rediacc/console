@@ -1606,9 +1606,10 @@ def test_a_teardown_leftover_names_the_delete_error_and_the_run_says_it_judged(
 class _GatewayDiesBeforeTeardown(FakeAccount):
     """P4 asks `gateway_healthy` once; the second ask is teardown's, by which time a stopped run's gateway is gone (2026-10-21)."""
 
-    def __init__(self, *, revive_error: str = "") -> None:
+    def __init__(self, *, revive_error: str = "", remint_error: str = "") -> None:
         super().__init__()
         self.revive_error = revive_error
+        self.remint_error = remint_error
         self.healthy_calls = 0
 
     def gateway_healthy(self) -> bool:
@@ -1616,6 +1617,7 @@ class _GatewayDiesBeforeTeardown(FakeAccount):
         if self.healthy_calls == 2:
             self.healthy = False
             self.restart_error = self.revive_error
+            self.mint_error = self.remint_error
         return self.healthy
 
 
@@ -1643,6 +1645,19 @@ def test_a_gateway_teardown_cannot_revive_is_a_named_leftover(tmp_path: pathlib.
         "dev gateway gone before teardown and not revived (gateway did not come up)" in x
         for x in receipt["teardown"]["leftovers"]
     ), receipt["teardown"]
+
+
+def test_a_revived_gateway_that_refuses_the_new_token_is_a_named_leftover(
+    tmp_path: pathlib.Path,
+) -> None:
+    account = _GatewayDiesBeforeTeardown(remint_error="login refused (%s)")
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert len(account.restarts) >= 1, "the restart ran before the mint failed"
+    left = receipt["teardown"]["leftovers"]
+    assert any("dev gateway gone before teardown and not revived" in x for x in left), left
+    assert account.password not in out, "the per-run password never reaches the output"
 
 
 def test_a_live_gateway_is_not_restarted_by_teardown(tmp_path: pathlib.Path) -> None:
