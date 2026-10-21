@@ -412,6 +412,7 @@ def test_env_signing_pair_is_reused_and_only_its_public_half_published(
 ) -> None:
     monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB")
+    monkeypatch.setattr(sa, "derived_public_key", lambda: "ENV-PUB")
     seen, gh_env = drive_run(tmp_path, monkeypatch, github_env=True)
     assert seen["edPriv"] == "ENV-PRIVATE-SENTINEL"
     assert seen["edPub"] == "ENV-PUB"
@@ -426,6 +427,26 @@ def test_env_signing_pair_is_reused_and_only_its_public_half_published(
     for text in (written, out.out, out.err):
         assert "ENV-PRIVATE-SENTINEL" not in text
         assert "ACCOUNT_ED25519_PRIVATE_KEY" not in text
+
+
+def test_a_mismatched_env_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB")
+    monkeypatch.setattr(sa, "derived_public_key", lambda: "SOME-OTHER-PUB")
+    with pytest.raises(sa.LegError, match="not one pair"):
+        sa.server_keys()
+
+
+def test_derived_public_key_matches_a_real_generated_pair(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Real node, no fake: the derivation reads the private key from the environment and returns its SPKI half; another pair's private key derives a different one."""
+    first, second = sa.generate_keys(), sa.generate_keys()
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", first["edPriv"])
+    assert sa.derived_public_key() == first["edPub"]
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", second["edPriv"])
+    assert sa.derived_public_key() != first["edPub"]
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "not-a-key")
+    assert sa.derived_public_key() == ""
 
 
 @pytest.mark.parametrize(

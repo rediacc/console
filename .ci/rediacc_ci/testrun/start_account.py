@@ -42,6 +42,11 @@ console.log(JSON.stringify({
   xPub: der(x.publicKey, "spki"),
 }));
 """
+DERIVE_PUBLIC_PROGRAM = """
+const crypto = require("crypto");
+const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.ACCOUNT_ED25519_PRIVATE_KEY, "base64"), format: "der", type: "pkcs8" });
+process.stdout.write(crypto.createPublicKey(priv).export({ type: "spki", format: "der" }).toString("base64"));
+"""
 SCOPES = ["license:read", "license:activate", "subscription:read"]
 USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>] [--scopes <a,b>] [--advertise-host <ip>]"
 
@@ -118,9 +123,26 @@ def server_keys() -> dict[str, str]:
     private = os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "")
     public = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "")
     if private and public:
+        if derived_public_key() != public:
+            raise LegError(
+                "ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_ED25519_PUBLIC_KEY are not one pair: the server would sign licences that do not verify under the published key",
+                show_log=False,
+            )
         log.info("signing with the ACCOUNT_ED25519_* pair from the environment")
         keys = {**keys, "edPriv": private, "edPub": public}
     return keys
+
+
+def derived_public_key() -> str:
+    """The SPKI base64 public half of ACCOUNT_ED25519_PRIVATE_KEY (PKCS8 base64), derived by node from the ENVIRONMENT so the private key never reaches argv; "" when node cannot read it."""
+    done = subprocess.run(
+        ["node", "-e", DERIVE_PUBLIC_PROGRAM],
+        capture_output=True,
+        text=True,
+        check=False,
+        stdin=subprocess.DEVNULL,
+    )
+    return done.stdout.strip() if done.returncode == 0 else ""
 
 
 class Api:

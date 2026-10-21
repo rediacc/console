@@ -2077,7 +2077,7 @@ jobs:
       - name: Reinstall renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
       - name: Verify renet bakes the signing key
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet private/renet/bin/renet --verify-renet private/renet/bin/renet-linux-amd64
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet "$RENET_BINARY" --verify-renet /usr/bin/renet --verify-renet private/renet/bin/renet-linux-amd64
 
       # check-e2e-coverage's registry self-check pairs this `--config` with the
       # runner by reading one logical shell command.
