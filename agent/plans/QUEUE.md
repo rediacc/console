@@ -55,9 +55,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 <!-- queue:inflight:begin -->
 - Mode: effort low; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
-- Phase: build.
+- Phase: babysit on PR #601 (branch 1020-1, session d778be9d, since 2026-10-21T18:34:27Z).
 - Branch: 1020-1, PR #601 open.
-- Plans on the PR (12):
+- Plans on the PR (11):
   - agent/plans/_done/PLAN-vm-check.md -- 8 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/_done/PLAN-account-vm-check.md -- 7 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/_done/PLAN-tooling-transformation.md -- 154 of 154 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
@@ -66,15 +66,14 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-shell-sandbox-readonly-view.md -- 6 of 7 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-pins-command.md -- 12 of 13 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- 6 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
-  - agent/plans/PLAN-remove-cross-session-messaging.md -- 13 of 13 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/_done/PLAN-remove-cross-session-messaging.md -- 13 of 13 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/_done/PLAN-remove-cross-session-messaging.md -- 13 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-e2e-browse-at-ci.md -- 7 of 8 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-e2e-browse-at-ci.md -- 7 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 270 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 0.
-- Next plan: agent/plans/PLAN-e2e-browse-at-ci.md, Promoted entry 4; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 313 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:acf70bb97621ca479.
+- Leased items: 3: #1732ee99 (worker:558898, d778be9d), #1a07399b (worker:acf70bb97621ca479, d778be9d), #f6fe02a8 (worker:acf70bb97621ca479, d778be9d).
+- Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 5; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
