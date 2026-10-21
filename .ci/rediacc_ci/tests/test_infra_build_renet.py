@@ -444,9 +444,24 @@ def test_an_old_format_stamp_is_rebuilt(tmp_path):
     assert str(out["raw_stamp"]).count("|") == 2
 
 
+def test_an_empty_digest_never_makes_a_stamp_current() -> None:
+    """The skip decision, in-process and permission-free, so it holds under root too: an unreadable binary digests to "" and must never match."""
+    want = "default|" + EMPTY_KEY_DIGEST
+    assert build_renet.stamp_is_current(want + "|abc", want, "abc")
+    assert not build_renet.stamp_is_current(want + "|", want, "")
+    assert not build_renet.stamp_is_current(want + "|abc", want, "")
+    assert not build_renet.stamp_is_current(want, want, "abc")
+
+
+def test_no_stamp_line_for_an_unread_digest() -> None:
+    """The write decision, in-process: a build whose output could not be hashed gets no stamp at all."""
+    assert build_renet.stamp_line("default|k", "") is None
+    assert build_renet.stamp_line("default|k", "abc") == "default|k|abc"
+
+
 @pytest.mark.skipif(
     hasattr(os, "geteuid") and os.geteuid() == 0,
-    reason="root reads a mode-000 file, so an unreadable binary cannot be built; CI runs pytest as the runner user",
+    reason="root reads a mode-000 file, so this end-to-end form cannot make the binary unreadable; the in-process tests above cover the decision under root",
 )
 def test_an_unreadable_binary_under_an_empty_digest_stamp_is_not_skipped(tmp_path):
     """The skip decision itself: `<identity>|` beside a binary that cannot be read must not read as "already built"."""
@@ -465,7 +480,7 @@ def test_an_unreadable_binary_under_an_empty_digest_stamp_is_not_skipped(tmp_pat
 
 @pytest.mark.skipif(
     hasattr(os, "geteuid") and os.geteuid() == 0,
-    reason="root reads a mode-000 file, so an unreadable binary cannot be built; CI runs pytest as the runner user",
+    reason="root reads a mode-000 file, so this end-to-end form cannot make the output unreadable; test_no_stamp_line_for_an_unread_digest covers the decision under root",
 )
 def test_a_build_whose_output_cannot_be_read_is_not_stamped(tmp_path):
     """A stamp `<identity>|` would vouch for bytes nobody hashed, so a build whose output cannot be read exits 1 and writes none."""
