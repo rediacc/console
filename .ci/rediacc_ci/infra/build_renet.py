@@ -192,11 +192,9 @@ def _build(argv: list[str]) -> int:
     have = have.rstrip("\n")
 
     # The stamp is `<identity>|<binary digest>`. An old-format stamp (identity only) or a digest that no longer matches the bytes on disk means the binary was NOT produced by the build the stamp describes, so it is rebuilt.
-    bound = (
-        renet_bin.is_file()
-        and stamp.is_file()
-        and have == "%s|%s" % (want, binary_digest(renet_bin))
-    )
+    on_disk = binary_digest(renet_bin) if renet_bin.is_file() else ""
+    # An unreadable binary digests to "", and "" must never match: a stamp written as `<identity>|` would otherwise skip forever.
+    bound = bool(on_disk) and stamp.is_file() and have == "%s|%s" % (want, on_disk)
     if bound:
         log.info("Renet binary already built the same way: %s" % renet_bin)
     else:
@@ -252,7 +250,11 @@ def _build(argv: list[str]) -> int:
             log.error("Renet build failed: binary not found at %s" % renet_bin)
             return 1
         # Stamp AFTER the binary is verified present, never before: a stamp written ahead of a failed build would make the next run skip and hand back nothing, or a half-written binary that looks current.
-        stamp.write_text("%s|%s" % (want, binary_digest(renet_bin)), encoding="utf-8")
+        digest = binary_digest(renet_bin)
+        if not digest:
+            log.error("Renet build produced %s but it cannot be read to stamp it" % renet_bin)
+            return 1
+        stamp.write_text("%s|%s" % (want, digest), encoding="utf-8")
         log.info("Renet built successfully: %s" % renet_bin)
 
     # `export RENET_BINARY` in the twin is inert for a child process and is not reproduced as an export; the two OBSERVABLE consequences are, and they are the ones every caller actually reads.
