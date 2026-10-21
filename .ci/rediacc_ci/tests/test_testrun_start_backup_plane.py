@@ -41,6 +41,7 @@ def test_parse_defaults_and_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     assert plane.main(["--port"]) == 2
     assert plane.main(["--port", "4900; rm -rf /"]) == 2
     assert plane.main(["--worker", "11 x"]) == 2
+    assert plane.main(["--port", "\u00b2"]) == 2
 
 
 def test_bucket_failure_is_fatal(monkeypatch: pytest.MonkeyPatch) -> None:
