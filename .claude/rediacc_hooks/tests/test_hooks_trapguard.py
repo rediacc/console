@@ -635,3 +635,45 @@ def test_resolve_gitlinks_refuses_a_mixed_conflict_set():
     finally:
         _fixture_cleanup(directory)
     block.done()
+
+
+def _git_in(directory: str, *args: str) -> str:
+    done = subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=directory,
+        capture_output=True,
+        check=True,
+        timeout=120,
+    )
+    return done.stdout.decode().strip()
+
+
+PAD = "\n".join("pad%d=0" % i for i in range(20))
+
+
+def test_verify_rebase_names_a_commit_the_base_partly_made(tmp_path):
+    """2026-10-21: a branch commit overlapping a hotfix on main was replayed with a smaller patch, and the refusal named neither the commit nor where it went."""
+    repo = str(tmp_path / "r")
+    os.makedirs(repo)
+    _git_in(repo, "init", "-q", "-b", "main")
+    with open(os.path.join(repo, "costs.txt"), "w") as fh:
+        fh.write("a=1\n%s\nb=1\n" % PAD)
+    _git_in(repo, "add", "costs.txt")
+    _git_in(repo, "commit", "-q", "-m", "base")
+    _git_in(repo, "checkout", "-q", "-b", "0101-1")
+    with open(os.path.join(repo, "costs.txt"), "w") as fh:
+        fh.write("a=2\n%s\nb=2\n" % PAD)
+    _git_in(repo, "commit", "-q", "-am", "chore: refresh costs")
+    snap = tmp_path / "pre.snap"
+    snap.write_text(_worklist_git(repo, "snapshot"))
+    _git_in(repo, "checkout", "-q", "main")
+    with open(os.path.join(repo, "costs.txt"), "w") as fh:
+        fh.write("a=2\n%s\nb=1\n" % PAD)
+    _git_in(repo, "commit", "-q", "-am", "fix: hotfix a")
+    _git_in(repo, "checkout", "-q", "0101-1")
+    _git_in(repo, "rebase", "-q", "main")
+    twin = _git_in(repo, "log", "-1", "--format=%h")
+    said = _worklist_git(repo, "verify-rebase", str(snap), "main")
+    assert "REFUSED" in said, said
+    assert "chore: refresh costs" in said, said
+    assert "same subject in the new range: %s" % twin in said, said
