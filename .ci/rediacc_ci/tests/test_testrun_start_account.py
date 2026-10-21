@@ -446,7 +446,29 @@ def test_derived_public_key_matches_a_real_generated_pair(monkeypatch: pytest.Mo
     monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", second["edPriv"])
     assert sa.derived_public_key() != first["edPub"]
     monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "not-a-key")
-    assert sa.derived_public_key() == ""
+    with pytest.raises(sa.LegError, match="could not derive"):
+        sa.derived_public_key()
+
+
+def test_a_public_key_with_trailing_whitespace_still_matches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB\n")
+    monkeypatch.setattr(sa, "derived_public_key", lambda: "ENV-PUB")
+    assert sa.server_keys()["edPriv"] == "ENV-PRIVATE-SENTINEL"
+
+
+def test_node_that_cannot_run_is_named_not_called_a_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def missing(*_a, **_k):
+        raise FileNotFoundError("node")
+
+    monkeypatch.setattr(sa.subprocess, "run", missing)
+    with pytest.raises(sa.LegError, match="node could not run"):
+        sa.derived_public_key()
 
 
 @pytest.mark.parametrize(

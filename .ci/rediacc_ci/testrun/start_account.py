@@ -123,7 +123,7 @@ def server_keys() -> dict[str, str]:
     private = os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "")
     public = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "")
     if private and public:
-        if derived_public_key() != public:
+        if derived_public_key() != public.strip():
             raise LegError(
                 "ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_ED25519_PUBLIC_KEY are not one pair: the server would sign licences that do not verify under the published key",
                 show_log=False,
@@ -134,15 +134,25 @@ def server_keys() -> dict[str, str]:
 
 
 def derived_public_key() -> str:
-    """The SPKI base64 public half of ACCOUNT_ED25519_PRIVATE_KEY (PKCS8 base64), derived by node from the ENVIRONMENT so the private key never reaches argv; "" when node cannot read it."""
-    done = subprocess.run(
-        ["node", "-e", DERIVE_PUBLIC_PROGRAM],
-        capture_output=True,
-        text=True,
-        check=False,
-        stdin=subprocess.DEVNULL,
-    )
-    return done.stdout.strip() if done.returncode == 0 else ""
+    """The SPKI base64 public half of ACCOUNT_ED25519_PRIVATE_KEY (PKCS8 base64), derived by node from the ENVIRONMENT so the private key never reaches argv. A node that cannot run, or cannot parse the key, is a LegError naming node's own error, so it is never misreported as a mismatched pair."""
+    try:
+        done = subprocess.run(
+            ["node", "-e", DERIVE_PUBLIC_PROGRAM],
+            capture_output=True,
+            text=True,
+            check=False,
+            stdin=subprocess.DEVNULL,
+        )
+    except OSError as exc:
+        raise LegError(
+            f"node could not run to check the signing pair: {exc}", show_log=False
+        ) from exc
+    if done.returncode != 0:
+        raise LegError(
+            f"node could not derive the public half of ACCOUNT_ED25519_PRIVATE_KEY: {done.stderr.strip()}",
+            show_log=False,
+        )
+    return done.stdout.strip()
 
 
 class Api:
