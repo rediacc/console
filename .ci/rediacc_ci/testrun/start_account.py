@@ -120,10 +120,10 @@ def server_keys() -> dict[str, str]:
     A caller that bakes the public half into a renet build (`start_backup_plane`) has to hold the pair before this server starts, or the licence blobs it signs are filed under a fingerprint that renet never looks up. Half a pair is ignored: a lone public key would sign nothing, and a lone private key has no matching public half to publish. The private half is passed to the server through its environment only, never printed or written.
     """
     keys = generate_keys()
-    private = os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "")
-    public = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "")
+    private = os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "").strip()
+    public = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "").strip()
     if private and public:
-        if derived_public_key() != public.strip():
+        if derived_public_key() != public:
             raise LegError(
                 "ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_ED25519_PUBLIC_KEY are not one pair: the server would sign licences that do not verify under the published key",
                 show_log=False,

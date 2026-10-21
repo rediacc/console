@@ -457,7 +457,10 @@ def test_a_public_key_with_trailing_whitespace_still_matches(
     monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB\n")
     monkeypatch.setattr(sa, "derived_public_key", lambda: "ENV-PUB")
-    assert sa.server_keys()["edPriv"] == "ENV-PRIVATE-SENTINEL"
+    keys = sa.server_keys()
+    # Both halves are stored stripped, so the published key and the one a renet build bakes carry no newline.
+    assert keys["edPriv"] == "ENV-PRIVATE-SENTINEL"
+    assert keys["edPub"] == "ENV-PUB"
 
 
 def test_node_that_cannot_run_is_named_not_called_a_mismatch(
