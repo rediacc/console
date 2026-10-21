@@ -76,6 +76,7 @@ import {
   sourceManifests,
 } from '../lib/pins/drivers/pin-manifests.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
+import { familyGateOf } from '../lib/pins/family-gates.js';
 import { loadRegistry, type PinEntry, type RepoPath, siteMatches } from '../lib/pins/registry.js';
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
 import {
@@ -638,6 +639,20 @@ async function selectAndPlan(
       if (!explicit && v.state === 'not-compared' && v.notChecked.length > 0) {
         out.notChecked.push({ id: entry.id, submodules: v.notChecked, why });
         continue;
+      }
+      // AN UNNAMED SELECTION (`bump --all`, `apply-soaked`) skips a pin it could never compare for a reason already on record, the same leaves check:ci-pin-freshness leaves alone: a `source: none` leaf (its BLOCKER is in the registry) and a leaf no driver serves whose own family gate judges it. Unknown upstream stays a refusal (fail closed); a pin named on the command line is always refused when not compared.
+      if (!explicit && v.state === 'not-compared') {
+        const family = familyGateOf(entry.gates);
+        if (entry.source.type === 'none' || (family && !driverFor(entry, ctx))) {
+          out.skipped.push({
+            id: entry.id,
+            why:
+              entry.source.type === 'none'
+                ? `no upstream source (BLOCKER in the registry): ${v.detail}`
+                : `owned by ${family}: ${v.detail}`,
+          });
+          continue;
+        }
       }
       if (explicit || v.state === 'not-compared') out.refused.push({ id: entry.id, why });
       else out.skipped.push({ id: entry.id, why });
@@ -2136,6 +2151,81 @@ const CASES: Record<string, Case> = {
             .readFileSync(path.join(fx.root, 'out/private-renet.patch'), 'utf8')
             .includes('+ARG ZED_VERSION=2.1.0'),
         detail: `rc=${r.rc} ${r.err}`,
+      },
+    ];
+  },
+  async onrecord(m) {
+    // A pin an unnamed run could never compare for a reason already on record: a `source: none` leaf and a family-gated leaf no driver serves. apply-soaked skips both and stays green; naming either still refuses (fail closed).
+    const build = (): Fx => {
+      const fx = fixtureTree();
+      const file = path.join(fx.root, '.ci/config/pins.json');
+      const reg = JSON.parse(fs.readFileSync(file, 'utf8')) as {
+        entries: Array<Record<string, unknown>>;
+      };
+      const base = reg.entries.find((e) => e.id === 'embed:tool') as Record<string, unknown>;
+      reg.entries.push({
+        ...base,
+        id: 'embed:nosource',
+        name: 'nosource',
+        source: {
+          type: 'none',
+          reason: 'BLOCKER: the upstream publishes on a host no pins source type reads',
+        },
+        gates: ['check:fixture-nosource'],
+        sites: [
+          { repo: '.', file: 'Dockerfile', role: 'version', expect: 1, arg: 'NOSRC_VERSION' },
+        ],
+      });
+      reg.entries.push({
+        ...base,
+        id: 'breakpoint:copy',
+        name: 'copy',
+        driver: 'breakpoint',
+        gates: ['check:ci-breakpoint-drift'],
+        sites: [{ repo: '.', file: 'Dockerfile', role: 'version', expect: 1, arg: 'COPY_VERSION' }],
+      });
+      fs.writeFileSync(file, `${JSON.stringify(reg, null, 2)}\n`);
+      fs.appendFileSync(
+        path.join(fx.root, 'Dockerfile'),
+        'ARG NOSRC_VERSION=1.0.0\nARG COPY_VERSION=1.0.0\n'
+      );
+      // Committed, so the run's transaction sees a clean tree rather than changes it did not make.
+      sh(
+        fx.root,
+        '-c',
+        'user.email=fx@example.invalid',
+        '-c',
+        'user.name=fx',
+        'commit',
+        '-qam',
+        'on-record pins'
+      );
+      return fx;
+    };
+    const all = build();
+    const r = await runCli(['apply-soaked', '--json'], withMutant(all, m));
+    const j = JSON.parse(r.out || '{}') as {
+      refused?: Array<{ id: string }>;
+      skipped?: Array<{ id: string }>;
+    };
+    const skippedIds = (j.skipped ?? []).map((x) => x.id);
+    const refusedIds = (j.refused ?? []).map((x) => x.id);
+    const named = await runCli(['bump', 'embed:nosource', '--json'], withMutant(build(), m));
+    return [
+      {
+        name: 'apply-soaked: a source-none leaf and a driverless family-gated leaf are skipped, not refused, so the run stays green',
+        ok:
+          r.rc === 0 &&
+          skippedIds.includes('embed:nosource') &&
+          skippedIds.includes('breakpoint:copy') &&
+          !refusedIds.includes('embed:nosource') &&
+          !refusedIds.includes('breakpoint:copy'),
+        detail: `rc=${r.rc} skipped=${skippedIds.join(',')} refused=${refusedIds.join(',')} ${r.err}`,
+      },
+      {
+        name: 'bump <id>: a source-none pin named on the command line is still refused',
+        ok: named.rc === 1,
+        detail: `rc=${named.rc} ${named.err}`,
       },
     ];
   },

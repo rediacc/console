@@ -73,6 +73,7 @@ import process from 'node:process';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
 import { driverFor, type PinDriver, registerDrivers } from '../lib/pins/driver.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
+import { FAMILY_GATES } from '../lib/pins/family-gates.js';
 import { loadRegistry, type PinEntry, type PinRegistry } from '../lib/pins/registry.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { iso } from '../lib/pins/soak.js';
@@ -88,17 +89,6 @@ import {
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs } from '../lib/release-age.js';
 import { REPO_ROOT } from '../lib/repo-root.js';
-
-/** The gates that judge their own leaves' freshness, so a leaf naming one is not judged here. */
-const FAMILY_GATES: Record<string, string> = {
-  'check:ci-embed-asset-freshness': 'the embedded binaries of private/renet',
-  'check:ci-devcontainer-pins': 'the devcontainer CLIs it lists',
-  'check:ci-real-provider-pins': 'the real-provider lock',
-  'check:ci-ceph-image-pin':
-    'the Ceph image and host pins (review date and same-host-version rule)',
-  'check:ci-breakpoint-drift':
-    'the vendored .ci/breakpoint copy, whose pins move only with a re-vendor of the canonical repo',
-};
 
 interface Selection {
   judged: PinEntry[];
