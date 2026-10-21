@@ -267,6 +267,16 @@ def judge_skips(scan: Scan) -> int | None:
     return None
 
 
+def pin_local_renet_data_dir() -> None:
+    """A local run keeps renet's data dir at `~/.renet`, where `renet ops up` staged the VMs' authorized key.
+
+    `create_e2e_env` writes `CI=true` into `packages/e2e-tests/.env` (Playwright loads it), and renet resolves its data dir as RENET_DATA_DIR > CI autodetect (`/tmp/renet`) > `~/.renet` (opsconfig/config.go:284). So a local run silently looked under `/tmp/renet` and found no key. dotenv never overrides a variable already in the environment, so exporting it here wins over the file. Under GitHub Actions the autodetect (`$RUNNER_TEMP/renet`) is the correct answer and is left alone, as is an explicit RENET_DATA_DIR.
+    """
+    if os.environ.get("GITHUB_ACTIONS") == "true" or os.environ.get("RENET_DATA_DIR"):
+        return
+    os.environ["RENET_DATA_DIR"] = os.path.join(os.path.expanduser("~"), ".renet")
+
+
 def main(argv: list[str]) -> int:
     try:
         opts = parse(argv)
@@ -294,6 +304,7 @@ def main(argv: list[str]) -> int:
         else:
             print(exc, file=sys.stderr)
         return 1
+    pin_local_renet_data_dir()
     rc, scan = stream(cmd, str(root / E2E_TESTS_DIR))
     if opts.fail_on_skip:
         verdict = judge_skips(scan)

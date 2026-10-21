@@ -321,13 +321,29 @@ const browseAtVerdict: PrerequisiteVerdict = resolvePrerequisites({
 const storeCurl = (objectKey: string): ((extra: string[]) => Buffer) => {
   const env = process.env;
   const url = `${env.E2E_BACKUP_S3_ENDPOINT || 'http://127.0.0.1:9100'}/${env.E2E_BACKUP_S3_BUCKET || 'rediacc-backups-probe'}/${objectKey}`;
-  const creds = `user = "${env.E2E_BACKUP_S3_KEY || 'configadmin'}:${env.E2E_BACKUP_S3_SECRET || 'configadmin'}"\n`;
+  const accessKey = env.E2E_BACKUP_S3_KEY;
+  const secretKey = env.E2E_BACKUP_S3_SECRET;
+  if (!accessKey || !secretKey) {
+    throw new Error(
+      'E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_SECRET must be set to the dev plane store credentials; no default is sent to the endpoint'
+    );
+  }
+  const creds = `user = "${accessKey}:${secretKey}"\n`;
   return (extra) =>
     execFileSync(
       'curl',
       ['-sS', '--fail', '--aws-sigv4', 'aws:amz:us-east-1:s3', '-K', '-', ...extra, url],
       { input: creds, maxBuffer: 64 * 1024 * 1024 }
     );
+};
+
+/** Parse a JSON envelope, failing with an assertion that names the raw output rather than a bare SyntaxError. */
+const parseEnvelope = (raw: string): Partial<CliEnvelope<unknown>> => {
+  try {
+    return JSON.parse(raw.trim() || '{}') as Partial<CliEnvelope<unknown>>;
+  } catch {
+    throw new Error(`stdout is not a JSON envelope: ${raw.slice(0, 800)}`);
+  }
 };
 
 /** Both channels: the CLI's refusals arrive on stderr. */
@@ -1173,7 +1189,7 @@ test.describe
           bareSnapshotId
         );
         // Non-TTY output is the JSON envelope even for a failure (`success:false, data:null`), so stdout is not empty; what must be empty is the DATA.
-        const refused = JSON.parse(browse.stdout.trim() || '{}') as Partial<CliEnvelope<unknown>>;
+        const refused = parseEnvelope(browse.stdout);
         expect(refused.success, 'a snapshot with no listing reported success').toBe(false);
         expect(refused.data ?? null, 'a snapshot with no listing printed rows').toBeNull();
       });
@@ -1197,6 +1213,7 @@ test.describe
             ).stdout,
             'the password mount did not write the TOC key'
           ).toContain('present');
+          // TEMPORARY WORKAROUND, tracking item #86b5992c: the renet fix that makes a repository without an autostart keyfile browsable. Once it lands this autostart step (and its afterAll disable) goes away.
           // The listing is built from the STAGED copy of the image, which `repodiff.OpenImageReadOnly` opens with the repository's autostart keyfile (live-mount reuse does not apply to a staged copy). Without one the snapshot stores with no listing and `--at` answers 18, so the keyfile is what makes this snapshot browsable. Removed again in afterAll.
           const autostart = await w1.executeViaBridge(
             `printf '%s\\n' '${repo.credential}' | sudo renet repository autostart enable --name "${repo.guid}" ` +
@@ -1238,6 +1255,26 @@ test.describe
         expect(remote, 'the stored listing differs from the image it was taken from').toEqual(
           local
         );
+      });
+
+      test('2b. `GET /backups/manifests` reports hasIndex false for the snapshot with no listing and true for the listed one', async () => {
+        // The listing leg of the browse index: the commit stores `hasIndex` and the list route surfaces it, so a client can tell "no listing there" before it asks for one. The pair is the control: a route that always said false (or true) fails one of the two.
+        const { result, json } = await cli.runJson<CliEnvelope<{ manifests: BackupManifest[] }>>([
+          'backup',
+          'manifests',
+          `${REPO_NAME}@${M1}`,
+        ]);
+        expect(result.code, `backup manifests: ${bothChannels(result).slice(-800)}`).toBe(0);
+        const rows = json?.data?.manifests ?? [];
+        const bare = rows.find((m) => m.snapshotId === bareSnapshotId);
+        const listed = rows.find((m) => m.snapshotId === listedSnapshotId);
+        expect(bare, `snapshot ${bareSnapshotId} is not in the manifests listing`).toBeDefined();
+        expect(
+          listed,
+          `snapshot ${listedSnapshotId} is not in the manifests listing`
+        ).toBeDefined();
+        expect(bare?.hasIndex, 'a snapshot stored with no listing claims one').toBe(false);
+        expect(listed?.hasIndex, 'a snapshot stored with a listing does not claim it').toBe(true);
       });
 
       test('3. a wrong passphrase fails closed: no listing, no hint of the content', async () => {
@@ -1315,8 +1352,11 @@ test.describe
           if (!restored && existsSync(original)) {
             try {
               curl(['-X', 'PUT', '-T', original]);
-            } catch {
-              // the afterAll repo delete is the next cleanup
+            } catch (err) {
+              // Surface it: the stored listing is still the tampered one and later tests read it.
+              throw new Error(
+                `could not restore the tampered listing object t/${subscriptionId}/l/${repo.guid}/i/${listedSnapshotId}: ${String(err)}`
+              );
             }
           }
           rmSync(dir, { recursive: true, force: true });
@@ -1341,8 +1381,8 @@ test.describe
           licensing: true,
           env: { REDIACC_ACCOUNT_SERVER: sinkUrl },
         });
-        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
         try {
+          const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
           expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
           const local = await sinkCli.runJson<CliEnvelope<unknown>>([
             'backup',
