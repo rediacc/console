@@ -1658,6 +1658,7 @@ def test_a_revived_gateway_that_refuses_the_new_token_is_a_named_leftover(
     left = receipt["teardown"]["leftovers"]
     assert any("dev gateway gone before teardown and not revived" in x for x in left), left
     assert account.password not in out, "the per-run password never reaches the output"
+    assert account.password not in json.dumps(receipt), "nor the receipt"
 
 
 def test_a_live_gateway_is_not_restarted_by_teardown(tmp_path: pathlib.Path) -> None:

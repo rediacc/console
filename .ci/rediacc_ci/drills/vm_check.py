@@ -2363,7 +2363,8 @@ class VmCheck:
             self.lock.release()
             self.locked = False
         # Scrubbed once here, where every leftover leaves for the receipt and the output: a delete's error, a revival's exception or a crash can each echo the token or the per-run password.
-        self.leftovers = [self.scrub(x) for x in leftovers]
+        leftovers = [self.scrub(x) for x in leftovers]
+        self.leftovers = leftovers
         if not self.forks and not self.fleet_started and not self.connection and not leftovers:
             self.record("T", "nothing to tear down (no fork created, no fleet started)", True)
         elif leftovers:
