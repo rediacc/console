@@ -168,10 +168,34 @@ def _commit_shas(shas, cwd):
     }
 
 
+def _submodule_dirs(cwd):
+    """The submodule checkouts `.gitmodules` names under `cwd`, each that exists on disk."""
+    root = cwd or "."
+    done = subprocess.run(
+        ["git", "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"],
+        capture_output=True,
+        text=True,
+        cwd=root,
+        check=False,
+    )
+    if done.returncode != 0:
+        return []
+    paths = [line.split(" ", 1)[1].strip() for line in done.stdout.splitlines() if " " in line]
+    return [os.path.join(root, p) for p in paths if os.path.isdir(os.path.join(root, p))]
+
+
 def _counted(files, cwd=None):
-    """The files that count toward scale: every path but a real review record."""
+    """The files that count toward scale: every path but a real review record.
+
+    A record names a commit of the console OR of a submodule: wl_review.py reviews submodule commits on the same branch and writes their records into the console's `agent/reviews/<branch>/`, so a mixed `--review-commit` (2026-10-21: 56 files, 5bba553d5) counted every submodule record and was refused as an unproven bulk transform.
+    """
     named = {f: m.group(1) for f in files if (m := SHA_RECORD.match(f))}
-    real = _commit_shas(set(named.values()), cwd)
+    wanted = set(named.values())
+    real = _commit_shas(wanted, cwd)
+    for sub in _submodule_dirs(cwd):
+        if not wanted - real:
+            break
+        real |= _commit_shas(wanted - real, sub)
     out = []
     ledger_seen = False
     for f in files:
