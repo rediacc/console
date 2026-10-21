@@ -136,7 +136,12 @@ test.describe('System Functions @bridge @smoke', () => {
     const release = runner.getCombinedOutput(
       await runner.executeOnWorker('. /etc/os-release && echo "os=$ID-${VERSION_ID%%.*}"')
     );
-    const os = release.match(/os=([a-z0-9-]+)/)?.[1] ?? 'unknown';
+    const os = release.match(/os=([a-z0-9-]+)/)?.[1];
+    expect(os, `could not read the worker's OS from /etc/os-release: ${release}`).toBeTruthy();
+    // The kernel's own list of active LSMs: Landlock is usable only when it is in it.
+    const lsm = runner
+      .getCombinedOutput(await runner.executeOnWorker('cat /sys/kernel/security/lsm'))
+      .trim();
     const result = await runner.executeOnWorker('renet sandbox-exec --detect');
     const output = runner.getCombinedOutput(result);
 
@@ -147,7 +152,12 @@ test.describe('System Functions @bridge @smoke', () => {
     });
 
     expect(result.code, output).toBe(0);
-    if (LANDLOCK_INACTIVE_BY_DEFAULT.has(os)) {
+    // Detection must agree with the kernel on every OS: a detect that says NOT AVAILABLE while landlock is in the active LSM
+    // list is a renet regression, and one that says AVAILABLE without it is a false pass.
+    expect(lsm.split(',').includes('landlock'), `lsm=${lsm} vs detect: ${output}`).toBe(
+      /status:\s*available/.test(output)
+    );
+    if (LANDLOCK_INACTIVE_BY_DEFAULT.has(os ?? '')) {
       // Repo-key shells refuse on this OS until Landlock is added to lsm= (PLAN-shell-sandbox-readonly-view E1). A pass here
       // after an image or kernel change means Landlock became active: move the OS out of the set.
       expect(
