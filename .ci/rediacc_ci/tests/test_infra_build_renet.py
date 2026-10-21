@@ -453,6 +453,18 @@ def test_an_empty_digest_never_makes_a_stamp_current() -> None:
     assert not build_renet.stamp_is_current(want, want, "abc")
 
 
+def test_a_binary_that_cannot_be_read_digests_to_empty(tmp_path, monkeypatch) -> None:
+    """binary_digest's OSError branch, in-process and permission-free: the read is made to fail, whatever user runs the test."""
+    binary = tmp_path / "renet"
+    binary.write_bytes(b"x")
+
+    def unreadable(_self):
+        raise PermissionError("unreadable")
+
+    monkeypatch.setattr(pathlib.Path, "read_bytes", unreadable)
+    assert build_renet.binary_digest(binary) == ""
+
+
 def test_no_stamp_line_for_an_unread_digest() -> None:
     """The write decision, in-process: a build whose output could not be hashed gets no stamp at all."""
     assert build_renet.stamp_line("default|k", "") is None
