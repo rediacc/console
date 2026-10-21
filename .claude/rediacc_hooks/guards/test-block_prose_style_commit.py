@@ -45,7 +45,41 @@ R18_VIOLATION = "This starts with one short sentence. " + ("word " * 150)
 # unfixed applies here too, so this case is the class-sweep proof that R19 was fixed alongside it, not left as the other half of the same gap.
 R19_VIOLATION = "This is a line that is deliberately\nkept narrow so that joining works\nas the paragraph intent shows here."
 
+# A PR body whose only first-person line sits inside the generated epic block (a verbatim operator quote the worklist renders), and its controls: the same line outside the block, and an unterminated begin marker, which hides nothing.
+def _body_file_with(text):
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as fh:
+        fh.write(text)
+    atexit.register(pathlib.Path(fh.name).unlink, missing_ok=True)
+    return fh.name
+
+
+EPIC_BEGIN = "<!-- worklist-epics:" + "begin -->"
+EPIC_END = "<!-- worklist-epics:" + "end -->"
+GENERATED_QUOTE_BODY = _body_file_with(
+    "The change lands the fix.\n%s\n- [ ] Operator order (verbatim): \"%s see the queue\"\n%s\n"
+    % (EPIC_BEGIN, EYE, EPIC_END)
+)
+PROSE_QUOTE_BODY = _body_file_with(
+    "%s think the change lands the fix.\n%s\n- [ ] done\n%s\n" % (EYE, EPIC_BEGIN, EPIC_END)
+)
+UNTERMINATED_BODY = _body_file_with("The change lands.\n%s\n%s think this hides.\n" % (EPIC_BEGIN, EYE))
+
 CASES = [
+    (
+        "a PR body whose first person sits only inside the generated epic block",
+        "gh api repos/o/r/pulls/589 -X PATCH -F body=@%s" % GENERATED_QUOTE_BODY,
+        False,
+    ),
+    (
+        "CONTROL: first person in the PR prose outside the block is still refused",
+        "gh api repos/o/r/pulls/589 -X PATCH -F body=@%s" % PROSE_QUOTE_BODY,
+        True,
+    ),
+    (
+        "CONTROL: an unterminated begin marker hides nothing after it",
+        "gh api repos/o/r/pulls/589 -X PATCH -F body=@%s" % UNTERMINATED_BODY,
+        True,
+    ),
     # (name, command, expect_blocked) ---- the block direction ------------------------------------------
     ("a subject addressing the reader", '%s -m "Did %s run the tests?"' % (COMMIT, Y), True),
     (
