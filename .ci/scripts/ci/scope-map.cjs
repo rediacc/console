@@ -221,6 +221,7 @@ const VM_E2E_JOB_KEYS = [
   'e2e_k8s_ceph',
   'e2e_k8s_multinode',
   'e2e_migrate',
+  'e2e_backup_browse_at',
   'fork_isolation',
 ];
 

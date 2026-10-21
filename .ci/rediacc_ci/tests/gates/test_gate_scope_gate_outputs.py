@@ -87,6 +87,7 @@ WORKFLOW_CONTRACT_KEYS = (
     "run_e2e_k8s_ceph",
     "run_e2e_k8s_multinode",
     "run_e2e_migrate",
+    "run_e2e_backup_browse_at",
     "run_fork_isolation",
     "run_renet",
     "run_license_enforcement",
@@ -130,7 +131,7 @@ class Fixture:
         main:  B ------------------- M
         pr:     \\-- C1 --- C2 ------/
 
-    The engine walks first-parent from head (C2) fenced at M^1 (B), so C1 is the only candidate. C1's run is green and carries an attested FULL plan, which makes it a usable baseline, and the NET delta C1..C2 touches docs plus packages/www only. Of the 18 job surfaces exactly one (`unit`) consumes www, so the correct plan runs `unit` and skips the other seventeen. That asymmetry is
+    The engine walks first-parent from head (C2) fenced at M^1 (B), so C1 is the only candidate. C1's run is green and carries an attested FULL plan, which makes it a usable baseline, and the NET delta C1..C2 touches docs plus packages/www only. Of the 19 job surfaces exactly one (`unit`) consumes www, so the correct plan runs `unit` and skips the other eighteen. That asymmetry is
     the point: an emitter that skips everything, or nothing, fails.
     """
 
@@ -453,31 +454,31 @@ def test_the_fixture_carries_a_real_engine(gate, fixture):
             gate.log_fail("the engine copy is missing %s, which the cases below execute" % name)
     if not (fixture.repo / SUBJECT_REL).is_file():
         gate.log_fail("the subject copy at %s is missing, so nothing below drives it" % SUBJECT_REL)
-    gate.assert_eq(len(fixture.expected_false.split("\n")), 17, "17 out-of-scope keys expected")
+    gate.assert_eq(len(fixture.expected_false.split("\n")), 18, "18 out-of-scope keys expected")
     gate.log_pass(
-        "the fixture carries %d file(s) copied from %s, including %s, and 17 expected "
+        "the fixture carries %d file(s) copied from %s, including %s, and 18 expected "
         "false keys" % (count, CI_SRC_REL, ", ".join(REQUIRED_ENGINE_FILES))
     )
 
 
 def test_emitted_names_match_the_workflow_contract(gate, fixture):
-    """The emitter can only ever produce `run_<key>` for a key in scope-map's JOB_SURFACES, so comparing that table to the literal list above is the whole contract: same 18 names, same spelling. A key added to scope-map without a matching ci.yml output would be emitted and dropped on the floor; a key renamed in ci.yml without scope-map would be read as empty forever, which
+    """The emitter can only ever produce `run_<key>` for a key in scope-map's JOB_SURFACES, so comparing that table to the literal list above is the whole contract: same 19 names, same spelling. A key added to scope-map without a matching ci.yml output would be emitted and dropped on the floor; a key renamed in ci.yml without scope-map would be read as empty forever, which
     reads as "run it" and is safe but silently free of any saving at all."""
     from_map = fixture.surface_keys()
     gate.assert_eq(
         "\n".join(from_map),
         "\n".join(WORKFLOW_CONTRACT_KEYS),
-        "the emitter's key set must match ci.yml's 18 declared outputs exactly, in name "
+        "the emitter's key set must match ci.yml's 19 declared outputs exactly, in name "
         "and spelling",
     )
 
     # CONTROL: the comparison is over a non-empty set. An empty JOB_SURFACES and an empty literal list would compare equal and assert nothing.
     gate.assert_eq(
         len([k for k in WORKFLOW_CONTRACT_KEYS if k]),
-        18,
+        19,
         "the contract list must hold all 18 keys, or the comparison above is vacuous",
     )
-    gate.log_pass("the 18 emitted output names match ci.yml's declared outputs byte for byte")
+    gate.log_pass("the 19 emitted output names match ci.yml's declared outputs byte for byte")
 
 
 def test_reduced_plan_emits_exactly_the_out_of_scope_keys(gate, fixture):
@@ -533,7 +534,7 @@ def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
             "the quiet wire values suppressed every false line -- the kill switch is "
             "firing on an ordinary PR.\n--- gate.log ---\n%s" % run.log
         )
-    gate.assert_eq(n, 17, "and the reduction must be the same one an unset environment produces")
+    gate.assert_eq(n, 18, "and the reduction must be the same one an unset environment produces")
     gate.log_pass("the empty-string and literal-'false' wire values leave the kill switch disarmed")
 
 

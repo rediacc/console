@@ -243,12 +243,12 @@ def test_workflow_closure_is_computed_not_name_matched(gate, tmp_path):
 
 
 def test_vm_e2e_surfaces_carry_the_mandated_inputs(gate):
-    """The 8 VM/E2E jobs check out with `submodules: true` and run setup-workspace (verified against ct-tests.yml), so their surface must include packages/shared, packages/provisioning and every submodule pointer."""
+    """The 9 VM/E2E jobs check out with `submodules: true` and run setup-workspace (verified against ct-tests.yml), so their surface must include packages/shared, packages/provisioning and every submodule pointer."""
     check = node_eval(
         """
 const m = require(process.argv[1]);
-if (m.VM_E2E_JOB_KEYS.length !== 8) {
-  process.stdout.write("expected 8 VM/E2E jobs, got " + m.VM_E2E_JOB_KEYS.length);
+if (m.VM_E2E_JOB_KEYS.length !== 9) {
+  process.stdout.write("expected 9 VM/E2E jobs, got " + m.VM_E2E_JOB_KEYS.length);
   process.exit(0);
 }
 const required = ["shared", "provisioning", "renet", "account", "elite", "homebrew-tap"];
@@ -758,38 +758,38 @@ def expect_classify(gate, label: str, expected: str, *file_paths: str) -> None:
 def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     """Each partial set is named ONCE and reused by every row that expects it, so a legitimate map change edits one line rather than several rows. The sets are the measured truth as of 2026-08-05, taken from the real --classify path rather than read off JOB_SURFACES by hand."""
     cli_keys = (
-        "drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate "
+        "drills e2e_backup_browse_at e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate "
         "e2e_workers fork_isolation install_methods ops package_tests unit update_flow"
     )
     renet_keys = (
-        "drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate "
+        "drills e2e_backup_browse_at e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate "
         "e2e_workers elite_run fork_isolation install_methods license_enforcement ops "
         "package_tests renet update_flow"
     )
     account_keys = (
-        "account_e2e drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode "
+        "account_e2e drills e2e_backup_browse_at e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode "
         "e2e_migrate e2e_workers fork_isolation ops"
     )
 
     # -- the rows that must skip the heavy matrix entirely -------------------
-    expect_classify(gate, "docs only", "reduced|18|", "docs/ci-overhaul/06-progress.md")
-    expect_classify(gate, "agent tooling only", "reduced|18|", ".claude/commands/pr-babysit.md")
+    expect_classify(gate, "docs only", "reduced|19|", "docs/ci-overhaul/06-progress.md")
+    expect_classify(gate, "agent tooling only", "reduced|19|", ".claude/commands/pr-babysit.md")
     # THE REPORTED CASE (commit bcc4f1ee1, 2026-08-06): an Apache-2.0 attribution-URL check that ran the ceph fork test, because scripts/** was a single blanket rule.
-    expect_classify(gate, "gate source only", "reduced|18|", "scripts/gates/check-embed-credits.ts")
-    expect_classify(gate, "gate lib only", "reduced|18|", "scripts/lib/blocker-validator.ts")
+    expect_classify(gate, "gate source only", "reduced|19|", "scripts/gates/check-embed-credits.ts")
+    expect_classify(gate, "gate lib only", "reduced|19|", "scripts/lib/blocker-validator.ts")
     # FULL since 2026-09-30: housekeeping.yml's gate-costs-capture executes scripts/ci-runner/run.ts and its budget check reads gates.lock.json, so check_scope_scripts_reachability requires the `scripts-ci-runner` harness rule, the same verdict scripts/ci already has.
     expect_classify(
         gate,
         "ci-runner only",
-        "full|18|account_e2e drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers elite_run fork_isolation install_methods license_enforcement ops package_tests renet unit update_flow",
+        "full|19|account_e2e drills e2e_backup_browse_at e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers elite_run fork_isolation install_methods license_enforcement ops package_tests renet unit update_flow",
         "scripts/ci-runner/manifest.ts",
     )
     # The tracked agent/ notes root. STATE.md is rewritten many times per session, so this row decides whether a session costs nothing or seventy minutes a write.
-    expect_classify(gate, "agent session state only", "reduced|18|", "agent/97604f47/STATE.md")
+    expect_classify(gate, "agent session state only", "reduced|19|", "agent/97604f47/STATE.md")
     expect_classify(
         gate,
         "agent plan + program suite",
-        "reduced|18|",
+        "reduced|19|",
         "agent/PLAN-agent-folder-migration.md",
         "agent/programs/backup-storage/CHECKLIST.md",
     )
@@ -797,14 +797,14 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     expect_classify(
         gate,
         "MIXED agent notes + one cli file",
-        "reduced|18|%s" % cli_keys,
+        "reduced|19|%s" % cli_keys,
         "agent/97604f47/STATE.md",
         "packages/cli/src/commands/repo.ts",
     )
     expect_classify(
         gate,
         "MIXED gate source + one cli file",
-        "reduced|18|%s" % cli_keys,
+        "reduced|19|%s" % cli_keys,
         "scripts/gates/check-cli-docs.ts",
         "packages/cli/src/commands/repo.ts",
     )
@@ -812,7 +812,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     expect_classify(
         gate,
         "the reported push (run 30983418337)",
-        "reduced|18|",
+        "reduced|19|",
         ".claude/agents/pr-babysitter.md",
         ".claude/commands/pr-babysit.md",
         ".claude/hooks/stop/wl_judge.py",
@@ -821,20 +821,20 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
 
     # -- the rows that must run a specific, named set -----------------------
     expect_classify(
-        gate, "cli source", "reduced|18|%s" % cli_keys, "packages/cli/src/commands/repo.ts"
+        gate, "cli source", "reduced|19|%s" % cli_keys, "packages/cli/src/commands/repo.ts"
     )
     expect_classify(
-        gate, "renet source", "reduced|18|%s" % renet_keys, "private/renet/pkg/license/keys.go"
+        gate, "renet source", "reduced|19|%s" % renet_keys, "private/renet/pkg/license/keys.go"
     )
     expect_classify(
-        gate, "account source", "reduced|18|%s" % account_keys, "private/account/src/index.ts"
+        gate, "account source", "reduced|19|%s" % account_keys, "private/account/src/index.ts"
     )
 
     # THE ROW THAT CATCHES AN OVER-EAGER SKIP, the direction that costs correctness rather than money. An engine that let the docs classification win would pass every zero-key row above and be catastrophically wrong here.
     expect_classify(
         gate,
         "MIXED docs + one cli file",
-        "reduced|18|%s" % cli_keys,
+        "reduced|19|%s" % cli_keys,
         "docs/ci-overhaul/06-progress.md",
         "packages/cli/src/commands/repo.ts",
     )
@@ -872,7 +872,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     # CONTROL for the control: the real engine still answers, so the sentinel above is a dead engine rather than a helper stuck at its error string.
     gate.assert_eq(
         classify_verdict(ENGINE, "docs/ci-overhaul/06-progress.md"),
-        "reduced|18|",
+        "reduced|19|",
         "and the same call against the real engine answers normally",
     )
     gate.log_pass("representative deltas classify to their pinned verdicts, as sets")

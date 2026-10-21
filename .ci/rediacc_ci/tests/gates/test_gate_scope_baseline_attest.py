@@ -67,6 +67,7 @@ const healthyJobs = () => [
   S('Tests + Infra / E2E K8s Ceph'),
   S('Tests + Infra / E2E K8s Multinode'),
   S('Tests + Infra / E2E Migrate'),
+  S('Tests + Infra / E2E Backup Browse-At'),
   S('Tests + Infra / Concurrent Fork Isolation'),
   S('Tests + Infra / Renet'),
   S('Tests + Infra / License Enforcement'),

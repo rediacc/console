@@ -71,6 +71,10 @@ on:
         type: string
         required: false
         default: ''
+      run_e2e_backup_browse_at:
+        type: string
+        required: false
+        default: ''
       run_fork_isolation:
         type: string
         required: false
@@ -1917,7 +1921,7 @@ jobs:
       contents: read
       packages: read
     needs: [renet-embed-assets]
-    if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_multinode != 'false'
+    if: inputs.full_suite == 'true' && inputs.run_e2e_backup_browse_at != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
