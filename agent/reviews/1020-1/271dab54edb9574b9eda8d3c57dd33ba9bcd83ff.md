@@ -21,14 +21,14 @@ Body-Sig: 0c4638843f28a900
 ### 271dab54.1 [low] agent/d778be9d/STATE.md:8
 Anchor: in-diff
 Claim: STATE.md says two writers are running (#fd102e58 under agent a71bd4e92fde3378f, #f6c74045 under agent a35699a240aa8b6cb), but the same commit's QUEUE.md line 70 says 'Writers: 0 live' and line 71 says 'Leased items: 0', so the next session gets contradictory lease state and may re-spawn or double-lease those items.
-Resolution: open
+Resolution: fixed ff04f1a7d3b976d1cb8e8caf47b1e35d1affec6b | d778be9d 2026-10-21T02:22:43Z
 
 ### 271dab54.2 [low] agent/d778be9d/STATE.md:5
 Anchor: in-diff
 Claim: STATE.md line 5 says branch 1020-1 is 'local only; ~140 unpushed commits', but the turbo push-reason ledger in this commit records pushes of 1020-1 to private/renet, private/account and the console repo (lines 33-35), and QUEUE.md line 69 counts 177 commits on the branch rather than 140.
-Resolution: open
+Resolution: fixed ff04f1a7d3b976d1cb8e8caf47b1e35d1affec6b | d778be9d 2026-10-21T02:22:43Z
 
 ### 271dab54.3 [low] agent/ledgers/turbo-push-reasons.jsonl:38
 Anchor: in-diff
 Claim: Ledger lines 38-39 are stamped 2026-10-21T01:27Z, after the STATE.md snapshot time of ~19:40Z on 2026-10-20 that the same commit records, so the committed state is not a single consistent point in time.
-Resolution: open
+Resolution: not-a-bug | agent/ledgers/turbo-push-reasons.jsonl:38 is an append-only ledger whose rows carry their own times; it is never a single-instant snapshot, and the stale STATE.md it was compared against is rewritten in the next commit | d778be9d 2026-10-21T02:22:44Z
