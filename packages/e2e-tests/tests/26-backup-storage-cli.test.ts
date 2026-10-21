@@ -1,5 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
@@ -313,6 +315,21 @@ const browseAtVerdict: PrerequisiteVerdict = resolvePrerequisites({
   ],
 });
 
+/**
+ * `curl` against the dev plane's S3 (RustFS on the host) for one object key, SigV4-signed. The credentials ride a curl config on stdin, never argv.
+ */
+const storeCurl = (objectKey: string): ((extra: string[]) => Buffer) => {
+  const env = process.env;
+  const url = `${env.E2E_BACKUP_S3_ENDPOINT || 'http://127.0.0.1:9100'}/${env.E2E_BACKUP_S3_BUCKET || 'rediacc-backups-probe'}/${objectKey}`;
+  const creds = `user = "${env.E2E_BACKUP_S3_KEY || 'configadmin'}:${env.E2E_BACKUP_S3_SECRET || 'configadmin'}"\n`;
+  return (extra) =>
+    execFileSync(
+      'curl',
+      ['-sS', '--fail', '--aws-sigv4', 'aws:amz:us-east-1:s3', '-K', '-', ...extra, url],
+      { input: creds, maxBuffer: 64 * 1024 * 1024 }
+    );
+};
+
 /** Both channels: the CLI's refusals arrive on stderr. */
 const bothChannels = (r: { stdout: string; stderr: string }): string => r.stdout + r.stderr;
 
@@ -539,7 +556,12 @@ test.describe
           chunkCount: 0,
           overLimit: false,
           lineages: [
-            { lineageGuid: plantedLineage, storedBytes: 0, chunkCount: 0, logicalBytes: 0 },
+            {
+              lineageGuid: plantedLineage,
+              storedBytes: 0,
+              chunkCount: 0,
+              logicalBytes: 0,
+            },
           ],
         }).catch(() => undefined);
         await restoreLedger(cli, subscriptionId);
@@ -607,7 +629,12 @@ test.describe
           overLimit: false,
           // Retire the row test 2 planted, or the parts still exceed the whole.
           lineages: [
-            { lineageGuid: plantedLineage, storedBytes: 0, chunkCount: 0, logicalBytes: 0 },
+            {
+              lineageGuid: plantedLineage,
+              storedBytes: 0,
+              chunkCount: 0,
+              logicalBytes: 0,
+            },
           ],
         });
         expect(seeded.status).toBe(200);
@@ -1098,20 +1125,6 @@ test.describe
         return record?.snapshotId ?? '';
       };
 
-      /** Mount with the password (this is what writes the TOC key), write through the filesystem, unmount. */
-      const mountWriteUnmount = async (fileName: string): Promise<void> => {
-        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
-        expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
-        const write = await w1.executeViaBridge(
-          `sudo sh -c 'echo ${fileName} > "${DS}/mounts/${repo.guid}/${fileName}"' && sync`
-        );
-        expect(write.code, `planting ${fileName}: ${w1.getCombinedOutput(write)}`).toBe(0);
-        const unmounted = await w1.repositoryUnmount(repo.guid, DS);
-        expect(unmounted.code, `unmounting: ${w1.getCombinedOutput(unmounted).slice(-800)}`).toBe(
-          0
-        );
-      };
-
       /** Rows of an `-o json` browse, reduced to what a local and a remote listing must agree on. */
       const comparable = (rows: unknown): string[] =>
         (Array.isArray(rows) ? (rows as { name: string; type: string }[]) : [])
@@ -1131,6 +1144,11 @@ test.describe
 
       test.afterAll(async () => {
         await restoreLedger(cli, subscriptionId);
+        await w1
+          .executeViaBridge(
+            `sudo renet repository autostart disable --name "${repo.guid}" --datastore "${DS}"`
+          )
+          .catch(() => undefined);
         await cli.run(['repo', 'delete', REPO_NAME, '-y']).catch(() => undefined);
       });
 
@@ -1154,33 +1172,45 @@ test.describe
         expect(bothChannels(browse), 'the refusal must name the snapshot').toContain(
           bareSnapshotId
         );
-        expect(browse.stdout.trim(), 'a snapshot with no listing printed rows').toBe('');
+        // Non-TTY output is the JSON envelope even for a failure (`success:false, data:null`), so stdout is not empty; what must be empty is the DATA.
+        const refused = JSON.parse(browse.stdout.trim() || '{}') as Partial<CliEnvelope<unknown>>;
+        expect(refused.success, 'a snapshot with no listing reported success').toBe(false);
+        expect(refused.data ?? null, 'a snapshot with no listing printed rows').toBeNull();
       });
 
       test('2. `rdc backup browse --at <id>` equals a local `backup browse` of the same content', async () => {
-        // A password mount writes the key, so this snapshot carries a sealed listing.
-        await mountWriteUnmount(`browse-at-${stamp}.txt`);
-        expect(
-          (
-            await w1.executeViaBridge(
-              `sudo test -f "${tocKeyPath()}" && echo present || echo absent`
-            )
-          ).stdout,
-          'the password mount did not write the TOC key'
-        ).toContain('present');
-        listedSnapshotId = await snapshot();
-        expect(listedSnapshotId, 'the second snapshot reused the first id').not.toBe(
-          bareSnapshotId
-        );
-
-        // Local listing of the SAME content: mount, read, and write nothing between the snapshot and this read.
+        // The snapshot builds its listing by reading the image, which it can only do through a LIVE mount of the repository (or an autostart keyfile, which this repo has not enabled): an unmounted repo stores WITHOUT a listing even when the TOC key exists (cmd/renet/backup_snapshot_toc.go sealSnapshotTOC -> repodiff.OpenImageReadOnly). So the repo stays mounted from the write, through the snapshot, to the local read: the password mount also writes the key, so this snapshot carries a sealed listing, and nothing changes between it and the local read.
         const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
-        expect(
-          mounted.code,
-          `mounting for the local read: ${w1.getCombinedOutput(mounted).slice(-800)}`
-        ).toBe(0);
+        expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
         let local: string[];
         try {
+          const fileName = `browse-at-${stamp}.txt`;
+          const write = await w1.executeViaBridge(
+            `sudo sh -c 'echo ${fileName} > "${DS}/mounts/${repo.guid}/${fileName}"' && sync`
+          );
+          expect(write.code, `planting ${fileName}: ${w1.getCombinedOutput(write)}`).toBe(0);
+          expect(
+            (
+              await w1.executeViaBridge(
+                `sudo test -f "${tocKeyPath()}" && echo present || echo absent`
+              )
+            ).stdout,
+            'the password mount did not write the TOC key'
+          ).toContain('present');
+          // The listing is built from the STAGED copy of the image, which `repodiff.OpenImageReadOnly` opens with the repository's autostart keyfile (live-mount reuse does not apply to a staged copy). Without one the snapshot stores with no listing and `--at` answers 18, so the keyfile is what makes this snapshot browsable. Removed again in afterAll.
+          const autostart = await w1.executeViaBridge(
+            `printf '%s\\n' '${repo.credential}' | sudo renet repository autostart enable --name "${repo.guid}" ` +
+              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`
+          );
+          expect(
+            autostart.code,
+            `autostart enable: ${w1.getCombinedOutput(autostart).slice(-800)}`
+          ).toBe(0);
+          listedSnapshotId = await snapshot();
+          expect(listedSnapshotId, 'the second snapshot reused the first id').not.toBe(
+            bareSnapshotId
+          );
+
           const l = await cli.runJson<CliEnvelope<unknown>>([
             'backup',
             'browse',
@@ -1230,6 +1260,118 @@ test.describe
         );
         expect(right.code, `right passphrase: ${w1.getCombinedOutput(right).slice(-800)}`).toBe(0);
         expect(right.stdout).toContain(`browse-at-${stamp}.txt`);
+      });
+
+      test('4. a tampered stored listing fails closed: no rows, no content, and the original still opens', async () => {
+        // The sealed listing lives in the bucket at t/<subscription>/l/<lineage>/i/<snapshot>. Flip one byte in the middle of it, as a hostile or corrupted store would, and ask for it back. The dev plane's S3 is RustFS on the host (the same one the account server presigns for), so the object is reached with SigV4 over curl; the credentials ride a curl config on stdin, never argv.
+        const curl = storeCurl(`t/${subscriptionId}/l/${repo.guid}/i/${listedSnapshotId}`);
+        const dir = mkdtempSync(path.join(os.tmpdir(), 'browse-at-tamper-'));
+        const original = path.join(dir, 'original');
+        const tampered = path.join(dir, 'tampered');
+        let restored = false;
+        try {
+          const body = curl([]);
+          expect(
+            body.length,
+            'the stored listing is implausibly small; wrong object key?'
+          ).toBeGreaterThan(32);
+          writeFileSync(original, body);
+          const flipped = Buffer.from(body);
+          flipped[Math.floor(flipped.length / 2)] ^= 0xff;
+          writeFileSync(tampered, flipped);
+
+          curl(['-X', 'PUT', '-T', tampered]);
+          const bad = await cli.runJson<CliEnvelope<unknown>>([
+            'backup',
+            'browse',
+            `${REPO_NAME}@${M1}`,
+            '--at',
+            listedSnapshotId,
+          ]);
+          expect(bad.result.code, 'a tampered listing was opened').not.toBe(0);
+          expect(bad.result.code, 'tampering must not read as NO_LISTING').not.toBe(18);
+          expect(bad.json?.success, 'a tampered listing reported success').toBe(false);
+          expect(bad.json?.data ?? null, 'a tampered listing printed rows').toBeNull();
+          expect(bothChannels(bad.result), 'the refusal leaked a file name').not.toContain(
+            `browse-at-${stamp}`
+          );
+
+          // Control: the original bytes open again, so the refusal above was the tamper and not a dead store.
+          curl(['-X', 'PUT', '-T', original]);
+          restored = true;
+          const good = await cli.runJson<CliEnvelope<unknown>>([
+            'backup',
+            'browse',
+            `${REPO_NAME}@${M1}`,
+            '--at',
+            listedSnapshotId,
+          ]);
+          expect(
+            good.result.code,
+            `restored listing: ${bothChannels(good.result).slice(-800)}`
+          ).toBe(0);
+          expect(comparable(good.json?.data)).toContain(`file /browse-at-${stamp}.txt`);
+        } finally {
+          if (!restored && existsSync(original)) {
+            try {
+              curl(['-X', 'PUT', '-T', original]);
+            } catch {
+              // the afterAll repo delete is the next cleanup
+            }
+          }
+          rmSync(dir, { recursive: true, force: true });
+        }
+      });
+
+      test('5. regression: `backup browse` WITHOUT --at makes zero storage or licence calls to the account server', async () => {
+        // A counting server stands in for the account server. The local verb must never touch it; the same server, asked for a remote listing, must be hit, which proves the counter and the redirect are live (a counter nothing can reach would pass for free).
+        let hits = 0;
+        const seen: string[] = [];
+        const sink = http.createServer((req, res) => {
+          hits += 1;
+          seen.push(`${req.method} ${req.url}`);
+          res.statusCode = 503;
+          res.end('{}');
+        });
+        await new Promise<void>((resolve) => sink.listen(0, '127.0.0.1', resolve));
+        const address = sink.address();
+        const sinkUrl = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+        const sinkCli = CliRunner.create({
+          configName: CFG,
+          licensing: true,
+          env: { REDIACC_ACCOUNT_SERVER: sinkUrl },
+        });
+        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        try {
+          expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
+          const local = await sinkCli.runJson<CliEnvelope<unknown>>([
+            'backup',
+            'browse',
+            `${REPO_NAME}@${M1}`,
+          ]);
+          expect(local.result.code, `local browse: ${bothChannels(local.result).slice(-800)}`).toBe(
+            0
+          );
+          expect(comparable(local.json?.data), 'the local listing is empty').toContain(
+            `file /browse-at-${stamp}.txt`
+          );
+          // Every rdc command asks the server for its public key (`.well-known/server-info`, the E2E-key discovery of b5147eec); that is startup, not the browse. What the browse itself must not do is reach any storage or licence route.
+          const beyondStartup = (): string[] =>
+            seen.filter((r) => !r.includes('/.well-known/server-info'));
+          expect(beyondStartup(), 'the local browse called a server route beyond startup').toEqual(
+            []
+          );
+
+          const startupHits = hits;
+          await sinkCli.run(['backup', 'browse', `${REPO_NAME}@${M1}`, '--at', listedSnapshotId]);
+          expect(
+            hits,
+            `control: --at made no call beyond the local browse's ${startupHits} (seen: ${seen.join(', ')})`
+          ).toBeGreaterThan(startupHits);
+        } finally {
+          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+          await new Promise<void>((resolve) => sink.close(() => resolve()));
+        }
       });
     }
   });
