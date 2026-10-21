@@ -3742,9 +3742,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-renet-types',
     // 1.4s measured. It shells out to `go build`, so a COLD Go build cache costs more than this -- but that is a once-per-tree cost, not the steady-state one the lane is sized against.
     gate: true,
-    // check:ci-gate-tree-writes V6: `go build -o bin/renet` runs with cwd=private/renet.
-    mutex: ['renet-bin', 'tree:repo'],
-    writesTree: 'builds bin/renet inside the private/renet submodule (go build -o bin/renet)',
+    // Builds into the gate's own scratch directory (`-tags nolicense`), so it writes nothing shared: no `renet-bin` mutex and no `writesTree`. It used to build bin/renet in place, which planted a keyless binary that the next deploy shipped.
     leaves: ['.ci/scripts/quality/check_renet_types.py'],
     ci: {
       kind: 'step',
@@ -3753,7 +3751,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check renet types freshness',
     },
   },
-  // No `renet-bin` mutex, deliberately: that group guards the shared WRITE of private/renet/bin/renet (the renet-types gate, and the renet quality battery that rebuilds it). This gate only runs `go test`, which writes nothing into bin/ and whose build cache is concurrency-safe, so serialising it behind the two binary writers would buy nothing.
+  // No `renet-bin` mutex, deliberately: that group guards the shared WRITE of private/renet/bin/renet (the renet quality battery that rebuilds it). This gate only runs `go test`, which writes nothing into bin/ and whose build cache is concurrency-safe, so serialising it behind the two binary writers would buy nothing.
   //
   // `local-only` is measured, not assumed. The tier-map tests DO run in CI, but through ct-tests.yml job test-renet step "Run renet tests", which resolves to the leaf .ci/rediacc_ci/private/run_renet.py (renet's whole `go test ./...` suite) and never to this script. Declaring that as a `step` pointer fails R3 with "the pointer names a step that runs something else", which is the
   // oracle working correctly: a manifest pointer asserts CI runs THIS leaf.

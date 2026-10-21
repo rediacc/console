@@ -3991,11 +3991,6 @@
     "id": "check:ci-renet-types",
     "run": "npm run check:ci-renet-types",
     "gate": true,
-    "mutex": [
-      "renet-bin",
-      "tree:repo"
-    ],
-    "writesTree": "builds bin/renet inside the private/renet submodule (go build -o bin/renet)",
     "leaves": [
       ".ci/scripts/quality/check_renet_types.py"
     ],

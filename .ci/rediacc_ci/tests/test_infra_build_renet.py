@@ -31,6 +31,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 
@@ -170,6 +171,27 @@ def _fixture(
     return root
 
 
+def _bind_stamp(root: pathlib.Path) -> None:
+    """Make a fixture's stamp the port's bound form: `<identity>|<sha256(binary)[:16]>`.
+
+    The twin's goldens were recorded with identity-only stamps, and the port now REQUIRES the digest of the bytes (see `build_renet.binary_digest`). The twin's input stays as recorded so its golden key does not move; only the port's copy is bound, and `_run_live` strips the digest from the port's stamp again before the comparison."""
+    bin_dir = root / "private" / "renet" / "bin"
+    stamp = bin_dir / ".renet-build-identity"
+    binary = bin_dir / "renet"
+    if stamp.is_file() and binary.is_file():
+        text = stamp.read_text(encoding="utf-8")
+        identity = text.rstrip("\n")
+        # A trailing newline is kept where the case supplied one: the skip path leaves the stamp untouched and the comparison reads it back.
+        stamp.write_text(
+            "%s|%s%s" % (identity, _digest(binary), text[len(identity) :]), encoding="utf-8"
+        )
+
+
+def _digest(path: pathlib.Path) -> str:
+    # Computed here, not imported from the port: a value the subject supplies cannot contradict the subject.
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+
+
 def _binder(where: pathlib.Path, *, go: bool, system: str, exclude: tuple[str, ...]) -> str:
     """The COMPLETE PATH for one run: named tools, plus the two fakes."""
     binder = where / "bin"
@@ -262,12 +284,18 @@ def _run_live(
 
     stamp_path = root / "private" / "renet" / "bin" / ".renet-build-identity"
     bin_dir = root / "private" / "renet" / "bin"
+    raw_stamp = stamp_path.read_text(encoding="utf-8") if stamp_path.exists() else None
+    # The port's stamp carries a third field (the binary digest); the twin's cannot. Strip it so the two stay comparable, and keep the raw form for the tests that assert on the digest itself.
+    stamp = raw_stamp
+    if runner == "python3" and raw_stamp is not None:
+        stamp = re.sub(r"(?<=\|[0-9a-f]{16})\|[0-9a-f]{16}(?=\n?$)", "", raw_stamp)
     return {
+        "raw_stamp": raw_stamp,
         "exit": proc.returncode,
         "stdout": proc.stdout.replace(str(root), "<root>"),
         "stderr": proc.stderr.replace(str(root), "<root>"),
         "calls": calls,
-        "stamp": stamp_path.read_text(encoding="utf-8") if stamp_path.exists() else None,
+        "stamp": stamp,
         "binaries": sorted(p.name for p in bin_dir.iterdir()) if bin_dir.is_dir() else None,
         # Masked like stdout/stderr: the fixture root differs between the two runs by construction, and an unmasked comparison would report every
         # case as divergent for that reason alone.
@@ -346,6 +374,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
     old = _run(TWIN_REL, root_a, **run_kw)
 
     root_b = _fixture(tmp_path / "b", **fixture_kw)
+    _bind_stamp(root_b)
     new = _run(PORT_REL, root_b, **run_kw)
 
     for field in ("exit", "stdout", "stderr", "calls", "stamp", "binaries", "github_env"):
@@ -373,9 +402,46 @@ def test_the_skip_path_really_skips(tmp_path):
 
     A port that rebuilt unconditionally would satisfy every positive assertion in this file and would re-run a Go build in ten CI steps."""
     root = _fixture(tmp_path / "s", binary="renet", stamp="default|" + EMPTY_KEY_DIGEST)
+    _bind_stamp(root)
     out = _run(PORT_REL, root)
     assert out["calls"] == [], "a build ran despite a matching stamp: %r" % out["calls"]
     assert "already built the same way" in out["stderr"]
+
+
+def test_a_swapped_binary_under_an_unchanged_stamp_is_rebuilt(tmp_path):
+    """THE INCIDENT, 2026-10-21: a bare `go build -o bin/renet` replaced the bytes and left the stamp, so the keyless binary was handed on as "already built the same way"."""
+    root = _fixture(tmp_path / "x", binary="renet", stamp="default|" + EMPTY_KEY_DIGEST)
+    _bind_stamp(root)
+    binary = root / "private" / "renet" / "bin" / "renet"
+    binary.write_text("keyless-binary-from-a-bare-go-build\n", encoding="utf-8")
+    out = _run(PORT_REL, root)
+    assert out["calls"], "the swapped binary was NOT rebuilt: %r" % out
+    assert "replaced after it was stamped" in out["stderr"]
+    assert "already built the same way" not in out["stderr"]
+    # The rebuilt binary is stamped with ITS digest, so the run after this one skips.
+    assert out["raw_stamp"] == "default|%s|%s" % (EMPTY_KEY_DIGEST, _digest(binary))
+    again = _run(PORT_REL, root)
+    assert again["calls"] == [], "the rebuilt, re-stamped binary was rebuilt again: %r" % again
+
+
+def test_an_untouched_binary_is_skipped(tmp_path):
+    """CONTROL for the case above: the digest check must not turn every run into a rebuild."""
+    root = _fixture(tmp_path / "u", binary="renet", stamp="default|" + EMPTY_KEY_DIGEST)
+    _bind_stamp(root)
+    before = (root / "private" / "renet" / "bin" / ".renet-build-identity").read_text("utf-8")
+    out = _run(PORT_REL, root)
+    assert out["calls"] == []
+    assert "already built the same way" in out["stderr"]
+    assert out["raw_stamp"] == before
+
+
+def test_an_old_format_stamp_is_rebuilt(tmp_path):
+    """An identity-only stamp vouches for nothing about the bytes on disk, so it never skips."""
+    root = _fixture(tmp_path / "o", binary="renet", stamp="default|" + EMPTY_KEY_DIGEST)
+    out = _run(PORT_REL, root)
+    assert out["calls"], "an old-format stamp skipped the build: %r" % out
+    assert "not bound to its bytes" in out["stderr"]
+    assert str(out["raw_stamp"]).count("|") == 2
 
 
 def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):
