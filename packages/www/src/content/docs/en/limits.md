@@ -199,7 +199,7 @@ Remote machines must run one of the following to meet Rediacc's kernel, filesyst
 
 ### Kernel feature matrix
 
-Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. All five satisfy every requirement. Landlock is required: renet refuses repo-key shells and transfers when `renet sandbox-exec --detect` does not report AVAILABLE.
+Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. Four of the five provide active Landlock out of the box; Oracle Linux 10 needs Landlock added to the boot LSM list (see [Requirements](/en/docs/requirements)). Landlock is required: renet refuses repo-key shells and transfers when `renet sandbox-exec --detect` does not report AVAILABLE.
 
 | OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1, required) | eBPF cgroup hooks |
 |----|--------------|------------|--------------------|-------------------|
@@ -207,4 +207,4 @@ Read the matrix as a single-glance view of what each CI-tested OS provides out o
 | Debian 13 | in-tree | unified hierarchy | yes | yes |
 | Fedora 43 | in-tree | unified hierarchy | yes | yes |
 | openSUSE Leap 16.0 | in-tree | unified hierarchy | yes | yes |
-| Oracle Linux 10 (UEK) | in-tree (via UEK) | unified hierarchy | yes | yes |
+| Oracle Linux 10 (UEK) | in-tree (via UEK) | unified hierarchy | built in, not active by default (enable via `lsm=`) | yes |

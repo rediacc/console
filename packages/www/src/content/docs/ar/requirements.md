@@ -7,8 +7,8 @@ tags:
 subcategory: setup
 order: 0
 language: ar
-sourceHash: "a605c6b2fac9bea2"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "6f8d0e423a4f4171"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # المتطلبات
@@ -54,6 +54,14 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 يتطلب المحرك الخلفي للتخزين المشفر في Rediacc وحدة نواة `btrfs` المدمجة. **نواة RHEL 10 الأصلية لا تتضمنها**: يفشل `modprobe btrfs` بالرسالة "Module btrfs not found"، ولا يُرجع `dnf search btrfs` أي نتيجة. يرث كل من Rocky Linux 10 وAlmaLinux 10 نفس النواة ولا يمكنهما بالتالي العمل كخوادم Rediacc.
 
 يستخدم Oracle Linux 10 افتراضيًا **نواة المؤسسة غير القابلة للكسر (UEK)** التي تحتفظ ببناء btrfs. وهذا هو الهدف الوحيد المتوافق مع RHEL في القائمة المدعومة. إذا كان يجب عليك تشغيل خادم من عائلة RHEL، فاستخدم Oracle Linux 10 مع UEK. (المرجع الأساسي لهذا القرار موجود في `.github/workflows/ct-tests.yml` بوصفه مصفوفة CI Bridge Workers.)
+
+على Oracle Linux 10، يكون Landlock مدمجًا في UEK لكنه غير موجود في قائمة LSM الافتراضية عند الإقلاع. تحتاج إليه أجهزة الصدفة (shell) والنقل بمفتاح المستودع، لذا فعّله عند الإقلاع ثم أعد التشغيل:
+
+```bash
+sudo grubby --update-kernel=ALL --args="lsm=$(cat /sys/kernel/security/lsm),landlock"
+```
+
+بعد إعادة التشغيل، يُبلغ `renet sandbox-exec --detect` عن الحالة AVAILABLE.
 
 #### للاستخدام على محطة العمل فقط (أهداف تثبيت CLI)
 

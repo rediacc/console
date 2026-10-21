@@ -7,8 +7,8 @@ tags:
 subcategory: setup
 order: 0
 language: et
-sourceHash: "a605c6b2fac9bea2"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "6f8d0e423a4f4171"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Nõuded
@@ -54,6 +54,14 @@ Kõik read on `x86_64`. `arm64` on ehitatud, kuid mitte pidevalt testitud iga se
 Rediacci krüpteeritud salvestusserveri taustarakendus nõuab puusisest `btrfs` kerneli moodulit. **RHEL 10 standardne kernel saadetakse ilma selleta**: `modprobe btrfs` ebaõnnestub teatega "Module btrfs not found" ja `dnf search btrfs` ei tagasta midagi. Rocky Linux 10 ja AlmaLinux 10 pärivad sama kerneli ja seetõttu ei saa töötada Rediacci serveritena.
 
 Oracle Linux 10 kasutab vaikimisi **Unbreakable Enterprise Kernel (UEK)**, mis hoiab btrfs-i sisseehitatuna. See on ainus RHEL-ühilduv sihtmärk toetatud loendis. Kui peate käitama RHEL-perekonna serverit, kasutage Oracle Linux 10 koos UEK-iga. (Selle otsuse tõde elab `.github/workflows/ct-tests.yml`-s CI Bridge Workers maatriksina.)
+
+Oracle Linux 10-s on Landlock UEK-sse sisse ehitatud, kuid vaikimisi alglaadimise LSM-loendis seda pole. Repositooriumivõtmega shellid ja ülekanded vajavad seda, seega lubage see alglaadimisel ja taaskäivitage:
+
+```bash
+sudo grubby --update-kernel=ALL --args="lsm=$(cat /sys/kernel/security/lsm),landlock"
+```
+
+Pärast taaskäivitust teatab `renet sandbox-exec --detect` olekut AVAILABLE.
 
 #### Ainult tööjaam (CLI installimise sihtmärgid)
 

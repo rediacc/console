@@ -53,6 +53,14 @@ Rediacc's encrypted storage backend requires the in-tree `btrfs` kernel module. 
 
 Oracle Linux 10 uses the **Unbreakable Enterprise Kernel (UEK)** by default, which keeps btrfs built in. That is the only RHEL-compatible target on the supported list. If you must run a RHEL-family server, use Oracle Linux 10 with UEK. (The ground truth for this decision lives in `.github/workflows/ct-tests.yml` as the CI Bridge Workers matrix.)
 
+On Oracle Linux 10, Landlock is built into UEK but not in the default boot LSM list. Repo-key shells and transfers need it, so enable it at boot, then reboot:
+
+```bash
+sudo grubby --update-kernel=ALL --args="lsm=$(cat /sys/kernel/security/lsm),landlock"
+```
+
+After the reboot, `renet sandbox-exec --detect` reports AVAILABLE.
+
 #### Workstation-only (CLI install targets)
 
 The `rdc` CLI additionally installs cleanly on Alpine 3.19+ (APK with the `gcompat` compatibility layer, installed automatically) and Arch Linux (rolling, via pacman). These are client-side install paths only (see [Installation](/en/docs/installation)) and are not supported as `renet` server targets.

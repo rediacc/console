@@ -7,8 +7,8 @@ tags:
 subcategory: setup
 order: 0
 language: ja
-sourceHash: "a605c6b2fac9bea2"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "6f8d0e423a4f4171"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # システム要件
@@ -54,6 +54,14 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 Rediaccの暗号化ストレージバックエンドには、ツリー内の `btrfs` カーネルモジュールが必要です。**RHEL 10のストックカーネルにはそれが含まれていません**：`modprobe btrfs` は "Module btrfs not found" で失敗し、`dnf search btrfs` は何も返しません。Rocky Linux 10とAlmaLinux 10は同じカーネルを継承しているため、Rediaccサーバーとして動作させることができません。
 
 Oracle Linux 10はデフォルトで **Unbreakable Enterprise Kernel (UEK)** を使用しており、btrfsが組み込まれています。これがサポートリストに載っている唯一のRHEL互換ターゲットです。RHELファミリーのサーバーを使用しなければならない場合は、UEK付きのOracle Linux 10を使用してください。（この決定の根拠は `.github/workflows/ct-tests.yml` のCI Bridge Workersマトリックスにあります。）
+
+Oracle Linux 10 では、Landlock は UEK に組み込まれていますが、既定の起動時 LSM リストには含まれていません。リポジトリキーのシェルと転送には Landlock が必要なため、起動時に有効化して再起動してください。
+
+```bash
+sudo grubby --update-kernel=ALL --args="lsm=$(cat /sys/kernel/security/lsm),landlock"
+```
+
+再起動後、`renet sandbox-exec --detect` が AVAILABLE を報告します。
 
 #### ワークステーション専用（CLIインストールターゲット）
 

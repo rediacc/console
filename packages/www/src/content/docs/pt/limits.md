@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: pt
-sourceHash: "fef2e6b43b4a24c3"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "9dd121af7aed1c6c"
+sourceCommit: "cb91651e4061b0a77c3454d728f739d8b6927d8e"
 ---
 
 # Limites e Quotas
@@ -200,7 +200,7 @@ As máquinas remotas devem correr um dos seguintes para satisfazer os requisitos
 
 ### Matriz de funcionalidades do kernel
 
-Leia a matriz como uma vista rápida do que cada SO testado em CI fornece de origem. Os cinco satisfazem todos os requisitos. O Landlock é obrigatório: o renet recusa shells e transferências com chave de repositório quando `renet sandbox-exec --detect` não indica AVAILABLE.
+Leia a matriz como uma vista rápida do que cada SO testado em CI fornece de origem. Quatro dos cinco trazem o Landlock ativo de origem; o Oracle Linux 10 precisa que o Landlock seja adicionado à lista de LSM do arranque (veja [Requisitos](/pt/docs/requirements)). O Landlock é obrigatório: o renet recusa shells e transferências com chave de repositório quando `renet sandbox-exec --detect` não indica AVAILABLE.
 
 | SO | módulo btrfs | cgroups v2 | Landlock (ABI >= 1, obrigatório) | hooks eBPF cgroup |
 |----|--------------|------------|--------------------|-------------------|
@@ -208,4 +208,4 @@ Leia a matriz como uma vista rápida do que cada SO testado em CI fornece de ori
 | Debian 13 | in-tree | hierarquia unificada | sim | sim |
 | Fedora 43 | in-tree | hierarquia unificada | sim | sim |
 | openSUSE Leap 16.0 | in-tree | hierarquia unificada | sim | sim |
-| Oracle Linux 10 (UEK) | in-tree (via UEK) | hierarquia unificada | sim | sim |
+| Oracle Linux 10 (UEK) | in-tree (via UEK) | hierarquia unificada | integrado, mas não ativo por padrão (ative com `lsm=`) | sim |

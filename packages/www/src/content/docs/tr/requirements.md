@@ -7,8 +7,8 @@ tags:
 subcategory: setup
 order: 0
 language: tr
-sourceHash: "a605c6b2fac9bea2"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "6f8d0e423a4f4171"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Gereksinimler
@@ -54,6 +54,14 @@ Tüm satırlar `x86_64` içindir. `arm64` derlenmektedir ancak her sunucu işlet
 Rediacc'ın şifrelenmiş depolama arka ucu, ağaç içi `btrfs` çekirdek modülünü gerektirir. **RHEL 10'un standart çekirdeği bu modül olmadan gönderilmektedir**: `modprobe btrfs`, "Module btrfs not found" hatasıyla başarısız olur ve `dnf search btrfs` hiçbir şey döndürmez. Rocky Linux 10 ve AlmaLinux 10 aynı çekirdeği devraldığından Rediacc sunucusu olarak çalışamazlar.
 
 Oracle Linux 10 varsayılan olarak **Unbreakable Enterprise Kernel (UEK)** kullanır ve bu çekirdek btrfs'i yerleşik olarak korur. Bu, desteklenen listede yer alan tek RHEL uyumlu hedeftir. Mutlaka bir RHEL ailesi sunucu kullanmanız gerekiyorsa UEK ile Oracle Linux 10 kullanın. (Bu kararın gerçek kaynağı `.github/workflows/ct-tests.yml` dosyasında CI Bridge Workers matrisi olarak yer almaktadır.)
+
+Oracle Linux 10'da Landlock UEK içinde yerleşik olarak bulunur ancak varsayılan önyükleme LSM listesinde yer almaz. Depo anahtarlı kabuklar ve aktarımlar buna ihtiyaç duyar; bu yüzden önyüklemede etkinleştirin ve yeniden başlatın:
+
+```bash
+sudo grubby --update-kernel=ALL --args="lsm=$(cat /sys/kernel/security/lsm),landlock"
+```
+
+Yeniden başlatmanın ardından `renet sandbox-exec --detect` AVAILABLE bildirir.
 
 #### Yalnızca İş İstasyonu (CLI kurulum hedefleri)
 

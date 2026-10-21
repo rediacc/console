@@ -10,8 +10,8 @@ tags:
 subcategory: platform
 order: 99
 language: et
-sourceHash: "fef2e6b43b4a24c3"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "9dd121af7aed1c6c"
+sourceCommit: "cb91651e4061b0a77c3454d728f739d8b6927d8e"
 ---
 
 # Piirangud ja kvoodid
@@ -201,7 +201,7 @@ Kaugmasinad peavad käitama üht järgmistest, et vastata Rediacc tuuma-, failis
 
 ### Tuumafunktsioonide maatriks
 
-Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele. Landlock on kohustuslik: renet keeldub repositooriumivõtmega shellidest ja ülekannetest, kui `renet sandbox-exec --detect` ei teata olekut AVAILABLE.
+Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Neljal viiest on Landlock kastist välja aktiivne; Oracle Linux 10 puhul tuleb Landlock lisada alglaadimise LSM-loendisse (vt [Nõuded](/et/docs/requirements)). Landlock on kohustuslik: renet keeldub repositooriumivõtmega shellidest ja ülekannetest, kui `renet sandbox-exec --detect` ei teata olekut AVAILABLE.
 
 | OS | btrfs moodul | cgroups v2 | Landlock (ABI >= 1, kohustuslik) | eBPF cgroup haagid |
 |----|--------------|------------|--------------------|-------------------|
@@ -209,4 +209,4 @@ Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist
 | Debian 13 | sees-puu | ühtne hierarhia | jah | jah |
 | Fedora 43 | sees-puu | ühtne hierarhia | jah | jah |
 | openSUSE Leap 16.0 | sees-puu | ühtne hierarhia | jah | jah |
-| Oracle Linux 10 (UEK) | sees-puu (UEK kaudu) | ühtne hierarhia | jah | jah |
+| Oracle Linux 10 (UEK) | sees-puu (UEK kaudu) | ühtne hierarhia | sisseehitatud, aga vaikimisi mitteaktiivne (lubamine `lsm=` kaudu) | jah |
