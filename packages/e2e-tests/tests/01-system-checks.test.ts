@@ -139,9 +139,9 @@ test.describe('System Functions @bridge @smoke', () => {
     const os = release.match(/os=([a-z0-9-]+)/)?.[1];
     expect(os, `could not read the worker's OS from /etc/os-release: ${release}`).toBeTruthy();
     // The kernel's own list of active LSMs: Landlock is usable only when it is in it.
-    const lsm = runner
-      .getCombinedOutput(await runner.executeOnWorker('cat /sys/kernel/security/lsm'))
-      .trim();
+    const lsmRead = await runner.executeOnWorker('cat /sys/kernel/security/lsm');
+    const lsm = runner.getCombinedOutput(lsmRead).trim();
+    expect(lsmRead.code, `could not read /sys/kernel/security/lsm: ${lsm}`).toBe(0);
     const result = await runner.executeOnWorker('renet sandbox-exec --detect');
     const output = runner.getCombinedOutput(result);
 
