@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/start-account-for-e2e.sh`: start a throwaway account server for an E2E leg and mint the API token that leg's suite needs.
 
-Prints, and under Actions appends to `$GITHUB_ENV`, `REDIACC_ACCOUNT_SERVER` and `E2E_ACCOUNT_API_TOKEN`. The two ordering rules of the twin are kept and are why this is not a plain HTTP helper: the CLI must be the token's FIRST user (so it is minted over the cookie session and never presented again here), and the server must outlive the step (own session, listener pid recorded from the LISTENING SOCKET, never from the `npx` wrapper).
+Prints, and under Actions appends to `$GITHUB_ENV`, `REDIACC_ACCOUNT_SERVER`, `ACCOUNT_ED25519_PUBLIC_KEY` (the signer's public half, see delta 7) and `E2E_ACCOUNT_API_TOKEN`. The two ordering rules of the twin are kept and are why this is not a plain HTTP helper: the CLI must be the token's FIRST user (so it is minted over the cookie session and never presented again here), and the server must outlive the step (own session, listener pid recorded from the LISTENING SOCKET, never from the `npx` wrapper).
 
 Deliberate differences from the twin (Rule T), each with a test that fails on the bash behaviour:
 
@@ -10,6 +10,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   4. `--port` with no value was a raw bash `parameter null or not set` diagnostic and exit 1; it is a usage error, exit 2, like the unknown option next to it.
   5. The throwaway secrets come from `secrets.token_hex` instead of `openssl rand -hex 32`, whose silent failure left them empty in the retired `ci-env.sh` (see `infra/ci_env.py`). Same shape, 64 hex characters.
   6. The cookie jar lives in memory; the twin wrote and removed `account-for-e2e-cookies.txt`.
+  7. The ED25519 signing pair is taken from the environment when BOTH `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` are set (the twin always minted its own), and the PUBLIC half is published as `ACCOUNT_ED25519_PUBLIC_KEY` next to `REDIACC_ACCOUNT_SERVER`. A renet build has to bake the signer's public key, or every licence this server signs is filed under a fingerprint renet never looks up (`start_backup_plane`). The private half is never printed or written.
 """
 
 import contextlib
@@ -106,6 +107,20 @@ def generate_keys() -> dict[str, str]:
             f"node could not generate the throwaway keys: {done.stderr.strip()}", show_log=False
         )
     return json.loads(done.stdout)
+
+
+def server_keys() -> dict[str, str]:
+    """The throwaway key set, with the ED25519 signing pair taken from the environment when BOTH halves are there.
+
+    A caller that bakes the public half into a renet build (`start_backup_plane`) has to hold the pair before this server starts, or the licence blobs it signs are filed under a fingerprint that renet never looks up. Half a pair is ignored: a lone public key would sign nothing, and a lone private key has no matching public half to publish. The private half is passed to the server through its environment only, never printed or written.
+    """
+    keys = generate_keys()
+    private = os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "")
+    public = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "")
+    if private and public:
+        log.info("signing with the ACCOUNT_ED25519_* pair from the environment")
+        keys = {**keys, "edPriv": private, "edPub": public}
+    return keys
 
 
 class Api:
@@ -219,7 +234,7 @@ def run(opts: Options) -> int:
                 show_log=False,
             )
         log.step("Generating throwaway server keys...")
-        keys = generate_keys()
+        keys = server_keys()
         log.step(f"Starting account server on port {opts.port}...")
         db_path = pathlib.Path(temp) / f"e2e-account-{os.getpid()}.db"
         try:
@@ -258,7 +273,7 @@ def run(opts: Options) -> int:
 
     server_url = f"http://{opts.advertise_host}:{opts.port}"
     log.info(f"subscription {subscription_id}, token {token[:12]}...")
-    publish(server_url, token)
+    publish(server_url, token, keys["edPub"])
     return 0
 
 
@@ -321,19 +336,27 @@ def terminate(server: subprocess.Popen) -> None:
             os.killpg(server.pid, signal.SIGKILL)
 
 
-def publish(server_url: str, token: str) -> None:
+def publish(server_url: str, token: str, public_key: str) -> None:
+    """The server URL, the token and the PUBLIC signing key (unmasked: it is public, and a renet build bakes it). The private half never reaches this function."""
     github_env = os.environ.get("GITHUB_ENV")
     if github_env:
         # Not a `secrets.*` value, so Actions would not mask it on its own.
         print(f"::add-mask::{token}")
         with open(github_env, "a", encoding="utf-8") as handle:
-            handle.write(f"REDIACC_ACCOUNT_SERVER={server_url}\nE2E_ACCOUNT_API_TOKEN={token}\n")
-        log.info("exported REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN to $GITHUB_ENV")
+            handle.write(
+                f"REDIACC_ACCOUNT_SERVER={server_url}\n"
+                f"ACCOUNT_ED25519_PUBLIC_KEY={public_key}\n"
+                f"E2E_ACCOUNT_API_TOKEN={token}\n"
+            )
+        log.info(
+            "exported REDIACC_ACCOUNT_SERVER, ACCOUNT_ED25519_PUBLIC_KEY and E2E_ACCOUNT_API_TOKEN to $GITHUB_ENV"
+        )
     github_output = os.environ.get("GITHUB_OUTPUT")
     if github_output:
         with open(github_output, "a", encoding="utf-8") as handle:
             handle.write(f"server-url={server_url}\n")
-    # Bare stdout for a local caller: `eval "$(... | tail -2)"`.
+    # Bare stdout for a local caller: `eval "$(... | tail -2)"` (the public key line sits above the two the twin printed, so `tail -2` still reads them).
+    print(f"ACCOUNT_ED25519_PUBLIC_KEY={public_key}")
     print(f"REDIACC_ACCOUNT_SERVER={server_url}")
     print(f"E2E_ACCOUNT_API_TOKEN={token}", flush=True)
 

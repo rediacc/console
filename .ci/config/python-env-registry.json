@@ -1265,12 +1265,16 @@
     ],
     ".ci/rediacc_ci/testrun/start_account.py": [
       "ACCOUNT_API_PORT",
+      "ACCOUNT_ED25519_PRIVATE_KEY",
+      "ACCOUNT_ED25519_PUBLIC_KEY",
       "GITHUB_ENV",
       "GITHUB_OUTPUT",
       "RUNNER_TEMP"
     ],
     ".ci/rediacc_ci/testrun/start_backup_plane.py": [
       "ACCOUNT_API_PORT",
+      "ACCOUNT_ED25519_PUBLIC_KEY",
+      "GITHUB_ACTIONS",
       "GITHUB_ENV",
       "RUNNER_TEMP"
     ],

@@ -147,6 +147,15 @@ def bash_side(
     return ts.Outcome(rc, out.replace("<PORT>", unwanted), err.replace("<PORT>", unwanted), calls)
 
 
+def without_public_key(text: str) -> str:
+    """The text with its `ACCOUNT_ED25519_PUBLIC_KEY=` lines dropped (delta 7: the twin never published one)."""
+    return "".join(
+        line
+        for line in text.splitlines(keepends=True)
+        if not line.startswith("ACCOUNT_ED25519_PUBLIC_KEY=")
+    )
+
+
 def requests(directory: pathlib.Path) -> list[dict]:
     log = directory / "stub.jsonl"
     return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
@@ -191,7 +200,8 @@ def test_success_matches_the_twin(tmp_path: pathlib.Path) -> None:
         r["cookie"] for r in requests(nd) if r["path"].endswith(("/subscription", "/api-tokens"))
     ][-2:] == [True, True]
     for directory, port in ((od, op), (nd, np_)):
-        env = (directory / "gh_env").read_text().splitlines()
+        # Delta 7: the port also publishes the public signing key; asserted apart below.
+        env = without_public_key((directory / "gh_env").read_text()).splitlines()
         assert env == [
             f"REDIACC_ACCOUNT_SERVER=http://127.0.0.1:{port}",
             "E2E_ACCOUNT_API_TOKEN=rdt_stub_token_0123456789",
@@ -200,10 +210,23 @@ def test_success_matches_the_twin(tmp_path: pathlib.Path) -> None:
         assert server_up(directory)
 
     def norm(out: ts.Outcome, directory: pathlib.Path, port: int) -> str:
-        return ts.mask(out.out, directory).replace(str(port), "<PORT>")
+        return without_public_key(ts.mask(out.out, directory)).replace(str(port), "<PORT>")
 
     assert norm(old, od, op) == norm(new, nd, np_)
     assert "::add-mask::rdt_stub_token_0123456789" in new.out
+
+    # Delta 7 (a golden for a separate case would need a twin run that no longer exists, so it rides this one): the twin published no signing key, the port publishes the PUBLIC half once, unmasked, and never the private one.
+    assert "ACCOUNT_ED25519_PUBLIC_KEY" not in (od / "gh_env").read_text() + old.out
+    published = [
+        line
+        for line in (nd / "gh_env").read_text().splitlines()
+        if line.startswith("ACCOUNT_ED25519_PUBLIC_KEY=")
+    ]
+    assert len(published) == 1
+    # An SPKI-wrapped ED25519 key in base64: the 12-byte DER header always encodes to this prefix.
+    assert published[0].startswith("ACCOUNT_ED25519_PUBLIC_KEY=MCowBQYDK2VwAyEA")
+    assert published[0] + "\n" in new.out
+    assert "ACCOUNT_ED25519_PRIVATE_KEY" not in (nd / "gh_env").read_text() + new.out + new.err
 
 
 @pytest.mark.parametrize(
@@ -344,7 +367,9 @@ def test_advertise_host_names_the_published_url(
     monkeypatch.setenv("GITHUB_ENV", str(gh_env))
     monkeypatch.setenv("GITHUB_OUTPUT", str(gh_out))
     started: list[str] = []
-    monkeypatch.setattr(sa, "generate_keys", dict)
+    monkeypatch.delenv("ACCOUNT_ED25519_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("ACCOUNT_ED25519_PUBLIC_KEY", raising=False)
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
     monkeypatch.setattr(sa, "start_server", lambda *_a: started.append("x"))
     monkeypatch.setattr(sa, "seed_and_mint", lambda _api, _o: ("rdt_unit", "sub1"))
     monkeypatch.setattr(sa, "listener_pid", lambda _port: "")
@@ -355,3 +380,73 @@ def test_advertise_host_names_the_published_url(
     assert sa.run(opts) == 0
     assert "REDIACC_ACCOUNT_SERVER=http://192.168.111.254:4911\n" in gh_env.read_text()
     assert gh_out.read_text() == "server-url=http://192.168.111.254:4911\n"
+
+
+FAKE_KEYS = {"edPriv": "GEN-PRIV", "edPub": "GEN-PUB", "xPriv": "GEN-XPRIV", "xPub": "GEN-XPUB"}
+
+
+def drive_run(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, *, github_env: bool
+) -> tuple[dict, pathlib.Path]:
+    """`run()` with the server, the seed and the health probe stubbed; returns the keys handed to the server and the `$GITHUB_ENV` path."""
+    seen: dict = {}
+    gh_env = tmp_path / "env"
+    if github_env:
+        monkeypatch.setenv("GITHUB_ENV", str(gh_env))
+    else:
+        monkeypatch.delenv("GITHUB_ENV", raising=False)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
+    monkeypatch.setattr(sa, "start_server", lambda _o, _a, _l, _d, keys: seen.update(keys))
+    monkeypatch.setattr(sa, "seed_and_mint", lambda _api, _o: ("rdt_unit", "sub1"))
+    monkeypatch.setattr(sa, "listener_pid", lambda _port: "")
+    answers = iter([False, True])
+    monkeypatch.setattr(sa, "healthy", lambda _port: next(answers))
+    assert sa.run(sa.parse(["--port", "4911"])) == 0
+    return seen, gh_env
+
+
+def test_env_signing_pair_is_reused_and_only_its_public_half_published(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB")
+    seen, gh_env = drive_run(tmp_path, monkeypatch, github_env=True)
+    assert seen["edPriv"] == "ENV-PRIVATE-SENTINEL"
+    assert seen["edPub"] == "ENV-PUB"
+    # The x25519 pair still comes from the generator.
+    assert (seen["xPriv"], seen["xPub"]) == ("GEN-XPRIV", "GEN-XPUB")
+    written = gh_env.read_text()
+    assert "ACCOUNT_ED25519_PUBLIC_KEY=ENV-PUB\n" in written
+    out = capsys.readouterr()
+    assert "ACCOUNT_ED25519_PUBLIC_KEY=ENV-PUB\n" in out.out
+    # Not masked: it is public, and the renet build step reads it back.
+    assert "::add-mask::ENV-PUB" not in out.out
+    for text in (written, out.out, out.err):
+        assert "ENV-PRIVATE-SENTINEL" not in text
+        assert "ACCOUNT_ED25519_PRIVATE_KEY" not in text
+
+
+@pytest.mark.parametrize(
+    "present",
+    [(), ("ACCOUNT_ED25519_PUBLIC_KEY",), ("ACCOUNT_ED25519_PRIVATE_KEY",)],
+    ids=["none", "public-only", "private-only"],
+)
+def test_without_both_env_halves_the_keys_are_generated(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys, present: tuple[str, ...]
+) -> None:
+    for name in ("ACCOUNT_ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PUBLIC_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    for name in present:
+        monkeypatch.setenv(name, "HALF-SENTINEL")
+    seen, _ = drive_run(tmp_path, monkeypatch, github_env=False)
+    assert seen == FAKE_KEYS
+    out = capsys.readouterr()
+    assert "ACCOUNT_ED25519_PUBLIC_KEY=GEN-PUB\n" in out.out
+    assert "GEN-PRIV" not in out.out + out.err
+    # The twin's last two stdout lines are unchanged, so `tail -2` callers still read them.
+    assert out.out.splitlines()[-2:] == [
+        "REDIACC_ACCOUNT_SERVER=http://127.0.0.1:4911",
+        "E2E_ACCOUNT_API_TOKEN=rdt_unit",
+    ]
