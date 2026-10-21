@@ -132,22 +132,27 @@ function restoreListing(
 }
 
 /**
- * The tamper test's cleanup: temp copies go on every path, the failed restore included. A restore failure is
- * always logged with the object key; it fails the test only when no primary failure is already being reported.
+ * The tamper test's cleanup: temp copies go on every path. The original is put back only if the tampered bytes
+ * were ever sent. A failed restore is logged with the object key and always fails the test; beside a primary
+ * failure both travel in one AggregateError, so neither hides the other and the tampered object is never left
+ * behind silently.
  */
 function finishTamper(o: {
   dir: string;
   original: string;
+  tamperSent: boolean;
   restored: boolean;
   primary: unknown;
   curl: (args: string[]) => unknown;
   objectKey: string;
 }): void {
-  const restoreError = o.restored ? undefined : restoreListing(o.original, o.curl, o.objectKey);
+  const restoreError =
+    o.tamperSent && !o.restored ? restoreListing(o.original, o.curl, o.objectKey) : undefined;
   rmSync(o.dir, { recursive: true, force: true });
   if (!restoreError) return;
   console.error(restoreError.message);
   if (o.primary === undefined) throw restoreError;
+  throw new AggregateError([o.primary, restoreError], restoreError.message);
 }
 
 // --------------------------------------------------------------------------- BROWSE-AT tier — a stored snapshot lists without being restored ---------------------------------------------------------------------------
@@ -462,6 +467,7 @@ test.describe
         const dir = mkdtempSync(path.join(os.tmpdir(), 'browse-at-tamper-'));
         const original = path.join(dir, 'original');
         const tampered = path.join(dir, 'tampered');
+        let tamperSent = false;
         let restored = false;
         let primary: unknown;
         try {
@@ -475,6 +481,7 @@ test.describe
           flipped[Math.floor(flipped.length / 2)] ^= 0xff;
           writeFileSync(tampered, flipped);
 
+          tamperSent = true;
           curl(['-X', 'PUT', '-T', tampered]);
           const bad = await cli.runJson<CliEnvelope<unknown>>([
             'backup',
@@ -513,6 +520,7 @@ test.describe
           finishTamper({
             dir,
             original,
+            tamperSent,
             restored,
             primary,
             curl,

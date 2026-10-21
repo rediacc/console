@@ -121,7 +121,7 @@ export const parseEnvelope = (raw: string, stderr = ''): Partial<CliEnvelope<unk
     return JSON.parse(raw.trim() || '{}') as Partial<CliEnvelope<unknown>>;
   } catch {
     throw new Error(
-      `stdout is not a JSON envelope: ${raw.slice(0, 800)}\nstderr: ${stderr.slice(0, 800)}`
+      `stdout is not a JSON envelope: ${raw.slice(0, 800)}${stderr ? `\nstderr: ${stderr.slice(0, 800)}` : ''}`
     );
   }
 };
