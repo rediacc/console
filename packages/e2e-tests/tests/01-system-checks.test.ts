@@ -21,6 +21,15 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * - machine_check_cli, machine_fix_groups
  * Note: datastore_status is tested in 03-datastore-lifecycle.test.ts
  */
+
+/**
+ * OS images whose default boot leaves Landlock out of the active LSM list, so `renet sandbox-exec --detect` reports
+ * NOT AVAILABLE and repo-key shells refuse there by design. Measured on the CI matrix (run 39640583259, 2026-10-21):
+ * Oracle Linux 10 UEK 6.12 boots with `lsm=lockdown,capability,yama,selinux,bpf,ima,evm` and logs
+ * "landlock: Disabled but requested by user space"; Ubuntu 24.04, Debian 13, Fedora 43 and openSUSE 16.0 report ABI 4-7.
+ */
+const LANDLOCK_INACTIVE_BY_DEFAULT = new Set(['ol-10']);
+
 test.describe('System Functions @bridge @smoke', () => {
   let runner: BridgeTestRunner;
 
@@ -122,19 +131,32 @@ test.describe('System Functions @bridge @smoke', () => {
     expect(result.code).toBe(0);
   });
 
-  // Repo-key shells and transfers refuse to run without Landlock, so every supported OS leg must report it. getCombinedOutput lowercases, so the patterns are lowercase; "status: not available" cannot match `status:\s*available`.
-  test('sandbox-exec --detect reports Landlock AVAILABLE and records the ABI', async () => {
+  // Repo-key shells and transfers refuse to run without Landlock, so every supported OS leg must report it, except where the measured default boot leaves it out of `lsm=`. getCombinedOutput lowercases, so the patterns are lowercase; "status: not available" cannot match `status:\s*available`.
+  test('sandbox-exec --detect reports Landlock as measured for this OS and records the ABI', async () => {
+    const release = runner.getCombinedOutput(
+      await runner.executeOnWorker('. /etc/os-release && echo "os=$ID-${VERSION_ID%%.*}"')
+    );
+    const os = release.match(/os=([a-z0-9-]+)/)?.[1] ?? 'unknown';
     const result = await runner.executeOnWorker('renet sandbox-exec --detect');
     const output = runner.getCombinedOutput(result);
 
     const abi = output.match(/landlock abi version:\s*(\d+)/)?.[1] ?? 'unreported';
     test.info().annotations.push({
       type: 'landlock-abi',
-      description: `ABI ${abi} on ${runner.getTargetVM()}`,
+      description: `ABI ${abi} on ${runner.getTargetVM()} (${os})`,
     });
 
     expect(result.code, output).toBe(0);
-    expect(output).toMatch(/status:\s*available/);
+    if (LANDLOCK_INACTIVE_BY_DEFAULT.has(os)) {
+      // Repo-key shells refuse on this OS until Landlock is added to lsm= (PLAN-shell-sandbox-readonly-view E1). A pass here
+      // after an image or kernel change means Landlock became active: move the OS out of the set.
+      expect(
+        output,
+        `${os} now reports Landlock; remove it from LANDLOCK_INACTIVE_BY_DEFAULT`
+      ).toMatch(/status:\s*not available/);
+    } else {
+      expect(output).toMatch(/status:\s*available/);
+    }
   });
 
   test('check_btrfs should verify btrfs availability', async () => {
