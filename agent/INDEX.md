@@ -673,7 +673,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-trap-enforcement.md` | done | 547 | 0 | 7 | 61243 |
 | `agent/plans/_done/PLAN-turbo-local-first.md` | done | 124 | 0 | 6 | 15349 |
 | `agent/plans/_done/PLAN-typecheck-orphan-packages.md` | done | 84 | 0 | 5 | 7157 |
-| `agent/plans/_done/PLAN-vm-check.md` | done | 159 | 0 | 8 | 37562 |
+| `agent/plans/_done/PLAN-vm-check.md` | done | 159 | 0 | 8 | 37578 |
 | `agent/plans/_done/PLAN-w9p2-script-relocation.md` | done | 182 | 0 | 10 | 29321 |
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | done | 203 | 0 | 15 | 29033 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
