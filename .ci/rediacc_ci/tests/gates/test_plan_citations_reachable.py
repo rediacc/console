@@ -16,8 +16,8 @@ def _gate_module(monkeypatch):
     # The script imports its sibling `_cipath` (the hop to `.ci`), as it does when run directly.
     monkeypatch.syspath_prepend(str(GATE.parent))
     spec = importlib.util.spec_from_file_location("check_plan_citations_under_test", GATE)
+    assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
     spec.loader.exec_module(mod)
     return mod
 

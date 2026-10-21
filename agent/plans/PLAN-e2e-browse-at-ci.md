@@ -13,7 +13,7 @@ The suite-26 BROWSE-AT tier passes on the local KVM fleet, but CI provides none 
 ## Findings (checked in the tree, 2026-10-21)
 
 1. Prerequisites CI lacks, each with a no-new-secret source:
-   - (a) RustFS on 127.0.0.1:9100 with the rediacc-backups-probe bucket: account_lifecycle._start_rustfs (.ci/rediacc_ci/core/account_lifecycle.py:690-755) starts config-rustfs with dev-default keys (private/account/docker-compose.yml:41-50); backup_local_plane.create_bucket (.ci/rediacc_ci/drills/backup_local_plane.py:85-106) adds the bucket.
+   - (a) RustFS on 127.0.0.1:9100 with the local probe bucket (backup_local_plane PROBE_BUCKET): account_lifecycle._start_rustfs (.ci/rediacc_ci/core/account_lifecycle.py:690-755) starts config-rustfs with dev-default keys (private/account/docker-compose.yml:41-50); backup_local_plane.create_bucket (.ci/rediacc_ci/drills/backup_local_plane.py:85-106) adds the bucket.
    - (b) A gateway carrying ACCOUNT_BACKUP_S3_*: rediacc_ci.testrun.start_account already starts src/entry/node.ts with self-minted keys and passes os.environ through; private/account/src/entry/node.ts:56 builds the backup plane from the S3 env.
    - (c) A backup:read token: .ci/rediacc_ci/testrun/start_account.py:44 hard-codes license and subscription scopes only.
    - (d) The 192.168.111.254 address the VMs reach (wire.bridge_host): it must appear in the published account server URL (the renewalUrl stamp, private/account/src/app.ts:542) and in ACCOUNT_BACKUP_S3_ENDPOINT, since SigV4 signs the Host header.
