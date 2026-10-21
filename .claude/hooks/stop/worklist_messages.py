@@ -2854,8 +2854,8 @@ V_WISDOM_DUE = (
     "important open thread to a sub-agent with a self-contained brief, leases the item to it and "
     "records the brief on the item with --update, commits verified work, and rewrites "
     "agent/%(me8)s/STATE.md through `worklist.py --state` with a '## Delegated' section (one line per "
-    "agent: agent id, item id, what it owns) and a '## Next action'. That rewrite, made past this point "
-    "in the context, clears this check. It fires here and not in the late band because the late band "
+    "agent: agent id, item id, files owned, acceptance check) and a '## Next action'. That rewrite, made "
+    "past this point in the context with a section that is not the previous context's, clears this check. It fires here and not in the late band because the late band "
     "leaves about %(late)s tokens, too few for the briefs."
 )
 
