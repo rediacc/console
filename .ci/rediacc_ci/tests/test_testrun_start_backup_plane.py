@@ -284,7 +284,7 @@ def buildinfo(key: str | None) -> str:
         f" -X github.com/{RENET_REPO}/pkg/license/keys.ProductionPublicKey={key}" if key else ""
     )
     return (
-        f"/r/renet: go1.27.3\n\tpath\tgithub.com/{RENET_REPO}/cmd/renet\n"
+        f"/r/renet: go0.0.0-test\n\tpath\tgithub.com/{RENET_REPO}/cmd/renet\n"
         f'\tbuild\t-ldflags="-s -w -X main.Version=0.0.0-dev{ldflag}"\n\tbuild\t-tags=nolicense\n'
     )
 

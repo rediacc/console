@@ -192,7 +192,7 @@ def _build(argv: list[str]) -> int:
     have = have.rstrip("\n")
 
     # The stamp is `<identity>|<binary digest>`. An old-format stamp (identity only) or a digest that no longer matches the bytes on disk means the binary was NOT produced by the build the stamp describes, so it is rebuilt.
-    on_disk = binary_digest(renet_bin) if renet_bin.is_file() else ""
+    on_disk = binary_digest(renet_bin) if renet_bin.is_file() and stamp.is_file() else ""
     # An unreadable binary digests to "", and "" must never match: a stamp written as `<identity>|` would otherwise skip forever.
     bound = bool(on_disk) and stamp.is_file() and have == "%s|%s" % (want, on_disk)
     if bound:
