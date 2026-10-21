@@ -18,6 +18,7 @@ import time
 import pytest
 
 from rediacc_ci import xdist_groups
+from rediacc_ci.testrun import start_account as sa
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
 
@@ -289,3 +290,68 @@ def test_delta_port_without_a_value_is_a_usage_error(tmp_path: pathlib.Path) -> 
     assert "--port needs a value" in old.err
     assert new.code == 2
     assert "--port needs a value" in new.err
+
+
+class FakeApi(sa.Api):
+    """Answers the seed/mint sequence and records the mint request."""
+
+    def __init__(self) -> None:
+        super().__init__("0", "")
+        self.mint: dict | None = None
+
+    def call(self, _method: str, path: str, body: dict | None = None) -> tuple[int, str]:
+        if path == "/auth/login":
+            return 200, json.dumps({"user": {"id": "u1"}})
+        if path == "/portal/subscription":
+            return 200, json.dumps({"id": "sub1"})
+        if path == "/api-tokens":
+            self.mint = body
+            return 200, json.dumps({"token": "rdt_unit"})
+        return 200, "{}"
+
+
+def test_scopes_default_is_unchanged() -> None:
+    opts = sa.parse([])
+    assert sa.token_scopes(opts) == ["license:read", "license:activate", "subscription:read"]
+    assert opts.advertise_host == "127.0.0.1"
+    api = FakeApi()
+    assert sa.seed_and_mint(api, opts) == ("rdt_unit", "sub1")
+    assert api.mint is not None
+    assert api.mint["scopes"] == ["license:read", "license:activate", "subscription:read"]
+
+
+def test_scopes_option_reaches_the_mint_request() -> None:
+    opts = sa.parse(["--scopes", "license:read, backup:read"])
+    api = FakeApi()
+    sa.seed_and_mint(api, opts)
+    assert api.mint is not None
+    assert api.mint["scopes"] == ["license:read", "backup:read"]
+
+
+def test_scopes_without_a_scope_is_a_usage_error() -> None:
+    with pytest.raises(ValueError, match="at least one scope"):
+        sa.parse(["--scopes", ","])
+    with pytest.raises(ValueError, match="--scopes needs a value"):
+        sa.parse(["--scopes"])
+
+
+def test_advertise_host_names_the_published_url(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    opts = sa.parse(["--advertise-host", "192.168.111.254", "--port", "4911"])
+    assert opts.advertise_host == "192.168.111.254"
+    gh_env, gh_out = tmp_path / "env", tmp_path / "out"
+    monkeypatch.setenv("GITHUB_ENV", str(gh_env))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(gh_out))
+    started: list[str] = []
+    monkeypatch.setattr(sa, "generate_keys", dict)
+    monkeypatch.setattr(sa, "start_server", lambda *_a: started.append("x"))
+    monkeypatch.setattr(sa, "seed_and_mint", lambda _api, _o: ("rdt_unit", "sub1"))
+    monkeypatch.setattr(sa, "listener_pid", lambda _port: "")
+    # The readiness loop needs one healthy answer after the (stubbed) start.
+    answers = iter([False, True])
+    monkeypatch.setattr(sa, "healthy", lambda _port: next(answers))
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    assert sa.run(opts) == 0
+    assert "REDIACC_ACCOUNT_SERVER=http://192.168.111.254:4911\n" in gh_env.read_text()
+    assert gh_out.read_text() == "server-url=http://192.168.111.254:4911\n"

@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-21T06:21:17.942Z",
+  "generatedAt": "2026-10-21T09:26:54.676Z",
   "legs": [
     {
       "index": 1,
@@ -175,7 +175,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_soakedpins.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_triage_and_plans.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_triage_and_plans.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_wisdom.py"
       ]
     },
     {
@@ -672,6 +673,7 @@
         "pytest:.ci/rediacc_ci/tests/test_shacite.py",
         "pytest:.ci/rediacc_ci/tests/test_shape_probe_agreement.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_rdc_update.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_start_backup_plane.py",
         "pytest:.ci/rediacc_ci/tests/test_tmp_capacity.py",
         "pytest:.ci/rediacc_ci/tests/test_vitest_cache_isolation.py",
         "pytest:.ci/rediacc_ci/tests/test_w7p4b_ledgers.py",

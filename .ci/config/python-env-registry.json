@@ -1269,6 +1269,11 @@
       "GITHUB_OUTPUT",
       "RUNNER_TEMP"
     ],
+    ".ci/rediacc_ci/testrun/start_backup_plane.py": [
+      "ACCOUNT_API_PORT",
+      "GITHUB_ENV",
+      "RUNNER_TEMP"
+    ],
     ".ci/rediacc_ci/tests/differential.py": [
       "HOME",
       "PATH",

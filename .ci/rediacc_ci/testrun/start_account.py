@@ -42,7 +42,7 @@ console.log(JSON.stringify({
 }));
 """
 SCOPES = ["license:read", "license:activate", "subscription:read"]
-USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>]"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>] [--scopes <a,b>] [--advertise-host <ip>]"
 
 
 class LegError(Exception):
@@ -59,11 +59,21 @@ class Options:
         self.email = "e2e-cluster-licensing@rediacc.io"
         self.plan = "PROFESSIONAL"
         self.name = "e2e-cluster-licensing"
+        self.scopes = ",".join(SCOPES)
+        # The host the published account server URL names; the server itself is always probed and seeded on 127.0.0.1.
+        self.advertise_host = "127.0.0.1"
 
 
 def parse(argv: list[str]) -> Options:
     opts = Options()
-    names = {"--port": "port", "--email": "email", "--plan": "plan", "--name": "name"}
+    names = {
+        "--port": "port",
+        "--email": "email",
+        "--plan": "plan",
+        "--name": "name",
+        "--scopes": "scopes",
+        "--advertise-host": "advertise_host",
+    }
     i = 0
     while i < len(argv):
         flag = argv[i]
@@ -73,7 +83,14 @@ def parse(argv: list[str]) -> Options:
             raise ValueError(f"{flag} needs a value")
         setattr(opts, names[flag], argv[i + 1])
         i += 2
+    if not token_scopes(opts):
+        raise ValueError("--scopes needs at least one scope")
     return opts
+
+
+def token_scopes(opts: Options) -> list[str]:
+    """The comma-separated `--scopes` value as the list the mint request carries."""
+    return [scope.strip() for scope in opts.scopes.split(",") if scope.strip()]
 
 
 def generate_keys() -> dict[str, str]:
@@ -239,7 +256,7 @@ def run(opts: Options) -> int:
             terminate(server)
         return 1
 
-    server_url = f"http://127.0.0.1:{opts.port}"
+    server_url = f"http://{opts.advertise_host}:{opts.port}"
     log.info(f"subscription {subscription_id}, token {token[:12]}...")
     publish(server_url, token)
     return 0
@@ -269,7 +286,7 @@ def seed_and_mint(api: Api, opts: Options) -> tuple[str, str]:
     _, minted = api.call(
         "POST",
         "/api-tokens",
-        {"subscriptionId": subscription_id, "name": opts.name, "scopes": SCOPES},
+        {"subscriptionId": subscription_id, "name": opts.name, "scopes": token_scopes(opts)},
     )
     token = _json_get(minted, "token") or ""
     if not token:

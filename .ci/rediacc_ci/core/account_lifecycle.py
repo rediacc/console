@@ -687,7 +687,7 @@ def _docker_usable() -> bool:
     return _run(["docker", "info"], quiet_out=True, quiet_err=True) == 0
 
 
-def _start_rustfs() -> None:
+def start_rustfs() -> None:
     """`.ci/lib/account.sh:402-444`: reuse or start the config blob store, then export its coordinates."""
     if not _docker_usable():
         log.info("Docker not available -- config blob storage disabled")
@@ -824,7 +824,7 @@ def _refuse_stale_dev_server(port: int | str) -> None:
 def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     """`.ci/lib/account.sh:446-499`: everything after the trap is armed. Returns the gateway's status, or dies."""
     os.makedirs(account.log_directory(), exist_ok=True)
-    _start_rustfs()
+    start_rustfs()
 
     dev_bind = os.environ.get("REDIACC_DEV_BIND") or "127.0.0.1"
     root = account.console_root()
