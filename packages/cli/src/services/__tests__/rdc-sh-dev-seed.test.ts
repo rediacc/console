@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const RDC_SH = resolve(__dirname, '../../../../../rdc.sh');
@@ -52,16 +53,19 @@ describe('rdc.sh dev-config seeder', () => {
 
   it('keeps the saved key when the gateway advertised none and only a trailing slash differs', () => {
     const account = seed(
-      { accountServer: 'http://localhost:4800/', e2ePublicKey: 'DEV-KEY' },
-      'http://localhost:4800',
+      { accountServer: `http://localhost:${WK_ACCOUNT_DEV_PORT}/`, e2ePublicKey: 'DEV-KEY' },
+      `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       ''
     );
-    expect(account).toEqual({ accountServer: 'http://localhost:4800', e2ePublicKey: 'DEV-KEY' });
+    expect(account).toEqual({
+      accountServer: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
+      e2ePublicKey: 'DEV-KEY',
+    });
   });
 
   it('drops the old key when the gateway moved and advertised none', () => {
     const account = seed(
-      { accountServer: 'http://localhost:4800', e2ePublicKey: 'OLD-KEY' },
+      { accountServer: `http://localhost:${WK_ACCOUNT_DEV_PORT}`, e2ePublicKey: 'OLD-KEY' },
       'http://localhost:4900',
       ''
     );
@@ -70,7 +74,7 @@ describe('rdc.sh dev-config seeder', () => {
 
   it('takes the key the gateway advertised', () => {
     const account = seed(
-      { accountServer: 'http://localhost:4800' },
+      { accountServer: `http://localhost:${WK_ACCOUNT_DEV_PORT}` },
       'http://localhost:4900',
       'NEW'
     );

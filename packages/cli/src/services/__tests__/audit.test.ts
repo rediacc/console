@@ -1,3 +1,4 @@
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockAccountServerFetch, mockGetSubscriptionTokenState, mockNamedTokenServer } = vi.hoisted(
@@ -256,7 +257,7 @@ describe('auditService.flush', () => {
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
       token: { token: 'test' },
-      serverUrl: 'https://eu.rediacc.com',
+      serverUrl: WK_ACCOUNT_DEFAULT_ORIGIN,
     });
     mockAccountServerFetch.mockResolvedValue({ accepted: 1 });
     auditService.recordOperation({
@@ -290,7 +291,7 @@ describe('auditService.flush', () => {
 
   it("drops the batch, never sending the bearer token, when --server names a host other than the token's", async () => {
     readyWithOneEvent();
-    mockNamedTokenServer.mockReturnValue('https://eu.rediacc.com');
+    mockNamedTokenServer.mockReturnValue(WK_ACCOUNT_DEFAULT_ORIGIN);
     await auditService.flush('http://dev.test:4800');
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
 
