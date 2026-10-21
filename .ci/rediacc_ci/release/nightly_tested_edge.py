@@ -47,6 +47,8 @@ DERIVED_JOBS: frozenset[str] = frozenset({"CI Complete", "CI Verdict", "Publish 
 
 # Jobs derived from ONE sharded job: `Quality / Shard receipts` fails when a `Quality / Code (n)` shard reported anything but success (run 39551246836). Skipped only when such a shard really failed, since the same job also fails when a shard never reported at all, which is a wiring defect and never drift.
 SHARD_DERIVED_JOBS: Mapping[str, str] = {"Quality / Shard receipts": "Quality / Code ("}
+# The one step of each derived job whose failure only echoes a failed source shard; any OTHER failed step in that job is judged like a step of any job.
+SHARD_DERIVED_STEPS: Mapping[str, str] = {"Quality / Shard receipts": "Quality shard receipts"}
 
 # Test lanes that must have RUN on a scheduled nightly. ci.yml's `package-tests` used to skip whenever Quality failed, so a drift-only red never tested the Linux packages; it now runs on `schedule` regardless of Quality's result. A skip here therefore means the lane did not run for some other reason, and skipped is not passed: the waiver refuses.
 MUST_RUN_TEST_LANES: frozenset[str] = frozenset({"Tests + Infra / Linux Packages"})
@@ -162,6 +164,18 @@ def nightly_failures_are_drift_only(
         source = SHARD_DERIVED_JOBS.get(name)
         if source is not None:
             if any(other.startswith(source) for other in failed_jobs):
+                echo = SHARD_DERIVED_STEPS[name]
+                stray = [
+                    str(step.get("name", ""))
+                    for step in job.get("steps") or []
+                    if step.get("conclusion") not in _PASSING_STEP
+                    and str(step.get("name", "")) != echo
+                ]
+                if stray:
+                    return (
+                        False,
+                        f"step {name!r} / {stray[0]!r} failed beside the shard echo and is not a drift gate",
+                    )
                 continue
             unreported = (
                 f"job {name!r} failed while no {source}...) shard did, so a shard did not report"
