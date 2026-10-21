@@ -1003,6 +1003,27 @@ def test_a_moved_stub_whose_target_is_gone_or_unreadable_keeps_its_path(tmp_path
     ]
 
 
+def test_a_moved_stub_whose_target_cannot_be_stated_keeps_its_path(tmp_path, monkeypatch):
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    root = tmp_path / "repo"
+    plans = root / "agent" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "PLAN-locked.md").write_text(
+        "# PLAN: locked (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-locked.md\n",
+        encoding="utf-8",
+    )
+    real_is_file = pathlib.Path.is_file
+
+    def denied(self, *args, **kwargs):
+        if self.name == "PLAN-locked.md" and "_done" in self.parts:
+            raise PermissionError(13, "Permission denied")
+        return real_is_file(self, *args, **kwargs)
+
+    monkeypatch.setattr(pathlib.Path, "is_file", denied)
+    plan_gate.record_turbo_named(str(root), "1004-1", ["agent/plans/PLAN-locked.md"])
+    assert plan_gate.turbo_named(str(root), "1004-1") == ["agent/plans/PLAN-locked.md"]
+
+
 def test_a_stub_without_moved_status_is_read_as_itself(tmp_path, monkeypatch):
     monkeypatch.setenv("TMPDIR", str(tmp_path))
     root = tmp_path / "repo"
