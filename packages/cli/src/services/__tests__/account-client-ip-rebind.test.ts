@@ -59,7 +59,8 @@ vi.mock('../account/subscription-auth.js', () => ({
   }),
 }));
 vi.mock('../account/account-pointer.js', () => ({
-  readAccountPointer: () => ({ e2ePublicKey: 'spki' }),
+  // The saved key counts only for the server it was saved with, the one these requests go to.
+  readAccountPointer: () => ({ accountServer: SERVER, e2ePublicKey: 'spki' }),
 }));
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: { update: vi.fn() },

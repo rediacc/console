@@ -50,9 +50,31 @@ type AccountField = 'accountServer' | 'e2ePublicKey' | 'updateChannel';
 const LOGIN_FIELDS = ['accountServer', 'e2ePublicKey'] as const;
 
 /**
+ * `cfg` with `account[field]` set. A new `accountServer` drops the saved `e2ePublicKey` in the same
+ * write: a key belongs to the server it was fetched from, and getServerKeyMaterial trusts the saved
+ * key only for the saved server, so the old server's key must not survive under the new one.
+ */
+function withAccountField<C extends { account?: Record<string, unknown> }>(
+  cfg: C,
+  field: AccountField,
+  value: string
+): C {
+  const account: Record<string, unknown> = { ...(cfg.account ?? {}), [field]: value };
+  const previous = cfg.account?.accountServer;
+  if (
+    field === 'accountServer' &&
+    typeof previous === 'string' &&
+    normalizeServerUrl(previous) !== normalizeServerUrl(value)
+  ) {
+    delete account.e2ePublicKey;
+  }
+  return { ...cfg, account };
+}
+
+/**
  * Write account fields into the active config. A config that does not exist yet is skipped; any
- * other write failure throws, because a lost `e2ePublicKey` makes every later request decrypt with
- * the production key and fail as "Decryption failed", naming nothing (2026-10-21). Each field is
+ * other write failure throws, because a lost `e2ePublicKey` leaves every later request to discover
+ * the key again, and to refuse when the server cannot answer (2026-10-21). Each field is
  * routed by its pointer: the login fields stay on this device, `updateChannel` syncs, and is
  * written only when it changes, so a login does not push an unchanged channel.
  */
@@ -63,10 +85,9 @@ async function patchActiveAccount(fields: Partial<Record<AccountField, string>>)
     if (value === undefined) continue;
     if (field === 'updateChannel' && readAccountPointer(configName).updateChannel === value)
       continue;
-    const write = updateConfigAtPointer(configName, `/account/${field}`, (cfg) => ({
-      ...cfg,
-      account: { ...(cfg.account ?? {}), [field]: value },
-    }));
+    const write = updateConfigAtPointer(configName, `/account/${field}`, (cfg) =>
+      withAccountField(cfg, field, value)
+    );
     if (field !== 'updateChannel') {
       await write;
       continue;

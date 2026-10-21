@@ -624,7 +624,7 @@ class License:
         self.cli("config", "init", CONFIG_NAME, "--server", self.server_url)
         # config init above was the first CLI invocation, so the renet (re)build has happened by now; prove its flavor before machine setup deploys it.
         self.verify_renet_flavor()
-        # Sync the target server's E2E public key before anything tunnels; without this the first tunnelled call dies as "Decryption failed".
+        # Once the step that healed a missing E2E key before anything tunnelled; `config init` now saves the key, and the CLI refuses, by name, a non-production server it holds no key for.
         self.cli("config", "current", "-o", "json")
         self.cli("config", "ssh", "set", "--key", o.ssh_key)
         # `--token -` reads the token from stdin, so it never enters argv (worklist #773eccc5).

@@ -115,11 +115,11 @@ async function buildConfigListRow(
 /**
  * Build the `account` patch for `config init --server <url>`.
  *
- * Writing only `accountServer` leaves the config with no `e2ePublicKey`, so the
- * FIRST tunnelled request falls through to the baked-in production key
- * (getServerKeyMaterial tier 3) and dies with a bare "Decryption failed". Only
- * a LATER command self-heals, via discoverServerKey(). Seeding the key here is
- * what makes the first real command work.
+ * Writing only `accountServer` leaves the config with no `e2ePublicKey`, so
+ * every tunnelled request first has to discover the key from server-info
+ * (getServerKeyMaterial tier 2), and a non-production server that cannot
+ * answer then refuses with ServerE2eKeyUnavailableError. Seeding the key here
+ * is what makes the first real command need no discovery.
  *
  * An unreachable server is not fatal: discovery still heals the config on a
  * later run, so this warns and writes the server URL alone.
@@ -160,14 +160,22 @@ export function mergeInitUpdates(
     mpUpdate: Partial<RdcConfig>;
   }
 ): RdcConfig {
+  const account = { ...(newConfig.account ?? {}), ...(parts.accountUpdate ?? {}) };
+  // A key belongs to the server it came from: a new server whose key could not be fetched keeps no key of the old one.
+  const previousServer = newConfig.account?.accountServer;
+  if (
+    parts.accountUpdate?.accountServer !== undefined &&
+    parts.accountUpdate.e2ePublicKey === undefined &&
+    previousServer !== undefined &&
+    previousServer.replace(/\/+$/, '') !== parts.accountUpdate.accountServer
+  ) {
+    delete account.e2ePublicKey;
+  }
   return {
     ...newConfig,
     ...(parts.renetPath ? { renetPath: parts.renetPath } : {}),
     ...parts.mpUpdate,
-    account: {
-      ...(newConfig.account ?? {}),
-      ...(parts.accountUpdate ?? {}),
-    },
+    account,
     credentials:
       parts.mpUpdate.credentials || parts.sshContent
         ? {
