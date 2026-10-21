@@ -152,7 +152,11 @@ function finishTamper(o: {
   if (!restoreError) return;
   console.error(restoreError.message);
   if (o.primary === undefined) throw restoreError;
-  throw new AggregateError([o.primary, restoreError], restoreError.message);
+  const primaryText = o.primary instanceof Error ? o.primary.message : String(o.primary);
+  throw new AggregateError(
+    [o.primary, restoreError],
+    `${primaryText}\nand then: ${restoreError.message}`
+  );
 }
 
 // --------------------------------------------------------------------------- BROWSE-AT tier — a stored snapshot lists without being restored ---------------------------------------------------------------------------
