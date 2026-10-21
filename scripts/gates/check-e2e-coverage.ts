@@ -90,6 +90,7 @@ const PRODUCTION_REGISTRY: { file: string; isDefault: boolean }[] = [
   { file: 'playwright.k8s-ceph.config.ts', isDefault: false },
   { file: 'playwright.k8s-multinode.config.ts', isDefault: false },
   { file: 'playwright.migrate.config.ts', isDefault: false },
+  { file: 'playwright.backup-browse-at.config.ts', isDefault: false },
 ];
 
 /**
