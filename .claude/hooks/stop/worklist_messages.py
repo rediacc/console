@@ -2847,6 +2847,18 @@ N_CAP_WAIT_CONC = (
     "a live plan (%s); %d work-order check(s) stood down until the holder finishes. Next status "
     "due %s."
 )
+# `wisdom-due` (wl_checks.wisdom_due): the context crossed ctx_budget.WISDOM_FRACTION and the in-flight work has not been handed over. The first sentence names the whole remedy, because a crowded block names an always-tier check by its first 150 characters.
+V_WISDOM_DUE = (
+    "CONTEXT AT %(pct)d%% OF AUTO-COMPACT: run /wisdom now, before the summary replaces what this "
+    "context knows (%(usage)s of %(threshold)s tokens, context epoch %(epoch)s). /wisdom hands each "
+    "important open thread to a sub-agent with a self-contained brief, leases the item to it and "
+    "records the brief on the item with --update, commits verified work, and rewrites "
+    "agent/%(me8)s/STATE.md through `worklist.py --state` with a '## Delegated' section (one line per "
+    "agent: agent id, item id, what it owns) and a '## Next action'. That rewrite, made past this point "
+    "in the context, clears this check. It fires here and not in the late band because the late band "
+    "leaves about %(late)s tokens, too few for the briefs."
+)
+
 # Appended to a STATE.md demand the cap-saturated wait KEPT because compaction is imminent.
 N_CAP_WAIT_COMPACTION = (
     "(Kept although every writer slot is full: the context is in its last band before auto-compact, "

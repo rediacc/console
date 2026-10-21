@@ -68,6 +68,8 @@ ALWAYS_KEYS = frozenset(
         "scheduled-red",
         # I3 -- a trapguard rule raised and was skipped (wl_trapfires, PLAN-trap-enforcement.md section 4.3.4): the dispatcher fails open per rule, so a rotating key would let a silently dead guard read as a working one.
         "trapguard-errors",
+        # I1/I2 -- `wisdom-due` (wl_checks.wisdom_due): the window closes at compaction and never reopens for that context, and the party owed is the next context, which cannot see this one. A rotating or pausable key could be skipped until the summary has already replaced what the briefs needed.
+        "wisdom-due",
     }
 )
 

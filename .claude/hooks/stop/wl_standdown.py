@@ -70,6 +70,8 @@ CORE = frozenset(
         # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7): an open high finding or a hand-edited record protects the PR, and waiting on writers resolves neither, so both profiles keep them.
         "commit-review",
         "commit-review-malformed",
+        # The context is past ctx_budget.WISDOM_FRACTION with its in-flight work not handed over (wl_checks.wisdom_due): waiting on writers does not write the briefs, and the window closes at compaction.
+        "wisdom-due",
     }
 )
 # Kept whatever their suffix: `agent-pushback:<id>`, `giveup-claim:<id>` (one-shot latches, as above).

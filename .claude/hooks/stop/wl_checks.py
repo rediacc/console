@@ -2400,6 +2400,8 @@ PRIORITY_LADDER = (
                 "roster-silent",
                 # A scheduled workflow red on main that this session claimed, or ticked without evidence (wl_schedred): the party owed is the release pipeline (promote-stable counts only green scheduled runs), which cannot see this session stop.
                 "scheduled-red",
+                # The context crossed ctx_budget.WISDOM_FRACTION with its in-flight work not handed over (wisdom_due): the party owed is the next context, which cannot see this one and rediscovers whatever it did not write down.
+                "wisdom-due",
             }
         ),
     ),
@@ -2623,6 +2625,49 @@ def _ctx_late_band(session_id):
         return band >= names.index("late")
     except Exception:
         return False
+
+
+# The heading /wisdom writes into STATE.md: one line per delegated thread (agent id, item id). Its presence in a document rewritten past ctx_budget.WISDOM_FRACTION is what clears `wisdom-due`.
+WISDOM_HEADING_RE = re.compile(r"^## Delegated\b", re.MULTILINE)
+
+
+def wisdom_due(root, session_id, state_doc, now=None):
+    """The `wisdom-due` text when this context has crossed ctx_budget.WISDOM_FRACTION and STATE.md was not rewritten with a `## Delegated` section after the crossing; "" otherwise, and on any failure.
+
+    "After the crossing" is either fact: the band state saw the rewrite at or past the fraction (`state_written_usage`, so a /wisdom run before the first stop past the line counts), or the document's mtime is at or after the first stop that saw the crossing in this epoch (`state_doc["wisdom"]`, reset per epoch, so a `## Delegated` section left over from an earlier context never clears a new one).
+    """
+    try:
+        import wl_retro
+
+        cb = wl_retro.ctx()
+        st = cb.load_state(session_id)
+        frac = cb.used_fraction(st)
+        if frac is None or frac < cb.WISDOM_FRACTION:
+            return ""
+        epoch = int(st.get("epoch") or 0)
+        mark = state_doc.get("wisdom")
+        if not isinstance(mark, dict) or mark.get("epoch") != epoch:
+            mark = {"epoch": epoch, "at": time.time() if now is None else now}
+            state_doc["wisdom"] = mark
+        threshold = float(st.get("threshold") or 0)
+        doc = cb.state_md_path(root, session_id)
+        if doc.is_file() and WISDOM_HEADING_RE.search(doc.read_text(encoding="utf-8")):
+            written = float(st.get("state_written_usage") or 0)
+            if doc.stat().st_mtime >= float(mark.get("at") or 0) or (
+                threshold and written >= threshold * cb.WISDOM_FRACTION
+            ):
+                return ""
+        usage = float(st.get("usage") or 0)
+        return M.V_WISDOM_DUE % {
+            "pct": int(frac * 100),
+            "usage": cb.fmt(usage),
+            "threshold": cb.fmt(threshold),
+            "epoch": epoch,
+            "me8": cb.session_slug(session_id),
+            "late": cb.fmt(threshold * (1 - cb.BANDS[-1][1])),
+        }
+    except Exception:
+        return ""
 
 
 def _focus_refused_count(worklist, me8, since):
@@ -5373,6 +5418,10 @@ def run_stop(event, event_ok, worklist, hook_file):
         wl_admit.record_hits(worklist, session_id, admit_hits, admit_sig)
         state_doc["admit_tier_r"] = admit_sig
 
+    # /wisdom, once per context near compaction (ctx_budget.WISDOM_FRACTION): the in-flight work goes to sub-agents with full briefs before the summary replaces this context. Added HERE, before the effort verdict, like the tuner below, so every block exit carries it; always-tier, because a rotation that skips it past compaction loses it for good.
+    _wisdom = wisdom_due(root, session_id, state_doc)
+    if _wisdom:
+        vadd("wisdom-due", True, _wisdom)
     # ---- THE EFFORT LEVEL (agent/plans/PLAN-stop-hook-effort.md), applied ONCE, here, after every check has had its say and before the roster's honest suppression and the stand-down profiles: each violation blocks, rides the advisory queue in its place, or is dropped, by its threshold in .claude/config/effort.json. The FLOOR (wl_floor) blocks at every level, and STATE.md joins it while compaction is due.
     _compaction_due = astate in _COMPACTION_ASTATES and _ctx_late_band(session_id)
     # THE OUTCOME LEDGER (agent/plans/PLAN-stop-hook-effort-tuning.md T1): this stop's emissions get ids and earlier ones are classified into agent/ledgers/effort-outcomes.jsonl. Never raises.
