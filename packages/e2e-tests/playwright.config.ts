@@ -119,8 +119,8 @@ export default test.defineConfig({
     ...(process.env.CI && process.env.BACKUP_STORAGE_SUITE !== '1'
       ? []
       : [{ name: 'test-26', testMatch: '26-*.test.ts' }]),
-    // Suite 27 (backup browse-at) needs an account server whose gateway carries the backup plane (S3 presign) and a backup:read token, which E2E Workers does not provide. Gated like suite 26: CI collects nothing here, and the dedicated job runs playwright.backup-browse-at.config.ts with BACKUP_BROWSE_AT_SUITE=1. Locally it always runs and fails closed on its own prerequisites.
-    ...(process.env.CI && process.env.BACKUP_BROWSE_AT_SUITE !== '1'
+    // Suite 27 (backup browse-at) needs an account server whose gateway carries the backup plane (S3 presign) and a backup:read token, which E2E Workers does not provide, and it must not run after this config's globalSetup, which resets the fleet (see playwright.backup-browse-at.config.ts). So this config collects it only under BACKUP_BROWSE_AT_SUITE=1, locally as in CI; the ct-tests.yml job test-e2e-backup-browse-at and a local run both use playwright.backup-browse-at.config.ts.
+    ...(process.env.BACKUP_BROWSE_AT_SUITE !== '1'
       ? []
       : [{ name: 'test-27', testMatch: '27-*.test.ts' }]),
   ],
