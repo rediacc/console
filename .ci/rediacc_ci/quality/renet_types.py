@@ -148,33 +148,37 @@ def main(argv: list[str] | None = None) -> int:
         # The caller's `|| exit 0`. A skip, loud on stderr, and never a claim that anything was checked.
         return 0
 
-    log.step("Building renet...")
-    try:
-        built = subprocess.run(
-            ["go", "build", "-o", "bin/renet", "./cmd/renet"],
-            cwd=str(renet_dir),
-            check=False,
-        )
-    except FileNotFoundError:
-        # The one deliberate wording divergence; see the port notes.
-        log.error("go is not installed, so renet cannot be built and NOTHING was verified.")
-        log.error("  Install the Go toolchain, or run this gate where one exists.")
-        return 127
-    if built.returncode != 0:
-        # `set -e`: the twin dies here with go's own diagnostics already on stderr and go's exit code. Nothing is added, because anything added would be a line the twin does not print.
-        return built.returncode
-
-    log.step("Checking types freshness...")
+    # The scanner binary is built into this run's OWN scratch directory, never into `private/renet/bin/renet`. That slot is what `./rdc.sh` builds into and deploys to machines from, and `rediacc_ci.infra.build_renet` skips its rebuild on a matching stamp. A bare `go build -o bin/renet` here planted an ENFORCING binary with NO baked ACCOUNT_ED25519 key, and licence lookups on the fleet failed (2026-10-21). `-tags nolicense` keeps the scratch build independent of any key; the generator only reads the function registry.
     temp_dir = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("renet-types-")))
     try:
+        scratch_bin = temp_dir / "build" / "renet"
+        log.step("Building renet into a scratch directory...")
+        try:
+            built = subprocess.run(
+                ["go", "build", "-tags", "nolicense", "-o", str(scratch_bin), "./cmd/renet"],
+                cwd=str(renet_dir),
+                check=False,
+            )
+        except FileNotFoundError:
+            # The one deliberate wording divergence; see the port notes.
+            log.error("go is not installed, so renet cannot be built and NOTHING was verified.")
+            log.error("  Install the Go toolchain, or run this gate where one exists.")
+            return 127
+        if built.returncode != 0:
+            # `set -e`: the twin dies here with go's own diagnostics already on stderr and go's exit code. Nothing is added, because anything added would be a line the twin does not print.
+            return built.returncode
+
+        log.step("Checking types freshness...")
+        out_dir = temp_dir / "generated"
+        out_dir.mkdir()
         version = _describe(root)
         generated = subprocess.run(
             [
-                str(renet_dir / "bin" / "renet"),
+                str(scratch_bin),
                 "functions",
                 "generate-types",
                 "--output",
-                str(temp_dir),
+                str(out_dir),
                 "--version",
                 version,
             ],
@@ -188,8 +192,8 @@ def main(argv: list[str] | None = None) -> int:
         stale: list[str] = [
             name
             for name in FILES
-            if (temp_dir / name).is_file()
-            and not compare_ignoring_version(output_dir / name, temp_dir / name)
+            if (out_dir / name).is_file()
+            and not compare_ignoring_version(output_dir / name, out_dir / name)
         ]
 
         if not stale:
@@ -198,9 +202,12 @@ def main(argv: list[str] | None = None) -> int:
 
         log.error("Stale types detected: %s" % " ".join(stale))
         log.error("Regenerate:")
-        log.error("  cd private/renet && go build -o bin/renet ./cmd/renet")
-        log.error("  private/renet/bin/renet functions generate-types \\")
-        log.error("    --output packages/shared/src/renet-contract/data --version dev")
+        log.error("  cd private/renet && go build -tags nolicense -o /tmp/renet-types ./cmd/renet")
+        log.error("  /tmp/renet-types functions generate-types \\")
+        log.error("    --output ../../packages/shared/src/renet-contract/data --version dev")
+        log.error(
+            "  (never build into private/renet/bin/renet: that slot is the one deployed to machines)"
+        )
         return 1
     finally:
         # `trap 'rm -rf "$TEMP_DIR"' EXIT`.

@@ -201,9 +201,12 @@ def main(argv: list[str] | None = None) -> int:
         log.error("  A registered function with no tier entry means renet cannot decide whether")
         log.error("  it needs a licence, and the CLI's generated contract inherits that gap.")
         log.error("  Fix private/renet/pkg/license/tiermap.go, then regenerate:")
-        log.error("    cd private/renet && go build -o bin/renet ./cmd/renet")
-        log.error("    private/renet/bin/renet functions generate-types \\")
-        log.error("      --output packages/shared/src/renet-contract/data --version dev")
+        log.error(
+            "    cd private/renet && go build -tags nolicense -o /tmp/renet-types ./cmd/renet"
+        )
+        log.error("    /tmp/renet-types functions generate-types \\")
+        log.error("      --output ../../packages/shared/src/renet-contract/data --version dev")
+        log.error("    (never build into private/renet/bin/renet: that slot is the one deployed)")
         return 1
 
     # -- Phase 3: a green exit is not enough --------------------------------

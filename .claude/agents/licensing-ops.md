@@ -55,7 +55,7 @@ VMs (`./rdc.sh ops up`, basic=2 VMs for legs b-e, full 6 incl. Ceph for leg a) a
 - Tier-map totality: `TestTierMapCoversRegistry` (+dispatch tests) in
 private/renet/pkg/functions/; console-side `npm run check:ci-renet-tiers`; the contract generator refuses unmapped names; CI home is ct-tests test-renet.
 - Contract freshness: `check:ci-renet-types` diffs 6 generated files including
-license-tiers.generated.ts. Regen: build renet, then `bin/renet functions generate-types --output <TEMP> --version dev` and copy into `packages/shared/src/renet-contract/data/` (NOT the parent dir: a bare `-o` on the package root sprays 6 strays). Rebuild packages/shared after, or CLI tests read stale dist and lie.
+license-tiers.generated.ts. Regen: build renet to a scratch path (`go build -tags nolicense -o /tmp/renet-types ./cmd/renet`, never into `bin/renet`), then `/tmp/renet-types functions generate-types --output <TEMP> --version dev` and copy into `packages/shared/src/renet-contract/data/` (NOT the parent dir: a bare `-o` on the package root sprays 6 strays). Rebuild packages/shared after, or CLI tests read stale dist and lie.
 - The CLI derives licensed-function knowledge ONLY from LICENSE_TIERS
 (renet-license-contract.ts accessors). `isRepoProvisioningFunction` = repository_ prefix AND tier create MINUS metadata-only verbs (repository_commit_meta). Never hand-list function names again.
 - `npm run ci` is a manifest-driven parallel runner: a new gate needs the npm script

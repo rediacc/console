@@ -6,7 +6,7 @@ back on stdout as `RENET_BINARY=<path>` (plus an append to `$GITHUB_ENV` when
 running under GitHub Actions).
 
 WHAT "THE SAME WAY" MEANS, AND WHY IT IS NOT `-f bin/renet`. The twin's own comment (build-renet.sh:44-63) records the incident: this used to be a bare existence test, ten CI steps call the script, and a job that had built `--nolicense` handed its binary to a later job that wanted an enforcing one, so that job's licence assertions passed for free. The identity string
-`<mode>|<sha256(ACCOUNT_ED25519_PUBLIC_KEY)[:16]>` covers everything that changes the BYTES, and it is stamped into `bin/.renet-build-identity` only AFTER the produced binary has been seen on disk. Both halves are reproduced here exactly; `build_identity()` and `build_args()` are exported so a test can drive them without a build.
+`<mode>|<sha256(ACCOUNT_ED25519_PUBLIC_KEY)[:16]>` covers everything that changes the BYTES, and it is stamped into `bin/.renet-build-identity` only AFTER the produced binary has been seen on disk, followed by `|<sha256(bin/renet)[:16]>`, the digest of the binary itself (not in the twin): a skip needs the identity AND the bytes on disk to match, so a binary replaced under an unchanged stamp (the `check:ci-renet-types` bare `go build -o bin/renet` did exactly that until 2026-10-21) is rebuilt. Both identity halves are reproduced here exactly; `build_identity()` and `build_args()` are exported so a test can drive them without a build.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHAT IS NOT
@@ -119,6 +119,17 @@ def build_identity(args: list[str]) -> str:
     return "%s|%s" % (mode, digest)
 
 
+def binary_digest(binary: pathlib.Path) -> str:
+    """First 16 hex of sha256 over the binary's bytes, or "" when it cannot be read.
+
+    The third field of the stamp. An identity of `<mode>|<key digest>` says how a binary WAS built, and nothing ties it to the file now on disk: a `go build -o bin/renet` by hand (a gate, a developer) swaps the bytes under an unchanged stamp, the next run reads "already built the same way", and a keyless binary is deployed to machines. Binding the stamp to the bytes makes any foreign write read as a mismatch. "" never equals a digest, so an unreadable binary rebuilds.
+    """
+    try:
+        return hashlib.sha256(binary.read_bytes()).hexdigest()[:16]
+    except OSError:
+        return ""
+
+
 def exe_suffix() -> str:
     """`.exe` under Git Bash / MSYS / Cygwin, empty everywhere else.
 
@@ -180,14 +191,31 @@ def _build(argv: list[str]) -> int:
     # Command substitution strips ALL trailing newlines, and the stamp is written without one; stripping here keeps a hand-edited stamp with a trailing newline comparing equal, exactly as bash would.
     have = have.rstrip("\n")
 
-    if renet_bin.is_file() and stamp.is_file() and have == want:
+    # The stamp is `<identity>|<binary digest>`. An old-format stamp (identity only) or a digest that no longer matches the bytes on disk means the binary was NOT produced by the build the stamp describes, so it is rebuilt.
+    bound = (
+        renet_bin.is_file()
+        and stamp.is_file()
+        and have == "%s|%s" % (want, binary_digest(renet_bin))
+    )
+    if bound:
         log.info("Renet binary already built the same way: %s" % renet_bin)
     else:
         if renet_bin.is_file():
-            log.info(
-                "Renet binary exists but was built differently %s rebuilding for: %s"
-                % (_EM_DASH, want)
-            )
+            if have == want:
+                log.info(
+                    "Renet binary exists but its stamp is not bound to its bytes (old format) %s rebuilding for: %s"
+                    % (_EM_DASH, want)
+                )
+            elif have.startswith(want + "|"):
+                log.info(
+                    "Renet binary was replaced after it was stamped %s rebuilding for: %s"
+                    % (_EM_DASH, want)
+                )
+            else:
+                log.info(
+                    "Renet binary exists but was built differently %s rebuilding for: %s"
+                    % (_EM_DASH, want)
+                )
             # THE TWIN DELETES BEFORE IT CHECKS FOR go, and this port keeps that order. It is a real defect (a host without go loses a working binary and gets exit 1), reported rather than repaired: reordering here would make the port's filesystem effect differ from the twin's on the exact input that exposes the bug, and the differential would then be certifying the wrong script.
             #
             # `rm -f` is silent on a file it cannot remove only when the file is absent; a permission error does print and fail. That sub-case is not reachable from any caller in this tree (bin/ is created by build.sh as the invoking user), so the twin's `rm -f` is matched on its common path and no message is invented for the other.
@@ -224,7 +252,7 @@ def _build(argv: list[str]) -> int:
             log.error("Renet build failed: binary not found at %s" % renet_bin)
             return 1
         # Stamp AFTER the binary is verified present, never before: a stamp written ahead of a failed build would make the next run skip and hand back nothing, or a half-written binary that looks current.
-        stamp.write_text(want, encoding="utf-8")
+        stamp.write_text("%s|%s" % (want, binary_digest(renet_bin)), encoding="utf-8")
         log.info("Renet built successfully: %s" % renet_bin)
 
     # `export RENET_BINARY` in the twin is inert for a child process and is not reproduced as an export; the two OBSERVABLE consequences are, and they are the ones every caller actually reads.
