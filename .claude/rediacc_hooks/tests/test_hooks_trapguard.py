@@ -677,3 +677,35 @@ def test_verify_rebase_names_a_commit_the_base_partly_made(tmp_path):
     assert "REFUSED" in said, said
     assert "chore: refresh costs" in said, said
     assert "same subject in the new range: %s" % twin in said, said
+
+
+def test_verify_rebase_names_every_same_subject_candidate(tmp_path):
+    """Review c83c1814.1: when several new-range commits share the missing one's subject, every one is named rather than the newest."""
+    repo = str(tmp_path / "r")
+    os.makedirs(repo)
+    _git_in(repo, "init", "-q", "-b", "main")
+    with open(os.path.join(repo, "costs.txt"), "w") as fh:
+        fh.write("a=1\n%s\nb=1\n" % PAD)
+    with open(os.path.join(repo, "other.txt"), "w") as fh:
+        fh.write("x=1\n")
+    _git_in(repo, "add", "costs.txt", "other.txt")
+    _git_in(repo, "commit", "-q", "-m", "base")
+    _git_in(repo, "checkout", "-q", "-b", "0101-1")
+    with open(os.path.join(repo, "costs.txt"), "w") as fh:
+        fh.write("a=2\n%s\nb=2\n" % PAD)
+    _git_in(repo, "commit", "-q", "-am", "chore: refresh costs")
+    with open(os.path.join(repo, "other.txt"), "w") as fh:
+        fh.write("x=2\n")
+    _git_in(repo, "commit", "-q", "-am", "chore: refresh costs")
+    snap = tmp_path / "pre.snap"
+    snap.write_text(_worklist_git(repo, "snapshot"))
+    _git_in(repo, "checkout", "-q", "main")
+    with open(os.path.join(repo, "costs.txt"), "w") as fh:
+        fh.write("a=2\n%s\nb=1\n" % PAD)
+    _git_in(repo, "commit", "-q", "-am", "fix: hotfix a")
+    _git_in(repo, "checkout", "-q", "0101-1")
+    _git_in(repo, "rebase", "-q", "main")
+    shorts = _git_in(repo, "log", "--format=%h", "main..HEAD").split()
+    said = _worklist_git(repo, "verify-rebase", str(snap), "main")
+    assert "REFUSED" in said, said
+    assert "same subject in the new range: %s" % ", ".join(shorts) in said, said
