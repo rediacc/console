@@ -70,6 +70,18 @@ export function getConfiguredServerUrl(): string | undefined {
   return server ? normalizeServerUrl(server) : undefined;
 }
 
+/**
+ * The server the active token belongs to, as something named it: for a REDIACC_TOKEN env token the
+ * server the config universe names (getConfiguredServerUrl), else the server the stored token was
+ * issued by. Never the production default, unlike the `serverUrl` of getSubscriptionTokenState,
+ * which for an env token falls back to it. Background traffic (the audit flush) uses this, so a
+ * token on a config that names no server sends nothing rather than reaching production.
+ */
+export function getNamedTokenServerUrl(): string | undefined {
+  if (process.env[SUBSCRIPTION_TOKEN_ENV]?.trim()) return getConfiguredServerUrl();
+  return loadStoredSubscriptionToken()?.serverUrl;
+}
+
 export function loadEnvSubscriptionToken(): StoredSubscriptionToken | null {
   const token = process.env[SUBSCRIPTION_TOKEN_ENV]?.trim();
   if (!token) return null;

@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockAccountServerFetch, mockGetSubscriptionTokenState } = vi.hoisted(() => ({
-  mockAccountServerFetch: vi.fn(),
-  mockGetSubscriptionTokenState: vi.fn(),
-}));
+const { mockAccountServerFetch, mockGetSubscriptionTokenState, mockNamedTokenServer } = vi.hoisted(
+  () => ({
+    mockAccountServerFetch: vi.fn(),
+    mockGetSubscriptionTokenState: vi.fn(),
+    mockNamedTokenServer: vi.fn<() => string | undefined>(() => 'http://localhost'),
+  })
+);
 
 vi.mock('../account/account-client.js', () => ({
   accountServerFetch: mockAccountServerFetch,
@@ -11,6 +14,8 @@ vi.mock('../account/account-client.js', () => ({
 
 vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
+  getNamedTokenServerUrl: mockNamedTokenServer,
+  normalizeServerUrl: (url: string) => url.replace(/\/+$/, ''),
 }));
 
 vi.mock('../../version.js', () => ({
@@ -242,8 +247,55 @@ describe('auditService.recordOperation', () => {
 describe('auditService.flush', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNamedTokenServer.mockReturnValue('http://localhost');
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
     void auditService.flush();
+  });
+
+  function readyWithOneEvent(): void {
+    mockGetSubscriptionTokenState.mockReturnValue({
+      kind: 'ready',
+      token: { token: 'test' },
+      serverUrl: 'https://eu.rediacc.com',
+    });
+    mockAccountServerFetch.mockResolvedValue({ accepted: 1 });
+    auditService.recordOperation({
+      functionName: 'repository_up',
+      machineName: 'server-1',
+      success: true,
+      exitCode: 0,
+      durationMs: 100,
+    });
+  }
+
+  it("sends to the server the token belongs to as named, not the token state's default", async () => {
+    readyWithOneEvent();
+    mockNamedTokenServer.mockReturnValue('http://gateway.test:4800');
+    await auditService.flush();
+    expect(mockAccountServerFetch).toHaveBeenCalledOnce();
+    expect(mockAccountServerFetch.mock.calls[0][1]).toMatchObject({
+      serverUrl: 'http://gateway.test:4800',
+    });
+  });
+
+  it("sends to the server the command named over the token's", async () => {
+    readyWithOneEvent();
+    await auditService.flush('http://dev.test:4800/');
+    expect(mockAccountServerFetch.mock.calls[0][1]).toMatchObject({
+      serverUrl: 'http://dev.test:4800',
+    });
+  });
+
+  it('flushes nothing, and drops the batch, when a token is present but nothing names its server', async () => {
+    readyWithOneEvent();
+    mockNamedTokenServer.mockReturnValue(undefined);
+    await auditService.flush();
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
+
+    // The batch is gone, not parked for a later flush.
+    mockNamedTokenServer.mockReturnValue('http://gateway.test:4800');
+    await auditService.flush();
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 
   it('does nothing when queue is empty', async () => {

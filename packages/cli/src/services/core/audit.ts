@@ -18,7 +18,11 @@ import { randomUUID } from 'node:crypto';
 import { type AuditEvent, AuditEventSchema, functionNameToEventType } from '@rediacc/shared';
 import { VERSION } from '../../version.js';
 import { accountServerFetch } from '../account/account-client.js';
-import { getSubscriptionTokenState } from '../account/subscription-auth.js';
+import {
+  getNamedTokenServerUrl,
+  getSubscriptionTokenState,
+  normalizeServerUrl,
+} from '../account/subscription-auth.js';
 
 export { functionNameToEventType };
 
@@ -119,21 +123,35 @@ class AuditService {
    * extra attempt because this runs at process exit: a losing network must not
    * hold the command open indefinitely.
    */
-  async flush(): Promise<void> {
+  async flush(serverUrl?: string): Promise<void> {
     if (this.queue.length === 0) return;
-    if (!this.hasToken()) {
+    const target = this.hasToken() ? this.flushTarget(serverUrl) : undefined;
+    if (!target) {
       this.queue = [];
       return;
     }
 
     const events = this.queue.splice(0);
-    if (!(await this.send(events))) {
-      await this.send(events);
+    if (!(await this.send(events, target))) {
+      await this.send(events, target);
+    }
+  }
+
+  /**
+   * The server a flush goes to: the one the command named (`--server`), else the one the token
+   * belongs to as named by the config or the stored token. Never the production default: a
+   * REDIACC_TOKEN on a config that names no server flushes nothing.
+   */
+  private flushTarget(serverUrl: string | undefined): string | undefined {
+    try {
+      return serverUrl ? normalizeServerUrl(serverUrl) : getNamedTokenServerUrl();
+    } catch {
+      return undefined;
     }
   }
 
   /** POST one batch. Resolves true when the server accepted it. */
-  private async send(events: AuditEvent[]): Promise<boolean> {
+  private async send(events: AuditEvent[], serverUrl: string): Promise<boolean> {
     let timer: NodeJS.Timeout | undefined;
     try {
       const request = accountServerFetch(AUDIT_ENDPOINT, {
@@ -148,6 +166,7 @@ class AuditService {
         },
         // A background flush never prompts for an authenticator code; a refused token just drops the batch.
         ipRebind: false,
+        serverUrl,
       });
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error('audit flush timeout')), FLUSH_TIMEOUT_MS);
