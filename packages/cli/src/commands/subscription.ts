@@ -1,6 +1,7 @@
 import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
+import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
 import { accountServerFetch, fetchServerInfo } from '../services/account/account-client.js';
 import { readAccountPointer } from '../services/account/account-pointer.js';
@@ -49,24 +50,32 @@ type AccountField = 'accountServer' | 'e2ePublicKey' | 'updateChannel';
 const LOGIN_FIELDS = ['accountServer', 'e2ePublicKey'] as const;
 
 /**
- * Write account fields into the active config, best-effort (config may not exist yet). Each field
- * is routed by its pointer: the login fields stay on this device, `updateChannel` syncs, and is
+ * Write account fields into the active config. A config that does not exist yet is skipped; any
+ * other write failure throws, because a lost `e2ePublicKey` makes every later request decrypt with
+ * the production key and fail as "Decryption failed", naming nothing (2026-10-21). Each field is
+ * routed by its pointer: the login fields stay on this device, `updateChannel` syncs, and is
  * written only when it changes, so a login does not push an unchanged channel.
  */
 async function patchActiveAccount(fields: Partial<Record<AccountField, string>>): Promise<void> {
   const configName = getEffectiveConfigName();
+  if (!(await configFileStorage.exists(configName))) return;
   for (const [field, value] of Object.entries(fields) as [AccountField, string | undefined][]) {
     if (value === undefined) continue;
     if (field === 'updateChannel' && readAccountPointer(configName).updateChannel === value)
       continue;
-    try {
-      await updateConfigAtPointer(configName, `/account/${field}`, (cfg) => ({
-        ...cfg,
-        account: { ...(cfg.account ?? {}), [field]: value },
-      }));
-    } catch {
-      /* config might not exist yet */
+    const write = updateConfigAtPointer(configName, `/account/${field}`, (cfg) => ({
+      ...cfg,
+      account: { ...(cfg.account ?? {}), [field]: value },
+    }));
+    if (field !== 'updateChannel') {
+      await write;
+      continue;
     }
+    // The channel is a synced preference, not a login field: a remote config that cannot take the
+    // write right now keeps its old channel rather than failing the login.
+    await write.catch((error: unknown) => {
+      outputService.warn(`update channel not saved: ${(error as Error).message}`);
+    });
   }
 }
 
@@ -101,16 +110,23 @@ async function promptRegionIfNeeded(): Promise<void> {
  * Resolve the account server URL and auto-sync update channel + e2e key from server-info.
  * Returns the resolved server URL for use in subsequent requests.
  */
-async function resolveAndSyncServer(options: { server?: string }): Promise<string> {
+export async function resolveAndSyncServer(options: { server?: string }): Promise<string> {
   // Resolve the server URL from --server / env / active config / default.
   const serverUrl = getSubscriptionServerUrl(options.server);
 
   // Pin the resolved server into the active config for per-config isolation.
   await patchActiveAccount({ accountServer: serverUrl });
 
-  // Auto-sync update channel and e2e key from server-info into the active config.
+  // Auto-sync update channel and e2e key from server-info into the active config. Only the fetch is
+  // non-fatal: a server-info that cannot be read leaves the existing config, but one that was read
+  // and then could not be persisted is an error, never a silent fall back to the production key.
+  let info: Awaited<ReturnType<typeof fetchServerInfo>> | undefined;
   try {
-    const info = await fetchServerInfo(serverUrl);
+    info = await fetchServerInfo(serverUrl);
+  } catch {
+    info = undefined;
+  }
+  if (info) {
     await patchActiveAccount({
       updateChannel: info.updateChannel,
       e2ePublicKey: info.e2e.keys[0]?.publicKeySpki,
@@ -120,8 +136,6 @@ async function resolveAndSyncServer(options: { server?: string }): Promise<strin
         t('commands.subscription.login.channelSynced', { channel: info.updateChannel })
       );
     }
-  } catch {
-    // server-info fetch failed -- non-fatal, continue with existing config
   }
 
   return serverUrl;
