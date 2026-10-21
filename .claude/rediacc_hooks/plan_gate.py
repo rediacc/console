@@ -503,14 +503,19 @@ def _moved_to(root: str, rel: str) -> str:
     """The `Moved-To:` path of a moved-plan stub at `rel`, or "" when `rel` is no such stub."""
     try:
         head = (pathlib.Path(root) / rel).read_text(encoding="utf-8").splitlines()[:6]
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return ""
     if not any(line.strip() == "Status: moved" for line in head):
         return ""
     for line in head:
         if line.startswith("Moved-To:"):
             target = line[len("Moved-To:") :].strip()
-            return target if PLAN_PATH.match(target) else ""
+            # A stub whose target is gone keeps its own path: a pick never points at a file that is not there.
+            return (
+                target
+                if PLAN_PATH.match(target) and (pathlib.Path(root) / target).is_file()
+                else ""
+            )
     return ""
 
 
