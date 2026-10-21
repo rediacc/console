@@ -55,7 +55,7 @@ def parse(argv: Sequence[str]) -> dict[str, str]:
         opts[flags[flag]] = argv[i + 1]
         i += 2
     for name, value in opts.items():
-        if not value.isdigit():
+        if not (value.isascii() and value.isdigit()):
             raise ValueError(f"--{name} must be a number, got {value!r}")
     return opts
 
