@@ -22,7 +22,7 @@ It builds on the chunk-store plan's Stage-2 TOC writer (sealSnapshotTOC, Listing
 
 - (A) Kernel-keyring volume key: `cryptsetup open --link-vk-to-keyring @u::rediacc:vk:<guid>` at password mount, then `cryptsetup open --readonly --volume-key-keyring %logon:rediacc:vk:<guid>` on the staged reflink (same LUKS header, same volume key). Exact by construction; reuses the staged-copy path autostart repositories already take.
 - (B) Walk the files during the cold outage. Cold runs only, and the outage grows by the walk, breaking "the outage is the reflink". Rejected.
-- (D) fanotify change detection on top of the live walk. Not exact (mmap writes, queue overflow, no freeze on hot runs). Rejected.
+- (C) fanotify change detection on top of the live walk. Not exact (mmap writes, queue overflow, no freeze on hot runs). Rejected.
 - Recommended: (A), as an operator opt-in per repository. With it off, renet behaves exactly as fb9cf01 does today.
 
 ## What an operator accepts by opting in

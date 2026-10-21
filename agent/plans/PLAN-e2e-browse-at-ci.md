@@ -1,6 +1,6 @@
 # PLAN: run the backup browse-at e2e tier in CI
 
-Status: approved -- operator 2026-10-21: findings are fixed in the session that finds them (worklist #1a07399b); the tier passes on the local fleet but no workflow runs it
+Status: approved -- 2026-10-21 under the operator's standing rule that a finding is fixed in the session that finds it (CLAUDE.md rule 2), not a ruling on this plan (worklist #1a07399b); the tier passed on the local fleet but no workflow ran it
 Depends-On: PLAN-chunk-store-browse-toc-and-remote.md
 First-Seen: 2026-10-21
 Owner: d778be9d

@@ -30,7 +30,7 @@ export async function runBrowseAt(
     throw new ValidationError(t('commands.backup.browse.atNeedsCredential', { name: repoKey }));
   }
   const lineage = lineageOf(repo);
-  // Dynamic: backup.ts statically imports this file.
+  // Dynamic: backup.ts statically imports backup-storage.ts, which imports this file, so a static import back would close a cycle.
   const { resolveSnapshotAt } = await import('./backup.js');
   const snapshotId = await resolveSnapshotAt(lineage, at);
   const result = await executeRepoFunction(
