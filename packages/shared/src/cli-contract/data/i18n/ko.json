@@ -5,6 +5,7 @@
   "commands.backup.browse.descriptionShort": "저장소(--at 지정 시 저장된 스냅샷)의 파일 나열",
   "commands.backup.browse.empty": "{{name}}에 파일이 없습니다.",
   "commands.backup.browse.failed": "{{name}}을(를) 나열하지 못했습니다",
+  "commands.backup.browse.liveMountListing": "스냅샷 {{snapshot}}의 목록은 생성 시점 무렵 라이브 마운트에서 읽은 것이라 저장된 이미지와 조금 다를 수 있습니다. 복원하면 저장된 이미지가 그대로 돌아옵니다.",
   "commands.backup.browse.noListing": "{{name}}의 스냅샷 {{snapshot}}에는 저장된 파일 목록이 없어 탐색할 수 없습니다. 파일을 확인하려면 복원하세요.",
   "commands.backup.browse.optionAt": "이 시각 또는 그 이전에 생성된 스냅샷이나 이 스냅샷 ID를 나열합니다 (청크 저장소를 읽음)",
   "commands.backup.browse.optionDepth": "하위 탐색을 N단계로 제한합니다 (0은 무제한)",

@@ -11,6 +11,7 @@
         "descriptionShort": "Bir deponun ya da --at ile saklanan bir anlık görüntünün dosyalarını listele",
         "empty": "{{name}} hiç dosya içermiyor.",
         "failed": "{{name}} listelenemedi",
+        "liveMountListing": "{{snapshot}} anlık görüntüsünün listesi, alındığı ana yakın bir zamanda canlı bağlama noktasından okundu; bu yüzden saklanan imajdan biraz farklı olabilir. Geri yükleme, saklanan imajı birebir getirir.",
         "noListing": "{{name}} deposunun {{snapshot}} anlık görüntüsü için kayıtlı dosya listesi yok, bu yüzden gezilemiyor. Dosyalarına bakmak için geri yükleyin.",
         "optionAt": "Bu zamanda veya öncesinde alınan anlık görüntüyü ya da bu anlık görüntü kimliğini listele (parça deposunu okur)",
         "optionDepth": "İnişi N seviyeyle sınırla (sınırsız için 0)",

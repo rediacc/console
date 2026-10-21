@@ -11,6 +11,7 @@
         "descriptionShort": "Loetle hoidla või valikuga --at salvestatud hetktõmmise failid",
         "empty": "{{name}} ei sisalda faile.",
         "failed": "{{name}} loetlemine ebaõnnestus",
+        "liveMountListing": "Hetktõmmise {{snapshot}} loend loeti töötavalt haakepunktilt selle tegemise aja lähedal, seega võib see salvestatud tõmmisest veidi erineda. Taastamine annab salvestatud tõmmise täpselt tagasi.",
         "noListing": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud faililoendit, seega ei saa seda sirvida. Failide vaatamiseks taasta see.",
         "optionAt": "Loetle sel ajal või enne seda tehtud hetktõmmis või see hetktõmmise ID (loeb tükihoidlat)",
         "optionDepth": "Piira laskumine N tasemega (0 piiramatuks)",

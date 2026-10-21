@@ -58,6 +58,13 @@ export interface BrowseListing {
   entries: BrowseEntry[];
   truncated: boolean;
   totalSize: number;
+  /** Where a stored snapshot's listing was walked: `staged` (exact) or `live-mount` (near the capture, may differ slightly). Absent on a local browse. */
+  listingSource?: string;
+}
+
+/** True when a stored snapshot's listing came from the live mount rather than the staged image, so it may differ slightly from what a restore returns. */
+export function isLiveMountListing(listing: BrowseListing): boolean {
+  return listing.listingSource === 'live-mount';
 }
 
 /**

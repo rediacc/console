@@ -5,6 +5,7 @@
   "commands.backup.browse.descriptionShort": "Lister les fichiers d'un dépôt, ou d'un instantané enregistré avec --at",
   "commands.backup.browse.empty": "{{name}} ne contient aucun fichier.",
   "commands.backup.browse.failed": "Impossible de lister {{name}}",
+  "commands.backup.browse.liveMountListing": "La liste de l'instantané {{snapshot}} a été lue sur le montage actif peu avant ou après sa capture : elle peut donc différer légèrement de l'image stockée. Une restauration rend l'image stockée à l'identique.",
   "commands.backup.browse.noListing": "L'instantané {{snapshot}} de {{name}} n'a pas de liste de fichiers enregistrée, il ne peut donc pas être parcouru. Restaurez-le pour consulter ses fichiers.",
   "commands.backup.browse.optionAt": "Lister l'instantané pris à cette date ou avant, ou cet identifiant d'instantané (lit le magasin de blocs)",
   "commands.backup.browse.optionDepth": "Limiter la descente à N niveaux (0 pour illimité)",

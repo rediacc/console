@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseBrowseResult } from '../backup-storage-parser.js';
+import { isLiveMountListing, parseBrowseResult } from '../backup-storage-parser.js';
 
 const listing = {
   source: 'repository demo',
@@ -83,5 +83,23 @@ describe('parseBrowseResult', () => {
     expect(parseBrowseResult('{"status":"verified","level":"full"}')).toBeUndefined();
     expect(parseBrowseResult('{"entries":[]}')).toBeUndefined();
     expect(parseBrowseResult('{"source":"x"}')).toBeUndefined();
+  });
+});
+
+describe('isLiveMountListing', () => {
+  it('is true only for a listing walked from the live mount', () => {
+    expect(isLiveMountListing({ ...listing, listingSource: 'live-mount' })).toBe(true);
+    expect(isLiveMountListing({ ...listing, listingSource: 'staged' })).toBe(false);
+    // A listing from a renet that predates the marker, or a local browse, carries none.
+    expect(isLiveMountListing(listing)).toBe(false);
+  });
+
+  it('survives the escaped log-line wrapping', () => {
+    const wrapped = `msg="[backup_browse_at] ${JSON.stringify({
+      ...listing,
+      listingSource: 'live-mount',
+    }).replaceAll('"', '\\"')}"`;
+    const got = parseBrowseResult(wrapped);
+    expect(got && isLiveMountListing(got)).toBe(true);
   });
 });

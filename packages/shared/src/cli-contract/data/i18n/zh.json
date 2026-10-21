@@ -5,6 +5,7 @@
   "commands.backup.browse.descriptionShort": "列出仓库的文件，使用 --at 时列出已保存快照的文件",
   "commands.backup.browse.empty": "{{name}} 不包含任何文件。",
   "commands.backup.browse.failed": "无法列出 {{name}}",
+  "commands.backup.browse.liveMountListing": "快照 {{snapshot}} 的文件列表是在其创建前后从实时挂载中读取的，因此可能与存储的镜像略有差异。恢复操作会原样还原存储的镜像。",
   "commands.backup.browse.noListing": "{{name}} 的快照 {{snapshot}} 没有已保存的文件列表，因此无法浏览。请先恢复它再查看文件。",
   "commands.backup.browse.optionAt": "列出在此时间或之前创建的快照，或指定快照 ID（读取块存储）",
   "commands.backup.browse.optionDepth": "将遍历深度限制为 N 层（0 表示不限）",
