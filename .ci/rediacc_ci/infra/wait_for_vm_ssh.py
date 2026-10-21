@@ -7,6 +7,8 @@ Blocks until EVERY named VM accepts SSH, then trusts its host key. `ops up` retu
 36 attempts, 5 seconds apart, 180 seconds per VM. The twin's own header explains the number (raised from 150s because this repo has a documented incident where a DIFFERENT subsystem's 150s healthcheck budget was insufficient on a downclocked host, and nested-KVM boot under contention is the same physical phenomenon). The budget is hardcoded there, so it is hardcoded here: inventing
 an env knob would be a new feature wearing a port's clothes, and the first thing a knob does is get set to 1 in a test that then proves nothing about the real timeout.
 
+IT NAMES NO KEY. The probe is a bare `ssh <user>@<vm>`, so it authenticates only with a default identity under `~/.ssh`. A job must arrange for `ops up` to authorize that identity (the fork-isolation job generates `~/.ssh/id_rsa` first); a job whose VMs authorize only the key `ops up` stages under `$RENET_DATA_DIR` times out here with the VMs healthy (the browse-at job, run 39640583259, before its wait was removed).
+
 SIBLING, NOT DUPLICATE, of `verify_ssh.py`. Read that module's docstring for the six-way behavioural comparison (host keys, identity, ports, budget, ANY vs EVERY, and where ssh's stderr goes). The short version: the two twins share the SHAPE of a poll loop and nothing else, they disagree on host-key policy in opposite directions, and a shared helper would be smaller than the
 argument list each caller would have to hand it. Neither port factors one out, because factoring two live bash scripts together is a refactor, not a port.
 
