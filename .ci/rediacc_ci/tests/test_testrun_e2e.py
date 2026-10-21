@@ -233,7 +233,9 @@ def test_delta_a_local_run_pins_the_renet_data_dir_that_ops_up_staged(
     """`CI=true` from the generated .env sends renet to /tmp/renet; the VMs' key is under ~/.renet."""
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
-    monkeypatch.delenv("RENET_DATA_DIR", raising=False)
+    # setenv first so monkeypatch owns the name: delenv of an unset name records nothing, and the pin's write would then outlive this test.
+    monkeypatch.setenv("RENET_DATA_DIR", "unset-by-this-test")
+    monkeypatch.delenv("RENET_DATA_DIR")
     e2e.pin_local_renet_data_dir()
     assert os.environ["RENET_DATA_DIR"] == str(tmp_path / ".renet")
 

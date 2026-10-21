@@ -524,6 +524,25 @@ function parseSnapshotRecord(line: string): SnapshotRecord | undefined {
   }
 }
 
+/**
+ * Put the saved listing bytes back after the tamper test. A failure is returned, not thrown, so the
+ * caller removes its temp copies first; the stored listing is then still the tampered one, and later
+ * tests read it, so the caller surfaces it.
+ */
+function restoreListing(
+  original: string,
+  curl: (args: string[]) => unknown,
+  objectKey: string
+): Error | undefined {
+  if (!existsSync(original)) return undefined;
+  try {
+    curl(['-X', 'PUT', '-T', original]);
+    return undefined;
+  } catch (err) {
+    return new Error(`could not restore the tampered listing object ${objectKey}: ${String(err)}`);
+  }
+}
+
 test.describe
   .serial('rdc backup control plane @cli @backup', () => {
     if (accountVerdict.kind === 'undeclared') {
@@ -1349,17 +1368,16 @@ test.describe
           ).toBe(0);
           expect(comparable(good.json?.data)).toContain(`file /browse-at-${stamp}.txt`);
         } finally {
-          if (!restored && existsSync(original)) {
-            try {
-              curl(['-X', 'PUT', '-T', original]);
-            } catch (err) {
-              // Surface it: the stored listing is still the tampered one and later tests read it.
-              throw new Error(
-                `could not restore the tampered listing object t/${subscriptionId}/l/${repo.guid}/i/${listedSnapshotId}: ${String(err)}`
+          const restoreError = restored
+            ? undefined
+            : restoreListing(
+                original,
+                curl,
+                `t/${subscriptionId}/l/${repo.guid}/i/${listedSnapshotId}`
               );
-            }
-          }
+          // The temp copies go on every path, the failed restore included.
           rmSync(dir, { recursive: true, force: true });
+          if (restoreError) throw restoreError;
         }
       });
 
