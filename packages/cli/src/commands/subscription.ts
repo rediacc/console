@@ -74,7 +74,9 @@ async function patchActiveAccount(fields: Partial<Record<AccountField, string>>)
     // The channel is a synced preference, not a login field: a remote config that cannot take the
     // write right now keeps its old channel rather than failing the login.
     await write.catch((error: unknown) => {
-      outputService.warn(`update channel not saved: ${(error as Error).message}`);
+      outputService.warn(
+        `update channel not saved: ${error instanceof Error ? error.message : String(error)}`
+      );
     });
   }
 }
@@ -126,7 +128,7 @@ export async function resolveAndSyncServer(options: { server?: string }): Promis
   } catch (error) {
     info = undefined;
     outputService.warn(
-      `server-info unreachable at ${serverUrl}; the saved channel and e2e key are kept: ${(error as Error).message}`
+      `server-info unreachable at ${serverUrl}; the saved channel and e2e key are kept: ${error instanceof Error ? error.message : String(error)}`
     );
   }
   if (info) {
