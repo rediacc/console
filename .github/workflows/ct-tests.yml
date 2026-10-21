@@ -2045,12 +2045,39 @@ jobs:
       - name: Create E2E Test Environment
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env --vm-workers "11"
 
+      # The suite's config has no globalSetup (it would reset a shared local
+      # fleet), so nothing else brings the VMs up, and the backup plane probes
+      # worker 11 over the VM network. RENET_DATA_DIR is the CI autodetect spelled
+      # out, so the plane's SSH probe finds the key `ops up` stages there.
+      - name: Provision VMs
+        env:
+          RENET_DATA_DIR: ${{ runner.temp }}/renet
+        run: "$RENET_BINARY ops up --force --parallel"
+      - name: Wait for VM SSH readiness
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.wait_for_vm_ssh "192.168.111.1" "192.168.111.11"
+
       # RustFS, the probe bucket and an account server at the bridge host with a
       # backup:read token (PLAN-e2e-browse-at-ci). LOUD: it exits non-zero with the
       # server log attached on every path that does not leave the plane healthy
-      # from worker 11, so the tier is never a declared skip.
+      # from worker 11, so the tier is never a declared skip. It generates the
+      # ED25519 signing pair the account server uses and publishes the PUBLIC half
+      # as ACCOUNT_ED25519_PUBLIC_KEY; the private half is never written.
       - name: Start the backup plane
+        env:
+          RENET_DATA_DIR: ${{ runner.temp }}/renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane
+
+      # `rdc repo create` files each licence under the SIGNER's fingerprint and
+      # renet looks up the fingerprint of the key it BAKED, so the renet the CLI
+      # deploys to worker 11 is rebuilt with the plane's public key. It cannot
+      # be built with it up front: the plane needs the VMs, and they need renet.
+      # The build stamp carries the key's hash, so this really relinks.
+      - name: Rebuild renet with the signing key
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+      - name: Reinstall renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
+      - name: Verify renet bakes the signing key
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet private/renet/bin/renet --verify-renet private/renet/bin/renet-linux-amd64
 
       # check-e2e-coverage's registry self-check pairs this `--config` with the
       # runner by reading one logical shell command.
@@ -2074,8 +2101,8 @@ jobs:
             ${{ runner.temp }}/complete.txt
             ${{ runner.temp }}/vm-diagnostics/
             ${{ runner.temp }}/account-for-e2e.log
-            packages/e2e-tests/reports/bridge-backup-browse-at/
-            packages/e2e-tests/reports/bridge-backup-browse-at-logs/
+            packages/e2e-tests/reports/backup-browse-at/
+            packages/e2e-tests/reports/backup-browse-at-logs/
           retention-days: 3
           if-no-files-found: ignore
 

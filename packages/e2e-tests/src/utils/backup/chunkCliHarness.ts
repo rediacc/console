@@ -15,22 +15,22 @@ import { CliRunner } from '../CliRunner';
 // Shared by suites 26 and 27: the account-server and fleet wiring, the CLI login, and the repository provisioning both chunk-store CLI suites build on.
 
 export const ACCOUNT_SERVER = (process.env.REDIACC_ACCOUNT_SERVER ?? '').trim();
-export const ACCOUNT_TOKEN = (process.env.E2E_ACCOUNT_API_TOKEN ?? '').trim();
+const ACCOUNT_TOKEN = (process.env.E2E_ACCOUNT_API_TOKEN ?? '').trim();
 export const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
 export const DS = DEFAULT_DATASTORE_PATH;
 
 // `~/.renet`, NOT `~/.rediacc`: the fallback is the harness's own renet data dir (packages/provisioning getRenetDataDir), which is where `ops up` stages the fleet key. The `.rediacc` spelling this file carried resolves to a path that does not exist on a default box, so every bridge call fell back to whatever ~/.ssh happened to hold. Suite 23 still carries the same typo.
-export const SSH_KEY =
+const SSH_KEY =
   process.env.E2E_SSH_KEY ??
   `${process.env.RENET_DATA_DIR ?? `${process.env.HOME}/.renet`}/staging/.ssh/id_rsa`;
 
 // Machine registration for the CLI, same wiring suite 23 uses. The CLI needs its own machine entries: the bridge runners SSH straight through, but `rdc repo create` (the only thing that installs a repository license) addresses a machine BY NAME out of the config.
-export const NET_BASE = process.env.VM_NET_BASE ?? '192.168.111';
+const NET_BASE = process.env.VM_NET_BASE ?? '192.168.111';
 export const M1 = 'machine-11';
 export const M2 = 'machine-12';
-export const M1_IP = `${NET_BASE}.${workers[0] ?? '11'}`;
-export const M2_IP = `${NET_BASE}.${workers[1] ?? '12'}`;
-export const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
+const M1_IP = `${NET_BASE}.${workers[0] ?? '11'}`;
+const M2_IP = `${NET_BASE}.${workers[1] ?? '12'}`;
+const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
 
 /** The `-o json` envelope every rdc command prints (output.ts formatJson). */
 export interface CliEnvelope<T> {
@@ -39,7 +39,7 @@ export interface CliEnvelope<T> {
 }
 
 /** The slice of rdc's config-v3 file this suite reads back after a create. */
-export interface CliConfigFile {
+interface CliConfigFile {
   resources?: {
     repositories?: Record<
       string,
@@ -88,7 +88,7 @@ export const accountPrereqs = [
  * Any failure to resolve or execute reads as "absent", which is the fail-closed
  * direction.
  */
-export function localRenetHelp(): string {
+function localRenetHelp(): string {
   const candidates = [process.env.RENET_BINARY_PATH].filter((c): c is string => !!c);
   for (const start of [process.cwd(), __dirname]) {
     let dir = start;
@@ -157,7 +157,7 @@ export const loginCli = async (cfg: string): Promise<CliRunner> => {
 };
 
 /** Read rdc's own config file — the artifact `repo create` just wrote. */
-export const readCliConfig = (cli: CliRunner): CliConfigFile =>
+const readCliConfig = (cli: CliRunner): CliConfigFile =>
   JSON.parse(readFileSync(cli.configPath, 'utf8')) as CliConfigFile;
 
 /**
@@ -241,7 +241,15 @@ export const provisionRepo = async (
     `no license row for ${guid} on ${machine}; the CLI created the repo without licensing it:\n${rawStatus.slice(-800)}`
   ).toBeDefined();
   expect(installed?.status, `license for ${guid} is not valid`).toBe('valid');
-  expect(installed?.installed, `license for ${guid} was issued but not installed`).toBe(true);
+  // `installed` means a blob sits under the BAKED key's fingerprint (/var/lib/rediacc/license/repos/<guid>/<fingerprint>.json). The CLI files it under the SIGNER's fingerprint, so a signer the renet build does not bake reads as issued-but-not-installed, and every snapshot or restore verb after it refuses the repo.
+  expect(
+    installed?.installed,
+    `license for ${guid} was issued but not installed. The likely cause is a key mismatch: the account server signed with a key the deployed renet does not bake. ` +
+      `Compare the blob names under /var/lib/rediacc/license/repos/${guid}/ on ${machine} with the baked key ` +
+      '(`go version -m private/renet/bin/renet-linux-amd64 | grep ProductionPublicKey`), or run ' +
+      '`PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet private/renet/bin/renet-linux-amd64` ' +
+      'with ACCOUNT_ED25519_PUBLIC_KEY set to the server key; rebuild renet with that key exported if they differ.'
+  ).toBe(true);
 
   // `repo create` leaves the repo MOUNTED with its docker daemon up. The snapshot verb reads the image underneath, so bring it down first.
   await runner.repositoryUnmount(guid, DS).catch(() => undefined);
