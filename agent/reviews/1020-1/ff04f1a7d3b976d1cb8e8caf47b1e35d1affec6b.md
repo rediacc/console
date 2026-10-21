@@ -21,4 +21,4 @@ Body-Sig: 1032fb1ee4398fad
 ### ff04f1a7.1 [low] agent/d778be9d/STATE.md:10
 Anchor: in-diff
 Claim: The rewrite drops the pre-merge item for the ~70 open below-threshold review findings (#0707f67f), so the new line 'Per-commit reviews clean' now reads as if nothing is open, while the removed text said those findings still had to be handled before merge.
-Resolution: open
+Resolution: not-a-bug | c237f86bd is the commit #0707f67f was ticked on, every open finding resolved, and wl_review.py --check reports clean, so "Per-commit reviews clean" is the current fact | d778be9d 2026-10-21T02:23:20Z
