@@ -71,29 +71,31 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-remove-cross-session-messaging.md -- 13 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-backup-program.md -- 0 of 186 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 227 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:af0bfea10916a804b, worker:a1b6905d4396cc595.
-- Leased items: 2: #1a07399b (worker:af0bfea10916a804b, d778be9d), #86b5992c (worker:a1b6905d4396cc595, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 232 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a5894c1f60a6f829c.
+- Leased items: 2: #1a07399b (worker:a0e5991d10870b076, d778be9d), #86b5992c (worker:a5894c1f60a6f829c, d778be9d).
 - Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 4; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 4 plans done, 33 of 222 boxes done (14%).
+Promoted: 0 of 5 plans done, 33 of 230 boxes done (14%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-pins-command.md | 12/13 | 1 open |
 | 3 | PLAN-shell-sandbox-readonly-view.md | 6/7 | 1 open |
-| 4 | PLAN-backup-program.md | 0/186 | 186 open |
+| 4 | PLAN-e2e-browse-at-ci.md | 0/8 | 8 open |
+| 5 | PLAN-backup-program.md | 0/186 | 186 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
 2. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it
 3. agent/plans/PLAN-shell-sandbox-readonly-view.md -- operator /ask 2026-10-20T15:14Z ("bring its deps to the promoted area to start them first"): prerequisite of entry 5 (PLAN-backup-program), beside PLAN-account-vm-check (done 2026-10-20); closes the cross-repo integrity hole where a repo key holder can re-mode or re-time another repo's files
-4. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
+4. agent/plans/PLAN-e2e-browse-at-ci.md -- finding fix on this PR (worklist #1a07399b, 2026-10-21): the browse-at e2e tier passes on the local fleet but no workflow runs it; findings are fixed in the session that finds them
+5. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
 
 ## Generated
 
