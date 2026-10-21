@@ -11,6 +11,7 @@
         "descriptionShort": "Elenca i file di un repository, o di uno snapshot salvato con --at",
         "empty": "{{name}} non contiene file.",
         "failed": "Impossibile elencare {{name}}",
+        "liveMountListing": "L'elenco dello snapshot {{snapshot}} è stato letto dal mount attivo a ridosso della sua acquisizione, quindi può differire leggermente dall'immagine archiviata. Un ripristino restituisce esattamente l'immagine archiviata.",
         "noListing": "Lo snapshot {{snapshot}} di {{name}} non ha un elenco di file salvato, quindi non può essere esplorato. Ripristinalo per vederne i file.",
         "optionAt": "Elenca lo snapshot eseguito a questo momento o prima, oppure questo ID snapshot (legge l'archivio dei chunk)",
         "optionDepth": "Limita la discesa a N livelli (0 per illimitato)",

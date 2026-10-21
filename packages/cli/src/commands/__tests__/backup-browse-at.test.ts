@@ -187,4 +187,32 @@ describe('backup browse --at', () => {
     expect(rows.map((r: { name: string }) => r.name)).toEqual(['/app', '/readme.txt']);
     expect(mockWarn).not.toHaveBeenCalled();
   });
+
+  it('notes once that a live-mount listing may differ from the stored image, and still renders it', async () => {
+    mockExecuteRepoFunction.mockResolvedValue({
+      success: true,
+      exitCode: 0,
+      stdout: JSON.stringify({ ...JSON.parse(listingStdout), listingSource: 'live-mount' }),
+    });
+
+    await run(['browse', 'shop', '--at', SNAPSHOT]);
+
+    expect(mockWarn).toHaveBeenCalledTimes(1);
+    expect(mockWarn.mock.calls[0][0]).toContain('commands.backup.browse.liveMountListing');
+    expect(mockWarn.mock.calls[0][0]).toContain(SNAPSHOT);
+    expect(mockPrint).toHaveBeenCalledTimes(1);
+  });
+
+  it('adds no note for a staged listing', async () => {
+    mockExecuteRepoFunction.mockResolvedValue({
+      success: true,
+      exitCode: 0,
+      stdout: JSON.stringify({ ...JSON.parse(listingStdout), listingSource: 'staged' }),
+    });
+
+    await run(['browse', 'shop', '--at', SNAPSHOT]);
+
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockPrint).toHaveBeenCalledTimes(1);
+  });
 });

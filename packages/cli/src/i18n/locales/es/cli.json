@@ -11,6 +11,7 @@
         "descriptionShort": "Listar los archivos de un repositorio, o de una instantánea guardada con --at",
         "empty": "{{name}} no contiene archivos.",
         "failed": "No se pudo listar {{name}}",
+        "liveMountListing": "La lista de la instantánea {{snapshot}} se leyó del montaje activo cerca del momento en que se tomó, así que puede diferir ligeramente de la imagen almacenada. Una restauración devuelve la imagen almacenada exactamente.",
         "noListing": "La instantánea {{snapshot}} de {{name}} no tiene un listado de archivos guardado, así que no se puede explorar. Restáurela para ver sus archivos.",
         "optionAt": "Listar la instantánea tomada en o antes de este momento, o este id de instantánea (lee el almacén de fragmentos)",
         "optionDepth": "Limitar el descenso a N niveles (0 para ilimitado)",

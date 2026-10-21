@@ -5,6 +5,7 @@
   "commands.backup.browse.descriptionShort": "List the files a repository, or a stored snapshot with --at, contains",
   "commands.backup.browse.empty": "{{name}} contains no files.",
   "commands.backup.browse.failed": "Could not list {{name}}",
+  "commands.backup.browse.liveMountListing": "Snapshot {{snapshot}}'s listing was read from the live mount close to when it was taken, so it may differ slightly from the stored image. A restore returns the stored image exactly.",
   "commands.backup.browse.noListing": "Snapshot {{snapshot}} of {{name}} has no stored file listing, so it cannot be browsed. Restore it to inspect its files.",
   "commands.backup.browse.optionAt": "List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)",
   "commands.backup.browse.optionDepth": "Limit descent to N levels (0 for unlimited)",

@@ -5,6 +5,7 @@
   "commands.backup.browse.descriptionShort": "Elenca i file di un repository, o di uno snapshot salvato con --at",
   "commands.backup.browse.empty": "{{name}} non contiene file.",
   "commands.backup.browse.failed": "Impossibile elencare {{name}}",
+  "commands.backup.browse.liveMountListing": "L'elenco dello snapshot {{snapshot}} è stato letto dal mount attivo a ridosso della sua acquisizione, quindi può differire leggermente dall'immagine archiviata. Un ripristino restituisce esattamente l'immagine archiviata.",
   "commands.backup.browse.noListing": "Lo snapshot {{snapshot}} di {{name}} non ha un elenco di file salvato, quindi non può essere esplorato. Ripristinalo per vederne i file.",
   "commands.backup.browse.optionAt": "Elenca lo snapshot eseguito a questo momento o prima, oppure questo ID snapshot (legge l'archivio dei chunk)",
   "commands.backup.browse.optionDepth": "Limita la discesa a N livelli (0 per illimitato)",

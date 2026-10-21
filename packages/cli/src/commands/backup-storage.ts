@@ -20,7 +20,11 @@ import { getOutputFormat, handleError, ValidationError } from '../utils/errors.j
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
-import { parseBrowseResult, parseVerifyVerdict } from './backup-storage-parser.js';
+import {
+  isLiveMountListing,
+  parseBrowseResult,
+  parseVerifyVerdict,
+} from './backup-storage-parser.js';
 
 /** GET /backups/usage, subscription aggregate + per-lineage breakdown. */
 interface BackupUsageResponse {
@@ -322,6 +326,12 @@ function registerBackupBrowse(backup: Command): void {
           const listing = parseBrowseResult(result.stdout);
           if (!listing) {
             throw new Error(`browse returned no listing for "${repoKey}"`);
+          }
+          // A listing walked from the live mount (a repository with no autostart keyfile) can differ slightly from the stored image, and the operator is told so before reading it.
+          if (options.at && isLiveMountListing(listing)) {
+            outputService.warn(
+              t('commands.backup.browse.liveMountListing', { snapshot: snapshotId })
+            );
           }
           if (listing.entries.length === 0) {
             outputService.info(t('commands.backup.browse.empty', { name: repoKey }));

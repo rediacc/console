@@ -11,6 +11,7 @@
         "descriptionShort": "Dateien eines Repositorys oder, mit --at, eines gespeicherten Snapshots auflisten",
         "empty": "{{name}} enthält keine Dateien.",
         "failed": "{{name}} konnte nicht aufgelistet werden",
+        "liveMountListing": "Die Auflistung von Snapshot {{snapshot}} wurde kurz vor oder nach seiner Erstellung vom laufenden Mount gelesen und kann daher geringfügig vom gespeicherten Image abweichen. Eine Wiederherstellung liefert das gespeicherte Image exakt.",
         "noListing": "Zu Snapshot {{snapshot}} von {{name}} ist keine Dateiliste gespeichert, deshalb lässt er sich nicht durchsuchen. Stellen Sie ihn wieder her, um seine Dateien einzusehen.",
         "optionAt": "Den Snapshot zu oder vor diesem Zeitpunkt bzw. diese Snapshot-ID auflisten (liest den Chunk-Speicher)",
         "optionDepth": "Abstiegstiefe auf N Ebenen begrenzen (0 für unbegrenzt)",

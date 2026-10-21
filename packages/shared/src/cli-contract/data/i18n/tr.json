@@ -5,6 +5,7 @@
   "commands.backup.browse.descriptionShort": "Bir deponun ya da --at ile saklanan bir anlık görüntünün dosyalarını listele",
   "commands.backup.browse.empty": "{{name}} hiç dosya içermiyor.",
   "commands.backup.browse.failed": "{{name}} listelenemedi",
+  "commands.backup.browse.liveMountListing": "{{snapshot}} anlık görüntüsünün listesi, alındığı ana yakın bir zamanda canlı bağlama noktasından okundu; bu yüzden saklanan imajdan biraz farklı olabilir. Geri yükleme, saklanan imajı birebir getirir.",
   "commands.backup.browse.noListing": "{{name}} deposunun {{snapshot}} anlık görüntüsü için kayıtlı dosya listesi yok, bu yüzden gezilemiyor. Dosyalarına bakmak için geri yükleyin.",
   "commands.backup.browse.optionAt": "Bu zamanda veya öncesinde alınan anlık görüntüyü ya da bu anlık görüntü kimliğini listele (parça deposunu okur)",
   "commands.backup.browse.optionDepth": "İnişi N seviyeyle sınırla (sınırsız için 0)",

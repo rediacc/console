@@ -1548,6 +1548,7 @@
         "descriptionShort": "List the files a repository, or a stored snapshot with --at, contains",
         "empty": "{{name}} contains no files.",
         "failed": "Could not list {{name}}",
+        "liveMountListing": "Snapshot {{snapshot}}'s listing was read from the live mount close to when it was taken, so it may differ slightly from the stored image. A restore returns the stored image exactly.",
         "noListing": "Snapshot {{snapshot}} of {{name}} has no stored file listing, so it cannot be browsed. Restore it to inspect its files.",
         "optionAt": "List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)",
         "optionDepth": "Limit descent to N levels (0 for unlimited)",

@@ -5,6 +5,7 @@
   "commands.backup.browse.descriptionShort": "Listar os ficheiros de um repositório, ou de um snapshot guardado com --at",
   "commands.backup.browse.empty": "{{name}} não contém ficheiros.",
   "commands.backup.browse.failed": "Não foi possível listar {{name}}",
+  "commands.backup.browse.liveMountListing": "A listagem do snapshot {{snapshot}} foi lida da montagem ativa perto do momento em que foi feito, por isso pode diferir ligeiramente da imagem armazenada. Uma restauração devolve exatamente a imagem armazenada.",
   "commands.backup.browse.noListing": "O snapshot {{snapshot}} de {{name}} não tem uma lista de ficheiros guardada, por isso não pode ser explorado. Restaure-o para ver os seus ficheiros.",
   "commands.backup.browse.optionAt": "Listar o snapshot feito neste momento ou antes, ou este id de snapshot (lê o armazém de blocos)",
   "commands.backup.browse.optionDepth": "Limitar a descida a N níveis (0 para ilimitado)",
