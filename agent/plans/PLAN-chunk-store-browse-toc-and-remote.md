@@ -140,7 +140,8 @@ Stage 3 depends on Stage 2's TOC object existing, so Stage 2 must land, be teste
     (ticked) 2026-10-20T14:42:48Z by d778be9d: commit:548129481 rdc backup browse --at
 - [x] i18n: every new user-facing string in both new Go and TS surfaces, matching Stage 1's convention.
     (ticked) 2026-10-20T14:42:50Z by d778be9d: commit:548129481 CLI keys x13; renet 17aedbd 51 keys x13 pinned by 64547bb24
-- [ ] Stage-3 tests: end-to-end round trip cross-checked against Stage 1's local `Browse` of the same content; tampered/wrong-key fail-closed negative; `hasIndex:false` honest refusal; Stage-1 regression control (no-`--at` path unchanged, zero new server calls).
+- [x] Stage-3 tests: end-to-end round trip cross-checked against Stage 1's local `Browse` of the same content; tampered/wrong-key fail-closed negative; `hasIndex:false` honest refusal; Stage-1 regression control (no-`--at` path unchanged, zero new server calls).
+    (ticked) 2026-10-21T07:48:51Z by d778be9d: commit:d96400c32 suite 25 13/13 and suite 26 18/18 on the local KVM fleet; each of the four clauses has a passing test
 - [x] CI registration: suite 25/26, `.e2e-coverage-allowlist`, command-plane/command-tree/i18n gates.
     (ticked) 2026-10-20T14:42:52Z by d778be9d: commit:548129481 allowlist, command-tree, cli-contract, i18n gates rc 0
 

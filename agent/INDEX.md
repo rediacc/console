@@ -479,7 +479,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-DECISION.md` | compacted | 37 | 0 | 0 | 2572 |
 | `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5233 |
 | `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4897 |
-| `agent/plans/PLAN-chunk-store-browse-toc-and-remote.md` | proposed | 170 | 1 | 10 | 35201 |
+| `agent/plans/PLAN-chunk-store-browse-toc-and-remote.md` | proposed | 171 | 0 | 11 | 35367 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 76 | 3 | 2 | 10341 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
