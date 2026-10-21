@@ -75,3 +75,49 @@ describe('InfrastructureManager post-deploy renet MD5 verification', () => {
     expect(executeOnVM).toHaveBeenCalledTimes(1);
   });
 });
+
+type Step = { success: boolean; code: number; stderr: string };
+type Retrier = { retryOnceOnTransportFailure(ip: string, run: () => Promise<Step>): Promise<Step> };
+const retry = (run: () => Promise<Step>): Promise<Step> =>
+  (new InfrastructureManager() as unknown as Retrier).retryOnceOnTransportFailure(IP, run);
+
+describe('InfrastructureManager install step retry', () => {
+  beforeEach(() => {
+    waitForHost.mockReset();
+    waitForHost.mockResolvedValue(true);
+  });
+
+  it('re-runs an idempotent step once after a transport refusal', async () => {
+    const run = vi
+      .fn<() => Promise<Step>>()
+      .mockResolvedValueOnce({ success: false, code: 255, stderr: REFUSED.stderr })
+      .mockResolvedValueOnce({ success: true, code: 0, stderr: '' });
+    await expect(retry(run)).resolves.toMatchObject({ success: true });
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(waitForHost).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not re-run a step whose command failed on a working connection', async () => {
+    const run = vi.fn<() => Promise<Step>>().mockResolvedValue({
+      success: false,
+      code: 1,
+      stderr: 'install: cannot stat /var/tmp/renet',
+    });
+    await expect(retry(run)).resolves.toMatchObject({ success: false, code: 1 });
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(waitForHost).not.toHaveBeenCalled();
+  });
+
+  it('treats an unreachable network as a transport failure', async () => {
+    const run = vi
+      .fn<() => Promise<Step>>()
+      .mockResolvedValueOnce({
+        success: false,
+        code: 1,
+        stderr: `ssh: connect to host ${IP} port 22: Network is unreachable`,
+      })
+      .mockResolvedValueOnce({ success: true, code: 0, stderr: '' });
+    await expect(retry(run)).resolves.toMatchObject({ success: true });
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+});

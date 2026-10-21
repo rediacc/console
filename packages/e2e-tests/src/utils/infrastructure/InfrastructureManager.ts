@@ -19,11 +19,7 @@ function getFileMD5(filePath: string): string {
   return crypto.createHash('md5').update(content).digest('hex');
 }
 
-/**
- * The renet `ops up` installed on a VM, as whatever /usr/bin/renet resolves to.
- * bridgesvc.InstallRenet (the bridge and every Ceph node) moves the binary to RENET_BINARY_PATH when that is set, and to /usr/lib/rediacc/renet/current/renet otherwise, then points /usr/bin/renet at it.
- * The target path therefore differs between CI and a local run, and only the resolved symlink is stable.
- */
+/** One read of the remote renet hash: the hash (or null), and whether ssh itself failed rather than the remote command. */
 interface RemoteMD5Read {
   md5: string | null;
   transportFailure: boolean;
@@ -35,13 +31,18 @@ const VERIFY_TRANSPORT_ATTEMPTS = 4;
 const VERIFY_WAIT_MS = 45000;
 const VERIFY_WAIT_INTERVAL_MS = 3000;
 const SSH_TRANSPORT_FAILURE_PATTERN =
-  /connection (refused|timed out|reset|closed)|no route to host|could not resolve|broken pipe|kex_exchange_identification/i;
+  /connection (refused|timed out|reset|closed)|no route to host|network is unreachable|host is down|could not resolve|broken pipe|kex_exchange_identification/i;
 
 /** ssh itself failed (exit 255 or a connect error), as opposed to the remote command failing. */
 function isSSHTransportFailure(code: number, stderr: string): boolean {
   return code === 255 || SSH_TRANSPORT_FAILURE_PATTERN.test(stderr);
 }
 
+/**
+ * The renet `ops up` installed on a VM, as whatever /usr/bin/renet resolves to.
+ * bridgesvc.InstallRenet (the bridge and every Ceph node) moves the binary to RENET_BINARY_PATH when that is set, and to /usr/lib/rediacc/renet/current/renet otherwise, then points /usr/bin/renet at it.
+ * The target path therefore differs between CI and a local run, and only the resolved symlink is stable.
+ */
 const OPS_UP_RENET_PATH = '"$(readlink -f /usr/bin/renet)"';
 const OPS_UP_RENET_MD5_COMMAND = `md5sum ${OPS_UP_RENET_PATH} 2>/dev/null | cut -d" " -f1`;
 
@@ -344,6 +345,19 @@ export class InfrastructureManager {
   }
 
   /**
+   * Runs an idempotent remote step, and once more after the host answers again when the first run failed
+   * at the SSH transport (a refusal right after provisioning). A failure of the command itself is returned as is.
+   */
+  private async retryOnceOnTransportFailure<
+    T extends { success: boolean; code: number; stderr: string },
+  >(ip: string, run: () => Promise<T>): Promise<T> {
+    const first = await run();
+    if (first.success || !isSSHTransportFailure(first.code, first.stderr)) return first;
+    await this.sshExecutor.waitForHost(ip, VERIFY_WAIT_MS, VERIFY_WAIT_INTERVAL_MS);
+    return run();
+  }
+
+  /**
    * Post-deploy check: the remote hash must equal the local one. Retries only a transport
    * failure (after waiting for the host); a real mismatch fails at once.
    */
@@ -351,7 +365,7 @@ export class InfrastructureManager {
     let read = await this.readRemoteRenetMD5(ip);
     for (let attempt = 1; read.transportFailure && attempt < VERIFY_TRANSPORT_ATTEMPTS; attempt++) {
       log(
-        `renet MD5 check on ${ip} hit a transport failure (exit ${read.code}), waiting for SSH (attempt ${attempt}/${VERIFY_TRANSPORT_ATTEMPTS})`
+        `renet MD5 check on ${ip} hit a transport failure (exit ${read.code}), waiting for SSH before retry ${attempt} of ${VERIFY_TRANSPORT_ATTEMPTS - 1}`
       );
       await this.sshExecutor.waitForHost(ip, VERIFY_WAIT_MS, VERIFY_WAIT_INTERVAL_MS);
       read = await this.readRemoteRenetMD5(ip);
@@ -410,12 +424,8 @@ export class InfrastructureManager {
           `sudo mkdir -p ${installDir} ${currentDir} && sudo install -m 755 /var/tmp/renet ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
           { execTimeout: 60000 }
         );
-      let moveResult = await runMove();
       // The install is idempotent, so a transport refusal right after provisioning is retried once the host answers.
-      if (!moveResult.success && isSSHTransportFailure(moveResult.code, moveResult.stderr)) {
-        await this.sshExecutor.waitForHost(ip, VERIFY_WAIT_MS, VERIFY_WAIT_INTERVAL_MS);
-        moveResult = await runMove();
-      }
+      const moveResult = await this.retryOnceOnTransportFailure(ip, runMove);
 
       if (!moveResult.success) {
         throw new Error(`Move/chmod failed: ${moveResult.stderr}`);
