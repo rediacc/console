@@ -1514,6 +1514,21 @@ def test_delta_3a8d1f46_the_rustfs_keys_reach_docker_through_its_environment(
     assert env["AWS_SECRET_ACCESS_KEY"] == "rustfs-secret"
 
 
+def test_start_rustfs_makes_its_own_log_directory(monkeypatch, tmp_path, capsys) -> None:
+    """start_backup_plane calls start_rustfs on a fresh CI checkout, where no .account-logs exists yet (run 39658436875 died on FileNotFoundError); it must not rely on _serve having made it."""
+    logs = tmp_path / "fresh-checkout" / ".account-logs"
+    calls: list[tuple[list[str], object, dict | None]] = []
+    alive = iter([False, True, True, True])
+    monkeypatch.setattr(account_lifecycle.account, "log_directory", lambda *_a, **_k: str(logs))
+    monkeypatch.setattr(account_lifecycle, "_docker_usable", lambda: True)
+    monkeypatch.setattr(account_lifecycle, "docker_ghost_clean", lambda: None)
+    monkeypatch.setattr(account_lifecycle.account, "rustfs_alive", lambda _port: next(alive, True))
+    monkeypatch.setattr(account_lifecycle.subprocess, "run", _recording_run(calls))
+    account_lifecycle.start_rustfs()
+    capsys.readouterr()
+    assert (logs / "rustfs.log").is_file()
+
+
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
 def test_delta_3a8d1f46_the_recording_still_carries_the_twins_argv() -> None:
     """The control on `_argv_delta_3a8d1f46`: the frozen twin transcripts still spell both shapes the twin's way, the port's spell them the new way, and the rewrite is what makes them meet. A golden re-recorded from the port would fail the first two assertions."""
