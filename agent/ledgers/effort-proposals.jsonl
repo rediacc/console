@@ -8,3 +8,5 @@
 {"at": "2026-10-15T18:37:44Z", "epoch": 71, "fraction": 0.853, "id": "ep-77335d89", "kind": "tuner-request", "session": "d778be9d"}
 {"at": "2026-10-19T07:04:54Z", "epoch": 72, "fraction": 0.852, "id": "ep-254d2dbc", "kind": "tuner-request", "session": "d778be9d"}
 {"at": "2026-10-20T01:06:01Z", "epoch": 73, "fraction": 0.852, "id": "ep-6729540a", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-20T11:21:05Z", "epoch": 74, "fraction": 0.896, "id": "ep-d26f24c0", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-20T16:40:36Z", "epoch": 75, "fraction": 0.854, "id": "ep-26b3e4df", "kind": "tuner-request", "session": "d778be9d"}
