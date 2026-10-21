@@ -2,13 +2,11 @@
  * Regression test: `rdc config init <name> --server <url>` must seed the
  * server's E2E public key, not just the server URL.
  *
- * Writing `accountServer` alone leaves `account.e2ePublicKey` absent, so the
- * FIRST tunnelled request falls through to the baked-in production key
- * (getServerKeyMaterial tier 3 in services/account/account-client.ts) and dies
- * with a bare "Error: Decryption failed". Only a LATER command self-heals, via
- * discoverServerKey(). A drill hit exactly that: init against a non-production
- * server, then one failing command, then `rdc config current` silently repaired
- * it.
+ * Writing `accountServer` alone leaves `account.e2ePublicKey` absent, so every
+ * tunnelled request has to discover the key from server-info first
+ * (getServerKeyMaterial tier 2 in services/account/account-client.ts). A drill
+ * once hit the older form of this, when a missing key fell through to the
+ * baked-in production key and died with a bare "Error: Decryption failed".
  *
  * The server being unreachable at init time must stay non-fatal, because
  * discovery still heals the config on a later run.
@@ -104,5 +102,43 @@ describe('buildInitAccountUpdate', () => {
 
     expect(update).toEqual({ accountServer: 'https://keyless.example.com' });
     expect(mockWarn).toHaveBeenCalledWith('commands.config.init.serverKeyMissing');
+  });
+});
+
+describe('mergeInitUpdates keeps a key only with the server it came from', () => {
+  const existing = {
+    schemaVersion: 3,
+    id: '00000000-0000-0000-0000-000000000001',
+    version: 1,
+    encryption: { mode: 'plaintext' as const },
+    account: { accountServer: 'https://old.example.com', e2ePublicKey: 'OLD-SERVER-KEY' },
+  };
+
+  it('drops the old key when a new server arrives without one', async () => {
+    const { mergeInitUpdates } = await import('../config.js');
+    const merged = mergeInitUpdates(existing, {
+      accountUpdate: { accountServer: 'https://down.example.com' },
+      mpUpdate: {},
+    });
+    expect(merged.account?.accountServer).toBe('https://down.example.com');
+    expect(merged.account).not.toHaveProperty('e2ePublicKey');
+  });
+
+  it('keeps the key when the server is the same one, a trailing slash aside', async () => {
+    const { mergeInitUpdates } = await import('../config.js');
+    const merged = mergeInitUpdates(
+      { ...existing, account: { ...existing.account, accountServer: 'https://old.example.com/' } },
+      { accountUpdate: { accountServer: 'https://old.example.com' }, mpUpdate: {} }
+    );
+    expect(merged.account?.e2ePublicKey).toBe('OLD-SERVER-KEY');
+  });
+
+  it('takes the new server key when the update carries one', async () => {
+    const { mergeInitUpdates } = await import('../config.js');
+    const merged = mergeInitUpdates(existing, {
+      accountUpdate: { accountServer: 'https://new.example.com', e2ePublicKey: SERVER_KEY },
+      mpUpdate: {},
+    });
+    expect(merged.account?.e2ePublicKey).toBe(SERVER_KEY);
   });
 });

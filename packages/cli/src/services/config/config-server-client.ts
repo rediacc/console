@@ -29,7 +29,7 @@ export interface ConfigServerFetchOptions {
    * in one process can call from different client addresses.
    */
   fetchImpl?: typeof fetch;
-  /** Test seam: the server's E2E key. Production passes nothing and getServerKeyMaterial() resolves it. */
+  /** Test seam: the server's E2E key. Production passes nothing and getServerKeyMaterial(serverUrl) resolves it. */
   serverKey?: { key: CryptoKey; keyId: string };
 }
 
@@ -95,7 +95,8 @@ export async function configServerFetch<T = unknown>(
   }
 
   // Encrypt the request via E2E tunnel
-  const { key: serverKey, keyId } = options.serverKey ?? (await getServerKeyMaterial());
+  const { key: serverKey, keyId } =
+    options.serverKey ?? (await getServerKeyMaterial(options.serverUrl));
   const { envelope, aesKey } = await sealRequest(
     serverKey,
     keyId,

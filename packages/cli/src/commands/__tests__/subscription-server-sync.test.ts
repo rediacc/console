@@ -113,4 +113,27 @@ describe('resolveAndSyncServer', () => {
     await expect(resolveAndSyncServer({})).resolves.toBe('http://gateway.test:4800');
     expect(mockUpdateConfigAtPointer).not.toHaveBeenCalled();
   });
+  it('drops the saved e2e key in the same write that moves the config to another server', async () => {
+    mockFetchServerInfo.mockRejectedValue(new Error('offline'));
+    await resolveAndSyncServer({});
+    const [, pointer, edit] = mockUpdateConfigAtPointer.mock.calls[0] as [
+      string,
+      string,
+      (cfg: { account?: Record<string, unknown> }) => { account?: Record<string, unknown> },
+    ];
+    expect(pointer).toBe('/account/accountServer');
+
+    const moved = edit({
+      account: { accountServer: 'https://eu.example.com', e2ePublicKey: 'EU-KEY' },
+    });
+    expect(moved.account).toEqual({ accountServer: 'http://gateway.test:4800' });
+
+    const same = edit({
+      account: { accountServer: 'http://gateway.test:4800', e2ePublicKey: 'DEV-KEY' },
+    });
+    expect(same.account).toEqual({
+      accountServer: 'http://gateway.test:4800',
+      e2ePublicKey: 'DEV-KEY',
+    });
+  });
 });
