@@ -278,12 +278,32 @@ describe('auditService.flush', () => {
     });
   });
 
-  it("sends to the server the command named over the token's", async () => {
+  it("sends to the command's --server when it is the server the token belongs to", async () => {
     readyWithOneEvent();
+    mockNamedTokenServer.mockReturnValue('http://dev.test:4800');
     await auditService.flush('http://dev.test:4800/');
+    expect(mockAccountServerFetch).toHaveBeenCalledOnce();
     expect(mockAccountServerFetch.mock.calls[0][1]).toMatchObject({
       serverUrl: 'http://dev.test:4800',
     });
+  });
+
+  it("drops the batch, never sending the bearer token, when --server names a host other than the token's", async () => {
+    readyWithOneEvent();
+    mockNamedTokenServer.mockReturnValue('https://eu.rediacc.com');
+    await auditService.flush('http://dev.test:4800');
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
+
+    // Dropped, not parked: a later flush to the token's own server sends nothing.
+    await auditService.flush();
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
+  });
+
+  it('drops the batch when --server is given but nothing names the token server', async () => {
+    readyWithOneEvent();
+    mockNamedTokenServer.mockReturnValue(undefined);
+    await auditService.flush('http://dev.test:4800');
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 
   it('flushes nothing, and drops the batch, when a token is present but nothing names its server', async () => {

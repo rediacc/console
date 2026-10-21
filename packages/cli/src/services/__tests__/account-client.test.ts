@@ -286,6 +286,62 @@ describe('getServerKeyMaterial tiers', () => {
     expect(edit({ account: { accountServer: server } }).account?.e2ePublicKey).toBe(discovered);
   });
 
+  it('reads the config once per request and settles the save of a remembered key after it is written, so later requests take no config lock', async () => {
+    const server = devServer();
+    const discovered = freshSpki();
+    globalThis.fetch = vi.fn().mockResolvedValue(serverInfoResponse(discovered)) as typeof fetch;
+    // The pointer read outside the lock keeps showing no key (say, a key written to a file this reader caches), so only the settled save stops the lock.
+    mockReadAccountPointer.mockReturnValue({ accountServer: server });
+    mockConfigUpdate.mockImplementation(
+      (_name: string, edit: (cfg: Record<string, unknown>) => unknown) => {
+        edit({ account: { accountServer: server } });
+        return Promise.resolve(undefined);
+      }
+    );
+
+    await getServerKeyMaterial(server);
+    expect(mockReadAccountPointer).toHaveBeenCalledTimes(1);
+    expect(mockConfigUpdate).toHaveBeenCalledTimes(1);
+
+    await getServerKeyMaterial(server);
+    await getServerKeyMaterial(server);
+    expect(mockReadAccountPointer).toHaveBeenCalledTimes(3);
+    expect(mockConfigUpdate).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('tries a failed save of a remembered key once per process; the key still serves every request', async () => {
+    const server = devServer();
+    const discovered = freshSpki();
+    globalThis.fetch = vi.fn().mockResolvedValue(serverInfoResponse(discovered)) as typeof fetch;
+    mockReadAccountPointer.mockReturnValue({ accountServer: server });
+    mockConfigUpdate.mockRejectedValue(new Error('config locked'));
+
+    const first = await getServerKeyMaterial(server);
+    const second = await getServerKeyMaterial(server);
+    expect(spkiOf(first.key)).toBe(discovered);
+    expect(spkiOf(second.key)).toBe(discovered);
+    expect(mockConfigUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers a remembered key again when the locked config had come to name another server', async () => {
+    const server = devServer();
+    const discovered = freshSpki();
+    globalThis.fetch = vi.fn().mockResolvedValue(serverInfoResponse(discovered)) as typeof fetch;
+    mockReadAccountPointer.mockReturnValue({ accountServer: server });
+    // Inside the lock the config names another server with no key: nothing is written, and the save stays open.
+    mockConfigUpdate.mockImplementation(
+      (_name: string, edit: (cfg: Record<string, unknown>) => unknown) => {
+        edit({ account: { accountServer: 'http://elsewhere.test' } });
+        return Promise.resolve(undefined);
+      }
+    );
+
+    await getServerKeyMaterial(server);
+    await getServerKeyMaterial(server);
+    expect(mockConfigUpdate).toHaveBeenCalledTimes(2);
+  });
+
   it('falls back to the baked-in key for a production region whose server-info cannot be read', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('fetch failed')) as typeof fetch;
     const material = await getServerKeyMaterial(`https://${regionOf('us').domain}`);

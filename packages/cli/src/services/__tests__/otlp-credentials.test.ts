@@ -15,6 +15,7 @@ import { Command } from 'commander';
 import { accountServerFetch } from '../account/account-client.js';
 import {
   credentialsToBasicAuthToken,
+  fetchCommandOtlpCredentials,
   fetchOtlpCredentials,
   resetOtlpCredentialsCache,
   serverOptionOf,
@@ -199,5 +200,57 @@ describe('serverOptionOf', () => {
   it('returns nothing for a command without one', () => {
     expect(serverOptionOf(parsed(['config', 'init', 'dev']))).toBeUndefined();
     expect(serverOptionOf(parsed(['config', 'current']))).toBeUndefined();
+  });
+});
+
+describe('fetchCommandOtlpCredentials, through a preAction hook as cli.ts runs it', () => {
+  beforeEach(() => {
+    resetOtlpCredentialsCache();
+    vi.resetAllMocks();
+    mockConfiguredServer.mockReturnValue(CONFIGURED);
+    mockedFetch.mockResolvedValue({ otlp: null });
+  });
+
+  afterEach(() => {
+    resetOtlpCredentialsCache();
+  });
+
+  async function runHook(argv: string[]): Promise<void> {
+    const program = new Command().exitOverride();
+    let fetched: Promise<unknown> | undefined;
+    program.hook('preAction', (_thisCommand, actionCommand) => {
+      fetched = fetchCommandOtlpCredentials(actionCommand);
+    });
+    const config = program.command('config');
+    config
+      .command('init [name]')
+      .option('--server <url>')
+      .action(() => undefined);
+    config.command('current').action(() => undefined);
+    await program.parseAsync(argv, { from: 'user' });
+    await fetched;
+  }
+
+  const servers = () => mockedFetch.mock.calls.map(([, options]) => options?.serverUrl);
+
+  it("asks the server a command's --server names, normalized", async () => {
+    await runHook(['config', 'init', 'dev', '--server', 'http://dev.test:4800/']);
+    expect(servers()).toEqual(['http://dev.test:4800']);
+  });
+
+  it('asks the configured server for a command given no --server', async () => {
+    await runHook(['config', 'init', 'dev']);
+    expect(servers()).toEqual([CONFIGURED]);
+  });
+
+  it('asks the configured server for a command that takes no --server', async () => {
+    await runHook(['config', 'current']);
+    expect(servers()).toEqual([CONFIGURED]);
+  });
+
+  it('asks nothing for a command with no --server on a config that names no server', async () => {
+    mockConfiguredServer.mockReturnValue(undefined);
+    await runHook(['config', 'current']);
+    expect(mockedFetch).not.toHaveBeenCalled();
   });
 });

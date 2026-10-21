@@ -30,7 +30,7 @@ import { getEffectiveConfigName } from '../config/config-name.js';
 import { updateConfigAtPointer } from '../config/synced-write.js';
 import { writeStderr } from '../core/request-context.js';
 import { resolveChannel } from '../update/updater.js';
-import { readAccountPointer } from './account-pointer.js';
+import { type AccountPointer, readAccountPointer } from './account-pointer.js';
 import {
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
@@ -121,7 +121,7 @@ export async function getServerKeyMaterial(serverUrl: string): Promise<ServerKey
 
   let failure: unknown;
   try {
-    const discovered = await discoverServerKey(target);
+    const discovered = await discoverServerKey(target, pointer);
     if (discovered) {
       return { key: await importKeyOnce(discovered.publicKeySpki), keyId: discovered.keyId };
     }
@@ -144,14 +144,17 @@ export async function getServerKeyMaterial(serverUrl: string): Promise<ServerKey
  * Fetch the E2E public key of the server at `serverUrl` (normalized) from its .well-known
  * endpoint. Resolves null when the server answers without a key; a fetch that fails rejects.
  */
-async function discoverServerKey(serverUrl: string): Promise<{
+async function discoverServerKey(
+  serverUrl: string,
+  pointer: AccountPointer
+): Promise<{
   keyId: string;
   publicKeySpki: string;
 } | null> {
   const known = discoveredKeys.get(serverUrl);
   if (known) {
     // The config may name this server only now (a login saved it after an earlier call discovered the key), so a remembered key is offered for saving too.
-    await saveDiscoveredKey(serverUrl, known.publicKeySpki);
+    await saveDiscoveredKey(serverUrl, known.publicKeySpki, pointer);
     return known;
   }
 
@@ -166,7 +169,7 @@ async function discoverServerKey(serverUrl: string): Promise<{
   if (!key?.publicKeySpki) return null;
   discoveredKeys.set(serverUrl, key);
 
-  await saveDiscoveredKey(serverUrl, key.publicKeySpki);
+  await saveDiscoveredKey(serverUrl, key.publicKeySpki, pointer);
   return key;
 }
 
@@ -183,6 +186,13 @@ function acceptsDiscoveredKey(
 }
 
 /**
+ * Servers whose discovered key needs no further save in this process: the save wrote it, the locked
+ * config already held a key, or the write failed (the discovered key still serves this process).
+ * A remembered key is then reused without taking the config lock again on every request.
+ */
+const keySaveSettled = new Set<string>();
+
+/**
  * Save a discovered key into the active config, for the next startup: only when that config's
  * server IS the one the key came from and it holds no key yet, and that is checked again inside
  * the locked write. A check outside the lock alone let a discovery that started while `config
@@ -191,23 +201,33 @@ function acceptsDiscoveredKey(
  * every later request to the dev gateway then failed "Decryption failed" (reproduced 2026-10-21).
  * The key is device-local (DEVICE_LOCAL_POINTERS), so this writes this device's file even for a
  * remote config: no push, and so no pull re-entering this lookup. A failed save leaves the
- * discovered key in use for this process.
+ * discovered key in use for this process. `pointer` is the one the caller already read, so a
+ * request reads the config once; a config that does not name this server yet is checked again on
+ * the next request, since a login may name it later in the process.
  */
-async function saveDiscoveredKey(serverUrl: string, publicKeySpki: string): Promise<void> {
-  const configName = getEffectiveConfigName();
-  const pointer = readAccountPointer(configName);
+async function saveDiscoveredKey(
+  serverUrl: string,
+  publicKeySpki: string,
+  pointer: AccountPointer
+): Promise<void> {
+  if (keySaveSettled.has(serverUrl)) return;
   // readAccountPointer stands `remote.apiUrl` in for a missing accountServer; only a saved accountServer owns a key.
   if (pointer.e2ePublicKey || pointer.accountServer === undefined) return;
   if (normalizeServerUrl(pointer.accountServer) !== serverUrl) return;
+  // What the locked write found: `settled` when it wrote the key or a key was already there, `pending` when the config had come to name another server (checked again on a later request).
+  let outcome: 'settled' | 'pending' = 'settled';
   try {
-    await updateConfigAtPointer(configName, '/account/e2ePublicKey', (cfg) =>
-      acceptsDiscoveredKey(cfg.account, serverUrl)
-        ? { ...cfg, account: { ...(cfg.account ?? {}), e2ePublicKey: publicKeySpki } }
-        : cfg
-    );
+    await updateConfigAtPointer(getEffectiveConfigName(), '/account/e2ePublicKey', (cfg) => {
+      if (acceptsDiscoveredKey(cfg.account, serverUrl)) {
+        return { ...cfg, account: { ...(cfg.account ?? {}), e2ePublicKey: publicKeySpki } };
+      }
+      if (!cfg.account?.e2ePublicKey) outcome = 'pending';
+      return cfg;
+    });
   } catch {
     // The config may be gone or locked; the discovered key still serves this process.
   }
+  if (outcome === 'settled') keySaveSettled.add(serverUrl);
 }
 
 /** Default HTTP method for account server requests. */
