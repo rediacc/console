@@ -1186,31 +1186,6 @@
         "e3709674"
       ]
     },
-    "agent/plans/PLAN-remove-cross-session-messaging.md": {
-      "status": "draft",
-      "owner": "unowned",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 1,
-      "done": 12,
-      "open_sigs": [
-        "ee4a3a4a"
-      ],
-      "done_sigs": [
-        "0c59d5cc",
-        "43e63a72",
-        "55c635d1",
-        "55d0352f",
-        "5b8f694f",
-        "605e573d",
-        "650f1204",
-        "6a4d0173",
-        "6b599b9b",
-        "a5692f6a",
-        "bd420ea4",
-        "e0a15728"
-      ]
-    },
     "agent/plans/PLAN-renet-fetch-hardening.md": {
       "status": "draft",
       "owner": "unowned",
@@ -3589,6 +3564,30 @@
         "8aaf4384",
         "930f003b",
         "9f2c95b0"
+      ]
+    },
+    "agent/plans/_done/PLAN-remove-cross-session-messaging.md": {
+      "status": "done",
+      "owner": "unowned",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-21",
+      "open": 0,
+      "done": 13,
+      "open_sigs": [],
+      "done_sigs": [
+        "0c59d5cc",
+        "43e63a72",
+        "55c635d1",
+        "55d0352f",
+        "5b8f694f",
+        "605e573d",
+        "650f1204",
+        "6a4d0173",
+        "6b599b9b",
+        "a5692f6a",
+        "bd420ea4",
+        "e0a15728",
+        "ee4a3a4a"
       ]
     },
     "agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md": {
