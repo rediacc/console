@@ -1,17 +1,25 @@
-## SESSION d778be9d 2026-10-21T08:52:35Z
+## SESSION d778be9d 2026-10-21T17:18:13Z
 
-# STATE d778be9d (2026-10-21 ~08:50Z)
+# d778be9d STATE (1020-1, PR rediacc/console#601, renet PR on 1020-1)
 
-Branch 1020-1 (rebased on main 26fc745e4). PR-TASK 8ed364fe. PRs: console #601 (draft, pushed at 160177293; ~35 newer commits local), renet #118 (pushed 6aeb4a0; local fb9cf01, f082a1d, 8b0cd71 unpushed), account #97 (6296d6a).
+## Where things stand (2026-10-21 ~17:20Z)
+- Pushed: console 0f06ea8a (red-fix: plan citations), renet 6b6f2ab. CI on #601 running; watch armed (ci-trace --wait --until-final, verdict to worklist #1732ee99).
+- #601 body updated 17:05Z: Plan: adds PLAN-e2e-browse-at-ci and the _done path for remove-cross-session-messaging; Operational-Reason names E1, T11, pin-awscli B7, B8, R1. sync_epic_block done.
+- Today landed: /wisdom + wisdom-due (a476bc84, e20b3cecc); browse-at e2e job B1-B7 (start_backup_plane shared signing key 895ebda28, suites 26 13/0 and 27 8/0 on fleet); keyless bin/renet fix (373976425 + build stamp digest); R1 drift waiver (012529e63, 54e3c53db, renet d65e4e8, d6f1071 ci.sh all-stage); K8s Multinode: harness SSH retry (714065521, a91bf1bd8, 00523a791), renet fork step budget (0c87a87, abdaa02), apt auto-upgrade bootcmd on KVM/qemu/Hyper-V (4029a95, 1a364e9, 6b6f2ab); gate-costs refresh (a3e559914); ceph opensuse pin .2.103; external-links per-host keys + narrow carry link:gdpr-info.eu (91c2fffdd, 6d8928d13).
 
-## Running agents (each leased in the worklist)
-- e2e a5894c1f60a6f829c (#86b5992c): suite 26 test 2 without autostart, proving listingSource live-mount + CLI note on the fleet; then PLAN-e2e-browse-at-ci B3-B5 (suite 27 split, its config, local proof).
-- writer a11c6c1c3ba81b0dd (#1a07399b): B1/B2 (start_account --scopes/--advertise-host; new testrun/start_backup_plane.py).
-- gate-author a6995fb6943556fa7: B6/B7 (ct-tests.yml job test-e2e-backup-browse-at; check-e2e-coverage registry; drop the backup_browse_at allowlist block).
-Verify each report against the artifact, commit by path, mark findings, tick boxes with plan-investigate + plan-tick.
+## Open boxes and what closes them
+- E1 (shell-sandbox, #46e10bf7): five E2E Workers <os> 1/8 legs green on #601; tick with run id, five job ids, ABI values.
+- B8 (e2e-browse-at-ci, #1a07399b): E2E Backup Browse-At green on #601, then budget_report.py --refresh --branch 1020-1 records its p90 (seed 9.0, cap 12).
+- pin-awscli B7 (#f6fe02a8): the CI timing of this PR run.
+- T11 (pins-command, #0e0e8021): branch dispatches done (39640724477 green, 39641033633 red by fixture); --scheduled needs a run on main after merge.
+- R1 (plan-per-pr-loop, #753d4fdc): first promote job after merge logging drift-only acceptance.
+- Review findings 6d1ae929.1, b8fc0e7d.2: QUEUE.md double listing; recommit QUEUE.md after the Stop hook re-renders it from the new body, then mark fixed.
 
-## Done today (local, unpushed)
-Decryption error fixed (b5147eec8, 0329df473, 21998ea17, 623c5260f): an E2E key belongs to its server; telemetry and audit never reach production unasked; tokens only go to their issuer. Non-autostart repos get a browse index (renet fb9cf01) marked live-mount (f082a1d, CLI 0c08b07e8). Plans: remove-cross-session-messaging closed; chunk-store all boxes ticked (keep open until #86b5992c ticks); PLAN-backup-toc-exact-opt-in filed P3 (operator: opt-in, off by default); PLAN-e2e-browse-at-ci promoted.
+## Delegated
+- none running.
 
 ## Next action
-When the agents report: commit their work; run vm:check ALONE (never beside ci:quick or a fleet run); run ci:quick then the three slow gates (guard-mutations, security-audit, proxy-image-smoke); push renet, then console with TURBO_PUSH_REASON='red-fix: ...'; edit #601 body (gh pr view --json body -> fix Plan: line to _done path for remove-cross-session-messaging, add PLAN-e2e-browse-at-ci -> gh api PATCH -F body=@file -> sync_epic_block 601 1020-1); watch CI (ci-trace.py --wait); re-dispatch pins-soaked plain then fixture_fail=true for T11; check E1 and B7 legs. Prune agent/reviews/1007-1 after 2026-10-22T06:09Z.
+1. When the #601 CI watch reports: read failures with ci-trace --run <id> --why; fix reds (red-fix push needs ci:quick on a still tree; vm:check only if renet/account/CLI-remote paths change; three slow gates via run.ts --only).
+2. Tick E1, B8 (after budget_report --refresh), B7 from the run; commit plan ticks by path.
+3. Commit the re-rendered QUEUE.md; mark 6d1ae929.1 and b8fc0e7d.2 fixed with that sha.
+4. Then the finish condition (/pr-babysit -> /pr-merge per standing order 2026-10-14).
