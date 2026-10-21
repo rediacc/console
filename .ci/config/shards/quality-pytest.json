@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-21T05:10:43.870Z",
+  "generatedAt": "2026-10-21T06:21:17.942Z",
   "legs": [
     {
       "index": 1,
@@ -398,6 +398,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_untagged_commit_branch.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_budget.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_no_retry_cancel.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_plan_citations_reachable.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_twin_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_bench_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_blocker_implementations.py",

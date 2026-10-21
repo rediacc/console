@@ -592,44 +592,51 @@ def commit_exists(root, token) -> bool:
     return r.returncode == 0 and bool(r.stdout.strip())
 
 
-_REACHABLE_OBJECTS: dict[str, frozenset[str]] = {}
+_REACHABLE_OBJECTS: dict[tuple[str, str], frozenset[str] | None] = {}
 
 
 def _reachable_objects(root):
-    """Every object id reachable from HEAD and origin/main (when present), computed once per root.
+    """Every object id reachable from HEAD and origin/main (when present), or None when git could not list them.
 
-    `--missing=print` lists a promisor object CI's `blob:none` checkout has not fetched (prefixed `?`) instead of fetching it, so the set is the same locally and in CI.
+    `--missing=print` lists a promisor object CI's `blob:none` checkout has not fetched (prefixed `?`) instead of fetching it, so the set is the same locally and in CI. Keyed by root and HEAD, so an in-process caller that commits gets a fresh answer.
     """
-    key = str(root)
+    head = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    ).stdout.strip()
+    key = (str(root), head)
     if key not in _REACHABLE_OBJECTS:
         refs = ["HEAD", "origin/main"] if "origin/main" in reachability_refs(root) else ["HEAD"]
         r = subprocess.run(
-            ["git", "-C", key, "rev-list", "--objects", "--missing=print", *refs],
+            ["git", "-C", str(root), "rev-list", "--objects", "--missing=print", *refs],
             capture_output=True,
             text=True,
             check=False,
             env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
         )
-        _REACHABLE_OBJECTS[key] = frozenset(
-            line.split(" ", 1)[0].lstrip("?") for line in r.stdout.splitlines() if line
+        _REACHABLE_OBJECTS[key] = (
+            frozenset(line.split(" ", 1)[0].lstrip("?") for line in r.stdout.splitlines() if line)
+            if r.returncode == 0
+            else None
         )
     return _REACHABLE_OBJECTS[key]
 
 
 def content_object_is_reachable(root, token):
-    """A cited blob or tree that a fresh clone of HEAD (or origin/main) also holds.
+    """A cited blob or tree that a fresh clone of HEAD (or origin/main) also holds; True when git cannot list the objects, since presence was already proven and a listing failure must not refuse every citation.
 
-    Existence alone passed locally for an object only this clone had (a tree a tool wrote while hashing an uncommitted state), and CI then refused it as naming nothing (PR #601, PLAN-vm-check.md:137, 2026-10-21). Content addressing is why a cited blob survives a rebase-merge; it does not make an object that was never committed reachable.
+    Existence alone passed locally for an object only this clone had (a tree a tool wrote while hashing an uncommitted state), and CI then refused it as naming nothing (PR #601, PLAN-vm-check.md:137, 2026-10-21). The cited prefix is matched against the listed ids directly, never expanded with rev-parse first, because CI's blob:none checkout cannot expand the id of a blob it has not fetched.
     """
-    r = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", token + "^{object}"],
-        capture_output=True,
-        text=True,
-        check=False,
-        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
-    )
-    full = r.stdout.strip()
-    return r.returncode == 0 and full in _reachable_objects(root)
+    reachable = _reachable_objects(root)
+    if reachable is None:
+        return True
+    token = token.lower()
+    if len(token) == 40:
+        return token in reachable
+    return any(full.startswith(token) for full in reachable)
 
 
 def unresolved(root, kind, token):
