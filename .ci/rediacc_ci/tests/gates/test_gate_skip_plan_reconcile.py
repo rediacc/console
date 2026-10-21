@@ -42,6 +42,7 @@ HEALTHY_SUCCESS = [
     "Tests + Infra / E2E K8s Ceph",
     "Tests + Infra / E2E K8s Multinode",
     "Tests + Infra / E2E Migrate",
+    "Tests + Infra / E2E Backup Browse-At",
     "Tests + Infra / Concurrent Fork Isolation",
     "Tests + Infra / Renet",
     "Tests + Infra / License Enforcement",
@@ -682,7 +683,7 @@ def push_jobs() -> list[dict]:
 
 
 def test_pointer_bump_exempts_every_key(gate, tmp_path):
-    """THE case this whole extension exists for. All eighteen planned keys skip while nothing is wrong, so an unannotated plan reports eighteen failures on a healthy run."""
+    """THE case this whole extension exists for. All nineteen planned keys skip while nothing is wrong, so an unannotated plan reports nineteen failures on a healthy run."""
     world = make_world(gate, tmp_path)
     jobs = pointer_bump_jobs()
     pb_jobs = world.write_jobs("jobs-pointer-bump.json", jobs)
@@ -726,13 +727,13 @@ def test_pointer_bump_exempts_every_key(gate, tmp_path):
     gate.assert_contains(world.out, "unit (pointer_bump_only)", "naming the key and the condition")
     gate.assert_contains(
         world.out,
-        "0 of 18 planned keys verified",
+        "0 of 19 planned keys verified",
         "and the headline counts VERIFIED keys, not planned ones: this pass proves nothing",
     )
-    gate.log_pass("pointer_bump_only exempts all 18 keys; the same run reds without the annotation")
+    gate.log_pass("pointer_bump_only exempts all 19 keys; the same run reds without the annotation")
 
 
-def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
+def test_full_suite_exempts_eighteen_but_never_install_methods(gate, tmp_path):
     """The condition sets are NOT interchangeable. `validate-install` (ci.yml:1081-1083) hangs off `stage-artifacts`, which carries no full_suite clause (ci.yml:658), so the install matrix genuinely DOES run on push-to-main. Exempting it under full_suite would excuse a real skip for ever."""
     world = make_world(gate, tmp_path)
     push_plan = world.annotate(
@@ -744,8 +745,8 @@ def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
     push = world.write_jobs("jobs-push.json", jobs)
     gate.assert_eq(
         skipped_count(jobs),
-        32,
-        "the push fixture skips all 32 non-install jobs and leaves the four install legs",
+        33,
+        "the push fixture skips all 33 non-install jobs and leaves the four install legs",
     )
     gate.assert_eq(
         world.reconcile(push_plan, push),
@@ -776,7 +777,7 @@ def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
     gate.assert_not_contains(
         world.err,
         "planned-run-but-skipped: 'unit'",
-        "while the seventeen full_suite really gates stay excused",
+        "while the eighteen full_suite really gates stay excused",
     )
 
     # And pointer_bump_only DOES cover it, on the identical payload. Two conditions, two different key sets, same jobs: the table discriminates rather than handing out one blanket exemption.
@@ -791,7 +792,7 @@ def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
         "the same skipped install matrix is excused under pointer_bump_only",
     )
     gate.log_pass(
-        "full_suite exempts 17 keys and never install_methods; pointer_bump_only exempts all 18"
+        "full_suite exempts 18 keys and never install_methods; pointer_bump_only exempts all 19"
     )
 
 
@@ -955,7 +956,7 @@ def test_strict_mode_is_the_module_default(gate, tmp_path):
     )
     gate.assert_contains(strict, "this run is not proof that it ran", "in those words")
     gate.assert_contains(lenient, "true|", "while the gate, which opts in, passes the same input")
-    gate.assert_contains(lenient, "exempt=18", "having excused all eighteen keys")
+    gate.assert_contains(lenient, "exempt=19", "having excused all nineteen keys")
 
     # CONTROL: the flag is not a blanket mute. On the healthy fixture, where no condition is active, both modes agree and both pass.
     gate.assert_contains(
@@ -1099,8 +1100,8 @@ process.stdout.write(`pb=${n("pointer_bump_only")} fs=${n("full_suite")} bot=${n
     )
     gate.assert_eq(
         sizes,
-        "pb=18 fs=17 bot=1",
-        "pointer_bump_only cuts all 18, full_suite 17 (not install_methods), is_bot 1",
+        "pb=19 fs=18 bot=1",
+        "pointer_bump_only cuts all 19, full_suite 18 (not install_methods), is_bot 1",
     )
     gate.log_pass("the condition table cannot rot or widen silently")
 

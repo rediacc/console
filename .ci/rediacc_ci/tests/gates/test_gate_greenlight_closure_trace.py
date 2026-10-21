@@ -133,7 +133,7 @@ def test_derivation_is_not_vacuous(gate, tmp_path):
     out = trace(gate, table).combined
 
     keys = len([line for line in out.splitlines() if line.startswith("DERIVED ")])
-    gate.assert_eq(keys, 18, "every key in the table must have a defining site and be traced")
+    gate.assert_eq(keys, 19, "every key in the table must have a defining site and be traced")
 
     # Every key must derive MORE than the defining workflow file it gets for free, or the job block was not found and the scan ran over nothing. The floor is 2 rather than something rounder because update_flow honestly derives exactly 2.
     thin = [

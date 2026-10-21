@@ -251,6 +251,7 @@ jobs:
       run_e2e_k8s_ceph: ${{ steps.scope.outputs.run_e2e_k8s_ceph }}
       run_e2e_k8s_multinode: ${{ steps.scope.outputs.run_e2e_k8s_multinode }}
       run_e2e_migrate: ${{ steps.scope.outputs.run_e2e_migrate }}
+      run_e2e_backup_browse_at: ${{ steps.scope.outputs.run_e2e_backup_browse_at }}
       run_fork_isolation: ${{ steps.scope.outputs.run_fork_isolation }}
       run_renet: ${{ steps.scope.outputs.run_renet }}
       run_license_enforcement: ${{ steps.scope.outputs.run_license_enforcement }}
@@ -1203,6 +1204,7 @@ jobs:
       run_e2e_k8s_ceph: ${{ needs.initialize.outputs.run_e2e_k8s_ceph }}
       run_e2e_k8s_multinode: ${{ needs.initialize.outputs.run_e2e_k8s_multinode }}
       run_e2e_migrate: ${{ needs.initialize.outputs.run_e2e_migrate }}
+      run_e2e_backup_browse_at: ${{ needs.initialize.outputs.run_e2e_backup_browse_at }}
       run_fork_isolation: ${{ needs.initialize.outputs.run_fork_isolation }}
       run_renet: ${{ needs.initialize.outputs.run_renet }}
       run_license_enforcement: ${{ needs.initialize.outputs.run_license_enforcement }}

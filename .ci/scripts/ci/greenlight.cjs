@@ -166,6 +166,12 @@ const CLOSURES = {
     submodules: VM_E2E_SUBMODULES,
     paths: VM_E2E_PATHS,
   },
+  // ct-tests.yml `test-e2e-backup-browse-at`, suite 27 under playwright.backup-browse-at.config.ts. Its own lane so a scope decision about K8s Multinode cannot skip it. Over-inclusive on purpose: VM_E2E_PATHS already names .ci/rediacc_ci (start_backup_plane.py, start_account.py, account_lifecycle.py), packages/e2e-tests (the suite, the config, src/utils/backup) and the renet/cli build chain.
+  e2e_backup_browse_at: {
+    jobNames: ['E2E Backup Browse-At'],
+    submodules: VM_E2E_SUBMODULES,
+    paths: VM_E2E_PATHS,
+  },
   // ct-tests.yml:392. The leaf is matched exactly, so "E2E Ceph" cannot be satisfied by "E2E Ceph Workers" and vice versa.
   e2e_ceph: {
     jobNames: ['E2E Ceph'],
