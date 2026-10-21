@@ -78,6 +78,7 @@ blocker: BLOCKER: the gate runs without submodule checkouts by design (absent_su
 
 from __future__ import annotations
 
+import bisect
 import json
 import os
 import pathlib
@@ -592,24 +593,27 @@ def commit_exists(root, token) -> bool:
     return r.returncode == 0 and bool(r.stdout.strip())
 
 
-_REACHABLE_OBJECTS: dict[tuple[str, str], frozenset[str] | None] = {}
+_REACHABLE_OBJECTS: dict[tuple[str, ...], list[str] | None] = {}
 
 
-def _reachable_objects(root):
-    """Every object id reachable from HEAD and origin/main (when present), or None when git could not list them.
-
-    `--missing=print` lists a promisor object CI's `blob:none` checkout has not fetched (prefixed `?`) instead of fetching it, so the set is the same locally and in CI. Keyed by root and HEAD, so an in-process caller that commits gets a fresh answer.
-    """
-    head = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "HEAD"],
+def _rev(root, ref):
+    return subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", ref],
         capture_output=True,
         text=True,
         check=False,
         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
     ).stdout.strip()
-    key = (str(root), head)
+
+
+def _reachable_objects(root):
+    """Every object id reachable from HEAD and origin/main (when present), sorted, or None when git could not list them.
+
+    `--missing=print` lists a promisor object CI's `blob:none` checkout has not fetched (prefixed `?`) instead of fetching it, so the list is the same locally and in CI. Keyed by root and both tips, so a commit or a fetch in the same process gets a fresh answer.
+    """
+    refs = ["HEAD", "origin/main"] if "origin/main" in reachability_refs(root) else ["HEAD"]
+    key = (str(root), *(_rev(root, ref) for ref in refs))
     if key not in _REACHABLE_OBJECTS:
-        refs = ["HEAD", "origin/main"] if "origin/main" in reachability_refs(root) else ["HEAD"]
         r = subprocess.run(
             ["git", "-C", str(root), "rev-list", "--objects", "--missing=print", *refs],
             capture_output=True,
@@ -618,7 +622,7 @@ def _reachable_objects(root):
             env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
         )
         _REACHABLE_OBJECTS[key] = (
-            frozenset(line.split(" ", 1)[0].lstrip("?") for line in r.stdout.splitlines() if line)
+            sorted({line.split(" ", 1)[0].lstrip("?") for line in r.stdout.splitlines() if line})
             if r.returncode == 0
             else None
         )
@@ -626,17 +630,20 @@ def _reachable_objects(root):
 
 
 def content_object_is_reachable(root, token):
-    """A cited blob or tree that a fresh clone of HEAD (or origin/main) also holds; True when git cannot list the objects, since presence was already proven and a listing failure must not refuse every citation.
+    """Whether a cited blob or tree, whose presence the CALLER has already proven, is also held by a fresh clone of HEAD (or origin/main).
 
-    Existence alone passed locally for an object only this clone had (a tree a tool wrote while hashing an uncommitted state), and CI then refused it as naming nothing (PR #601, PLAN-vm-check.md:137, 2026-10-21). The cited prefix is matched against the listed ids directly, never expanded with rev-parse first, because CI's blob:none checkout cannot expand the id of a blob it has not fetched.
+    Existence alone passed locally for an object only this clone had (a tree a tool wrote while hashing an uncommitted state), and CI then refused it as naming nothing (PR #601, PLAN-vm-check.md:137, 2026-10-21). The prefix is matched against the listed ids directly, never expanded with rev-parse first, because CI's blob:none checkout cannot expand the id of a blob it has not fetched; it must match exactly one id, as rev-parse would demand. When git cannot list the objects at all the answer is True, deferring to the presence check the caller ran: a listing failure must not refuse every citation, and `unresolved` never asks before that check passes.
     """
     reachable = _reachable_objects(root)
     if reachable is None:
         return True
     token = token.lower()
-    if len(token) == 40:
-        return token in reachable
-    return any(full.startswith(token) for full in reachable)
+    at = bisect.bisect_left(reachable, token)
+    hits = 0
+    while at < len(reachable) and reachable[at].startswith(token) and hits < 2:
+        hits += 1
+        at += 1
+    return hits == 1
 
 
 def unresolved(root, kind, token):
