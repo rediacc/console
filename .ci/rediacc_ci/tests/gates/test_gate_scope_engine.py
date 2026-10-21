@@ -839,7 +839,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         "packages/cli/src/commands/repo.ts",
     )
 
-    # -- the rows that must force full -------------------------------------- Asserted STRUCTURALLY rather than as a literal nineteen-name list: naming all eighteen in three more rows would make a legitimate key addition an eighteen-line diff in a file that is not about the key list.
+    # -- the rows that must force full -------------------------------------- Asserted STRUCTURALLY rather than as a literal nineteen-name list: naming all nineteen in three more rows would make a legitimate key addition a nineteen-line diff in a file that is not about the key list.
     for path, reason in (
         (".github/workflows/ci.yml", "workflow-closure:.github/workflows/ci.yml"),
         (".ci-trigger", "root-manifest:.ci-trigger"),
