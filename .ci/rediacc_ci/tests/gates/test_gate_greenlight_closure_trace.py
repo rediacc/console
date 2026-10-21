@@ -161,7 +161,7 @@ def test_derivation_is_not_vacuous(gate, tmp_path):
         "the whole trace must derive a substantial set (%d paths)" % total,
     )
     gate.log_pass(
-        "the derivation produces a real requirement set for all 18 keys (%d paths)" % total
+        "the derivation produces a real requirement set for all 19 keys (%d paths)" % total
     )
 
 

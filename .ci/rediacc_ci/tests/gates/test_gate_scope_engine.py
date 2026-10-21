@@ -696,7 +696,7 @@ process.stdout.write("ok");
 # --- the classification regression table (2026-08-05) -----------------------
 #
 # WHAT IT GUARDS, and why nothing above already does. Every case above tests the engine's DECISION MACHINERY. None of them pins the ANSWER for a representative delta, which is the half the operator actually experienced: "run 30983418337 ran the whole matrix for a commit that is documentation". Add a surface to JOB_SURFACES, mistype a glob, or drop a module mapping, and every case
-# above stays green while docs-only silently goes back to running eighteen jobs.
+# above stays green while docs-only silently goes back to running nineteen jobs.
 #
 # SETS, NEVER COUNTS, wherever the expectation is a partial run. A count of 14 passes just as happily when the map swaps two keys for two others.
 
@@ -721,7 +721,7 @@ def classify_verdict(engine: pathlib.Path, *file_paths: str) -> str:
     """`<mode>|<total keys>|<sorted running keys>`, or a SENTINEL that can never equal an expectation.
 
     The sentinel is the whole point. A classification that produced nothing must not read as "no keys to run": here that is the vacuity shape, and it fails toward skipping everything. So a dead engine, unparseable bytes and a plan with no job vector each answer with a distinct string rather than an empty key list, and the `total` field means a zero-key row still has to prove it saw
-    all eighteen keys before finding none of them running.
+    all nineteen keys before finding none of them running.
 
     The reducing half stays in JS, run over the engine's raw stdout, so the port and the twin read the plan through the identical expression.
     """
@@ -839,7 +839,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         "packages/cli/src/commands/repo.ts",
     )
 
-    # -- the rows that must force full -------------------------------------- Asserted STRUCTURALLY rather than as a literal eighteen-name list: naming all eighteen in three more rows would make a legitimate key addition an eighteen-line diff in a file that is not about the key list.
+    # -- the rows that must force full -------------------------------------- Asserted STRUCTURALLY rather than as a literal nineteen-name list: naming all eighteen in three more rows would make a legitimate key addition an eighteen-line diff in a file that is not about the key list.
     for path, reason in (
         (".github/workflows/ci.yml", "workflow-closure:.github/workflows/ci.yml"),
         (".ci-trigger", "root-manifest:.ci-trigger"),
