@@ -5,9 +5,9 @@ import { promisify } from 'node:util';
 import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { VM_RENET_INSTALL_PATH } from '../../constants';
 import { getOpsManager, OpsManager } from '../bridge/OpsManager';
+import { log } from '../log';
 import { getRenetResolver, RenetResolver } from '../RenetResolver';
 import { getSSHExecutor, SSHExecutor } from '../ssh';
-import { log } from '../log';
 
 const execAsync = promisify(exec);
 
@@ -24,6 +24,24 @@ function getFileMD5(filePath: string): string {
  * bridgesvc.InstallRenet (the bridge and every Ceph node) moves the binary to RENET_BINARY_PATH when that is set, and to /usr/lib/rediacc/renet/current/renet otherwise, then points /usr/bin/renet at it.
  * The target path therefore differs between CI and a local run, and only the resolved symlink is stable.
  */
+interface RemoteMD5Read {
+  md5: string | null;
+  transportFailure: boolean;
+  code: number;
+  stderr: string;
+}
+
+const VERIFY_TRANSPORT_ATTEMPTS = 4;
+const VERIFY_WAIT_MS = 45000;
+const VERIFY_WAIT_INTERVAL_MS = 3000;
+const SSH_TRANSPORT_FAILURE_PATTERN =
+  /connection (refused|timed out|reset|closed)|no route to host|could not resolve|broken pipe|kex_exchange_identification/i;
+
+/** ssh itself failed (exit 255 or a connect error), as opposed to the remote command failing. */
+function isSSHTransportFailure(code: number, stderr: string): boolean {
+  return code === 255 || SSH_TRANSPORT_FAILURE_PATTERN.test(stderr);
+}
+
 const OPS_UP_RENET_PATH = '"$(readlink -f /usr/bin/renet)"';
 const OPS_UP_RENET_MD5_COMMAND = `md5sum ${OPS_UP_RENET_PATH} 2>/dev/null | cut -d" " -f1`;
 
@@ -298,17 +316,55 @@ export class InfrastructureManager {
   }
 
   /**
-   * Get MD5 hash of renet binary on a remote VM.
+   * Read the MD5 of the renet binary on a remote VM. A transport failure (sshd refusing,
+   * timeout, ssh exit 255) is reported apart from a missing binary, so a refusal is never read as "no binary".
    */
-  private async getRemoteRenetMD5(ip: string): Promise<string | null> {
+  private async readRemoteRenetMD5(ip: string): Promise<RemoteMD5Read> {
     const result = await this.opsManager.executeOnVM(
       ip,
       `md5sum ${VM_RENET_INSTALL_PATH} 2>/dev/null | cut -d" " -f1`
     );
-    if (result.code === 0 && result.stdout.trim().length === 32) {
-      return result.stdout.trim();
+    const md5 = result.stdout.trim();
+    if (result.code === 0 && md5.length === 32) {
+      return { md5, transportFailure: false, code: result.code, stderr: result.stderr };
     }
-    return null;
+    return {
+      md5: null,
+      transportFailure: isSSHTransportFailure(result.code, result.stderr),
+      code: result.code,
+      stderr: result.stderr,
+    };
+  }
+
+  /**
+   * Get MD5 hash of renet binary on a remote VM, or null when it cannot be read.
+   */
+  private async getRemoteRenetMD5(ip: string): Promise<string | null> {
+    return (await this.readRemoteRenetMD5(ip)).md5;
+  }
+
+  /**
+   * Post-deploy check: the remote hash must equal the local one. Retries only a transport
+   * failure (after waiting for the host); a real mismatch fails at once.
+   */
+  private async verifyRemoteRenetMD5(ip: string, localMD5: string): Promise<void> {
+    let read = await this.readRemoteRenetMD5(ip);
+    for (let attempt = 1; read.transportFailure && attempt < VERIFY_TRANSPORT_ATTEMPTS; attempt++) {
+      log(
+        `renet MD5 check on ${ip} hit a transport failure (exit ${read.code}), waiting for SSH (attempt ${attempt}/${VERIFY_TRANSPORT_ATTEMPTS})`
+      );
+      await this.sshExecutor.waitForHost(ip, VERIFY_WAIT_MS, VERIFY_WAIT_INTERVAL_MS);
+      read = await this.readRemoteRenetMD5(ip);
+    }
+    if (read.md5 === localMD5) return;
+    if (read.transportFailure) {
+      throw new Error(
+        `MD5 check after deploy could not reach ${ip} (SSH transport failure, exit ${read.code}): ${read.stderr.trim()}`
+      );
+    }
+    throw new Error(
+      `MD5 mismatch after deploy: local=${localMD5}, remote=${read.md5} (exit ${read.code}, stderr: ${read.stderr.trim()})`
+    );
   }
 
   /**
@@ -348,11 +404,18 @@ export class InfrastructureManager {
       const currentDir = `${installRoot}/current`;
       // install(1) copies the ~100MB binary; on an IO-starved CI runner right
       // after a VM reset that can exceed 10s, so give it real headroom.
-      const moveResult = await this.sshExecutor.execute(
-        ip,
-        `sudo mkdir -p ${installDir} ${currentDir} && sudo install -m 755 /var/tmp/renet ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
-        { execTimeout: 60000 }
-      );
+      const runMove = () =>
+        this.sshExecutor.execute(
+          ip,
+          `sudo mkdir -p ${installDir} ${currentDir} && sudo install -m 755 /var/tmp/renet ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
+          { execTimeout: 60000 }
+        );
+      let moveResult = await runMove();
+      // The install is idempotent, so a transport refusal right after provisioning is retried once the host answers.
+      if (!moveResult.success && isSSHTransportFailure(moveResult.code, moveResult.stderr)) {
+        await this.sshExecutor.waitForHost(ip, VERIFY_WAIT_MS, VERIFY_WAIT_INTERVAL_MS);
+        moveResult = await runMove();
+      }
 
       if (!moveResult.success) {
         throw new Error(`Move/chmod failed: ${moveResult.stderr}`);
@@ -372,10 +435,7 @@ export class InfrastructureManager {
       }
 
       // Verify the deployment by checking MD5
-      const newRemoteMD5 = await this.getRemoteRenetMD5(ip);
-      if (newRemoteMD5 !== localMD5) {
-        throw new Error(`MD5 mismatch after deploy: local=${localMD5}, remote=${newRemoteMD5}`);
-      }
+      await this.verifyRemoteRenetMD5(ip, localMD5);
 
       return true;
     } catch (error: unknown) {
