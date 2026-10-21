@@ -1458,7 +1458,7 @@ def test_stripe_listen_takes_its_key_from_the_environment(monkeypatch, tmp_path)
 
 
 def _recording_run(calls: list[tuple[list[str], object, dict | None]]):
-    """A `subprocess.run` that records argv, stdin and environment, and answers the few programs `dev_credentials` and `_start_rustfs` read."""
+    """A `subprocess.run` that records argv, stdin and environment, and answers the few programs `dev_credentials` and `start_rustfs` read."""
 
     def run(argv, **kwargs):
         calls.append((list(argv), kwargs.get("input"), kwargs.get("env")))
@@ -1502,7 +1502,7 @@ def test_delta_3a8d1f46_the_rustfs_keys_reach_docker_through_its_environment(
     monkeypatch.setattr(account_lifecycle, "_docker_usable", lambda: True)
     monkeypatch.setattr(account_lifecycle.account, "rustfs_alive", lambda _port: True)
     monkeypatch.setattr(account_lifecycle.subprocess, "run", _recording_run(calls))
-    account_lifecycle._start_rustfs()
+    account_lifecycle.start_rustfs()
     capsys.readouterr()
     ((argv, _body, env),) = [c for c in calls if c[0][:2] == ["docker", "run"]]
     assert "rustfs-secret" not in " ".join(argv), argv
