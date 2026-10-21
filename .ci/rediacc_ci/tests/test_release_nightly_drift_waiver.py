@@ -316,6 +316,24 @@ def test_a_stray_failure_inside_shard_receipts_is_refused() -> None:
     accepted, reason = nightly_failures_are_drift_only(jobs)
     assert not accepted
     assert "Download shard receipts" in reason
+    assert "is not a drift gate" in reason
+
+
+def test_a_drift_step_inside_shard_receipts_is_waived_like_any_drift_step() -> None:
+    """A stray step is judged against the drift set, not refused outright: a drift gate failing inside the derived job is drift there too."""
+    drift_name = min(nightly_tested_edge.drift_steps())
+    jobs = [
+        *green_jobs(),
+        job("Quality / Code (1)", "failure", [step("Pin upstream freshness", "failure")]),
+        job(
+            "Quality / Shard receipts",
+            "failure",
+            [step(drift_name, "failure"), step("Quality shard receipts", "failure")],
+        ),
+    ]
+    accepted, reason = nightly_failures_are_drift_only(jobs)
+    assert accepted, reason
+    assert f"Quality / Shard receipts / {drift_name}" in reason
 
 
 def test_an_unreadable_lock_refuses(
