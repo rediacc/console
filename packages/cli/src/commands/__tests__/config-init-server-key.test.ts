@@ -107,7 +107,7 @@ describe('buildInitAccountUpdate', () => {
 
 describe('mergeInitUpdates keeps a key only with the server it came from', () => {
   const existing = {
-    schemaVersion: 3,
+    schemaVersion: 3 as const,
     id: '00000000-0000-0000-0000-000000000001',
     version: 1,
     encryption: { mode: 'plaintext' as const },

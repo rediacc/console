@@ -127,7 +127,7 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
     # An empty key list yields "", and the seeder below then leaves e2ePublicKey alone.
     dev_e2e_key=$(node -e 'let k="";try{k=JSON.parse(process.argv[1])?.e2e?.keys?.[0]?.publicKeySpki??""}catch{}process.stdout.write(String(k))' "$server_info")
 
-    # Seed/patch the "dev" config (`rdc config set` cannot reach account fields). It writes the CLI's file by the CLI's rules: the config dir of packages/shared/src/paths/dirs.ts, 'wx' creation, the CLI's proper-lockfile lock (the `<file>.lock` directory), temp+rename, no write when the fields already match, and a file it cannot parse is an error, never replaced.
+    # Seed/patch the "dev" config (`rdc config set` cannot reach account fields). It writes the CLI's file by the CLI's rules: the config dir of packages/shared/src/paths/dirs.ts, 'wx' creation, the CLI's proper-lockfile lock (the `<file>.lock` directory), temp+rename, no write when the fields already match, and a file it cannot parse is an error, never replaced. A key belongs to the server it came from: a moved gateway that advertised none keeps no key of the old one.
     node -e '
       const fs = require("fs"), path = require("path"), { randomUUID } = require("crypto"), env = process.env, home = require("os").homedir();
       const [server, key] = process.argv.slice(1), win = process.platform === "win32", mac = process.platform === "darwin";
@@ -145,7 +145,6 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
       try {
         const c = JSON.parse(fs.readFileSync(p, "utf8"));
         const account = { ...(c.account ?? {}), accountServer: server, ...(key ? { e2ePublicKey: key } : {}) };
-        // A key belongs to the server it came from: a moved gateway that advertised none keeps no key of the old one.
         const bare = (url) => String(url ?? "").replace(/\/+$/, "");
         if (!key && bare(c.account?.accountServer) !== bare(server)) delete account.e2ePublicKey;
         if (JSON.stringify(account) !== JSON.stringify(c.account ?? {})) {
@@ -158,8 +157,7 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
       }
     ' "$dev_server" "$dev_e2e_key"
 
-    # The only export the dev path adds: select the "dev" config. Everything
-    # else (server URL, E2E key) now lives inside that config file.
+    # The only export the dev path adds: select the "dev" config (server URL and E2E key live inside it).
     export REDIACC_CONFIG=dev
 
     if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" != "1" ]]; then
