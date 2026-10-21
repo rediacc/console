@@ -8,6 +8,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   getConfiguredServerUrl,
+  getNamedTokenServerUrl,
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
   getSubscriptionTokenFile,
@@ -111,6 +112,35 @@ describe('subscription-auth', () => {
       expect(getConfiguredServerUrl()).toBe('https://config.example.com');
       process.env.REDIACC_ACCOUNT_SERVER = 'https://env.example.com';
       expect(getConfiguredServerUrl()).toBe('https://env.example.com');
+    });
+  });
+
+  describe('getNamedTokenServerUrl()', () => {
+    beforeEach(() => {
+      delete process.env.REDIACC_ACCOUNT_SERVER;
+      delete process.env.REDIACC_CONFIG;
+      delete process.env.REDIACC_TOKEN;
+    });
+
+    it('names no server for an env token on a config that names none, never the production default', () => {
+      process.env.REDIACC_TOKEN = 'rdt_env';
+      expect(getSubscriptionTokenState()).toMatchObject({
+        kind: 'ready',
+        serverUrl: DEFAULT_SERVER,
+      });
+      expect(getNamedTokenServerUrl()).toBeUndefined();
+    });
+
+    it('names the configured server for an env token', () => {
+      process.env.REDIACC_TOKEN = 'rdt_env';
+      writeConfig('rediacc', { accountServer: 'https://config.example.com/' });
+      expect(getNamedTokenServerUrl()).toBe('https://config.example.com');
+    });
+
+    it('names the issuing server for a stored token, and nothing without a token', () => {
+      expect(getNamedTokenServerUrl()).toBeUndefined();
+      saveStoredSubscriptionToken({ token: 'rdt_x', serverUrl: 'https://token.example.com' });
+      expect(getNamedTokenServerUrl()).toBe('https://token.example.com');
     });
   });
 

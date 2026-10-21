@@ -296,7 +296,7 @@ export function createCli(): Command {
       commandContext.delete(commandName);
 
       // Flush audit events (fire-and-forget, timeout-bounded)
-      await auditService.flush();
+      await auditService.flush(serverOptionOf(actionCommand));
     });
 
   // Register all command groups
