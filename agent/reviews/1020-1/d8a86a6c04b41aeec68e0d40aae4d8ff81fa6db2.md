@@ -21,4 +21,4 @@ Body-Sig: ef1475b85288a547
 ### d8a86a6c.1 [medium] packages/e2e-tests/src/utils/backup/chunkCliHarness.ts:23
 Anchor: in-diff
 Claim: The new comment says "Suite 23 still carries its own hand-built path", but this same commit switches suite 23 to getSSHPrivateKeyPath(), so the comment is false for every checkout of this commit and will mislead the next reader about where the key path comes from.
-Resolution: open
+Resolution: fixed 06d0b59ae6a99c4637b66c39e8e5ad15c69ee536 | d778be9d 2026-10-21T22:03:25Z
