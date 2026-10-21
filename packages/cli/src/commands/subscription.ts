@@ -119,9 +119,7 @@ export async function resolveAndSyncServer(options: { server?: string }): Promis
   // Pin the resolved server into the active config for per-config isolation.
   await patchActiveAccount({ accountServer: serverUrl });
 
-  // Auto-sync update channel and e2e key from server-info into the active config. Only the fetch is
-  // non-fatal: a server-info that cannot be read leaves the existing config, but one that was read
-  // and then could not be persisted is an error, never a silent fall back to the production key.
+  // Auto-sync update channel and e2e key from server-info into the active config. Only the fetch is non-fatal: a server-info that cannot be read leaves the existing config, but one that was read and then could not be persisted is an error, never a silent fall back to the production key.
   let info: Awaited<ReturnType<typeof fetchServerInfo>> | undefined;
   try {
     info = await fetchServerInfo(serverUrl);

@@ -366,7 +366,7 @@ def _read_file(name, cwd):
         return ""
 
 
-# The PR body's generated regions: worklist.py --publish renders the epic block from the worklist, which quotes operator rulings verbatim ("I see ..."), and the pushed-head block is machine text. A whole-body PATCH must carry them (another guard refuses one that drops them), so linting them as prose made every body edit unpassable (2026-10-21, PR #601).
+# The PR body's generated regions: worklist.py --publish renders the epic block from the worklist, which quotes operator rulings verbatim, first person included, and the pushed-head block is machine text. A whole-body PATCH must carry them (another guard refuses one that drops them), so linting them as prose made every body edit unpassable (2026-10-21, PR #601).
 GENERATED_BLOCKS = (
     ("<!-- worklist-epics:begin -->", "<!-- worklist-epics:end -->"),
     ("<!-- pushed-head:begin -->", "<!-- pushed-head:end -->"),
