@@ -144,7 +144,7 @@ const RULES = [
   // Quality-gate sources and lint machinery.
   //
   // THE OLD COMMENT HERE GAVE THE WRONG REASON, and a conservative rule defended by a wrong reason is one that gets removed for bad reasons later. It said quality lanes "must stay immune to scoping by construction" and concluded `full`. Gate immunity is real but the engine already guarantees it independently: ci-quality.yml contains ZERO `run_` references, so no quality lane is
-  // among the 18 keys the engine can switch off. A scripts/ rule cannot scope out a gate because gates are not scopeable at all.
+  // among the 19 keys the engine can switch off. A scripts/ rule cannot scope out a gate because gates are not scopeable at all.
   //
   // The load-bearing half was the second clause -- "these also feed hooks and dev flows whose surface is unmapped" -- so the surface was mapped (2026-08-06, tracing execution rather than reading names). The subsets a gated job reaches are carved out below, and the rest becomes a zero-job module.
   //

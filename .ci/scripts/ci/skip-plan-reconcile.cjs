@@ -12,7 +12,7 @@
 // exact failure it exists to catch (a skip nobody attested) read as green.
 //
 // PRE-EXISTING SKIPS ARE NOT SCOPE DECISIONS, and conflating them is what would have made this gate unshippable. Long before the scope engine existed, ci.yml skipped whole columns for reasons of its own: `full_suite` is false on every push-to-main, `pointer_bump_only` cuts the entire expensive pipeline on a submodule-pointer PR, and `is_bot` cuts the staging chain. A plan that
-// says only "scope wants unit to run" is therefore an incomplete prediction: on a pointer-bump PR every one of the 18 keys is planned `run: true` and every one of them skips, so a live gate would report eighteen `planned-run-but-skipped` failures on a run where nothing whatsoever went wrong. The plan now carries the observed condition values (`plan.conditions`) and the reconciler
+// says only "scope wants unit to run" is therefore an incomplete prediction: on a pointer-bump PR every one of the 19 keys is planned `run: true` and every one of them skips, so a live gate would report eighteen `planned-run-but-skipped` failures on a run where nothing whatsoever went wrong. The plan now carries the observed condition values (`plan.conditions`) and the reconciler
 // derives the exemption itself, per PREEXISTING_CONDITIONS below.
 //
 // Usage: skip-plan-reconcile.cjs --plan <plan.json> --jobs <jobs.json> --run-id <id> plan.json: the attested skip-plan artifact (run_id, mode, conditions,
@@ -80,17 +80,17 @@ const FLAT_JOB_KEYS = new Set(['package_tests']);
 // `activeWhen` is the value of the condition that CAUSES the skip, so `full_suite: false` skips and `pointer_bump_only: true` skips. Comparison is strict against a real boolean: a condition the plan does not carry, or carries as a string or null, is NOT active, so a plan that fails to record a condition gets NO exemption and the reconciler stays at its strict default. Missing
 // information must never widen an exemption.
 //
-// Every entry is derived from the tree, with the gate that performs the skip named. Ten of the eighteen keys are cut TRANSITIVELY, by a caller or a build job going `skipped`, which is why this cannot be read off the leaf's own `if:` (the thirteen ct-tests leaves mention only `full_suite`, and never `pointer_bump_only`, yet all thirteen skip on a pointer bump).
+// Every entry is derived from the tree, with the gate that performs the skip named. Most of the nineteen keys are cut TRANSITIVELY, by a caller or a build job going `skipped`, which is why this cannot be read off the leaf's own `if:` (the fourteen ct-tests leaves mention only `full_suite`, and never `pointer_bump_only`, yet all fourteen skip on a pointer bump).
 //
 //   full_suite   ci.yml:118, `github.event_name != 'push'`. FALSE only on
 // push-to-main.
-//     - the 13 ct-tests leaves: each carries its own `inputs.full_suite ==
-// 'true'` clause. Cited by CLAUSE rather than by line number on purpose: the thirteen line numbers that used to sit here went stale the moment ct-tests.yml gained the run_* inputs, and a stale citation is worse than none because it sends the next reader to the wrong job. Find them
+//     - the 14 ct-tests leaves: each carries its own `inputs.full_suite ==
+// 'true'` clause. Cited by CLAUSE rather than by line number on purpose: the line numbers that used to sit here went stale the moment ct-tests.yml gained the run_* inputs, and a stale citation is worse than none because it sends the next reader to the wrong job. Find them
 //       with `grep -n "full_suite" .github/workflows/ct-tests.yml`.
 // - ops ci.yml:717 elite_run ci.yml:739 - update_flow ci.yml:568 package_tests ci.yml:584 - install_methods is DELIBERATELY ABSENT: `validate-install` (ci.yml:1081-1083) is gated only on `stage-artifacts`, which has no full_suite clause (ci.yml:658), so the install matrix DOES run on push-to-main. Adding it here would exempt a genuine skip.
 //
-// pointer_bump_only ci.yml:123 <- rediacc_ci.ci.initialize and rediacc_ci.ci.detect_pointer_bump. TRUE only on a pull_request whose every commit moves nothing but tree-identical gitlinks. Cuts ALL EIGHTEEN keys: - build-renet skips (ci.yml:493) and everything below it inherits:
-//       build-docker-fast (ci.yml:532) -> tests (ci.yml:687) -> the 13 leaves;
+// pointer_bump_only ci.yml:123 <- rediacc_ci.ci.initialize and rediacc_ci.ci.detect_pointer_bump. TRUE only on a pull_request whose every commit moves nothing but tree-identical gitlinks. Cuts ALL NINETEEN keys: - build-renet skips (ci.yml:493) and everything below it inherits:
+//       build-docker-fast (ci.yml:532) -> tests (ci.yml:687) -> the 14 leaves;
 //       build-cli (ci.yml:553) -> update_flow (ci.yml:568);
 // build-docker (ci.yml:512) -> stage-artifacts (ci.yml:658) ->
 //       install_methods (ci.yml:1083); build-docker-fast -> elite_run
@@ -237,7 +237,7 @@ function parseJobsPayload(payload) {
 // honorPreexisting DEFAULTS TO FALSE, and the default is the interesting half, because the two consumers of this function want OPPOSITE things:
 //
 // - THE GATE (the CLI, via rediacc_ci.ci.scope_reconcile_shadow) must not red a run for a skip the workflow performs on every run of that shape. It passes true. - THE BASELINE READER (scope-engine.cjs's attestPlan, which calls this module's reconcile() over a plan downloaded from an EARLIER run) must not accept such a run as proof. A baseline is "the last run where everything
-//     passed"; a pointer-bump run where all eighteen keys skipped passed
+//     passed"; a pointer-bump run where all nineteen keys skipped passed
 // nothing, and treating it as a baseline would let the delta since then go unvalidated. It passes nothing, so it gets the strict reading and refuses the candidate with `reconcile:planned-run-but-skipped` exactly as before.
 //
 // So the exemption is opt-in, and the caller that never heard of it keeps the stricter behaviour. Adding it as an opt-OUT would have silently widened what counts as a usable baseline. ---------------------------------------------------------------------------

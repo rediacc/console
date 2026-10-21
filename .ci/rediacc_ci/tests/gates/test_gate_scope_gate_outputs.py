@@ -224,7 +224,7 @@ class Fixture:
         return self._run([self.node, "-e", script, *args]).out
 
     def _write_gh_responses(self) -> None:
-        # The baseline plan C1's run attested. Built THROUGH the real buildPlan so its 18 keys cannot drift from scope-map's; a hand-written key list here would silently stop being a full plan the day a surface is added, and the test would then pass for the wrong reason.
+        # The baseline plan C1's run attested. Built THROUGH the real buildPlan so its 19 keys cannot drift from scope-map's; a hand-written key list here would silently stop being a full plan the day a surface is added, and the test would then pass for the wrong reason.
         self.baseline_plan = self.work / "baseline-plan.json"
         self._node_eval(
             """
@@ -307,7 +307,7 @@ exit 1
         shim.chmod(shim.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def _expected_false(self) -> str:
-        """The seventeen keys a correct reduced plan must mark false, derived from the real surface table rather than listed by hand.
+        """The eighteen keys a correct reduced plan must mark false, derived from the real surface table rather than listed by hand.
 
         Sorted AFTER the `run_<k>=false` suffix is applied, so this side and the
         Python sort in the case below are byte-order sorts over the SAME strings rather than two sorts that merely agree today. Sorting the bare keys first
@@ -476,7 +476,7 @@ def test_emitted_names_match_the_workflow_contract(gate, fixture):
     gate.assert_eq(
         len([k for k in WORKFLOW_CONTRACT_KEYS if k]),
         19,
-        "the contract list must hold all 18 keys, or the comparison above is vacuous",
+        "the contract list must hold all 19 keys, or the comparison above is vacuous",
     )
     gate.log_pass("the 19 emitted output names match ci.yml's declared outputs byte for byte")
 
