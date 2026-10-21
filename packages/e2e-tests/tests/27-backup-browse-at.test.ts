@@ -131,6 +131,25 @@ function restoreListing(
   }
 }
 
+/**
+ * The tamper test's cleanup: temp copies go on every path, the failed restore included. A restore failure is
+ * always logged with the object key; it fails the test only when no primary failure is already being reported.
+ */
+function finishTamper(o: {
+  dir: string;
+  original: string;
+  restored: boolean;
+  primary: unknown;
+  curl: (args: string[]) => unknown;
+  objectKey: string;
+}): void {
+  const restoreError = o.restored ? undefined : restoreListing(o.original, o.curl, o.objectKey);
+  rmSync(o.dir, { recursive: true, force: true });
+  if (!restoreError) return;
+  console.error(restoreError.message);
+  if (o.primary === undefined) throw restoreError;
+}
+
 // --------------------------------------------------------------------------- BROWSE-AT tier — a stored snapshot lists without being restored ---------------------------------------------------------------------------
 
 test.describe
@@ -207,10 +226,8 @@ test.describe
             `--repo "${repo.guid}" --lineage "${repo.guid}" --at '${snapshotId}' --password-stdin`
         );
         expect(out.code, `browse-at verb: ${w1.getCombinedOutput(out).slice(-800)}`).toBe(0);
-        const parsed = JSON.parse(out.stdout.trim().split('\n').pop() ?? '{}') as {
-          listingSource?: string;
-        };
-        return parsed.listingSource;
+        const record = parseEnvelope(out.stdout.trim().split('\n').pop() ?? '', out.stderr);
+        return (record as { listingSource?: string }).listingSource;
       };
 
       /** Lowercase, drop ANSI colour codes and collapse whitespace: the CLI colours each wrapped line of the note and wraps it at the terminal width. */
@@ -260,7 +277,7 @@ test.describe
           bareSnapshotId
         );
         // Non-TTY output is the JSON envelope even for a failure (`success:false, data:null`), so stdout is not empty; what must be empty is the DATA.
-        const refused = parseEnvelope(browse.stdout);
+        const refused = parseEnvelope(browse.stdout, browse.stderr);
         expect(refused.success, 'a snapshot with no listing reported success').toBe(false);
         expect(refused.data ?? null, 'a snapshot with no listing printed rows').toBeNull();
       });
@@ -446,6 +463,7 @@ test.describe
         const original = path.join(dir, 'original');
         const tampered = path.join(dir, 'tampered');
         let restored = false;
+        let primary: unknown;
         try {
           const body = curl([]);
           expect(
@@ -488,17 +506,18 @@ test.describe
             `restored listing: ${bothChannels(good.result).slice(-800)}`
           ).toBe(0);
           expect(comparable(good.json?.data)).toContain(`file /browse-at-${stamp}.txt`);
+        } catch (err) {
+          primary = err;
+          throw err;
         } finally {
-          const restoreError = restored
-            ? undefined
-            : restoreListing(
-                original,
-                curl,
-                `t/${subscriptionId}/l/${repo.guid}/i/${listedSnapshotId}`
-              );
-          // The temp copies go on every path, the failed restore included.
-          rmSync(dir, { recursive: true, force: true });
-          if (restoreError) throw restoreError;
+          finishTamper({
+            dir,
+            original,
+            restored,
+            primary,
+            curl,
+            objectKey: `t/${subscriptionId}/l/${repo.guid}/i/${listedSnapshotId}`,
+          });
         }
       });
 
@@ -515,20 +534,22 @@ test.describe
         await new Promise<void>((resolve) => sink.listen(0, '127.0.0.1', resolve));
         const address = sink.address();
         const sinkUrl = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
-        const sinkCli = CliRunner.create({
-          configName: CFG,
-          licensing: true,
-          env: { REDIACC_ACCOUNT_SERVER: sinkUrl },
-        });
-        // The stored token's serverUrl outranks REDIACC_ACCOUNT_SERVER for every account fetch (account-client.ts resolveServerUrl), so the env alone never redirects a logged-in config. The redirect is the stored token file, restored in finally.
-        const tokenFile = path.join(path.dirname(cli.configPath), `api-token-${CFG}.json`);
-        const tokenOriginal = readFileSync(tokenFile, 'utf8');
-        writeFileSync(
-          tokenFile,
-          JSON.stringify({ ...JSON.parse(tokenOriginal), serverUrl: sinkUrl }),
-          { mode: 0o600 }
-        );
+        let tokenFile = '';
+        let tokenOriginal: string | undefined;
         try {
+          const sinkCli = CliRunner.create({
+            configName: CFG,
+            licensing: true,
+            env: { REDIACC_ACCOUNT_SERVER: sinkUrl },
+          });
+          // The stored token's serverUrl outranks REDIACC_ACCOUNT_SERVER for every account fetch (account-client.ts resolveServerUrl), so the env alone never redirects a logged-in config. The redirect is the stored token file, restored in finally.
+          tokenFile = path.join(path.dirname(cli.configPath), `api-token-${CFG}.json`);
+          tokenOriginal = readFileSync(tokenFile, 'utf8');
+          writeFileSync(
+            tokenFile,
+            JSON.stringify({ ...JSON.parse(tokenOriginal), serverUrl: sinkUrl }),
+            { mode: 0o600 }
+          );
           const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
           expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
           const local = await sinkCli.runJson<CliEnvelope<unknown>>([
@@ -563,7 +584,7 @@ test.describe
             `control: --at made no call beyond the local browse's ${startupHits} (seen: ${seen.join(', ')}; --at rc=${remote.code}: ${bothChannels(remote).slice(-500)})`
           ).toBeGreaterThan(startupHits);
         } finally {
-          writeFileSync(tokenFile, tokenOriginal, { mode: 0o600 });
+          if (tokenOriginal !== undefined) writeFileSync(tokenFile, tokenOriginal, { mode: 0o600 });
           await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
           await new Promise<void>((resolve) => sink.close(() => resolve()));
         }

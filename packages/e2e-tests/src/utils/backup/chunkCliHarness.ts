@@ -116,11 +116,13 @@ export const localHelp = localRenetHelp();
 export const engineVerbPresent = verbIsRegistered(localHelp, chunkVerbs().run);
 
 /** Parse a JSON envelope, failing with an assertion that names the raw output rather than a bare SyntaxError. */
-export const parseEnvelope = (raw: string): Partial<CliEnvelope<unknown>> => {
+export const parseEnvelope = (raw: string, stderr = ''): Partial<CliEnvelope<unknown>> => {
   try {
     return JSON.parse(raw.trim() || '{}') as Partial<CliEnvelope<unknown>>;
   } catch {
-    throw new Error(`stdout is not a JSON envelope: ${raw.slice(0, 800)}`);
+    throw new Error(
+      `stdout is not a JSON envelope: ${raw.slice(0, 800)}\nstderr: ${stderr.slice(0, 800)}`
+    );
   }
 };
 
