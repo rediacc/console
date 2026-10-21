@@ -4,10 +4,10 @@
 
 Four steps, each fatal on failure (the drill `drills.backup_local_plane` only warns on a bucket failure, since it starts a dev gateway that may reuse an existing bucket; a CI leg has nothing to reuse, so a missing bucket would surface minutes later as a presign error):
 
-  1. RustFS on 127.0.0.1:9100 (`account_lifecycle.start_rustfs`) and the `rediacc-backups-probe` bucket. NEVER `rediacc-backups`, the production name.
+  1. RustFS on port 9100 (`account_lifecycle.start_rustfs`, published on every interface, so the bridge address below reaches it) and the `rediacc-backups-probe` bucket. NEVER `rediacc-backups`, the production name.
   2. The bridge address of the VM network (`wire.bridge_host("192.168.111")`). It is the host in the published account server URL (the licence's renewalUrl is stamped from it) and in ACCOUNT_BACKUP_S3_ENDPOINT, since SigV4 signs the Host header and the presigned URLs are dialled from the VM.
   3. `start_account` with the backup scopes, `--advertise-host <bridge>` and the ACCOUNT_BACKUP_S3_* environment.
-  4. A `/health` request from the worker VM over SSH to the advertised URL. No CI job had a VM call a service on the runner before, so an unreachable runner fails here instead of as a timeout inside a test.
+  4. Two requests from the worker VM over SSH: `/health` on the advertised URL, and any HTTP answer from ACCOUNT_BACKUP_S3_ENDPOINT (RustFS answers 403 to an anonymous GET). No CI job had a VM call a service on the runner before, so an unreachable account server or RustFS fails here instead of as a timeout inside a test.
 
 The suite's S3 credentials are exported as E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_SECRET: appended to `$GITHUB_ENV` (and masked) under Actions, otherwise only their names are printed. Their values are never printed.
 """
@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shlex
 import signal
 import subprocess
 import sys
@@ -53,6 +54,9 @@ def parse(argv: Sequence[str]) -> dict[str, str]:
             raise ValueError(f"{flag} needs a value")
         opts[flags[flag]] = argv[i + 1]
         i += 2
+    for name, value in opts.items():
+        if not value.isdigit():
+            raise ValueError(f"--{name} must be a number, got {value!r}")
     return opts
 
 
@@ -83,10 +87,13 @@ def probe_from_vm(
     worker: str,
     url: str,
     run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+    *,
+    http_ok: bool = True,
 ) -> None:
-    """GET `<url>/health` from the worker VM; ssh's own failure (255) is told apart from the remote answer."""
+    """GET `url` from the worker VM; ssh's own failure (255) is told apart from the remote answer. With `http_ok` false any HTTP status passes, so only reachability is tested."""
     host = f"{NET_BASE}.{worker}"
-    command = f"curl -fsS --max-time 10 {url}/health"
+    flags = "-fsS" if http_ok else "-sS -o /dev/null"
+    command = f"curl {flags} --max-time 10 {shlex.quote(url)}"
     argv = vm_ssh.ssh_argv(vm_ssh.default_user(), vm_ssh.default_key(), host, command)
     try:
         done = run(
@@ -103,9 +110,9 @@ def probe_from_vm(
         raise PlaneError(f"cannot ssh to {host}: {(done.stderr or '').strip()}")
     if done.returncode != 0:
         raise PlaneError(
-            f"{host} cannot reach {url}/health (curl rc={done.returncode}): {(done.stderr or '').strip()}"
+            f"{host} cannot reach {url} (curl rc={done.returncode}): {(done.stderr or '').strip()}"
         )
-    log.info(f"{host} reaches {url}/health")
+    log.info(f"{host} reaches {url}")
 
 
 def export_credentials(k: dict[str, str]) -> None:
@@ -145,14 +152,16 @@ def run(opts: dict[str, str]) -> int:
             raise PlaneError(
                 f"no interface on {NET_BASE}.0/24: the VM network is not up on this host"
             )
-        os.environ.update(account_env(k, bridge))
+        s3_env = account_env(k, bridge)
+        os.environ.update(s3_env)
         code = start_account.main(
             ["--port", opts["port"], "--scopes", SCOPES, "--advertise-host", bridge]
         )
         if code != 0:
             raise PlaneError(f"start_account exited {code}")
         try:
-            probe_from_vm(opts["worker"], f"http://{bridge}:{opts['port']}")
+            probe_from_vm(opts["worker"], f"http://{bridge}:{opts['port']}/health")
+            probe_from_vm(opts["worker"], s3_env["ACCOUNT_BACKUP_S3_ENDPOINT"] + "/", http_ok=False)
         except PlaneError:
             stop_account()
             raise

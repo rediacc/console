@@ -39,6 +39,8 @@ def test_parse_defaults_and_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(ValueError, match="Unknown option"):
         plane.parse(["--x"])
     assert plane.main(["--port"]) == 2
+    assert plane.main(["--port", "4900; rm -rf /"]) == 2
+    assert plane.main(["--worker", "11 x"]) == 2
 
 
 def test_bucket_failure_is_fatal(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -68,9 +70,11 @@ def test_probe_runs_curl_on_the_worker() -> None:
         seen.append(argv)
         return done(0)
 
-    plane.probe_from_vm("11", "http://192.168.111.254:4900", fake)
+    plane.probe_from_vm("11", "http://192.168.111.254:4900/health", fake)
+    plane.probe_from_vm("11", "http://192.168.111.254:9100/", fake, http_ok=False)
     assert seen[0][-2].endswith("@192.168.111.11")
     assert seen[0][-1] == "curl -fsS --max-time 10 http://192.168.111.254:4900/health"
+    assert seen[1][-1] == "curl -sS -o /dev/null --max-time 10 http://192.168.111.254:9100/"
 
 
 @pytest.mark.parametrize(("rc", "needle"), [(255, "cannot ssh"), (7, "cannot reach")])
@@ -99,8 +103,8 @@ def drive(monkeypatch: pytest.MonkeyPatch, bridge: str | None, probe_ok: bool = 
 
     monkeypatch.setattr(plane.start_account, "main", fake_start)
 
-    def fake_probe(worker, url):
-        calls["probe"] = (worker, url)
+    def fake_probe(worker, url, *, http_ok=True):
+        calls.setdefault("probes", []).append((worker, url, http_ok))
         if not probe_ok:
             raise plane.PlaneError("unreachable")
 
@@ -116,7 +120,10 @@ def test_run_wires_scopes_advertise_host_and_probe(monkeypatch: pytest.MonkeyPat
     argv = calls["argv"]
     assert argv[argv.index("--advertise-host") + 1] == "192.168.111.254"
     assert "backup:read" in argv[argv.index("--scopes") + 1].split(",")
-    assert calls["probe"] == ("11", "http://192.168.111.254:4900")
+    assert calls["probes"] == [
+        ("11", "http://192.168.111.254:4900/health", True),
+        ("11", "http://192.168.111.254:9100/", False),
+    ]
     assert calls["exported"] is True
 
 
@@ -134,6 +141,19 @@ def test_failed_probe_stops_the_account_and_exports_nothing(
     assert plane.run({"port": "4900", "worker": "11"}) == 1
     assert calls["stopped"] is True
     assert "exported" not in calls
+
+
+def test_stop_account_kills_the_recorded_listener(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    killed: list[tuple[int, int]] = []
+    monkeypatch.setattr(plane.os, "kill", lambda pid, sig: killed.append((pid, sig)))
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    plane.stop_account()
+    assert killed == []
+    (tmp_path / "account-for-e2e.pid").write_text("4242\n")
+    plane.stop_account()
+    assert killed == [(4242, plane.signal.SIGTERM)]
 
 
 def test_credentials_go_to_github_env_masked(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
