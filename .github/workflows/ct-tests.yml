@@ -2060,8 +2060,12 @@ jobs:
         env:
           RENET_DATA_DIR: ${{ runner.temp }}/renet
         run: "$RENET_BINARY ops up --force --parallel"
-      - name: Wait for VM SSH readiness
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.wait_for_vm_ssh "192.168.111.1" "192.168.111.11"
+      # No wait_for_vm_ssh step here: it probes with a bare `ssh` (no -i), so it
+      # authenticates only with a ~/.ssh default identity, and this job's VMs
+      # authorize only the key `ops up` stages under $RENET_DATA_DIR (run
+      # 39640583259: both VMs booted with ssh=ok while the probe timed out).
+      # `ops up` already waits for the bridge and workers, and the plane step
+      # below probes worker 11 with the staged key.
 
       # RustFS, the probe bucket and an account server at the bridge host with a
       # backup:read token (PLAN-e2e-browse-at-ci). LOUD: it exits non-zero with the
