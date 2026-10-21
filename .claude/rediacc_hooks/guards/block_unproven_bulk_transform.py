@@ -181,7 +181,14 @@ def _submodule_dirs(cwd):
     if done.returncode != 0:
         return []
     paths = [line.split(" ", 1)[1].strip() for line in done.stdout.splitlines() if " " in line]
-    return [os.path.join(root, p) for p in paths if os.path.isdir(os.path.join(root, p))]
+    top = os.path.realpath(root)
+    out = []
+    for rel in paths:
+        full = os.path.realpath(os.path.join(root, rel))
+        # Only a checkout inside this repository counts: a `path` of `../x` or an absolute path would let any repository on disk vouch for a record.
+        if full != top and full.startswith(top + os.sep) and os.path.isdir(full):
+            out.append(full)
+    return out
 
 
 def _counted(files, cwd=None):

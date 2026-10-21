@@ -55,3 +55,13 @@ def test_without_gitmodules_a_submodule_sha_still_counts(tmp_path):
     sub_sha = _repo(str(tmp_path / "elsewhere"))
     record = "agent/reviews/0101-1/%s.md" % sub_sha
     assert guard._counted([record], console) == [record]
+
+
+def test_a_gitmodules_path_outside_the_repository_vouches_for_nothing(tmp_path):
+    console = str(tmp_path / "console")
+    _repo(console)
+    outside_sha = _repo(str(tmp_path / "outside"))
+    with open(os.path.join(console, ".gitmodules"), "w") as fh:
+        fh.write('[submodule "x"]\n\tpath = ../outside\n\turl = ../outside\n')
+    record = "agent/reviews/0101-1/%s.md" % outside_sha
+    assert guard._counted([record], console) == [record]
