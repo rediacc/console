@@ -56,6 +56,7 @@ import {
   WK_RELEASES_ORIGIN,
   WK_SITE_ORIGIN,
 } from '../../packages/shared/src/config/well-known.generated.js';
+import { emitFinding } from '../ci-runner/findings.js';
 import { githubToken } from '../lib/github-token.js';
 import { askUpstream, NotCompared, reportUnreachable } from '../lib/upstream.js';
 
@@ -560,15 +561,17 @@ async function auditAllowlist(
 
 async function processQueue(entries: LinkEntry[]): Promise<{
   broken: LinkEntry[];
-  unreachable: Array<{ who: string; err: NotCompared }>;
+  unreachable: Array<{ who: string; url: string; err: NotCompared }>;
   notAsked: number;
+  notAskedUrls: string[];
   skipped: LinkEntry[];
   excluded: number;
   knownBroken: number;
   checked: number;
 }> {
   const broken: LinkEntry[] = [];
-  const unreachable: Array<{ who: string; err: NotCompared }> = [];
+  const unreachable: Array<{ who: string; url: string; err: NotCompared }> = [];
+  const notAskedUrls: string[] = [];
   const skipped: LinkEntry[] = [];
   let excluded = 0;
   let knownBroken = 0;
@@ -600,6 +603,7 @@ async function processQueue(entries: LinkEntry[]): Promise<{
 
       if (answered === 0 && unansweredRun >= OUTAGE_BREAKER) {
         notAsked++;
+        notAskedUrls.push(entry.url);
         continue;
       }
 
@@ -608,7 +612,11 @@ async function processQueue(entries: LinkEntry[]): Promise<{
 
       if (result.kind === 'unreachable') {
         unansweredRun++;
-        unreachable.push({ who: `${entry.url} (${where(entry)})`, err: result.err });
+        unreachable.push({
+          who: `${entry.url} (${where(entry)})`,
+          url: entry.url,
+          err: result.err,
+        });
         continue;
       }
       answered++;
@@ -625,7 +633,7 @@ async function processQueue(entries: LinkEntry[]): Promise<{
   const workers = Array.from({ length: CONCURRENCY }, () => worker());
   await Promise.all(workers);
 
-  return { broken, unreachable, notAsked, skipped, excluded, knownBroken, checked };
+  return { broken, unreachable, notAsked, notAskedUrls, skipped, excluded, knownBroken, checked };
 }
 
 /** The first place a link is cited, and how many more there are. */
@@ -675,6 +683,105 @@ function collectFiles(): { files: string[]; perRoot: Map<string, number> } | nul
   return { files, perRoot };
 }
 
+/** The finding key for the host of `url`. A host outside the key alphabet (an IPv6 literal, say) or an unparsable URL gets a fixed key rather than none, so it is still a finding. */
+export function hostKey(url: string): string {
+  const host = hostnameOf(url);
+  if (host === null || host === '') return 'link:unparsable-url';
+  const key = `link:${host.toLowerCase()}`;
+  return /^[A-Za-z0-9._:/@#-]{1,200}$/.test(key) ? key : 'link:unkeyable-host';
+}
+
+export interface FailureInputs {
+  brokenUrls: string[];
+  unreachableUrls: string[];
+  notAskedUrls: string[];
+  unreferencedDomains: string[];
+  unreferencedKnownBroken: string[];
+  zeroProbes: boolean;
+  checkedNothing: boolean;
+}
+
+/**
+ * Every finding key of a failing run, deduped and sorted. Per HOST, never per URL (a URL carries characters outside the key alphabet). Each failure tier has a key, because a tier without one would fail the gate while a keyed carry of it still passed the push guard.
+ */
+export function failureKeys(f: FailureInputs): string[] {
+  const keys = new Set<string>();
+  for (const url of [...f.brokenUrls, ...f.unreachableUrls, ...f.notAskedUrls]) {
+    keys.add(hostKey(url));
+  }
+  for (const d of f.unreferencedDomains)
+    keys.add(hostKey(`https://${d}/`).replace('link:', 'allowlist-stale:'));
+  for (const u of f.unreferencedKnownBroken)
+    keys.add(hostKey(u).replace('link:', 'known-broken-stale:'));
+  if (f.zeroProbes) keys.add('link:liveness-zero-probes');
+  if (f.checkedNothing) keys.add('link:nothing-checked');
+  return [...keys].sort();
+}
+
+function selftestFailureKeys(): number {
+  const none: FailureInputs = {
+    brokenUrls: [],
+    unreachableUrls: [],
+    notAskedUrls: [],
+    unreferencedDomains: [],
+    unreferencedKnownBroken: [],
+    zeroProbes: false,
+    checkedNothing: false,
+  };
+  const cases: [string, FailureInputs, string[]][] = [
+    ['a passing run emits none', none, []],
+    [
+      'one failing link emits exactly its host key',
+      { ...none, unreachableUrls: ['https://gdpr-info.eu/art-6-gdpr/'] },
+      ['link:gdpr-info.eu'],
+    ],
+    [
+      'urls of one host collapse, kinds merge, order is sorted',
+      {
+        ...none,
+        brokenUrls: ['https://b.example.org/x?q=1', 'https://A.example.org/y'],
+        unreachableUrls: ['https://b.example.org/z'],
+        notAskedUrls: ['https://a.example.org/w'],
+      },
+      ['link:a.example.org', 'link:b.example.org'],
+    ],
+    [
+      'an IPv6 literal and a bad url still key',
+      { ...none, brokenUrls: ['http://[::1]/x', 'not a url'] },
+      ['link:unkeyable-host', 'link:unparsable-url'],
+    ],
+    [
+      'keyless tiers key too',
+      {
+        ...none,
+        unreferencedDomains: ['a.io'],
+        unreferencedKnownBroken: ['https://k.io/p'],
+        zeroProbes: true,
+        checkedNothing: true,
+      },
+      [
+        'allowlist-stale:a.io',
+        'known-broken-stale:k.io',
+        'link:liveness-zero-probes',
+        'link:nothing-checked',
+      ],
+    ],
+  ];
+  let bad = 0;
+  for (const [name, input, want] of cases) {
+    const got = failureKeys(input);
+    if (JSON.stringify(got) !== JSON.stringify(want)) {
+      bad++;
+      console.error(
+        `  selftest FAIL: ${name}: ${JSON.stringify(got)} (want ${JSON.stringify(want)})`
+      );
+    }
+  }
+  if (bad > 0) process.exit(1);
+  console.log(`  selftest ok: ${cases.length} failureKeys cases`);
+  return cases.length;
+}
+
 function selftestToApiUrl(): void {
   const repoApi = `${WK_GH_API_BASE}/repos/${WK_GH_REPO}`;
   const cases: [string, string | null][] = [
@@ -703,6 +810,7 @@ function selftestToApiUrl(): void {
 async function main() {
   if (process.argv.includes('--selftest')) {
     selftestToApiUrl();
+    selftestFailureKeys();
     return;
   }
   console.log('External Link Checker');
@@ -750,7 +858,7 @@ async function main() {
   );
   console.log('Checking links...\n');
 
-  const { broken, unreachable, notAsked, skipped, excluded, knownBroken, checked } =
+  const { broken, unreachable, notAsked, notAskedUrls, skipped, excluded, knownBroken, checked } =
     await processQueue(entries);
 
   console.log('Auditing allowlist liveness...\n');
@@ -884,8 +992,19 @@ async function main() {
   }
 
   if (failures.length > 0) {
+    // One `::finding::` line per failing host (and per keyless failure), so a carried red of this gate names what it carries instead of hiding every future finding (.ci/config/carried-reds.json).
+    const keys = failureKeys({
+      brokenUrls: broken.map((e) => e.url),
+      unreachableUrls: unreachable.map((u) => u.url),
+      notAskedUrls,
+      unreferencedDomains: liveness.unreferencedDomains,
+      unreferencedKnownBroken: liveness.unreferencedKnownBroken,
+      zeroProbes: liveness.referencedDomains > 0 && liveness.domainProbes === 0,
+      checkedNothing: checked === 0,
+    });
     console.error(`\n  FAILED:`);
     for (const f of failures) console.error(f);
+    for (const key of keys) emitFinding(key);
     process.exit(1);
   }
 
