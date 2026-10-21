@@ -312,6 +312,25 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-backup-toc-exact-opt-in.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "0c1f578e",
+        "1415b673",
+        "1a4a6747",
+        "344f5351",
+        "4b51dde2",
+        "662ce951",
+        "bc479abe",
+        "e0349ed2"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-bump-k3s-upstream-1-36-4.md": {
       "status": "compacted",
       "owner": "9d92d9b6",
