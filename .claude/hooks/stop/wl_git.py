@@ -1262,25 +1262,27 @@ def main(argv):
                 )
                 if missing:
                     # The refusal names each commit: it is raised before the plan renders, so the MISSING row above never reaches the reader. A commit whose change the base already partly made is replayed with a different patch, so a new-range commit with the same subject is named beside it as the place to look (2026-10-21: a gate-costs refresh overlapping main's hotfix).
-                    _rc_n, new_subjects, _ = run_git(
+                    rc_n, new_subjects, _ = run_git(
                         ["log", "--format=%h %s", "%s..%s" % (base, new_tip)], cwd=repo
                     )
-                    by_subject = {}
+                    by_subject: dict[str, list[str]] = {}
                     for line in new_subjects.splitlines():
                         short, _sep, subject = line.partition(" ")
-                        by_subject.setdefault(subject, short)
+                        by_subject.setdefault(subject, []).append(short)
                     rows = []
+                    if rc_n != 0:
+                        rows.append("  (the same-subject lookup failed: git log rc=%d)" % rc_n)
                     for sha in missing:
                         _rc_s, subject, _ = run_git(["log", "-1", "--format=%s", sha], cwd=repo)
-                        twin = by_subject.get(subject.strip())
+                        twins = by_subject.get(subject.strip(), [])
                         rows.append(
                             "  %s %s%s"
                             % (
                                 sha[:12],
                                 subject.strip(),
-                                " (same subject in the new range: %s; compare `git diff %s %s`)"
-                                % (twin, sha[:12], twin)
-                                if twin
+                                " (same subject in the new range: %s; compare `git diff %s <one of them>`)"
+                                % (", ".join(twins), sha[:12])
+                                if twins
                                 else "",
                             )
                         )
