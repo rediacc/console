@@ -234,10 +234,10 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
   },
   {
     job: 'test-e2e-ceph-workers-rpm',
-    p90Minutes: 18,
+    p90Minutes: 19,
     timeoutMinutes: 20,
     ruling:
-      'Operator ruling #23e93715 (ASKED 2026-10-19T06:57Z, "Raise caps for now"): cold renet builds on branch 1008-1 (run 39177571049 embed assets 820 s cold, run 39188334570 23-29 s warm; cache key is the embed-assets lockfile hash only) put the refreshed p90 of E2E Ceph Workers non-apt (oracle-10) at 17.5 (runs 702-1089 s); p90 18 / timeout 20. Earlier: #fc4f34f8 (ASKED 2026-09-30T10:38Z) p90 16 / timeout 20',
+      'Operator ruling #4b9be429 (ASKED 2026-10-22T08:59Z, "Raise limits to measured"): the PLAN-e2e-browse-at-ci B8 refresh (budget_report --refresh --branch 1020-1 after green run 39742633342) measured E2E Ceph Workers non-apt (oracle-10) at 18.2; p90 19 / timeout 20. Earlier: #23e93715 (ASKED 2026-10-19T06:57Z, "Raise caps for now"): cold renet builds on branch 1008-1 (run 39177571049 embed assets 820 s cold, run 39188334570 23-29 s warm; cache key is the embed-assets lockfile hash only) put the refreshed p90 of E2E Ceph Workers non-apt (oracle-10) at 17.5 (runs 702-1089 s); p90 18 / timeout 20. Earlier: #fc4f34f8 (ASKED 2026-09-30T10:38Z) p90 16 / timeout 20',
   },
   {
     job: 'test-e2e-workers',
@@ -248,10 +248,17 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
   },
   {
     job: 'test-e2e-ceph-workers',
-    p90Minutes: 12,
+    p90Minutes: 14,
     timeoutMinutes: 20,
     ruling:
-      'Operator ruling #153aace7 (ASKED 2026-09-30T11:21Z): timeout 20, measured max 15.1; p90 budget unchanged at 12',
+      'Operator ruling #4b9be429 (ASKED 2026-10-22T08:59Z, "Raise limits to measured"): the PLAN-e2e-browse-at-ci B8 refresh (budget_report --refresh --branch 1020-1 after green run 39742633342) measured E2E Ceph Workers at 13.2; p90 14 / timeout 20. Earlier: #153aace7 (ASKED 2026-09-30T11:21Z): timeout 20, measured max 15.1; p90 budget unchanged at 12',
+  },
+  {
+    job: 'test-e2e-ceph',
+    p90Minutes: 14,
+    timeoutMinutes: 15,
+    ruling:
+      'Operator ruling #4b9be429 (ASKED 2026-10-22T08:59Z, "Raise limits to measured"): the PLAN-e2e-browse-at-ci B8 refresh (budget_report --refresh --branch 1020-1 after green run 39742633342) measured E2E Ceph at 13.0, over the 12-minute default; p90 14 / timeout 15 (its timeout-minutes in ct-tests.yml)',
   },
   {
     job: 'build-renet',
@@ -3046,8 +3053,15 @@ async function selftest(): Promise<number> {
       ),
     },
     {
-      name: 'FIRES: a NON-exempt job over 12 (E2E Ceph at 14.3m; it left the list 2026-09-28)',
-      ok: jobBudgetFindings({ 'test-e2e-ceph': 14.3 }).some((f) => f.includes('over the 12m')),
+      name: 'FIRES: a NON-exempt job over 12 (E2E K8s at 14.3m)',
+      ok: jobBudgetFindings({ 'test-e2e-k8s': 14.3 }).some((f) => f.includes('over the 12m')),
+    },
+    {
+      name: 'E2E Ceph (#4b9be429): p90 14.1 is red naming the ruling, 14.0 is not',
+      ok:
+        jobBudgetFindings({ 'test-e2e-ceph': 14.1 }).some(
+          (f) => f.includes('exemption cap of 14m') && f.includes('#4b9be429')
+        ) && jobBudgetFindings({ 'test-e2e-ceph': 14.0 }).length === 0,
     },
     {
       name: 'FIRES: a non-exempt job at 12.1m, and MATCH: the same job at 11.9m',
@@ -3427,15 +3441,15 @@ async function selftest(): Promise<number> {
         ),
     },
     {
-      name: 'E2E Ceph Workers non-apt (#23e93715): p90 18.1 is red naming the ruling, 18.0 is not; timeout 20 accepted, 21 red',
+      name: 'E2E Ceph Workers non-apt (#4b9be429): p90 19.1 is red naming the ruling, 19.0 is not; timeout 20 accepted, 21 red',
       ok:
-        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 18.1 }).some(
-          (f) => f.includes('exemption cap of 18m') && f.includes('#23e93715')
+        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 19.1 }).some(
+          (f) => f.includes('exemption cap of 19m') && f.includes('#4b9be429')
         ) &&
-        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 18.0 }).length === 0 &&
+        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 19.0 }).length === 0 &&
         timeoutFindings([t7('test-e2e-ceph-workers-rpm', '20')]).length === 0 &&
         timeoutFindings([t7('test-e2e-ceph-workers-rpm', '21')]).some(
-          (f) => f.includes('over the 20m ceiling') && f.includes('#23e93715')
+          (f) => f.includes('over the 20m ceiling') && f.includes('#4b9be429')
         ),
     },
     {
