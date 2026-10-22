@@ -27,7 +27,7 @@ def hosted_runner(env: dict[str, str]) -> bool:
 
 
 def rewrite_text(text: str) -> str:
-    """Replace the Azure host with the global archive, then drop the duplicate lines that makes in a mirror list.
+    """Replace the Azure host with the global archive, then drop the duplicate lines the replacement creates in a mirror list.
 
     A duplicate is only collapsed in a line that is a bare mirror URL (apt-mirrors.txt entries, `http://host/ubuntu/ priority:N`), never in a `deb` or `URIs:` line, where a repeated line would change the file's meaning.
     """
