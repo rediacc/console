@@ -116,6 +116,7 @@ import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
   askUpstream,
+  emptyReleaseList,
   githubAsker,
   NotCompared,
   PinTally,
@@ -240,6 +241,7 @@ async function releasesFor(src: Source): Promise<Latest[]> {
   // answer.
   const rels = await github(`/repos/${src.repo}/releases?per_page=100`, src.display);
   if (!Array.isArray(rels)) throw new UnreadableListing('the response is not a release list');
+  if (rels.length === 0) throw emptyReleaseList(src.repo);
   const hits = (rels as Array<GithubRelease | null>).filter(
     (r): r is GithubRelease =>
       !!r && !r.draft && !r.prerelease && (r.tag_name ?? '').startsWith(src.tagPrefix)

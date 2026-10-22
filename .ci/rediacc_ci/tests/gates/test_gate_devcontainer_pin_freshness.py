@@ -408,6 +408,28 @@ def test_a_listing_without_the_tag_prefix_is_red(gate, tmp_path):
     gate.log_pass("a listing that lost the tag scheme is red")
 
 
+def test_an_empty_release_list_is_not_compared_not_a_lost_tag_scheme(gate, tmp_path):
+    """2026-10-22, during GitHub's Actions Results incident: four sources answered 200 with an empty list and the gate called it a lost tag scheme. An empty list is the API not answering, so it is the reachability class."""
+    dockerfile = build_fixtures(gate, tmp_path)
+    script = current_script(gate, dockerfile)
+    dlv = by_base(gate, "dlv")
+    script[route(dlv)] = [ok([])]
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(dockerfile, stub.base)
+    gate.assert_exit(1, result, "an empty release list still fails closed")
+    gate.assert_contains(
+        result.err, "1 devcontainer pin(s) were NOT compared", "one not-compared finding"
+    )
+    gate.assert_contains(
+        result.err, "HTTP 200 with an empty release list", "the finding names the empty answer"
+    )
+    gate.assert_contains(
+        result.err, "UPSTREAM REACHABILITY FAILURE", "it is reported as reachability"
+    )
+    gate.assert_not_contains(result.err, "cannot use", "it is not the unusable-listing class")
+    gate.log_pass("an empty release list is not compared, not a lost tag scheme")
+
+
 def test_a_held_pin_is_not_asked_and_is_counted(gate, tmp_path):
     """A hold is an explicit, reasoned exemption, so a held pin is the one pin a green may leave uncompared, and the green line counts it."""
     dockerfile = build_fixtures(gate, tmp_path)
