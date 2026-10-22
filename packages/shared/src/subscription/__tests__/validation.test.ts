@@ -242,7 +242,9 @@ describe('Subscription Status Functions', () => {
         const checkIn = new Date('2026-10-22T06:00:00Z');
         expect(calculateGracePeriodEnd(checkIn).getTime() - checkIn.getTime()).toBe(3 * 86_400_000);
       } finally {
-        process.env.TZ = saved;
+        // Assigning undefined would store the string "undefined", an invalid zone for every later test in this worker.
+        if (saved === undefined) delete process.env.TZ;
+        else process.env.TZ = saved;
       }
     });
   });
