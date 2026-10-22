@@ -96,8 +96,15 @@ const MAJOR_EXCEPTIONS_REL = path
   .relative(CONSOLE_ROOT, MAJOR_EXCEPTIONS_FILE)
   .split(path.sep)
   .join('/');
-// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping; `update-first` restores the pre-2026-10-08 step order, every lockfile's `npm update` before its out-of-range `npm install` steps, so the selftest can prove its exact-pinned-sibling case goes red without the reorder; `skip-pin-sync` skips the .syncpackrc.json pinVersion rewrite after an upgrade (worklist #3b831146), so the selftest can prove its syncpack-style check finds the group left behind; `ambient-npm` makes the pins npm driver plan its commands for the ambient `npm` instead of `npx -y npm@<NPM_VERSION>`, so the selftest can prove its pinned-npm case goes red without the pin. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
-const MUTANTS = ['ignore-clock', 'split-update', 'update-first', 'skip-pin-sync', 'ambient-npm'];
+// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping; `update-first` restores the pre-2026-10-08 step order, every lockfile's `npm update` before its out-of-range `npm install` steps, so the selftest can prove its exact-pinned-sibling case goes red without the reorder; `skip-pin-sync` skips the .syncpackrc.json pinVersion rewrite after an upgrade (worklist #3b831146), so the selftest can prove its syncpack-style check finds the group left behind; `ambient-npm` makes the pins npm driver plan its commands for the ambient `npm` instead of `npx -y npm@<NPM_VERSION>`, so the selftest can prove its pinned-npm case goes red without the pin; `peer-split` restores the pre-2026-10-22 planner, an in-range sibling of an installing package waiting for the later `npm update`, so the selftest can prove its peer-family case goes red with ERESOLVE. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
+const MUTANTS = [
+  'ignore-clock',
+  'split-update',
+  'update-first',
+  'skip-pin-sync',
+  'ambient-npm',
+  'peer-split',
+];
 /** A blocklisted major fails at this age, measured from the first release of the first line past `current`. */
 const HOLD_DEADLINE_DAYS = 90;
 /** ... and warns from this age. */
@@ -1332,7 +1339,9 @@ async function checkDependencies(): Promise<void> {
             ? `${YELLOW}MUTANT skip-pin-sync: the .syncpackrc.json pin groups are NOT rewritten for this fixture run${NC}\n`
             : MUTANT === 'ambient-npm'
               ? `${YELLOW}MUTANT ambient-npm: the pins npm driver plans the ambient npm for this fixture run${NC}\n`
-              : `${YELLOW}MUTANT update-first: every npm update runs before the npm install steps for this fixture run${NC}\n`
+              : MUTANT === 'peer-split'
+                ? `${YELLOW}MUTANT peer-split: an in-range peer sibling is left to the later npm update for this fixture run${NC}\n`
+                : `${YELLOW}MUTANT update-first: every npm update runs before the npm install steps for this fixture run${NC}\n`
     );
   }
   const clockOff = MUTANT === 'ignore-clock' || planJson;
@@ -1683,6 +1692,8 @@ interface FixtureSpec {
   lockstep?: Record<string, Array<{ names: string[]; workspaces: string[] }>>;
   /** The fixture's .syncpackrc.json text, written verbatim; absent means the fixture has none. */
   syncpackrc?: string;
+  /** Peer requirements per manifest, same keys: the stub `npm install` fails ERESOLVE when it names `spec` without also naming `needs`, as real npm did for @opentelemetry/core@3 (peer @opentelemetry/api >=1.10) on 2026-10-22. */
+  installPeers?: Record<string, Array<{ spec: string; needs: string }>>;
 }
 
 // The fixture's local-only, non-submodule directory. See its use in `buildFixture` below.
@@ -1745,6 +1756,8 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       write(path.join(rel, 'package-lock.json'), JSON.stringify({ packages: spec.locks[rel] }));
     if (spec.lockstep?.[rel])
       write(path.join(rel, '.fixture-lockstep.json'), JSON.stringify(spec.lockstep[rel]));
+    if (spec.installPeers?.[rel])
+      write(path.join(rel, '.fixture-install-peers.json'), JSON.stringify(spec.installPeers[rel]));
     if (spec.updateLocks?.[rel])
       write(
         path.join(rel, '.fixture-update-lock.json'),
@@ -1784,6 +1797,21 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       '  if (!fam.names.some((n) => args.includes(n))) continue;',
       '  const missing = [...fam.names.filter((n) => !args.includes(n)), ...fam.workspaces.filter((w) => !args.includes(`-w=${w}`)).map((w) => `-w=${w}`)];',
       "  if (missing.length > 0) { console.error(`npm error code ERESOLVE (fixture): exact peer pin, the call lacks ${missing.join(' ')}`); process.exit(1); }",
+      '}',
+      '',
+    ].join('\n')
+  );
+  // The ERESOLVE a peer requirement produces when `install` names a package without the in-range sibling it peer-requires: the sibling is still at its old version in the tree, so npm refuses.
+  write(
+    'bin/check-peers.cjs',
+    [
+      "const fs = require('node:fs');",
+      "if (!fs.existsSync('.fixture-install-peers.json')) process.exit(0);",
+      'const args = process.argv.slice(2);',
+      "for (const p of JSON.parse(fs.readFileSync('.fixture-install-peers.json', 'utf8'))) {",
+      '  if (!args.includes(p.spec) || args.includes(p.needs)) continue;',
+      '  console.error(`npm error code ERESOLVE (fixture): ${p.spec} requires ${p.needs}, the call does not name it`);',
+      '  process.exit(1);',
       '}',
       '',
     ].join('\n')
@@ -1860,7 +1888,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       `  install) case "$*" in *--package-lock-only*) echo "$(pwd) :: $*" >> "${log}.other"; exit 0 ;; esac ;;`,
       `  esac`,
       `case "$1" in`,
-      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-} :: via=\${FIXTURE_VIA_NPX:-ambient}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'check-lockstep.cjs')}" "$@" || exit 1; fi; if [ "$1" = install ]; then ${pins} install "$@"; fi; if [ "$1" = update ]; then ${pins} pre "$@"; fi; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then ${pins} post "$@"; "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
+      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-} :: via=\${FIXTURE_VIA_NPX:-ambient}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'check-lockstep.cjs')}" "$@" || exit 1; fi; if [ "$1" = install ]; then "${process.execPath}" "${path.join(root, 'bin', 'check-peers.cjs')}" "$@" || exit 1; ${pins} install "$@"; fi; if [ "$1" = update ]; then ${pins} pre "$@"; fi; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then ${pins} post "$@"; "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
       '  *) echo "fixture npm stub: unexpected: $*" >&2; exit 2 ;;',
       'esac',
       '',
@@ -2873,6 +2901,83 @@ async function selftest(): Promise<void> {
       heldSib.installs.length === 0 &&
       heldSib.output.includes(`npm run pins -- bump npm --to ${otelNode}@0.223 --major --reason`),
     heldSibDetail
+  );
+  // 10d. A PEER FAMILY RIDES THE INSTALL (2026-10-22). @opentelemetry/core@3 peer-requires @opentelemetry/api >=1.10 while the in-range api bump 1.9.1 -> 1.10.0 waited for the later `npm update`, so the install failed ERESOLVE in private/account. The stub refuses `install core@3` unless the same call names api@1.10.0; the peer-split mutant restores the old planner and must go red. An unrelated in-range package (another scope) stays on the update.
+  const otelApi = '@opentelemetry/api';
+  const peerCase = (env?: NodeJS.ProcessEnv): FixtureSpec => ({
+    outdated: {
+      '': {
+        [otelApi]: { current: '1.9.1', wanted: '1.10.0', latest: '1.10.0' },
+        [otelCore]: { current: '2.12.0', wanted: '2.12.0', latest: '3.0.0' },
+        dotenv: { current: '18.0.4', wanted: '18.0.5', latest: '18.0.5' },
+      },
+      'private/account': {},
+    },
+    locks: {
+      '': {
+        [`node_modules/${otelApi}`]: { version: '1.9.1' },
+        [`node_modules/${otelCore}`]: { version: '2.12.0' },
+        'node_modules/dotenv': { version: '18.0.4' },
+      },
+      'private/account': {},
+    },
+    installLocks: {
+      '': {
+        [`node_modules/${otelApi}`]: { version: '1.10.0' },
+        [`node_modules/${otelCore}`]: { version: '3.0.0' },
+      },
+    },
+    updateLocks: { '': { 'node_modules/dotenv': { version: '18.0.5' } } },
+    installPeers: { '': [{ spec: `${otelCore}@3.0.0`, needs: `${otelApi}@1.10.0` }] },
+    manifests: {
+      '': { workspaces: ['packages/cli'] },
+      'packages/cli': {
+        dependencies: { [otelApi]: '^1.9.1', [otelCore]: '^2.12.0', dotenv: '^18.0.4' },
+      },
+    },
+    env,
+  });
+  const peerTake = [
+    'bump',
+    'npm',
+    '--to',
+    `${otelCore}@3`,
+    '--major',
+    '--reason',
+    'core 3 is taken with the api 1.10 it peer-requires in one change',
+  ];
+  const peer = runFixture(peerCase(), 'upgrade', peerTake);
+  const peerDetail = `installs:\n${peer.installs.join('\n')}\noutput:\n${peer.output}`;
+  expect(
+    'e2e pins: an in-range peer sibling of an out-of-range install rides the SAME npm install; an unrelated in-range package still goes through the npm update',
+    peer.status === 0 &&
+      peer.installs.length === 2 &&
+      peer.installs[0].startsWith(
+        `<root> :: install -w=packages/cli ${otelCore}@3.0.0 ${otelApi}@1.10.0 ::`
+      ) &&
+      peer.installs[1].startsWith('<root> :: update -w=packages/cli dotenv ::'),
+    peerDetail
+  );
+  const peerSplit = runFixture(peerCase({ CHECK_DEPS_MUTANT: 'peer-split' }), 'upgrade', peerTake);
+  const peerSplitDetail = `installs:\n${peerSplit.installs.join('\n')}\noutput:\n${peerSplit.output}`;
+  expect(
+    'e2e pins: CONTROL: the peer-split mutant (the in-range peer waits for the update) fails the install with ERESOLVE',
+    peerSplit.status === 1 && peerSplit.output.includes('ERESOLVE'),
+    peerSplitDetail
+  );
+  const realPeer: NodeJS.ProcessEnv = { ...process.env, CHECK_DEPS_MUTANT: 'peer-split' };
+  delete realPeer.CHECK_DEPS_ROOT;
+  delete realPeer.CHECK_DEPS_FORCE_PROBE_FAILURE;
+  const realPeerRun = spawnSync(process.execPath, [...process.execArgv, process.argv[1]], {
+    cwd: CONSOLE_ROOT,
+    encoding: 'utf-8',
+    env: realPeer,
+  });
+  expect(
+    'mutant: CONTROL: peer-split without CHECK_DEPS_ROOT is refused',
+    realPeerRun.status === 1 &&
+      `${realPeerRun.stdout}${realPeerRun.stderr}`.includes('CHECK_DEPS_MUTANT=peer-split refused'),
+    `${realPeerRun.stdout}${realPeerRun.stderr}`
   );
   const pinLock: Record<string, LockEntry> = {
     'node_modules/core': { version: '2.11.0' },
@@ -4291,7 +4396,7 @@ async function selftest(): Promise<void> {
       'installed one is left to npm, and an uninstalled root refuses the run; an exact-pin override is moved to the ',
       'judged version before a root npm update, while an admitting override is left alone and a bounding one is refused; ',
       'a lockstep family moves in one npm update per lockfile, and the split-update mutant fails ERESOLVE; every npm command the pins driver plans is `npx -y npm@<NPM_VERSION>` (the ambient-npm mutant fails), the canonical lockfile pass, `npm ci` and `install:natives` follow a changed root lockfile, and `lockfiles` covers every npm project; the workers/ projects are judged; a major is taken by name with its blocklist line and exception dropped and no allow entry left behind, a young blocklisted major is refused, and `remove` drops every line that named the package and refuses one a source file still imports; an allow-listed ',
-      'sibling that pins an in-range package exactly is installed before its lockfile is updated, the update-first mutant ',
+      'sibling that pins an in-range package exactly is installed before its lockfile is updated, an in-range same-scope peer of an installing package rides that install (the peer-split mutant fails ERESOLVE), the update-first mutant ',
       'leaves that package held back, and a held-back package names its pinning sibling instead of a freshness breach; ',
       'every step carries --before=<the freshness cutoff>, which agrees with the window rule at its boundary; an upgrade ',
       'rewrites the .syncpackrc.json pinVersion of each group holding a moved package (label kept), the skip-pin-sync ',
