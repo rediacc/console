@@ -12,6 +12,7 @@ import { pathToFileURL } from 'node:url';
 import { type ControlCase, type RunControlsOptions, runControls } from '../controls.js';
 import {
   journalRoot,
+  ledgerHolds,
   liveLockPid,
   openJournals,
   RestoreRefused,
@@ -590,6 +591,35 @@ function floorRefusesShortRun(): ControlCase {
   };
 }
 
+/** The ledger holds for the exact bytes a done journal recorded, not for other bytes, a missing key, or a journal that did not finish. */
+function ledgerByHash(): ControlCase {
+  const root = tmpRoot();
+  const put = (stamp: string, state: string, wrote: string | null, late?: string): void => {
+    const dir = path.join(journalRoot(root), stamp);
+    fs.mkdirSync(dir, { recursive: true });
+    const files = { a: { repo: '.', file: 'a', before: null, wrote } };
+    fs.writeFileSync(
+      path.join(dir, 'journal.json'),
+      JSON.stringify({ stamp, state, pins: [], files, late: late ? { b: late } : undefined })
+    );
+  };
+  put('s1', 'done', 'h1', 'h2');
+  put('s2', 'restored', 'h3');
+  const got = {
+    exact: ledgerHolds(root, 'a', 'h1'),
+    other: ledgerHolds(root, 'a', 'hX'),
+    late: ledgerHolds(root, 'b', 'h2'),
+    unfinished: ledgerHolds(root, 'a', 'h3'),
+    missing: ledgerHolds(root, 'c', 'h1'),
+  };
+  fs.rmSync(root, { recursive: true, force: true });
+  return {
+    name: 'ledger: holds for the bytes a done journal wrote (or late-wrote) and for nothing else',
+    ok: got.exact && got.late && !got.other && !got.unfinished && !got.missing,
+    detail: JSON.stringify(got),
+  };
+}
+
 export function txnCases(): ControlCase[] {
   return [
     noHardLinkLock(),
@@ -607,6 +637,7 @@ export function txnCases(): ControlCase[] {
     symlinkedStamp(),
     liveRunRefusesReplay(),
     floorRefusesShortRun(),
+    ledgerByHash(),
   ];
 }
 

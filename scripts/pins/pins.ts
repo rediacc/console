@@ -96,6 +96,7 @@ import {
   RestoreRefused,
   type Runner,
   realRunner,
+  recordLateWrites,
   restoreJournal,
   runTransaction,
   type TxnResult,
@@ -769,7 +770,7 @@ function report(
 }
 
 /** Run a set of plans as one transaction and print its outcome. */
-function apply(w: World, f: Flags, s: Selected, subject: string): number {
+function apply(w: World, f: Flags, s: Selected, subject: string, lockfilesVerb = false): number {
   if (s.plans.length === 0) {
     if (f.json) w.out.push(JSON.stringify(report(w, f, s, null, []), null, 2));
     else {
@@ -791,6 +792,7 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
       npmVersion: w.npmVersion,
       submodules: w.reg.submodules.scanned,
       registry: w.reg.entries,
+      lockfilesVerb,
     });
   } finally {
     release();
@@ -809,6 +811,11 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
     lateDocs = g.late;
     unclaimedDocs = g.unclaimed;
     if (g.record) res.commands.push(g.record);
+    recordLateWrites(
+      w.root,
+      res.stamp,
+      g.late.map((file) => ({ repo: '.', file }))
+    );
     if (g.changed.length > 0) {
       const home = res.changes.find((c) => c.repo === '.');
       if (home) {
@@ -999,7 +1006,8 @@ function cmdNpmPlan(w: World, f: Flags, verb: 'remove' | 'lockfiles'): number {
     s,
     verb === 'remove'
       ? `chore(deps): remove ${arg}`
-      : `chore(deps): canonical lockfiles${arg ? ` (${arg})` : ''}`
+      : `chore(deps): canonical lockfiles${arg ? ` (${arg})` : ''}`,
+    verb === 'lockfiles'
   );
 }
 
@@ -1506,6 +1514,70 @@ const CASES: Record<string, Case> = {
           /refused: Dockerfile already hold/.test(r.err) &&
           same(before, snap(fx, TOOL_FILES)),
         detail: `rc=${r.rc} ${r.err}`,
+      },
+    ];
+  },
+  async ledger(m) {
+    const bumpTwice = async (peer: boolean) => {
+      const fx = fixtureTree();
+      const a = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+      if (peer) fx.write('Dockerfile', `${fx.read('Dockerfile')}# a peer session's note\n`);
+      const mid = snap(fx, TOOL_FILES);
+      const rel = fx.fixture.releases['embed:tool'];
+      rel[0].published = '2026-10-02T00:00:00Z';
+      fs.writeFileSync(path.join(fx.root, 'fixture.json'), JSON.stringify(fx.fixture));
+      const b = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+      return { fx, a, b, mid };
+    };
+    const seq = await bumpTwice(false);
+    const peer = await bumpTwice(true);
+    const lock = (dirtyManifest: boolean) => {
+      const fx = fixtureTree((x) => {
+        x.commands.unshift({
+          match:
+            '^npx -y npm@11\\.20\\.0 install --package-lock-only --ignore-scripts --loglevel=notice$',
+          rc: 0,
+        });
+      }, true);
+      fx.write('package-lock.json', '{ "lockfileVersion": 3, "manual": true }\n');
+      if (dirtyManifest)
+        fx.write('package.json', '{ "name": "pins-fixture", "private": true, "x": 1 }\n');
+      return { fx, mid: snap(fx, ['package-lock.json', 'package.json']) };
+    };
+    const clean = lock(false);
+    const lockClean = await runCli(['lockfiles'], withMutant(clean.fx, m));
+    const dirtyM = lock(true);
+    const lockDirty = await runCli(['lockfiles'], withMutant(dirtyM.fx, m));
+    return [
+      {
+        name: 'bump: a second run over the files the first run left uncommitted is accepted and both edits are present',
+        ok:
+          seq.a.rc === 0 &&
+          seq.b.rc === 0 &&
+          seq.fx.read('Dockerfile').includes('TOOL_VERSION=1.2.0'),
+        detail: `a=${seq.a.rc} b=${seq.b.rc} ${seq.b.err}`,
+      },
+      {
+        name: "bump: a peer's line added after the first run's write is refused by name, the file byte-identical",
+        ok:
+          peer.a.rc === 0 &&
+          peer.b.rc === 1 &&
+          /refused: Dockerfile already hold/.test(peer.b.err) &&
+          same(peer.mid, snap(peer.fx, TOOL_FILES)),
+        detail: `a=${peer.a.rc} b=${peer.b.rc} ${peer.b.err}`,
+      },
+      {
+        name: 'lockfiles: a manually changed lockfile with a clean manifest is accepted',
+        ok: lockClean.rc === 0,
+        detail: `rc=${lockClean.rc} ${lockClean.err}`,
+      },
+      {
+        name: 'lockfiles: a changed lockfile beside a changed manifest is refused, both byte-identical',
+        ok:
+          lockDirty.rc === 1 &&
+          /refused: package-lock\.json already hold/.test(lockDirty.err) &&
+          same(dirtyM.mid, snap(dirtyM.fx, ['package-lock.json', 'package.json'])),
+        detail: `rc=${lockDirty.rc} ${lockDirty.err}`,
       },
     ];
   },
@@ -3357,6 +3429,8 @@ const MUTANT_CASES: Record<Mutant, string> = {
   'no-canonical': 'canonical',
   'partial-write': 'mismatch',
   'no-dirty-check': 'dirty',
+  'ledger-off': 'ledger',
+  'ledger-by-path': 'ledger',
   'no-restore': 'restore',
   'blind-restore': 'compare',
   'first-eligible': 'setmajor',
