@@ -88,15 +88,9 @@
     "leg, 'onLeg' pins a unit to a leg, 'notOnLeg' keeps a unit off one. quality-pytest needs no entry: its xdist groups come",
     "from the gate's own mutex model and are indivisible there. The gate reds a committed plan that breaks a rule, and",
     "--rebalance refuses one it cannot satisfy.",
-    "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py is SEEDED from one local run (37 tests, 9.10 s, 2026-09-29, box B3),",
-    "not a CI p90: 8a0fdc995 added the file after the last --refresh, and an unpriced unit fails the gate's STABLE control.",
-    "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py is SEEDED the same way (17 tests, 0.28 s, 2026-09-29, boxes B4/B5).",
-    "'units' github.com/rediacc/renet/pkg/infra/{aptretry,pkgset} were SEEDED from go's own elapsed on one local run (19.149 s, 0.004 s, 2026-09-29; renet 99ebeca, 226bf35); aptretry's behavior tests wait on real timeouts. Every --refresh since replaces the seed with the measured p90, so the stored number is the latest sample, not the seed.",
-    "'units' github.com/rediacc/renet/pkg/infra/cephpkg was SEEDED the same way (0.026 s on one local run, 2026-09-29; renet b7e55e6) and is re-measured by every --refresh.",
-    "'units' pytest:.ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py was SEEDED from one local run's summed testcase times (36 tests, 69 ms, 2026-09-29, box P6) and is re-measured by every --refresh.",
-    "'job_p90_minutes' 'Renet pkg scope', 'Renet pkg matrix (<distro>)' and 'E2E Ceph Workers non-apt (<distro>)' are SEEDED, not measured (box P6 of PLAN-renet-ceph-gpu-non-apt.md; P7 replaces them with 5 nightly runs):",
-    "the matrix legs from one local Docker run of renet_pkg_matrix.py per distro (95-147 s, 2026-09-29) plus about 3 minutes of runner setup and the renet build, the Ceph Workers legs from plan section 4 (ubuntu's 12.5 plus the rpm download and Docker CE on 2 Ceph nodes, 13-15).",
-    "'job_p90_minutes' 'E2E Backup Browse-At' was SEEDED at 9.0 (PLAN-e2e-browse-at-ci B6, 2026-10-21) and is now MEASURED: B8's budget_report --refresh --branch 1020-1 (2026-10-22, after green PR run 39742633342, job 119710934780 at 7m00s) recorded 7.0."
+    "Every value that used to be SEEDED here is now MEASURED by the 2026-10-22 refresh (budget_report --refresh --branch 1020-1, 10 sampled runs, after green PR run 39742633342):",
+    "the vm_bake_key/vm_bake_image and renet_pkg_matrix pytest units, the renet pkg/infra aptretry, pkgset and cephpkg go units, 'Renet pkg scope', 'Renet pkg matrix (<distro>)' and 'E2E Ceph Workers non-apt (<distro>)' (seeded 2026-09-29, PLAN-renet-ceph-gpu-non-apt P6),",
+    "and 'E2E Backup Browse-At' (seeded 9.0 at PLAN-e2e-browse-at-ci B6, 2026-10-21; measured 7.0, job 119710934780 at 7m00s). The seed derivations are in git history before commit 9c568c99e."
   ],
   "refreshed_at": "2026-10-22T08:57:07Z",
   "concurrency": 20,
