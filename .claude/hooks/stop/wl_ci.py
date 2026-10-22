@@ -1067,8 +1067,10 @@ def adhoc_watch(live_bg):
 
 
 # A background task that is BUILDING A PUSH: the pre-push battery (ci:quick, the ci-runner the slow gates go through, vm:check) or the push itself. Matched against the command only, never the description, so a task that merely talks about ci:quick does not count.
+# The command must RUN it: it starts a shell segment (after ^ ; & | ( then do), optionally behind VAR=value assignments, so `tail scripts/ci-runner/run.ts` or `grep "npm run ci:quick"` is a reader, not a pipeline.
 PUSH_PIPELINE_RE = re.compile(
-    r"\bnpm\s+run\s+(?:ci:quick|ci|vm:check)\b|scripts/ci-runner/run\.ts|\bgit\s+push\b"
+    r"(?:^|[;&|(]|\bthen\b|\bdo\b)\s*(?:\w+=(?:'[^']*'|\"[^\"]*\"|\S*)\s+)*"
+    r"(?:npm\s+run\s+(?P<gates>ci:quick|ci|vm:check)\b|(?:npx\s+)?tsx\s+scripts/ci-runner/run\.ts|git\s+push\b(?P<push>[^;&|\n]*))"
 )
 # Paths whose change is the loop's own paperwork (records, ledgers, plans, STATE.md), not a fix. Unpushed commits touching only these are no reason to stand a red down.
 FIX_PAPERWORK_PREFIXES = ("agent/",)
@@ -1081,7 +1083,7 @@ def fix_in_flight(root, ref, tip, live_bg):
 
       1. the checkout is on `ref` and the pushed head `tip` is a strict ancestor of HEAD (the unpushed commits sit on top of the red head);
       2. at least one unpushed commit changes a path outside FIX_PAPERWORK_PREFIXES (a review record or STATE.md is not a fix);
-      3. a RUNNING background task's command matches PUSH_PIPELINE_RE.
+      3. a RUNNING background task's command runs a push pipeline (PUSH_PIPELINE_RE): the gates judge the tree whatever its branch, and a `git push` counts only when its arguments name `ref`.
 
     The stand-down ends by itself: the push moves `tip` (a new failure set re-arms the budget), and a pipeline that exits without pushing fails fact 3, so the red blocks again on the next stop.
     """
@@ -1099,8 +1101,12 @@ def fix_in_flight(root, ref, tip, live_bg):
         return None
     task = ""
     for b in live_bg or []:
-        if PUSH_PIPELINE_RE.search(str(b.get("command") or "")):
-            task = str(b.get("id") or "")
+        for m in PUSH_PIPELINE_RE.finditer(str(b.get("command") or "")):
+            # A push of ANOTHER branch is not this fix on its way.
+            if m.group("push") is None or ref in m.group("push").split():
+                task = str(b.get("id") or "")
+                break
+        if task:
             break
     if not task:
         return None

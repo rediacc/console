@@ -82,9 +82,10 @@ check("... but only the code path as a fix", (got or {}).get("files"), 1)
 check("... naming the pipeline task", (got or {}).get("task"), "bza6uy3ls")
 
 # ---- 2. each fact removed, one at a time ------------------------------------------------------------
+repo0, tip0 = repo_with()
 check(
-    "control: no unpushed commit",
-    W.fix_in_flight(*repo_with()[:1], BRANCH, repo_with()[1], PIPELINE),
+    "control: no unpushed commit (HEAD is the red head)",
+    W.fix_in_flight(repo0, BRANCH, tip0, PIPELINE),
     None,
 )
 repo, tip = repo_with("agent/d778be9d/STATE.md", "agent/ledgers/turbo-push-reasons.jsonl")
@@ -109,12 +110,12 @@ check(
     None,
 )
 check("control: another branch checked out", W.fix_in_flight(repo, "other", tip, PIPELINE), None)
-# The pushed head is not under HEAD (a rebase or another session's push): the local commits are not on top of the red.
-# A different root, or the two scratch repos would mint the same first commit sha within one second.
-repo2, _tip2 = repo_with("packages/cli/src/b.ts", root="unrelated")
+# The pushed head EXISTS here but is not under HEAD (a rebase, or another session's push): the local commits are not on top of the red.
+repo2, root2 = repo_with("packages/cli/src/b.ts")
+diverged = git(repo2, "commit-tree", root2 + "^{tree}", "-p", root2, "-m", "diverged")
 check(
-    "control: the red head is not an ancestor of HEAD",
-    W.fix_in_flight(repo2, BRANCH, tip, PIPELINE),
+    "control: a present but diverged red head",
+    W.fix_in_flight(repo2, BRANCH, diverged, PIPELINE),
     None,
 )
 
@@ -123,11 +124,26 @@ for cmd in (
     "npx tsx scripts/ci-runner/run.ts --only check:ci-security-audit",
     "TURBO_PUSH_REASON='red-fix: x' git push origin 1020-1",
     "npm run vm:check -- --changed",
+    "cd /x && npm run ci:quick",
+    "TURBO_PUSH_REASON='red-fix: a b' git push origin 1020-1",
 ):
     check(
         "pipeline: %s" % cmd.split()[0][:30],
         bool(W.fix_in_flight(repo, BRANCH, tip, [{"id": "p", "command": cmd}])),
         True,
+    )
+
+# ---- 3b. readers and other branches are not this fix's pipeline ------------------------------------
+for cmd in (
+    "tail -50 scripts/ci-runner/run.ts",
+    'grep -n "npm run ci:quick" package.json',
+    "git push origin other-branch",
+    "git push origin 1020-10",
+):
+    check(
+        "not a pipeline: %s" % cmd,
+        W.fix_in_flight(repo, BRANCH, tip, [{"id": "p", "command": cmd}]),
+        None,
     )
 
 # ---- 4. ci_trouble: `fixing` on a final red, `trouble` while live or without the pipeline ---------
