@@ -622,13 +622,13 @@ const RUNNER_STEP_NAMES = ['Set up job', 'Complete job'];
 
 /**
  * The runner's post-step for an UNNAMED `uses:` step is "Post Run <action>" (named ones are "Post <step name>", which a workflow
- * step such as "Post review report" can also be, so only this prefix is unambiguous). A stall there is the platform's cleanup:
+ * step such as "Post review report" can also be, so only this prefix is unambiguous, and test_no_workflow_step_is_named_like_a_runner_post_run_step keeps it so). A stall there is the platform's cleanup:
  * run 39821300649 (2026-10-22) was cancelled with 'E2E Probe (13-postgres-fork-isolation.test.ts#part1)' stuck in
  * 'Post Run actions/checkout@...' after its test steps had passed.
  */
 const RUNNER_STEP_PREFIXES = ['Post Run '];
 
-/** True when `stepName` is an infra step: one of `runnerSteps` (default RUNNER_STEP_NAMES, the runner-owned steps) or a match for one of `patterns` (default INFRA_STEP_PATTERNS). Both lists are parameters, so a caller can isolate either. Pure. */
+/** True when `stepName` is an infra step: a runner-owned step (`runnerSteps`, default RUNNER_STEP_NAMES, which also brings RUNNER_STEP_PREFIXES; any other list disables the prefixes) or a match for one of `patterns` (default INFRA_STEP_PATTERNS). Passing `[]` for `runnerSteps` isolates the patterns; the patterns alone cannot switch the runner-owned steps off. Pure. */
 function isInfraStep(stepName, patterns = INFRA_STEP_PATTERNS, runnerSteps = RUNNER_STEP_NAMES) {
   if (typeof stepName !== 'string' || stepName === '') return false;
   if (runnerSteps.includes(stepName)) return true;

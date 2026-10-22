@@ -1299,6 +1299,42 @@ def test_runner_post_run_steps_are_infra_and_named_post_steps_are_not(gate):
     gate.log_pass("only the runner's unambiguous 'Post Run ' prefix is infra")
 
 
+def test_no_workflow_step_is_named_like_a_runner_post_run_step(gate):
+    """The 'Post Run ' prefix is unambiguous only while no workflow or action step is NAMED with it: such a step would be retried as an infra stall instead of cancelled."""
+    names = sorted(
+        {
+            m.group(1).strip("'\"")
+            for f in _step_sources()
+            for m in _STEP_NAME_RE.finditer(f.read_text(encoding="utf-8"))
+        }
+    )
+    gate.assert_eq(len(names) > 100, True, "the workflow step names were read (%d)" % len(names))
+    gate.assert_eq(
+        [n for n in names if n.startswith("Post Run ")], [], "no step is named 'Post Run ...'"
+    )
+    gate.log_pass("no workflow step collides with the runner's 'Post Run ' prefix")
+
+
+def test_monitor_live_overrun_in_a_post_run_step_is_retried(gate, tmp_path):
+    step = "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+    trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, step)], PR_RUN)
+    _assert_retried_not_cancelled(gate, trace, step)
+    gate.log_pass("a live overrun stuck in a 'Post Run' cleanup step at attempt 1 holds a rerun")
+
+
+def test_a_custom_runner_list_disables_the_post_run_prefix(gate):
+    verdicts = _node_eval(
+        gate,
+        "const m=require(process.argv[1]);const s='Post Run actions/checkout@x';"
+        "process.stdout.write(JSON.stringify([m.isInfraStep(s),m.isInfraStep(s,[],[]),"
+        "m.isInfraStep(s,[],['Complete job'])]))",
+    )
+    gate.assert_eq(
+        verdicts, [True, False, False], "the prefix rides only with the default runner list"
+    )
+    gate.log_pass("a caller's own runner list is unaffected by the 'Post Run ' prefix")
+
+
 def test_monitor_live_overrun_in_set_up_job_is_retried(gate, tmp_path):
     trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Set up job")], PR_RUN)
     _assert_retried_not_cancelled(gate, trace, "Set up job")
