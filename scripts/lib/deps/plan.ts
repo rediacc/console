@@ -99,6 +99,8 @@ export function freshnessCutoffMs(nowMs: number, minReleaseAgeMs: number): numbe
  *
  * INSTALL BEFORE UPDATE, PER LOCKFILE (2026-10-08). Within one project the out-of-range `npm install` steps run first and the project's single `npm update` after them. The reverse order, which this replaced, ran the update while the OLD version of an allow-listed sibling was still installed: @opentelemetry/sdk-node 0.222.0 (and its 0.x experimental family) pins @opentelemetry/core, resources and sdk-metrics EXACTLY at 2.11.0, so `npm update -w=packages/cli @opentelemetry/core ...` kept 2.11.0, the freshness guard failed the step (judged 2.12.0, installed 2.11.0) in the console root and in private/account alike, and only the install of sdk-node@0.223.0 that ran after it released the pin. Installing first moves the pinning sibling, so the update then resolves the judged version in the same run. When no allow entry moves the sibling, the update still cannot land; verifyUpdatedVersions then names the lockfile entry that pins it (a held-back package, not a freshness breach).
  *
+ * A PEER FAMILY RIDES THE INSTALL (2026-10-22). Within one manifest, an in-range package that shares an npm scope with an out-of-range one joins that install as an exact `name@latest` instead of waiting for the `npm update`: `@opentelemetry/core@3` peer-requires `@opentelemetry/api` >=1.10 and failed ERESOLVE in private/account while the in-range api 1.9.1 -> 1.10.0 was still queued. Only the same-scope siblings of a package whose semver major number changes fold (a 0.x minor keeps its siblings on the update); the rest of the manifest stays on the single `npm update` (a pinned sibling family installed by name fails where `update` succeeds).
+ *
  * AN OVERRIDE DECIDES WHAT NPM RESOLVES (worklist #d8fef08a). A package the project's `overrides` pins to a range that excludes the judged version cannot move by `npm update` or `npm install`: on 2026-10-01 the root pinned fast-xml-parser to 5.11.1, `npm update -w=packages/www fast-xml-parser` stayed on 5.11.1, and the freshness guard failed the step. Such a package leaves the ordinary steps. When the override is an exact version and every declaring manifest's range admits the target, the step moves the override to the judged version (planOverrideBump) and runs `npm update <name>` in the project root, which re-resolves every copy the override governs (measured on npm 11.20.0: `npm update` honours a changed override, while `npm install --package-lock-only` exits 0 without applying it). Any other override that excludes the target (a bounded range, a range this gate cannot read, a declared range that excludes the target too) is a refused step: moving it is a decision about the bound, not a freshness bump. An override that admits the target, or a `$name` reference to the root's own range, changes nothing here.
  */
 export function planInstalls(
@@ -168,8 +170,27 @@ export function planInstalls(
       overridden.set(key, entry);
       return false;
     });
-    const inRange = pkgs.filter((p) => satisfiesRange(ranges[p.name], p.latest));
-    const outOfRange = pkgs.filter((p) => !inRange.includes(p));
+    let inRange = pkgs.filter((p) => satisfiesRange(ranges[p.name], p.latest));
+    let outOfRange = pkgs.filter((p) => !inRange.includes(p));
+    // PEER FAMILY RIDES THE INSTALL (2026-10-22). An in-range sibling of an out-of-range package (same npm scope) joins that manifest's install as an exact `name@latest`: core@3 peer-requires @opentelemetry/api >=1.10, and the in-range api bump queued for the later `npm update` left the install failing ERESOLVE. Unscoped and unrelated packages stay on the update. The peer-split mutant (fixture runs only) disables this.
+    if (outOfRange.length > 0 && !(MUTANT === 'peer-split' && FIXTURE_ROOT)) {
+      const scopeOf = (n: string) => (n.startsWith('@') ? n.split('/')[0] : null);
+      const majorOf = (v: string) => parseVersion(v)?.major;
+      // Only a bump of the semver major number can change a peer range; a 0.x minor (sdk-node 0.222 -> 0.223) keeps its in-range siblings on the update, which the install-before-update order serves.
+      const scopes = new Set<string>();
+      for (const p of outOfRange) {
+        const scope = scopeOf(p.name);
+        if (scope !== null && majorOf(p.current) !== majorOf(p.latest)) scopes.add(scope);
+      }
+      const folded = inRange.filter((p) => {
+        const scope = scopeOf(p.name);
+        return scope !== null && scopes.has(scope);
+      });
+      if (folded.length > 0) {
+        inRange = inRange.filter((p) => !folded.includes(p));
+        outOfRange = [...outOfRange, ...folded];
+      }
+    }
     if (inRange.length > 0) {
       // The split-update mutant (fixture runs only, see MUTANTS) keys the group per manifest, which is the planner this replaced.
       const key = MUTANT === 'split-update' && FIXTURE_ROOT ? `${cwd}\0${workspace ?? ''}` : cwd;
