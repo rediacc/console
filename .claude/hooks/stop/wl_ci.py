@@ -8,6 +8,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import sys
 import time
 import urllib.parse
@@ -1067,11 +1068,61 @@ def adhoc_watch(live_bg):
 
 
 # A background task that is BUILDING A PUSH: the pre-push battery (ci:quick, the ci-runner the slow gates go through, vm:check) or the push itself. Matched against the command only, never the description, so a task that merely talks about ci:quick does not count.
-# The command must RUN it: it starts a shell segment (after ^ ; & | ( then do), optionally behind VAR=value assignments, so `tail scripts/ci-runner/run.ts` or `grep "npm run ci:quick"` is a reader, not a pipeline.
-PUSH_PIPELINE_RE = re.compile(
-    r"(?:^|[;&|(]|\bthen\b|\bdo\b)\s*(?:\w+=(?:'[^']*'|\"[^\"]*\"|\S*)\s+)*"
-    r"(?:npm\s+run\s+(?P<gates>ci:quick|ci|vm:check)\b|(?:npx\s+)?tsx\s+scripts/ci-runner/run\.ts|git\s+push\b(?P<push>[^;&|\n]*))"
-)
+# A push pipeline is judged per shell SEGMENT, tokenized by shlex so quoted text stays one argument (`grep "a; npm run ci:quick" f` is a reader). A segment counts when its own first words, after VAR=value assignments and a shell keyword, run the gates or push.
+_PIPE_KEYWORDS = frozenset({"then", "do", "else", "time", "exec", "env", "{", "!"})
+_PIPE_GATES = frozenset({"ci:quick", "ci", "vm:check"})
+_PIPE_LAUNCHERS = frozenset({"npx", "tsx", "node", "bun", "ts-node"})
+_PIPE_RUNNER = "scripts/ci-runner/run.ts"
+_ENV_ASSIGN_RE = re.compile(r"^\w+=")
+
+
+def _command_segments(command):
+    """The command's shell segments as token lists; [] when it does not tokenize (an unbalanced quote counts as no pipeline)."""
+    lex = shlex.shlex(command.replace("\n", " ; "), posix=True, punctuation_chars=";&|()")
+    lex.whitespace_split = True
+    try:
+        tokens = list(lex)
+    except ValueError:
+        return []
+    segments, seg = [], []
+    for tok in tokens:
+        if tok and set(tok) <= set(";&|()"):
+            segments.append(seg)
+            seg = []
+        else:
+            seg.append(tok)
+    segments.append(seg)
+    return [x for x in segments if x]
+
+
+def _segment_pipeline(seg, ref):
+    """True when this one segment runs the gates, or pushes `ref` (a bare `git push` pushes the checked-out branch, which fix_in_flight has already required to be `ref`)."""
+    k = 0
+    while k < len(seg) and (seg[k] in _PIPE_KEYWORDS or _ENV_ASSIGN_RE.match(seg[k])):
+        k += 1
+    seg = seg[k:]
+    if not seg:
+        return False
+    head = seg[0]
+    if head == "npm" and len(seg) >= 3 and seg[1] == "run" and seg[2] in _PIPE_GATES:
+        return True
+    if head.endswith(_PIPE_RUNNER) or (
+        head in _PIPE_LAUNCHERS and any(t.endswith(_PIPE_RUNNER) for t in seg[1:3])
+    ):
+        return True
+    if head == "git" and "push" in seg[1:4]:
+        args = [t for t in seg[seg.index("push") + 1 :] if not t.startswith("-")]
+        if len(args) <= 1:
+            return True  # `git push` or `git push origin`: the current branch
+        return any(a == ref or a.rsplit(":", 1)[-1].rsplit("/", 1)[-1] == ref for a in args[1:])
+    return False
+
+
+def runs_push_pipeline(command, ref):
+    """True when the background `command` runs a push pipeline for `ref` (see _segment_pipeline)."""
+    return any(_segment_pipeline(seg, ref) for seg in _command_segments(str(command or "")))
+
+
 # Paths whose change is the loop's own paperwork (records, ledgers, plans, STATE.md), not a fix. Unpushed commits touching only these are no reason to stand a red down.
 FIX_PAPERWORK_PREFIXES = ("agent/",)
 
@@ -1083,7 +1134,7 @@ def fix_in_flight(root, ref, tip, live_bg):
 
       1. the checkout is on `ref` and the pushed head `tip` is a strict ancestor of HEAD (the unpushed commits sit on top of the red head);
       2. at least one unpushed commit changes a path outside FIX_PAPERWORK_PREFIXES (a review record or STATE.md is not a fix);
-      3. a RUNNING background task's command runs a push pipeline (PUSH_PIPELINE_RE): the gates judge the tree whatever its branch, and a `git push` counts only when its arguments name `ref`.
+      3. a RUNNING background task's command runs a push pipeline (runs_push_pipeline): the gates judge the tree whatever its branch, and a `git push` counts only when it pushes `ref`.
 
     The stand-down ends by itself: the push moves `tip` (a new failure set re-arms the budget), and a pipeline that exits without pushing fails fact 3, so the red blocks again on the next stop.
     """
@@ -1101,12 +1152,8 @@ def fix_in_flight(root, ref, tip, live_bg):
         return None
     task = ""
     for b in live_bg or []:
-        for m in PUSH_PIPELINE_RE.finditer(str(b.get("command") or "")):
-            # A push of ANOTHER branch is not this fix on its way.
-            if m.group("push") is None or ref in m.group("push").split():
-                task = str(b.get("id") or "")
-                break
-        if task:
+        if runs_push_pipeline(b.get("command"), ref):
+            task = str(b.get("id") or "")
             break
     if not task:
         return None
