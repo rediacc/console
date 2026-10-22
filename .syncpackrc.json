@@ -44,31 +44,40 @@
       "pinVersion": "^24.19.0"
     },
     {
-      "label": "Pin the OpenTelemetry 0.x line in lockstep",
+      "label": "Pin the OpenTelemetry 0.3 line in lockstep",
       "packages": [
         "**"
       ],
       "dependencies": [
-        "@opentelemetry/api-logs",
         "@opentelemetry/exporter-logs-otlp-http",
         "@opentelemetry/exporter-metrics-otlp-http",
         "@opentelemetry/exporter-trace-otlp-http",
-        "@opentelemetry/sdk-logs",
         "@opentelemetry/sdk-node"
+      ],
+      "pinVersion": "^0.300.0"
+    },
+    {
+      "label": "Pin the OpenTelemetry api-logs line (no 0.300 release yet)",
+      "packages": [
+        "**"
+      ],
+      "dependencies": [
+        "@opentelemetry/api-logs"
       ],
       "pinVersion": "^0.223.0"
     },
     {
-      "label": "Pin the OpenTelemetry 2.x line in lockstep",
+      "label": "Pin the OpenTelemetry 3.x line in lockstep",
       "packages": [
         "**"
       ],
       "dependencies": [
         "@opentelemetry/core",
         "@opentelemetry/resources",
+        "@opentelemetry/sdk-logs",
         "@opentelemetry/sdk-metrics"
       ],
-      "pinVersion": "^2.11.0"
+      "pinVersion": "^3.0.0"
     },
     {
       "label": "Pin i18next for CLI",

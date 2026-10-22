@@ -78,7 +78,7 @@ export function setupOtelSdk(opts: {
   const sdk = new NodeSDK({
     resource,
     traceExporter,
-    metricReader,
+    metricReaders: [metricReader],
     logRecordProcessors: [new SimpleLogRecordProcessor({ exporter: logExporter })],
   });
 
