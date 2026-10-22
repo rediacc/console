@@ -74,7 +74,13 @@ import { fileURLToPath } from 'node:url';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
-import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
+import {
+  emptyReleaseList,
+  githubAsker,
+  NotCompared,
+  PinTally,
+  UnreadableListing,
+} from '../lib/upstream.js';
 
 const CONSOLE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LOCK_REL = 'private/account/e2e/real-provider.lock.json';
@@ -174,6 +180,7 @@ async function fetchListing(src: PinSource): Promise<unknown> {
 /** Every stable release under the source's tag prefix, newest version first. */
 function stableReleases(listing: unknown, src: PinSource): StableRelease[] {
   if (!Array.isArray(listing)) throw new UnreadableListing('the response is not a release list');
+  if (listing.length === 0) throw emptyReleaseList(src.repo);
   const out: StableRelease[] = [];
   for (const raw of listing as Array<Record<string, unknown> | null>) {
     const tag = typeof raw?.tag_name === 'string' ? raw.tag_name : '';

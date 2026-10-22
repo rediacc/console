@@ -183,6 +183,22 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
     gate.log_pass("an unreachable upstream is red after three attempts")
 
 
+def test_an_empty_release_list_is_not_compared(gate, tmp_path):
+    """The same empty-list case as the devcontainer gate (scripts/lib/upstream.ts emptyReleaseList): reachability, not an unusable listing."""
+    listing = current_listing()
+    script = served(bitwarden=[ok(listing[BITWARDEN])], vaultwarden=[ok([])])
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(gate, tmp_path, stub.base)
+    gate.assert_exit(1, result, "an empty release list fails closed")
+    gate.assert_contains(
+        result.err, "1 real-provider pin(s) were NOT compared", "one not-compared finding"
+    )
+    gate.assert_contains(
+        result.err, "HTTP 200 with an empty release list", "it names the empty answer"
+    )
+    gate.log_pass("an empty release list is not compared")
+
+
 def test_a_rate_limit_is_red(gate, tmp_path):
     listing = current_listing()
     script = served(bitwarden=[ok(listing[BITWARDEN])], vaultwarden=[RATE_LIMITED])
