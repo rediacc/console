@@ -3,7 +3,13 @@ import { configService } from '../../services/config/config-resources.js';
 import { localExecutorService } from '../../services/executor/local-executor.js';
 import { executeRepoFunction } from '../repo-executor.js';
 
-afterEach(() => vi.restoreAllMocks());
+// The failure renderer exits the process outright in an agent environment; these tests read the exit code instead.
+vi.mock('../agent-guard.js', () => ({ isAgentEnvironment: () => false }));
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  process.exitCode = undefined;
+});
 
 const msgs = { starting: 's', completed: 'c', failed: 'f' };
 
@@ -145,5 +151,37 @@ describe('executeRepoFunction declares the recorded datastore (#74)', () => {
     await executeRepoFunction('repository_status', 'shop', 'm1', {}, {}, msgs);
 
     expect(exec.mock.calls[0][0].datastore).toBeUndefined();
+  });
+});
+
+/**
+ * The callers' contract: on a failed result executeRepoFunction has ALREADY rendered the failure and set a
+ * failing exit code, so `backup browse`, `verify` and `snapshot` return without printing or setting one of their own.
+ * Mocking the executor in a command test cannot catch this side losing the code, which is why it is pinned here.
+ */
+describe('executeRepoFunction fails closed on a failed result', () => {
+  it.each([
+    ['its own exit code', 3, 3],
+    ['exit 1 for an exit code of 0', 0, 1],
+    ['exit 1 for no exit code', undefined, 1],
+  ])('sets %s', async (_label, exitCode, expected) => {
+    vi.spyOn(configService, 'getRepository').mockResolvedValue({
+      repositoryGuid: 'g',
+      tag: 'latest',
+      credential: 'cred',
+      networkId: 2816,
+    });
+    vi.spyOn(configService, 'ensureRepositoryNetworkId').mockResolvedValue(undefined as never);
+    vi.spyOn(localExecutorService, 'execute').mockResolvedValue({
+      success: false,
+      exitCode,
+      error: 'boom',
+    } as never);
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+
+    const result = await executeRepoFunction('backup_verify', 'shop', 'server-1', {}, {}, msgs);
+
+    expect(result.success).toBe(false);
+    expect(process.exitCode).toBe(expected);
   });
 });
