@@ -28,6 +28,8 @@ export interface PackageInfo {
   reason?: string;
   /** The allow key that authorised a breaking upgrade, when one did. */
   allowKey?: string;
+  /** The peerDependencies the TARGET (`latest`) version declares, from the registry document; absent when none was read. */
+  peers?: Record<string, string>;
 }
 
 /** The `packages` map of a manifest's package-lock.json, or null when there is none. */
