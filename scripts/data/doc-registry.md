@@ -832,7 +832,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/shadow/w7p5b-blocker-validator.observations.jsonl | 2 | inline |
 | .hadolint.yaml | 1 | # comment |
 | .shellcheckrc | 2 | # comment |
-| .syncpackrc-reasons.json | 8 | JSON value |
+| .syncpackrc-reasons.json | 9 | JSON value |
 | agent/ledgers/plan-investigation.jsonl | 2 | inline |
 | agent/plans/PLAN-retire-bash-oracles.inventory.tsv | 35 | prose only (no live entry) |
 | knip.jsonc | 26 | // comment |
