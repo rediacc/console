@@ -263,6 +263,13 @@ CI_NOTE_TURBO_HELD = (
     "go out now with TURBO_PUSH_REASON='red-fix: <why>'."
 )
 
+# ONE LINE, NOT A BLOCK (operator, 2026-10-22): the red head's fix is committed locally and a push pipeline is running, so the push will re-run every failing job (wl_ci.fix_in_flight). Args: PR, the failed job count, the jobs on one line, the red head, the unpushed commit count, the non-paperwork file count, the local head, the pipeline task id.
+CI_NOTE_FIXING = (
+    "CI on PR #%s is red on %d job(s): %s (head %s). Stood down, not blocking: %d unpushed "
+    "commit(s) changing %d file(s) sit on it (local head %s) and push pipeline task %s is running. "
+    "It blocks again if that task exits without the push."
+)
+
 # ONE LINE, NOT A BLOCK (worklist #e3fca920): every failed job failed only on findings the PR carries on purpose, so there is nothing new to fix or watch. Args: PR, the carried keys, the carry file, the jobs, and a live-run suffix.
 CI_NOTE_CARRIED = "CI on PR #%s is red only on carried finding(s) %s; carried in %s (job(s): %s%s)."
 

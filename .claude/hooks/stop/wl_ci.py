@@ -1066,6 +1066,71 @@ def adhoc_watch(live_bg):
     return "", ""
 
 
+# A background task that is BUILDING A PUSH: the pre-push battery (ci:quick, the ci-runner the slow gates go through, vm:check) or the push itself. Matched against the command only, never the description, so a task that merely talks about ci:quick does not count.
+PUSH_PIPELINE_RE = re.compile(
+    r"\bnpm\s+run\s+(?:ci:quick|ci|vm:check)\b|scripts/ci-runner/run\.ts|\bgit\s+push\b"
+)
+# Paths whose change is the loop's own paperwork (records, ledgers, plans, STATE.md), not a fix. Unpushed commits touching only these are no reason to stand a red down.
+FIX_PAPERWORK_PREFIXES = ("agent/",)
+
+
+def fix_in_flight(root, ref, tip, live_bg):
+    """{commits, files, task, head} when a fix for the red on `tip` is on its way to the PR, else None.
+
+    THE DEFECT (operator, 2026-10-22). PR #601 run 39685278337 was red on 997fcb58. The fix was committed locally (fb87c54b6 and four follow-ups) and ci:quick plus the three slow gates were running in the background to admit the push, yet the hook said "CI IS RED ... AND NOTHING IS WATCHING IT" twice. Something was: the push pipeline, whose push re-runs every failing job. All three facts below are local and mechanical, so none of them is the session's word for it:
+
+      1. the checkout is on `ref` and the pushed head `tip` is a strict ancestor of HEAD (the unpushed commits sit on top of the red head);
+      2. at least one unpushed commit changes a path outside FIX_PAPERWORK_PREFIXES (a review record or STATE.md is not a fix);
+      3. a RUNNING background task's command matches PUSH_PIPELINE_RE.
+
+    The stand-down ends by itself: the push moves `tip` (a new failure set re-arms the budget), and a pipeline that exits without pushing fails fact 3, so the red blocks again on the next stop.
+    """
+    if not tip or _git(root, "rev-parse", "--abbrev-ref", "HEAD") != ref:
+        return None
+    head = _git(root, "rev-parse", "HEAD")
+    if not head or head == tip or _git(root, "merge-base", tip, head) != tip:
+        return None
+    files = [
+        f
+        for f in _git(root, "diff", "--name-only", tip, head).splitlines()
+        if f and not f.startswith(FIX_PAPERWORK_PREFIXES)
+    ]
+    if not files:
+        return None
+    task = ""
+    for b in live_bg or []:
+        if PUSH_PIPELINE_RE.search(str(b.get("command") or "")):
+            task = str(b.get("id") or "")
+            break
+    if not task:
+        return None
+    n = _git(root, "rev-list", "--count", "%s..%s" % (tip, head))
+    return {
+        "commits": int(n) if n.isdigit() else 0,
+        "files": len(files),
+        "task": task,
+        "head": head,
+    }
+
+
+def ci_fixing_note(detail):
+    """The one-line report for a `fixing` ci_trouble state: the red stands, and its fix is building toward a push."""
+    import worklist_messages as M
+
+    info = (detail or {}).get("info") or {}
+    fx = (detail or {}).get("fixing") or {}
+    return M.CI_NOTE_FIXING % (
+        info.get("pr", "?"),
+        len((detail or {}).get("hard") or []),
+        ci_rows_line((detail or {}).get("hard") or []),
+        str(info.get("sha") or "")[:9],
+        fx.get("commits", 0),
+        fx.get("files", 0),
+        str(fx.get("head") or "")[:9],
+        fx.get("task", "?"),
+    )
+
+
 def ci_watch_armed(live_bg, rows, sha):
     """The id of a RUNNING background task watching THIS head, or "".
 
@@ -1212,7 +1277,9 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     """(state, detail) -- is the open PR in trouble nobody is on?
 
     state: unset | multi-session | no-pr | ok | pending | cancelled | watched | soft |
-           carried | trouble | downgraded | unreadable
+           carried | fixing | trouble | downgraded | unreadable
+
+    `fixing` is a final red whose fix is committed locally on top of the red head while a push pipeline runs (fix_in_flight); ci_fixing_note renders the one-line report and no block budget is spent.
 
     `carried` is a final head whose every failed job failed only on findings `.ci/config/carried-reds.json` carries (ci_carry_split); its detail names them under `carried` and ci_carried_note renders the advisory. A red with any uncarried, unreadable or keyless failure stays `trouble`.
 
@@ -1311,6 +1378,17 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
         }
     if not hard:
         return "soft", {"info": info, "hard": hard, "soft": soft, "live": live}
+    # A FIX ON ITS WAY stands the red down without spending the block budget, like `hold` (fix_in_flight says what counts). Only a final run: while it is live, more jobs may still fail that the local fix never saw.
+    fixing = None if live else fix_in_flight(root, ref, tip, live_bg)
+    if fixing:
+        return "fixing", {
+            "info": info,
+            "hard": hard,
+            "soft": soft,
+            "live": live,
+            "fixing": fixing,
+            "carried": carried_rows,
+        }
     low = (ack_text or "").lower()
     acked = [r["name"] for r in hard if r["name"].lower() in low]
     sig = hashlib.sha1(

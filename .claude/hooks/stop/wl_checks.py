@@ -4556,6 +4556,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     elif cistate == "cancelled":
         # Blocking contexts cancelled with nothing failing. wl_ci renders the attributed cause and returns "" for superseded/unknown, which stay silent (test_122).
         ci_report = wl_ci.ci_cancel_note(cidetail)
+    elif cistate == "fixing":
+        # The red head's fix is committed locally and a push pipeline is running (wl_ci.fix_in_flight): one report line, never a block.
+        ci_report = wl_ci.ci_fixing_note(cidetail)
     elif cistate == "carried":
         # Red only on findings .ci/config/carried-reds.json carries: one advisory line, never a block (worklist #e3fca920). A red with any uncarried or unreadable finding is `trouble` below.
         ci_report = wl_ci.ci_carried_note(cidetail)
@@ -4834,6 +4837,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             "watched",
             "cancelled",
             "carried",
+            "fixing",
         ) and isinstance(cidetail, dict):
             _prf_info = cidetail.get("info")
         _prf_num = (_prf_info or {}).get("pr")
