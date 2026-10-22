@@ -28,7 +28,7 @@ export interface PackageInfo {
   reason?: string;
   /** The allow key that authorised a breaking upgrade, when one did. */
   allowKey?: string;
-  /** The peerDependencies the TARGET (`latest`) version declares, from the registry document; absent when none was read. */
+  /** The peerDependencies the TARGET (`latest`) version declares, optional ones included (npm enforces an installed optional peer's range), from the registry document; absent when none was read. */
   peers?: Record<string, string>;
 }
 
