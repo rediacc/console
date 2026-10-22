@@ -21,6 +21,7 @@ import socket
 import subprocess
 import sys
 import threading
+import time
 
 import pytest
 
@@ -627,6 +628,19 @@ def _alive(pid: int) -> bool:
     return True
 
 
+def _gone(pid: int, timeout: float = 5.0) -> bool:
+    """True once `pid` stops answering `kill -0`, polling up to `timeout` seconds.
+
+    "Reaped the moment it exits" is a thread, not an instant: right after `stop()` SIGKILLs a child, the reaper may not have run yet, and the zombie still answers `kill -0`. Asserting `_alive` immediately made this case flaky (#d49ae221: "stop() returned 0 but the real port occupant is still alive", PR #601 run 39761731646). A process `stop()` really missed stays alive past the timeout and still fails, five seconds later.
+    """
+    deadline = time.monotonic() + timeout
+    while _alive(pid):
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.05)
+    return True
+
+
 def _spawn_reaped(argv: list[str], **kwargs) -> subprocess.Popen:
     """A real child process, reaped by a background thread the moment it exits, so `_alive()` reads real process-table state rather than a zombie."""
     proc = subprocess.Popen(argv, start_new_session=True, **kwargs)
@@ -685,10 +699,8 @@ def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant(
         rc = account.stop(env)
 
         assert rc == 0
-        assert not _alive(tracked.pid), "stop() returned 0 but the real tracked pid is still alive"
-        assert not _alive(listener.pid), (
-            "stop() returned 0 but the real port occupant is still alive"
-        )
+        assert _gone(tracked.pid), "stop() returned 0 but the real tracked pid is still alive"
+        assert _gone(listener.pid), "stop() returned 0 but the real port occupant is still alive"
         assert not state.is_file(), "stop() returned 0 but left the state file behind"
     finally:
         for proc in (tracked, listener):
