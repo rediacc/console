@@ -43,6 +43,11 @@ function failureOutputTail(message: string, stderr?: string, stdout?: string): s
   return tail;
 }
 
+// A rendered failure never exits 0: callers return right after it and rely on the code to fail closed.
+function failureExitCode(exitCode: number | undefined): number {
+  return typeof exitCode === 'number' && exitCode !== 0 ? exitCode : 1;
+}
+
 export function renderLocalExecutionFailure(
   result: Pick<
     ExecuteResult,
@@ -54,7 +59,7 @@ export function renderLocalExecutionFailure(
 ): void {
   const message = result.error ?? fallbackMessage;
   const code = result.errorCode ?? LOCAL_EXECUTION_FAILED_CODE;
-  const exitCode = typeof result.exitCode === 'number' ? result.exitCode : 1;
+  const exitCode = failureExitCode(result.exitCode);
   // Skip the tail when the executor already echoed the full output (non-capture failure path).
   const outputTail = result.outputEchoed
     ? undefined
