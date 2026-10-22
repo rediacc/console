@@ -323,8 +323,13 @@ export interface TxnOptions {
   submodules: string[];
   /** Every registry entry's id and gates, so a red gate shared with pins this run did not move can name them. */
   registry?: ReadonlyArray<{ id: string; gates: readonly string[] }>;
-  /** The `lockfiles` verb: a dirty package-lock.json is not foreign while its sibling package.json is clean (or ledger-known). */
-  lockfilesVerb?: boolean;
+  /**
+   * Paths (as the refusal prints them, `<repo>/<file>` or `<file>` for the console) whose uncommitted bytes the caller adopts
+   * by naming them with `--adopt`: a hand step this run builds on, such as a manual lockfile edit. Nothing is adopted by
+   * inference; a peer's edit the caller did not name stays refused (review of 575ed2c4: accepting any dirty lockfile beside a
+   * clean manifest overwrote a peer's hand edit).
+   */
+  adopt?: readonly string[];
 }
 
 export interface RepoChange {
@@ -484,16 +489,13 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
         const trusted = (q: RepoPath): boolean =>
           ledgerHolds(o.root, keyOf(q), sha(readBytes(absOf(o.root, q))), o.mutant);
         if (trusted(p)) continue;
-        if (o.lockfilesVerb && path.posix.basename(f) === 'package-lock.json') {
-          const manifest = { repo, file: path.posix.join(path.posix.dirname(f), 'package.json') };
-          const md = dirtyPaths(path.join(o.root, repo), [manifest.file]);
-          if (md !== null && (!md.has(manifest.file) || trusted(manifest))) continue;
-        }
-        foreign.push(repo === '.' ? f : `${repo}/${f}`);
+        const shown = repo === '.' ? f : `${repo}/${f}`;
+        if (o.adopt?.includes(shown)) continue;
+        foreign.push(shown);
       }
     }
     if (foreign.length > 0) {
-      res.failure = `refused: ${foreign.join(', ')} already hold(s) changes this run did not make (another session's work); commit or move them first`;
+      res.failure = `refused: ${foreign.join(', ')} already hold(s) changes this run did not make (another session's work); commit or move them first, or name a hand step of your own with --adopt <path>`;
       j.state = 'refused';
       saveJournal(dir, j);
       return res;
