@@ -67,6 +67,9 @@ describe('renderLocalExecutionFailure', () => {
   it.each([
     ['an exit code of 0', 0],
     ['no exit code', undefined],
+    ['NaN', Number.NaN],
+    ['256, which a POSIX exit status wraps to 0', 256],
+    ['a negative code', -1],
   ])('fails closed with exit 1 on %s', (_label, exitCode) => {
     mockGetOutputFormat.mockReturnValue('table');
 
