@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-21T09:26:54.676Z",
+  "generatedAt": "2026-10-22T18:40:25.105Z",
   "legs": [
     {
       "index": 1,
@@ -452,6 +452,7 @@
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_stale_d1.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py",
+        "pytest:.ci/rediacc_ci/tests/test_infra_apt_mirror.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_build_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py",

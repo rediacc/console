@@ -6,15 +6,21 @@ import typing
 
 import pytest
 
+from rediacc_ci import well_known
 from rediacc_ci.infra import apt_mirror
+
+AZ = well_known.UBUNTU_AZURE_MIRROR
+ARCH = well_known.UBUNTU_ARCHIVE
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 HOSTED = {"GITHUB_ACTIONS": "true", "RUNNER_ENVIRONMENT": "github-hosted"}
 
-MIRRORS_BARE = "http://azure.archive.ubuntu.com/ubuntu/ priority:1\nhttp://archive.ubuntu.com/ubuntu/ priority:1\nhttp://security.ubuntu.com/ubuntu/ priority:3\n"
-DEB822 = "Types: deb\nURIs: http://azure.archive.ubuntu.com/ubuntu/\nSuites: noble noble-updates\nComponents: main\n"
+MIRRORS_BARE = (
+    f"{AZ}/ priority:1\n{ARCH}/ priority:1\nhttp://security.ubuntu.com/ubuntu/ priority:3\n"
+)
+DEB822 = f"Types: deb\nURIs: {AZ}/\nSuites: noble noble-updates\nComponents: main\n"
 
 
 def make_tree(root: pathlib.Path) -> pathlib.Path:
@@ -32,20 +38,14 @@ def test_rewrites_azure_to_archive_on_hosted(tmp_path: pathlib.Path) -> None:
     assert "azure" not in (apt / "apt-mirrors.txt").read_text()
     # The rewrite makes the first line a duplicate of the second; one survives.
     assert (
-        (apt / "apt-mirrors.txt").read_text()
-        == "http://archive.ubuntu.com/ubuntu/ priority:1\nhttp://security.ubuntu.com/ubuntu/ priority:3\n"
-    )
-    assert (
-        "URIs: http://archive.ubuntu.com/ubuntu/\n"
-        in (apt / "sources.list.d" / "ubuntu.sources").read_text()
-    )
+        apt / "apt-mirrors.txt"
+    ).read_text() == f"{ARCH}/ priority:1\nhttp://security.ubuntu.com/ubuntu/ priority:3\n"
+    assert f"URIs: {ARCH}/\n" in (apt / "sources.list.d" / "ubuntu.sources").read_text()
 
 
 def test_deb_lines_are_not_deduplicated() -> None:
-    text = "deb http://azure.archive.ubuntu.com/ubuntu/ noble main\ndeb http://archive.ubuntu.com/ubuntu/ noble main\n"
-    assert (
-        apt_mirror.rewrite_text(text).count("deb http://archive.ubuntu.com/ubuntu/ noble main") == 2
-    )
+    text = f"deb {AZ}/ noble main\ndeb {ARCH}/ noble main\n"
+    assert apt_mirror.rewrite_text(text).count(f"deb {ARCH}/ noble main") == 2
 
 
 @pytest.mark.parametrize(
@@ -78,15 +78,10 @@ def test_missing_files_are_skipped(tmp_path: pathlib.Path) -> None:
 
 def test_a_duplicate_already_in_the_file_is_kept():
     """Only a duplicate the rewrite creates is dropped (review c883a865.1)."""
-    text = (
-        "http://archive.ubuntu.com/ubuntu/\tpriority:1\n"
-        "http://archive.ubuntu.com/ubuntu/\tpriority:1\n"
-        "http://azure.archive.ubuntu.com/ubuntu/\tpriority:2\n"
-        "http://azure.archive.ubuntu.com/ubuntu/\tpriority:1\n"
-    )
+    text = f"{ARCH}/\tpriority:1\n{ARCH}/\tpriority:1\n{AZ}/\tpriority:2\n{AZ}/\tpriority:1\n"
     out = apt_mirror.rewrite_text(text).splitlines()
     assert out == [
-        "http://archive.ubuntu.com/ubuntu/\tpriority:1",
-        "http://archive.ubuntu.com/ubuntu/\tpriority:1",
-        "http://archive.ubuntu.com/ubuntu/\tpriority:2",
+        f"{ARCH}/\tpriority:1",
+        f"{ARCH}/\tpriority:1",
+        f"{ARCH}/\tpriority:2",
     ]
