@@ -3750,6 +3750,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-go-deps',
     run: 'npm run check:ci-go-deps',
     gate: true,
+    slow: true, // 46.2s CI step measured 2026-10-22 (lane refresh after run 39742633342): go list -u -m -json all resolves every module upstream
     leaves: ['.ci/scripts/quality/check_go_deps.py'],
     ci: {
       kind: 'step',
