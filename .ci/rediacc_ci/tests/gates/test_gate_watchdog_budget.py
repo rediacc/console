@@ -1284,6 +1284,30 @@ def test_monitor_live_overrun_in_complete_job_is_retried(gate, tmp_path):
     gate.log_pass("a live overrun stuck in 'Complete job' at attempt 1 holds a rerun")
 
 
+def test_monitor_live_overrun_in_set_up_job_is_retried(gate, tmp_path):
+    trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Set up job")], PR_RUN)
+    _assert_retried_not_cancelled(gate, trace, "Set up job")
+    gate.log_pass("a live overrun stuck in 'Set up job' at attempt 1 holds a rerun")
+
+
+def test_monitor_runner_step_stall_at_the_attempt_cap_cancels(gate, tmp_path):
+    run = dict(PR_RUN, attempt=2)
+    trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Complete job")], run)
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("a runner-owned stall at attempt 2 (MAX_ATTEMPTS) cancels without retry")
+
+
+def test_runner_steps_are_an_overridable_parameter(gate):
+    verdicts = _node_eval(
+        gate,
+        "const m=require(process.argv[1]);"
+        "process.stdout.write(JSON.stringify([m.isInfraStep('Complete job',[],[]),"
+        "m.isInfraStep('Complete job',[])]))",
+    )
+    gate.assert_eq(verdicts, [False, True], "an empty runner list isolates the pattern behaviour")
+    gate.log_pass("isInfraStep's runner-owned names are a parameter, like its patterns")
+
+
 def test_every_infra_pattern_names_a_step_that_exists(gate):
     """Anti-drift: a pattern no workflow step matches is a rename the list did not follow, and its stall is silently back on the no-retry cancel."""
     names = sorted(

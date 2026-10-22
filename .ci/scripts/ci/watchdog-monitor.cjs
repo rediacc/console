@@ -621,9 +621,9 @@ const INFRA_STEP_PATTERNS = [
 const RUNNER_STEP_NAMES = ['Set up job', 'Complete job'];
 
 /** True when `stepName` is an infra step: a runner-owned step (RUNNER_STEP_NAMES) or one INFRA_STEP_PATTERNS matches. Pure. */
-function isInfraStep(stepName, patterns = INFRA_STEP_PATTERNS) {
+function isInfraStep(stepName, patterns = INFRA_STEP_PATTERNS, runnerSteps = RUNNER_STEP_NAMES) {
   if (typeof stepName !== 'string' || stepName === '') return false;
-  if (RUNNER_STEP_NAMES.includes(stepName)) return true;
+  if (runnerSteps.includes(stepName)) return true;
   return patterns.some((re) => re.test(stepName));
 }
 
