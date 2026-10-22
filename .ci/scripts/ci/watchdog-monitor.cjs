@@ -620,10 +620,23 @@ const INFRA_STEP_PATTERNS = [
  */
 const RUNNER_STEP_NAMES = ['Set up job', 'Complete job'];
 
+/**
+ * The runner's post-step for an UNNAMED `uses:` step is "Post Run <action>" (named ones are "Post <step name>", which a workflow
+ * step such as "Post review report" can also be, so only this prefix is unambiguous). A stall there is the platform's cleanup:
+ * run 39821300649 (2026-10-22) was cancelled with 'E2E Probe (13-postgres-fork-isolation.test.ts#part1)' stuck in
+ * 'Post Run actions/checkout@...' after its test steps had passed.
+ */
+const RUNNER_STEP_PREFIXES = ['Post Run '];
+
 /** True when `stepName` is an infra step: one of `runnerSteps` (default RUNNER_STEP_NAMES, the runner-owned steps) or a match for one of `patterns` (default INFRA_STEP_PATTERNS). Both lists are parameters, so a caller can isolate either. Pure. */
 function isInfraStep(stepName, patterns = INFRA_STEP_PATTERNS, runnerSteps = RUNNER_STEP_NAMES) {
   if (typeof stepName !== 'string' || stepName === '') return false;
   if (runnerSteps.includes(stepName)) return true;
+  if (
+    runnerSteps === RUNNER_STEP_NAMES &&
+    RUNNER_STEP_PREFIXES.some((pre) => stepName.startsWith(pre))
+  )
+    return true;
   return patterns.some((re) => re.test(stepName));
 }
 
@@ -2153,5 +2166,6 @@ module.exports.budgetStepNote = budgetStepNote;
 module.exports.stalledStep = stalledStep;
 module.exports.INFRA_STEP_PATTERNS = INFRA_STEP_PATTERNS;
 module.exports.RUNNER_STEP_NAMES = RUNNER_STEP_NAMES;
+module.exports.RUNNER_STEP_PREFIXES = RUNNER_STEP_PREFIXES;
 module.exports.isInfraStep = isInfraStep;
 module.exports.evaluateInfraStallRetry = evaluateInfraStallRetry;

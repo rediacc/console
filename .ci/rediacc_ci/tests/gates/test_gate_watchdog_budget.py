@@ -1284,6 +1284,21 @@ def test_monitor_live_overrun_in_complete_job_is_retried(gate, tmp_path):
     gate.log_pass("a live overrun stuck in 'Complete job' at attempt 1 holds a rerun")
 
 
+def test_runner_post_run_steps_are_infra_and_named_post_steps_are_not(gate):
+    verdicts = _node_eval(
+        gate,
+        "const m=require(process.argv[1]);"
+        "process.stdout.write(JSON.stringify(['Post Run actions/checkout@3d3c42e5','Post review report']"
+        ".map((n)=>m.isInfraStep(n))))",
+    )
+    gate.assert_eq(
+        verdicts,
+        [True, False],
+        "'Post Run <action>' is infra; a workflow step named 'Post ...' is not",
+    )
+    gate.log_pass("only the runner's unambiguous 'Post Run ' prefix is infra")
+
+
 def test_monitor_live_overrun_in_set_up_job_is_retried(gate, tmp_path):
     trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Set up job")], PR_RUN)
     _assert_retried_not_cancelled(gate, trace, "Set up job")
