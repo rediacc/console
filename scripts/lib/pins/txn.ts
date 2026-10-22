@@ -474,6 +474,18 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
   if (o.mutant !== 'no-dirty-check') {
     const byRepo = new Map<string, string[]>();
     for (const p of touched.values()) byRepo.set(p.repo, [...(byRepo.get(p.repo) ?? []), p.file]);
+    // --adopt is spelled as the refusal prints a path; `./x` and backslashes are normalised, and a value naming no file this run
+    // writes is refused by name rather than silently ignored (it would otherwise read as "adopted" while protecting nothing).
+    const shownOf = (p: RepoPath): string => (p.repo === '.' ? p.file : `${p.repo}/${p.file}`);
+    const adopt = (o.adopt ?? []).map((a) => a.replace(/\\/g, '/').replace(/^(\.\/)+/, ''));
+    const writes = new Set([...touched.values()].map(shownOf));
+    const unmatched = adopt.filter((a) => !writes.has(a));
+    if (unmatched.length > 0) {
+      res.failure = `refused: --adopt ${unmatched.join(', ')} names no file this run writes (it writes: ${[...writes].sort().join(', ')})`;
+      j.state = 'refused';
+      saveJournal(dir, j);
+      return res;
+    }
     const foreign: string[] = [];
     for (const [repo, files] of byRepo) {
       const dirty = dirtyPaths(path.join(o.root, repo), files);
@@ -489,8 +501,8 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
         const trusted = (q: RepoPath): boolean =>
           ledgerHolds(o.root, keyOf(q), sha(readBytes(absOf(o.root, q))), o.mutant);
         if (trusted(p)) continue;
-        const shown = repo === '.' ? f : `${repo}/${f}`;
-        if (o.adopt?.includes(shown)) continue;
+        const shown = shownOf(p);
+        if (adopt.includes(shown)) continue;
         foreign.push(shown);
       }
     }
