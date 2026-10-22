@@ -70,9 +70,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-e2e-browse-at-ci.md -- 7 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 313 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:acf70bb97621ca479.
-- Leased items: 3: #1732ee99 (worker:558898, d778be9d), #1a07399b (worker:acf70bb97621ca479, d778be9d), #f6fe02a8 (worker:acf70bb97621ca479, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 346 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 2: #1732ee99 (worker:751417, d778be9d), #b3ed16fd (worker:queue, d778be9d).
 - Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 5; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 

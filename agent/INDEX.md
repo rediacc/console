@@ -598,7 +598,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-config-team-scoping.md` | done | 245 | 0 | 11 | 31530 |
 | `agent/plans/_done/PLAN-consolidate-test-scaffolding.md` | done | 66 | 0 | 4 | 4475 |
 | `agent/plans/_done/PLAN-defer-settle-classifier.md` | done | 275 | 0 | 7 | 43164 |
-| `agent/plans/_done/PLAN-deferred-findings-block-merge.md` | done | 250 | 0 | 17 | 28277 |
+| `agent/plans/_done/PLAN-deferred-findings-block-merge.md` | done | 250 | 0 | 17 | 28410 |
 | `agent/plans/_done/PLAN-deflected-finding-check.md` | done | 74 | 0 | 6 | 7257 |
 | `agent/plans/_done/PLAN-devbox-toolchain-guard-extension.md` | done | 111 | 0 | 20 | 16709 |
 | `agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md` | done | 235 | 0 | 20 | 26813 |
