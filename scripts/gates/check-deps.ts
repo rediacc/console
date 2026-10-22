@@ -1239,6 +1239,16 @@ async function partitionByReleaseAge(
   };
 }
 
+/** Each package with the peerDependencies its TARGET version declares, read from the registry document the freshness partition already fetched (the cache serves it, so no extra request). The install planner folds an in-range package into an install when an out-of-range one peer-requires a version of it the tree lacks. A package whose document or version is missing carries no `peers` and is never folded. */
+async function withTargetPeers(packages: PackageInfo[]): Promise<PackageInfo[]> {
+  return Promise.all(
+    packages.map(async (pkg) => {
+      const peers = (await fetchPackument(pkg.name))?.versions?.[pkg.latest]?.peerDependencies;
+      return peers && Object.keys(peers).length > 0 ? { ...pkg, peers } : pkg;
+    })
+  );
+}
+
 /**
  * Print a labeled group of packages (header + each line). Returns early when the
  * group is empty so callers don't need their own length guards.
@@ -1467,7 +1477,7 @@ async function checkDependencies(): Promise<void> {
     groups.push({
       dir: m.dir,
       name: m.name,
-      mustUpgrade: must.installable,
+      mustUpgrade: await withTargetPeers(must.installable),
       heldMajor: held.installable,
       blocked: cat.blocked,
       tooNew: [...must.tooNew, ...held.tooNew],
@@ -2902,7 +2912,7 @@ async function selftest(): Promise<void> {
       heldSib.output.includes(`npm run pins -- bump npm --to ${otelNode}@0.223 --major --reason`),
     heldSibDetail
   );
-  // 10d. A PEER FAMILY RIDES THE INSTALL (2026-10-22). @opentelemetry/core@3 peer-requires @opentelemetry/api >=1.10 while the in-range api bump 1.9.1 -> 1.10.0 waited for the later `npm update`, so the install failed ERESOLVE in private/account. The stub refuses `install core@3` unless the same call names api@1.10.0; the peer-split mutant restores the old planner and must go red. An unrelated in-range package (another scope) stays on the update.
+  // 10d. A PEER FAMILY RIDES THE INSTALL (2026-10-22). @opentelemetry/core@3 peer-requires @opentelemetry/api >=1.10 while the in-range api bump 1.9.1 -> 1.10.0 waited for the later `npm update`, so the install failed ERESOLVE in private/account. The stub refuses `install core@3` unless the same call names api@1.10.0; the peer-split mutant restores the old planner and must go red. The fold rule is the TARGET version's declared peer range (read from the registry document) against the in-range package's current version, so 10d also covers a minor bump that raises a peer floor, a same-scope sibling that is not a peer, and a 0.x sibling with no unmet peer, each staying on or leaving the update as the range says.
   const otelApi = '@opentelemetry/api';
   const peerCase = (env?: NodeJS.ProcessEnv): FixtureSpec => ({
     outdated: {
@@ -2929,6 +2939,11 @@ async function selftest(): Promise<void> {
     },
     updateLocks: { '': { 'node_modules/dotenv': { version: '18.0.5' } } },
     installPeers: { '': [{ spec: `${otelCore}@3.0.0`, needs: `${otelApi}@1.10.0` }] },
+    registry: {
+      [otelCore]: {
+        versions: { '3.0.0': { peerDependencies: { [otelApi]: '>=1.10.0 <1.11.0' } } },
+      },
+    },
     manifests: {
       '': { workspaces: ['packages/cli'] },
       'packages/cli': {
@@ -2964,6 +2979,156 @@ async function selftest(): Promise<void> {
     'e2e pins: CONTROL: the peer-split mutant (the in-range peer waits for the update) fails the install with ERESOLVE',
     peerSplit.status === 1 && peerSplit.output.includes('ERESOLVE'),
     peerSplitDetail
+  );
+  // (a) A same-major MINOR bump can raise a peer floor too: core ~2.11 -> 2.12.0 (out of range of the tilde) peer-requires api >=1.10, so the sibling folds although no major changes.
+  const minorPeerCase = (env?: NodeJS.ProcessEnv): FixtureSpec => ({
+    ...peerCase(env),
+    outdated: {
+      '': {
+        [otelApi]: { current: '1.9.1', wanted: '1.10.0', latest: '1.10.0' },
+        [otelCore]: { current: '2.11.0', wanted: '2.11.0', latest: '2.12.0' },
+      },
+      'private/account': {},
+    },
+    locks: {
+      '': {
+        [`node_modules/${otelApi}`]: { version: '1.9.1' },
+        [`node_modules/${otelCore}`]: { version: '2.11.0' },
+      },
+      'private/account': {},
+    },
+    installLocks: {
+      '': {
+        [`node_modules/${otelApi}`]: { version: '1.10.0' },
+        [`node_modules/${otelCore}`]: { version: '2.12.0' },
+      },
+    },
+    updateLocks: undefined,
+    installPeers: { '': [{ spec: `${otelCore}@2.12.0`, needs: `${otelApi}@1.10.0` }] },
+    registry: {
+      [otelCore]: {
+        versions: { '2.12.0': { peerDependencies: { [otelApi]: '>=1.10.0 <1.11.0' } } },
+      },
+    },
+    manifests: {
+      '': { workspaces: ['packages/cli'] },
+      'packages/cli': { dependencies: { [otelApi]: '^1.9.1', [otelCore]: '~2.11.0' } },
+    },
+  });
+  const minorPeer = runFixture(minorPeerCase(), 'upgrade');
+  const minorPeerDetail = `installs:\n${minorPeer.installs.join('\n')}\noutput:\n${minorPeer.output}`;
+  expect(
+    'e2e pins: a same-major minor bump whose target raises a peer floor folds the unmet in-range peer into the SAME npm install',
+    minorPeer.status === 0 &&
+      minorPeer.installs.length === 1 &&
+      minorPeer.installs[0].startsWith(
+        `<root> :: install -w=packages/cli ${otelCore}@2.12.0 ${otelApi}@1.10.0 ::`
+      ),
+    minorPeerDetail
+  );
+  const minorPeerSplit = runFixture(minorPeerCase({ CHECK_DEPS_MUTANT: 'peer-split' }), 'upgrade');
+  expect(
+    'e2e pins: CONTROL: the peer-split mutant fails the minor-bump install with ERESOLVE',
+    minorPeerSplit.status === 1 && minorPeerSplit.output.includes('ERESOLVE'),
+    `installs:\n${minorPeerSplit.installs.join('\n')}\noutput:\n${minorPeerSplit.output}`
+  );
+  // (b) A same-scope in-range sibling the target does NOT name as a peer stays on the update (a pinned-family member installed by name would fail where `npm update` succeeds).
+  const semconv = '@opentelemetry/semantic-conventions';
+  const siblingBase = peerCase();
+  const sibling = runFixture(
+    {
+      ...siblingBase,
+      outdated: {
+        '': {
+          ...siblingBase.outdated[''],
+          [semconv]: { current: '1.40.0', wanted: '1.41.0', latest: '1.41.0' },
+        },
+        'private/account': {},
+      },
+      locks: {
+        '': { ...siblingBase.locks[''], [`node_modules/${semconv}`]: { version: '1.40.0' } },
+        'private/account': {},
+      },
+      updateLocks: {
+        '': {
+          'node_modules/dotenv': { version: '18.0.5' },
+          [`node_modules/${semconv}`]: { version: '1.41.0' },
+        },
+      },
+      manifests: {
+        '': { workspaces: ['packages/cli'] },
+        'packages/cli': {
+          dependencies: {
+            [otelApi]: '^1.9.1',
+            [otelCore]: '^2.12.0',
+            dotenv: '^18.0.4',
+            [semconv]: '^1.40.0',
+          },
+        },
+      },
+    },
+    'upgrade',
+    peerTake
+  );
+  expect(
+    'e2e pins: a same-scope in-range sibling that no out-of-range target names as a peer stays on the npm update',
+    sibling.status === 0 &&
+      sibling.installs.length === 2 &&
+      sibling.installs[0].startsWith(
+        `<root> :: install -w=packages/cli ${otelCore}@3.0.0 ${otelApi}@1.10.0 ::`
+      ) &&
+      !sibling.installs[0].includes(semconv) &&
+      sibling.installs[1].includes(` ${semconv}`) &&
+      sibling.installs[1].includes(' dotenv'),
+    `installs:\n${sibling.installs.join('\n')}\noutput:\n${sibling.output}`
+  );
+  // (c) A 0.x minor (sdk-node 0.222 -> 0.223) with no unmet peer keeps every in-range sibling on the update: api 1.9.1 satisfies the sdk's declared peer range.
+  const zeroBase = otelCase({ allow: {} });
+  const zeroX = runFixture(
+    {
+      ...zeroBase,
+      outdated: {
+        '': {
+          ...zeroBase.outdated[''],
+          [otelApi]: { current: '1.9.1', wanted: '1.10.0', latest: '1.10.0' },
+        },
+        'private/account': {},
+      },
+      locks: {
+        '': { ...zeroBase.locks[''], [`node_modules/${otelApi}`]: { version: '1.9.1' } },
+        'private/account': {},
+      },
+      updateLocks: {
+        '': {
+          ...zeroBase.updateLocks?.[''],
+          [`node_modules/${otelApi}`]: { version: '1.10.0' },
+        },
+      },
+      registry: {
+        [otelNode]: {
+          versions: { '0.223.0': { peerDependencies: { [otelApi]: '>=1.3.0 <2.0.0' } } },
+        },
+      },
+      manifests: {
+        '': { workspaces: ['packages/cli'] },
+        'packages/cli': {
+          dependencies: { [otelCore]: '^2.11.0', [otelNode]: '^0.222.0', [otelApi]: '^1.9.1' },
+        },
+      },
+    },
+    'upgrade',
+    otelTake
+  );
+  expect(
+    'e2e pins: a 0.x minor whose peer ranges its siblings already satisfy leaves them on the npm update',
+    zeroX.status === 0 &&
+      zeroX.installs.length === 2 &&
+      zeroX.installs[0].startsWith(`<root> :: install -w=packages/cli ${otelNode}@0.223.0 ::`) &&
+      !zeroX.installs[0].includes(otelApi) &&
+      !zeroX.installs[0].includes(otelCore) &&
+      zeroX.installs[1].includes(` ${otelApi}`) &&
+      zeroX.installs[1].includes(` ${otelCore}`),
+    `installs:\n${zeroX.installs.join('\n')}\noutput:\n${zeroX.output}`
   );
   const realPeer: NodeJS.ProcessEnv = { ...process.env, CHECK_DEPS_MUTANT: 'peer-split' };
   delete realPeer.CHECK_DEPS_ROOT;

@@ -172,20 +172,16 @@ export function planInstalls(
     });
     let inRange = pkgs.filter((p) => satisfiesRange(ranges[p.name], p.latest));
     let outOfRange = pkgs.filter((p) => !inRange.includes(p));
-    // PEER FAMILY RIDES THE INSTALL (2026-10-22). An in-range sibling of an out-of-range package (same npm scope) joins that manifest's install as an exact `name@latest`: core@3 peer-requires @opentelemetry/api >=1.10, and the in-range api bump queued for the later `npm update` left the install failing ERESOLVE. Unscoped and unrelated packages stay on the update. The peer-split mutant (fixture runs only) disables this.
+    // PEER FAMILY RIDES THE INSTALL (2026-10-22). An out-of-range package p whose TARGET version peer-requires an in-range package q (`p.peers[q.name]`, read from the registry document check-deps already holds) and whose CURRENT q version does not satisfy that range needs q moved in the same `npm install`: @opentelemetry/core@3 peer-requires @opentelemetry/api >=1.10 <1.11, and the in-range api bump 1.9.1 -> 1.10.0 queued for the later `npm update` left the install failing ERESOLVE. Any release can raise a peer floor, a minor as well as a major, so the signal is the declared range and nothing is inferred from scope or version shape. q installs as exact `q@latest`, and only when q's judged version satisfies the range; otherwise it stays on the update and the failure surfaces as it would have. A q that is not named as an unmet peer (an unscoped sibling, a pinned family member, a 0.x sibling) stays on the single `npm update`. The peer-split mutant (fixture runs only) disables this.
     if (outOfRange.length > 0 && !(MUTANT === 'peer-split' && FIXTURE_ROOT)) {
-      const scopeOf = (n: string) => (n.startsWith('@') ? n.split('/')[0] : null);
-      const majorOf = (v: string) => parseVersion(v)?.major;
-      // Only a bump of the semver major number can change a peer range; a 0.x minor (sdk-node 0.222 -> 0.223) keeps its in-range siblings on the update, which the install-before-update order serves.
-      const scopes = new Set<string>();
-      for (const p of outOfRange) {
-        const scope = scopeOf(p.name);
-        if (scope !== null && majorOf(p.current) !== majorOf(p.latest)) scopes.add(scope);
-      }
-      const folded = inRange.filter((p) => {
-        const scope = scopeOf(p.name);
-        return scope !== null && scopes.has(scope);
-      });
+      const folded = inRange.filter((q) =>
+        outOfRange.some((p) => {
+          const range = p.peers?.[q.name];
+          if (range === undefined) return false;
+          const sets = parseRange(range);
+          return sets !== null && !rangeAdmits(sets, q.current) && rangeAdmits(sets, q.latest);
+        })
+      );
       if (folded.length > 0) {
         inRange = inRange.filter((p) => !folded.includes(p));
         outOfRange = [...outOfRange, ...folded];
