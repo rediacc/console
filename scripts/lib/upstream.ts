@@ -102,14 +102,33 @@ export class NotCompared extends Error {
  * the reachability class. The other cause, a repository that really lost every release, is named in the finding too, so a
  * reader whose re-run stays empty checks the repository instead of waiting.
  */
-export function emptyReleaseList(repo: string): NotCompared {
+export function emptyReleaseList(repo: string, attempts = 1): NotCompared {
   return new NotCompared(
     'HTTP 200 with an empty release list (a GitHub API outage, or the repository lost every release: check it if a re-run stays empty)',
     'api.github.com',
     `GET api.github.com/repos/${repo}/releases`,
-    1,
+    attempts,
     200
   );
+}
+
+/**
+ * A repository's GitHub release list, asking again on an EMPTY answer within the same budget as a transient failure
+ * (MAX_ATTEMPTS, BACKOFF_MS). Measured 2026-10-22 after the incident: 3 of 10 identical calls for go-delve/delve answered
+ * 200 with an empty list and 7 with all 44 releases, so one empty answer is noise and only an empty answer on every
+ * attempt is reported (emptyReleaseList). A non-array answer is returned as is, for the caller's UnreadableListing check.
+ */
+export async function askReleaseList(
+  ask: (apiPath: string, who: string) => Promise<unknown>,
+  repo: string,
+  who: string
+): Promise<unknown> {
+  for (let attempt = 1; ; attempt++) {
+    const listing = await ask(`/repos/${repo}/releases?per_page=100`, who);
+    if (!Array.isArray(listing) || listing.length > 0) return listing;
+    if (attempt >= MAX_ATTEMPTS) throw emptyReleaseList(repo, attempt);
+    await sleep(BACKOFF_MS[attempt - 1] ?? 0);
+  }
 }
 
 /** One failed attempt: what answered, whether asking again within the budget can help, and whether it was an answer at all. */
