@@ -512,6 +512,8 @@ interface Flags {
   restore?: string;
   /** Files a killed step had in flight that `verify --restore` may give their before-bytes back, once the operator has inspected them. */
   inflight: string[];
+  /** Paths whose uncommitted bytes this run adopts as the caller's own hand step (`--adopt <path>`, repeatable); see TxnOptions.adopt. */
+  adopt: string[];
   pos: string[];
 }
 
@@ -523,6 +525,7 @@ function parseFlags(argv: string[]): Flags {
     major: false,
     task: null,
     inflight: [],
+    adopt: [],
     pos: [],
   };
   const val = (i: number, name: string): string => {
@@ -549,6 +552,7 @@ function parseFlags(argv: string[]): Flags {
     else if (a === '--out') f.out = val(i++, a);
     else if (a === '--restore') f.restore = val(i++, a);
     else if (a === '--inflight') f.inflight.push(val(i++, a));
+    else if (a === '--adopt') f.adopt.push(val(i++, a));
     else if (a.startsWith('--')) throw new Usage(`unknown flag ${a}`);
     else f.pos.push(a);
   }
@@ -770,7 +774,7 @@ function report(
 }
 
 /** Run a set of plans as one transaction and print its outcome. */
-function apply(w: World, f: Flags, s: Selected, subject: string, lockfilesVerb = false): number {
+function apply(w: World, f: Flags, s: Selected, subject: string): number {
   if (s.plans.length === 0) {
     if (f.json) w.out.push(JSON.stringify(report(w, f, s, null, []), null, 2));
     else {
@@ -792,7 +796,7 @@ function apply(w: World, f: Flags, s: Selected, subject: string, lockfilesVerb =
       npmVersion: w.npmVersion,
       submodules: w.reg.submodules.scanned,
       registry: w.reg.entries,
-      lockfilesVerb,
+      adopt: f.adopt,
     });
   } finally {
     release();
@@ -1006,8 +1010,7 @@ function cmdNpmPlan(w: World, f: Flags, verb: 'remove' | 'lockfiles'): number {
     s,
     verb === 'remove'
       ? `chore(deps): remove ${arg}`
-      : `chore(deps): canonical lockfiles${arg ? ` (${arg})` : ''}`,
-    verb === 'lockfiles'
+      : `chore(deps): canonical lockfiles${arg ? ` (${arg})` : ''}`
   );
 }
 
@@ -1546,6 +1549,11 @@ const CASES: Record<string, Case> = {
     };
     const clean = lock(false);
     const lockClean = await runCli(['lockfiles'], withMutant(clean.fx, m));
+    const adopted = lock(false);
+    const lockAdopted = await runCli(
+      ['lockfiles', '--adopt', 'package-lock.json'],
+      withMutant(adopted.fx, m)
+    );
     const dirtyM = lock(true);
     const lockDirty = await runCli(['lockfiles'], withMutant(dirtyM.fx, m));
     return [
@@ -1567,9 +1575,17 @@ const CASES: Record<string, Case> = {
         detail: `a=${peer.a.rc} b=${peer.b.rc} ${peer.b.err}`,
       },
       {
-        name: 'lockfiles: a manually changed lockfile with a clean manifest is accepted',
-        ok: lockClean.rc === 0,
+        name: 'lockfiles: a hand-changed lockfile nobody adopted is refused, byte-identical, even beside a clean manifest',
+        ok:
+          lockClean.rc === 1 &&
+          /refused: package-lock\.json already hold/.test(lockClean.err) &&
+          same(clean.mid, snap(clean.fx, ['package-lock.json', 'package.json'])),
         detail: `rc=${lockClean.rc} ${lockClean.err}`,
+      },
+      {
+        name: 'lockfiles: the same lockfile named with --adopt is accepted',
+        ok: lockAdopted.rc === 0,
+        detail: `rc=${lockAdopted.rc} ${lockAdopted.err}`,
       },
       {
         name: 'lockfiles: a changed lockfile beside a changed manifest is refused, both byte-identical',
