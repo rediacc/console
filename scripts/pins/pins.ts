@@ -1551,9 +1551,11 @@ const CASES: Record<string, Case> = {
     const lockClean = await runCli(['lockfiles'], withMutant(clean.fx, m));
     const adopted = lock(false);
     const lockAdopted = await runCli(
-      ['lockfiles', '--adopt', 'package-lock.json'],
+      ['lockfiles', '--adopt', './package-lock.json'],
       withMutant(adopted.fx, m)
     );
+    const stray = lock(false);
+    const lockStray = await runCli(['lockfiles', '--adopt', 'nope.json'], withMutant(stray.fx, m));
     const dirtyM = lock(true);
     const lockDirty = await runCli(['lockfiles'], withMutant(dirtyM.fx, m));
     return [
@@ -1583,9 +1585,17 @@ const CASES: Record<string, Case> = {
         detail: `rc=${lockClean.rc} ${lockClean.err}`,
       },
       {
-        name: 'lockfiles: the same lockfile named with --adopt is accepted',
-        ok: lockAdopted.rc === 0,
+        name: 'lockfiles: the same lockfile named with --adopt (as ./package-lock.json) is accepted, its hand edit still on disk',
+        ok: lockAdopted.rc === 0 && adopted.fx.read('package-lock.json').includes('"manual": true'),
         detail: `rc=${lockAdopted.rc} ${lockAdopted.err}`,
+      },
+      {
+        name: 'lockfiles: an --adopt naming no file this run writes is refused by name, nothing written',
+        ok:
+          lockStray.rc === 1 &&
+          /--adopt nope\.json names no file this run writes/.test(lockStray.err) &&
+          same(stray.mid, snap(stray.fx, ['package-lock.json', 'package.json'])),
+        detail: `rc=${lockStray.rc} ${lockStray.err}`,
       },
       {
         name: 'lockfiles: a changed lockfile beside a changed manifest is refused, both byte-identical',
