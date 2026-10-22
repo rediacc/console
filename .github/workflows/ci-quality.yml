@@ -2671,6 +2671,9 @@ jobs:
           cache: true
           cache-dependency-path: private/renet/go.sum
 
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Install clang
         # `apt-get update` is mandatory before install: the Azure runner image
         # ships with stale apt metadata referencing a kernel ABI that may have
