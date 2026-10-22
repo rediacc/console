@@ -14,9 +14,12 @@ import os
 import pathlib
 import re
 import sys
+import urllib.parse
 
-AZURE_HOST = "azure.archive.ubuntu.com"
-GLOBAL_HOST = "archive.ubuntu.com"
+from rediacc_ci import well_known
+
+AZURE_HOST = urllib.parse.urlsplit(well_known.UBUNTU_AZURE_MIRROR).hostname or ""
+GLOBAL_HOST = urllib.parse.urlsplit(well_known.UBUNTU_ARCHIVE).hostname or ""
 
 # Files under the apt root that name a mirror.
 GLOBS = ("apt-mirrors.txt", "sources.list", "sources.list.d/*.sources", "sources.list.d/*.list")
