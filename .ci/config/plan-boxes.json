@@ -1430,13 +1430,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 6,
-      "open_sigs": [
-        "88c84d61"
-      ],
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
       "done_sigs": [
         "35a8734b",
+        "88c84d61",
         "a344b11a",
         "a7ba8046",
         "ce1f9881",

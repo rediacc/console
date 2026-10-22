@@ -88,11 +88,12 @@ CI runs renet's go tests as root (`private/renet/.ci/scripts/test/run-tests.sh:4
   - Tests: the shell argv carries `--require-landlock`; with `landlockABI` forced to 0 the shell's sandbox-exec argv refuses and a marker command does not run; as root, repo A's `chmod 0777 /proc/<pid of B's shell>/cwd/victim` fails and the victim is unchanged. If that last case SUCCEEDS, stop and escalate: the view would need a private PID namespace and procfs.
   - Acceptance: `go test -count=1 -run 'TestShellPlan|TestShellOfOneRepo|TestRunSandboxExec' ./cmd/renet` rc 0 as non-root and as root; the S2 build, lint and i18n commands rc 0.
     (ticked) 2026-10-14T16:26:41Z by d778be9d: renet bcb9351: TestShellPlanRefusesWithoutLandlock and TestShellOfOneRepoCannotReachAnotherThroughProc PASS as root; go test -count=1 ./cmd/renet rc=0 as non-root and the targeted root run PASS; lint.sh and i18n.sh rc=0 (private/renet/cmd/renet/sandbox_gateway.go:1)
-- [ ] E1: measure, and from then on gate, Landlock on every supported OS.
+- [x] E1: measure, and from then on gate, Landlock on every supported OS.
   - `packages/e2e-tests/tests/01-system-checks.test.ts`: `runner.executeOnWorker('renet sandbox-exec --detect')` prints `Status: AVAILABLE`, and its ABI line is logged.
   - Measure the default image first: `./rdc.sh ops up --basic`, then `ssh 192.168.111.11 renet sandbox-exec --detect`.
   - A leg that shows `NOT AVAILABLE` holds S3; the box becomes `[?]` with DEFAULT: document `lsm=...,landlock` for that OS and keep the refusal.
   - Acceptance: `npx tsc --noEmit -p packages/e2e-tests` rc 0; `npx biome lint packages/e2e-tests --error-on-warnings` rc 0; the PR's bridge-workers legs for ubuntu-24.04, debian-13, fedora-43, opensuse-16.0 and oracle-10 green with the new test passing.
+    (ticked) 2026-10-22T09:13:31Z by d778be9d: commit:2b18e81fe: run 39742633342 green; "sandbox-exec --detect reports Landlock as measured for this OS and records the ABI" passed in all five bridge-workers 1/8 legs: ubuntu-24.04 job 119710935662, debian-13 119710935627, fedora-43 119710935631, opensuse-16.0 119710935648, oracle-10 119710935508 (lsm= pin from the executed [?] #46e10bf7 DEFAULT); tsc and biome lint for packages/e2e-tests are gated in that green run
 - [x] D1: the docs stop calling Landlock non-gating.
   - `packages/www/src/content/docs/en/limits.md:202` calls the kernel matrix "not a gating criterion"; Landlock is now required for repo-key shells and transfers. Rewrite that sentence and the Landlock column heading (`:204`) in all 13 locales.
   - Acceptance: the www docs and i18n parity gates rc 0.
