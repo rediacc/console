@@ -1239,7 +1239,7 @@ async function partitionByReleaseAge(
   };
 }
 
-/** Each package with the peerDependencies its TARGET version declares, read from the registry document the freshness partition already fetched (the cache serves it, so no extra request). The install planner folds an in-range package into an install when an out-of-range one peer-requires a version of it the tree lacks. A package whose document or version is missing carries no `peers` and is never folded. */
+/** Each package with the peerDependencies its TARGET version declares, read from the registry document the freshness partition already fetched (the cache serves it, so no extra request). The install planner folds an in-range package into an install when an out-of-range one peer-requires a version of it the tree lacks. A package whose document or version is missing carries no `peers` and is never folded. OPTIONAL peers (`peerDependenciesMeta[name].optional`) are kept on purpose: npm enforces an optional peer's range whenever that peer is installed, and every package the planner could fold is a declared dependency of the manifest, so it is installed and an unmet optional range fails ERESOLVE exactly like a required one. */
 async function withTargetPeers(packages: PackageInfo[]): Promise<PackageInfo[]> {
   return Promise.all(
     packages.map(async (pkg) => {
