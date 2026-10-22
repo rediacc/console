@@ -131,6 +131,9 @@ for cmd in (
     "cd /x\nnpm run ci:quick > out 2>&1",
     "node scripts/ci-runner/run.ts --only check:a",
     "./scripts/ci-runner/run.ts --only check:a",
+    "# the gates\nnpm run ci:quick",
+    "git push origin HEAD",
+    "git -C /x push origin 1020-1",
 ):
     check(
         "pipeline: %s" % cmd,
@@ -147,6 +150,11 @@ for cmd in (
     'grep "a; npm run ci:quick" f',
     "echo 'x | git push origin 1020-1'",
     'echo "unbalanced',
+    "git push \\\norigin other-branch",
+    'echo ";" npm run ci:quick',
+    "git stash push -m x",
+    "git -C /other/repo push",
+    "echo a # ; npm run ci:quick",
 ):
     check(
         "not a pipeline: %s" % cmd,
