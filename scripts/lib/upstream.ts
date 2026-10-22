@@ -96,14 +96,15 @@ export class NotCompared extends Error {
 }
 
 /**
- * A GitHub release list that came back EMPTY for a repository the gate tracks. Every tracked repository has releases, so an
- * empty list is the API failing to answer (seen 2026-10-22 during GitHub's "Actions Results" incident: four sources at once
- * answered 200 with no release, while the same calls minutes later returned 100, 90 and 44), not a changed tag scheme. It
- * is reported as not compared, the reachability class, so nobody goes looking for a renamed tag that does not exist.
+ * A GitHub release list that came back EMPTY for a repository the gate tracks. That is almost always the API failing to
+ * answer (seen 2026-10-22 during GitHub's "Actions Results" incident: four sources at once answered 200 with no release,
+ * while the same calls minutes later returned 100, 90 and 44), not a changed tag scheme, so it is reported as not compared,
+ * the reachability class. The other cause, a repository that really lost every release, is named in the finding too, so a
+ * reader whose re-run stays empty checks the repository instead of waiting.
  */
 export function emptyReleaseList(repo: string): NotCompared {
   return new NotCompared(
-    'HTTP 200 with an empty release list',
+    'HTTP 200 with an empty release list (a GitHub API outage, or the repository lost every release: check it if a re-run stays empty)',
     'api.github.com',
     `GET api.github.com/repos/${repo}/releases`,
     1,
