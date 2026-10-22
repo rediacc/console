@@ -615,9 +615,15 @@ const INFRA_STEP_PATTERNS = [
   /^Bake the image$/,
 ];
 
-/** True when `stepName` is an infra step (INFRA_STEP_PATTERNS). Pure. */
+/**
+ * The steps GitHub's runner adds to every job, with no source in any workflow (so INFRA_STEP_PATTERNS' liveness test cannot see them). A stall there is the platform's own: run 39791585275 (2026-10-22, during the "Actions Results" incident) had 'Quality / Go' and 'Quality / Content' finish every real step in about 9 minutes and then sit in 'Complete job' until the watchdog cancelled the pipeline at 15.4m. Exact names, not patterns.
+ */
+const RUNNER_STEP_NAMES = ['Set up job', 'Complete job'];
+
+/** True when `stepName` is an infra step: a runner-owned step (RUNNER_STEP_NAMES) or one INFRA_STEP_PATTERNS matches. Pure. */
 function isInfraStep(stepName, patterns = INFRA_STEP_PATTERNS) {
   if (typeof stepName !== 'string' || stepName === '') return false;
+  if (RUNNER_STEP_NAMES.includes(stepName)) return true;
   return patterns.some((re) => re.test(stepName));
 }
 
@@ -2146,5 +2152,6 @@ module.exports.evaluateBudget = evaluateBudget;
 module.exports.budgetStepNote = budgetStepNote;
 module.exports.stalledStep = stalledStep;
 module.exports.INFRA_STEP_PATTERNS = INFRA_STEP_PATTERNS;
+module.exports.RUNNER_STEP_NAMES = RUNNER_STEP_NAMES;
 module.exports.isInfraStep = isInfraStep;
 module.exports.evaluateInfraStallRetry = evaluateInfraStallRetry;

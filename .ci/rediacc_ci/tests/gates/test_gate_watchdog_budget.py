@@ -1264,6 +1264,26 @@ def test_infra_step_classifier_on_the_observed_and_the_test_steps(gate):
     gate.log_pass("isInfraStep: %s infra, %s not" % (OBSERVED_INFRA_STEPS, TEST_STEPS))
 
 
+def test_runner_owned_steps_are_infra(gate):
+    """Run 39791585275: two Quality jobs finished every real step, then sat in GitHub's 'Complete job' during an Actions incident and were cancelled as budget overruns."""
+    verdicts = _node_eval(
+        gate,
+        "const m=require(process.argv[1]);"
+        "process.stdout.write(JSON.stringify(['Set up job','Complete job','Run E2E Tests']"
+        ".map((n)=>m.isInfraStep(n))))",
+    )
+    gate.assert_eq(
+        verdicts, [True, True, False], "runner-owned steps are infra; a test step is not"
+    )
+    gate.log_pass("'Set up job' and 'Complete job' stalls take the infra retry path")
+
+
+def test_monitor_live_overrun_in_complete_job_is_retried(gate, tmp_path):
+    trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Complete job")], PR_RUN)
+    _assert_retried_not_cancelled(gate, trace, "Complete job")
+    gate.log_pass("a live overrun stuck in 'Complete job' at attempt 1 holds a rerun")
+
+
 def test_every_infra_pattern_names_a_step_that_exists(gate):
     """Anti-drift: a pattern no workflow step matches is a rename the list did not follow, and its stall is silently back on the no-retry cancel."""
     names = sorted(
