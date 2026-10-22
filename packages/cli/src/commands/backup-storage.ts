@@ -276,7 +276,8 @@ function registerBackupBrowse(backup: Command): void {
             return;
           }
 
-          // executeRepoFunction already rendered the failure (envelope and exit code); falling through would throw "no listing" and print a SECOND envelope, so stdout would stop being one JSON document.
+          // executeRepoFunction already rendered the failure (envelope and exit code).
+          // Falling through would throw "no listing" and print a SECOND envelope, so stdout would stop being one JSON document.
           if (!result.success) return;
           const listing = parseBrowseResult(result.stdout);
           if (!listing) {

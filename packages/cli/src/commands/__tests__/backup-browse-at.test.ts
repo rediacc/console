@@ -128,6 +128,20 @@ describe('backup browse without --at (regression control)', () => {
   });
 });
 
+describe('backup browse failure', () => {
+  it.each([
+    ['without --at', ['browse', 'shop']],
+    ['with --at', ['browse', 'shop', '--at', SNAPSHOT]],
+  ])('returns after the executor rendered the failure %s, adding nothing', async (_label, argv) => {
+    mockExecuteRepoFunction.mockResolvedValue({ success: false, exitCode: 3, stdout: '' });
+
+    await expect(run(argv)).resolves.toBeUndefined();
+
+    expect(mockPrint).not.toHaveBeenCalled();
+    expect(mockWarn).not.toHaveBeenCalled();
+  });
+});
+
 describe('backup browse --at', () => {
   it('dispatches backup_browse_at with a snapshot id as given', async () => {
     await run(['browse', 'shop', '--at', SNAPSHOT, '--path', '/app']);

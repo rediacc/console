@@ -64,6 +64,17 @@ describe('renderLocalExecutionFailure', () => {
     expect(process.exitCode).toBe(10);
   });
 
+  it.each([
+    ['an exit code of 0', 0],
+    ['no exit code', undefined],
+  ])('fails closed with exit 1 on %s', (_label, exitCode) => {
+    mockGetOutputFormat.mockReturnValue('table');
+
+    renderLocalExecutionFailure({ error: 'fail', errorCode: 'TEST', exitCode }, 'fallback');
+
+    expect(process.exitCode).toBe(1);
+  });
+
   it('prints structured failures in json output mode', () => {
     mockGetOutputFormat.mockReturnValue('json');
     mockIsAgent.mockReturnValue(false);
