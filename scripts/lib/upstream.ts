@@ -113,8 +113,9 @@ export function emptyReleaseList(repo: string, attempts = 1): NotCompared {
 }
 
 /**
- * A repository's GitHub release list, asking again on an EMPTY answer within the same budget as a transient failure
- * (MAX_ATTEMPTS, BACKOFF_MS). Measured 2026-10-22 after the incident: 3 of 10 identical calls for go-delve/delve answered
+ * A repository's GitHub release list, asking again on an EMPTY answer with the same numbers as a transient failure
+ * (MAX_ATTEMPTS, BACKOFF_MS). The two budgets NEST: each attempt here is one `ask`, which retries its own transient
+ * failures, so the worst case is MAX_ATTEMPTS x MAX_ATTEMPTS requests (9) for one repository. Measured 2026-10-22 after the incident: 3 of 10 identical calls for go-delve/delve answered
  * 200 with an empty list and 7 with all 44 releases, so one empty answer is noise and only an empty answer on every
  * attempt is reported (emptyReleaseList). A non-array answer is returned as is, for the caller's UnreadableListing check.
  */
