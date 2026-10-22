@@ -12,6 +12,9 @@
 //     (the ones that boot VMs or pull images); everything else fails fast.
 // See evaluateRetryEligibility -- this used to be "retry everything", which meant every failure in the repo was retried on a judgment nobody made. On attempt 2+: force-cancels without retry.
 //
+// TIME BUDGETS (PLAN-ci-time-budget T4.2/T4.3): a live job over its budget force-cancels the pipeline, and a job killed at its timeout is never retried -- EXCEPT a stall in an INFRA step (a package install, KVM/VM setup, an image build or pull; INFRA_STEP_PATTERNS). Ruling #f8b7f499 (2026-10-22) routes that one to the transient retry path, capped by MAX_ATTEMPTS, after run 39766647743 lost three attempts to runner slowness with
+// nothing failing. A slow TEST step is still a no-retry cancel. See evaluateInfraStallRetry.
+//
 // TWO THINGS THE WATCHDOG MUST NOT DO, both learned the hard way: - It must never cancel a `schedule` run. Cancelling rewrites the run's conclusion from `failure` to `cancelled`, which reads as "superseded, ignore" -- and that is exactly how twelve consecutive red nightlies went unnoticed. See evaluateCancelExemption. - It must never rerun a job without first persisting that job's
 // log. The rerun makes attempt 1's logs unreachable, so retrying blind destroys the evidence needed to tell a real break from a flake. See persistJobLog.
 //
@@ -55,7 +58,7 @@ const NO_DRAIN_PATTERNS = ['Review Gate'];
 // run is still re-run; only the conclusion-rewriting cancel is withheld.
 const CANCEL_EXEMPT_EVENTS = ['schedule', 'workflow_dispatch'];
 
-// A cancelled job that ran this long or longer is classified as killed by its timeout (a budget violation) and is never auto-retried. The per-job budget (PLAN-ci-time-budget T4.3); STUCK_THRESHOLD_MIN overrides it.
+// A cancelled job that ran this long or longer is classified as killed by its timeout (a budget violation) and is not auto-retried unless it stalled in an infra step (ruling #f8b7f499, evaluateInfraStallRetry). The per-job budget (PLAN-ci-time-budget T4.3); STUCK_THRESHOLD_MIN overrides it.
 const DEFAULT_STUCK_THRESHOLD_MIN = 15;
 
 // The failure annotation GitHub writes on a job it killed for exceeding its `timeout-minutes`. Measured 2026-09-30 with `gh api repos/rediacc/console/check-runs/106268923515/annotations` (Quality / Branch, run 35571489498, conclusion `cancelled`): "The job has exceeded the maximum execution time of 12m0s", followed by "The operation was canceled.". The
@@ -558,9 +561,7 @@ function evaluateBudget({
  * (budget <b>m)` still parses with the same regex. Pure.
  */
 function budgetStepNote(job, nowMs) {
-  const steps = Array.isArray(job?.steps) ? job.steps : [];
-  const step =
-    steps.find((s) => s.status === 'in_progress') || [...steps].reverse().find((s) => s.started_at);
+  const step = stalledStep(job);
   if (!step?.started_at) return '';
   const startMs = new Date(step.started_at).getTime();
   const endMs =
@@ -569,6 +570,92 @@ function budgetStepNote(job, nowMs) {
       : nowMs;
   if (Number.isNaN(startMs) || Number.isNaN(endMs)) return '';
   return ` -- in step '${step.name}' for ${((endMs - startMs) / 60000).toFixed(1)}m`;
+}
+
+/**
+ * The step a job was in when its budget ran out, or null.
+ *
+ * A LIVE job: its `in_progress` step. A job GitHub already killed at its timeout: the step the kill CANCELLED, which is not the last step with a start time -- after a timeout the runner still runs the `Post ...` cleanup steps and `Complete job`, so a plain "last started step" names the teardown instead of the stall. The last started step is the fallback for neither shape. Pure.
+ */
+function stalledStep(job) {
+  const steps = Array.isArray(job?.steps) ? job.steps : [];
+  return (
+    steps.find((s) => s.status === 'in_progress') ||
+    steps.find((s) => s.conclusion === 'cancelled' && s.started_at) ||
+    [...steps].reverse().find((s) => s.started_at) ||
+    null
+  );
+}
+
+// Steps whose stall is the RUNNER's, not the code's (ruling #f8b7f499, 2026-10-22): a package install, KVM or VM setup, an image build, pull or bake. A budget overrun stuck in one of these takes the transient retry path under MAX_ATTEMPTS instead of the no-retry pipeline cancel of T4.3 (see evaluateInfraStallRetry).
+//
+// The receipt is run 39766647743 (PR #601), which lost three attempts with nothing failing: 'E2E Probe (18-ops-workflow.test.ts)' at 15.1m in 'Setup KVM Host' (6.6m), Probe 04 at 15.0m silent 833s in 'Install clang for BPF compilation' (apt), and 'Devcontainer (amd64)' at 11.0m in 'Build and push'.
+//
+// CURATED and ANCHORED, never a bare /Install/: 'Install table' and 'Install-script tests' are quality gates, 'Test APT Installation' is a test, and a slow test step must stay a no-retry cancel. Every entry names a step that exists in .github/workflows or .github/actions; test_gate_watchdog_infra_stall.py reds on an entry that matches none, and on a test step that matches one.
+const INFRA_STEP_PATTERNS = [
+  // Package installs (apt, npm, the CLI and renet binaries).
+  /^Install clang( for BPF compilation)?$/,
+  /^Install dependencies( and build packages)?$/,
+  /^Install CLI Globally$/,
+  /^Install renet$/,
+  /^Install the pinned npm$/,
+  /^Setup workspace$/,
+  // KVM host and VM preparation.
+  /^Setup KVM Host$/,
+  /^Enable KVM$/,
+  /^Boot second KVM group/,
+  /^Provision VMs?$/,
+  /^Fetch baked VM image$/,
+  /^Restore VM base image cache$/,
+  // Image builds, pulls and bakes.
+  /^Build and push$/,
+  /^Build & push\b/,
+  /^Pre-pull /,
+  /^Stage Docker images$/,
+  /^Bake the image$/,
+];
+
+/** True when `stepName` is an infra step (INFRA_STEP_PATTERNS). Pure. */
+function isInfraStep(stepName, patterns = INFRA_STEP_PATTERNS) {
+  if (typeof stepName !== 'string' || stepName === '') return false;
+  return patterns.some((re) => re.test(stepName));
+}
+
+/**
+ * A job overran its budget (live, or already killed at its timeout) while stuck in `stepName`. Retry it, or cancel the pipeline as T4.3 does?
+ *
+ * Ruling #f8b7f499 (2026-10-22, "Yes, in this PR"): an INFRA step's stall is the runner's (a slow apt mirror, a slow KVM host, a slow registry), so it takes the normal retry path, capped by MAX_ATTEMPTS. A slow TEST step stays a cancel without retry: that is the regression the budget exists to catch. T4.3 (1d29c3ffb) made every overrun a no-retry cancel; run 39766647743 lost three attempts to it on runner slowness with nothing failing.
+ *
+ * FAIL-CLOSED: no step name, an unknown step, the no-auto-retry label, the attempt cap, or a newer run all resolve to today's no-retry cancel. Pure.
+ */
+function evaluateInfraStallRetry({
+  stepName,
+  attempt,
+  maxAttempts,
+  newerRunExists,
+  skipAutoRetry = false,
+  patterns = INFRA_STEP_PATTERNS,
+}) {
+  const infra = isInfraStep(stepName, patterns);
+  if (!infra) {
+    return {
+      retry: false,
+      infra,
+      reason: stepName
+        ? `step '${stepName}' is not an infra step -- a slow test is a budget violation, not retried`
+        : 'the stalled step is unknown -- treated as a budget violation, not retried',
+    };
+  }
+  if (skipAutoRetry) {
+    return { retry: false, infra, reason: 'the no-auto-retry label is on the PR' };
+  }
+  const pending = evaluatePendingRerun({ attempt, maxAttempts, newerRunExists });
+  if (!pending.rerun) return { retry: false, infra, reason: pending.reason };
+  return {
+    retry: true,
+    infra,
+    reason: `stalled in infra step '${stepName}' (ruling #f8b7f499): retried as an infra stall, attempt ${attempt}/${maxAttempts}`,
+  };
 }
 
 /**
@@ -844,7 +931,7 @@ const monitor = async ({ github, context, core }) => {
     writeBudgetArtifact();
   }
 
-  // Record and surface newly-seen violations from one evaluateBudget() call. An ENFORCED violation (a live job over its budget under jobMode 'enforce', or the run under runMode 'enforce') is recorded with the T4.2 text and returned, for the caller to hand to forceCancel; everything else is a report-only warning. Returns the enforced messages, empty when nothing is to be cancelled.
+  // Record and surface newly-seen violations from one evaluateBudget() call. An ENFORCED violation (a live job over its budget under jobMode 'enforce', or the run under runMode 'enforce') is recorded with the T4.2 text and returned, for the caller to hand to forceCancel or, for an infra stall, to the retry path (evaluateInfraStallRetry); everything else is a report-only warning. Returns `{ text, job }` per enforced violation (`job` null for the run-level one), empty when nothing is to be cancelled.
   function reportBudget(budget, jobs = []) {
     const enforcedNames = new Set(budget.enforcedJobViolations.map((v) => v.name));
     const jobByName = new Map(jobs.map((j) => [j.name, j]));
@@ -860,7 +947,7 @@ const monitor = async ({ github, context, core }) => {
         : budgetReportText(v.name, v.minutes, v.budgetMin);
       if (enforced) {
         core.error(text);
-        enforcedMessages.push(text);
+        enforcedMessages.push({ text, job: jobByName.get(v.name) || null });
       } else {
         core.warning(text);
       }
@@ -882,7 +969,7 @@ const monitor = async ({ github, context, core }) => {
         : budgetReportText('whole pipeline', minutes, budgetMin);
       if (enforced) {
         core.error(text);
-        enforcedMessages.push(text);
+        enforcedMessages.push({ text, job: null });
       } else {
         core.warning(text);
       }
@@ -897,6 +984,18 @@ const monitor = async ({ github, context, core }) => {
     }
     if (budgetViolationLog.length > logLengthBefore) flushBudgetReport();
     return enforcedMessages;
+  }
+
+  // Ruling #f8b7f499: a budget stall in an infra step holds a pending rerun (BY DESIGN, so it signals rather than fails the step). Shared by the live-overrun and timeout-kill call sites so the signal text is one. Returns true, the new pendingRerun.
+  async function holdInfraStallRerun(failureMsg) {
+    await signalByDesign(
+      core,
+      'rerun-pending',
+      'Holding a pending rerun for an infra-step budget stall',
+      failureMsg,
+      targetRunId
+    );
+    return true;
   }
 
   // Track jobs already handled to avoid re-logging the same failure every poll
@@ -1470,7 +1569,8 @@ const monitor = async ({ github, context, core }) => {
   console.log(`Install-validation patterns: ${installValidationPatterns.join(', ')}`);
   console.log(`Max runtime: ${maxRuntime / 3600000} hours`);
 
-  // Loop-invariant: parse env var once. Cancelled jobs with elapsed runtime at or above this threshold are treated as "stuck" (likely hit their declared timeout-minutes) and bypass the AI / retry path -- a hung job will hang again on retry.
+  // Loop-invariant: parse env var once. Cancelled jobs with elapsed runtime at or above this threshold are treated as "stuck" (likely hit their declared timeout-minutes) and bypass the AI / retry path -- a hung job will hang again on retry. REFINED by ruling #f8b7f499 (2026-10-22): a stuck job whose stalled step is an infra step (evaluateInfraStallRetry) takes the retry path under MAX_ATTEMPTS, because
+  // run 39766647743 lost three attempts to apt, KVM setup and an image build running slow with nothing failing. A stall in a test step keeps the T4.3 rule below.
   //
   // 15, not 60 (PLAN-ci-time-budget T4.3). Every job's `timeout-minutes` is now the per-job budget (T4.1), so a leg the platform killed at its timeout is a BUDGET VIOLATION, not a flake: at 60 a 15-minute timeout read as a "normal cancellation" and went down the retry path, re-running a job that had already blown its budget. A JOB_BUDGET_CAPS job (K8s Ceph 25, K8s Multinode 30) is judged
   // against its own cap instead, so an infra cancel of one at, say, 20 minutes is still a retryable cancellation, and its timeout kill at 25 is not.
@@ -1579,12 +1679,44 @@ const monitor = async ({ github, context, core }) => {
         allJobs
       );
       if (budgetMessages.length > 0 && !pendingRerun) {
-        const budgetMsg = budgetMessages.join('; ');
+        const budgetMsg = budgetMessages.map((m) => m.text).join('; ');
         console.log('#'.repeat(70));
         console.log(`Budget enforcement: ${budgetMsg}`);
         console.log('#'.repeat(70));
-        if (await forceCancel(budgetMsg, { preamble: budgetMsg, cause: CANCEL_CAUSE_BUDGET }))
-          return;
+        // Ruling #f8b7f499: every enforced violation a live JOB stalled in an infra step (no run-level one, which names no step) holds a pending rerun instead of cancelling. No single-job cancel exists in the REST API, so the job is left to its own `timeout-minutes` (the budget, T4.1); the run then completes and the pending-rerun path below persists its log (the job-logs endpoint 404s while it is live) and re-runs it. One non-infra violation among them keeps today's pipeline cancel.
+        const verdicts = [];
+        if (budgetMessages.every((m) => m.job && isInfraStep(stalledStep(m.job)?.name))) {
+          await refreshPrLabels();
+          const newerRunExists =
+            run.run_attempt >= MAX_ATTEMPTS
+              ? undefined
+              : await hasNewerRun({ github, context, run });
+          for (const m of budgetMessages) {
+            verdicts.push(
+              evaluateInfraStallRetry({
+                stepName: stalledStep(m.job)?.name,
+                attempt: run.run_attempt,
+                maxAttempts: MAX_ATTEMPTS,
+                newerRunExists,
+                skipAutoRetry,
+              })
+            );
+          }
+        }
+        if (verdicts.length > 0 && verdicts.every((v) => v.retry)) {
+          for (const [i, m] of budgetMessages.entries()) {
+            core.error(
+              `${m.text}. INFRA STALL, RETRIED: ${verdicts[i].reason}. The pipeline is not cancelled; the job ends at its timeout-minutes and is re-run once the run completes.`
+            );
+          }
+          pendingRerun = await holdInfraStallRerun(budgetMsg);
+        } else {
+          for (const v of verdicts.filter((x) => x.infra && !x.retry)) {
+            console.log(`Infra stall NOT retried: ${v.reason}`);
+          }
+          if (await forceCancel(budgetMsg, { preamble: budgetMsg, cause: CANCEL_CAUSE_BUDGET }))
+            return;
+        }
       }
     }
 
@@ -1729,22 +1861,27 @@ const monitor = async ({ github, context, core }) => {
       // The labels as they are NOW, before the no-auto-retry branch below reads them (forceCancel re-reads them again for its own decision).
       await refreshPrLabels();
 
-      // 0. Stuck cancellations bypass AI + retry entirely -- the job hung once, retrying would just hang again. Force-cancel and surface a loud annotation so the operator investigates the root cause.
+      // 0. Stuck cancellations bypass AI + retry -- the job hung once, retrying would just hang again. Force-cancel and surface a loud annotation so the operator investigates the root cause. The one exception (ruling #f8b7f499): a kill whose stalled step is an INFRA step (evaluateInfraStallRetry) is the runner's stall, not the code's, and takes the retry path under MAX_ATTEMPTS.
       if (isStuck) {
         // A job GitHub's annotation names as timed out is judged against its declared timeout-minutes (rounded, "5m0s" -> 5); one caught by the threshold alone against the threshold.
         const threshold =
           timeoutKill && timeoutKill.timeoutMin !== null
             ? Math.round(timeoutKill.timeoutMin)
             : stuckThresholdFor(job);
-        console.log(
-          `"${job.name}" reached its ${threshold}m budget before cancellation -- a budget violation (timeout kill), no retry`
-        );
-        const budgetText = budgetEnforcedText(job.name, jobMin, threshold);
-        core.error(
-          timeoutKill
-            ? `${budgetText}. GitHub killed it after ${jobMin}m: "${timeoutKill.message}". Not retried; investigate the slow step before re-running.`
-            : `${budgetText}. Cancelled after ${jobMin}m, at or past the ${threshold}m stuck-threshold: its declared timeout-minutes likely expired. Not retried; investigate the slow step before re-running.`
-        );
+        const budgetText =
+          budgetEnforcedText(job.name, jobMin, threshold) + budgetStepNote(job, Date.now());
+        const stallStep = stalledStep(job)?.name;
+        const stall = evaluateInfraStallRetry({
+          stepName: stallStep,
+          attempt: run.run_attempt,
+          maxAttempts: MAX_ATTEMPTS,
+          // Asked only when the answer can matter: an infra step under the attempt cap.
+          newerRunExists:
+            isInfraStep(stallStep) && run.run_attempt < MAX_ATTEMPTS
+              ? await hasNewerRun({ github, context, run })
+              : undefined,
+          skipAutoRetry,
+        });
         budgetViolationLog.push({
           kind: 'timeout',
           name: job.name,
@@ -1754,6 +1891,26 @@ const monitor = async ({ github, context, core }) => {
           message: budgetText,
         });
         flushBudgetReport();
+        if (stall.retry) {
+          console.log(
+            `"${job.name}" reached its ${threshold}m budget in an infra step -- ${stall.reason}`
+          );
+          core.error(
+            `${budgetText}. INFRA STALL, RETRIED: ${stall.reason}. Its log is captured; the job is re-run once the run completes.`
+          );
+          pendingRerun = await holdInfraStallRerun(failureMsg);
+          await new Promise((resolve) => setTimeout(resolve, pollInterval));
+          continue;
+        }
+        if (stall.infra) console.log(`Infra stall NOT retried: ${stall.reason}`);
+        console.log(
+          `"${job.name}" reached its ${threshold}m budget before cancellation -- a budget violation (timeout kill), no retry`
+        );
+        core.error(
+          timeoutKill
+            ? `${budgetText}. GitHub killed it after ${jobMin}m: "${timeoutKill.message}". Not retried; investigate the slow step before re-running.`
+            : `${budgetText}. Cancelled after ${jobMin}m, at or past the ${threshold}m stuck-threshold: its declared timeout-minutes likely expired. Not retried; investigate the slow step before re-running.`
+        );
         // Cause 'failure', deliberately, although the text says budget: this job is already DEAD (GitHub's timeout killed it), so a cancel reclaims nothing from it and would only take the still-reporting jobs down, which is what the no-auto-cancel label exists to prevent. The budget was enforced by the kill itself, and the job is still never retried.
         if (await forceCancel(failureMsg, { preamble: budgetText })) return;
 
@@ -1902,6 +2059,19 @@ const monitor = async ({ github, context, core }) => {
         );
         return;
       }
+      // Persist every job the rerun will re-run BEFORE it runs (persistJobLog). The classified failure was captured when it was handled, but an infra stall was held while its job was still live and unreadable, and a sibling that failed after the hold was never handled at all. getLogTail caches by name, so an already-captured job costs nothing.
+      const toRerun = monitoredJobs.filter(
+        (j) =>
+          j.conclusion === 'failure' || j.conclusion === 'cancelled' || j.conclusion === 'timed_out'
+      );
+      if (toRerun.length === 0) {
+        // An infra-stalled job can still finish inside its timeout; rerun-failed-jobs on a run with nothing to re-run is an API error, not a retry.
+        console.log(
+          `Run ${targetRunId} completed with no failed or cancelled job - nothing to re-run, ending the chain`
+        );
+        return;
+      }
+      for (const j of toRerun) await getLogTail(j);
       if (await executeRerun()) {
         core.setOutput('continue', 'true');
         core.setOutput('pending_rerun', 'false');
@@ -1970,3 +2140,7 @@ module.exports.evaluateSupersession = evaluateSupersession;
 module.exports.evaluatePendingRerun = evaluatePendingRerun;
 module.exports.evaluateBudget = evaluateBudget;
 module.exports.budgetStepNote = budgetStepNote;
+module.exports.stalledStep = stalledStep;
+module.exports.INFRA_STEP_PATTERNS = INFRA_STEP_PATTERNS;
+module.exports.isInfraStep = isInfraStep;
+module.exports.evaluateInfraStallRetry = evaluateInfraStallRetry;

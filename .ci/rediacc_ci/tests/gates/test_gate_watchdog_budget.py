@@ -529,10 +529,14 @@ const monitor = require(process.argv[2]);
 const fx = JSON.parse(process.argv[3]);
 const now = Date.now();
 const ago = (m) => new Date(now - m * 60000).toISOString();
+// `steps` on a fixture job (optional) are offsets like the job's own; absent keeps the job step-less, the shape every pre-#f8b7f499 case was written against.
 const jobs = fx.jobs.map((j, i) => ({
   id: 100 + i, name: j.name, status: j.status, conclusion: j.conclusion || null,
   started_at: ago(j.startedAgoMin),
   completed_at: j.status === 'completed' ? ago(j.startedAgoMin - j.durationMin) : null,
+  ...(j.steps ? { steps: j.steps.map((s) => ({ name: s.name, status: s.status,
+    conclusion: s.conclusion || null, started_at: ago(s.startedAgoMin),
+    completed_at: s.status === 'completed' ? ago(s.startedAgoMin - s.durationMin) : null })) } : {}),
 }));
 const actions = [], outputs = {}, errors = [], warnings = [], annotationReads = [];
 // `labels` on the fixture is one entry PER READ of the PR's labels, the last entry repeating: a list of names, or the string "ERROR" to make that read throw. Absent means every read answers "no labels".
@@ -549,10 +553,11 @@ const github = {
   rest: {
     actions: {
       getWorkflowRun: async () => ({ data: { id: 999, status: fx.run.status, conclusion: null,
-        run_attempt: 1, event: fx.run.event, run_started_at: ago(fx.run.startedAgoMin),
+        run_attempt: fx.run.attempt || 1, event: fx.run.event, run_started_at: ago(fx.run.startedAgoMin),
         head_branch: 'b', workflow_id: 1, run_number: 1 } }),
       listJobsForWorkflowRun: () => {},
-      listWorkflowRuns: async () => ({ data: { workflow_runs: [] } }),
+      // `newerRun` on the fixture run makes a newer run of the same workflow and branch exist.
+      listWorkflowRuns: async () => ({ data: { workflow_runs: fx.run.newerRun ? [{ id: 1000, run_number: 2 }] : [] } }),
       downloadJobLogsForWorkflowRun: async () => ({ data: 'log line\n' }),
       cancelWorkflowRun: async () => { actions.push('cancel'); return {}; },
     },
@@ -629,8 +634,10 @@ SIBLINGS = [
 ]
 
 
-def run_monitor(gate, tmp_path: pathlib.Path, jobs, run, labels=None, **env_overrides) -> dict:
-    """Drive the real monitor once; returns its trace plus the budget-violations.json it wrote (or None). `labels` scripts the PR's label reads (see MONITOR_JS) and makes the run a PR's."""
+def run_monitor(
+    gate, tmp_path: pathlib.Path, jobs, run, labels=None, watchdog=None, **env_overrides
+) -> dict:
+    """Drive the real monitor once; returns its trace plus the budget-violations.json it wrote (or None). `labels` scripts the PR's label reads (see MONITOR_JS) and makes the run a PR's. `watchdog` points at a mutant copy for a control; absent is the real module."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     script = tmp_path / "monitor.cjs"
     script.write_text(MONITOR_JS, encoding="utf-8")
@@ -643,7 +650,7 @@ def run_monitor(gate, tmp_path: pathlib.Path, jobs, run, labels=None, **env_over
         fixture["labels"] = labels
         env.setdefault("WATCHDOG_PR_NUMBER", "600")
     result = harness.run(
-        ["node", str(script), str(subject(gate)), json.dumps(fixture)], timeout=120
+        ["node", str(script), str(watchdog or subject(gate)), json.dumps(fixture)], timeout=120
     )
     lines = [ln for ln in result.out.splitlines() if ln.startswith("{")]
     if not lines:
@@ -1110,3 +1117,289 @@ def test_no_auto_retry_beside_the_label_neither_reruns_nor_cancels(gate, tmp_pat
     )
     gate.assert_eq(alone["actions"], ["force-cancel"], "CONTROL: no-auto-retry alone cancels")
     gate.log_pass("no-auto-retry beside the label: the run finishes red, untouched")
+
+
+# --- ruling #f8b7f499: an infra-step stall is retried, a test-step stall is not --------
+#
+# Run 39766647743 (PR #601) lost three attempts with nothing failing, each one a budget overrun in a step that was slow because the RUNNER was: 'Setup KVM Host', 'Install clang for BPF compilation' (apt) and 'Build and push'. The ruling sends a stall in such a step down the transient retry path, capped by MAX_ATTEMPTS, and leaves a slow TEST step on T4.3's no-retry cancel.
+#
+# THE CONTROLS ARE A MUTANT, not a second fixture. `_mutant` writes a copy of the watchdog whose `isInfraStep` always answers false -- the module as it was before the ruling, as far as these paths can tell -- and the retry cases are driven against it too: each must then cancel the pipeline. A case that passes against the mutant was never testing the new branch.
+
+OBSERVED_INFRA_STEPS = ["Setup KVM Host", "Install clang for BPF compilation", "Build and push"]
+TEST_STEPS = [
+    "Run E2E Tests",
+    "Python package tests",
+    "Test APT Installation",
+    "Install-script tests",
+    "Install table",
+    "Create E2E Test Environment",
+    "",
+]
+INFRA_RETURN = "return patterns.some((re) => re.test(stepName));"
+WELL_KNOWN = paths.from_root("scripts", "ci", "well-known.cjs")
+STEP_SOURCES = [
+    *sorted(paths.from_root(".github", "workflows").glob("*.yml")),
+    *sorted(paths.from_root(".github", "actions").glob("*/action.yml")),
+]
+_STEP_NAME_RE = re.compile(r"^\s*-\s+name:\s*(.+?)\s*$", re.MULTILINE)
+
+
+def _mutant(gate, tmp_path: pathlib.Path) -> pathlib.Path:
+    """A copy of the watchdog with `isInfraStep` answering false, laid out so its relative `require` of well-known.cjs still resolves."""
+    text = subject(gate).read_text(encoding="utf-8")
+    gate.assert_eq(text.count(INFRA_RETURN), 1, "the mutation anchor exists exactly once")
+    target = tmp_path / "mutant" / ".ci" / "scripts" / "ci" / "watchdog-monitor.cjs"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(text.replace(INFRA_RETURN, "return false;"), encoding="utf-8")
+    link = tmp_path / "mutant" / "scripts" / "ci" / "well-known.cjs"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(WELL_KNOWN)
+    return target
+
+
+def _node_eval(gate, js: str, *args: str):
+    result = harness.run(["node", "-e", js, str(subject(gate)), *args])
+    gate.assert_exit(0, result, "the watchdog's exports must be drivable")
+    return json.loads(result.out)
+
+
+def _stalled_live(name: str, step: str, minutes: float = 15.1) -> dict:
+    """A live job `minutes` in, its current step `step` started 6.6 minutes ago (run 39766647743, gen 2)."""
+    return {
+        "name": name,
+        "status": "in_progress",
+        "startedAgoMin": minutes,
+        "steps": [
+            {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "startedAgoMin": minutes,
+                "durationMin": 0.2,
+            },
+            {"name": step, "status": "in_progress", "startedAgoMin": 6.6},
+        ],
+    }
+
+
+def _killed(name: str, step: str, minutes: float = 15) -> dict:
+    """A job GitHub killed at its timeout in `step`; the runner still ran the post steps after it."""
+    return {
+        "name": name,
+        "status": "completed",
+        "conclusion": "cancelled",
+        "startedAgoMin": minutes + 1,
+        "durationMin": minutes,
+        "steps": [
+            {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "startedAgoMin": minutes + 1,
+                "durationMin": 0.2,
+            },
+            {
+                "name": step,
+                "status": "completed",
+                "conclusion": "cancelled",
+                "startedAgoMin": minutes - 5,
+                "durationMin": minutes - 5.9,
+            },
+            {
+                "name": "Post Run actions/checkout",
+                "status": "completed",
+                "conclusion": "success",
+                "startedAgoMin": 1.05,
+                "durationMin": 0.02,
+            },
+            {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "startedAgoMin": 1.02,
+                "durationMin": 0.01,
+            },
+        ],
+    }
+
+
+PROBE_LEG = "E2E Dependency Probe / E2E Probe (18-ops-workflow.test.ts)"
+
+
+def _assert_retried_not_cancelled(gate, trace: dict, step: str) -> None:
+    gate.assert_not_contains(" ".join(trace["actions"]), "cancel", "the pipeline is not cancelled")
+    gate.assert_eq(trace["outputs"].get("by_design_kind"), "rerun-pending", "a rerun is held")
+    gate.assert_contains(" ".join(trace["errors"]), "INFRA STALL, RETRIED", "loudly annotated")
+    gate.assert_contains(" ".join(trace["errors"]), "'%s'" % step, "naming the stalled step")
+
+
+def _assert_cancelled_without_retry(gate, trace: dict) -> None:
+    gate.assert_eq(trace["actions"].count("force-cancel"), 1, "the pipeline is cancelled")
+    gate.assert_not_contains(" ".join(trace["actions"]), "rerun", "and nothing is re-run")
+    gate.assert_not_contains(" ".join(trace["errors"]), "INFRA STALL, RETRIED", "no retry claim")
+    gate.assert_eq(trace["outputs"].get("pending_rerun"), None, "no pending rerun handed on")
+
+
+def test_infra_step_classifier_on_the_observed_and_the_test_steps(gate):
+    verdict = _node_eval(
+        gate,
+        "const m=require(process.argv[1]);"
+        "process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map((s)=>m.isInfraStep(s))))",
+        json.dumps(OBSERVED_INFRA_STEPS + TEST_STEPS),
+    )
+    gate.assert_eq(
+        verdict,
+        [True] * len(OBSERVED_INFRA_STEPS) + [False] * len(TEST_STEPS),
+        "the three steps of run 39766647743 are infra; test and gate steps are not",
+    )
+    gate.log_pass("isInfraStep: %s infra, %s not" % (OBSERVED_INFRA_STEPS, TEST_STEPS))
+
+
+def test_every_infra_pattern_names_a_step_that_exists(gate):
+    """Anti-drift: a pattern no workflow step matches is a rename the list did not follow, and its stall is silently back on the no-retry cancel."""
+    names = sorted(
+        {
+            m.group(1).strip("'\"")
+            for f in STEP_SOURCES
+            for m in _STEP_NAME_RE.finditer(f.read_text(encoding="utf-8"))
+        }
+    )
+    gate.assert_eq(len(names) > 100, True, "the workflow step names were read (%d)" % len(names))
+    unmatched = _node_eval(
+        gate,
+        "const m=require(process.argv[1]);const names=JSON.parse(process.argv[2]);"
+        "process.stdout.write(JSON.stringify(m.INFRA_STEP_PATTERNS"
+        ".filter((re)=>!names.some((n)=>re.test(n))).map((re)=>re.source)))",
+        json.dumps(names),
+    )
+    gate.assert_eq(unmatched, [], "every INFRA_STEP_PATTERNS entry matches a real step name")
+    gate.log_pass("every infra pattern names a step in .github/workflows or .github/actions")
+
+
+def test_the_stalled_step_of_a_killed_job_is_the_cancelled_one_not_the_teardown(gate):
+    names = _node_eval(
+        gate,
+        "const m=require(process.argv[1]);"
+        "process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map((j)=>m.stalledStep(j)?.name ?? null)))",
+        json.dumps(
+            [
+                {"steps": [{"name": "a", "conclusion": "success", "started_at": T0}]},
+                {
+                    "steps": [
+                        {"name": "Setup KVM Host", "conclusion": "cancelled", "started_at": T0},
+                        {"name": "Complete job", "conclusion": "success", "started_at": T0},
+                    ]
+                },
+                {"steps": []},
+            ]
+        ),
+    )
+    gate.assert_eq(names, ["a", "Setup KVM Host", None], "the cancelled step, not 'Complete job'")
+    gate.log_pass("stalledStep names the step the timeout cancelled")
+
+
+def test_monitor_live_infra_stall_at_attempt_1_is_retried_not_cancelled(gate, tmp_path):
+    trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Setup KVM Host")], PR_RUN)
+    _assert_retried_not_cancelled(gate, trace, "Setup KVM Host")
+    gate.assert_eq(trace["outputs"].get("pending_rerun"), "true", "handed to the next generation")
+    gate.assert_eq(
+        [(v["name"], v["enforced"]) for v in trace["budget"]["violations"]],
+        [(PROBE_LEG, True)],
+        "the overrun is still recorded as an enforced violation",
+    )
+    gate.log_pass("a live overrun in 'Setup KVM Host' at attempt 1 holds a rerun, cancels nothing")
+
+
+def test_control_live_infra_stall_cancels_when_the_classifier_is_disabled(gate, tmp_path):
+    mutant = _mutant(gate, tmp_path)
+    trace = run_monitor(
+        gate, tmp_path, [_stalled_live(PROBE_LEG, "Setup KVM Host")], PR_RUN, watchdog=mutant
+    )
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("CONTROL: with isInfraStep disabled the same fixture cancels the pipeline")
+
+
+def test_monitor_live_infra_stall_at_attempt_2_cancels_without_retry(gate, tmp_path):
+    run = dict(PR_RUN, attempt=2)
+    trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Setup KVM Host")], run)
+    _assert_cancelled_without_retry(gate, trace)
+    gate.assert_contains(trace["stdout"], "already at attempt 2/2", "the cap is the reason")
+    gate.log_pass("at attempt 2 (MAX_ATTEMPTS) an infra stall cancels without retry")
+
+
+def test_monitor_live_infra_stall_with_a_newer_run_cancels_without_retry(gate, tmp_path):
+    run = dict(PR_RUN, newerRun=True)
+    trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Setup KVM Host")], run)
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("a superseded head is never re-run for an infra stall")
+
+
+def test_monitor_live_infra_stall_under_no_auto_retry_cancels(gate, tmp_path):
+    trace = run_monitor(
+        gate,
+        tmp_path,
+        [_stalled_live(PROBE_LEG, "Install clang for BPF compilation")],
+        PR_RUN,
+        labels=[["no-auto-retry"]],
+    )
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("the no-auto-retry label keeps an infra stall on the cancel path")
+
+
+def test_monitor_live_test_step_overrun_at_attempt_1_cancels_without_retry(gate, tmp_path):
+    """T4.3 preserved. Its control is the infra case above: the same job, attempt and minutes, only the step differs."""
+    trace = run_monitor(gate, tmp_path, [_stalled_live(PROBE_LEG, "Run E2E Tests")], PR_RUN)
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("a live overrun in a test step at attempt 1 still cancels without retry")
+
+
+def test_monitor_live_mixed_infra_and_test_overruns_cancel(gate, tmp_path):
+    jobs = [
+        _stalled_live(PROBE_LEG, "Setup KVM Host"),
+        _stalled_live("E2E Dependency Probe / E2E Probe (04)", "Run E2E Tests"),
+    ]
+    trace = run_monitor(gate, tmp_path, jobs, PR_RUN)
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("one test-step overrun beside an infra stall keeps the pipeline cancel")
+
+
+def test_monitor_timeout_kill_in_an_infra_step_is_retried(gate, tmp_path):
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    trace = run_monitor(gate, tmp_path, [_killed(LEG, "Install clang for BPF compilation")], run)
+    gate.assert_contains(" ".join(trace["actions"]), "rerun", "the killed job is re-run")
+    _assert_retried_not_cancelled(gate, trace, "Install clang for BPF compilation")
+    gate.assert_eq(trace["budget"]["violations"][0]["kind"], "timeout", "still recorded")
+    gate.log_pass("a timeout kill in an infra step goes to the retry path")
+
+
+def test_control_timeout_kill_in_an_infra_step_cancels_when_the_classifier_is_disabled(
+    gate, tmp_path
+):
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    mutant = _mutant(gate, tmp_path)
+    trace = run_monitor(
+        gate,
+        tmp_path,
+        [_killed(LEG, "Install clang for BPF compilation")],
+        run,
+        watchdog=mutant,
+    )
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("CONTROL: with isInfraStep disabled the same timeout kill is not retried")
+
+
+def test_monitor_timeout_kill_in_a_test_step_is_not_retried(gate, tmp_path):
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    trace = run_monitor(gate, tmp_path, [_killed(LEG, "Run E2E Tests")], run)
+    _assert_cancelled_without_retry(gate, trace)
+    gate.assert_contains(
+        " ".join(trace["errors"]), "in step 'Run E2E Tests'", "the error names the stalled step"
+    )
+    gate.log_pass("a timeout kill in a test step is still a no-retry cancel")
+
+
+def test_monitor_timeout_kill_in_an_infra_step_at_attempt_2_is_not_retried(gate, tmp_path):
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20, "attempt": 2}
+    trace = run_monitor(gate, tmp_path, [_killed(LEG, "Setup KVM Host")], run)
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("at attempt 2 a timeout kill in an infra step is not retried")
