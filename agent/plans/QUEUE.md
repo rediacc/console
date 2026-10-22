@@ -57,7 +57,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort low; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
 - Phase: babysit on PR #601 (branch 1020-1, session d778be9d, since 2026-10-21T18:34:27Z).
 - Branch: 1020-1, PR #601 open.
-- Plans on the PR (11):
+- Plans on the PR (12):
   - agent/plans/_done/PLAN-vm-check.md -- 8 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/_done/PLAN-account-vm-check.md -- 7 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/_done/PLAN-tooling-transformation.md -- 154 of 154 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
@@ -68,9 +68,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- 6 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/_done/PLAN-remove-cross-session-messaging.md -- 13 of 13 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-e2e-browse-at-ci.md -- 7 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-e2e-browse-at-ci.md -- 8 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-backup-program.md -- 0 of 186 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 357 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 361 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
 - Writers: 0 live of writer_cap 15 (session d778be9d).
 - Leased items: 1: #1732ee99 (worker:3176141, d778be9d).
 - Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 5; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
@@ -79,13 +80,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 5 plans done, 41 of 230 boxes done (17%).
+Promoted: 2 of 5 plans done, 42 of 230 boxes done (18%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-pins-command.md | 12/13 | 1 open |
-| 3 | PLAN-shell-sandbox-readonly-view.md | 6/7 | 1 open |
+| 3 | PLAN-shell-sandbox-readonly-view.md | 7/7 | done |
 | 4 | PLAN-e2e-browse-at-ci.md | 8/8 | done |
 | 5 | PLAN-backup-program.md | 0/186 | 186 open |
 <!-- queue:progress:end -->
