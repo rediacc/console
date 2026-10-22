@@ -233,6 +233,18 @@ describe('Subscription Status Functions', () => {
       const graceEnd = calculateGracePeriodEnd(checkIn);
       expect(graceEnd.toISOString()).toBe('2026-01-04T00:00:00.000Z');
     });
+
+    it('stays exactly 72 h across a DST change in the local time zone', () => {
+      const saved = process.env.TZ;
+      // Europe/Berlin leaves DST on 2026-10-25; local calendar days made this grace 73 h.
+      process.env.TZ = 'Europe/Berlin';
+      try {
+        const checkIn = new Date('2026-10-22T06:00:00Z');
+        expect(calculateGracePeriodEnd(checkIn).getTime() - checkIn.getTime()).toBe(3 * 86_400_000);
+      } finally {
+        process.env.TZ = saved;
+      }
+    });
   });
 
   describe('getEffectivePlanCode', () => {

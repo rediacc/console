@@ -162,9 +162,8 @@ export function isGracePeriodExpired(gracePeriodEnds: string | Date): boolean {
  */
 export function calculateGracePeriodEnd(lastCheckIn: string | Date): Date {
   const checkIn = typeof lastCheckIn === 'string' ? new Date(lastCheckIn) : lastCheckIn;
-  const grace = new Date(checkIn);
-  grace.setDate(grace.getDate() + SUBSCRIPTION_CONFIG.gracePeriodDays);
-  return grace;
+  // A fixed 24 h per day, never setDate: a local calendar day is 23 or 25 hours across a DST change (the same cap delegation-cert-policy computes).
+  return new Date(checkIn.getTime() + SUBSCRIPTION_CONFIG.gracePeriodDays * 86_400_000);
 }
 
 /**
