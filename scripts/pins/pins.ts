@@ -1564,6 +1564,17 @@ const CASES: Record<string, Case> = {
       ['lockfiles', '--adopt', './sub/../package-lock.json'],
       withMutant(adopted.fx, m)
     );
+    // The other spellings the normalisation claims: a backslash path and a doubled slash.
+    const spelled: Array<{ spelling: string; rc: number; kept: boolean }> = [];
+    for (const spelling of ['.\\package-lock.json', './/package-lock.json']) {
+      const fx = lock(false);
+      const r = await runCli(['lockfiles', '--adopt', spelling], withMutant(fx.fx, m));
+      spelled.push({
+        spelling,
+        rc: r.rc,
+        kept: fx.fx.read('package-lock.json').includes('"manual": true'),
+      });
+    }
     const stray = lock(false);
     const lockStray = await runCli(['lockfiles', '--adopt', 'nope.json'], withMutant(stray.fx, m));
     const dirtyM = lock(true);
@@ -1598,6 +1609,11 @@ const CASES: Record<string, Case> = {
         name: 'lockfiles: the same lockfile named with --adopt (as ./sub/../package-lock.json) is accepted, its hand edit still on disk',
         ok: lockAdopted.rc === 0 && adopted.fx.read('package-lock.json').includes('"manual": true'),
         detail: `rc=${lockAdopted.rc} ${lockAdopted.err}`,
+      },
+      {
+        name: 'lockfiles: --adopt as .\\package-lock.json and .//package-lock.json is accepted too (the backslash and doubled-slash spellings)',
+        ok: spelled.every((x) => x.rc === 0 && x.kept),
+        detail: JSON.stringify(spelled),
       },
       {
         name: 'lockfiles: an --adopt naming no file this run writes is refused by name, nothing written',
