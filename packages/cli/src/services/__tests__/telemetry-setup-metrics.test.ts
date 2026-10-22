@@ -10,18 +10,23 @@ describe('setupOtelSdk metrics wiring', () => {
   let shutdown: (() => Promise<void>) | undefined;
 
   afterEach(async () => {
-    await shutdown?.();
-    await new Promise<void>((resolve) => (server ? server.close(() => resolve()) : resolve()));
-    server = undefined;
-    shutdown = undefined;
+    try {
+      await shutdown?.();
+    } finally {
+      // Closed even when shutdown rejects, so a failing run does not leak a listening server into later tests.
+      await new Promise<void>((resolve) => (server ? server.close(() => resolve()) : resolve()));
+      server = undefined;
+      shutdown = undefined;
+    }
   });
 
   it('exports a recorded counter to /v1/metrics on a reader flush', async () => {
-    const paths: string[] = [];
+    const metricBodies: Buffer[] = [];
     server = createServer((req, res) => {
-      paths.push(req.url ?? '');
-      req.resume();
+      const chunks: Buffer[] = [];
+      req.on('data', (c: Buffer) => chunks.push(c));
       req.on('end', () => {
+        if (req.url === '/v1/metrics') metricBodies.push(Buffer.concat(chunks));
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end('{}');
       });
@@ -42,6 +47,7 @@ describe('setupOtelSdk metrics wiring', () => {
     otel.commandCounter.add(1, { command: 'test' });
     await otel.metricReader.forceFlush();
 
-    expect(paths).toContain('/v1/metrics');
+    // The instrument's name is plain bytes in both the JSON and the protobuf encodings, so this ties the export to THIS counter.
+    expect(metricBodies.some((b) => b.includes('cli.command.count'))).toBe(true);
   });
 });
