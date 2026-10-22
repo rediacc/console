@@ -18,8 +18,8 @@ from rediacc_ci import paths
 SUT = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 SWEEPER = paths.from_root(".ci", "rediacc_ci", "housekeeping", "retry_failed_runs.py")
 
-# Three by-design paths, one real-error setFailed. These are COUNTS OF A KNOWN SET rather than thresholds: the twin asserts equality both ways for the same reason, because a fourth by-design site is as much a change as a lost one.
-BY_DESIGN_SITES = 3
+# Four by-design paths (pipeline cancelled, left uncancelled, transient rerun pending, infra-stall rerun pending -- ruling #f8b7f499), one real-error setFailed. These are COUNTS OF A KNOWN SET rather than thresholds: the twin asserts equality both ways for the same reason, because a fifth by-design site is as much a change as a lost one.
+BY_DESIGN_SITES = 4
 REAL_SETFAILED_SITES = 1
 
 SETFAILED_RE = re.compile(r"^ *core\.setFailed\(", re.MULTILINE)
