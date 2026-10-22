@@ -166,6 +166,18 @@ for cmd in (
         None,
     )
 
+# ---- 3c. the scanner's continuation rules, read directly ------------------------------------------
+check(
+    "scan: backslash-newline inside double quotes joins, and the quote stays one segment",
+    W._split_unquoted('echo "a\\\nb; c"\nnpm run ci:quick'),
+    ['echo "ab; c"', "npm run ci:quick"],
+)
+check(
+    "scan: backslash-newline inside single quotes is literal, as in POSIX sh",
+    W._split_unquoted("echo 'a\\\nb'"),
+    ["echo 'a\\\nb'"],
+)
+
 # ---- 4. ci_trouble: `fixing` on a final red, `trouble` while live or without the pipeline ---------
 CASE = [0]
 
