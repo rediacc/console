@@ -49,12 +49,15 @@ capture with no difference.
 INVARIANT 5 HELD THROUGH W7P5-c: `.ci/scripts/quality/check-go-deps.sh` stayed on disk as the differential twin for as long as the ledger above needed it to exist, and was deleted only once the K=5 shadow-gate ledger (`.ci/shadow/w7p2-go-deps.observations.jsonl`) and this docstring's own DRIVEN evidence licensed the retirement. `.ci/scripts/lib/release-age.sh` and
 `.ci/scripts/lib/age-check.sh`, the twin's two sourced libraries, went in the same change: this twin was the last real sourcer of each.
 
+SLOW SINCE 2026-10-22: the lane-timing refresh after green PR run 39742633342 measured its CI step at 46.2 s (`go list -u -m -json all` resolves every module upstream), and check:ci-gate-manifest refuses a pre-push gate over its tier, so `slow: true` moves it to the slow lane CI still runs on every PR.
+
 ---- gate ----
 step: Check Go dependency freshness
 needs: none
 selftest: true
 lane: quality-go
 when: inputs.external_quality != 'skip'
+slow: true
 ---- end gate ----
 """
 

@@ -141,7 +141,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-git-history-depth | quality-static / Git history depth | yes | no |
 | check:ci-git-op-conditionals | quality-code / Git-op conditional guards | yes | no |
 | check:ci-git-tool-safety | quality-code / Mediated git tool stays lease-only and dry-run by default | yes | no |
-| check:ci-go-deps | quality-go / Check Go dependency freshness | yes | no |
+| check:ci-go-deps | quality-go / Check Go dependency freshness | yes | yes |
 | check:ci-go-module-sync | quality-go / Check Go module sync against the renet worktree | yes | no |
 | check:ci-go-tool-path | quality-code / Go tool PATH | yes | no |
 | check:ci-greenlight-closures | quality-code / Greenlight closure paths | yes | no |

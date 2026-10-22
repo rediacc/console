@@ -4001,6 +4001,7 @@
     "id": "check:ci-go-deps",
     "run": "npm run check:ci-go-deps",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_go_deps.py"
     ],
