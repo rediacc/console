@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { configService } from '../../services/config/config-resources.js';
+import { outputService } from '../../services/core/output.js';
 import { localExecutorService } from '../../services/executor/local-executor.js';
 import { executeRepoFunction } from '../repo-executor.js';
 
@@ -177,11 +178,12 @@ describe('executeRepoFunction fails closed on a failed result', () => {
       exitCode,
       error: 'boom',
     } as never);
-    vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const rendered = vi.spyOn(outputService, 'error').mockImplementation(() => undefined);
 
     const result = await executeRepoFunction('backup_verify', 'shop', 'server-1', {}, {}, msgs);
 
     expect(result.success).toBe(false);
     expect(process.exitCode).toBe(expected);
+    expect(rendered).toHaveBeenCalledWith('boom');
   });
 });
