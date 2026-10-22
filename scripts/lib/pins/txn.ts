@@ -129,12 +129,69 @@ interface Journal {
   state: 'planned' | 'writing' | 'done' | 'restored' | 'refused';
   pins: string[];
   files: Record<string, JournalFile>;
+  /** sha256 of files written after the transaction closed (the regenerated docs), by key; the ledger trusts them like a `wrote`. */
+  late?: Record<string, string>;
 }
 
 export const journalRoot = (root: string): string => path.join(root, '.ci/cache/pins');
 
 function saveJournal(dir: string, j: Journal): void {
   fs.writeFileSync(path.join(dir, 'journal.json'), `${JSON.stringify(j, null, 2)}\n`);
+}
+
+/**
+ * The per-tree ledger, read from the journals every finished run already leaves: a file that
+ * is dirty only because an earlier run of this tree wrote it is not a peer's change. The
+ * ledger holds when some done journal recorded exactly these bytes (`wrote`, or a `late`
+ * write) for the key, so any byte a peer adds afterwards changes the hash and the file is
+ * refused again. `ledger-off` never holds (the refusal before 2026-10-22); `ledger-by-path`
+ * holds for any key a journal names, whatever the bytes.
+ */
+export function ledgerHolds(
+  root: string,
+  key: string,
+  currentSha: string,
+  mutant: Mutant | null = null
+): boolean {
+  if (mutant === 'ledger-off') return false;
+  let names: string[];
+  try {
+    names = fs.readdirSync(journalRoot(root));
+  } catch {
+    return false;
+  }
+  for (const n of names) {
+    let j: Journal;
+    try {
+      j = JSON.parse(fs.readFileSync(path.join(journalRoot(root), n, 'journal.json'), 'utf8'));
+    } catch {
+      continue;
+    }
+    if (j.state !== 'done') continue;
+    const wrote = j.files?.[key]?.wrote ?? null;
+    const late = j.late?.[key] ?? null;
+    if (mutant === 'ledger-by-path') {
+      if (wrote !== null || late !== null) return true;
+      continue;
+    }
+    if (wrote === currentSha || late === currentSha) return true;
+  }
+  return false;
+}
+
+/** Record files written after a done transaction (the regenerated docs), so a later run trusts their bytes. */
+export function recordLateWrites(root: string, stamp: string, paths: RepoPath[]): void {
+  const dir = path.join(journalRoot(root), stamp);
+  let j: Journal;
+  try {
+    j = JSON.parse(fs.readFileSync(path.join(dir, 'journal.json'), 'utf8'));
+  } catch {
+    return;
+  }
+  if (j.state !== 'done') return;
+  j.late = j.late ?? {};
+  for (const p of paths) j.late[keyOf(p)] = sha(readBytes(absOf(root, p)));
+  saveJournal(dir, j);
 }
 
 export interface RestoreOutcome {
@@ -266,6 +323,8 @@ export interface TxnOptions {
   submodules: string[];
   /** Every registry entry's id and gates, so a red gate shared with pins this run did not move can name them. */
   registry?: ReadonlyArray<{ id: string; gates: readonly string[] }>;
+  /** The `lockfiles` verb: a dirty package-lock.json is not foreign while its sibling package.json is clean (or ledger-known). */
+  lockfilesVerb?: boolean;
 }
 
 export interface RepoChange {
@@ -419,7 +478,19 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
         saveJournal(dir, j);
         return res;
       }
-      for (const f of files) if (dirty.has(f)) foreign.push(repo === '.' ? f : `${repo}/${f}`);
+      for (const f of files) {
+        if (!dirty.has(f)) continue;
+        const p = { repo, file: f };
+        const trusted = (q: RepoPath): boolean =>
+          ledgerHolds(o.root, keyOf(q), sha(readBytes(absOf(o.root, q))), o.mutant);
+        if (trusted(p)) continue;
+        if (o.lockfilesVerb && path.posix.basename(f) === 'package-lock.json') {
+          const manifest = { repo, file: path.posix.join(path.posix.dirname(f), 'package.json') };
+          const md = dirtyPaths(path.join(o.root, repo), [manifest.file]);
+          if (md !== null && (!md.has(manifest.file) || trusted(manifest))) continue;
+        }
+        foreign.push(repo === '.' ? f : `${repo}/${f}`);
+      }
     }
     if (foreign.length > 0) {
       res.failure = `refused: ${foreign.join(', ')} already hold(s) changes this run did not make (another session's work); commit or move them first`;

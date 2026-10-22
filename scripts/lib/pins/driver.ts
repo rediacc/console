@@ -114,6 +114,10 @@ export interface PinDriver {
  *   no-canonical   the canonical lockfile pass is skipped
  *   partial-write  the leaf planner writes each site to disk as it plans it
  *   no-dirty-check the refusal of a site file holding another session's changes is off
+ *   ledger-off     the per-tree ledger never holds, so a file an earlier run of this tree wrote is
+ *                  refused as a peer's change (the refusal before 2026-10-22)
+ *   ledger-by-path the ledger trusts any file a journal names, whatever its bytes now, so a
+ *                  peer's edit made after the run's write passes
  *   no-restore     a failed run keeps what it wrote
  *   blind-restore  a failed run restores every journaled file without comparing bytes
  *   first-eligible a run may leave a pending held major behind, and `--major` may take no major
@@ -142,6 +146,8 @@ export const MUTANTS = [
   'no-canonical',
   'partial-write',
   'no-dirty-check',
+  'ledger-off',
+  'ledger-by-path',
   'no-restore',
   'blind-restore',
   'first-eligible',
