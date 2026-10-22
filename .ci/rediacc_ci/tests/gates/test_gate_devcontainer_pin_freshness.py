@@ -416,7 +416,9 @@ def test_an_empty_release_list_is_not_compared_not_a_lost_tag_scheme(gate, tmp_p
     script[route(dlv)] = [ok([])]
     with stub_upstream(script) as stub:
         result = run_gate_over_http(dockerfile, stub.base)
-    gate.assert_exit(1, result, "an empty release list still fails closed")
+        gate.assert_eq(stub.asked(route(dlv)), 3, "an empty list is asked again within the budget")
+    gate.assert_exit(1, result, "an empty release list on every attempt still fails closed")
+    gate.assert_contains(result.err, "after 3 attempt(s)", "the attempt count is printed")
     gate.assert_contains(
         result.err, "1 devcontainer pin(s) were NOT compared", "one not-compared finding"
     )
@@ -433,6 +435,19 @@ def test_an_empty_release_list_is_not_compared_not_a_lost_tag_scheme(gate, tmp_p
     )
     gate.assert_not_contains(result.err, "cannot use", "it is not the unusable-listing class")
     gate.log_pass("an empty release list is not compared, not a lost tag scheme")
+
+
+def test_an_empty_answer_then_the_listing_is_green(gate, tmp_path):
+    """Measured 2026-10-22: 3 of 10 identical calls answered 200 with an empty list, 7 with all 44 releases. One empty answer is noise; the retry inside the budget reads the real list."""
+    dockerfile = build_fixtures(gate, tmp_path)
+    script = current_script(gate, dockerfile)
+    dlv = by_base(gate, "dlv")
+    script[route(dlv)] = [ok([]), *script[route(dlv)]]
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(dockerfile, stub.base)
+        gate.assert_eq(stub.asked(route(dlv)), 2, "asked once more after the empty answer")
+    gate.assert_exit(0, result, "the listing on the second attempt is compared")
+    gate.log_pass("an empty answer followed by the listing is green")
 
 
 def test_a_held_pin_is_not_asked_and_is_counted(gate, tmp_path):

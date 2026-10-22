@@ -115,6 +115,7 @@ import { bumpRemedy } from '../lib/pins/remedy.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
+  askReleaseList,
   askUpstream,
   emptyReleaseList,
   githubAsker,
@@ -239,7 +240,7 @@ async function releasesFor(src: Source): Promise<Latest[]> {
 
   // NOT /releases/latest. On a monorepo that endpoint answers with whichever COMPONENT shipped last -- for bitwarden/clients that is web-*, desktop-*, browser-* or cli-* depending on the week -- so it would compare the CLI pin against a browser-extension version and produce nonsense in both directions. The list endpoint is ordered newest-first, so the first prefix match is the
   // answer.
-  const rels = await github(`/repos/${src.repo}/releases?per_page=100`, src.display);
+  const rels = await askReleaseList(github, src.repo, src.display);
   if (!Array.isArray(rels)) throw new UnreadableListing('the response is not a release list');
   if (rels.length === 0) throw emptyReleaseList(src.repo);
   const hits = (rels as Array<GithubRelease | null>).filter(

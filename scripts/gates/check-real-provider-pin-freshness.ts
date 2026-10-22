@@ -75,6 +75,7 @@ import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
+  askReleaseList,
   emptyReleaseList,
   githubAsker,
   NotCompared,
@@ -174,7 +175,7 @@ async function fetchListing(src: PinSource): Promise<unknown> {
     if (!(src.repo in fixture)) throw NotCompared.absentFromFixture(src.repo);
     return fixture[src.repo];
   }
-  return github(`/repos/${src.repo}/releases?per_page=100`, src.display);
+  return askReleaseList(github, src.repo, src.display);
 }
 
 /** Every stable release under the source's tag prefix, newest version first. */
