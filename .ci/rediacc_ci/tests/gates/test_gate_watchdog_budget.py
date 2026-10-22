@@ -1142,9 +1142,7 @@ WELL_KNOWN = paths.from_root("scripts", "ci", "well-known.cjs")
 def _step_sources() -> list[pathlib.Path]:
     """Every workflow and composite action, read as DATA: the step names a pattern must still match.
 
-    A function, not a module-level glob, because nothing here is run per file, so this module is
-    not a fan-out driver; test_gate_fanout_timeout_declarable.is_fanout_driver keys on a glob bound
-    at import time.
+    A function, not a module-level glob, because nothing here is run per file, so this module is not a fan-out driver; test_gate_fanout_timeout_declarable.is_fanout_driver keys on a glob bound at import time.
     """
     return [
         *sorted(paths.from_root(".github", "workflows").glob("*.yml")),
