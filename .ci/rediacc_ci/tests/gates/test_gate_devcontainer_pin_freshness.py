@@ -426,6 +426,11 @@ def test_an_empty_release_list_is_not_compared_not_a_lost_tag_scheme(gate, tmp_p
     gate.assert_contains(
         result.err, "UPSTREAM REACHABILITY FAILURE", "it is reported as reachability"
     )
+    gate.assert_contains(
+        result.err,
+        "the repository lost every release",
+        "the other cause is named, so a re-run that stays empty points at the repository",
+    )
     gate.assert_not_contains(result.err, "cannot use", "it is not the unusable-listing class")
     gate.log_pass("an empty release list is not compared, not a lost tag scheme")
 
