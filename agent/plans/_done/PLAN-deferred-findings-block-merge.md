@@ -44,7 +44,7 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
 
 - **D1. `deferred` is retired as a new resolution.**
   - `mark()` refuses `deferred` with the plan-and-fix order (D5).
-  - The parser still reads the legacy grammar, so merged history (`agent/reviews/1007-1/`) is not made malformed for `ledger_migrate`/`migration_snapshot` (`.claude/hooks/stop/wl_review.py:2990-3008`).
+  - The parser still reads the legacy grammar, so merged history (the 1007-1 review records, pruned 2026-10-22 after retention; in git at `git show 23e0dddaa:agent/reviews/1007-1`) is not made malformed for `ledger_migrate`/`migration_snapshot` (`.claude/hooks/stop/wl_review.py:2990-3008`).
   - On the branch being judged, a legacy `deferred` line is a refusal at any severity, whatever state its item is in. The `items`-reopen logic at `.claude/hooks/stop/wl_review.py:2277` is removed.
   - Why retire it rather than allow it "mid-branch only": a resolution that is legal mid-branch but illegal at merge is a parked state with a timer, and the ruling says to fix before merge ALWAYS. The Stop hook would block on it every stop anyway (D5), so the mid-branch allowance buys nothing but a push.
   - Nothing reopens a finding to `open`, and no verb is added for it. A deferred low can therefore not be downgraded into an advisory open low.
@@ -98,7 +98,7 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
   - Answers already posted with a deferral turn red only once this reaches main, which is intended.
 - **D7. Migration.**
   - Only `agent/reviews/1008-1/` is migrated, by fixing the findings. The records themselves are append-only and nobody edits them by hand.
-  - `agent/reviews/1007-1/` and every other merged directory are history and are not judged. The open item `#9e7a546f` still tracks the 1007-1 finding as ordinary worklist work.
+  - The 1007-1 review records (pruned 2026-10-22; in git at 23e0dddaa) and every other merged directory are history and are not judged. The open item `#9e7a546f` still tracks the 1007-1 finding as ordinary worklist work.
   - Finding `4045c454.3` (`.claude/hooks/stop/wl_review.py:2427`) is inside W2's ownership, so W2 fixes it.
   - The two highs stay with their live leased writers (`#894643cf`, part of `#d72223aa`).
   - The local enabling commits (W1 gate wiring, W2 `push_refusals`) and the migration land before the next push. Under `turbo_push: batch-end` that push is one batch-end push; otherwise the first push after W1/W2 waits for M1-M3.
