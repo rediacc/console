@@ -39,7 +39,8 @@ The suite-26 BROWSE-AT tier passes on the local KVM fleet, but CI provides none 
     (ticked) 2026-10-21T10:02:38Z by d778be9d: commit:9b7a77c20 job test-e2e-backup-browse-at; check:ci-workflows and check:ci-actionlint rc=0. DEPS-WAIVED: PLAN-chunk-store-browse-toc-and-remote has 11 of 11 boxes ticked on this branch and closes after the merge
 - [x] B7: check-e2e-coverage.ts PRODUCTION_REGISTRY gains the new config; the backup_browse_at block leaves .ci/policy/.e2e-coverage-allowlist -- acceptance: check:ci-e2e-coverage rc=0
     (ticked) 2026-10-21T09:59:09Z by d778be9d: commit:9b7a77c20 PRODUCTION_REGISTRY entry and allowlist block removed; check:ci-e2e-coverage rc=0
-- [ ] B8: the job runs green on the PR, and `budget_report.py --refresh --branch <PR>` records its p90 -- acceptance: CI Complete includes the job green; check:ci-lane-budget rc=0 (the seeded 9.0 is replaced by the measured p90; one above the 12-minute default needs an operator ruling in JOB_BUDGET_CAPS)
+- [x] B8: the job runs green on the PR, and `budget_report.py --refresh --branch <PR>` records its p90 -- acceptance: CI Complete includes the job green; check:ci-lane-budget rc=0 (the seeded 9.0 is replaced by the measured p90; one above the 12-minute default needs an operator ruling in JOB_BUDGET_CAPS)
+    (ticked) 2026-10-22T09:02:13Z by d778be9d: commit:9c568c99e: run 39742633342 green incl E2E Backup Browse-At job 119710934780; budget_report --refresh --branch 1020-1 replaced seeded 9.0 with measured 7.0; check:ci-lane-budget rc=0 (91 controls), Ceph caps raised by operator ruling #4b9be429
 
 ## Risks
 
