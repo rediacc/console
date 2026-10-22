@@ -1363,6 +1363,33 @@ def test_monitor_live_mixed_infra_and_test_overruns_cancel(gate, tmp_path):
     gate.log_pass("one test-step overrun beside an infra stall keeps the pipeline cancel")
 
 
+def test_monitor_pending_rerun_still_cancels_a_later_test_step_overrun(gate, tmp_path):
+    """Review 8aaf3a8e.1: a generation that inherits a pending rerun (an infra hold, or a transient classification) skipped enforcement entirely, so a test-step overrun arriving later was recorded as enforced and never cancelled."""
+    trace = run_monitor(
+        gate,
+        tmp_path,
+        [_stalled_live(PROBE_LEG, "Run E2E Tests")],
+        PR_RUN,
+        WATCHDOG_PENDING_RERUN="true",
+    )
+    _assert_cancelled_without_retry(gate, trace)
+    gate.log_pass("a pending rerun does not shield a later test-step overrun from the cancel")
+
+
+def test_monitor_pending_rerun_keeps_holding_for_a_later_infra_stall(gate, tmp_path):
+    """The other half: a second infra stall during the hold is already covered by the pending rerun, so it cancels nothing."""
+    trace = run_monitor(
+        gate,
+        tmp_path,
+        [_stalled_live(PROBE_LEG, "Setup KVM Host")],
+        PR_RUN,
+        WATCHDOG_PENDING_RERUN="true",
+    )
+    gate.assert_eq(trace["outputs"].get("pending_rerun"), "true", "the hold is handed on")
+    gate.assert_not_contains(trace["stdout"], "Budget enforcement:", "no enforcement fires")
+    gate.log_pass("a later infra stall during a pending rerun keeps holding")
+
+
 def test_monitor_timeout_kill_in_an_infra_step_is_retried(gate, tmp_path):
     run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
     trace = run_monitor(gate, tmp_path, [_killed(LEG, "Install clang for BPF compilation")], run)

@@ -591,7 +591,7 @@ function stalledStep(job) {
 //
 // The receipt is run 39766647743 (PR #601), which lost three attempts with nothing failing: 'E2E Probe (18-ops-workflow.test.ts)' at 15.1m in 'Setup KVM Host' (6.6m), Probe 04 at 15.0m silent 833s in 'Install clang for BPF compilation' (apt), and 'Devcontainer (amd64)' at 11.0m in 'Build and push'.
 //
-// CURATED and ANCHORED, never a bare /Install/: 'Install table' and 'Install-script tests' are quality gates, 'Test APT Installation' is a test, and a slow test step must stay a no-retry cancel. Every entry names a step that exists in .github/workflows or .github/actions; test_gate_watchdog_infra_stall.py reds on an entry that matches none, and on a test step that matches one.
+// CURATED and ANCHORED, never a bare /Install/: 'Install table' and 'Install-script tests' are quality gates, 'Test APT Installation' is a test, and a slow test step must stay a no-retry cancel. Every entry names a step that exists in .github/workflows or .github/actions; test_gate_watchdog_budget.py reds on an entry that matches none, and on a test step that matches one.
 const INFRA_STEP_PATTERNS = [
   // Package installs (apt, npm, the CLI and renet binaries).
   /^Install clang( for BPF compilation)?$/,
@@ -1678,14 +1678,18 @@ const monitor = async ({ github, context, core }) => {
         }),
         allJobs
       );
-      if (budgetMessages.length > 0 && !pendingRerun) {
+      // A pending rerun (an infra hold, or a transient classification) skips enforcement ONLY while every new violation is itself an infra stall: a later test-step or run-level overrun still reaches the cancel, so it can never be recorded as enforced and left running (review 8aaf3a8e.1).
+      const allInfraStalls =
+        budgetMessages.length > 0 &&
+        budgetMessages.every((m) => m.job && isInfraStep(stalledStep(m.job)?.name));
+      if (budgetMessages.length > 0 && !(pendingRerun && allInfraStalls)) {
         const budgetMsg = budgetMessages.map((m) => m.text).join('; ');
         console.log('#'.repeat(70));
         console.log(`Budget enforcement: ${budgetMsg}`);
         console.log('#'.repeat(70));
         // Ruling #f8b7f499: every enforced violation a live JOB stalled in an infra step (no run-level one, which names no step) holds a pending rerun instead of cancelling. No single-job cancel exists in the REST API, so the job is left to its own `timeout-minutes` (the budget, T4.1); the run then completes and the pending-rerun path below persists its log (the job-logs endpoint 404s while it is live) and re-runs it. One non-infra violation among them keeps today's pipeline cancel.
         const verdicts = [];
-        if (budgetMessages.every((m) => m.job && isInfraStep(stalledStep(m.job)?.name))) {
+        if (allInfraStalls && !pendingRerun) {
           await refreshPrLabels();
           const newerRunExists =
             run.run_attempt >= MAX_ATTEMPTS
