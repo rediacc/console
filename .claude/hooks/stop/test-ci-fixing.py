@@ -126,9 +126,14 @@ for cmd in (
     "npm run vm:check -- --changed",
     "cd /x && npm run ci:quick",
     "TURBO_PUSH_REASON='red-fix: a b' git push origin 1020-1",
+    "git push",
+    "git -C /x push origin HEAD:refs/heads/1020-1",
+    "cd /x\nnpm run ci:quick > out 2>&1",
+    "node scripts/ci-runner/run.ts --only check:a",
+    "./scripts/ci-runner/run.ts --only check:a",
 ):
     check(
-        "pipeline: %s" % cmd.split()[0][:30],
+        "pipeline: %s" % cmd,
         bool(W.fix_in_flight(repo, BRANCH, tip, [{"id": "p", "command": cmd}])),
         True,
     )
@@ -139,6 +144,9 @@ for cmd in (
     'grep -n "npm run ci:quick" package.json',
     "git push origin other-branch",
     "git push origin 1020-10",
+    'grep "a; npm run ci:quick" f',
+    "echo 'x | git push origin 1020-1'",
+    'echo "unbalanced',
 ):
     check(
         "not a pipeline: %s" % cmd,
