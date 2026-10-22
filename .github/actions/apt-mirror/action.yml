@@ -1,0 +1,16 @@
+name: Prefer the global apt archive
+description: >
+  Rewrites a GitHub-hosted runner's apt sources from azure.archive.ubuntu.com to
+  archive.ubuntu.com, so an apt install cannot sit on the Azure node that
+  trickles (actions/runner-images#14823; PR #601 runs 39766647743 and
+  39821300649 stalled 7m30s in every `renet ops host setup` install attempt).
+  Call it before any step that runs apt on a hosted runner. A no-op off
+  GitHub-hosted runners and idempotent; the logic and its tests are
+  .ci/rediacc_ci/infra/apt_mirror.py.
+
+runs:
+  using: composite
+  steps:
+    - name: Prefer archive.ubuntu.com
+      shell: bash
+      run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT env PYTHONPATH=.ci python3 -m rediacc_ci.infra.apt_mirror

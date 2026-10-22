@@ -550,6 +550,9 @@ jobs:
         with:
           mode: wait
 
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
 
@@ -753,6 +756,9 @@ jobs:
         with:
           mode: wait
 
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
 
@@ -928,6 +934,9 @@ jobs:
         uses: ./.github/actions/free-disk-space
         with:
           mode: wait
+
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
 
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
@@ -1271,6 +1280,9 @@ jobs:
         uses: ./.github/actions/free-disk-space
         with:
           mode: wait
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
       # OBS keeps only its latest Leap build, so the opensuse-16.0 leg installs
@@ -1453,6 +1465,9 @@ jobs:
         with:
           mode: wait
 
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
 
@@ -1630,6 +1645,9 @@ jobs:
         uses: ./.github/actions/free-disk-space
         with:
           mode: wait
+
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
 
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
@@ -1822,6 +1840,9 @@ jobs:
         uses: ./.github/actions/free-disk-space
         with:
           mode: wait
+
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
 
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
@@ -2046,6 +2067,9 @@ jobs:
         with:
           mode: wait
 
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
 
@@ -2260,6 +2284,9 @@ jobs:
         with:
           mode: wait
 
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup
 
@@ -2458,6 +2485,9 @@ jobs:
         uses: ./.github/actions/free-disk-space
         with:
           mode: wait
+
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
 
       - name: Setup KVM Host
         run: sudo "$RENET_BINARY" ops host setup

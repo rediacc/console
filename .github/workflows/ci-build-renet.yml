@@ -110,6 +110,9 @@ jobs:
       # extraction under emulation, not a slow source compile).
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Install clang for BPF compilation
         # `apt-get update` is mandatory before install: the Azure runner image
         # ships with stale apt metadata referencing a kernel ABI that may have

@@ -248,6 +248,9 @@ jobs:
           account: 'true'
           build-packages: 'true'
 
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       # Staged embed-assets cache, shared with Build (Renet) via the same key
