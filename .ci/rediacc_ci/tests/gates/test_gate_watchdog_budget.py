@@ -1137,10 +1137,16 @@ TEST_STEPS = [
 ]
 INFRA_RETURN = "return patterns.some((re) => re.test(stepName));"
 WELL_KNOWN = paths.from_root("scripts", "ci", "well-known.cjs")
-STEP_SOURCES = [
-    *sorted(paths.from_root(".github", "workflows").glob("*.yml")),
-    *sorted(paths.from_root(".github", "actions").glob("*/action.yml")),
-]
+
+
+def _step_sources() -> list[pathlib.Path]:
+    """Every workflow and composite action, read as DATA (the step names a pattern must still match). A function, not a module-level glob: nothing here is run per file, so this module is not a fan-out driver (test_gate_fanout_timeout_declarable.is_fanout_driver keys on an import-time glob)."""
+    return [
+        *sorted(paths.from_root(".github", "workflows").glob("*.yml")),
+        *sorted(paths.from_root(".github", "actions").glob("*/action.yml")),
+    ]
+
+
 _STEP_NAME_RE = re.compile(r"^\s*-\s+name:\s*(.+?)\s*$", re.MULTILINE)
 
 
@@ -1260,7 +1266,7 @@ def test_every_infra_pattern_names_a_step_that_exists(gate):
     names = sorted(
         {
             m.group(1).strip("'\"")
-            for f in STEP_SOURCES
+            for f in _step_sources()
             for m in _STEP_NAME_RE.finditer(f.read_text(encoding="utf-8"))
         }
     )
