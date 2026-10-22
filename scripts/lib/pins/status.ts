@@ -305,7 +305,11 @@ export async function viewOf(
     if (missing.length > 0)
       return {
         ...base,
-        detail: `not compared: ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} not among the releases newer than ${insp.current} the source answered`,
+        // Name what the source DID answer: without it a version-selection mismatch (an allow entry or a range moving `current`) read as a registry problem (2026-10-22).
+        detail: `not compared: ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} not among the releases newer than ${insp.current} the source answered (it answered ${insp.releases.length}: ${insp.releases
+          .slice(0, 5)
+          .map((r) => r.version)
+          .join(', ')}${insp.releases.length > 5 ? ', ...' : ''})`,
       };
   }
   // A release a driver marks breaking (a Go minor line) is a major whatever its leading number.
