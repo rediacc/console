@@ -33,13 +33,17 @@ def rewrite_text(text: str) -> str:
     """
     if AZURE_HOST not in text:
         return text
+    lines = text.splitlines(keepends=True)
+    bare = re.compile(r"\s*https?://")
+    # Only a line the rewrite produced is dropped as a duplicate, of a line already there or of an earlier rewritten one, in any order; a duplicate already in the file is left as found.
+    kept = {ln.strip() for ln in lines if bare.match(ln) and AZURE_HOST not in ln}
     out: list[str] = []
-    seen: set[str] = set()
-    for line in text.replace(AZURE_HOST, GLOBAL_HOST).splitlines(keepends=True):
-        if re.match(r"\s*https?://", line):
-            if line.strip() in seen:
+    for original in lines:
+        line = original.replace(AZURE_HOST, GLOBAL_HOST)
+        if AZURE_HOST in original and bare.match(line):
+            if line.strip() in kept:
                 continue
-            seen.add(line.strip())
+            kept.add(line.strip())
         out.append(line)
     return "".join(out)
 

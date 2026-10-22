@@ -74,3 +74,19 @@ def test_idempotent(tmp_path: pathlib.Path) -> None:
 
 def test_missing_files_are_skipped(tmp_path: pathlib.Path) -> None:
     assert apt_mirror.apply(tmp_path, HOSTED) == []
+
+
+def test_a_duplicate_already_in_the_file_is_kept():
+    """Only a duplicate the rewrite creates is dropped (review c883a865.1)."""
+    text = (
+        "http://archive.ubuntu.com/ubuntu/\tpriority:1\n"
+        "http://archive.ubuntu.com/ubuntu/\tpriority:1\n"
+        "http://azure.archive.ubuntu.com/ubuntu/\tpriority:2\n"
+        "http://azure.archive.ubuntu.com/ubuntu/\tpriority:1\n"
+    )
+    out = apt_mirror.rewrite_text(text).splitlines()
+    assert out == [
+        "http://archive.ubuntu.com/ubuntu/\tpriority:1",
+        "http://archive.ubuntu.com/ubuntu/\tpriority:1",
+        "http://archive.ubuntu.com/ubuntu/\tpriority:2",
+    ]
