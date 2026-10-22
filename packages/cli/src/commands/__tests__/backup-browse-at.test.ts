@@ -133,10 +133,15 @@ describe('backup browse failure', () => {
     ['without --at', ['browse', 'shop']],
     ['with --at', ['browse', 'shop', '--at', SNAPSHOT]],
   ])('returns after the executor rendered the failure %s, adding nothing', async (_label, argv) => {
-    mockExecuteRepoFunction.mockResolvedValue({ success: false, exitCode: 3, stdout: '' });
+    // The real executor renders the failure and sets the exit code; the action must leave it as set.
+    mockExecuteRepoFunction.mockImplementation(() => {
+      process.exitCode = 3;
+      return Promise.resolve({ success: false, exitCode: 3, stdout: '' });
+    });
 
     await expect(run(argv)).resolves.toBeUndefined();
 
+    expect(process.exitCode).toBe(3);
     expect(mockPrint).not.toHaveBeenCalled();
     expect(mockWarn).not.toHaveBeenCalled();
   });

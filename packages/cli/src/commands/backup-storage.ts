@@ -350,20 +350,17 @@ function registerBackupVerify(backup: Command): void {
             failed: t('commands.backup.verify.failed', { name: repoKey }),
           }
         );
+        if (!result.success) {
+          // executeRepoFunction already rendered the failure (envelope and exit code), and renet's verdict rides its output tail.
+          // Printing the verdict too would put a SECOND JSON document on stdout.
+          await recordBackupRun(repoKey, { kind: 'verify', status: 'mismatch' });
+          return;
+        }
         // The verdict is structured data, so it is printed as structured data in every mode -- including `table`, where the alternative would be a hand-written English sentence (a new i18n key across 13 locales) that says strictly less than the record itself.
-        const verdict = parseVerifyVerdict(result.stdout) ?? {
-          status: result.success ? 'verified' : 'mismatch',
-          level,
-        };
+        const verdict = parseVerifyVerdict(result.stdout) ?? { status: 'verified', level };
         const format = getOutputFormat();
         outputService.print(verdict, format === 'table' ? 'json' : format);
-        await recordBackupRun(repoKey, {
-          kind: 'verify',
-          status: result.success ? 'verified' : 'mismatch',
-        });
-        // The renet verb exits non-zero on mismatch/failure; carry that out so a
-        // script or CI step sees a failed verification as a failure.
-        if (!result.success) setExitCode(1);
+        await recordBackupRun(repoKey, { kind: 'verify', status: 'verified' });
       } catch (error) {
         handleError(error);
       }
@@ -433,9 +430,8 @@ function registerBackupSnapshot(backup: Command): void {
           if (quotaRefused) {
             outputService.warn(t('commands.backup.snapshot.quotaRefused', { name: repoKey }));
             setExitCode(RENET_QUOTA_REFUSED_EXIT);
-          } else if (!result.success) {
-            setExitCode(1);
           }
+          // Any other failure keeps the exit code executeRepoFunction's renderer set (10 for a license refresh, for one); overwriting it with 1 lost that.
         } catch (error) {
           handleError(error);
         }

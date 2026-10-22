@@ -134,9 +134,15 @@ describe('backup verify', () => {
     expect(process.exitCode).not.toBe(1);
   });
 
-  it('defaults to level=spot and surfaces a mismatch as exit 1', async () => {
-    mockExecuteRepoFunction.mockResolvedValue({ success: false });
+  it('defaults to level=spot and leaves a mismatch to the rendered failure, printing nothing more', async () => {
+    // The real executor renders the failure envelope and sets the exit code; verify must add no second document.
+    mockExecuteRepoFunction.mockImplementation(() => {
+      process.exitCode = 1;
+      return Promise.resolve({ success: false });
+    });
     await run(['verify', 'shop']);
+
+    expect(mockPrint).not.toHaveBeenCalled();
 
     expect(mockExecuteRepoFunction.mock.calls[0][3]).toEqual({ level: 'spot' });
     expect(mockRecordBackupRun).toHaveBeenCalledWith('shop', {

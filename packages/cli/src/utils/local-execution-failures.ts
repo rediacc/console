@@ -44,8 +44,11 @@ function failureOutputTail(message: string, stderr?: string, stdout?: string): s
 }
 
 // A rendered failure never exits 0: callers return right after it and rely on the code to fail closed.
+// Only 1-255 survives as given; 0, NaN, a negative and 256+ (which a POSIX exit status wraps, 256 to 0) become 1.
 function failureExitCode(exitCode: number | undefined): number {
-  return typeof exitCode === 'number' && exitCode !== 0 ? exitCode : 1;
+  return Number.isInteger(exitCode) && exitCode !== undefined && exitCode > 0 && exitCode < 256
+    ? exitCode
+    : 1;
 }
 
 export function renderLocalExecutionFailure(
