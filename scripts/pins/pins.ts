@@ -1551,7 +1551,7 @@ const CASES: Record<string, Case> = {
     const lockClean = await runCli(['lockfiles'], withMutant(clean.fx, m));
     const adopted = lock(false);
     const lockAdopted = await runCli(
-      ['lockfiles', '--adopt', './package-lock.json'],
+      ['lockfiles', '--adopt', './sub/../package-lock.json'],
       withMutant(adopted.fx, m)
     );
     const stray = lock(false);
@@ -1585,7 +1585,7 @@ const CASES: Record<string, Case> = {
         detail: `rc=${lockClean.rc} ${lockClean.err}`,
       },
       {
-        name: 'lockfiles: the same lockfile named with --adopt (as ./package-lock.json) is accepted, its hand edit still on disk',
+        name: 'lockfiles: the same lockfile named with --adopt (as ./sub/../package-lock.json) is accepted, its hand edit still on disk',
         ok: lockAdopted.rc === 0 && adopted.fx.read('package-lock.json').includes('"manual": true'),
         detail: `rc=${lockAdopted.rc} ${lockAdopted.err}`,
       },
