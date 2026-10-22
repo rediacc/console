@@ -85,3 +85,8 @@ def test_a_duplicate_already_in_the_file_is_kept():
         f"{ARCH}/\tpriority:1",
         f"{ARCH}/\tpriority:2",
     ]
+
+
+def test_a_mirror_constant_without_a_host_fails_loudly():
+    with pytest.raises(ValueError, match="no hostname"):
+        apt_mirror._host("not-a-url")

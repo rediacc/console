@@ -78,7 +78,7 @@ const VM_E2E_PATHS = [
   '.github/actions/free-disk-space',
   '.github/actions/setup-workspace',
   '.github/actions/app-token',
-  // Added c883a8653 (2026-10-22): every 'Setup KVM Host' and 'Install clang' step is preceded by this composite, which rewrites the runner's apt sources to archive.ubuntu.com (actions/runner-images#14823). Found by test_gate_greenlight_closure_trace.py.
+  // Added c883a8653 (2026-10-22): every 'Setup KVM Host' and 'Install clang' step is preceded by this composite, which, on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com (actions/runner-images#14823). Found by test_gate_greenlight_closure_trace.py.
   '.github/actions/apt-mirror',
   // `npm ci` resolves the lockfile and reads .npmrc (which turns off lifecycle scripts repo-wide, so it changes what gets installed).
   'package.json',
@@ -252,7 +252,7 @@ const CLOSURES = {
       '.ci/rediacc_ci/infra/verify_ssh.py',
       '.github/actions/setup-workspace',
       '.github/actions/app-token',
-      // Before its 'Setup KVM Host' (c883a8653): rewrites the runner's apt sources to archive.ubuntu.com.
+      // Before its 'Setup KVM Host' (c883a8653): on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com.
       '.github/actions/apt-mirror',
       'package.json',
       'package-lock.json',
