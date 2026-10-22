@@ -91,6 +91,8 @@ const JOB_BUDGET_CAPS = [
   // Operator ruling #153aace7 (2026-09-30): measured maxima sit at or over 15.
   { job: 'E2E Workers', budgetMin: 20 },
   { job: 'E2E Ceph Workers', budgetMin: 20 },
+  // Ruling #4b9be429 (2026-10-22, "Raise limits to measured"): E2E Ceph p90 14 / timeout 15, its timeout-minutes in ct-tests.yml. Exact match only, so it never reaches "E2E Ceph Workers".
+  { job: 'E2E Ceph', budgetMin: 15 },
   // Keyed by the full segment: "Renet (Full)" must not reduce to "Renet", which other Renet jobs share.
   { job: 'Renet (Full)', budgetMin: 20 },
   // Ruling #23e93715 (2026-10-19): Renet embed assets p90 13 / timeout 15, its timeout-minutes in ct-tests.yml and ci-ops-test.yml.
