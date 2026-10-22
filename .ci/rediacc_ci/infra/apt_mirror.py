@@ -18,8 +18,17 @@ import urllib.parse
 
 from rediacc_ci import well_known
 
-AZURE_HOST = urllib.parse.urlsplit(well_known.UBUNTU_AZURE_MIRROR).hostname or ""
-GLOBAL_HOST = urllib.parse.urlsplit(well_known.UBUNTU_ARCHIVE).hostname or ""
+
+def _host(url: str) -> str:
+    """The hostname of a well_known mirror URL; a constant with no host fails at import rather than rewriting against ''."""
+    host = urllib.parse.urlsplit(url).hostname
+    if not host:
+        raise ValueError(f"apt_mirror: no hostname in well_known mirror URL {url!r}")
+    return host
+
+
+AZURE_HOST = _host(well_known.UBUNTU_AZURE_MIRROR)
+GLOBAL_HOST = _host(well_known.UBUNTU_ARCHIVE)
 
 # Files under the apt root that name a mirror.
 GLOBS = ("apt-mirrors.txt", "sources.list", "sources.list.d/*.sources", "sources.list.d/*.list")
