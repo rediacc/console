@@ -1076,27 +1076,69 @@ _PIPE_RUNNER = "scripts/ci-runner/run.ts"
 _ENV_ASSIGN_RE = re.compile(r"^\w+=")
 
 
-def _command_segments(command):
-    """The command's shell segments as token lists; [] when it does not tokenize (an unbalanced quote counts as no pipeline)."""
-    lex = shlex.shlex(command.replace("\n", " ; "), posix=True, punctuation_chars=";&|()")
-    lex.whitespace_split = True
-    try:
-        tokens = list(lex)
-    except ValueError:
-        return []
-    segments, seg = [], []
-    for tok in tokens:
-        if tok and set(tok) <= set(";&|()"):
-            segments.append(seg)
-            seg = []
+def _split_unquoted(command):
+    """The command's segments as strings, split at UNQUOTED ; & | ( ) and newline only.
+
+    A quote-aware scan, because every shortcut was wrong (review of 102e6e9c): turning newlines into ' ; ' broke a backslash continuation and let a leading `#` comment line swallow the rest, and splitting shlex's tokens took a quoted ";" for a separator. A backslash-newline joins lines; an unquoted `#` at a word start comments out the rest of its line."""
+    command = command.replace("\\\n", "")
+    out, cur, quote, i, n = [], [], "", 0, len(command)
+    while i < n:
+        c = command[i]
+        if quote:
+            cur.append(c)
+            if c == "\\" and quote == '"' and i + 1 < n:
+                cur.append(command[i + 1])
+                i += 1
+            elif c == quote:
+                quote = ""
+        elif c == "\\" and i + 1 < n:
+            cur.append(c + command[i + 1])
+            i += 1
+        elif c in "'\"":
+            quote = c
+            cur.append(c)
+        elif c == "#" and (not cur or cur[-1].isspace()):
+            while i < n and command[i] != "\n":
+                i += 1
+            continue
+        elif c in ";&|()\n":
+            out.append("".join(cur))
+            cur = []
         else:
-            seg.append(tok)
-    segments.append(seg)
-    return [x for x in segments if x]
+            cur.append(c)
+        i += 1
+    out.append("".join(cur))
+    return out
+
+
+def _command_segments(command):
+    """The command's shell segments as token lists. A segment that does not tokenize (an unbalanced quote) is dropped, so it counts as no pipeline."""
+    segments = []
+    for text in _split_unquoted(command):
+        try:
+            tokens = shlex.split(text, posix=True)
+        except ValueError:
+            continue
+        if tokens:
+            segments.append(tokens)
+    return segments
+
+
+def _git_subcommand(seg):
+    """(subcommand index, whether -C or --git-dir points git at another repository) for a `git ...` segment."""
+    k, elsewhere = 1, False
+    while k < len(seg) and seg[k].startswith("-"):
+        if seg[k] in ("-C", "-c", "--git-dir", "--work-tree", "--namespace"):
+            elsewhere = elsewhere or seg[k] in ("-C", "--git-dir", "--work-tree")
+            k += 2
+            continue
+        elsewhere = elsewhere or seg[k].startswith(("--git-dir=", "--work-tree="))
+        k += 1
+    return k, elsewhere
 
 
 def _segment_pipeline(seg, ref):
-    """True when this one segment runs the gates, or pushes `ref` (a bare `git push` pushes the checked-out branch, which fix_in_flight has already required to be `ref`)."""
+    """True when this one segment runs the gates, or pushes `ref`. A push with no refspec (or HEAD) pushes the checked-out branch, which fix_in_flight already requires to be `ref`, unless -C or --git-dir points git at another repository."""
     k = 0
     while k < len(seg) and (seg[k] in _PIPE_KEYWORDS or _ENV_ASSIGN_RE.match(seg[k])):
         k += 1
@@ -1110,12 +1152,15 @@ def _segment_pipeline(seg, ref):
         head in _PIPE_LAUNCHERS and any(t.endswith(_PIPE_RUNNER) for t in seg[1:3])
     ):
         return True
-    if head == "git" and "push" in seg[1:4]:
-        args = [t for t in seg[seg.index("push") + 1 :] if not t.startswith("-")]
-        if len(args) <= 1:
-            return True  # `git push` or `git push origin`: the current branch
-        return any(a == ref or a.rsplit(":", 1)[-1].rsplit("/", 1)[-1] == ref for a in args[1:])
-    return False
+    if head != "git":
+        return False
+    sub, elsewhere = _git_subcommand(seg)
+    if sub >= len(seg) or seg[sub] != "push":
+        return False
+    refspecs = [t for t in seg[sub + 1 :] if not t.startswith("-")][1:]
+    if not refspecs or any(r in ("HEAD", "@") for r in refspecs):
+        return not elsewhere
+    return any(r.rsplit(":", 1)[-1].rsplit("/", 1)[-1] == ref for r in refspecs)
 
 
 def runs_push_pipeline(command, ref):
