@@ -134,6 +134,9 @@ for cmd in (
     "# the gates\nnpm run ci:quick",
     "git push origin HEAD",
     "git -C /x push origin 1020-1",
+    "echo a\\\\\nnpm run ci:quick",
+    "git push -o ci.skip origin",
+    "git push --push-option x origin 1020-1",
 ):
     check(
         "pipeline: %s" % cmd,
@@ -155,6 +158,7 @@ for cmd in (
     "git stash push -m x",
     "git -C /other/repo push",
     "echo a # ; npm run ci:quick",
+    "git push -o ci.skip origin other-branch",
 ):
     check(
         "not a pipeline: %s" % cmd,

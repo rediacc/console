@@ -1073,26 +1073,31 @@ _PIPE_KEYWORDS = frozenset({"then", "do", "else", "time", "exec", "env", "{", "!
 _PIPE_GATES = frozenset({"ci:quick", "ci", "vm:check"})
 _PIPE_LAUNCHERS = frozenset({"npx", "tsx", "node", "bun", "ts-node"})
 _PIPE_RUNNER = "scripts/ci-runner/run.ts"
+_PUSH_VALUE_OPTIONS = frozenset({"-o", "--push-option", "--repo", "--receive-pack", "--exec"})
 _ENV_ASSIGN_RE = re.compile(r"^\w+=")
 
 
 def _split_unquoted(command):
     """The command's segments as strings, split at UNQUOTED ; & | ( ) and newline only.
 
-    A quote-aware scan, because every shortcut was wrong (review of 102e6e9c): turning newlines into ' ; ' broke a backslash continuation and let a leading `#` comment line swallow the rest, and splitting shlex's tokens took a quoted ";" for a separator. A backslash-newline joins lines; an unquoted `#` at a word start comments out the rest of its line."""
-    command = command.replace("\\\n", "")
+    A quote-aware scan, because every shortcut was wrong (review of 102e6e9c): turning newlines into ' ; ' broke a backslash continuation and let a leading `#` comment line swallow the rest, and splitting shlex's tokens took a quoted ";" for a separator. A backslash-newline joins lines (judged during the scan, so an escaped backslash before a newline does not); an unquoted `#` at a word start comments out the rest of its line."""
     out, cur, quote, i, n = [], [], "", 0, len(command)
     while i < n:
         c = command[i]
         if quote:
             cur.append(c)
             if c == "\\" and quote == '"' and i + 1 < n:
-                cur.append(command[i + 1])
+                if command[i + 1] == "\n":
+                    cur.pop()  # a continuation inside double quotes: neither character survives
+                else:
+                    cur.append(command[i + 1])
                 i += 1
             elif c == quote:
                 quote = ""
         elif c == "\\" and i + 1 < n:
-            cur.append(c + command[i + 1])
+            # A backslash-newline joins lines; any other escaped character (an escaped backslash included) is kept, so `a\\` then a newline still ends the segment.
+            if command[i + 1] != "\n":
+                cur.append(c + command[i + 1])
             i += 1
         elif c in "'\"":
             quote = c
@@ -1157,7 +1162,16 @@ def _segment_pipeline(seg, ref):
     sub, elsewhere = _git_subcommand(seg)
     if sub >= len(seg) or seg[sub] != "push":
         return False
-    refspecs = [t for t in seg[sub + 1 :] if not t.startswith("-")][1:]
+    refspecs, k = [], sub + 1
+    while k < len(seg):
+        # Push options with a SEPARATE value: the value is not a remote or a refspec.
+        if seg[k] in _PUSH_VALUE_OPTIONS:
+            k += 2
+            continue
+        if not seg[k].startswith("-"):
+            refspecs.append(seg[k])
+        k += 1
+    refspecs = refspecs[1:]
     if not refspecs or any(r in ("HEAD", "@") for r in refspecs):
         return not elsewhere
     return any(r.rsplit(":", 1)[-1].rsplit("/", 1)[-1] == ref for r in refspecs)
