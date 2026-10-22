@@ -1392,7 +1392,17 @@ const CASES: Record<string, Case> = {
       withMutant(fx, m)
     );
     const one = await runCli(['plan', 'embed:tool', '--to', '1.1.0,1.1.0'], withMutant(fx, m));
+    const absent = await runCli(['plan', 'embed:tool', '--to', '9.9.9'], withMutant(fx, m));
     return [
+      {
+        name: 'plan: a --to the source never answered names the releases it did answer, so it cannot read as a registry outage',
+        ok:
+          absent.rc === 1 &&
+          /9\.9\.9 is not among the releases newer than 1\.0\.0 the source answered \(it answered \d+: 1\./.test(
+            `${absent.out}${absent.err}`
+          ),
+        detail: `rc=${absent.rc} ${absent.err} ${absent.out.slice(0, 600)}`,
+      },
       {
         name: 'bump: several --to are refused for a driver that cannot take them as a set, and nothing is written',
         ok:
