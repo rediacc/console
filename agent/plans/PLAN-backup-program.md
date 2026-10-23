@@ -3,7 +3,7 @@
 Status: approved -- operator 2026-10-15 ("make a new plan file with boxes", "last steps should be real backup from hostinger to eu R2"); in ## Generated, promoted later by the operator
 Depends-On: PLAN-shell-sandbox-readonly-view.md, PLAN-account-vm-check.md
 Priority: P1 -- hostinger has had no backup since 2026-08-14, and a restore can overwrite its own source
-Concurrency: exclusive -- one program across renet, account, CLI and shared; writers inside it take disjoint per-box Owns
+Concurrency: parallel -- operator /ask 2026-10-23 ("Parallel, per-phase Owns"): writers take disjoint per-phase Owns declared on their spawn (account backup services; renet chunkstore and restore; renet daemons; CLI backup), and phases touching files other live plans hold (account types/env.ts, drizzle/meta, CLI locales, gates.lock, renet pkg/i18n) wait for those plans
 Owns: private/renet/**, private/account/**, private/elite/**, packages/cli/src/**, packages/shared/src/**, packages/e2e-tests/**, packages/www/src/content/**, workers/account/**, .ci/rediacc_ci/**, .ci/scripts/quality/**, .ci/config/**, .claude/rediacc_hooks/**, .claude/skills/**, .claude/agents/backup-storage.md, scripts/gates/**, docs/backup-storage/**, docs/design/**, .github/workflows/**
 Owner: 5cc33087
 First-Seen: 2026-10-15
