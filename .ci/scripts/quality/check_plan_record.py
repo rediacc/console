@@ -772,6 +772,7 @@ def write_rp_baseline(root, recs):
     refused = sorted(set(found) - set(baseline))
     doc = json.loads((root / RP_BASELINE_REL).read_text(encoding="utf-8"))
     doc["findings"] = {k: kept[k] for k in sorted(kept)}
+    # tree-write: mode --write-baseline main() reaches this only under --write-baseline; the controls call it on a TemporaryDirectory root
     (root / RP_BASELINE_REL).write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
     for key in removed:
         print(f"  drained {key} ({baseline[key]})")

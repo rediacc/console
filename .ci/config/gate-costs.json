@@ -11,11 +11,16 @@
     "stamped with when they were measured (gate_costs.py docstring, TWO KINDS OF GATE).",
     "Do not hand-edit: the next --refresh overwrites every figure."
   ],
-  "refreshed_at": "2026-10-22T09:31:43Z",
+  "refreshed_at": "2026-10-23T22:04:28Z",
   "source": {
     "runner": "ubuntu-latest",
     "cores": 4,
     "runs": [
+      {
+        "id": 39924171335,
+        "sha": "403f47b970a8e0cdbc1a3e3f9b4345f56a257b79",
+        "created_at": "2026-10-23T08:22:25Z"
+      },
       {
         "id": 39747698450,
         "sha": "26fc745e4bf7ab29f341d10126c00ee774eddf42",
@@ -25,30 +30,25 @@
         "id": 39568933019,
         "sha": "26fc745e4bf7ab29f341d10126c00ee774eddf42",
         "created_at": "2026-10-21T08:23:43Z"
-      },
-      {
-        "id": 39392594253,
-        "sha": "d35df2ab144cf518dcd5725debf1ef1fab777a6b",
-        "created_at": "2026-10-20T08:19:44Z"
       }
     ]
   },
   "gates": {
     "build:cli": {
-      "cpu_s": 7.092,
-      "wall_s": 2.736,
-      "eff_cores": 2.59,
+      "cpu_s": 8.339,
+      "wall_s": 2.667,
+      "eff_cores": 3.13,
       "capped": false,
       "peak_rss_mb": 850,
-      "rank": 25
+      "rank": 17
     },
     "build:packages": {
-      "cpu_s": 3.445,
-      "wall_s": 1.522,
-      "eff_cores": 2.26,
+      "cpu_s": 3.157,
+      "wall_s": 1.404,
+      "eff_cores": 2.25,
       "capped": false,
       "peak_rss_mb": 457,
-      "rank": 50
+      "rank": 52
     },
     "build:www": {
       "cpu_s": 34.961,
@@ -63,8 +63,8 @@
       "wall_s": 0.626,
       "eff_cores": 1.23,
       "capped": false,
-      "peak_rss_mb": 255,
-      "rank": 110
+      "peak_rss_mb": 253,
+      "rank": 111
     },
     "check:ci-account-no-admin-role": {
       "cpu_s": 0.128,
@@ -72,7 +72,7 @@
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 283
+      "rank": 284
     },
     "check:ci-account-no-node-env-routes": {
       "cpu_s": 0.129,
@@ -80,7 +80,7 @@
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 282
+      "rank": 283
     },
     "check:ci-account-probes": {
       "cpu_s": 0.439,
@@ -88,39 +88,39 @@
       "eff_cores": 0.92,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 181
+      "rank": 182
     },
     "check:ci-actionlint": {
-      "cpu_s": 8.096,
-      "wall_s": 3.318,
-      "eff_cores": 2.44,
+      "cpu_s": 7.981,
+      "wall_s": 3.398,
+      "eff_cores": 2.35,
       "capped": false,
       "peak_rss_mb": 169,
-      "rank": 18
+      "rank": 20
     },
     "check:ci-actions-allowlist": {
-      "cpu_s": 0.213,
-      "wall_s": 0.2,
-      "eff_cores": 1.06,
+      "cpu_s": 0.211,
+      "wall_s": 0.193,
+      "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 242
+      "rank": 243
     },
     "check:ci-actions-vars": {
-      "cpu_s": 0.374,
+      "cpu_s": 0.372,
       "wall_s": 0.356,
-      "eff_cores": 1.05,
+      "eff_cores": 1.04,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 201
+      "rank": 203
     },
     "check:ci-agent-browser-exit": {
       "cpu_s": 0.273,
       "wall_s": 0.257,
       "eff_cores": 1.06,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 226
+      "peak_rss_mb": 59,
+      "rank": 227
     },
     "check:ci-agent-hint-liveness": {
       "cpu_s": 0.267,
@@ -128,12 +128,12 @@
       "eff_cores": 1.04,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 228
+      "rank": 229
     },
     "check:ci-agent-model-roster": {
-      "cpu_s": 0.164,
-      "wall_s": 0.147,
-      "eff_cores": 1.12,
+      "cpu_s": 0.162,
+      "wall_s": 0.146,
+      "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 57,
       "rank": 277
@@ -144,7 +144,7 @@
       "eff_cores": 1.02,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 155
+      "rank": 153
     },
     "check:ci-anchor-integrity": {
       "cpu_s": 1.827,
@@ -152,7 +152,7 @@
       "eff_cores": 1.06,
       "capped": false,
       "peak_rss_mb": 272,
-      "rank": 71
+      "rank": 73
     },
     "check:ci-app-admin-perm": {
       "cpu_s": 0.176,
@@ -176,7 +176,7 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 106,
-      "rank": 60
+      "rank": 61
     },
     "check:ci-backup-bucket-conformance": {
       "cpu_s": 0.36,
@@ -184,47 +184,47 @@
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 205
+      "rank": 207
     },
     "check:ci-backup-credential-isolation": {
       "cpu_s": 0.325,
       "wall_s": 0.309,
       "eff_cores": 1.05,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 219
+      "peak_rss_mb": 57,
+      "rank": 220
     },
     "check:ci-baseline-key-semantics": {
       "cpu_s": 0.685,
       "wall_s": 0.584,
       "eff_cores": 1.17,
       "capped": false,
-      "peak_rss_mb": 230,
-      "rank": 119
+      "peak_rss_mb": 233,
+      "rank": 121
     },
     "check:ci-bash-lib-ported": {
       "cpu_s": 0.162,
       "wall_s": 0.147,
       "eff_cores": 1.1,
       "capped": false,
-      "peak_rss_mb": 58,
+      "peak_rss_mb": 57,
       "rank": 278
     },
     "check:ci-bootstrap-idempotency": {
       "cpu_s": 0.555,
-      "wall_s": 0.507,
-      "eff_cores": 1.09,
+      "wall_s": 0.5,
+      "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 150
+      "rank": 149
     },
     "check:ci-breakpoint-drift": {
-      "cpu_s": 0.261,
+      "cpu_s": 0.26,
       "wall_s": 0.206,
-      "eff_cores": 1.27,
+      "eff_cores": 1.26,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 229
+      "rank": 230
     },
     "check:ci-browser-smoke": {
       "cpu_s": 0.172,
@@ -232,23 +232,23 @@
       "eff_cores": 0.0,
       "capped": false,
       "peak_rss_mb": 110,
-      "rank": 265
+      "rank": 266
     },
     "check:ci-builder-env-contract": {
       "cpu_s": 0.371,
       "wall_s": 0.333,
       "eff_cores": 1.11,
       "capped": false,
-      "peak_rss_mb": 59,
-      "rank": 203
+      "peak_rss_mb": 58,
+      "rank": 204
     },
     "check:ci-captcha-recovery": {
       "cpu_s": 0.393,
-      "wall_s": 0.346,
-      "eff_cores": 1.14,
+      "wall_s": 0.342,
+      "eff_cores": 1.15,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 195
+      "rank": 196
     },
     "check:ci-changed-selection": {
       "cpu_s": 4.846,
@@ -256,7 +256,7 @@
       "eff_cores": 1.21,
       "capped": false,
       "peak_rss_mb": 464,
-      "rank": 33
+      "rank": 34
     },
     "check:ci-checkout-cone": {
       "cpu_s": 3.94,
@@ -264,15 +264,15 @@
       "eff_cores": 1.0,
       "capped": false,
       "peak_rss_mb": 262,
-      "rank": 45
+      "rank": 44
     },
     "check:ci-cli-contract": {
-      "cpu_s": 3.653,
-      "wall_s": 2.403,
-      "eff_cores": 1.52,
+      "cpu_s": 3.537,
+      "wall_s": 2.402,
+      "eff_cores": 1.47,
       "capped": false,
       "peak_rss_mb": 441,
-      "rank": 46
+      "rank": 47
     },
     "check:ci-cli-doc-coverage": {
       "cpu_s": 0.165,
@@ -288,22 +288,22 @@
       "eff_cores": 1.05,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 215
+      "rank": 216
     },
     "check:ci-client-bundle-budget": {
-      "cpu_s": 0.608,
-      "wall_s": 0.535,
-      "eff_cores": 1.14,
+      "cpu_s": 0.634,
+      "wall_s": 0.542,
+      "eff_cores": 1.17,
       "capped": false,
-      "peak_rss_mb": 65,
-      "rank": 133
+      "peak_rss_mb": 58,
+      "rank": 129
     },
     "check:ci-client-i18n": {
       "cpu_s": 0.756,
-      "wall_s": 0.674,
-      "eff_cores": 1.12,
+      "wall_s": 0.668,
+      "eff_cores": 1.13,
       "capped": false,
-      "peak_rss_mb": 192,
+      "peak_rss_mb": 194,
       "rank": 112
     },
     "check:ci-command-planes": {
@@ -312,15 +312,15 @@
       "eff_cores": 1.39,
       "capped": false,
       "peak_rss_mb": 338,
-      "rank": 64
+      "rank": 65
     },
     "check:ci-command-tree": {
-      "cpu_s": 3.548,
-      "wall_s": 2.279,
-      "eff_cores": 1.56,
+      "cpu_s": 3.344,
+      "wall_s": 2.242,
+      "eff_cores": 1.49,
       "capped": false,
-      "peak_rss_mb": 444,
-      "rank": 48
+      "peak_rss_mb": 454,
+      "rank": 50
     },
     "check:ci-compose-env": {
       "cpu_s": 0.169,
@@ -328,15 +328,15 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 269
+      "rank": 270
     },
     "check:ci-config-migrations": {
       "cpu_s": 1.009,
       "wall_s": 0.776,
       "eff_cores": 1.3,
       "capped": false,
-      "peak_rss_mb": 307,
-      "rank": 91
+      "peak_rss_mb": 313,
+      "rank": 92
     },
     "check:ci-container-build-context": {
       "cpu_s": 0.182,
@@ -344,15 +344,15 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 257
+      "rank": 258
     },
     "check:ci-content-quality": {
       "cpu_s": 3.509,
       "wall_s": 3.494,
       "eff_cores": 1.0,
       "capped": false,
-      "peak_rss_mb": 99,
-      "rank": 49
+      "peak_rss_mb": 98,
+      "rank": 48
     },
     "check:ci-control-in-string": {
       "cpu_s": 1.862,
@@ -360,22 +360,22 @@
       "eff_cores": 1.36,
       "capped": false,
       "peak_rss_mb": 325,
-      "rank": 70
+      "rank": 71
     },
     "check:ci-control-vacuity": {
       "cpu_s": 0.38,
       "wall_s": 0.368,
       "eff_cores": 1.03,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 199
+      "peak_rss_mb": 57,
+      "rank": 200
     },
     "check:ci-css-dom-refs": {
-      "cpu_s": 0.785,
+      "cpu_s": 0.769,
       "wall_s": 0.631,
-      "eff_cores": 1.24,
+      "eff_cores": 1.22,
       "capped": false,
-      "peak_rss_mb": 230,
+      "peak_rss_mb": 232,
       "rank": 109
     },
     "check:ci-cta-bolt": {
@@ -384,7 +384,7 @@
       "eff_cores": 1.07,
       "capped": false,
       "peak_rss_mb": 253,
-      "rank": 114
+      "rank": 115
     },
     "check:ci-dead-bash": {
       "cpu_s": 13.536,
@@ -400,15 +400,15 @@
       "eff_cores": 1.05,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 221
+      "rank": 222
     },
     "check:ci-dead-css": {
-      "cpu_s": 1.175,
-      "wall_s": 0.978,
+      "cpu_s": 1.167,
+      "wall_s": 0.975,
       "eff_cores": 1.2,
       "capped": false,
-      "peak_rss_mb": 234,
-      "rank": 85
+      "peak_rss_mb": 238,
+      "rank": 86
     },
     "check:ci-dead-python": {
       "cpu_s": 7.476,
@@ -416,7 +416,7 @@
       "eff_cores": 1.0,
       "capped": false,
       "peak_rss_mb": 258,
-      "rank": 22
+      "rank": 23
     },
     "check:ci-dead-service-methods": {
       "cpu_s": 0.492,
@@ -432,7 +432,7 @@
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 253,
-      "rank": 117
+      "rank": 119
     },
     "check:ci-decision-ids": {
       "cpu_s": 0.556,
@@ -440,7 +440,7 @@
       "eff_cores": 1.02,
       "capped": false,
       "peak_rss_mb": 77,
-      "rank": 148
+      "rank": 147
     },
     "check:ci-design-tree": {
       "cpu_s": 0.356,
@@ -448,23 +448,23 @@
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 207
+      "rank": 209
     },
     "check:ci-devbox-exec": {
       "cpu_s": 0.169,
       "wall_s": 0.152,
       "eff_cores": 1.11,
       "capped": false,
-      "peak_rss_mb": 57,
-      "rank": 270
+      "peak_rss_mb": 56,
+      "rank": 271
     },
     "check:ci-devcontainer-pins": {
       "cpu_s": 0.978,
-      "wall_s": 2.324,
-      "eff_cores": 0.42,
+      "wall_s": 2.637,
+      "eff_cores": 0.37,
       "capped": false,
-      "peak_rss_mb": 280,
-      "rank": 97
+      "peak_rss_mb": 276,
+      "rank": 98
     },
     "check:ci-devcontainer-scripts": {
       "cpu_s": 0.393,
@@ -472,15 +472,15 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 196
+      "rank": 197
     },
     "check:ci-doc-region-parity": {
-      "cpu_s": 7.759,
-      "wall_s": 7.201,
-      "eff_cores": 1.08,
+      "cpu_s": 7.638,
+      "wall_s": 7.152,
+      "eff_cores": 1.07,
       "capped": false,
-      "peak_rss_mb": 370,
-      "rank": 20
+      "peak_rss_mb": 383,
+      "rank": 21
     },
     "check:ci-docker-npm-pins": {
       "cpu_s": 0.328,
@@ -488,7 +488,7 @@
       "eff_cores": 1.04,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 217
+      "rank": 218
     },
     "check:ci-dockerfile-mirror-resilience": {
       "cpu_s": 0.187,
@@ -500,7 +500,7 @@
     },
     "check:ci-docs-browse-invariants": {
       "cpu_s": 0.569,
-      "wall_s": 0.518,
+      "wall_s": 0.516,
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
@@ -512,7 +512,7 @@
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 145
+      "rank": 144
     },
     "check:ci-docs-render-parity": {
       "cpu_s": 0.72,
@@ -520,23 +520,23 @@
       "eff_cores": 1.08,
       "capped": false,
       "peak_rss_mb": 561,
-      "rank": 115
+      "rank": 117
     },
     "check:ci-docs-structure-parity": {
-      "cpu_s": 0.532,
-      "wall_s": 0.452,
+      "cpu_s": 0.527,
+      "wall_s": 0.448,
       "eff_cores": 1.18,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 161
+      "rank": 162
     },
     "check:ci-docs-thumb-coverage": {
       "cpu_s": 0.552,
-      "wall_s": 0.502,
-      "eff_cores": 1.1,
+      "wall_s": 0.495,
+      "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 152
+      "rank": 151
     },
     "check:ci-domain-partition": {
       "cpu_s": 1.568,
@@ -544,7 +544,7 @@
       "eff_cores": 1.08,
       "capped": false,
       "peak_rss_mb": 211,
-      "rank": 79
+      "rank": 80
     },
     "check:ci-drill-verdicts": {
       "cpu_s": 0.482,
@@ -552,15 +552,15 @@
       "eff_cores": 1.03,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 175
+      "rank": 174
     },
     "check:ci-durable-paths-tracked": {
       "cpu_s": 0.183,
       "wall_s": 0.168,
       "eff_cores": 1.09,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 256
+      "peak_rss_mb": 57,
+      "rank": 257
     },
     "check:ci-e2e-case-blind": {
       "cpu_s": 2.406,
@@ -568,63 +568,63 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 92,
-      "rank": 57
+      "rank": 58
     },
     "check:ci-e2e-coverage": {
       "cpu_s": 1.904,
       "wall_s": 1.398,
       "eff_cores": 1.36,
       "capped": false,
-      "peak_rss_mb": 432,
-      "rank": 68
+      "peak_rss_mb": 430,
+      "rank": 69
     },
     "check:ci-e2e-skip-hygiene": {
       "cpu_s": 0.358,
-      "wall_s": 0.319,
-      "eff_cores": 1.12,
+      "wall_s": 0.316,
+      "eff_cores": 1.13,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 206
+      "rank": 208
     },
     "check:ci-editorconfig": {
-      "cpu_s": 7.916,
-      "wall_s": 8.059,
-      "eff_cores": 0.98,
+      "cpu_s": 8.207,
+      "wall_s": 8.453,
+      "eff_cores": 0.97,
       "capped": false,
       "peak_rss_mb": 122,
       "rank": 19
     },
     "check:ci-em-dash-surfaces": {
       "cpu_s": 1.001,
-      "wall_s": 0.812,
-      "eff_cores": 1.23,
+      "wall_s": 0.805,
+      "eff_cores": 1.24,
       "capped": false,
       "peak_rss_mb": 259,
-      "rank": 93
+      "rank": 94
     },
     "check:ci-enumeration-vacuity": {
       "cpu_s": 0.471,
       "wall_s": 0.421,
       "eff_cores": 1.12,
       "capped": false,
-      "peak_rss_mb": 59,
-      "rank": 176
+      "peak_rss_mb": 58,
+      "rank": 177
     },
     "check:ci-env-file-adoption": {
-      "cpu_s": 0.31,
-      "wall_s": 0.294,
-      "eff_cores": 1.05,
+      "cpu_s": 0.308,
+      "wall_s": 0.291,
+      "eff_cores": 1.06,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 222
+      "rank": 223
     },
     "check:ci-env-manifest": {
       "cpu_s": 7.427,
       "wall_s": 7.416,
       "eff_cores": 1.0,
       "capped": false,
-      "peak_rss_mb": 120,
-      "rank": 23
+      "peak_rss_mb": 124,
+      "rank": 24
     },
     "check:ci-environment-names": {
       "cpu_s": 0.169,
@@ -632,20 +632,20 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 271
+      "rank": 272
     },
     "check:ci-external-links": {
-      "cpu_s": 1.783,
-      "wall_s": 21.135,
+      "cpu_s": 1.851,
+      "wall_s": 22.217,
       "eff_cores": 0.08,
       "capped": false,
-      "peak_rss_mb": 261,
+      "peak_rss_mb": 258,
       "rank": 72
     },
     "check:ci-fetch-integrity": {
       "cpu_s": 0.427,
-      "wall_s": 0.374,
-      "eff_cores": 1.14,
+      "wall_s": 0.372,
+      "eff_cores": 1.15,
       "capped": false,
       "peak_rss_mb": 58,
       "rank": 183
@@ -656,22 +656,22 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 261
+      "rank": 260
     },
     "check:ci-fixture-event-timestamps": {
       "cpu_s": 0.549,
-      "wall_s": 0.492,
-      "eff_cores": 1.12,
+      "wall_s": 0.481,
+      "eff_cores": 1.14,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 153
+      "rank": 152
     },
     "check:ci-form-validation": {
-      "cpu_s": 0.402,
-      "wall_s": 0.351,
+      "cpu_s": 0.399,
+      "wall_s": 0.348,
       "eff_cores": 1.15,
       "capped": false,
-      "peak_rss_mb": 58,
+      "peak_rss_mb": 57,
       "rank": 192
     },
     "check:ci-format-scope": {
@@ -684,35 +684,35 @@
     },
     "check:ci-gate-bind": {
       "cpu_s": 4.192,
-      "wall_s": 3.719,
-      "eff_cores": 1.13,
+      "wall_s": 3.691,
+      "eff_cores": 1.14,
       "capped": false,
-      "peak_rss_mb": 366,
-      "rank": 39
+      "peak_rss_mb": 367,
+      "rank": 40
     },
     "check:ci-gate-cwd-independence": {
       "cpu_s": 0.537,
       "wall_s": 0.475,
       "eff_cores": 1.13,
       "capped": false,
-      "peak_rss_mb": 57,
-      "rank": 160
+      "peak_rss_mb": 58,
+      "rank": 158
     },
     "check:ci-gate-manifest": {
       "cpu_s": 0.983,
       "wall_s": 0.686,
       "eff_cores": 1.43,
       "capped": false,
-      "peak_rss_mb": 194,
-      "rank": 96
+      "peak_rss_mb": 203,
+      "rank": 97
     },
     "check:ci-gate-prerequisites": {
-      "cpu_s": 3.991,
-      "wall_s": 3.974,
+      "cpu_s": 3.748,
+      "wall_s": 3.73,
       "eff_cores": 1.0,
       "capped": false,
-      "peak_rss_mb": 147,
-      "rank": 43
+      "peak_rss_mb": 146,
+      "rank": 45
     },
     "check:ci-gate-reachability-coverage": {
       "cpu_s": 0.644,
@@ -720,7 +720,7 @@
       "eff_cores": 1.02,
       "capped": false,
       "peak_rss_mb": 101,
-      "rank": 126
+      "rank": 128
     },
     "check:ci-gate-test-real-file-plants": {
       "cpu_s": 6.454,
@@ -728,7 +728,7 @@
       "eff_cores": 1.0,
       "capped": false,
       "peak_rss_mb": 107,
-      "rank": 27
+      "rank": 28
     },
     "check:ci-gate-tree-writes": {
       "cpu_s": 10.104,
@@ -736,7 +736,7 @@
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 603,
-      "rank": 15
+      "rank": 14
     },
     "check:ci-gates-lock": {
       "cpu_s": 0.574,
@@ -752,15 +752,15 @@
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 242,
-      "rank": 113
+      "rank": 114
     },
     "check:ci-generated-artifacts": {
       "cpu_s": 5.396,
       "wall_s": 5.384,
       "eff_cores": 1.0,
       "capped": false,
-      "peak_rss_mb": 99,
-      "rank": 30
+      "peak_rss_mb": 98,
+      "rank": 31
     },
     "check:ci-gh-retry-reads": {
       "cpu_s": 4.485,
@@ -776,7 +776,7 @@
       "eff_cores": 1.02,
       "capped": false,
       "peak_rss_mb": 95,
-      "rank": 89
+      "rank": 90
     },
     "check:ci-git-op-conditionals": {
       "cpu_s": 0.424,
@@ -788,27 +788,27 @@
     },
     "check:ci-git-tool-safety": {
       "cpu_s": 0.562,
-      "wall_s": 0.513,
-      "eff_cores": 1.1,
+      "wall_s": 0.501,
+      "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 147
+      "rank": 146
     },
     "check:ci-go-tool-path": {
       "cpu_s": 0.187,
       "wall_s": 0.172,
       "eff_cores": 1.09,
       "capped": false,
-      "peak_rss_mb": 58,
+      "peak_rss_mb": 57,
       "rank": 254
     },
     "check:ci-greenlight-closures": {
-      "cpu_s": 0.403,
-      "wall_s": 0.383,
-      "eff_cores": 1.05,
+      "cpu_s": 0.396,
+      "wall_s": 0.374,
+      "eff_cores": 1.06,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 191
+      "peak_rss_mb": 57,
+      "rank": 194
     },
     "check:ci-guard-mention-anchoring": {
       "cpu_s": 99.943,
@@ -819,11 +819,11 @@
       "rank": 1
     },
     "check:ci-guard-mutations": {
-      "cpu_s": 13.803,
-      "wall_s": 10.738,
-      "eff_cores": 1.29,
+      "cpu_s": 13.816,
+      "wall_s": 10.802,
+      "eff_cores": 1.28,
       "capped": false,
-      "peak_rss_mb": 958,
+      "peak_rss_mb": 947,
       "rank": 10
     },
     "check:ci-hint-corpus": {
@@ -831,8 +831,8 @@
       "wall_s": 0.272,
       "eff_cores": 1.05,
       "capped": false,
-      "peak_rss_mb": 59,
-      "rank": 223
+      "peak_rss_mb": 58,
+      "rank": 224
     },
     "check:ci-hook-cross-os": {
       "cpu_s": 1.416,
@@ -840,7 +840,7 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 109,
-      "rank": 81
+      "rank": 82
     },
     "check:ci-hook-exec-baseline": {
       "cpu_s": 0.184,
@@ -848,15 +848,15 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 255
+      "rank": 256
     },
     "check:ci-hook-integrity": {
       "cpu_s": 0.197,
       "wall_s": 0.182,
       "eff_cores": 1.08,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 247
+      "peak_rss_mb": 59,
+      "rank": 248
     },
     "check:ci-hooks-resolvable": {
       "cpu_s": 0.222,
@@ -864,23 +864,23 @@
       "eff_cores": 1.07,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 237
+      "rank": 238
     },
     "check:ci-host-toolchain-coverage": {
       "cpu_s": 0.168,
       "wall_s": 0.15,
       "eff_cores": 1.12,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 273
+      "peak_rss_mb": 57,
+      "rank": 274
     },
     "check:ci-hydration-clean": {
-      "cpu_s": 0.416,
-      "wall_s": 0.366,
-      "eff_cores": 1.14,
+      "cpu_s": 0.411,
+      "wall_s": 0.347,
+      "eff_cores": 1.18,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 188
+      "rank": 189
     },
     "check:ci-i18n-cli-help-render": {
       "cpu_s": 3.24,
@@ -896,7 +896,7 @@
       "eff_cores": 1.23,
       "capped": false,
       "peak_rss_mb": 256,
-      "rank": 99
+      "rank": 100
     },
     "check:ci-i18n-command-parity": {
       "cpu_s": 2.359,
@@ -904,31 +904,31 @@
       "eff_cores": 1.4,
       "capped": false,
       "peak_rss_mb": 340,
-      "rank": 58
+      "rank": 59
     },
     "check:ci-i18n-cross-locale-core": {
-      "cpu_s": 1.618,
-      "wall_s": 1.479,
-      "eff_cores": 1.09,
+      "cpu_s": 1.576,
+      "wall_s": 1.437,
+      "eff_cores": 1.1,
       "capped": false,
-      "peak_rss_mb": 278,
-      "rank": 78
+      "peak_rss_mb": 275,
+      "rank": 79
     },
     "check:ci-i18n-docs-inline": {
       "cpu_s": 1.378,
       "wall_s": 1.189,
       "eff_cores": 1.16,
       "capped": false,
-      "peak_rss_mb": 281,
-      "rank": 83
+      "peak_rss_mb": 279,
+      "rank": 84
     },
     "check:ci-i18n-docs-render-parity": {
       "cpu_s": 3.96,
       "wall_s": 3.263,
       "eff_cores": 1.21,
       "capped": false,
-      "peak_rss_mb": 435,
-      "rank": 44
+      "peak_rss_mb": 420,
+      "rank": 43
     },
     "check:ci-i18n-docs-untranslated": {
       "cpu_s": 1.884,
@@ -936,7 +936,7 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 259,
-      "rank": 69
+      "rank": 70
     },
     "check:ci-i18n-hardcoded-strings": {
       "cpu_s": 0.496,
@@ -944,31 +944,31 @@
       "eff_cores": 1.25,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 169
+      "rank": 168
     },
     "check:ci-i18n-ledger-growth": {
-      "cpu_s": 2.196,
-      "wall_s": 2.161,
+      "cpu_s": 2.195,
+      "wall_s": 2.146,
       "eff_cores": 1.02,
       "capped": false,
-      "peak_rss_mb": 265,
-      "rank": 62
+      "peak_rss_mb": 261,
+      "rank": 63
     },
     "check:ci-i18n-locale-only": {
       "cpu_s": 0.814,
-      "wall_s": 0.699,
-      "eff_cores": 1.16,
+      "wall_s": 0.69,
+      "eff_cores": 1.18,
       "capped": false,
       "peak_rss_mb": 276,
-      "rank": 105
+      "rank": 106
     },
     "check:ci-i18n-media": {
-      "cpu_s": 1.168,
-      "wall_s": 0.999,
-      "eff_cores": 1.17,
+      "cpu_s": 1.16,
+      "wall_s": 0.977,
+      "eff_cores": 1.19,
       "capped": false,
-      "peak_rss_mb": 220,
-      "rank": 86
+      "peak_rss_mb": 222,
+      "rank": 87
     },
     "check:ci-i18n-naturalization": {
       "cpu_s": 0.458,
@@ -976,7 +976,7 @@
       "eff_cores": 1.18,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 177
+      "rank": 178
     },
     "check:ci-i18n-page-locale-imports": {
       "cpu_s": 3.155,
@@ -984,12 +984,12 @@
       "eff_cores": 1.24,
       "capped": false,
       "peak_rss_mb": 448,
-      "rank": 52
+      "rank": 53
     },
     "check:ci-i18n-untranslated": {
       "cpu_s": 0.423,
-      "wall_s": 0.367,
-      "eff_cores": 1.15,
+      "wall_s": 0.366,
+      "eff_cores": 1.16,
       "capped": false,
       "peak_rss_mb": 58,
       "rank": 185
@@ -1003,20 +1003,20 @@
       "rank": 180
     },
     "check:ci-i18n-www-cli-docs": {
-      "cpu_s": 0.548,
-      "wall_s": 0.456,
-      "eff_cores": 1.2,
+      "cpu_s": 0.537,
+      "wall_s": 0.445,
+      "eff_cores": 1.21,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 154
+      "peak_rss_mb": 57,
+      "rank": 159
     },
     "check:ci-i18n-www-comparison-refs": {
       "cpu_s": 0.323,
-      "wall_s": 0.284,
+      "wall_s": 0.283,
       "eff_cores": 1.14,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 220
+      "rank": 221
     },
     "check:ci-i18n-www-content": {
       "cpu_s": 0.619,
@@ -1024,63 +1024,63 @@
       "eff_cores": 1.28,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 131
+      "rank": 133
     },
     "check:ci-i18n-www-content-accuracy": {
-      "cpu_s": 0.867,
-      "wall_s": 0.696,
-      "eff_cores": 1.25,
+      "cpu_s": 0.859,
+      "wall_s": 0.69,
+      "eff_cores": 1.24,
       "capped": false,
       "peak_rss_mb": 240,
-      "rank": 103
+      "rank": 104
     },
     "check:ci-i18n-www-docs-cli-usage": {
       "cpu_s": 1.158,
       "wall_s": 0.919,
       "eff_cores": 1.26,
       "capped": false,
-      "peak_rss_mb": 247,
-      "rank": 87
+      "peak_rss_mb": 246,
+      "rank": 88
     },
     "check:ci-i18n-www-landing-cli-usage": {
-      "cpu_s": 0.487,
-      "wall_s": 0.414,
-      "eff_cores": 1.18,
+      "cpu_s": 0.477,
+      "wall_s": 0.4,
+      "eff_cores": 1.19,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 171
+      "rank": 176
     },
     "check:ci-i18n-www-translation-freshness": {
-      "cpu_s": 0.567,
+      "cpu_s": 0.537,
       "wall_s": 1.016,
-      "eff_cores": 0.56,
+      "eff_cores": 0.53,
       "capped": false,
-      "peak_rss_mb": 238,
-      "rank": 144
+      "peak_rss_mb": 235,
+      "rank": 160
     },
     "check:ci-illustration-contract": {
-      "cpu_s": 0.349,
-      "wall_s": 0.319,
-      "eff_cores": 1.09,
+      "cpu_s": 0.346,
+      "wall_s": 0.307,
+      "eff_cores": 1.13,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 212
+      "peak_rss_mb": 57,
+      "rank": 215
     },
     "check:ci-inner-timeout-reachable": {
       "cpu_s": 1.625,
       "wall_s": 1.611,
       "eff_cores": 1.01,
       "capped": false,
-      "peak_rss_mb": 123,
-      "rank": 77
+      "peak_rss_mb": 124,
+      "rank": 78
     },
     "check:ci-install-sh-config": {
-      "cpu_s": 0.532,
-      "wall_s": 1.725,
-      "eff_cores": 0.31,
+      "cpu_s": 0.526,
+      "wall_s": 1.56,
+      "eff_cores": 0.34,
       "capped": false,
       "peak_rss_mb": 133,
-      "rank": 162
+      "rank": 163
     },
     "check:ci-install-table": {
       "cpu_s": 0.189,
@@ -1091,12 +1091,12 @@
       "rank": 251
     },
     "check:ci-job-aggregation": {
-      "cpu_s": 0.194,
-      "wall_s": 0.18,
-      "eff_cores": 1.08,
+      "cpu_s": 0.186,
+      "wall_s": 0.168,
+      "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 248
+      "rank": 255
     },
     "check:ci-jq-boolean-default": {
       "cpu_s": 0.456,
@@ -1104,7 +1104,7 @@
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 178
+      "rank": 179
     },
     "check:ci-judged-rule-wiring": {
       "cpu_s": 0.281,
@@ -1112,15 +1112,15 @@
       "eff_cores": 1.06,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 224
+      "rank": 225
     },
     "check:ci-knip-blockers": {
       "cpu_s": 0.418,
       "wall_s": 0.367,
       "eff_cores": 1.14,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 186
+      "peak_rss_mb": 57,
+      "rank": 187
     },
     "check:ci-label-refs": {
       "cpu_s": 1.394,
@@ -1128,7 +1128,7 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 140,
-      "rank": 82
+      "rank": 83
     },
     "check:ci-landmarks": {
       "cpu_s": 1.077,
@@ -1136,23 +1136,31 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 278,
-      "rank": 88
+      "rank": 89
+    },
+    "check:ci-lane-budget": {
+      "cpu_s": 4.204,
+      "wall_s": 3.454,
+      "eff_cores": 1.22,
+      "capped": false,
+      "peak_rss_mb": 287,
+      "rank": 38
     },
     "check:ci-language-policy": {
       "cpu_s": 0.27,
       "wall_s": 0.256,
       "eff_cores": 1.05,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 227
+      "peak_rss_mb": 57,
+      "rank": 228
     },
     "check:ci-layout-overflow": {
-      "cpu_s": 0.499,
-      "wall_s": 0.441,
-      "eff_cores": 1.13,
+      "cpu_s": 0.494,
+      "wall_s": 0.428,
+      "eff_cores": 1.15,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 167
+      "rank": 169
     },
     "check:ci-lint-scope-coverage": {
       "cpu_s": 33.568,
@@ -1168,7 +1176,7 @@
       "eff_cores": 1.79,
       "capped": false,
       "peak_rss_mb": 115,
-      "rank": 53
+      "rank": 54
     },
     "check:ci-locale-config-divergence": {
       "cpu_s": 0.563,
@@ -1176,15 +1184,15 @@
       "eff_cores": 1.21,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 146
+      "rank": 145
     },
     "check:ci-locale-currency": {
-      "cpu_s": 0.762,
-      "wall_s": 0.656,
-      "eff_cores": 1.16,
+      "cpu_s": 0.755,
+      "wall_s": 0.638,
+      "eff_cores": 1.18,
       "capped": false,
-      "peak_rss_mb": 187,
-      "rank": 111
+      "peak_rss_mb": 190,
+      "rank": 113
     },
     "check:ci-locale-de-contamination": {
       "cpu_s": 0.668,
@@ -1192,7 +1200,7 @@
       "eff_cores": 1.21,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 121
+      "rank": 123
     },
     "check:ci-locale-sources": {
       "cpu_s": 0.601,
@@ -1200,7 +1208,7 @@
       "eff_cores": 1.13,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 135
+      "rank": 136
     },
     "check:ci-locale-tutorial-assets": {
       "cpu_s": 0.399,
@@ -1208,7 +1216,7 @@
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 194
+      "rank": 193
     },
     "check:ci-lockfile": {
       "cpu_s": 8.962,
@@ -1216,15 +1224,15 @@
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 417,
-      "rank": 16
+      "rank": 15
     },
     "check:ci-max-lines": {
-      "cpu_s": 5.056,
-      "wall_s": 3.587,
-      "eff_cores": 1.41,
+      "cpu_s": 5.132,
+      "wall_s": 3.625,
+      "eff_cores": 1.42,
       "capped": false,
-      "peak_rss_mb": 440,
-      "rank": 31
+      "peak_rss_mb": 514,
+      "rank": 32
     },
     "check:ci-merge-method-prose": {
       "cpu_s": 0.655,
@@ -1232,15 +1240,15 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 235,
-      "rank": 122
+      "rank": 124
     },
     "check:ci-mutate-check": {
       "cpu_s": 0.485,
-      "wall_s": 0.452,
-      "eff_cores": 1.07,
+      "wall_s": 0.451,
+      "eff_cores": 1.08,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 172
+      "rank": 171
     },
     "check:ci-native-rebuild": {
       "cpu_s": 0.553,
@@ -1248,15 +1256,15 @@
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 151
+      "rank": 150
     },
     "check:ci-naturalization-model-policy": {
       "cpu_s": 0.352,
-      "wall_s": 0.323,
-      "eff_cores": 1.09,
+      "wall_s": 0.321,
+      "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 210
+      "rank": 211
     },
     "check:ci-nis2-quotes": {
       "cpu_s": 0.633,
@@ -1264,7 +1272,7 @@
       "eff_cores": 1.21,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 128
+      "rank": 130
     },
     "check:ci-no-inline-python": {
       "cpu_s": 0.501,
@@ -1272,7 +1280,7 @@
       "eff_cores": 1.03,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 166
+      "rank": 167
     },
     "check:ci-no-otlp-creds": {
       "cpu_s": 0.172,
@@ -1280,23 +1288,23 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 266
+      "rank": 267
     },
     "check:ci-npmrc": {
-      "cpu_s": 0.18,
-      "wall_s": 0.165,
+      "cpu_s": 0.177,
+      "wall_s": 0.162,
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 258
+      "rank": 262
     },
     "check:ci-overrides-reasons": {
       "cpu_s": 0.375,
       "wall_s": 0.343,
       "eff_cores": 1.09,
       "capped": false,
-      "peak_rss_mb": 57,
-      "rank": 200
+      "peak_rss_mb": 58,
+      "rank": 201
     },
     "check:ci-package-key-budget": {
       "cpu_s": 0.348,
@@ -1315,28 +1323,28 @@
       "rank": 233
     },
     "check:ci-page-locale-imports": {
-      "cpu_s": 0.429,
-      "wall_s": 0.353,
-      "eff_cores": 1.22,
+      "cpu_s": 0.423,
+      "wall_s": 0.339,
+      "eff_cores": 1.25,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 182
+      "peak_rss_mb": 57,
+      "rank": 186
     },
     "check:ci-parity": {
       "cpu_s": 0.985,
-      "wall_s": 0.88,
-      "eff_cores": 1.12,
+      "wall_s": 0.874,
+      "eff_cores": 1.13,
       "capped": false,
       "peak_rss_mb": 263,
-      "rank": 95
+      "rank": 96
     },
     "check:ci-paths-origin": {
       "cpu_s": 0.975,
       "wall_s": 0.993,
       "eff_cores": 0.98,
       "capped": false,
-      "peak_rss_mb": 218,
-      "rank": 98
+      "peak_rss_mb": 111,
+      "rank": 99
     },
     "check:ci-pathspec-scope": {
       "cpu_s": 2.342,
@@ -1344,15 +1352,15 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 96,
-      "rank": 61
+      "rank": 62
     },
     "check:ci-peer-deps": {
       "cpu_s": 1.006,
       "wall_s": 0.74,
       "eff_cores": 1.36,
       "capped": false,
-      "peak_rss_mb": 208,
-      "rank": 92
+      "peak_rss_mb": 210,
+      "rank": 93
     },
     "check:ci-pipefail-grep-q": {
       "cpu_s": 0.239,
@@ -1360,7 +1368,7 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 234
+      "rank": 235
     },
     "check:ci-plan-boxes": {
       "cpu_s": 1.56,
@@ -1368,23 +1376,23 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 132,
-      "rank": 80
+      "rank": 81
     },
     "check:ci-plan-citations": {
-      "cpu_s": 1.783,
-      "wall_s": 1.755,
+      "cpu_s": 1.826,
+      "wall_s": 1.795,
       "eff_cores": 1.02,
       "capped": false,
-      "peak_rss_mb": 111,
-      "rank": 73
+      "peak_rss_mb": 113,
+      "rank": 74
     },
     "check:ci-plan-deps": {
-      "cpu_s": 0.634,
-      "wall_s": 0.606,
+      "cpu_s": 0.53,
+      "wall_s": 0.504,
       "eff_cores": 1.05,
       "capped": false,
-      "peak_rss_mb": 115,
-      "rank": 127
+      "peak_rss_mb": 58,
+      "rank": 161
     },
     "check:ci-plan-implementation": {
       "cpu_s": 0.833,
@@ -1392,7 +1400,7 @@
       "eff_cores": 1.02,
       "capped": false,
       "peak_rss_mb": 119,
-      "rank": 104
+      "rank": 105
     },
     "check:ci-plant-proofs": {
       "cpu_s": 3.005,
@@ -1400,7 +1408,7 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 103,
-      "rank": 54
+      "rank": 55
     },
     "check:ci-player-css-scope": {
       "cpu_s": 1.745,
@@ -1415,56 +1423,56 @@
       "wall_s": 4.047,
       "eff_cores": 1.0,
       "capped": false,
-      "peak_rss_mb": 148,
-      "rank": 41
+      "peak_rss_mb": 147,
+      "rank": 42
     },
     "check:ci-pool-writer-safety": {
       "cpu_s": 0.25,
       "wall_s": 0.239,
       "eff_cores": 1.05,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 231
+      "peak_rss_mb": 57,
+      "rank": 232
     },
     "check:ci-portal-sitekey-guard": {
       "cpu_s": 0.214,
-      "wall_s": 0.202,
-      "eff_cores": 1.06,
+      "wall_s": 0.2,
+      "eff_cores": 1.07,
       "capped": false,
       "peak_rss_mb": 57,
       "rank": 241
     },
     "check:ci-pr-epic-block": {
       "cpu_s": 0.556,
-      "wall_s": 0.507,
-      "eff_cores": 1.1,
+      "wall_s": 0.5,
+      "eff_cores": 1.11,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 149
+      "peak_rss_mb": 59,
+      "rank": 148
     },
     "check:ci-pr-head-ref-completeness": {
       "cpu_s": 3.653,
       "wall_s": 3.638,
       "eff_cores": 1.0,
       "capped": false,
-      "peak_rss_mb": 103,
-      "rank": 47
+      "peak_rss_mb": 102,
+      "rank": 46
     },
     "check:ci-pr-task-trailers": {
-      "cpu_s": 0.584,
-      "wall_s": 0.529,
-      "eff_cores": 1.1,
+      "cpu_s": 0.769,
+      "wall_s": 0.693,
+      "eff_cores": 1.11,
       "capped": false,
-      "peak_rss_mb": 78,
-      "rank": 139
+      "peak_rss_mb": 168,
+      "rank": 110
     },
     "check:ci-pricing-consistency": {
       "cpu_s": 0.351,
       "wall_s": 0.319,
       "eff_cores": 1.1,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 211
+      "peak_rss_mb": 57,
+      "rank": 212
     },
     "check:ci-probe-parity": {
       "cpu_s": 0.162,
@@ -1480,7 +1488,7 @@
       "eff_cores": 1.03,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 174
+      "rank": 173
     },
     "check:ci-prose-style": {
       "cpu_s": 70.037,
@@ -1495,8 +1503,8 @@
       "wall_s": 0.655,
       "eff_cores": 1.03,
       "capped": false,
-      "peak_rss_mb": 106,
-      "rank": 120
+      "peak_rss_mb": 104,
+      "rank": 122
     },
     "check:ci-proxy-docker-prepull": {
       "cpu_s": 0.944,
@@ -1504,23 +1512,23 @@
       "eff_cores": 0.21,
       "capped": false,
       "peak_rss_mb": 194,
-      "rank": 101
+      "rank": 102
     },
     "check:ci-proxy-ensure-nfpm": {
       "cpu_s": 0.811,
-      "wall_s": 0.918,
-      "eff_cores": 0.88,
+      "wall_s": 1.025,
+      "eff_cores": 0.79,
       "capped": false,
-      "peak_rss_mb": 121,
-      "rank": 106
+      "peak_rss_mb": 120,
+      "rank": 107
     },
     "check:ci-proxy-rdc-update": {
-      "cpu_s": 2.064,
-      "wall_s": 2.853,
-      "eff_cores": 0.72,
+      "cpu_s": 1.958,
+      "wall_s": 2.325,
+      "eff_cores": 0.84,
       "capped": false,
-      "peak_rss_mb": 263,
-      "rank": 65
+      "peak_rss_mb": 270,
+      "rank": 67
     },
     "check:ci-python-control-plants": {
       "cpu_s": 4.195,
@@ -1528,7 +1536,7 @@
       "eff_cores": 1.0,
       "capped": false,
       "peak_rss_mb": 149,
-      "rank": 38
+      "rank": 39
     },
     "check:ci-python-env-registry": {
       "cpu_s": 20.659,
@@ -1551,24 +1559,24 @@
       "wall_s": 0.588,
       "eff_cores": 1.19,
       "capped": false,
-      "peak_rss_mb": 229,
-      "rank": 118
+      "peak_rss_mb": 236,
+      "rank": 120
     },
     "check:ci-rdc-native": {
       "cpu_s": 1.925,
-      "wall_s": 1.908,
+      "wall_s": 1.906,
       "eff_cores": 1.01,
       "capped": false,
-      "peak_rss_mb": 110,
-      "rank": 67
+      "peak_rss_mb": 109,
+      "rank": 68
     },
     "check:ci-rdc-sh-env": {
-      "cpu_s": 0.25,
-      "wall_s": 0.234,
-      "eff_cores": 1.07,
+      "cpu_s": 0.248,
+      "wall_s": 0.228,
+      "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 232
+      "rank": 234
     },
     "check:ci-record-paths": {
       "cpu_s": 14.324,
@@ -1579,12 +1587,12 @@
       "rank": 9
     },
     "check:ci-redirect-integrity": {
-      "cpu_s": 0.354,
+      "cpu_s": 0.366,
       "wall_s": 0.321,
-      "eff_cores": 1.1,
+      "eff_cores": 1.14,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 209
+      "rank": 206
     },
     "check:ci-regions-sync": {
       "cpu_s": 0.169,
@@ -1592,15 +1600,15 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 272
+      "rank": 273
     },
     "check:ci-release-bump-skip": {
       "cpu_s": 0.484,
-      "wall_s": 0.471,
+      "wall_s": 0.469,
       "eff_cores": 1.03,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 173
+      "rank": 172
     },
     "check:ci-release-key-canonical": {
       "cpu_s": 0.328,
@@ -1608,7 +1616,7 @@
       "eff_cores": 0.06,
       "capped": false,
       "peak_rss_mb": 112,
-      "rank": 218
+      "rank": 219
     },
     "check:ci-release-signing-coverage": {
       "cpu_s": 0.2,
@@ -1616,31 +1624,31 @@
       "eff_cores": 1.06,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 244
+      "rank": 245
     },
     "check:ci-resprofile": {
       "cpu_s": 0.274,
-      "wall_s": 4.04,
+      "wall_s": 4.029,
       "eff_cores": 0.07,
       "capped": false,
       "peak_rss_mb": null,
-      "rank": 225
+      "rank": 226
     },
     "check:ci-retired-commands": {
       "cpu_s": 0.509,
-      "wall_s": 0.46,
+      "wall_s": 0.457,
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 164
+      "rank": 165
     },
     "check:ci-retired-terms": {
-      "cpu_s": 0.804,
-      "wall_s": 0.788,
+      "cpu_s": 0.733,
+      "wall_s": 0.719,
       "eff_cores": 1.02,
       "capped": false,
-      "peak_rss_mb": 119,
-      "rank": 107
+      "peak_rss_mb": 121,
+      "rank": 116
     },
     "check:ci-review-resolutions": {
       "cpu_s": 0.256,
@@ -1648,7 +1656,7 @@
       "eff_cores": 1.05,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 230
+      "rank": 231
     },
     "check:ci-rubric-calibration": {
       "cpu_s": 0.179,
@@ -1656,23 +1664,23 @@
       "eff_cores": 1.08,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 260
+      "rank": 259
     },
     "check:ci-runner-advice": {
-      "cpu_s": 0.217,
-      "wall_s": 0.201,
+      "cpu_s": 0.214,
+      "wall_s": 0.198,
       "eff_cores": 1.08,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 239
+      "rank": 242
     },
     "check:ci-runner-selftest": {
-      "cpu_s": 5.617,
-      "wall_s": 9.064,
-      "eff_cores": 0.62,
+      "cpu_s": 5.605,
+      "wall_s": 8.943,
+      "eff_cores": 0.63,
       "capped": false,
-      "peak_rss_mb": 512,
-      "rank": 29
+      "peak_rss_mb": 523,
+      "rank": 30
     },
     "check:ci-scans-tracked-paths": {
       "cpu_s": 0.334,
@@ -1680,7 +1688,7 @@
       "eff_cores": 1.05,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 216
+      "rank": 217
     },
     "check:ci-schema-call-sites": {
       "cpu_s": 0.622,
@@ -1688,15 +1696,15 @@
       "eff_cores": 1.02,
       "capped": false,
       "peak_rss_mb": 101,
-      "rank": 130
+      "rank": 132
     },
     "check:ci-schema-coverage": {
       "cpu_s": 0.619,
       "wall_s": 0.465,
       "eff_cores": 1.33,
       "capped": false,
-      "peak_rss_mb": 57,
-      "rank": 132
+      "peak_rss_mb": 58,
+      "rank": 134
     },
     "check:ci-scope-mirrors": {
       "cpu_s": 0.505,
@@ -1704,14 +1712,14 @@
       "eff_cores": 1.02,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 165
+      "rank": 166
     },
     "check:ci-scope-scripts-reachability": {
-      "cpu_s": 4.539,
-      "wall_s": 4.379,
+      "cpu_s": 4.516,
+      "wall_s": 4.35,
       "eff_cores": 1.04,
       "capped": false,
-      "peak_rss_mb": 143,
+      "peak_rss_mb": 142,
       "rank": 35
     },
     "check:ci-script-exec-bit": {
@@ -1719,16 +1727,16 @@
       "wall_s": 2.175,
       "eff_cores": 1.01,
       "capped": false,
-      "peak_rss_mb": 108,
-      "rank": 63
+      "peak_rss_mb": 107,
+      "rank": 64
     },
     "check:ci-search-index": {
-      "cpu_s": 1.78,
-      "wall_s": 1.49,
+      "cpu_s": 1.72,
+      "wall_s": 1.44,
       "eff_cores": 1.19,
       "capped": false,
       "peak_rss_mb": 409,
-      "rank": 74
+      "rank": 77
     },
     "check:ci-secret-scope": {
       "cpu_s": 0.347,
@@ -1744,23 +1752,23 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 156
+      "rank": 154
     },
     "check:ci-selftest-reachability": {
       "cpu_s": 5.794,
       "wall_s": 5.245,
       "eff_cores": 1.1,
       "capped": false,
-      "peak_rss_mb": 467,
-      "rank": 28
+      "peak_rss_mb": 472,
+      "rank": 29
     },
     "check:ci-sentence-wrapping": {
       "cpu_s": 0.631,
-      "wall_s": 0.573,
-      "eff_cores": 1.1,
+      "wall_s": 0.564,
+      "eff_cores": 1.12,
       "capped": false,
-      "peak_rss_mb": 239,
-      "rank": 129
+      "peak_rss_mb": 231,
+      "rank": 131
     },
     "check:ci-seo-core": {
       "cpu_s": 0.948,
@@ -1768,22 +1776,22 @@
       "eff_cores": 1.14,
       "capped": false,
       "peak_rss_mb": 286,
-      "rank": 100
+      "rank": 101
     },
     "check:ci-setup-idempotency": {
       "cpu_s": 2.359,
-      "wall_s": 2.602,
-      "eff_cores": 0.91,
+      "wall_s": 2.385,
+      "eff_cores": 0.99,
       "capped": false,
-      "peak_rss_mb": 139,
-      "rank": 59
+      "peak_rss_mb": 138,
+      "rank": 60
     },
     "check:ci-setup-port-parity": {
       "cpu_s": 0.198,
       "wall_s": 0.186,
       "eff_cores": 1.06,
       "capped": false,
-      "peak_rss_mb": 58,
+      "peak_rss_mb": 57,
       "rank": 246
     },
     "check:ci-shape-duplication": {
@@ -1791,13 +1799,13 @@
       "wall_s": 1.732,
       "eff_cores": 1.42,
       "capped": false,
-      "peak_rss_mb": 260,
-      "rank": 55
+      "peak_rss_mb": 262,
+      "rank": 56
     },
     "check:ci-shared-esm-resolvable": {
-      "cpu_s": 0.802,
-      "wall_s": 0.672,
-      "eff_cores": 1.19,
+      "cpu_s": 0.798,
+      "wall_s": 0.656,
+      "eff_cores": 1.22,
       "capped": false,
       "peak_rss_mb": 304,
       "rank": 108
@@ -1815,8 +1823,8 @@
       "wall_s": 0.673,
       "eff_cores": 0.58,
       "capped": false,
-      "peak_rss_mb": 112,
-      "rank": 198
+      "peak_rss_mb": 111,
+      "rank": 199
     },
     "check:ci-shell-lint": {
       "cpu_s": 7.274,
@@ -1824,15 +1832,15 @@
       "eff_cores": 1.0,
       "capped": false,
       "peak_rss_mb": 183,
-      "rank": 24
+      "rank": 26
     },
     "check:ci-shell-size": {
-      "cpu_s": 0.2,
-      "wall_s": 0.187,
-      "eff_cores": 1.07,
+      "cpu_s": 0.198,
+      "wall_s": 0.182,
+      "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 245
+      "rank": 247
     },
     "check:ci-silent-failures": {
       "cpu_s": 0.168,
@@ -1840,7 +1848,7 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 274
+      "rank": 275
     },
     "check:ci-skill-size": {
       "cpu_s": 0.539,
@@ -1848,7 +1856,7 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 159
+      "rank": 157
     },
     "check:ci-solution-video-engine": {
       "cpu_s": 0.597,
@@ -1856,15 +1864,15 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 137
+      "rank": 138
     },
     "check:ci-solution-videos": {
       "cpu_s": 0.599,
-      "wall_s": 0.55,
-      "eff_cores": 1.09,
+      "wall_s": 0.536,
+      "eff_cores": 1.12,
       "capped": false,
-      "peak_rss_mb": 79,
-      "rank": 136
+      "peak_rss_mb": 58,
+      "rank": 137
     },
     "check:ci-source-rules": {
       "cpu_s": 29.681,
@@ -1880,30 +1888,30 @@
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 244,
-      "rank": 124
+      "rank": 126
     },
     "check:ci-staging-tag-guard": {
-      "cpu_s": 0.456,
-      "wall_s": 0.44,
-      "eff_cores": 1.04,
+      "cpu_s": 0.453,
+      "wall_s": 0.439,
+      "eff_cores": 1.03,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 179
+      "rank": 181
     },
     "check:ci-step-env-parity": {
       "cpu_s": 0.587,
-      "wall_s": 0.531,
+      "wall_s": 0.527,
       "eff_cores": 1.11,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 138
+      "rank": 139
     },
     "check:ci-suppression-liveness": {
-      "cpu_s": 2.008,
-      "wall_s": 1.891,
+      "cpu_s": 1.998,
+      "wall_s": 1.89,
       "eff_cores": 1.06,
       "capped": false,
-      "peak_rss_mb": 261,
+      "peak_rss_mb": 264,
       "rank": 66
     },
     "check:ci-svg-theme-reach": {
@@ -1912,7 +1920,7 @@
       "eff_cores": 1.16,
       "capped": false,
       "peak_rss_mb": 234,
-      "rank": 116
+      "rank": 118
     },
     "check:ci-swallowed-failures": {
       "cpu_s": 0.172,
@@ -1920,7 +1928,7 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 267
+      "rank": 268
     },
     "check:ci-syncpack-reasons": {
       "cpu_s": 0.369,
@@ -1928,7 +1936,7 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 204
+      "rank": 205
     },
     "check:ci-test-file-orphans": {
       "cpu_s": 0.236,
@@ -1936,12 +1944,12 @@
       "eff_cores": 1.07,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 235
+      "rank": 236
     },
     "check:ci-test-gate-wiring": {
       "cpu_s": 0.57,
-      "wall_s": 0.525,
-      "eff_cores": 1.09,
+      "wall_s": 0.516,
+      "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
       "rank": 142
@@ -1952,7 +1960,7 @@
       "eff_cores": 1.3,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 134
+      "rank": 135
     },
     "check:ci-timeout-headroom": {
       "cpu_s": 0.217,
@@ -1964,11 +1972,11 @@
     },
     "check:ci-tmpfs-health": {
       "cpu_s": 0.156,
-      "wall_s": 0.14,
-      "eff_cores": 1.11,
+      "wall_s": 0.139,
+      "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 280
+      "rank": 281
     },
     "check:ci-toolchain-env-dockerfile-sync": {
       "cpu_s": 0.17,
@@ -1976,7 +1984,7 @@
       "eff_cores": 1.1,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 268
+      "rank": 269
     },
     "check:ci-toolchain-pins": {
       "cpu_s": 1.022,
@@ -1984,15 +1992,15 @@
       "eff_cores": 1.01,
       "capped": false,
       "peak_rss_mb": 94,
-      "rank": 90
+      "rank": 91
     },
     "check:ci-tracked-credentials": {
       "cpu_s": 8.67,
-      "wall_s": 2.658,
-      "eff_cores": 3.26,
+      "wall_s": 2.678,
+      "eff_cores": 3.24,
       "capped": false,
       "peak_rss_mb": 253,
-      "rank": 17
+      "rank": 16
     },
     "check:ci-tracked-sidecars": {
       "cpu_s": 0.219,
@@ -2000,15 +2008,15 @@
       "eff_cores": 1.08,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 238
+      "rank": 239
     },
     "check:ci-trap-registry": {
-      "cpu_s": 0.499,
-      "wall_s": 0.487,
-      "eff_cores": 1.02,
+      "cpu_s": 0.481,
+      "wall_s": 0.467,
+      "eff_cores": 1.03,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 168
+      "rank": 175
     },
     "check:ci-tree-shape": {
       "cpu_s": 4.924,
@@ -2016,7 +2024,7 @@
       "eff_cores": 1.0,
       "capped": false,
       "peak_rss_mb": 110,
-      "rank": 32
+      "rank": 33
     },
     "check:ci-turnstile-drift": {
       "cpu_s": 0.189,
@@ -2028,23 +2036,23 @@
     },
     "check:ci-tutorial-caption-sync": {
       "cpu_s": 0.992,
-      "wall_s": 2.994,
-      "eff_cores": 0.33,
+      "wall_s": 1.158,
+      "eff_cores": 0.86,
       "capped": false,
       "peak_rss_mb": 281,
-      "rank": 94
+      "rank": 95
     },
     "check:ci-tutorial-casts": {
-      "cpu_s": 0.4,
-      "wall_s": 0.33,
+      "cpu_s": 0.395,
+      "wall_s": 0.326,
       "eff_cores": 1.21,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 193
+      "rank": 195
     },
     "check:ci-tutorial-cli-validity": {
       "cpu_s": 0.176,
-      "wall_s": 0.162,
+      "wall_s": 0.161,
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
@@ -2052,27 +2060,27 @@
     },
     "check:ci-tutorial-commands": {
       "cpu_s": 0.418,
-      "wall_s": 0.36,
-      "eff_cores": 1.16,
+      "wall_s": 0.356,
+      "eff_cores": 1.17,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 187
+      "rank": 188
     },
     "check:ci-tutorial-healthcheck-headroom": {
       "cpu_s": 0.225,
       "wall_s": 0.214,
       "eff_cores": 1.05,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 236
+      "peak_rss_mb": 57,
+      "rank": 237
     },
     "check:ci-tutorial-no-skips": {
-      "cpu_s": 0.168,
-      "wall_s": 0.152,
-      "eff_cores": 1.11,
+      "cpu_s": 0.159,
+      "wall_s": 0.144,
+      "eff_cores": 1.1,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 275
+      "peak_rss_mb": 57,
+      "rank": 280
     },
     "check:ci-tutorial-noninteractive": {
       "cpu_s": 0.373,
@@ -2083,20 +2091,20 @@
       "rank": 202
     },
     "check:ci-tutorial-parity": {
-      "cpu_s": 0.414,
-      "wall_s": 0.351,
+      "cpu_s": 0.409,
+      "wall_s": 0.347,
       "eff_cores": 1.18,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 189
+      "peak_rss_mb": 57,
+      "rank": 190
     },
     "check:ci-tutorial-render-queue": {
-      "cpu_s": 0.18,
-      "wall_s": 0.161,
+      "cpu_s": 0.175,
+      "wall_s": 0.156,
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 259
+      "rank": 265
     },
     "check:ci-typecheck-scope-coverage": {
       "cpu_s": 6.631,
@@ -2104,7 +2112,7 @@
       "eff_cores": 1.28,
       "capped": false,
       "peak_rss_mb": 335,
-      "rank": 26
+      "rank": 27
     },
     "check:ci-vendored-blocker-derivation": {
       "cpu_s": 0.211,
@@ -2112,12 +2120,12 @@
       "eff_cores": 1.08,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 243
+      "rank": 244
     },
     "check:ci-video-player-invariants": {
       "cpu_s": 0.579,
-      "wall_s": 0.521,
-      "eff_cores": 1.11,
+      "wall_s": 0.515,
+      "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 58,
       "rank": 140
@@ -2128,15 +2136,15 @@
       "eff_cores": 1.06,
       "capped": false,
       "peak_rss_mb": 224,
-      "rank": 125
+      "rank": 127
     },
     "check:ci-watch-recipe": {
       "cpu_s": 0.655,
       "wall_s": 0.693,
       "eff_cores": 0.95,
       "capped": false,
-      "peak_rss_mb": 108,
-      "rank": 123
+      "peak_rss_mb": 99,
+      "rank": 125
     },
     "check:ci-workflow-env-provision": {
       "cpu_s": 2.441,
@@ -2144,31 +2152,31 @@
       "eff_cores": 1.0,
       "capped": false,
       "peak_rss_mb": 98,
-      "rank": 56
+      "rank": 57
     },
     "check:ci-workflow-invariants": {
       "cpu_s": 0.923,
       "wall_s": 0.907,
       "eff_cores": 1.02,
       "capped": false,
-      "peak_rss_mb": 101,
-      "rank": 102
+      "peak_rss_mb": 100,
+      "rank": 103
     },
     "check:ci-workflow-orphan-step-keys": {
-      "cpu_s": 0.525,
-      "wall_s": 0.468,
-      "eff_cores": 1.12,
+      "cpu_s": 0.523,
+      "wall_s": 0.457,
+      "eff_cores": 1.14,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 163
+      "rank": 164
     },
     "check:ci-workflow-submodule-deps": {
-      "cpu_s": 10.616,
-      "wall_s": 10.603,
+      "cpu_s": 8.214,
+      "wall_s": 8.207,
       "eff_cores": 1.0,
       "capped": false,
       "peak_rss_mb": 123,
-      "rank": 14
+      "rank": 18
     },
     "check:ci-workflows": {
       "cpu_s": 0.406,
@@ -2176,15 +2184,15 @@
       "eff_cores": 1.04,
       "capped": false,
       "peak_rss_mb": 56,
-      "rank": 190
+      "rank": 191
     },
     "check:ci-worklist-env-registry": {
-      "cpu_s": 4.774,
-      "wall_s": 4.778,
+      "cpu_s": 7.294,
+      "wall_s": 7.293,
       "eff_cores": 1.0,
       "capped": false,
-      "peak_rss_mb": 118,
-      "rank": 34
+      "peak_rss_mb": 117,
+      "rank": 25
     },
     "check:ci-worklist-event-builders": {
       "cpu_s": 0.542,
@@ -2192,7 +2200,7 @@
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 57,
-      "rank": 157
+      "rank": 155
     },
     "check:ci-worklist-path-resolution": {
       "cpu_s": 0.542,
@@ -2200,23 +2208,23 @@
       "eff_cores": 1.12,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 158
+      "rank": 156
     },
     "check:ci-www-build-token": {
       "cpu_s": 0.178,
       "wall_s": 0.162,
       "eff_cores": 1.1,
       "capped": false,
-      "peak_rss_mb": 58,
-      "rank": 262
+      "peak_rss_mb": 57,
+      "rank": 261
     },
     "check:cli-docs": {
-      "cpu_s": 4.05,
+      "cpu_s": 3.361,
       "wall_s": 2.966,
-      "eff_cores": 1.37,
+      "eff_cores": 1.13,
       "capped": false,
-      "peak_rss_mb": 411,
-      "rank": 42
+      "peak_rss_mb": 404,
+      "rank": 49
     },
     "check:cli-examples": {
       "cpu_s": 13.164,
@@ -2227,11 +2235,11 @@
       "rank": 12
     },
     "check:format": {
-      "cpu_s": 4.405,
-      "wall_s": 4.335,
-      "eff_cores": 1.02,
+      "cpu_s": 4.368,
+      "wall_s": 4.317,
+      "eff_cores": 1.01,
       "capped": false,
-      "peak_rss_mb": 389,
+      "peak_rss_mb": 395,
       "rank": 37
     },
     "check:i18n:key-usage": {
@@ -2240,13 +2248,13 @@
       "eff_cores": 1.25,
       "capped": false,
       "peak_rss_mb": 481,
-      "rank": 21
+      "rank": 22
     },
     "check:lint": {
       "cpu_s": 31.83,
-      "wall_s": 8.55,
-      "eff_cores": 3.72,
-      "capped": true,
+      "wall_s": 9.201,
+      "eff_cores": 3.46,
+      "capped": false,
       "peak_rss_mb": 538,
       "rank": 5
     },
@@ -2256,23 +2264,23 @@
       "eff_cores": 1.16,
       "capped": false,
       "peak_rss_mb": 365,
-      "rank": 84
+      "rank": 85
     },
     "check:test-shared": {
       "cpu_s": 11.564,
       "wall_s": 9.458,
       "eff_cores": 1.22,
       "capped": false,
-      "peak_rss_mb": 427,
+      "peak_rss_mb": 411,
       "rank": 13
     },
     "check:test-www": {
-      "cpu_s": 4.182,
-      "wall_s": 2.095,
-      "eff_cores": 2.0,
+      "cpu_s": 4.18,
+      "wall_s": 2.058,
+      "eff_cores": 2.03,
       "capped": false,
       "peak_rss_mb": 558,
-      "rank": 40
+      "rank": 41
     },
     "check:version": {
       "cpu_s": 0.393,
@@ -2280,23 +2288,23 @@
       "eff_cores": 1.09,
       "capped": false,
       "peak_rss_mb": 58,
-      "rank": 197
+      "rank": 198
     },
     "test:install-script": {
-      "cpu_s": 0.156,
+      "cpu_s": 0.153,
       "wall_s": 0.219,
-      "eff_cores": 0.71,
+      "eff_cores": 0.7,
       "capped": false,
       "peak_rss_mb": 21,
-      "rank": 281
+      "rank": 282
     },
     "test:write-once-guard": {
-      "cpu_s": 0.356,
+      "cpu_s": 0.355,
       "wall_s": 0.361,
-      "eff_cores": 0.99,
+      "eff_cores": 0.98,
       "capped": false,
       "peak_rss_mb": 21,
-      "rank": 208
+      "rank": 210
     }
   },
   "unmeasured": {
@@ -2306,7 +2314,6 @@
     "check:ci-account-onboarding": "fail",
     "check:ci-account-portal": "fail",
     "check:ci-account-scope-audit": "fail",
-    "check:ci-account-server": "fail",
     "check:ci-agent-session-archival": "blocked",
     "check:ci-aws-credential-bridge": "fail",
     "check:ci-backup-manifest-shape-parity": "fail",
@@ -2364,12 +2371,10 @@
     "check:ci-subscription-schema": "fail",
     "check:ci-syncpack-sources": "fail",
     "check:ci-test-account-web": "fail",
-    "check:ci-tutorial-card-fonts": "fail",
     "check:ci-unverified-downloads": "fail",
     "check:ci-worker-secret-names": "fail",
     "check:ci-workflow-gates": "fail",
     "check:deps": "fail",
-    "check:test-cli": "fail",
     "check:test-e2e-unit": "fail",
     "check:test-workers": "fail",
     "check:test:tutorial-player": "fail",
@@ -2377,5 +2382,11 @@
     "check:types:incremental": "fail",
     "lint:unused": "fail"
   },
-  "carried": {}
+  "carried": {
+    "check:ci-guard-mention-anchoring": "2026-10-22T09:31:43Z",
+    "check:ci-record-paths": "2026-10-22T09:31:43Z",
+    "check:ci-shell-lint": "2026-10-22T09:31:43Z",
+    "check:ci-source-rules": "2026-10-22T09:31:43Z",
+    "check:ci-ssr-locale": "2026-10-22T09:31:43Z"
+  }
 }
