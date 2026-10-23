@@ -60,21 +60,6 @@
         "f14deb25"
       ]
     },
-    "agent/plans/PLAN-app-wide-org-selection.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 1,
-      "done": 2,
-      "open_sigs": [
-        "14ca1c52"
-      ],
-      "done_sigs": [
-        "bc1fc81a",
-        "de02333f"
-      ]
-    },
     "agent/plans/PLAN-ask-flow-preemptive-settled-check.md": {
       "status": "compacted",
       "owner": "9d92d9b6",
@@ -413,23 +398,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-ci-watch-enforcement.md": {
-      "status": "draft",
-      "owner": "unowned",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 6,
-      "done": 0,
-      "open_sigs": [
-        "10b968a9",
-        "54eb6912",
-        "59850222",
-        "d8a313a7",
-        "f67db57d",
-        "fa72523d"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-citation-fragility.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -541,22 +509,21 @@
         "eac723b1"
       ]
     },
-    "agent/plans/PLAN-config-networkid-sync.md": {
-      "status": "draft",
+    "agent/plans/PLAN-config-networkid-discovery.md": {
+      "status": "approved",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
+      "open": 7,
       "done": 0,
       "open_sigs": [
-        "43a26f19",
+        "17eb8443",
+        "3022db4c",
         "497bd19f",
-        "5bcae656",
-        "7febe0df",
-        "82c99ae0",
-        "86ae4693",
-        "ecf2fbb1",
-        "f46ceea9"
+        "5a66b9aa",
+        "5ac35d6c",
+        "721413cb",
+        "b1ee5c7d"
       ],
       "done_sigs": []
     },
@@ -1207,22 +1174,16 @@
       ],
       "done_sigs": []
     },
-    "agent/plans/PLAN-renet-fetch-hardening.md": {
-      "status": "draft",
-      "owner": "unowned",
+    "agent/plans/PLAN-renet-fetch-retries.md": {
+      "status": "approved",
+      "owner": "d778be9d",
       "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 8,
+      "moved_at": "",
+      "open": 2,
       "done": 0,
       "open_sigs": [
-        "0779dbe8",
-        "242b5564",
-        "305274ea",
-        "50eb2aa0",
-        "5975d923",
-        "8967ca6d",
-        "c0f953bd",
-        "c1087942"
+        "2c1262b3",
+        "a60505d7"
       ],
       "done_sigs": []
     },
@@ -1346,52 +1307,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-secret-namespace-migration.md": {
-      "status": "executing",
-      "owner": "unowned",
-      "folder": "agent/plans",
-      "moved_at": "2026-09-21",
-      "open": 5,
-      "done": 29,
-      "open_sigs": [
-        "3dc0a0b5",
-        "5922423d",
-        "648bfaed",
-        "be5ce8f9",
-        "cfe6a745"
-      ],
-      "done_sigs": [
-        "02015bc4",
-        "04b509d8",
-        "0a36f1a1",
-        "16f8e04e",
-        "1bc12aa2",
-        "2a6460e3",
-        "2b381052",
-        "2b58a199",
-        "2ec6fc05",
-        "3799ac3c",
-        "3a34cc77",
-        "54be95b6",
-        "567b8d06",
-        "59cb6f43",
-        "59e5a656",
-        "636d7c53",
-        "668e3d6b",
-        "7423368e",
-        "74468edf",
-        "8e4ffef4",
-        "a5c06efb",
-        "af1e2217",
-        "c1771330",
-        "c2623422",
-        "ca9878e4",
-        "e75b47b5",
-        "e82d384c",
-        "f56f0a22",
-        "feb3060c"
-      ]
     },
     "agent/plans/PLAN-sentence-aware-wrapping.md": {
       "status": "compacted",
@@ -1894,6 +1809,20 @@
         "ae7114ff"
       ]
     },
+    "agent/plans/_done/PLAN-app-wide-org-selection.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 0,
+      "done": 3,
+      "open_sigs": [],
+      "done_sigs": [
+        "14ca1c52",
+        "bc1fc81a",
+        "de02333f"
+      ]
+    },
     "agent/plans/_done/PLAN-archival-tests-python-compliance.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2359,6 +2288,24 @@
         "cbf7fd2f"
       ]
     },
+    "agent/plans/_done/PLAN-ci-watch-enforcement.md": {
+      "status": "superseded",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "10b968a9",
+        "54eb6912",
+        "59850222",
+        "d8a313a7",
+        "f67db57d",
+        "fa72523d"
+      ],
+      "done_sigs": [],
+      "ruling": "#0c1cbd0d"
+    },
     "agent/plans/_done/PLAN-clean-review-ledger.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2449,6 +2396,26 @@
         "dcdc7331",
         "e7ea085e"
       ]
+    },
+    "agent/plans/_done/PLAN-config-networkid-sync.md": {
+      "status": "superseded",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "43a26f19",
+        "497bd19f",
+        "5bcae656",
+        "7febe0df",
+        "82c99ae0",
+        "86ae4693",
+        "ecf2fbb1",
+        "f46ceea9"
+      ],
+      "done_sigs": [],
+      "ruling": "#0c1cbd0d"
     },
     "agent/plans/_done/PLAN-config-passkey-optional.md": {
       "status": "done",
@@ -3741,6 +3708,26 @@
       ],
       "ruling": "#c3a46b36"
     },
+    "agent/plans/_done/PLAN-renet-fetch-hardening.md": {
+      "status": "superseded",
+      "owner": "unowned",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "0779dbe8",
+        "242b5564",
+        "305274ea",
+        "50eb2aa0",
+        "5975d923",
+        "8967ca6d",
+        "c0f953bd",
+        "c1087942"
+      ],
+      "done_sigs": [],
+      "ruling": "#0c1cbd0d"
+    },
     "agent/plans/_done/PLAN-renet-obs-mirror.md": {
       "status": "closed",
       "owner": "d778be9d",
@@ -3858,6 +3845,51 @@
         "b33cfa20",
         "e786de74",
         "e95189bb"
+      ]
+    },
+    "agent/plans/_done/PLAN-secret-namespace-migration.md": {
+      "status": "done",
+      "owner": "unowned",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 0,
+      "done": 34,
+      "open_sigs": [],
+      "done_sigs": [
+        "02015bc4",
+        "04b509d8",
+        "0a36f1a1",
+        "16f8e04e",
+        "1bc12aa2",
+        "2a6460e3",
+        "2b381052",
+        "2b58a199",
+        "2ec6fc05",
+        "3799ac3c",
+        "3a34cc77",
+        "3dc0a0b5",
+        "54be95b6",
+        "567b8d06",
+        "5922423d",
+        "59cb6f43",
+        "59e5a656",
+        "636d7c53",
+        "648bfaed",
+        "668e3d6b",
+        "7423368e",
+        "74468edf",
+        "8e4ffef4",
+        "a5c06efb",
+        "af1e2217",
+        "be5ce8f9",
+        "c1771330",
+        "c2623422",
+        "ca9878e4",
+        "cfe6a745",
+        "e75b47b5",
+        "e82d384c",
+        "f56f0a22",
+        "feb3060c"
       ]
     },
     "agent/plans/_done/PLAN-session-onboarding-marker.md": {
