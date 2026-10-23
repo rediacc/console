@@ -77,15 +77,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 11 plans done, 85 of 332 boxes done (25%).
+Promoted: 0 of 11 plans done, 95 of 332 boxes done (28%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-backup-program.md | 2/190 | 188 open |
-| 3 | PLAN-cloudflare-proxy.md | 14/29 | 15 open |
+| 3 | PLAN-cloudflare-proxy.md | 18/29 | 11 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 0/6 | 6 open |
-| 5 | PLAN-telemetry-export.md | 2/19 | 17 open |
+| 5 | PLAN-telemetry-export.md | 8/19 | 11 open |
 | 6 | PLAN-renet-bridge-leftovers.md | 0/14 | 14 open |
 | 7 | PLAN-app-wide-org-selection.md | 2/3 | 1 open |
 | 8 | PLAN-config-handoff-relay-only.md | 9/11 | 2 open |
