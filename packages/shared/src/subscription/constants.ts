@@ -2,7 +2,7 @@
  * Subscription Constants
  *
  * Single source of truth for plan resources and features.
- * All components (account-server, middleware, renet, CLI) should use these values.
+ * All components (account-server, renet, CLI) should use these values.
  */
 
 import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing } from './types.js';

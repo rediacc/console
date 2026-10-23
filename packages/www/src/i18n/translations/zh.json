@@ -518,7 +518,7 @@
         "whatWeDontUse": {
           "content": ["以下技术在我们的网站上<strong>未</strong>使用："],
           "content2": [
-            "注意：本Cookie政策适用于Rediacc营销网站。我们的软件产品（Web 应用程序、CLI、中间件、Renet 代理）收集不使用Cookie的单独使用遥测数据。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
+            "注意：本 Cookie 政策适用于 Rediacc 营销网站。我们的软件产品（CLI 和 Renet 代理）会收集单独的使用遥测数据，这些数据不使用 Cookie。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测政策</a>。"
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -2139,7 +2139,7 @@
             },
             "productTelemetry": {
               "content": [
-                "我们的软件产品（Web 应用程序、CLI、中间件和 Renet 代理）收集匿名使用遥测数据，以提高产品质量、性能和可靠性。遥测数据包括技术信息，例如应用程序版本、操作系统、浏览器类型、性能指标、功能使用模式和错误报告。个人标识符在收集前进行匿名处理——电子邮件地址仅保留域名部分，用户 ID 经过哈希和截断处理，密码或机密信息绝不收集。",
+                "我们的软件产品（CLI 和 Renet 代理）会收集匿名的使用遥测数据，以提升产品的质量、性能和可靠性。遥测数据包括应用版本、操作系统、性能指标、功能使用模式和错误报告等技术信息。个人标识符在收集前会进行匿名化处理：电子邮件地址仅保留域名，用户 ID 经哈希并截断，密码和密钥绝不会被收集。",
                 "遥测功能在我们的 Web 应用程序和 CLI 中默认启用，并且可以在所有产品中禁用。有关每个产品收集的内容以及如何退出的完整详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
               ],
               "title": "2.5 产品遥测数据"
@@ -9290,7 +9290,7 @@
         "title": "我们的遥测数据收集实践与透明度"
       },
       "meta": {
-        "description": "Rediacc产品收集的遥测数据的详细说明，包括收集原因、处理方式以及如何退出。涵盖Web应用程序、CLI、中间件和 Renet 代理。",
+        "description": "说明 Rediacc 产品收集哪些遥测数据、收集原因、处理方式以及如何选择退出。适用于 CLI 和 Renet 代理。",
         "keywords": "遥测策略, 数据收集, OpenTelemetry, 退出, 隐私, GDPR, Rediacc",
         "title": "遥测策略 - Rediacc 产品遥测数据收集与使用的透明详细说明"
       },
@@ -9400,7 +9400,7 @@
         "introduction": {
           "content": [
             "Rediacc软件产品收集匿名使用遥测数据，以帮助我们改善产品质量、诊断问题并了解工具的使用情况。本遥测策略准确描述了收集的数据、原因、处理方式以及如何退出。",
-            "本策略涵盖四个产品：<strong>Rediacc Web 应用程序</strong>、<strong>Rediacc CLI</strong>、<strong>Rediacc 中间件</strong>和<strong>Rediacc Renet 代理</strong>。网站分析（Plausible）在我们的<a href=\"privacy-policy\">隐私政策</a>和<a href=\"cookie-policy\">Cookie政策</a>中另行说明。"
+            "本政策涵盖两个产品：<strong>Rediacc CLI</strong> 和 <strong>Rediacc Renet 代理</strong>。网站分析（Plausible）在我们的<a href=\"privacy-policy\">隐私政策</a>和 <a href=\"cookie-policy\">Cookie 政策</a>中另行说明。"
           ],
           "id": "introduction",
           "title": "1. 简介"
@@ -9409,7 +9409,7 @@
           "content": [
             "根据欧盟《通用数据保护条例》（GDPR）和《电子隐私指令》，我们收集遥测数据的法律依据取决于产品场景：",
             "对于<strong>Web 应用程序</strong>（基于浏览器）：遥测数据基于<strong>合法利益</strong>（GDPR第6(1)(f)条）收集，目的是维护和提高服务质量。您可以随时退出。",
-            "对于<strong>CLI、中间件和 Renet 代理</strong>（安装在您的基础设施上）：遥测数据基于<strong>合法利益</strong>收集，并提供明确的退出机制。您可以在发送任何数据之前禁用遥测。"
+            "对于要求明确同意的司法辖区的用户（例如适用 PIPA 的韩国），应在发送任何数据之前，通过产品配置明确启用遥测。"
           ],
           "id": "legal-basis",
           "title": "3. 收集的法律依据"

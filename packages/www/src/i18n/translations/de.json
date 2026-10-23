@@ -522,7 +522,7 @@
             "Folgende Technologien werden auf unserer Website <strong>nicht</strong> verwendet:"
           ],
           "content2": [
-            "Hinweis: Diese Cookie-Richtlinie gilt für die Rediacc-Marketingwebsite. Unsere Softwareprodukte (Webanwendung, CLI, Middleware, Renet-Agent) erfassen separate Nutzungstelemetrie, die keine Cookies verwendet. Einzelheiten zur Produkttelemetrie finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
+            "Hinweis: Diese Cookie-Richtlinie gilt für die Rediacc-Marketingwebsite. Unsere Softwareprodukte (CLI und Renet-Agent) erfassen separate Nutzungstelemetrie, die keine Cookies verwendet. Einzelheiten zur Produkttelemetrie finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -2164,7 +2164,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Unsere Softwareprodukte (Webanwendung, CLI, Middleware und Renet-Agent) erfassen anonyme Nutzungstelemetrie, um die Produktqualität, Leistung und Zuverlässigkeit zu verbessern. Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Browsertyp, Leistungsmetriken, Funktionsnutzungsmuster und Fehlerberichte. Persönliche Identifikatoren werden vor der Erfassung anonymisiert – E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden niemals erfasst.",
+                "Unsere Softwareprodukte (CLI und Renet-Agent) erfassen anonyme Nutzungstelemetrie, um Qualität, Leistung und Zuverlässigkeit der Produkte zu verbessern. Die Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Leistungsmetriken, Nutzungsmuster von Funktionen und Fehlerberichte. Persönliche Kennungen werden vor der Erfassung anonymisiert: E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden nie erfasst.",
                 "Telemetrie ist in unserer Webanwendung und CLI standardmäßig aktiviert und kann in allen Produkten deaktiviert werden. Vollständige Details darüber, was jedes Produkt erfasst und wie Sie sich abmelden können, finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
               ],
               "title": "2.5 Produkttelemetriedaten"
@@ -9336,7 +9336,7 @@
         "title": "Unsere Telemetriepraxis"
       },
       "meta": {
-        "description": "Welche Telemetriedaten Rediacc erfasst, warum, wie sie verarbeitet werden und wie Sie sich abmelden. Web-App, CLI, Middleware und Renet-Agent.",
+        "description": "Welche Telemetriedaten die Produkte von Rediacc erfassen, warum, wie sie verarbeitet werden und wie Sie widersprechen können. Gilt für die CLI und den Renet-Agent.",
         "keywords": "Telemetrie-Richtlinie, Datenerfassung, OpenTelemetry, Abmeldung, Datenschutz, DSGVO, Rediacc",
         "title": "Telemetrie-Richtlinie — Rediacc"
       },
@@ -9448,7 +9448,7 @@
         "introduction": {
           "content": [
             "Rediacc-Softwareprodukte erfassen anonymisierte Nutzungstelemetrie, um uns bei der Verbesserung der Produktqualität, der Diagnose von Problemen und dem Verständnis der Nutzung unserer Tools zu helfen. Diese Telemetrie-Richtlinie beschreibt genau, welche Daten erfasst werden, warum, wie sie verarbeitet werden und wie Sie sich abmelden können.",
-            "Diese Richtlinie umfasst vier Produkte: die <strong>Rediacc Webanwendung</strong>, die <strong>Rediacc CLI</strong>, die <strong>Rediacc Middleware</strong> und die <strong>Rediacc Renet-Agent</strong>. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
+            "Diese Richtlinie gilt für zwei Produkte: die <strong>Rediacc CLI</strong> und den <strong>Rediacc Renet-Agent</strong>. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und unserer <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
           ],
           "id": "introduction",
           "title": "1. Einleitung"
@@ -9457,7 +9457,7 @@
           "content": [
             "Gemäß der EU-Datenschutz-Grundverordnung (DSGVO) und der ePrivacy-Richtlinie hängt unsere Rechtsgrundlage für die Telemetrieerfassung vom Produktkontext ab:",
             "Für die <strong>Webanwendung</strong> (browserbasiert): Die Telemetrie wird unter <strong>berechtigtem Interesse</strong> (DSGVO Art. 6(1)(f)) zum Zweck der Aufrechterhaltung und Verbesserung der Dienstqualität erfasst. Sie können sich jederzeit abmelden.",
-            "Für <strong>CLI, Middleware und Renet-Agent</strong> (auf Ihrer Infrastruktur installiert): Die Telemetrie wird unter <strong>berechtigtem Interesse</strong> mit klaren Abmeldemechanismen erfasst. Sie können die Telemetrie deaktivieren, bevor Daten gesendet werden."
+            "Für Nutzer in Rechtsordnungen, die eine ausdrückliche Einwilligung verlangen (z. B. Südkorea nach dem PIPA), sollte die Telemetrie in der Produktkonfiguration ausdrücklich aktiviert werden, bevor Daten übertragen werden."
           ],
           "id": "legal-basis",
           "title": "3. Rechtsgrundlage für die Erfassung"

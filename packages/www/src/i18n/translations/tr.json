@@ -520,7 +520,7 @@
         "whatWeDontUse": {
           "content": ["Aşağıdaki teknolojiler web sitemizde <strong>kullanılmamaktadır</strong>:"],
           "content2": [
-            "Not: Bu Çerez Politikası Rediacc pazarlama web sitesi için geçerlidir. Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware, Renet Ajanı) çerez kullanmayan ayrı kullanım telemetrisi toplar. Ürün telemetrisi hakkında ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+            "Not: Bu Çerez Politikası Rediacc pazarlama web sitesi için geçerlidir. Yazılım ürünlerimiz (CLI ve Renet Ajanı) çerez kullanmayan ayrı bir kullanım telemetrisi toplar. Ürün telemetrisi hakkında ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -2155,7 +2155,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, tarayıcı türü, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplama öncesinde anonimleştirilir — e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenir ve kısaltılır, şifreler veya gizli bilgiler asla toplanmaz.",
+                "Yazılım ürünlerimiz (CLI ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplanmadan önce anonimleştirilir: e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenip kısaltılır, parolalar ve gizli bilgiler ise asla toplanmaz.",
                 "Telemetri, Web Uygulamamızda ve CLI'da varsayılan olarak etkindir ve tüm ürünlerde devre dışı bırakılabilir. Her ürünün ne topladığı ve nasıl devre dışı bırakılacağı hakkında eksiksiz ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
               ],
               "title": "2.5 Ürün Telemetri Verileri"
@@ -9325,7 +9325,7 @@
         "title": "Telemetri Uygulamalarımız"
       },
       "meta": {
-        "description": "Rediacc ürünlerinin hangi telemetri verilerini topladığı, neden topladığı ve nasıl devre dışı bırakılacağı hakkında bilgiler.",
+        "description": "Rediacc ürünlerinin hangi telemetri verilerini topladığı, nedenini, nasıl işlendiğini ve nasıl vazgeçilebileceğini açıklar. CLI ve Renet Ajanı için geçerlidir.",
         "keywords": "telemetri politikası, veri toplama, OpenTelemetry, devre dışı bırakma, gizlilik, GDPR, Rediacc",
         "title": "Telemetri Politikası - Veri Toplama Bilgileri | Rediacc"
       },
@@ -9437,7 +9437,7 @@
         "introduction": {
           "content": [
             "Rediacc yazılım ürünleri, ürün kalitesini artırmamıza, sorunları teşhis etmemize ve araçlarımızın nasıl kullanıldığını anlamamıza yardımcı olmak için anonimleştirilmiş kullanım telemetrisi toplar. Bu Telemetri Politikası, tam olarak hangi verilerin toplandığını, neden toplandığını, nasıl işlendiğini ve nasıl devre dışı bırakabileceğinizi açıklar.",
-            "Bu politika dört ürünü kapsar: <strong>Rediacc Web Uygulaması</strong>, <strong>Rediacc CLI</strong>, <strong>Rediacc Middleware</strong> ve <strong>Rediacc Renet Ajanı</strong>. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
+            "Bu politika iki ürünü kapsar: <strong>Rediacc CLI</strong> ve <strong>Rediacc Renet Ajanı</strong>. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
           ],
           "id": "introduction",
           "title": "1. Giriş"
@@ -9446,7 +9446,7 @@
           "content": [
             "AB Genel Veri Koruma Yönetmeliği (GDPR) ve eGizlilik Yönergesi kapsamında, telemetri toplama için yasal dayanağımız ürün bağlamına bağlıdır:",
             "<strong>Web Uygulaması</strong> (tarayıcı tabanlı) için: telemetri, hizmet kalitesini sürdürme ve iyileştirme amacıyla <strong>meşru menfaat</strong> (GDPR Md. 6(1)(f)) kapsamında toplanır. İstediğiniz zaman devre dışı bırakabilirsiniz.",
-            "<strong>CLI, Middleware ve Renet Ajanı</strong> (altyapınıza kurulan) için: telemetri, açık devre dışı bırakma mekanizmaları sağlanarak <strong>meşru menfaat</strong> kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz."
+            "Açık rıza gerektiren hukuk düzenlerindeki kullanıcılar için (örneğin PIPA kapsamında Güney Kore), herhangi bir veri gönderilmeden önce telemetri ürün yapılandırmasından açıkça etkinleştirilmelidir."
           ],
           "id": "legal-basis",
           "title": "3. Toplama için Yasal Dayanak"

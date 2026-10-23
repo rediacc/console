@@ -27,7 +27,6 @@ Rediacc uses OpenTelemetry to collect traces, metrics, and logs from all service
 |---------|-------------|----------|---------|
 | [CLI](signals/cli.md) | `rediacc-cli` | Node.js | Traces, Metrics, Logs |
 | [Account Server](signals/account-server.md) | `rediacc-account-server` | Node.js/Hono | Traces, Logs |
-| [Renet Bridge](signals/renet.md) | `renet-bridge` | Go | Traces, Metrics, Logs, Profiling |
 | [Renet Execute](signals/renet.md) | `renet-execute` | Go | Traces, Metrics, Logs, Profiling |
 
 ## Something Broken? Start Here

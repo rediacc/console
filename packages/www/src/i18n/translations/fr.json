@@ -524,7 +524,7 @@
             "Les technologies suivantes ne sont <strong>pas</strong> utilisées sur notre site web :"
           ],
           "content2": [
-            "Remarque : Cette Politique de Cookies s'applique au site web marketing de Rediacc. Nos produits logiciels (Application Web, CLI, Middleware, Renet Agent) collectent une télémétrie d'utilisation distincte qui n'utilise pas de cookies. Pour plus de détails sur la télémétrie des produits, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
+            "Remarque : cette Politique de Cookies s'applique au site web marketing de Rediacc. Nos produits logiciels (CLI et Renet Agent) collectent une télémétrie d'utilisation distincte, qui n'utilise pas de cookies. Pour en savoir plus sur la télémétrie des produits, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -2164,7 +2164,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Nos produits logiciels (Application Web, CLI, Middleware et Renet Agent) collectent des données de télémétrie d'utilisation anonymes afin d'améliorer la qualité, les performances et la fiabilité du produit. Les données de télémétrie incluent des informations techniques telles que la version de l'application, le système d'exploitation, le type de navigateur, les métriques de performance, les habitudes d'utilisation des fonctionnalités et les rapports d'erreurs. Les identifiants personnels sont anonymisés avant la collecte — les adresses e-mail sont réduites au domaine seul, les identifiants utilisateur sont hachés et tronqués, et les mots de passe ou secrets ne sont jamais collectés.",
+                "Nos produits logiciels (CLI et Renet Agent) collectent une télémétrie d'utilisation anonyme afin d'améliorer la qualité, les performances et la fiabilité des produits. Les données de télémétrie comprennent des informations techniques comme la version de l'application, le système d'exploitation, des métriques de performance, les habitudes d'utilisation des fonctionnalités et des rapports d'erreurs. Les identifiants personnels sont anonymisés avant la collecte : les adresses e-mail sont réduites au seul domaine, les identifiants utilisateur sont hachés et tronqués, et les mots de passe ou secrets ne sont jamais collectés.",
                 "La télémétrie est activée par défaut dans notre Application Web et notre CLI, et peut être désactivée dans tous les produits. Pour plus de détails sur ce que chaque produit collecte et comment vous désinscrire, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
               ],
               "title": "2.5 Données de télémétrie produit"
@@ -9336,7 +9336,7 @@
         "title": "Nos pratiques de télémétrie"
       },
       "meta": {
-        "description": "Données de télémétrie collectées par Rediacc, comment elles sont traitées et comment se désinscrire. Couvre le Web, CLI et Middleware.",
+        "description": "Détails sur les données de télémétrie que collectent les produits Rediacc, sur les raisons de cette collecte, sur leur traitement et sur la façon de s'y opposer. Couvre le CLI et le Renet Agent.",
         "keywords": "politique de télémétrie, collecte de données, OpenTelemetry, désinscription, confidentialité, RGPD, Rediacc",
         "title": "Politique de Télémétrie — Rediacc"
       },
@@ -9448,7 +9448,7 @@
         "introduction": {
           "content": [
             "Les produits logiciels Rediacc collectent des données de télémétrie d'utilisation anonymisées pour nous aider à améliorer la qualité des produits, diagnostiquer les problèmes et comprendre comment nos outils sont utilisés. Cette Politique de Télémétrie décrit exactement quelles données sont collectées, pourquoi, comment elles sont traitées, et comment vous pouvez vous désinscrire.",
-            "Cette politique couvre quatre produits : l'<strong>Application Web Rediacc</strong>, le <strong>CLI Rediacc</strong>, le <strong>Middleware Rediacc</strong> et le <strong>Renet Agent Rediacc</strong>. Les analyses du site web (Plausible) sont couvertes séparément dans notre <a href=\"privacy-policy\">Politique de Confidentialité</a> et notre <a href=\"cookie-policy\">Politique de Cookies</a>."
+            "Cette politique couvre deux produits : le <strong>CLI Rediacc</strong> et le <strong>Renet Agent Rediacc</strong>. Les statistiques du site web (Plausible) sont traitées séparément dans notre <a href=\"privacy-policy\">Politique de Confidentialité</a> et notre <a href=\"cookie-policy\">Politique de Cookies</a>."
           ],
           "id": "introduction",
           "title": "1. Introduction"
@@ -9457,7 +9457,7 @@
           "content": [
             "En vertu du Règlement Général sur la Protection des Données (RGPD) de l'UE et de la Directive ePrivacy, notre base juridique pour la collecte de télémétrie dépend du contexte du produit :",
             "Pour l'<strong>Application Web</strong> (basée sur le navigateur) : la télémétrie est collectée sur la base de l'<strong>intérêt légitime</strong> (RGPD Art. 6(1)(f)) dans le but de maintenir et d'améliorer la qualité du service. Vous pouvez vous désinscrire à tout moment.",
-            "Pour le <strong>CLI, le Middleware et le Bridge</strong> (installés sur votre infrastructure) : la télémétrie est collectée sur la base de l'<strong>intérêt légitime</strong> avec des mécanismes de désinscription clairs fournis. Vous pouvez désactiver la télémétrie avant l'envoi de toute donnée."
+            "Pour les utilisateurs de juridictions qui exigent un consentement explicite (par exemple la Corée du Sud avec la PIPA), la télémétrie doit être activée explicitement dans la configuration du produit avant toute transmission de données."
           ],
           "id": "legal-basis",
           "title": "3. Base juridique de la collecte"

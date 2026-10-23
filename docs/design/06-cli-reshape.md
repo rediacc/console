@@ -205,7 +205,7 @@ skills against the live tree — all documented snippets must be updated in the 
 - Command metadata (`command-metadata.ts`): re-annotate grandGuard/agentBlocked per verb.
 - CLI i18n: en strings for every new/renamed command; 12 locales re-naturalized via the
 i18n pipeline (Sonnet; ledger-driven).
-- Renet bridge functions renamed/added/deleted → `renet functions generate-types --output
+- Renet functions renamed/added/deleted → `renet functions generate-types --output
 packages/shared/src/renet-contract/data`; every generated function name must appear in packages/e2e-tests sources or `check:ci-e2e-coverage` fails.
 - **MCP alignment gate (P4 closing step)**: the existing `mcp-coverage.test.ts`
 (`packages/cli/src/commands/mcp/__tests__/`) is registry-keyed and misses unregistered leaves — verified 2026-07-10: a tree-walking version found **56 drifted commands** with neither `mcp` nor `mcpExcludeReason`. Confirmed still true 2026-07-13 and now worse: it iterates `COMMAND_REGISTRY` (13 domains) while the live tree has 16, so the `job`, `cluster`, `credits` and `serve`

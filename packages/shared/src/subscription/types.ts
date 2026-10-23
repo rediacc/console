@@ -2,7 +2,7 @@
  * Subscription Types
  *
  * Centralized type definitions for the subscription system.
- * Used by account-server, middleware, renet, and CLI.
+ * Used by account-server, renet, and CLI.
  */
 
 /**
@@ -50,7 +50,7 @@ export interface SubscriptionData {
   version: 2;
   /** UUID from account server */
   subscriptionId: string;
-  /** Middleware organization ID */
+  /** Account server organization ID */
   organizationId: number;
   /** Customer identifier */
   customerId: string;
@@ -355,7 +355,7 @@ export interface ApiTokenIpRebindResponse {
 
 /**
  * Refusal codes from the rebind route (on top of TOKEN_IP_MISMATCH from the
- * auth middleware and TOTP_INVALID for a wrong code):
+ * auth check and TOTP_INVALID for a wrong code):
  * - TOTP_INVALID 400, body carries `attemptsRemaining`
  * - TOTP_REPLAYED 409, the code's time step is at or below the last one used
  * - IP_REBIND_LOCKED 429, body carries `retryAfter` (seconds) plus a Retry-After header

@@ -2,7 +2,7 @@
  * @rediacc/shared/subscription
  *
  * Centralized subscription schema for the Rediacc platform.
- * Used by account-server, middleware, renet, and CLI.
+ * Used by account-server, renet, and CLI.
  */
 
 // Constants
