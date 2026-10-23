@@ -5,7 +5,7 @@ implementations exactly as in the two sibling differentials -- a COPY of `common
 
 `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece. The twin is additionally MANUAL ONLY by its own header: no workflow invokes it, and CI drives only the `--dry-run` path.
 
-WHAT THE STREAMS CANNOT SHOW, and therefore what the call log is compared for: which region reached wrangler (none: the region is printed and never passed), whether the dry run really passed `--outdir`, and whether the two builds ran BEFORE the worker directory was looked at. All three are recorded rather than inferred.
+WHAT THE STREAMS CANNOT SHOW, and therefore what the call log is compared for: which region reached wrangler (none: the twin printed the region and passed it nowhere; the port refuses any region but eu before any call), whether the dry run really passed `--outdir`, and whether the two builds ran BEFORE the worker directory was looked at. All three are recorded rather than inferred.
 
 TWO DEFECTS IN THE TWIN ARE PINNED, NOT FIXED:
 `test_the_build_runs_before_the_directory_is_checked` shows both builds completing and only then a failed `cd`, and `test_the_account_id_is_documented_and_never_checked` shows a run succeeding
@@ -259,13 +259,17 @@ def _run(
     return proc, call_log.read_text(encoding="utf-8")
 
 
-def run_both(tmp_path: pathlib.Path, root: pathlib.Path, *args: str, **kw):
+def run_both(
+    tmp_path: pathlib.Path, root: pathlib.Path, *args: str, label: str | None = None, **kw
+):
+    """Both sides. `label` reads the golden under ANOTHER test's name: the key is `<test name>#<hash>`, so a test renamed after the twin was frozen names the old one to reach its records."""
     twin_copy = root / ".ci" / "scripts" / "deploy" / TWIN.name
     old, old_calls = diff.twin_result(
         TWIN_REL,
         ["args=%r" % (args,), "kw=%r" % (sorted(kw.items()),)],
         lambda: _run(twin_copy, tmp_path, root, args, **kw),
         work=(str(tmp_path),),
+        label=label,
     )
     new, new_calls = _run(PORT, tmp_path, root, args, **kw)
     return old, new, old_calls, new_calls
@@ -344,17 +348,52 @@ def test_the_three_closing_lines_all_carry_the_check_glyph(tmp_path: pathlib.Pat
     _assert_agree(old, new, "closing-lines", old_calls, new_calls)
 
 
-def test_the_region_is_printed_and_never_passed_to_wrangler(tmp_path: pathlib.Path) -> None:
-    """`REGION` REACHES ONE LOG LINE AND NO ARGV (:33, :62). Two regions produce two different messages and byte-identical calls, which is the whole point of comparing the call log rather than the streams alone."""
+# The name the twin's region records were frozen under, before the port repaired the defect they show.
+TWIN_REGION_LABEL = "test_the_region_is_printed_and_never_passed_to_wrangler"
+
+
+def test_a_region_other_than_eu_refuses_before_any_build(tmp_path: pathlib.Path) -> None:
+    """THE TWIN'S DEFECT, REPAIRED (PLAN-cloudflare-proxy.md, the `--region` box). The frozen twin answered `--region asia` with exit 0, a log line saying `asia`, and calls byte-identical to an eu run: a deploy of the eu config under a message naming another region. The port refuses any region but eu, exit 1, before the token check and before any build, so the call log stays empty."""
     root = _fixture_root(tmp_path)
-    eu_old, eu_new, eu_old_calls, eu_new_calls = run_both(tmp_path, root)
-    as_old, as_new, as_old_calls, as_new_calls = run_both(tmp_path, root, "--region", "asia")
+    eu_old, eu_new, eu_old_calls, eu_new_calls = run_both(tmp_path, root, label=TWIN_REGION_LABEL)
+    as_old, as_new, as_old_calls, as_new_calls = run_both(
+        tmp_path, root, "--region", "asia", label=TWIN_REGION_LABEL
+    )
+    # What the twin did, from its golden: the defect this test exists for.
     assert as_old.returncode == 0, as_old.stderr
     assert "(region: asia)" in as_old.stderr
     assert as_old_calls == eu_old_calls
-    assert _twin_source().count("$REGION") == 1
+    # The default region still agrees with the twin in full.
     _assert_agree(eu_old, eu_new, "region-eu", eu_old_calls, eu_new_calls)
-    _assert_agree(as_old, as_new, "region-asia", as_old_calls, as_new_calls)
+    # What the port does instead.
+    assert as_new.returncode == 1, as_new.stderr
+    assert as_new.stdout == ""
+    assert as_new.stderr == "✗ %s\n" % port.region_refusal("asia")
+    assert "workers/proxy/wrangler.toml" in as_new.stderr
+    assert as_new_calls == "", (
+        "nothing may be built or deployed for a region the config does not name"
+    )
+
+
+def test_a_region_refusal_needs_no_token(tmp_path: pathlib.Path) -> None:
+    """The region is an argument error, checked before the token, so a caller with no credentials still learns the real problem."""
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(PORT, tmp_path, root, ("--region", "us"), drop_env=("CLOUDFLARE_API_TOKEN",))
+    assert proc.returncode == 1
+    assert proc.stderr == "✗ %s\n" % port.region_refusal("us")
+    assert calls == ""
+
+
+def test_an_explicit_eu_region_deploys_exactly_as_the_default(tmp_path: pathlib.Path) -> None:
+    """The refusal must not fire on the one region the config names."""
+    root = _fixture_root(tmp_path)
+    for side in ("d", "e"):
+        (tmp_path / side).mkdir()
+    default, default_calls = _run(PORT, tmp_path / "d", root, ())
+    explicit, explicit_calls = _run(PORT, tmp_path / "e", root, ("--region", "eu"))
+    assert explicit.returncode == 0, explicit.stderr
+    assert explicit.stderr == default.stderr == DEPLOY_STDERR
+    assert explicit_calls == default_calls != ""
 
 
 def test_an_absent_region_defaults_to_eu(tmp_path: pathlib.Path) -> None:
@@ -642,17 +681,20 @@ def test_a_failed_renet_build_deploys_nothing(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_smoke_url_is_the_route_wrangler_toml_names(tmp_path: pathlib.Path) -> None:
-    """Not the region: `--region` still reaches no argv, so the smoke asks the host the deployed config actually serves."""
+    """Not the region: the smoke asks the host the deployed config actually serves. The twin's frozen `--region asia` run proves the host never came from the flag; the port now refuses that run, so its side is the default region."""
     root = _fixture_root(tmp_path)
-    old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "asia")
+    _old, _new, old_calls, _new_calls = run_both(tmp_path, root, "--region", "asia")
     assert "https://%s/v1/health\n" % SMOKE_HOST in old_calls
+    (tmp_path / "port").mkdir()
+    new, new_calls = _run(PORT, tmp_path / "port", root, ())
+    assert new.returncode == 0, new.stderr
+    assert "https://%s/v1/health\n" % SMOKE_HOST in new_calls
     assert (
         port.smoke_host(
             'routes = [\n  { pattern = "proxy.eu.rediacc.com", custom_domain = true }\n]\n'
         )
         == "proxy.eu.rediacc.com"
     )
-    _assert_agree(old, new, "smoke-url", old_calls, new_calls)
 
 
 def test_the_real_wrangler_toml_names_a_route_the_smoke_can_reach(tmp_path: pathlib.Path) -> None:

@@ -68,9 +68,20 @@ MISSING_AUTH_MSG = (
 # `$REPO_ROOT/workers/proxy` (:34).
 WORKER_SUBDIR = ("workers", "proxy")
 
-# `REGION="${ARG_REGION:-eu}"` (:35). READ AND PRINTED, NEVER PASSED ON: it
-# appears in exactly one log line (:64) and in no argv, because the region for the proxy lives in `workers/proxy/wrangler.toml` rather than in a flag. A caller passing `--region us` therefore gets a message saying `us` and a deploy of whatever the config names. Reproduced; the differential pins it by comparing the recorded `npx` argv across regions.
+# `REGION="${ARG_REGION:-eu}"` (:35). The region for the proxy lives in `workers/proxy/wrangler.toml` (Worker `rediacc-proxy-eu`, route `proxy.eu.rediacc.com`), never in a flag, so the only region this script can deploy is the one that file names. The twin read `--region`, printed it in one log line and passed it to no argv, so `--region us` got a message saying `us` and a deploy of the eu config. That defect is REPAIRED here, not reproduced (PLAN-cloudflare-proxy.md, the `--region` box): any other value is refused before any build, and the differential reads the twin's frozen answer to show what it did instead.
 DEFAULT_REGION = "eu"
+SUPPORTED_REGIONS = (DEFAULT_REGION,)
+
+
+def region_refusal(region: str) -> str:
+    """The refusal for a region this script cannot deploy, naming the file that fixes the region and the way forward."""
+    return (
+        "--region %s is not supported: the proxy's region is fixed by workers/proxy/wrangler.toml "
+        "(Worker rediacc-proxy-eu, route proxy.eu.rediacc.com), so only --region %s deploys. "
+        "Another region needs its own wrangler config and a deploy that names it."
+        % (region, DEFAULT_REGION)
+    )
+
 
 # `DRY_RUN="${ARG_DRY_RUN:-false}"` (:36) and the one value that branches (:52).
 # The comparison is against the literal `true`, which is also what a bare `--dry-run` with no value produces through `parse_args`. Anything else -- `1`, `yes`, `True` -- IS A REAL DEPLOY.
@@ -235,6 +246,11 @@ def main(argv: list[str]) -> int:
     worker_dir = repo_root.joinpath(*WORKER_SUBDIR)
     region = args.get("ARG_REGION") or DEFAULT_REGION
     dry_run = args.get("ARG_DRY_RUN") or DEFAULT_DRY_RUN
+
+    if region not in SUPPORTED_REGIONS:
+        # Refused first, before the token check and before any build: it is an argument error, and a deploy of the wrong region's config is not one a caller asked for.
+        log.error(region_refusal(region))
+        return 1
 
     if not os.environ.get("CLOUDFLARE_API_TOKEN"):
         # THE DIVERGENCE: bash prefixes this with `<script>: line 29: `.
