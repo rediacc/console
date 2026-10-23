@@ -58,6 +58,8 @@ export interface BackupPullParams {
   sourceType: string;
   /** Source machine or storage name */
   from: string;
+  /** Source repository GUID on the source machine (defaults to the destination repository) */
+  src?: string;
   /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
   seed?: string;
   /** Overwrite existing repository */
@@ -1649,6 +1651,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         ui: 'source-dropdown',
         dependsOn: 'sourceType',
         minLength: 1,
+      },
+      src: {
+        type: 'string',
+        help: 'Source repository GUID on the source machine (defaults to the destination repository)',
       },
       seed: {
         type: 'string',

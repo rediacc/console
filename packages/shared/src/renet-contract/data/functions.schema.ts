@@ -53,6 +53,7 @@ export const BackupPullParamsSchema = z.object({
     .default('machine')
     .describe('Source type: machine (SSH); storage is retired'),
   from: z.string().min(1).describe('Source machine or storage name'),
+  src: z.string().optional().describe('Source repository GUID on the source machine (defaults to the destination repository)'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
   force: z.boolean().default(false).optional().describe('Overwrite existing repository'),
   bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),

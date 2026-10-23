@@ -146,24 +146,33 @@ describe('backup restore honours --datastore (#74)', () => {
 });
 
 /**
- * A restored repo REUSES the source's GUID, and the executor's credential map is
- * keyed by GUID (`buildCredentialsMap`). Minting a fresh `randomBytes(24)`
- * credential here therefore never gave the restored repo a key of its own: the
- * two records fought over one map slot, and which credential survived depended
- * on where the operator's `--as` name sorted. `repo fork` has always inherited
- * (repo-fork.ts, `credential: parentConfig.credential`); restore now matches.
- *
- * The refusal half of this fix (a second live record on one GUID under a
- * different credential) is pinned at the service layer, where the guard lives:
- * services/__tests__/config-resources-credential-collision.test.ts.
+ * Every restore mints a FRESH GUID, the pull route (no `--at`) included. The
+ * source image is addressed by its own GUID through `backup_pull`'s `src`
+ * parameter while `repository` names the destination, so the source record is
+ * left intact. The credential map is keyed by GUID, so the restored repo gets a
+ * NEW entry carrying the source's passphrase (`repo fork` inherits the same
+ * way, repo-fork.ts, `credential: parentConfig.credential`).
  */
-describe('backup restore credential inheritance', () => {
-  it('reuses the source credential instead of minting a fresh one', async () => {
+describe('backup restore --as without --at mints a new identity', () => {
+  it('registers a fresh GUID, not the source GUID, and keeps the lineage', async () => {
     await run(['restore', 'store1:src', '--as', 'copy', '--machine', 'm1', '-y']);
 
     const [, config] = mockAddRepository.mock.calls[0];
-    expect(config.repositoryGuid).toBe('guid-src');
+    expect(config.repositoryGuid).not.toBe('guid-src');
+    expect(config.repositoryGuid).toMatch(/^[0-9a-f-]{36}$/);
+    expect(config.grandGuid).toBe('guid-src');
     expect(config.credential).toBe(SOURCE_CREDENTIAL);
+  });
+
+  it('pulls the source GUID into the new name and leaves the source record alone', async () => {
+    await run(['restore', 'store1:src', '--as', 'copy', '--machine', 'm1', '-y']);
+
+    const pull = callFor('backup_pull');
+    expect(pull?.params.repository).toBe('copy');
+    expect(pull?.params.src).toBe('guid-src');
+    // Only the target was registered; the source key was never written.
+    expect(mockAddRepository).toHaveBeenCalledTimes(1);
+    expect(mockAddRepository.mock.calls[0][0]).toBe('copy:latest');
   });
 
   it('registers the restored repo under the --as name, not the source name', async () => {

@@ -162,7 +162,7 @@ function registerBackupRestore(backup: Command): void {
         const networkId = await configService.allocateNetworkId();
         const lineage = source.grandGuid ?? source.repositoryGuid;
         await configService.addRepository(compositeKey(targetName, 'latest'), {
-          ...restoredIdentity(source, lineage, options.at !== undefined),
+          ...restoredIdentity(source, lineage),
           tag: 'latest',
           // The image bytes are the source's ciphertext, so the restored repo unlocks with the source's passphrase whatever GUID it lands under. Inherit, exactly as `repo fork` does; under a fresh GUID this is a NEW credential map entry (the map is keyed by GUID), not a second claim on the source's slot.
           credential: source.credential,
@@ -190,6 +190,7 @@ function registerBackupRestore(backup: Command): void {
               datastore,
               sourceType,
               from,
+              sourceGuid: source.repositoryGuid,
               debug: options.debug,
               place: ref.place,
             });
@@ -207,27 +208,21 @@ function registerBackupRestore(backup: Command): void {
 /**
  * The identity a restored record is registered under (box E1).
  *
- * A chunk-store restore (`--at`) mints a FRESH GUID. Reusing the source's made
+ * Every restore, `--at` or not, mints a FRESH GUID. Reusing the source's made
  * the restored image's path `repositories/<source-guid>`, so a restore on the
- * source's own machine wrote over the live source image; renet now refuses that
+ * source's own machine wrote over the live source image; renet refuses that
  * unless `--replace <guid>` names the target on purpose, which left every
  * same-machine `--as` restore refused. A fresh GUID is a fresh path, and the
  * lineage (the grand GUID the snapshot's object keys namespace on) is carried
- * as grandGuid, so the restored repo's own snapshots dedup in the same family
- * and `backup_restore` is still told the source lineage explicitly.
+ * as grandGuid, so the restored repo's own snapshots dedup in the same family.
  *
- * The pull route (no `--at`) still reuses the source GUID, because `backup_pull`
- * addresses the artifact on the source host by the TARGET's name: renet's
- * `backup pull --src <guid>` exists, but the backup_pull FunctionDef does not
- * expose it, so a fresh GUID there would look for an artifact that is not on
- * the source host.
+ * The pull route addresses the source image by its own GUID (`backup_pull`'s
+ * `src` parameter), separately from the destination name.
  */
 function restoredIdentity(
-  source: { repositoryGuid: string; grandGuid?: string },
-  lineage: string,
-  chunkRestore: boolean
+  _source: { repositoryGuid: string; grandGuid?: string },
+  lineage: string
 ): { repositoryGuid: string; grandGuid?: string } {
-  if (!chunkRestore) return { repositoryGuid: source.repositoryGuid };
   return { repositoryGuid: randomUUID(), grandGuid: lineage };
 }
 
@@ -284,10 +279,11 @@ async function runRestorePull(args: {
   datastore: string | undefined;
   sourceType: 'machine' | 'storage';
   from: string;
+  sourceGuid: string;
   debug?: boolean;
   place: string;
 }): Promise<boolean> {
-  const { targetName, targetMachine, datastore, sourceType, from, debug, place } = args;
+  const { targetName, targetMachine, datastore, sourceType, from, sourceGuid, debug, place } = args;
   outputService.info(t('commands.backup.restore.pulling', { name: targetName, place }));
   await deployRepoKeyIfNeeded(targetName, targetMachine);
   // No `at` here. `backup_pull` no longer declares the parameter, and the caller routes `--at` to `backup_restore` before reaching this function. Passing one anyway would fail schema validation, which is the honest outcome: a parameter wired to a verb that refuses it is how the next session concludes the path works.
@@ -295,7 +291,7 @@ async function runRestorePull(args: {
     functionName: 'backup_pull',
     machineName: targetMachine,
     datastore,
-    params: { repository: targetName, sourceType, from },
+    params: { repository: targetName, sourceType, from, src: sourceGuid },
     debug,
   });
   if (!pull.success) {
