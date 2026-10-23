@@ -5,7 +5,7 @@ Depends-On: no-dep -- cites no other plan; the fix lives in the CLI sync path, a
 Owner: d778be9d
 First-Seen: 2026-10-23
 Priority: P1 -- a first-time nested `--remote-file` upload leaves a directory the repo's own user cannot delete or modify (`rm -rf` fails with "Permission denied" in `rdc term connect`). The report saw it in two repos, so it is not repo-specific, and the only workaround needs root on the machine.
-Concurrency: exclusive -- T1 to T3 edit the same CLI files (`rsync.ts`, `repo-sync.ts`), so one writer takes them in order. T4 (the VM drill) starts after T3.
+Concurrency: parallel -- T1 to T3 edit the same CLI files (rsync.ts, repo-sync.ts), so one writer takes T1-T3 and T6 in order; T4 (the VM drill) starts after T3. The one cross-plan overlap is PLAN-renet-bridge-leftovers.md's packages/cli/src/commands/repo-*.ts glob, whose T11 and T14 already wait for this plan, so the guard's overlap rule covers it without a mutex
 Owns: packages/cli/src/remote/sync/rsync.ts, packages/cli/src/remote/sync/remote-parents.ts, packages/cli/src/remote/sync/index.ts, packages/cli/src/commands/repo-sync.ts, packages/cli/src/remote/sync/__tests__/remote-parents.test.ts, packages/cli/src/remote/sync/__tests__/rsync-args.test.ts, packages/cli/src/commands/__tests__/repo-sync.test.ts, .ci/rediacc_ci/drills/vm_check.py, .ci/rediacc_ci/tests/test_drills_vm_check.py, agent/plans/PLAN-sync-remote-file-ownership.md
 
 ## Context
