@@ -321,7 +321,7 @@ def run(
     emit("workers.cpu_ms.month", sum(s["cpu_ms"] for s in scripts.values()), "workers_cpu_ms_month")
 
     try:
-        count, source = maintenance_count(env, transport, headers, account, now)
+        count, source = maintenance_count(env, transport, ov.telemetry_headers(env), account, now)
     except ReportError as exc:
         print("cf_usage_report: %s" % exc, file=err)
         return 2

@@ -8,7 +8,7 @@ THE COUNT. `POST /accounts/{id}/workers/observability/telemetry/query` with `vie
 
 THE SIZE. Logs: Loki `bytes_over_time` over `count_over_time` per `service_name`, through the Grafana datasource proxy. Spans: a sample of recent Tempo traces, the JSON body length over the span count. A service Loki holds no line for takes the all-service mean, and the line says so (`mean=all`). A span size that cannot be sampled falls back to the log mean and the footer says so.
 
-OUTPUT. One line per Worker: events by signal, estimated bytes, projected GB a month and its share of the 50 GB included ingestion, then one total line with the storage steady state (daily bytes x `--retention-days`) against the 10 GB-month included. Exit 0 when at least one Worker was read, 2 on a setup error or a read of zero Workers, 1 when Cloudflare refused the count. Secrets (`CLOUDFLARE_API_TOKEN` or the Global API Key pair, `OBS_GRAFANA_READ_TOKEN`) come from the environment, travel as headers only and never reach argv or output.
+OUTPUT. One line per Worker: events by signal, estimated bytes, projected GB a month and its share of the 50 GB included ingestion, then one total line with the storage steady state (daily bytes x `--retention-days`) against the 10 GB-month included. Exit 0 when the count answered, including an answer of zero stored events (what persist = false asks for, printed as `TOTAL 0 Workers`), 2 on a setup error, 1 when Cloudflare refused the count. The telemetry query takes the Global API Key pair ahead of the scoped token (`telemetry_headers`), because the scoped token cannot run it. Secrets (`CLOUDFLARE_API_TOKEN` or the Global API Key pair, `OBS_GRAFANA_READ_TOKEN`) come from the environment, travel as headers only and never reach argv or output.
 """
 
 from __future__ import annotations
@@ -79,6 +79,17 @@ def cf_headers(env: Mapping[str, str]) -> dict[str, str]:
     raise VolumeError(
         "no Cloudflare credential: set CLOUDFLARE_API_TOKEN (or CF_GLOBAL_API_KEY and CF_EMAIL)"
     )
+
+
+def telemetry_headers(env: Mapping[str, str]) -> dict[str, str]:
+    """Headers for the Workers Observability telemetry query: the Global API Key pair when it is set, else `cf_headers`.
+
+    The long-lived scoped `CLOUDFLARE_API_TOKEN` carries no Workers Observability Write and answers this query 403, so preferring it (as `cf_headers` does, rightly, for GraphQL) made the Global-key route that secret-supply.json describes unreachable whenever both were bound.
+    """
+    key, email = env.get("CF_GLOBAL_API_KEY"), env.get("CF_EMAIL")
+    if key and email:
+        return {"X-Auth-Key": key, "X-Auth-Email": email}
+    return cf_headers(env)
 
 
 def _cf_errors(body: object) -> str:
@@ -359,7 +370,7 @@ def run(
 ) -> int:
     err_out = sys.stderr
     try:
-        headers = cf_headers(env)
+        headers = telemetry_headers(env)
         grafana_token = env.get("OBS_GRAFANA_READ_TOKEN", "")
         if not grafana_token:
             print("OBS_GRAFANA_READ_TOKEN is not set", file=err_out)
@@ -381,8 +392,12 @@ def run(
         print("observability_volume: %s" % exc, file=err_out)
         return 1 if "telemetry query" in str(exc) else 2
     if not counts:
-        print("observability_volume: zero Workers returned events for the window", file=err_out)
-        return 2
+        # The query answered, and Cloudflare stores nothing: the state persist = false asks for (PLAN-telemetry-export T15), not a failed read. A refused or malformed answer already left above as exit 1 or 2.
+        print(
+            "TOTAL 0 Workers: Cloudflare stored no events in the window (expected with persist = false)",
+            file=out or sys.stdout,
+        )
+        return 0
     rows, span_fallback = estimate(counts, log_sizes, span_bytes)
     render(rows, span_fallback, window_s, retention_days, out)
     return 0
@@ -403,9 +418,7 @@ def main(argv: list[str] | None = None) -> int:
     end_s = time.time()
     if args.end:
         try:
-            end_s = (
-                datetime.fromisoformat(args.end).astimezone(UTC).timestamp()
-            )
+            end_s = datetime.fromisoformat(args.end).astimezone(UTC).timestamp()
         except ValueError:
             print("--end is not an ISO 8601 time", file=sys.stderr)
             return 2

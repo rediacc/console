@@ -148,9 +148,17 @@ def test_full_run_prints_a_row_per_worker_and_no_secret(capsys):
         assert all(secret not in json.dumps([c[0], c[1], c[3]]) for c in fake.calls)
 
 
-def test_zero_workers_is_exit_2(capsys):
-    assert ov.run(ENV, Fake([]), hours=24, end_s=END, retention_days=7) == 2
-    assert "zero Workers" in capsys.readouterr().err
+def test_zero_stored_events_is_exit_0_and_says_so(capsys):
+    """persist = false means Cloudflare stores nothing; an answered count of zero is that state, not a failed read."""
+    assert ov.run(ENV, Fake([]), hours=24, end_s=END, retention_days=7) == 0
+    assert "TOTAL 0 Workers" in capsys.readouterr().out
+
+
+def test_the_telemetry_query_prefers_the_global_key_over_the_scoped_token():
+    both = {"CLOUDFLARE_API_TOKEN": "t", "CF_GLOBAL_API_KEY": "k", "CF_EMAIL": "e"}
+    assert set(ov.telemetry_headers(both)) == {"X-Auth-Key", "X-Auth-Email"}
+    assert ov.cf_headers(both) == {"Authorization": "Bearer t"}, "GraphQL keeps the scoped token"
+    assert ov.telemetry_headers({"CLOUDFLARE_API_TOKEN": "t"}) == {"Authorization": "Bearer t"}
 
 
 def test_a_refused_count_is_exit_1_with_cloudflares_text(capsys):
