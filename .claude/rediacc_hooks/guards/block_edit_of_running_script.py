@@ -38,8 +38,8 @@ ORDER = 7
 # THE LIMIT ARGUMENT, ZEROED. `live_shells` truncates to the first N matches before this guard ever reads them, so pinning it at 0 answers every case as though nothing were running -- local to this file's own `run()`, unlike the old HOOK_CHAIN-exclusion defect this guard carried before its process-table scan moved to `rediacc_hooks.runningscript` (PLAN-retire-bash-oracles A3): a
 # defect textually planted into THIS module's source can no longer reach into a function that lives in a different one.
 DEFECT = (
-    "runningscript.live_shells(runningscript.pattern_for(base), 3)",
-    "runningscript.live_shells(runningscript.pattern_for(base), 0)",
+    "runningscript.pattern_for(base), 3, path",
+    "runningscript.pattern_for(base), 0, path",
 )
 
 MESSAGE = """BLOCKED: '%(base)s' is being executed by a live process right now.
@@ -233,7 +233,9 @@ def run(ev):
         if not hookio.case_glob(path, "*.sh"):
             continue
         base = path.rsplit("/", 1)[-1]
-        running = runningscript.live_shells(runningscript.pattern_for(base), 3)
+        running = runningscript.live_shells(
+            runningscript.pattern_for(base), 3, path, ev.field("cwd") or None
+        )
         if running != "":
             ev.warn_raw(MESSAGE % {"base": base, "running": indented(running)})
             return hookio.DENY

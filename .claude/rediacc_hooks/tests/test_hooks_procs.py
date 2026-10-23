@@ -111,6 +111,13 @@ def test_block_edit_of_running_script(tmp_path):
             path_json(fixture),
             "running-script: editing a .sh a live process is executing is refused",
         )
+        (tmp_path / "samename").mkdir()
+        (tmp_path / "samename" / "running-fixture.sh").write_text("", encoding="utf-8")
+        block.check(
+            "check 0 guards/block_edit_of_running_script.py",
+            path_json(tmp_path / "samename" / "running-fixture.sh"),
+            "running-script CONTROL: a same-named .sh in ANOTHER directory is untouched",
+        )
         block.check(
             "check 0 guards/block_edit_of_running_script.py",
             path_json(tmp_path / "idle-fixture.sh"),
@@ -287,6 +294,38 @@ def test_block_bash_write_to_running_script(tmp_path):
             "check 0 guards/block_bash_write_to_running_script.py",
             bash_json("echo x > %s/never-run.sh" % tmp_path),
             "bash-write CONTROL: a .sh nothing is running is untouched",
+        )
+        # SAME BASENAME, DIFFERENT DIRECTORY (2026-10-23): a sub-agent's write to /tmp/smtpwork/run.sh was refused because an unrelated /tmp/t9deploy/run.sh was running. The pgrep pattern is basename-only, so the full path is compared after realpath on both sides.
+        (tmp_path / "elsewhere").mkdir()
+        (tmp_path / "elsewhere" / "bw-fixture.sh").write_text("", encoding="utf-8")
+        block.check(
+            "check 0 guards/block_bash_write_to_running_script.py",
+            bash_json("echo x > %s/elsewhere/bw-fixture.sh" % tmp_path),
+            "bash-write CONTROL: a same-named script in ANOTHER directory is not the running one",
+        )
+        block.check(
+            "check 2 guards/block_bash_write_to_running_script.py",
+            bash_json("echo x > %s/elsewhere/../bw-fixture.sh" % tmp_path),
+            "bash-write: the same path spelled through .. is still the running script",
+        )
+        in_tmp = hookcases._j(
+            {"tool_input": {"command": "echo x > bw-fixture.sh"}, "cwd": str(tmp_path)}
+        )
+        block.check(
+            "check 2 guards/block_bash_write_to_running_script.py",
+            in_tmp,
+            "bash-write: a RELATIVE path that resolves to the running script is refused",
+        )
+        in_elsewhere = hookcases._j(
+            {
+                "tool_input": {"command": "echo x > bw-fixture.sh"},
+                "cwd": str(tmp_path / "elsewhere"),
+            }
+        )
+        block.check(
+            "check 0 guards/block_bash_write_to_running_script.py",
+            in_elsewhere,
+            "bash-write CONTROL: a relative path resolving to a same-named OTHER script",
         )
         # THE TARGET NAME ITSELF BECAME A WILDCARD, round six and a different mechanism from the five before it. `pat` interpolated the basename RAW, so a one-letter name plus the shell suffix produced `[x].sh` -- and `.` is a regex wildcard, so for the letter `b` that matches /bin/bash, i.e. every bash process alive. Measured 2026-09-01.
         block.check(

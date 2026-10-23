@@ -484,7 +484,7 @@ def run(ev):
         if hookio.case_glob(cand, "*$*"):
             continue
         base = cand.rsplit("/", 1)[-1]
-        running = runningscript.live_shells(runningscript.pattern_for(base), 2)
+        running = runningscript.live_shells(runningscript.pattern_for(base), 2, cand, cwd)
         if running == "":
             continue
         body = hookio._command_substitution(
