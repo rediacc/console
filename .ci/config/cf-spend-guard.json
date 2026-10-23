@@ -19,9 +19,9 @@
         "why": "Workers CPU time, about twice the 30 million ms Workers Paid includes."
       },
       "r2_storage": {
-        "limit": 50000000000,
+        "limit": 200000000000,
         "unit": "bytes",
-        "why": "R2 storage, 50 GB (decimal), five times the 10 GB-month included."
+        "why": "R2 storage, 200 GB (decimal). Operator /ask 2026-10-23 \"Keep 20, raise the alert to 200 GB\": the 20 kept cli/v* release folders hold about 85 GB of the measured 151 GB, about $2 a month."
       },
       "r2_class_a_operations": {
         "limit": 2000000,
