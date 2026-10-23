@@ -1,19 +1,20 @@
-## SESSION d778be9d 2026-10-23T10:54:02Z
+## SESSION d778be9d 2026-10-23T15:06:19Z
 
-# STATE d778be9d (2026-10-23 ~10:45Z, end of context epoch 79)
-
-## Where things are
-- PR #601 merged; main 403f47b97. Branch 1023-1: ~35 unpushed commits, no PR, not rebased onto main. Concurrent session (epic 6f81c19f, renet bbf3a68) also commits here; its PLAN-renet-run-docker-sock-isolation has 5 unresolved citations to clear before push. private/renet pointer moved by it (not ours).
-- Effort HIGH (d43c90b6). Rulings campaign + plan-record gate landed (f8840f98f). All planning agents and writers finished: operator order #64f47665 is now ACTIVE.
+# STATE d778be9d (2026-10-23, paused for the operator's Claude Code update)
 
 ## Big pieces
-- PLAN-backup-program, PLAN-cloudflare-proxy, PLAN-deletion-budget, PLAN-renet-bridge-leftovers, PLAN-stop-hook-rulings-campaign, PLAN-telemetry-export.
+- Promoted wave (operator: ultra, all Promoted plans in parallel). 19 plans, 138+/416 boxes. Effort is LOW during the pause; switch back to ultra (`worklist.py --queue-set d778be9d effort=ultra`) when the operator returns.
+- Rulings of the 2026-10-23 /ask to apply on resume: item #0c1cbd0d (backup parallel per-phase Owns; close ci-watch-enforcement and secret-namespace-migration; rewrite renet-fetch-hardening and config-networkid-sync; plan-preflight lean scope).
+- Sync fix (T1-T4, T6) stays UNCOMMITTED by operator order (#74c56a22).
 
-## Delegated
-- none live.
+## Delegated (live at pause)
+- a1f0d8a0f2f6d8cf2 telemetry T1 remainder + T6-T8 ops (#081a0126); owns private/account rotation check.ts, otlp-basic-auth.ts, consumer test. Resumed once after an API timeout.
+- a84eb76f72d89685f plan-preflight PF2 (#343c5419); owns check_plan_citations.py + its gate test. Resumed once.
+No new sub-agents during the pause (operator order).
 
 ## Next action
-1. Start the parallel wave (#64f47665): writers for the Promoted plans with disjoint Owns (writer_cap 15), each prompt carrying `Plan: <path>`, a self-contained brief, owned files, acceptance, and the no-commit/no-checkout rules: PLAN-sync-remote-file-ownership T1-T3+T6 (one exclusive writer; changes stay UNCOMMITTED per operator), PLAN-telemetry-export T1-T4 (account submodule) and T13 (CLI) and T16-T18 (docs/delivery check; no operator steps, memory feedback_no_operator_steps_observability), PLAN-renet-bridge-leftovers T1-T5 (renet writer) and T8-T10 (console docs, www translations writer), PLAN-cloudflare-proxy B5a/B5b/C1 and the --region and image-smoke boxes, PLAN-backup-program next open boxes after A2 (operator plan, exclusive). Lease each item to its real agent id.
-2. Then the hook fixes #1e3ac977 (turbo-next skips dep-blocked/exclusive), #f2402dba (--defer cap refusal), #f7b8953f (stale-SHA gate), #dd9b7624 (re-judge vs render auto-promote).
-3. Rebase 1023-1 onto main, ci:quick + slow gates (+ vm:check), push, open PR, dispatch pins-soaked --ref 1023-1 (#6516dd5b).
-4. R1: tick after the nightly Console CI on main is green. S6 #450b6eb7 held to 2026-10-30T06:00Z.
+1. When each live writer reports: spot-check, commit by path, tick.
+2. Commit agent/plans/PLAN-renet-run-docker-sock-isolation.md T1 result with /tmp/d778m/msg-pause.txt (adjusted) together with agent/INDEX.md once PF2 is done; tick T1; re-own the plan; T2 writer (fix A+B).
+3. Uncommitted, verified, waiting: config-handoff T10 docs (26 www docs, DESIGN-CONFIG-STORAGE.md, 03-cli-contracts.md, rdc skill doc) need search-index + cli-docs regeneration first; private/account otlp-basic-auth.ts belongs to writer a1f0.
+4. Pending pointer bump: private/account to b2916e6 (C1) after writer a1f0 finishes (guard false positive #e59c13a0).
+5. On resume (ultra): apply #0c1cbd0d, then writers for backup phases, networkid R+B, fetch-hardening, docker-sock T2, preflight PF3/PF4, awscli B7 close-out, config chain e2e (26-01,16-01,16-02,20-11) and sync-hardening re-run; live smokes (relay T11, token T9, sync T15) are operator-run.
