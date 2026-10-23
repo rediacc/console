@@ -77,7 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 19 plans done, 122 of 392 boxes done (31%).
+Promoted: 1 of 19 plans done, 131 of 392 boxes done (33%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -98,7 +98,7 @@ Promoted: 1 of 19 plans done, 122 of 392 boxes done (31%).
 | 15 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
 | 16 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
 | 17 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
-| 18 | PLAN-renet-cross-repo-isolation.md | 0/11 | 11 open |
+| 18 | PLAN-renet-cross-repo-isolation.md | 9/11 | 2 open |
 | 19 | PLAN-dockerd-api-privilege-gate.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 
