@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: low -- operator 2026-10-20: "let's make effort low", agent/plans/PLAN-stop-hook-effort.md
+effort: smart -- operator 2026-10-23: "switch effort: low to smart", agent/plans/PLAN-stop-hook-effort.md
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,7 +54,7 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort low; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
+- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: build.
 - Branch: 1023-1, no PR yet.
 - Plans on the PR (6):
@@ -66,9 +66,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a4f448f06ff5d7bd5, worker:ae1f22634491ba096, worker:a2e58f82a5c85282e.
-- Leased items: 3: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #88032097 (worker:a2e58f82a5c85282e, d778be9d), #a7d8bacc (worker:ae1f22634491ba096, d778be9d).
-- Next plan: agent/plans/PLAN-app-wide-org-selection.md, Generated entry 1 (no Promoted entry ahead of it has an open box); starts after this branch's PR merges.
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4f448f06ff5d7bd5.
+- Leased items: 3: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #a7d8bacc (worker:ae1f22634491ba096, d778be9d), #b97dfd29 (worker:a8ee818930f58e8d6, d778be9d).
+- Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
