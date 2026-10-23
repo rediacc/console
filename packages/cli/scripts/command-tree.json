@@ -5593,6 +5593,20 @@
           "subcommands": []
         },
         {
+          "name": "proxy-token",
+          "descriptionKey": "commands.subscription.proxyToken.description",
+          "options": [
+            {
+              "flags": "--json",
+              "descriptionKey": "commands.subscription.proxyToken.jsonOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "status",
           "descriptionKey": "commands.subscription.status.description",
           "options": [

@@ -7,7 +7,7 @@ order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "7c4501e854a86ff0"
+sourceHash: "69bf8eb459276ef3"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2749,8 +2749,22 @@ rdc subscription login [options]
 rdc subscription logout
 ```
 
+<a id="cli-local-subscription-proxy-token"></a>
+### 13.3 proxy-token
+
+{{t:cli.commands.subscription.proxyToken.description}}
+
+```bash
+rdc subscription proxy-token [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--json` | {{t:cli.commands.subscription.proxyToken.jsonOption}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-subscription-status"></a>
-### 13.3 status
+### 13.4 status
 
 {{t:cli.commands.subscription.status.description}}
 
@@ -2764,7 +2778,7 @@ rdc subscription status [options]
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 13.4 refresh
+### 13.5 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
