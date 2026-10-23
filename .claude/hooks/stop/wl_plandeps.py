@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import datetime
 import difflib
 import importlib
 import os
@@ -66,6 +67,8 @@ OPERATOR_MARK = "operator"
 PARALLEL = "parallel"
 EXCLUSIVE = "exclusive"
 OWNS_NONE = "none"
+# PLAN-plan-preflight.md PF1: the optional `Revalidated:` stamp, read in the X window. Absent means no finding; a present one must parse.
+REVALIDATED = "Revalidated"
 
 FIELD = "Depends-On"
 NO_DEP = "no-dep"
@@ -88,6 +91,9 @@ PRIORITY_VALUE_RE = re.compile(r"^(P[0-3])(?: \((operator)\))?(?: (?:--|\u2014) 
 CONCURRENCY_VALUE_RE = re.compile(r"^(parallel|exclusive)(?: (?:--|\u2014) (\S.*))?$")
 OWNS_NONE_RE = re.compile(r"^none(?:\s+(?:--|\u2014)(?:\s+(.*))?)?$")
 # An Owns item's optional trailing note: `path (new)`, `file.ts (one mount line)`.
+REVALIDATED_VALUE_RE = re.compile(
+    r"^(\d{4}-\d{2}-\d{2}) @ ([0-9a-f]{12,40})(?: (?:--|\u2014) (\S.*))?$"
+)
 OWNS_NOTE_RE = re.compile(r"^(\S+)(?:\s+\(([^()]*)\))?$")
 # A worklist item implements a plan box when the plan's basename is IMMEDIATELY followed by ` [<8hex>]`, the existing `PLAN-x.md [41f56150]` convention. A bare mention links nothing.
 LINK_RE = re.compile(r"(PLAN-[A-Za-z0-9._-]+\.md) \[([0-9a-f]{8})\]")
@@ -206,6 +212,11 @@ class Header:
         f = self.fields.get(OWNS)
         return f.parsed if f is not None else None
 
+    @property
+    def revalidated(self) -> Revalidated | None:
+        f = self.fields.get(REVALIDATED)
+        return f.parsed if f is not None else None
+
     def field_errors(self, name: str) -> list[str]:
         """Every error for one field: its value's and the structural ones."""
         out = [msg for fname, msg in self.errors if fname == name]
@@ -307,6 +318,27 @@ class Owns:
     notes: tuple[tuple[str, str], ...] = ()
 
 
+@dataclasses.dataclass(frozen=True)
+class Revalidated:
+    """A parsed `Revalidated:`: the ISO date, the merge-base sha (12-40 lowercase hex) and an optional note."""
+
+    date: str
+    sha: str
+    note: str = ""
+
+
+def parse_revalidated(value: str) -> tuple[Revalidated | None, list[str]]:
+    value = (value or "").strip()
+    m = REVALIDATED_VALUE_RE.match(value)
+    if not m:
+        return None, ["%r is not `YYYY-MM-DD @ <12-40 lowercase hex sha> [-- <note>]`" % value]
+    try:
+        datetime.date.fromisoformat(m.group(1))
+    except ValueError:
+        return None, ["%r is not a calendar date" % m.group(1)]
+    return Revalidated(m.group(1), m.group(2), (m.group(3) or "").strip()), []
+
+
 def parse_priority(value: str) -> tuple[Priority | None, list[str]]:
     value = (value or "").strip()
     m = PRIORITY_VALUE_RE.match(value)
@@ -394,6 +426,7 @@ FIELD_SPECS: dict[str, FieldSpec] = {
     PRIORITY: FieldSpec(PRIORITY, X_HEADER_LINES, parse_priority),
     CONCURRENCY: FieldSpec(CONCURRENCY, X_HEADER_LINES, parse_concurrency),
     OWNS: FieldSpec(OWNS, X_HEADER_LINES, parse_owns),
+    REVALIDATED: FieldSpec(REVALIDATED, X_HEADER_LINES, parse_revalidated),
 }
 
 

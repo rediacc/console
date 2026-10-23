@@ -30,7 +30,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 253  # 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
+CONTROL_FLOOR = 271  # 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -521,6 +521,68 @@ check(
     "x: line 13 is outside it",
     (D.parse_header(at13).priority, len(D.parse_header(at13).field_errors(D.PRIORITY))),
     (None, 1),
+)
+
+# --------------------------------------------------------------------------- Revalidated (PLAN-plan-preflight.md PF1): `YYYY-MM-DD @ <12-40 hex> [-- note]`, optional, X window.
+
+RV_SHA = "0123456789abcdef0123"
+RV_HEAD = "# P\n\nStatus: draft\nOwner: x\nOwns: a/**\n"
+
+
+def rv(line):
+    return D.parse_header(RV_HEAD + line + "\n## Tasks\n")
+
+
+rv_ok = rv("Revalidated: 2026-10-23 @ %s -- merge base of 1023-1\n" % RV_SHA)
+check(
+    "revalidated: valid parses date, sha and note",
+    (
+        fget(rv_ok, D.REVALIDATED),
+        rv_ok.field_errors(D.REVALIDATED),
+    ),
+    ((6, D.Revalidated("2026-10-23", RV_SHA, "merge base of 1023-1")), []),
+)
+check(
+    "revalidated: valid without a note",
+    rv("Revalidated: 2026-10-23 @ %s\n" % RV_SHA[:12]).revalidated,
+    D.Revalidated("2026-10-23", RV_SHA[:12], ""),
+)
+rv_bad_date = rv("Revalidated: 2026-13-40 @ %s\n" % RV_SHA)
+check(
+    "revalidated: bad date is refused",
+    (rv_bad_date.revalidated, bool(rv_bad_date.field_errors(D.REVALIDATED))),
+    (None, True),
+)
+rv_short = rv("Revalidated: 2026-10-23 @ %s\n" % RV_SHA[:11])
+check(
+    "revalidated: short sha is refused",
+    (rv_short.revalidated, bool(rv_short.field_errors(D.REVALIDATED))),
+    (None, True),
+)
+rv_dup = rv("Revalidated: 2026-10-23 @ %s\nRevalidated: 2026-10-24 @ %s\n" % (RV_SHA, RV_SHA[:12]))
+check(
+    "revalidated: duplicate line is a structural error, the first is kept",
+    (
+        (fget(rv_dup, D.REVALIDATED) or (None,))[0],
+        ["second" in m for m in rv_dup.field_errors(D.REVALIDATED)],
+    ),
+    (6, [True]),
+)
+rv13 = D.parse_header(
+    "Status: draft\n"
+    + "".join("N%d: x\n" % i for i in range(11))
+    + "Revalidated: 2026-10-23 @ %s\n" % RV_SHA
+)
+check(
+    "revalidated: line 13 is outside the window",
+    (rv13.revalidated, ["outside" in m for m in rv13.field_errors(D.REVALIDATED)]),
+    (None, [True]),
+)
+rv_absent = rv("")
+check(
+    "revalidated: absent field yields no finding",
+    (rv_absent.revalidated, rv_absent.field_errors(D.REVALIDATED), D.REVALIDATED in D.FIELD_SPECS),
+    (None, [], True),
 )
 
 # --------------------------------------------------------------------------- set_x: append after the header block, replace in place.
