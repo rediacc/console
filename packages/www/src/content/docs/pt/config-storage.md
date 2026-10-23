@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 8
 language: pt
-sourceHash: "ccced160d151eeeb"
+sourceHash: "2ba65230cde4c5e5"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -78,6 +78,23 @@ Requisitos:
 - Um **token de API com o âmbito `config:enroll`** para autenticar o pedido
 
 A inscrição é uma leitura: o CLI obtém os parâmetros KDF públicos do slot e a chave protegida, deriva o segredo da palavra-passe localmente e desbloqueia a CEK no próprio dispositivo. Isto concede ao dispositivo a capacidade de desencriptar e sincronizar a configuração; não altera o armazenamento.
+
+## Como as chaves chegam ao seu CLI
+
+`rdc config remote enable` (e `rdc config rotate-cek`) entregam o segredo de desbloqueio ao CLI através do servidor da conta. O CLI e o browser nunca comunicam diretamente, pelo que o processo funciona da mesma forma num servidor sem browser, no WSL com o browser no Windows ou num telemóvel.
+
+1. Inicie primeiro sessão no CLI com `rdc subscription login`. O servidor associa o pedido a essa conta.
+2. O CLI cria um pedido de curta duração e apresenta uma ligação e um **código de emparelhamento** como `7KQ2-M9XD-P4RT`. A ligação guarda tudo o que transporta depois do `#`, parte que os browsers nunca enviam a um servidor.
+3. Abra a ligação em qualquer browser com sessão iniciada na mesma conta. Um pedido de outra conta é recusado.
+4. Quando a página pedir, introduza o código de emparelhamento que aparece no seu terminal. O botão de desbloqueio fica desativado até o código coincidir.
+5. Desbloqueie com a sua passkey ou palavra-passe mestra. O browser sela a chave para o CLI e o servidor limita-se a retransmitir um blob que não consegue ler.
+6. O CLI desencripta o blob, guarda o segredo no chaveiro do sistema operativo e indica que a operação foi concluída.
+
+O pedido expira ao fim de 10 minutos. Prima **Ctrl+C** no CLI para o cancelar: a ligação deixa de funcionar de imediato e a página indica que deve executar o comando outra vez. Se a ligação for aberta depois de expirar, ou depois de um redirecionamento de início de sessão ter perdido a parte a seguir ao `#`, execute o comando novamente.
+
+O código de emparelhamento é derivado da chave que vai dentro da ligação. Se alguém trocar a ligação pela sua, o código no seu terminal não coincidirá com o que a página espera, pelo que nada é libertado.
+
+Isto protege contra a adulteração da ligação e contra um retransmissor que troque ou forje um blob. Não protege contra um servidor que sirva código de página modificado: a página que abre é servida pelo servidor da conta, e as chaves estão tão seguras quanto esse código. A mesma confiança aplica-se a todas as páginas do portal que lidam com a chave da configuração.
 
 ## Ativação e leituras offline
 

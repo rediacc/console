@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ko
-sourceHash: "cbfa1730b069f73c"
-sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
+sourceHash: "48538a4c661c9f72"
+sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
 ---
 
 ### 인증
@@ -69,6 +69,8 @@ rdc subscription login
 # 표시: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # 승인 후 CLI가 자격 증명을 자동으로 수신합니다
 ```
+
+설정을 [설정 저장소](/en/docs/config-storage)에 연결할 때는 이와 별개의 요청을 사용하며, 이 요청 역시 계정 서버를 거칩니다. 요청은 CLI가 로그인한 계정에 묶이고, 링크의 시크릿은 `#` 뒤에 두어 서버 로그에 남지 않게 하며, 승인 페이지에서는 사용자가 터미널에 표시된 페어링 코드를 입력합니다. 요청은 10분 후에 만료됩니다.
 
 ### 설정 저장소
 

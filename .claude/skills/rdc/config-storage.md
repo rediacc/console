@@ -8,7 +8,7 @@ The CLI surface is `rdc config remote`:
 
 | Command | Purpose |
 |---------|---------|
-| `rdc config remote enable` | Link this config to remote encrypted storage (add `--headless` for a device-code flow on a server with no browser) |
+| `rdc config remote enable` | Link this config to remote encrypted storage (sign in first with `rdc subscription login`; the CLI prints a link and a pairing code to approve in any browser, through the account server relay) |
 | `rdc config remote disable` | Disconnect from remote storage and save the config locally |
 | `rdc config remote status` | Show remote connection status |
 | `rdc config remote refresh` | Force a re-fetch of the config from remote storage |

@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 8
 language: it
-sourceHash: "ccced160d151eeeb"
+sourceHash: "2ba65230cde4c5e5"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -78,6 +78,23 @@ Requisiti:
 - Un **token API con lo scope `config:enroll`** per autenticare la chiamata
 
 L'iscrizione è una lettura: la CLI recupera i parametri KDF pubblici dello slot e la chiave avvolta, deriva localmente il segreto della password e sblocca la CEK sul dispositivo. Concede al dispositivo la capacità di decifrare e sincronizzare la configurazione; non modifica l'archivio.
+
+## Come le chiavi raggiungono la tua CLI
+
+`rdc config remote enable` (e `rdc config rotate-cek`) consegnano alla CLI il segreto di sblocco tramite il server dell'account. La CLI e il browser non comunicano mai direttamente, quindi il procedimento funziona allo stesso modo su un server senza browser, in WSL con il browser su Windows o da uno smartphone.
+
+1. Accedi prima con la CLI usando `rdc subscription login`. Il server associa la richiesta a quell'account.
+2. La CLI crea una richiesta di breve durata e stampa un link e un **codice di abbinamento** come `7KQ2-M9XD-P4RT`. Il link conserva tutto ciò che trasporta dopo il `#`, che i browser non inviano mai a un server.
+3. Apri il link in un browser qualsiasi con accesso allo stesso account. Una richiesta proveniente da un altro account viene rifiutata.
+4. Digita il codice di abbinamento mostrato nel terminale quando la pagina lo chiede. Il pulsante di sblocco resta disattivato finché il codice non corrisponde.
+5. Sblocca con la tua passkey o la password principale. Il browser sigilla la chiave per la CLI e il server inoltra un blob che non può leggere.
+6. La CLI decifra il blob, salva il segreto nel portachiavi del sistema operativo (keyring) e segnala il successo.
+
+La richiesta scade dopo 10 minuti. Premi **Ctrl+C** nella CLI per annullarla: il link smette subito di funzionare e la pagina chiede di eseguire di nuovo il comando. Se il link viene aperto dopo la scadenza, o se un reindirizzamento di login ha eliminato la parte dopo il `#`, esegui di nuovo il comando.
+
+Il codice di abbinamento deriva dalla chiave contenuta nel link. Se qualcuno sostituisce il link con uno proprio, il codice mostrato nel terminale non corrisponderà a quello atteso dalla pagina, e quindi non viene rilasciato nulla.
+
+Questo protegge dalla manomissione del link e da un relay che sostituisca o falsifichi un blob. Non protegge da un server che distribuisca codice di pagina modificato: la pagina che apri è servita dal server dell'account, e le chiavi sono sicure quanto quel codice. Lo stesso livello di fiducia vale per ogni pagina del portale che gestisce la chiave di configurazione.
 
 ## Abilitazione e letture offline
 

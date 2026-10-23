@@ -10,7 +10,7 @@ tags:
 subcategory: account
 order: 8
 language: es
-sourceHash: "ccced160d151eeeb"
+sourceHash: "2ba65230cde4c5e5"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -80,6 +80,23 @@ Requisitos:
 - Un **token de API con el alcance `config:enroll`** para autenticar la llamada
 
 La inscripción es una lectura: el CLI obtiene los parámetros públicos de KDF de la ranura y la clave envuelta, deriva el secreto de la contraseña localmente y desenvuelve la CEK en el dispositivo. Otorga al dispositivo la capacidad de descifrar y sincronizar la configuración; no modifica el almacén.
+
+## Cómo llegan las claves a tu CLI
+
+`rdc config remote enable` (y `rdc config rotate-cek`) entregan el secreto de desbloqueo al CLI a través del servidor de cuentas. El CLI y el navegador nunca se comunican directamente, así que funciona igual en un servidor sin navegador, en WSL con el navegador en Windows o desde un teléfono.
+
+1. Inicia sesión primero en el CLI con `rdc subscription login`. El servidor vincula la solicitud a esa cuenta.
+2. El CLI crea una solicitud de corta duración e imprime un enlace y un **código de emparejamiento** como `7KQ2-M9XD-P4RT`. El enlace guarda todo lo que lleva después del `#`, una parte que los navegadores nunca envían a un servidor.
+3. Abre el enlace en cualquier navegador con la sesión iniciada en la misma cuenta. Una solicitud de otra cuenta se rechaza.
+4. Escribe el código de emparejamiento desde tu terminal cuando la página lo pida. El botón de desbloqueo permanece desactivado hasta que coincida.
+5. Desbloquea con tu passkey o tu contraseña maestra. El navegador sella la clave para el CLI, y el servidor reenvía un bloque de datos que no puede leer.
+6. El CLI descifra el bloque, guarda el secreto en el llavero del sistema operativo e informa del éxito.
+
+La solicitud caduca a los 10 minutos. Pulsa **Ctrl+C** en el CLI para cancelarla: el enlace deja de funcionar al instante y la página indica que hay que volver a ejecutar el comando. Si el enlace se abre después de que caduque, o después de que una redirección de inicio de sesión haya perdido la parte posterior al `#`, vuelve a ejecutar el comando.
+
+El código de emparejamiento se deriva de la clave que va dentro del enlace. Si alguien sustituye el enlace por uno propio, el código de tu terminal no coincidirá con el que espera la página y no se liberará nada.
+
+Esto protege frente a la manipulación del enlace y frente a un relé que cambie o falsifique un bloque de datos. No protege frente a un servidor que entregue código de página modificado: la página que abres la sirve el servidor de cuentas, y las claves son tan seguras como ese código. La misma confianza se aplica a cualquier página del portal que maneje la clave de configuración.
 
 ## Activación y lecturas sin conexión
 

@@ -68,6 +68,8 @@ rdc subscription login
 # After approval, CLI receives credentials automatically
 ```
 
+Linking a config to [Config Storage](/en/docs/config-storage) uses a separate request that goes through the account server as well. It is bound to the account the CLI is signed in as, the link keeps its secrets after the `#` so they stay out of server logs, and the user types a pairing code from the terminal on the approval page. The request expires after 10 minutes.
+
 ### Config Storage
 
 For encrypted, server-synced configuration, see [Config Storage](/en/docs/config-storage) for the full guide. Config storage uses:

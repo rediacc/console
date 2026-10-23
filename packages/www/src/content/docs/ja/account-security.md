@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ja
-sourceHash: "cbfa1730b069f73c"
-sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
+sourceHash: "48538a4c661c9f72"
+sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
 ---
 
 ### 認証
@@ -69,6 +69,8 @@ rdc subscription login
 # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # After approval, CLI receives credentials automatically
 ```
+
+リンクした設定を [Config Storage](/en/docs/config-storage) に接続する操作は、これとは別のリクエストで、やはりアカウントサーバーを経由します。このリクエストは、CLIがサインインしているアカウントに紐づけられます。リンクのシークレットは`#`の後ろに置かれるため、サーバーのログには残りません。承認ページでは、ユーザーがターミナルに表示されたペアリングコードを入力します。リクエストの有効期限は10分です。
 
 ### Config Storage
 

@@ -608,7 +608,7 @@ Unchanged (06 §5). `log` flags: `--since <spec>`, `--path <glob>`, `--actor <ki
 - Gate: A. MCP: `log` mcp(read); `tail` exclude: `Endless stream.`; `verify` mcp(read).
 
 #### `config remote enable|disable|status|refresh`
-Unchanged (06 §5): zero-knowledge config sync. `enable` flags `--headless`, `--api-url <url>`.
+Zero-knowledge config sync (06 §5). `enable` flag `--api-url <url>`. The browser handoff goes through the account server relay and needs `rdc subscription login` first.
 - Gate: A. MCP: exclude (group, as today): `Interactive browser flow.` `status`
 mcp(read).
 

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: tr
-sourceHash: "cbfa1730b069f73c"
-sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
+sourceHash: "48538a4c661c9f72"
+sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
 ---
 
 ### Kimlik Doğrulama
@@ -69,6 +69,8 @@ rdc subscription login
 # Gösterir: XXXX-XXXX-XX kodunu https://www.rediacc.com/account/authorize adresine girin
 # Onaydan sonra CLI otomatik olarak kimlik bilgilerini alır
 ```
+
+Bir yapılandırmayı [Config Storage](/en/docs/config-storage) ile bağlamak, yine hesap sunucusu üzerinden giden ayrı bir istek kullanır. İstek, CLI'ın oturum açtığı hesaba bağlıdır; bağlantı sırlarını `#` işaretinden sonra tutar, böylece sunucu günlüklerine girmezler; kullanıcı da onay sayfasında terminaldeki eşleştirme kodunu yazar. İstek 10 dakika sonra sona erer.
 
 ### Config Storage
 

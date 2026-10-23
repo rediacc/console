@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ar
-sourceHash: "cbfa1730b069f73c"
-sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
+sourceHash: "48538a4c661c9f72"
+sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
 ---
 
 ### المصادقة
@@ -69,6 +69,8 @@ rdc subscription login
 # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # After approval, CLI receives credentials automatically
 ```
+
+يستخدم ربط الإعدادات بـ [Config Storage](/en/docs/config-storage) طلباً منفصلاً يمر عبر خادم الحساب أيضاً. فهو مرتبط بالحساب الذي سجّل CLI الدخول به، ويضع الرابط أسراره بعد `#` كي تبقى خارج سجلات الخادم، ويكتب المستخدم في صفحة الموافقة رمز اقتران يراه في الطرفية. تنتهي صلاحية الطلب بعد 10 دقائق.
 
 ### Config Storage
 

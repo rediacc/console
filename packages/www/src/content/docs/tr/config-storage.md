@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 8
 language: tr
-sourceHash: "ccced160d151eeeb"
+sourceHash: "2ba65230cde4c5e5"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -78,6 +78,23 @@ Gereksinimler:
 - Çağrıyı doğrulamak için `config:enroll` kapsamına sahip bir **API token'ı**
 
 Kayıt işlemi bir okumadır: CLI, yuvanın herkese açık KDF parametrelerini ve sarmalanmış anahtarı getirir, parola sırrını yerel olarak türetir ve CEK'in kilidini cihazda açar. Bu işlem cihaza yapılandırmayı çözme ve senkronize etme yetkisi verir; depoda herhangi bir değişiklik yapmaz.
+
+## Anahtarlar CLI'a nasıl ulaşır
+
+`rdc config remote enable` (ve `rdc config rotate-cek`) kilit açma sırrını hesap sunucusu üzerinden CLI'a iletir. CLI ile tarayıcı birbiriyle hiç konuşmaz; bu yüzden tarayıcısı olmayan bir sunucuda, tarayıcının Windows'ta olduğu WSL'de ya da bir telefonda aynı şekilde çalışır.
+
+1. Önce CLI'da `rdc subscription login` ile oturum açın. Sunucu isteği bu hesaba bağlar.
+2. CLI kısa ömürlü bir istek oluşturur ve bir bağlantı ile `7KQ2-M9XD-P4RT` gibi bir **eşleştirme kodu** yazdırır. Bağlantı taşıdığı her şeyi `#` işaretinden sonra tutar; tarayıcılar bu kısmı sunucuya hiç göndermez.
+3. Bağlantıyı aynı hesapla oturum açmış herhangi bir tarayıcıda açın. Başka bir hesaptan gelen istek reddedilir.
+4. Sayfa istediğinde eşleştirme kodunu terminalinizden yazın. Kod eşleşene kadar kilit açma düğmesi devre dışı kalır.
+5. Passkey'iniz veya ana parolanızla kilidi açın. Tarayıcı anahtarı CLI için mühürler; sunucu ise okuyamadığı bir veri bloğunu iletir.
+6. CLI bloğun şifresini çözer, sırrı işletim sisteminin anahtar zincirinde saklar ve başarıyı bildirir.
+
+İstek 10 dakika sonra sona erer. İptal etmek için CLI'da **Ctrl+C** tuşlarına basın: bağlantı hemen çalışmaz hale gelir ve sayfa komutu yeniden çalıştırmanızı söyler. Bağlantı süresi dolduktan sonra ya da bir oturum açma yönlendirmesi `#` sonrasındaki kısmı düşürdükten sonra açılırsa komutu yeniden çalıştırın.
+
+Eşleştirme kodu, bağlantının içindeki anahtardan türetilir. Biri bağlantıyı kendi bağlantısıyla değiştirirse terminalinizdeki kod sayfanın beklediğiyle eşleşmez ve hiçbir şey serbest bırakılmaz.
+
+Bu, bağlantının kurcalanmasına ve bir veri bloğunu değiştiren ya da sahteleyen bir aktarıcıya karşı koruma sağlar. Değiştirilmiş sayfa kodu sunan bir sunucuya karşı koruma sağlamaz: açtığınız sayfayı hesap sunucusu sunar ve anahtarlar bu kod kadar güvendedir. Aynı güven, yapılandırma anahtarını işleyen tüm portal sayfaları için geçerlidir.
 
 ## Etkinleştirme ve Çevrimdışı Okumalar
 
