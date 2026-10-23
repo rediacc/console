@@ -488,7 +488,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 90 | 8 | 0 | 26942 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
-| `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 420 | 1 | 10 | 40661 |
+| `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 430 | 0 | 11 | 42003 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 178 | 7 | 0 | 23843 |
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 475 | 1 | 18 | 57866 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |

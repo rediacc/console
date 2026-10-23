@@ -73,7 +73,8 @@ T1 freezes the contract. The submodule PR (A and B) lands first, then the consol
     (ticked) 2026-10-03T09:42:41Z by d778be9d: 15da8633f: config-remote-relay.test.ts, config-remote-prereq.test.ts, spinner-ctrl-c.test.ts; shared known-answer test handoff-pairing.test.ts
 - [x] T10 [C] CLI i18n in 13 locales, `generate:cli-contract`, the www docs in 13 locales, the design docs and the skill doc (section 8).
     (ticked) 2026-10-23T18:06:30Z by d778be9d: console 093711b47 (www docs 13 locales, DESIGN-CONFIG-STORAGE.md, 03-cli-contracts.md, skill doc) and 15da8633f (CLI i18n 13 locales, cli-contract); validate-translation-freshness rc=0
-- [ ] T11 [lead] Closure: the removal sweep in section 9 returns nothing. Deploy the account server (eu) before the CLI release. Then do a live smoke of the operator's exact case: CLI in WSL, browser on Windows, `./rdc.sh config remote enable` for both a fresh store and an existing one, plus `config rotate-cek`.
+- [x] T11 [lead] Closure: the removal sweep in section 9 returns nothing. Deploy the account server (eu) before the CLI release. Then do a live smoke of the operator's exact case: CLI in WSL, browser on Windows, `./rdc.sh config remote enable` for both a fresh store and an existing one, plus `config rotate-cek`.
+    (ticked) 2026-10-23T18:42:45Z by d778be9d: narrowed section-9 sweeps rc=1 (empty); eu deployed (edge bab1c235, stable f93672cb, rollback in /home/developer/persist-deploy-rollback.txt); live smoke vs https://eu.rediacc.com: remote enable fresh + existing, rotate-cek, re-enroll all rc=0 (browser in WSLg, Turnstile headed)
 
 ## 0. What the code does now, and corrections to the brief
 
@@ -397,6 +398,15 @@ rg -n "startCallbackServer|callback=|callbackUrl|Access-Control-Allow-Private-Ne
    packages/cli/src packages/shared/src private/account/src private/account/web/src private/account/e2e packages/www/src/content docs .claude/skills
 ```
 Also, `rg -n "node:http" packages/cli/src/commands/config-remote*.ts` must be empty.
+
+Narrowed 2026-10-23 at T11: the sweep above, run literally, prints 15 lines, none of them handoff code: `--headless` is also a real flag of `rdc repo replicate` and of nvim (packages/cli/src/utils/editor-launcher.ts), and the config-remote tests assert the removal by naming the old tokens. The closure criterion is therefore these three, each empty (rc 1):
+```
+rg -n "startCallbackServer|callback=|callbackUrl|Access-Control-Allow-Private-Network|device-config|DeviceConfigSetup|headlessRemoteUrl|optionHeadless|config_handoff_blob.*callback" \
+   packages/cli/src packages/shared/src private/account/src private/account/web/src private/account/e2e packages/www/src/content docs .claude/skills \
+   -g '!**/__tests__/config-remote-*.test.ts' -g '!docs/archive/**'
+rg -n -- "--headless" packages/cli/src/commands/config-remote*.ts packages/www/src/content/docs/*/config-storage.md docs/DESIGN-CONFIG-STORAGE.md .claude/skills/rdc/config-storage.md
+rg -n "node:http" packages/cli/src/commands/config-remote*.ts
+```
 
 ## 10. Operator decisions (ruled 2026-09-25, AskUserQuestion)
 

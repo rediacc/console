@@ -510,11 +510,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 10,
-      "open_sigs": [
-        "f24d5818"
-      ],
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
       "done_sigs": [
         "0ff08bfc",
         "26f06abf",
@@ -525,7 +523,8 @@
         "695b137a",
         "705ef39a",
         "90d26a33",
-        "eac723b1"
+        "eac723b1",
+        "f24d5818"
       ]
     },
     "agent/plans/PLAN-config-networkid-discovery.md": {

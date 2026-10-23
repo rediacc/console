@@ -77,7 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 19 plans done, 113 of 392 boxes done (28%).
+Promoted: 1 of 19 plans done, 114 of 392 boxes done (29%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -87,7 +87,7 @@ Promoted: 0 of 19 plans done, 113 of 392 boxes done (28%).
 | 4 | PLAN-sync-remote-file-ownership.md | 5/6 | 1 open |
 | 5 | PLAN-telemetry-export.md | 8/19 | 11 open |
 | 6 | PLAN-renet-bridge-leftovers.md | 0/14 | 14 open |
-| 7 | PLAN-config-handoff-relay-only.md | 10/11 | 1 open |
+| 7 | PLAN-config-handoff-relay-only.md | 11/11 | done |
 | 8 | PLAN-token-ip-rebind.md | 9/10 | 1 open |
 | 9 | PLAN-config-sync-hardening.md | 18/19 | 1 open |
 | 10 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
