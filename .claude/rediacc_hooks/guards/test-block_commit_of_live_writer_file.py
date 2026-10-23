@@ -167,6 +167,10 @@ CASES = [
     ("a directory pathspec covers it", "git commit -F m -- src/", None, True, LIVE, SESSION),
     # ---- a gitlink pathspec commits the submodule pointer, never the submodule's files (#e59c13a0)
     ("a submodule root pathspec does not cover its files", "git commit -F m -- subm", None, False, "", SESSION),
+    ("a submodule root with a trailing slash does not cover its files", "git commit -F m -- subm/", None, False, "", SESSION),
+    ("an absolute submodule root does not cover its files", "git commit -F m -- %s/subm" % REPO, None, False, "", SESSION),
+    # CONTROL: a writer's file named INSIDE the submodule is still that writer's file.
+    ("a file inside the submodule named directly", "git commit -F m -- subm/inner.ts", None, True, LIVE, SESSION),
     ("an absolute pathspec", "git commit -F m -- %s/src/live.ts" % REPO, None, True, LIVE, SESSION),
     (
         "named from a subdirectory",
