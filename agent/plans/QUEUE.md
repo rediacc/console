@@ -69,8 +69,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 10 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4566959bbe77f42e.
-- Leased items: 4: #500debc0 (worker:a4566959bbe77f42e, d778be9d), #61819a7f (worker:ae15232974443019d, d778be9d), #8971d8b7 (worker:byefksh8i, d778be9d), #8cb01693 (worker:a4566959bbe77f42e, d778be9d).
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a86c978263c5d3f9e.
+- Leased items: 2: #8971d8b7 (worker:a86c978263c5d3f9e, d778be9d), #8cb01693 (worker:a86c978263c5d3f9e, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
