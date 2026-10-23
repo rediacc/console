@@ -1631,17 +1631,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
+      "open": 1,
+      "done": 5,
       "open_sigs": [
+        "be7f809c"
+      ],
+      "done_sigs": [
         "0d88e725",
         "949ebb21",
         "a09b739c",
         "a587d4d7",
-        "be7f809c",
         "e959d800"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-telemetry-export.md": {
       "status": "approved",
