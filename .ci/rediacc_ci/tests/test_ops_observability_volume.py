@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import urllib.parse
+from typing import Any
 
 import pytest
 
@@ -35,7 +36,7 @@ class Fake:
         self.loki_lines = loki_lines if loki_lines is not None else {"a": 10.0}
         self.telemetry_status = telemetry_status
         self.tempo = tempo
-        self.calls: list[tuple[str, str, dict, object]] = []
+        self.calls: list[tuple[str, str, dict, Any]] = []
 
     def __call__(self, method, url, headers, body):
         self.calls.append((method, url, dict(headers), body))

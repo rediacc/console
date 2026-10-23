@@ -77,7 +77,7 @@ def region_refusal(region: str) -> str:
     """The refusal for a region this script cannot deploy, naming the file that fixes the region and the way forward."""
     return (
         "--region %s is not supported: the proxy's region is fixed by workers/proxy/wrangler.toml "
-        "(Worker rediacc-proxy-eu, route proxy.eu.rediacc.com), so only --region %s deploys. "
+        "(Worker rediacc-proxy-eu, whose route that file names), so only --region %s deploys. "
         "Another region needs its own wrangler config and a deploy that names it."
         % (region, DEFAULT_REGION)
     )

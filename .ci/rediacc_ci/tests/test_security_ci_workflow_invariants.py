@@ -45,6 +45,7 @@ from rediacc_ci import paths, workflows
 from rediacc_ci.quality import workflows as quality_workflows
 from rediacc_ci.security import ci_workflow_invariants
 from rediacc_ci.tests import differential, frozen
+from rediacc_ci.well_known import GH_API_BASE
 
 if typing.TYPE_CHECKING:  # pragma: no cover - annotations only
     import pathlib
@@ -2158,7 +2159,7 @@ def test_a_read_in_any_case_is_still_a_read(step, why) -> None:
         {"run": "x", "if": "SECRETS.K != ''"},
         {"run": "Git Push origin HEAD"},
         {"run": "GH PR create --fill"},
-        {"run": "curl -X post https://api.github.com/x"},
+        {"run": "curl -X post %s/x" % GH_API_BASE},
         {"uses": "./.github/actions/App-Token", "with": {"preset": "cd"}},
         {"uses": "peter-evans/Create-Pull-Request@sha"},
     ],
@@ -2185,20 +2186,20 @@ def test_the_default_token_is_exempt_only_in_its_exact_spelling() -> None:
 @pytest.mark.parametrize(
     "run",
     [
-        "curl --request PUT https://api.github.com/x",
-        "curl -XDELETE https://api.github.com/x",
-        "curl -d @body.json https://api.github.com/x",
-        "curl --data-binary @f https://api.github.com/x",
-        "curl -F f=@x https://api.github.com/x",
-        "curl --json '{}' https://api.github.com/x",
-        "curl -d'{\"a\":1}' https://api.github.com/x",
-        "curl -d@body.json https://api.github.com/x",
-        "curl -sSd x https://api.github.com/x",
-        "curl -Tfile https://api.github.com/x",
-        "curl --form-string f=x https://api.github.com/x",
-        "curl -sSX POST https://api.github.com/x",
-        'curl "https://api.github.com/x?a=1&b=2" -X POST',
-        "curl 'https://api.github.com/x?a=1&b=2' -d @body",
+        "curl --request PUT %s/x" % GH_API_BASE,
+        "curl -XDELETE %s/x" % GH_API_BASE,
+        "curl -d @body.json %s/x" % GH_API_BASE,
+        "curl --data-binary @f %s/x" % GH_API_BASE,
+        "curl -F f=@x %s/x" % GH_API_BASE,
+        "curl --json '{}' %s/x" % GH_API_BASE,
+        "curl -d'{\"a\":1}' %s/x" % GH_API_BASE,
+        "curl -d@body.json %s/x" % GH_API_BASE,
+        "curl -sSd x %s/x" % GH_API_BASE,
+        "curl -Tfile %s/x" % GH_API_BASE,
+        "curl --form-string f=x %s/x" % GH_API_BASE,
+        "curl -sSX POST %s/x" % GH_API_BASE,
+        'curl "%s/x?a=1&b=2" -X POST' % GH_API_BASE,
+        "curl '%s/x?a=1&b=2' -d @body" % GH_API_BASE,
     ],
 )
 def test_a_curl_method_or_body_flag_is_a_write(run) -> None:
@@ -2421,7 +2422,9 @@ def test_a_heredoc_does_not_swallow_the_pipe_after_it() -> None:
 
 
 def test_composite_action_steps_are_read() -> None:
-    action = {"runs": {"using": "composite", "steps": [{"run": TEE_RUN, "shell": "sh"}]}}
+    action: dict[str, typing.Any] = {
+        "runs": {"using": "composite", "steps": [{"run": TEE_RUN, "shell": "sh"}]}
+    }
     assert pipe_kinds(action) == ["pipe-no-pipefail"]
     action["runs"]["steps"][0]["shell"] = "bash"
     assert pipe_kinds(action) == []
@@ -2542,7 +2545,7 @@ def test_workflow_level_contents_write_reaches_a_job_without_its_own_block() -> 
 def test_a_call_to_a_local_reusable_workflow_that_writes_is_write_capable() -> None:
     callee = dispatch_doc(job_if=GUARD)
     callee["on"] = {"workflow_call": None}
-    caller = {
+    caller: dict[str, typing.Any] = {
         "on": {"workflow_dispatch": None},
         "jobs": {"deploy": {"uses": "./.github/workflows/deploy.yml", "secrets": "inherit"}},
     }

@@ -10,22 +10,36 @@ from rediacc_ci.ops import r2_lifecycle as r2
 class FakeWrangler:
     def __init__(self, buckets, rules=None):
         self.buckets = list(buckets)
-        self.rules = {b: list((rules or {}).get(b, [r2.Rule(r2.PLATFORM_DEFAULT_RULE, "", abort_days=7)])) for b in buckets}
+        self.rules = {
+            b: list((rules or {}).get(b, [r2.Rule(r2.PLATFORM_DEFAULT_RULE, "", abort_days=7)]))
+            for b in buckets
+        }
         self.calls: list[tuple[str, ...]] = []
 
     def mutations(self):
-        return [c for c in self.calls if c[:2] == ("bucket", "lifecycle") and c[2] in ("add", "remove")]
+        return [
+            c for c in self.calls if c[:2] == ("bucket", "lifecycle") and c[2] in ("add", "remove")
+        ]
 
     def __call__(self, *args):
         self.calls.append(args)
         if args == ("bucket", "list"):
-            return 0, "".join("name:           %s\ncreation_date:  2026-01-01T00:00:00Z\n\n" % b for b in self.buckets)
+            return 0, "".join(
+                "name:           %s\ncreation_date:  2026-01-01T00:00:00Z\n\n" % b
+                for b in self.buckets
+            )
         if args[:3] == ("bucket", "lifecycle", "list"):
             out = ""
             for r in self.rules[args[3]]:
-                out += "name:     %s\nenabled:  Yes\nprefix:   %s\n" % (r.name, r.prefix or "(all prefixes)")
+                out += "name:     %s\nenabled:  Yes\nprefix:   %s\n" % (
+                    r.name,
+                    r.prefix or "(all prefixes)",
+                )
                 if r.abort_days is not None:
-                    out += "action:   Abort incomplete multipart uploads after %d days\n" % r.abort_days
+                    out += (
+                        "action:   Abort incomplete multipart uploads after %d days\n"
+                        % r.abort_days
+                    )
                 if r.expire_days is not None:
                     out += "action:   Delete objects after %d days\n" % r.expire_days
                 out += "\n"
@@ -33,8 +47,14 @@ class FakeWrangler:
         if args[:3] == ("bucket", "lifecycle", "add"):
             bucket, name, prefix = args[3:6]
             exp = args[args.index("--expire-days") + 1] if "--expire-days" in args else None
-            ab = args[args.index("--abort-multipart-days") + 1] if "--abort-multipart-days" in args else None
-            self.rules[bucket].append(r2.Rule(name, prefix, int(exp) if exp else None, int(ab) if ab else None))
+            ab = (
+                args[args.index("--abort-multipart-days") + 1]
+                if "--abort-multipart-days" in args
+                else None
+            )
+            self.rules[bucket].append(
+                r2.Rule(name, prefix, int(exp) if exp else None, int(ab) if ab else None)
+            )
             return 0, ""
         if args[:3] == ("bucket", "lifecycle", "remove"):
             bucket, name = args[3], args[args.index("--name") + 1]
@@ -43,7 +63,7 @@ class FakeWrangler:
         raise AssertionError(args)
 
 
-BUCKETS = ["rediacc-releases", "rediacc-backups-eu", "rediacc-configs", "rediacc-www-media"]
+BUCKETS = [r2.RELEASES_BUCKET, "rediacc-backups-eu", "rediacc-configs", "rediacc-www-media"]
 
 
 def test_first_apply_adds_twelve_rules_plus_multipart():
@@ -51,10 +71,40 @@ def test_first_apply_adds_twelve_rules_plus_multipart():
     assert r2.run_mode(w, "apply") == 0
     adds = [c for c in w.mutations() if c[2] == "add"]
     assert len(adds) == 13
-    assert {c[3] for c in adds} == {"rediacc-releases"}
-    assert ("bucket", "lifecycle", "add", "rediacc-releases", "spend-guard-pr-cli", "cli/pr-", "--expire-days", "14", "-y") in w.calls
-    assert ("bucket", "lifecycle", "add", "rediacc-releases", "spend-guard-dryrun-apk", "apk/dryrun-", "--expire-days", "21", "-y") in w.calls
-    assert ("bucket", "lifecycle", "add", "rediacc-releases", r2.MULTIPART_RULE, "", "--abort-multipart-days", "1", "-y") in w.calls
+    assert {c[3] for c in adds} == {r2.RELEASES_BUCKET}
+    assert (
+        "bucket",
+        "lifecycle",
+        "add",
+        r2.RELEASES_BUCKET,
+        "spend-guard-pr-cli",
+        "cli/pr-",
+        "--expire-days",
+        "14",
+        "-y",
+    ) in w.calls
+    assert (
+        "bucket",
+        "lifecycle",
+        "add",
+        r2.RELEASES_BUCKET,
+        "spend-guard-dryrun-apk",
+        "apk/dryrun-",
+        "--expire-days",
+        "21",
+        "-y",
+    ) in w.calls
+    assert (
+        "bucket",
+        "lifecycle",
+        "add",
+        r2.RELEASES_BUCKET,
+        r2.MULTIPART_RULE,
+        "",
+        "--abort-multipart-days",
+        "1",
+        "-y",
+    ) in w.calls
 
 
 def test_second_apply_changes_nothing():
@@ -68,9 +118,11 @@ def test_second_apply_changes_nothing():
 def test_changed_window_updates_exactly_one_rule():
     w = FakeWrangler(BUCKETS)
     r2.run_mode(w, "apply")
-    w.rules["rediacc-releases"] = [
-        r2.Rule(r.name, r.prefix, 30 if r.name == "spend-guard-pr-npm" else r.expire_days, r.abort_days)
-        for r in w.rules["rediacc-releases"]
+    w.rules[r2.RELEASES_BUCKET] = [
+        r2.Rule(
+            r.name, r.prefix, 30 if r.name == "spend-guard-pr-npm" else r.expire_days, r.abort_days
+        )
+        for r in w.rules[r2.RELEASES_BUCKET]
     ]
     w.calls.clear()
     assert r2.run_mode(w, "check") == 1
@@ -86,20 +138,29 @@ def test_check_fails_on_missing_rule_and_never_writes():
     assert w.mutations() == []
 
 
-@pytest.mark.parametrize("bucket", ["rediacc-backups-eu", "rediacc-configs", "edge-rediacc-backups-us", "rediacc-configs-bench", "rediacc-www-media"])
+@pytest.mark.parametrize(
+    "bucket",
+    [
+        "rediacc-backups-eu",
+        "rediacc-configs",
+        "edge-rediacc-backups-us",
+        "rediacc-configs-bench",
+        "rediacc-www-media",
+    ],
+)
 def test_protected_and_unlisted_buckets_are_refused_before_any_call(bucket):
     w = FakeWrangler(BUCKETS)
     assert r2.run_mode(w, "apply", bucket=bucket) == 2
     assert w.calls == []
-    with pytest.raises(r2.RefusedBucket):
+    with pytest.raises(r2.RefusedBucketError):
         r2.require_writable(bucket)
 
 
 def test_mutation_helpers_refuse_a_backup_bucket_directly():
     w = FakeWrangler(BUCKETS)
-    with pytest.raises(r2.RefusedBucket):
+    with pytest.raises(r2.RefusedBucketError):
         r2._add(w, "rediacc-backups-eu", r2.desired_rules()[0])
-    with pytest.raises(r2.RefusedBucket):
+    with pytest.raises(r2.RefusedBucketError):
         r2._remove(w, "rediacc-configs", "x")
     assert w.calls == []
 
@@ -107,7 +168,7 @@ def test_mutation_helpers_refuse_a_backup_bucket_directly():
 def test_apply_never_touches_protected_buckets():
     w = FakeWrangler(BUCKETS)
     r2.run_mode(w, "apply")
-    assert not [c for c in w.mutations() if c[3] != "rediacc-releases"]
+    assert not [c for c in w.mutations() if c[3] != r2.RELEASES_BUCKET]
 
 
 def test_planted_rule_on_a_backup_bucket_is_reported():
@@ -115,13 +176,13 @@ def test_planted_rule_on_a_backup_bucket_is_reported():
     w = FakeWrangler(BUCKETS, planted)
     r2.run_mode(w, "apply")
     assert r2.run_mode(w, "check") == 1
-    assert w.mutations()[-1][3] == "rediacc-releases"  # reported, never removed
+    assert w.mutations()[-1][3] == r2.RELEASES_BUCKET  # reported, never removed
 
 
 def test_staging_bucket_gets_rules_only_when_listed():
-    w = FakeWrangler(BUCKETS + [r2.STAGING_BUCKET])
+    w = FakeWrangler([*BUCKETS, r2.STAGING_BUCKET])
     r2.run_mode(w, "apply")
-    assert {c[3] for c in w.mutations()} == {"rediacc-releases", r2.STAGING_BUCKET}
+    assert {c[3] for c in w.mutations()} == {r2.RELEASES_BUCKET, r2.STAGING_BUCKET}
 
 
 def test_no_allowed_bucket_in_listing_exits_2():
@@ -142,7 +203,7 @@ def test_parse_rules_reads_wrangler_default_rule():
 def test_failed_add_raises():
     def failing(*args):
         if args == ("bucket", "list"):
-            return 0, "name: rediacc-releases\n"
+            return 0, "name: %s\n" % r2.RELEASES_BUCKET
         if args[:3] == ("bucket", "lifecycle", "list"):
             return 0, ""
         return 1, "boom"
@@ -152,11 +213,13 @@ def test_failed_add_raises():
 
 
 def test_protected_pattern_refuses_even_if_the_allowlist_were_widened(monkeypatch):
-    monkeypatch.setattr(r2, "ALLOWED_BUCKETS", (*r2.ALLOWED_BUCKETS, "rediacc-backups-eu", "rediacc-configs"))
+    monkeypatch.setattr(
+        r2, "ALLOWED_BUCKETS", (*r2.ALLOWED_BUCKETS, "rediacc-backups-eu", "rediacc-configs")
+    )
     w = FakeWrangler(BUCKETS)
     for b in ("rediacc-backups-eu", "rediacc-configs"):
-        with pytest.raises(r2.RefusedBucket, match="never get lifecycle rules"):
+        with pytest.raises(r2.RefusedBucketError, match="never get lifecycle rules"):
             r2.require_writable(b)
-    with pytest.raises(r2.RefusedBucket):
+    with pytest.raises(r2.RefusedBucketError):
         r2.run_mode(w, "apply")
     assert w.mutations() == []

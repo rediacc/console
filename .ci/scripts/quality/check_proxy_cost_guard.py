@@ -155,8 +155,11 @@ def sleep_after_findings(sources: dict[str, str], class_names: list[str]) -> tup
                     "justifies it." % (where, raw, seconds, SLEEP_AFTER_BUDGET_S)
                 )
     for name in class_names:
-        hits = [(rel, class_body(text, name)) for rel, text in sorted(sources.items())]
-        hits = [(rel, body) for rel, body in hits if body is not None]
+        hits: list[tuple[str, tuple[int, str]]] = []
+        for rel, text in sorted(sources.items()):
+            found_body = class_body(text, name)
+            if found_body is not None:
+                hits.append((rel, found_body))
         if not hits:
             findings.append(
                 "workers/proxy/wrangler.toml names container class %s, and no file under "
@@ -221,7 +224,7 @@ def check(root: pathlib.Path) -> int:
     sources = read_sources(root)
     if not sources:
         print(
-            "NO VERDICT: zero source files under %s; the gate cannot see any sleepAfter."
+            "NO VERDICT: VACUOUS, zero source files under %s; the gate cannot see any sleepAfter."
             % root.joinpath(*SOURCE_REL),
             file=sys.stderr,
         )

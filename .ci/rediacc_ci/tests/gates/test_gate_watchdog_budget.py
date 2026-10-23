@@ -1388,7 +1388,11 @@ def test_every_infra_pattern_names_a_step_that_exists(gate):
         ".filter((re)=>!names.some((n)=>re.test(n))).map((re)=>re.source)))",
         json.dumps(names + _local_action_labels()),
     )
-    gate.assert_eq(unmatched, [], "every INFRA_STEP_PATTERNS entry matches a real step name or an unnamed-uses label")
+    gate.assert_eq(
+        unmatched,
+        [],
+        "every INFRA_STEP_PATTERNS entry matches a real step name or an unnamed-uses label",
+    )
     gate.log_pass("every infra pattern names a step in .github/workflows or .github/actions")
 
 
@@ -1559,15 +1563,25 @@ _RUN_ACTIONS = ("setup-workspace", "setup-node-npm", "free-disk-space", "apt-mir
 def test_unnamed_infra_action_steps_are_infra(gate):
     """Run 39840878669: 'Run ./.github/actions/setup-workspace' stalled 512 s and was not classed infra."""
     labels = ["Run ./.github/actions/" + a for a in _RUN_ACTIONS]
-    labels += ["Run ./.github/actions/app-token", "Run ./.github/actions/profiler", "Run ./.github/actions/setup-workspace2"]
+    labels += [
+        "Run ./.github/actions/app-token",
+        "Run ./.github/actions/profiler",
+        "Run ./.github/actions/setup-workspace2",
+    ]
     verdicts = _node_eval(
         gate,
         "const m=require(process.argv[1]);"
         "process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map((n)=>m.isInfraStep(n,m.INFRA_STEP_PATTERNS,[]))))",
         json.dumps(labels),
     )
-    gate.assert_eq(verdicts, [True] * len(_RUN_ACTIONS) + [False] * 3, "only the four infra actions' unnamed steps are infra")
-    gate.log_pass("unnamed setup-workspace, setup-node-npm, free-disk-space and apt-mirror steps are infra")
+    gate.assert_eq(
+        verdicts,
+        [True] * len(_RUN_ACTIONS) + [False] * 3,
+        "only the four infra actions' unnamed steps are infra",
+    )
+    gate.log_pass(
+        "unnamed setup-workspace, setup-node-npm, free-disk-space and apt-mirror steps are infra"
+    )
 
 
 def test_every_infra_run_action_pattern_has_a_uses_line(gate):
@@ -1575,7 +1589,9 @@ def test_every_infra_run_action_pattern_has_a_uses_line(gate):
     live = _local_action_labels()
     gate.assert_eq(len(live) >= 4, True, "the local action uses were read (%r)" % live)
     infra = ["Run ./.github/actions/" + a for a in _RUN_ACTIONS]
-    unmatched = _node_eval(gate, _UNMATCHED_JS, json.dumps([n for n in live if n not in infra] + live))
+    unmatched = _node_eval(
+        gate, _UNMATCHED_JS, json.dumps([n for n in live if n not in infra] + live)
+    )
     run_patterns = [u for u in unmatched if u.startswith("^Run ")]
     gate.assert_eq(run_patterns, [], "every 'Run ./.github/actions/<x>' pattern has a uses: line")
     # Control: with the setup-workspace use renamed away the same check must go red.

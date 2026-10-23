@@ -19,7 +19,7 @@ GLOBAL_KEY = "GLOBAL-KEY-SECRET"
 MINTED = "MINTED-TOKEN-SECRET"
 POLICIES = "/accounts/%s/alerting/v3/policies" % ACCT
 
-FAKE_CURL = r'''#!{py}
+FAKE_CURL = r"""#!{py}
 import ast, json, os, sys
 argv = sys.argv[1:]
 config = sys.stdin.read() if "-K" in argv else ""
@@ -71,7 +71,7 @@ if path.startswith(policies):
         state["policies"] = [p for p in state["policies"] if p["id"] != pid]
         answer({{"success": True, "result": {{"id": pid}}}})
 answer({{"success": False, "errors": [{{"message": "no fake route"}}]}})
-'''
+"""
 
 BUDGET = {
     "id": "budget1",
@@ -86,9 +86,17 @@ BUDGET = {
 class Cf:
     def __init__(self, tmp: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
         self.state = tmp / "state.json"
-        self.state.write_text(json.dumps({"calls": [], "policies": [BUDGET], "next": 0, "minted": 0, "destroyed": 0}))
+        self.state.write_text(
+            json.dumps({"calls": [], "policies": [BUDGET], "next": 0, "minted": 0, "destroyed": 0})
+        )
         self.config = tmp / "cf-spend-guard.json"
-        self.write_config({"worker_requests": 20000000, "r2_storage": 50000000000, "r2_class_a_operations": 2000000})
+        self.write_config(
+            {
+                "worker_requests": 20000000,
+                "r2_storage": 50000000000,
+                "r2_class_a_operations": 2000000,
+            }
+        )
         bindir = tmp / "bin"
         bindir.mkdir()
         curl = bindir / "curl"
@@ -102,7 +110,11 @@ class Cf:
 
     def write_config(self, limits: dict[str, int], unavailable: dict | None = None) -> None:
         products = {p: {"limit": v, "unit": "units"} for p, v in limits.items()}
-        section = {"policy_prefix": "spend-guard:", "products": products, "unavailable": unavailable or {}}
+        section = {
+            "policy_prefix": "spend-guard:",
+            "products": products,
+            "unavailable": unavailable or {},
+        }
         self.config.write_text(json.dumps({"notifications": section}))
 
     def read(self) -> dict:
@@ -137,7 +149,9 @@ def _assert_no_secret_leaked(cf: Cf, out: str, err: str) -> None:
             assert not any(secret in a for a in call["argv"]), call["argv"]
 
 
-def test_first_run_creates_every_policy_and_destroys_its_token(cf: Cf, capsys: pytest.CaptureFixture[str]) -> None:
+def test_first_run_creates_every_policy_and_destroys_its_token(
+    cf: Cf, capsys: pytest.CaptureFixture[str]
+) -> None:
     rc, out, err = cf.run(capsys)
     assert rc == 0, err
     assert sorted(cf.policy_writes()) == [("POST", "")] * 3
@@ -170,10 +184,14 @@ def test_second_run_changes_nothing(cf: Cf, capsys: pytest.CaptureFixture[str]) 
     _assert_no_secret_leaked(cf, out, err)
 
 
-def test_a_changed_limit_puts_exactly_that_policy(cf: Cf, capsys: pytest.CaptureFixture[str]) -> None:
+def test_a_changed_limit_puts_exactly_that_policy(
+    cf: Cf, capsys: pytest.CaptureFixture[str]
+) -> None:
     assert cf.run(capsys)[0] == 0
     target = next(p["id"] for p in cf.read()["policies"] if p["name"] == "spend-guard:r2_storage")
-    cf.write_config({"worker_requests": 20000000, "r2_storage": 60000000000, "r2_class_a_operations": 2000000})
+    cf.write_config(
+        {"worker_requests": 20000000, "r2_storage": 60000000000, "r2_class_a_operations": 2000000}
+    )
     rc, out, _err = cf.run(capsys)
     assert rc == 0
     assert cf.policy_writes() == [("PUT", "/" + target)]
@@ -193,11 +211,16 @@ def test_an_unavailable_product_is_named_and_fails_the_run(
     assert "spend-guard:r2_storage" not in {p["name"] for p in cf.read()["policies"]}
 
 
-def test_a_recorded_unavailable_product_is_reported_without_failing(cf: Cf, capsys: pytest.CaptureFixture[str]) -> None:
+def test_a_recorded_unavailable_product_is_reported_without_failing(
+    cf: Cf, capsys: pytest.CaptureFixture[str]
+) -> None:
     cf.write_config({"worker_requests": 1}, {"containers": {"fallback": "the budget alert"}})
     rc, out, _err = cf.run(capsys)
     assert rc == 0
-    assert "UNAVAILABLE containers (recorded in .ci/config/cf-spend-guard.json; fallback: the budget alert)" in out
+    assert (
+        "UNAVAILABLE containers (recorded in .ci/config/cf-spend-guard.json; fallback: the budget alert)"
+        in out
+    )
 
 
 def test_dry_run_writes_nothing(cf: Cf, capsys: pytest.CaptureFixture[str]) -> None:
@@ -212,7 +235,9 @@ def test_a_policy_dropped_from_the_config_is_deleted_and_others_are_left_alone(
     cf: Cf, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert cf.run(capsys)[0] == 0
-    gone = next(p["id"] for p in cf.read()["policies"] if p["name"] == "spend-guard:r2_class_a_operations")
+    gone = next(
+        p["id"] for p in cf.read()["policies"] if p["name"] == "spend-guard:r2_class_a_operations"
+    )
     cf.write_config({"worker_requests": 20000000, "r2_storage": 50000000000})
     rc, out, _err = cf.run(capsys)
     assert rc == 0

@@ -8,10 +8,14 @@ import sys
 import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import TYPE_CHECKING
 
 import pytest
 
 from rediacc_ci.ops import telemetry_delivery as td
+
+if TYPE_CHECKING:
+    from collections.abc import Set as AbstractSet
 
 TOKEN = "glsa_SECRET_TOKEN_VALUE"
 
@@ -19,7 +23,11 @@ TOKEN = "glsa_SECRET_TOKEN_VALUE"
 class Fake:
     """One loopback server playing every account host (by path prefix) and Grafana."""
 
-    def __init__(self, silent: set[tuple[str, str]] = frozenset(), down: set[str] = frozenset()):
+    def __init__(
+        self,
+        silent: AbstractSet[tuple[str, str]] = frozenset(),
+        down: AbstractSet[str] = frozenset(),
+    ):
         self.silent = silent  # (host, signal)
         self.down = down
         self.probes: dict[str, str] = {}  # probe id -> host
@@ -42,19 +50,19 @@ class Fake:
                     host = parts.path.split("/")[2]
                     if host in fake.down:
                         return self._send(503)
-                    fake.probes[self.headers[td.PROBE_HEADER]] = host
+                    fake.probes[self.headers[td.PROBE_HEADER] or ""] = host
                     return self._send(200, b'{"status":"ok"}')
                 fake.auth.append(self.headers.get("Authorization", ""))
                 if "/uid/tempo/" in parts.path:
                     pid = qs["tags"][0].split("=", 1)[1]
-                    host = fake.probes.get(pid)
-                    if host and (host, "traces") not in fake.silent:
+                    seen_host = fake.probes.get(pid)
+                    if seen_host and (seen_host, "traces") not in fake.silent:
                         return self._send(200, b'{"traces":[{"traceID":"a"}]}')
                     return self._send(200, b'{"traces":[]}')
                 if "/uid/loki/" in parts.path:
                     pid = qs["query"][0].split('"')[-2]
-                    host = fake.probes.get(pid)
-                    if host and (host, "logs") not in fake.silent:
+                    seen_host = fake.probes.get(pid)
+                    if seen_host and (seen_host, "logs") not in fake.silent:
                         body = {"status": "success", "data": {"result": [{"values": [["1", "x"]]}]}}
                     else:
                         body = {"status": "success", "data": {"result": []}}
@@ -141,18 +149,19 @@ def test_token_is_a_header_only_and_never_printed(make_fake):
     rc, text = drive(fake)
     assert rc == 0, text
     assert TOKEN not in text
-    assert fake.auth and all(a == "Bearer %s" % TOKEN for a in fake.auth)
+    assert fake.auth
+    assert all(a == "Bearer %s" % TOKEN for a in fake.auth)
     assert all(TOKEN not in a for a in sys.argv)
 
 
 def test_main_without_token_exits_2_and_prints_no_secret(monkeypatch, capsys):
-    monkeypatch.delenv(td.TOKEN_ENV, raising=False)
+    monkeypatch.delenv(td.READ_CREDENTIAL_ENV, raising=False)
     assert td.main([]) == 2
-    assert td.TOKEN_ENV in capsys.readouterr().err
+    assert td.READ_CREDENTIAL_ENV in capsys.readouterr().err
 
 
 def test_main_never_echoes_token_even_when_hosts_fail(monkeypatch, capsys):
-    monkeypatch.setenv(td.TOKEN_ENV, TOKEN)
+    monkeypatch.setenv(td.READ_CREDENTIAL_ENV, TOKEN)
     monkeypatch.setattr(td, "all_hosts", lambda: (_ for _ in ()).throw(ValueError(TOKEN)))
     assert td.main([]) == 2
     cap = capsys.readouterr()
@@ -166,7 +175,8 @@ def test_all_hosts_is_stable_edge_and_bench():
     ]
     hosts = td.all_hosts(regions)
     assert hosts[:4] == ["eu.d", "us.d", "edge-eu.d", "edge-us.d"]
-    assert len(hosts) == 5 and hosts[4].startswith("bench")
+    assert len(hosts) == 5
+    assert hosts[4].startswith("bench")
 
 
 def test_loki_and_tempo_need_real_results():

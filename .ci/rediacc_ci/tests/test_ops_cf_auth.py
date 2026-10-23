@@ -17,12 +17,32 @@ ANALYTICS_READ = "b89a480218d04ceb98b4fe57ca29dc1f"
 OBS_WRITE = "82c075da3f4647a2a03becd0fe240f8a"
 GROUPS = [
     {"id": NOTIF_WRITE, "name": "Notifications Write", "scopes": ["com.cloudflare.api.account"]},
-    {"id": "ce18edbdcebf465e9d6d1d2fc80ffd42", "name": "Notifications Read", "scopes": ["com.cloudflare.api.account"]},
-    {"id": ANALYTICS_READ, "name": "Account Analytics Read", "scopes": ["com.cloudflare.api.account"]},
+    {
+        "id": "ce18edbdcebf465e9d6d1d2fc80ffd42",
+        "name": "Notifications Read",
+        "scopes": ["com.cloudflare.api.account"],
+    },
+    {
+        "id": ANALYTICS_READ,
+        "name": "Account Analytics Read",
+        "scopes": ["com.cloudflare.api.account"],
+    },
     # The same display name on another scope must not be taken for the account group.
-    {"id": "zone-analytics", "name": "Account Analytics Read", "scopes": ["com.cloudflare.api.account.zone"]},
-    {"id": OBS_WRITE, "name": "Workers Observability Write", "scopes": ["com.cloudflare.api.account"]},
-    {"id": "bf7481a1826f439697cb59a20b22293e", "name": "Workers R2 Storage Write", "scopes": ["com.cloudflare.api.account"]},
+    {
+        "id": "zone-analytics",
+        "name": "Account Analytics Read",
+        "scopes": ["com.cloudflare.api.account.zone"],
+    },
+    {
+        "id": OBS_WRITE,
+        "name": "Workers Observability Write",
+        "scopes": ["com.cloudflare.api.account"],
+    },
+    {
+        "id": "bf7481a1826f439697cb59a20b22293e",
+        "name": "Workers R2 Storage Write",
+        "scopes": ["com.cloudflare.api.account"],
+    },
 ]
 
 
@@ -63,14 +83,21 @@ def test_spend_guard_purposes_name_the_groups_the_plan_needs() -> None:
     assert ANALYTICS_READ not in cf_auth.ACCOUNT_PERMISSION_GROUPS
 
 
-def test_permission_groups_resolve_by_name_on_the_account_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_permission_groups_resolve_by_name_on_the_account_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(cf_auth, "curl_json", FakeApi())
     ids = cf_auth.permission_group_ids([], ["Account Analytics Read", "Notifications Write"])
     assert ids == [ANALYTICS_READ, NOTIF_WRITE]
 
 
-def test_an_unknown_or_ambiguous_group_name_is_refused_by_name(monkeypatch: pytest.MonkeyPatch) -> None:
-    doubled = [*GROUPS, {"id": "dup", "name": "Notifications Write", "scopes": ["com.cloudflare.api.account"]}]
+def test_an_unknown_or_ambiguous_group_name_is_refused_by_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    doubled = [
+        *GROUPS,
+        {"id": "dup", "name": "Notifications Write", "scopes": ["com.cloudflare.api.account"]},
+    ]
     monkeypatch.setattr(cf_auth, "curl_json", FakeApi(doubled))
     with pytest.raises(cf_auth.CfAuthError) as exc:
         cf_auth.permission_group_ids([], ["Notifications Write", "No Such Group"])
@@ -112,10 +139,15 @@ def test_a_scoped_token_is_awaited_on_its_own_service(monkeypatch: pytest.Monkey
     cf_auth.await_propagation(auth, sleep=lambda _s: None)
     paths = [url[len(cf_auth.CF_API_BASE) :] for _m, url, _h, _b in fake.calls]
     want = "/accounts/%s/alerting/v3/policies" % ACCT
-    assert paths == ["/user/tokens/verify"] * cf_auth.READY_CONSECUTIVE + [want] * cf_auth.READY_CONSECUTIVE
+    assert (
+        paths
+        == ["/user/tokens/verify"] * cf_auth.READY_CONSECUTIVE + [want] * cf_auth.READY_CONSECUTIVE
+    )
 
 
-def test_resolve_scoped_prefers_a_supplied_token_and_never_prompts(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_resolve_scoped_prefers_a_supplied_token_and_never_prompts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     fake = FakeApi()
     monkeypatch.setattr(cf_auth, "curl_json", fake)
     monkeypatch.setattr("builtins.input", lambda *_a: pytest.fail("prompted"))

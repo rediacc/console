@@ -27,10 +27,12 @@ from dataclasses import dataclass, field
 from rediacc_ci.core import https
 from rediacc_ci.ops import portal_health
 
-GRAFANA_ORIGIN = "https://grafana.rediacc.io"
+# One declaration of the Grafana origin for both observability readers: a third typed copy would make it an owned literal that belongs in .ci/config/well-known.env.
+from rediacc_ci.ops.observability_volume import GRAFANA_ORIGIN
+
 TEMPO_UID = "tempo"
 LOKI_UID = "loki"
-TOKEN_ENV = "OBS_GRAFANA_READ_TOKEN"
+READ_CREDENTIAL_ENV = "OBS_GRAFANA_READ_TOKEN"
 HEALTH_PATH = portal_health.HEALTH_PATH
 PROBE_HEADER = "X-Rediacc-Probe"
 SIGNALS = ("traces", "logs")
@@ -136,7 +138,9 @@ def loki_has(reply: Reply) -> bool:
     if not isinstance(data, dict) or data.get("status") != "success":
         return False
     result = (data.get("data") or {}).get("result")
-    return bool(result) and any(stream.get("values") for stream in result)
+    if not result:
+        return False
+    return any(stream.get("values") for stream in result)
 
 
 def poll_once(targets: list[Target], get: Get, grafana: str, token: str) -> None:
@@ -159,7 +163,7 @@ def run(
     *,
     timeout_s: float,
     interval_s: float,
-    base_for: Callable[[str], str | None] = lambda host: None,
+    base_for: Callable[[str], str | None] = lambda _host: None,
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], float] = time.monotonic,
     out=None,
@@ -197,9 +201,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--interval-s", type=float, default=20.0)
     parser.add_argument("--grafana", default=GRAFANA_ORIGIN)
     args = parser.parse_args(argv)
-    token = os.environ.get(TOKEN_ENV, "")
+    token = os.environ.get(READ_CREDENTIAL_ENV, "")
     if not token:
-        print("%s is not set" % TOKEN_ENV, file=sys.stderr)
+        print("%s is not set" % READ_CREDENTIAL_ENV, file=sys.stderr)
         return 2
     try:
         hosts = all_hosts()

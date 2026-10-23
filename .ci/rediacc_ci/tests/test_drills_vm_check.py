@@ -647,7 +647,9 @@ class World(vm_check.Host):
             rel = path.split("%s/%s/" % (vm_check.MOUNTS, mine), 1)[1]
             owner = self.owners.get((tag, rel))
             if owner is None:
-                return vm_check.Result(1, "", "stat: cannot statx '%s': No such file or directory" % path)
+                return vm_check.Result(
+                    1, "", "stat: cannot statx '%s': No such file or directory" % path
+                )
             return vm_check.Result(0, owner + "\n")
         if command.startswith("stat "):
             return vm_check.Result(0, "644 1700000000\n")

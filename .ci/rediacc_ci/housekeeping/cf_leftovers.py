@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Report-only listing of Cloudflare leftovers that no PR cleanup owns.
 
 PLAN-cloudflare-spend-guard T7. Four listings, all read with GET, nothing deleted or changed:
@@ -23,9 +22,9 @@ import re
 import sys
 import tomllib
 import urllib.error
-import urllib.request
 
 from rediacc_ci import paths
+from rediacc_ci.core import https
 from rediacc_ci.well_known import CF_API_BASE
 
 PR_SCRIPT_RE = re.compile(r"^pr-[0-9]+$")
@@ -40,11 +39,11 @@ class CfError(Exception):
 
 def fetch(path: str, token: str) -> dict:
     """GET one API path and return the decoded body, raising CfError on any failure. The only network call here."""
-    req = urllib.request.Request(
-        CF_API_BASE + path, headers={"Authorization": "Bearer " + token}, method="GET"
-    )
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        req = https.build_request(
+            CF_API_BASE + path, headers={"Authorization": "Bearer " + token}, method="GET"
+        )
+        with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
     except urllib.error.HTTPError as exc:
         raw = exc.read()
@@ -125,9 +124,11 @@ def find_leftovers(
     counts = {"scripts": len(live_set), "d1": 0, "routes": 0, "domains": 0}
     out: list[tuple[str, str, str]] = []
 
-    for name in sorted(live_set):
-        if name not in known_scripts and not PR_SCRIPT_RE.match(name):
-            out.append(("script", name, "named by no wrangler config"))
+    out.extend(
+        ("script", name, "named by no wrangler config")
+        for name in sorted(live_set)
+        if name not in known_scripts and not PR_SCRIPT_RE.match(name)
+    )
 
     d1_all = listing("/accounts/%s/d1/database" % account, token, get)
     counts["d1"] = len(d1_all)
@@ -146,22 +147,22 @@ def find_leftovers(
             if not script:
                 out.append(("route", pattern, "zone %s: names no script" % zname))
             elif script not in live_set:
-                out.append(("route", pattern, "zone %s: script %s does not exist" % (zname, script)))
+                out.append(
+                    ("route", pattern, "zone %s: script %s does not exist" % (zname, script))
+                )
 
     domains = listing("/accounts/%s/workers/domains" % account, token, get)
     counts["domains"] = len(domains)
     for dom in domains:
         service = dom.get("service")
         if service not in live_set:
-            out.append(
-                ("domain", dom.get("hostname", "?"), "service %s does not exist" % service)
-            )
+            out.append(("domain", dom.get("hostname", "?"), "service %s does not exist" % service))
     if scanned is not None:
         scanned.update(counts)
     return out
 
 
-def main(argv: list[str], get=fetch) -> int:
+def main(_argv: list[str], get=fetch) -> int:
     token = os.environ.get("CLOUDFLARE_API_TOKEN", "")
     account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
     if not token or not account:

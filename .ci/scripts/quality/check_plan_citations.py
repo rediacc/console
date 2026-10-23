@@ -1353,7 +1353,7 @@ def plan_report(root, rel, skip_prefixes=()):
     classes = line_classes(lines)
     blame = blame_commits(root, rel)
     subs = submodule_paths(root) if pathlib.Path(root) == ROOT else ()
-    cache = {}
+    cache: dict[tuple[str, str], list[str] | None] = {}
     unres, drifted = [], []
     shape = {
         "lines": len(lines),
@@ -1468,7 +1468,7 @@ def drift_selftest(ck):
         if not built:
             ck("the drift control could commit its fixture history", False)
             return
-        cache = {}
+        cache: dict[tuple[str, str], list[str] | None] = {}
         blame = blame_commits(fx, "PLAN-x.md")
         lines = _split_lines((fx / "PLAN-x.md").read_text(encoding="utf-8"))
         ck(

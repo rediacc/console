@@ -2215,9 +2215,18 @@ class VmCheck:
         one.write_text("vm:check %s\n" % run)
         top = "vmc-newdir-%s" % run
         res = self.rdc(
-            "repo", "sync", "upload", ref, "--local", str(one), "--remote-file", top + "/a/b/c/f.txt"
+            "repo",
+            "sync",
+            "upload",
+            ref,
+            "--local",
+            str(one),
+            "--remote-file",
+            top + "/a/b/c/f.txt",
         )
-        if self.check("V1.5", "sync upload --remote-file into three missing levels", res.rc == 0, res):
+        if self.check(
+            "V1.5", "sync upload --remote-file into three missing levels", res.rc == 0, res
+        ):
             for rel in (top, top + "/a", top + "/a/b", top + "/a/b/c"):
                 self._owner_row(a, "created by --remote-file", rel, owned)
         tree = self.work / "own-dir"
@@ -2232,7 +2241,8 @@ class VmCheck:
                 self._owner_row(a, "created by --remote", rel, owned)
         keep = "vmc-keep-%s" % run
         made = self.probe(
-            "sudo install -d -o root -g root -m 755 %s" % shlex.quote("%s/%s" % (self.mount(a), keep))
+            "sudo install -d -o root -g root -m 755 %s"
+            % shlex.quote("%s/%s" % (self.mount(a), keep))
         )
         if not self.check(
             "V1.5",
@@ -2245,7 +2255,9 @@ class VmCheck:
         res = self.rdc(
             "repo", "sync", "upload", ref, "--local", str(one), "--remote-file", keep + "/g.txt"
         )
-        if self.check("V1.5", "sync upload --remote-file into an existing directory", res.rc == 0, res):
+        if self.check(
+            "V1.5", "sync upload --remote-file into an existing directory", res.rc == 0, res
+        ):
             self._owner_row(a, "an existing directory", keep, "root:root")
 
     def v1_6_vscode(self) -> None:

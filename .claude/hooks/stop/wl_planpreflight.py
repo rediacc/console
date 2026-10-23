@@ -223,9 +223,13 @@ def _record_gate():
     name = "check_plan_record"
     if name in sys.modules:
         return sys.modules[name]
-    quality = str(CHECKOUT / QUALITY_REL)
-    if quality not in sys.path:
-        sys.path.insert(0, quality)
+    helper = CHECKOUT / ".claude" / "rediacc_hooks" / "syspath.py"
+    hop_spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if hop_spec is None or hop_spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(hop_spec)
+    hop_spec.loader.exec_module(syspath)
+    syspath.on_sys_path(CHECKOUT / QUALITY_REL)
     spec = importlib.util.spec_from_file_location(name, str(CHECKOUT / RECORD_REL))
     if spec is None or spec.loader is None:
         raise ImportError("cannot load %s" % RECORD_REL)

@@ -95,7 +95,7 @@ class Fake:
 
 def go(fake, ceilings=None):
     out = io.StringIO()
-    rc = ur.run(ENV, fake, now=NOW, ceilings=ceilings or dict.fromkeys(CEILINGS, 10 ** 12), out=out)
+    rc = ur.run(ENV, fake, now=NOW, ceilings=ceilings or dict.fromkeys(CEILINGS, 10**12), out=out)
     return rc, out.getvalue()
 
 
@@ -103,12 +103,8 @@ def test_under_budget_is_exit_0_and_folds_the_reads():
     rc, text = go(Fake())
     assert rc == 0, text
     assert "r2.bucket.b1.bytes value=105 objects=3" in text  # peak, not a sum of the two groups
-    assert (
-        "r2.class_a.month value=10 ceiling" in text
-    )
-    assert (
-        "r2.class_b.month value=20 ceiling" in text
-    )
+    assert "r2.class_a.month value=10 ceiling" in text
+    assert "r2.class_b.month value=20 ceiling" in text
     assert "d1.d1.bytes value=70" in text  # the latest day
     assert "workers.w1.requests value=400 cpu_ms=300" in text
     assert "workers.cpu_ms.month value=300 ceiling" in text  # microseconds to milliseconds

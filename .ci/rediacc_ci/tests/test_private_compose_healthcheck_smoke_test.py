@@ -140,7 +140,11 @@ HEALTHY_REPLIES = {
     "poll": [("starting|0\n", "", 0), ("starting|1\n", "", 0), ("healthy|0\n", "", 0)],
     "app": [("running\n", "", 0)],
     "diag": [
-        (("=== " + RUNTIME_DIR + "/net-7/docker-7.sock ===\nState=running Health=starting/1\n"), "", 0)
+        (
+            ("=== " + RUNTIME_DIR + "/net-7/docker-7.sock ===\nState=running Health=starting/1\n"),
+            "",
+            0,
+        )
     ],
     "ss": [("LISTEN 0 244 127.0.0.1:5432 0.0.0.0:*\n", "", 0)],
 }

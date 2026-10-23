@@ -60,7 +60,10 @@ def test_token_mint_sequence_matches_bash(world: h.World) -> None:
         for g in port_post["policies"][0]["permission_groups"]
         if g not in post["policies"][0]["permission_groups"]
     ]
-    assert extra == [{"id": "bf7481a1826f439697cb59a20b22293e"}, {"id": "66c1ed49f4ed46098b75696a6d4ee3c9"}]
+    assert extra == [
+        {"id": "bf7481a1826f439697cb59a20b22293e"},
+        {"id": "66c1ed49f4ed46098b75696a6d4ee3c9"},
+    ]
     for g in extra:
         port_post["policies"][0]["permission_groups"].remove(g)
     assert port_calls[2] == {**bash_calls[2], "body": port_post}

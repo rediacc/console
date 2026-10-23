@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.housekeeping import cf_leftovers as cfl
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN
 
 ROOT = paths.repo_root()
 TOKEN = "tok-SECRET-123"
+ACCOUNT_HOST = urlsplit(ACCOUNT_DEFAULT_ORIGIN).hostname
 
 
 def fake_api(scripts, d1, routes, domains=(), calls=None):
@@ -21,7 +25,7 @@ def fake_api(scripts, d1, routes, domains=(), calls=None):
         elif base.endswith("/d1/database"):
             res = [{"name": n, "uuid": "u-" + n} for n in d1]
         elif base == "/zones":
-            res = [{"id": "z1", "name": "rediacc.com"}]
+            res = [{"id": "z1", "name": APEX_DOMAIN}]
         elif base.endswith("/workers/routes"):
             res = list(routes)
         elif base.endswith("/workers/domains"):
@@ -66,8 +70,15 @@ def test_dangling_route_and_scriptless_route_listed():
 
 
 def test_dangling_custom_domain_listed():
-    found = run([CONFIGURED], [], [], [{"hostname": "x.rediacc.com", "service": "nope"},
-                                       {"hostname": "eu.rediacc.com", "service": CONFIGURED}])
+    found = run(
+        [CONFIGURED],
+        [],
+        [],
+        [
+            {"hostname": "x.rediacc.com", "service": "nope"},
+            {"hostname": ACCOUNT_HOST, "service": CONFIGURED},
+        ],
+    )
     assert kinds(found) == {("domain", "x.rediacc.com")}
 
 
@@ -77,7 +88,9 @@ def test_main_exits_zero_with_findings_prints_them_and_never_the_token(monkeypat
     rc = cfl.main([], get=fake_api(["stray-worker"], ["x-bench"], []))
     out = capsys.readouterr()
     assert rc == 0
-    assert "LEFTOVER script" in out.out and "stray-worker" in out.out and "x-bench" in out.out
+    assert "LEFTOVER script" in out.out
+    assert "stray-worker" in out.out
+    assert "x-bench" in out.out
     assert TOKEN not in out.out + out.err
 
 
@@ -85,7 +98,7 @@ def test_unreadable_listing_is_an_error_not_an_empty_report(monkeypatch, capsys)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", TOKEN)
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
 
-    def get(path, token):
+    def get(path, _token):
         raise cfl.CfError("GET %s: denied" % path)
 
     assert cfl.main([], get=get) == 1
@@ -100,15 +113,21 @@ def test_missing_env_is_an_error(monkeypatch):
 def test_only_get_listings_are_requested():
     calls: list = []
     cfl.find_leftovers(ROOT, "acct", TOKEN, fake_api([CONFIGURED], [], [], calls=calls))
-    assert calls and all(t == TOKEN for _, t in calls)
-    assert all("/workers/scripts" in p or "/d1/database" in p or p.startswith("/zones")
-               or "/workers/domains" in p for p, _ in calls)
+    assert calls
+    assert all(t == TOKEN for _, t in calls)
+    assert all(
+        "/workers/scripts" in p
+        or "/d1/database" in p
+        or p.startswith("/zones")
+        or "/workers/domains" in p
+        for p, _ in calls
+    )
 
 
 def test_pagination_follows_total_pages():
     pages = {1: [{"id": "a"}], 2: [{"id": "b"}]}
 
-    def get(path, token):
+    def get(path, _token):
         n = int(path.split("&page=")[1])
         return {"success": True, "result": pages[n], "result_info": {"total_pages": 2}}
 
@@ -122,7 +141,8 @@ def test_configured_reads_env_blocks(tmp_path):
         'binding = "DB"\ndatabase_name = "stage-bench"\n'
     )
     scripts, dbs = cfl.configured(tmp_path)
-    assert scripts == {"top", "top-staging"} and dbs == {"stage-bench"}
+    assert scripts == {"top", "top-staging"}
+    assert dbs == {"stage-bench"}
 
 
 def test_no_config_is_an_error(tmp_path):
@@ -133,5 +153,7 @@ def test_no_config_is_an_error(tmp_path):
 def test_report_states_how_many_items_were_scanned(monkeypatch, capsys):
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", TOKEN)
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
-    cfl.main([], get=fake_api([CONFIGURED, "pr-1"], [BOUND_DB], [{"pattern": "p", "script": CONFIGURED}]))
+    cfl.main(
+        [], get=fake_api([CONFIGURED, "pr-1"], [BOUND_DB], [{"pattern": "p", "script": CONFIGURED}])
+    )
     assert "scanned 2 scripts, 1 d1, 1 routes, 0 domains" in capsys.readouterr().out

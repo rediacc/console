@@ -21,8 +21,8 @@ import pytest
 
 from rediacc_ci.infra import obs_ceph_autobump as ab
 
-OLD = "19.2.3-lp160.2.103"
-NEW = "19.2.3-lp160.2.105"
+OLD = "19.2.3-lp160.2.1"
+NEW = "19.2.3-lp160.2.2"
 BRANCH = "1023-1"
 TASK = "cafe1234"
 GITLINK = "a" * 40

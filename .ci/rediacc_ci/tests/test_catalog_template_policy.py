@@ -11,6 +11,7 @@ import pathlib
 import re
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import DATASTORE_PATH, ETC_DIR
 
 TEMPLATES = paths.repo_root() / "packages" / "json" / "templates"
 
@@ -20,7 +21,7 @@ HARD_TREES = (
     "/sys",
     "/run",
     "/var/run",
-    "/etc/rediacc",
+    ETC_DIR,
     "/etc/docker",
     "/etc/containerd",
     "/etc/shadow",
@@ -30,7 +31,7 @@ HARD_TREES = (
     "/var/lib/rediacc",
     "/var/lib/docker",
     "/var/lib/containerd",
-    "/mnt/rediacc",
+    DATASTORE_PATH,
 )
 DEV_ALLOWED = ("/dev/net/tun",)
 HARD_OPTIONS = {

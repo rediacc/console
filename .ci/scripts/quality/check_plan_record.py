@@ -3010,12 +3010,12 @@ def selftest_closure():
         ck("RF CONTEXT CONTROL: a plan holding nothing up adds nothing", rf_context(root, x) == "")
 
         # RP. The seed claim, both directions, then the shrink-only verdict and the writer that cannot add.
-        seed_ok = plan().replace(
-            "a fixture priority reason", "seed: Status approved, 1 open box(es)"
+        seed_ok = plant(
+            plan(), "a fixture priority reason", "seed: Status approved, 1 open box(es)"
         )
         ck("RP CONTROL: an agreeing seed claim is silent", seed_claim(a, seed_ok) is None)
-        stale_n = seed_ok.replace("1 open box(es)", "0 open box(es)")
-        stale_s = seed_ok.replace("seed: Status approved", "seed: Status proposed")
+        stale_n = plant(seed_ok, "1 open box(es)", "0 open box(es)")
+        stale_s = plant(seed_ok, "seed: Status approved", "seed: Status proposed")
         got_n, got_s = seed_claim(a, stale_n), seed_claim(a, stale_s)
         ck(
             "RP: a stale box count is refused",
@@ -3032,7 +3032,7 @@ def selftest_closure():
             seed_claim("agent/plans/_done/PLAN-a.md", stale_n) is None,
         )
         ck("RP CONTROL: a Priority with no seed clause is silent", seed_claim(a, plan()) is None)
-        moved_down = stale_n.replace("## Tasks", "A paragraph moved above the tasks.\n\n## Tasks")
+        moved_down = plant(stale_n, "## Tasks", "A paragraph moved above the tasks.\n\n## Tasks")
         ck(
             "RP: the stable id survives a line move below the header",
             got_n is not None and (seed_claim(a, moved_down) or ("",))[0] == got_n[0],
@@ -3048,7 +3048,7 @@ def selftest_closure():
             any("Drain it" in p for p in rp_verdict({}, {key: "note"})[0]),
         )
         ck("RP: a missing baseline refuses a verdict", rp_verdict({}, None)[0] != [])
-        tree({a: stale_n, b: stale_s.replace("PLAN: fixture", "PLAN: other")}, [])
+        tree({a: stale_n, b: plant(stale_s, "PLAN: fixture", "PLAN: other")}, [])
         frozen_b = (seed_claim(b, (root / b).read_text(encoding="utf-8")) or ("unseen",))[0]
         (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
         (root / RP_BASELINE_REL).write_text(

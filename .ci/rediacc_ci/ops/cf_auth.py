@@ -259,7 +259,10 @@ def create_scoped_token(
     """Mint a token carrying only `SCOPED_GROUPS[purpose]` on `account_id` plus the user-scoped API Tokens pair its self-destruct needs; CfAuthError naming the failing step."""
     names = SCOPED_GROUPS.get(purpose)
     if names is None:
-        raise CfAuthError("no scoped permission set named %r (known: %s)" % (purpose, ", ".join(sorted(SCOPED_GROUPS))))
+        raise CfAuthError(
+            "no scoped permission set named %r (known: %s)"
+            % (purpose, ", ".join(sorted(SCOPED_GROUPS)))
+        )
     headers = _global_headers(global_key, email)
     user = curl_json("GET", "%s/user" % CF_API_BASE, headers)
     result = user.get("result")

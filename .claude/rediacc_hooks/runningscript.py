@@ -39,7 +39,7 @@ def pattern_for(base):
 def _same_script(rargs_first4, base, target, target_cwd, pid):
     """Whether a running shell's script argument IS `target`, by resolved full path.
 
-    The pgrep pattern matches on the BASENAME alone, so `/tmp/smtpwork/run.sh` was refused while an unrelated `/tmp/t9deploy/run.sh` ran (2026-10-23). Both sides go through `os.path.realpath`: the target against the hook's cwd, a relative argv word against the process's own `/proc/<pid>/cwd`. A word whose directory cannot be resolved (process gone, cwd unreadable) still counts as a match, the direction this guard fails safe in.
+    The pgrep pattern matches on the BASENAME alone, so `/tmp/smtpwork/run.sh` was refused while an unrelated `/tmp/t9deploy/run.sh` ran (2026-10-23). Both sides go through `os.path.realpath`: the target against the hook's cwd, a relative argv word against the process's own working directory (`proc.cwd`). A word whose directory cannot be resolved (process gone, cwd unreadable) still counts as a match, the direction this guard fails safe in.
     """
     want = os.path.realpath(os.path.join(target_cwd, target))
     for word in rargs_first4.split(" "):
@@ -48,9 +48,8 @@ def _same_script(rargs_first4, base, target, target_cwd, pid):
         if os.path.isabs(word):
             root = "/"
         else:
-            try:
-                root = os.readlink("/proc/%d/cwd" % pid)
-            except OSError:
+            root = proc.cwd(pid)
+            if root is None:
                 return True
         if os.path.realpath(os.path.join(root, word)) == want:
             return True

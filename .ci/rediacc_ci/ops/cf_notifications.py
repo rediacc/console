@@ -117,7 +117,9 @@ class Api:
         body = cf_auth.curl_json("GET", self.base, self.auth.headers, content_type=False)
         result = body.get("result")
         if body.get("success") is not True or not isinstance(result, list):
-            raise NotificationError("listing notification policies failed: %s" % cf_auth._errors(body))
+            raise NotificationError(
+                "listing notification policies failed: %s" % cf_auth._errors(body)
+            )
         return [p for p in result if isinstance(p, dict)]
 
     def write(self, method: str, url: str, payload: dict | None) -> dict:
@@ -133,7 +135,9 @@ class Api:
                 raise UnavailableError(cf_auth._errors(body))
             if attempt + 1 < WRITE_ATTEMPTS:
                 self.sleep(RETRY_SLEEP_S)
-        raise NotificationError("%s %s failed: %s" % (method, url.rsplit("/", 1)[-1], cf_auth._errors(body)))
+        raise NotificationError(
+            "%s %s failed: %s" % (method, url.rsplit("/", 1)[-1], cf_auth._errors(body))
+        )
 
     def create(self, want: dict) -> str:
         body = self.write("POST", self.base, want)
@@ -170,10 +174,15 @@ def run(api: Api, section: dict, dry_run: bool, out: typing.TextIO | None = None
             if not have:
                 changes += 1
                 if dry_run:
-                    print("CREATE %s limit=%s (dry run)" % (name, body["filters"]["limit"][0]), file=out)
+                    print(
+                        "CREATE %s limit=%s (dry run)" % (name, body["filters"]["limit"][0]),
+                        file=out,
+                    )
                     continue
                 pid = api.create(body)
-                print("CREATE %s id=%s limit=%s" % (name, pid, body["filters"]["limit"][0]), file=out)
+                print(
+                    "CREATE %s id=%s limit=%s" % (name, pid, body["filters"]["limit"][0]), file=out
+                )
                 continue
             current = have[0]
             diffs = drift(current, body)
@@ -182,7 +191,10 @@ def run(api: Api, section: dict, dry_run: bool, out: typing.TextIO | None = None
                 continue
             changes += 1
             if dry_run:
-                print("UPDATE %s id=%s: %s (dry run)" % (name, current.get("id"), "; ".join(diffs)), file=out)
+                print(
+                    "UPDATE %s id=%s: %s (dry run)" % (name, current.get("id"), "; ".join(diffs)),
+                    file=out,
+                )
                 continue
             api.update(str(current.get("id")), body)
             print("UPDATE %s id=%s: %s" % (name, current.get("id"), "; ".join(diffs)), file=out)
@@ -198,17 +210,24 @@ def run(api: Api, section: dict, dry_run: bool, out: typing.TextIO | None = None
                 print("DELETE %s id=%s (dry run)" % (name, policy.get("id")), file=out)
                 continue
             api.delete(str(policy.get("id")))
-            print("DELETE %s id=%s (no longer in %s)" % (name, policy.get("id"), CONFIG_REL), file=out)
+            print(
+                "DELETE %s id=%s (no longer in %s)" % (name, policy.get("id"), CONFIG_REL), file=out
+            )
     for name, spec in sorted((section.get("unavailable") or {}).items()):
         print(
-            "UNAVAILABLE %s (recorded in %s; fallback: %s)" % (name, CONFIG_REL, spec.get("fallback", "none named")),
+            "UNAVAILABLE %s (recorded in %s; fallback: %s)"
+            % (name, CONFIG_REL, spec.get("fallback", "none named")),
             file=out,
         )
     for policy in existing:
         if policy.get("alert_type") == "billing_budget_alert":
             print(
                 "BUDGET %s id=%s total_spend_dollars=%s (not managed here)"
-                % (policy.get("name"), policy.get("id"), (policy.get("filters") or {}).get("total_spend_dollars")),
+                % (
+                    policy.get("name"),
+                    policy.get("id"),
+                    (policy.get("filters") or {}).get("total_spend_dollars"),
+                ),
                 file=out,
             )
     if not dry_run and changes:
@@ -223,7 +242,9 @@ def run(api: Api, section: dict, dry_run: bool, out: typing.TextIO | None = None
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="cf_notifications", description=__doc__.split("\n\n")[0])
     parser.add_argument("--dry-run", action="store_true", help="list the changes, write nothing")
-    parser.add_argument("--config", type=pathlib.Path, default=None, help="default: %s" % CONFIG_REL)
+    parser.add_argument(
+        "--config", type=pathlib.Path, default=None, help="default: %s" % CONFIG_REL
+    )
     parser.add_argument("--account-id", default=cf_auth.DEFAULT_ACCOUNT_ID)
     args = parser.parse_args(argv)
     config = args.config or paths.from_root(*CONFIG_REL.split("/"))

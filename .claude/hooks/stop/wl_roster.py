@@ -1137,7 +1137,7 @@ def _py_written_paths(text):
         tree = ast.parse(text)
     except (SyntaxError, ValueError):
         return every
-    bound = {}
+    bound: dict[str, list[ast.expr]] = {}
     for node in ast.walk(tree):
         if (
             isinstance(node, ast.Assign)
@@ -1222,6 +1222,8 @@ def _py_written_paths(text):
         owner = (
             f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else None
         )
+        # `attr` is set only for an Attribute, so `recv` is its receiver wherever `attr` is read below.
+        recv = f.value if isinstance(f, ast.Attribute) else f
         args = node.args
         if isinstance(f, ast.Name) and f.id == "open" and args:
             if mode_writes(node, 1):
@@ -1248,11 +1250,11 @@ def _py_written_paths(text):
             "zipfile",
         ):
             if mode_writes(node, 0):
-                take(f.value)
+                take(recv)
         elif attr in ("write_text", "write_bytes", "unlink", "touch"):
-            take(f.value)
+            take(recv)
         elif attr in ("rename", "replace") and len(args) == 1 and owner not in ("os", "shutil"):
-            take(f.value)
+            take(recv)
             take(args[0])
         elif owner == "os" and attr in ("remove", "unlink", "rmdir", "rename", "replace"):
             for a in args[:2]:

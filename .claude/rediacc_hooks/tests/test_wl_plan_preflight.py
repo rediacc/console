@@ -74,6 +74,7 @@ def dep_text(
 class Repo:
     def __init__(self, root: pathlib.Path):
         self.root = pathlib.Path(root)
+        self.base0 = ""
 
     def git(self, *args: str) -> str:
         r = subprocess.run(

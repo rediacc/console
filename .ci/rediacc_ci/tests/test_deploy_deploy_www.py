@@ -684,7 +684,7 @@ def test_the_generated_toml_ends_with_exactly_one_newline() -> None:
 def test_a_preview_worker_persists_no_logs_or_traces() -> None:
     """PLAN-telemetry-export T15: Cloudflare persists a Worker's logs and traces unless told not to, and a preview has no OTLP destination, so every observability table is off and both signals carry `persist = false`."""
     body = port.preview_toml("pr-1", "db", "u")
-    tables = {}
+    tables: dict[str, list[str]] = {}
     current = None
     for line in body.splitlines():
         if line.startswith("["):

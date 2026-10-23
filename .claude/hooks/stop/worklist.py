@@ -1078,7 +1078,7 @@ def _planpreflight_cli(argv):
         M.CLI_PLANPREFLIGHT_WROTE
         % {
             "rel": rel,
-            "base": pf.base[:12],
+            "base": (pf.base or "")[:12],
             "relocated": len(result.relocated),
             "investigation": "/".join(R.INVESTIGATION_REL),
             "index": R.INDEX_REL,
@@ -2415,8 +2415,13 @@ def _plan_record_gate():
     import importlib.util
 
     folder = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "quality"
-    if str(folder) not in sys.path:
-        sys.path.insert(0, str(folder))
+    helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    hop_spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if hop_spec is None or hop_spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(hop_spec)
+    hop_spec.loader.exec_module(syspath)
+    syspath.on_sys_path(folder)
     spec = importlib.util.spec_from_file_location(
         "_wl_check_plan_record", folder / "check_plan_record.py"
     )

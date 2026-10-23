@@ -24,7 +24,6 @@ from __future__ import annotations
 import os
 import pathlib
 import re
-from typing import Any
 
 import wl_planconc as X
 import wl_plandeps as D
@@ -233,7 +232,9 @@ def reason(verdict: X.Verdict) -> str:
     return text[: REASON_MAX - 3] + "..."
 
 
-def conflicts(serving: dict[str, set[str]], live, xinfo, declared=None) -> list[tuple[str, X.Verdict]]:
+def conflicts(
+    serving: dict[str, set[str]], live, xinfo, declared=None
+) -> list[tuple[str, X.Verdict]]:
     """[(agent_id, verdict)] for each live writer of THIS session whose plans already break the mutex or overlap ANOTHER live writer of this session's plans.
 
     Judged against this session's writers only: they are what the harness's own event proves live. A clash with a peer's lease is the spawn guard's and the queue's question, and a stale peer lease must never make this session stop a writer.

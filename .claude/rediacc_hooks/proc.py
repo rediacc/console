@@ -114,6 +114,13 @@ class _ProcBackend:
             parts.pop()
         return [p.decode("utf-8", "surrogateescape") for p in parts]
 
+    def cwd(self, pid):
+        try:
+            return os.readlink("/proc/%d/cwd" % pid)
+        except OSError:
+            # Gone, or a process of another user whose cwd this user may not read.
+            return None
+
 
 class _PsBackend:
     """`ps`, for hosts with no /proc. One invocation answers everything.
@@ -169,6 +176,10 @@ class _PsBackend:
         row = self._read().get(pid)
         return None if row is None else list(row[1])
 
+    def cwd(self, _pid):
+        # `ps` has no working-directory column on either platform, so the answer is "unknown", which a caller already handles as it handles a process that is gone.
+        return None
+
 
 def _backend():
     """A FRESH backend per call.
@@ -191,6 +202,11 @@ def comm(pid):
 def argv(pid):
     """The process's arguments as a list, or None when the process is gone."""
     return _backend().argv(pid)
+
+
+def cwd(pid):
+    """The process's working directory (the target of `/proc/<pid>/cwd`), or None when the process is gone, unreadable, or the backend (`ps`) cannot tell."""
+    return _backend().cwd(pid)
 
 
 def cmdline(pid):

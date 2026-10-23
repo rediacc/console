@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Move the openSUSE Leap 16.0 Ceph pin to each new OBS build once ci-obs-mirror has captured it (PLAN-plan-per-pr-loop R1, operator /ask 2026-10-23 "Scheduled auto-bump").
 
 OBS `filesystems:ceph:squid/16.0` keeps only its latest build and rebuilds every few days (2.98, 2.100, 2.103, 2.105 in October 2026). ci-obs-mirror captures every build within six hours, but the pin in private/renet still had to be moved by hand, and until it was the nightly's `OBS upstream serves the pin` step stayed red. This module is the two jobs of `.github/workflows/obs-ceph-autobump.yml`:
@@ -37,7 +36,9 @@ import sys
 import tempfile
 from typing import TYPE_CHECKING
 
+from rediacc_ci.core.gh_retry import retry_transient
 from rediacc_ci.infra.obs_mirror import EVR_RE, read_pin
+from rediacc_ci.well_known import GH_ORIGIN
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -222,7 +223,7 @@ def branch_task(snapshot: str | None, branch: str) -> str:
 
 def message(subject: str, old: str, new: str, task: str) -> str:
     run_url = "%s/%s/actions/runs/%s" % (
-        os.environ.get("GITHUB_SERVER_URL", "https://github.com"),
+        os.environ.get("GITHUB_SERVER_URL", GH_ORIGIN),
         os.environ.get("GITHUB_REPOSITORY", "%s/%s" % (OWNER, CONSOLE)),
         os.environ.get("GITHUB_RUN_ID", "local"),
     )
@@ -246,7 +247,7 @@ def _push(run: RunFn, repo: pathlib.Path, branch: str) -> None:
 
 
 def _url(repo: str) -> str:
-    return "https://github.com/%s/%s.git" % (OWNER, repo)
+    return "%s/%s/%s.git" % (GH_ORIGIN, OWNER, repo)
 
 
 def land(
@@ -259,22 +260,30 @@ def land(
         raise AutobumpError(
             "%s has a site outside private/renet; land moves renet files only" % ENTRY_ID
         )
-    prs = _ok(
-        run,
-        [
-            "gh",
-            "pr",
-            "list",
-            "--repo",
-            "%s/%s" % (OWNER, CONSOLE),
-            "--state",
-            "open",
-            "--base",
-            "main",
-            "--json",
-            "headRefName,isCrossRepository",
-        ],
+    # One 5xx on the PR listing must not end the run: the spawn sits inside retry_transient, a 4xx still fails at once.
+    listed = retry_transient(
+        lambda: run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--repo",
+                "%s/%s" % (OWNER, CONSOLE),
+                "--state",
+                "open",
+                "--base",
+                "main",
+                "--json",
+                "headRefName,isCrossRepository",
+            ],
+            None,
+        ),
+        lambda r: None if r.returncode == 0 else (r.stderr or r.stdout or "failed"),
     )
+    if listed.returncode != 0:
+        tail = (listed.stderr or listed.stdout or "").strip()[-400:]
+        raise AutobumpError("`gh pr list` exited %d: %s" % (listed.returncode, tail))
+    prs = listed.stdout or ""
     branch = _branch(live_branch(prs))
     console = work / CONSOLE
     _ok(

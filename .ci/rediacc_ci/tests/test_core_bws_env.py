@@ -783,9 +783,12 @@ def test_names_profile_with_no_required_spec_resolves_nothing_not_the_whole_map(
     monkeypatch.setattr(
         bws_env, "profiles", lambda _env=None: {"opt-only": {"required": [], "optional": ["X"]}}
     )
-    monkeypatch.setattr(
-        bws_env, "load", lambda names=None, **_kw: seen.append(names) or ({}, [], 0)
-    )
+
+    def load(names=None, **_kw):
+        seen.append(names)
+        return {}, [], 0
+
+    monkeypatch.setattr(bws_env, "load", load)
     assert bws_env.main(["names", "--profile", "opt-only"]) == 0
     assert bws_env.main(["names"]) == 0
     assert seen == [[], None]

@@ -219,11 +219,11 @@ def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr
         print("✗ commit citations: CANNOT RUN: %s" % exc, file=err)
         return 2
     if scanned == 0:
-        print("✗ commit citations: CANNOT RUN: no tracked file is in scope", file=err)
+        print("✗ commit citations: CANNOT RUN: VACUOUS, no tracked file is in scope", file=err)
         return 2
     if not found:
         print(
-            "✗ commit citations: CANNOT RUN: %d file(s) scanned and not one citation found; "
+            "✗ commit citations: CANNOT RUN: VACUOUS, %d file(s) scanned and not one citation found; "
             "the extractor is not seeing the tree" % scanned,
             file=err,
         )

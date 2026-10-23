@@ -21,8 +21,8 @@ import typing
 
 from rediacc_ci import log, paths
 from rediacc_ci.ops import cf_auth
+from rediacc_ci.well_known import RELEASES_BUCKET
 
-RELEASES_BUCKET = "rediacc-releases"
 STAGING_BUCKET = "rediacc-staging"
 # Written only when the live listing shows them.
 ALLOWED_BUCKETS = (RELEASES_BUCKET, STAGING_BUCKET)
@@ -36,7 +36,7 @@ MULTIPART_RULE = "spend-guard-multipart"
 PLATFORM_DEFAULT_RULE = "Default Multipart Abort Rule"
 
 
-class RefusedBucket(Exception):
+class RefusedBucketError(Exception):
     """A bucket outside the allowlist, or a protected one."""
 
 
@@ -49,7 +49,9 @@ class Rule:
 
 
 def desired_rules() -> list[Rule]:
-    rules = [Rule("spend-guard-pr-%s" % f, "%s/pr-" % f, expire_days=PR_EXPIRE_DAYS) for f in FORMAT_DIRS]
+    rules = [
+        Rule("spend-guard-pr-%s" % f, "%s/pr-" % f, expire_days=PR_EXPIRE_DAYS) for f in FORMAT_DIRS
+    ]
     rules += [
         Rule("spend-guard-dryrun-%s" % f, "%s/dryrun-" % f, expire_days=DRYRUN_EXPIRE_DAYS)
         for f in FORMAT_DIRS
@@ -63,14 +65,16 @@ def is_protected(bucket: str) -> bool:
 
 
 def require_writable(bucket: str) -> None:
-    """Raise `RefusedBucket` unless `bucket` may be written; called before every mutation."""
+    """Raise `RefusedBucketError` unless `bucket` may be written; called before every mutation."""
     if is_protected(bucket):
-        raise RefusedBucket(
+        raise RefusedBucketError(
             "refusing %s: backup and config buckets never get lifecycle rules (the chunk GC is authoritative there)"
             % bucket
         )
     if bucket not in ALLOWED_BUCKETS:
-        raise RefusedBucket("refusing %s: not in the allowlist %s" % (bucket, ", ".join(ALLOWED_BUCKETS)))
+        raise RefusedBucketError(
+            "refusing %s: not in the allowlist %s" % (bucket, ", ".join(ALLOWED_BUCKETS))
+        )
 
 
 class Wrangler:
@@ -130,7 +134,9 @@ def parse_rules(text: str) -> list[Rule]:
 def list_rules(run: Runner, bucket: str) -> list[Rule]:
     rc, out = run("bucket", "lifecycle", "list", bucket)
     if rc != 0:
-        raise RuntimeError("lifecycle list %s failed (exit %d): %s" % (bucket, rc, out.strip()[-300:]))
+        raise RuntimeError(
+            "lifecycle list %s failed (exit %d): %s" % (bucket, rc, out.strip()[-300:])
+        )
     return parse_rules(out)
 
 
@@ -143,14 +149,20 @@ def _add(run: Runner, bucket: str, rule: Rule) -> None:
         args += ["--abort-multipart-days", str(rule.abort_days)]
     rc, out = run(*args, "-y")
     if rc != 0:
-        raise RuntimeError("lifecycle add %s on %s failed (exit %d): %s" % (rule.name, bucket, rc, out.strip()[-300:]))
+        raise RuntimeError(
+            "lifecycle add %s on %s failed (exit %d): %s"
+            % (rule.name, bucket, rc, out.strip()[-300:])
+        )
 
 
 def _remove(run: Runner, bucket: str, name: str) -> None:
     require_writable(bucket)
     rc, out = run("bucket", "lifecycle", "remove", bucket, "--name", name)
     if rc != 0:
-        raise RuntimeError("lifecycle remove %s on %s failed (exit %d): %s" % (name, bucket, rc, out.strip()[-300:]))
+        raise RuntimeError(
+            "lifecycle remove %s on %s failed (exit %d): %s"
+            % (name, bucket, rc, out.strip()[-300:])
+        )
 
 
 def diff(existing: list[Rule], wanted: list[Rule]) -> tuple[list[Rule], list[Rule]]:
@@ -175,11 +187,9 @@ def target_buckets(run: Runner) -> tuple[list[str], list[str]]:
 
 def planted(run: Runner, protected: list[str]) -> list[tuple[str, Rule]]:
     """Rules on protected buckets beyond the platform default. Read-only."""
-    found = []
+    found: list[tuple[str, Rule]] = []
     for b in protected:
-        for rule in list_rules(run, b):
-            if rule.name != PLATFORM_DEFAULT_RULE:
-                found.append((b, rule))
+        found.extend((b, rule) for rule in list_rules(run, b) if rule.name != PLATFORM_DEFAULT_RULE)
     return found
 
 
@@ -188,7 +198,7 @@ def run_mode(run: Runner, mode: str, bucket: str | None = None, dry_run: bool = 
     if bucket is not None:
         try:
             require_writable(bucket)
-        except RefusedBucket as exc:
+        except RefusedBucketError as exc:
             log.error(str(exc))
             return 2
     targets, protected = target_buckets(run)
@@ -203,7 +213,10 @@ def run_mode(run: Runner, mode: str, bucket: str | None = None, dry_run: bool = 
         existing = list_rules(run, b)
         if mode == "list":
             for r in existing:
-                print("%s: %s prefix=%r expire=%s abort=%s" % (b, r.name, r.prefix, r.expire_days, r.abort_days))
+                print(
+                    "%s: %s prefix=%r expire=%s abort=%s"
+                    % (b, r.name, r.prefix, r.expire_days, r.abort_days)
+                )
             continue
         missing, drifted = diff(existing, wanted)
         for r in missing:
@@ -223,10 +236,16 @@ def run_mode(run: Runner, mode: str, bucket: str | None = None, dry_run: bool = 
             else:
                 _add(run, b, r)
                 print("ADDED %s: %s" % (b, r.name))
-        print("%s: %d added, %d updated, %d unchanged" % (b, len(missing), len(drifted), len(wanted) - len(missing) - len(drifted)))
+        print(
+            "%s: %d added, %d updated, %d unchanged"
+            % (b, len(missing), len(drifted), len(wanted) - len(missing) - len(drifted))
+        )
     if mode in ("list", "check"):
         for b, r in planted(run, protected):
-            print("PLANTED %s: %s prefix=%r expire=%s abort=%s" % (b, r.name, r.prefix, r.expire_days, r.abort_days))
+            print(
+                "PLANTED %s: %s prefix=%r expire=%s abort=%s"
+                % (b, r.name, r.prefix, r.expire_days, r.abort_days)
+            )
             status = 1
         print("protected buckets read, not written: %s" % (", ".join(protected) or "none"))
     return status
@@ -237,13 +256,15 @@ def main(argv: list[str]) -> int:
     parser.add_argument("mode", nargs="?", default="apply", choices=("apply", "list", "check"))
     parser.add_argument("--check", action="store_true", help="same as the check mode")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--bucket", help="restrict to one allowed bucket; a protected or unlisted name exits 2")
+    parser.add_argument(
+        "--bucket", help="restrict to one allowed bucket; a protected or unlisted name exits 2"
+    )
     args = parser.parse_args(argv)
     mode = "check" if args.check else args.mode
     if args.bucket:
         try:
             require_writable(args.bucket)
-        except RefusedBucket as exc:
+        except RefusedBucketError as exc:
             log.error(str(exc))
             return 2
     try:
