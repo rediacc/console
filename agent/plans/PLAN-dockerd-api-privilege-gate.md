@@ -102,6 +102,7 @@ These bind T2-T4; each box's writer reads this section with its box.
 2. Named volumes bypass a create-only gate: `POST /volumes/create` with the local driver and `o=bind,device=/` makes a named volume aimed at a host path, and a later create that uses it by name passes. T2 also gates `POST /volumes/create`, running `dockerpolicy.ClassifyBindSource` on the `device` option.
 3. `Evaluate` is pure, so a symlink inside the repo mount aimed into `/run/...` is invisible to it; the per-network sandbox narrowing of PLAN-renet-cross-repo-isolation stays the backstop for that case.
 4. T1 already narrowed `runpaths.DockerSocketGlob` to `net-*/docker-*[0-9].sock` so discovery never picks up `DockerInternalSocket` once T3 moves dockerd.
+5. Own-mount rule (review fix private/renet 5546219): `Evaluate` does not know the requesting repo's own mount, so a bind of another repo's `/mnt/rediacc/mounts/<guid>/...` (per-repo Docker data, `private/renet/pkg/repository/repository.go:101`) still passes, and so do host paths outside the protected lists (`/srv`, `/home/*/.ssh` read-only). T2/T4 pass the repo mount and datastore into the policy and the bind rule becomes: own mount, named volumes, own socket and secrets, and safe mounts only.
 
 ## Risks
 
