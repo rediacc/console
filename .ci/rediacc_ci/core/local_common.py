@@ -1320,10 +1320,24 @@ def renet_artifact_fp(path: str) -> str:
     return "%d:%d" % (status.st_size, int(status.st_mtime))
 
 
+def renet_head(renet_dir: str) -> str:
+    """renet's own HEAD commit, or "" when `renet_dir` is not the top of its own git checkout.
+
+    Only renet's own commit belongs in the stamp: from a plain directory inside the console, `git rev-parse HEAD` answers with the console's HEAD, which moves on every console commit and would rebuild renet each time.
+    """
+    top = _capture(["git", "rev-parse", "--show-toplevel"], quiet_err=True, cwd=renet_dir)
+    if top.returncode != 0 or os.path.realpath(_subst(top.stdout or "")) != os.path.realpath(
+        renet_dir
+    ):
+        return ""
+    head = _capture(["git", "rev-parse", "HEAD"], quiet_err=True, cwd=renet_dir)
+    return _subst(head.stdout or "") if head.returncode == 0 else ""
+
+
 def renet_stamp_key(source: str, head: str, license_mode: str, account_key: str) -> str:
     """The digest `ensure_renet_built` stores in build-renet.stamp: the renet source fingerprint, renet's HEAD commit, the license mode and the account key.
 
-    HEAD is in it because the binary stamps `vcs.revision`, and a rebase-merge leaves the tree byte-identical under a new commit: with the fingerprint alone the stamp still matched, nothing rebuilt, and `npm run vm:check` refused bin/renet as renet-build-mismatch on every run (2026-10-23, c32bb4884efa built, 0a89e786caef checked out). An empty `head` (not a git checkout) keeps the old key's meaning.
+    HEAD is in it because the binary stamps `vcs.revision`, and a rebase-merge leaves the tree byte-identical under a new commit, which the fingerprint alone reads as current. An empty `head` (see `renet_head`) keeps the old key's meaning.
     """
     text = "src=%s\nlicense=%s\nkey=%s\n" % (source, license_mode, account_key)
     if head:
@@ -1365,10 +1379,7 @@ def ensure_renet_built(env: dict[str, str] | None = None) -> bool:
             raise LocalCommonError("cd %s failed" % renet_dir, code=1)
         source = _subst(computed)
 
-    head = _capture(["git", "rev-parse", "HEAD"], quiet_err=True, cwd=renet_dir)
-    current = renet_stamp_key(
-        source, _subst(head.stdout or "") if head.returncode == 0 else "", license_mode, account_key
-    )
+    current = renet_stamp_key(source, renet_head(renet_dir), license_mode, account_key)
     saved_stamp = _subst(read_stamp_hash(stamp))
     saved_lines = saved_stamp.split("\n")
     saved = saved_lines[0]

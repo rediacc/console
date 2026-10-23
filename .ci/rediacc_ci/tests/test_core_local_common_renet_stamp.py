@@ -48,3 +48,67 @@ def test_the_key_still_moves_with_source_license_and_key():
 def test_an_empty_head_keeps_the_key_the_stamp_held_before():
     legacy = local_common._hex_of(b"src=s\nlicense=nolicense\nkey=\n")
     assert local_common.renet_stamp_key("s", "", "nolicense", "") == legacy
+
+
+def _repo(path):
+    path.mkdir(parents=True, exist_ok=True)
+    _git(path, "init", "-q")
+    _git(path, "config", "user.email", "t@example.com")
+    _git(path, "config", "user.name", "t")
+    (path / "main.go").write_text("package main\n")
+    _git(path, "add", "main.go")
+    _git(path, "commit", "-q", "-m", "one")
+    return _git(path, "rev-parse", "HEAD")
+
+
+def test_renet_head_is_the_commit_of_its_own_checkout(tmp_path):
+    head = _repo(tmp_path / "renet")
+    assert local_common.renet_head(str(tmp_path / "renet")) == head
+
+
+def test_renet_head_is_empty_for_a_plain_directory_inside_another_repo(tmp_path):
+    _repo(tmp_path)
+    (tmp_path / "private" / "renet").mkdir(parents=True)
+    assert local_common.renet_head(str(tmp_path / "private" / "renet")) == ""
+
+
+def test_renet_head_is_empty_outside_any_repo(tmp_path):
+    (tmp_path / "renet").mkdir()
+    assert local_common.renet_head(str(tmp_path / "renet")) == ""
+
+
+def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch):
+    """The wiring, not just the key: a stamp written for one commit matches it, and an empty commit on top makes ensure_renet_built build."""
+    renet = tmp_path / "private" / "renet"
+    _repo(renet)
+    binary = renet / "bin" / "renet"
+    binary.parent.mkdir()
+    binary.write_text("binary")
+    env = {
+        "LOCAL_ROOT_DIR": str(tmp_path),
+        "RDC_RENET_LICENSE": "0",
+        "ACCOUNT_ED25519_PUBLIC_KEY": "",
+    }
+    monkeypatch.setattr(local_common, "check_go_installed", lambda: None)
+    builds = []
+
+    def fake_run(argv, *, cwd=None, **_):
+        builds.append((argv, cwd))
+        return 1
+
+    monkeypatch.setattr(local_common, "_run", fake_run)
+
+    source = local_common._subst(local_common.git_tree_fingerprint(str(renet), ["."], env))
+    key = local_common.renet_stamp_key(source, local_common.renet_head(str(renet)), "nolicense", "")
+    stamp = tmp_path / ".ci" / "cache" / "build-renet.stamp"
+    stamp.parent.mkdir(parents=True)
+    local_common.write_stamp_hash(
+        str(stamp), "%s\nbin=%s" % (key, local_common.renet_artifact_fp(str(binary)))
+    )
+
+    assert local_common.ensure_renet_built(env) is True
+    assert builds == []
+
+    _git(renet, "commit", "-q", "--allow-empty", "-m", "the same tree under a new commit")
+    assert local_common.ensure_renet_built(env) is False
+    assert builds == [(["./build.sh", "dev"], str(renet))]
