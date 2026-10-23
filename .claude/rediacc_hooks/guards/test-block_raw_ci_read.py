@@ -78,7 +78,11 @@ CASES = [
     ),
     ("api run logs", G + " api %s/actions/runs/7/logs" % REPO, T + " --run 7 --why"),
     ("api run", G + " api %s/actions/runs/7" % REPO, T + " --run 7 --why"),
-    ("api runs list", G + " api %s/actions/runs" % REPO, T + " --runs"),
+    (
+        "api runs list",
+        G + " api %s/actions/runs" % REPO,
+        T + " --runs --ref <branch> --workflow <stem|file|name>",
+    ),
     ("api annotations", G + " api %s/check-runs/9/annotations" % REPO, T + " --job 9 --errors"),
     ("api commit check-runs", G + " api %s/commits/abc/check-runs" % REPO, T + " --json"),
     ("api combined status", G + " api %s/commits/abc/status" % REPO, T + " --json"),
