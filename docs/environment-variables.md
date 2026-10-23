@@ -21,6 +21,7 @@ Each level has a distinct owner: this invocation > this shell/CI job > the persi
 | `REDIACC_CONFIG` | Selects the active config name (`--config` flag wins). Default `rediacc`. | `services/config/config-name.ts` |
 | `REDIACC_ACCOUNT_SERVER` | Account-server URL override for this invocation/job. The one connectivity env var. | `services/account/subscription-auth.ts` |
 | `REDIACC_UPDATE_CHANNEL` | Release-channel override (config field `account.updateChannel` is the persisted value). | `services/update/updater.ts`, telemetry |
+| `REDIACC_REGION` | Region label (`eu`, `us`, `asia`) the container executor (`rdc serve --mode container`) puts on its telemetry as `rediacc.region`; set by the proxy Worker in the container env. Unset reports no region. | `services/telemetry/container-telemetry.ts` |
 | `XDG_CONFIG_HOME` / `XDG_STATE_HOME` / `XDG_CACHE_HOME` | Standard base-dir overrides. | `packages/shared/src/paths/dirs.ts` |
 
 ## Who: credentials (headless / CI)
@@ -122,5 +123,5 @@ These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappea
 | `RDC_SKIP_ROUTER_RESTART` / `RDC_SKIP_SETUP_CHECK` | `REDIACC_SKIP_ROUTER_RESTART` / `REDIACC_SKIP_SETUP_CHECK` |
 | `RDC_DEBUG_RENET_PROVISION`, `RDC_TIMING_CHART`, `REDIACC_DAEMON_DEBUG`, `DEBUG` | `REDIACC_DEBUG` scopes |
 | `REDIACC_NO_COLOR` | `NO_COLOR` |
-| `REDIACC_TEAM` / `REDIACC_REGION` | none (config fields; env overrides were unused) |
+| `REDIACC_TEAM` | none (a config field; the env override was unused) |
 | `server.json` (file, not env) | `account.*` fields in the active config |

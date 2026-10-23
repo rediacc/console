@@ -35,6 +35,7 @@ vi.mock('../../../utils/agent-guard.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../utils/agent-guard.js')>()),
   isAgentEnvironment: () => false,
 }));
+
 import { configFileStorage } from '../../../adapters/config-file-storage.js';
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';

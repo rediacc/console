@@ -48,6 +48,12 @@ import {
   runInRequestContext,
 } from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
+import {
+  currentRequestTelemetry,
+  runWithRequestTelemetry,
+  type TelemetryCaller,
+} from '../telemetry/request-telemetry.js';
+import { telemetryService } from '../telemetry/telemetry.js';
 
 /** A request the executor refuses before running anything. Answered as a 400. */
 export class CommandRejected extends Error {
@@ -102,6 +108,11 @@ export interface DispatchArgs {
    * none); a daemon omits it and runs against its enrolled config file.
    */
   config?: RdcConfig;
+  /**
+   * Who asked, as the account server introspected the caller. Telemetry attributes
+   * the command's spans to this and not to the executor's own token.
+   */
+  caller?: TelemetryCaller;
 }
 
 export interface DispatchOutcome {
@@ -312,6 +323,27 @@ function harden(command: Command, stderr: string[]): void {
   for (const child of command.commands) harden(child, stderr);
 }
 
+/**
+ * A command that threw never reaches its postAction hook, so its span would stay
+ * open forever. Close it here, inside the request's own telemetry scope, as an
+ * error. A command that failed before its span opened has nothing to close.
+ */
+function endFailedCommandSpan(error: unknown, durationMs: number): void {
+  const open = currentRequestTelemetry()?.open;
+  if (!open) return;
+  const exitCode = error instanceof DispatchExit ? error.code : 1;
+  telemetryService.endCommand(
+    open.commandName,
+    {
+      success: exitCode === 0,
+      exitCode,
+      error: error instanceof Error ? error.message : 'The command failed.',
+      duration: durationMs,
+    },
+    open.spanKey
+  );
+}
+
 /** The result of a command that ran but reported nothing back through the executor. */
 function inertResult(durationMs: number): ExecuteResult {
   return { success: true, exitCode: 0, durationMs };
@@ -377,16 +409,19 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
 
-  const outcome = await runInRequestContext(context, async () => {
-    const program = createCli();
-    harden(program, context.stderr);
-    try {
-      await program.parseAsync(argv, { from: 'user' });
-      return { failed: false as const };
-    } catch (error) {
-      return { failed: true as const, error };
-    }
-  });
+  const outcome = await runWithRequestTelemetry(args.caller, () =>
+    runInRequestContext(context, async () => {
+      const program = createCli();
+      harden(program, context.stderr);
+      try {
+        await program.parseAsync(argv, { from: 'user' });
+        return { failed: false as const };
+      } catch (error) {
+        endFailedCommandSpan(error, Date.now() - started);
+        return { failed: true as const, error };
+      }
+    })
+  );
 
   const { text: stdout, bytes: stdoutBytes } = joinStdout(context.stdout);
   const stderr = context.stderr.join('\n');

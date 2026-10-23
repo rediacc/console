@@ -21,11 +21,14 @@ import { registerTermCommands } from './commands/term.js';
 import { registerUpdateCommand } from './commands/update.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
-import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
+import {
+  getSubscriptionServerUrl,
+  getSubscriptionTokenState,
+} from './services/account/subscription-auth.js';
 import { configService } from './services/config/config-resources.js';
 import { auditService } from './services/core/audit.js';
 import { outputService } from './services/core/output.js';
-import { exitProcess } from './services/core/request-context.js';
+import { currentRequestContext, exitProcess } from './services/core/request-context.js';
 import { setBackgroundRequested } from './services/executor/executor-factory.js';
 import {
   assertDetachable,
@@ -33,9 +36,15 @@ import {
   runCommandThroughProxy,
 } from './services/executor/proxy-command.js';
 import {
+  containerTelemetryConfig,
+  isContainerServe,
+} from './services/telemetry/container-telemetry.js';
+import {
   fetchCommandOtlpCredentials,
+  fetchOtlpCredentials,
   serverOptionOf,
 } from './services/telemetry/otlp-credentials.js';
+import { currentRequestTelemetry } from './services/telemetry/request-telemetry.js';
 import { isTelemetryDisabled, telemetryService } from './services/telemetry/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
@@ -48,16 +57,25 @@ import { VERSION } from './version.js';
 // Track if i18n has been initialized
 let i18nInitialized = false;
 
-// Track command context for telemetry
-const commandContext = new Map<string, { startTime: number }>();
-
 /**
- * The deferred telemetry-setup chain started in preAction (credential fetch →
- * initialize → startCommand → user context). postAction awaits it before
- * closing the command span. Resolved-by-default so a postAction without a
- * matching preAction (or with telemetry disabled) never hangs.
+ * Telemetry state of one command run, keyed by the Commander action command and not
+ * by the command's name: the executor runs many commands at once (two concurrent
+ * `repo list` share a name), and each dispatch builds its own tree, so the action
+ * command object is unique per run.
+ *
+ * `ready` is the deferred telemetry-setup chain started in preAction (credential
+ * fetch, initialize, startCommand, user context). postAction awaits it before
+ * closing the command span. A postAction without a matching preAction finds no
+ * entry and never waits.
  */
-let telemetryReady: Promise<void> = Promise.resolve();
+interface ActionTelemetry {
+  commandName: string;
+  startTime: number;
+  spanKey: string;
+  ready: Promise<void>;
+}
+const actionTelemetry = new WeakMap<Command, ActionTelemetry>();
+let spanSequence = 0;
 
 // formatDuration removed, timeline handles all timing display
 
@@ -251,9 +269,29 @@ export function createCli(): Command {
       // after initialize). Executor paths that inject the credentials into renet env await the same memoized fetch, and the postAction hook awaits this chain before ending the command span, so no telemetry is lost, the span's duration comes from the startTime captured here.
       const commandName = getFullCommandName(actionCommand);
       const startTime = Date.now();
-      commandContext.set(commandName, { startTime });
+      const spanKey = `${commandName}#${++spanSequence}`;
       outputService.setCommandContext(commandName, startTime);
-      telemetryReady = (async () => {
+      // Inside an executor request the SDK already exists (the container initialised it at start), the user is the introspected caller, and profiling is process-wide: none of the per-process setup below applies, only the command span.
+      const inRequest = currentRequestContext() !== undefined;
+      const containerServe = !inRequest && isContainerServe(actionCommand);
+      const ready = (async () => {
+        if (inRequest) {
+          telemetryService.startCommand(commandName, {
+            args: actionCommand.args,
+            options: actionCommand.opts(),
+            spanKey,
+          });
+          const scope = currentRequestTelemetry();
+          if (scope) scope.open = { commandName, spanKey };
+          return;
+        }
+        if (containerServe) {
+          // The container fetches its credential from its own account server (REDIACC_ACCOUNT_SERVER), initialises once under its own service name, and never profiles. There is no command span: `serve` runs until the container stops.
+          const otlpCreds = await fetchOtlpCredentials(getSubscriptionServerUrl());
+          telemetryService.setRuntimeOtlpCredentials(otlpCreds);
+          await telemetryService.initialize(containerTelemetryConfig());
+          return;
+        }
         if (!isTelemetryDisabled()) {
           try {
             const otlpCreds = await fetchCommandOtlpCredentials(actionCommand);
@@ -273,6 +311,7 @@ export function createCli(): Command {
       })().catch(() => {
         // Telemetry setup failures never surface into the command.
       });
+      actionTelemetry.set(actionCommand, { commandName, startTime, spanKey, ready });
 
       // License auto-refresh is now handled per-operation in services/license.ts
     })
@@ -280,23 +319,27 @@ export function createCli(): Command {
       // Timeline rendering handles timing display for executor commands. No additional "Completed in X (total: Y)" message needed.
 
       // The deferred telemetry chain from preAction must land before the command span is closed, for fast commands it may still be in flight.
-      await telemetryReady;
+      const ctx = actionTelemetry.get(actionCommand);
+      await ctx?.ready;
 
-      // Stop profiling before ending telemetry
-      await telemetryService.stopProfiling();
+      // Stop profiling before ending telemetry (profiling is a process-wide singleton and is never started inside an executor request)
+      if (currentRequestContext() === undefined) {
+        await telemetryService.stopProfiling();
+      }
 
       // End telemetry tracking for the command
-      const commandName = getFullCommandName(actionCommand);
-      const ctx = commandContext.get(commandName);
+      const commandName = ctx?.commandName ?? getFullCommandName(actionCommand);
       const duration = ctx ? Date.now() - ctx.startTime : 0;
 
-      telemetryService.endCommand(commandName, {
-        success: true,
-        exitCode: 0,
-        duration,
-      });
+      telemetryService.endCommand(
+        commandName,
+        { success: true, exitCode: 0, duration },
+        ctx?.spanKey ?? commandName
+      );
 
-      commandContext.delete(commandName);
+      const scope = currentRequestTelemetry();
+      if (scope?.open && scope.open.spanKey === ctx?.spanKey) scope.open = undefined;
+      actionTelemetry.delete(actionCommand);
 
       // Flush audit events (fire-and-forget, timeout-bounded)
       await auditService.flush(serverOptionOf(actionCommand));

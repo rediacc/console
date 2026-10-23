@@ -1,6 +1,10 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
-import { exitProcess, writeStdout } from '../services/core/request-context.js';
+import {
+  currentRequestContext,
+  exitProcess,
+  writeStdout,
+} from '../services/core/request-context.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
@@ -113,10 +117,12 @@ export function handleError(error: unknown): never {
     outputTextError(cliError);
   }
 
-  // Fire-and-forget telemetry shutdown (don't block exit)
-  void telemetryService.shutdown().catch(() => {
-    // Ignore shutdown errors - we're exiting anyway
-  });
+  // Fire-and-forget telemetry shutdown (don't block exit). Inside an executor dispatch the process keeps serving other callers, and a shut-down SDK cannot be restarted, so one failed request would silence telemetry for all of them.
+  if (!currentRequestContext()) {
+    void telemetryService.shutdown().catch(() => {
+      // Ignore shutdown errors - we're exiting anyway
+    });
+  }
 
   // Exit synchronously. On a laptop this is process.exit() as it always was. Inside an executor dispatch it throws instead, because a command that fails
   // for one tenant must not kill the process serving everyone else.

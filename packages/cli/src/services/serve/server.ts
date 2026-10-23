@@ -224,6 +224,11 @@ export function createServeApp(deps: ServeDeps): Hono {
           prepared,
           executor: deps.executor,
           ...(requestConfig ? { config: requestConfig } : {}),
+          caller: {
+            userId: principal.userId,
+            orgId: principal.orgId,
+            userEmail: principal.userEmail,
+          },
           // The executor detaches a proxied command by default (its connection cannot be assumed to outlive the work), overridable via deps.detach.
           detached: deps.detach ? deps.detach(entry) : entry.detachable,
           // Announce the job the instant it starts, before any event, so a dropped connection can be re-attached via GET /v1/jobs/:id/events.

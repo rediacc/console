@@ -65,7 +65,6 @@ const BANNED: Banned[] = [
   { token: 'DEBUG', envOnly: true },
   { token: 'isDevelopmentSubscriptionMode' },
   { token: 'process.env.REDIACC_TEAM' },
-  { token: 'process.env.REDIACC_REGION' },
   { token: 'process.env.X25519_PUBLIC_KEY' },
   { token: 'loadServerConfig' },
   { token: 'saveServerConfig' },

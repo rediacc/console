@@ -1987,6 +1987,7 @@
     ".claude/hooks/stop/wl_checks.py": [
       "WORKLIST_ALWAYS_FULL_MAX",
       "WORKLIST_ARCHIVE_HOURS",
+      "WORKLIST_BIGPIECES_LATCH_MIN",
       "WORKLIST_CADENCE_MAX",
       "WORKLIST_CI_FORCE_MIN_AGE",
       "WORKLIST_CI_FORCE_PER_STOP",
@@ -2008,7 +2009,6 @@
       "WORKLIST_SOLO_MIN",
       "WORKLIST_STUCK_ROUNDS",
       "WORKLIST_STUCK_SUPERVISED_MAX_MIN",
-      "WORKLIST_SUBMODULE_DECIDED_LATCH_MIN",
       "WORKLIST_SUBMODULE_LATCH_MIN",
       "WORKLIST_UNREAD_INVARIANT_MIN",
       "WORKLIST_UNREAD_ROTATE_MIN"
@@ -2139,6 +2139,10 @@
     ],
     ".claude/hooks/stop/wl_rules.py": [
       "TMPDIR"
+    ],
+    ".claude/hooks/stop/wl_ruling.py": [
+      "CLAUDE_PROJECT_DIR",
+      "WORKLIST_STORE_DIR"
     ],
     ".claude/hooks/stop/wl_schedred.py": [
       "WORKLIST_SCHED_RED_TTL_S"

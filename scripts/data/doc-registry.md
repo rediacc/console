@@ -1918,7 +1918,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_PROVISION_LOCK_TIMEOUT_MS` | product-runtime | - |
 | `REDIACC_PROXY_URL` | product-runtime | - |
 | `REDIACC_PYTEST_REAL_DIST` | harness | - |
-| `REDIACC_REGION` | tombstone | tombstone proof: `packages/cli/src/__tests__/env-tombstones.test.ts` |
+| `REDIACC_REGION` | product-runtime | - |
 | `REDIACC_SECRET_STORE` | product-runtime | - |
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | product-runtime | - |
 | `REDIACC_SKIP_MACHINE_ACTIVATION` | product-runtime | - |
@@ -2281,6 +2281,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKLIST_BG_OUTPUT_DIR` | harness | - |
 | `WORKLIST_BG_REPORT_MIN` | harness | - |
 | `WORKLIST_BG_STALE_MIN` | harness | - |
+| `WORKLIST_BIGPIECES_LATCH_MIN` | harness | - |
 | `WORKLIST_BIG_OPEN_FLOOR` | harness | - |
 | `WORKLIST_BIG_TOP_N` | harness | - |
 | `WORKLIST_BRAVE_MAX_FIRES` | harness | - |
@@ -2382,7 +2383,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKLIST_STORE_DIR` | harness | - |
 | `WORKLIST_STUCK_ROUNDS` | harness | - |
 | `WORKLIST_STUCK_SUPERVISED_MAX_MIN` | harness | - |
-| `WORKLIST_SUBMODULE_DECIDED_LATCH_MIN` | harness | - |
 | `WORKLIST_SUBMODULE_LATCH_MIN` | harness | - |
 | `WORKLIST_SWEEP_MAX_FIRES` | harness | - |
 | `WORKLIST_SWEEP_TTL_MIN` | harness | - |
