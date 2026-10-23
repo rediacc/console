@@ -27,9 +27,9 @@ describe('planMissingParents', () => {
   });
 
   it('treats a probe error as existing', async () => {
-    const plan = await planMissingParents('/m', 'a/b/f.txt', async () => {
-      throw new Error('sftp down');
-    });
+    const plan = await planMissingParents('/m', 'a/b/f.txt', () =>
+      Promise.reject(new Error('sftp down'))
+    );
     expect(plan.missing).toEqual([]);
   });
 

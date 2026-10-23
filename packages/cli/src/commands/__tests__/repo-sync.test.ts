@@ -259,9 +259,9 @@ describe('ensureRemoteParents', () => {
       userHost: 'u@h',
       rsyncOptions,
       probe: async (p) => present.includes(p),
-      runRsync: async (o) => {
+      runRsync: (o) => {
         calls.push(o);
-        return { success: true, errors: [] };
+        return Promise.resolve({ success: true, errors: [] });
       },
     });
     return { calls, created };

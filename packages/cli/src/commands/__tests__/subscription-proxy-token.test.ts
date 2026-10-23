@@ -40,14 +40,16 @@ const SERVER = 'https://eu.example.test';
  */
 function serveMint(): void {
   fakeAccountServer.mockImplementation(
-    async (path: string, opts: { method?: string; token?: string; serverUrl?: string }) => {
+    (path: string, opts: { method?: string; token?: string; serverUrl?: string }) => {
       if (path !== PROXY_CLI_TOKEN_PATH || opts.method !== 'POST') {
-        throw Object.assign(new Error('Not Found'), { status: 404 });
+        return Promise.reject(Object.assign(new Error('Not Found'), { status: 404 }));
       }
       if (opts.token !== LOGIN || opts.serverUrl !== SERVER) {
-        throw Object.assign(new Error('Invalid or expired API token'), { status: 401 });
+        return Promise.reject(
+          Object.assign(new Error('Invalid or expired API token'), { status: 401 })
+        );
       }
-      return { token: MINTED, expiresAt: EXPIRES, scopes: ['proxy:exec'] };
+      return Promise.resolve({ token: MINTED, expiresAt: EXPIRES, scopes: ['proxy:exec'] });
     }
   );
 }
@@ -117,9 +119,7 @@ describe('rdc subscription proxy-token', () => {
     await run();
     expect(fakeAccountServer).not.toHaveBeenCalled();
     expect(handleError).toHaveBeenCalledTimes(1);
-    expect((handleError.mock.calls[0][0] as Error).message).toBe(
-      'errors.subscription.notLoggedIn'
-    );
+    expect((handleError.mock.calls[0][0] as Error).message).toBe('errors.subscription.notLoggedIn');
     expect(stdout.join('')).toBe('');
   });
 
@@ -142,9 +142,7 @@ describe('rdc subscription proxy-token', () => {
 
   it('fails rather than printing an empty line when the server returns no token', async () => {
     fakeAccountServer.mockResolvedValueOnce({});
-    await expect(executeProxyToken({})).rejects.toThrow(
-      'commands.subscription.proxyToken.noToken'
-    );
+    await expect(executeProxyToken({})).rejects.toThrow('commands.subscription.proxyToken.noToken');
     expect(stdout.join('')).toBe('');
   });
 });
