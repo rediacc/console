@@ -18,7 +18,7 @@ export interface TelemetryCaller {
 }
 
 /** The command span currently open for this request. */
-export interface OpenCommandSpan {
+interface OpenCommandSpan {
   commandName: string;
   spanKey: string;
 }

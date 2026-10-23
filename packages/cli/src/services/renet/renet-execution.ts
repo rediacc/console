@@ -176,7 +176,11 @@ const realCleanBuildDeps: RenetCleanBuildDeps = {
   build: (cwd, env) =>
     new Promise((resolve, reject) => {
       // stdout is the CLI command's; build progress goes to stderr.
-      const child = spawn('./build.sh', ['dev'], { cwd, env, stdio: ['ignore', 2, 2] });
+      const child = spawn(path.join(cwd, 'build.sh'), ['dev'], {
+        cwd,
+        env,
+        stdio: ['ignore', 2, 2],
+      });
       child.on('error', reject);
       child.on('close', (code) =>
         code === 0 ? resolve() : reject(new Error(`./build.sh dev exited ${code} in ${cwd}`))

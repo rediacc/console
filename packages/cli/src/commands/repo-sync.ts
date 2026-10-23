@@ -378,7 +378,9 @@ export async function ensureRemoteParents(args: EnsureRemoteParentsArgs): Promis
       destination: skeletonDestination(args.userHost, existingAncestor, missing),
     });
     if (!result.success) {
-      throw new RemoteFoldersError(`Creating remote folders failed: ${result.errors.join(' ').trim()}`);
+      throw new RemoteFoldersError(
+        `Creating remote folders failed: ${result.errors.join(' ').trim()}`
+      );
     }
   } finally {
     skeleton.cleanup();

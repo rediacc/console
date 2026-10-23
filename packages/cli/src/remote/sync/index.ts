@@ -6,9 +6,7 @@
 // High-level operations
 export { formatChangesSummary, formatDetailedChanges } from './operations.js';
 export {
-  type MissingParents,
   planMissingParents,
-  type Skeleton,
   skeletonDestination,
   writeSkeleton,
 } from './remote-parents.js';

@@ -9,7 +9,7 @@ import type { Command } from 'commander';
 import { VERSION } from '../../version.js';
 import type { TelemetryInitConfig } from './telemetry.js';
 
-export const CONTAINER_EXECUTOR_SERVICE_NAME = 'rediacc-proxy-executor';
+const CONTAINER_EXECUTOR_SERVICE_NAME = 'rediacc-proxy-executor';
 
 /** True for the one command that runs the container tier: `serve --mode container`. */
 export function isContainerServe(command: Command): boolean {
