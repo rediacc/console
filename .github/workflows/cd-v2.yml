@@ -62,6 +62,7 @@ jobs:
   # ============================================================================
   init:
     name: Initialize
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     # Bounds the artifact download in assert_artifact_version (DOWNLOAD_TIMEOUT_S=300) with headroom; check:ci-inner-timeout-reachable requires a ceiling above every step timer.
     timeout-minutes: 30
@@ -260,6 +261,7 @@ jobs:
           RETRY_MODE: ${{ steps.skip-check.outputs.retry_mode }}
           GIT_BOT_NAME: ${{ env.BWS_GIT_BOT_NAME }}
           GIT_BOT_EMAIL: ${{ env.BWS_GIT_BOT_EMAIL }}
+        shell: bash
         run: |
           rc=0; REFS=$(git ls-remote --exit-code origin "refs/tags/v${VERSION}" "refs/tags/v${VERSION}^{}") || rc=$?
           if [[ "$rc" == 0 ]]; then AT=$(tail -n1 <<<"$REFS" | cut -f1); [[ "$AT" == "$CI_SHA" || "$RETRY_MODE" == true ]] || { echo "::error::Tag v${VERSION} already exists at ${AT}, not at CI commit ${CI_SHA}. Refusing to release one version from two commits."; exit 1; }; echo "::notice::Tag v${VERSION} already exists at ${AT} (retry_mode=${RETRY_MODE}); nothing to create."; exit 0; fi
@@ -314,6 +316,7 @@ jobs:
       attestations: read
     needs: [init]
     if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
       success()
     environment:
       name: edge
@@ -415,6 +418,7 @@ jobs:
 
       - name: Verify Stripe webhook endpoints (per-region)
         if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
+        shell: bash
         run: |
           jq -r '.regions[] | .domain' regions.json | while read -r domain; do
             echo "Verifying webhook for ${domain}..."
@@ -517,6 +521,7 @@ jobs:
     # per-job result checks. See the deploy-marketing-stable pattern in
     # commit c608e29a8 for the established shape.
     if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
       always() &&
       needs.init.result == 'success' &&
       (needs.publish.result == 'success' || needs.publish.result == 'skipped')
@@ -538,6 +543,7 @@ jobs:
     needs: [init, publish]
     # See deploy-marketing-edge above for why we don't use bare success().
     if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
       always() &&
       needs.init.result == 'success' &&
       (needs.publish.result == 'success' || needs.publish.result == 'skipped')
@@ -565,6 +571,7 @@ jobs:
     # tag-and-release to be either success or skipped; gate the rest
     # explicitly so a real upstream failure still blocks the deploy.
     if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
       always() &&
       needs.init.result == 'success' &&
       needs.publish.result == 'success' &&
@@ -589,6 +596,7 @@ jobs:
     needs: [init, publish, smoke-test, tag-and-release]
     # See deploy-marketing-stable above for why we don't use bare success().
     if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
       always() &&
       needs.init.result == 'success' &&
       needs.publish.result == 'success' &&
@@ -717,6 +725,7 @@ jobs:
     # retry_mode is NOT excluded here any more; see the job header and the
     # "Decide what this run still owes" step. workers_only cuts no version.
     if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
       success() &&
       needs.init.outputs.workers_only != 'true'
     steps:

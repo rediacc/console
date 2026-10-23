@@ -1354,6 +1354,7 @@ jobs:
 
       - name: Final Service Status
         if: always()
+        shell: bash
         run: |
           echo "Final Container Status:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true

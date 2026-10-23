@@ -67,6 +67,8 @@ THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a f
 THE EXTERNAL-GATE PINS (operator rulings 2026-10-13, "Everything fails closed, nightly included", and 2026-10-14, "Extend to all seven") ride the same phase and read a fifth file, `ci-quality.yml` (`QUALITY_WORKFLOW_FILE` overrides it). Every gate that asks a host outside the repository (`UPSTREAM_GATES`: the four pin freshness gates, actions, external links, DKIM, Go dependencies and npm dependencies) is hard on a pull request, on the nightly and on a dispatch.
 `analyse_upstream_gates` refuses: a gate with no step; an `if:` other than the lane guard plus the label hold (a gate-bind shard conjunct `matrix.shard == N` is allowed, since it cannot tell one cadence from another); a job whose announcer does not name the gate under `no-external-quality`; and a ci.yml whose `external_quality` can resolve to `skip` off a pull request.
 
+THE WORKFLOW-ESTATE PINS (2026-10-23) ride the same phase and read EVERY workflow and composite action (`estate_files`, the set `check:ci-workflows` walks): `pipe-no-pipefail` refuses a `run:` that pipes with no pipefail in force (commit 41437ea6f), and `dispatch-write-off-default-branch` refuses a write-capable job in a `workflow_dispatch` workflow without `DEFAULT_BRANCH_GUARD` as a top-level `&&` conjunct of its `if:` (commit f8d184807). Zero files or zero run steps is red. The comment block above `PIPEFAIL_KINDS` carries the rules.
+
 WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-v2.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
 and its success line prints the shape (tag job, its ancestors, job count, push count) so a collapse is visible.
 
@@ -1517,6 +1519,442 @@ def _pins_soaked_phase(pins_file: str) -> tuple[list[str], list[str]]:
     return [], ["pins-soaked holds: " + "; ".join(shape)]
 
 
+# THE WORKFLOW-ESTATE PINS (2026-10-23, asked for by the Stop hook's regression judge). Two fixes landed that day that no check could catch, so both are pinned here over EVERY workflow and composite action, not one named file:
+#
+#   * `pipe-no-pipefail` (commit 41437ea6f). A `run:` with no explicit `shell:` runs under `bash -e {0}`, which has NO pipefail, so `report | tee -a "$GITHUB_STEP_SUMMARY"` took tee's exit 0 and a failing report passed green. A run that contains a shell pipe must run under the bare `shell: bash` (GitHub expands it to `bash --noprofile --norc -eo pipefail {0}`), under a custom shell line naming pipefail, or `set -o pipefail` (any `set` spelling carrying it) on or before the pipe's line. Every pipe counts, not only a final `tee`: `cmd | tail` and `cmd | grep` lose the exit code the same way.
+#   * `dispatch-write-off-default-branch` (commit f8d184807). `workflow_dispatch` runs the file from the branch the dispatcher selects, so a write-capable job in a dispatchable workflow runs unreviewed code with a write credential unless its `if:` carries `DEFAULT_BRANCH_GUARD` as a top-level conjunct. Write-capable means: a step minting the app-token action with any preset outside `READ_PRESETS` (the same action path and `preset:` key the pins-soaked rules read; an absent preset is the action's `readonly` default, an expression preset is not provably read-only), an effective `contents: write` (or `write-all`) at job or workflow level, or a call to a local reusable workflow holding such a job.
+PIPEFAIL_KINDS = ("pipe-no-pipefail", "estate-no-files", "estate-no-runs")
+DISPATCH_KINDS = ("dispatch-write-off-default-branch",)
+DEFAULT_BRANCH_GUARD = (
+    "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
+)
+READ_PRESETS = frozenset({"readonly", "pr-read"})
+# Shells whose run body is not a POSIX shell script, so a `|` in it is not a pipeline. `pwsh` is also the implicit shell on a windows runner.
+_NON_SH_SHELLS = ("pwsh", "powershell", "cmd", "python", "node")
+_PIPEFAIL_SET_RE = re.compile(r"\bset\b[^\n;#|&]*?-[A-Za-z]*o\s+pipefail\b")
+_HEREDOC_RE = re.compile(r"<<(-?)\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\2")
+_EXPR_SPAN_RE = re.compile(r"\$\{\{.*?\}\}", re.DOTALL)
+
+
+def _shell_skeleton(script: str) -> list[str]:
+    """The script with quoted text, comments, heredoc bodies and `${{ }}` expressions blanked, one entry per source line, so only operators the shell itself reads survive.
+
+    A `$(...)` is shell code wherever it sits, inside double quotes included (`x="$(a | b)"` is a pipeline whose status the assignment takes), so it is kept. A state stack tracks quotes, command substitutions and heredocs across lines; backticks are not read.
+    """
+    text = _EXPR_SPAN_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), script)
+    out: list[str] = []
+    heredoc: tuple[str, bool] | None = None
+    # Each frame is a state: "n" top-level code, "c" inside $( ), "a" inside $(( )), '"' or "'" inside quotes. A "c" or "a" frame carries its own paren depth.
+    stack: list[list] = [["n", 0]]
+    for line in text.split("\n"):
+        if heredoc is not None:
+            delim, dash = heredoc
+            if (line.lstrip("\t") if dash else line).rstrip() == delim:
+                heredoc = None
+            out.append("")
+            continue
+        kept: list[str] = []
+        i = 0
+        pending: tuple[str, bool] | None = None
+        while i < len(line):
+            ch = line[i]
+            state = stack[-1][0]
+            if state == "'":
+                if ch == "'":
+                    stack.pop()
+                kept.append(" ")
+                i += 1
+                continue
+            if state == "a":
+                # $(( )) arithmetic: `|` there is bitwise OR, never a pipe.
+                if ch == "(":
+                    stack[-1][1] += 1
+                elif ch == ")":
+                    if stack[-1][1] == 0 and line.startswith("))", i):
+                        stack.pop()
+                        kept.append("  ")
+                        i += 2
+                        continue
+                    stack[-1][1] -= 1
+                kept.append(" ")
+                i += 1
+                continue
+            if state == '"':
+                if ch == "\\":
+                    kept.append("  ")
+                    i += 2
+                elif line.startswith("$(", i) and not line.startswith("$((", i):
+                    stack.append(["c", 0])
+                    kept.append("  ")
+                    i += 2
+                else:
+                    if ch == '"':
+                        stack.pop()
+                    kept.append(" ")
+                    i += 1
+                continue
+            # code: "n" or "c"
+            if ch == "\\":
+                kept.append("  ")
+                i += 2
+                continue
+            if ch in "'\"":
+                stack.append([ch, 0])
+                kept.append(" ")
+                i += 1
+                continue
+            if ch == "#" and (i == 0 or line[i - 1] in " \t;|&("):
+                break
+            if line.startswith("$((", i):
+                stack.append(["a", 0])
+                kept.append("   ")
+                i += 3
+                continue
+            if line.startswith("$(", i):
+                stack.append(["c", 0])
+                kept.append("  ")
+                i += 2
+                continue
+            if state == "c" and ch == "(":
+                stack[-1][1] += 1
+            elif state == "c" and ch == ")":
+                if stack[-1][1] == 0:
+                    stack.pop()
+                    kept.append(" ")
+                    i += 1
+                    continue
+                stack[-1][1] -= 1
+            m = _HEREDOC_RE.match(line, i)
+            if m:
+                pending = (m.group(3), bool(m.group(1)))
+                kept.append(" " * (m.end() - i))
+                i = m.end()
+                continue
+            kept.append(ch)
+            i += 1
+        out.append("".join(kept))
+        if pending is not None and stack[-1][0] in ("n", "c"):
+            heredoc = pending
+    return out
+
+
+_PIPE_RE = re.compile(r"(?<![|>])\|(?!\|)")
+
+
+def _case_pattern_lines(skeleton: list[str]) -> set[int]:
+    """Indices of lines inside a `case ... in ... esac` whose `|` belongs to a pattern (`a|b)`), not a pipeline."""
+    lines: set[int] = set()
+    depth = 0
+    for idx, line in enumerate(skeleton):
+        if re.search(r"\bcase\b.*\bin\b", line):
+            depth += 1
+        if depth and re.match(r"^\s*[^()]*\)", line) and not re.match(r"^\s*\S+\s*\(\)", line):
+            head = line.split(")", 1)[0]
+            if "|" in head:
+                lines.add(idx)
+        if re.search(r"\besac\b", line):
+            depth = max(0, depth - 1)
+    return lines
+
+
+def pipe_lines(script: str) -> list[int]:
+    """1-based line numbers of the script's shell pipe operators (`|` and `|&`, never `||` or the `>|` clobber)."""
+    skeleton = _shell_skeleton(script)
+    case_lines = _case_pattern_lines(skeleton)
+    found: list[int] = []
+    for idx, line in enumerate(skeleton):
+        probe = line
+        if idx in case_lines:
+            probe = line.split(")", 1)[1] if ")" in line else ""
+        if _PIPE_RE.search(probe):
+            found.append(idx + 1)
+    return found
+
+
+def pipefail_line(script: str) -> int | None:
+    """The 1-based line of the first `set` that turns pipefail on, outside quotes and comments; None when none does."""
+    for idx, line in enumerate(_shell_skeleton(script)):
+        if _PIPEFAIL_SET_RE.search(line):
+            return idx + 1
+    return None
+
+
+def _defaults_shell(node: object) -> str:
+    defaults = node.get("defaults") if isinstance(node, dict) else None
+    run = defaults.get("run") if isinstance(defaults, dict) else None
+    return _text(run.get("shell")).strip() if isinstance(run, dict) else ""
+
+
+def _shell_verdict(shell: str, runs_on: str, script: str) -> str | None:
+    """None when the run is safe, otherwise why its pipe loses the exit code."""
+    lines = pipe_lines(script)
+    if not lines:
+        return None
+    if shell == "bash" or "pipefail" in shell:
+        return None
+    if not shell and "windows" in runs_on.lower() and "${{" not in runs_on:
+        return None
+    first = shell.split(maxsplit=1)[0].lower() if shell else ""
+    if first and any(first.startswith(s) for s in _NON_SH_SHELLS):
+        return None
+    on = pipefail_line(script)
+    if on is not None and on <= lines[0]:
+        return None
+    where = "line %d" % lines[0]
+    if on is not None:
+        return "%s pipes before `set -o pipefail` on line %d" % (where, on)
+    return "%s pipes under %s with no pipefail" % (
+        where,
+        "`shell: %s`" % shell if shell else "the implicit `bash -e {0}`",
+    )
+
+
+def analyse_pipefail(doc: object) -> tuple[list[tuple[str, str]], int, int]:
+    """(findings, runs read, runs that pipe) for one workflow or composite action document."""
+    if not isinstance(doc, dict):
+        return [], 0, 0
+    out: list[tuple[str, str]] = []
+    runs = pipes = 0
+    top_shell = _defaults_shell(doc)
+    units: list[tuple[str, str, str, list]] = []
+    jobs = doc.get("jobs")
+    if isinstance(jobs, dict):
+        for jname, job in jobs.items():
+            if not isinstance(job, dict):
+                continue
+            shell = _defaults_shell(job) or top_shell
+            units.append((str(jname), shell, _text(job.get("runs-on")), _steps(job)))
+    action_runs = doc.get("runs")
+    if isinstance(action_runs, dict) and isinstance(action_runs.get("steps"), list):
+        units.append(("<composite>", "", "", _steps(action_runs)))
+    for jname, shell, runs_on, steps in units:
+        for i, st in enumerate(steps):
+            script = st.get("run")
+            if not isinstance(script, str):
+                continue
+            runs += 1
+            pipes += bool(pipe_lines(script))
+            why = _shell_verdict(_text(st.get("shell")).strip() or shell, runs_on, script)
+            if why:
+                out.append(("pipe-no-pipefail", "%s: %s" % (_step_label(jname, i, st), why)))
+    return out, runs, pipes
+
+
+def _strip_expr(cond: str) -> str:
+    cond = cond.strip()
+    if cond.startswith("${{") and cond.endswith("}}"):
+        cond = cond[3:-2]
+    return " ".join(cond.split())
+
+
+def _top_level_split(expr: str, op: str) -> list[str]:
+    parts: list[str] = []
+    depth, quote, start, i = 0, "", 0, 0
+    while i < len(expr):
+        ch = expr[i]
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch == "'":
+            quote = ch
+        elif ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+        elif depth == 0 and expr.startswith(op, i):
+            parts.append(expr[start:i])
+            i += len(op)
+            start = i
+            continue
+        i += 1
+    parts.append(expr[start:])
+    return [p.strip() for p in parts]
+
+
+def _unparen(expr: str) -> str:
+    """`expr` without parentheses that enclose ALL of it; `(a) && (b)` is left alone."""
+    while expr.startswith("(") and expr.endswith(")"):
+        depth = 0
+        for i, ch in enumerate(expr):
+            depth += ch == "("
+            depth -= ch == ")"
+            if depth == 0 and i < len(expr) - 1:
+                return expr
+        expr = expr[1:-1].strip()
+    return expr
+
+
+_GUARD_FORMS = frozenset(
+    {
+        DEFAULT_BRANCH_GUARD,
+        "format('refs/heads/{0}', github.event.repository.default_branch) == github.ref",
+    }
+)
+
+
+def has_default_branch_guard(cond: object) -> bool:
+    """True when `cond` is a conjunction with `DEFAULT_BRANCH_GUARD` as one of its top-level conjuncts; a guard under `||` or `!` guards nothing."""
+    expr = _unparen(_strip_expr(_text(cond)))
+    if not expr or len(_top_level_split(expr, "||")) > 1:
+        return False
+    return any(_unparen(c) in _GUARD_FORMS for c in _top_level_split(expr, "&&"))
+
+
+def _writes_contents_any(perms: object) -> bool:
+    if isinstance(perms, str):
+        return perms.strip() == "write-all"
+    return isinstance(perms, dict) and _text(perms.get("contents")).strip() == "write"
+
+
+def _write_token_steps(job: dict) -> list[str]:
+    found = []
+    for i, st in enumerate(_steps(job)):
+        if _text(st.get("uses")).strip() != APP_MINT_ACTION:
+            continue
+        with_ = st.get("with")
+        preset = _text(with_.get("preset")).strip() if isinstance(with_, dict) else ""
+        if (preset or "readonly") not in READ_PRESETS:
+            found.append("step %d mints app-token preset %s" % (i, preset))
+    return found
+
+
+def _job_write_reasons(
+    doc: dict, job: dict, load: typing.Callable[[str], object] | None, seen: frozenset = frozenset()
+) -> list[str]:
+    reasons = list(_write_token_steps(job))
+    perms = job["permissions"] if "permissions" in job else doc.get("permissions")
+    if _writes_contents_any(perms):
+        reasons.append("holds contents: write")
+    uses = _text(job.get("uses")).strip()
+    if uses.startswith("./.github/workflows/") and load is not None and uses not in seen:
+        callee = load(uses[2:])
+        if isinstance(callee, dict):
+            cjobs = callee.get("jobs")
+            for cname, cjob in cjobs.items() if isinstance(cjobs, dict) else ():
+                if isinstance(cjob, dict) and _job_write_reasons(callee, cjob, load, seen | {uses}):
+                    reasons.append("calls %s, whose job %s can write" % (uses, cname))
+                    break
+    return reasons
+
+
+def analyse_dispatch(
+    doc: object, load: typing.Callable[[str], object] | None = None
+) -> tuple[list[tuple[str, str]], int]:
+    """(findings, write-capable dispatchable jobs) for one workflow. `load` reads a repo-relative path, for local reusable workflows; None skips that leg."""
+    if not isinstance(doc, dict) or "workflow_dispatch" not in _pins_triggers(doc):
+        return [], 0
+    out: list[tuple[str, str]] = []
+    writers = 0
+    jobs = doc.get("jobs")
+    for jname, job in jobs.items() if isinstance(jobs, dict) else ():
+        if not isinstance(job, dict):
+            continue
+        reasons = _job_write_reasons(doc, job, load)
+        if not reasons:
+            continue
+        writers += 1
+        if not has_default_branch_guard(job.get("if")):
+            out.append(
+                ("dispatch-write-off-default-branch", "job %s (%s)" % (jname, "; ".join(reasons)))
+            )
+    return out, writers
+
+
+def estate_files(root_dir: str) -> list[str]:
+    """Every workflow (`.github/workflows/*.yml|yaml`) and every composite action at any depth (`.github/actions/**/action.yml|yaml`), sorted, as repo-relative paths: the same set `check:ci-workflows` reads."""
+    found = []
+    wf = os.path.join(root_dir, ".github", "workflows")
+    if os.path.isdir(wf):
+        found += [
+            ".github/workflows/" + n for n in sorted(os.listdir(wf)) if re.match(r".+\.ya?ml$", n)
+        ]
+    actions = os.path.join(root_dir, ".github", "actions")
+    for dirpath, dirnames, filenames in os.walk(actions):
+        dirnames.sort()
+        for leaf in ("action.yml", "action.yaml"):
+            if leaf in filenames:
+                found.append(
+                    os.path.relpath(os.path.join(dirpath, leaf), root_dir).replace(os.sep, "/")
+                )
+    return sorted(found)
+
+
+def estate_message_for(kind: str, name: str, path: str) -> str | None:
+    if kind == "pipe-no-pipefail":
+        return (
+            "INVARIANT-FAIL: pipe-no-pipefail: %s: %s. Without pipefail the step takes the LAST "
+            "command's exit code, so a failing producer piped into tee/tail/grep ends green "
+            "(commit 41437ea6f). Fix: add `shell: bash` to the step (GitHub runs it as "
+            "`bash -eo pipefail`), or put `set -o pipefail` before the pipe." % (path, name)
+        )
+    if kind == "dispatch-write-off-default-branch":
+        return (
+            "INVARIANT-FAIL: dispatch-write-off-default-branch: %s: %s is write-capable in a "
+            "workflow_dispatch workflow, and dispatch runs the file from whichever branch the "
+            "dispatcher selects, so unreviewed code would hold the write credential (commit "
+            "f8d184807). Fix: make `%s` a top-level `&&` conjunct of the job's `if:`."
+            % (path, name, DEFAULT_BRANCH_GUARD)
+        )
+    if kind == "estate-no-files":
+        return (
+            "INVARIANT-FAIL: workflow-estate: no workflow or action file under %s (nothing to check cannot pass)"
+            % path
+        )
+    if kind == "estate-no-runs":
+        return (
+            "INVARIANT-FAIL: workflow-estate: %d file(s) read but no `run:` step found (the pipefail pin checked nothing)"
+            % int(name)
+        )
+    return None
+
+
+def _estate_phase(root_dir: str) -> tuple[list[str], list[str]]:
+    """(errors, info lines) for both estate pins. Zero files, zero runs or an unparseable file is an error."""
+    files = estate_files(root_dir)
+    if not files:
+        return [estate_message_for("estate-no-files", "", root_dir + "/.github") or ""], []
+    cache: dict[str, object] = {}
+
+    def load(rel: str) -> object:
+        if rel not in cache:
+            path = os.path.join(root_dir, rel)
+            cache[rel] = load_workflow(path) if os.path.isfile(path) else None
+        return cache[rel]
+
+    errors: list[str] = []
+    runs = pipes = dispatchable = writers = 0
+    for rel in files:
+        try:
+            doc = load(rel)
+        except SetupExitError as exc:
+            errors.append("INVARIANT-FAIL: workflow-estate: %s" % exc.message.strip())
+            if "not importable" in exc.message:
+                # One line, not one per file: no file can parse.
+                return errors, []
+            continue
+        found, r, p = analyse_pipefail(doc)
+        runs, pipes = runs + r, pipes + p
+        dfound, w = analyse_dispatch(doc, load)
+        if isinstance(doc, dict) and "workflow_dispatch" in _pins_triggers(doc):
+            dispatchable += 1
+        writers += w
+        errors += [m for k, n in found + dfound if (m := estate_message_for(k, n, rel)) is not None]
+    if runs == 0:
+        errors.append(estate_message_for("estate-no-runs", str(len(files)), "") or "")
+    if errors:
+        return errors, []
+    return [], [
+        "workflow estate holds: %d file(s), %d run step(s), %d piping, each under shell: bash "
+        "or set -o pipefail; %d workflow_dispatch workflow(s), %d write-capable job(s), each "
+        "guarded to the default branch" % (len(files), runs, pipes, dispatchable, writers),
+        (
+            "  Blind spot: a pipe inside backticks is not read, nor a pipe in a script a run "
+            "step calls, nor a job with no permissions block on a repository whose default "
+            "token can write."
+        ),
+    ]
+
+
 def _guarded(path: str) -> tuple[list[tuple[str, str]] | None, int]:
     """Run the analysis the way bash runs the heredoc: any failure is rc != 0.
 
@@ -1596,8 +2034,11 @@ def main(argv: list[str]) -> int:
         preflight_errors, preflight_info = _preflight_phase(workflow_file, cd_file, hk_file)
         upstream_errors, upstream_info = _upstream_gate_phase(workflow_file, quality_file)
         pins_errors, pins_info = _pins_soaked_phase(pins_file)
-        release_info += preflight_info + upstream_info + pins_info
-        for message in release_errors + preflight_errors + upstream_errors + pins_errors:
+        estate_errors, estate_info = _estate_phase(root_dir)
+        release_info += preflight_info + upstream_info + pins_info + estate_info
+        for message in (
+            release_errors + preflight_errors + upstream_errors + pins_errors + estate_errors
+        ):
             log.error(message)
             failed = 1
 

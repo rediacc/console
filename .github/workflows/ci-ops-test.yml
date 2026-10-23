@@ -173,6 +173,7 @@ jobs:
         # PLAN-ci-time-budget follow-up: measure free space on / first and
         # only pay for the removal (38-341s observed) when it is actually
         # needed, mirroring .github/actions/free-disk-space's guard.
+        shell: bash
         run: |
           avail_gb="$(df -BG --output=avail / | tail -n1 | tr -dc '0-9')"
           echo "Free space on /: ${avail_gb}GB (threshold: 40GB)"
@@ -227,6 +228,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
 
       - name: Enable KVM
+        shell: bash
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
             | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -341,6 +343,7 @@ jobs:
 
       - name: "Test: rdc ops status"
         id: status
+        shell: bash
         run: |
           STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json)
           echo "$STATUS"
@@ -406,6 +409,7 @@ jobs:
           WORKER2_IP: ${{ steps.status.outputs.worker2_ip }}
           DOCKERHUB_USERNAME: ${{ env.BWS_DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
+        shell: bash
         run: |
           AUTH=$(printf '%s:%s' "$DOCKERHUB_USERNAME" "$DOCKERHUB_TOKEN" | base64 -w0)
           for ip in "$WORKER_IP" "$WORKER2_IP"; do
@@ -474,6 +478,7 @@ jobs:
 
       - name: "Verify: cleanup"
         if: always()
+        shell: bash
         run: |
           STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
           echo "$STATUS" | jq -e '.data.vms | length == 0' || echo "Warning: VMs still present after cleanup"

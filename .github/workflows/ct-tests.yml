@@ -3007,6 +3007,7 @@ jobs:
         # pure time saving -- rediacc_ci.testrun.account_e2e's own file-derived check is
         # what actually keeps a second `stripe listen` off the sandbox.
         if: env.STRIPE_SANDBOX_SECRET_KEY != '' && matrix.shard == 1
+        shell: bash
         run: |
           # -f, and retries: `-s` alone makes an HTTP error SILENT and pipes the
           # error page into gpg, and a single attempt makes one network blip a

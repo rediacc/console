@@ -43,6 +43,7 @@ concurrency:
 jobs:
   cleanup:
     name: Cleanup versions
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform
     # cap, so the 60-minute timeout below was unreachable -- a long run was
     # silently CANCELLED at 15 rather than timing out. Found by CHECK 3 in
@@ -214,6 +215,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Verify Stripe sandbox webhook endpoints (per-region)
+        shell: bash
         run: |
           jq -r '.regions[] | .edgeDomain' regions.json | while read -r domain; do
             echo "Verifying sandbox webhook for ${domain}..."

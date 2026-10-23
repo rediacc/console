@@ -34,13 +34,15 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import typing
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import paths, workflows
+from rediacc_ci.quality import workflows as quality_workflows
 from rediacc_ci.security import ci_workflow_invariants
 from rediacc_ci.tests import differential, frozen
 
@@ -2250,3 +2252,428 @@ def test_an_admitted_shape_in_another_case_is_refused_not_admitted(mutate) -> No
     kinds = pins_kinds(doc)
     assert kinds
     assert set(kinds) == {"pins-soaked-writes"}
+
+
+# ---- the workflow-estate pins (2026-10-23; asked for by the Stop hook's regression judge) ----
+#
+# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 41437ea6f): cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit f8d184807): obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
+
+PIPEFAIL_FIX = "41437ea6fec97878060164859b01984c1108d32a"
+DISPATCH_FIX = "f8d184807ca93051f04bd554b68adfddd5dd81d5"
+GUARD = ci_workflow_invariants.DEFAULT_BRANCH_GUARD
+
+
+def git_blob(rev: str, path: str) -> str:
+    """A tracked file at a revision. A missing object FAILS: quality-pytest checks out with fetch-depth 0, and check:ci-pytest refuses a skip anyway, so an unreachable commit means this control did not run."""
+    show = subprocess.run(
+        ["git", "show", "%s:%s" % (rev, path)],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert show.returncode == 0, "cannot read %s:%s (%s)" % (rev, path, show.stderr.strip())
+    return show.stdout
+
+
+def yaml_doc(text: str) -> object:
+    """In-process parse through `rediacc_ci.workflows`, the PyYAML-agreeing subset parser: the pytest interpreter cannot import PyYAML (an isolated uv venv), while the subject's own subprocess runs below use the system interpreter, which can."""
+    return workflows.parse(text)
+
+
+def pipe_doc(
+    run: str,
+    *,
+    shell: str | None = None,
+    job_shell: str | None = None,
+    top_shell: str | None = None,
+    runs_on: str = "ubuntu-latest",
+) -> dict:
+    step: dict = {"name": "report", "run": run}
+    if shell is not None:
+        step["shell"] = shell
+    job: dict = {"runs-on": runs_on, "steps": [step]}
+    if job_shell is not None:
+        job["defaults"] = {"run": {"shell": job_shell}}
+    doc: dict = {"on": {"push": None}, "jobs": {"report": job}}
+    if top_shell is not None:
+        doc["defaults"] = {"run": {"shell": top_shell}}
+    return doc
+
+
+def pipe_kinds(doc: object) -> list[str]:
+    return [k for k, _n in ci_workflow_invariants.analyse_pipefail(doc)[0]]
+
+
+TEE_RUN = (
+    'PYTHONPATH=.ci python3 -m rediacc_ci.ops.cf_usage_report | tee -a "$GITHUB_STEP_SUMMARY"\n'
+)
+
+
+def test_a_pipe_under_the_implicit_shell_is_refused() -> None:
+    findings, runs, pipes = ci_workflow_invariants.analyse_pipefail(pipe_doc(TEE_RUN))
+    assert (runs, pipes) == (1, 1)
+    assert [k for k, _n in findings] == ["pipe-no-pipefail"]
+    assert "the implicit `bash -e {0}`" in findings[0][1]
+    assert "report step 1 (report): line 1" in findings[0][1]
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {"shell": "bash"},
+        {"job_shell": "bash"},
+        {"top_shell": "bash"},
+        {"shell": "bash --noprofile --norc -eo pipefail {0}"},
+        {"shell": "pwsh"},
+        {"shell": "python"},
+        {"runs_on": "windows-latest"},
+    ],
+)
+def test_a_pipe_under_bash_or_a_non_posix_shell_passes(kw) -> None:
+    assert pipe_kinds(pipe_doc(TEE_RUN, **kw)) == []
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {"shell": "sh"},
+        {"shell": "bash {0}"},
+        {"job_shell": "sh"},
+        # A matrix runner may be linux, so the implicit shell may be bash -e.
+        {"runs_on": "${{ matrix.os }}"},
+        # A step's own shell beats a safe default.
+        {"shell": "sh", "job_shell": "bash"},
+    ],
+)
+def test_a_pipe_under_a_shell_without_pipefail_is_refused(kw) -> None:
+    assert pipe_kinds(pipe_doc(TEE_RUN, **kw)) == ["pipe-no-pipefail"]
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "set -o pipefail\n",
+        "set -euo pipefail\n",
+        "set -Eeuo pipefail\n",
+        "set -e -o pipefail\n",
+        "set -o pipefail; ",
+    ],
+)
+def test_set_pipefail_on_or_before_the_pipe_passes(prefix) -> None:
+    assert pipe_kinds(pipe_doc(prefix + TEE_RUN)) == []
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        TEE_RUN + "set -o pipefail\n",
+        "# set -o pipefail\n" + TEE_RUN,
+        "echo 'set -o pipefail'\n" + TEE_RUN,
+        "set +o pipefail\n" + TEE_RUN,
+    ],
+)
+def test_a_pipefail_after_the_pipe_or_in_text_does_not_count(run) -> None:
+    assert pipe_kinds(pipe_doc(run)) == ["pipe-no-pipefail"]
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        'x="$(df -BG / | tail -n1)"\n',
+        'x=$(echo "$S" | jq -r .ip)\n',
+        "a |& tee log\n",
+        "a \\\n  | tee log\n",
+        "curl -fsSL https://x |\n  sh\n",
+        'echo "$(printf "%s" "$(id | cut -c1)")"\n',
+    ],
+)
+def test_every_real_pipe_spelling_is_read(run) -> None:
+    assert ci_workflow_invariants.pipe_lines(run), run
+    assert pipe_kinds(pipe_doc(run)) == ["pipe-no-pipefail"]
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        "a || b\n",
+        "echo 'a | b'\n",
+        'echo "a | b"\n',
+        "echo hi # a | b\n",
+        "echo hi >| out\n",
+        "echo ${{ inputs.a || 'x' }}\n",
+        "jq -r '.regions[] | .domain' regions.json > out\n",
+        "cat <<'EOF'\na | b\nEOF\necho done\n",
+        "cat <<-EOF\n\ta | b\n\tEOF\necho done\n",
+        'case "$x" in\n  a|b) echo ab ;;\n  *) echo other ;;\nesac\n',
+        "x=$((1 | 2))\n",
+    ],
+)
+def test_text_that_only_looks_like_a_pipe_is_not_one(run) -> None:
+    """The NEGATIVE direction: without it the rule could be red on every run step in the tree."""
+    assert ci_workflow_invariants.pipe_lines(run) == [], run
+    assert pipe_kinds(pipe_doc(run)) == []
+
+
+def test_a_heredoc_does_not_swallow_the_pipe_after_it() -> None:
+    run = "cat <<EOF > f\nbody\nEOF\na | tee log\n"
+    assert ci_workflow_invariants.pipe_lines(run) == [4]
+
+
+def test_composite_action_steps_are_read() -> None:
+    action = {"runs": {"using": "composite", "steps": [{"run": TEE_RUN, "shell": "sh"}]}}
+    assert pipe_kinds(action) == ["pipe-no-pipefail"]
+    action["runs"]["steps"][0]["shell"] = "bash"
+    assert pipe_kinds(action) == []
+
+
+def test_the_pre_fix_cf_usage_report_is_refused_and_the_fix_passes() -> None:
+    """THE HISTORICAL CONTROL for 41437ea6f: the file before the fix is red, the file the fix wrote is green."""
+    path = ".github/workflows/cf-usage-report.yml"
+    before = ci_workflow_invariants.analyse_pipefail(yaml_doc(git_blob(PIPEFAIL_FIX + "^", path)))[
+        0
+    ]
+    assert [k for k, _n in before] == ["pipe-no-pipefail"], before
+    assert "the implicit `bash -e {0}`" in before[0][1]
+    after = ci_workflow_invariants.analyse_pipefail(yaml_doc(git_blob(PIPEFAIL_FIX, path)))
+    assert after[0] == [], after
+    assert after[2] == 1, after
+
+
+def test_the_ct_tests_drill_steps_pass_on_set_pipefail() -> None:
+    """The drill universe, transfer and backup steps pipe into tee under `set -o pipefail` and no `shell: bash`; they must pass, and they must really pipe (or this proves nothing)."""
+    doc = yaml_doc((ROOT / ".github/workflows/ct-tests.yml").read_text(encoding="utf-8"))
+    assert isinstance(doc, dict)
+    drills = [
+        (jname, st)
+        for jname, job in doc["jobs"].items()
+        for st in ci_workflow_invariants._steps(job)
+        if re.search(r"run\.sh drill (universe|transfer|backup)", str(st.get("run") or ""))
+        and "| tee" in str(st.get("run"))
+    ]
+    assert len(drills) == 3, [st.get("name") for _j, st in drills]
+    for jname, st in drills:
+        assert not st.get("shell"), st.get("name")
+        assert ci_workflow_invariants.pipe_lines(st["run"]), st.get("name")
+        sub = {"jobs": {jname: {"runs-on": "ubuntu-latest", "steps": [st]}}}
+        assert pipe_kinds(sub) == [], st.get("name")
+
+
+def dispatch_doc(
+    *,
+    job_if: str | None = None,
+    preset: str | None = "cd",
+    perms: object = None,
+    trigger: str = "workflow_dispatch",
+) -> dict:
+    with_ = {"client-id": "x", "private-key": "y"}
+    if preset is not None:
+        with_["preset"] = preset
+    job: dict = {
+        "runs-on": "ubuntu-latest",
+        "steps": [
+            {"id": "app-token", "uses": "./.github/actions/app-token", "with": with_},
+            {"run": "git push"},
+        ],
+    }
+    if job_if is not None:
+        job["if"] = job_if
+    if perms is not None:
+        job["permissions"] = perms
+    return {"on": {trigger: None}, "jobs": {"land": job}}
+
+
+def dispatch_kinds(doc: object, load=None) -> list[str]:
+    return [k for k, _n in ci_workflow_invariants.analyse_dispatch(doc, load)[0]]
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {},
+        {"job_if": "needs.plan.outputs.action == 'bump'"},
+        {"preset": "housekeeping"},
+        {"preset": "${{ inputs.preset }}"},
+        {"preset": None, "perms": {"contents": "write"}},
+        {"preset": None, "perms": "write-all"},
+        # A guard that an OR or a negation can bypass guards nothing.
+        {"job_if": GUARD + " || github.event_name == 'workflow_dispatch'"},
+        {"job_if": "!(" + GUARD + ")"},
+        {
+            "job_if": "github.ref != format('refs/heads/{0}', github.event.repository.default_branch)"
+        },
+        {"job_if": "github.ref == 'refs/heads/feature'"},
+    ],
+)
+def test_a_write_capable_dispatch_job_without_the_guard_is_refused(kw) -> None:
+    assert dispatch_kinds(dispatch_doc(**kw)) == ["dispatch-write-off-default-branch"]
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {"job_if": GUARD},
+        {"job_if": "${{ " + GUARD + " }}"},
+        {"job_if": GUARD + " && needs.plan.outputs.action == 'bump'"},
+        {"job_if": "always() && (" + GUARD + ") && (a == 'b' || c == 'd')"},
+        {
+            "job_if": "format('refs/heads/{0}', github.event.repository.default_branch) == github.ref"
+        },
+        {"job_if": "  " + GUARD.replace(" == ", "  ==  ") + "\n  && success()"},
+        {"preset": "readonly"},
+        {"preset": "pr-read"},
+        {"preset": None},
+        {"preset": None, "perms": {"contents": "read"}},
+        {"trigger": "push"},
+    ],
+)
+def test_a_guarded_read_only_or_undispatchable_job_passes(kw) -> None:
+    assert dispatch_kinds(dispatch_doc(**kw)) == []
+
+
+def test_workflow_level_contents_write_reaches_a_job_without_its_own_block() -> None:
+    doc = dispatch_doc(preset=None)
+    doc["permissions"] = {"contents": "write"}
+    assert dispatch_kinds(doc) == ["dispatch-write-off-default-branch"]
+    doc["jobs"]["land"]["permissions"] = {"contents": "read"}
+    assert dispatch_kinds(doc) == []
+
+
+def test_a_call_to_a_local_reusable_workflow_that_writes_is_write_capable() -> None:
+    callee = dispatch_doc(job_if=GUARD)
+    callee["on"] = {"workflow_call": None}
+    caller = {
+        "on": {"workflow_dispatch": None},
+        "jobs": {"deploy": {"uses": "./.github/workflows/deploy.yml", "secrets": "inherit"}},
+    }
+    files = {".github/workflows/deploy.yml": callee}
+    findings = ci_workflow_invariants.analyse_dispatch(caller, files.get)[0]
+    assert [k for k, _n in findings] == ["dispatch-write-off-default-branch"]
+    assert "calls ./.github/workflows/deploy.yml, whose job land can write" in findings[0][1]
+    caller["jobs"]["deploy"]["if"] = GUARD
+    assert dispatch_kinds(caller, files.get) == []
+    callee["jobs"]["land"]["steps"][0]["with"]["preset"] = "readonly"
+    caller["jobs"]["deploy"].pop("if")
+    assert dispatch_kinds(caller, files.get) == []
+
+
+def test_a_reusable_workflow_cycle_terminates() -> None:
+    a = {
+        "on": {"workflow_dispatch": None, "workflow_call": None},
+        "jobs": {"j": {"uses": "./.github/workflows/b.yml"}},
+    }
+    b = {"on": {"workflow_call": None}, "jobs": {"j": {"uses": "./.github/workflows/a.yml"}}}
+    files = {".github/workflows/a.yml": a, ".github/workflows/b.yml": b}
+    assert dispatch_kinds(a, files.get) == []
+
+
+def test_the_pre_fix_obs_ceph_autobump_is_refused_and_the_fix_passes() -> None:
+    """THE HISTORICAL CONTROL for f8d184807: the pre-fix `land` job (cd preset, no ref guard) is red; the fixed file is green with its write job counted."""
+    path = ".github/workflows/obs-ceph-autobump.yml"
+    before = ci_workflow_invariants.analyse_dispatch(yaml_doc(git_blob(DISPATCH_FIX + "^", path)))[
+        0
+    ]
+    assert [k for k, _n in before] == ["dispatch-write-off-default-branch"], before
+    assert before[0][1].startswith("job land ("), before
+    assert "preset cd" in before[0][1], before
+    after = ci_workflow_invariants.analyse_dispatch(yaml_doc(git_blob(DISPATCH_FIX, path)))
+    assert after == ([], 1), after
+
+
+def test_every_estate_kind_has_a_message() -> None:
+    for kind in ci_workflow_invariants.PIPEFAIL_KINDS + ci_workflow_invariants.DISPATCH_KINDS:
+        assert ci_workflow_invariants.estate_message_for(kind, "0", "x") is not None, kind
+
+
+def test_an_empty_estate_is_an_error_never_a_pass(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(ci_workflow_invariants, "load_workflow", workflows.load)
+    errors, info = ci_workflow_invariants._estate_phase(str(tmp_path))
+    assert info == []
+    assert len(errors) == 1, errors
+    assert "nothing to check cannot pass" in errors[0]
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    (tmp_path / ".github/workflows/x.yml").write_text(
+        "on: push\njobs:\n  a:\n    steps:\n      - uses: x@y\n"
+    )
+    errors, info = ci_workflow_invariants._estate_phase(str(tmp_path))
+    assert info == []
+    assert len(errors) == 1, errors
+    assert "no `run:` step found" in errors[0]
+
+
+ESTATE_PROBE = (
+    "import json, sys\n"
+    "from rediacc_ci.security import ci_workflow_invariants as m\n"
+    "print(json.dumps(m._estate_phase(sys.argv[1])))\n"
+)
+
+
+def test_the_real_workflow_estate_holds() -> None:
+    """The real tree, every workflow and composite action, through the subject's own PyYAML loader in the system interpreter, with the shape asserted so a collapse is visible."""
+    proc = subprocess.run(
+        [PYTHON, "-c", ESTATE_PROBE, str(ROOT)],
+        env=env_for(),
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    errors, info = json.loads(proc.stdout)
+    assert errors == [], "\n".join(errors)
+    m = re.match(
+        r"workflow estate holds: (\d+) file\(s\), (\d+) run step\(s\), (\d+) piping", info[0]
+    )
+    assert m, info
+    files, runs, pipes = (int(g) for g in m.groups())
+    assert files >= 30, info[0]
+    assert runs >= 500, info[0]
+    assert pipes >= 10, info[0]
+
+
+def test_planted_violations_in_a_copy_of_the_real_tree_go_red(tmp_path) -> None:
+    """THE CONTROL ON THE REAL INVOCATION: the port's main over a copy of the real .github, with the two 2026-10-23 fixes reverted in place, names both files; the unplanted copy is the real tree's own verdict."""
+    shutil.copytree(ROOT / ".github", tmp_path / ".github")
+    cf = tmp_path / ".github/workflows/cf-usage-report.yml"
+    cf.write_text(
+        cut_once(cf.read_text(encoding="utf-8"), "        shell: bash\n", ""), encoding="utf-8"
+    )
+    obs = tmp_path / ".github/workflows/obs-ceph-autobump.yml"
+    obs.write_text(
+        cut_once(
+            obs.read_text(encoding="utf-8"),
+            "    if: " + GUARD + " && needs.plan.outputs.action == 'bump'\n",
+            "    if: needs.plan.outputs.action == 'bump'\n",
+        ),
+        encoding="utf-8",
+    )
+    proc = subprocess.run(
+        [PYTHON, str(PORT)],
+        env=env_for(REDIACC_CI_ROOT=str(tmp_path)),
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert "pipe-no-pipefail: .github/workflows/cf-usage-report.yml: report step" in proc.stderr
+    assert (
+        "dispatch-write-off-default-branch: .github/workflows/obs-ceph-autobump.yml: job land ("
+        in proc.stderr
+    )
+
+
+def test_the_estate_reads_every_workflow_and_action_check_ci_workflows_reads() -> None:
+    """A file the estate skips is a file both pins pass unread; `check:ci-workflows`' own walk is the reference set, including the nested profiler/nest-probe action."""
+    estate = set(ci_workflow_invariants.estate_files(str(ROOT)))
+    reference = {p.replace(os.sep, "/") for p in quality_workflows.github_yamls(ROOT)}
+    unread = {
+        p
+        for p in reference - estate
+        if p.startswith(".github/workflows/") or p.endswith("/action.yml")
+    }
+    assert unread == set(), unread
+    assert ".github/actions/profiler/nest-probe/action.yml" in estate
+    assert len(estate) >= 30, sorted(estate)
