@@ -21,7 +21,10 @@ from rediacc_hooks.tests import wlfix
 ARCHIVED = """Session cafe1234 finished the chunk-store cold-path cutover weeks ago and has not been seen since. Its directory is the kind this gate archives: abandoned by the hook's own oracle, well past the grace period, and holding nothing anybody is still editing.
 
 ## Next action
-Nothing. The work landed; this document is a record."""
+Nothing. The work landed; this document is a record.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 #: What `--move` would leave behind IF it left a stub, which it does not. Deliberately in the shape every other mover in this repository uses, so the case proves something about THAT shape rather than about a malformed file.
 REJECTED_STUB = "Status: moved\nMoved-To: agent/archive/2026-09-22-backfill/cafe1234/STATE.md\n"

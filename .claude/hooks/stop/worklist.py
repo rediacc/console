@@ -2084,6 +2084,129 @@ def _batch_body_cli(argv):
     sys.stdout.write(body if body.endswith("\n") else body + "\n")
 
 
+RULE_USAGE = (
+    "usage: --rule <me>\n"
+    "       --rule <me> <check> <subject> <text...> [--until <ISO8601Z>]\n"
+    "       --rule <me> --revoke <id> <reason...>\n"
+)
+
+
+def _vsuppressed_lines():
+    """One line per (session, check key) the Stop hook SILENCED before appending a violation (agent/plans/PLAN-stop-hook-rulings-campaign.md section 3): a ruling or an unchanged subject. Silence needs a denominator, or a ruling could quietly mute a real signal and nothing would ever say so."""
+    out = []
+    try:
+        wl = _local_worklist_path(_local_project_start())
+        for path in sorted(wl.parent.glob(wl.stem + ".state-*.json")):
+            try:
+                doc = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            sup = doc.get("vsuppressed") if isinstance(doc, dict) else None
+            if not isinstance(sup, dict):
+                continue
+            who = path.name.rsplit(".state-", 1)[-1][: -len(".json")]
+            for key in sorted(sup):
+                row = sup[key] if isinstance(sup[key], dict) else {}
+                out.append(
+                    "suppressed %s %s: %d by ruling, %d unchanged subject, last %s"
+                    % (
+                        who,
+                        key,
+                        int(row.get("ruled") or 0),
+                        int(row.get("unchanged") or 0),
+                        row.get("last") or "?",
+                    )
+                )
+    except Exception as exc:
+        out.append("suppression counts unreadable: %s" % exc)
+    return out
+
+
+def _rule_cli(argv):
+    """`--rule`: record, revoke or list an operator ruling (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2).
+
+    The row goes to `agent/rulings/<me>.jsonl` and the `## Rulings (machine-checked)` block of RULES.md is re-rendered from the whole ledger under the same lock (wl_ruling.record). Every argument is validated before anything is written, so a refused call leaves both files as they were. The verb never commits; it prints the `git add` line.
+    """
+    import wl_ruling as RU
+
+    if len(argv) < 2 or not C.PREFIX_RE.match(argv[1]):
+        sys.stderr.write(RULE_USAGE)
+        sys.exit(2)
+    me = argv[1]
+    _identity_or_die(me, _die2)
+    root = C.project_root(C.project_start())
+    rest = list(argv[2:])
+    rows, problems = RU.read_ledger(RU.rulings_dir(root))
+    if not rest:
+        live = RU.live_rulings(rows)
+        revoked = sum(1 for _r, rv in RU.fold(rows).values() if rv is not None)
+        print(
+            "operator rulings: %d live, %d revoked, %d malformed row(s)"
+            % (len(live), revoked, len(problems))
+        )
+        for r in live:
+            print(
+                "  %s %s %s: %s (%s, %s%s)"
+                % (
+                    r["id"],
+                    r["check"],
+                    r["subject"],
+                    r["text"],
+                    r["by"],
+                    r["at"],
+                    ", until %s" % r["until"] if r.get("until") else "",
+                )
+            )
+        for prob in problems:
+            print("  MALFORMED %s" % prob)
+        return
+    if rest[0] == "--revoke":
+        if len(rest) < 3:
+            _die2(RULE_USAGE)
+        target, reason = rest[1], " ".join(rest[2:])
+        folded = RU.fold(rows)
+        if target not in folded:
+            _die2("--rule --revoke: no ruling with id %r in %s" % (target, RU.rulings_dir(root)))
+        if folded[target][1] is not None:
+            _die2("--rule --revoke: ruling %s is already revoked" % target)
+        row = RU.revoke_row(me, target, reason)
+    else:
+        until = None
+        if "--until" in rest:
+            i = rest.index("--until")
+            if i + 1 >= len(rest):
+                _die2("--rule: --until needs an ISO8601Z instant")
+            until = rest[i + 1]
+            del rest[i : i + 2]
+            if not RU.valid_until(until):
+                _die2("--rule: --until %r is not a future ISO8601Z instant" % until)
+        if len(rest) < 3:
+            _die2(RULE_USAGE)
+        check, subject, text = rest[0], rest[1], " ".join(rest[2:])
+        if check not in RU.RULABLE_CHECKS:
+            _die2(
+                "--rule: %r is not a check that consults rulings; the ones that do: %s"
+                % (check, ", ".join(sorted(RU.RULABLE_CHECKS)))
+            )
+        row = RU.rule_row(me, check, subject, text, until)
+    why = RU.row_problem(row)
+    if why:
+        _die2("--rule: refused, the row would be malformed (%s)" % why)
+    target_md = RU.record(root, me, row)
+    ledger = RU.rulings_dir(root) / ("%s.jsonl" % RU.writer_slug(me))
+    print(
+        "%s #%s recorded in %s; %s re-rendered.\n  git add -- %s %s"
+        % (
+            "ruling" if row["ev"] == "rule" else "revocation",
+            row["id"],
+            ledger,
+            target_md,
+            ledger,
+            target_md,
+        )
+    )
+
+
 def _queue_set_cli(argv):
     """`--queue-set <me> [key=value ...] [--note "<text>"]`: the one writer of `agent/plans/QUEUE.md` `## Settings` (agent/plans/PLAN-stop-hook-turbo.md D9).
 
@@ -2789,10 +2912,16 @@ def main():
         if tgt is not None:
             print("commit it by name:  git add %s" % tgt)
         sys.exit(0 if tgt is not None else 1)
+    if sys.argv[1:2] == ["--rule"]:
+        _rule_cli(sys.argv[1:])
+        return
     if sys.argv[1:2] == ["--doctor"]:
         probs, nfiles, nevents = S.doctor(C.project_root(C.project_start()))
         for msg in probs:
             print(msg)
+        # FIRST, on every exit path: a suppression count is a fact about the Stop hook, not about the store, so an empty or broken store must not hide it.
+        for line in _vsuppressed_lines():
+            print(line)
         if probs:
             print("\n%d problem(s) in %d store file(s)" % (len(probs), nfiles))
             sys.exit(1)

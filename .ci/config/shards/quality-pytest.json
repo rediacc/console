@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-23T05:18:48.996Z",
+  "generatedAt": "2026-10-23T10:47:37.769Z",
   "legs": [
     {
       "index": 1,
@@ -350,7 +350,6 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_check.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_scratch.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_submodule_decision.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_wake.py"
       ]
     },
@@ -379,6 +378,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_pin_cli.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_citations.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_housekeeping.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_record_promoted_deps.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_policy_path.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py",
@@ -525,6 +525,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_progress.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_diff.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_rulings.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py"
       ]
     },

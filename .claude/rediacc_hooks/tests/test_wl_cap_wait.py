@@ -432,6 +432,11 @@ def test_c11_the_verdict_says_every_queued_item_is_held(wl):
 
 def test_m6_without_the_concurrency_term_the_held_queue_is_judged_again(wl):
     held_queue(wl)
+    # The world's plans carry open boxes, so the STATE.md must name a big piece or the `bigpieces` drift check blocks before the judge is reached (agent/plans/PLAN-stop-hook-rulings-campaign.md section 5).
+    body = wlfix.STATE_BODY.replace(
+        "none: the fixture project carries no plan with an open box.", "- PLAN-e.md"
+    )
+    assert wl.cli("--state", wlfix.ME, stdin=body).rc == 0
     capturing_judge(wl, CONTINUE)
     mutated_hook(
         wl,

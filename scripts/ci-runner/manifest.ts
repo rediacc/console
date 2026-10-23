@@ -2216,6 +2216,26 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // The operator-ruling ledger (agent/rulings/*.jsonl) and the block it renders into agent/RULES.md, held byte-equal (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2). The render is wl_ruling.render_section, shared with the `worklist.py --rule` writer, which is why the hook module is in `paths`. Lane quality-branch beside the rest of the agent-tree family, hand-written for the same reason (no `- id: setup` in that job).
+    id: 'check:ci-operator-rulings',
+    run: 'npm run check:ci-operator-rulings',
+    gate: true,
+    paths: [
+      'agent/RULES.md',
+      'agent/rulings/**',
+      '.ci/scripts/quality/check_operator_rulings.py',
+      '.claude/hooks/stop/wl_ruling.py',
+    ],
+    pathsOrigin: 'declared',
+    leaves: ['.ci/scripts/quality/check_operator_rulings.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Operator rulings',
+    },
+  },
+  {
     // The five lint rules configured `off` everywhere are outside the liveness gate's universe BY CONSTRUCTION -- it can only observe a rule that fires -- so nothing in this repository ever executed them. A RuleTester harness is the only instrument that can, which is why this is a separate gate and not a wider net cast by the liveness one.
     id: 'check:ci-lint-rule-units',
     run: 'npm run check:ci-lint-rule-units',

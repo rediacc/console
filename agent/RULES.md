@@ -87,3 +87,11 @@ THE TREE IS PARKED ON `main`, which makes this sharper rather than softer: those
 To change branches while keeping such files, back them up, `checkout -f`, then restore and verify byte-identity by hash. That is what was done here.
 - Re-read `git diff --cached` immediately BEFORE every commit. The index is what
 gets committed, not the paths named on the command line.
+
+## Rulings (machine-checked)
+
+A ruling the operator gives about one subject of one Stop check (a submodule pointer at one sha, a drifted `## Big pieces` section) is recorded with `worklist.py --rule <me> <check> <subject> '<text>' [--until <ISO>]` and revoked with `worklist.py --rule <me> --revoke <id> '<reason>'`. The ledger is `agent/rulings/<session>.jsonl`, append-only; the check consults it before firing, in every session. The block below is rendered from that ledger and nothing else.
+
+<!-- rulings:begin -- generated from agent/rulings/*.jsonl by `worklist.py --rule`; check:ci-operator-rulings holds it byte-equal to the ledger. Never hand-edit. -->
+(no ruling recorded)
+<!-- rulings:end -->

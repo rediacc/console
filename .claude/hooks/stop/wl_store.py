@@ -102,6 +102,10 @@ AGENT_STATE_ADOPT_MAX_MIN = int(os.environ.get("WORKLIST_AGENT_ADOPT_MAX_MIN", "
 # The one structural demand on STATE.md. Length is a proxy for value; the presence of a next action IS the value, and it cannot be satisfied by padding. Case-insensitive, any heading level.
 AGENT_NEXT_RE = re.compile(r"^\s*#{1,6}\s*next action\b", re.IGNORECASE | re.MULTILINE)
 
+# THE BIG PIECES ARE REQUIRED TOO (agent/plans/PLAN-stop-hook-rulings-campaign.md section 5). The ruling "finish the big pieces first" (agent/RULES.md) is encoded as a derived census mark (wl_planindex.big_pieces); a STATE.md that carries no `## Big pieces` section is `unfocused`, refused at write time and at read time exactly as a missing `## Next action` is. The rotating `bigpieces` drift check
+# then compares what the section names against the census, so a wholesale rewrite is FORCED to re-derive the list rather than remember it.
+AGENT_BIG_RE = re.compile(r"^\s*#{1,6}\s*big pieces\b", re.IGNORECASE | re.MULTILINE)
+
 # THE FIRST STEP OF '## Next action' MAY NOT BE A WAIT.
 #
 # WHY (operator, 2026-08-19): "you should continue for the rest of the remaining tasks instead of waiting only for CI... this is a general problem after compaction. WHY THIS HAPPENS? WE MUST SOLVE THE ROOT OF THE PROBLEM FIRST."
@@ -177,8 +181,21 @@ def agent_root(root):
 # (check:ci-plan-folders) and would have been the third the day it was created. `ledgers` followed the same day, when the plan-record census moved out of the agent root. The set is what `check:ci-tree-shape` DERIVES its agent-directory classes from rather than copying, so a name missing here is also a stray file there.
 #
 # `reviews` ADDED 2026-10-02 with the per-commit reviewer (agent/plans/PLAN-per-commit-review.md H5): agent/reviews/<branch>/<sha40>.md is keyed by branch on purpose, and without this name every session would report a peer session called "reviews".
+#
+# `rulings` ADDED with the operator-ruling ledger (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2): agent/rulings/<session8>.jsonl, read by wl_ruling. Seven characters fit the session-slug shape, so without this name every session would report a peer called "rulings".
 AGENT_RESERVED_DIRS = frozenset(
-    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy", "reviews"}
+    {
+        "archive",
+        "programs",
+        "worklist",
+        "reggate",
+        "plans",
+        "ledgers",
+        "pr",
+        "legacy",
+        "reviews",
+        "rulings",
+    }
 )
 
 
@@ -2557,7 +2574,7 @@ def loop_state(worklist, session_id):
 
 
 def agent_state_shape(body):
-    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | ok, plus a detail string.
+    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | ok, plus a detail string.
 
     Extracted so BOTH write paths (`worklist.py --state` and the PreToolUse guard) refuse a bad document AT WRITE TIME with the identical rule the Stop check reads with. The handover this replaces once accepted any body and let the check reject it a stop later; an accept-then-reject asymmetry leaves the one artifact designed to survive compaction broken while the session believes
     it is fine.
@@ -2579,6 +2596,11 @@ def agent_state_shape(body):
     if lead == "wait":
         return "waitled", "the first step is %r; a wait is a CONDITION, not a next action" % (
             lead_text[:70],
+        )
+    if not AGENT_BIG_RE.search(text):
+        return "unfocused", (
+            "no '## Big pieces' section; name the census's big pieces (the plans marked "
+            "! BIG PIECE ! in the SessionStart plans block), or 'none' when no plan carries an open box"
         )
     return "ok", "%d chars" % len(text)
 
@@ -2737,7 +2759,7 @@ def state_items_sig(fold, session_id):
 
 
 def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None, fold=None):
-    """('no-dir'|'missing'|'thin'|'bloated'|'aimless'|'stale'|'ok', age_min, my_body).
+    """('no-dir'|'missing'|'thin'|'bloated'|'aimless'|'waitled'|'unfocused'|'stale'|'ok', age_min, my_body).
 
     WHY THIS EXISTS. Compaction silently drops context, and a session lost a real operator decision that way: the rediacc-autopilot App had already been created, the operator had said so, and after a compact it was reported as blocked-on-operator. The transcript is not the recovery mechanism, because the thing that failed IS the transcript being summarised.
 

@@ -689,6 +689,7 @@ def test_144_state_document_staleness_is_world_keyed(wl):
             "Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite "
             "from test-hooks.sh.\n\n## Next action\n\nPush and watch the run, then bump the "
             "submodule pointers to the squash commits before the merge chain closes out.\n"
+            "\n## Big pieces\n\nnone\n"
         ),
     )
     wl.check("allow", "", "fresh STATE.md, settled world: allowed")

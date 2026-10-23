@@ -302,7 +302,8 @@ V_AGENT_STATE = (
     "already cost this project one operator decision (the autopilot App was "
     "reported blocked AFTER the operator had created it), and the transcript "
     "cannot be the recovery mechanism because the transcript is what gets "
-    "summarised. Rewrite it (%d-%d chars, with a '## Next action' section) for "
+    "summarised. Rewrite it (%d-%d chars, with a '## Next action' and a "
+    "'## Big pieces' section) for "
     "a session that knows NOTHING: what is true right now and what happens "
     "next. RULES.md and TRAPS.md are not freshness-gated, so do NOT restate "
     "them here; STATE.md carries only what is volatile. Stale means the WORLD "
@@ -852,7 +853,8 @@ N_CL_FOREIGN_DRIFT = (
 
 CLI_STATE_REFUSED = (
     "STATE REFUSED (%s: %s). Limits for YOUR SECTION: %d-%d chars and a "
-    "'## Next action' section whose FIRST step is real work rather than a wait. "
+    "'## Next action' section whose FIRST step is real work rather than a wait, "
+    "plus a '## Big pieces' section naming the census's big pieces (or 'none'). "
     "Nothing was written; the previous STATE.md is untouched, including every "
     "other session's section.\n"
 )
@@ -902,7 +904,7 @@ CLI_STATE_WHOLE_DOC = (
     "never a whole document to paste.\n"
     "Send your section's body ALONE -- no '## SESSION' line, no peer's text:\n"
     "    .claude/hooks/stop/worklist.py --state %s <<'EOF'\n"
-    "    ...what is true right now, and a '## Next action' section...\n"
+    "    ...what is true right now, a '## Next action' and a '## Big pieces' section...\n"
     "    EOF\n"
     "Nothing was written; the previous document is untouched.\n"
 )
@@ -2264,6 +2266,18 @@ Session scratchpad (<tmp>/claude-<uid>/<project>/<session>/scratchpad):
                                 tree with undelivered changes all keep);
                                 --write deletes the deletable ones
 
+Operator rulings (agent/rulings/<session>.jsonl, rendered into agent/RULES.md):
+  --rule <me>                   list the live rulings and how many were revoked
+  --rule <me> <check> <subject> <text...> [--until <ISO8601Z>]
+                                record the operator's ruling on one subject of
+                                one Stop check (submodule, bigpieces); every
+                                session's check reads it before firing, until
+                                it expires or is revoked. Rewrites the
+                                `## Rulings (machine-checked)` block in RULES.md
+  --rule <me> --revoke <id> <reason...>
+                                revoke a ruling; the row stays, nothing is
+                                ever deleted
+
 Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
   --queue-set <me> [key=value ...] [--note "<text>"]
                                 write effort (quiet|low|smart|high|ultra) and
@@ -2308,6 +2322,13 @@ With no arguments this runs as the Stop hook and expects a JSON event on stdin.
 # work (the branch usually descends from the old pointer) but it adds a submodule PR to the merge chain, and `Quality / Submodule Branches` only says so minutes later, in CI.
 #
 # Deliberately NOT auto-resolved: pointing at an unmerged submodule branch is LEGITIMATE in this repo's flow (that is how a stacked submodule PR lands). Only the human-or-agent deciding can say which case this is, so the check hands over the facts rather than a verdict.
+V_BIGPIECES_DRIFT = """BIG PIECES DRIFT in agent/%(slug)s/STATE.md: %(body)s.
+The '## Big pieces' section disagrees with the plan census. A big piece is DERIVED (agent/INDEX.md's census: top open-box counts, or 10+ open), never remembered. Re-derive the section from the plans the SessionStart block marks ! BIG PIECE ! and rewrite STATE.md:
+    .claude/hooks/stop/worklist.py --state %(me)s <<'EOF'
+    ...
+    EOF"""
+
+
 V_SUBMODULE_POINTER = """SUBMODULE POINTER MOVED IN THE WORKTREE (%d): %s
 
 `git add -A` would COMMIT this pointer move, changing what this PR depends on.
@@ -2319,7 +2340,11 @@ Decide explicitly, then act:
     recorded pointer with
         git submodule update --checkout <path>
     which is safe ONLY while that submodule's worktree is clean and its commit
-    is pushed. Verify both first; this is not an undo you can take back."""
+    is pushed. Verify both first; this is not an undo you can take back.
+  - leave it unstaged (the checkout belongs to a peer, or the parent already
+    matches): record the decision once, and no session fires on this pointer
+    at this sha again until the ruling is revoked:
+%s"""
 
 
 # --------------------------------------------------------------------------- --roundlog: the pr-babysit round log's STATUS block.

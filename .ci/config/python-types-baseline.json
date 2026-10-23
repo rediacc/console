@@ -2284,20 +2284,6 @@
       "message": "Need type annotation for \"v\" (hint: \"v: list[<type>] = ...\")"
     },
     {
-      "id": "77bffce329df3bd9",
-      "file": ".claude/hooks/stop/wl_checks.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"Callable[[], Any]\", target has type \"Callable[[Any], Any]\")"
-    },
-    {
-      "id": "ebd564763a84fc10",
-      "file": ".claude/hooks/stop/wl_checks.py",
-      "code": "misc",
-      "count": 1,
-      "message": "Cannot infer type of lambda"
-    },
-    {
       "id": "bfef57e66cd8b42e",
       "file": ".claude/hooks/stop/wl_checks.py",
       "code": "union-attr",

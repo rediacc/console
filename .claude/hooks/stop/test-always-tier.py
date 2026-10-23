@@ -98,6 +98,7 @@ HYGIENE_KEYS = frozenset(
         "pr-stale",
         "solo-grind",
         "agent-state",
+        "bigpieces",
         "agent-absent",
         "idle",
         "deferred-finding",

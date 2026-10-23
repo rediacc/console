@@ -329,6 +329,10 @@
       "block": "high",
       "advise": "smart"
     },
+    "bigpieces": {
+      "block": "high",
+      "advise": "smart"
+    },
     "pr-stale": {
       "block": "high",
       "advise": "smart"

@@ -11,12 +11,17 @@ import os
 import stat
 import time
 
+from rediacc_hooks.tests import wlfix
+from rediacc_hooks.tests.test_wl_rulings import NEEDLE, advance, world
 from rediacc_hooks.tests.wlfix import FAKE_ORIGIN
 
 B_BODY_44B = """Session B is holding the canary campaign: attempt 6 is in flight behind watch id 9be21c, five flags are flipped, and v1.2.24 is released. None of this is session A material and none of it may be silenced by session A writing.
 
 ## Next action
-Read attempt 6 to completion and record the flag states before touching anything."""
+Read attempt 6 to completion and record the flag states before touching anything.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 GH_SHIM = """#!/bin/bash
 echo '{"data":{"repository":{"pullRequests":{"nodes":[{"number":9,"lastEditedAt":"%s","updatedAt":"%s"}]}}}}'
@@ -392,3 +397,28 @@ def test_44c_a_future_heading_stamp_cannot_buy_permanent_freshness(wl):
     wl.check(
         "allow", "", "44c CONTROL: the untrusted stamp falls back to mtime, which here is fresh"
     )
+
+
+def test_s3_an_unchanged_moved_pointer_surfaces_once_while_a_higher_priority_check_wins_rotation(
+    wl,
+):
+    """agent/plans/PLAN-stop-hook-rulings-campaign.md section 3 CONTROL, Defect B.
+
+    Three stops, the same moved pointer, and an open worklist item that out-ranks it in rotation on the first stop. Before `vadd(subject=)` the pointer was appended on every stop and its latch spent only when it won the pick, so it surfaced on stop 1 (named) AND stop 2 (quoted): two blocks for one unchanged fact. Now the stop that names it opens the window and the next two suppress it before it reaches
+    `violations`. A new sha is a new subject and fires at once, and `--doctor` reports what was silenced.
+    """
+    world(wl)
+    # The competitor: an open item this session owns, a mission-tier check that blocks every stop.
+    assert wl.cli("--add", wlfix.ME, "(deadbeef) the competing open item").rc == 0
+    outs = [wl.run() for _ in range(3)]
+    assert all(o.decision == "block" for o in outs), [o.decision for o in outs]
+    assert NEEDLE not in wlfix.quoted(outs[0].out), "the open item must win stop 1's rotation"
+    hits = [i for i, o in enumerate(outs) if NEEDLE in o.out]
+    assert hits == [0], "surfaced on stops %r, want only the first" % hits
+    newer = advance(wl)
+    fired = wl.run()
+    assert NEEDLE in fired.out, wl.why("new sha", "block", fired, NEEDLE)
+    assert newer in fired.out, wl.why("new sha", "block", fired, NEEDLE)
+    doctor = wl.cli("--doctor")
+    line = next((ln for ln in doctor.out.splitlines() if " submodule: " in ln), "")
+    assert line.startswith("suppressed deadbeef submodule: 0 by ruling, 2 unchanged"), doctor.out

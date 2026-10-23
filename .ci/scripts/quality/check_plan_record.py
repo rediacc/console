@@ -47,6 +47,19 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       --move` retires its entry, and `--retire-promoted` is the repair for a
       queue that predates that. `--update` does not retire: the entries are the
       operator's, and the one write a tool makes to them is the mover's.
+  RQ-DEPS  EVERY UNFINISHED PREREQUISITE OF A `## Promoted` ENTRY, TRANSITIVELY,
+      IS PROMOTED AHEAD OF IT (operator 2026-10-23). Edges are the hook's
+      (`wl_plandeps.Graph.resolve`, a task ref counting as its plan, plus the
+      `wl_planqueue.parent_of` sub-plan relation); a prerequisite that is no plan
+      file and a cycle are findings of their own. `--update` REPAIRS the order
+      before the check judges it: a missing prerequisite is inserted directly
+      ahead of the earliest entry needing it, a misordered one is moved there,
+      one line printed per change. A second exception to "the one write" above.
+  RP  A LIVE PLAN'S `Priority:` SEED CLAIM (`seed: Status <s>, <n> open box(es)`)
+      AGREES WITH ITS STATUS AND OPEN BOX COUNT. Shrink-only against
+      `.ci/config/plan-priority-seed-baseline.json`; `--write-baseline` only drains.
+  RF names what an open-on-paper plan still holds up: its Promoted entry and the
+      plans that depend on it. RF, RQ-DEPS and RP also run under `--rendered-only`.
   RE  THE EFFORT TABLE IS HONEST (agent/plans/PLAN-stop-hook-effort.md E1).
       `.claude/config/effort.json` gives every check key the Stop hook can
       produce exactly one threshold: the keys are DERIVED by AST
@@ -151,12 +164,15 @@ Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import functools
+import hashlib
 import io
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -186,10 +202,12 @@ try:
     import wl_checks as CK
     import wl_effort as EF
     import wl_effort_tune as TUNE
+    import wl_plandeps as D
     import wl_planfile as PF
     import wl_planindex as PI
     import wl_planqueue as PQ
     import wl_planrec as R
+    import wl_store
     from check_plan_citations import citations as _citations
     from check_plan_citations import unresolved as _unresolved
 except ImportError as _exc:  # pragma: no cover -- exercised by `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`
@@ -319,8 +337,8 @@ def main_view(rel, git=None, ref_of=None):
     return ("base", text) if rc_show == 0 else None
 
 
-def finished_verdict(rel, text, main=lambda: None):
-    """("refuse" | "warn" | "", message) for one plan. `main` is called only for a fully ticked plan (review f15c2fcc.3: no git launch per plan), and returns what `main_view` returns.
+def finished_verdict(rel, text, main=lambda: None, context=lambda: ""):
+    """("refuse" | "warn" | "", message) for one plan. `main` is called only for a fully ticked plan (review f15c2fcc.3: no git launch per plan), and returns what `main_view` returns. `context` is called only then too, and returns what the open plan is still holding up (`rf_context`), appended to the message.
 
     A plan whose last box was ticked on THIS branch only warns: its tick commits are not on main yet, so `check_plan_folders.py --move` cannot remap their citations and refuses the move, and F2 refuses a done Status left outside _done/ (measured 2026-10-15 on six plans). On the main branch's own commit RF warns too (review f15c2fcc.1): the merge that lands such a plan must not turn main red, and the next PR branch, where main reads it finished and `--move` can remap, refuses until it is closed. Without a main ref, or when git fails, RF refuses, so a checkout that cannot tell never goes quiet."""
     if PL.folder_of(rel) in PL.TERMINAL_DIRS:
@@ -333,25 +351,436 @@ def finished_verdict(rel, text, main=lambda: None):
     if open_t or not done_t:
         return "", ""
     status = plan.status or "(none)"
+    remedy = RF_REMEDY.replace("--move`", f"--move {rel}`")
+    held = context()
+    held = f" {held}" if held else ""
     view = main()
     if view is not None:
         where, main_text = view
         if where == "self":
             return "warn", (
                 f"{rel}: RF every box is ticked ({len(done_t)} of {len(done_t)}) on main; the next "
-                f"PR branch refuses it until it is closed. Then: {RF_REMEDY}."
+                f"PR branch refuses it until it is closed. Then: {remedy}.{held}"
             )
         main_open, main_done = PF.plan_boxes(main_text)
         if main_open or not main_done:
             return "warn", (
                 f"{rel}: RF every box is ticked ({len(done_t)} of {len(done_t)}) on this branch, "
-                f"not yet on main; close it on the next branch, after the merge. Then: {RF_REMEDY}."
+                f"not yet on main; close it on the next branch, after the merge. Then: {remedy}.{held}"
             )
     return "refuse", (
         f"{rel}: RF every box is ticked ({len(done_t)} of {len(done_t)}) but `Status: "
         f"{status}` is not a finished word and the plan sits outside _done/, so the queue "
-        f"reads `all boxes ticked: close it` and nothing closes it. Fix: {RF_REMEDY}."
+        f"reads `all boxes ticked: close it` and nothing closes it. Fix: {remedy}.{held}"
     )
+
+
+def rf_context(root, rel, graph=None):
+    """What an open-on-paper plan is still holding up, as one sentence, or "".
+
+    Two costs of a finished plan left open, both found by hand on 2026-10-23 rather than by a gate: its `## Promoted` entry in agent/plans/QUEUE.md stays ahead of live work, and every plan whose `Depends-On:` names it (or whose sub-plan it is) reads as blocked. RF already refuses the plan itself; this names the blast radius so the message says why the close is urgent. `--move` retires the entry, and the dependents unblock once the Status is a finished word.
+    """
+    root = pathlib.Path(root)
+    parts = []
+    try:
+        queue_text = (root / PQ.QUEUE_REL).read_text(encoding="utf-8")
+    except OSError:
+        queue_text = ""
+    nums = [num for num, r in PQ.promoted_numbered(queue_text) if r == rel]
+    if nums:
+        parts.append(f"It still holds `## Promoted` entry {nums[0]} in {PQ.QUEUE_REL}.")
+    graph = graph or deps_graph(root)
+    waiting = sorted(
+        r.rsplit("/", 1)[-1]
+        for r in graph.required()
+        if r != rel and any(target == rel for target, _via in plan_prereqs(graph, r, {})[0])
+    )
+    waiting += sorted(
+        p.rsplit("/", 1)[-1]
+        for p in [PQ.parent_of(rel, graph)]
+        if p and graph.is_required(p) and p.rsplit("/", 1)[-1] not in waiting
+    )
+    if waiting:
+        parts.append(
+            f"{len(waiting)} plan(s) depend on it and read as blocked until it closes: "
+            f"{', '.join(waiting)}."
+        )
+    return " ".join(parts)
+
+
+# --------------------------------------------------------------------------- RQ-DEPS: a Promoted plan's unfinished prerequisites are Promoted AHEAD of it (operator 2026-10-23).
+#
+# THE GAP. The operator asked (2026-10-23) that a plan moved into `## Promoted` bring its unfinished prerequisites with it, theirs too, and that CI catch it when it does not. `## Promoted` is hand-ordered and wins over `## Generated`, so a promoted plan whose prerequisite is not promoted (or sits behind it) is an entry the loop reaches and cannot start.
+#
+# THE EDGES ARE THE HOOK'S, IMPORTED READ-ONLY, never restated: `wl_plandeps.Graph.resolve` for every `Depends-On:` token (a task ref `PLAN-x.md#T3` counts as its PLAN, which is how `wl_planqueue.live_plans` orders the generated list through `Graph._succ`), and `wl_planqueue.parent_of` for the sub-plan relation (`PLAN-<parent>.<suffix>.md`: the parent needs the sub first). The graph is built over TRACKED plans, the way `live_plans` builds it, so a clean CI checkout and a local run agree.
+#
+# UNFINISHED is the operator's definition: outside `_done/` and `_removed/`, and either an open box (the queue's counter, `wl_planqueue.box_counts`) or a Status that is not finished, with one carve-out: every box ticked under a live Status is RF's subject (close it), so it is neither refused nor inserted here. A finished prerequisite needs no entry and is not walked past. A prerequisite that resolves to no plan file (dangling or ambiguous) is its own finding, since it can never finish; a withdrawn one is check:ci-plan-deps D4's, not this rule's. A cycle is reported once per entry and never walked twice.
+
+RQ_DEPS = "RQ-DEPS"
+
+
+def deps_graph(root):
+    """`wl_plandeps.Graph` over the tracked plans (stubs and tombstones kept, so a moved prerequisite still resolves), as `wl_planqueue.live_plans` builds it."""
+    root = pathlib.Path(root)
+    tracked = {
+        p.relative_to(root).as_posix() for p in wl_store.agent_plan_files(root, tracked_only=True)
+    }
+    every = {p.relative_to(root).as_posix() for p in wl_store.agent_plan_files(root)}
+    full = D.Graph.load(root)
+    return D.Graph(
+        {r: t for r, t in full.texts.items() if r not in every - tracked}, full.index_text, root
+    )
+
+
+def sub_plans(graph):
+    """{parent rel: [sub rel, ...]} over required plans, `wl_planqueue.parent_of`'s relation with `live_plans`' filter (both ends required)."""
+    out: dict[str, list[str]] = {}
+    for rel in graph.required():
+        parent = PQ.parent_of(rel, graph)
+        if parent is not None and graph.is_required(parent):
+            out.setdefault(parent, []).append(rel)
+    return out
+
+
+def plan_prereqs(graph, rel, subs):
+    """([(prerequisite rel, how it was named)], [(token, why it resolves to no plan)]) for one plan."""
+    plans, missing = [], []
+    for edge in graph.edges(rel):
+        target = graph.resolve(str(edge))
+        if target.state in (D.DANGLING, D.AMBIGUOUS):
+            missing.append((str(edge), target.detail or target.state))
+        elif (
+            target.state in (D.LIVE, D.COMPLETE) and target.rel in graph.plans and target.rel != rel
+        ):
+            plans.append((target.rel, str(edge)))
+    plans.extend((sub, "its sub-plan") for sub in sorted(subs.get(rel, ())))
+    return plans, missing
+
+
+def unfinished_why(root, graph, rel):
+    """ "" for a finished plan, else why it is not: its Status and open box count."""
+    info = graph.plans[rel]
+    if info.folder in (D.DONE_DIR, D.REMOVED_DIR):
+        return ""
+    status = info.header.status
+    counts = PQ.box_counts(pathlib.Path(root) / rel)
+    if counts is None:
+        return "the file cannot be read"
+    finished = status in PF.FINISHED_STATES or status == D.REMOVED_STATUS
+    if not counts[0] and counts[1] and not finished:
+        # Every box ticked under a live Status is RF's subject: it is closed, never promoted. Counting it here would refuse on main and on the PR that ticks its last box, the two places RF deliberately only warns, and the repair would insert a finished plan into the list (2026-10-23 replay of daab83af1: PLAN-chunk-store-browse-toc-and-remote, 11 of 11 ticked, `Status: proposed`).
+        return ""
+    if counts[0] or not finished:
+        return f"Status {status or '(none)'}, {counts[0]} open box(es)"
+    return ""
+
+
+def _base(rel):
+    return rel.rsplit("/", 1)[-1]
+
+
+def promoted_dep_problems(root, graph=None):
+    """(problems, shape note) for RQ-DEPS over agent/plans/QUEUE.md's `## Promoted`."""
+    root = pathlib.Path(root)
+    try:
+        text = (root / PQ.QUEUE_REL).read_text(encoding="utf-8")
+    except OSError:
+        return [], f"{RQ_DEPS}: no {PQ.QUEUE_REL}, so no Promoted entry to walk"
+    promoted = PQ.promoted_numbered(text)
+    if not promoted:
+        return [], f"{RQ_DEPS}: {PQ.QUEUE_REL} has no Promoted entry to walk"
+    graph = graph or deps_graph(root)
+    subs = sub_plans(graph)
+    pos: dict[str, int] = {}
+    num_of: dict[str, str] = {}
+    for i, (num, rel) in enumerate(promoted):
+        pos.setdefault(rel, i)
+        num_of.setdefault(rel, num)
+    problems: list[str] = []
+    walked = 0
+    prereq_seen: set[str] = set()
+    for i, (num, top) in enumerate(promoted):
+        info = graph.plans.get(top)
+        if info is None or info.stub:
+            continue  # RQ-MOVED names a stub; the progress block names an unreadable entry
+        head = f"{RQ_DEPS}: {PQ.QUEUE_REL} Promoted entry {num} ({_base(top)})"
+        visited = {top}
+        reported: set[tuple[str, str]] = set()
+        stack = [(top, [top])]
+        while stack:
+            cur, chain = stack.pop()
+            targets, missing = plan_prereqs(graph, cur, subs)
+            for token, why in missing:
+                walked += 1
+                if ("missing", token) in reported:
+                    continue
+                reported.add(("missing", token))
+                via = " needs ".join(_base(r) for r in chain)
+                problems.append(
+                    f"{head} reaches {via}, and {_base(cur)}'s `Depends-On:` names {token}, which "
+                    f"resolves to no single plan file ({why}). A prerequisite that is no plan can "
+                    f"never finish, so the entry can never start. Fix the `Depends-On:` line of "
+                    f"{cur}: point it at the plan that exists, or write `no-dep -- <why>`."
+                )
+            for target, _how in targets:
+                walked += 1
+                if target in chain:
+                    loop = [*chain[chain.index(target) :], target]
+                    key = ("cycle", "|".join(sorted(set(loop))))
+                    if key not in reported:
+                        reported.add(key)
+                        problems.append(
+                            f"{head} sits on a dependency cycle: "
+                            f"{' needs '.join(_base(r) for r in loop)}. No plan in it can start "
+                            f"first; drop the `Depends-On:` edge that is not a real prerequisite."
+                        )
+                    continue
+                why = unfinished_why(root, graph, target)
+                if not why:
+                    continue
+                prereq_seen.add(target)
+                path = [*chain, target]
+                j = pos.get(target)
+                if (j is None or j > i) and ("order", target) not in reported:
+                    reported.add(("order", target))
+                    where = (
+                        "is not in `## Promoted`"
+                        if j is None
+                        else f"is Promoted entry {num_of[target]}, behind it"
+                    )
+                    lacking = [r for r in path[1:] if pos.get(r) is None or pos[r] > i]
+                    problems.append(
+                        f"{head} needs {_base(target)}, which is unfinished ({why}) and {where}: "
+                        f"{' needs '.join(_base(r) for r in path)}. A plan starts only after its "
+                        f"prerequisites, so this entry stalls behind work the list does not order. "
+                        f"Fix: in `## Promoted`, list "
+                        f"{', then '.join(_base(r) for r in reversed(lacking))} ahead of entry "
+                        f"{num} (deepest first, as `N. {target} -- <why>`); or, if {_base(target)} "
+                        f"is finished in fact, close it (`Status: done`, then `python3 "
+                        f".ci/scripts/quality/check_plan_folders.py --move {target}`)."
+                    )
+                if target not in visited:
+                    visited.add(target)
+                    stack.append((target, path))
+    return problems, (
+        f"{RQ_DEPS}: {len(promoted)} Promoted entr{'y' if len(promoted) == 1 else 'ies'}, "
+        f"{walked} prerequisite edge(s) walked, {len(prereq_seen)} unfinished prerequisite(s)"
+        + (" all Promoted ahead of what needs them" if not problems else "")
+    )
+
+
+# THE REPAIR (operator 2026-10-23: "maybe the queue.md file generation can auto move dependencies of promoted into promoted section besides CI failure?"). `--update` (and `--rendered-only --update`, which agents run after every tick and move) rewrites `## Promoted` so the check above has nothing to say: each unfinished prerequisite that is missing is INSERTED directly ahead of the earliest entry that needs it, deepest first, with a generated note naming who needs it; one that is present but BEHIND what needs it is MOVED up to the same place, note and continuation lines with it. Moved rather than refused, because an entry listed above its own prerequisite is an order nothing can execute as written (the generated list already pulls prerequisites ahead the same way), and a refusal would hand the agent the same mechanical edit. Every other entry keeps its relative order; nothing is removed; a finished plan is never inserted; a dangling prerequisite and a cycle edge are left for the check to name. A second run changes nothing.
+
+
+def _promoted_blocks(text):
+    """(head, blocks, tail) of the Promoted section: `blocks` is [(plan path, [lines])], each an entry line with the continuation, blank and prose lines under it up to the next entry. None when there is no section or no entry."""
+    bounds = PQ._promoted_bounds(text)
+    if not bounds:
+        return None
+    start, end = bounds
+    lines = text[start:end].splitlines(keepends=True)
+    first = next((i for i, ln in enumerate(lines) if PQ.ENTRY.match(ln.rstrip("\r\n"))), None)
+    if first is None:
+        return None
+    blocks: list[tuple[str, list[str]]] = []
+    for ln in lines[first:]:
+        m = PQ.ENTRY.match(ln.rstrip("\r\n"))
+        if m:
+            blocks.append((m.group(1), [ln]))
+        else:
+            blocks[-1][1].append(ln)
+    # Trailing blank lines belong to the section, not to the last entry, so an insert never lands below them.
+    trail: list[str] = []
+    last = blocks[-1][1]
+    while len(last) > 1 and not last[-1].strip():
+        trail.insert(0, last.pop())
+    return text[:start] + "".join(lines[:first]), blocks, "".join(trail) + text[end:]
+
+
+def promoted_dep_order(root, text, graph=None, today=None):
+    """(new text, [one line per insert or move]) for the repair; the text comes back unchanged with [] when the Promoted order already holds."""
+    parts = _promoted_blocks(text)
+    if parts is None:
+        return text, []
+    head, blocks, tail = parts
+    graph = graph or deps_graph(root)
+    subs = sub_plans(graph)
+    today = today or datetime.datetime.now(datetime.UTC).date().isoformat()
+    by_rel: dict[str, list[str]] = {}
+    for rel, lines in blocks:
+        by_rel.setdefault(rel, lines)
+    placed: set[str] = set()
+    out: list[tuple[str, list[str]]] = []
+    said: list[str] = []
+
+    def pull(cur, stack):
+        info = graph.plans.get(cur)
+        if info is None or info.stub:
+            return
+        for target, how in plan_prereqs(graph, cur, subs)[0]:
+            if target in stack or target in placed or not unfinished_why(root, graph, target):
+                continue
+            pull(target, (*stack, target))
+            if target in placed:
+                continue
+            placed.add(target)
+            via = "Depends-On" if how != "its sub-plan" else "sub-plan"
+            if target in by_rel:
+                out.append((target, by_rel[target]))
+                said.append(
+                    f"  moved Promoted entry {_base(target)} ahead of {_base(cur)}, which needs it ({via})"
+                )
+            else:
+                note = f"pulled in as an unfinished prerequisite of {_base(cur)} ({via}), {today}"
+                out.append((target, [f"1. {target} -- {note}\n"]))
+                said.append(
+                    f"  inserted {_base(target)} into Promoted ahead of {_base(cur)} ({via})"
+                )
+
+    for rel, lines in blocks:
+        if rel in placed:
+            continue
+        pull(rel, (rel,))
+        placed.add(rel)
+        out.append((rel, lines))
+    if [r for r, _l in out] == [r for r, _l in blocks]:
+        return text, []
+    body = []
+    for n, (_rel, lines) in enumerate(out, start=1):
+        first = lines[0]
+        num = PQ._ENTRY_NUM.match(first)
+        body.append(first[: num.start(1)] + str(n) + first[num.end(1) :] if num else first)
+        body.extend(lines[1:])
+    return head + "".join(body) + tail, said
+
+
+def repair_promoted_deps(root):
+    """Write the repair into agent/plans/QUEUE.md, re-reading just before the write the way `wl_planqueue.retire_promoted` does; [lines said]. [] when there is nothing to do or no queue file."""
+    path = pathlib.Path(root) / PQ.QUEUE_REL
+    if not path.is_file():
+        return []
+    graph = deps_graph(root)
+    for _attempt in range(2):
+        got = path.read_text(encoding="utf-8")
+        new, said = promoted_dep_order(root, got, graph)
+        if not said:
+            return []
+        if path.read_text(encoding="utf-8") == got:
+            R.write_atomic(path, new)
+            return said
+    return [f"  {PQ.QUEUE_REL} changed under both reads; the Promoted repair was not written"]
+
+
+# --------------------------------------------------------------------------- RP: a `Priority:` line's seed claim agrees with the plan (2026-10-23).
+#
+# `check_plan_deps.py --migrate-x` seeded every Priority it could not salvage as `P<n> -- seed: Status <s>, <n> open box(es)`: a snapshot at seeding, written into prose a reader takes as current. PLAN-cloudflare-proxy said "0 open box(es)" over 24. REFUSED, NOT RENDERED: the Priority reason is author prose (an `(operator)` mark can sit beside it), and a tool rewriting plan headers on every tick would be a second writer of plan files outside the plan verbs. The live count already has two owners, the QUEUE.md progress block and .ci/config/plan-boxes.json, so the fix is to drop the snapshot for a real reason, not to keep a third copy fresh. Scoped to the live folder: a `_done/` plan's Priority is history and is never read again.
+#
+# SHRINK-ONLY. Eight live plans disagreed on the day the rule landed and their text is not this gate's to edit, so they are frozen in RP_BASELINE_REL by a stable id: the plan path plus a hash of the Priority value (never a line number). A new disagreement fails; a baselined one that stops firing fails too, until `--write-baseline` drains it. The writer only ever REMOVES, so a drain cannot re-absorb a fresh finding.
+
+RP_BASELINE_REL = ".ci/config/plan-priority-seed-baseline.json"
+WRITE_BASELINE = "--write-baseline"
+SEED_CLAIM_RE = re.compile(r"seed: Status ([A-Za-z-]+), (\d+) open box\(es\)")
+
+
+def seed_claim(rel, text):
+    """(stable id, message) when a live plan's Priority seed claim disagrees with the plan, else None. Pure: no filesystem, no git."""
+    if PL.folder_of(rel) != PL.PLANS_DIR:
+        return None
+    header = D.parse_header(text or "")
+    if D.is_stub_header(header):
+        return None
+    field = header.get(D.PRIORITY)
+    if field is None:
+        return None
+    m = SEED_CLAIM_RE.search(field.value)
+    if not m:
+        return None
+    open_t, _done_t = PF.plan_boxes(text or "")
+    status = header.status or "(none)"
+    claimed_status, claimed_open = m.group(1), int(m.group(2))
+    if claimed_status == status and claimed_open == len(open_t):
+        return None
+    key = "%s:%s" % (rel, hashlib.sha256(field.value.encode("utf-8")).hexdigest()[:12])
+    return key, (
+        f"{rel}: RP `Priority:` claims the migration seed's `Status {claimed_status}, "
+        f"{claimed_open} open box(es)`, and the plan reads `Status {status}`, {len(open_t)} open "
+        f"box(es). The seed was a one-time stamp, so a reader takes a stale number as current. "
+        f"Fix: replace the `seed: ...` clause with the real reason for the level "
+        f"(`Priority: P<n> -- <why>`); the live count is in the {PQ.QUEUE_REL} progress block. "
+        f"Do not add it to {RP_BASELINE_REL}."
+    )
+
+
+def load_rp_baseline(root):
+    """{stable id: note} from RP_BASELINE_REL, or None when the file is absent or unreadable."""
+    try:
+        doc = json.loads((pathlib.Path(root) / RP_BASELINE_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    found = doc.get("findings") if isinstance(doc, dict) else None
+    return dict(found) if isinstance(found, dict) else None
+
+
+def rp_verdict(found, baseline):
+    """(problems, shape note) for RP: `found` is {id: message} from the tree, `baseline` the frozen ids (None when unreadable)."""
+    if baseline is None:
+        missing = (
+            f"RP: {RP_BASELINE_REL} is missing or unreadable, so no seed claim can be told "
+            f"apart from a frozen one. It ships with check_plan_record.py and is committed "
+            f"beside it; a checkout holding the gate without the file has a half-landed change"
+        )
+        return [missing], ""
+    problems = [msg for key, msg in sorted(found.items()) if key not in baseline]
+    problems.extend(
+        f"RP: {RP_BASELINE_REL} entry {key} ({baseline[key]}) no longer fires, so the baseline "
+        f"is larger than the debt. Drain it: python3 .ci/scripts/quality/check_plan_record.py "
+        f"{WRITE_BASELINE} (it only ever removes entries)"
+        for key in sorted(set(baseline) - set(found))
+    )
+    return problems, (
+        f"RP: {len(found)} live seed claim(s) disagree with their plan, "
+        f"{len(set(found) & set(baseline))} of them frozen in {RP_BASELINE_REL}, none new"
+    )
+
+
+def rp_found(root, recs):
+    """{stable id: message} for every live plan whose seed claim disagrees, read from `recs`."""
+    found = {}
+    for rel, _status, _n in recs:
+        try:
+            text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        got = seed_claim(rel, text)
+        if got:
+            found[got[0]] = got[1]
+    return found
+
+
+def write_rp_baseline(root, recs):
+    """`--write-baseline`: keep only the frozen ids that still fire. Never adds one; a finding not already frozen is printed and exits 1."""
+    root = pathlib.Path(root)
+    baseline = load_rp_baseline(root)
+    if baseline is None:
+        print(
+            f"✗ {RP_BASELINE_REL} is missing or unreadable; refusing to mint one", file=sys.stderr
+        )
+        return 1
+    found = rp_found(root, recs)
+    kept = {k: v for k, v in baseline.items() if k in found}
+    removed = sorted(set(baseline) - set(kept))
+    refused = sorted(set(found) - set(baseline))
+    doc = json.loads((root / RP_BASELINE_REL).read_text(encoding="utf-8"))
+    doc["findings"] = {k: kept[k] for k in sorted(kept)}
+    (root / RP_BASELINE_REL).write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    for key in removed:
+        print(f"  drained {key} ({baseline[key]})")
+    print(
+        f"✓ {RP_BASELINE_REL}: {len(baseline)} -> {len(kept)} entr(ies), added 0 (the writer cannot add)"
+    )
+    for key in refused:
+        print(f"✗ NOT frozen, fix the plan instead: {found[key]}", file=sys.stderr)
+    return 1 if refused else 0
 
 
 # --------------------------------------------------------------------------- W12 P3.4b. R9: the three cross-reference header keys RESOLVE.
@@ -1264,13 +1693,19 @@ def rendered_problems(root, recs=None, update=False):
         PI.census_rows(root, plan_records=lambda _r: recs, plan_box_census=CK.plan_box_census)
     )
     problems = list(index_problems(root, rows, census=census, update=update))
+    if update:
+        for line in repair_promoted_deps(root):
+            print(line)
     # RQ. agent/plans/QUEUE.md's generated section equals `wl_planqueue`'s render over the tracked plans; `--update` rewrites only that section.
     problems.extend(PQ.problems(root, update=update))
     # RQ-SETTINGS. Every problem the settings reader found in the `## Settings` block is a finding; `--update` never rewrites the block, it is the operator's.
     problems.extend("RQ-SETTINGS: %s" % p for p in PQ.settings_for(root)[1])
     # RQ-MOVED. A Promoted entry naming a moved stub is a finished plan still sitting in the operator's list (13 of 17 entries before worklist #7b9fe4f1); the mover retires it, so one left here was moved before that or by hand.
     problems.extend(PQ.moved_problems(root))
-    return recs, problems, len(PI.parse_census(census))
+    # RQ-DEPS. Every unfinished plan a Promoted entry needs, transitively, is Promoted ahead of it. Pure over the files under `agent/`, so RC judges HEAD's bytes with it too. `--update` repairs the order first (`repair_promoted_deps`) and the check then judges the result; the Promoted progress block is re-rendered by the RQ write below because the repair runs BEFORE it.
+    dep_problems, dep_note = promoted_dep_problems(root)
+    problems.extend(dep_problems)
+    return recs, problems, len(PI.parse_census(census)), dep_note
 
 
 def export_head_agent(root, dest):
@@ -1327,7 +1762,7 @@ def committed_problems(root, floor=None):
                 % why
             ], ""
         floor = MIN_PLAN_FILES if floor is None else floor
-        recs, found, _n = rendered_problems(td)
+        recs, found, _n, _deps = rendered_problems(td)
         if len(recs) < floor:
             return [
                 "RC: VACUOUS INPUT: HEAD's export holds %d plan file(s), floor is %d. The export lost the corpus, so the committed bytes were not judged."
@@ -1341,6 +1776,13 @@ def committed_problems(root, floor=None):
         )
     out = []
     for p in found:
+        if p.startswith(RQ_DEPS):
+            out.append(
+                "RC: in the COMMITTED tree (HEAD), %s\n"
+                "      Reorder the Promoted entries in the working tree, then commit the queue:\n"
+                "      git commit -F <msg> -- %s" % (p, PQ.QUEUE_REL)
+            )
+            continue
         if p.startswith("RQ-MOVED"):
             out.append(
                 "RC: in the COMMITTED tree (HEAD), %s\n"
@@ -2368,6 +2810,265 @@ def selftest():
 
 
 @git_isolated
+def selftest_closure():
+    """RQ-DEPS, its repair, RP and RF's context, each planted and mirrored over a scratch tree read through the production readers (`wl_plandeps.Graph`, `wl_planqueue.box_counts`, `wl_store`), never stubs."""
+    bad = 0
+
+    def ck(label, ok, detail=""):
+        nonlocal bad
+        print(f"  {'PASS' if ok else 'FAIL'}  {label}")
+        if not ok:
+            bad += 1
+            if detail:
+                print(f"        {detail}")
+
+    open_box = "- [ ] T1 build the fixture thing -- acceptance: `true` exits 0\n"
+    done_box = "- [x] T1 built the fixture thing -- acceptance: `true` exits 0\n"
+
+    def plan(status="approved", deps="no-dep -- the fixture stands alone on purpose", box=open_box):
+        return (
+            f"# PLAN: fixture\nStatus: {status}\nDepends-On: {deps}\n"
+            f"Priority: P2 -- a fixture priority reason\n\n## Tasks\n\n{box}"
+        )
+
+    def queue(*rels):
+        entries = "".join(f"{i}. {r} -- operator note {i}\n" for i, r in enumerate(rels, 1))
+        return (
+            "# Queue\n\n## Promoted\n\n" + entries + "\n## Generated\n\n"
+            f"{PQ.GEN_BEGIN}\n{PQ.GEN_END}\n"
+        )
+
+    def rels_of(text):
+        return [r for _n, r in PQ.promoted_numbered(text)]
+
+    a, b, c, x = (f"agent/plans/PLAN-{n}.md" for n in "abcx")
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+
+        def tree(plans, promoted):
+            for folder in ("agent/plans", "agent/plans/_done"):
+                d = root / folder
+                d.mkdir(parents=True, exist_ok=True)
+                for f in d.glob("PLAN-*.md"):
+                    f.unlink()
+            for rel, text in plans.items():
+                (root / rel).write_text(text, encoding="utf-8")
+            (root / PQ.QUEUE_REL).write_text(queue(*promoted), encoding="utf-8")
+
+        def check():
+            return promoted_dep_problems(root)[0]
+
+        # RQ-DEPS, the check. The clean case first: a prerequisite promoted ahead is silent.
+        tree({a: plan(deps="PLAN-b.md"), b: plan()}, [b, a])
+        ck("RQ-DEPS CONTROL: a prerequisite promoted ahead is silent", check() == [], f"{check()}")
+        tree({a: plan(deps="PLAN-b.md"), b: plan()}, [a])
+        got = check()
+        ck(
+            "RQ-DEPS: an unfinished prerequisite missing from Promoted is refused",
+            len(got) == 1 and "is not in `## Promoted`" in got[0] and "PLAN-b.md" in got[0],
+            f"{got}",
+        )
+        tree({a: plan(deps="PLAN-b.md"), b: plan(deps="PLAN-c.md"), c: plan()}, [a])
+        got = check()
+        ck(
+            "RQ-DEPS: the closure is transitive, and the chain and deepest-first fix are named",
+            len(got) == 2
+            and any("PLAN-a.md needs PLAN-b.md needs PLAN-c.md" in g for g in got)
+            and any("PLAN-c.md, then PLAN-b.md" in g for g in got),
+            f"{got}",
+        )
+        tree({a: plan(deps="PLAN-b.md"), b: plan()}, [a, b])
+        got = check()
+        ck(
+            "RQ-DEPS: a prerequisite promoted BEHIND what needs it is refused",
+            len(got) == 1 and "behind it" in got[0],
+            f"{got}",
+        )
+        tree({a: plan(deps="PLAN-b.md#T1"), b: plan()}, [a])
+        got = check()
+        ck(
+            "RQ-DEPS: a task ref counts as its plan",
+            len(got) == 1 and "PLAN-b.md" in got[0],
+            f"{got}",
+        )
+        tree({a: plan(), "agent/plans/PLAN-a.s1.md": plan()}, [a])
+        got = check()
+        ck(
+            "RQ-DEPS: a sub-plan is a prerequisite of its parent",
+            len(got) == 1 and "PLAN-a.s1.md" in got[0],
+            f"{got}",
+        )
+        tree(
+            {a: plan(deps="PLAN-b.md"), "agent/plans/_done/PLAN-b.md": plan("done", box=done_box)},
+            [a],
+        )
+        ck("RQ-DEPS CONTROL: a prerequisite in _done/ needs no entry", check() == [], f"{check()}")
+        tree({a: plan(deps="PLAN-b.md"), b: plan(box=done_box)}, [a])
+        ck(
+            "RQ-DEPS CONTROL: an all-ticked prerequisite under a live Status is RF's to close, not this rule's",
+            check() == [] and promoted_dep_order(root, queue(a))[1] == [],
+            f"{check()}",
+        )
+        tree({a: plan(deps="PLAN-b.md"), b: plan("done", box=open_box)}, [a])
+        got = check()
+        ck(
+            "RQ-DEPS: an open box under a done Status outside _done/ is still unfinished",
+            len(got) == 1 and "Status done, 1 open box(es)" in got[0],
+            f"{got}",
+        )
+        tree({a: plan()}, [a])
+        ck("RQ-DEPS CONTROL: `no-dep` has no edge", check() == [], f"{check()}")
+        tree({a: plan(deps="PLAN-nope.md")}, [a])
+        got = check()
+        ck(
+            "RQ-DEPS: a prerequisite that is no plan file is its own finding",
+            len(got) == 1 and "resolves to no single plan file" in got[0],
+            f"{got}",
+        )
+        tree({a: plan(deps="PLAN-b.md"), b: plan(deps="PLAN-a.md")}, [b, a])
+        got = check()
+        ck(
+            "RQ-DEPS: a cycle is reported, and the walk ends",
+            any("dependency cycle" in g for g in got),
+            f"{got}",
+        )
+
+        # The repair. Insert, transitive insert, move, the bystander's place, idempotence, and the finished plan it must never insert.
+        def repaired(plans, promoted):
+            tree(plans, promoted)
+            text = (root / PQ.QUEUE_REL).read_text(encoding="utf-8")
+            return text, promoted_dep_order(root, text, today="2026-10-23")
+
+        text, (new, said) = repaired({a: plan(deps="PLAN-b.md"), b: plan()}, [a])
+        ck(
+            "RQ-DEPS REPAIR: a missing prerequisite is inserted ahead, with a generated note",
+            rels_of(new) == [b, a]
+            and "pulled in as an unfinished prerequisite of PLAN-a.md (Depends-On), 2026-10-23"
+            in new
+            and "2. agent/plans/PLAN-a.md -- operator note 1" in new
+            and len(said) == 1,
+            f"{new!r} {said}",
+        )
+        (root / PQ.QUEUE_REL).write_text(new, encoding="utf-8")
+        ck(
+            "RQ-DEPS REPAIR CONTROL: the repaired queue passes the check",
+            check() == [],
+            f"{check()}",
+        )
+        again, said2 = promoted_dep_order(root, new, today="2026-10-24")
+        ck("RQ-DEPS REPAIR: a second run changes nothing", again == new and said2 == [], f"{said2}")
+        _t, (new, said) = repaired(
+            {a: plan(deps="PLAN-b.md"), b: plan(deps="PLAN-c.md"), c: plan()}, [a]
+        )
+        ck(
+            "RQ-DEPS REPAIR: the transitive closure is inserted deepest first",
+            rels_of(new) == [c, b, a] and len(said) == 2,
+            f"{rels_of(new)} {said}",
+        )
+        _t, (new, said) = repaired({a: plan(deps="PLAN-b.md"), b: plan()}, [a, b])
+        ck(
+            "RQ-DEPS REPAIR: a prerequisite behind its dependant is moved ahead, note kept",
+            rels_of(new) == [b, a]
+            and "1. agent/plans/PLAN-b.md -- operator note 2" in new
+            and said
+            and "moved" in said[0],
+            f"{new!r} {said}",
+        )
+        _t, (new, said) = repaired({x: plan(), a: plan(deps="PLAN-b.md"), b: plan()}, [x, a])
+        ck(
+            "RQ-DEPS REPAIR: an unrelated entry keeps its place; the insert lands directly ahead of its dependant",
+            rels_of(new) == [x, b, a],
+            f"{rels_of(new)}",
+        )
+        text, (new, said) = repaired(
+            {a: plan(deps="PLAN-b.md"), "agent/plans/_done/PLAN-b.md": plan("done", box=done_box)},
+            [a],
+        )
+        ck(
+            "RQ-DEPS REPAIR CONTROL: a finished prerequisite is never inserted",
+            new == text and said == [],
+            f"{said}",
+        )
+        tree({a: plan(deps="PLAN-b.md"), b: plan()}, [a])
+        said = repair_promoted_deps(root)
+        written = (root / PQ.QUEUE_REL).read_text(encoding="utf-8")
+        ck(
+            "RQ-DEPS REPAIR: repair_promoted_deps writes the file and says one line per insert",
+            rels_of(written) == [b, a] and len(said) == 1 and "inserted PLAN-b.md" in said[0],
+            f"{said}",
+        )
+
+        # RF's context: the Promoted entry and the dependants of an open-on-paper plan, and silence for a plan holding nothing up.
+        tree({a: plan(box=done_box), "agent/plans/PLAN-d.md": plan(deps="PLAN-a.md")}, [a])
+        ctx = rf_context(root, a)
+        ck(
+            "RF CONTEXT: names the Promoted entry and every plan reading as blocked",
+            "`## Promoted` entry 1" in ctx and "PLAN-d.md" in ctx,
+            f"{ctx!r}",
+        )
+        tree({x: plan(box=done_box)}, [])
+        ck("RF CONTEXT CONTROL: a plan holding nothing up adds nothing", rf_context(root, x) == "")
+
+        # RP. The seed claim, both directions, then the shrink-only verdict and the writer that cannot add.
+        seed_ok = plan().replace(
+            "a fixture priority reason", "seed: Status approved, 1 open box(es)"
+        )
+        ck("RP CONTROL: an agreeing seed claim is silent", seed_claim(a, seed_ok) is None)
+        stale_n = seed_ok.replace("1 open box(es)", "0 open box(es)")
+        stale_s = seed_ok.replace("seed: Status approved", "seed: Status proposed")
+        got_n, got_s = seed_claim(a, stale_n), seed_claim(a, stale_s)
+        ck(
+            "RP: a stale box count is refused",
+            got_n is not None and "0 open box(es)" in got_n[1],
+            f"{got_n}",
+        )
+        ck(
+            "RP: a stale Status is refused",
+            got_s is not None and "Status proposed" in got_s[1],
+            f"{got_s}",
+        )
+        ck(
+            "RP CONTROL: a _done/ plan's Priority is history, not judged",
+            seed_claim("agent/plans/_done/PLAN-a.md", stale_n) is None,
+        )
+        ck("RP CONTROL: a Priority with no seed clause is silent", seed_claim(a, plan()) is None)
+        moved_down = stale_n.replace("## Tasks", "A paragraph moved above the tasks.\n\n## Tasks")
+        ck(
+            "RP: the stable id survives a line move below the header",
+            got_n is not None and (seed_claim(a, moved_down) or ("",))[0] == got_n[0],
+        )
+        key, msg = got_n or ("agent/plans/PLAN-a.md:000000000000", "RP planted")
+        ck(
+            "RP: a new finding fails, and says not to baseline it",
+            any("Do not add it" in p for p in rp_verdict({key: msg}, {})[0]),
+        )
+        ck("RP CONTROL: a frozen finding passes", rp_verdict({key: msg}, {key: "note"})[0] == [])
+        ck(
+            "RP: a frozen finding that stopped firing fails until drained",
+            any("Drain it" in p for p in rp_verdict({}, {key: "note"})[0]),
+        )
+        ck("RP: a missing baseline refuses a verdict", rp_verdict({}, None)[0] != [])
+        tree({a: stale_n, b: stale_s.replace("PLAN: fixture", "PLAN: other")}, [])
+        frozen_b = (seed_claim(b, (root / b).read_text(encoding="utf-8")) or ("unseen",))[0]
+        (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+        (root / RP_BASELINE_REL).write_text(
+            json.dumps(
+                {"findings": {frozen_b: "b", "agent/plans/PLAN-gone.md:000000000000": "gone"}}
+            ),
+            encoding="utf-8",
+        )
+        recs = [(a, "approved", 0), (b, "approved", 0)]
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            rc = write_rp_baseline(root, recs)
+        kept = load_rp_baseline(root) or {}
+        ck(
+            "RP --write-baseline: drains the fixed entry, keeps the live one, and never adds the new one",
+            rc == 1 and set(kept) == {frozen_b},
+            f"rc={rc} kept={kept}",
+        )
+    return bad
+
+
 def selftest_committed():
     """RC's controls, in a real repository: the incident shape reds, its two neighbours stay silent, and a reading that could not happen is never a pass. Returns the number of failed controls."""
     bad = 0
@@ -2462,8 +3163,26 @@ def selftest_committed():
 
 
 def rendered_only(root, update=False):
-    """`--rendered-only`: R8, RQ and RQ-SETTINGS for `root`, no selftest, no history. With `update` the two renders are written first, which is the fast regeneration (about 3 s against the full gate's 77 s). Exit 0 or 1."""
-    recs, problems, n_census = rendered_problems(root, update=update)
+    """`--rendered-only`: R8, RQ, RQ-SETTINGS, RQ-MOVED, RQ-DEPS, RF and RP for `root`, no selftest, no history. With `update` the two renders are written first, which is the fast regeneration (about 3 s against the full gate's 77 s). Exit 0 or 1."""
+    recs, problems, n_census, dep_note = rendered_problems(root, update=update)
+    # RF and RP ride the fast verb too. It is the command a plan close is verified with (`--rendered-only --update`), and on 2026-10-23 it was green over three plans the full gate's RF refused, because RF was not in it.
+    rf_warnings = []
+    for rel, _status, _n in recs:
+        try:
+            text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        rf_kind, rf_msg = finished_verdict(
+            rel, text, lambda rel=rel: main_view(rel), lambda rel=rel: rf_context(root, rel)
+        )
+        if rf_kind == "refuse":
+            problems.append(rf_msg)
+        elif rf_kind == "warn":
+            rf_warnings.append(rf_msg)
+    rp_problems, rp_note = rp_verdict(rp_found(root, recs), load_rp_baseline(root))
+    problems.extend(rp_problems)
+    for w in rf_warnings:
+        print(f"  WARNING {w}")
     if len(recs) < MIN_PLAN_FILES:
         print(
             f"VACUOUS INPUT: found {len(recs)} plan file(s) under agent/, floor is "
@@ -2480,7 +3199,8 @@ def rendered_only(root, update=False):
     print(
         f"✓ plan records (rendered files only): {len(recs)} plan file(s) (floor {MIN_PLAN_FILES}), "
         f"{R.INDEX_REL} ({n_census} census row(s)) and {PQ.QUEUE_REL} equal their renders. "
-        f"NOT judged here: R1..R7, R9, RB, RC and the census; the full gate judges them."
+        f"RF: no fully ticked plan left open. {dep_note}. {rp_note}. "
+        f"NOT judged here: R1..R7, R9, RB, RC, RE and the census; the full gate judges them."
     )
     return 0
 
@@ -2492,10 +3212,12 @@ def main(argv):
         return census_report(ROOT)
     if RENDERED_ONLY in argv:
         return rendered_only(ROOT, update=update)
+    if WRITE_BASELINE in argv:
+        return write_rp_baseline(ROOT, CK.plan_records(ROOT, tracked_only=True))
     if EFFORT_TABLE in argv:
         return effort_table_only(ROOT, argv)
     print("plan records: controls first, then the verdict")
-    if selftest() + selftest_committed() + selftest_effort():
+    if selftest() + selftest_committed() + selftest_effort() + selftest_closure():
         print(
             "✗ instrument control failed; every verdict below would be meaningless",
             file=sys.stderr,
@@ -2554,7 +3276,9 @@ def main(argv):
             problems.append(rb_msg)
         elif rb_kind == "warn":
             rb_warnings.append(rb_msg)
-        rf_kind, rf_msg = finished_verdict(rel, text, lambda rel=rel: main_view(rel))
+        rf_kind, rf_msg = finished_verdict(
+            rel, text, lambda rel=rel: main_view(rel), lambda rel=rel: rf_context(ROOT, rel)
+        )
         if rf_kind == "refuse":
             problems.append(rf_msg)
         elif rf_kind == "warn":
@@ -2565,8 +3289,10 @@ def main(argv):
         problems.extend(header_xref_problems(ROOT, rel, text))
 
     # R8, RQ and RQ-SETTINGS over the working tree (`rendered_problems`), then RC: the same three over HEAD's bytes, which is what CI reads.
-    _recs, rendered, n_census = rendered_problems(ROOT, recs=recs, update=update)
+    _recs, rendered, n_census, dep_note = rendered_problems(ROOT, recs=recs, update=update)
     problems.extend(rendered)
+    rp_problems, rp_note = rp_verdict(rp_found(ROOT, recs), load_rp_baseline(ROOT))
+    problems.extend(rp_problems)
     rc_problems, rc_note = committed_problems(ROOT)
     problems.extend(rc_problems)
     re_problems, re_note = effort_problems(ROOT)
@@ -2613,7 +3339,8 @@ def main(argv):
         f"opening the plans). {rc_note}. R9: {n_xref} plan(s) carry a "
         f"{'/'.join(HEADER_XREF_KEYS)} header and every pointer in one resolves. "
         f"RB: {n_rb_judged} plan(s) judged, no started plan without a box, "
-        f"{len(rb_warnings)} not-started plan(s) warned. {re_note}, every key once."
+        f"{len(rb_warnings)} not-started plan(s) warned. {re_note}, every key once. "
+        f"{dep_note}. {rp_note}."
     )
     if n_records == 0:
         print(

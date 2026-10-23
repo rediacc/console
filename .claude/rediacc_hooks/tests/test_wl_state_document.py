@@ -22,44 +22,68 @@ from rediacc_hooks.tests.test_wl_agent_session_archival import roster
 B_BODY_29F = """This is session B, running the licensing drill on a fork of the bench universe, with the mint tool staged and the activation cap already lifted to five. Nothing here overlaps session A, and losing it would cost the drill.
 
 ## Next action
-Re-run the license-e2e battery against the fork and read the failure reason verbatim."""
+Re-run the license-e2e battery against the fork and read the failure reason verbatim.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 PEER_29K = """Session cafe1234 is mid-migration on the chunk-store cold path and owns every uncommitted file under packages/cli/src/services/backup. Sweeping them into another commit is the concrete harm this note exists to prevent, so it has to be visible from a stop, not only after a compaction.
 
 ## Next action
-Finish the cold-path cutover and hand the file list back to the lead."""
+Finish the cold-path cutover and hand the file list back to the lead.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 DEAD_BODY = """Session ghost1234 was driving the ceph cutover rehearsal and has not been seen since. Its last recorded position is the RBD snapshot step on carrier two, with the node sync verified and the fork not yet taken.
 
 ## Next action
-Take the fork once node sync is confirmed on all three carriers."""
+Take the fork once node sync is confirmed on all three carriers.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 LIVE_BODY = """Session live5678 is watching the nightly on main and is very much alive, which is the whole point of this control: an age in the DOCUMENT must not outvote a transcript that is still being written.
 
 ## Next action
-Read the nightly job log and diagnose any red."""
+Read the nightly job log and diagnose any red.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 LEGACY_BODY = """This document predates the section format entirely. It belongs to whichever session wrote it last, it has no heading, and if the first sectioned write deletes it then this change has reproduced the very incident it was built to prevent.
 
 ## Next action
-Preserve me verbatim under a legacy heading."""
+Preserve me verbatim under a legacy heading.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 JUNK = "half a sentence with no heading and no next action, well under the floor"
 
 VICTIM_29C = """This is the document a SECOND session wrote and must be able to get back. It carries the one fact that would otherwise die with it: PR #547 merged to main at 01:30Z, so the nightly is now watchable on main rather than on the branch.
 
 ## Next action
-Diagnose any red in the nightly from its full log; the run itself is scheduled on main."""
+Diagnose any red in the nightly from its full log; the run itself is scheduled on main.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 VICT_A_29D = """Victim body, deliberately long enough for the shape gate to accept it as a real state document (the gate refuses anything under 250 characters as thin, and an earlier draft of this very fixture was refused exactly that way, which is why this sentence exists). It carries the one fact only this document holds.
 
 ## Next action
-Recover me from the backup and nothing else."""
+Recover me from the backup and nothing else.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 PEER_BODY_29D = """Peer body owned by cafe1234 alone, long enough for the shape gate to accept it as a real state document rather than refusing it as thin, which is a floor of 250 characters and easy to fall under when writing a fixture in a hurry.
 
 ## Next action
-This text must never appear in another session backup slot."""
+This text must never appear in another session backup slot.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 
 def text_of(path) -> str:
@@ -529,3 +553,97 @@ def test_29d_the_document_and_its_backup_follow_the_session_across_a_branch(wl):
     why = "29d CONTROL: the failed backup was advertised as saved: %r" % out[:200]
     assert "backup copy FAILED" in out, why
     assert "previous document saved to" not in out, why
+
+
+# ---- agent/plans/PLAN-stop-hook-rulings-campaign.md section 5: the `## Big pieces` section is required, and what it names is checked against the census.
+
+UNFOCUSED_BODY = wlfix.STATE_BODY.split("## Big pieces", 1)[0].rstrip() + "\n"
+PLAN_BIG = "# PLAN: the big one\nStatus: draft\n\n" + "".join(
+    "- [ ] box %d\n" % n for n in range(4)
+)
+PLAN_DONE = "# PLAN: finished\nStatus: done\n\n- [x] the only box\n"
+
+
+def plant_plans(fix) -> None:
+    plans = fix.proj / "agent" / "plans"
+    plans.mkdir(parents=True, exist_ok=True)
+    (plans / "PLAN-big.md").write_text(PLAN_BIG, encoding="utf-8")
+    (plans / "PLAN-finished.md").write_text(PLAN_DONE, encoding="utf-8")
+
+
+def body_naming(*names: str) -> str:
+    return UNFOCUSED_BODY + "\n## Big pieces\n\n" + "".join("- agent/plans/%s\n" % n for n in names)
+
+
+def blocked_world(fix) -> None:
+    """Something remains (an open item), so the STATE.md checks are live."""
+    fix.brief_now()
+    fix.say("answer\n\n## Remaining\n- #7 thing (pending)")
+    fix.task(7, "pending", "thing")
+    assert fix.cli("--add", wlfix.ME, "(deadbeef) keep the STATE.md checks live").rc == 0
+
+
+def test_s5_the_state_verb_refuses_a_body_without_big_pieces_and_accepts_one_with_it(wl):
+    """WRITE PATH: the same agent_state_shape rule the Stop check reads with refuses at write time; the byte comparison proves the refusal wrote nothing."""
+    wl.hand_now()
+    good = wl.state_file().read_text(encoding="utf-8")
+    got = wl.python(["--state", wlfix.ME], stdin=UNFOCUSED_BODY)
+    assert got.rc == 2, got.out + got.err
+    assert "STATE REFUSED (unfocused" in got.err, got.out + got.err
+    assert wl.state_file().read_text(encoding="utf-8") == good
+    ok = wl.python(["--state", wlfix.ME], stdin=body_naming("PLAN-big.md"))
+    assert ok.rc == 0, ok.out + ok.err
+
+
+def test_s5_the_stop_check_calls_a_planted_body_without_big_pieces_unfocused(wl):
+    """READ PATH: a document that bypassed the verb (planted on disk) is refused by the Stop check, and the same document with the section is not."""
+    blocked_world(wl)
+    wl.plant_state(wlfix.section_now(wlfix.ME, UNFOCUSED_BODY))
+    got = wl.run()
+    assert "STATE.md is unfocused" in got.out, wl.why(
+        "planted, unfocused", "block", got, "unfocused"
+    )
+    wl.plant_state(wlfix.section_now(wlfix.ME, wlfix.STATE_BODY))
+    got = wl.run()
+    assert "unfocused" not in got.out, wl.why("planted, focused", "block", got, "unfocused")
+
+
+def test_s5_a_section_naming_a_finished_plan_fires_the_drift_check(wl):
+    blocked_world(wl)
+    plant_plans(wl)
+    assert wl.cli("--state", wlfix.ME, stdin=body_naming("PLAN-big.md", "PLAN-finished.md")).rc == 0
+    got = wl.run()
+    assert "BIG PIECES DRIFT" in got.out, wl.why("finished plan named", "block", got, "DRIFT")
+    assert "PLAN-finished.md: not a big piece now" in got.out
+
+
+def test_s5_a_section_naming_none_of_the_big_pieces_fires_the_drift_check(wl):
+    blocked_world(wl)
+    plant_plans(wl)
+    assert wl.cli("--state", wlfix.ME, stdin=body_naming()).rc == 0
+    got = wl.run()
+    assert "names none of the 1 current big piece" in got.out, wl.why(
+        "none named", "block", got, "DRIFT"
+    )
+
+
+def test_s5_a_section_agreeing_with_the_census_is_silent(wl):
+    """CONTROL for both drift cases: the same world, the section re-derived, and the check says nothing while the stop still blocks for the open item (so the battery ran)."""
+    blocked_world(wl)
+    plant_plans(wl)
+    assert wl.cli("--state", wlfix.ME, stdin=body_naming("PLAN-big.md")).rc == 0
+    got = wl.run()
+    assert got.decision == "block", got.out[:300]
+    assert "BIG PIECES DRIFT" not in got.out, got.out[:600]
+    assert "bigpieces" not in got.out, got.out[:600]
+
+
+def test_s5_a_plan_named_without_its_extension_counts(wl):
+    """`PLAN-big` and `PLAN-big.md` name one file; the live lead STATE.md of 2026-10-23 wrote the short form."""
+    blocked_world(wl)
+    plant_plans(wl)
+    body = UNFOCUSED_BODY + "\n## Big pieces\n\n- PLAN-big (four open boxes)\n"
+    assert wl.cli("--state", wlfix.ME, stdin=body).rc == 0
+    got = wl.run()
+    assert got.decision == "block", got.out[:300]
+    assert "BIG PIECES DRIFT" not in got.out, got.out[:600]

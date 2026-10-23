@@ -519,6 +519,8 @@ def drive_l1(fix) -> L1Drive:
         ("--prune-scratch", "--prune-scratch @WHO@", "nothing to prune"),
         # The stop-hook retro brief (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13). It WRITES: the first accepted run orders the band and adds the tracking item, so a foreign `<me>` must be refused before either.
         ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
+        # The operator-ruling verb (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2), driven in its listing mode: a bare `<me>` prints the live rulings after the same _identity_or_die its record and revoke modes run.
+        ("--rule", "--rule @WHO@", "operator rulings:"),
     ]
 
     stand_in = fix.proj / ".ci" / "scripts" / "quality" / "check_agent_session_archival.py"

@@ -2298,6 +2298,27 @@
     }
   },
   {
+    "id": "check:ci-operator-rulings",
+    "run": "npm run check:ci-operator-rulings",
+    "gate": true,
+    "paths": [
+      "agent/RULES.md",
+      "agent/rulings/**",
+      ".ci/scripts/quality/check_operator_rulings.py",
+      ".claude/hooks/stop/wl_ruling.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_operator_rulings.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Operator rulings"
+    }
+  },
+  {
     "id": "check:ci-lint-rule-units",
     "run": "npm run check:ci-lint-rule-units",
     "gate": true,

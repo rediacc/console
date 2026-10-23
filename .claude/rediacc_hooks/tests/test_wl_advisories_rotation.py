@@ -83,7 +83,10 @@ HINT_BRIEFING = """You are picking up the zorbium frobnicator recalibration, whi
 
 ## Next action
 
-Re-run the frobnicator index build, then compare the recalibration output against the numbers in the notes."""
+Re-run the frobnicator index build, then compare the recalibration output against the numbers in the notes.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 BROKEN_AGENT = "---\nname: brokenagent\ntools: Bash\n---\nbody with no description\n"
 
