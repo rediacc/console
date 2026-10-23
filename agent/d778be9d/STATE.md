@@ -1,19 +1,20 @@
-## SESSION d778be9d 2026-10-23T18:12:52Z
+## SESSION d778be9d 2026-10-23T20:20:00Z
 
-# STATE d778be9d (branch 1023-1, no PR yet, never pushed) -- 2026-10-23T18:30Z
+# STATE d778be9d (branch 1023-1, no PR, never pushed) -- 2026-10-23T20:25Z
 
 ## Big pieces
-- Promoted wave (19 entries). This context: renet cross-repo isolation T1-T9 landed (renet 0c3a88a, c7dd6c1; CLI b3b74547b; plan ## T9 result 6566d3753); new PLAN-dockerd-api-privilege-gate (Promoted 19, plan file staged, commit waiting on writer ae152329 touching renders); spend guard R2 retention + 200 GB alert; telemetry persist=false on all Workers (6 regional deployed, 0 stored events 17:22-17:40Z); Grafana SMTP + hide_version; config-handoff T10; plan-preflight design 3a/3b.
-- Operator rulings: secrets split ARCHIVED (ASKED 17:23Z); R2 keep 20, alert 200 GB.
+- Renet cross-repo isolation: T1-T10 ticked (vm:check vmc-10231935-89f632 VERIFIED, 52/52, renet 45bf795); T11 left only the managing-secrets cast (#0902d655).
+- PLAN-dockerd-api-privilege-gate (#8cb01693): T1 031d303/5546219, T2 cef804e, T3 45bf795 (console 9cb04b587); T4 writer a53c284b implementing the Hub delegation per /tmp/d778m/t4-design.md; then T5 live, T6 vm:check, T7 docs.
+- Fixes today: renet 61d01f1 (/tmp bind inside new ns), e672975 (compose-tmp), f1cd666 (compose CreateTemp race), template node-exporter removed 5902719a8 + gate test 7bf4900c2.
 
 ## Delegated (agent, item, owns, accept)
-- afcda6841f56c31d1 #a5269c96 (+#8971d8b7): renet c7dd6c1d review fixes (.1 HIGH compose /etc mask, .2 bind race, .3-.5); owns private/renet cmd/renet/main.go, daemon_containerd_exec.go, tests, pkg/runpaths, i18n baseline; accept go build/vet/test rc0.
-- a4612fcf0d3814d5d #d602fbf2: PLAN-config-handoff-relay-only T11 (section 9 sweep, eu deploy w/ rollback file, live WSL+agent-browser smoke).
-- ae15232974443019d #61819a7f: PLAN-plan-preflight PF4-PF7 + design 3a; owns worklist.py, worklist_messages.py, wl_planpreflight.py, wl_planrec.py, test-planrec/planenforce, test_wl_identity, test_wl_plan_preflight, check_plan_implementation.py (+json, tests), pr-babysitter.md, pr-merge.md, pr-babysit.md. It touched QUEUE/INDEX/plan-boxes (asked why).
+- a53c284b #8cb01693: gate T4 per /tmp/d778m/t4-design.md section 6 files (renet dockergrant/dockerpolicy/dockerproxy/daemon/compose/hub/runpaths/cmd); accept full renet go test.
+- a025305a #0902d655: managing-secrets cast re-record; accept tutorial gates + no old paths in the cast.
+- ci:quick cluster (38 gates failed; evidence /tmp/d778m/gates/*.txt), item #831b7e48:
+  a36174a9 python quality sources; a633cf76 .ci/config manifests, gates.lock, shards; a6f77e9a agent/plans, docs, skills; af5f238e packages TS (format, lint:unused, test-cli); a3bdea7a renet/proxy/devbox real-vs-churn.
 
 ## Next action
-1. Commit agent/plans/PLAN-dockerd-api-privilege-gate.md + QUEUE/INDEX/plan-boxes (message /tmp/d778m/m17.txt) once ae152329 reports; regenerate renders first.
-2. After afcda684 lands: commit renet, bump pointer, mark c7dd6c1d.1-.5; spawn the privilege-gate writer for T1-T4 (exclusive with renet files); then `npm run vm:check -- --changed`, then ci:quick, then backup push (TURBO_PUSH_REASON='backup: ...').
-3. Tick plan boxes with --plan-investigate rows: renet-cross-repo-isolation T1-T9 (T1 a9a6906c, T3 be001774, T5 b559bbf5, T8 9ef692cd), plan-preflight PF1-PF3 (0a5aafab1, 74f386139, d74ca4311) then PF8.
-4. Settle below-threshold review findings before merge.
-5. Waiting: #806d6a60 T11 alert (/tmp/tq/t11.py), #753d4fdc/#cba857c9 R1 after green scheduled run.
+1. As each report lands: re-run its gates, commit by path with PR-TASK 9f92c43e.
+2. When the cluster is green: ci:quick on a still tree (no commits during it), vm:check if renet moved (T4), then the backup push with TURBO_PUSH_REASON='backup: ...' (#831b7e48).
+3. T4 lands: verify, commit renet + pointer, rewrite the T4 box and add "Findings from T4 design" to the plan, then T5 live repro on ops-worker, T6 vm:check, T7 docs.
+4. Waiting: #806d6a60 T11 alert, #753d4fdc/#cba857c9 R1 scheduled run, #61819a7f PF9 post-merge.
