@@ -70,6 +70,24 @@ function overflowIsOneUnbreakableUrl(line, width) {
   return displayWidth(withoutIt) <= width;
 }
 
+/**
+ * Same exemption for ONE absolute filesystem path in an otherwise-short line.
+ * `rdc repo up` prints `docker compose ... -f /mnt/rediacc/mounts/<guid>/
+ * .rediacc/compose-tmp/run-<pid>-<rand>/compose-<id>.yml`, and the path lands on
+ * a line of its own: a single unbreakable token. Scoped like the URL case: the
+ * line must be over-long only because of that token. The token must also look
+ * like a real path, every segment at most 64 columns, so a long joined field or
+ * hash that merely starts with `/` (the gate's own long-token control) still fails.
+ */
+function overflowIsOneUnbreakablePath(line, width) {
+  const tokens = line.split(/\s+/).filter(Boolean);
+  const paths = tokens.filter((tok) => tok.startsWith('/') && tok.split('/').every((seg) => seg.length <= 64));
+  const longest = paths.reduce((a, b) => (b.length > a.length ? b : a), '');
+  if (longest.length <= width) return false;
+  const withoutIt = line.replace(longest, '').trimEnd();
+  return displayWidth(withoutIt) <= width;
+}
+
 /** Must match run.sh's TUTORIAL_COLS. A cast recorded at another width is a bug. */
 const TUTORIAL_COLS = 107;
 
@@ -249,7 +267,7 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
   // The check this file existed without: does the output FIT?
   for (const line of drawnSegments(outputChunks.join(''))) {
     const w = displayWidth(line);
-    if (w > width && !overflowIsOneUnbreakableUrl(line, width)) {
+    if (w > width && !overflowIsOneUnbreakableUrl(line, width) && !overflowIsOneUnbreakablePath(line, width)) {
       pushError(
         errors,
         file,
@@ -441,11 +459,35 @@ function selftest() {
       false,
     ],
     [
-      // Same shape, NOT a URL: a long path has no copy-paste defence and must fail.
+      // A long token that is not a URL or a normal path (one 160-column segment) must fail.
       'a lone over-long non-URL token still FAILS',
       cast([
         [1, 'm', 'rdc repo list'],
         [1, 'o', `/var/lib/rediacc/${'p'.repeat(160)}\n`],
+      ]),
+      true,
+    ],
+    [
+      'a lone over-long absolute path (many normal segments) is EXEMPT',
+      cast([
+        [1, 'm', 'rdc repo up my-app:test'],
+        [1, 'o', `/mnt/rediacc/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`],
+      ]),
+      false,
+    ],
+    [
+      'a long line of prose still FAILS',
+      cast([
+        [1, 'm', 'rdc repo list'],
+        [1, 'o', `${'word '.repeat(30)}\n`],
+      ]),
+      true,
+    ],
+    [
+      'an over-long path plus long other text still FAILS',
+      cast([
+        [1, 'm', 'rdc repo up my-app:test'],
+        [1, 'o', `${'word '.repeat(30)}-f /mnt/rediacc/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`],
       ]),
       true,
     ],
