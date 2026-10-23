@@ -1211,29 +1211,6 @@
       ],
       "done_sigs": []
     },
-    "agent/plans/PLAN-renet-cross-repo-isolation.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 1,
-      "done": 10,
-      "open_sigs": [
-        "41121b17"
-      ],
-      "done_sigs": [
-        "2f9e27ed",
-        "6109126a",
-        "65ea9658",
-        "914af779",
-        "9ba06710",
-        "9ef692cd",
-        "a9a6906c",
-        "b559bbf5",
-        "be001774",
-        "f0c9c6cc"
-      ]
-    },
     "agent/plans/PLAN-renet-fetch-retries.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -3767,6 +3744,28 @@
         "d0988b5f"
       ],
       "ruling": "#c3a46b36"
+    },
+    "agent/plans/_done/PLAN-renet-cross-repo-isolation.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
+        "2f9e27ed",
+        "41121b17",
+        "6109126a",
+        "65ea9658",
+        "914af779",
+        "9ba06710",
+        "9ef692cd",
+        "a9a6906c",
+        "b559bbf5",
+        "be001774",
+        "f0c9c6cc"
+      ]
     },
     "agent/plans/_done/PLAN-renet-fetch-hardening.md": {
       "status": "superseded",

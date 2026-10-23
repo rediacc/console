@@ -530,7 +530,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 99 | 14 | 0 | 23753 |
-| `agent/plans/PLAN-renet-cross-repo-isolation.md` | approved | 165 | 1 | 10 | 44466 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 48 | 2 | 0 | 5317 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 93 | 3 | 0 | 9323 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
@@ -655,6 +654,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | done | 59 | 0 | 9 | 8213 |
 | `agent/plans/_done/PLAN-remove-cross-session-messaging.md` | done | 379 | 0 | 13 | 42487 |
 | `agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md` | closed | 252 | 1 | 7 | 30113 |
+| `agent/plans/_done/PLAN-renet-cross-repo-isolation.md` | done | 166 | 0 | 11 | 44631 |
 | `agent/plans/_done/PLAN-renet-fetch-hardening.md` | superseded | 146 | 8 | 0 | 12145 |
 | `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 104 | 3 | 2 | 14962 |
 | `agent/plans/_done/PLAN-repair-prose-style-findings.md` | done | 53 | 0 | 6 | 6070 |

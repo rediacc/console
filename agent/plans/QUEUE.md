@@ -77,7 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 19 plans done, 132 of 392 boxes done (33%).
+Promoted: 1 of 18 plans done, 122 of 381 boxes done (32%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -98,8 +98,7 @@ Promoted: 1 of 19 plans done, 132 of 392 boxes done (33%).
 | 15 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
 | 16 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
 | 17 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
-| 18 | PLAN-renet-cross-repo-isolation.md | 10/11 | 1 open |
-| 19 | PLAN-dockerd-api-privilege-gate.md | 0/7 | 7 open |
+| 18 | PLAN-dockerd-api-privilege-gate.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -119,8 +118,7 @@ Promoted: 1 of 19 plans done, 132 of 392 boxes done (33%).
 15. agent/plans/PLAN-config-networkid-discovery.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
 16. agent/plans/PLAN-renet-fetch-retries.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
 17. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report
-18. agent/plans/PLAN-renet-cross-repo-isolation.md -- operator /ask 2026-10-23 ("Plan it and fix now"): each sandbox mounts all of /var/run/rediacc; live, repo 8256 drove repo 7104 daemon; per-network directories
-19. agent/plans/PLAN-dockerd-api-privilege-gate.md -- triage #8cb01693 PLAN+SUBAGENT; follows PLAN-renet-cross-repo-isolation T9 finding
+18. agent/plans/PLAN-dockerd-api-privilege-gate.md -- triage #8cb01693 PLAN+SUBAGENT; follows PLAN-renet-cross-repo-isolation T9 finding
 
 ## Generated
 
