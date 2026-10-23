@@ -2164,7 +2164,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Nos produits logiciels (CLI et Renet Agent) collectent une télémétrie d'utilisation anonyme afin d'améliorer la qualité, les performances et la fiabilité des produits. Les données de télémétrie comprennent des informations techniques comme la version de l'application, le système d'exploitation, des métriques de performance, les habitudes d'utilisation des fonctionnalités et des rapports d'erreurs. Les identifiants personnels sont anonymisés avant la collecte : les adresses e-mail sont réduites au seul domaine, les identifiants utilisateur sont hachés et tronqués, et les mots de passe ou secrets ne sont jamais collectés.",
+                "Nos produits logiciels (CLI et Renet Agent) collectent une télémétrie d'utilisation anonyme afin d'améliorer la qualité, les performances et la fiabilité des produits. Les données de télémétrie comprennent des informations techniques comme la version de l'application, le système d'exploitation, des métriques de performance, les habitudes d'utilisation des fonctionnalités et des rapports d'erreurs. Les identifiants personnels sont anonymisés avant la collecte : les adresses e-mail sont réduites au seul domaine, les identifiants utilisateur sont hachés et tronqués, et les mots de passe ou secrets ne sont jamais collectés. La télémétrie de notre site web et de notre service de comptes inclut aussi la localisation à l'échelle de la ville (ville et région), fournie par le réseau edge de Cloudflare et conservée pendant 7 jours.",
                 "La télémétrie est activée par défaut dans notre Application Web et notre CLI, et peut être désactivée dans tous les produits. Pour plus de détails sur ce que chaque produit collecte et comment vous désinscrire, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
               ],
               "title": "2.5 Données de télémétrie produit"
@@ -9377,7 +9377,7 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Catégories d'informations collectées :</strong> Informations sur l'activité Internet ou du réseau électronique (type de navigateur, données d'interaction, journaux d'erreurs), identifiants d'appareil (anonymisés), données de géolocalisation (niveau pays uniquement, dérivées de l'adresse IP qui n'est pas stockée)",
+            "<strong>Catégories d'informations collectées :</strong> Informations sur l'activité Internet ou du réseau électronique (type de navigateur, données d'interaction, journaux d'erreurs), identifiants d'appareil (anonymisés), données de géolocalisation (à l'échelle de la ville : ville et région, déduites de l'adresse IP sur le réseau edge de Cloudflare ; l'adresse IP elle-même n'est pas stockée et la localisation est conservée 7 jours)",
             "<strong>Objectif :</strong> Amélioration et maintien de la qualité du service, débogage, surveillance des performances et sécurité",
             "<strong>Vente/Partage :</strong> Nous ne vendons ni ne partageons les données de télémétrie au sens défini par la CCPA/CPRA",
             "<strong>Droit de désinscription :</strong> Utilisez les mécanismes de désinscription spécifiques à chaque produit décrits dans les sections 4 à 7 ci-dessus. Nous honorons également le signal Global Privacy Control (GPC) dans notre Application Web."

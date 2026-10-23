@@ -67,10 +67,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (4 epic(s)):
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 10 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
-  - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 8 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
+  - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 15 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 5 live of writer_cap 15 (session d778be9d): worker:afafe9d9c28804701, worker:a5b7428bce3b0c898, worker:aca6e5ee73f07d830, worker:adffb5f50da55ba17, worker:ae0cd4d8251b99159.
-- Leased items: 5: #05e5aa68 (worker:adffb5f50da55ba17, d778be9d), #2ba0c177 (worker:ae0cd4d8251b99159, d778be9d), #69525332 (worker:aca6e5ee73f07d830, d778be9d), #753d4fdc (worker:a5b7428bce3b0c898, d778be9d), #d06aa07b (worker:afafe9d9c28804701, d778be9d).
+- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a8c39f8339528589e, worker:a3d30d2fbc12eaa3d, worker:aabb55461c84a58eb, worker:ad3e6e2752f7f26fd.
+- Leased items: 7: #05e5aa68 (worker:a3d30d2fbc12eaa3d, d778be9d), #4558df19 (worker:ad3e6e2752f7f26fd, d778be9d), #6c15a77f (worker:aabb55461c84a58eb, d778be9d), #8108314a (worker:a3d5687e966e38cbf, d778be9d), #8971d8b7 (worker:a8c39f8339528589e, d778be9d), #bde3f1dc (worker:ac673f2c431eb8679, d778be9d), #c35dc69f (worker:ad3e6e2752f7f26fd, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 

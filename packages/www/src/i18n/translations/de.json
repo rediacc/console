@@ -2164,7 +2164,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Unsere Softwareprodukte (CLI und Renet-Agent) erfassen anonyme Nutzungstelemetrie, um Qualität, Leistung und Zuverlässigkeit der Produkte zu verbessern. Die Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Leistungsmetriken, Nutzungsmuster von Funktionen und Fehlerberichte. Persönliche Kennungen werden vor der Erfassung anonymisiert: E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden nie erfasst.",
+                "Unsere Softwareprodukte (CLI und Renet-Agent) erfassen anonyme Nutzungstelemetrie, um Qualität, Leistung und Zuverlässigkeit der Produkte zu verbessern. Die Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Leistungsmetriken, Nutzungsmuster von Funktionen und Fehlerberichte. Persönliche Kennungen werden vor der Erfassung anonymisiert: E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden nie erfasst. Die Telemetrie unserer Website und des Kontodienstes enthält außerdem den Standort auf Stadtebene (Stadt und Region). Er stammt vom Edge-Netzwerk von Cloudflare und wird 7 Tage lang gespeichert.",
                 "Telemetrie ist in unserer Webanwendung und CLI standardmäßig aktiviert und kann in allen Produkten deaktiviert werden. Vollständige Details darüber, was jedes Produkt erfasst und wie Sie sich abmelden können, finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
               ],
               "title": "2.5 Produkttelemetriedaten"
@@ -9377,7 +9377,7 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Kategorien erfasster Informationen:</strong> Internet- oder elektronische Netzwerkaktivitätsinformationen (Browsertyp, Interaktionsdaten, Fehlerprotokolle), Geräteidentifikatoren (anonymisiert), Geolokalisierungsdaten (nur auf Landesebene, abgeleitet von der IP-Adresse, die nicht gespeichert wird)",
+            "<strong>Kategorien erfasster Informationen:</strong> Internet- oder elektronische Netzwerkaktivitätsinformationen (Browsertyp, Interaktionsdaten, Fehlerprotokolle), Geräteidentifikatoren (anonymisiert), Geolokalisierungsdaten (auf Stadtebene: Stadt und Region, am Edge von Cloudflare aus der IP-Adresse abgeleitet; die IP-Adresse selbst wird nicht gespeichert, der Standort wird 7 Tage lang aufbewahrt)",
             "<strong>Zweck:</strong> Verbesserung und Aufrechterhaltung der Dienstqualität, Debugging, Leistungsüberwachung und Sicherheit",
             "<strong>Verkauf/Weitergabe:</strong> Wir verkaufen oder teilen keine Telemetriedaten im Sinne des CCPA/CPRA",
             "<strong>Recht auf Abmeldung:</strong> Verwenden Sie die in den Abschnitten 4–7 oben beschriebenen produktspezifischen Abmeldemechanismen. Wir berücksichtigen auch das Global Privacy Control (GPC)-Signal in unserer Webanwendung."

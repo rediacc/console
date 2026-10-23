@@ -2168,7 +2168,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Meie tarkvaratooted (CLI ja Renet agent) koguvad anonüümset kasutustelemetriat, et parandada toodete kvaliteeti, jõudlust ja töökindlust. Telemetriaandmed sisaldavad tehnilist teavet, näiteks rakenduse versiooni, operatsioonisüsteemi, jõudlusmõõdikuid, funktsioonide kasutusmustreid ja veaaruandeid. Isikuandmed muudetakse enne kogumist anonüümseks: e-posti aadressidest jäetakse alles ainult domeen, kasutaja ID-d räsitakse ja lühendatakse ning paroole ega saladusi ei koguta kunagi.",
+                "Meie tarkvaratooted (CLI ja Renet agent) koguvad anonüümset kasutustelemetriat, et parandada toodete kvaliteeti, jõudlust ja töökindlust. Telemetriaandmed sisaldavad tehnilist teavet, näiteks rakenduse versiooni, operatsioonisüsteemi, jõudlusmõõdikuid, funktsioonide kasutusmustreid ja veaaruandeid. Isikuandmed muudetakse enne kogumist anonüümseks: e-posti aadressidest jäetakse alles ainult domeen, kasutaja ID-d räsitakse ja lühendatakse ning paroole ega saladusi ei koguta kunagi. Meie veebisaidi ja kontoteenuse telemeetria sisaldab ka linnatasemel asukohta (linn ja piirkond), mis pärineb Cloudflare'i servavõrgust ja mida säilitatakse 7 päeva.",
                 "Telemetria on meie veebirakenduses ja CLI-s vaikimisi lubatud ning seda saab kõigis toodetes keelata. Üksikasjaliku teabe saamiseks selle kohta, mida iga toode kogub ja kuidas loobuda, vaata meie <a href=\"telemetry-policy\">telemetria poliitikat</a>."
               ],
               "title": "2.5 Tootetelemetria andmed"
@@ -9389,7 +9389,7 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Kogutud teabe kategooriad:</strong> Interneti- või elektroonilise võrgu tegevuse teave (brauseri tüüp, suhtluse andmed, vealogid), seadme tuvastajad (anonümiseeritud), geolokatsiooni andmed (ainult riigi tasemel, tuletatud IP-aadressist, mida ei salvestata)",
+            "<strong>Kogutud teabe kategooriad:</strong> Interneti- või elektroonilise võrgu tegevuse teave (brauseri tüüp, suhtluse andmed, vealogid), seadme tuvastajad (anonümiseeritud), geolokatsiooni andmed (linnatasemel: linn ja piirkond, tuletatud IP-aadressist Cloudflare'i servavõrgus; IP-aadressi ennast ei salvestata ja asukohta säilitatakse 7 päeva)",
             "<strong>Eesmärk:</strong> Teenuse kvaliteedi parandamine ja säilitamine, silumine, jõudluse jälgimine ja turvalisus",
             "<strong>Müük/jagamine:</strong> Me ei müü ega jaga telemetria andmeid CCPA/CPRA tähenduses",
             "<strong>Õigus loobuda:</strong> Kasutage ülalkirjeldatud tootespetsiifilisi loobumismehhanisme jaotistes 4–7. Austame ka meie veebirakenduses globaalse privaatsusjuhtimise (GPC) signaali."

@@ -117,7 +117,7 @@ The raw user agent and the query string are not copied.
 One-time tokens travel in URL queries (magic link, password reset, email confirm, invite), so `url.full` would carry live tokens. The Alloy transform:
 
 - strips the query from `url.full`
-- drops `geo.locality.*`
+- keeps `geo.locality.*` (city-level location, operator ruling 2026-10-23)
 - rewrites `token=<value>` in log bodies
 
 #### Limits

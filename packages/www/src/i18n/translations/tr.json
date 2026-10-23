@@ -2155,7 +2155,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Yazılım ürünlerimiz (CLI ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplanmadan önce anonimleştirilir: e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenip kısaltılır, parolalar ve gizli bilgiler ise asla toplanmaz.",
+                "Yazılım ürünlerimiz (CLI ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplanmadan önce anonimleştirilir: e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenip kısaltılır, parolalar ve gizli bilgiler ise asla toplanmaz. Web sitemizin ve hesap hizmetimizin telemetrisi, Cloudflare'in uç ağından alınan şehir düzeyinde konumu (şehir ve bölge) de içerir ve bu bilgi 7 gün saklanır.",
                 "Telemetri, Web Uygulamamızda ve CLI'da varsayılan olarak etkindir ve tüm ürünlerde devre dışı bırakılabilir. Her ürünün ne topladığı ve nasıl devre dışı bırakılacağı hakkında eksiksiz ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
               ],
               "title": "2.5 Ürün Telemetri Verileri"
@@ -9366,7 +9366,7 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Toplanan bilgi kategorileri:</strong> İnternet veya elektronik ağ etkinlik bilgileri (tarayıcı türü, etkileşim verileri, hata günlükleri), cihaz tanımlayıcıları (anonimleştirilmiş), coğrafi konum verileri (yalnızca ülke düzeyinde, saklanmayan IP adresinden türetilir)",
+            "<strong>Toplanan bilgi kategorileri:</strong> İnternet veya elektronik ağ etkinlik bilgileri (tarayıcı türü, etkileşim verileri, hata günlükleri), cihaz tanımlayıcıları (anonimleştirilmiş), coğrafi konum verileri (şehir düzeyinde: şehir ve bölge, Cloudflare'in uç ağında IP adresinden türetilir; IP adresinin kendisi saklanmaz, konum 7 gün tutulur)",
             "<strong>Amaç:</strong> Hizmet kalitesini sürdürme ve iyileştirme, hata ayıklama, performans izleme ve güvenlik",
             "<strong>Satış/Paylaşım:</strong> CCPA/CPRA tarafından tanımlandığı şekliyle telemetri verilerini satmıyoruz veya paylaşmıyoruz",
             "<strong>Devre dışı bırakma hakkı:</strong> Yukarıdaki 4-7 bölümlerinde açıklanan ürüne özgü devre dışı bırakma mekanizmalarını kullanın. Web Uygulamamızda Global Privacy Control (GPC) sinyalini de dikkate alırız."

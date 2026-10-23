@@ -2174,7 +2174,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Os nossos produtos de software (CLI e Agente Renet) recolhem telemetria de utilização anónima para melhorar a qualidade, o desempenho e a fiabilidade dos produtos. Os dados de telemetria incluem informações técnicas como a versão da aplicação, o sistema operativo, métricas de desempenho, padrões de utilização de funcionalidades e relatórios de erros. Os identificadores pessoais são anonimizados antes da recolha: os endereços de e-mail são reduzidos apenas ao domínio, os IDs de utilizador são convertidos em hash e truncados, e as palavras-passe ou segredos nunca são recolhidos.",
+                "Os nossos produtos de software (CLI e Agente Renet) recolhem telemetria de utilização anónima para melhorar a qualidade, o desempenho e a fiabilidade dos produtos. Os dados de telemetria incluem informações técnicas como a versão da aplicação, o sistema operativo, métricas de desempenho, padrões de utilização de funcionalidades e relatórios de erros. Os identificadores pessoais são anonimizados antes da recolha: os endereços de e-mail são reduzidos apenas ao domínio, os IDs de utilizador são convertidos em hash e truncados, e as palavras-passe ou segredos nunca são recolhidos. A telemetria do nosso site e do serviço de contas também inclui a localização ao nível da cidade (cidade e região), obtida a partir do edge da Cloudflare e mantida durante 7 dias.",
                 "A telemetria está ativada por omissão na nossa Aplicação Web e na CLI, podendo ser desativada em todos os produtos. Para informações completas sobre o que cada produto recolhe e como optar por não participar, consulte a nossa <a href=\"telemetry-policy\">Política de Telemetria</a>."
               ],
               "title": "2.5 Dados de Telemetria do Produto"
@@ -9397,7 +9397,7 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Categorias de informação recolhida:</strong> Informação de atividade de rede eletrónica ou Internet (tipo de browser, dados de interação, registos de erros), identificadores de dispositivos (anonimizados), dados de geolocalização (apenas ao nível do país, derivados do endereço IP que não é armazenado)",
+            "<strong>Categorias de informação recolhida:</strong> Informação de atividade de rede eletrónica ou Internet (tipo de browser, dados de interação, registos de erros), identificadores de dispositivos (anonimizados), dados de geolocalização (ao nível da cidade: cidade e região, derivadas do endereço IP no edge da Cloudflare; o próprio endereço IP não é armazenado e a localização é mantida durante 7 dias)",
             "<strong>Finalidade:</strong> Melhoria e manutenção da qualidade do serviço, depuração, monitorização de desempenho e segurança",
             "<strong>Venda/Partilha:</strong> Não vendemos nem partilhamos dados de telemetria conforme definido pela CCPA/CPRA",
             "<strong>Direito de recusa:</strong> Utilize os mecanismos de recusa específicos de cada produto descritos nas secções 4 a 7 acima. A nossa Aplicação Web também respeita o sinal do Controlo Global de Privacidade (GPC)."

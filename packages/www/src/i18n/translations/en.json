@@ -1081,7 +1081,7 @@
             "productTelemetry": {
               "title": "2.5 Product Telemetry Data",
               "content": [
-                "Our software products (CLI and Renet Agent) collect anonymous usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected.",
+                "Our software products (CLI and Renet Agent) collect anonymous usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected. Telemetry from our website and account service also includes city-level location (city and region), taken from Cloudflare's edge and kept for 7 days.",
                 "Telemetry is enabled by default in our CLI, and can be disabled in all products. For complete details on what each product collects and how to opt out, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
               ]
             },
@@ -1857,7 +1857,7 @@
             "If you are a California resident, the following additional disclosures apply under the California Consumer Privacy Act (CCPA) as amended by the California Privacy Rights Act (CPRA):"
           ],
           "items": [
-            "<strong>Categories of information collected:</strong> Internet or electronic network activity information (browser type, interaction data, error logs), device identifiers (anonymized), geolocation data (country-level only, derived from IP address which is not stored)",
+            "<strong>Categories of information collected:</strong> Internet or electronic network activity information (browser type, interaction data, error logs), device identifiers (anonymized), geolocation data (city-level: city and region, derived from the IP address at Cloudflare's edge; the IP address itself is not stored, and the location is kept for 7 days)",
             "<strong>Purpose:</strong> Improving and maintaining service quality, debugging, performance monitoring, and security",
             "<strong>Sale/Sharing:</strong> We do not sell or share telemetry data as defined by the CCPA/CPRA",
             "<strong>Right to opt out:</strong> Use the product-specific opt-out mechanisms described in sections 4 and 5 above."
