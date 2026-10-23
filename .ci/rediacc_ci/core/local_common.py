@@ -1320,6 +1320,17 @@ def renet_artifact_fp(path: str) -> str:
     return "%d:%d" % (status.st_size, int(status.st_mtime))
 
 
+def renet_stamp_key(source: str, head: str, license_mode: str, account_key: str) -> str:
+    """The digest `ensure_renet_built` stores in build-renet.stamp: the renet source fingerprint, renet's HEAD commit, the license mode and the account key.
+
+    HEAD is in it because the binary stamps `vcs.revision`, and a rebase-merge leaves the tree byte-identical under a new commit: with the fingerprint alone the stamp still matched, nothing rebuilt, and `npm run vm:check` refused bin/renet as renet-build-mismatch on every run (2026-10-23, c32bb4884efa built, 0a89e786caef checked out). An empty `head` (not a git checkout) keeps the old key's meaning.
+    """
+    text = "src=%s\nlicense=%s\nkey=%s\n" % (source, license_mode, account_key)
+    if head:
+        text += "head=%s\n" % head
+    return _hex_of(text.encode("utf-8", "surrogateescape"))
+
+
 def ensure_renet_built(env: dict[str, str] | None = None) -> bool:
     """`ensure_renet_built`, `.ci/lib/local-common.sh:759`."""
     environ = os.environ if env is None else env
@@ -1354,10 +1365,9 @@ def ensure_renet_built(env: dict[str, str] | None = None) -> bool:
             raise LocalCommonError("cd %s failed" % renet_dir, code=1)
         source = _subst(computed)
 
-    current = _hex_of(
-        ("src=%s\nlicense=%s\nkey=%s\n" % (source, license_mode, account_key)).encode(
-            "utf-8", "surrogateescape"
-        )
+    head = _capture(["git", "rev-parse", "HEAD"], quiet_err=True, cwd=renet_dir)
+    current = renet_stamp_key(
+        source, _subst(head.stdout or "") if head.returncode == 0 else "", license_mode, account_key
     )
     saved_stamp = _subst(read_stamp_hash(stamp))
     saved_lines = saved_stamp.split("\n")
