@@ -82,6 +82,12 @@ for repo in (REPO, OUTSIDE):
     git(repo, "add", "-A")
     git(repo, "commit", "-q", "-m", "seed")
 
+# A submodule root: a `.git` file makes `subm` a gitlink-shaped directory (#e59c13a0).
+(REPO / "subm").mkdir()
+git(REPO / "subm", "init", "-q", "--initial-branch=main")
+(REPO / "subm/inner.ts").write_text("writer edit\n", encoding="utf-8")
+(REPO / ".git/info/exclude").write_text("subm/\n", encoding="utf-8")
+
 SESSION = "c0ffee00-live-writer-suite-000000000000"
 CONFIG = pathlib.Path(tempfile.mkdtemp(prefix="config-", dir=RUN_TMP))
 LIVE, DONE, CHILD = "asuitelivewriter00001", "asuitedonewriter00002", "asuitechildwriter0003"
@@ -91,7 +97,13 @@ guard.write_session(
     REPO,
     SESSION,
     [
-        (LIVE, "suite live writer", [str(REPO / "src/live.ts"), str(REPO / "out")], True, ""),
+        (
+            LIVE,
+            "suite live writer",
+            [str(REPO / "src/live.ts"), str(REPO / "out"), str(REPO / "subm/inner.ts")],
+            True,
+            "",
+        ),
         (DONE, "suite finished writer", [str(REPO / "src/done.ts")], False, ""),
         # Finished, but its parent is live: its edit is part of unfinished work.
         (CHILD, "suite sub-writer", [str(REPO / "lib/child.py")], False, LIVE),
@@ -153,6 +165,8 @@ CASES = [
         SESSION,
     ),
     ("a directory pathspec covers it", "git commit -F m -- src/", None, True, LIVE, SESSION),
+    # ---- a gitlink pathspec commits the submodule pointer, never the submodule's files (#e59c13a0)
+    ("a submodule root pathspec does not cover its files", "git commit -F m -- subm", None, False, "", SESSION),
     ("an absolute pathspec", "git commit -F m -- %s/src/live.ts" % REPO, None, True, LIVE, SESSION),
     (
         "named from a subdirectory",

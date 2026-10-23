@@ -233,7 +233,9 @@ def committed_paths(commit, cmd, repo, base):
         if spec.startswith(":") or any(ch in spec for ch in "*?["):
             continue
         out.add(os.path.normpath(spec if spec.startswith("/") else os.path.join(here, spec)))
-    return out
+    # A submodule's root is a gitlink: committing it records the submodule's commit pointer and never takes a file of the submodule's working tree, so it must not act as a prefix over a writer's files inside the submodule (#e59c13a0: `git commit -- workers/... private/account` was refused for a writer editing private/account/scripts/rotation/*).
+    repo_root = os.path.normpath(repo)
+    return {p for p in out if p == repo_root or not os.path.exists(os.path.join(p, ".git"))}
 
 
 def _shown(path, root):
