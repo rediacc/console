@@ -57,3 +57,39 @@ def test_a_plain_dict_live_map_narrows_nothing():
     narrowed = X.LivePlans(plain)
     narrowed.owns["PLAN-t.md"] = ("src/t/**",)
     assert X.spawn_verdict({"PLAN-p.md"}, narrowed, xi.__getitem__).allow
+
+
+PO = wlfix.import_wl("wl_planorder")
+
+
+def _roster_world():
+    xi = {
+        "PLAN-b.md": X.PlanX("PLAN-b.md", owns=("private/renet/**", ".ci/**")),
+        "PLAN-d.md": X.PlanX("PLAN-d.md", owns=("private/renet/pkg/compose/validate.go",)),
+    }
+    serving = {"wb": {"PLAN-b.md"}, "wd": {"PLAN-d.md"}}
+    live = {
+        "PLAN-b.md": ["writer wb (backup-storage)"],
+        "PLAN-d.md": ["writer wd (general-purpose)"],
+    }
+    return xi, serving, live
+
+
+def test_the_roster_backstop_judges_writers_on_their_declared_owns():
+    """The Stop-side backstop (`roster-concurrency`) must agree with the spawn guard: two writers whose declared Owns are disjoint are not a conflict even when their plans' whole Owns overlap. Before the fix it passed declared=None and a plain dict, and accused both writers."""
+    xi, serving, live = _roster_world()
+    declared = {"wb": ("private/renet/pkg/chunkstore/**",), "wd": ("private/renet/pkg/compose/validate.go",)}
+    assert PO.conflicts(serving, live, xi.__getitem__, declared) == []
+
+
+def test_the_roster_backstop_still_flags_overlapping_declared_owns():
+    """CONTROL: declared subsets that share a file are still a conflict."""
+    xi, serving, live = _roster_world()
+    declared = {"wb": ("private/renet/pkg/compose/**",), "wd": ("private/renet/pkg/compose/validate.go",)}
+    assert {aid for aid, _v in PO.conflicts(serving, live, xi.__getitem__, declared)} == {"wb", "wd"}
+
+
+def test_the_roster_backstop_without_declarations_compares_whole_plans():
+    """CONTROL: a writer that declared nothing keeps the whole-plan comparison."""
+    xi, serving, live = _roster_world()
+    assert {aid for aid, _v in PO.conflicts(serving, live, xi.__getitem__)} == {"wb", "wd"}

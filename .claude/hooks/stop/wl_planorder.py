@@ -233,24 +233,31 @@ def reason(verdict: X.Verdict) -> str:
     return text[: REASON_MAX - 3] + "..."
 
 
-def conflicts(serving: dict[str, set[str]], live, xinfo) -> list[tuple[str, X.Verdict]]:
+def conflicts(serving: dict[str, set[str]], live, xinfo, declared=None) -> list[tuple[str, X.Verdict]]:
     """[(agent_id, verdict)] for each live writer of THIS session whose plans already break the mutex or overlap ANOTHER live writer of this session's plans.
 
     Judged against this session's writers only: they are what the harness's own event proves live. A clash with a peer's lease is the spawn guard's and the queue's question, and a stale peer lease must never make this session stop a writer.
+
+    `declared` is {agent_id: the `Owns:` globs its prompt declares, or None}. Each writer is judged on its own declared Owns and the other writers' plans on theirs, exactly as the spawn guard judged them (#f412fdb8): without it this backstop compared whole-plan Owns and accused writers the guard had rightly admitted on disjoint declared subsets.
     """
+    declared = declared or {}
     out: list[tuple[str, X.Verdict]] = []
     for aid in sorted(serving):
         mine = serving[aid]
         if not mine:
             continue
-        others: dict[str, list[Any]] = {}
+        others = X.LivePlans()
         for plan, hs in (live or {}).items():
             keep = [
                 h for h in hs if h.startswith("writer ") and not h.startswith("writer %s " % aid)
             ]
-            if keep:
-                others[plan] = keep
-        got = X.spawn_verdict(mine, others, xinfo, None)
+            if not keep:
+                continue
+            others[plan] = keep
+            owns = [declared.get(h.split()[1]) for h in keep]
+            if all(owns):
+                others.owns[plan] = tuple(dict.fromkeys(g for o in owns for g in o))
+        got = X.spawn_verdict(mine, others, xinfo, declared.get(aid))
         if not got.allow and got.kind in HOLD_KINDS:
             out.append((aid, got))
     return out

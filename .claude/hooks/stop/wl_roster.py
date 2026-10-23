@@ -715,6 +715,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     # PLAN ORDER AND PLAN CONCURRENCY (agent/plans/PLAN-plan-priority-concurrency.md sections 2 and 5c), judged against the writers the harness's own event proves live plus every session's fresh leases. A plan read that fails leaves the queue in age order with nothing held, and says why in `plan_error`: never a crashed roster.
     plan_holders: dict[str, list[str]] | None = None
     plan_serving: dict[str, set[str]] = {}
+    plan_declared: dict[str, tuple[str, ...] | None] = {}
     plan_error = ""
     xinfo = None
     order_key = queue_order
@@ -736,6 +737,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             for w in [aid, *ancestors(aid, metas)]:
                 served.update(p for p in (X.item_plan(r) for r in leases.get(w, ())) if p)
             plan_serving[aid] = served
+            plan_declared[aid] = X.declared_owns(text)
     except Exception as exc:
         plan_holders = None
         plan_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
@@ -744,7 +746,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     if plan_holders is not None:
         plan_conflicts = [
             (aid, sorted(plan_serving[aid]), list(v.lines))
-            for aid, v in PO.conflicts(plan_serving, plan_holders, xinfo)
+            for aid, v in PO.conflicts(plan_serving, plan_holders, xinfo, plan_declared)
         ]
 
     covered: list[Any] = []
