@@ -12475,6 +12475,41 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "subscription",
+        "proxy-token"
+      ],
+      "pathKey": "subscription proxy-token",
+      "domain": "subscription",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.subscription.proxyToken.description",
+      "label": "Mint a short-lived proxy:exec token from this device's login, for --proxy",
+      "options": [
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.proxyToken.jsonOption",
+          "label": "Print JSON with the token and its expiresAt"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "subscription",
         "refresh"
       ],
       "pathKey": "subscription refresh",

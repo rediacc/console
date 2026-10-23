@@ -1887,6 +1887,14 @@ Authenticate via browser or API token
 
 Clear stored subscription token
 
+### rdc subscription proxy-token
+
+Mint a short-lived proxy:exec token from this device's login, for --proxy
+
+**Options:**
+
+- `--json`: Print JSON with the token and its expiresAt
+
 ### rdc subscription status
 
 Show subscription, and license state for a machine.

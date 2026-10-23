@@ -1865,6 +1865,11 @@
         "description": "Supprimer le jeton d'abonnement stocké",
         "success": "Jeton d'abonnement supprimé"
       },
+      "proxyToken": {
+        "description": "Émettre un jeton proxy:exec de courte durée à partir de la connexion de cet appareil, pour --proxy",
+        "jsonOption": "Afficher en JSON le jeton et son expiresAt",
+        "noToken": "Le serveur de compte n'a renvoyé aucun jeton de proxy."
+      },
       "refresh": {
         "account": {
           "failed": "Impossible de lire l'état du compte depuis le serveur de compte.",

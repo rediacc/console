@@ -1824,6 +1824,11 @@
         "description": "Clear stored subscription token",
         "success": "Subscription token removed"
       },
+      "proxyToken": {
+        "description": "Mint a short-lived proxy:exec token from this device's login, for --proxy",
+        "jsonOption": "Print JSON with the token and its expiresAt",
+        "noToken": "The account server returned no proxy token."
+      },
       "status": {
         "description": "Show subscription, and license state for a machine.",
         "parseFailed": "  Could not read remote machine status",

@@ -1865,6 +1865,11 @@
         "description": "Cancella il token di abbonamento memorizzato",
         "success": "Token di abbonamento rimosso"
       },
+      "proxyToken": {
+        "description": "Emetti un token proxy:exec di breve durata dall'accesso di questo dispositivo, da usare con --proxy",
+        "jsonOption": "Stampa in JSON il token e il relativo expiresAt",
+        "noToken": "Il server dell'account non ha restituito alcun token proxy."
+      },
       "refresh": {
         "account": {
           "failed": "Impossibile leggere lo stato dell'account dal server account.",

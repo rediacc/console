@@ -1865,6 +1865,11 @@
         "description": "Gespeichertes Abonnement-Token löschen",
         "success": "Abonnement-Token entfernt"
       },
+      "proxyToken": {
+        "description": "Kurzlebiges proxy:exec-Token aus der Anmeldung dieses Geräts für --proxy ausstellen",
+        "jsonOption": "JSON mit dem Token und seinem expiresAt ausgeben",
+        "noToken": "Der Kontoserver hat kein Proxy-Token zurückgegeben."
+      },
       "refresh": {
         "account": {
           "failed": "Kontostatus konnte nicht vom Account-Server gelesen werden.",

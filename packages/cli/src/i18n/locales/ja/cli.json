@@ -1865,6 +1865,11 @@
         "description": "保存されたサブスクリプショントークンを削除する",
         "success": "サブスクリプショントークンを削除しました"
       },
+      "proxyToken": {
+        "description": "このデバイスのログインから、--proxy 用の短期間有効な proxy:exec トークンを発行する",
+        "jsonOption": "トークンとその expiresAt を JSON で出力する",
+        "noToken": "アカウントサーバーからプロキシトークンが返されませんでした。"
+      },
       "refresh": {
         "account": {
           "failed": "アカウントサーバーからアカウント状態を読み取れませんでした",

@@ -1865,6 +1865,11 @@
         "description": "Kayıtlı abonelik jetonunu temizle",
         "success": "Abonelik jetonu kaldırıldı"
       },
+      "proxyToken": {
+        "description": "--proxy için bu cihazdaki oturumdan kısa ömürlü bir proxy:exec belirteci üret",
+        "jsonOption": "Belirteci ve expiresAt değerini JSON olarak yazdır",
+        "noToken": "Hesap sunucusu bir vekil belirteci döndürmedi."
+      },
       "refresh": {
         "account": {
           "failed": "Hesap durumu hesap sunucusundan okunamadı.",

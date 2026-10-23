@@ -1865,6 +1865,11 @@
         "description": "Kustutab salvestatud tellimuse tokeni",
         "success": "Tellimuse token eemaldatud"
       },
+      "proxyToken": {
+        "description": "Väljasta selle seadme sisselogimisest lühiajaline proxy:exec-tõend kasutamiseks koos --proxy-ga",
+        "jsonOption": "Prindi JSON, milles on tõend ja selle expiresAt",
+        "noToken": "Kontoserver ei tagastanud proksitõendit."
+      },
       "refresh": {
         "account": {
           "failed": "Konto olekut ei õnnestunud kontoserverist lugeda.",

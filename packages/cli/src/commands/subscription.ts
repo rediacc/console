@@ -31,6 +31,7 @@ import {
   executeSubscriptionStatus,
 } from './subscription-actions.js';
 import { outputSubscriptionScope } from './subscription-output.js';
+import { executeProxyToken } from './subscription-proxy-token.js';
 
 /** Clear session and notify when the server URL has changed. */
 function handleServerChange(currentServer: string | undefined, newServer: string): void {
@@ -341,6 +342,21 @@ export function registerSubscriptionCommands(program: Command): void {
           }
         }
         outputService.success(t('commands.subscription.logout.success'));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // subscription proxy-token [--json]
+  // Mints a short-lived proxy:exec token from this device's login, for `rdc --proxy`. Stdout carries
+  // only the token (with --json, the token and its expiresAt), so `$(...)` captures it whole.
+  sub
+    .command('proxy-token')
+    .description(t('commands.subscription.proxyToken.description'))
+    .option('--json', t('commands.subscription.proxyToken.jsonOption'))
+    .action(async (options: { json?: boolean }) => {
+      try {
+        await executeProxyToken(options);
       } catch (error) {
         handleError(error);
       }

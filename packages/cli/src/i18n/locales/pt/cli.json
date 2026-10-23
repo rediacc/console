@@ -1865,6 +1865,11 @@
         "description": "Apagar token de subscrição armazenado",
         "success": "Token de subscrição removido"
       },
+      "proxyToken": {
+        "description": "Emitir um token proxy:exec de curta duração a partir do login deste dispositivo, para usar com --proxy",
+        "jsonOption": "Imprimir JSON com o token e o respectivo expiresAt",
+        "noToken": "O servidor de contas não retornou nenhum token de proxy."
+      },
       "refresh": {
         "account": {
           "failed": "Não foi possível ler o estado da conta a partir do servidor de conta.",
