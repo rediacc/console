@@ -1260,6 +1260,9 @@ def _recursive_reaches_log_dir(alt, context=""):
     """
     if alt.startswith(("/", "~")) or re.search(r"chdir", context):
         return True
+    # A `.` or `..` segment ANYWHERE climbs out of the fixed tree, including one after the `**` (`workers/**/../../agent/pr-*.md`), so only the prefix check below would miss it.
+    if any(s in (".", "..") for s in alt.split("/")):
+        return True
     head = re.split(r"[*?\[{]", alt, maxsplit=1)[0]
     fixed = [s for s in head.split("/")[:-1] if s]
     if not fixed or any(s in (".", "..") for s in fixed):

@@ -82,6 +82,11 @@ CASES = [
         True,
     ),
     (
+        "a recursive glob that climbs out after the stars (3800cd21.1)",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('workers/**/../../agent/pr-*.md', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
         "a recursive glob under a fixed directory after chdir",
         "python3 - <<'PY'\nimport glob, os\nos.chdir('/')\nfor p in glob.glob('home/u/console/**', recursive=True):\n    open(p, 'w').write('')\nPY",
         True,
