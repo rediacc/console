@@ -8,6 +8,15 @@
 
 Debugging account server issues, checking auth flow health, or monitoring license operations.
 
+## Variables
+
+| Variable | Label | Description |
+|----------|-------|-------------|
+| `environment` | `deployment_environment` | `production`, `edge` or `bench` |
+| `region` | `rediacc_region` | `eu`, `us` or `asia` |
+
+The account panels filter on both. Span-attribute panels use `url.path`, `http.route` and `http.response.status_code`.
+
 ## Panels
 
 | Panel | Type | Description |

@@ -8,6 +8,15 @@
 
 Primary error triage dashboard. Start here when investigating any error across the platform.
 
+## Variables
+
+| Variable | Label | Description |
+|----------|-------|-------------|
+| `environment` | `deployment_environment` | `production`, `edge` or `bench` |
+| `region` | `rediacc_region` | `eu`, `us` or `asia` |
+
+The account panels filter on both. Span-attribute panels use `url.path`, `http.route` and `http.response.status_code`.
+
 ## Panels
 
 | Panel | Type | Description |

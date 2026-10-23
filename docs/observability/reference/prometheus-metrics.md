@@ -24,7 +24,8 @@ All span metrics carry these labels:
 | `span_name` | Operation or route | `POST /api/v1/license/activate` |
 | `status_code` | Span status | `STATUS_CODE_OK`, `STATUS_CODE_ERROR` |
 | `service_version` | Deployed version | `1.5.0` |
-| `deployment_environment` | Environment | `production` |
+| `deployment_environment` | Environment | `production`, `edge`, `bench` |
+| `rediacc_region` | Region (from span attribute `rediacc.region`) | `eu`, `us`, `asia` |
 
 ## Common PromQL Queries
 
@@ -54,6 +55,14 @@ histogram_quantile(0.95, sum(rate(traces_spanmetrics_latency_bucket[5m])) by (le
   /
   sum(rate(traces_spanmetrics_calls_total[5m])) by (service)
 ) * 100
+```
+
+### Request count by environment and region (Workers)
+
+`rediacc_region` and `deployment_environment` identify the account Worker deployments and the proxy:
+
+```promql
+sum by (deployment_environment, rediacc_region) (increase(traces_spanmetrics_calls_total{service="rediacc-account-server"}[1h]))
 ```
 
 ### Top 10 failing routes (last 1h)
