@@ -6,6 +6,53 @@ Owner: d778be9d
 Priority: P1 -- the operator's operating model for every PR after #591
 Concurrency: parallel -- writers with disjoint file ownership per box group
 Owns: .claude/rediacc_hooks/guards/block_push_to_protected_branch.py, .claude/rediacc_hooks/guards/block_git_force_push.py, .claude/rediacc_hooks/guards/block_second_branch.py, .claude/rediacc_hooks/guards/block_second_open_pr.py, .claude/rediacc_hooks/git/githooks.py, .claude/commands/pr-merge.md, .claude/agents/pr-babysitter.md, .github/workflows/promote-stable.yml, .ci/rediacc_ci/release/check_soak_period.py
+Revalidated: 2026-10-23 @ daab83af1f31
+
+<!-- preflight:begin -->
+```text
+preflight 2026-10-23 @ daab83af1f31
+open boxes: 1 (partial 1)
+citations: 0 unresolved, 2 drifted, 1 relocated
+  relocated plan line 26: .claude/rediacc_hooks/git/githooks.py line 169-207 -> 187-225
+overlap since dd9de2761f15: 68 commit(s) (first 30 shown)
+  012529e6380d fix(release): the nightly drift waiver keys on step names derived from the upstream gates, and the t
+  a89fe21367d7 chore(agent): publish the 1020-1 PR snapshot and record the session state
+  9542b049d575 chore(agent): record the session state, ledgers and worklist events before the rebase onto main
+  87fa76120c16 chore(agent): record session d778be9d's worklist, ledger and queue render before the main hotfix swi
+  2d272d67d79e fix(hooks): /branch-rebase runs over the never-committed settings.local.json, and the ref hook tells
+  33c328464cc6 refactor(ci): the App key's job-local alias is BWS_GITHUB_APP_PRIVATE_KEY, and secret-rename protect
+  62ff4e271500 chore(agent): record session d778be9d's worklist, STATE and ledgers before the rebase onto main
+  84e60433df78 fix(hooks): the merge phase's pointer-bump push needs no turbo reason
+  ca717bcf8604 feat(ci): every job that reaches R2 installs the pinned aws CLI v2 and exports AWS_BIN
+    plan agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md
+  0acb2a91de75 fix(www): the build writes its search index into the build output, and check:ci-gate-tree-writes fol
+  68b5f243b41c docs: comments and docstrings state what the code does
+  4c4f9ef7b582 fix(cd): Verify stable moves the production tag with the App token, which holds workflows:write
+  2ee2d7713602 fix(hooks): guards drop their inline markers (DTZ, lazy-import and fail-open sites)
+  cc7216720010 docs(hooks): guards, commands and the output style speak effort and phase
+  19f231b2ed17 feat(hooks): one registry of generated artifacts, judged at commit time against the staged tree
+  c004509a42d2 fix(ci): no-auto-cancel holds a failing run open but not a hung one, and the docs stop saying the la
+  7892031862b8 chore(agent): session state names the second CI red and its fix, with the push time corrected
+  3d8994ad6ae5 chore(agent): session records after the red-fix push of PR 600
+  e892e9eba558 chore(agent): session state, worklist and the PR snapshot before the red-fix push
+  a1fdeab00b00 chore(agent): session state, worklist and the PR snapshot after the first CI run of PR 600
+  cf74c2800854 chore(agent): session state and worklist at the first window with no open review finding
+  35b7f7434fa6 chore(agent): session state before the first push of 1008-1
+  7964155b17df chore(agent): session state and hook ledgers before the rebase onto origin/main
+  df3d4a783a53 fix(hooks): the hooks, not /branch-rebase's prose, refuse a remote branch delete, a forced or path c
+  ff5d83bbc818 fix(ci): every remaining port prefixes its diagnostics and usage with its own module name, not a del
+  0bc59b00d16a fix(commands): no command carries disable-model-invocation; /handoff and /standing-orders are invoca
+  434b2b4e8897 feat(ci): check:ci-scope-mirrors holds the PR-scope rules in .claude's commands, agent, skills and o
+    plan agent/plans/PLAN-scope-mirrors.md
+  389b4135a24d refactor(ci): W11-B: common.sh is deleted, its call sites run Python, ~55 tests stop copying it, and
+  fec2254c5c5e fix(ci): twenty-two ops review findings: subject runners prepend .ci to PYTHONPATH, a failed chain-s
+  876d7b249019 docs(plans): the deferral plan ticks C1-C5 and L1-L5 and lands D1-D3, and PLAN-retire-bash-oracles g
+    plan agent/plans/PLAN-deferred-findings-block-merge.md
+    plan agent/plans/PLAN-retire-bash-oracles.md
+dependencies: 1
+  ok PLAN-ci-verdict.md#A -- task A is ticked
+```
+<!-- preflight:end -->
 
 ## Operator rulings (2026-10-02), condensed
 
@@ -22,13 +69,14 @@ Owns: .claude/rediacc_hooks/guards/block_push_to_protected_branch.py, .claude/re
 - Soak starvation: `check_soak_period` judges only the newest edge; with a release on every merge, the newest edge is almost always under 7 days old, so stable never promotes.
 - Release decision: `.ci/rediacc_ci/ci/dispatch_release.py` (`SKIP_LABEL = "bump-none"` :73, `STABLE_LABEL = "release"` :75, fail-open doctrine :7); `ci.yml` initialize `--decide-only` gates the sentinel and the cd-v2 dispatch.
 - Console ruleset 12344707 "Branch Protection": target `~DEFAULT_BRANCH` (main), rules `pull_request`, `required_status_checks` (strict; `CI Complete`, `Review Complete`, integration 15368 = GitHub Actions), `deletion`, `non_fast_forward`; no `required_linear_history`; bypass: RepositoryRole 5 (admin) always, Integration 2772000 always. renet, account and elite are private on GitHub Free: rulesets and branch protection return 403 (not available on the plan); homebrew-tap: none (404).
-- `Review Complete` is posted by `review-status.yml` from the `<!-- claude-reviewed: <sha> -->` marker that `claude-review.yml` (Claude app) wrote; with the app gone no PR can satisfy it. `.claude/commands/pr-merge.md:108` and `.claude/agents/pr-babysitter.md:16,110` require the marker and resolved threads. `agent/plans/PLAN-per-commit-review.md` (13 tasks) exists, held 2026-09-26, not implemented.
-- Guards: `block_push_to_protected_branch` refuses every push to main (`!` only); git pre-push (`.claude/rediacc_hooks/git/githooks.py:169-207`) refuses main (COMMIT_POLICY_OK override); `block_git_force_push` refuses `--force-with-lease` too (mediated verb `worklist.py --git force-push <branch>`); `block_second_branch` decides consumed names from `gh pr list --state all` heads (:96); `block_second_open_pr` fails closed on gh errors; `block_admin_merge` bans `--admin`; `block_premature_ready` gates `gh pr ready` on CI Complete.
+- `Review Complete` is posted by `review-status.yml` from the `<!-- claude-reviewed: <sha> -->` marker that `claude-review.yml` (Claude app) wrote; with the app gone no PR can satisfy it. `.claude/commands/pr-merge.md` (its finish-line bullet as of a7bce08cb) and `.claude/agents/pr-babysitter.md` (its finish-line paragraph and loop step as of a7bce08cb) require the marker and resolved threads. `agent/plans/PLAN-per-commit-review.md` (13 tasks) exists, held 2026-09-26, not implemented.
+- Guards: `block_push_to_protected_branch` refuses every push to main (`!` only); git pre-push (`.claude/rediacc_hooks/git/githooks.py:187-225`) refuses main (COMMIT_POLICY_OK override); `block_git_force_push` refuses `--force-with-lease` too (mediated verb `worklist.py --git force-push <branch>`); `block_second_branch` decides consumed names from `gh pr list --state all` heads (:96); `block_second_open_pr` fails closed on gh errors; `block_admin_merge` bans `--admin`; `block_premature_ready` gates `gh pr ready` on CI Complete.
 
 ## Boxes
 
 ### Releases
 - [ ] R1 Find and fix the root cause of the scheduled Console CI on main failing every night since 2026-09-25 (trace each night's first real failure with ci-trace once PLAN-ci-verdict B lands; raw reads until then), so the nightly waiver can fire.
+    (preflight) 2026-10-23 partial: R1 root cause found and fixed in code: OBS rebuilds the openSUSE Ceph package past the pin; private/renet 7070d28 bumps the pin to .105 and e28e2f8df/f8d184807 add the scheduled auto-bump. Remaining: one green scheduled Console CI run on main after the merge (#753d4fdc)
 - [x] R2 Soak starvation: `check_soak_period` promotes the NEWEST edge release that is at least SOAK_DAYS old (walking back from the newest), not only the newest one; red-first test with three edges (1, 4, 9 days old -> the 9-day one promotes; 1 and 4 alone -> nothing).
     (ticked) 2026-10-02T09:40:59Z by d778be9d: commit:bfaf3db8c check_soak_period promotes the newest soaked edge (walk-back), red-first test with 1/4/9-day edges; R2 channel-snapshot limit is #51ea3682
 - [x] R3 Release on every merge that changes the product: skill and doc text stops suggesting a hand-applied `bump-none` (pr-merge, pr-babysitter, release-process.md, ci-gates.md). The bump is decided once at a green head by Console CI's `pr-labels` job from the per-commit reviews: `bump-major`/`bump-minor` from the highest verdict, no label for a patch, and `bump-none` only when every commit's review says `none` (operator rulings 2026-10-02, #e1e9edf7). Verify dispatch_release's fail-open path on a real merge (M7).
