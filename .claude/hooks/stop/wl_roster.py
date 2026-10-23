@@ -1117,10 +1117,125 @@ def bash_write_paths(cmd, cwd, root):
             add(target, None)
     for text, run_cwd in py_bodies:
         if text and _PY_WRITES.search(text):
-            for lit in _PY_PATH_LIT.findall(text):
-                if "/" in lit or re.search(r"\.[A-Za-z0-9]{1,8}$", lit):
-                    add(lit, run_cwd)
+            for lit in _py_written_paths(text):
+                add(lit, run_cwd)
     return {p for p in out if p not in ("/dev/null", "/dev/stdout", "/dev/stderr")}
+
+
+def _is_path_lit(lit):
+    return "/" in lit or re.search(r"\.[A-Za-z0-9]{1,8}$", lit) is not None
+
+
+def _py_written_paths(text):
+    """The repo-path literals a Python body writes, deletes or moves.
+
+    The body is parsed, and a path counts only as the target of a write-shaped call (`open(x, 'w')`, `Path(x).write_text`, `os.replace`, `shutil.move|copy*|rmtree`) where `x` is a literal, or a name bound once to a literal (or to `Path(<literal>)`, or a literal list a `for` walks). A path named only inside a string being written (a replacement text mentioning `agent/INDEX.md`) is not a target. When a write target cannot be resolved this way, or the body does not parse, the old reading stands: every path-shaped literal in the body counts, because a missed subtraction blocks the lead's turn while an extra one only defers the question to the writer's own tick."""
+    import ast
+
+    every = [lit for lit in _PY_PATH_LIT.findall(text) if _is_path_lit(lit)]
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return every
+    bound = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            bound.setdefault(node.targets[0].id, []).append(node.value)
+        elif isinstance(node, ast.For) and isinstance(node.target, ast.Name):
+            bound.setdefault(node.target.id, []).append(node.iter)
+
+    def strs(node, depth=0):
+        """Every string `node` can be, or None when any part is unknowable."""
+        if depth > 6:
+            return None
+        if isinstance(node, ast.Constant):
+            return [node.value] if isinstance(node.value, str) else None
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            out = []
+            for el in node.elts:
+                got = strs(el, depth + 1)
+                if got is None:
+                    return None
+                out += got
+            return out
+        if isinstance(node, ast.Name):
+            values = bound.get(node.id)
+            if not values:
+                return None
+            out = []
+            for v in values:
+                got = strs(v, depth + 1)
+                if got is None:
+                    return None
+                out += got
+            return out
+        if isinstance(node, ast.Call):
+            f = node.func
+            fname = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else ""
+            if fname in ("Path", "PurePath", "str", "fspath") and len(node.args) == 1 and not node.keywords:
+                return strs(node.args[0], depth + 1)
+            return None
+        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Div)):
+            left, right = strs(node.left, depth + 1), strs(node.right, depth + 1)
+            if left is None or right is None:
+                return None
+            sep = "/" if isinstance(node.op, ast.Div) else ""
+            return [a + sep + b for a in left for b in right]
+        return None
+
+    def mode_writes(call, pos):
+        mode = call.args[pos] if len(call.args) > pos else None
+        for kw in call.keywords:
+            if kw.arg == "mode":
+                mode = kw.value
+        if mode is None:
+            return False
+        if isinstance(mode, ast.Constant) and isinstance(mode.value, str):
+            return any(c in mode.value for c in "wax+")
+        return True  # a computed mode may write
+
+    found, unresolved = [], False
+
+    def take(node):
+        nonlocal unresolved
+        got = strs(node)
+        if got is None:
+            unresolved = True
+        else:
+            found.extend(got)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        f = node.func
+        attr = f.attr if isinstance(f, ast.Attribute) else None
+        owner = f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else None
+        args = node.args
+        if isinstance(f, ast.Name) and f.id == "open" and args:
+            if mode_writes(node, 1):
+                take(args[0])
+        elif attr == "open" and owner not in ("os", "io", "codecs", "gzip", "bz2", "lzma", "tarfile", "zipfile"):
+            if mode_writes(node, 0):
+                take(f.value)
+        elif attr in ("write_text", "write_bytes", "unlink", "touch"):
+            take(f.value)
+        elif attr in ("rename", "replace") and len(args) == 1 and owner not in ("os", "shutil"):
+            take(f.value)
+            take(args[0])
+        elif owner == "os" and attr in ("remove", "unlink", "rmdir", "rename", "replace"):
+            for a in args[:2]:
+                take(a)
+        elif owner == "shutil" and (attr in ("rmtree", "move") or (attr or "").startswith("copy")):
+            if attr == "rmtree" and args:
+                take(args[0])
+            elif attr == "move":
+                for a in args[:2]:
+                    take(a)
+            elif len(args) > 1:
+                take(args[1])
+    if unresolved:
+        return every
+    return [lit for lit in found if _is_path_lit(lit)]
 
 
 def _python_text(shellscan, run, cmd, cwd):

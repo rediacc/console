@@ -1788,3 +1788,37 @@ def test_78afdc0b_a_python_program_is_read_as_the_guards_read_it(tmp_path, cmd, 
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout) == want, (cmd, "was", was)
+
+
+# 2026-10-23: a heredoc that edited only wl_planpreflight.py but whose replacement TEXT named agent/INDEX.md, .ci/config/plan-boxes.json and agent/plans/QUEUE.md as string literals was read as writing all four, and the live-writer commit guard refused the lead's commit of the three. A path counts only as the target of a write-shaped call.
+PY_TARGET_CASES = [
+    (
+        (
+            "python3 - <<'EOF'\np='.claude/hooks/stop/wl_planpreflight.py'\ns=open(p).read()\n"
+            "s=s.replace('a', 'x', ['agent/INDEX.md', '.ci/config/plan-boxes.json', 'agent/plans/QUEUE.md'])\n"
+            "open(p,'w').write(s)\nEOF"
+        ),
+        [".claude/hooks/stop/wl_planpreflight.py"],
+    ),
+    ("python3 - <<'EOF'\nopen('docs/x.md','w').write('see docs/other.md')\nEOF", ["docs/x.md"]),
+    ("python3 - <<'EOF'\nf='docs/x.md'\nwith open(f, 'a') as h:\n    h.write('docs/o.md')\nEOF", ["docs/x.md"]),
+    ("python3 - <<'EOF'\nfrom pathlib import Path\nPath('docs/y.md').write_text('docs/o.md')\nEOF", ["docs/y.md"]),
+    ("python3 - <<'EOF'\nprint(open('docs/in.md').read(), 'docs/o.md')\nEOF", []),
+    # An unresolvable target keeps the conservative reading: every path literal counts.
+    (
+        "python3 - <<'EOF'\nimport sys\nopen(sys.argv[1],'w').write('docs/o.md')\nEOF",
+        ["docs/o.md"],
+    ),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want"), PY_TARGET_CASES)
+def test_a_python_heredoc_writes_only_the_targets_of_write_calls(tmp_path, cmd, want):
+    proc = subprocess.run(
+        [sys.executable, "-c", WRITE_PATHS_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == sorted(want), cmd
