@@ -69,15 +69,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 10 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a86c978263c5d3f9e.
-- Leased items: 2: #8971d8b7 (worker:a86c978263c5d3f9e, d778be9d), #8cb01693 (worker:a86c978263c5d3f9e, d778be9d).
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 4: #3e67ad6d (worker:b9l5avyq9, d778be9d), #8971d8b7 (worker:b9l5avyq9, d778be9d), #8cb01693 (worker:a228a95cf539d3922, d778be9d), #a20e5207 (worker:a43b7cf1c8a1db286, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 19 plans done, 131 of 392 boxes done (33%).
+Promoted: 1 of 19 plans done, 132 of 392 boxes done (33%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -98,7 +98,7 @@ Promoted: 1 of 19 plans done, 131 of 392 boxes done (33%).
 | 15 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
 | 16 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
 | 17 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
-| 18 | PLAN-renet-cross-repo-isolation.md | 9/11 | 2 open |
+| 18 | PLAN-renet-cross-repo-isolation.md | 10/11 | 1 open |
 | 19 | PLAN-dockerd-api-privilege-gate.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 

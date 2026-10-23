@@ -1216,13 +1216,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 9,
+      "open": 1,
+      "done": 10,
       "open_sigs": [
-        "2f9e27ed",
         "41121b17"
       ],
       "done_sigs": [
+        "2f9e27ed",
         "6109126a",
         "65ea9658",
         "914af779",
