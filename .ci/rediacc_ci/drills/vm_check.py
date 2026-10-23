@@ -159,6 +159,8 @@ SED_WRITE = (
 )
 # Fixture entries a privileged sync never carries: it passes --no-links (packages/cli/src/remote/sync/rsync.ts) and the renet gateway refuses symlinks by design, so the link must be ABSENT on the remote rather than equal.
 SYNC_DROPPED = ("link",)
+# The user a sync's created directories must belong to (the owner and the group of the repo mount's files).
+UNIVERSAL_USER = "rediacc"
 # Where `vscode connect` writes its aliases: getSSHHome()/.ssh/config_rediacc (packages/cli/src/remote/vscode/sshConfig.ts), which on WSL is the Windows home under the drive mounts, never read by a plain `sftp <alias>`.
 ALIAS_CONFIG = "config_rediacc"
 WINDOWS_DRIVE_PATH = re.compile(r"^([A-Za-z]):[\\/](.*)$")
@@ -2187,6 +2189,64 @@ class VmCheck:
                 res,
                 "" if res.rc == 0 else self.remote_evidence(res),
             )
+        self._sync_ownership()
+
+    def _owner_row(self, a: str, desc: str, rel: str, want: str) -> None:
+        """One `stat -c %U:%G` of a path under fork A's mount, through `term connect`, against the owner it must have."""
+        target = shlex.quote("%s/%s" % (self.mount(a), rel))
+        res = self.shell(self.ref(a), "stat -c %%U:%%G -- %s" % target)
+        got = res.out.strip().splitlines()[-1] if res.rc == 0 and res.out.strip() else ""
+        self.say("        stat %s: %s" % (rel, got or "<none>"))
+        self.check(
+            "V1.5",
+            "%s: %s is %s" % (desc, rel, want),
+            res.rc == 0 and got == want,
+            res,
+            "owner %s, want %s; %s" % (got or "<none>", want, self.remote_evidence(res)),
+        )
+
+    def _sync_ownership(self) -> None:
+        """Directories a sync creates on the remote belong to the universal user, and one that already exists keeps its owner (PLAN-sync-remote-file-ownership T4, T6)."""
+        a = self.tags[0]
+        ref = self.ref(a)
+        run = self.run_id
+        owned = "%s:%s" % (UNIVERSAL_USER, UNIVERSAL_USER)
+        one = self.work / "own-file.txt"
+        one.write_text("vm:check %s\n" % run)
+        top = "vmc-newdir-%s" % run
+        res = self.rdc(
+            "repo", "sync", "upload", ref, "--local", str(one), "--remote-file", top + "/a/b/c/f.txt"
+        )
+        if self.check("V1.5", "sync upload --remote-file into three missing levels", res.rc == 0, res):
+            for rel in (top, top + "/a", top + "/a/b", top + "/a/b/c"):
+                self._owner_row(a, "created by --remote-file", rel, owned)
+        tree = self.work / "own-dir"
+        tree.mkdir(exist_ok=True)
+        (tree / "d.txt").write_text("vm:check %s\n" % run)
+        top = "vmc-newtree-%s" % run
+        res = self.rdc(
+            "repo", "sync", "upload", ref, "--local", str(tree) + "/", "--remote", top + "/a/b/c"
+        )
+        if self.check("V1.5", "sync upload --remote into three missing levels", res.rc == 0, res):
+            for rel in (top, top + "/a", top + "/a/b", top + "/a/b/c"):
+                self._owner_row(a, "created by --remote", rel, owned)
+        keep = "vmc-keep-%s" % run
+        made = self.probe(
+            "sudo install -d -o root -g root -m 755 %s" % shlex.quote("%s/%s" % (self.mount(a), keep))
+        )
+        if not self.check(
+            "V1.5",
+            "a root-owned directory pre-created for the keep row",
+            made.rc == 0,
+            made,
+            "rc=%d stderr: %s" % (made.rc, last_lines(made.err) or "<empty>"),
+        ):
+            return
+        res = self.rdc(
+            "repo", "sync", "upload", ref, "--local", str(one), "--remote-file", keep + "/g.txt"
+        )
+        if self.check("V1.5", "sync upload --remote-file into an existing directory", res.rc == 0, res):
+            self._owner_row(a, "an existing directory", keep, "root:root")
 
     def v1_6_vscode(self) -> None:
         a = self.tags[0]

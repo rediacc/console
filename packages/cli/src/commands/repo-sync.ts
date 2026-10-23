@@ -11,13 +11,16 @@ import {
 } from '../remote/ssh/index.js';
 import {
   executeRsync,
+  planMissingParents,
   type RsyncExecutorOptions,
   type SftpUploadSource,
   sftpDownloadDirectory,
   sftpDownloadFile,
   sftpUploadFile,
   sftpUploadPaths,
+  skeletonDestination,
   warnSkippedEntries,
+  writeSkeleton,
 } from '../remote/sync/index.js';
 import type { SyncProgress } from '../remote/types/index.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
@@ -34,6 +37,7 @@ import {
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
+import { debugLog } from '../utils/debug.js';
 import { handleError } from '../utils/errors.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { oraOptions, withSpinner } from '../utils/spinner.js';
@@ -185,6 +189,8 @@ export interface SyncConnectionContext {
   details: Awaited<ReturnType<typeof getSSHConnectionDetails>>;
   remotePath: string;
   sftpRemotePath: string;
+  /** The repo's remote root that `--remote`/`--remote-file` are relative to. */
+  baseRemotePath?: string;
   /** Connect options for the SFTP fallback; leased from the pool when rsync is absent. */
   sftpConfig: SFTPClientConfig;
 }
@@ -238,7 +244,7 @@ async function prepareSyncConnection(
     knownHosts: details.known_hosts,
   };
 
-  return { details, remotePath, sftpRemotePath, sftpConfig };
+  return { details, remotePath, sftpRemotePath, baseRemotePath, sftpConfig };
 }
 
 function isRsyncNotFoundError(err: unknown): boolean {
@@ -300,9 +306,11 @@ async function executeSyncWithSftpFallback(
     duration: number;
     errors: string[];
   }>,
-  keyDiagnostic?: string
+  keyDiagnostic?: string,
+  beforeRsync?: () => Promise<void>
 ): Promise<{ filesTransferred: number; bytesTransferred: number }> {
   try {
+    await beforeRsync?.();
     return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
   } catch (err: unknown) {
     if (!isRsyncNotFoundError(err)) throw err;
@@ -333,6 +341,75 @@ export function sftpUploadTransfer(
       ? sftpUploadFile(sftpSources[0].path, ctx.sftpRemotePath, sftp, sftpOptions)
       : sftpUploadPaths(sftpSources, ctx.sftpRemotePath, sftp, sftpOptions)
   );
+}
+
+class RemoteFoldersError extends Error {}
+
+export interface EnsureRemoteParentsArgs {
+  baseRemotePath: string;
+  /** The `--remote-file` or `--remote` value; its own last component is left to the transfer. */
+  subPath: string;
+  /** `user@host` of the rsync destination. */
+  userHost: string;
+  /** The upload's options; only ssh options and the universal user are reused. */
+  rsyncOptions: RsyncExecutorOptions;
+  probe: (remotePath: string) => Promise<boolean>;
+  runRsync: (options: RsyncExecutorOptions) => Promise<{ success: boolean; errors: string[] }>;
+}
+
+/**
+ * Creates the missing parent directories of an upload's destination with the universal user's ownership, in file mode and directory mode alike. The transfer's own rsync would create them as root (`--mkpath` under `sudo rsync`) or fail (directory mode, two or more missing levels). Only segments the probe found missing are sent, so existing directories keep their owner.
+ * Returns the segments created.
+ */
+export async function ensureRemoteParents(args: EnsureRemoteParentsArgs): Promise<string[]> {
+  const { existingAncestor, missing } = await planMissingParents(
+    args.baseRemotePath,
+    args.subPath,
+    args.probe
+  );
+  if (missing.length === 0) return [];
+  const skeleton = writeSkeleton(missing);
+  try {
+    const result = await args.runRsync({
+      sshOptions: args.rsyncOptions.sshOptions,
+      universalUser: args.rsyncOptions.universalUser,
+      isUpload: true,
+      source: skeleton.source,
+      destination: skeletonDestination(args.userHost, existingAncestor, missing),
+    });
+    if (!result.success) {
+      throw new RemoteFoldersError(`Creating remote folders failed: ${result.errors.join(' ').trim()}`);
+    }
+  } finally {
+    skeleton.cleanup();
+  }
+  return missing;
+}
+
+/** Probes on one pooled SFTP connection; any failure to probe skips the step and the transfer proceeds as before. */
+async function ensureUploadParents(
+  ctx: SyncConnectionContext,
+  subPath: string | undefined,
+  rsyncOptions: RsyncExecutorOptions
+): Promise<void> {
+  if (!subPath || !ctx.baseRemotePath) return;
+  const baseRemotePath = ctx.baseRemotePath;
+  try {
+    await withPooledSftp(ctx.sftpConfig, (sftp) =>
+      ensureRemoteParents({
+        baseRemotePath,
+        subPath,
+        userHost: `${ctx.details.user}@${ctx.details.host}`,
+        rsyncOptions,
+        probe: (p) => sftp.exists(p),
+        runRsync: executeRsync,
+      })
+    );
+  } catch (err) {
+    if (isRsyncNotFoundError(err)) throw err;
+    if (err instanceof RemoteFoldersError) throw err;
+    debugLog(`remote parent probe skipped: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void> {
@@ -395,7 +472,8 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
               spinner.text = `Uploading: ${file}`;
             },
           }),
-        sshKeyDiagnostic(ctx.details.privateKey)
+        sshKeyDiagnostic(ctx.details.privateKey),
+        () => ensureUploadParents(ctx, options.remoteFile ?? options.remote, rsyncOptions)
       );
       filesTransferred = counts.filesTransferred;
       bytesTransferred = counts.bytesTransferred;

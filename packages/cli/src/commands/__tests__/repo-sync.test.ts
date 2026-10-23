@@ -2,7 +2,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { RsyncExecutorOptions } from '../../remote/sync/index.js';
+import { ensureRemoteParents } from '../repo-sync.js';
 import {
   buildSyncRemotePaths,
   resolveUploadLocalPaths,
@@ -235,5 +237,76 @@ describe('validateUploadOptions', () => {
   it('accepts no flags (defaults to cwd directory upload)', () => {
     const r = validateUploadOptions({ local: [dir] });
     expect(r.isFileMode).toBe(false);
+  });
+});
+
+describe('ensureRemoteParents', () => {
+  const rsyncOptions: RsyncExecutorOptions = {
+    sshOptions: '-p 22',
+    source: '/local/f',
+    destination: 'u@h:/m/a/b/f',
+    universalUser: 'rediacc',
+    isUpload: true,
+    mkpath: true,
+    mirror: true,
+    exclude: ['x'],
+  };
+  const run = async (subPath: string, present: string[]) => {
+    const calls: RsyncExecutorOptions[] = [];
+    const created = await ensureRemoteParents({
+      baseRemotePath: '/m',
+      subPath,
+      userHost: 'u@h',
+      rsyncOptions,
+      probe: async (p) => present.includes(p),
+      runRsync: async (o) => {
+        calls.push(o);
+        return { success: true, errors: [] };
+      },
+    });
+    return { calls, created };
+  };
+
+  it('file mode, new nested parent: one skeleton rsync with the plain directory args', async () => {
+    const { calls, created } = await run('a/b/f', []);
+    expect(created).toEqual(['a', 'b']);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].destination).toBe('u@h:/m/a/');
+    expect(calls[0].universalUser).toBe('rediacc');
+    expect(calls[0].isUpload).toBe(true);
+    expect(calls[0].mkpath).toBeUndefined();
+    expect(calls[0].mirror).toBeUndefined();
+    expect(calls[0].exclude).toBeUndefined();
+  });
+
+  it('directory mode, nested missing levels: same helper creates every level but the last', async () => {
+    const { calls, created } = await run('a/b/c/', []);
+    expect(created).toEqual(['a', 'b']);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('an existing parent is never sent, so its owner is unchanged', async () => {
+    const { calls, created } = await run('a/b/f', ['/m/a']);
+    expect(created).toEqual(['b']);
+    expect(calls[0].destination).toBe('u@h:/m/a/b/');
+  });
+
+  it('all parents existing runs no rsync', async () => {
+    const { calls } = await run('a/b/f', ['/m/a', '/m/a/b']);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('a failing skeleton rsync raises', async () => {
+    const runRsync = vi.fn(async () => ({ success: false, errors: ['boom'] }));
+    await expect(
+      ensureRemoteParents({
+        baseRemotePath: '/m',
+        subPath: 'a/f',
+        userHost: 'u@h',
+        rsyncOptions,
+        probe: async () => false,
+        runRsync,
+      })
+    ).rejects.toThrow(/boom/);
   });
 });

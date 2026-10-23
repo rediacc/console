@@ -218,6 +218,9 @@ class World(vm_check.Host):
         self.alias_written = over.pop("alias_written", True)
         # True: a sync that carries symlinks across, the confinement property V1.5 asserts lost.
         self.sync_keeps_links = over.pop("sync_keeps_links", False)
+        # Directory owners by (fork tag, path under the mount); an absent entry is whatever the sync created. `root_parents` plants the bug: a sync that leaves the directories it creates root-owned.
+        self.owners: dict[tuple[str, str], str] = {}
+        self.root_parents = over.pop("root_parents", False)
         self.written: set[str] = set()
         self.minted_check_err = over.pop("minted_check_err", "")
         # The `repo create` answer: rc and the CLI's JSON error message when it fails.
@@ -323,6 +326,13 @@ class World(vm_check.Host):
                 return vm_check.Result(0, HASH + "\n")
             if argv[-1] == vm_check.PROBE_OS_RELEASE:
                 return vm_check.Result(0, self.os_release + "\n")
+            if argv[-1].startswith("sudo install -d -o root -g root -m 755 "):
+                path = shlex.split(argv[-1])[-1]
+                guid, rel = path[len(vm_check.MOUNTS) + 1 :].split("/", 1)
+                tag = next(n for n, g in self.repos.items() if g == guid).split(":", 1)[1]
+                (self.store / tag / rel).mkdir(parents=True, exist_ok=True)
+                self.owners[(tag, rel)] = "root:root"
+                return vm_check.Result(0)
             return vm_check.Result(255, "", "unexpected probe")
         if argv[0] == "sftp":
             return self._sftp(argv)
@@ -487,6 +497,14 @@ class World(vm_check.Host):
                 self.purges.append(args[4])
                 return vm_check.Result(self.purge_rc, self.purge_out)
             return self._shell(args[2], args[4], env)
+        if args[:3] == ["repo", "sync", "upload"] and "--remote-file" in args:
+            local = pathlib.Path(args[args.index("--local") + 1])
+            rel = args[args.index("--remote-file") + 1]
+            self._create_parents(args[3], rel.rsplit("/", 1)[0])
+            shutil.copy(local, self.store / args[3].split(":", 1)[1] / rel)
+            return ok
+        if args[:3] == ["repo", "sync", "upload"] and "--remote" in args:
+            self._create_parents(args[3], args[args.index("--remote") + 1])
         if args[:3] == ["repo", "sync", "upload"]:
             local = pathlib.Path(args[args.index("--local") + 1])
             # A privileged sync passes --no-links and the renet gateway refuses symlinks, so none lands.
@@ -543,6 +561,16 @@ class World(vm_check.Host):
     def _json_error(rc: int, message: str) -> vm_check.Result:
         envelope = {"success": False, "errors": [{"code": "ERROR", "message": message}]}
         return vm_check.Result(rc, json.dumps(envelope), "Creating repository...\n")
+
+    def _create_parents(self, ref: str, rel: str) -> None:
+        """Every missing level of `rel` is created and takes the owner the sync gives it; an existing level keeps its own."""
+        tag = ref.split(":", 1)[1]
+        parts = rel.strip("/").split("/")
+        for i in range(1, len(parts) + 1):
+            sub = "/".join(parts[:i])
+            if not (self.store / tag / sub).exists():
+                self.owners[(tag, sub)] = "root:root" if self.root_parents else "rediacc:rediacc"
+        (self.store / tag / rel).mkdir(parents=True, exist_ok=True)
 
     def _remote_dir(self, ref: str, args: list[str]) -> pathlib.Path:
         """A repo's mount in the fake store; `--remote` absent is the mount root, as in buildSyncRemotePaths."""
@@ -614,6 +642,13 @@ class World(vm_check.Host):
             rel = path.split("%s/%s/" % (vm_check.MOUNTS, mine), 1)[1]
             local = self.store / tag / rel
             return vm_check.Result(1 if local.is_symlink() or local.exists() else 0)
+        if command.startswith("stat -c %U:%G -- "):
+            path = shlex.split(command)[-1]
+            rel = path.split("%s/%s/" % (vm_check.MOUNTS, mine), 1)[1]
+            owner = self.owners.get((tag, rel))
+            if owner is None:
+                return vm_check.Result(1, "", "stat: cannot statx '%s': No such file or directory" % path)
+            return vm_check.Result(0, owner + "\n")
         if command.startswith("stat "):
             return vm_check.Result(0, "644 1700000000\n")
         if command == "ls /dev/shm":
@@ -938,7 +973,9 @@ def scenario_compose_file_is_uploaded_into_fork_a_only(
     rc, out, receipt = run_check(tmp_path, world, m=m)
     assert rc == vm_check.EXIT_VERIFIED, out
     uploads = [
-        c for c in world.rdc_calls() if c[:3] == ["repo", "sync", "upload"] and "--remote" not in c
+        c
+        for c in world.rdc_calls()
+        if c[:3] == ["repo", "sync", "upload"] and "--remote" not in c and "--remote-file" not in c
     ]
     assert len(uploads) == 1, uploads
     assert uploads[0][3] == "%s:%s" % (PARENT, world.forked[0]), uploads
@@ -2883,6 +2920,32 @@ def test_a_present_vi_is_used_and_sed_is_not(tmp_path: pathlib.Path) -> None:
     assert [r["verdict"] for r in _rows(receipt, "V1.3") if r["desc"] == "A: vi writes ~/v"] == [
         "ok"
     ]
+
+
+def test_sync_created_directories_are_owned_and_existing_ones_keep_their_owner(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    rows = {r["desc"]: r["verdict"] for r in _rows(receipt, "V1.5")}
+    run = receipt.get("run_id", "")
+    owned = [d for d in rows if d.startswith("created by --remote")]
+    assert len(owned) == 8, rows
+    assert all(rows[d] == "ok" for d in owned), rows
+    kept = [d for d in rows if d.startswith("an existing directory") and d.endswith("root:root")]
+    assert len(kept) == 1, (rows, run)
+    assert rows[kept[0]] == "ok", (rows, run)
+
+
+def test_a_root_owned_new_directory_fails_v15(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, root_parents=True)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    failed = [r["desc"] for r in _rows(receipt, "V1.5") if r["verdict"] == "FAIL"]
+    assert any(d.startswith("created by --remote-file") for d in failed), failed
+    assert any(d.startswith("created by --remote:") for d in failed), failed
+    assert not any(d.startswith("an existing directory") for d in failed), failed
 
 
 def test_a_symlink_that_reaches_the_remote_fails_v15(tmp_path: pathlib.Path) -> None:
