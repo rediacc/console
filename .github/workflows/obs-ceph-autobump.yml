@@ -17,9 +17,10 @@ run-name: "OBS Ceph autobump: ${{ github.event_name }}"
 #         renet's same-named branch) and pushes without force. No open PR is red.
 #
 # Triggers: every completed CI - OBS Mirror run on main (each capture is followed
-# by a bump within minutes), and on demand. `workflow_run` and `workflow_dispatch`
-# both execute this file from the default branch, so the write job only ever runs
-# reviewed code.
+# by a bump within minutes), and on demand. `workflow_run` always executes this file
+# from the default branch, but `workflow_dispatch` executes it from whichever branch
+# the dispatcher selects, so both jobs refuse any ref but the default branch: the
+# write job only ever runs reviewed code (per-commit finding e28e2f8d.1).
 
 on:
   workflow_run:
@@ -39,7 +40,7 @@ jobs:
   plan:
     name: Bump the Leap Ceph pin
     # A failed mirror run captured nothing new.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # packages: read lets the bump probe the private obs-mirror tag in ghcr.io/rediacc/ci-vm-bake.
@@ -117,7 +118,7 @@ jobs:
   land:
     name: Land the bump on the live branch
     needs: plan
-    if: needs.plan.outputs.action == 'bump'
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.outputs.action == 'bump'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # The default token only checks out this file's own code; every write rides the App token.
