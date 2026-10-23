@@ -1671,6 +1671,9 @@
     ".ci/rediacc_ci/tests/test_ops_build_server.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_ops_cf_notifications.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py": [
       "HOME"
     ],

@@ -1,0 +1,76 @@
+{
+  "$comment": "Cloudflare spend-guard thresholds, the one source for agent/plans/PLAN-cloudflare-spend-guard.md. `notifications.products` is upserted by `PYTHONPATH=.ci python3 -m rediacc_ci.ops.cf_notifications` as one `spend-guard:<product>` billing_usage_alert policy each, emailed to WK_OPERATOR_EMAIL. A limit is in the product's base unit per billing cycle (requests, CPU ms, bytes, operations).",
+  "notifications": {
+    "policy_prefix": "spend-guard:",
+    "products": {
+      "worker_requests": {
+        "limit": 20000000,
+        "unit": "requests",
+        "why": "Workers requests, about twice the 10 million the Workers Paid plan includes. Configured beside worker_standard_request because the API accepts both and the billed line item is not documented."
+      },
+      "worker_standard_request": {
+        "limit": 20000000,
+        "unit": "requests",
+        "why": "Workers standard-usage-model requests, the same 20 million ceiling as worker_requests."
+      },
+      "worker_standard_cpu_ms": {
+        "limit": 60000000,
+        "unit": "CPU milliseconds",
+        "why": "Workers CPU time, about twice the 30 million ms Workers Paid includes."
+      },
+      "r2_storage": {
+        "limit": 50000000000,
+        "unit": "bytes",
+        "why": "R2 storage, 50 GB (decimal), five times the 10 GB-month included."
+      },
+      "r2_class_a_operations": {
+        "limit": 2000000,
+        "unit": "operations",
+        "why": "R2 Class A (writes, lists), twice the 1 million included."
+      },
+      "r2_class_b_operations": {
+        "limit": 20000000,
+        "unit": "operations",
+        "why": "R2 Class B (reads), twice the 10 million included."
+      }
+    },
+    "unavailable": {
+      "observability": {
+        "wanted": "Workers Observability ingestion 40 GB and storage 8 GB-month (80 percent of the included 50 GB and 10 GB-month)",
+        "evidence": "2026-10-23: POST alerting/v3/policies with every candidate product name tried (worker_observability_events, worker_observability_ingestion, worker_observability_storage, worker_logs_events, observability_ingestion and nine more) answered `Error 17106: Invalid product selection.`; available_alerts lists no product values (AvailableValues null).",
+        "fallback": "The account-level billing_budget_alert `Default budget alert (auto-created)` (total_spend_dollars 10, emailed to the operator) covers it in dollars; the weekly cf_usage_report reads the volume; Dashboard > Notifications > Add > Usage Based Billing lists the product once Cloudflare offers it."
+      },
+      "containers": {
+        "wanted": "Containers at the cost guard's 2-instance budget, about 15 USD a month",
+        "evidence": "2026-10-23: containers, containers_vcpu, containers_memory, container_vcpu_seconds, container_memory_gib_seconds, cloudchamber_cpu_usage, cloudchamber_memory_usage, cloudchamber_disk_usage and eleven more answered `Error 17106: Invalid product selection.`",
+        "fallback": "The same 10 USD billing_budget_alert; check_proxy_cost_guard.py caps max_instances and sleep_after in code."
+      }
+    },
+    "available_alerts_read": {
+      "date": "2026-10-23",
+      "billing_usage_alert_filter_options": [
+        {"Key": "product", "ComparisonOperator": "==", "Range": "1-n", "AvailableValues": null},
+        {"Key": "limit", "ComparisonOperator": ">=", "Range": "1-n", "AvailableValues": null}
+      ],
+      "products_accepted_by_the_api": [
+        "worker_requests",
+        "worker_standard_request",
+        "worker_standard_cpu_ms",
+        "worker_kv_reads",
+        "worker_durable_objects_requests",
+        "worker_durable_objects_duration",
+        "r2_storage",
+        "r2_class_a_operations",
+        "r2_class_b_operations",
+        "d1_rows_read",
+        "d1_rows_written",
+        "d1_storage",
+        "queues_standard_operations",
+        "stream_minutes_viewed"
+      ],
+      "existing_policies": [
+        "Default budget alert (auto-created): billing_budget_alert, total_spend_dollars 10, created by Cloudflare 2026-07-21 for PayGo budget monitoring; not managed here"
+      ]
+    }
+  }
+}

@@ -14,6 +14,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH, each one pinned by a test
   4. SELF-DESTRUCT RUNS ONCE. The bash trap was installed for EXIT, INT and TERM, so an interrupt ran the handler and then the EXIT trap ran it again, the second pass failing on a token that no longer existed. `Auth.destroyed` makes the second call a no-op.
   7. THE MINTED TOKEN CARRIES R2 STORAGE WRITE. The bash policy had no R2 group, so a bench deploy that minted its own token died at the bucket preflight (`wrangler r2 bucket list` -> Cloudflare API error, run live 2026-10-01), and the same token could not list or create the bucket `deploy-bench` is meant to guarantee.
   6. A MINTED TOKEN IS AWAITED BEFORE ITS FIRST USE (`await_propagation`), BY PROBING, NOT BY SLEEPING. `deploy-bench.sh` carried a hand-written `sleep 5` for this; `reset-bench.sh` had none and failed every real run with `Authentication error` on its first D1 query (2026-10-01, twice, then reproduced in isolation: refused at 0 s, accepted at 6 s). A fixed 8 s replaced both and was itself a guess: measured 2026-10-07 over three mints, `/user/tokens/verify` accepts a new token at 0.3 s, Workers Scripts list at 1.2-1.4 s and D1 list/query at 2.0-4.4 s, and one accepted D1 request can be followed by another refusal. The wait now sends read-only GET probes, one per slow service the minted policies grant, until each has been accepted twice in a row, bounded at 60 s with a `CfAuthError` naming the service and Cloudflare's last error codes. Only a token minted here is awaited.
+  8. A SPEND-GUARD SCRIPT MINTS ITS OWN NARROW TOKEN (`resolve_scoped`), NOT A WIDER `auto-rotation-management` (agent/plans/PLAN-cloudflare-spend-guard.md design item 3). `SCOPED_GROUPS` names, per caller, the account-scoped groups it needs; the names are resolved to ids from `/user/tokens/permission_groups` at mint time rather than hard-coded, and the token carries those plus the user-scoped API Tokens pair its self-destruct needs, nothing else. Pinned by `tests/test_ops_cf_auth.py`.
   5. MORE THAN FIFTY ZONES ARE NOT SILENTLY DROPPED. `zones?per_page=50` read the first page only, so a token minted for an account with fifty-one zones lacked Workers Routes Write on the last one. The first request is byte-identical to the bash; further pages are fetched only when `result_info.total_pages` says there are some.
 """
 
@@ -75,6 +76,25 @@ USER_PERMISSION_GROUPS = (
 )
 
 
+# Account-scoped permission group NAMES per spend-guard caller (agent/plans/PLAN-cloudflare-spend-guard.md design item 3), resolved to ids by `permission_group_ids`. Names read live 2026-10-23 from /user/tokens/permission_groups, each with scope `com.cloudflare.api.account`.
+SCOPED_GROUPS = {
+    # T1: POST/PUT/DELETE .../alerting/v3/policies (the API docs accept Notifications Write or Account Settings Write).
+    "cf-notifications": ("Notifications Write",),
+    # T3: `wrangler r2 bucket lifecycle add|list`.
+    "r2-lifecycle": ("Workers R2 Storage Write",),
+    # T4: POST .../workers/observability/telemetry/query names Workers Observability Write.
+    "observability-volume": ("Workers Observability Write",),
+    # T6: the GraphQL Analytics datasets (R2, D1, Workers invocations) take Account Analytics Read; the telemetry query fallback takes Workers Observability Write.
+    "cf-usage-report": ("Account Analytics Read", "Workers Observability Write"),
+}
+ACCOUNT_SCOPE = "com.cloudflare.api.account"
+# Group name -> (service, read-only path template) a scoped token is awaited on, beside verify. Only GETs measured to answer on this account are listed; a group absent here is awaited on verify alone.
+SCOPED_PROBES = {
+    "Notifications Write": ("Notifications", "/accounts/%s/alerting/v3/policies"),
+    "Workers R2 Storage Write": ("R2", "/accounts/%s/r2/buckets?per_page=1"),
+}
+
+
 class CfAuthError(Exception):
     """A credential could not be resolved; the message is what the operator sees."""
 
@@ -88,6 +108,8 @@ class Auth:
     destroyed: bool = False
     # The policies a token minted here carries; `await_propagation` chooses its probes from them.
     policies: list[dict] = dataclasses.field(default_factory=list)
+    # Extra (service, path) GET probes a scoped mint is awaited on, after the ones `ready_probes` derives from `policies`.
+    probes: list[tuple[str, str]] = dataclasses.field(default_factory=list)
 
     @property
     def headers(self) -> list[str]:
@@ -208,6 +230,86 @@ def create_management_token(
     return str(value), policies
 
 
+def permission_group_ids(headers: list[str], names: typing.Iterable[str]) -> list[str]:
+    """The account-scoped permission group id for each of `names`, in order; CfAuthError naming every name Cloudflare does not list exactly once."""
+    body = curl_json("GET", "%s/user/tokens/permission_groups" % CF_API_BASE, headers)
+    result = body.get("result")
+    if not isinstance(result, list):
+        raise CfAuthError("listing permission groups failed: %s" % _errors(body))
+    found: dict[str, list[str]] = {}
+    for group in result:
+        if not isinstance(group, dict) or ACCOUNT_SCOPE not in (group.get("scopes") or []):
+            continue
+        found.setdefault(str(group.get("name")), []).append(str(group.get("id")))
+    ids, bad = [], []
+    for name in names:
+        hits = found.get(name, [])
+        if len(hits) == 1:
+            ids.append(hits[0])
+        else:
+            bad.append("%s (%d account-scoped matches)" % (name, len(hits)))
+    if bad:
+        raise CfAuthError("permission groups not resolvable by name: %s" % ", ".join(bad))
+    return ids
+
+
+def create_scoped_token(
+    global_key: str, email: str, purpose: str, account_id: str = DEFAULT_ACCOUNT_ID
+) -> Auth:
+    """Mint a token carrying only `SCOPED_GROUPS[purpose]` on `account_id` plus the user-scoped API Tokens pair its self-destruct needs; CfAuthError naming the failing step."""
+    names = SCOPED_GROUPS.get(purpose)
+    if names is None:
+        raise CfAuthError("no scoped permission set named %r (known: %s)" % (purpose, ", ".join(sorted(SCOPED_GROUPS))))
+    headers = _global_headers(global_key, email)
+    user = curl_json("GET", "%s/user" % CF_API_BASE, headers)
+    result = user.get("result")
+    user_id = result.get("id") if isinstance(result, dict) else None
+    if not user_id:
+        raise CfAuthError(
+            "Cloudflare did not accept the Global API Key for %s: %s" % (email, _errors(user))
+        )
+    group_ids = permission_group_ids(headers, names)
+    policies = [
+        {
+            "effect": "allow",
+            "resources": {"%s.%s" % (ACCOUNT_SCOPE, account_id): "*"},
+            "permission_groups": [{"id": g} for g in group_ids],
+        },
+        {
+            "effect": "allow",
+            "resources": {"com.cloudflare.api.user.%s" % user_id: "*"},
+            "permission_groups": [{"id": g} for g in USER_PERMISSION_GROUPS],
+        },
+    ]
+    payload = {"name": "auto-scoped-%s" % purpose, "policies": policies}
+    created = curl_json("POST", "%s/user/tokens" % CF_API_BASE, headers, json.dumps(payload))
+    result = created.get("result")
+    value = result.get("value") if isinstance(result, dict) else None
+    if not value:
+        raise CfAuthError("creating the %s token failed: %s" % (purpose, _errors(created)))
+    probes = [
+        (SCOPED_PROBES[n][0], SCOPED_PROBES[n][1] % account_id) for n in names if n in SCOPED_PROBES
+    ]
+    return Auth(token=str(value), created=True, policies=policies, probes=probes)
+
+
+def resolve_scoped(purpose: str, account_id: str = DEFAULT_ACCOUNT_ID) -> Auth:
+    """A token for one spend-guard caller: `CF_MANAGEMENT_TOKEN` as supplied, else one minted from `CF_GLOBAL_API_KEY` + `CF_EMAIL` with `SCOPED_GROUPS[purpose]` only. Never prompts: these run unattended."""
+    token = os.environ.get("CF_MANAGEMENT_TOKEN")
+    if token:
+        return Auth(token=token)
+    global_key = os.environ.get("CF_GLOBAL_API_KEY")
+    email = os.environ.get("CF_EMAIL")
+    if not (global_key and email):
+        raise CfAuthError(
+            "Cloudflare authentication credentials are required: set CF_MANAGEMENT_TOKEN or CF_GLOBAL_API_KEY + CF_EMAIL"
+        )
+    log.step("Creating a %s token from the Global API Key..." % purpose)
+    auth = create_scoped_token(global_key, email, purpose, account_id)
+    log.info("%s token created (will self-destruct after run)" % purpose)
+    return auth
+
+
 def _mint(global_key: str, email: str, account_id: str) -> Auth:
     log.step("Creating scoped management token from Global API Key...")
     token, policies = create_management_token(global_key, email, account_id)
@@ -296,7 +398,9 @@ def await_propagation(
     sleep = time.sleep if sleep is None else sleep
     clock = time.monotonic if clock is None else clock
     start = clock()
-    for service, path in ready_probes(auth.policies):
+    probes = ready_probes(auth.policies)
+    probes += [p for p in auth.probes if p not in probes]
+    for service, path in probes:
         url = CF_API_BASE + path
         streak, last = 0, []
         while True:
