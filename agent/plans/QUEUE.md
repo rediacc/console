@@ -77,7 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 19 plans done, 114 of 392 boxes done (29%).
+Promoted: 1 of 19 plans done, 121 of 392 boxes done (30%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -93,7 +93,7 @@ Promoted: 1 of 19 plans done, 114 of 392 boxes done (29%).
 | 10 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
 | 11 | PLAN-w7p5a-real-run-dispatch.md | 8/9 | 1 open |
 | 12 | PLAN-pin-awscli-toolchain-python-compatible.md | 6/7 | 1 open |
-| 13 | PLAN-plan-preflight.md | 0/9 | 9 open |
+| 13 | PLAN-plan-preflight.md | 7/9 | 2 open |
 | 14 | PLAN-renet-run-docker-sock-isolation.md | 0/3 | 3 open |
 | 15 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
 | 16 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
