@@ -200,6 +200,14 @@ def test_pragma_rules():
         gate.classify(tree, [{"--write"}], ("mode", "--write", "regenerates the baseline"))[0]
         == "TREE"
     )
+    # A write two flags reach names both, and turns red when EITHER is registered.
+    both = ("mode", "--write|--init", "writes or seeds the baseline")
+    assert gate.classify(tree, [set()], both)[0] == "MODE-GATED"
+    assert gate.classify(tree, [{"--init"}], both)[0] == "TREE"
+    assert gate.classify(tree, [{"--write"}], both)[0] == "TREE"
+    m = gate.MODE_RE.match("--write|--init writes or seeds the baseline")
+    assert m is not None
+    assert m.group(1) == "--write|--init"
 
 
 def test_bash_mode_flag_follows_the_parse_args_shape():

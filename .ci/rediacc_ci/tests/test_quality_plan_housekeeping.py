@@ -411,6 +411,11 @@ def test_plan_age_date_takes_the_older_of_the_two_dates(tmp_path: pathlib.Path) 
     assert hk.plan_age_date(plan, "2026-09-20T10:00:00+00:00") == "2026-01-01"
     assert hk.plan_age_date(plan, "2025-05-05T10:00:00+00:00") == "2025-05-05T10:00:00+00:00"
     assert hk.plan_age_date(plan, "") == "2026-01-01"
+    # A modification at the path is real work: a move only ever reaches the new path as an add.
+    assert (
+        hk.plan_age_date(plan, "2026-10-23T10:00:00+00:00", "2026-10-23T10:00:00+00:00")
+        == "2026-10-23T10:00:00+00:00"
+    )
     plan.write_text("# t\nStatus: draft\n", encoding="utf-8")
     assert hk.first_seen(plan) == ""
     assert hk.plan_age_date(plan, "2026-09-20T10:00:00+00:00") == "2026-09-20T10:00:00+00:00"

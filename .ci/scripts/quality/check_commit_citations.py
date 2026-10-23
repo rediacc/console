@@ -206,12 +206,12 @@ def write_baseline(root, entries: dict[str, dict]) -> None:
     }
     # The writer is mode-gated: main() reaches it only under --write-baseline or --init-baseline, and the controls call it on a TemporaryDirectory root.
     path = pathlib.Path(root) / BASELINE_REL
-    # tree-write: mode --write-baseline the baseline directory, created only by the baseline writer
+    # tree-write: mode --write-baseline|--init-baseline the baseline directory, created only by the baseline writer
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
-    # tree-write: mode --write-baseline the temporary copy the baseline writer renames into place
+    # tree-write: mode --write-baseline|--init-baseline the temporary copy the baseline writer renames into place
     tmp.write_text(json.dumps(doc, indent=2, sort_keys=False) + "\n", encoding="utf-8")
-    # tree-write: mode --write-baseline the atomic rename of the baseline writer's temporary copy
+    # tree-write: mode --write-baseline|--init-baseline the atomic rename of the baseline writer's temporary copy
     tmp.replace(path)
 
 
