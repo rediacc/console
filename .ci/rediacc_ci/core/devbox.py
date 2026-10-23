@@ -150,7 +150,7 @@ DEVBOX_OFFSET_VSCODE = 0
 DEVBOX_OFFSET_STUDIO = 3
 DEVBOX_OFFSET_TERM = 5
 # ONE published port for every worktree and every service. Routing is by Host header, so each app still believes it is at "/" and needs no base-path configuration; Chrome resolves *.localhost to 127.0.0.1 itself, which is the whole point on ChromeOS, where each published port otherwise needs its own manual forward.
-DEVBOX_PROXY_IMAGE = "traefik:v3.6"
+DEVBOX_PROXY_IMAGE = "traefik:v3.7.16"
 DEVBOX_PROXY_NAME = "rediacc-devbox-proxy"
 DEVBOX_PROXY_PORT = 8090
 DEVBOX_NETWORK = "rediacc-devbox"
