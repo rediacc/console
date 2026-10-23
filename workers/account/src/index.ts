@@ -3,6 +3,8 @@ import accountApp from '../../../private/account/src/entry/cloudflare.js';
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
+  /** The executor proxy service binding (wrangler.eu.toml); read by the console route. */
+  EXECUTOR?: Fetcher;
   [key: string]: unknown;
 }
 

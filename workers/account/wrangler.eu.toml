@@ -59,3 +59,12 @@ jurisdiction = "eu"
 binding = "BACKUP_BUCKET"
 bucket_name = "rediacc-backups-eu"
 jurisdiction = "eu"
+
+# The web console reaches the executor proxy through this binding, not a public fetch: this
+# Worker and rediacc-proxy-eu share the rediacc.com zone, and a same-zone subrequest never
+# reaches another Worker (the proxy's own ACCOUNT binding fixed the same 401 the other way).
+# private/account/src/routes/console.ts uses it when bound; EXECUTOR_MODE still decides
+# whether the console runs against it at all (mock until box C2 of PLAN-cloudflare-proxy).
+[[services]]
+binding = "EXECUTOR"
+service = "rediacc-proxy-eu"
