@@ -48,5 +48,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           OBS_GRAFANA_READ_TOKEN: ${{ env.BWS_OBS_GRAFANA_READ_TOKEN }}
+        # An explicit `shell: bash` runs `bash -eo pipefail`, so the report's exit code (1 over a ceiling, 2 on an unreadable source) survives the `tee`; the implicit default is `bash -e` without pipefail, which reports tee's 0.
+        shell: bash
         run: |
           PYTHONPATH=.ci python3 -m rediacc_ci.ops.cf_usage_report | tee -a "$GITHUB_STEP_SUMMARY"
