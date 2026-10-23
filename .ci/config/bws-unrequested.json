@@ -80,6 +80,10 @@
       "kind": "no-github-twin",
       "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
     },
+    "AWS_SES_SMTP_PASSWORD_EU": {
+      "kind": "no-github-twin",
+      "reason": "The SES SMTP password for Grafana alert email on the hostinger observability stack, stored 2026-10-23 with read-back MATCH. Bound only by `bws_env exec --profile grafana-smtp` (secret-supply.json) for a local sync into that stack's secrets.env; no workflow sends Grafana mail."
+    },
     "AWS_SES_HOST": {
       "kind": "no-github-twin",
       "reason": "SMTP endpoint hostname; the account server talks to SES over the API. git log -S finds one commit, the one that added the map entry."
