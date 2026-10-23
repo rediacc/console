@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: smart -- operator 2026-10-23: "switch effort: low to smart", agent/plans/PLAN-stop-hook-effort.md
+effort: high -- operator 2026-10-23: "when all open planning agents are finished and open writers are done, switch from smart to high"
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,7 +54,7 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
+- Mode: effort high; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge full; cadence on; agent_hint on; agent_pushback on.
 - Phase: build.
 - Branch: 1023-1, no PR yet.
 - Plans on the PR (6):
@@ -69,8 +69,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 4 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 1 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 3 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4f448f06ff5d7bd5.
-- Leased items: 1: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d).
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 0.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
