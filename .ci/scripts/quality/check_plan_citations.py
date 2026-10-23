@@ -117,7 +117,8 @@ except ImportError as _exc:  # pragma: no cover -- exercised by `.ci/rediacc_ci/
         f"through wl_planrec/wl_checks, so without them it has no oracle.",
         file=sys.stderr,
     )
-    sys.exit(1)
+    # `--plan` documents 2 for "the instrument could not answer" (WHOLE-PLAN MODE, EXIT CODES); the diff-scoped gate keeps its 1.
+    sys.exit(2 if "--plan" in sys.argv[1:] else 1)
 
 #: The corpus, and the predicate that defines it. `agent/` holds three different
 #: kinds of document and only one of them belongs here.

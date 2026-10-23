@@ -8,6 +8,7 @@ the real branch. `_origin_last_content` closes this by walking the origin's own 
 
 import importlib.util
 import json
+import os
 import pathlib
 import shutil
 import sys
@@ -574,3 +575,17 @@ def test_plan_mode_a_ticked_line_is_history_even_under_an_open_box(gate, tmp_pat
             "expected the (ticked) line as history and the continuation as blocking: %s" % got
         )
     gate.log_pass("(ticked) marks history on its own; an open box's continuation blocks")
+
+
+def test_unimportable_resolvers_exit_2_in_plan_mode_and_1_in_the_diff_gate(tmp_path) -> None:
+    """`--plan` documents 2 for "the instrument could not answer"; the diff-scoped gate keeps 1 (worklist #d8634506)."""
+    env = {**os.environ, "PLAN_CITATIONS_ROOT": str(tmp_path)}
+    plan_mode = harness.run(
+        [sys.executable, str(GATE), "--plan", "agent/plans/PLAN-p.md", "--json"],
+        cwd=paths.repo_root(),
+        env=env,
+    )
+    diff_mode = harness.run([sys.executable, str(GATE)], cwd=paths.repo_root(), env=env)
+    assert "VACUOUS INPUT" in plan_mode.err
+    assert plan_mode.rc == 2, plan_mode
+    assert diff_mode.rc == 1, diff_mode
