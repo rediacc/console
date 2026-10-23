@@ -335,8 +335,21 @@ def test_all_workflows_scheduled_verdict_reads_no_dispatch_run(ct, monkeypatch, 
         (["--runs", "--run", "1"], "--runs lists a branch's runs"),
         (["--workflow", "cd-v2"], "--workflow needs --scheduled or --runs"),
         (["--scheduled", "--ref", "0930-1"], "--scheduled reads main only"),
-        (["--scheduled", "--why"], "--scheduled does not combine with --why"),
+        (["--scheduled", "--why"], "--why and --scheduled are separate verbs"),
         (["--until-final"], "--until-final needs --wait"),
+        # Review finding 3: every pair of verbs is refused, not only the --scheduled ones.
+        (["--runs", "--jobs", "--run", "1"], "--runs and --jobs are separate verbs"),
+        (["--why", "--runs"], "--why and --runs are separate verbs"),
+        (["--runs", "--history", "Quality / Code"], "--runs and --history are separate verbs"),
+        (["--runs", "--watchdog"], "--runs and --watchdog are separate verbs"),
+        (["--job", "5", "--history", "x"], "--job and --history are separate verbs"),
+        (["--why", "--watchdog", "1"], "--why and --watchdog are separate verbs"),
+        # Review finding 4: a --run wait already lasts until the run completes.
+        (
+            ["--scheduled", "--run", "1", "--wait", "--until-final"],
+            "--until-final applies to a branch wait",
+        ),
+        (["--run", "1", "--wait", "--until-final"], "--until-final applies to a branch wait"),
     ],
 )
 def test_a_flag_that_would_be_ignored_is_refused(ct, capsys, argv, needle):
@@ -356,3 +369,43 @@ def test_a_crash_in_the_run_path_names_the_run_reader(ct, monkeypatch, capsys):
     assert rc == ct.EXIT_NO_VERDICT
     assert "the run reader failed: RuntimeError: no such run" in err
     assert "scheduled-run reader" not in err
+
+
+@pytest.mark.usefixtures("quiet")
+def test_an_unread_workflow_name_is_no_verdict_not_a_match(ct, monkeypatch, capsys):
+    """Review finding 1: a run whose workflow name came back empty is not judged as the named workflow's run."""
+    monkeypatch.setitem(sys.modules, "wl_schedred", FakeSchedred())
+    snapshots(ct, monkeypatch, [GREEN], workflow="")
+    assert ct.main(["--scheduled", "--workflow", "pins-soaked", "--run", "39902213758"]) == 2
+    assert "the workflow of run 39902213758 could not be read" in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("quiet")
+def test_an_unread_workflow_name_still_reads_without_workflow(ct, monkeypatch):
+    """CONTROL: with no --workflow named there is nothing to match, so the same run is judged."""
+    monkeypatch.setitem(sys.modules, "wl_schedred", FakeSchedred())
+    snapshots(ct, monkeypatch, [GREEN], workflow="")
+    assert ct.main(["--scheduled", "--run", "39902213758"]) == 0
+
+
+@pytest.mark.usefixtures("quiet")
+@pytest.mark.parametrize("name", ["Release to Edge", "cd-v2", "cd-v2.yml"])
+def test_scheduled_run_resolves_a_dispatch_only_workflow(ct, monkeypatch, capsys, name):
+    """Review finding 2: `--scheduled --workflow X --run N` takes any workflow, so the Release to Edge dispatch is judged."""
+    fake = FakeSchedred()
+    monkeypatch.setitem(sys.modules, "wl_schedred", fake)
+    seen = snapshots(ct, monkeypatch, [GREEN], workflow="Release to Edge")
+    assert ct.main(["--scheduled", "--workflow", name, "--run", "39902042581"]) == 0
+    assert "GREEN  run 39902042581" in capsys.readouterr().out
+    assert seen == ["39902042581"]
+
+
+@pytest.mark.usefixtures("quiet")
+def test_scheduled_run_unknown_workflow_rc2_names_every_workflow(ct, monkeypatch, capsys):
+    monkeypatch.setitem(sys.modules, "wl_schedred", FakeSchedred())
+    seen = snapshots(ct, monkeypatch, [GREEN])
+    assert ct.main(["--scheduled", "--workflow", "nope", "--run", "1"]) == 2
+    err = capsys.readouterr().err
+    assert "'nope' names no workflow" in err
+    assert "cd-v2 (cd-v2.yml, Release to Edge)" in err
+    assert seen == []

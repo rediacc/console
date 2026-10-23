@@ -372,10 +372,14 @@ def _trace_run(root, run_id, wait, timeout, as_json, expect_workflow=""):
             time.sleep(POLL_SECONDS)
             continue
         read_failures = 0
-        if expect_workflow and workflow and workflow != expect_workflow:
+        # AN UNREAD WORKFLOW NAME IS NOT A MATCH. The guard used to require a non-empty name before comparing, so a run whose workflow could not be read was judged as the named workflow's run.
+        if expect_workflow and workflow != expect_workflow:
             _no_verdict(
                 "run %s is a %r run, not %r; pass that workflow's run id"
                 % (run_id, workflow, expect_workflow)
+                if workflow
+                else "the workflow of run %s could not be read, so it is not judged as a %r run"
+                % (run_id, expect_workflow)
             )
             return EXIT_NO_VERDICT
         if wait:
@@ -1066,10 +1070,11 @@ def main(argv=None):
         "--workflow",
         metavar="NAME",
         help=(
-            "any workflow by stem, file or display name. With --runs: its newest runs on the"
-            " branch. With --scheduled: its newest 5 scheduled runs and newest workflow_dispatch"
-            " runs on main (the exit code counts the scheduled ones); with --run <id> too: that"
-            " run's verdict, refused when the run belongs to another workflow"
+            "a workflow by stem, file or display name. With --runs: any workflow's newest runs"
+            " on the branch. With --scheduled: a scheduled workflow's newest 5 scheduled runs and"
+            " newest workflow_dispatch runs on main (the exit code counts the scheduled ones)."
+            " With --scheduled --run <id>: any workflow, and that run's verdict, refused when"
+            " the run's workflow is another one or cannot be read"
         ),
     )
     ap.add_argument(
@@ -1129,6 +1134,10 @@ def main(argv=None):
         )
         if on
     ]
+    # ONE VERB PER CALL. The dispatch below takes the first verb it meets, so `--runs --jobs` ran --runs and `--why --runs` ran --why, each dropping the other without a word.
+    picked = one_read + (["--scheduled"] if args.scheduled else [])
+    if len(picked) > 1:
+        ap.error("%s and %s are separate verbs; run one per call" % (picked[0], picked[1]))
     if args.wait and one_read:
         ap.error(
             "--wait does not combine with %s, a one-read verb; wait on one run with"
@@ -1141,10 +1150,14 @@ def main(argv=None):
         )
     if args.until_final and not args.wait:
         ap.error("--until-final needs --wait")
+    # A --run wait already returns only once the run's status is `completed`, never on its first failed job, so --until-final would change nothing there and is refused rather than accepted and dropped.
+    if args.until_final and args.run:
+        ap.error(
+            "--until-final applies to a branch wait; --run <id> --wait already waits until"
+            " that run completes"
+        )
     if args.runs and args.run:
         ap.error("--runs lists a branch's runs; for one run use --run <id> without --runs")
-    if args.scheduled and one_read:
-        ap.error("--scheduled does not combine with %s" % one_read[0])
     if args.scheduled and args.ref and _branch_name(args.ref) != "main":
         ap.error("--scheduled reads main only; drop --ref %s" % args.ref)
     if args.scheduled:
@@ -1522,16 +1535,19 @@ def _print_dispatch(w, rows, err):
     )
 
 
-def _verb_scheduled_run(root, sched, workflow, run_id, wait, timeout, as_json):
-    """--scheduled [--workflow X] --run N: that one run's verdict (any event), through the same reader as `--run N`."""
+def _verb_scheduled_run(root, workflow, run_id, wait, timeout, as_json):
+    """--scheduled [--workflow X] --run N: that one run's verdict (any event), through the same reader as `--run N`.
+
+    X resolves against EVERY workflow under .github/workflows, not only the scheduled ones: one run is judged the same way whatever triggered it, so a dispatch-only workflow (`--workflow "Release to Edge" --run <id>`) is a valid target and the check that the run is X's own is what matters.
+    """
     expect = ""
     if workflow:
-        known = sched.scheduled_workflows(root) or []
+        known = _workflows(root)
         w = _resolve_workflow(known, workflow)
         if w is None:
             print(
-                "no-verdict: %r is not a scheduled workflow; known: %s"
-                % (workflow, _known_text(known) or "none"),
+                "no-verdict: %r names no workflow under %s; known: %s"
+                % (workflow, WORKFLOW_DIR, _known_text(known) or "none"),
                 file=sys.stderr,
             )
             return EXIT_NO_VERDICT
@@ -1547,7 +1563,7 @@ def verb_scheduled(root, workflow, as_json, run_id=None, wait=False, timeout=0):
         import wl_schedred
 
         if run_id:
-            return _verb_scheduled_run(root, wl_schedred, workflow, run_id, wait, timeout, as_json)
+            return _verb_scheduled_run(root, workflow, run_id, wait, timeout, as_json)
         if workflow:
             return _verb_scheduled_workflow(root, wl_schedred, workflow, as_json)
         data = wl_schedred.refresh(root, wl_core.worklist_for(root), force=True)
