@@ -400,8 +400,8 @@ RETIRED_TWINS = {
     "w7p4b-build-renet": "PLAN-retire-bash-oracles B3 (goldens/twins/infra.build-renet.jsonl)",
     "w7p4b-ensure-nfpm": "PLAN-retire-bash-oracles wave 1 unit W2, commit 4a6641bf2 (goldens/twins/build.ensure-nfpm.jsonl)",
     "w7p4b-resolve-version": "PLAN-retire-bash-oracles wave 1 unit W3, commit 8ba9169be (goldens/twins/version.resolve-version.jsonl)",
-    "w7p4b-check-existing-release": "PLAN-retire-bash-oracles wave 1 unit W5, commit 58aaa1604 (release twins frozen to goldens)",
-    "w7p4b-wait-for-preview-worker": "PLAN-retire-bash-oracles wave 1 unit W6, commit a9caf34b1 (promote, purge and verify twins frozen to goldens)",
+    "w7p4b-check-existing-release": "PLAN-retire-bash-oracles wave 1 unit W5, commit 50ebe57f1 (release twins frozen to goldens)",
+    "w7p4b-wait-for-preview-worker": "PLAN-retire-bash-oracles wave 1 unit W6, commit 43f13ce45 (promote, purge and verify twins frozen to goldens)",
     "w7p4b-inject-env": "PLAN-retire-bash-oracles wave 1 unit W2, commit 4a6641bf2 (goldens/twins/version.inject-env.jsonl)",
 }
 
