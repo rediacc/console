@@ -126,26 +126,5 @@
       ]
     }
   ],
-  "plan_baseline": [
-    {
-      "plan": "agent/plans/PLAN-pins-command.md",
-      "term": "rclone",
-      "blocker": "BLOCKER: the plan predates the 2026-10-15 retirement and lists rclone among the embedded assets; private/renet/embed-assets.lock.json no longer carries it, so the line is stale text for the session running that plan to drop, and a gate change does not edit another plan's prose."
-    },
-    {
-      "plan": "agent/plans/PLAN-renet-fetch-hardening.md",
-      "term": "rclone",
-      "blocker": "BLOCKER: the plan predates the 2026-10-15 retirement and its open Site 6 box hardens ensureRclone, which private/renet/pkg/infra/docker/service.go still calls at three sites; the box is withdrawn when the decommission deletes those calls."
-    },
-    {
-      "plan": "agent/plans/PLAN-secret-namespace-migration.md",
-      "term": "BACKUP_S3_pre-rename",
-      "blocker": "BLOCKER: the plan is still executing with three open boxes (the growth and generative renames), and its BACKUP_S3_* lines record the 2026-09 rename as history; they leave the live corpus when the plan closes into _done."
-    },
-    {
-      "plan": "agent/plans/PLAN-secret-namespace-migration.md",
-      "term": "R2_TOKEN_AUTH_API",
-      "blocker": "BLOCKER: the plan is still executing with three open boxes (the growth and generative renames), and its R2_TOKEN_AUTH_API lines record the 2026-09 secret audit as history; they leave the live corpus when the plan closes into _done."
-    }
-  ]
+  "plan_baseline": []
 }

@@ -161,10 +161,6 @@
       "path": ".ci/rediacc_ci/quality/rubric_calibration.py",
       "sha": "18700a769"
     },
-    "5a719fcdb7f60140": {
-      "path": "agent/plans/PLAN-app-wide-org-selection.md",
-      "sha": "2d1da22"
-    },
     "5c58b87fff6d9e7b": {
       "path": ".ci/scripts/quality/check_policy_inventory.py",
       "sha": "b80552370"
