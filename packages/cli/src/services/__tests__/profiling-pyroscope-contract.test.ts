@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * The installed @pyroscope/nodejs, loaded the way profiling.ts loads it, still offers the five calls that file's
- * PyroscopeModule interface declares, and runs them. A major bump of the package that renames, drops or re-types one
- * fails here instead of turning profiling into a silent no-op (loadPyroscope swallows every load error).
+ * PyroscopeModule interface declares, and runs them. A major bump that renames or drops one, throws on the init call
+ * profiling.ts makes, or stops resolving a stop call fails here instead of turning profiling into a silent no-op
+ * (loadPyroscope swallows every load error). Whether init still honours each option is not checked.
  */
 describe('@pyroscope/nodejs contract used by profiling.ts', () => {
   const cjsRequire = createRequire(import.meta.url);
