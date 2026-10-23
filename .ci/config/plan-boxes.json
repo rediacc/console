@@ -1601,6 +1601,22 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-sync-remote-file-ownership.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "0d88e725",
+        "949ebb21",
+        "a587d4d7",
+        "be7f809c",
+        "e959d800"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-test-advisor.md": {
       "status": "compacted",
       "owner": "b7baf3ee",

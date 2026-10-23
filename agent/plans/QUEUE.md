@@ -67,25 +67,27 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (1 epic(s)):
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
 - Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4f448f06ff5d7bd5.
-- Leased items: 3: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #a7d8bacc (worker:ae1f22634491ba096, d778be9d), #b97dfd29 (worker:a8ee818930f58e8d6, d778be9d).
+- Leased items: 4: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #9342a223 (worker:af10bbb0a51180aa3, d778be9d), #b97dfd29 (worker:a8ee818930f58e8d6, d778be9d), #e05a93ae (worker:af22bb098e3685ccc, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 3 plans done, 31 of 235 boxes done (13%).
+Promoted: 0 of 4 plans done, 31 of 240 boxes done (12%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-backup-program.md | 2/190 | 188 open |
 | 3 | PLAN-cloudflare-proxy.md | 14/29 | 15 open |
+| 4 | PLAN-sync-remote-file-ownership.md | 0/5 | 5 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
 2. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
 3. agent/plans/PLAN-cloudflare-proxy.md -- operator 2026-10-23 ("move agent/plans/PLAN-cloudflare-proxy.md promoted but investigate to update it"; /ask: "Keep it and finish Phase 2", B5 "A mint command", console "Wire it after Phase 2"): rdc --proxy through the Cloudflare Worker and Container deployed on eu 2026-09-24; P1; Depends-On none; the plan was refreshed against the code the same day and its proven boxes ticked
+4. agent/plans/PLAN-sync-remote-file-ownership.md -- operator 2026-10-23 (plan prompt /tmp/prompt-sync-remote-file-ownership.md): rdc repo sync upload --remote-file leaves the parent directories it creates root:root; fix through a skeleton rsync of only the missing segments so they get the universal user and existing directories are never re-owned; P1; Depends-On none; proposed, awaiting operator approval, and the report asks that the change stays uncommitted for review
 
 ## Generated
 
