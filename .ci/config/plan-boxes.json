@@ -661,18 +661,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 1,
+      "open": 2,
+      "done": 5,
       "open_sigs": [
         "1166e648",
-        "579d0a70",
-        "5f67fddf",
-        "66d855eb",
-        "7ecb33c4",
-        "905edc3c"
+        "66d855eb"
       ],
       "done_sigs": [
-        "4f8ada89"
+        "4f8ada89",
+        "579d0a70",
+        "5f67fddf",
+        "7ecb33c4",
+        "905edc3c"
       ]
     },
     "agent/plans/PLAN-duplication-angle.md": {
@@ -3747,7 +3747,7 @@
       "ruling": "#c3a46b36"
     },
     "agent/plans/_done/PLAN-renet-cross-repo-isolation.md": {
-      "status": "approved",
+      "status": "done",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-10-23",

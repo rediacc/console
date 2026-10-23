@@ -69,15 +69,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 10 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a1623d83e3ff489db.
-- Leased items: 2: #831b7e48 (worker:a1623d83e3ff489db, d778be9d), #8cb01693 (worker:a1623d83e3ff489db, d778be9d).
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 3: #831b7e48 (worker:b2rmhg3h0, d778be9d), #8cb01693 (worker:b2rmhg3h0, d778be9d), #cc6eb748 (worker:b2rmhg3h0, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 18 plans done, 123 of 381 boxes done (32%).
+Promoted: 1 of 18 plans done, 127 of 381 boxes done (33%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -98,7 +98,7 @@ Promoted: 1 of 18 plans done, 123 of 381 boxes done (32%).
 | 15 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
 | 16 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
 | 17 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
-| 18 | PLAN-dockerd-api-privilege-gate.md | 1/7 | 6 open |
+| 18 | PLAN-dockerd-api-privilege-gate.md | 5/7 | 2 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
