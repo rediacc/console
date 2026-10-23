@@ -28,12 +28,13 @@ enabled = true
 invocation_logs = false
 head_sampling_rate = 1
 destinations = ["otlp-asia-logs"]
+persist = false
 
 [observability.traces]
 enabled = true
 head_sampling_rate = 1
 destinations = ["otlp-asia-traces"]
-persist = true
+persist = false
 
 [assets]
 directory = "./dist"

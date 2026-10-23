@@ -50,12 +50,13 @@ enabled = true
 head_sampling_rate = 1
 invocation_logs = true
 destinations = ["otlp-bench-logs"]
+persist = false
 
 [observability.traces]
 enabled = true
 head_sampling_rate = 1
 destinations = ["otlp-bench-traces"]
-persist = true
+persist = false
 
 [assets]
 directory = "./dist"

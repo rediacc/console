@@ -47,9 +47,17 @@ class_name = "ExecutorContainer"
 tag = "v1"
 new_sqlite_classes = ["ExecutorContainer"]
 
+# Operator ruling 2026-10-23: Cloudflare keeps no copy of Workers logs or traces.
+# This Worker has no OTLP destination yet, so persist = false would export
+# nowhere; logs and traces are off until a destination exists.
 [observability]
-enabled = true
+enabled = false
 
 [observability.logs]
-enabled = true
+enabled = false
 invocation_logs = false
+persist = false
+
+[observability.traces]
+enabled = false
+persist = false
