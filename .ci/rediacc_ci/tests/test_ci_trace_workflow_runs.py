@@ -409,3 +409,23 @@ def test_scheduled_run_unknown_workflow_rc2_names_every_workflow(ct, monkeypatch
     assert "'nope' names no workflow" in err
     assert "cd-v2 (cd-v2.yml, Release to Edge)" in err
     assert seen == []
+
+
+def test_a_nameless_workflow_is_named_as_github_names_its_runs(ct, tmp_path, monkeypatch):
+    """GitHub names the runs of a workflow with no top-level `name:` by its repository path, so the --run check compares against that, never against an empty name."""
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "named.yml").write_text("name: Named One\non: push\n")
+    (wf / "bare.yml").write_text("on: push\njobs: {}\n")
+    known = {k["stem"]: k["name"] for k in ct._workflows(str(tmp_path))}
+    assert known == {"bare": ".github/workflows/bare.yml", "named": "Named One"}
+
+    seen = {}
+
+    def fake_trace(*_args, expect_workflow=""):
+        seen["expect"] = expect_workflow
+        return 0
+
+    monkeypatch.setattr(ct, "_trace_run", fake_trace)
+    assert ct._verb_scheduled_run(str(tmp_path), "bare", "1", False, 0, False) == 0
+    assert seen["expect"] == ".github/workflows/bare.yml"

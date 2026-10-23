@@ -1647,7 +1647,7 @@ _TOP_NAME = re.compile(r"^name:\s*(.+?)\s*$", re.MULTILINE)
 
 
 def _workflows(root):
-    """[{stem, file, name}] for every `.github/workflows/*.y*ml`, sorted by file; the name falls back to the stem."""
+    """[{stem, file, name}] for every `.github/workflows/*.y*ml`, sorted by file; a workflow with no top-level `name:` takes the name GitHub gives its runs, the file's repository path."""
     try:
         files = sorted(
             f
@@ -1663,7 +1663,13 @@ def _workflows(root):
         except OSError:
             m = None
         name = m.group(1).split(" #", 1)[0].strip().strip("'\"") if m else ""
-        out.append({"stem": f.stem, "file": f.name, "name": name or f.stem})
+        out.append(
+            {
+                "stem": f.stem,
+                "file": f.name,
+                "name": name or "%s/%s" % (WORKFLOW_DIR.as_posix(), f.name),
+            }
+        )
     return out
 
 
