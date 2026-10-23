@@ -69,15 +69,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 10 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:ad8b3c16dfa1551f1.
-- Leased items: 3: #831b7e48 (worker:ad8b3c16dfa1551f1, d778be9d), #8cb01693 (worker:b8ufy6ku9, d778be9d), #99580994 (worker:ad8b3c16dfa1551f1, d778be9d).
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:ad8b3c16dfa1551f1, worker:a817dc9c941bbfdb9.
+- Leased items: 5: #0c687d7f (worker:aa2831ebf13598529, d778be9d), #7af4d08f (worker:a0e5cd0477c28dd2b, d778be9d), #7d379d2c (worker:a817dc9c941bbfdb9, d778be9d), #831b7e48 (worker:ad8b3c16dfa1551f1, d778be9d), #99580994 (worker:ad8b3c16dfa1551f1, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 17 plans done, 117 of 370 boxes done (31%).
+Promoted: 0 of 16 plans done, 111 of 363 boxes done (30%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -97,7 +97,6 @@ Promoted: 0 of 17 plans done, 117 of 370 boxes done (31%).
 | 14 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
 | 15 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
 | 16 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
-| 17 | PLAN-dockerd-api-privilege-gate.md | 6/7 | 1 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -116,7 +115,6 @@ Promoted: 0 of 17 plans done, 117 of 370 boxes done (31%).
 14. agent/plans/PLAN-config-networkid-discovery.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
 15. agent/plans/PLAN-renet-fetch-retries.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
 16. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report
-17. agent/plans/PLAN-dockerd-api-privilege-gate.md -- triage #8cb01693 PLAN+SUBAGENT; follows PLAN-renet-cross-repo-isolation T9 finding
 
 ## Generated
 
