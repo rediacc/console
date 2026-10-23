@@ -57,34 +57,34 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort low; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
 - Phase: build.
 - Branch: 1023-1, no PR yet.
-- Plans on the PR (1):
+- Plans on the PR (4):
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (1 epic(s)):
-  - epic 9f92c43e, no plan, 1 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:aa778c773f8ac1729.
-- Leased items: 2: #1732ee99 (worker:2310191, d778be9d), #ff7812f9 (worker:aa778c773f8ac1729, d778be9d).
-- Next plan: agent/plans/PLAN-pins-command.md, Promoted entry 2; starts after this branch's PR merges.
+  - agent/plans/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 8 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-stop-hook-rulings-campaign.md -- 3 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Work outside the PR's plans: none.
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:ad68ef64c98ebce10, worker:a4f448f06ff5d7bd5.
+- Leased items: 2: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #6516dd5b (worker:ad68ef64c98ebce10, d778be9d).
+- Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 5 plans done, 43 of 230 boxes done (18%).
+Promoted: 2 of 4 plans done, 36 of 223 boxes done (16%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-pins-command.md | 13/13 | done |
-| 3 | PLAN-shell-sandbox-readonly-view.md | 7/7 | done |
-| 4 | PLAN-e2e-browse-at-ci.md | 8/8 | done |
-| 5 | PLAN-backup-program.md | 0/186 | 186 open |
+| 3 | PLAN-e2e-browse-at-ci.md | 8/8 | done |
+| 4 | PLAN-backup-program.md | 0/186 | 186 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
 2. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it
-3. agent/plans/PLAN-shell-sandbox-readonly-view.md -- operator /ask 2026-10-20T15:14Z ("bring its deps to the promoted area to start them first"): prerequisite of entry 5 (PLAN-backup-program), beside PLAN-account-vm-check (done 2026-10-20); closes the cross-repo integrity hole where a repo key holder can re-mode or re-time another repo's files
-4. agent/plans/PLAN-e2e-browse-at-ci.md -- finding fix on this PR (worklist #1a07399b, 2026-10-21): the browse-at e2e tier passes on the local fleet but no workflow runs it; findings are fixed in the session that finds them
-5. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
+3. agent/plans/PLAN-e2e-browse-at-ci.md -- finding fix on this PR (worklist #1a07399b, 2026-10-21): the browse-at e2e tier passes on the local fleet but no workflow runs it; findings are fixed in the session that finds them
+4. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
 
 ## Generated
 

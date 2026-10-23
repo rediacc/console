@@ -545,7 +545,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
-| `agent/plans/PLAN-shell-sandbox-readonly-view.md` | active | 124 | 0 | 7 | 20491 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-ssr-nav-locale.md` | compacted | 36 | 0 | 0 | 1976 |
 | `agent/plans/PLAN-staged-duplication-probe.md` | compacted | 52 | 0 | 8 | 3329 |
@@ -655,6 +654,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-scheduled-red-detector.md` | done | 191 | 0 | 15 | 14544 |
 | `agent/plans/_done/PLAN-scope-mirrors.md` | done | 272 | 0 | 11 | 31109 |
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | done | 204 | 0 | 10 | 20644 |
+| `agent/plans/_done/PLAN-shell-sandbox-readonly-view.md` | done | 124 | 0 | 7 | 20505 |
 | `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` | done | 321 | 0 | 20 | 41672 |
 | `agent/plans/_done/PLAN-stop-hook-cap-saturated-wait.md` | done | 229 | 0 | 1 | 22823 |
 | `agent/plans/_done/PLAN-stop-hook-continuity.md` | done | 438 | 0 | 22 | 49904 |

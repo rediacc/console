@@ -1424,24 +1424,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-shell-sandbox-readonly-view.md": {
-      "status": "active",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "35a8734b",
-        "88c84d61",
-        "a344b11a",
-        "a7ba8046",
-        "ce1f9881",
-        "fdd7c9d0",
-        "fe8a544f"
-      ]
-    },
     "agent/plans/PLAN-skip-release-gates-r2-manifest.md": {
       "status": "compacted",
       "owner": "854ac1c6",
@@ -3784,6 +3766,24 @@
         "ac008cf3",
         "c9c3f81c",
         "fdd528a8"
+      ]
+    },
+    "agent/plans/_done/PLAN-shell-sandbox-readonly-view.md": {
+      "status": "active",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "35a8734b",
+        "88c84d61",
+        "a344b11a",
+        "a7ba8046",
+        "ce1f9881",
+        "fdd7c9d0",
+        "fe8a544f"
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-behavioral-hints.md": {
