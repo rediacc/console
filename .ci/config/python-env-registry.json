@@ -570,6 +570,10 @@
     ".ci/rediacc_ci/gitx.py": [
       "*name"
     ],
+    ".ci/rediacc_ci/housekeeping/cf_leftovers.py": [
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN"
+    ],
     ".ci/rediacc_ci/housekeeping/cleanup_versions.py": [
       "BRANCH_MAX_AGE_DAYS",
       "CLOUDFLARE_ACCOUNT_ID",
@@ -1853,6 +1857,9 @@
       "BWS_MAP_ROOT",
       "BWS_MIN_CALLERS",
       "BWS_MIN_MAP_ENTRIES"
+    ],
+    ".ci/scripts/quality/check_commit_citations.py": [
+      "GITHUB_BASE_REF"
     ],
     ".ci/scripts/quality/check_decision_ids.py": [
       "DECISION_IDS_BASE",

@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-23T16:01:06.907Z",
+  "generatedAt": "2026-10-23T16:05:39.892Z",
   "legs": [
     {
       "index": 1,
@@ -464,6 +464,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py",
         "pytest:.ci/rediacc_ci/tests/test_named_paths.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_portal_health.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_probe_receipt_stability.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_telemetry_delivery.py",
@@ -633,7 +634,9 @@
         "pytest:.ci/rediacc_ci/tests/test_native.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_observability_volume.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_push_backup_credentials.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_r2_lifecycle.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
