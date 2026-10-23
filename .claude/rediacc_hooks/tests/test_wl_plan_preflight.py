@@ -471,3 +471,41 @@ def test_citation_report_fails_closed_on_an_instrument_failure(repo):
     )
     assert not clean.error
     assert not PP.refusals([], clean, [])
+
+
+# --------------------------------------------------------------------------- 3a: the plan and its renders are not watched
+
+
+RENDERS = {
+    "agent/INDEX.md": "# index\n",
+    "agent/plans/QUEUE.md": "# queue\n",
+    ".ci/config/plan-boxes.json": "{}\n",
+    "agent/ledgers/plan-investigation.jsonl": "{}\n",
+}
+
+
+def cites_renders(text: str) -> str:
+    """The plan text with a prose line citing every render in backticks and an `Owns:` glob that covers the plan and two renders, so each of the three routes into `watched_paths` would reach them."""
+    text = text.replace("Owns: pkg/owned/*.py", "Owns: pkg/owned/*.py, agent/**")
+    return text + "\n- Renders: %s.\n" % ", ".join("`%s`" % r for r in RENDERS)
+
+
+def test_main_commit_touching_only_the_plan_and_its_renders_leaves_the_plan_fresh(repo):
+    # The main commit carries the stamped plan the branch already holds (as a merged tick would), so the rebase replays nothing and the plan path itself is in the range.
+    repo.commit({PLAN: repo.read(PLAN), **RENDERS}, "main: a merged tick rewrites the plan")
+    text = cites_renders(repo.read(PLAN))
+    got = PP.revalidation_state(repo.root, PLAN, text)
+    assert got.state == PP.FRESH, got
+    watched = PP.watched_paths(repo.root, PLAN, text)
+    assert PLAN not in watched
+    assert not set(RENDERS) & set(watched)
+
+
+def test_control_the_same_main_commit_plus_a_cited_path_makes_the_plan_stale(repo):
+    sha = repo.commit(
+        {PLAN: repo.read(PLAN), **RENDERS, "src/a.py": A_PY + "landed\n"},
+        "main: a merged tick and a cited file",
+    )
+    got = PP.revalidation_state(repo.root, PLAN, cites_renders(repo.read(PLAN)))
+    assert got.state == PP.STALE, got
+    assert got.commits == (sha,)

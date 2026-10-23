@@ -13,8 +13,10 @@ THE PUBLIC API IS FROZEN HERE. PF4, PF5 and PF6 build on it in parallel, so a ch
     watched_paths(root, rel, text=None, graph=None) -> list[str]
         Git pathspecs whose change on main makes the plan stale: every fileline path
         cited outside fences, every backticked token that is a tracked file, the
-        `Owns:` globs as `:(glob)<glob>`, the plan file itself, and the plan files of
-        its `Depends-On:` targets. Plain paths sorted first, then the globs.
+        `Owns:` globs as `:(glob)<glob>`, and the plan files of its `Depends-On:`
+        targets. The plan's own path and RENDER_PATHS are dropped (Design 3a), and
+        when a glob is present they follow as `:(exclude)<path>`. Plain paths
+        sorted first, then the globs, then the excludes.
 
     revalidation_state(root, rel, text=None, base=None) -> RevalidationState
         .state is one of MISSING, ORPHAN, STALE, FRESH, UNKNOWN (module constants).
@@ -113,6 +115,13 @@ QUALITY_REL = ".ci/scripts/quality"
 CITATIONS_REL = QUALITY_REL + "/check_plan_citations.py"
 RECORD_REL = QUALITY_REL + "/check_plan_record.py"
 QUEUE_REL = "agent/plans/QUEUE.md"
+# The files a tick or a preflight regenerates beside the plan (Design 3a): a main commit touching only these and the plan itself never makes a plan stale.
+RENDER_PATHS = (
+    "agent/INDEX.md",
+    QUEUE_REL,
+    ".ci/config/plan-boxes.json",
+    "agent/ledgers/plan-investigation.jsonl",
+)
 
 BACKTICK_RE = re.compile(r"`([^`\s]+)`")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
@@ -341,7 +350,11 @@ def watched_paths(root, rel, text=None, graph=None) -> list[str]:
     owns = _deps().parse_header(text).owns
     globs = {":(glob)%s" % g for g in (owns.globs if owns else ()) if _safe_rel(g)}
     paths.update(_dep_rels(root, rel, graph))
-    return sorted(paths) + sorted(globs)
+    # Design 3a: every merged tick rewrites the plan and its renders on main, so they never count. A glob can still reach them, hence the exclude pathspecs; they ride only beside a glob, because an exclude-only pathspec list means "everything else".
+    unwatched = {rel, *RENDER_PATHS}
+    paths -= unwatched
+    excludes = sorted(":(exclude)%s" % p for p in unwatched) if globs else []
+    return sorted(paths) + sorted(globs) + excludes
 
 
 # --------------------------------------------------------------------------- freshness

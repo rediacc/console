@@ -777,6 +777,106 @@ def scope_controls():
         )
 
 
+# --------------------------------------------------------------------------- 5. CLAUSE 3, WARN-FIRST (agent/plans/PLAN-plan-preflight.md PF5, Design 3b). The stale-plan check warns and lets every tick through; each warning case is paired with a silent one.
+
+
+def _preflight_tree(tmp, stamp=True, origin=True):
+    """(root, rel, sig, c1, evidence): `make_tree` on branch `work`, with the plan citing `seed.txt` and, when `stamp`, a `Revalidated:` header at c1, the commit `origin/main` names when `origin`. Branch `work` keeps git's `main` fallback out of reach, so removing origin/main really leaves the merge base unresolvable."""
+    root, rel, sigs, _c0 = make_tree(tmp)
+    git(root, "branch", "-m", "work")
+    body = PLAN_BODY.replace(
+        "\n## Tasks", "\nThe fixture's work lives in `seed.txt`, which the plan cites.\n\n## Tasks"
+    )
+    (root / rel).write_text(body, encoding="utf-8")
+    (root / R.LEDGER_REL).write_text(
+        json.dumps({"plans": {rel: R.ledger_row(root, rel, body)}}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    git(root, "commit", "-q", "-am", "fixture c1: the plan cites seed.txt")
+    c1 = git(root, "rev-parse", "HEAD").stdout.strip()
+    if origin:
+        git(root, "update-ref", "refs/remotes/origin/main", c1)
+    if stamp:
+        stamped = body.replace(
+            "First-Seen: 2026-01-01\n",
+            "First-Seen: 2026-01-01\nRevalidated: 2026-10-23 @ %s\n" % c1[:12],
+        )
+        (root / rel).write_text(stamped, encoding="utf-8")
+        git(root, "commit", "-q", "-am", "fixture: the plan is revalidated at c1 (a branch commit)")
+    sig = sigs[0]
+    inv(root, rel, sig, "present", c1, [("fileline", "seed.txt:1"), ("commit", c1)])
+    return root, rel, sig, c1, "landed at %s, see seed.txt:1" % c1
+
+
+def _seed_commit(root, msg, main):
+    (root / "seed.txt").write_text("one\ntwo\nthree\nfour\n", encoding="utf-8")
+    git(root, "commit", "-q", "-am", msg)
+    sha = git(root, "rev-parse", "HEAD").stdout.strip()
+    if main:
+        git(root, "update-ref", "refs/remotes/origin/main", sha)
+    return sha
+
+
+def _tick_note(label, root, rel, sig, evidence):
+    """The note of an ACCEPTED tick, or None (and a FAIL) when it was refused: warn-first means every case here must tick."""
+    Tally.count += 1
+    try:
+        _text, _doc, note = R.plan_tick(root, rel, sig, evidence, ME)
+    except Exception as exc:
+        Tally.fails += 1
+        print(
+            "  FAIL  %s: the tick was refused (%s); clause 3 must only warn" % (label, exc),
+            file=sys.stderr,
+        )
+        return None
+    print("  PASS  %s: the tick went through" % label)
+    return note
+
+
+def _warned(label, note, want, needles=()):
+    if note is None:
+        return
+    cmd = "worklist.py --plan-preflight %s " % ME
+    got = "WARNING:" in note and cmd in note and all(n in note for n in needles)
+    silent = "WARNING:" not in note
+    control(
+        "%s: %s" % (label, "warns, naming the preflight command" if want else "ticks silently"),
+        got if want else silent,
+        True,
+    )
+
+
+def preflight_warn_controls():
+    print("5. clause 3 warns and never refuses (PF5)")
+    with tempfile.TemporaryDirectory() as tmp:
+        root, rel, sig, _c1, ev = _preflight_tree(tmp, stamp=False)
+        note = _tick_note("PF5a unrevalidated plan", root, rel, sig, ev)
+        _warned("PF5a unrevalidated plan", note, True, ("state missing",))
+    with tempfile.TemporaryDirectory() as tmp:
+        root, rel, sig, _c1, ev = _preflight_tree(tmp)
+        note = _tick_note("PF5b fresh plan", root, rel, sig, ev)
+        _warned("PF5b fresh plan", note, False)
+    with tempfile.TemporaryDirectory() as tmp:
+        root, rel, sig, _c1, ev = _preflight_tree(tmp)
+        stale = _seed_commit(root, "main edits the cited seed.txt", main=True)
+        note = _tick_note("PF5c stale after a main commit on a cited path", root, rel, sig, ev)
+        _warned(
+            "PF5c stale after a main commit on a cited path",
+            note,
+            True,
+            ("state stale", "stale: %s" % stale[:12]),
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        root, rel, sig, _c1, ev = _preflight_tree(tmp)
+        _seed_commit(root, "the branch implements in the cited seed.txt", main=False)
+        note = _tick_note("PF5d branch-own commit on a cited path", root, rel, sig, ev)
+        _warned("PF5d branch-own commit on a cited path", note, False)
+    with tempfile.TemporaryDirectory() as tmp:
+        root, rel, sig, _c1, ev = _preflight_tree(tmp, origin=False)
+        note = _tick_note("PF5e unresolvable merge base", root, rel, sig, ev)
+        _warned("PF5e unresolvable merge base", note, True, ("state unknown",))
+
+
 def main():
     print("plan implementation enforcement: controls first, then any verdict")
     clock_controls()
@@ -789,6 +889,7 @@ def main():
     neighbour_controls()
     wiring_controls()
     scope_controls()
+    preflight_warn_controls()
     print("\n%d control(s) ran, %d failed" % (Tally.count, Tally.fails))
     return 1 if Tally.fails else 0
 

@@ -907,6 +907,187 @@ def _plantick_cli(argv):
     )
 
 
+PREFLIGHT_LIST_CAP = 40
+
+
+def _preflight_report(pf, me, rel):
+    """The five-part dry-run report of `--plan-preflight` (agent/plans/PLAN-plan-preflight.md, PF4), one string."""
+    import wl_planpreflight as PP
+
+    who = me[:8]
+    out = ["PLAN PREFLIGHT %s @ %s" % (rel, (pf.base or "(merge base unresolvable)")[:12])]
+    st = pf.state
+    out.append("state: %s -- %s" % (st.state, st.detail))
+    out.extend("  stale: %s" % c[:12] for c in st.commits[:5])
+    if len(st.commits) > 5:
+        out.append("  ... and %d more" % (len(st.commits) - 5))
+
+    current = [b for b in pf.survey if b.current]
+    present = [b for b in current if b.verdict == "present"]
+    out.append("")
+    out.append(
+        "1. SURVEY: %d open box(es), %d with a current row, %d uncovered or taken before the "
+        "merge base, %d present and still open"
+        % (len(pf.survey), len(current), len(pf.survey) - len(current), len(present))
+    )
+    for b in pf.survey:
+        tag = (b.verdict or "uncovered") if b.current else ("stale row" if b.row else "uncovered")
+        out.append("  %s [%s] %s" % (b.sig, tag, b.body[:80]))
+        if not b.current:
+            out.append(
+                "    worklist.py --plan-investigate %s %s %s <absent|present|partial> "
+                "<kind>:<token> <kind>:<token> -- <note> --write" % (who, rel, b.sig)
+            )
+        elif b.verdict == "present":
+            ptrs = " ".join("%s:%s" % (k, t) for k, t in (b.row or {}).get("pointers") or [])
+            out.append(
+                "    worklist.py --plan-tick %s %s %s '<evidence: %s>' --write"
+                % (who, rel, b.sig, ptrs or "the row's pointers")
+            )
+
+    c = pf.citations
+    out.append("")
+    if c.error:
+        out.append("2. CITATIONS: not judged -- %s" % c.error)
+    else:
+        unres = c.report.get("unresolved", [])
+        drift = c.report.get("drifted", [])
+        out.append(
+            "2. CITATIONS: %d unresolved (%d blocking), %d drifted (%d blocking without a "
+            "relocation, %d relocatable)"
+            % (
+                len(unres),
+                len(c.blocking_unresolved),
+                len(drift),
+                len(c.blocking_drifted),
+                len(c.relocations),
+            )
+        )
+        rows = [
+            "  line %d: unresolved %s `%s` -- %s [%s]"
+            % (
+                u["line"],
+                u.get("kind", "?"),
+                u["token"],
+                u.get("why", ""),
+                "blocking" if u.get("blocking") else "history",
+            )
+            for u in unres
+        ]
+        rows += [
+            "  line %d: drifted `%s` -> %s [%s]"
+            % (
+                d["line"],
+                d["token"],
+                "line %s" % d["relocate_to"] if d.get("relocate_to") is not None else "nowhere",
+                "blocking" if d.get("blocking") else "history",
+            )
+            for d in drift
+        ]
+        out.extend(rows[:PREFLIGHT_LIST_CAP])
+        if len(rows) > PREFLIGHT_LIST_CAP:
+            out.append("  ... and %d more" % (len(rows) - PREFLIGHT_LIST_CAP))
+
+    ov = pf.overlap
+    out.append("")
+    shown = " (first %d shown)" % len(ov.commits) if ov.total > len(ov.commits) else ""
+    out.append(
+        "3. OVERLAP since %s: %d main commit(s) touched the watched paths%s"
+        % ((ov.since or "(no starting point)")[:12], ov.total, shown)
+    )
+    for oc in ov.commits:
+        out.append("  %s %s" % (oc.sha[:12], oc.subject[:100]))
+        out.extend("    plan %s" % p for p in oc.plans)
+
+    out.append("")
+    out.append("4. DEPENDENCIES: %d finding(s)" % len(pf.deps))
+    out.extend("  %s %s -- %s" % (d.level, d.edge, d.why) for d in pf.deps)
+
+    out.append("")
+    if pf.refusals:
+        out.append("5. VERDICT: --write would be REFUSED (%d reason(s)):" % len(pf.refusals))
+        out.extend("  - %s" % r for r in pf.refusals)
+    else:
+        out.append("5. VERDICT: clean; --write may stamp `Revalidated:`")
+    if st.state != PP.FRESH and not pf.refusals:
+        out.append("  (state %s turns fresh once --write stamps the header)" % st.state)
+    return "\n".join(out) + "\n"
+
+
+def _planpreflight_cli(argv):
+    """--plan-preflight <me> <path> [--write] (agent/plans/PLAN-plan-preflight.md, box PF4).
+
+    A DRY RUN BY DEFAULT, and it exits 0 whatever the verdict: the report IS the product, and a loop step that reads it must not be told the read failed. `--write` is the only refusal, and it refuses exactly what `wl_planpreflight.refusals` names.
+
+    NEVER COMMITS, same as every verb in this file. The plan, the investigation rows and the renders land in one commit, and the success message says which.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 3:
+        die(M.CLI_PLANPREFLIGHT_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    rest = argv[2:]
+    write = "--write" in rest
+    rest = [a for a in rest if a != "--write"]
+    for f in rest:
+        if f.startswith("--"):
+            die("unknown flag %r\n\n%s" % (f, M.CLI_PLANPREFLIGHT_USAGE))
+    if len(rest) != 1:
+        die(M.CLI_PLANPREFLIGHT_USAGE)
+
+    import wl_planpreflight as PP
+    import wl_planrec as R
+
+    root = C.project_root(C.project_start())
+    rel = rest[0]
+    try:
+        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
+    except ValueError:
+        rel = rel.lstrip("./")
+    path = pathlib.Path(root) / rel
+    if not path.is_file():
+        die("%s does not exist\n\n%s" % (rel, M.CLI_PLANPREFLIGHT_USAGE))
+    text = path.read_text(encoding="utf-8", errors="replace")
+    pf = PP.preflight(root, rel, text)
+    sys.stdout.write(_preflight_report(pf, me, rel))
+    if not write:
+        sys.stdout.write(M.CLI_PLANPREFLIGHT_DRY)
+        return
+    if pf.refusals:
+        die(
+            M.CLI_PLANPREFLIGHT_REFUSED
+            % {"rel": rel, "why": "\n".join("  - %s" % r for r in pf.refusals)}
+        )
+    today = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+    try:
+        result = PP.apply(
+            root, rel, text, pf.base, pf.survey, pf.citations, pf.deps, pf.overlap, today
+        )
+    except PP.PreflightError as exc:
+        die(M.CLI_PLANPREFLIGHT_REFUSED % {"rel": rel, "why": "  - %s" % exc})
+        return
+    R.write_atomic(path, result.text)
+    R.refresh_index(root, CK.plan_records, CK.plan_box_census)
+    print(
+        M.CLI_PLANPREFLIGHT_WROTE
+        % {
+            "rel": rel,
+            "base": pf.base[:12],
+            "relocated": len(result.relocated),
+            "investigation": "/".join(R.INVESTIGATION_REL),
+            "index": R.INDEX_REL,
+            "queue": PP.QUEUE_REL,
+            "slug": rel.rsplit("/", 1)[-1].removeprefix("PLAN-").removesuffix(".md"),
+        }
+    )
+
+
 def _planinvestigate_cli(argv):
     """--plan-investigate <me> <path> <box> <verdict> <kind>:<tok>... -- <note...> [--write].
 
@@ -3080,6 +3261,9 @@ def main():
         return
     if sys.argv[1:2] == ["--plan-investigate"]:
         _planinvestigate_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--plan-preflight"]:
+        _planpreflight_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])

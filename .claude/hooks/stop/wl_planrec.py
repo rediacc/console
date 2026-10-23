@@ -1988,6 +1988,45 @@ def records(root, plan_records):
 #: check_plan_boxes.py's A1 reports as a box that VANISHED.
 TICK_EVIDENCE = "    (ticked) %s by %s: %s"
 
+#: The stale-plan WARNING `plan_tick` appends to its note (agent/plans/PLAN-plan-preflight.md PF5, Design 3b, operator ruling 2026-10-23 "Lean first, enforcement warns"). A warning and never a refusal: the tick goes through either way.
+PREFLIGHT_TICK_WARN = (
+    "\nWARNING: %(rel)s is not revalidated against the current tree (state %(state)s: %(detail)s).\n"
+    "%(commits)s"
+    "The tick goes through; revalidate the plan before the next box:\n"
+    "    worklist.py --plan-preflight %(me)s %(rel)s"
+)
+#: What revalidating can raise short of a bug in this file: a missing or broken module, an unreadable plan, a git child that failed.
+_PREFLIGHT_ERRORS = (ImportError, OSError, ValueError, AttributeError, subprocess.SubprocessError)
+
+
+def preflight_warning(root, rel, text, me):
+    """ "" when the plan is `fresh` (wl_planpreflight.revalidation_state), else the PREFLIGHT_TICK_WARN paragraph naming up to 5 stale commits. Never raises: an instrument that cannot judge is itself a warning, because the ruling is warn-first and a tick must not fail on the warning's account."""
+    who = (me or "<me>")[:8]
+    try:
+        import wl_planpreflight as PP
+
+        st = PP.revalidation_state(root, rel, text)
+    except _PREFLIGHT_ERRORS as exc:
+        return PREFLIGHT_TICK_WARN % {
+            "rel": rel,
+            "state": "not judged",
+            "detail": "%s: %s" % (type(exc).__name__, exc),
+            "commits": "",
+            "me": who,
+        }
+    if st.state == PP.FRESH:
+        return ""
+    shown = "".join("    stale: %s\n" % c[:12] for c in st.commits[:5])
+    if len(st.commits) > 5:
+        shown += "    ... and %d more\n" % (len(st.commits) - 5)
+    return PREFLIGHT_TICK_WARN % {
+        "rel": rel,
+        "state": st.state,
+        "detail": st.detail,
+        "commits": shown,
+        "me": who,
+    }
+
 
 def _evidence_slot(lines, i):
     """Where a box's evidence line goes: after the box AND its continuation lines.
@@ -2748,6 +2787,8 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
         "box %s moved from open_sigs to done_sigs in %s (%d open, %d done for this plan). "
         "BOTH files must land in the SAME commit." % (sig, LEDGER_REL, row["open"], row["done"])
     )
+    # CLAUSE 3, WARN-FIRST (PLAN-plan-preflight.md PF5, Design 3b): after clause 1 and clause 2, so their refusals keep their order, and judged on the plan as it stood BEFORE this tick. It adds a paragraph to the note and never refuses.
+    note += preflight_warning(root, rel, text, me)
     return out, merge_ledger(doc, rel, row), note
 
 

@@ -2755,6 +2755,47 @@ CLI_PLAN_ORDER = (
     "\n"
 )
 
+CLI_PLANPREFLIGHT_USAGE = (
+    "usage: worklist.py --plan-preflight <me> <agent/plans/PLAN-x.md> [--write]\n"
+    "\n"
+    "Revalidate a plan against the current tree before its first box is worked\n"
+    "(agent/plans/PLAN-plan-preflight.md). The report has five parts: the survey of\n"
+    "every open box against its latest investigation row, the plan's citations\n"
+    "(unresolved, drifted, relocatable), the main commits that touched the paths\n"
+    "the plan watches, its dependencies, and the verdict.\n"
+    "\n"
+    "Without --write nothing is written and the exit code is 0 whatever the verdict.\n"
+    "With --write, a clean verdict stamps `Revalidated: <today> @ <merge base>`,\n"
+    "relocates the drifted citations, writes the `(preflight)` partial lines and the\n"
+    "generated block, and refreshes agent/INDEX.md and agent/plans/QUEUE.md. A\n"
+    "verdict that is not clean refuses the write (exit 2) and names each reason.\n"
+    "Never commits.\n"
+)
+
+CLI_PLANPREFLIGHT_DRY = (
+    "\n---- NOTHING was written. Re-run with --write once the verdict is clean. ----\n"
+)
+
+CLI_PLANPREFLIGHT_REFUSED = (
+    "--plan-preflight --write REFUSED for %(rel)s; nothing was written:\n"
+    "%(why)s\n"
+    "\n"
+    "Each line above is a fact the plan still owes. Investigate the uncovered boxes\n"
+    "(the survey prints a skeleton per box), tick the `present` ones, re-cite the\n"
+    "unrelocatable citations, then run the preflight again.\n"
+)
+
+CLI_PLANPREFLIGHT_WROTE = (
+    "revalidated %(rel)s @ %(base)s (%(relocated)d citation(s) relocated)\n"
+    "\n"
+    "NOT COMMITTED. The plan, the investigation rows the survey wrote and the\n"
+    "renders this run refreshed land in ONE commit:\n"
+    "\n"
+    "  git add -- %(rel)s %(investigation)s %(index)s %(queue)s\n"
+    "  git commit -F <msg> -- %(rel)s %(investigation)s %(index)s %(queue)s\n"
+    "  # subject: chore(plan): preflight %(slug)s @ %(base)s\n"
+)
+
 #: Appended to CLI_PLANINV_USAGE by `--plan-investigate`'s usage path.
 CLI_PLANINV_RETRO_USAGE = (
     "\n"

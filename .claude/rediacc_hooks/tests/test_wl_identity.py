@@ -495,6 +495,8 @@ def drive_l1(fix) -> L1Drive:
             % (inv_rel, inv_selector, inv_rel, inv_rel),
             "[verdict: present]",
         ),
+        # A dry run (no --write) over the same fixture plan: it prints the five-part report and writes nothing. The fixture has no git repository, so the merge base is unresolvable and the report says so, after the same _identity_or_die its --write mode runs.
+        ("--plan-preflight", "--plan-preflight @WHO@ %s" % inv_rel, "5. VERDICT:"),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
         # The effort tuner's verbs (agent/plans/PLAN-stop-hook-effort-tuning.md T2, T5), each driven in its listing mode: a bare `<me>` prints the proposal ledger's summary after the same _identity_or_die their write modes run.
         ("--effort-propose", "--effort-propose @WHO@", "effort proposals:"),
