@@ -1073,6 +1073,15 @@ _PINS_WRITE_RE = re.compile(
     r"|\bcurl\b[^\n|;&]*\s(?:--data(?:-[a-z]+)?|--form(?:-string)?|--upload-file|--json)(?=[\s=]|$)",
     re.IGNORECASE,
 )
+_PINS_QUOTED_RE = re.compile(r"'[^'\n]*'|\"(?:[^\"\\\n]|\\.)*\"")
+
+
+def _pins_writes(run: str) -> bool:
+    """True when a run script holds a write command. The curl clauses stop at a command separator (`|`, `;`, `&`), so a separator INSIDE a quoted argument, such as the `&` of `"https://x?a=1&b=2"`, is blanked first; otherwise the scan would end inside the URL and miss a later `-X POST` or `-d`."""
+    blanked = _PINS_QUOTED_RE.sub(lambda m: re.sub(r"[|;&]", "_", m.group(0)), run)
+    return bool(_PINS_WRITE_RE.search(blanked))
+
+
 # The secrets context can only be read inside an expression: a `${{ }}` anywhere, or a bare `if:` condition. Any use of the word there counts (`secrets.NAME`, `secrets['NAME']`, `toJSON(secrets)`, `secrets == ''`) except `secrets.GITHUB_TOKEN`, read-only under `contents: read`. The workflow needs no secret, so the check does not judge which one could write.
 _PINS_EXPR_RE = re.compile(r"\$\{\{(.*?)\}\}", re.DOTALL)
 # The exemption is an ADMITTING shape, so it stays exact inside the case-insensitive read pattern: `secrets.github_token` is refused and costs a rewrite.
@@ -1417,7 +1426,7 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
             if i in admitted:
                 pass
             elif (
-                _PINS_WRITE_RE.search(run)
+                _pins_writes(run)
                 or any(w in uses.lower() for w in _PINS_WRITE_USES)
                 or _pins_secret(st, st.get("if"))
             ):

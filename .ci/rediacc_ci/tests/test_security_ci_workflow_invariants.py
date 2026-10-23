@@ -2195,6 +2195,8 @@ def test_the_default_token_is_exempt_only_in_its_exact_spelling() -> None:
         "curl -Tfile https://api.github.com/x",
         "curl --form-string f=x https://api.github.com/x",
         "curl -sSX POST https://api.github.com/x",
+        'curl "https://api.github.com/x?a=1&b=2" -X POST',
+        "curl 'https://api.github.com/x?a=1&b=2' -d @body",
     ],
 )
 def test_a_curl_method_or_body_flag_is_a_write(run) -> None:
