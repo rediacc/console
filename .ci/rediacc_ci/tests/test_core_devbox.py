@@ -431,10 +431,19 @@ TWIN_BIND_SPELLING = "/.ci/lib/../../.devcontainer/"
 PORT_BIND_SPELLING = "/.devcontainer/"
 
 
-def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
-    """The comparison the whole file stands on, minus the Rule T deltas."""
+# The twin pinned the proxy image at `traefik:v3.6`; the port reads `DEVBOX_PROXY_IMAGE`, which moves with the product proxy's pin (e52a9d8f0). The frozen transcripts keep the old tag, so every comparison folds it to the port's rather than re-recording a golden whose D12 spelling must stay.
+TWIN_PROXY_IMAGE = '"traefik:v3.6"'
+
+
+def _fold_twin_spellings(scenario: str, old_out: str) -> str:
     if scenario in BIND_SPELLING_SCENARIOS:
         old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)
+    return old_out.replace(TWIN_PROXY_IMAGE, '"%s"' % devbox.DEVBOX_PROXY_IMAGE)
+
+
+def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
+    """The comparison the whole file stands on, minus the Rule T deltas."""
+    old_out = _fold_twin_spellings(scenario, old_out)
     if scenario in NEWLINE_SCENARIOS:
         return _newline_delta_holds(scenario, old_out, new_out)
     return _without_delta_labels(old_out, scenario) == _without_delta_labels(new_out, scenario)
@@ -449,8 +458,7 @@ def divergence(scenario: str, old_out: str, new_out: str) -> str:
 
     A bare `assert equivalent(...)` prints pytest's elided repr of two transcripts tens of kilobytes long, which names no line: runs 38389205702 and 38409515814 each cost a round trip to learn WHAT diverged. A `docker run` argv is one long line, so each side is cut around the first differing column.
     """
-    if scenario in BIND_SPELLING_SCENARIOS:
-        old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)
+    old_out = _fold_twin_spellings(scenario, old_out)
     old_lines = _without_delta_labels(old_out, scenario)
     new_lines = _without_delta_labels(new_out, scenario)
     found = [
