@@ -126,7 +126,7 @@ PRODUCTION_GUARD_IS_UNREACHABLE = True
 A_VALUELESS_NAME_DEPLOYS_A_WORKER_CALLED_TRUE = True
 A_NON_PR_NAME_IS_ACCEPTED_VERBATIM = True
 
-# The generated preview config (twin :90-133), byte for byte after expansion.
+# The generated preview config (twin :90-133), byte for byte after expansion, with ONE Rule-T change: the `[observability]` tables. The twin enabled logs and traces, which Cloudflare persists by default; PLAN-telemetry-export T15 turns them off with persist = false, and the golden records carry that change as `intentional`.
 #
 # THE U+2014 ON THE `trailingSlash` COMMENT IS THE TWIN'S, written as an escape rather than as the character itself, for the reason in the module docstring. THE BACKTICKS on the `trailingSlash` line are `\`` in the twin's UNQUOTED heredoc, which bash renders as bare backticks; there is no command substitution in the emitted bytes.
 #
@@ -151,16 +151,19 @@ ALLOWED_EMAIL_DOMAINS = \""""
 # off the wrong channel. See private/account/src/types/env.ts.
 ENVIRONMENT = "preview"
 
+# A preview has no OTLP destination, and Cloudflare must store nothing from it
+# (persist = false), so logs and traces are off. Mirrors wrangler.toml.
 [observability]
-enabled = true
+enabled = false
 
 [observability.logs]
-enabled = true
-invocation_logs = false # Disabled to reduce high-volume per-request log noise/cost.
+enabled = false
+invocation_logs = false
+persist = false
 
 [observability.traces]
-enabled = true
-head_sampling_rate = 1
+enabled = false
+persist = false
 
 [assets]
 directory = "./dist"

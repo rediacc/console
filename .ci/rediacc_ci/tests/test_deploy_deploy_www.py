@@ -681,6 +681,27 @@ def test_the_generated_toml_ends_with_exactly_one_newline() -> None:
     assert not body.endswith("\n\n")
 
 
+def test_a_preview_worker_persists_no_logs_or_traces() -> None:
+    """PLAN-telemetry-export T15: Cloudflare persists a Worker's logs and traces unless told not to, and a preview has no OTLP destination, so every observability table is off and both signals carry `persist = false`."""
+    body = port.preview_toml("pr-1", "db", "u")
+    tables = {}
+    current = None
+    for line in body.splitlines():
+        if line.startswith("["):
+            current = line
+            tables[current] = []
+        elif current is not None and line and not line.startswith("#"):
+            tables[current].append(line)
+    assert tables["[observability]"] == ["enabled = false"]
+    assert tables["[observability.logs]"] == [
+        "enabled = false",
+        "invocation_logs = false",
+        "persist = false",
+    ]
+    assert tables["[observability.traces]"] == ["enabled = false", "persist = false"]
+    assert "head_sampling_rate" not in body
+
+
 def test_both_credentials_are_read_with_literal_keys() -> None:
     """THE ENV-REGISTRY SCANNER MUST BE ABLE TO SEE BOTH INPUTS.
 
