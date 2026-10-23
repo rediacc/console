@@ -1151,6 +1151,18 @@ def _step_sources() -> list[pathlib.Path]:
 
 
 _STEP_NAME_RE = re.compile(r"^\s*-\s+name:\s*(.+?)\s*$", re.MULTILINE)
+_LOCAL_USES_RE = re.compile(r"^\s*(?:-\s+)?uses:\s*(\./\.github/actions/[\w.-]+)\s*$", re.MULTILINE)
+
+
+def _local_action_labels() -> list[str]:
+    """The label the runner gives an unnamed `uses: ./.github/actions/<x>` step, for every local action some workflow or action uses."""
+    return sorted(
+        {
+            "Run " + m.group(1)
+            for f in _step_sources()
+            for m in _LOCAL_USES_RE.finditer(f.read_text(encoding="utf-8"))
+        }
+    )
 
 
 def _mutant(gate, tmp_path: pathlib.Path) -> pathlib.Path:
@@ -1374,9 +1386,9 @@ def test_every_infra_pattern_names_a_step_that_exists(gate):
         "const m=require(process.argv[1]);const names=JSON.parse(process.argv[2]);"
         "process.stdout.write(JSON.stringify(m.INFRA_STEP_PATTERNS"
         ".filter((re)=>!names.some((n)=>re.test(n))).map((re)=>re.source)))",
-        json.dumps(names),
+        json.dumps(names + _local_action_labels()),
     )
-    gate.assert_eq(unmatched, [], "every INFRA_STEP_PATTERNS entry matches a real step name")
+    gate.assert_eq(unmatched, [], "every INFRA_STEP_PATTERNS entry matches a real step name or an unnamed-uses label")
     gate.log_pass("every infra pattern names a step in .github/workflows or .github/actions")
 
 
@@ -1534,3 +1546,44 @@ def test_monitor_timeout_kill_in_an_infra_step_at_attempt_2_is_not_retried(gate,
     trace = run_monitor(gate, tmp_path, [_killed(LEG, "Setup KVM Host")], run)
     _assert_cancelled_without_retry(gate, trace)
     gate.log_pass("at attempt 2 a timeout kill in an infra step is not retried")
+
+
+_UNMATCHED_JS = (
+    "const m=require(process.argv[1]);const names=JSON.parse(process.argv[2]);"
+    "process.stdout.write(JSON.stringify(m.INFRA_STEP_PATTERNS"
+    ".filter((re)=>!names.some((n)=>re.test(n))).map((re)=>re.source)))"
+)
+_RUN_ACTIONS = ("setup-workspace", "setup-node-npm", "free-disk-space", "apt-mirror")
+
+
+def test_unnamed_infra_action_steps_are_infra(gate):
+    """Run 39840878669: 'Run ./.github/actions/setup-workspace' stalled 512 s and was not classed infra."""
+    labels = ["Run ./.github/actions/" + a for a in _RUN_ACTIONS]
+    labels += ["Run ./.github/actions/app-token", "Run ./.github/actions/profiler", "Run ./.github/actions/setup-workspace2"]
+    verdicts = _node_eval(
+        gate,
+        "const m=require(process.argv[1]);"
+        "process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map((n)=>m.isInfraStep(n,m.INFRA_STEP_PATTERNS,[]))))",
+        json.dumps(labels),
+    )
+    gate.assert_eq(verdicts, [True] * len(_RUN_ACTIONS) + [False] * 3, "only the four infra actions' unnamed steps are infra")
+    gate.log_pass("unnamed setup-workspace, setup-node-npm, free-disk-space and apt-mirror steps are infra")
+
+
+def test_every_infra_run_action_pattern_has_a_uses_line(gate):
+    """Liveness with a fail-before control: a renamed action leaves its 'Run ./.github/actions/<x>' pattern unmatched."""
+    live = _local_action_labels()
+    gate.assert_eq(len(live) >= 4, True, "the local action uses were read (%r)" % live)
+    infra = ["Run ./.github/actions/" + a for a in _RUN_ACTIONS]
+    unmatched = _node_eval(gate, _UNMATCHED_JS, json.dumps([n for n in live if n not in infra] + live))
+    run_patterns = [u for u in unmatched if u.startswith("^Run ")]
+    gate.assert_eq(run_patterns, [], "every 'Run ./.github/actions/<x>' pattern has a uses: line")
+    # Control: with the setup-workspace use renamed away the same check must go red.
+    renamed = [n for n in live if not n.endswith("/setup-workspace")]
+    broken = _node_eval(gate, _UNMATCHED_JS, json.dumps(renamed))
+    gate.assert_eq(
+        [u for u in broken if "setup-workspace" in u],
+        ["^Run \\.\\/\\.github\\/actions\\/setup-workspace$"],
+        "a renamed setup-workspace action is reported",
+    )
+    gate.log_pass("each Run ./.github/actions/<x> pattern matches a uses: line, and a rename reds")

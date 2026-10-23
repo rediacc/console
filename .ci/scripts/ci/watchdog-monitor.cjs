@@ -600,6 +600,11 @@ const INFRA_STEP_PATTERNS = [
   /^Install renet$/,
   /^Install the pinned npm$/,
   /^Setup workspace$/,
+  // An UNNAMED `uses: ./.github/actions/<x>` step is labelled "Run ./.github/actions/<x>" by the runner. Run 39840878669 (2026-10-23) lost 'Build (CLI) / CLI (mac-x64)' silent 512 s in "Run ./.github/actions/setup-workspace" (npm install). Only the composite actions that install or prepare the runner are infra: setup-workspace (npm install / node_modules restore), setup-node-npm (pinned npm download), free-disk-space (runner deletion), apt-mirror (apt source rewrite). app-token, bws-secrets, setup-aws and profiler stay out: a stall there is a credential or API fault, not the runner. test_every_infra_run_action_pattern_has_a_uses_line reds when an action is renamed.
+  /^Run \.\/\.github\/actions\/setup-workspace$/,
+  /^Run \.\/\.github\/actions\/setup-node-npm$/,
+  /^Run \.\/\.github\/actions\/free-disk-space$/,
+  /^Run \.\/\.github\/actions\/apt-mirror$/,
   // KVM host and VM preparation.
   /^Setup KVM Host$/,
   /^Enable KVM$/,
