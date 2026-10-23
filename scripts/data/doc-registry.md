@@ -1007,7 +1007,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/test | 2 | .sh 1, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/lib | 1 | .sh 1 |
-| .ci/shadow | 287 | .jsonl 286, .json 1 |
+| .ci/shadow | 239 | .jsonl 238, .json 1 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/apps/heartbeat | 2 | (none) 1, .yaml 1 |
