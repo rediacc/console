@@ -2194,6 +2194,7 @@ def test_the_default_token_is_exempt_only_in_its_exact_spelling() -> None:
         "curl -sSd x https://api.github.com/x",
         "curl -Tfile https://api.github.com/x",
         "curl --form-string f=x https://api.github.com/x",
+        "curl -sSX POST https://api.github.com/x",
     ],
 )
 def test_a_curl_method_or_body_flag_is_a_write(run) -> None:
@@ -2209,6 +2210,8 @@ def test_a_curl_method_or_body_flag_is_a_write(run) -> None:
         "curl -fsSL https://example.com/put/patch/post.txt",
         "curl -x http://proxy:3128 -D headers.txt https://example.com/a",
         "curl -fsSL -o out https://example.com/a",
+        "curl -fsSL https://example.com/a | cut -d: -f1",
+        "curl -fsSL https://example.com/a | grep -Fq x && echo ok",
     ],
 )
 def test_a_method_word_in_a_curl_url_is_a_read(run) -> None:
