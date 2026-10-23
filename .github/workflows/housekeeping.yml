@@ -231,6 +231,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
       - name: Fetch secrets from Bitwarden
         uses: ./.github/actions/bws-secrets
         with:

@@ -533,6 +533,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
       # The gate's controls start a fake account server under node before any build.
       - uses: ./.github/actions/setup-node-npm
 
