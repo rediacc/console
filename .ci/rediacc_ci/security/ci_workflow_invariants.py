@@ -1065,14 +1065,17 @@ PINS_SOAKED_WORKFLOW = "CI - OBS Mirror"
 _PINS_APPLY_RE = re.compile(r"\bpins\s+--\s+apply-soaked\b")
 # CASE. GitHub resolves context names and the steps context without regard to case (actions/runner DictionaryContextData looks keys up with StringComparer.OrdinalIgnoreCase, and ExecutionContext.ExpressionValues and StepsContext are built from it), and the env context too on a Windows runner (StepsRunner.cs, `#if OS_WINDOWS`).
 # So every pattern below that recognises a READ (secrets, steps, env, BWS_* names, write commands, write actions) matches in any case, since a missed spelling is a hole; every pattern that ADMITS a shape (the access-token, client-id, private-key and token expressions, the preset, the action paths, the blanking and scrub lines) stays exact, since a refused spelling only costs a rewrite.
-# Write commands match in any case as well: a Windows runner resolves `Git` to git.
+# Write commands match in any case as well: a Windows runner resolves `Git` to git. A curl write is a method named by `-X`/`--request` or a body flag (`-d`, `-F`, `-T`, `--data*`, `--form`, `--upload-file`, `--json`), never a method word elsewhere on the line, so a URL such as `.../delete-notes` is a read; the short flags stay case-exact because curl's `-x` is the proxy and `-D` dumps headers.
 _PINS_WRITE_RE = re.compile(
-    r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b|\bcurl\b[^\n]*\b(POST|PUT|PATCH|DELETE)\b",
+    r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b"
+    r"|\bcurl\b[^\n]*(?:(?-i:-X)\s*|--request(?:=|\s+))['\"]?(POST|PUT|PATCH|DELETE)\b"
+    r"|\bcurl\b[^\n]*\s(?:(?-i:-d|-F|-T)|--data(?:-[a-z]+)?|--form|--upload-file|--json)(?=[\s=]|$)",
     re.IGNORECASE,
 )
 # The secrets context can only be read inside an expression: a `${{ }}` anywhere, or a bare `if:` condition. Any use of the word there counts (`secrets.NAME`, `secrets['NAME']`, `toJSON(secrets)`, `secrets == ''`) except `secrets.GITHUB_TOKEN`, read-only under `contents: read`. The workflow needs no secret, so the check does not judge which one could write.
 _PINS_EXPR_RE = re.compile(r"\$\{\{(.*?)\}\}", re.DOTALL)
-_PINS_SECRET_RE = re.compile(r"\bsecrets\b(?!\s*\.\s*GITHUB_TOKEN\b)", re.IGNORECASE)
+# The exemption is an ADMITTING shape, so it stays exact inside the case-insensitive read pattern: `secrets.github_token` is refused and costs a rewrite.
+_PINS_SECRET_RE = re.compile(r"\bsecrets\b(?!\s*\.\s*(?-i:GITHUB_TOKEN)\b)", re.IGNORECASE)
 
 
 def _pins_secret(value: object, condition: object = None) -> bool:

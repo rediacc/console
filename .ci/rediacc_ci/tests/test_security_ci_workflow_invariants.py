@@ -2167,11 +2167,47 @@ def test_a_write_in_any_case_is_still_a_write(step) -> None:
     assert pins_kinds(doc) == ["pins-soaked-writes"]
 
 
-def test_the_default_token_in_any_case_is_still_not_a_write_secret() -> None:
+def test_the_default_token_is_exempt_only_in_its_exact_spelling() -> None:
+    doc = token_doc()
+    _tok_steps(doc).append(
+        {"uses": "some/action@sha", "with": {"t": "${{ secrets.GITHUB_TOKEN }}"}}
+    )
+    assert pins_kinds(doc) == []
     doc = token_doc()
     _tok_steps(doc).append(
         {"uses": "some/action@sha", "with": {"t": "${{ secrets.github_token }}"}}
     )
+    assert pins_kinds(doc) == ["pins-soaked-writes"]
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        "curl --request PUT https://api.github.com/x",
+        "curl -XDELETE https://api.github.com/x",
+        "curl -d @body.json https://api.github.com/x",
+        "curl --data-binary @f https://api.github.com/x",
+        "curl -F f=@x https://api.github.com/x",
+        "curl --json '{}' https://api.github.com/x",
+    ],
+)
+def test_a_curl_method_or_body_flag_is_a_write(run) -> None:
+    doc = token_doc()
+    _tok_steps(doc).append({"run": run})
+    assert pins_kinds(doc) == ["pins-soaked-writes"]
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        "curl -fsSL https://example.com/delete-notes -o notes",
+        "curl -fsSL https://example.com/put/patch/post.txt",
+        "curl -x http://proxy:3128 -D headers.txt https://example.com/a",
+    ],
+)
+def test_a_method_word_in_a_curl_url_is_a_read(run) -> None:
+    doc = token_doc()
+    _tok_steps(doc).append({"run": run})
     assert pins_kinds(doc) == []
 
 
