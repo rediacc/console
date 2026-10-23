@@ -1801,9 +1801,28 @@ PY_TARGET_CASES = [
         [".claude/hooks/stop/wl_planpreflight.py"],
     ),
     ("python3 - <<'EOF'\nopen('docs/x.md','w').write('see docs/other.md')\nEOF", ["docs/x.md"]),
-    ("python3 - <<'EOF'\nf='docs/x.md'\nwith open(f, 'a') as h:\n    h.write('docs/o.md')\nEOF", ["docs/x.md"]),
-    ("python3 - <<'EOF'\nfrom pathlib import Path\nPath('docs/y.md').write_text('docs/o.md')\nEOF", ["docs/y.md"]),
+    (
+        "python3 - <<'EOF'\nf='docs/x.md'\nwith open(f, 'a') as h:\n    h.write('docs/o.md')\nEOF",
+        ["docs/x.md"],
+    ),
+    (
+        "python3 - <<'EOF'\nfrom pathlib import Path\nPath('docs/y.md').write_text('docs/o.md')\nEOF",
+        ["docs/y.md"],
+    ),
     ("python3 - <<'EOF'\nprint(open('docs/in.md').read(), 'docs/o.md')\nEOF", []),
+    (
+        "python3 - <<'EOF'\nimport io\nio.open('docs/x.md','w').write('docs/o.md')\nEOF",
+        ["docs/x.md"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport tarfile\ntarfile.open('docs/out.tar','w').close()\nEOF",
+        ["docs/out.tar"],
+    ),
+    ("python3 - <<'EOF'\nimport gzip\nprint(gzip.open('docs/in.gz').read(), 'docs/o.md')\nEOF", []),
+    (
+        "python3 - <<'EOF'\nimport os\nos.open('docs/f.bin', os.O_WRONLY | os.O_CREAT)\nEOF",
+        ["docs/f.bin"],
+    ),
     # An unresolvable target keeps the conservative reading: every path literal counts.
     (
         "python3 - <<'EOF'\nimport sys\nopen(sys.argv[1],'w').write('docs/o.md')\nEOF",

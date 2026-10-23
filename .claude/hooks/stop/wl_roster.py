@@ -953,7 +953,7 @@ _BASH_MAYBE_WRITES = re.compile(
 _PY_WRITES = re.compile(
     r"open\((?:[^()]|\([^()]*\))*?,\s*(?:mode\s*=\s*)?['\"][rbt]*[wax+][rbtwax+]*['\"]"
     r"|\.write_(?:text|bytes)\(|\.unlink\(|\.rename\(|\.touch\("
-    r"|\bos\.(?:remove|unlink|rename|replace|rmdir)\(|\bshutil\.(?:rmtree|move|copy\w*)\("
+    r"|\bos\.(?:open|remove|unlink|rename|replace|rmdir)\(|\bshutil\.(?:rmtree|move|copy\w*)\("
 )
 # A string literal that reads as a repo path: path characters only, with a `/` or a file extension. `HEAD:x` and `utf-8` are not.
 _PY_PATH_LIT = re.compile(r"""['"]([A-Za-z0-9_.@+-][A-Za-z0-9_./@+-]*)['"]""")
@@ -1139,7 +1139,11 @@ def _py_written_paths(text):
         return every
     bound = {}
     for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+        ):
             bound.setdefault(node.targets[0].id, []).append(node.value)
         elif isinstance(node, ast.For) and isinstance(node.target, ast.Name):
             bound.setdefault(node.target.id, []).append(node.iter)
@@ -1171,8 +1175,14 @@ def _py_written_paths(text):
             return out
         if isinstance(node, ast.Call):
             f = node.func
-            fname = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else ""
-            if fname in ("Path", "PurePath", "str", "fspath") and len(node.args) == 1 and not node.keywords:
+            fname = (
+                f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else ""
+            )
+            if (
+                fname in ("Path", "PurePath", "str", "fspath")
+                and len(node.args) == 1
+                and not node.keywords
+            ):
                 return strs(node.args[0], depth + 1)
             return None
         if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Div)):
@@ -1209,12 +1219,34 @@ def _py_written_paths(text):
             continue
         f = node.func
         attr = f.attr if isinstance(f, ast.Attribute) else None
-        owner = f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else None
+        owner = (
+            f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else None
+        )
         args = node.args
         if isinstance(f, ast.Name) and f.id == "open" and args:
             if mode_writes(node, 1):
                 take(args[0])
-        elif attr == "open" and owner not in ("os", "io", "codecs", "gzip", "bz2", "lzma", "tarfile", "zipfile"):
+        elif (
+            attr == "open"
+            and owner in ("io", "codecs", "gzip", "bz2", "lzma", "tarfile", "zipfile")
+            and args
+        ):
+            # Module-level opens take (path, mode, ...) like the builtin.
+            if mode_writes(node, 1):
+                take(args[0])
+        elif attr == "open" and owner == "os" and args:
+            # os.open takes integer flags, not a mode string: count the target, conservatively.
+            take(args[0])
+        elif attr == "open" and owner not in (
+            "os",
+            "io",
+            "codecs",
+            "gzip",
+            "bz2",
+            "lzma",
+            "tarfile",
+            "zipfile",
+        ):
             if mode_writes(node, 0):
                 take(f.value)
         elif attr in ("write_text", "write_bytes", "unlink", "touch"):
