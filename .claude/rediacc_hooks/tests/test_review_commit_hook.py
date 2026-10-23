@@ -1589,3 +1589,40 @@ def test_drop_foreign_reviews_reports_a_partial_delete_and_rewrites_the_ledger_f
     assert "%s.md" % shas[1] in text, text
     assert not world.review_file(shas[0]).exists()
     assert world.review_file(shas[1]).exists()
+
+
+def test_mark_fixed_admits_a_test_file_for_a_missing_test_finding(world):
+    """2026-10-23: a "no test for this bump" finding anchored at one file was refused ("does not touch") for the fix that necessarily adds a test elsewhere. A test path among the fix's files, or an explicit `--test <path>` the fix touches, now closes it; an unrelated sha is still refused."""
+    world.answer(
+        [{"severity": "high", "file": "f.py", "line": 2, "claim": "no test covers this bump"}]
+    )
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    unrelated = world.commit("other.py", body="z = 1\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated], "deadbeef")
+    test_fix = world.commit("tests/test_f.py", body="def test_f():\n    assert True\n")
+    # --test names a path the fix did not touch: refused, and an unrelated sha with a named test too.
+    with pytest.raises(ValueError, match="does not touch the named test"):
+        R.mark(
+            world.repo, BRANCH, fid, "fixed", [unrelated, "--test", "tests/test_f.py"], "deadbeef"
+        )
+    with pytest.raises(ValueError, match="not a test path"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated, "--test", "other.py"], "deadbeef")
+    R.mark(world.repo, BRANCH, fid, "fixed", [test_fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % test_fix)
+
+
+def test_mark_fixed_test_flag_admits_a_test_for_any_claim(world):
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    test_fix = world.commit("tests/test_f.py", body="def test_f():\n    assert True\n")
+    # The default claim ("returns None") is not about tests: the bare sha is refused, `--test` admits it.
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [test_fix], "deadbeef")
+    R.mark(world.repo, BRANCH, fid, "fixed", [test_fix, "--test", "tests/test_f.py"], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % test_fix)

@@ -2929,6 +2929,17 @@ def _waive(finding_id, args, items, asked_ok):
     return "waived #%s ASKED:%sZ" % (item, minute)
 
 
+TEST_CLAIM_RE = re.compile(r"\b(tests?|untested|coverage)\b", re.IGNORECASE)
+_TEST_PATH_RE = re.compile(
+    r"(^|/)(tests?|__tests__)/|(^|/)test[_-][^/]*$|[_.-]tests?\.[A-Za-z]+$|\.(test|spec)\.[A-Za-z]+$"
+)
+
+
+def is_test_path(path):
+    """True for a path that names a test file (a tests/ directory, test_*, *_test.*, *.test.*, *.spec.*)."""
+    return bool(_TEST_PATH_RE.search(path))
+
+
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
@@ -2938,8 +2949,16 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
     repo = repo_from_label(root, review.repo)
     stamp = "%s %s" % (me[:8], now_iso(now))
     if kind == "fixed":
+        args = list(args)
+        test_path = ""
+        if "--test" in args:
+            i = args.index("--test")
+            if i + 1 >= len(args):
+                raise ValueError("--test takes the path of the test the fix touches")
+            test_path = args[i + 1].strip()
+            del args[i : i + 2]
         if len(args) != 1:
-            raise ValueError("fixed takes exactly one sha")
+            raise ValueError("fixed takes exactly one sha (and optionally --test <path>)")
         fix = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % args[0])
         if not fix:
             raise ValueError("%s does not resolve to a commit in %s" % (args[0], review.repo))
@@ -2976,10 +2995,17 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             if stub_rc == 0
             else wl_store.plan_stub_target(str(pathlib.Path(repo) / finding.file))
         )
+        if test_path and test_path not in touched:
+            raise ValueError("%s does not touch the named test %s" % (fix[:12], test_path))
+        if test_path and not is_test_path(test_path):
+            raise ValueError("%s is not a test path" % test_path)
         if (
             finding.file not in touched
             and not set(renamed.splitlines()) & set(touched)
             and not (moved and moved in touched)
+            # A "no test for this change" finding is closed by a test elsewhere: the fix may touch a test file instead of the anchored one, named by --test or found among the paths the fix touches.
+            and not test_path
+            and not (TEST_CLAIM_RE.search(finding.claim) and any(map(is_test_path, touched)))
         ):
             raise ValueError("%s does not touch %s" % (fix[:12], finding.file))
         resolution = "fixed %s | %s" % (fix, stamp)
@@ -3088,7 +3114,7 @@ def commit_reviews(root, branch, run=subprocess.run):
 
 VERB_USAGE = """usage:
   worklist.py --review-mark <me>                                       list the branch's open findings
-  worklist.py --review-mark <me> <finding-id> fixed <sha>              the fix: on the branch, after the reviewed commit, touching the file
+  worklist.py --review-mark <me> <finding-id> fixed <sha> [--test <path>]  the fix: on the branch, after the reviewed commit, touching the file (or the named test, or a test file for a missing-test finding)
   worklist.py --review-mark <me> <finding-id> not-a-bug <evidence...>  >= 20 chars citing an existing path:line or a sha on the branch
   worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z
                                                                        an operator-only triaged item naming the finding id, and the minute of the operator's AskUserQuestion answer

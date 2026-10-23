@@ -45,6 +45,9 @@ CHAIN = "pre-bash"
 # An assignment's value may be bare or quoted with spaces inside (`TURBO_PUSH_REASON='ci-cd: ...'` is the form the turbo push guard demands on this same command), and the hatch may sit anywhere among the leading assignments.
 PREFIX_HATCH = r"""(^|[;&|(][ \t]*)([A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|"[^"]*"|[^ \t'"])*[ \t]+)*PR_BRANCH_DATE_OK=1[ \t]+([A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|"[^"]*"|[^ \t'"])*[ \t]+)*gh[ \t]+pr[ \t]+create"""
 ORDER = 23
+SUBMODULE_REPOS = frozenset(
+    "rediacc/%s" % name for name in ("account", "renet", "elite", "homebrew-tap")
+)
 
 # The escape hatch. Without it a deliberately long-lived branch (resuming a multi-day wave onto its existing PR) can never file its PR, which is the shape that gets a guard bypassed rather than obeyed.
 DEFECT = ('if ev.env("PR_BRANCH_DATE_OK") != "":', "if False:")
@@ -121,6 +124,7 @@ def run(ev):
 
     # The branches these PRs would come from: an explicit --head wins, else the checkout. Each walked create reads its own head the way gh does (`shellscan.gh_args` over the expanded argv): `-dH x`, `-Hx`, `-H=x` and `--head=x` name x, `-t --head` titles a PR "--head" and names none, and `--head $B` names what B was assigned earlier in the command. A head the walk cannot evaluate (`--head "$(git branch --show-current)"`) falls back to the checkout, which is what such a substitution almost always names; the text reader the walk replaced did the same for any `$`.
     heads = []
+    repos = []
     runs = shellscan.gh_pr_runs(cmd, "create")
     if runs:
         for run_ in runs:
@@ -129,6 +133,7 @@ def run(ev):
                 continue
             head = parsed.last("head") or ""
             heads.append("" if shellscan.unresolved(head) else head)
+            repos.append(parsed.last("repo") or "")
     else:
         matches = hookio.grep_o(HEAD_FLAG, hookio._printf_line(scan))
         heads.append(
@@ -137,12 +142,19 @@ def run(ev):
             else ""
         )
     checkout = None
-    for head in heads:
+    for i, head in enumerate(heads):
         branch = head
         if branch == "":
             if checkout is None:
                 checkout = hookio.git_out(["-C", cwd, "branch", "--show-current"])
             branch = checkout
+        # A submodule PR must carry the console's live branch name (the Submodule Branches check matches names), so a head equal to the console checkout's branch is admitted whatever its date; renaming the console branch would break the match with the open console PR (2026-10-23, `--repo rediacc/account --head 1020-1`).
+        repo = repos[i] if i < len(repos) else ""
+        if repo in SUBMODULE_REPOS and branch != "":
+            if checkout is None:
+                checkout = hookio.git_out(["-C", cwd, "branch", "--show-current"])
+            if branch == checkout:
+                continue
         refusal = _stale(branch, cwd)
         if refusal:
             ev.warn_raw(refusal)
