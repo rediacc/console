@@ -438,3 +438,13 @@ def test_an_empty_name_value_does_not_capture_the_next_line(ct, tmp_path):
     (wf / "spaced.yml").write_text("name:   Spaced Name  \non: push\n")
     known = {k["stem"]: k["name"] for k in ct._workflows(str(tmp_path))}
     assert known == {"empty": ".github/workflows/empty.yml", "spaced": "Spaced Name"}
+
+
+def test_a_crlf_workflow_name_carries_no_carriage_return(ct, tmp_path):
+    """_workflows reads with read_text, whose universal newlines turn CRLF into LF before _TOP_NAME runs, so a CRLF file yields the bare name."""
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "crlf.yml").write_bytes(b"name: Release to Edge\r\non: push\r\n")
+    (wf / "crlfempty.yml").write_bytes(b"name:\r\non: push\r\n")
+    known = {k["stem"]: k["name"] for k in ct._workflows(str(tmp_path))}
+    assert known == {"crlf": "Release to Edge", "crlfempty": ".github/workflows/crlfempty.yml"}
