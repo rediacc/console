@@ -100,16 +100,18 @@ Promoted: 0 of 2 plans done, 16 of 206 boxes done (7%).
 13. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
 14. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 15. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-16. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-17. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-18. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started, dep-blocked
-19. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-20. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-21. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-22. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-23. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-24. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-25. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+16. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+18. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+19. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- P1, draft, not started
+20. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started, dep-blocked
+21. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+22. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+23. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+25. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+26. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
