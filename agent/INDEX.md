@@ -520,7 +520,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md` | executing | 81 | 1 | 6 | 16086 |
-| `agent/plans/PLAN-pins-command.md` | approved | 85 | 1 | 12 | 27855 |
+| `agent/plans/PLAN-pins-command.md` | approved | 86 | 0 | 13 | 28231 |
 | `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 50 | 7 | 0 | 7813 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 71 | 1 | 15 | 14314 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 127 | 9 | 0 | 23411 |
@@ -565,7 +565,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
-| `agent/plans/PLAN-w7p5a-real-run-dispatch.md` | in-progress | 755 | 2 | 7 | 92666 |
+| `agent/plans/PLAN-w7p5a-real-run-dispatch.md` | in-progress | 756 | 1 | 8 | 92929 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-www-bundle-determinism.md` | compacted | 38 | 0 | 0 | 2592 |

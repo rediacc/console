@@ -55,37 +55,26 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 <!-- queue:inflight:begin -->
 - Mode: effort low; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
-- Phase: babysit on PR #601 (branch 1020-1, session d778be9d, since 2026-10-21T18:34:27Z).
-- Branch: 1020-1, PR #601 open.
-- Plans on the PR (12):
-  - agent/plans/_done/PLAN-vm-check.md -- 8 of 8 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/_done/PLAN-account-vm-check.md -- 7 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
-  - agent/plans/_done/PLAN-tooling-transformation.md -- 154 of 154 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
-  - agent/plans/_done/PLAN-backup-credential-isolation.md -- 8 of 8 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 11 of 11 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-shell-sandbox-readonly-view.md -- 6 of 7 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-pins-command.md -- 12 of 13 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- 6 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
-  - agent/plans/_done/PLAN-remove-cross-session-messaging.md -- 13 of 13 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-e2e-browse-at-ci.md -- 8 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
-  - agent/plans/PLAN-backup-program.md -- 0 of 186 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+- Phase: build.
+- Branch: 1023-1, no PR yet.
+- Plans on the PR (1):
+  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 361 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 1: #1732ee99 (worker:3176141, d778be9d).
-- Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 5; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
+  - epic 9f92c43e, no plan, 1 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:aa778c773f8ac1729.
+- Leased items: 2: #1732ee99 (worker:2310191, d778be9d), #ff7812f9 (worker:aa778c773f8ac1729, d778be9d).
+- Next plan: agent/plans/PLAN-pins-command.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 2 of 5 plans done, 42 of 230 boxes done (18%).
+Promoted: 3 of 5 plans done, 43 of 230 boxes done (18%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
-| 2 | PLAN-pins-command.md | 12/13 | 1 open |
+| 2 | PLAN-pins-command.md | 13/13 | done |
 | 3 | PLAN-shell-sandbox-readonly-view.md | 7/7 | done |
 | 4 | PLAN-e2e-browse-at-ci.md | 8/8 | done |
 | 5 | PLAN-backup-program.md | 0/186 | 186 open |
@@ -109,7 +98,7 @@ Promoted: 2 of 5 plans done, 42 of 230 boxes done (18%).
 7. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
 8. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
 9. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-10. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
+10. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (8 of 9 boxes ticked)
 11. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 12. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, in progress (6 of 7 boxes ticked)
 13. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
