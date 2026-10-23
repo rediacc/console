@@ -6,18 +6,69 @@ Owner: d778be9d
 Priority: P1 -- operator-requested 2026-10-02; queued in QUEUE.md Promoted right after PLAN-plan-per-pr-loop
 Concurrency: parallel -- at most 4 writers, disjoint file ownership per box (see Tasks)
 Owns: .claude/hooks/stop/wl_planpreflight.py, .claude/hooks/stop/wl_plandeps.py, .claude/hooks/stop/test-plandeps.py, .claude/hooks/stop/wl_planrec.py, .claude/hooks/stop/test-planrec.py, .claude/hooks/stop/test-planenforce.py, .claude/hooks/stop/worklist.py, .claude/hooks/stop/worklist_messages.py, .claude/rediacc_hooks/tests/test_wl_plan_preflight.py, .claude/rediacc_hooks/tests/test_wl_identity.py, .ci/scripts/quality/check_plan_citations.py, .ci/rediacc_ci/tests/gates/test_gate_plan_citations.py, .ci/scripts/quality/check_plan_implementation.py, .ci/config/plan-implementation.json, .claude/agents/pr-babysitter.md, .claude/commands/pr-merge.md, .claude/commands/pr-babysit.md
+Revalidated: 2026-10-23 @ daab83af1f31
+
+<!-- preflight:begin -->
+```text
+preflight 2026-10-23 @ daab83af1f31
+open boxes: 2 (absent 2)
+citations: 0 unresolved, 8 drifted, 8 relocated
+  relocated plan line 13: .claude/hooks/stop/wl_planrec.py line 1843 -> 2031
+  relocated plan line 13: .claude/hooks/stop/wl_planrec.py line 674 -> 818
+  relocated plan line 14: .ci/scripts/quality/check_plan_citations.py line 324 -> 341
+  relocated plan line 14: .ci/scripts/quality/check_plan_citations.py line 655 -> 782
+  relocated plan line 15: .claude/hooks/stop/wl_plandeps.py line 749 -> 923
+  relocated plan line 18: .ci/scripts/quality/check_plan_implementation.py line 344 -> 553
+  relocated plan line 19: .claude/hooks/stop/wl_plandeps.py line 389 -> 424
+  relocated plan line 19: .claude/hooks/stop/wl_plandeps.py line 58 -> 61
+overlap since cf7557d5df0d: 154 commit(s) (first 30 shown)
+  a8b873ac3d2b feat(stop-hook): a red whose fix is committed and building toward a push stands down to one report l
+  ee29acba43f2 style(hooks): V_WISDOM_DUE's reworded line is wrapped to the block's width
+  e20b3ceccd0f fix(hooks): wisdom-due ignores a Delegated section carried over from the previous context
+  a476bc84084b feat(hooks): the Stop hook orders /wisdom past 92% of auto-compact, and /wisdom hands in-flight work
+  069fe0309a06 fix(hooks,gates): pin the EACCES moved-stub path and state what each docstring guarantees
+  888a1e9f2950 fix(hooks): a moved-plan target the hook cannot stat keeps the stub path
+  7563fea654e7 fix(gates): a cited prefix must name exactly one reachable object, and the reachability cache follow
+  cf058d38d6c7 fix(gates): plan citations judge a cited blob by prefix in the reachable set, and fail open when git
+  f6435e9db1b2 fix(hooks): a moved-plan stub with a missing target or unreadable bytes keeps its own path
+  797ccaed7c85 fix(hooks): a turbo pick of a plan that later moved reads at its new path, once
+  fb2e9af55a40 fix(gates): a cited blob or tree must be reachable, so plan citations fail locally as they do in CI
+  84e60433df78 fix(hooks): the merge phase's pointer-bump push needs no turbo reason
+  4ca8852631d8 test: six more fixtures that commit and then remove or rebuild their repo turn off git's detached ma
+  6c9f6fd8a6fa fix(hooks): indirect expansion, loop-cap writes, directory-touching runs, parameter arithmetic, tool
+  8ef7858647c9 fix(hooks): unexpandable write targets read through their sources, and an unreadable program through
+  ff357dfa7e74 fix(hooks): read every redirect target as typed and as bash expands it in four guards and the roster
+  b75e7924d043 fix(ci): review findings on the argv reader, the P-A1 body lookup, the ruff resolvers and the tie-br
+  dd1d1e937437 fix(ci): a local plan-implementation run reads the open PR's body, so its P-A1 verdict matches CI's
+  0acb2a91de75 fix(www): the build writes its search index into the build output, and check:ci-gate-tree-writes fol
+  4f98b05ae998 fix(ci): the open-box citation exemption reads boxes with the plan-box parser itself
+  121d52127013 fix(ci): an open plan box may name the gate it promises, and the plans cite renet by repo-root path
+    plan agent/plans/PLAN-pins-command.md
+    plan agent/plans/PLAN-shell-sandbox-readonly-view.md
+  68b5f243b41c docs: comments and docstrings state what the code does
+  6a39bf688051 fix(hooks): wl_roster reads a Python program as the guards read it
+  411ed6cd8937 docs(hooks): the reasons the removed markers carried are comments again, and the hookio re-export no
+  e7aa60fad67b fix(ci): the bws-map, renet-lint, go-deps and plan-implementation gates fail loudly on input they mi
+  4a7748ec8779 fix(hooks): the outcome ledger, the judge's effort rewrite and the effort tuner keep their documente
+  fa983477c236 refactor(ci): hoist the provably cycle-free lazy imports, narrow the BLE001 handlers, and drop the l
+  d2ba79652b1e chore(ci): ruff per-file ignores with BLOCKER reasons for the verified gate-script and harness resid
+  fb45d0451ea5 feat(hooks): the effort table tunes itself near compaction through an effort-tuner sub-agent
+  127b0faaa1f2 fix(ci): shadow, infra and plan-gate modules drop their inline markers
+dependencies: 0
+```
+<!-- preflight:end -->
 
 ## Current state (verified 2026-10-02 on 0930-1, merge base with origin/main = origin/main)
 
-- Box-level investigation exists only at tick time. `--plan-tick` dispatches at `.claude/hooks/stop/worklist.py:2473` and `--plan-investigate` at `.claude/hooks/stop/worklist.py:2476` (`_plantick_cli` at `.claude/hooks/stop/worklist.py:737`, `_planinvestigate_cli` at `.claude/hooks/stop/worklist.py:810`). `wl_planrec.plan_tick` (`.claude/hooks/stop/wl_planrec.py:2373`) refuses a tick with no investigation row (`.claude/hooks/stop/wl_planrec.py:2422`), then runs clause 1 (ordering) and clause 2 (falsifiable absent) at `.claude/hooks/stop/wl_planrec.py:2437`. The latest row per (plan, sig) wins (`investigation_for`, `.claude/hooks/stop/wl_planrec.py:2098`). Rows record `head` = `git rev-parse HEAD` (`plan_investigate`, `.claude/hooks/stop/wl_planrec.py:2213`). Nothing surveys a whole plan, and nothing runs when a plan becomes a PR's plan.
-- A box's signature is its box line only (`box_sig`, `.claude/hooks/stop/wl_planrec.py:674`). Rewording an open box counts as a deleted box: check:ci-plan-boxes G-A1 (`.ci/scripts/quality/check_plan_boxes.py:30`-`.ci/scripts/quality/check_plan_boxes.py:34`) treats "rewriting its text" as a vanished box. Indented continuation lines are not part of the signature (`_evidence_slot`, `.claude/hooks/stop/wl_planrec.py:1843`).
-- Citations are checked only on lines a change adds (`.ci/scripts/quality/check_plan_citations.py:9`, `added_lines` at `.ci/scripts/quality/check_plan_citations.py:324`). For a fileline citation the only test is that "the file exists and has that many lines" (`.ci/scripts/quality/check_plan_citations.py:17`). A cited line whose content moved still passes. `problems_for` (`.ci/scripts/quality/check_plan_citations.py:655`) already takes arbitrary (rel, lineno, text) rows.
-- Dependency completion is decided by `Status:` alone (`Graph.is_complete`, `.claude/hooks/stop/wl_plandeps.py:749`), and a task edge resolves at plan level. A dependency marked done but still carrying open boxes is never re-checked when a dependent plan starts.
-- The PR-to-plan link is written once, at the first push (`.claude/hooks/post-bash/refresh_pr_body.py:155`, from `plan_gate.queue_head`, `.claude/rediacc_hooks/plan_gate.py:51`). The only plan gate before merge counts boxes (`plan_merge_refusal`, `.claude/rediacc_hooks/plan_gate.py:129`).
-- The loop starts a plan without validating it: `.claude/agents/pr-babysitter.md:96` (one plan per PR), `.claude/agents/pr-babysitter.md:103` and `.claude/agents/pr-babysitter.md:125` (next plan from QUEUE.md), and `.claude/commands/pr-merge.md:326` ("Then start the next queued plan").
-- CI re-derives closed boxes forward-only: P-A2..P-A4 in `tick_findings` (`.ci/scripts/quality/check_plan_implementation.py:344`) require an evidence line, an investigation row and ancestry. These are cut by `baseline_at` in `.ci/config/plan-implementation.json`.
-- The header grammar can be extended by table: `FIELD_SPECS` (`.claude/hooks/stop/wl_plandeps.py:389`), with the X-field window at 12 lines (`.claude/hooks/stop/wl_plandeps.py:58`).
-- A read-only Haiku fan-out needs no new agent definition. `Explore` is already a read-only type (`.claude/hooks/stop/wl_roster.py:48`), and the Haiku slice uses the per-call `model` override (`docs/agent-reference/model-routing.md:42`). A new `model: haiku` agent file would also need a reason entry for check:ci-agent-model-roster.
+- Box-level investigation exists only at tick time. `--plan-tick` dispatches at `.claude/hooks/stop/worklist.py:2473` and `--plan-investigate` at `.claude/hooks/stop/worklist.py:2476` (`_plantick_cli` at `.claude/hooks/stop/worklist.py:737`, `_planinvestigate_cli` at `.claude/hooks/stop/worklist.py:810`). `wl_planrec.plan_tick` (`.claude/hooks/stop/wl_planrec.py:2373`) refuses a tick with no investigation row (`.claude/hooks/stop/wl_planrec.py:2422`), then runs clause 1 (ordering) and clause 2 (falsifiable absent) at `.claude/hooks/stop/wl_planrec.py:2437`. The latest row per (plan, sig) wins (`investigation_for`, `.claude/hooks/stop/wl_planrec.py:2098`). Rows record `head` = `git rev-parse HEAD` (`plan_investigate`, `.claude/hooks/stop/wl_planrec.py:2439`). Nothing surveys a whole plan, and nothing runs when a plan becomes a PR's plan.
+- A box's signature is its box line only (`box_sig`, `.claude/hooks/stop/wl_planrec.py:818`). Rewording an open box counts as a deleted box: check:ci-plan-boxes G-A1 (`.ci/scripts/quality/check_plan_boxes.py:30`-`.ci/scripts/quality/check_plan_boxes.py:34`) treats "rewriting its text" as a vanished box. Indented continuation lines are not part of the signature (`_evidence_slot`, `.claude/hooks/stop/wl_planrec.py:2031`).
+- Citations are checked only on lines a change adds (`.ci/scripts/quality/check_plan_citations.py:9`, `added_lines` at `.ci/scripts/quality/check_plan_citations.py:341`). For a fileline citation the only test is that "the file exists and has that many lines" (`.ci/scripts/quality/check_plan_citations.py:17`). A cited line whose content moved still passes. `problems_for` (`.ci/scripts/quality/check_plan_citations.py:782`) already takes arbitrary (rel, lineno, text) rows.
+- Dependency completion is decided by `Status:` alone (`Graph.is_complete`, `.claude/hooks/stop/wl_plandeps.py:923`), and a task edge resolves at plan level. A dependency marked done but still carrying open boxes is never re-checked when a dependent plan starts.
+- The PR-to-plan link is written once, at the first push (`.claude/hooks/post-bash/refresh_pr_body.py:195`, from `plan_gate.queue_head`, `.claude/rediacc_hooks/plan_gate.py:51`). The only plan gate before merge counts boxes (`plan_merge_refusal`, `.claude/rediacc_hooks/plan_gate.py:129`).
+- The loop starts a plan without validating it: `.claude/agents/pr-babysitter.md:96` (one plan per PR), `.claude/agents/pr-babysitter.md:108` and `.claude/agents/pr-babysitter.md:139` (next plan from QUEUE.md), and `.claude/commands/pr-merge.md:344` ("Then start the next queued plan").
+- CI re-derives closed boxes forward-only: P-A2..P-A4 in `tick_findings` (`.ci/scripts/quality/check_plan_implementation.py:553`) require an evidence line, an investigation row and ancestry. These are cut by `baseline_at` in `.ci/config/plan-implementation.json`.
+- The header grammar can be extended by table: `FIELD_SPECS` (`.claude/hooks/stop/wl_plandeps.py:424`), with the X-field window at 12 lines (`.claude/hooks/stop/wl_plandeps.py:61`).
+- A read-only Haiku fan-out needs no new agent definition. `Explore` is already a read-only type (`.claude/hooks/stop/wl_roster.py:48`), and the Haiku slice uses the per-call `model` override (`docs/agent-reference/model-routing.md:46`). A new `model: haiku` agent file would also need a reason entry for check:ci-agent-model-roster.
 
 ## Design
 
@@ -106,7 +157,7 @@ Writers: PF1 and PF2 start in parallel. PF3 freezes the `wl_planpreflight` API (
     (ticked) 2026-10-23T18:49:04Z by d778be9d: commit 81765f940: warn-only stale check at .claude/hooks/stop/wl_planrec.py:1991 (design 3b); test-planenforce.py rc=0
 - [x] PF6 CI backstop P-A9 in `.ci/scripts/quality/check_plan_implementation.py`: over the boxes `tick_findings` already judges, with the tick dated after the new `revalidation_at` key in `.ci/config/plan-implementation.json` (set to the landing date, so the landing commit is silent by construction), the plan's head copy must carry a `Revalidated:` whose sha is an ancestor of the merge base, and `revalidation_state` must not be `stale` against that base. Add `revalidation_state` to the `load_modules` contract. `controls_fired` gains three plants (missing header, stale range, tick before the cut, which stays silent), each with a healthy pair. Files: check_plan_implementation.py, plan-implementation.json. Depends on: PF3. Acceptance: `npm run check:ci-plan-implementation` rc 0 with the P-A9 controls printed as PASS.
     (ticked) 2026-10-23T18:49:05Z by d778be9d: commit 81765f940: advisory P-A9 at .ci/scripts/quality/check_plan_implementation.py:746; --selftest rc=0, test_quality_plan_implementation 11 passed
-- [x] PF7 Loop wiring: `.claude/agents/pr-babysitter.md` gains a per-PR-loop bullet "Preflight the plan before the first writer" and a step 0 in "The loop" ahead of survey and resume detection, carrying the fan-out procedure (Explore with model haiku, batches of 8, the fixed output line, `--plan-investigate`/`--plan-tick` per box), premise correction, `--plan-preflight --write`, the single preflight commit, and a re-run after any rebase that `--plan-tick` reports as stale. `.claude/commands/pr-merge.md:326` ("Then start the next queued plan") runs the preflight on the new branch before any writer, and `.claude/commands/pr-babysit.md` says the same in its loop summary. Files: those three. Depends on: PF4. Acceptance: `grep -c "plan-preflight" .claude/agents/pr-babysitter.md .claude/commands/pr-merge.md .claude/commands/pr-babysit.md` reports at least 1 per file; `npm run check:ci-prose-style` rc 0.
+- [x] PF7 Loop wiring: `.claude/agents/pr-babysitter.md` gains a per-PR-loop bullet "Preflight the plan before the first writer" and a step 0 in "The loop" ahead of survey and resume detection, carrying the fan-out procedure (Explore with model haiku, batches of 8, the fixed output line, `--plan-investigate`/`--plan-tick` per box), premise correction, `--plan-preflight --write`, the single preflight commit, and a re-run after any rebase that `--plan-tick` reports as stale. `.claude/commands/pr-merge.md:344` ("Then start the next queued plan") runs the preflight on the new branch before any writer, and `.claude/commands/pr-babysit.md` says the same in its loop summary. Files: those three. Depends on: PF4. Acceptance: `grep -c "plan-preflight" .claude/agents/pr-babysitter.md .claude/commands/pr-merge.md .claude/commands/pr-babysit.md` reports at least 1 per file; `npm run check:ci-prose-style` rc 0.
     (ticked) 2026-10-23T18:49:06Z by d778be9d: commit 81765f940: .claude/agents/pr-babysitter.md:98 preflight bullet and step 0; check_prose_style rc=0
 - [ ] PF8 Dogfood before enforcement: run the full preflight (fan-out, investigations, `--write`) on this plan and on every plan with open boxes that a live PR carries (today `agent/plans/PLAN-plan-per-pr-loop.md`: R1, R3, M7), and commit each. These are the plans whose next tick PF5 would otherwise refuse. Files: the two plan files, `.ci/config/plan-boxes.json`, `agent/ledgers/plan-investigation.jsonl`, `agent/INDEX.md`, `agent/plans/QUEUE.md` (lead only, no writer). Depends on: PF4. Acceptance: `python3 .claude/hooks/stop/worklist.py --plan-preflight <me> agent/plans/PLAN-plan-preflight.md` reports state `fresh`; `npm run check:ci-plan-boxes && npm run check:ci-plan-record && npm run check:ci-plan-citations` rc 0.
 - [ ] PF9 Real run: the first plan started by the loop after this PR merges goes through step 0 end to end. The PR body or report records the survey counts (present/absent/partial), ticks made by the survey, relocated and corrected citations, the overlap list length and the `Revalidated:` sha. One deliberate stale case is exercised: after a rebase onto a main commit that touches a cited path, `--plan-tick` refuses, the preflight is re-run and the tick passes. Files: none owned (evidence only). Depends on: PF5, PF6, PF7 and this PR's merge. Acceptance: the plan's header carries `Revalidated:` at the new branch's merge base, and the refused-then-accepted tick pair is quoted with both outputs in the round log.
