@@ -1581,6 +1581,8 @@ const CASES: Record<string, Case> = {
     }
     const stray = lock(false);
     const lockStray = await runCli(['lockfiles', '--adopt', 'nope.json'], withMutant(stray.fx, m));
+    const empty = lock(false);
+    const lockEmpty = await runCli(['lockfiles', '--adopt', ''], withMutant(empty.fx, m));
     const dirtyM = lock(true);
     const lockDirty = await runCli(['lockfiles'], withMutant(dirtyM.fx, m));
     return [
@@ -1626,6 +1628,14 @@ const CASES: Record<string, Case> = {
           /--adopt nope\.json names no file this run writes/.test(lockStray.err) &&
           same(stray.mid, snap(stray.fx, ['package-lock.json', 'package.json'])),
         detail: `rc=${lockStray.rc} ${lockStray.err}`,
+      },
+      {
+        name: "lockfiles: an empty --adopt is refused naming '' as typed, not the '.' normalize makes of it",
+        ok:
+          lockEmpty.rc === 1 &&
+          /--adopt '' names no file this run writes/.test(lockEmpty.err) &&
+          same(empty.mid, snap(empty.fx, ['package-lock.json', 'package.json'])),
+        detail: `rc=${lockEmpty.rc} ${lockEmpty.err}`,
       },
       {
         name: 'lockfiles: a changed lockfile beside a changed manifest is refused, both byte-identical',
