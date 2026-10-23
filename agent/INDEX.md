@@ -486,7 +486,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-watch-enforcement.md` | draft | 214 | 6 | 0 | 19722 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cloudflare-proxy.md` | proposed | 344 | 24 | 0 | 42182 |
+| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 320 | 29 | 0 | 44919 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 419 | 2 | 9 | 40429 |

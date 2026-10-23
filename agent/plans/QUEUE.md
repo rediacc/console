@@ -57,30 +57,35 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort low; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
 - Phase: build.
 - Branch: 1023-1, no PR yet.
-- Plans on the PR (4):
+- Plans on the PR (6):
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/_done/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 8 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-stop-hook-rulings-campaign.md -- 3 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans: none.
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:ad68ef64c98ebce10, worker:a4f448f06ff5d7bd5.
-- Leased items: 2: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #6516dd5b (worker:ad68ef64c98ebce10, d778be9d).
-- Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 5; starts after this branch's PR merges.
+  - agent/plans/PLAN-backup-program.md -- 2 of 190 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Work outside the PR's plans (1 epic(s)):
+  - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a4f448f06ff5d7bd5, worker:ae1f22634491ba096, worker:a2e58f82a5c85282e.
+- Leased items: 3: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #88032097 (worker:a2e58f82a5c85282e, d778be9d), #a7d8bacc (worker:ae1f22634491ba096, d778be9d).
+- Next plan: agent/plans/PLAN-app-wide-org-selection.md, Generated entry 1 (no Promoted entry ahead of it has an open box); starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 2 plans done, 17 of 206 boxes done (8%).
+Promoted: 0 of 3 plans done, 17 of 235 boxes done (7%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-backup-program.md | 2/190 | 188 open |
+| 3 | PLAN-cloudflare-proxy.md | 0/29 | 29 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
 2. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
+3. agent/plans/PLAN-cloudflare-proxy.md -- operator 2026-10-23 ("move agent/plans/PLAN-cloudflare-proxy.md promoted but investigate to update it"; /ask: "Keep it and finish Phase 2", B5 "A mint command", console "Wire it after Phase 2"): rdc --proxy through the Cloudflare Worker and Container deployed on eu 2026-09-24; P1; Depends-On none; the plan was refreshed against the code the same day and its proven boxes ticked
 
 ## Generated
 
@@ -106,10 +111,9 @@ Promoted: 0 of 2 plans done, 17 of 206 boxes done (8%).
 19. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- P1, draft, not started
 20. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
 21. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-22. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-23. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-25. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-26. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+22. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+23. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+24. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+25. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
