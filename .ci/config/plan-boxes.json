@@ -639,13 +639,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 5,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
-        "1166e648",
         "66d855eb"
       ],
       "done_sigs": [
+        "1166e648",
         "4f8ada89",
         "579d0a70",
         "5f67fddf",
