@@ -1564,9 +1564,13 @@ const CASES: Record<string, Case> = {
       ['lockfiles', '--adopt', './sub/../package-lock.json'],
       withMutant(adopted.fx, m)
     );
-    // The other spellings the normalisation claims: a backslash path and a doubled slash.
+    // The other spellings the normalisation claims: a backslash path, a doubled slash and an interior `/./` segment.
     const spelled: Array<{ spelling: string; rc: number; kept: boolean }> = [];
-    for (const spelling of ['.\\package-lock.json', './/package-lock.json']) {
+    for (const spelling of [
+      '.\\package-lock.json',
+      './/package-lock.json',
+      'sub/./../package-lock.json',
+    ]) {
       const fx = lock(false);
       const r = await runCli(['lockfiles', '--adopt', spelling], withMutant(fx.fx, m));
       spelled.push({
@@ -1611,7 +1615,7 @@ const CASES: Record<string, Case> = {
         detail: `rc=${lockAdopted.rc} ${lockAdopted.err}`,
       },
       {
-        name: 'lockfiles: --adopt as .\\package-lock.json and .//package-lock.json is accepted too (the backslash and doubled-slash spellings)',
+        name: 'lockfiles: --adopt as .\\package-lock.json, .//package-lock.json and sub/./../package-lock.json is accepted too (the backslash, doubled-slash and dot-segment spellings)',
         ok: spelled.every((x) => x.rc === 0 && x.kept),
         detail: JSON.stringify(spelled),
       },
