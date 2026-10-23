@@ -157,6 +157,8 @@ R2_ORPHAN_VERSION_AGE_DAYS = 14
 R2_PR_MAX_AGE_DAYS = 3
 # 8f's window: the npm tarballs kept per channel (`npm/<channel>/rediacc-cli-<semver>.tgz`). The four package trees are not 8f's any more: each publish prunes them to what its index lists (`upload_repos_to_r2`, `r2_promote.prune_tree`; operator ruling 2026-10-06, "Current version only").
 R2_NPM_KEEP_VERSIONS = 20
+# 8g's window: the newest `--versions` (default KEEP_RELEASES) `v<semver>/` folders per format directory, plus whatever `edge` and `stable` currently point at. Operator ruling 2026-10-23 ("Keep N newest releases"): rediacc-releases held 142.7 GB of the account's 151 GB.
+_R2_CHANNEL_POINTER_DIR = "cli"
 
 GH_RUNS_KEEP_PER_WORKFLOW = 100
 GH_RUNS_RETENTION_DAYS = 30
@@ -3028,6 +3030,115 @@ class Housekeeping:
                 )
             )
 
+    def _r2_channel_version(self, channel: str) -> str | None:
+        """The version `cli/<channel>/manifest.json` names, without a leading `v`; None when it cannot be read as a version (unset, unreadable, not JSON, or `null`)."""
+        code, text = capture_quiet(
+            [
+                awscli.AWS,
+                "s3",
+                "cp",
+                "s3://%s/%s/%s/manifest.json" % (self.r2_bucket, _R2_CHANNEL_POINTER_DIR, channel),
+                "-",
+                "--endpoint-url",
+                os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
+            ]
+        )
+        if code != 0:
+            return None
+        try:
+            version = check_stable_manifest.manifest_version(text)
+        except (ValueError, AttributeError):
+            return None
+        if not isinstance(version, str) or version in {"", "null"}:
+            return None
+        return version.removeprefix("v")
+
+    def cleanup_r2_versions(self) -> None:
+        """Phase 8g: keep the newest `--versions` release folders per format directory, and the releases `edge` and `stable` point at, whatever their age.
+
+        A release folder is `<fmt>/v<major>.<minor>.<patch>/` for each of `R2_FORMAT_DIRS` (today only `cli/` carries them; the package trees hold channels only, and the loop is generic so a format that grows version folders is covered). Order is semver, not listing order or date. Everything older is deleted, one prefix per `record_delete`, until `MAX_DELETES_PER_RUN`; the rest waits for the next run.
+
+        FAILS CLOSED. If either channel manifest cannot be read as a version, nothing is deleted and the run is latched as failed: deleting the folder a channel serves would break installs. `IN_FLIGHT_VERSION` is protected too. The prefix's sentinel (`cli/<v>/.released`) goes with it, which is the same removal the edge upload's own prune makes; Phase 2 then releases the git tag.
+
+        Not in the bash twin, so `run_all_phases` runs it only for the production entry point (`main`).
+        """
+        log.step(
+            "Phase 8g: R2 release folders (keep newest %s per format + edge/stable)"
+            % self.keep_versions
+        )
+        if not self.r2_credentials_exported():
+            log.warn("  8g: R2 credentials not set, skipping")
+            return
+        keep = int(self.keep_versions)
+        protected: set[str] = set()
+        for channel in ("edge", "stable"):
+            version = self._r2_channel_version(channel)
+            if version is None:
+                self.housekeeping_fail(
+                    "R2 release folders unchecked",
+                    "8g: could not read a version from %s/%s/manifest.json; no release folder "
+                    "was deleted because it may be the one this channel serves"
+                    % (_R2_CHANNEL_POINTER_DIR, channel),
+                )
+                return
+            protected.add(version)
+            log.info("  8g: %s serves v%s (never deleted)" % (channel, version))
+        in_flight = os.environ.get("IN_FLIGHT_VERSION", "").removeprefix("v")
+        if in_flight:
+            protected.add(in_flight)
+
+        total_deleted = 0
+        total_bytes = 0
+        budget_out = False
+        for directory in R2_FORMAT_DIRS:
+            found: list[tuple[tuple[int, int, int], str]] = []
+            for line in _stream_lines(self.r2_ls_prefix("%s/" % directory)):
+                sub = _awk_pre_field(line, _PRE_VERSION_RE)
+                name = sub.removesuffix("/")
+                if not _STRICT_SEMVER_RE.match(name):
+                    continue
+                major, minor, patch = name[1:].split(".")
+                found.append(((int(major), int(minor), int(patch)), name))
+            found.sort(reverse=True)
+            doomed = [name for _key, name in found[keep:] if name[1:] not in protected]
+            deleted = 0
+            freed = 0
+            for name in doomed:
+                if not self.deletes_budget_ok():
+                    log.warn(
+                        "  Phase 8g: hit MAX_DELETES_PER_RUN=%s; remaining R2 release folders "
+                        "deferred to next run" % self.max_deletes
+                    )
+                    budget_out = True
+                    break
+                prefix = "%s/%s/" % (directory, name)
+                size = 0
+                for entry in _stream_lines(self.r2_list(prefix, recursive=True)):
+                    fields = entry.split()
+                    if len(fields) > 2 and fields[2].isdigit():
+                        size += int(fields[2])
+                self.r2_rm_recursive(prefix, "outside newest %d, %.2f GB" % (keep, size / 1e9))
+                deleted += 1
+                freed += size
+            log.info(
+                "  8g: %s/: %d release folder(s), %s %d, %.2f GB"
+                % (
+                    directory,
+                    len(found),
+                    "would delete" if self.dry_run else "deleted",
+                    deleted,
+                    freed / 1e9,
+                )
+            )
+            total_deleted += deleted
+            total_bytes += freed
+            if budget_out:
+                break
+        log.info(
+            "  8g: %s %d release folder(s), %.2f GB"
+            % ("would delete" if self.dry_run else "deleted", total_deleted, total_bytes / 1e9)
+        )
+
     def _r2_rm_object(self, key: str, tag: str) -> None:
         """The single-object delete 8f uses twice, identically. Not a twin
         function: the twin repeats the five lines, and repeating them here would
@@ -3730,7 +3841,7 @@ class Housekeeping:
 
     # -- MAIN ---------------------------------------------------------------
 
-    def run_all_phases(self) -> int:
+    def run_all_phases(self, *, r2_versions: bool = False) -> int:
         """`run_all_phases` (:2004-2051), in the twin's order, blank lines and all.
 
         THE BLANK LINES GO TO STDOUT (`echo ""`) while every log line goes to stderr, so the two streams interleave differently and a comparison that merged them would not notice if one moved.
@@ -3764,6 +3875,9 @@ class Housekeeping:
         self.cleanup_orphan_turnstile_widgets()
         _blank()
         self.cleanup_r2()
+        if r2_versions:
+            _blank()
+            self.cleanup_r2_versions()
         _blank()
         self.cleanup_stale_branches()
         _blank()
@@ -3808,7 +3922,7 @@ def main(argv: list[str]) -> int:
         exc.report()
         return exc.code
     try:
-        return housekeeping.run_all_phases()
+        return housekeeping.run_all_phases(r2_versions=True)
     except ExpansionAbortError:
         # bash unwinds to the top level on an expansion error, abandoning every
         # function frame, and then looks for the NEXT top-level command. In this
