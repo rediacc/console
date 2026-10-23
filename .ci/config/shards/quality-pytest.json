@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-23T16:26:39.014Z",
+  "generatedAt": "2026-10-23T16:28:57.605Z",
   "legs": [
     {
       "index": 1,
@@ -460,6 +460,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_build_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py",
+        "pytest:.ci/rediacc_ci/tests/test_infra_obs_ceph_autobump.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py",

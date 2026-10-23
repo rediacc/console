@@ -358,6 +358,8 @@
       "OUT_DIR",
       "PENDING_RERUN",
       "PINS_FIXTURE_FAIL",
+      "PIN_NEW",
+      "PIN_OLD",
       "PKG_BINARY_NAME",
       "PKG_DESCRIPTION",
       "PKG_HOMEPAGE",

@@ -599,6 +599,13 @@
       "CI_DOCKER_DIR",
       "GITHUB_OUTPUT"
     ],
+    ".ci/rediacc_ci/infra/obs_ceph_autobump.py": [
+      "GITHUB_OUTPUT",
+      "GITHUB_REPOSITORY",
+      "GITHUB_RUN_ID",
+      "GITHUB_SERVER_URL",
+      "RUNNER_TEMP"
+    ],
     ".ci/rediacc_ci/infra/obs_mirror.py": [
       "GITHUB_OUTPUT",
       "GITHUB_STEP_SUMMARY",
