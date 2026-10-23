@@ -1766,7 +1766,8 @@ def test_the_real_pins_soaked_workflow_passes_the_gate() -> None:
 def test_a_conformant_pins_soaked_document_is_clean() -> None:
     findings, shape = ci_workflow_invariants.analyse_pins_soaked(pins_doc())
     assert findings == []
-    assert shape == ["1 cron(s), 1 apply step(s), 1 upload step(s), contents: read only"]
+    assert shape[0] == "1 cron(s), 1 apply step(s), 1 upload step(s), contents: read only"
+    assert shape[1].startswith("0 read-only checkout token(s)")
 
 
 @pytest.mark.parametrize(
@@ -1832,3 +1833,276 @@ def test_a_missing_pins_soaked_file_is_an_error_never_a_pass() -> None:
 
 def test_a_non_mapping_pins_soaked_document_is_refused() -> None:
     assert pins_kinds([]) == ["pins-soaked-triggers"]
+
+
+PINNED_CHECKOUT = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+
+
+def token_triple() -> list[dict]:
+    """The read-only checkout token the 2026-10-23 ruling admits, step for step as pins-soaked.yml wires it."""
+    return [
+        {
+            "name": "Fetch secrets from Bitwarden",
+            "uses": "./.github/actions/bws-secrets",
+            "with": {
+                "access-token": "${{ secrets.BWS_ACCESS_TOKEN }}",
+                "secrets": "GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY\nGITHUB_APP_ID > BWS_APP_ID\n",
+            },
+        },
+        {
+            "uses": "./.github/actions/app-token",
+            "id": "app-token",
+            "with": {
+                "client-id": "${{ env.BWS_APP_ID }}",
+                "private-key": "${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}",
+                "preset": "readonly",
+                "repositories": "console,renet,account,elite,homebrew-tap",
+            },
+        },
+        {
+            "name": "Drop the App credentials from the job environment",
+            "run": 'echo "BWS_GITHUB_APP_PRIVATE_KEY=" >> "$GITHUB_ENV"\necho "BWS_APP_ID=" >> "$GITHUB_ENV"\n',
+        },
+        token_checkout(),
+        {
+            "name": "Drop the App token from the global git config",
+            "run": "\n".join(ci_workflow_invariants._PINS_GIT_SCRUB_LINES) + "\n",
+        },
+    ]
+
+
+def token_checkout() -> dict:
+    return {
+        "uses": PINNED_CHECKOUT,
+        "with": {
+            "submodules": True,
+            "token": "${{ steps.app-token.outputs.token }}",
+            "persist-credentials": False,
+        },
+    }
+
+
+def token_doc() -> dict:
+    """pins_doc with the admitted shape after its first checkout: index 1 is bws-secrets, 2 app-token, 3 the blanking step, 4 the checkout, 5 the git config scrub."""
+    doc = pins_doc()
+    doc["jobs"]["soaked"]["steps"][1:1] = token_triple()
+    return doc
+
+
+def _tok_steps(d: dict) -> list[dict]:
+    return d["jobs"]["soaked"]["steps"]
+
+
+def test_the_admitted_read_only_checkout_token_passes() -> None:
+    findings, shape = ci_workflow_invariants.analyse_pins_soaked(token_doc())
+    assert findings == []
+    assert shape[1].startswith("1 read-only checkout token(s)")
+
+
+def test_two_back_to_back_token_checkouts_before_the_scrub_pass() -> None:
+    doc = token_doc()
+    _tok_steps(doc).insert(5, token_checkout())
+    assert pins_kinds(doc) == []
+
+
+def test_the_pinned_git_scrub_is_the_text_the_workflow_carries() -> None:
+    """The scrub lines the invariant demands are the ones a shell run proved; the workflow passing the gate is the other half."""
+    lines = ci_workflow_invariants._PINS_GIT_SCRUB_LINES
+    assert any("--unset-all" in ln for ln in lines)
+    assert lines[-3].startswith("if git config --global --get-regexp 'x-access-token'")
+
+
+def _git_scrub_edit(old: str, new: str) -> typing.Callable[[dict], None]:
+    def edit(d: dict) -> None:
+        step = _tok_steps(d)[5]
+        assert old in step["run"]
+        step["run"] = step["run"].replace(old, new)
+
+    return edit
+
+
+def test_the_admitted_token_tolerates_whitespace_inside_its_expressions() -> None:
+    doc = token_doc()
+    _tok_steps(doc)[2]["with"]["client-id"] = "${{env.BWS_APP_ID}}"
+    _tok_steps(doc)[4]["with"]["token"] = "${{steps.app-token.outputs.token}}"
+    assert pins_kinds(doc) == []
+
+
+@pytest.mark.parametrize(
+    ("mutate", "why"),
+    [
+        # the shapes the ruling names
+        (lambda d: _tok_steps(d)[2]["with"].__setitem__("preset", "pr-read"), "not readonly"),
+        (lambda d: _tok_steps(d)[2]["with"].__setitem__("preset", "cd"), "not readonly"),
+        (lambda d: _tok_steps(d)[2]["with"].pop("preset"), "no `preset:`"),
+        (
+            lambda d: _tok_steps(d)[1]["with"].__setitem__(
+                "secrets",
+                "GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY\nGITHUB_APP_ID > BWS_APP_ID\nCLOUDFLARE_API_TOKEN\n",
+            ),
+            "may fetch only",
+        ),
+        (
+            lambda d: _tok_steps(d)[1]["with"].__setitem__(
+                "secrets",
+                "CF_DEPLOY_KEY > BWS_GITHUB_APP_PRIVATE_KEY\nGITHUB_APP_ID > BWS_APP_ID\n",
+            ),
+            "may fetch only",
+        ),
+        (
+            lambda d: _tok_steps(d).append({"run": "echo ${{ steps.app-token.outputs.token }}"}),
+            "steps.app-token is read at jobs.soaked.steps.",
+        ),
+        (
+            lambda d: _tok_steps(d).append(
+                {
+                    "uses": "some/action@sha",
+                    "with": {"gh-token": "${{ steps.app-token.outputs.token }}"},
+                }
+            ),
+            "steps.app-token is read at jobs.soaked.steps.",
+        ),
+        (
+            lambda d: d["jobs"]["soaked"].__setitem__(
+                "env", {"GH_TOKEN": "${{ steps.app-token.outputs.token }}"}
+            ),
+            "steps.app-token is read at jobs.soaked.env.GH_TOKEN",
+        ),
+        (
+            lambda d: _tok_steps(d).extend(token_triple()),
+            "exactly one bws-secrets and one app-token step in the job, found 2 and 2",
+        ),
+        (
+            lambda d: _tok_steps(d)[1]["with"].__setitem__(
+                "access-token", "${{ secrets.BWS_ACCESS_TOKEN }}${{ secrets.DEPLOY_KEY }}"
+            ),
+            "access-token must be",
+        ),
+        (
+            lambda d: _tok_steps(d)[1].__setitem__("env", {"K": "${{ secrets.DEPLOY_KEY }}"}),
+            "bws-secrets step carries env",
+        ),
+        (
+            lambda d: _tok_steps(d)[1]["with"].__setitem__(
+                "secrets",
+                "GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY\nGITHUB_APP_ID > ${{ secrets.X }}\n",
+            ),
+            "no expression or comment",
+        ),
+        # the blanking step, the ordering and the checkout itself
+        (lambda d: _tok_steps(d).pop(3), "the step right after app-token must be exactly"),
+        (
+            lambda d: _tok_steps(d)[3].__setitem__(
+                "run", 'echo "BWS_GITHUB_APP_PRIVATE_KEY=" >> "$GITHUB_ENV"\n'
+            ),
+            "the step right after app-token must be exactly",
+        ),
+        (
+            lambda d: _tok_steps(d).insert(2, {"run": "true"}),
+            "app-token must directly follow bws-secrets",
+        ),
+        (
+            lambda d: _tok_steps(d)[4].__setitem__("uses", "actions/checkout@v7"),
+            "steps.app-token is read at jobs.soaked.steps.4.with.token",
+        ),
+        (
+            lambda d: _tok_steps(d).insert(0, _tok_steps(d).pop(4)),
+            "steps.app-token is read at jobs.soaked.steps.0.with.token",
+        ),
+        (
+            lambda d: _tok_steps(d)[4]["with"].pop("token"),
+            "no SHA-pinned actions/checkout after the blanking step takes the token",
+        ),
+        (lambda d: _tok_steps(d)[2].pop("id"), "app-token step has no `id`"),
+        (
+            lambda d: _tok_steps(d)[2]["with"].__setitem__(
+                "private-key", "${{ secrets.GITHUB_APP_PRIVATE_KEY }}"
+            ),
+            "private-key must be",
+        ),
+        (
+            lambda d: d["jobs"]["soaked"].__setitem__("outputs", {"t": "${{ toJSON(steps) }}"}),
+            "steps.app-token is read at jobs.soaked.outputs.t",
+        ),
+        # persisted credentials and the global git config entry app-token leaves behind
+        (
+            lambda d: _tok_steps(d)[4]["with"].pop("persist-credentials"),
+            "must set `persist-credentials: false`",
+        ),
+        (
+            lambda d: _tok_steps(d)[4]["with"].__setitem__("persist-credentials", True),
+            "must set `persist-credentials: false`",
+        ),
+        (
+            lambda d: _tok_steps(d)[4]["with"].__setitem__("persist-credentials", "true"),
+            "must set `persist-credentials: false`",
+        ),
+        (lambda d: _tok_steps(d).pop(5), "must be exactly the global git config scrub"),
+        (
+            lambda d: _tok_steps(d).insert(5, {"run": "true"}),
+            "must be exactly the global git config scrub",
+        ),
+        (
+            lambda d: _tok_steps(d).insert(5, {"uses": "./.github/actions/profiler"}),
+            "must be exactly the global git config scrub",
+        ),
+        (
+            _git_scrub_edit("*x-access-token*)", "*nomatch*)"),
+            "must be exactly the global git config scrub",
+        ),
+        (
+            _git_scrub_edit('git config --global --unset-all "$key"', "true"),
+            "must be exactly the global git config scrub",
+        ),
+        (
+            _git_scrub_edit("exit 1", "exit 0"),
+            "must be exactly the global git config scrub",
+        ),
+        (
+            lambda d: _tok_steps(d)[5].__setitem__("shell", "sh"),
+            "must be exactly the global git config scrub",
+        ),
+        (
+            lambda d: _tok_steps(d).insert(7, token_checkout()),
+            "must run back to back right after the blanking step",
+        ),
+    ],
+)
+def test_any_other_checkout_token_shape_is_refused(mutate, why) -> None:
+    doc = token_doc()
+    mutate(doc)
+    findings = ci_workflow_invariants.analyse_pins_soaked(doc)[0]
+    assert {k for k, _n in findings} == {"pins-soaked-writes"}, findings
+    assert any(why in n for _k, n in findings), findings
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        {"run": './tool "$BWS_GITHUB_APP_PRIVATE_KEY"'},
+        {"run": "./tool", "env": {"K": "${{ env.BWS_APP_ID }}"}},
+        {"run": "./tool", "env": {"K": "${{ toJSON(env) }}"}},
+        {"uses": "some/action@sha", "with": {"k": "${{ env['BWS_GITHUB_APP_PRIVATE_KEY'] }}"}},
+    ],
+)
+def test_a_later_step_reading_a_bws_value_is_refused(step) -> None:
+    doc = token_doc()
+    _tok_steps(doc).append(step)
+    findings = ci_workflow_invariants.analyse_pins_soaked(doc)[0]
+    assert [k for k, _n in findings] == ["pins-soaked-writes"], findings
+    assert "reads a BWS_* value" in findings[0][1]
+
+
+def test_a_bws_value_in_the_job_or_workflow_env_is_refused() -> None:
+    doc = token_doc()
+    doc["jobs"]["soaked"]["env"] = {"K": "${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}"}
+    assert pins_kinds(doc) == ["pins-soaked-writes"]
+    doc = token_doc()
+    doc["env"] = {"K": "$BWS_APP_ID"}
+    assert pins_kinds(doc) == ["pins-soaked-writes"]
+
+
+def test_a_blanking_step_without_the_token_steps_is_still_a_bws_read() -> None:
+    doc = pins_doc()
+    _tok_steps(doc).append(token_triple()[2])
+    assert pins_kinds(doc) == ["pins-soaked-writes"]

@@ -56,6 +56,44 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The private submodules hold sites the drivers read (private/renet/go.mod, the account
+      # manifests, the renet image tags and cephpkg.go). Without them the 2026-10-22 run
+      # refused npm, go-mod, toolchain:go and the renet images with "declared submodule(s) not
+      # checked out", so the App token checks them out, read-only.
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      # bws-secrets exports both values to $GITHUB_ENV for the rest of the job, and the apply step runs freshly bumped dependency code, which must never hold the App private key; the invariant requires this step right here.
+      - name: Drop the App credentials from the job environment
+        run: |
+          echo "BWS_GITHUB_APP_PRIVATE_KEY=" >> "$GITHUB_ENV"
+          echo "BWS_APP_ID=" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+      # app-token writes the token into the global git config (url.<x-access-token>.insteadOf), so every later step could read the private repos; remove it and prove it is gone.
+      - name: Drop the App token from the global git config
+        run: |
+          while read -r key; do
+            case "$key" in *x-access-token*) git config --global --unset-all "$key" ;; esac
+          done < <(git config --global --name-only --get-regexp '^url\..*\.insteadof$')
+          if git config --global --get-regexp 'x-access-token' >/dev/null || git config --global --get-regexp '.' 'x-access-token' >/dev/null; then
+            echo "::error::an x-access-token entry is still in the global git config"; exit 1
+          fi
+
       - uses: ./.github/actions/profiler
         with:
           runner-label: ubuntu-latest

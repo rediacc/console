@@ -1051,7 +1051,7 @@ def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[s
     ]
 
 
-# THE PINS-SOAKED PINS (PLAN-pins-command T11). `pins-soaked.yml` reports soaked pins as an artifact and opens nothing: no pull request, no push, no token beyond `contents: read`. The phase reads that file and refuses any shape that could write, or that no longer runs the verb or uploads its output.
+# THE PINS-SOAKED PINS (PLAN-pins-command T11). `pins-soaked.yml` reports soaked pins as an artifact and opens nothing: no pull request, no push, no token beyond `contents: read`, the one minted token being the read-only checkout token of the 2026-10-23 ruling (`_pins_checkout_token`). The phase reads that file and refuses any shape that could write, or that no longer runs the verb or uploads its output.
 PINS_SOAKED_KINDS = (
     "pins-soaked-triggers",
     "pins-soaked-permissions",
@@ -1129,6 +1129,227 @@ def _read_only(perms: object) -> bool:
     return isinstance(perms, dict) and perms == {"contents": "read"}
 
 
+# THE ONE ADMITTED TOKEN (operator ruling 2026-10-23, "Admit a read-only checkout token"). The private submodules hold sites the drivers read, so a job may mint a checkout token through exactly one closed shape, each step contiguous: a bws-secrets step fetching only the App id and key with `secrets.BWS_ACCESS_TOKEN`, an app-token step with an `id` and `preset: readonly` (contents: read, `.github/actions/app-token/action.yml` lines 20 and 55), a step blanking both BWS_* values in `$GITHUB_ENV`, and that token read only as `with.token` of a SHA-pinned `actions/checkout`.
+# The blanking step is the price of the ruling's own rule that no other step reads a BWS_* value: bws-secrets exports both to `$GITHUB_ENV` for the rest of the job (fetch.sh), so without it the apply step, which runs freshly bumped dependency code, would hold the App private key in its environment and could mint any preset. Any other shape, a second pair, or a token read anywhere else leaves both steps refused.
+_PINS_BWS_USES = "./.github/actions/bws-secrets"
+_PINS_APP_USES = "./.github/actions/app-token"
+_PINS_BWS_MAP = {
+    "GITHUB_APP_PRIVATE_KEY": "BWS_GITHUB_APP_PRIVATE_KEY",
+    "GITHUB_APP_ID": "BWS_APP_ID",
+}
+_PINS_BWS_ACCESS = "${{secrets.BWS_ACCESS_TOKEN}}"
+_PINS_TOKEN_KEY_INPUTS = {
+    "client-id": "${{env.BWS_APP_ID}}",
+    "private-key": "${{env.BWS_GITHUB_APP_PRIVATE_KEY}}",
+}
+_PINS_SCRUB_LINES = frozenset('echo "%s=" >> "$GITHUB_ENV"' % v for v in _PINS_BWS_MAP.values())
+# app-token writes its token into the GLOBAL git config as a `url.<...x-access-token...>.insteadof` key (`.github/actions/app-token/action.yml` line 126), and a checkout that persists credentials leaves it in .git/config, so either way every later step could read the private repos without naming the token.
+# So each token-taking checkout says `persist-credentials: false`, they run back to back after the blanking step, and the step right after the last of them is exactly these lines, which unset every such key and fail the job if any trace remains.
+# actions/checkout fetches submodules under its own temporary auth and removes it at the end of the step when persist-credentials is false (src/git-source-provider.ts lines 150, 277-284 and 316-324 at the pinned SHA), so the submodule checkout does not need the persisted header.
+_PINS_GIT_SCRUB_LINES = (
+    "while read -r key; do",
+    'case "$key" in *x-access-token*) git config --global --unset-all "$key" ;; esac',
+    "done < <(git config --global --name-only --get-regexp '^url\\..*\\.insteadof$')",
+    "if git config --global --get-regexp 'x-access-token' >/dev/null || git config --global --get-regexp '.' 'x-access-token' >/dev/null; then",
+    'echo "::error::an x-access-token entry is still in the global git config"; exit 1',
+    "fi",
+)
+_PINS_CHECKOUT_RE = re.compile(r"actions/checkout@[0-9a-f]{40}")
+_PINS_BWS_LINE_RE = re.compile(r"([A-Za-z0-9_.=:-]+)\s*>\s*([A-Za-z_][A-Za-z0-9_]*)")
+_PINS_STEP_ID_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*")
+# `steps.<id>` names one step; `steps[...]`, `toJSON(steps)` or a bare `steps` can reach any, so they count as a read of the token.
+_PINS_STEPS_RE = re.compile(r"\bsteps\b(?:\s*\.\s*([A-Za-z_][A-Za-z0-9_-]*))?")
+_PINS_BWS_NAME_RE = re.compile(r"\bBWS_\w*")
+# The env context read whole (`toJSON(env)`, `env[...]`) can reach a BWS_* value as surely as naming it.
+_PINS_ENV_WHOLE_RE = re.compile(r"\benv\b(?!\s*\.\s*[A-Za-z_])")
+
+
+def _leaves(value: object, path: tuple = ()) -> typing.Iterator[tuple[tuple, str]]:
+    """Every (path, text) scalar under `value`, so a check cannot miss a key it did not think to name."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            yield from _leaves(v, (*path, k))
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            yield from _leaves(v, (*path, i))
+    elif value is not None:
+        yield path, _text(value)
+
+
+def _exprs(path: tuple, text: str) -> list[str]:
+    """The expressions in one scalar; an `if:` value is an expression whether or not it is wrapped."""
+    found = _PINS_EXPR_RE.findall(text)
+    if path and path[-1] == "if":
+        found.append(text)
+    return found
+
+
+def _squash(value: object) -> str:
+    return re.sub(r"\s+", "", _text(value))
+
+
+def _pins_reads_bws(value: object) -> bool:
+    """True when anything under `value` names a BWS_* variable or reads the env context whole."""
+    for path, text in _leaves(value):
+        if _PINS_BWS_NAME_RE.search(text):
+            return True
+        if any(_PINS_ENV_WHOLE_RE.search(e) for e in _exprs(path, text)):
+            return True
+    return False
+
+
+def _pins_bws_shape(step: dict) -> str | None:
+    """Why this bws-secrets step is not the admitted one, or None."""
+    extra = sorted(str(k) for k in step if k not in ("name", "uses", "with"))
+    if extra:
+        return "bws-secrets step carries %s" % ", ".join(extra)
+    with_ = step.get("with")
+    if not isinstance(with_, dict) or set(with_) != {"access-token", "secrets"}:
+        return "bws-secrets `with:` must hold exactly access-token and secrets"
+    if _squash(with_.get("access-token")) != _PINS_BWS_ACCESS:
+        return "bws-secrets access-token must be ${{ secrets.BWS_ACCESS_TOKEN }}"
+    wanted = _text(with_.get("secrets"))
+    if "$" in wanted or "#" in wanted:
+        return "bws-secrets `secrets:` must be the two literal lines, with no expression or comment"
+    pairs: dict[str, str] = {}
+    lines = [ln.strip() for ln in wanted.split("\n") if ln.strip()]
+    for ln in lines:
+        m = _PINS_BWS_LINE_RE.fullmatch(ln)
+        if m:
+            pairs[m.group(1)] = m.group(2)
+    if len(lines) != len(_PINS_BWS_MAP) or pairs != _PINS_BWS_MAP:
+        return "bws-secrets may fetch only %s" % ", ".join(
+            "%s > %s" % kv for kv in _PINS_BWS_MAP.items()
+        )
+    return None
+
+
+def _pins_token_shape(step: dict) -> str | None:
+    """Why this app-token step is not the admitted one, or None."""
+    extra = sorted(str(k) for k in step if k not in ("name", "uses", "with", "id"))
+    if extra:
+        return "app-token step carries %s" % ", ".join(extra)
+    if not _PINS_STEP_ID_RE.fullmatch(_text(step.get("id"))):
+        return "app-token step has no `id`"
+    with_ = step.get("with")
+    if not isinstance(with_, dict):
+        return "app-token step has no `with:`"
+    allowed = (*_PINS_TOKEN_KEY_INPUTS, "preset", "repositories")
+    extra = sorted(str(k) for k in with_ if k not in allowed)
+    if extra:
+        return "app-token `with:` carries %s" % ", ".join(extra)
+    if "preset" not in with_:
+        return "app-token has no `preset:`; it must say `preset: readonly`"
+    if with_.get("preset") != "readonly":
+        return "app-token preset is %r, not readonly" % with_.get("preset")
+    for key, want in _PINS_TOKEN_KEY_INPUTS.items():
+        if _squash(with_.get(key)) != want:
+            return "app-token %s must be %s" % (key, want)
+    if "$" in _text(with_.get("repositories")):
+        return "app-token repositories must be a literal list"
+    return None
+
+
+def _pins_is_scrub(step: dict) -> bool:
+    """The closed form of the step that blanks both BWS_* values for the rest of the job."""
+    if any(k not in ("name", "run") for k in step):
+        return False
+    lines = [ln.strip() for ln in _text(step.get("run")).split("\n") if ln.strip()]
+    return len(lines) == len(_PINS_SCRUB_LINES) and set(lines) == _PINS_SCRUB_LINES
+
+
+def _pins_is_git_scrub(step: dict) -> bool:
+    """The closed form of the step that removes the token app-token left in the global git config, line for line."""
+    if any(k not in ("name", "run") for k in step):
+        return False
+    lines = tuple(ln.strip() for ln in _text(step.get("run")).split("\n") if ln.strip())
+    return lines == _PINS_GIT_SCRUB_LINES
+
+
+def _pins_token_read_at(path: tuple, text: str, ctx: tuple) -> int | None:
+    """The step index when this read of the token is `with.token` of a SHA-pinned checkout after the blanking step, else None."""
+    jname, raw, position, scrub, sid = ctx
+    if len(path) != 6 or path[:3] != ("jobs", jname, "steps") or path[4:] != ("with", "token"):
+        return None
+    k = path[3]
+    st = raw[k] if isinstance(raw, list) and isinstance(k, int) and k < len(raw) else None
+    at = position.get(id(st), -1) if isinstance(st, dict) else -1
+    if (
+        isinstance(st, dict)
+        and at > scrub
+        and _PINS_CHECKOUT_RE.fullmatch(_text(st.get("uses")).strip()) is not None
+        and _squash(text) == "${{steps.%s.outputs.token}}" % sid
+    ):
+        return at
+    return None
+
+
+def _pins_checkout_token(doc: dict, jname: str, job: dict) -> tuple[set[int], dict[int, str]]:
+    """(admitted step indices, refusal reason per refused bws-secrets/app-token step) for one job; see the ruling above."""
+    steps = list(_steps(job))
+    bws = [i for i, s in enumerate(steps) if _text(s.get("uses")).strip() == _PINS_BWS_USES]
+    tok = [i for i, s in enumerate(steps) if _text(s.get("uses")).strip() == _PINS_APP_USES]
+    if not bws and not tok:
+        return set(), {}
+
+    def refuse(why: str) -> tuple[set[int], dict[int, str]]:
+        return set(), dict.fromkeys(bws + tok, why)
+
+    if len(bws) != 1 or len(tok) != 1:
+        return refuse(
+            "the read-only checkout token needs exactly one bws-secrets and one app-token step in the job, found %d and %d"
+            % (len(bws), len(tok))
+        )
+    b, t = bws[0], tok[0]
+    if t != b + 1:
+        return refuse("app-token must directly follow bws-secrets")
+    why = _pins_bws_shape(steps[b]) or _pins_token_shape(steps[t])
+    if why:
+        return refuse(why)
+    s = t + 1
+    if s >= len(steps) or not _pins_is_scrub(steps[s]):
+        return refuse(
+            "the step right after app-token must be exactly `%s`, since bws-secrets exports both to the rest of the job"
+            % "; ".join(sorted(_PINS_SCRUB_LINES))
+        )
+    sid = _text(steps[t].get("id"))
+    ctx = (jname, job.get("steps"), {id(st): i for i, st in enumerate(steps)}, s, sid)
+    used: set[int] = set()
+    for path, text in _leaves(doc):
+        for expr in _exprs(path, text):
+            for m in _PINS_STEPS_RE.finditer(expr):
+                if m.group(1) is not None and m.group(1) != sid:
+                    continue
+                at = _pins_token_read_at(path, text, ctx)
+                if at is None:
+                    return refuse(
+                        "steps.%s is read at %s, not only as `with.token` of a SHA-pinned actions/checkout after the blanking step"
+                        % (sid, ".".join(str(p) for p in path))
+                    )
+                used.add(at)
+    if not used:
+        return refuse("no SHA-pinned actions/checkout after the blanking step takes the token")
+    for at in sorted(used):
+        with_ = steps[at].get("with")
+        persist = with_.get("persist-credentials") if isinstance(with_, dict) else None
+        if persist is not False and persist != "false":
+            return refuse(
+                "the token-taking checkout at step %d must set `persist-credentials: false`, or the token stays in .git/config for every later step"
+                % (at + 1)
+            )
+    last = max(used)
+    if sorted(used) != list(range(s + 1, last + 1)):
+        return refuse(
+            "the token-taking checkouts must run back to back right after the blanking step, so no other step runs while the token is in the global git config"
+        )
+    g = last + 1
+    if g >= len(steps) or not _pins_is_git_scrub(steps[g]):
+        return refuse(
+            "the step right after the last token-taking checkout must be exactly the global git config scrub (`_PINS_GIT_SCRUB_LINES`), since app-token leaves the token there for every later step"
+        )
+    return {b, t, s, g}, {}
+
+
 def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
     """(findings, shape) for pins-soaked.yml. A non-mapping document is every kind of failure at once."""
     out: list[tuple[str, str]] = []
@@ -1153,17 +1374,20 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
         out.append(("pins-soaked-permissions", "workflow level"))
     raw_jobs = doc.get("jobs")
     jobs: dict = raw_jobs if isinstance(raw_jobs, dict) else {}
-    if _pins_secret({k: v for k, v in doc.items() if k != "jobs"}):
+    outside_jobs = {k: v for k, v in doc.items() if k != "jobs"}
+    if _pins_secret(outside_jobs) or _pins_reads_bws(outside_jobs):
         out.append(("pins-soaked-writes", "workflow level"))
-    applies = uploads = reds = 0
+    applies = uploads = reds = tokens = 0
     for jname, job in jobs.items():
         if not isinstance(job, dict):
             continue
         # env, container, services and the rest of the job outside its steps; a `secrets:` block of any form hands secrets to a called workflow.
         outside = {k: v for k, v in job.items() if k != "steps"}
-        if "secrets" in job or _pins_secret(outside, job.get("if")):
+        if "secrets" in job or _pins_secret(outside, job.get("if")) or _pins_reads_bws(outside):
             out.append(("pins-soaked-writes", "job %s" % jname))
         steps = list(_steps(job))
+        admitted, refused = _pins_checkout_token(doc, jname, job)
+        tokens += bool(admitted)
         apply_ids = [
             _text(st.get("id"))
             for st in steps
@@ -1174,12 +1398,24 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
             out.append(("pins-soaked-permissions", "job %s" % jname))
         for i, st in enumerate(steps):
             run, uses = _text(st.get("run")), _text(st.get("uses"))
-            if (
+            label = _step_label(jname, i, st)
+            if i in admitted:
+                pass
+            elif (
                 _PINS_WRITE_RE.search(run)
                 or any(w in uses for w in _PINS_WRITE_USES)
                 or _pins_secret(st, st.get("if"))
             ):
-                out.append(("pins-soaked-writes", _step_label(jname, i, st)))
+                why = refused.get(i)
+                out.append(("pins-soaked-writes", "%s [%s]" % (label, why) if why else label))
+            elif _pins_reads_bws(st):
+                out.append(
+                    (
+                        "pins-soaked-writes",
+                        "%s [reads a BWS_* value or the whole env context; only the admitted checkout token steps may]"
+                        % label,
+                    )
+                )
             cond = _text(st.get("if"))
             if any(r.search(cond) for r in red_ifs) and _PINS_EXIT_RE.search(run):
                 reds += 1
@@ -1200,7 +1436,9 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
         )
     return out, [
         "%d cron(s), %d apply step(s), %d upload step(s), contents: read only"
-        % (len(crons), applies, uploads)
+        % (len(crons), applies, uploads),
+        "%d read-only checkout token(s) (bws-secrets, app-token preset readonly, BWS_* blanked, checkout with.token only and persist-credentials false, global git config scrubbed)"
+        % tokens,
     ]
 
 
@@ -1220,7 +1458,7 @@ def pins_soaked_message_for(kind: str, name: str, path: str) -> str | None:
     if kind == "pins-soaked-writes":
         return (
             head
-            + "%s: %s can write (a push, commit, tag, gh call, minted token, PR action or a secret passed in); this workflow is artifact-only."
+            + "%s: %s can write (a push, commit, tag, gh call, minted token, PR action or a secret passed in); this workflow is artifact-only, and the one token it may mint is the read-only checkout token of the 2026-10-23 ruling (bws-secrets with only GITHUB_APP_PRIVATE_KEY and GITHUB_APP_ID, app-token with an id and preset: readonly, a step blanking both BWS_* values in $GITHUB_ENV, the token only as with.token of SHA-pinned actions/checkout steps with persist-credentials: false run back to back, then the step scrubbing x-access-token from the global git config)."
             % (path, name)
         )
     if kind == "pins-soaked-no-apply":
