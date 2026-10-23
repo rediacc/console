@@ -3,7 +3,6 @@
   "findings": {
     "agent/plans/PLAN-haiku-model-routing.md:5f5e2b398f12": "claims Status phase, 1 open box(es); reads Status executing, 9 open",
     "agent/plans/PLAN-retire-bash-oracles.A0.md:fc82c7352bb9": "claims Status unknown, 0 open box(es); reads Status executing, 7 open",
-    "agent/plans/PLAN-stop-hook-rulings-campaign.md:14eec3936d0d": "claims Status draft, 16 open box(es); reads Status draft, 14 open",
     "agent/plans/PLAN-w7p5a-real-run-dispatch.md:b072b02fe02a": "claims Status in-progress, 2 open box(es); reads Status in-progress, 1 open"
   }
 }

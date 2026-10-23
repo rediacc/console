@@ -1460,35 +1460,6 @@
         "d54e3a5b"
       ]
     },
-    "agent/plans/PLAN-stop-hook-rulings-campaign.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 14,
-      "done": 3,
-      "open_sigs": [
-        "15eb2fa3",
-        "1e2bab22",
-        "2423a3bb",
-        "27b7c508",
-        "4b9439b7",
-        "4cfdbab9",
-        "5fb3419d",
-        "82a0f082",
-        "9e32e800",
-        "ab3e3872",
-        "d2374200",
-        "dbdc8bbc",
-        "e97f9440",
-        "eb55a6bd"
-      ],
-      "done_sigs": [
-        "0f583c13",
-        "60978fd3",
-        "c63cd990"
-      ]
-    },
     "agent/plans/PLAN-stop-report-queue.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -4242,6 +4213,34 @@
         "759c2b51",
         "bec5a550",
         "bfc9b7cd"
+      ]
+    },
+    "agent/plans/_done/PLAN-stop-hook-rulings-campaign.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 0,
+      "done": 17,
+      "open_sigs": [],
+      "done_sigs": [
+        "0f583c13",
+        "15eb2fa3",
+        "1e2bab22",
+        "2423a3bb",
+        "27b7c508",
+        "4b9439b7",
+        "4cfdbab9",
+        "5fb3419d",
+        "60978fd3",
+        "82a0f082",
+        "9e32e800",
+        "ab3e3872",
+        "c63cd990",
+        "d2374200",
+        "dbdc8bbc",
+        "e97f9440",
+        "eb55a6bd"
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-task-verification.md": {

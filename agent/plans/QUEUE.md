@@ -123,13 +123,12 @@ Promoted: 0 of 16 plans done, 111 of 363 boxes done (30%).
 2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
 4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-5. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
-6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-7. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-8. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-9. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
-10. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-11. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-12. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-13. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+5. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+6. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+7. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+8. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
+9. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+10. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+11. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+12. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
