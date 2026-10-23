@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 4
 language: zh
-sourceHash: "e1d1a463cc4049d4"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "a7c0a70e8868d2c0"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 仓库
@@ -195,7 +195,7 @@ rdc repo checkout staging --from my-app:work --tag staging-copy
 两种交付模式：
 
 - `env`。密钥在目标机器上的 renet shell 中导出为 `REDIACC_SECRET_<KEY>`。通过 `${REDIACC_SECRET_<KEY>}` 插值从 `docker-compose.yml` 中引用它。在容器环境中可见，因此使用此模式处理应用程序已期望在 env 中的连接字符串形状的值。
-- `file`。密钥写入主机上的 `/var/run/rediacc/secrets/<networkID>/<KEY>`（tmpfs，从不持久化）。通过带 `file:` 源的顶级 `secrets:` 声明以及每个服务的 `secrets:` 列表从 compose 文件中引用它。容器从 `/run/secrets/<key>` 读取。对任何敏感数据优选此模式。它不会出现在 `docker inspect` 或 `/proc/<pid>/environ` 中。
+- `file`。密钥写入主机上的 `/var/run/rediacc/net-<networkID>/secrets/<KEY>`（tmpfs，从不持久化）。通过带 `file:` 源的顶级 `secrets:` 声明以及每个服务的 `secrets:` 列表从 compose 文件中引用它。容器从 `/run/secrets/<key>` 读取。对任何敏感数据优选此模式。它不会出现在 `docker inspect` 或 `/proc/<pid>/environ` 中。
 
 ```bash
 # 设置、列出、获取（仅摘要）、取消设置
@@ -223,12 +223,12 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 小写服务端引用（`stripe_live_key`）是容器内 `/run/secrets/<name>` 文件名；主机路径尾部的大写（`STRIPE_LIVE_KEY`）与使用 `--key` 设置的内容匹配。`${REDIACC_NETWORK_ID}` 由 `renet compose` 自动插值。
 
-> **跨仓库隔离执行**：renet 的 compose 验证器拒绝引用任何其他仓库网络 ID 的 `secrets: file:`（以及 `configs: file:` 和 `env_file:`）路径。字面 `${REDIACC_NETWORK_ID}` 令牌（或你自己网络的整数）是 `/var/run/rediacc/secrets/...` 引用的唯一接受形式。`--unsafe` **不会**覆盖此检查。Rediaccfile bash 子进程周围的 Landlock 沙箱也仅将文件系统访问限定于你自己网络的密钥目录，所以来自 Rediaccfile 的恶意 `cat /var/run/rediacc/secrets/<other>/X` 在内核层面失败，错误码为 EACCES。
+> **跨仓库隔离执行**：renet 的 compose 验证器拒绝引用任何其他仓库网络 ID 的 `secrets: file:`（以及 `configs: file:` 和 `env_file:`）路径。字面 `${REDIACC_NETWORK_ID}` 令牌（或你自己网络的整数）是 `/var/run/rediacc/net-<N>/secrets/...` 引用的唯一接受形式。`--unsafe` **不会**覆盖此检查。Rediaccfile bash 子进程周围的 Landlock 沙箱也仅将文件系统访问限定于你自己网络的密钥目录，所以来自 Rediaccfile 的恶意 `cat /var/run/rediacc/net-<other>/secrets/X` 在内核层面失败，错误码为 EACCES。
 
 > **分支**：`rdc repo fork` **不会**复制密钥。要在分支中使用密钥，在分支上显式运行 `rdc repo secret set <fork>`。这是负载承载安全属性。分支的容器不应能在外部服务上充当生产主体。
 

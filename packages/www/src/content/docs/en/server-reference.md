@@ -42,7 +42,7 @@ For the high-level architecture, see [Architecture](/en/docs/architecture). For 
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
-/run/rediacc/docker-{id}.sock          # Per-network Docker sockets
+/run/rediacc/net-{id}/docker-{id}.sock          # Per-network Docker sockets
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
@@ -100,7 +100,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 You can also use the Docker socket directly:
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > Always run compose from the directory that contains `docker-compose.yml`, or Docker will not find the file.
@@ -314,7 +314,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### Find Which Docker Socket Runs a Container
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -340,7 +340,7 @@ renet list containers
 - The `--` separator is required before passing arguments to `renet compose` and `renet docker`
 - Run compose from the directory that contains `docker-compose.yml`
 - `.rediacc.json` slot assignments are stable, do not change them after deployment
-- Use `/run/rediacc/docker-{id}.sock` paths (systemd may change legacy `/var/run/` paths)
+- Use `/run/rediacc/net-{id}/docker-{id}.sock` paths (systemd may change legacy `/var/run/` paths)
 - Run `renet prune --dry-run` from time to time to find orphaned resources
 - BTRFS snapshots (`renet backup`) are fast and cheap, use them before making risky changes
 - Repositories are LUKS-encrypted, losing the password means losing the data

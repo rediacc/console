@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 4
 language: ko
-sourceHash: "e1d1a463cc4049d4"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "a7c0a70e8868d2c0"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 리포지터리
@@ -195,7 +195,7 @@ rdc repo checkout staging --from my-app:work --tag staging-copy
 두 가지 전달 모드:
 
 - `env`. 시크릿은 대상 머신의 renet 셸에서 `REDIACC_SECRET_<KEY>`로 내보내집니다. `docker-compose.yml`에서 `${REDIACC_SECRET_<KEY>}` 보간을 통해 참조하세요. 컨테이너 환경 내에서 보이므로, 애플리케이션이 이미 환경에서 기대하는 연결 문자열 형태의 값에 사용하세요.
-- `file`. 시크릿은 호스트의 `/var/run/rediacc/secrets/<networkID>/<KEY>`에 기록됩니다 (tmpfs, 절대 영구 저장되지 않음). compose 파일의 최상위 `secrets:` 선언과 `file:` 소스 및 서비스별 `secrets:` 목록을 통해 참조하세요. 컨테이너는 `/run/secrets/<key>`에서 읽습니다. 민감한 모든 것에는 이 모드를 선호하세요. `docker inspect` 또는 `/proc/<pid>/environ`에 절대 나타나지 않습니다.
+- `file`. 시크릿은 호스트의 `/var/run/rediacc/net-<networkID>/secrets/<KEY>`에 기록됩니다 (tmpfs, 절대 영구 저장되지 않음). compose 파일의 최상위 `secrets:` 선언과 `file:` 소스 및 서비스별 `secrets:` 목록을 통해 참조하세요. 컨테이너는 `/run/secrets/<key>`에서 읽습니다. 민감한 모든 것에는 이 모드를 선호하세요. `docker inspect` 또는 `/proc/<pid>/environ`에 절대 나타나지 않습니다.
 
 ```bash
 # 설정, 목록, 가져오기 (다이제스트만), 해제
@@ -223,12 +223,12 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 소문자 서비스 측 참조(`stripe_live_key`)는 컨테이너 내부 `/run/secrets/<name>` 파일 이름입니다. 호스트 경로의 대문자 꼬리(`STRIPE_LIVE_KEY`)는 `--key`로 설정한 것과 일치합니다. `${REDIACC_NETWORK_ID}`는 `renet compose`에 의해 자동으로 보간됩니다.
 
-> **리포지터리 간 격리 적용**: renet의 compose 검증자는 다른 리포지터리의 네트워크 ID를 참조하는 `secrets: file:` (그리고 `configs: file:`, `env_file:`) 경로를 거부합니다. `/var/run/rediacc/secrets/...` 참조에서 허용되는 유일한 형태는 리터럴 `${REDIACC_NETWORK_ID}` 토큰 (또는 자신의 네트워크 정수)입니다. `--unsafe`는 이 검사를 재정의하지 **않습니다**. Rediaccfile bash 서브프로세스 주변의 Landlock 샌드박스도 파일 시스템 접근을 자신의 네트워크 시크릿 디렉터리로만 제한하므로, Rediaccfile에서의 악의적인 `cat /var/run/rediacc/secrets/<other>/X`는 커널 레이어에서 EACCES로 실패합니다.
+> **리포지터리 간 격리 적용**: renet의 compose 검증자는 다른 리포지터리의 네트워크 ID를 참조하는 `secrets: file:` (그리고 `configs: file:`, `env_file:`) 경로를 거부합니다. `/var/run/rediacc/net-<N>/secrets/...` 참조에서 허용되는 유일한 형태는 리터럴 `${REDIACC_NETWORK_ID}` 토큰 (또는 자신의 네트워크 정수)입니다. `--unsafe`는 이 검사를 재정의하지 **않습니다**. Rediaccfile bash 서브프로세스 주변의 Landlock 샌드박스도 파일 시스템 접근을 자신의 네트워크 시크릿 디렉터리로만 제한하므로, Rediaccfile에서의 악의적인 `cat /var/run/rediacc/net-<other>/secrets/X`는 커널 레이어에서 EACCES로 실패합니다.
 
 > **포크**: `rdc repo fork`는 시크릿을 복사하지 **않습니다**. 포크에서 시크릿을 사용하려면 포크에 대해 명시적으로 `rdc repo secret set <fork>`를 실행하세요. 이것은 핵심 안전 속성입니다. 포크의 컨테이너는 외부 서비스에 대해 프로덕션 주체로 행동할 수 없어야 합니다.
 

@@ -11,8 +11,8 @@ tags:
   - case-study
 featured: true
 language: zh
-sourceHash: "4658b7226eb1e696"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "2b10e7d64d0ce38d"
+sourceCommit: "c8a8908f7412252e302fe5280980c35d5cae82da"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -124,7 +124,7 @@ Total: 6.3s
 
 2 GB fork 的 clone 步骤耗时 573 毫秒。128 GB fork 的 clone 步骤耗时 2.3 秒。因此数据 clone 是亚线性的，不是严格恒定。但总 fork 时间几乎相同（6.3 秒对 7.2 秒），因为大部分等待是 SSH 和 license 握手，而不是数据。从用户角度看，fork 就是 6 到 7 秒的停顿，与仓库大小无关。
 
-现在我是在 fork 上操作。它有自己的 GUID（`22c57178-...`）、自己的 networkId（`21760`）、自己的挂载路径、自己的 Docker daemon socket（`/var/run/rediacc/docker-21760.sock`）。父仓库的数据通过 reflink 共享。父仓库本身全程保持运行。
+现在我是在 fork 上操作。它有自己的 GUID（`22c57178-...`）、自己的 networkId（`21760`）、自己的挂载路径、自己的 Docker daemon socket（`/var/run/rediacc/net-21760/docker-21760.sock`）。父仓库的数据通过 reflink 共享。父仓库本身全程保持运行。
 
 当我 `term connect` 进入 fork 时，看到的是：
 

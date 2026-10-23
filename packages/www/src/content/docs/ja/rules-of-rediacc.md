@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Rediaccのルール
@@ -79,7 +79,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 
 ## ネットワーク
 
-- **各リポジトリは独自のDockerデーモンを持ちます**（`/var/run/rediacc/docker-<networkId>.sock`）。
+- **各リポジトリは独自のDockerデーモンを持ちます**（`/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`）。
 - **各サービスは/26サブネット内でユニークなループバックIPを取得します**（例: `127.0.24.192/26`）。
 - **バインドは自動です**: サービスは `0.0.0.0` または `localhost` にバインドでき、カーネルが透過的にアドレスをサービスに割り当てられたループバック IP に書き換えます。`${SERVICE_IP}` への明示的なバインドも引き続き機能しますが、もはや必須ではありません。
 - **ヘルスチェックには `localhost`** または `${SERVICE_IP}` を使用できます。例: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

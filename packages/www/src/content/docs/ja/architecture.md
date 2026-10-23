@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ja
-sourceHash: "878b744629cb8b14"
-sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # アーキテクチャ
@@ -72,12 +72,12 @@ Rediaccは、SSH経由で連携する2つのバイナリを使用しています
 ![Docker分離](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 例えば、ネットワークID`2816`を持つリポジトリは以下を使用します:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 これは以下を意味します:
@@ -107,7 +107,7 @@ Dockerデータと設定はリポジトリのマウント内に保存され、�
 
 **共有ランタイムパス**(変更なし):
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 この統合レイアウトにより、デーモンパスがホストファイルシステムと暗号化ボリュームに分割されていた場合に発生していた読み取り専用/読み書きマウント衝突が排除されます。この分割に複数回遭遇してから落ち着きました。リポジトリごともスタンドアロン両方のデーモンは同じディレクトリ構造に従うため、ツールと診断は両方のケースで同等に機能します。

@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 6
 language: es
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "467198b382846bca"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Red
@@ -42,7 +42,7 @@ Internet → Traefik (puertos 80/443/TCP/UDP)
                ↓ consulta cada 5s
            Servidor de rutas (descubre contenedores)
                ↓ inspecciona etiquetas
-           Daemons Docker (/var/run/rediacc/docker-*.sock)
+           Daemons Docker (/var/run/rediacc/net-*/docker-*.sock)
                ↓
            Contenedores (vinculados a IPs loopback 127.x.x.x)
 ```

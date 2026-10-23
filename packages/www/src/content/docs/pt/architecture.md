@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: pt
-sourceHash: "878b744629cb8b14"
-sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Arquitetura
@@ -73,12 +73,12 @@ Cada repositório tem o seu próprio daemon Docker isolado. Quando um repositór
 ![Docker Isolation](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 Por exemplo, um repositório com o ID de rede `2816` usa:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 Isto significa:
@@ -106,9 +106,9 @@ Os dados e a configuração do Docker são armazenados dentro do mount do reposi
 {datastore}/standalone/{N}/.rediacc/docker/config/
 ```
 
-**Caminho de runtime partilhado** (inalterado):
+**Caminho de runtime por rede**:
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Este layout unificado elimina colisões de mount só de leitura/leitura-escrita que ocorriam quando os caminhos dos daemons estavam divididos entre o sistema de ficheiros do host e o volume encriptado. Tanto os daemons por repositório como os standalone seguem a mesma estrutura de diretórios, pelo que as ferramentas e os diagnósticos funcionam de forma idêntica em ambos os casos.

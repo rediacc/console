@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ko
-sourceHash: "878b744629cb8b14"
-sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 아키텍처
@@ -72,12 +72,12 @@ Rediacc는 SSH를 통해 함께 작동하는 두 바이너리를 사용합니다
 ![Docker 격리](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 예를 들어, 네트워크 ID `2816`을 가진 레포지토리는 다음을 사용합니다.
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 즉:
@@ -107,7 +107,7 @@ Docker 데이터와 설정은 레포지토리 마운트 내부에 저장되어 �
 
 **공유 런타임 경로** (변경 없음):
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 이 통합 레이아웃은 데몬 경로가 호스트 파일시스템과 암호화 볼륨으로 분리되었을 때 발생했던 읽기 전용/읽기-쓰기 마운트 충돌을 제거합니다. 레포별 데몬과 독립형 데몬 모두 동일한 디렉토리 구조를 따르므로 툴링과 진단이 두 경우에서 동일하게 작동합니다.

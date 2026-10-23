@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: es
-sourceHash: "960821a4fc0654eb"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "661f857d2226d362"
+sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
 ---
 
 # Referencia del Servidor
@@ -44,7 +44,7 @@ Para la arquitectura de alto nivel, consulta [Arquitectura](/es/docs/architectur
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
-/run/rediacc/docker-{id}.sock          # Per-network Docker sockets
+/run/rediacc/net-{id}/docker-{id}.sock          # Per-network Docker sockets
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
@@ -102,7 +102,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 También puedes usar el socket de Docker directamente:
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > Ejecuta siempre compose desde el directorio que contiene `docker-compose.yml`, o Docker no encontrará el archivo.
@@ -316,7 +316,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### Encontrar qué socket de Docker ejecuta un contenedor
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -342,7 +342,7 @@ renet list containers
 - El separador `--` es obligatorio antes de pasar argumentos a `renet compose` y `renet docker`
 - Ejecuta compose desde el directorio que contiene `docker-compose.yml`
 - Las asignaciones de slots en `.rediacc.json` son estables, no las cambies tras el despliegue
-- Usa las rutas `/run/rediacc/docker-{id}.sock` (systemd puede cambiar las rutas antiguas de `/var/run/`)
+- Usa las rutas `/run/rediacc/net-{id}/docker-{id}.sock` (systemd puede cambiar las rutas antiguas de `/var/run/`)
 - Ejecuta `renet prune --dry-run` de vez en cuando para encontrar recursos huerfanos
 - Las instantáneas BTRFS (`renet backup`) son rápidas y baratas, úsalas antes de hacer cambios arriesgados
 - Los repositorios están cifrados con LUKS, perder la contraseña significa perder los datos

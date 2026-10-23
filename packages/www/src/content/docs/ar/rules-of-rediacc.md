@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ar
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # قواعد Rediacc
@@ -80,7 +80,7 @@ down() {
 
 ## الشبكات
 
-- **كل مستودع يحصل على Docker daemon خاص به** في `/var/run/rediacc/docker-<networkId>.sock`.
+- **كل مستودع يحصل على Docker daemon خاص به** في `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`.
 - **كل خدمة تحصل على عنوان IP loopback فريد** ضمن شبكة فرعية /26 (مثال: `127.0.24.192/26`).
 - **الربط تلقائي**: يمكن للخدمات الربط بـ `0.0.0.0` أو `localhost`، حيث تقوم النواة بإعادة كتابة العنوان بشكل شفاف إلى عنوان IP loopback المخصص للخدمة. الربط الصريح بـ `${SERVICE_IP}` لا يزال يعمل ولكنه لم يعد مطلوباً.
 - **يمكن لفحوصات الصحة استخدام `localhost`** أو `${SERVICE_IP}`. مثال: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

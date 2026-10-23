@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 4
 language: es
-sourceHash: "e1d1a463cc4049d4"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "a7c0a70e8868d2c0"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Repositorios
@@ -195,7 +195,7 @@ Los secretos por repositorio son credenciales de tiempo de implementación inyec
 Dos modos de entrega:
 
 - `env`: El secreto se exporta como `REDIACC_SECRET_<KEY>` en el shell renet en la máquina de destino. Hágale referencia desde su `docker-compose.yml` mediante interpolación `${REDIACC_SECRET_<KEY>}`. Visible dentro del entorno del contenedor, por lo que use esto para valores con forma de cadena de conexión que la aplicación ya espera en env.
-- `file`: El secreto se escribe en `/var/run/rediacc/secrets/<networkID>/<KEY>` en el host (tmpfs, nunca persistido). Hágale referencia desde su archivo de composición mediante una declaración de `secrets:` de nivel superior con origen `file:`, más una lista `secrets:` por servicio. Los contenedores leen desde `/run/secrets/<key>`. Prefiera este modo para cualquier cosa sensible. Nunca aparece en `docker inspect` o `/proc/<pid>/environ`.
+- `file`: El secreto se escribe en `/var/run/rediacc/net-<networkID>/secrets/<KEY>` en el host (tmpfs, nunca persistido). Hágale referencia desde su archivo de composición mediante una declaración de `secrets:` de nivel superior con origen `file:`, más una lista `secrets:` por servicio. Los contenedores leen desde `/run/secrets/<key>`. Prefiera este modo para cualquier cosa sensible. Nunca aparece en `docker inspect` o `/proc/<pid>/environ`.
 
 ```bash
 # Set, list, get (digest only), unset
@@ -223,12 +223,12 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 La referencia minúscula del lado del servicio (`stripe_live_key`) es el nombre del archivo `/run/secrets/<name>` dentro del contenedor; la parte en mayúsculas de la ruta del host (`STRIPE_LIVE_KEY`) coincide con lo que establece con `--key`. `${REDIACC_NETWORK_ID}` se interpola automáticamente por `renet compose`.
 
-> **Aislamiento entre repositorios aplicado:** el validador de composición de renet rechaza rutas `secrets: file:` (y `configs: file:`, y `env_file:`) que hacen referencia al ID de red de cualquier otro repositorio. El token literal `${REDIACC_NETWORK_ID}` (o el entero de su propia red) es la única forma aceptada para referencias `/var/run/rediacc/secrets/...`. Y `--unsafe` NO anula esta verificación. La sandbox de Landlock alrededor del subproceso bash de Rediaccfile también limita el acceso del sistema de archivos solo al directorio de secretos de su propia red, por lo que un `cat /var/run/rediacc/secrets/<other>/X` malicioso de un Rediaccfile falla con EACCES en el nivel del kernel.
+> **Aislamiento entre repositorios aplicado:** el validador de composición de renet rechaza rutas `secrets: file:` (y `configs: file:`, y `env_file:`) que hacen referencia al ID de red de cualquier otro repositorio. El token literal `${REDIACC_NETWORK_ID}` (o el entero de su propia red) es la única forma aceptada para referencias `/var/run/rediacc/net-<N>/secrets/...`. Y `--unsafe` NO anula esta verificación. La sandbox de Landlock alrededor del subproceso bash de Rediaccfile también limita el acceso del sistema de archivos solo al directorio de secretos de su propia red, por lo que un `cat /var/run/rediacc/net-<other>/secrets/X` malicioso de un Rediaccfile falla con EACCES en el nivel del kernel.
 
 > **Forks:** `rdc repo fork` **no** copia secretos. Para usar secretos en un fork, ejecute `rdc repo secret set <fork>` en el fork explícitamente. Esta es la propiedad de seguridad que soporta la carga. Los contenedores del fork no deberían poder actuar como el principal de producción contra servicios externos.
 

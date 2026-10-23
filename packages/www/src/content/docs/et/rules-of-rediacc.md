@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Rediacci reeglid
@@ -78,7 +78,7 @@ Renet süstib need automaatselt igasse konteinerisse:
 
 ## Võrgundus
 
-- **Igal repositooriumil on oma Dockeri deemon** aadressil `/var/run/rediacc/docker-<networkId>.sock`.
+- **Igal repositooriumil on oma Dockeri deemon** aadressil `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`.
 - **Igal teenusel on unikaalne loopback-IP** /26-alamvõrgus (nt `127.0.24.192/26`).
 - **Sidumine on automaatne**: Teenused saavad siduda `0.0.0.0` või `localhost` külge - kernel kirjutab aadressi läbipaistvalt teenuse määratud loopback-IP-ga üle. Selgesõnaline `${SERVICE_IP}` sidumine töötab endiselt, kuid pole enam nõutav.
 - **Tervisekontrollid võivad kasutada `localhost`-i** või `${SERVICE_IP}`-d. Näide: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

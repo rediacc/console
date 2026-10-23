@@ -71,12 +71,12 @@ Each repository gets its own isolated Docker daemon. When a repository is mounte
 ![Docker Isolation](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 For example, a repository with network ID `2816` uses:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 This means:
@@ -104,9 +104,9 @@ Docker data and configuration are stored inside the repository's mount, keeping 
 {datastore}/standalone/{N}/.rediacc/docker/config/
 ```
 
-**Shared runtime path** (unchanged):
+**Per-network runtime path**:
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 This unified layout eliminates read-only/read-write mount collisions that occurred when daemon paths were split across the host filesystem and the encrypted volume. We hit that split more than once before settling on this. Both per-repo and standalone daemons follow the same directory structure, so tooling and diagnostics work identically in both cases.

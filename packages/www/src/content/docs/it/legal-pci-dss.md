@@ -8,8 +8,8 @@ tags:
 subcategory: frameworks
 order: 6
 language: it
-sourceHash: "f0349ad8df33656e"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d748e8f6b0b7e064"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 Ascolta, PCI DSS v4.0.1. non è opzionale se gestisci i dati dei titolari di carta. La versione 4.0.1. si riduce a un requisito: isolamento a livello infrastrutturale da tutto il resto.
@@ -35,7 +35,7 @@ Riferimento: [PCI Security Standards Council](https://www.pcisecuritystandards.o
 
 Il PCI DSS punta forte sulla segmentazione. Continuo a vedere team che stratificano regole iptables su un isolamento insufficiente. Non funziona. I team che passano l'audit hanno la segmentazione integrata nell'architettura. Rediacc te la fornisce per default:
 
-- Ogni repository opera nel proprio daemon Docker in `/var/run/rediacc/docker-<networkId>.sock`
+- Ogni repository opera nel proprio daemon Docker in `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`
 - I repository dispongono di sottoreti IP di loopback isolate (127.0.x.x/26, 61 IP utilizzabili per rete)
 - Le regole iptables imposte da renet bloccano tutto il traffico tra daemon
 - I container di repository diversi non possono comunicare a livello di rete

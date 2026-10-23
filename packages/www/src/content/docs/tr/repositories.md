@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 4
 language: tr
-sourceHash: "e1d1a463cc4049d4"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "a7c0a70e8868d2c0"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Depolar
@@ -195,7 +195,7 @@ Depo başına gizli diziler, şifrelenmiş depo görüntüsüne yazılmadan kaps
 İki teslimat modu:
 
 - `env`. Gizli dizi, hedef makinedeki renet kabuğunda `REDIACC_SECRET_<KEY>` olarak dışa aktarılır. `docker-compose.yml` dosyanızdan `${REDIACC_SECRET_<KEY>}` enterpolasyonu aracılığıyla referans alın. Kapsayıcının ortamında görünür olduğundan, uygulamanın env'de zaten beklediği bağlantı dizesi şeklindeki değerler için bunu kullanın.
-- `file`. Gizli dizi, ana makinede `/var/run/rediacc/secrets/<networkID>/<KEY>` konumuna yazılır (tmpfs, hiçbir zaman kalıcı değil). Compose dosyanızdan `file:` kaynağıyla üst düzey bir `secrets:` bildirimi ve hizmet başına bir `secrets:` listesi aracılığıyla referans alın. Kapsayıcılar `/run/secrets/<key>` konumundan okur. Hassas her şey için bu modu tercih edin. `docker inspect` veya `/proc/<pid>/environ` içinde hiçbir zaman görünmez.
+- `file`. Gizli dizi, ana makinede `/var/run/rediacc/net-<networkID>/secrets/<KEY>` konumuna yazılır (tmpfs, hiçbir zaman kalıcı değil). Compose dosyanızdan `file:` kaynağıyla üst düzey bir `secrets:` bildirimi ve hizmet başına bir `secrets:` listesi aracılığıyla referans alın. Kapsayıcılar `/run/secrets/<key>` konumundan okur. Hassas her şey için bu modu tercih edin. `docker inspect` veya `/proc/<pid>/environ` içinde hiçbir zaman görünmez.
 
 ```bash
 # Set, list, get (digest only), unset
@@ -223,12 +223,12 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 Küçük harfli hizmet tarafı referansı (`stripe_live_key`), kapsayıcı içindeki `/run/secrets/<name>` dosya adıdır; ana makine yolunun büyük harfli kuyruğu (`STRIPE_LIVE_KEY`), `--key` ile belirlediğinizle eşleşir. `${REDIACC_NETWORK_ID}`, `renet compose` tarafından otomatik olarak enterpolasyona tabi tutulur.
 
-> **Depo arası yalıtım uygulanır**: renet'in compose doğrulayıcısı, başka bir deponun ağ kimliğine referans veren `secrets: file:` (ve `configs: file:`, ve `env_file:`) yollarını reddeder. `/var/run/rediacc/secrets/...` referansları için kabul edilen tek form, `${REDIACC_NETWORK_ID}` değişmez belirteci (veya kendi ağınızın tam sayısı) dir. `--unsafe` bu kontrolü geçersiz kılmaz. Rediaccfile bash alt işleminin etrafındaki Landlock korumalı alanı da dosya sistemi erişimini yalnızca kendi ağınızın gizli dizi diziniyle kapsar; bu nedenle bir Rediaccfile'dan kötü niyetli bir `cat /var/run/rediacc/secrets/<other>/X` çağrısı çekirdek katmanında EACCES ile başarısız olur.
+> **Depo arası yalıtım uygulanır**: renet'in compose doğrulayıcısı, başka bir deponun ağ kimliğine referans veren `secrets: file:` (ve `configs: file:`, ve `env_file:`) yollarını reddeder. `/var/run/rediacc/net-<N>/secrets/...` referansları için kabul edilen tek form, `${REDIACC_NETWORK_ID}` değişmez belirteci (veya kendi ağınızın tam sayısı) dir. `--unsafe` bu kontrolü geçersiz kılmaz. Rediaccfile bash alt işleminin etrafındaki Landlock korumalı alanı da dosya sistemi erişimini yalnızca kendi ağınızın gizli dizi diziniyle kapsar; bu nedenle bir Rediaccfile'dan kötü niyetli bir `cat /var/run/rediacc/net-<other>/secrets/X` çağrısı çekirdek katmanında EACCES ile başarısız olur.
 
 > **Fork'lar**: `rdc repo fork` gizli dizileri **kopyalamaz**. Fork'ta gizli diziler kullanmak için fork üzerinde açıkça `rdc repo secret set <fork>` çalıştırın. Bu, yük taşıyan güvenlik özelliğidir. Fork'un kapsayıcıları, harici hizmetlere karşı üretim asıl olarak hareket edememeli.
 

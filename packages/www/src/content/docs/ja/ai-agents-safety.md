@@ -9,8 +9,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: ja
-sourceHash: "e008783008d8e887"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f3439296da3e97f1"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 あなたのインフラストラクチャを管理するAIコーディングアシスタントを使用しているとします。Claude Code、Cursor、Gemini CLI、Copilot CLIなど、AIアシスタントが `rdc` を操作する場合、CLIはキーボードを操作する人間とは異なるルールセットを適用します。このページでは、エージェントが何ができるか・できないか、そしてエージェントがガードレールを回避しようとしても保護が機能する仕組みについて説明します。
@@ -214,7 +214,7 @@ rdc config audit verify
 
 主な対策は組み込まれています：**[リポジトリごとのシークレット](/ja/docs/repositories#secrets)** は暗号化されたリポジトリイメージとは別の領域に保存され、フォーク境界を越えてコピーされません。フォークのコンテナは空のシークレットマップでブートし、親とは異なる外部プリンシパルとして自身を識別します。`rdc repo secret set` で設定してください（compose補間用のenvモード、tmpfs `secrets:` ブロック用のfileモード）。変更ゲートは対称的です。人間とエージェント両者が、既存の値を上書きまたは削除するには `--current`（passwd形式の前提条件）または `--rotate-secret`（監査対象のローテーション）を供給する必要があります。
 
-**リポジトリ間の分離は強制されます。** リポジトリBの悪意あるまたは不注意なcompose ファイルは、リポジトリAのシークレットディレクトリを参照することはできません。Renetのcompose バリデーターは、現在のリポジトリの `${REDIACC_NETWORK_ID}` ディレクトリの外を指す `secrets: file:`、`configs: file:`、または `env_file:` パスを厳しく拒否し、その拒否は `--unsafe` でもオーバーライド不可です。多層防御：Rediaccfile bashサブプロセスの周りのLandlockサンドボックスは、ファイルシステムの読み取りを現在のネットワークのシークレットディレクトリのみにスコープするため、悪意のあるRediaccfileからの `cat /var/run/rediacc/secrets/<other>/X` はカーネル層でEACCESで失敗します。
+**リポジトリ間の分離は強制されます。** リポジトリBの悪意あるまたは不注意なcompose ファイルは、リポジトリAのシークレットディレクトリを参照することはできません。Renetのcompose バリデーターは、現在のリポジトリの `${REDIACC_NETWORK_ID}` ディレクトリの外を指す `secrets: file:`、`configs: file:`、または `env_file:` パスを厳しく拒否し、その拒否は `--unsafe` でもオーバーライド不可です。多層防御：Rediaccfile bashサブプロセスの周りのLandlockサンドボックスは、ファイルシステムの読み取りを現在のネットワークのシークレットディレクトリのみにスコープするため、悪意のあるRediaccfileからの `cat /var/run/rediacc/net-<other>/secrets/X` はカーネル層でEACCESで失敗します。
 
 さらに2つのパターンがエッジケースを塞ぎます：
 

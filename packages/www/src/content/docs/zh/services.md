@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4e5a0abadf84cd5f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 服务
@@ -52,7 +52,7 @@ Rediaccfile 在两个位置被发现：
 | `REDIACC_WORKING_DIR` | 仓库的挂载路径 | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | 仓库 GUID | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | 网络 ID（整数） | `2816` |
-| `DOCKER_HOST` | 此仓库隔离守护进程的 Docker 套接字 | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | 此仓库隔离守护进程的 Docker 套接字 | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json` 中定义的每个服务的回环 IP | `POSTGRES_IP=127.0.11.2` |
 
 `{SERVICE}_IP` 变量从 `.rediacc.json` 中的槽位映射自动生成，在 Rediaccfile 函数运行前导出。命名规则是将服务名称转换为大写，连字符替换为下划线，然后追加 `_IP`。例如，`listmonk-app` 变为 `LISTMONK_APP_IP=127.0.11.2`。
@@ -452,7 +452,7 @@ compose 中两种传递模式有效：
 
 **`env` 模式**。通过 `${REDIACC_SECRET_<KEY>}` 在任何 `environment:` 值中进行内插。renet 封装器在部署时将值传递到容器的环境中。
 
-**`file` 模式**。值输入到主机端 tmpfs 文件 `/var/run/rediacc/secrets/<networkID>/<KEY>`，您通过 Docker compose 的标准 `secrets:` 块将其挂载到容器中。容器读取 `/run/secrets/<key>`。对于任何敏感内容，请优先选择此模式。值永远不会出现在 `docker inspect` 或 `/proc/<pid>/environ` 中。
+**`file` 模式**。值输入到主机端 tmpfs 文件 `/var/run/rediacc/net-<networkID>/secrets/<KEY>`，您通过 Docker compose 的标准 `secrets:` 块将其挂载到容器中。容器读取 `/run/secrets/<key>`。对于任何敏感内容，请优先选择此模式。值永远不会出现在 `docker inspect` 或 `/proc/<pid>/environ` 中。
 
 ```yaml
 services:
@@ -465,9 +465,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 使用 `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` 和等效的文件模式来设定值。参阅[仓库 - 密钥](/zh/docs/repositories#secrets)了解完整的操作方法和[按仓库的密钥](/zh/docs/rdc-cheat-sheet#per-repo-secrets)在速查表中了解命令参考。
 
-> **跨仓库路径在验证时被拒绝。** 指向另一仓库的 `/var/run/rediacc/secrets/<other-networkID>/` 目录的 compose `secrets: file:`（或 `configs: file:`，或 `env_file:`）在 docker compose 运行前由 renet 封装器硬拒绝。`--unsafe` 不会覆盖。纵深防御：Rediaccfile shell 周围的 Landlock 沙箱限制读取到当前网络的密钥目录，因此即使绕过 YAML 验证器，来自 Rediaccfile bash 的 `cat /var/run/rediacc/secrets/<other>/X` 也会以 EACCES 失败。您无需选择加入；这对每个 `repo up` 都默认启用。
+> **跨仓库路径在验证时被拒绝。** 指向另一仓库的 `/var/run/rediacc/net-<other-networkID>/secrets/` 目录的 compose `secrets: file:`（或 `configs: file:`，或 `env_file:`）在 docker compose 运行前由 renet 封装器硬拒绝。`--unsafe` 不会覆盖。纵深防御：Rediaccfile shell 周围的 Landlock 沙箱限制读取到当前网络的密钥目录，因此即使绕过 YAML 验证器，来自 Rediaccfile bash 的 `cat /var/run/rediacc/net-<other>/secrets/X` 也会以 EACCES 失败。您无需选择加入；这对每个 `repo up` 都默认启用。

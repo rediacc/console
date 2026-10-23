@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: tr
-sourceHash: "878b744629cb8b14"
-sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Mimari
@@ -73,12 +73,12 @@ Her depo kendi izole Docker daemon'una sahiptir. Bir depo bağlandığında, ren
 ![Docker İzolasyonu](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 Örneğin, ağ kimliği `2816` olan bir depo şunu kullanır:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 Bu şu anlama gelir:
@@ -108,7 +108,7 @@ Docker verileri ve yapılandırması deponun bağlama noktasının içinde sakla
 
 **Paylaşılan çalışma zamanı yolu** (değişmez):
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Bu birleşik düzen, daemon yolları ana bilgisayar dosya sistemi ile şifreli birim arasında bölündüğünde oluşan salt okunur ve okuma yazma bağlama çatışmalarını ortadan kaldırır. Hem depo başına hem de bağımsız daemon'lar aynı dizin yapısını izler; bu nedenle araçlar ve tanılama her iki durumda da aynı şekilde çalışır.

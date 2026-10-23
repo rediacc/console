@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 4
 language: et
-sourceHash: "e1d1a463cc4049d4"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "a7c0a70e8868d2c0"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Repositooriumid
@@ -195,7 +195,7 @@ Repopõhised saladused on juurutamise ajal konteineritesse süstitavad mandaadid
 Kaks edastusviisi:
 
 - `env`. Saladus eksporditakse kui `REDIACC_SECRET_<KEY>` renet shelli kaudu sihtmasinal. Viita sellele oma `docker-compose.yml`-is `${REDIACC_SECRET_<KEY>}` interpolatsiooni kaudu. Nähtav konteineri keskkonnas, seega kasuta seda ühendusstring-kujuliste väärtuste jaoks, mida rakendus juba env-is eeldab.
-- `file`. Saladus kirjutatakse `/var/run/rediacc/secrets/<networkID>/<KEY>` hostimasinale (tmpfs, ei püsistata kunagi). Viita sellele compose-failist tipptaseme `secrets:` deklaratsiooni kaudu `file:` allikaga, lisaks teenusepõhise `secrets:` loendiga. Konteinerid loevad `/run/secrets/<key>` aadressilt. Eelista seda viisi kõige sensitiivse jaoks. See ei ilmu kunagi `docker inspect`-is ega `/proc/<pid>/environ`-is.
+- `file`. Saladus kirjutatakse `/var/run/rediacc/net-<networkID>/secrets/<KEY>` hostimasinale (tmpfs, ei püsistata kunagi). Viita sellele compose-failist tipptaseme `secrets:` deklaratsiooni kaudu `file:` allikaga, lisaks teenusepõhise `secrets:` loendiga. Konteinerid loevad `/run/secrets/<key>` aadressilt. Eelista seda viisi kõige sensitiivse jaoks. See ei ilmu kunagi `docker inspect`-is ega `/proc/<pid>/environ`-is.
 
 ```bash
 # Seadista, loetle, hangi (ainult räsi), tühista
@@ -223,12 +223,12 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 Väiketäheline teenusepoolne viide (`stripe_live_key`) on konteineri-sisene `/run/secrets/<name>` failinimi; hosti tee suuretäheline lõpp (`STRIPE_LIVE_KEY`) vastab sellele, mille seadsid `--key`-ga. `${REDIACC_NETWORK_ID}` interpoleeritakse automaatselt `renet compose` poolt.
 
-> **Repodeülene eraldatus on tagatud**: renet-i compose-validaator lükkab tagasi `secrets: file:` (ja `configs: file:`, ja `env_file:`) teede, mis viitavad mõne muu repo võrgu ID-le. Literaalne `${REDIACC_NETWORK_ID}` token (või oma võrgu täisarv) on ainus aktsepteeritav vorm `/var/run/rediacc/secrets/...` viidete jaoks. Ja `--unsafe` EI alista seda kontrolli. Rediaccfaili bash-alamprotsessi ümber olev Landlock liivakast piirab ka failisüsteemi juurdepääsu ainult oma võrgu saladuste kataloogiga, seega pahatahtlik `cat /var/run/rediacc/secrets/<teise>/X` Rediaccfailist ebaõnnestub EACCES-ga kerneli tasemel.
+> **Repodeülene eraldatus on tagatud**: renet-i compose-validaator lükkab tagasi `secrets: file:` (ja `configs: file:`, ja `env_file:`) teede, mis viitavad mõne muu repo võrgu ID-le. Literaalne `${REDIACC_NETWORK_ID}` token (või oma võrgu täisarv) on ainus aktsepteeritav vorm `/var/run/rediacc/net-<N>/secrets/...` viidete jaoks. Ja `--unsafe` EI alista seda kontrolli. Rediaccfaili bash-alamprotsessi ümber olev Landlock liivakast piirab ka failisüsteemi juurdepääsu ainult oma võrgu saladuste kataloogiga, seega pahatahtlik `cat /var/run/rediacc/net-<teise>/secrets/X` Rediaccfailist ebaõnnestub EACCES-ga kerneli tasemel.
 
 > **Kahvlid**: `rdc repo fork` ei kopeeri saladusi. Saladuste kasutamiseks kahvlis käivita `rdc repo secret set <fork>` kahvli kohta sõnaselgelt. See on kandev ohutusomadus. Kahvli konteinerid ei peaks suutma tegutseda tootmisprincipaalina väliste teenuste vastu.
 

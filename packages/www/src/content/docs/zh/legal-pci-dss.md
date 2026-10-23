@@ -8,8 +8,8 @@ tags:
 subcategory: frameworks
 order: 6
 language: zh
-sourceHash: "f0349ad8df33656e"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d748e8f6b0b7e064"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 简单来说，如果你处理持卡人数据，PCI DSS v4.0.1 不是可选的。PCI DSS v4.0.1 的核心就是一个要求：基础设施级别的隔离。
@@ -35,7 +35,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 PCI DSS 在网络分段方面要求很高。我经常看到团队试图在隔离不足的基础上堆叠 iptables 规则。这是行不通的。通过审计的团队是将分段构建到架构中。Rediacc 默认为您提供这种分段：
 
-- 每个仓库在 `/var/run/rediacc/docker-<networkId>.sock` 中运行自己的 Docker daemon
+- 每个仓库在 `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock` 中运行自己的 Docker daemon
 - 仓库具有隔离的环回 IP 子网（127.0.x.x/26，每个网络 61 个可用 IP）
 - renet 强制执行的 iptables 规则阻止所有跨 daemon 流量
 - 不同仓库的容器无法在网络层面通信

@@ -8,8 +8,8 @@ tags:
 subcategory: frameworks
 order: 6
 language: ja
-sourceHash: "f0349ad8df33656e"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d748e8f6b0b7e064"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 PCI DSS v4.0.1は、カード会員データを扱う場合、オプションではありません。v4.0.1の本質は1つの要件に集約されます：インフラストラクチャレベルで他のすべてから隔離すること。
@@ -35,7 +35,7 @@ PCI DSS v4.0.1は、カード会員データを扱う場合、オプションで
 
 PCI DSSはセグメンテーションに強く依存しています。不十分な隔離の上にiptablesルールを積み重ねるチームをよく見かけます。そうしたアプローチはうまくいきません。合格するチームはセグメンテーションをアーキテクチャに組み込んでいます。Rediaccはデフォルトでそれを提供します：
 
-- 各リポジトリは`/var/run/rediacc/docker-<networkId>.sock`で独自のDocker daemonとして実行
+- 各リポジトリは`/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`で独自のDocker daemonとして実行
 - リポジトリは分離されたループバックIPサブネット（127.0.x.x/26、ネットワークあたり61の使用可能IP）を持つ
 - renetが強制するiptablesルールがdaemon間のすべてのトラフィックをブロック
 - 異なるリポジトリのコンテナはネットワークレベルで通信不可

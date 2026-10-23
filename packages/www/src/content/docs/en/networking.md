@@ -38,7 +38,7 @@ Internet → Traefik (ports 80/443/TCP/UDP)
                ↓ polls every 5s
            Route Server (discovers containers)
                ↓ inspects labels
-           Docker Daemons (/var/run/rediacc/docker-*.sock)
+           Docker Daemons (/var/run/rediacc/net-*/docker-*.sock)
                ↓
            Containers (bound to 127.x.x.x loopback IPs)
 ```

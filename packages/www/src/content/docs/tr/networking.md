@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 6
 language: tr
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "467198b382846bca"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Ağ
@@ -42,7 +42,7 @@ Akış şu şekildedir:
                ↓ her 5 saniyede sorgular
            Route Server (konteynerleri keşfeder)
                ↓ etiketleri inceler
-           Docker Daemon'ları (/var/run/rediacc/docker-*.sock)
+           Docker Daemon'ları (/var/run/rediacc/net-*/docker-*.sock)
                ↓
            Konteynerler (127.x.x.x geri döngü IP'lerine bağlı)
 ```

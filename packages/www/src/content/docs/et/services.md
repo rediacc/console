@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4e5a0abadf84cd5f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Teenused
@@ -53,7 +53,7 @@ Kui Rediaccfile'i funktsioon käivitub, on saadaval järgmised keskkonna muutuja
 | `REDIACC_WORKING_DIR` | Repositooriumi ühendusrada | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | Repositooriumi GUID | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | Võrgu ID (täisarv) | `2816` |
-| `DOCKER_HOST` | Dockeri pesa selle repositooriumi isoleeritud deemoni jaoks | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | Dockeri pesa selle repositooriumi isoleeritud deemoni jaoks | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | Loopback-IP igale teenusele, mis on määratletud `.rediacc.json`-is | `POSTGRES_IP=127.0.11.2` |
 
 `{SERVICE}_IP`-muutujad genereeritakse automaatselt `.rediacc.json`-i pesa kaardistustest ja eksporditakse enne teie Rediaccfile'i funktsioonide käivitamist. Nimetamiskonventsioon teisendab teenuse nime suurtähtedeks, asendab sidekriipsud alljoontega ja lisab siis `_IP`. Näiteks teenus nimega `listmonk-app` pesaga `0` saab `LISTMONK_APP_IP=127.0.11.2`.
@@ -455,7 +455,7 @@ Kaks edastusrežiimi töötavad compose'is:
 
 **`env` režiim**. Interpoleerige `${REDIACC_SECRET_<KEY>}` kaudu mis tahes `environment:` väärtuses. renet ümbris edastab väärtuse juurutusajal konteineri keskkonda.
 
-**`file` režiim**. Väärtus maandub host-pool tmpfs-faili aadressile `/var/run/rediacc/secrets/<networkID>/<KEY>` ja ühendate selle konteinerisse Dockeri compose'i standse `secrets:` ploki kaudu. Konteiner loeb faili `/run/secrets/<key>`. Eelistage seda režiimi kõige tundliku jaoks. Väärtused ei ilmu kunagi `docker inspect` ega `/proc/<pid>/environ` väljunditesse.
+**`file` režiim**. Väärtus maandub host-pool tmpfs-faili aadressile `/var/run/rediacc/net-<networkID>/secrets/<KEY>` ja ühendate selle konteinerisse Dockeri compose'i standse `secrets:` ploki kaudu. Konteiner loeb faili `/run/secrets/<key>`. Eelistage seda režiimi kõige tundliku jaoks. Väärtused ei ilmu kunagi `docker inspect` ega `/proc/<pid>/environ` väljunditesse.
 
 ```yaml
 services:
@@ -468,9 +468,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 Seemendage väärtused käsuga `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` ja faili-režiimi ekvivalendiga. Vaadake [Repositooriumid § Saladused](/en/docs/repositories#secrets) täieliku juhendi saamiseks ja [Repositooriumipõhised saladused](/en/docs/rdc-cheat-sheet#per-repo-secrets) käsuviite jaoks.
 
-> **Repositooriumivahelised teed lükatakse tagasi valideerimise ajal.** Compose'i `secrets: file:` (või `configs: file:` või `env_file:`), mis osutab teise repositooriumi `/var/run/rediacc/secrets/<other-networkID>/` kataloogi, lükatakse renet-ümbriku poolt kõvasti tagasi enne docker compose'i käivitamist. `--unsafe` EI tühista seda. Kaitse süviti: Landlocki liivakast Rediaccfile'i kesta ümber piirab lugemist praeguse võrgu saladuste kataloogiga, nii et `cat /var/run/rediacc/secrets/<other>/X` Rediaccfile'i bash-ist ebaõnnestub EACCES-ga isegi kui see möödub YAML validaatorist. Te ei pea sisse lülitama; see on vaikimisi sees iga `repo up` jaoks.
+> **Repositooriumivahelised teed lükatakse tagasi valideerimise ajal.** Compose'i `secrets: file:` (või `configs: file:` või `env_file:`), mis osutab teise repositooriumi `/var/run/rediacc/net-<other-networkID>/secrets/` kataloogi, lükatakse renet-ümbriku poolt kõvasti tagasi enne docker compose'i käivitamist. `--unsafe` EI tühista seda. Kaitse süviti: Landlocki liivakast Rediaccfile'i kesta ümber piirab lugemist praeguse võrgu saladuste kataloogiga, nii et `cat /var/run/rediacc/net-<other>/secrets/X` Rediaccfile'i bash-ist ebaõnnestub EACCES-ga isegi kui see möödub YAML validaatorist. Te ei pea sisse lülitama; see on vaikimisi sees iga `repo up` jaoks.

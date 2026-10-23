@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 50
 language: pt
-sourceHash: "7592f803f8caf5f4"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "9a95c20ff97fdf3f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 O problema é este: os assistentes de codificação com IA (Claude Code, Cursor, Cline, Windsurf) continuam a inventar flags do `rdc` que não existem, e não conseguem saber qual o nome de repositório Rediacc que mapeia para qual GUID sem perguntar todas as vezes. Este modelo resolve isso. Cole o bloco abaixo no seu `CLAUDE.md`, `.cursorrules` ou em qualquer ficheiro de configuração de agente que a sua ferramenta utilize.
@@ -72,7 +72,7 @@ rdc repo sync download <repo>@<machine> --local ./local-path
 rdc --help-all
 
 ### Architecture
-- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
+- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/net-<networkId>/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
 - One adapter: **local** (SSH-based)
 

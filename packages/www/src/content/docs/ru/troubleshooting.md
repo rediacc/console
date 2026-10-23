@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 10
 language: ru
-sourceHash: "7a4072220b0985f8"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "5ffc0205fecd8950"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Устранение неполадок
@@ -121,7 +121,7 @@ rdc machine status server-1 --containers
 rdc term connect my-app -c "docker ps"
 
 # Или вручную с указанием сокета:
-docker -H unix:///var/run/rediacc/docker-2816.sock ps
+docker -H unix:///var/run/rediacc/net-2816/docker-2816.sock ps
 ```
 
 Замените `2816` на идентификатор сети вашего репозитория (можно найти в `rediacc.json` или через `rdc repo status`).

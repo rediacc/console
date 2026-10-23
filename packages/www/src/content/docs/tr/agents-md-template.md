@@ -10,8 +10,8 @@ tags:
 subcategory: ai-agents
 order: 50
 language: tr
-sourceHash: "7592f803f8caf5f4"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "9a95c20ff97fdf3f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 İşte sorun: AI kodlama asistanları (Claude Code, Cursor, Cline, Windsurf) var olmayan `rdc` bayrakları üretiyor ve sizi her seferinde hangi Rediacc depo adının hangi GUID'e karşılık geldiğini sormadan anlayamıyorlar. Bu şablon bunu düzeltiyor. Aşağıdaki bloğu projenizin `CLAUDE.md`, `.cursorrules` veya aracınızın kullandığı ajan yapılandırma dosyasına yapıştırın.
@@ -73,7 +73,7 @@ rdc repo sync download <repo>@<machine> --local ./local-path
 rdc --help-all
 
 ### Architecture
-- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
+- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/net-<networkId>/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
 - One adapter: **local** (SSH-based)
 

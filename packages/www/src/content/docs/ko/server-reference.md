@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ko
-sourceHash: "960821a4fc0654eb"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "661f857d2226d362"
+sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
 ---
 
 # 서버 레퍼런스
@@ -44,7 +44,7 @@ Rediacc 서버에 SSH로 접속하면 다음을 접하게 됩니다: 디렉터�
 ├── letsencrypt/                       # ACME 인증서
 └── traefik/dynamic/                   # 동적 라우트 파일
 
-/run/rediacc/docker-{id}.sock          # 네트워크별 Docker 소켓
+/run/rediacc/net-{id}/docker-{id}.sock          # 네트워크별 Docker 소켓
 /var/lib/rediacc/router/               # 라우터 상태 (포트 할당)
 ```
 
@@ -102,7 +102,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 Docker 소켓을 직접 사용할 수도 있습니다:
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > compose는 항상 `docker-compose.yml`이 있는 디렉터리에서 실행하십시오. 그렇지 않으면 Docker가 파일을 찾지 못합니다.
@@ -316,7 +316,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### 컨테이너를 실행하는 Docker 소켓 찾기
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -342,7 +342,7 @@ renet list containers
 - `renet compose` 및 `renet docker`에 인수를 전달하기 전에 `--` 구분자가 필요합니다.
 - compose는 `docker-compose.yml`이 있는 디렉터리에서 실행하십시오.
 - `.rediacc.json` 슬롯 할당은 안정적입니다. 배포 후에는 변경하지 마십시오.
-- `/run/rediacc/docker-{id}.sock` 경로를 사용하십시오 (systemd가 레거시 `/var/run/` 경로를 변경할 수 있습니다).
+- `/run/rediacc/net-{id}/docker-{id}.sock` 경로를 사용하십시오 (systemd가 레거시 `/var/run/` 경로를 변경할 수 있습니다).
 - 주기적으로 `renet prune --dry-run`을 실행하여 고아 리소스를 찾으십시오.
 - BTRFS 스냅샷(`renet backup`)은 빠르고 비용이 저렴합니다. 위험한 변경 전에 사용하십시오.
 - 저장소는 LUKS 암호화됩니다. 패스워드를 잃으면 데이터를 잃습니다.

@@ -51,7 +51,7 @@ When a Rediaccfile function executes, the following environment variables are av
 | `REDIACC_WORKING_DIR` | Mount path of the repository | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | Repository GUID | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | Network ID (integer) | `2816` |
-| `DOCKER_HOST` | Docker socket for this repository's isolated daemon | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | Docker socket for this repository's isolated daemon | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | Loopback IP for each service defined in `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 
 The `{SERVICE}_IP` variables are auto-generated from the slot mappings in `.rediacc.json` and exported before your Rediaccfile functions run. The naming convention converts the service name to uppercase with hyphens replaced by underscores, then appends `_IP`. For example, a service named `listmonk-app` with slot `0` becomes `LISTMONK_APP_IP=127.0.11.2`.
@@ -453,7 +453,7 @@ Two delivery modes work in compose:
 
 **`env` mode**. Interpolate via `${REDIACC_SECRET_<KEY>}` in any `environment:` value. The renet wrapper passes the value into the container's environment at deploy time.
 
-**`file` mode**. The value lands in a host-side tmpfs file at `/var/run/rediacc/secrets/<networkID>/<KEY>`, and you mount it into the container via Docker compose's standard `secrets:` block. Container reads `/run/secrets/<key>`. Prefer this mode for anything sensitive. Values never appear in `docker inspect` or `/proc/<pid>/environ`.
+**`file` mode**. The value lands in a host-side tmpfs file at `/var/run/rediacc/net-<networkID>/secrets/<KEY>`, and you mount it into the container via Docker compose's standard `secrets:` block. Container reads `/run/secrets/<key>`. Prefer this mode for anything sensitive. Values never appear in `docker inspect` or `/proc/<pid>/environ`.
 
 ```yaml
 services:
@@ -466,9 +466,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 Seed the values with `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` and the file-mode equivalent. See [Repositories § Secrets](/en/docs/repositories#secrets) for the full how-to and [Per-repo secrets](/en/docs/rdc-cheat-sheet#per-repo-secrets) on the cheat sheet for the command reference.
 
-> **Cross-repo paths are rejected at validate time.** A compose `secrets: file:` (or `configs: file:`, or `env_file:`) that points at another repo's `/var/run/rediacc/secrets/<other-networkID>/` directory is hard-rejected by the renet wrapper before docker compose runs. `--unsafe` does NOT override. Defense-in-depth: the Landlock sandbox around the Rediaccfile shell scopes reads to the current network's secrets dir, so a `cat /var/run/rediacc/secrets/<other>/X` from Rediaccfile bash fails with EACCES even if it bypasses the YAML validator. You don't need to opt in; this is on by default for every `repo up`.
+> **Cross-repo paths are rejected at validate time.** A compose `secrets: file:` (or `configs: file:`, or `env_file:`) that points at another repo's `/var/run/rediacc/net-<other-networkID>/secrets/` directory is hard-rejected by the renet wrapper before docker compose runs. `--unsafe` does NOT override. Defense-in-depth: the Landlock sandbox around the Rediaccfile shell scopes reads to the current network's secrets dir, so a `cat /var/run/rediacc/net-<other>/secrets/X` from Rediaccfile bash fails with EACCES even if it bypasses the YAML validator. You don't need to opt in; this is on by default for every `repo up`.

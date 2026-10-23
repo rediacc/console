@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ar
-sourceHash: "878b744629cb8b14"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # البنية المعمارية
@@ -72,12 +72,12 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ![عزل Docker](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 على سبيل المثال، مستودع بمعرّف شبكة `2816` يستخدم:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 هذا يعني:
@@ -107,7 +107,7 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 
 **مسار وقت التشغيل المشترك** (غير متغيّر):
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 يُزيل هذا التخطيط الموحّد تعارضات التحميل للقراءة فقط والقراءة-الكتابة التي كانت تحدث عندما كانت مسارات العمليات مقسّمة بين نظام ملفات المضيف والحجم المشفر. واجهنا هذا الفصل أكثر من مرة قبل الاستقرار على هذا. تتبع عمليات المستودعات والعمليات المستقلة نفس هيكل الدليل، لذا تعمل الأدوات والتشخيصات بشكل متطابق في كلتا الحالتين.

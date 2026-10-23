@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: zh
-sourceHash: "878b744629cb8b14"
-sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 架构
@@ -72,12 +72,12 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 ![Docker 隔离](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 例如，网络 ID 为 `2816` 的仓库使用：
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 这意味着：
@@ -107,7 +107,7 @@ Docker 数据和配置存储在仓库的挂载点内部，使每个守护进程�
 
 **共享运行时路径**（不变）：
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 这种统一布局消除了守护进程路径在主机文件系统和加密卷之间分割时出现的只读与读写挂载冲突。每仓库守护进程和独立守护进程遵循相同的目录结构，因此工具和诊断在两种情况下均以相同方式工作。

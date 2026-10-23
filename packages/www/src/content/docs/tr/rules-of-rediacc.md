@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Rediacc Kuralları
@@ -78,7 +78,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 ## Ağ
 
-- **Her depo kendi Docker daemon'ını alır**, `/var/run/rediacc/docker-<networkId>.sock` konumunda.
+- **Her depo kendi Docker daemon'ını alır**, `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock` konumunda.
 - **Her servis bir /26 alt ağ içinde benzersiz bir loopback IP alır** (örn. `127.0.24.192/26`).
 - **Bağlama otomatiktir**: Servisler `0.0.0.0` veya `localhost`'a bağlanabilir, çekirdek adresi şeffaf olarak servisin atanmış loopback IP'sine yeniden yazar. `${SERVICE_IP}`'ye açık bağlama hala çalışır ancak artık gerekli değildir.
 - **Health check'ler `localhost`** veya `${SERVICE_IP}` kullanabilir. Örnek: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

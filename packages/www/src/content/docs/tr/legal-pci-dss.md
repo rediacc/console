@@ -8,8 +8,8 @@ tags:
 subcategory: frameworks
 order: 6
 language: tr
-sourceHash: "f0349ad8df33656e"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d748e8f6b0b7e064"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 Kısacası, kart sahibi verisi işliyorsanız PCI DSS v4.0.1 isteğe bağlı değildir. PCI DSS v4.0.1, tek bir gereksinime indirgenir: her şeyden altyapı düzeyinde izolasyon.
@@ -35,7 +35,7 @@ Referans: [PCI Security Standards Council](https://www.pcisecuritystandards.org/
 
 PCI DSS segmentasyona ağır basıyor. Yetersiz izolasyonun üzerine iptables kuralları katmanlandıran ekipler görüyorum. Böyle çalışmıyor. Başarıyı yakalayanlar segmentasyonu mimariye yerleştirmiş olanlar. Rediacc bunu varsayılan olarak sağlıyor:
 
-- Her depo `/var/run/rediacc/docker-<networkId>.sock` adresinde kendi Docker daemon'ında çalışır
+- Her depo `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock` adresinde kendi Docker daemon'ında çalışır
 - Depolar izole loopback IP alt ağlarına sahiptir (127.0.x.x/26, ağ başına 61 kullanılabilir IP)
 - renet tarafından uygulanan iptables kuralları daemon'lar arası tüm trafiği engeller
 - Farklı depolardan konteynerler ağ düzeyinde iletişim kuramaz

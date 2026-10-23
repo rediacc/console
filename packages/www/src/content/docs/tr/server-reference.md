@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: tr
-sourceHash: "960821a4fc0654eb"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "661f857d2226d362"
+sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
 ---
 
 # Sunucu Referansı
@@ -44,7 +44,7 @@ Kullanıcıların büyük çoğunluğu sunucuları iş istasyonlarından `rdc` a
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
-/run/rediacc/docker-{id}.sock          # Per-network Docker sockets
+/run/rediacc/net-{id}/docker-{id}.sock          # Per-network Docker sockets
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
@@ -102,7 +102,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 Docker soketini doğrudan da kullanabilirsiniz:
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > Compose'u her zaman `docker-compose.yml` dosyasının bulunduğu dizinden çalıştırın; aksi takdirde Docker dosyayı bulamaz.
@@ -316,7 +316,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### Hangi Docker Soketinin Konteyneri Çalıştırdığını Bulma
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -342,7 +342,7 @@ renet list containers
 - `renet compose` ve `renet docker`'a argüman geçirmeden önce `--` ayracı zorunludur
 - Compose'u `docker-compose.yml` içeren dizinden çalıştırın
 - `.rediacc.json` slot atamaları sabittir, dağıtımdan sonra değiştirmeyin
-- `/run/rediacc/docker-{id}.sock` yollarını kullanın (systemd eski `/var/run/` yollarını değiştirebilir)
+- `/run/rediacc/net-{id}/docker-{id}.sock` yollarını kullanın (systemd eski `/var/run/` yollarını değiştirebilir)
 - Sahipsiz kaynakları bulmak için zaman zaman `renet prune --dry-run` çalıştırın
 - BTRFS anlık görüntüleri (`renet backup`) hızlı ve ucuzdur; riskli değişiklikler yapmadan önce kullanın
 - Depolar LUKS ile şifrelenmiştir; parolayı kaybetmek verileri kaybetmek anlamına gelir

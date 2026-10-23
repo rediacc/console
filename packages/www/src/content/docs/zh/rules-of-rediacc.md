@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Rediacc 规则
@@ -78,7 +78,7 @@ Renet 会自动将以下变量注入每个容器：
 
 ## 网络
 
-- **每个仓库获得自己的 Docker 守护进程**，位于 `/var/run/rediacc/docker-<networkId>.sock`。
+- **每个仓库获得自己的 Docker 守护进程**，位于 `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`。
 - **每个服务在 /26 子网内获得唯一的回环 IP**（例如 `127.0.24.192/26`）。
 - **绑定是自动的**：服务可以绑定到 `0.0.0.0` 或 `localhost`，内核会透明地将地址重写为分配给服务的回环 IP。显式绑定到 `${SERVICE_IP}` 仍然有效，但不再是必需的。
 - **健康检查可以使用 `localhost`** 或 `${SERVICE_IP}`。示例：`healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

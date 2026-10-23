@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ru
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Правила Rediacc
@@ -78,7 +78,7 @@ Renet автоматически внедряет их в каждый конт�
 
 ## Сеть
 
-- **Каждый репозиторий получает собственный Docker-демон** по пути `/var/run/rediacc/docker-<networkId>.sock`.
+- **Каждый репозиторий получает собственный Docker-демон** по пути `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`.
 - **Каждый сервис получает уникальный loopback IP** в подсети /26 (например, `127.0.24.192/26`).
 - **Привязка автоматическая**: Сервисы могут привязываться к `0.0.0.0` или `localhost`, ядро прозрачно переписывает адрес на присвоенный сервису loopback IP. Явная привязка к `${SERVICE_IP}` по-прежнему работает, но больше не требуется.
 - **Health-проверки могут использовать `localhost`** или `${SERVICE_IP}`. Пример: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

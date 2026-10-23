@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: it
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Regole di Rediacc
@@ -78,7 +78,7 @@ Renet inietta automaticamente queste in ogni container:
 
 ## Networking
 
-- **Ogni repository ottiene il proprio daemon Docker** su `/var/run/rediacc/docker-<networkId>.sock`.
+- **Ogni repository ottiene il proprio daemon Docker** su `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`.
 - **Ogni servizio ottiene un IP loopback univoco** all'interno di una subnet /26 (es. `127.0.24.192/26`).
 - **Il binding è automatico**: I servizi possono fare bind su `0.0.0.0` o `localhost` - il kernel riscrive in modo trasparente l'indirizzo all'IP loopback assegnato al servizio. Il binding esplicito con `${SERVICE_IP}` funziona ancora ma non è più necessario.
 - **Gli health check possono usare `localhost`** o `${SERVICE_IP}`. Esempio: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: es
-sourceHash: "878b744629cb8b14"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Arquitectura
@@ -73,12 +73,12 @@ Cada repositorio obtiene su propio daemon Docker aislado. Cuando se monta un rep
 ![Aislamiento de Docker](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 Por ejemplo, un repositorio con ID de red `2816` usa:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 Esto significa:
@@ -108,7 +108,7 @@ Los datos y la configuración de Docker se almacenan dentro del punto de montaje
 
 **Ruta de tiempo de ejecución compartida** (sin cambios):
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Esta estructura unificada elimina las colisiones de montaje de solo lectura y lectura-escritura que ocurrían cuando las rutas del daemon estaban divididas entre el sistema de archivos del host y el volumen cifrado. Hemos tenido que resolver esa división más de una vez antes de establecernos en esto. Tanto los daemons por repositorio como los independientes siguen la misma estructura de directorios, por lo que las herramientas y los diagnósticos funcionan de forma idéntica en ambos casos.

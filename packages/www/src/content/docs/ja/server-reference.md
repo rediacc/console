@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ja
-sourceHash: "960821a4fc0654eb"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "661f857d2226d362"
+sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
 ---
 
 # サーバーリファレンス
@@ -44,7 +44,7 @@ sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
-/run/rediacc/docker-{id}.sock          # Per-network Docker sockets
+/run/rediacc/net-{id}/docker-{id}.sock          # Per-network Docker sockets
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
@@ -102,7 +102,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 Dockerソケットを直接使用することもできます：
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > `docker-compose.yml`が含まれるディレクトリからcomposeを実行してください。そうしないとDockerがファイルを見つけられません。
@@ -316,7 +316,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### コンテナを実行しているDockerソケットの特定
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -342,7 +342,7 @@ renet list containers
 - `renet compose`および`renet docker`に引数を渡す前に`--`セパレーターが必要です
 - `docker-compose.yml`が含まれるディレクトリからcomposeを実行してください
 - `.rediacc.json`のスロット割り当ては固定です。デプロイ後に変更しないでください
-- `/run/rediacc/docker-{id}.sock`パスを使用してください（systemdがレガシーの`/var/run/`パスを変更する場合があります）
+- `/run/rediacc/net-{id}/docker-{id}.sock`パスを使用してください（systemdがレガシーの`/var/run/`パスを変更する場合があります）
 - 孤立したリソースを見つけるために、定期的に`renet prune --dry-run`を実行してください
 - BTRFSスナップショット（`renet backup`）は高速で低コストです。リスクのある変更の前に使用してください
 - リポジトリはLUKS暗号化されています。パスワードを紛失するとデータも失われます

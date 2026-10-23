@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Rediacc 규칙
@@ -78,7 +78,7 @@ Renet이 모든 컨테이너에 자동으로 주입합니다.
 
 ## 네트워킹
 
-- **각 저장소는 `/var/run/rediacc/docker-<networkId>.sock`에 자체 Docker 데몬을 갖습니다.**
+- **각 저장소는 `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`에 자체 Docker 데몬을 갖습니다.**
 - **각 서비스는 /26 서브넷 내에서 고유한 루프백 IP를 받습니다** (예: `127.0.24.192/26`).
 - **바인딩은 자동입니다.** 서비스는 `0.0.0.0` 또는 `localhost`에 바인딩할 수 있으며, 커널이 주소를 서비스에 할당된 루프백 IP로 투명하게 재작성합니다. 명시적인 `${SERVICE_IP}` 바인딩은 여전히 작동하지만 더 이상 필수가 아닙니다.
 - **헬스 체크는 `localhost` 또는 `${SERVICE_IP}`를 사용할 수 있습니다.** 예: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

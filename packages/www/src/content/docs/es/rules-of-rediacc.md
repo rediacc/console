@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: es
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "c814bc0e0e3151cc"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Reglas de Rediacc
@@ -78,7 +78,7 @@ Renet auto-inyecta estas en cada contenedor:
 
 ## Redes
 
-- **Cada repositorio tiene su propio daemon Docker** en `/var/run/rediacc/docker-<networkId>.sock`.
+- **Cada repositorio tiene su propio daemon Docker** en `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`.
 - **Cada servicio recibe una IP de loopback única** dentro de una subred /26 (ej. `127.0.24.192/26`).
 - **El enlace es automático**: Los servicios pueden enlazarse a `0.0.0.0` o `localhost`, el kernel reescribe transparentemente la dirección a la IP de loopback asignada al servicio. El enlace explícito a `${SERVICE_IP}` sigue funcionando pero ya no es necesario.
 - **Los health checks pueden usar `localhost`** o `${SERVICE_IP}`. Ejemplo: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

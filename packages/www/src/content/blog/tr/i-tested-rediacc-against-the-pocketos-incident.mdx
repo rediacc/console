@@ -11,8 +11,8 @@ tags:
   - case-study
 featured: true
 language: tr
-sourceHash: "4658b7226eb1e696"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "2b10e7d64d0ce38d"
+sourceCommit: "c8a8908f7412252e302fe5280980c35d5cae82da"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -124,7 +124,7 @@ Total: 6.3s
 
 2 GB çatallamasının klon adımı 573 milisaniye sürdü. 128 GB çatallamasının klon adımı 2,3 saniye sürdü. Yani veri klonu doğrusal altı, kesin sabit değil. Ama toplam çatallama süresi neredeyse aynı (6,3 sn'ye karşı 7,2 sn) çünkü beklemenin çoğu veri değil, SSH ve lisans dansı. Kullanıcı perspektifinden bakıldığında, çatallama depo boyutu fark etmeksizin 6 ile 7 saniye arası bir bekleme.
 
-Şimdi çatallama üzerinde çalışıyorum. Kendi GUID'i (`22c57178-...`) var. Kendi networkId'si (`21760`). Kendi mount yolu. Kendi Docker daemon soketi (`/var/run/rediacc/docker-21760.sock`). Ana deponun verisi reflink üzerinden paylaşılıyor. Ana deponun kendisi tüm süreç boyunca çalışmaya devam ediyor.
+Şimdi çatallama üzerinde çalışıyorum. Kendi GUID'i (`22c57178-...`) var. Kendi networkId'si (`21760`). Kendi mount yolu. Kendi Docker daemon soketi (`/var/run/rediacc/net-21760/docker-21760.sock`). Ana deponun verisi reflink üzerinden paylaşılıyor. Ana deponun kendisi tüm süreç boyunca çalışmaya devam ediyor.
 
 Çatallamaya `term connect` yaptığımda gördüğüm şey şu:
 

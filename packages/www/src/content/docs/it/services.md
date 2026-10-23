@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: it
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4e5a0abadf84cd5f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Servizi
@@ -53,7 +53,7 @@ Quando una funzione Rediaccfile viene eseguita, sono disponibili le seguenti var
 | `REDIACC_WORKING_DIR` | Percorso di mount del repository | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | GUID del repository | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | ID rete (intero) | `2816` |
-| `DOCKER_HOST` | Socket Docker per il daemon isolato di questo repository | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | Socket Docker per il daemon isolato di questo repository | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | IP loopback per ogni servizio definito in `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 
 Le variabili `{SERVICE}_IP` vengono generate automaticamente dai mapping degli slot in `.rediacc.json` ed esportate prima dell'esecuzione delle funzioni del Rediaccfile. La convenzione di denominazione converte il nome del servizio in maiuscolo con i trattini sostituiti da underscore, poi aggiunge `_IP`. Ad esempio, un servizio denominato `listmonk-app` con slot `0` diventa `LISTMONK_APP_IP=127.0.11.2`.
@@ -455,7 +455,7 @@ Due modalità di consegna funzionano in compose:
 
 **Modalità `env`**. Interpola tramite `${REDIACC_SECRET_<KEY>}` in qualsiasi valore `environment:`. Il wrapper renet passa il valore nell'ambiente del container al momento del deploy.
 
-**Modalità `file`**. Il valore arriva in un file tmpfs lato host su `/var/run/rediacc/secrets/<networkID>/<KEY>`, e lo monti nel container tramite il blocco `secrets:` standard di Docker compose. Il container legge `/run/secrets/<key>`. Preferisci questa modalità per qualsiasi dato sensibile. I valori non compaiono mai in `docker inspect` o `/proc/<pid>/environ`.
+**Modalità `file`**. Il valore arriva in un file tmpfs lato host su `/var/run/rediacc/net-<networkID>/secrets/<KEY>`, e lo monti nel container tramite il blocco `secrets:` standard di Docker compose. Il container legge `/run/secrets/<key>`. Preferisci questa modalità per qualsiasi dato sensibile. I valori non compaiono mai in `docker inspect` o `/proc/<pid>/environ`.
 
 ```yaml
 services:
@@ -468,9 +468,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 Inizializza i valori con `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` e l'equivalente in modalità file. Consulta [Repository § Segreti](/it/docs/repositories#secrets) per la guida completa e [Segreti per singolo repository](/it/docs/rdc-cheat-sheet#per-repo-secrets) sul cheat sheet per il riferimento ai comandi.
 
-> **I percorsi cross-repo vengono rifiutati al momento della validazione.** Un `secrets: file:` compose (o `configs: file:`, o `env_file:`) che punta alla directory `/var/run/rediacc/secrets/<other-networkID>/` di un altro repository viene rifiutato definitivamente dal wrapper renet prima che docker compose venga eseguito. `--unsafe` NON sovrascrive. Difesa in profondità: la sandbox Landlock attorno alla shell Rediaccfile limita le letture alla directory dei segreti della rete corrente, quindi un `cat /var/run/rediacc/secrets/<other>/X` dalla shell bash del Rediaccfile fallisce con EACCES anche se aggira il validatore YAML. Non è necessario attivarlo; è abilitato per impostazione predefinita per ogni `repo up`.
+> **I percorsi cross-repo vengono rifiutati al momento della validazione.** Un `secrets: file:` compose (o `configs: file:`, o `env_file:`) che punta alla directory `/var/run/rediacc/net-<other-networkID>/secrets/` di un altro repository viene rifiutato definitivamente dal wrapper renet prima che docker compose venga eseguito. `--unsafe` NON sovrascrive. Difesa in profondità: la sandbox Landlock attorno alla shell Rediaccfile limita le letture alla directory dei segreti della rete corrente, quindi un `cat /var/run/rediacc/net-<other>/secrets/X` dalla shell bash del Rediaccfile fallisce con EACCES anche se aggira il validatore YAML. Non è necessario attivarlo; è abilitato per impostazione predefinita per ogni `repo up`.

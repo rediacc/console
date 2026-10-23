@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: zh
-sourceHash: "960821a4fc0654eb"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "661f857d2226d362"
+sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
 ---
 
 # 服务器参考
@@ -44,7 +44,7 @@ sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
-/run/rediacc/docker-{id}.sock          # Per-network Docker sockets
+/run/rediacc/net-{id}/docker-{id}.sock          # Per-network Docker sockets
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
@@ -102,7 +102,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 您也可以直接使用 Docker 套接字：
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > 请始终在包含 `docker-compose.yml` 的目录中运行 compose，否则 Docker 将找不到该文件。
@@ -316,7 +316,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### 查找运行容器的 Docker 套接字
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -342,7 +342,7 @@ renet list containers
 - 向 `renet compose` 和 `renet docker` 传递参数前必须使用 `--` 分隔符
 - 在包含 `docker-compose.yml` 的目录中运行 compose
 - `.rediacc.json` 的槽位分配是稳定的，部署后请勿更改
-- 使用 `/run/rediacc/docker-{id}.sock` 路径（systemd 可能会更改旧的 `/var/run/` 路径）
+- 使用 `/run/rediacc/net-{id}/docker-{id}.sock` 路径（systemd 可能会更改旧的 `/var/run/` 路径）
 - 定期运行 `renet prune --dry-run` 以查找孤立资源
 - BTRFS 快照（`renet backup`）快速且开销低，在进行有风险的更改前使用它们
 - 仓库使用 LUKS 加密，丢失密码意味着丢失数据

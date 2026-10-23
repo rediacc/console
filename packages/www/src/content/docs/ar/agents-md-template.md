@@ -10,8 +10,8 @@ tags:
 subcategory: ai-agents
 order: 50
 language: ar
-sourceHash: "7592f803f8caf5f4"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "9a95c20ff97fdf3f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 هذه هي المشكلة: مساعدو البرمجة الذكية (Claude Code، Cursor، Cline، Windsurf) يخترعون باستمرار أعلاماً لـ `rdc` غير موجودة، ولا يستطيعون معرفة اسم مستودع Rediacc المرتبط بأي GUID دون سؤالك في كل مرة. هذا القالب يحل ذلك. الصق الكتلة أدناه في ملف `CLAUDE.md` أو `.cursorrules` أو أي ملف تهيئة وكيل تستخدمه أداتك.
@@ -73,7 +73,7 @@ rdc repo sync download <repo>@<machine> --local ./local-path
 rdc --help-all
 
 ### Architecture
-- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
+- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/net-<networkId>/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
 - One adapter: **local** (SSH-based)
 

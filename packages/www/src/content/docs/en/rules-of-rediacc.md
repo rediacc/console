@@ -76,7 +76,7 @@ Renet auto-injects these into every container:
 
 ## Networking
 
-- **Each repository gets its own Docker daemon** at `/var/run/rediacc/docker-<networkId>.sock`.
+- **Each repository gets its own Docker daemon** at `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`.
 - **Each service gets a unique loopback IP** within a /26 subnet (e.g., `127.0.24.192/26`).
 - **Binding is automatic**: Services can bind to `0.0.0.0` or `localhost` - the kernel transparently rewrites the address to the service's assigned loopback IP. Explicit `${SERVICE_IP}` binding still works but is no longer required.
 - **Health checks can use `localhost`** or `${SERVICE_IP}`. Example: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`

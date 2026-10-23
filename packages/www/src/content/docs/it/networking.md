@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 6
 language: it
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "467198b382846bca"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Rete
@@ -40,7 +40,7 @@ Internet -> Traefik (ports 80/443/TCP/UDP)
                | polls every 5s
            Route Server (discovers containers)
                | inspects labels
-           Docker Daemons (/var/run/rediacc/docker-*.sock)
+           Docker Daemons (/var/run/rediacc/net-*/docker-*.sock)
                |
            Containers (bound to 127.x.x.x loopback IPs)
 ```

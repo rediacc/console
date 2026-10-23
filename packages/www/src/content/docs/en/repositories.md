@@ -193,7 +193,7 @@ Per-repo secrets are deploy-time credentials injected into containers without be
 Two delivery modes:
 
 - `env`. The secret is exported as `REDIACC_SECRET_<KEY>` in the renet shell on the target machine. Reference it from your `docker-compose.yml` via `${REDIACC_SECRET_<KEY>}` interpolation. Visible inside the container's environment, so use this for connection-string-shaped values that the application already expects in env.
-- `file`. The secret is written to `/var/run/rediacc/secrets/<networkID>/<KEY>` on the host (tmpfs, never persisted). Reference it from your compose file via a top-level `secrets:` declaration with `file:` source, plus a per-service `secrets:` list. Containers read from `/run/secrets/<key>`. Prefer this mode for anything sensitive. It never appears in `docker inspect` or `/proc/<pid>/environ`.
+- `file`. The secret is written to `/var/run/rediacc/net-<networkID>/secrets/<KEY>` on the host (tmpfs, never persisted). Reference it from your compose file via a top-level `secrets:` declaration with `file:` source, plus a per-service `secrets:` list. Containers read from `/run/secrets/<key>`. Prefer this mode for anything sensitive. It never appears in `docker inspect` or `/proc/<pid>/environ`.
 
 ```bash
 # Set, list, get (digest only), unset
@@ -221,12 +221,12 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 The lowercase service-side reference (`stripe_live_key`) is the in-container `/run/secrets/<name>` filename; the uppercase tail of the host path (`STRIPE_LIVE_KEY`) matches what you set with `--key`. `${REDIACC_NETWORK_ID}` is interpolated by `renet compose` automatically.
 
-> **Cross-repo isolation enforced**: renet's compose validator rejects `secrets: file:` (and `configs: file:`, and `env_file:`) paths that reference any other repo's network ID. The literal `${REDIACC_NETWORK_ID}` token (or your own network's int) is the only accepted form for `/var/run/rediacc/secrets/...` references. And `--unsafe` does NOT override this check. The Landlock sandbox around the Rediaccfile bash subprocess also scopes filesystem access to your own network's secrets directory only, so a malicious `cat /var/run/rediacc/secrets/<other>/X` from a Rediaccfile fails with EACCES at the kernel layer.
+> **Cross-repo isolation enforced**: renet's compose validator rejects `secrets: file:` (and `configs: file:`, and `env_file:`) paths that reference any other repo's network ID. The literal `${REDIACC_NETWORK_ID}` token (or your own network's int) is the only accepted form for `/var/run/rediacc/net-<N>/secrets/...` references. And `--unsafe` does NOT override this check. The Landlock sandbox around the Rediaccfile bash subprocess also scopes filesystem access to your own network's secrets directory only, so a malicious `cat /var/run/rediacc/net-<other>/secrets/X` from a Rediaccfile fails with EACCES at the kernel layer.
 
 > **Forks**: `rdc repo fork` does **not** copy secrets. To use secrets in a fork, run `rdc repo secret set <fork>` on the fork explicitly. This is the load-bearing safety property. The fork's containers should not be able to act as the production principal against external services.
 

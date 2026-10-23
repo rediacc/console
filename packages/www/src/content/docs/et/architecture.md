@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: et
-sourceHash: "878b744629cb8b14"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Arhitektuur
@@ -73,12 +73,12 @@ Iga repositoorium saab oma isoleeritud Dockeri daemoni. Kui repositoorium ühend
 ![Dockeri isoleerimine](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 Näiteks repositoorium, mille võrgu ID on `2816`, kasutab:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 See tähendab:
@@ -108,7 +108,7 @@ Dockeri andmed ja konfiguratsioon salvestatakse repositooriumi ühenduspunkti si
 
 **Jagatud käitusaegne tee** (muutumatu):
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 See ühtne paigutus kõrvaldab kirjutuskaitstud/kirjutatavate ühenduspunktide konfliktid, mis tekkisid siis, kui daemoni teed olid jaotatud hosti failisüsteemi ja krüpteeritud köite vahel. Nii repo-kohased kui ka iseseisvad daemonid järgivad sama kataloogistruktuuri, nii et tööriistad ja diagnostika töötavad mõlemal juhul identselt.

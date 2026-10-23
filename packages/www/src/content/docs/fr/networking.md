@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 6
 language: fr
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "467198b382846bca"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Réseau
@@ -42,7 +42,7 @@ Internet → Traefik (ports 80/443/TCP/UDP)
                ↓ interroge toutes les 5s
            Serveur de routes (découvre les conteneurs)
                ↓ inspecte les labels
-           Démons Docker (/var/run/rediacc/docker-*.sock)
+           Démons Docker (/var/run/rediacc/net-*/docker-*.sock)
                ↓
            Conteneurs (liés aux IP de bouclage 127.x.x.x)
 ```

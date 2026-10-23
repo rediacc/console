@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4e5a0abadf84cd5f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Servisler
@@ -53,7 +53,7 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 | `REDIACC_WORKING_DIR` | Deponun bağlama yolu | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | Depo GUID'i | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | Ağ Kimliği (tamsayı) | `2816` |
-| `DOCKER_HOST` | Bu deponun izole daemon'u için Docker soketi | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | Bu deponun izole daemon'u için Docker soketi | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json` dosyasında tanımlanan her servis için loopback IP | `POSTGRES_IP=127.0.11.2` |
 
 `{SERVICE}_IP` değişkenleri `.rediacc.json` dosyasından otomatik olarak oluşturulur ve Rediaccfile işlevleriniz çalışmadan önce dışa aktarılır. Adlandırma kuralı, servis adını büyük harfe çevirir, tireleri alt çizgi ile değiştirir ve sonuna `_IP` ekler. Örneğin, slot `0` ile `listmonk-app` servisi `LISTMONK_APP_IP=127.0.11.2` olur.
@@ -454,7 +454,7 @@ Compose'ta iki teslimat modu çalışır:
 
 **`env` modu**. Herhangi bir `environment:` değerinde `${REDIACC_SECRET_<KEY>}` aracılığıyla enterpolasyon yapın. renet sarmalayıcısı değeri dağıtım zamanında konteynerin ortamına iletir.
 
-**`file` modu**. Değer, `/var/run/rediacc/secrets/<networkID>/<KEY>` konumunda host tarafı tmpfs dosyası haline gelir ve Docker compose'un standart `secrets:` bloğu aracılığıyla konteynere bağlanır. Konteyner `/run/secrets/<key>` dosyasını okur. Hassas her şey için bu modu tercih edin. Değerler `docker inspect` veya `/proc/<pid>/environ` dosyasında asla görünmez.
+**`file` modu**. Değer, `/var/run/rediacc/net-<networkID>/secrets/<KEY>` konumunda host tarafı tmpfs dosyası haline gelir ve Docker compose'un standart `secrets:` bloğu aracılığıyla konteynere bağlanır. Konteyner `/run/secrets/<key>` dosyasını okur. Hassas her şey için bu modu tercih edin. Değerler `docker inspect` veya `/proc/<pid>/environ` dosyasında asla görünmez.
 
 ```yaml
 services:
@@ -467,9 +467,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 Değerleri `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` komutundan yararlanarak ve file-modu eşdeğeriyle yapılandırın. Tam nasıl yapılacağı için bkz. [Depolar § Sırlar](/tr/docs/repositories#secrets) ve komut referansı için [Depo başına sırlar](/tr/docs/rdc-cheat-sheet#per-repo-secrets) başlığına bakın.
 
-> **Depo arası yollar doğrulama zamanında reddedilir.** Başka bir deponun `/var/run/rediacc/secrets/<other-networkID>/` dizinine işaret eden bir compose `secrets: file:` (veya `configs: file:`, ya da `env_file:`) docker compose çalışmadan önce renet sarmalayıcısı tarafından kesin olarak reddedilir. `--unsafe` bunu geçersiz kılmaz. Savunma derinlemesine: Rediaccfile kabuk çevresindeki Landlock sandbox'ı okumaları geçerli ağın sırlar dizinine kapsamlandırır; bu nedenle Rediaccfile bash'inden `cat /var/run/rediacc/secrets/<other>/X` komutu YAML doğrulayıcısını atlasa bile EACCES ile başarısız olur. Katılmak gerekmez; bu, her `repo up` için varsayılan olarak etkindir.
+> **Depo arası yollar doğrulama zamanında reddedilir.** Başka bir deponun `/var/run/rediacc/net-<other-networkID>/secrets/` dizinine işaret eden bir compose `secrets: file:` (veya `configs: file:`, ya da `env_file:`) docker compose çalışmadan önce renet sarmalayıcısı tarafından kesin olarak reddedilir. `--unsafe` bunu geçersiz kılmaz. Savunma derinlemesine: Rediaccfile kabuk çevresindeki Landlock sandbox'ı okumaları geçerli ağın sırlar dizinine kapsamlandırır; bu nedenle Rediaccfile bash'inden `cat /var/run/rediacc/net-<other>/secrets/X` komutu YAML doğrulayıcısını atlasa bile EACCES ile başarısız olur. Katılmak gerekmez; bu, her `repo up` için varsayılan olarak etkindir.

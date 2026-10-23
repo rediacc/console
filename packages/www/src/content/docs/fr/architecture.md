@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: fr
-sourceHash: "878b744629cb8b14"
-sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
+sourceHash: "30fbad660b050e2f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Architecture
@@ -73,12 +73,12 @@ Chaque dépôt dispose de son propre démon Docker isolé. Lorsqu'un dépôt est
 ![Isolation Docker](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 Par exemple, un dépôt avec l'ID réseau `2816` utilise :
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 Cela signifie :
@@ -108,7 +108,7 @@ Les données et la configuration Docker sont stockées dans le point de montage 
 
 **Chemin d'exécution partagé** (inchangé) :
 ```
-/run/rediacc/docker-{N}.sock
+/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Cette structure unifiée élimine les collisions de montage en lecture seule et lecture-écriture qui survenaient lorsque les chemins du daemon étaient répartis entre le système de fichiers de l'hôte et le volume chiffré. Nous avons rencontré cette répartition plus d'une fois avant de nous arrêter sur celle-ci. Les daemons par dépôt et les daemons autonomes suivent la même structure de répertoires, de sorte que les outils et les diagnostics fonctionnent de manière identique dans les deux cas.

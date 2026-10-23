@@ -9,8 +9,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: zh
-sourceHash: "e008783008d8e887"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f3439296da3e97f1"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 当 Claude Code、Cursor、Gemini CLI、Copilot CLI 或其他任何 AI 编程助手驱动 `rdc` 时，CLI 对其的处理方式与坐在键盘前的人类不同。本页说明智能体能做什么、不能做什么，以及即使智能体试图绕过防护机制，这些机制依然有效的原因。
@@ -214,7 +214,7 @@ rdc config audit verify
 
 主要的缓解措施是内置的：**[每个仓库的密钥](/zh/docs/repositories#secrets)** 存储在与加密仓库镜像不同的平面中，不会在 fork 边界之间复制。fork 的容器启动时会获得一个空的密钥映射，并以不同的外部主体身份自我标识。使用 `rdc repo secret set` 设置它们（环境变量模式用于 compose 插值，文件模式用于 tmpfs `secrets:` 块）。变更门控是对称的。人类和智能体都必须提供 `--current`（passwd 风格的前提条件）或 `--rotate-secret`（审计轮换）来覆盖或删除现有值。
 
-**跨仓库隔离是强制执行的。** 仓库 B 中的恶意或不谨慎的 compose 文件无法引用仓库 A 的密钥目录。Renet 的 compose 验证器会硬拒绝任何指向当前仓库 `${REDIACC_NETWORK_ID}` 目录之外的 `secrets: file:`、`configs: file:` 或 `env_file:` 路径，而且这个拒绝**不能被 `--unsafe` 覆盖**。纵深防御：围绕 Rediaccfile bash 子进程的 Landlock 沙箱将文件系统读取限制为仅当前网络的密钥目录，因此来自恶意 Rediaccfile 的 `cat /var/run/rediacc/secrets/<other>/X` 会在内核层以 EACCES 失败。
+**跨仓库隔离是强制执行的。** 仓库 B 中的恶意或不谨慎的 compose 文件无法引用仓库 A 的密钥目录。Renet 的 compose 验证器会硬拒绝任何指向当前仓库 `${REDIACC_NETWORK_ID}` 目录之外的 `secrets: file:`、`configs: file:` 或 `env_file:` 路径，而且这个拒绝**不能被 `--unsafe` 覆盖**。纵深防御：围绕 Rediaccfile bash 子进程的 Landlock 沙箱将文件系统读取限制为仅当前网络的密钥目录，因此来自恶意 Rediaccfile 的 `cat /var/run/rediacc/net-<other>/secrets/X` 会在内核层以 EACCES 失败。
 
 还有两种额外的模式可以关闭边界情况：
 

@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 4
 language: ar
-sourceHash: "e1d1a463cc4049d4"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "a7c0a70e8868d2c0"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # المستودعات
@@ -195,7 +195,7 @@ rdc repo checkout staging --from my-app:work --tag staging-copy
 نمطي توصيل:
 
 - `env`. يتم تصدير السر كـ `REDIACC_SECRET_<KEY>` في shell renet على الجهاز المستهدف. ارجع إليه من `docker-compose.yml` الخاص بك عبر استيفاء `${REDIACC_SECRET_<KEY>}`. مرئي داخل بيئة الحاوية، لذا استخدم هذا لقيم على شكل سلسلة اتصال يتوقع التطبيق أن تكون موجودة بالفعل في env.
-- `file`. يتم كتابة السر إلى `/var/run/rediacc/secrets/<networkID>/<KEY>` على المضيف (tmpfs، لا يتم الاستمرار). ارجع إليه من ملف التكوين الخاص بك عبر إعلان `secrets:` من المستوى الأعلى مع مصدر `file:`، بالإضافة إلى قائمة `secrets:` لكل خدمة. قراءة الحاويات من `/run/secrets/<key>`. فضّل هذا النمط لأي شيء حساس. لن يظهر في `docker inspect` أو `/proc/<pid>/environ`.
+- `file`. يتم كتابة السر إلى `/var/run/rediacc/net-<networkID>/secrets/<KEY>` على المضيف (tmpfs، لا يتم الاستمرار). ارجع إليه من ملف التكوين الخاص بك عبر إعلان `secrets:` من المستوى الأعلى مع مصدر `file:`، بالإضافة إلى قائمة `secrets:` لكل خدمة. قراءة الحاويات من `/run/secrets/<key>`. فضّل هذا النمط لأي شيء حساس. لن يظهر في `docker inspect` أو `/proc/<pid>/environ`.
 
 ```bash
 # تعيين، قائمة، الحصول (ملخص فقط)، إلغاء التعيين
@@ -223,12 +223,12 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 مرجع الخدمة من جانب الأحرف الصغيرة (`stripe_live_key`) هو اسم ملف `/run/secrets/<name>` داخل الحاوية؛ الذيل العلوي لمسار المضيف (`STRIPE_LIVE_KEY`) يطابق ما قمت بتعيينه مع `--key`. `${REDIACC_NETWORK_ID}` يتم استيفاء بواسطة `renet compose` تلقائياً.
 
-> **عزل متقاطع مفروض**: مدقق compose في renet يرفض مسارات `secrets: file:` (و`configs: file:`، و`env_file:`) التي تشير إلى معرف شبكة مستودع آخر. الرمز الحرفي `${REDIACC_NETWORK_ID}` (أو عدد صحيح الشبكة الخاص بك) هو النموذج الوحيد المقبول لمراجع `/var/run/rediacc/secrets/...`. و`--unsafe` لا يلغي هذا الفحص. صندوق Landlock حول عملية فرعية bash في Rediaccfile ينطاق الوصول إلى نظام الملفات لدليل أسرار شبكتك فقط، لذا محاولة `cat /var/run/rediacc/secrets/<other>/X` من Rediaccfile خبيثة تفشل مع EACCES على مستوى kernel.
+> **عزل متقاطع مفروض**: مدقق compose في renet يرفض مسارات `secrets: file:` (و`configs: file:`، و`env_file:`) التي تشير إلى معرف شبكة مستودع آخر. الرمز الحرفي `${REDIACC_NETWORK_ID}` (أو عدد صحيح الشبكة الخاص بك) هو النموذج الوحيد المقبول لمراجع `/var/run/rediacc/net-<N>/secrets/...`. و`--unsafe` لا يلغي هذا الفحص. صندوق Landlock حول عملية فرعية bash في Rediaccfile ينطاق الوصول إلى نظام الملفات لدليل أسرار شبكتك فقط، لذا محاولة `cat /var/run/rediacc/net-<other>/secrets/X` من Rediaccfile خبيثة تفشل مع EACCES على مستوى kernel.
 
 > **النسخ**: `rdc repo fork` يقوم **بعدم** نسخ الأسرار. لاستخدام الأسرار في نسخة، شغّل `rdc repo secret set <fork>` على النسخ بوضوح. هذه هي خاصية الأمان الحملة. لا يجب أن تكون حاويات النسخة قادرة على التصرف كمبدأ الإنتاج ضد الخدمات الخارجية.
 

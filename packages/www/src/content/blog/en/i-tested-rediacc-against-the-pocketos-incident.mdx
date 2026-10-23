@@ -122,7 +122,7 @@ Total: 6.3s
 
 The 2 GB fork's clone step took 573 milliseconds. The 128 GB fork's clone step took 2.3 seconds. So the data clone is sub-linear, not strictly constant. But the total fork time is almost identical (6.3 s vs 7.2 s) because most of the wait is the SSH and license dance, not the data. From the user's seat, a fork is a 6-to-7-second pause regardless of repo size.
 
-Now I am operating on the fork. It has its own GUID (`22c57178-...`). Its own networkId (`21760`). Its own mount path. Its own Docker daemon socket (`/var/run/rediacc/docker-21760.sock`). The parent's data is shared via reflink. The parent itself stays running the whole time.
+Now I am operating on the fork. It has its own GUID (`22c57178-...`). Its own networkId (`21760`). Its own mount path. Its own Docker daemon socket (`/var/run/rediacc/net-21760/docker-21760.sock`). The parent's data is shared via reflink. The parent itself stays running the whole time.
 
 When I `term connect` into the fork, this is what I see:
 
