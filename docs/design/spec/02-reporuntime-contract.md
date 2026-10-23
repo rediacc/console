@@ -204,9 +204,8 @@ type RepoRuntime interface {
 	// ApplyIsolation converges the runtime's isolation primitives for the
 	// repo (02 §8 parity table). Docker: per-repo dockerd behind its Docker
 	// API policy proxy (privileged, host `pid`/`ipc`/`uts` and cross-repo
-	// binds refused on the API as in compose, one `dockerpolicy` source) +
-	// eBPF exec cgroup
-	// + Landlock sandbox options (all existing; this method makes them an
+	// binds are refused on the API by the same `dockerpolicy` rules compose
+	// validation applies) + eBPF exec cgroup + Landlock sandbox options (all existing; this method makes them an
 	// asserted contract instead of scattered side effects). Kube: namespace +
 	// default-deny ingress NetworkPolicy + hostPath/hostNetwork
 	// ValidatingAdmissionPolicy + PSA label (templates: sibling P0 spec for
