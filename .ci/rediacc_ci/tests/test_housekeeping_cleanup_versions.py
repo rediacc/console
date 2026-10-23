@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import ast
 import datetime
+import inspect
 import json
 import os
 import pathlib
@@ -2686,7 +2687,7 @@ def _deleted_prefixes(calls: list[str]) -> list[str]:
 
 
 def test_phase_8g_keeps_the_newest_20_and_the_channel_releases_and_deletes_the_rest() -> None:
-    """25 folders, keep 20: v1.0.0..v1.4.0 are outside the window. v1.0.0 (edge) and v1.2.0 (stable) are inside it by age but are protected, so exactly v1.1.0, v1.3.0 and v1.4.0 go. The order is semver (v1.10.0 > v1.9.0), not lexical."""
+    """25 folders, keep 20: v1.0.0..v1.4.0 are outside the window. v1.0.0 (edge) and v1.2.0 (stable) are outside it too but survive only because the channels name them, so exactly v1.1.0, v1.3.0 and v1.4.0 go. The order is semver (v1.10.0 > v1.9.0), not lexical."""
     result = _port_only("cleanup_r2_versions", fixture=_versions_fixture(_version_names(25)))
     err = result[2].decode()
     assert result[0] == 0, err
@@ -2739,6 +2740,10 @@ def test_phase_8g_fails_closed_when_a_channel_manifest_cannot_be_read() -> None:
 def test_phase_8g_is_part_of_the_production_run_and_not_of_the_differential_one() -> None:
     source = PORT.read_text(encoding="utf-8")
     assert "run_all_phases(r2_versions=True)" in source
+    default = inspect.signature(cv.Housekeeping.run_all_phases).parameters["r2_versions"].default
+    assert default is False, (
+        "the differential run drives run_all_phases() bare, so 8g must stay off by default"
+    )
 
 
 def test_phase_8e_reads_a_null_upload_query_as_no_uploads() -> None:
