@@ -64,30 +64,35 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-stop-hook-rulings-campaign.md -- 3 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-program.md -- 2 of 190 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (1 epic(s)):
+- Work outside the PR's plans (2 epic(s)):
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
+  - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 1 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
 - Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4f448f06ff5d7bd5.
-- Leased items: 4: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #9342a223 (worker:af10bbb0a51180aa3, d778be9d), #b97dfd29 (worker:a8ee818930f58e8d6, d778be9d), #e05a93ae (worker:af22bb098e3685ccc, d778be9d).
+- Leased items: 2: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #e05a93ae (worker:af22bb098e3685ccc, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 4 plans done, 31 of 240 boxes done (12%).
+Promoted: 0 of 6 plans done, 31 of 273 boxes done (11%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-backup-program.md | 2/190 | 188 open |
 | 3 | PLAN-cloudflare-proxy.md | 14/29 | 15 open |
-| 4 | PLAN-sync-remote-file-ownership.md | 0/5 | 5 open |
+| 4 | PLAN-sync-remote-file-ownership.md | 0/6 | 6 open |
+| 5 | PLAN-telemetry-export.md | 0/19 | 19 open |
+| 6 | PLAN-renet-bridge-leftovers.md | 0/13 | 13 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
 2. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
 3. agent/plans/PLAN-cloudflare-proxy.md -- operator 2026-10-23 ("move agent/plans/PLAN-cloudflare-proxy.md promoted but investigate to update it"; /ask: "Keep it and finish Phase 2", B5 "A mint command", console "Wire it after Phase 2"): rdc --proxy through the Cloudflare Worker and Container deployed on eu 2026-09-24; P1; Depends-On none; the plan was refreshed against the code the same day and its proven boxes ticked
-4. agent/plans/PLAN-sync-remote-file-ownership.md -- operator 2026-10-23 (plan prompt /tmp/prompt-sync-remote-file-ownership.md): rdc repo sync upload --remote-file leaves the parent directories it creates root:root; fix through a skeleton rsync of only the missing segments so they get the universal user and existing directories are never re-owned; P1; Depends-On none; proposed, awaiting operator approval, and the report asks that the change stays uncommitted for review
+4. agent/plans/PLAN-sync-remote-file-ownership.md -- operator 2026-10-23 (plan prompt /tmp/prompt-sync-remote-file-ownership.md): rdc repo sync upload --remote-file leaves the parent directories it creates root:root; fix through a skeleton rsync of only the missing segments so they get the universal user and existing directories are never re-owned; P1; Depends-On none; approved by operator /ask 2026-10-23 ("Approve both", "Commit as usual")
+5. agent/plans/PLAN-telemetry-export.md -- operator 2026-10-23 (plan prompt /tmp/prompt-telemetry-export-plan.md; /ask: "Approve both", "Accept all defaults", no operator steps): the account Workers and the executor proxy export traces and logs to otlp.rediacc.io through Cloudflare's native OTLP destinations, per region and channel, with a scheduled delivery check; P2; Depends-On none (its proxy box T15 waits on PLAN-cloudflare-proxy.md#P2a)
+6. agent/plans/PLAN-renet-bridge-leftovers.md -- operator 2026-10-23 (plan prompt /tmp/prompt-bridge-leftovers.md; /ask: "Commit as usual"): the broken renet ops self-test (bridge once plus three unregistered function names), 65 dead and 20 renamed bridge.* keys, stale renet and console docs, the 12 www policy translations naming the middleware and web app, and the bridge-functions wording; P2; scope questions Q1, Q3, Q4 open with defaults
 
 ## Generated
 
