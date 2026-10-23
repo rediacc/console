@@ -702,25 +702,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-e2e-browse-at-ci.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 8,
-      "open_sigs": [],
-      "done_sigs": [
-        "025bce21",
-        "1b477f6a",
-        "40c78fa5",
-        "5e1003a1",
-        "6ce731cf",
-        "b987b3f8",
-        "cb047c22",
-        "efeff02a"
-      ]
-    },
     "agent/plans/PLAN-extension-shaped-matchers.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -980,30 +961,6 @@
         "85c8c882",
         "97c1c575",
         "d44bbcb5"
-      ]
-    },
-    "agent/plans/PLAN-pins-command.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 13,
-      "open_sigs": [],
-      "done_sigs": [
-        "097e0d3c",
-        "1f683ad5",
-        "44a5af15",
-        "52428dc8",
-        "52effe0e",
-        "6a2b2863",
-        "99b34656",
-        "a50a6173",
-        "a730821d",
-        "b5c0c73b",
-        "d5abc71e",
-        "eb613c95",
-        "fcbd1cc2"
       ]
     },
     "agent/plans/PLAN-plan-compaction-bindings.md": {
@@ -2526,6 +2483,25 @@
         "f627df71"
       ]
     },
+    "agent/plans/_done/PLAN-e2e-browse-at-ci.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "025bce21",
+        "1b477f6a",
+        "40c78fa5",
+        "5e1003a1",
+        "6ce731cf",
+        "b987b3f8",
+        "cb047c22",
+        "efeff02a"
+      ]
+    },
     "agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3248,6 +3224,30 @@
         "662affc2",
         "7cd0fbbb",
         "d581ca0d"
+      ]
+    },
+    "agent/plans/_done/PLAN-pins-command.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 0,
+      "done": 13,
+      "open_sigs": [],
+      "done_sigs": [
+        "097e0d3c",
+        "1f683ad5",
+        "44a5af15",
+        "52428dc8",
+        "52effe0e",
+        "6a2b2863",
+        "99b34656",
+        "a50a6173",
+        "a730821d",
+        "b5c0c73b",
+        "d5abc71e",
+        "eb613c95",
+        "fcbd1cc2"
       ]
     },
     "agent/plans/_done/PLAN-pipefail-grep-q-renet-gate.md": {

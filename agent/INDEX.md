@@ -499,7 +499,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
-| `agent/plans/PLAN-e2e-browse-at-ci.md` | approved | 49 | 0 | 8 | 8019 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
@@ -520,7 +519,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md` | executing | 81 | 1 | 6 | 16086 |
-| `agent/plans/PLAN-pins-command.md` | approved | 86 | 0 | 13 | 28231 |
 | `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 50 | 7 | 0 | 7813 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 71 | 1 | 15 | 14314 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 127 | 9 | 0 | 23411 |
@@ -600,6 +598,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-deferred-findings-block-merge.md` | done | 250 | 0 | 17 | 28410 |
 | `agent/plans/_done/PLAN-deflected-finding-check.md` | done | 74 | 0 | 6 | 7257 |
 | `agent/plans/_done/PLAN-devbox-toolchain-guard-extension.md` | done | 111 | 0 | 20 | 16709 |
+| `agent/plans/_done/PLAN-e2e-browse-at-ci.md` | done | 49 | 0 | 8 | 7958 |
 | `agent/plans/_done/PLAN-eliminate-worklist-report-per-stop-env.md` | done | 235 | 0 | 20 | 26813 |
 | `agent/plans/_done/PLAN-env-to-bitwarden-v2.md` | done | 509 | 0 | 10 | 52656 |
 | `agent/plans/_done/PLAN-fast-loop.md` | done | 112 | 0 | 19 | 17517 |
@@ -631,6 +630,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-parallel-writer-roster.md` | done | 304 | 0 | 28 | 40550 |
 | `agent/plans/_done/PLAN-per-commit-review.md` | done | 400 | 0 | 17 | 52582 |
 | `agent/plans/_done/PLAN-pid-fallback-liveness-check.md` | done | 272 | 0 | 6 | 24222 |
+| `agent/plans/_done/PLAN-pins-command.md` | done | 87 | 0 | 13 | 28197 |
 | `agent/plans/_done/PLAN-pipefail-grep-q-renet-gate.md` | done | 278 | 0 | 16 | 28334 |
 | `agent/plans/_done/PLAN-plan-dependencies.md` | done | 389 | 0 | 12 | 36921 |
 | `agent/plans/_done/PLAN-plan-file-lifecycle.md` | done | 360 | 1 | 12 | 33486 |

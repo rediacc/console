@@ -71,20 +71,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 2 of 4 plans done, 36 of 223 boxes done (16%).
+Promoted: 0 of 2 plans done, 15 of 202 boxes done (7%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
-| 2 | PLAN-pins-command.md | 13/13 | done |
-| 3 | PLAN-e2e-browse-at-ci.md | 8/8 | done |
-| 4 | PLAN-backup-program.md | 0/186 | 186 open |
+| 2 | PLAN-backup-program.md | 0/186 | 186 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
-2. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it
-3. agent/plans/PLAN-e2e-browse-at-ci.md -- finding fix on this PR (worklist #1a07399b, 2026-10-21): the browse-at e2e tier passes on the local fleet but no workflow runs it; findings are fixed in the session that finds them
-4. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
+2. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
 
 ## Generated
 
