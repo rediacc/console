@@ -744,3 +744,23 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `bws-env.sh` is deleted, so every refusal names the module a reader can run and find."""
     for line in (bws_env.NO_TOKEN[0], bws_env.LIST_FAILED[0]):
         assert line.startswith("rediacc_ci.core.bws_env: ")
+
+
+def test_names_specs_expands_a_profile_to_its_required_specs() -> None:
+    """`names --profile P` resolves the profile's REQUIRED specs, after any positional SPEC."""
+    specs = bws_env._names_specs(["EXTRA", "--profile", "grafana-smtp"])
+    assert specs == ["EXTRA", "AWS_SES_ACCESS_KEY_ID_EU", "AWS_SES_SMTP_PASSWORD_EU"]
+    assert bws_env._names_specs(["--profile=grafana-smtp"]) == specs[1:]
+
+
+def test_names_specs_refuses_an_unknown_flag_instead_of_looking_it_up() -> None:
+    """A flag is never a store name: `--bogus` refuses rather than reporting `--bogus` absent from the vault."""
+    with pytest.raises(bws_env.RefusalError) as refused:
+        bws_env._names_specs(["--bogus"])
+    assert "--bogus" in refused.value.lines[0]
+
+
+def test_names_specs_refuses_an_unknown_profile() -> None:
+    with pytest.raises(bws_env.RefusalError) as refused:
+        bws_env._names_specs(["--profile", "no-such-profile"])
+    assert "unknown profile" in refused.value.lines[0]

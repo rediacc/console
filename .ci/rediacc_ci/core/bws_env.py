@@ -253,7 +253,9 @@ JSON_REQUIRED = {
 
 USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
 
-  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names [SPEC ...] [--profile P ...]
+      `--profile P` adds the REQUIRED specs of that secret-supply profile.
+      Any other argument starting with `-` refuses with exit 2.
       Resolve, then print the sorted LOCAL names that came back with a NON-EMPTY
       value, one per line, on stdout. Diagnostics on stderr, exactly as the twin
       writes them. Exit 0 when every requested name resolved, 1 otherwise.
@@ -804,7 +806,13 @@ def main(argv: list[str]) -> int:
         print(USAGE, file=sys.stderr)
         return 2
     try:
-        resolved, _missing, rc = load(rest or None)
+        specs = _names_specs(rest)
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 2
+    try:
+        resolved, _missing, rc = load(specs or None)
     except RefusalError as refusal:
         for line in refusal.lines:
             print(line, file=sys.stderr)
@@ -812,6 +820,41 @@ def main(argv: list[str]) -> int:
     for name in sorted(resolved):
         print(name)
     return rc
+
+
+def _names_specs(argv: list[str]) -> list[str]:
+    """The SPECs `names` resolves: its positional SPECs plus the REQUIRED specs of each `--profile P`.
+
+    Any other argument that starts with `-` refuses. Before this, `names --profile grafana-smtp` looked the two words up as store names and reported them "absent or empty in the store", which read as a broken vault entry rather than an unknown flag (2026-10-23).
+    """
+    specs: list[str] = []
+    profile_names: list[str] = []
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--profile" and i + 1 < len(argv):
+            profile_names.append(argv[i + 1])
+            i += 2
+            continue
+        if arg.startswith("--profile="):
+            profile_names.append(arg.split("=", 1)[1])
+            i += 1
+            continue
+        if arg.startswith("-"):
+            raise RefusalError(
+                [
+                    "rediacc_ci.core.bws_env: names: unexpected argument %r (want SPEC ... or --profile P)"
+                    % arg
+                ]
+            )
+        specs.append(arg)
+        i += 1
+    if profile_names:
+        required, _optional = profile_specs(profiles(), profile_names)
+        specs.extend(
+            name if name == local else "%s > %s" % (name, local) for name, local in required
+        )
+    return specs
 
 
 def _json_verb(name: str) -> int:
