@@ -1063,12 +1063,16 @@ PINS_SOAKED_KINDS = (
 
 PINS_SOAKED_WORKFLOW = "CI - OBS Mirror"
 _PINS_APPLY_RE = re.compile(r"\bpins\s+--\s+apply-soaked\b")
+# CASE. GitHub resolves context names and the steps context without regard to case (actions/runner DictionaryContextData looks keys up with StringComparer.OrdinalIgnoreCase, and ExecutionContext.ExpressionValues and StepsContext are built from it), and the env context too on a Windows runner (StepsRunner.cs, `#if OS_WINDOWS`).
+# So every pattern below that recognises a READ (secrets, steps, env, BWS_* names, write commands, write actions) matches in any case, since a missed spelling is a hole; every pattern that ADMITS a shape (the access-token, client-id, private-key and token expressions, the preset, the action paths, the blanking and scrub lines) stays exact, since a refused spelling only costs a rewrite.
+# Write commands match in any case as well: a Windows runner resolves `Git` to git.
 _PINS_WRITE_RE = re.compile(
-    r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b|\bcurl\b[^\n]*\b(POST|PUT|PATCH|DELETE)\b"
+    r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b|\bcurl\b[^\n]*\b(POST|PUT|PATCH|DELETE)\b",
+    re.IGNORECASE,
 )
 # The secrets context can only be read inside an expression: a `${{ }}` anywhere, or a bare `if:` condition. Any use of the word there counts (`secrets.NAME`, `secrets['NAME']`, `toJSON(secrets)`, `secrets == ''`) except `secrets.GITHUB_TOKEN`, read-only under `contents: read`. The workflow needs no secret, so the check does not judge which one could write.
 _PINS_EXPR_RE = re.compile(r"\$\{\{(.*?)\}\}", re.DOTALL)
-_PINS_SECRET_RE = re.compile(r"\bsecrets\b(?!\s*\.\s*GITHUB_TOKEN\b)")
+_PINS_SECRET_RE = re.compile(r"\bsecrets\b(?!\s*\.\s*GITHUB_TOKEN\b)", re.IGNORECASE)
 
 
 def _pins_secret(value: object, condition: object = None) -> bool:
@@ -1158,10 +1162,11 @@ _PINS_CHECKOUT_RE = re.compile(r"actions/checkout@[0-9a-f]{40}")
 _PINS_BWS_LINE_RE = re.compile(r"([A-Za-z0-9_.=:-]+)\s*>\s*([A-Za-z_][A-Za-z0-9_]*)")
 _PINS_STEP_ID_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*")
 # `steps.<id>` names one step; `steps[...]`, `toJSON(steps)` or a bare `steps` can reach any, so they count as a read of the token.
-_PINS_STEPS_RE = re.compile(r"\bsteps\b(?:\s*\.\s*([A-Za-z_][A-Za-z0-9_-]*))?")
-_PINS_BWS_NAME_RE = re.compile(r"\bBWS_\w*")
+_PINS_STEPS_RE = re.compile(r"\bsteps\b(?:\s*\.\s*([A-Za-z_][A-Za-z0-9_-]*))?", re.IGNORECASE)
+# Any case, in shell text too: a Linux shell's `$bws_app_id` is another variable, but nothing here pins the runner to Linux, and on Windows `$env:bws_app_id` and `%bws_app_id%` read BWS_APP_ID; a refused lowercase `bws_` costs a rename.
+_PINS_BWS_NAME_RE = re.compile(r"\bBWS_\w*", re.IGNORECASE)
 # The env context read whole (`toJSON(env)`, `env[...]`) can reach a BWS_* value as surely as naming it.
-_PINS_ENV_WHOLE_RE = re.compile(r"\benv\b(?!\s*\.\s*[A-Za-z_])")
+_PINS_ENV_WHOLE_RE = re.compile(r"\benv\b(?!\s*\.\s*[A-Za-z_])", re.IGNORECASE)
 
 
 def _leaves(value: object, path: tuple = ()) -> typing.Iterator[tuple[tuple, str]]:
@@ -1318,7 +1323,7 @@ def _pins_checkout_token(doc: dict, jname: str, job: dict) -> tuple[set[int], di
     for path, text in _leaves(doc):
         for expr in _exprs(path, text):
             for m in _PINS_STEPS_RE.finditer(expr):
-                if m.group(1) is not None and m.group(1) != sid:
+                if m.group(1) is not None and m.group(1).lower() != sid.lower():
                     continue
                 at = _pins_token_read_at(path, text, ctx)
                 if at is None:
@@ -1332,6 +1337,12 @@ def _pins_checkout_token(doc: dict, jname: str, job: dict) -> tuple[set[int], di
     for at in sorted(used):
         with_ = steps[at].get("with")
         persist = with_.get("persist-credentials") if isinstance(with_, dict) else None
+        folded = [str(k).lower() for k in with_] if isinstance(with_, dict) else []
+        if len(folded) != len(set(folded)):
+            return refuse(
+                "the token-taking checkout at step %d spells one input twice in different case; action inputs are case-insensitive, so which one wins is not visible here"
+                % (at + 1)
+            )
         if persist is not False and persist != "false":
             return refuse(
                 "the token-taking checkout at step %d must set `persist-credentials: false`, or the token stays in .git/config for every later step"
@@ -1403,7 +1414,7 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
                 pass
             elif (
                 _PINS_WRITE_RE.search(run)
-                or any(w in uses for w in _PINS_WRITE_USES)
+                or any(w in uses.lower() for w in _PINS_WRITE_USES)
                 or _pins_secret(st, st.get("if"))
             ):
                 why = refused.get(i)

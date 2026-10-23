@@ -2106,3 +2106,100 @@ def test_a_blanking_step_without_the_token_steps_is_still_a_bws_read() -> None:
     doc = pins_doc()
     _tok_steps(doc).append(token_triple()[2])
     assert pins_kinds(doc) == ["pins-soaked-writes"]
+
+
+# CASE. GitHub resolves context names and the steps context in any case (actions/runner DictionaryContextData, StringComparer.OrdinalIgnoreCase), and env too on Windows, so every read pattern must see every spelling.
+@pytest.mark.parametrize(
+    ("step", "why"),
+    [
+        (
+            {"run": "echo ${{ steps.APP-TOKEN.outputs.token }}"},
+            "steps.app-token is read at jobs.soaked.steps.6.run",
+        ),
+        (
+            {"run": "x", "env": {"T": "${{ steps.App-Token.outputs.token }}"}},
+            "steps.app-token is read at jobs.soaked.steps.6.env.T",
+        ),
+        (
+            {"run": "echo ${{ STEPS.app-token.outputs.token }}"},
+            "steps.app-token is read at jobs.soaked.steps.6.run",
+        ),
+        (
+            {"run": "echo ${{ toJSON(STEPS) }}"},
+            "steps.app-token is read at jobs.soaked.steps.6.run",
+        ),
+        (
+            {"run": "x", "env": {"K": "${{ env.bws_app_id }}"}},
+            "reads a BWS_* value",
+        ),
+        (
+            {"run": "x", "env": {"K": "${{ ENV['Bws_Github_App_Private_Key'] }}"}},
+            "reads a BWS_* value",
+        ),
+        ({"run": "x", "env": {"K": "${{ toJSON(ENV) }}"}}, "reads a BWS_* value"),
+        ({"run": "Write-Output $env:bws_app_id"}, "reads a BWS_* value"),
+    ],
+)
+def test_a_read_in_any_case_is_still_a_read(step, why) -> None:
+    doc = token_doc()
+    _tok_steps(doc).insert(6, step)
+    findings = ci_workflow_invariants.analyse_pins_soaked(doc)[0]
+    assert {k for k, _n in findings} == {"pins-soaked-writes"}, findings
+    assert any(why in n for _k, n in findings), findings
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        {"run": "./tool ${{ SECRETS.DEPLOY_KEY }}"},
+        {"run": "./tool ${{ Secrets['DEPLOY_KEY'] }}"},
+        {"run": "x", "if": "SECRETS.K != ''"},
+        {"run": "Git Push origin HEAD"},
+        {"run": "GH PR create --fill"},
+        {"run": "curl -X post https://api.github.com/x"},
+        {"uses": "./.github/actions/App-Token", "with": {"preset": "cd"}},
+        {"uses": "peter-evans/Create-Pull-Request@sha"},
+    ],
+)
+def test_a_write_in_any_case_is_still_a_write(step) -> None:
+    doc = token_doc()
+    _tok_steps(doc).append(step)
+    assert pins_kinds(doc) == ["pins-soaked-writes"]
+
+
+def test_the_default_token_in_any_case_is_still_not_a_write_secret() -> None:
+    doc = token_doc()
+    _tok_steps(doc).append(
+        {"uses": "some/action@sha", "with": {"t": "${{ secrets.github_token }}"}}
+    )
+    assert pins_kinds(doc) == []
+
+
+def test_a_checkout_input_spelled_twice_in_different_case_is_refused() -> None:
+    doc = token_doc()
+    _tok_steps(doc)[4]["with"]["Persist-Credentials"] = True
+    findings = ci_workflow_invariants.analyse_pins_soaked(doc)[0]
+    assert {k for k, _n in findings} == {"pins-soaked-writes"}
+    assert any("spells one input twice in different case" in n for _k, n in findings), findings
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda d: _tok_steps(d)[4]["with"].__setitem__(
+            "token", "${{ steps.APP-TOKEN.outputs.token }}"
+        ),
+        lambda d: _tok_steps(d)[2]["with"].__setitem__("preset", "READONLY"),
+        lambda d: _tok_steps(d)[1]["with"].__setitem__(
+            "access-token", "${{ SECRETS.bws_access_token }}"
+        ),
+        lambda d: _tok_steps(d)[1].__setitem__("uses", "./.github/actions/BWS-Secrets"),
+    ],
+)
+def test_an_admitted_shape_in_another_case_is_refused_not_admitted(mutate) -> None:
+    """The admitting side stays exact: a respelled admitted value costs a rewrite, never a hole."""
+    doc = token_doc()
+    mutate(doc)
+    kinds = pins_kinds(doc)
+    assert kinds
+    assert set(kinds) == {"pins-soaked-writes"}
