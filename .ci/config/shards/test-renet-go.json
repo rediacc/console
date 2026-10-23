@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-10-20T17:02:07.738Z",
+  "generatedAt": "2026-10-23T20:19:35.810Z",
   "legs": [
     {
       "index": 1,
@@ -61,6 +61,9 @@
         "github.com/rediacc/renet/pkg/credentials",
         "github.com/rediacc/renet/pkg/datastore",
         "github.com/rediacc/renet/pkg/dns",
+        "github.com/rediacc/renet/pkg/dockergrant",
+        "github.com/rediacc/renet/pkg/dockerpolicy",
+        "github.com/rediacc/renet/pkg/dockerproxy",
         "github.com/rediacc/renet/pkg/embed",
         "github.com/rediacc/renet/pkg/filesystem",
         "github.com/rediacc/renet/pkg/functions/commands",
@@ -93,6 +96,7 @@
         "github.com/rediacc/renet/pkg/rbd",
         "github.com/rediacc/renet/pkg/repomerge",
         "github.com/rediacc/renet/pkg/repository",
+        "github.com/rediacc/renet/pkg/runpaths",
         "github.com/rediacc/renet/pkg/sandbox",
         "github.com/rediacc/renet/pkg/ssh",
         "github.com/rediacc/renet/pkg/storage",

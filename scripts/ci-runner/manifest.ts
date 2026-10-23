@@ -2249,9 +2249,9 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-operator-rulings',
     run: 'npm run check:ci-operator-rulings',
     gate: true,
+    // No 'agent/rulings/**' glob: the ledger directory holds no tracked file until the first `worklist.py --rule`, so the glob matched nothing and could only exclude (check:ci-paths-origin, check:ci-gate-manifest). `--rule` rewrites agent/RULES.md in the same locked write, so a recorded ruling still selects this gate through the RULES.md path.
     paths: [
       'agent/RULES.md',
-      'agent/rulings/**',
       '.ci/scripts/quality/check_operator_rulings.py',
       '.claude/hooks/stop/wl_ruling.py',
     ],

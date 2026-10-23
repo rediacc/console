@@ -2334,7 +2334,6 @@
     "gate": true,
     "paths": [
       "agent/RULES.md",
-      "agent/rulings/**",
       ".ci/scripts/quality/check_operator_rulings.py",
       ".claude/hooks/stop/wl_ruling.py"
     ],

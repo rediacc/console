@@ -192,6 +192,14 @@
         {
           "id": "check:ci-release-bump-skip",
           "reason": "It reaches .ci/rediacc_ci/ci/detect_pointer_bump.py, whose agent/reviews/ cite is REVIEW_PATH_PREFIX, a prefix matched against the path strings of `git diff-tree` output to admit review-record commits beside a pointer bump. No file under agent/reviews/ is opened, so no file's content reaches the verdict, and this gate's verdict on a receipt is computed over its own fixture repositories, not the checkout's agent/reviews/ tree."
+        },
+        {
+          "id": "check:ci-commit-citations",
+          "reason": "It names the record globs only to say it never reads them: its WHERE paragraph (.ci/scripts/quality/check_commit_citations.py:18) excludes agent/reviews/**, agent/worklist/** and agent/ledgers/** because those are records of a moment, and it scans git ls-files code, tests and agent/plans/**.md."
+        },
+        {
+          "id": "check:ci-operator-rulings",
+          "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
         }
       ]
     },
@@ -341,6 +349,14 @@
         {
           "id": "check:deps",
           "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-commit-citations",
+          "reason": "It names the record globs only to say it never reads them: its WHERE paragraph (.ci/scripts/quality/check_commit_citations.py:18) excludes agent/reviews/**, agent/worklist/** and agent/ledgers/** because those are records of a moment, and it scans git ls-files code, tests and agent/plans/**.md."
+        },
+        {
+          "id": "check:ci-operator-rulings",
+          "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
         }
       ]
     },
@@ -473,6 +489,10 @@
         {
           "id": "check:deps",
           "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-operator-rulings",
+          "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
         }
       ]
     },
@@ -609,6 +629,14 @@
         {
           "id": "check:deps",
           "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-commit-citations",
+          "reason": "It names the record globs only to say it never reads them: its WHERE paragraph (.ci/scripts/quality/check_commit_citations.py:18) excludes agent/reviews/**, agent/worklist/** and agent/ledgers/** because those are records of a moment, and it scans git ls-files code, tests and agent/plans/**.md."
+        },
+        {
+          "id": "check:ci-operator-rulings",
+          "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
         }
       ]
     }
