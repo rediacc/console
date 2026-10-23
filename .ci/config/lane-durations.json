@@ -1220,6 +1220,7 @@
     "Breakpoint Lifecycle": 0.6,
     "Build (Renet) / Renet (cached, cross-compile)": 6.7,
     "Build (Renet) / Renet (cached, linux)": 1.5,
+    "Build (Renet) / Proxy image smoke": 3.0,
     "Quality / Quick Lane": 0.8,
     "Quality / Security": 4.9,
     "Quality / Packages": 5.4,
