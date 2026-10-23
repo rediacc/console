@@ -64,11 +64,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-stop-hook-rulings-campaign.md -- 3 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-program.md -- 2 of 190 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (2 epic(s)):
+- Work outside the PR's plans (4 epic(s)):
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 1 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
+  - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 1 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
+  - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 3 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
 - Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4f448f06ff5d7bd5.
-- Leased items: 2: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d), #e05a93ae (worker:af22bb098e3685ccc, d778be9d).
+- Leased items: 1: #2797399b (worker:a4f448f06ff5d7bd5, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
