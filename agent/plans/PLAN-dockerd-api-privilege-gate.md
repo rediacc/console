@@ -104,6 +104,12 @@ These bind T2-T4; each box's writer reads this section with its box.
 4. T1 already narrowed `runpaths.DockerSocketGlob` to `net-*/docker-*[0-9].sock` so discovery never picks up `DockerInternalSocket` once T3 moves dockerd.
 5. Own-mount rule (review fix private/renet 5546219): `Evaluate` does not know the requesting repo's own mount, so a bind of another repo's `/mnt/rediacc/mounts/<guid>/...` (per-repo Docker data, `private/renet/pkg/repository/repository.go:101`) still passes, and so do host paths outside the protected lists (`/srv`, `/home/*/.ssh` read-only). T2/T4 pass the repo mount and datastore into the policy and the bind rule becomes: own mount, named volumes, own socket and secrets, and safe mounts only.
 
+## Findings from T2 (2026-10-23, private/renet cef804e)
+
+1. Session Hub checkpoints go into its `WorkspaceDir`; once T3 puts the proxy in front of a Hub daemon whose workspace lies outside its own mount, the `CheckpointDir` rule refuses them. This joins the Hub delegation of T1 Finding 1 in T4.
+2. `/grpc` and `/session` are spliced through unread after their h2c upgrade, so BuildKit's `security.insecure` is held only by dockerd's default `builder.entitlements`. T3 asserts the generated daemon.json never enables `security.insecure` (a golden plus a test).
+3. The compose validator still passes another repo's mount until T3 hands it a `dockerpolicy.Scope`; T3's validate.go change passes the repo mount, immovable path and datastore.
+
 ## Risks
 
 - The proxy is on the hot path for every Docker API call a repo makes; a splice bug would break exec/attach/logs/build streaming. T2's hijack test and T6's live build/exec on ops-worker are the gate.
