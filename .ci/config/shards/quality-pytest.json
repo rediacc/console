@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-23T02:03:10.038Z",
+  "generatedAt": "2026-10-23T05:18:48.996Z",
   "legs": [
     {
       "index": 1,
@@ -418,6 +418,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_sibling_runs.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_repo_flag.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_root_cause.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_trace_workflow_runs.py",
         "pytest:.ci/rediacc_ci/tests/test_core_account.py",
         "pytest:.ci/rediacc_ci/tests/test_core_allowlist.py",
         "pytest:.ci/rediacc_ci/tests/test_core_common.py",

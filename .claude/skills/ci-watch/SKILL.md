@@ -39,7 +39,9 @@ Start with `--why`. Every verb is one read that exits, compact by default, `--js
 .ci/scripts/ci/ci-trace.py --why                         # the PR head's Console CI run: cause, failing step, category, silences
 .ci/scripts/ci/ci-trace.py --run <id> --why              # the same for one run
 .ci/scripts/ci/ci-trace.py --runs                        # the newest Console CI runs on the branch (--ref main after a merge)
-.ci/scripts/ci/ci-trace.py --scheduled                   # newest scheduled run of every cron workflow on main, failed jobs named (--workflow X: its last 5)
+.ci/scripts/ci/ci-trace.py --runs --ref main --workflow "Release to Edge"  # any workflow's runs on a branch, every event (stem, file or name)
+.ci/scripts/ci/ci-trace.py --scheduled                   # newest scheduled run of every cron workflow on main, failed jobs named (--workflow X: its last 5 + its dispatch runs)
+.ci/scripts/ci/ci-trace.py --scheduled --workflow X --run <id> --wait  # one run of X (a dispatch too) to its verdict
 .ci/scripts/ci/ci-trace.py --run <id> --jobs             # counts + every job that did not pass, durations against p90
 .ci/scripts/ci/ci-trace.py --run <id> --jobs --attempt 2 # one attempt of a watchdog-rerun run
 .ci/scripts/ci/ci-trace.py --job <id> --errors           # the failing step's excerpt, infra/code category, top silences

@@ -77,12 +77,20 @@ class FakeSchedred(types.ModuleType):
         return self.runs, self.runs_err
 
 
+class EmptyFetch:
+    def json(self, _path):
+        return {"workflow_runs": []}, ""
+
+
 @pytest.fixture
 def install(ct, monkeypatch, tmp_path):
     # The same wl_core module object ci-trace imports inside the verb, reached through its own sys.path hop.
     wl_core = ct.wl_ci.C
     worklist = tmp_path / "wl.md"
     monkeypatch.setattr(wl_core, "worklist_for", lambda _root: worklist)
+
+    # The per-workflow view also reads the workflow_dispatch runs through ci-trace's own fetcher; no case here touches the network, so that read answers an empty list.
+    monkeypatch.setattr(ct, "_fetcher", lambda _root: EmptyFetch())
 
     def _install(fake):
         monkeypatch.setitem(sys.modules, "wl_schedred", fake)
@@ -248,7 +256,7 @@ def test_workflow_json(ct, install, capsys):
     assert data["runs"][0]["run_id"] == 41
 
 
-def test_workflow_without_scheduled_is_a_usage_error(ct):
+def test_workflow_without_scheduled_or_runs_is_a_usage_error(ct):
     with pytest.raises(SystemExit) as exc:
         ct.main(["--workflow", "ci"])
     assert exc.value.code == 2
