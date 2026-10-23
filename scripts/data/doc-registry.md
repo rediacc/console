@@ -255,7 +255,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-proxy-docker-prepull | local-only | yes | yes |
 | check:ci-proxy-ensure-nfpm | local-only | yes | no |
 | check:ci-proxy-go-unit | local-only | yes | yes |
-| check:ci-proxy-image-smoke | local-only | yes | yes |
+| check:ci-proxy-image-smoke | proxy-image-smoke / Proxy image smoke | yes | yes |
 | check:ci-proxy-license-e2e | local-only | yes | yes |
 | check:ci-proxy-linux-packages | local-only | yes | no |
 | check:ci-proxy-ops-host-check | local-only | yes | no |
@@ -844,7 +844,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | knip.jsonc | 26 | // comment |
 | package.json | 23 | JSON value |
 | pyproject.toml | 66 | # comment |
-| scripts/ci-runner/gates.lock.json | 31 | JSON value |
+| scripts/ci-runner/gates.lock.json | 30 | JSON value |
 | scripts/data/shape-duplication-seed-advisory.json | 47 | JSON value |
 | scripts/data/shape-duplication-seed.json | 11 | JSON value |
 

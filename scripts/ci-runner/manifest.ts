@@ -5541,22 +5541,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // <<< gen-manifest: region 48
-  // The executor image, built and booted: B1 (no token at boot) and B2 (no renet) shipped because nothing ever ran it. A full docker build of the CLI workspace, hence slow and local-only until a CI job that already builds images carries it.
+  // The executor image, built and booted: B1 (no token at boot) and B2 (no renet) shipped because nothing ever ran it. A full docker build of the CLI workspace, hence slow. CI runs it in ci-build-renet.yml after the renet build (full or cached), because the image must ship a renet-linux-amd64 and that job is where one exists; the gate stages the downloaded private/bin/ copy. Hand-registered: a gate header can only bind a step in ci-quality.yml.
   {
     id: 'check:ci-proxy-image-smoke',
     run: 'npm run check:ci-proxy-image-smoke',
     slow: true,
     gate: true,
     heavy: true,
-    // check:ci-gate-tree-writes V3. The Dockerfile's `COPY workers/proxy/renet/` fixes the build context to the tree, so staging elsewhere needs `docker build --build-context`, a Dockerfile change; until then the stage is declared. Local-only and heavy, so serialising costs nothing.
+    // check:ci-gate-tree-writes V3. The Dockerfile's `COPY workers/proxy/renet/` fixes the build context to the tree, so staging elsewhere needs `docker build --build-context`, a Dockerfile change; until then the stage is declared. Heavy, so serialising costs little locally, and in CI it runs alone in its own job.
     mutex: ['tree:repo'],
     writesTree:
       'stages workers/proxy/renet/renet-linux-amd64 into the docker build context (Dockerfile:54 COPY)',
     leaves: ['.ci/scripts/quality/check_proxy_image_smoke.py'],
     ci: {
-      kind: 'local-only',
-      blocker:
-        'BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)',
+      kind: 'step',
+      workflow: '.github/workflows/ci-build-renet.yml',
+      job: 'proxy-image-smoke',
+      step: 'Proxy image smoke',
     },
   },
   // >>> gen-manifest: region 49

@@ -5897,8 +5897,10 @@
       ".ci/scripts/quality/check_proxy_image_smoke.py"
     ],
     "ci": {
-      "kind": "local-only",
-      "blocker": "BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)"
+      "kind": "step",
+      "workflow": ".github/workflows/ci-build-renet.yml",
+      "job": "proxy-image-smoke",
+      "step": "Proxy image smoke"
     }
   },
   {

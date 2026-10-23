@@ -20,7 +20,7 @@ THE CONTROL THAT MAKES "STAYS UP" MEAN SOMETHING. The same image is also started
 
 THE RENET IT SHIPS. The Dockerfile copies `workers/proxy/renet/renet-linux-amd64`, which `rediacc_ci.deploy.deploy_proxy` builds. When none is staged the gate stages one for the run and removes it afterwards: `private/bin/renet-linux-amd64` when present, else a `go build` of `private/renet/cmd/renet` (no embedded assets, fine for a boot test). No staged binary and no way to make one is exit 2: no verdict.
 
-SLOW. A full image build (npm ci of the workspace, three package builds, the bundle) takes minutes, so the gate is `slow: true` in the manifest and no CI step runs it yet.
+SLOW. A full image build (npm ci of the workspace, three package builds, the bundle) takes minutes, so the gate is `slow: true` in the manifest and runs in CI only in `.github/workflows/ci-build-renet.yml` job `proxy-image-smoke`, after the renet build, with that build's renet-linux-amd64 downloaded into private/bin/ for the stage.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail or it cannot reach a verdict (docker absent, no renet to stage).
 """
