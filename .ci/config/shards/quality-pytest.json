@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-22T18:40:25.105Z",
+  "generatedAt": "2026-10-23T02:03:10.038Z",
   "legs": [
     {
       "index": 1,
@@ -423,6 +423,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_common.py",
         "pytest:.ci/rediacc_ci/tests/test_core_gate_controls.py",
         "pytest:.ci/rediacc_ci/tests/test_core_https.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_local_common_renet_stamp.py",
         "pytest:.ci/rediacc_ci/tests/test_core_platform.py",
         "pytest:.ci/rediacc_ci/tests/test_core_ports.py",
         "pytest:.ci/rediacc_ci/tests/test_core_proxyx.py",
