@@ -77,6 +77,7 @@ import {
 } from '../lib/pins/drivers/pin-manifests.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { familyGateOf } from '../lib/pins/family-gates.js';
+import { ranLine } from '../lib/pins/ran-line.js';
 import { loadRegistry, type PinEntry, type RepoPath, siteMatches } from '../lib/pins/registry.js';
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
 import {
@@ -206,7 +207,7 @@ export interface DraftInput {
  * One repository's drafted commit message. Each draft lists only what that repository's own commit changes: its own site lines and the commands run in it. A submodule's subject names the repository and its own changes, and the run's release lines appear in a submodule draft only for a plan whose every site lies in that submodule. The console draft carries the run's subject and release lines, and one pointer line per submodule naming that submodule's own commit. Pure.
  */
 export function draftMessage(d: DraftInput): string {
-  const cmdLine = (c: CommandRecord): string => `Ran: ${c.cmd} (in ${c.cwd}) rc=${c.rc}`;
+  const cmdLine = (c: CommandRecord): string => ranLine(c);
   const gateLines = (): string[] =>
     d.ungated.length > 0
       ? [
