@@ -74,13 +74,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 3 plans done, 17 of 235 boxes done (7%).
+Promoted: 0 of 3 plans done, 31 of 235 boxes done (13%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 2 | PLAN-backup-program.md | 2/190 | 188 open |
-| 3 | PLAN-cloudflare-proxy.md | 0/29 | 29 open |
+| 3 | PLAN-cloudflare-proxy.md | 14/29 | 15 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
