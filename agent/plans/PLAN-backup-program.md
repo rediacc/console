@@ -104,6 +104,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 ### Phase A: records, folds and doc truth
 
 - [ ] A1: Mark docs/backup-storage/CHECKLIST.md superseded by this plan; carry w8 and the w3/w4/w5 leftovers (preview smoke, e2e corruption-injection control, suite 26 never run, stale locales) into boxes here. Owns: docs/backup-storage/CHECKLIST.md. Accept: header line names this plan; check:ci-plan-citations rc=0.
+- [ ] A1a: Preview smoke for the portal quota page: run `stepQuotaPageShipped` (.ci/scripts/test/smoke-test-preview.ts, asserting the served bundle carries the `backup-storage` route) against a real preview deployment; carried from CHECKLIST w3. Accept: a green deploy-preview run id recorded here.
+- [ ] A1b: Locale freshness for the chunk-restore and quota docs (backup-restore.md, limits.md): the 12 non-English locales re-translated by delta and the hashes regenerated; carried from CHECKLIST w5. Accept: validate-translation-freshness rc=0 and check:i18n rc=0.
 - [ ] A2: After PR #600 merges, fold PLAN-chunk-store-browse-toc-and-remote.md: copy its 11 boxes verbatim into Phase O, leave a Status: moved + Moved-To: stub, run check_plan_boxes.py --update in the same commit. Accept: check:ci-plan-boxes rc=0, G-A1 finds every signature.
 - [ ] A3: Fold PLAN-renet-fetch-hardening.md site 6 (ensureRclone retry) as obsolete once H8 deletes ensureRclone; tick it there with the commit sha. Accept: plan-boxes ledger shows the box done.
 - [ ] A4: Give fresh boxes (cited, not edited) to the leftovers of compacted records: rclone-decommission (re-embed gate, storage prune), cold-path T3, backup-quota-delta-gc leg l and retention push, add-chunkstore-backup-verb I/O budget, backup-restore-target-license e2e, testing-surface-audit F1-F10 re-verified. Accept: each leftover maps to a box id below.
@@ -252,6 +254,7 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [ ] K9: Key rotation: a passphrase change keeps dedup (same master key); a reencrypt forces a full seed and still restores. Accept: btrfs/LUKS tier test.
 - [ ] K10: Large-repo performance: a nightly VM job seeds 50 GB and runs an incremental against a time and byte budget, recording durationMs. Accept: the first nightly result recorded.
 - [ ] K11: Corruption injection at e2e level: flip a byte in a stored chunk; restore refuses and verify reports it. Accept: suite 26 case.
+- [ ] K11a: A reusable corruption-injection fixture (flip one byte of a stored chunk) for K11 and later suites; CHECKLIST w4 found no such helper. Accept: K11's suite 26 case uses it.
 - [ ] K12: A restore scenario in license-e2e. Accept: license-e2e rc=0.
 - [ ] K13: Cross-region --at: an EU subscription resolves a time even when the CLI's default server is another region. Accept: CLI test, plus a fix if it fails.
 - [ ] K14: Parallel hashing on the backup side (private/renet/pkg/chunkstore/hash.go:35 is single-threaded), with a benchmark. Accept: the benchmark shows the speed-up; tests pass.
@@ -329,6 +332,7 @@ Two holes went to another session on 2026-10-15 for an immediate fix: cross-tena
 
 ### Phase Q: live cutover, stable EU, hostinger to rediacc-backups-eu
 
+- [ ] Q0: Before the cutover, set the four ACCOUNT_BACKUP_S3_* secrets on the eu stable Worker (names only, through the M1 path) and add the bucket-scoped cf-r2-backup rotation slug to the rotation profile in .ci/config/secret-supply.json; carried from CHECKLIST w8. Accept: the Worker settings list all four names; the rotation dry run lists the slug; the rollback version id is recorded.
 - [ ] Q1: Merge the program's PR through the loop (CD deploys edge). Deploy stable EU locally per .claude/skills/deploy/SKILL.md: `./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- bash -c 'npm run build:packages && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region eu --target stable'` (with the portal build step the skill names), then the M1 secrets path for eu stable. Record the rollback version id and the D1 bookmark. Accept: https://eu.rediacc.com/account/api/v1/health answers 200 and the portal assets load.
 - [ ] Q2: `./rdc.sh machine setup hostinger --config eu-remote`, then `./rdc.sh machine status hostinger --config eu-remote`. Accept: no stale_binary, no renet plugin process, state-mirror records at 0644, and every authorized_keys line carries --guid (D12).
 - [ ] Q3: In a quiet window, `./rdc.sh machine restart-services hostinger --include-docker --config eu-remote` restarts what the upgrade reported stale, repo by repo with health checks. Accept: `./rdc.sh machine status hostinger --containers --health-check --config eu-remote` exits 0 for all 11 repos.

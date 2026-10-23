@@ -1,4 +1,5 @@
 # Handoff checklist: backup-storage
+Superseded by agent/plans/PLAN-backup-program.md: open items (w8 and the w3/w4/w5 leftovers) are tracked there, and this file stays as a record.
 Status: executing
 Owner: 97604f47
 
