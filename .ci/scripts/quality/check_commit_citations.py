@@ -250,10 +250,7 @@ def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr
         dead_by_key.setdefault(c.key, c)
     path = pathlib.Path(root) / BASELINE_REL
     if mode == "init":
-        # The shared shrink-only decision: a first seed is allowed only where no baseline exists.
-        if path.exists() or shrink_only.write_verdict(
-            baseline_exists=path.exists(), first_seed=True, additions=[]
-        ):
+        if path.exists():
             print(
                 "✗ %s exists; --init-baseline writes only the first file" % BASELINE_REL, file=err
             )
@@ -272,7 +269,7 @@ def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr
     fixed = sorted(k for k in baseline if k not in dead_by_key)
     if mode == "write":
         kept = {k: v for k, v in baseline.items() if k in dead_by_key}
-        # The drain only removes, and the shared guard proves it: a kept set that grew past the baseline is refused.
+        # `kept` is drawn from the baseline, so today the verdict is always None; the shared guard is what refuses the day someone builds `kept` from the findings instead and the drain starts absorbing them.
         refusal = shrink_only.write_verdict(
             baseline_exists=True,
             first_seed=False,

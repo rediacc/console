@@ -400,10 +400,12 @@ def test_record_states_reads_nothing_rather_than_guessing(tmp_path: pathlib.Path
 # --------------------------------------------------------------------------- The two-sided clock, which is risk 1 of agent/plans/PLAN-agent-tree-lifecycle.md ---------------------------------------------------------------------------
 
 
-def test_plan_age_date_takes_the_older_of_the_two_dates(tmp_path: pathlib.Path) -> None:
+def test_plan_age_date_a_move_cannot_buy_freshness_but_a_modification_can(
+    tmp_path: pathlib.Path,
+) -> None:
     """`git log` does not follow renames, so a move would otherwise restart the window.
 
-    The day 97 plans moved into `agent/plans/`, every `%cI` in the corpus became the date of the move and this gate's 33-day clock silently restarted for all of them. `First-Seen:` carries the pre-move committer date and the older of the two wins, so neither the move nor a re-written header buys a plan freshness.
+    The day 97 plans moved into `agent/plans/`, every `%cI` in the corpus became the date of the move and this gate's 33-day clock silently restarted for all of them. `First-Seen:` carries the pre-move committer date, and with no modification at the new path the older of the two wins, so a move buys no freshness. A later modification at the path is work on the plan and resets the clock, as the gate's first remedy promises; a header-only touch counts too, and the log records it.
     """
     plan = tmp_path / "PLAN-x.md"
     plan.write_text("# t\nStatus: draft\nFirst-Seen: 2026-01-01\n", encoding="utf-8")
