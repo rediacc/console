@@ -1643,7 +1643,7 @@ RUNS_EVENTS = ("", "push", "pull_request", "schedule", "workflow_dispatch")
 
 #: Every workflow file under this, by stem, file and top-level `name:`, so `--runs --workflow` takes any spelling of any workflow (the Release to Edge dispatch `/pr-merge` step 5 looks up, a pins-soaked dispatch), not only the scheduled ones wl_schedred discovers.
 WORKFLOW_DIR = pathlib.Path(".github") / "workflows"
-_TOP_NAME = re.compile(r"^name:\s*(.+?)\s*$", re.MULTILINE)
+_TOP_NAME = re.compile(r"^name:[ \t]*(\S[^\n]*?)[ \t]*$", re.MULTILINE)
 
 
 def _workflows(root):

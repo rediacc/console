@@ -429,3 +429,12 @@ def test_a_nameless_workflow_is_named_as_github_names_its_runs(ct, tmp_path, mon
     monkeypatch.setattr(ct, "_trace_run", fake_trace)
     assert ct._verb_scheduled_run(str(tmp_path), "bare", "1", False, 0, False) == 0
     assert seen["expect"] == ".github/workflows/bare.yml"
+
+
+def test_an_empty_name_value_does_not_capture_the_next_line(ct, tmp_path):
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "empty.yml").write_text("name:\non: push\njobs: {}\n")
+    (wf / "spaced.yml").write_text("name:   Spaced Name  \non: push\n")
+    known = {k["stem"]: k["name"] for k in ct._workflows(str(tmp_path))}
+    assert known == {"empty": ".github/workflows/empty.yml", "spaced": "Spaced Name"}
