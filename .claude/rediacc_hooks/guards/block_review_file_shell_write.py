@@ -165,8 +165,10 @@ EDGE_CASES = [
 def _is_review(word, cwd=None, base=None):
     if not word:
         return False
-    # The directory is read with the word, so a glob in it counts as one in the word does: `cd agen? && tee revi*s/x.md` writes a review file, and joining the typed `agen?` onto the word's forms read `agen?/reviews/x.md` (rc 0).
-    joined = [word, str(cwd).rstrip("/") + "/" + word] if cwd else [word]
+    # The directory is read with the word, so a glob in it counts as one in the word does: `cd agen? && tee revi*s/x.md` writes a review file, and joining the typed `agen?` onto the word's forms read `agen?/reviews/x.md` (rc 0). An absolute word is not joined (#e85553f0): bash opens it where it names, wherever the run executes, so `cd agent/reviews/b && ls x 2>/dev/null` redirects into `/dev/null`, not a review record, and was refused (rc 2) while the typed directory was joined onto it.
+    joined = (
+        [word, str(cwd).rstrip("/") + "/" + word] if cwd and not word.startswith("/") else [word]
+    )
     return any(REVIEW_WORD.search(form) for w in joined for form in _review_forms(w)) or (
         _lands_in_reviews(word, base)
     )

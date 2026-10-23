@@ -161,6 +161,33 @@ OWN_CASES = [
         "T=$(mktemp); cat agent/reviews/x/a.md > $T",
         False,
     ),
+    # #e85553f0: an absolute redirect target is opened where it names, not under the run's directory. The first three were refused (rc 2) at b9674ed79 ("redirect into /dev/null"); the refusals were refused there too and stay refused.
+    (
+        "a stderr sink under cd into the review directory",
+        "cd agent/reviews/1023-1 && for f in 0f6b5915 1ac184a8; do ls $f*.md 2>/dev/null; done",
+        False,
+    ),
+    (
+        "stdout into /dev/stderr under cd into the review directory",
+        "cd agent/reviews/x && cat a.md >/dev/stderr",
+        False,
+    ),
+    (
+        "an absolute file outside under cd into the review directory",
+        "cd agent/reviews/x && ls 2>/tmp/r85e.txt",
+        False,
+    ),
+    (
+        "a relative write beside a sink under the review directory",
+        "cd agent/reviews/x && echo hi 2>/dev/null > y.md",
+        True,
+    ),
+    ("an absolute review path", "echo hi > /home/u/console/agent/reviews/x/y.md", True),
+    (
+        "an absolute review path under cd elsewhere",
+        "cd /tmp && echo hi > /home/u/console/agent/reviews/x/y.md",
+        True,
+    ),
     (
         "a trimmed loop value lands elsewhere",
         "for f in agent/reviews/x/a.md; do cp /tmp/a /tmp/${f##*/}; done",
@@ -345,6 +372,13 @@ MUTANTS = [
     (
         "git archive positionals read as files it writes (2026-10-20)",
         ('    if verb == "archive":', "    if False:"),
+    ),
+    (
+        "an absolute target joined to the run directory (#e85553f0)",
+        (
+            'if cwd and not word.startswith("/") else [word]',
+            "if cwd else [word]",
+        ),
     ),
     (
         "an indirect expansion read as $! (8ef78586.1)",

@@ -1253,6 +1253,20 @@ _LOG_DIRS = ("agent", "reports")
 _SPELLS_LOG_DIR = re.compile(r"(?<![\w.-])(?:agent|reports)/?(?=['\"`\s;)&|,]|\Z)")
 
 
+def _recursive_reaches_log_dir(alt, context=""):
+    """Can a `**` glob descend into a round-log directory? Only from where its fixed directory prefix (the whole segments before the first glob character) leaves the log directories reachable: no prefix, an absolute or `~` one, one holding `.` or `..`, one whose first segment can be a log directory (`agent/**`, `reports/**`), or any prefix in a program or command that changes directory with `chdir` (`os.chdir('/')` then `home/u/console/**`).
+
+    #3df07b02: a python heredoc that only printed a call holding `workers/account/src/telemetry/**` as a declared-ownership string was refused as a round-log truncation (rc 2); `**` under a fixed relative directory that is not a log directory walks only that tree. NAMED RESIDUAL: a directory named `agent` nested inside such a tree, and a shell `cd` to an ancestor of the repository before the program runs.
+    """
+    if alt.startswith(("/", "~")) or re.search(r"chdir", context):
+        return True
+    head = re.split(r"[*?\[{]", alt, maxsplit=1)[0]
+    fixed = [s for s in head.split("/")[:-1] if s]
+    if not fixed or any(s in (".", "..") for s in fixed):
+        return True
+    return any(fnmatch.fnmatchcase(d, fixed[0]) for d in _LOG_DIRS)
+
+
 def _glob_reaches_log_dir(literal, context):
     """Can the glob `literal` name a file in a round-log directory? `context` is the text a bare glob's directory is read from: the program, the command around it and the run's directory (the comment above)."""
     for token in literal.split():
@@ -1263,7 +1277,9 @@ def _glob_reaches_log_dir(literal, context):
             ):
                 continue
             if "**" in alt:
-                return True
+                if _recursive_reaches_log_dir(alt, context):
+                    return True
+                continue
             parent = alt.rsplit("/", 1)[0] if "/" in alt else "."
             segment = parent.rsplit("/", 1)[-1]
             if segment in (".", ".."):

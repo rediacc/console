@@ -60,6 +60,37 @@ CASES = [
         "python3 - <<'PY'\nimport glob\nfor p in glob.glob('**/[a-z]*', recursive=True):\n    open(p, 'w').write('')\nPY",
         True,
     ),
+    # #3df07b02: a `**` under a fixed directory that is not a log directory walks only that tree. The first was refused (rc 2) at b9674ed79 (the live heredoc, minimised: it imports a module the reader cannot follow and only prints); the rest reach `agent/` and stay refused.
+    (
+        "a recursive glob under a fixed non-log directory, printed",
+        "python3 -I - <<'EOF2'\nimport sys; sys.path.insert(0,'.claude/hooks/stop')\nimport wl_planconc as X\nprint(X.spawn_verdict({'a.md'}, {}, None, declared=('workers/account/src/telemetry/**',)))\nEOF2",
+        False,
+    ),
+    (
+        "a recursive glob under a fixed non-log directory, written through",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('workers/src/**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        False,
+    ),
+    (
+        "a recursive glob under agent",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('agent/**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a recursive glob under a parent directory",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('workers/../**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a recursive glob under a fixed directory after chdir",
+        "python3 - <<'PY'\nimport glob, os\nos.chdir('/')\nfor p in glob.glob('home/u/console/**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a recursive glob from the root",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('/home/u/console/**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
 ]
 
 # The two readers overlap (each alone refuses the same rows), so the plant takes both.
@@ -74,6 +105,15 @@ MUTANTS = [
             (
                 "        for op, target in _redirects(shellscan._analyse(cmd))\n",
                 "        for op, target in shellscan._analyse(cmd).writes\n",
+            ),
+        ],
+    ),
+    (
+        "any recursive glob reaches a log directory (#3df07b02)",
+        [
+            (
+                "                if _recursive_reaches_log_dir(alt, context):\n",
+                "                if True:\n",
             ),
         ],
     ),

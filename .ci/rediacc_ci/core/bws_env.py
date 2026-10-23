@@ -1172,10 +1172,16 @@ WRITER_ARGV = ("npx", "--no", "tsx", WRITER_SCRIPT_REL)
 WRITER_TIMEOUT_S = 120
 
 
+# The id Secrets Manager gives an entry: a UUID, the only thing a create's answer may be.
+_SECRET_ID = re.compile(
+    r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"
+)
+
+
 def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
     """Run bws-write.ts with REQUEST as JSON on stdin. None on success, else a value-free reason.
 
-    argv is the constant WRITER_ARGV and nothing else: no field of the request, the value least of all, is ever an argument. Success is exit 0 AND stdout being exactly the id asked for, so a writer that printed anything more is a failure too, and its stdout is never relayed.
+    argv is the constant WRITER_ARGV and nothing else: no field of the request, the value least of all, is ever an argument. Success is exit 0 AND stdout being exactly the id asked for (for a create, which asks for none, exactly one entry id), so a writer that printed anything more is a failure too, and its stdout is never relayed.
     """
     # Its own process group, so a timeout kills the node/tsx grandchild npx spawned and no late write lands after the verb reported failure.
     try:
@@ -1211,6 +1217,11 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
             % (proc.returncode, shlex.quote(account_dir), shlex.join(WRITER_ARGV))
         )
     answered = raw_out.decode(errors="replace").strip()
+    # A create carries no id (bws-write.ts refuses one), so the answer is the new entry's id and can only be held to an id's shape; an edit's answer is the id it asked for (#c938b4ab: a successful create was reported as "the writer answered an unexpected id").
+    if request.get("op") == "create":
+        if not _SECRET_ID.fullmatch(answered):
+            return "the writer answered an unexpected id"
+        return None
     wanted = request.get("id")
     if not answered or "\n" in answered or not wanted or answered != wanted:
         return "the writer answered an unexpected id"
