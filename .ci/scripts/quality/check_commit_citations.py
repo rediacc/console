@@ -48,6 +48,9 @@ import subprocess
 import sys
 import tempfile
 
+import _cipath
+from rediacc_ci.quality import shrink_only
+
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 BASELINE_REL = ".ci/config/commit-citations-baseline.json"
 EXCLUDED = ("agent/reviews/", "agent/worklist/", "agent/ledgers/")
@@ -247,7 +250,10 @@ def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr
         dead_by_key.setdefault(c.key, c)
     path = pathlib.Path(root) / BASELINE_REL
     if mode == "init":
-        if path.exists():
+        # The shared shrink-only decision: a first seed is allowed only where no baseline exists.
+        if path.exists() or shrink_only.write_verdict(
+            baseline_exists=path.exists(), first_seed=True, additions=[]
+        ):
             print(
                 "✗ %s exists; --init-baseline writes only the first file" % BASELINE_REL, file=err
             )
@@ -266,6 +272,15 @@ def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr
     fixed = sorted(k for k in baseline if k not in dead_by_key)
     if mode == "write":
         kept = {k: v for k, v in baseline.items() if k in dead_by_key}
+        # The drain only removes, and the shared guard proves it: a kept set that grew past the baseline is refused.
+        refusal = shrink_only.write_verdict(
+            baseline_exists=True,
+            first_seed=False,
+            additions=shrink_only.baseline_additions(list(baseline), list(kept)),
+        )
+        if refusal:
+            print("✗ commit citations: --write-baseline refused (%s)" % refusal, file=err)
+            return 1
         write_baseline(root, kept)
         print(
             "✓ drained %d fixed entr(y/ies) from %s; %d remain; %d new finding(s) were NOT added"

@@ -211,6 +211,8 @@ def test_discovery_pins_this_repos_scheduled_workflows():
         "ci-obs-mirror",
         "ci-vm-bake",
         "pins-soaked",
+        "cf-usage-report",
+        "telemetry-probe",
     }
 
 

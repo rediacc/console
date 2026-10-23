@@ -69,15 +69,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 10 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 3: #831b7e48 (worker:b2rmhg3h0, d778be9d), #8cb01693 (worker:b2rmhg3h0, d778be9d), #cc6eb748 (worker:b2rmhg3h0, d778be9d).
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a4bc8004a22d1301a, worker:ad8b3c16dfa1551f1.
+- Leased items: 4: #831b7e48 (worker:b2rmhg3h0, d778be9d), #8cb01693 (worker:b2rmhg3h0, d778be9d), #99580994 (worker:a4bc8004a22d1301a, d778be9d), #cc6eb748 (worker:b2rmhg3h0, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 18 plans done, 127 of 381 boxes done (33%).
+Promoted: 0 of 17 plans done, 116 of 370 boxes done (31%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -87,18 +87,17 @@ Promoted: 1 of 18 plans done, 127 of 381 boxes done (33%).
 | 4 | PLAN-sync-remote-file-ownership.md | 5/6 | 1 open |
 | 5 | PLAN-telemetry-export.md | 8/19 | 11 open |
 | 6 | PLAN-renet-bridge-leftovers.md | 0/14 | 14 open |
-| 7 | PLAN-config-handoff-relay-only.md | 11/11 | done |
-| 8 | PLAN-token-ip-rebind.md | 9/10 | 1 open |
-| 9 | PLAN-config-sync-hardening.md | 18/19 | 1 open |
-| 10 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
-| 11 | PLAN-w7p5a-real-run-dispatch.md | 8/9 | 1 open |
-| 12 | PLAN-pin-awscli-toolchain-python-compatible.md | 6/7 | 1 open |
-| 13 | PLAN-plan-preflight.md | 8/9 | 1 open |
-| 14 | PLAN-renet-run-docker-sock-isolation.md | 0/3 | 3 open |
-| 15 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
-| 16 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
-| 17 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
-| 18 | PLAN-dockerd-api-privilege-gate.md | 5/7 | 2 open |
+| 7 | PLAN-token-ip-rebind.md | 9/10 | 1 open |
+| 8 | PLAN-config-sync-hardening.md | 18/19 | 1 open |
+| 9 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
+| 10 | PLAN-w7p5a-real-run-dispatch.md | 8/9 | 1 open |
+| 11 | PLAN-pin-awscli-toolchain-python-compatible.md | 6/7 | 1 open |
+| 12 | PLAN-plan-preflight.md | 8/9 | 1 open |
+| 13 | PLAN-renet-run-docker-sock-isolation.md | 0/3 | 3 open |
+| 14 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
+| 15 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
+| 16 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
+| 17 | PLAN-dockerd-api-privilege-gate.md | 5/7 | 2 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -107,18 +106,17 @@ Promoted: 1 of 18 plans done, 127 of 381 boxes done (33%).
 4. agent/plans/PLAN-sync-remote-file-ownership.md -- operator 2026-10-23 (plan prompt /tmp/prompt-sync-remote-file-ownership.md): rdc repo sync upload --remote-file leaves the parent directories it creates root:root; fix through a skeleton rsync of only the missing segments so they get the universal user and existing directories are never re-owned; P1; Depends-On none; approved by operator /ask 2026-10-23 ("Approve both", "Commit as usual")
 5. agent/plans/PLAN-telemetry-export.md -- operator 2026-10-23 (plan prompt /tmp/prompt-telemetry-export-plan.md; /ask: "Approve both", "Accept all defaults", no operator steps): the account Workers and the executor proxy export traces and logs to otlp.rediacc.io through Cloudflare's native OTLP destinations, per region and channel, with a scheduled delivery check; P2; Depends-On none (its proxy box T15 waits on PLAN-cloudflare-proxy.md#P2a)
 6. agent/plans/PLAN-renet-bridge-leftovers.md -- operator 2026-10-23 (plan prompt /tmp/prompt-bridge-leftovers.md; /ask: "Commit as usual"): the broken renet ops self-test (bridge once plus three unregistered function names), 65 dead and 20 renamed bridge.* keys, stale renet and console docs, the 12 www policy translations naming the middleware and web app, and the bridge-functions wording; P2; approved with Q1 "(b) Also rename the harness", Q3 "Historical banner", Q4 "Change it" (/ask 2026-10-23)
-7. agent/plans/PLAN-config-handoff-relay-only.md -- pulled in as an unfinished prerequisite of PLAN-token-ip-rebind.md (Depends-On), 2026-10-23
-8. agent/plans/PLAN-token-ip-rebind.md -- pulled in as an unfinished prerequisite of PLAN-config-sync-hardening.md (Depends-On), 2026-10-23
-9. agent/plans/PLAN-config-sync-hardening.md -- operator 2026-10-23 ("Pick some new close to finish plans that have progressed, and promote them"): 18/19, closure box T15 left; --promote brings its prerequisites PLAN-token-ip-rebind (9/10), PLAN-config-handoff-relay-only (9/11) and PLAN-app-wide-org-selection (2/3) ahead of it
-10. agent/plans/PLAN-stop-hook-one-plan-scope.md -- operator 2026-10-23 ("Pick some new close to finish plans ... promote them"): 14/15, the last box SC13b is evidence from a real run after this PR merges
-11. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
-12. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
-13. agent/plans/PLAN-plan-preflight.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
-14. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
-15. agent/plans/PLAN-config-networkid-discovery.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
-16. agent/plans/PLAN-renet-fetch-retries.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
-17. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report
-18. agent/plans/PLAN-dockerd-api-privilege-gate.md -- triage #8cb01693 PLAN+SUBAGENT; follows PLAN-renet-cross-repo-isolation T9 finding
+7. agent/plans/PLAN-token-ip-rebind.md -- pulled in as an unfinished prerequisite of PLAN-config-sync-hardening.md (Depends-On), 2026-10-23
+8. agent/plans/PLAN-config-sync-hardening.md -- operator 2026-10-23 ("Pick some new close to finish plans that have progressed, and promote them"): 18/19, closure box T15 left; --promote brings its prerequisites PLAN-token-ip-rebind (9/10), PLAN-config-handoff-relay-only (9/11) and PLAN-app-wide-org-selection (2/3) ahead of it
+9. agent/plans/PLAN-stop-hook-one-plan-scope.md -- operator 2026-10-23 ("Pick some new close to finish plans ... promote them"): 14/15, the last box SC13b is evidence from a real run after this PR merges
+10. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
+11. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
+12. agent/plans/PLAN-plan-preflight.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
+13. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
+14. agent/plans/PLAN-config-networkid-discovery.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
+15. agent/plans/PLAN-renet-fetch-retries.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
+16. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report
+17. agent/plans/PLAN-dockerd-api-privilege-gate.md -- triage #8cb01693 PLAN+SUBAGENT; follows PLAN-renet-cross-repo-isolation T9 finding
 
 ## Generated
 

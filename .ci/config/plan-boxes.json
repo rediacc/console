@@ -505,28 +505,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-config-handoff-relay-only.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 11,
-      "open_sigs": [],
-      "done_sigs": [
-        "0ff08bfc",
-        "26f06abf",
-        "2a7400ec",
-        "2ea7ccfb",
-        "39dbf00f",
-        "58c053ae",
-        "695b137a",
-        "705ef39a",
-        "90d26a33",
-        "eac723b1",
-        "f24d5818"
-      ]
-    },
     "agent/plans/PLAN-config-networkid-discovery.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -2433,6 +2411,28 @@
         "d3e3de15",
         "dcdc7331",
         "e7ea085e"
+      ]
+    },
+    "agent/plans/_done/PLAN-config-handoff-relay-only.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-23",
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
+        "0ff08bfc",
+        "26f06abf",
+        "2a7400ec",
+        "2ea7ccfb",
+        "39dbf00f",
+        "58c053ae",
+        "695b137a",
+        "705ef39a",
+        "90d26a33",
+        "eac723b1",
+        "f24d5818"
       ]
     },
     "agent/plans/_done/PLAN-config-networkid-sync.md": {
