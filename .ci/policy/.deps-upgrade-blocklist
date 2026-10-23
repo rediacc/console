@@ -26,3 +26,6 @@
 
 # @types/node major must match Node engine version (24.x)
 @types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 24
+
+# biome 2.6 needs a config migration (`biome migrate`) and fixes for the findings its new rules raise
+@biomejs/biome  # BLOCKER: 2.6.2 raises 416 check:lint errors in console (226 useArraySortCompare, 123 noUnnecessaryConditions, 29 noFloatingPromises) and 66 in private/account, and rejects biome.json until migrated; worklist #36498fd3
