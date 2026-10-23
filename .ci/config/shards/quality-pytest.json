@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-23T18:58:50.664Z",
+  "generatedAt": "2026-10-23T19:58:09.754Z",
   "legs": [
     {
       "index": 1,
@@ -408,6 +408,7 @@
         "pytest:.ci/rediacc_ci/tests/test_build_cli_musl.py",
         "pytest:.ci/rediacc_ci/tests/test_build_generate_cli_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_catalog_generate.py",
+        "pytest:.ci/rediacc_ci/tests/test_catalog_template_policy.py",
         "pytest:.ci/rediacc_ci/tests/test_check_proxy_cost_guard.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_channel_for_event.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_budget_report.py",
