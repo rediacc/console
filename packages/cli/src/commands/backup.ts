@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
@@ -159,10 +160,11 @@ function registerBackupRestore(backup: Command): void {
         // Refuse a bad target name before allocateNetworkId persists anything.
         assertResourceName(targetName);
         const networkId = await configService.allocateNetworkId();
+        const lineage = source.grandGuid ?? source.repositoryGuid;
         await configService.addRepository(compositeKey(targetName, 'latest'), {
-          repositoryGuid: source.repositoryGuid,
+          ...restoredIdentity(source, lineage, options.at !== undefined),
           tag: 'latest',
-          // The restored record reuses the source's GUID, and the executor's credential map is keyed by GUID, so a fresh credential here does not give the restored repo its own key: it fights the source's over one map slot and one of the two images stops unlocking. Inherit, exactly as `repo fork` does.
+          // The image bytes are the source's ciphertext, so the restored repo unlocks with the source's passphrase whatever GUID it lands under. Inherit, exactly as `repo fork` does; under a fresh GUID this is a NEW credential map entry (the map is keyed by GUID), not a second claim on the source's slot.
           credential: source.credential,
           networkId,
           placement,
@@ -178,7 +180,7 @@ function registerBackupRestore(backup: Command): void {
               targetName,
               targetMachine,
               datastore,
-              lineage: source.grandGuid ?? source.repositoryGuid,
+              lineage,
               at: options.at,
               debug: options.debug,
             })
@@ -200,6 +202,33 @@ function registerBackupRestore(backup: Command): void {
         handleError(error);
       }
     });
+}
+
+/**
+ * The identity a restored record is registered under (box E1).
+ *
+ * A chunk-store restore (`--at`) mints a FRESH GUID. Reusing the source's made
+ * the restored image's path `repositories/<source-guid>`, so a restore on the
+ * source's own machine wrote over the live source image; renet now refuses that
+ * unless `--replace <guid>` names the target on purpose, which left every
+ * same-machine `--as` restore refused. A fresh GUID is a fresh path, and the
+ * lineage (the grand GUID the snapshot's object keys namespace on) is carried
+ * as grandGuid, so the restored repo's own snapshots dedup in the same family
+ * and `backup_restore` is still told the source lineage explicitly.
+ *
+ * The pull route (no `--at`) still reuses the source GUID, because `backup_pull`
+ * addresses the artifact on the source host by the TARGET's name: renet's
+ * `backup pull --src <guid>` exists, but the backup_pull FunctionDef does not
+ * expose it, so a fresh GUID there would look for an artifact that is not on
+ * the source host.
+ */
+function restoredIdentity(
+  source: { repositoryGuid: string; grandGuid?: string },
+  lineage: string,
+  chunkRestore: boolean
+): { repositoryGuid: string; grandGuid?: string } {
+  if (!chunkRestore) return { repositoryGuid: source.repositoryGuid };
+  return { repositoryGuid: randomUUID(), grandGuid: lineage };
 }
 
 /**
