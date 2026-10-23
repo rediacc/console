@@ -9352,7 +9352,7 @@
         "title": "Le Nostre Pratiche di Telemetria"
       },
       "meta": {
-        "description": "Dettagli sui dati di telemetria raccolti dai prodotti Rediacc, sul motivo della raccolta, sulle modalità di trattamento e su come disattivarla. Riguarda la CLI e il Renet Agent.",
+        "description": "Dati di telemetria raccolti dai prodotti Rediacc, motivo della raccolta, modalità di trattamento e come disattivarla. Riguarda la CLI e il Renet Agent.",
         "keywords": "informativa sulla telemetria, raccolta dati, OpenTelemetry, opt-out, privacy, GDPR, Rediacc",
         "title": "Informativa sulla Telemetria - Raccolta Dati | Rediacc"
       },

@@ -9336,7 +9336,7 @@
         "title": "Nos pratiques de télémétrie"
       },
       "meta": {
-        "description": "Détails sur les données de télémétrie que collectent les produits Rediacc, sur les raisons de cette collecte, sur leur traitement et sur la façon de s'y opposer. Couvre le CLI et le Renet Agent.",
+        "description": "Données de télémétrie collectées par les produits Rediacc : pourquoi, comment elles sont traitées et comment s'y opposer. Couvre le CLI et le Renet Agent.",
         "keywords": "politique de télémétrie, collecte de données, OpenTelemetry, désinscription, confidentialité, RGPD, Rediacc",
         "title": "Politique de Télémétrie — Rediacc"
       },

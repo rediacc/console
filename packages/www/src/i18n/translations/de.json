@@ -9336,7 +9336,7 @@
         "title": "Unsere Telemetriepraxis"
       },
       "meta": {
-        "description": "Welche Telemetriedaten die Produkte von Rediacc erfassen, warum, wie sie verarbeitet werden und wie Sie widersprechen können. Gilt für die CLI und den Renet-Agent.",
+        "description": "Welche Telemetriedaten Rediacc-Produkte erfassen, warum, wie sie verarbeitet werden und wie Sie widersprechen. Gilt für CLI und Renet-Agent.",
         "keywords": "Telemetrie-Richtlinie, Datenerfassung, OpenTelemetry, Abmeldung, Datenschutz, DSGVO, Rediacc",
         "title": "Telemetrie-Richtlinie — Rediacc"
       },

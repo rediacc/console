@@ -1866,7 +1866,7 @@
         "success": "Tellimuse token eemaldatud"
       },
       "proxyToken": {
-        "description": "Väljasta selle seadme sisselogimisest lühiajaline proxy:exec-tõend kasutamiseks koos --proxy-ga",
+        "description": "Väljasta selle seadme sisselogimisest lühiajaline proxy:exec-tõend, mida kasutatakse lipuga --proxy",
         "jsonOption": "Prindi JSON, milles on tõend ja selle expiresAt",
         "noToken": "Kontoserver ei tagastanud proksitõendit."
       },

@@ -17,8 +17,17 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_DATASTORE_PATH } from '../../shared/src/config/well-known.generated.ts';
 import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 import { displayWidth, drawnSegments, stripAnsi } from './lib/terminal-cells.js';
+import {
+  ERROR_PATTERNS,
+  FORBIDDEN_SCRIPT_PATTERNS,
+  MARKER_HACK_PATTERNS,
+  NOISE_PATTERNS,
+  overflowIsOneUnbreakablePath,
+  overflowIsOneUnbreakableUrl,
+} from './lib/cast-patterns.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -37,79 +46,8 @@ const colors = {
 /** Patterns that indicate a command produced error output. */
 /** Cursor-home / erase-line, which restart a display line just as `\r` does. */
 
-/**
- * Structured logs BELOW error level. They are not a correctness failure, they are
- * a "should never have been on camera" failure: the widest lines in the corpus
- * were 227-358 column `level=info` go-executor relays. Kept separate from
- * ERROR_PATTERNS so the two failures read differently in the report.
- */
-const NOISE_PATTERNS = [/\blevel=(info|warning|warn|debug|trace)\b/, /^time="\d{4}-/];
-
-/**
- * Is this line over-width ONLY because of a single URL nothing may break?
- *
- * `rdc vscode connect --browser` prints a 162-column line whose bulk is one URL
- * with an auth token in it. Wrapping a URL makes it uncopyable, which is worse
- * for the viewer than one long line, so the pipeline deliberately does not wrap
- * it. A gate that demands the impossible gets suppressed, so it is exempted
- * here EXPLICITLY rather than by widening the check.
- *
- * Deliberately narrow, and narrower than the first version: the token must be a
- * URL. Exempting any unbreakable token was tried and the gate's OWN selftest
- * caught it - the 150-column control is a single long token, so that version
- * silently stopped detecting the thing the gate exists for. Only URLs carry the
- * copy-paste argument; a long path, hash or joined field has no such defence and
- * still fails.
- */
-function overflowIsOneUnbreakableUrl(line, width) {
-  const tokens = line.split(/\s+/).filter(Boolean);
-  const urls = tokens.filter((tok) => /^https?:\/\//.test(tok));
-  const longest = urls.reduce((a, b) => (b.length > a.length ? b : a), '');
-  if (longest.length <= width) return false;
-  const withoutIt = line.replace(longest, '').trimEnd();
-  return displayWidth(withoutIt) <= width;
-}
-
-/**
- * Same exemption for ONE absolute filesystem path in an otherwise-short line.
- * `rdc repo up` prints `docker compose ... -f /mnt/rediacc/mounts/<guid>/
- * .rediacc/compose-tmp/run-<pid>-<rand>/compose-<id>.yml`, and the path lands on
- * a line of its own: a single unbreakable token. Scoped like the URL case: the
- * line must be over-long only because of that token. The token must also look
- * like a real path, every segment at most 64 columns, so a long joined field or
- * hash that merely starts with `/` (the gate's own long-token control) still fails.
- */
-function overflowIsOneUnbreakablePath(line, width) {
-  const tokens = line.split(/\s+/).filter(Boolean);
-  const paths = tokens.filter((tok) => tok.startsWith('/') && tok.split('/').every((seg) => seg.length <= 64));
-  const longest = paths.reduce((a, b) => (b.length > a.length ? b : a), '');
-  if (longest.length <= width) return false;
-  const withoutIt = line.replace(longest, '').trimEnd();
-  return displayWidth(withoutIt) <= width;
-}
-
 /** Must match run.sh's TUTORIAL_COLS. A cast recorded at another width is a bug. */
 const TUTORIAL_COLS = 107;
-
-const ERROR_PATTERNS = [
-  /^error:\s/i,
-  /unknown command/i,
-  /command not found/,
-  /required option .* not specified/i,
-  /too many arguments/i,
-  /missing required argument/i,
-  /^fatal:/i,
-  /panic:/,
-  /level=(error|fatal)/,
-];
-
-/** On-camera shell hacks that must never appear in a typed command. */
-const MARKER_HACK_PATTERNS = [
-  { pattern: /\|\|\s*true/, message: 'typed command carries "|| true"' },
-  { pattern: /2>\s*\/dev\/null/, message: 'typed command carries "2>/dev/null"' },
-  { pattern: />\s*\/dev\/null/, message: 'typed command suppresses output with >/dev/null' },
-  { pattern: /\btimeout\s+[\d.]+/, message: 'typed command is wrapped in "timeout"' },
-];
 
 function pushError(errors, file, message, suggestion) {
   errors.push({ file, message, suggestion });
@@ -267,7 +205,11 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
   // The check this file existed without: does the output FIT?
   for (const line of drawnSegments(outputChunks.join(''))) {
     const w = displayWidth(line);
-    if (w > width && !overflowIsOneUnbreakableUrl(line, width) && !overflowIsOneUnbreakablePath(line, width)) {
+    if (
+      w > width &&
+      !overflowIsOneUnbreakableUrl(line, width) &&
+      !overflowIsOneUnbreakablePath(line, width)
+    ) {
       pushError(
         errors,
         file,
@@ -340,35 +282,6 @@ function collectExpectFailLabels() {
   }
   return labels;
 }
-
-/** Patterns forbidden in on-camera tutorial script commands. */
-const FORBIDDEN_SCRIPT_PATTERNS = [
-  {
-    pattern: />\s*\/dev\/null/,
-    message: 'Output suppressed with >/dev/null',
-    suggestion: 'Tutorial commands should show their output',
-  },
-  {
-    pattern: /2>&1\s*\|?\s*>/,
-    message: 'Stderr redirected to suppress output',
-    suggestion: 'Tutorial commands should show their output',
-  },
-  {
-    pattern: /\|\|\s*true/,
-    message: 'Failure masked with "|| true"',
-    suggestion: 'Fix the underlying product issue or use run_cmd_expect_fail',
-  },
-  {
-    pattern: /2>\s*\/dev\/null/,
-    message: 'Stderr hidden with 2>/dev/null',
-    suggestion: 'Fix the noisy output at the source instead of hiding it',
-  },
-  {
-    pattern: /\btimeout\s+[\d.]+/,
-    message: 'Command wrapped in "timeout"',
-    suggestion: 'Use run_cmd_interrupt for long-running commands',
-  },
-];
 
 function validateTutorialScripts(errors) {
   if (!fs.existsSync(TUTORIAL_SCRIPTS_DIR)) return;
@@ -471,7 +384,11 @@ function selftest() {
       'a lone over-long absolute path (many normal segments) is EXEMPT',
       cast([
         [1, 'm', 'rdc repo up my-app:test'],
-        [1, 'o', `/mnt/rediacc/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`],
+        [
+          1,
+          'o',
+          `${WK_DATASTORE_PATH}/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`,
+        ],
       ]),
       false,
     ],
@@ -487,7 +404,11 @@ function selftest() {
       'an over-long path plus long other text still FAILS',
       cast([
         [1, 'm', 'rdc repo up my-app:test'],
-        [1, 'o', `${'word '.repeat(30)}-f /mnt/rediacc/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`],
+        [
+          1,
+          'o',
+          `${'word '.repeat(30)}-f ${WK_DATASTORE_PATH}/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`,
+        ],
       ]),
       true,
     ],
