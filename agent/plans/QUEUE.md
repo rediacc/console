@@ -77,7 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 16 plans done, 112 of 366 boxes done (30%).
+Promoted: 0 of 17 plans done, 112 of 374 boxes done (29%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -97,6 +97,7 @@ Promoted: 0 of 16 plans done, 112 of 366 boxes done (30%).
 | 14 | PLAN-renet-run-docker-sock-isolation.md | 0/3 | 3 open |
 | 15 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
 | 16 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
+| 17 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -115,6 +116,7 @@ Promoted: 0 of 16 plans done, 112 of 366 boxes done (30%).
 14. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
 15. agent/plans/PLAN-config-networkid-discovery.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
 16. agent/plans/PLAN-renet-fetch-retries.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
+17. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report
 
 ## Generated
 
