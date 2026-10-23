@@ -764,3 +764,28 @@ def test_names_specs_refuses_an_unknown_profile() -> None:
     with pytest.raises(bws_env.RefusalError) as refused:
         bws_env._names_specs(["--profile", "no-such-profile"])
     assert "unknown profile" in refused.value.lines[0]
+
+
+def test_names_verb_refusals_exit_2_at_the_cli_boundary(capsys) -> None:
+    """Both refusals reach `main` as exit 2, before any store access."""
+    assert bws_env.main(["names", "--bogus"]) == 2
+    assert bws_env.main(["names", "--profile", "no-such-profile"]) == 2
+    err = capsys.readouterr().err
+    assert "--bogus" in err
+    assert "unknown profile" in err
+
+
+def test_names_profile_with_no_required_spec_resolves_nothing_not_the_whole_map(
+    monkeypatch,
+) -> None:
+    """`None` means the whole map to `load`; a profile with no required spec must hand it an empty list instead."""
+    seen: list[object] = []
+    monkeypatch.setattr(
+        bws_env, "profiles", lambda _env=None: {"opt-only": {"required": [], "optional": ["X"]}}
+    )
+    monkeypatch.setattr(
+        bws_env, "load", lambda names=None, **_kw: seen.append(names) or ({}, [], 0)
+    )
+    assert bws_env.main(["names", "--profile", "opt-only"]) == 0
+    assert bws_env.main(["names"]) == 0
+    assert seen == [[], None]

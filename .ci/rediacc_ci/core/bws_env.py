@@ -255,10 +255,10 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
 
   PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names [SPEC ...] [--profile P ...]
       `--profile P` adds the REQUIRED specs of that secret-supply profile.
-      Any other argument starting with `-` refuses with exit 2.
       Resolve, then print the sorted LOCAL names that came back with a NON-EMPTY
       value, one per line, on stdout. Diagnostics on stderr, exactly as the twin
-      writes them. Exit 0 when every requested name resolved, 1 otherwise.
+      writes them. Exit 0 when every requested name resolved, 1 otherwise, and
+      2 for an unknown profile or any other argument that starts with `-`.
       A SPEC is `NAME` or `NAME > LOCAL_NAME`; the grammar is the one
       `.github/actions/bws-secrets` uses, parsed by the same rule.
 
@@ -812,7 +812,8 @@ def main(argv: list[str]) -> int:
             print(line, file=sys.stderr)
         return 2
     try:
-        resolved, _missing, rc = load(specs or None)
+        # `None` (the whole map) only when nothing was asked for: a profile with no required spec resolves nothing rather than everything.
+        resolved, _missing, rc = load(specs if rest else None)
     except RefusalError as refusal:
         for line in refusal.lines:
             print(line, file=sys.stderr)
@@ -825,7 +826,7 @@ def main(argv: list[str]) -> int:
 def _names_specs(argv: list[str]) -> list[str]:
     """The SPECs `names` resolves: its positional SPECs plus the REQUIRED specs of each `--profile P`.
 
-    Any other argument that starts with `-` refuses. Before this, `names --profile grafana-smtp` looked the two words up as store names and reported them "absent or empty in the store", which read as a broken vault entry rather than an unknown flag (2026-10-23).
+    Any other argument that starts with `-` refuses, so a mistyped flag is never looked up as a store name and reported "absent or empty in the store", which reads as a broken vault entry.
     """
     specs: list[str] = []
     profile_names: list[str] = []
