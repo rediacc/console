@@ -98,7 +98,9 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
 
     monkeypatch.setattr(local_common, "_run", fake_run)
 
-    source = local_common._subst(local_common.git_tree_fingerprint(str(renet), ["."], env))
+    fingerprint = local_common.git_tree_fingerprint(str(renet), ["."], env)
+    assert fingerprint is not None
+    source = local_common._subst(fingerprint)
     key = local_common.renet_stamp_key(source, local_common.renet_head(str(renet)), "nolicense", "")
     stamp = tmp_path / ".ci" / "cache" / "build-renet.stamp"
     stamp.parent.mkdir(parents=True)
