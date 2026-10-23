@@ -63,7 +63,7 @@ function serveAccountPortal(request: Request, url: URL, env: Env): Promise<Respo
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     // Account portals (eu/us/asia/bench + edge variants) are logged-in apps, not public content — keep them out of every search index.
@@ -80,7 +80,7 @@ export default {
 
     // Account API: delegate to Hono app (handles auth, billing, configs, webhooks, etc.)
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
-      return withSecurityHeaders(await accountApp.fetch(request, env));
+      return withSecurityHeaders(await accountApp.fetch(request, env, ctx));
     }
 
     // Account SPA: serve portal assets

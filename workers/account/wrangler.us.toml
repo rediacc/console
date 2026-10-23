@@ -26,10 +26,14 @@ enabled = true
 [observability.logs]
 enabled = true
 invocation_logs = false
+head_sampling_rate = 1
+destinations = ["otlp-us-logs"]
 
 [observability.traces]
 enabled = true
 head_sampling_rate = 1
+destinations = ["otlp-us-traces"]
+persist = true
 
 [assets]
 directory = "./dist"
