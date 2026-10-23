@@ -199,7 +199,7 @@ const StorageConfigSchema = z.object({
 
 // Per-repo secrets. Two delivery modes:
 //   env  → injected as REDIACC_SECRET_<KEY> in the renet shell (compose `${VAR}`).
-// file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the target machine, referenced by Docker compose `secrets:` block. Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
+// file → tmpfs file at /var/run/rediacc/net-<networkId>/secrets/<KEY> on the target machine, referenced by Docker compose `secrets:` block. Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
 const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
 
 // Size caps (gate C11, merged with spec 05). The config file is atomically rewritten and remote-pushed WHOLE on every mutation, and each mode materializes as one k8s Secret object per repo namespace (~1 MiB apiserver cap), so anything larger is a file the data plane should carry.
@@ -629,26 +629,27 @@ export type ClusterPoolRole = ClusterPool['role'];
 type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
 type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
 type EncryptionState = z.infer<typeof EncryptionSchema>;
+
 export type {
-  RdcConfig,
-  MachineConfig,
-  StorageConfig,
-  Placement,
-  RepoRecord,
-  RepoFamily,
-  SecretEntry,
-  InfraConfig,
+  AcmeCertCache,
   BackupDestination,
   BackupStrategyConfig,
   CloudProviderConfig,
   ClusterConfig,
-  ClusterPool,
   ClusterKvm,
-  RemoteConfig,
+  ClusterPool,
   EncryptedBlob,
   EncryptionState,
-  AcmeCertCache,
+  InfraConfig,
+  MachineConfig,
+  Placement,
+  RdcConfig,
   RdcState,
+  RemoteConfig,
+  RepoFamily,
+  RepoRecord,
+  SecretEntry,
+  StorageConfig,
 };
 
 /**
@@ -674,6 +675,7 @@ export type RepositoryConfig = RepoRecord & {
 };
 
 type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
+
 export type { ArchivedRepository };
 
 // =============================================================================

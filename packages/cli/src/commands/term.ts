@@ -1,3 +1,4 @@
+import { repoDockerSocketFallbackShell } from '@rediacc/shared/config/runtime-paths';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { generateSetupCommand, generateSourceCommand } from '../remote/repository/index.js';
@@ -78,6 +79,10 @@ export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
 
   const exports = buildExports(connectionDetails?.environment);
   if (exports) parts.push(exports.slice(0, -2));
+
+  // A daemon still on the flat socket layout (an older renet, or one not restarted since renet moved) keeps the session working.
+  const socketFallback = repoDockerSocketFallbackShell(connectionDetails?.environment ?? {});
+  if (socketFallback) parts.push(socketFallback);
 
   // Pin the kubectl current-context to the repo's namespace for a cluster-placed repo session (the k8s analog of the repo `cd` below). KUBECONFIG is already
   // exported by the loop, so this runs against the cluster's kubeconfig; the

@@ -1628,7 +1628,7 @@
       },
       "secret": {
         "currentOption": "القيمة الصريحة السابقة (شرط مسبق بنمط passwd). مطلوبة للكتابة فوق القيمة أو حذفها؛ حصرية بشكل متبادل مع --rotate-secret.",
-        "description": "إدارة أسرار كل مستودع المُحقنة وقت النشر. للكتابة فقط: تُعيد get التلخيص فقط (لا القيمة الصريحة أبدًا)، وتتطلب set/unset تطابق تلخيص --current أو --rotate-secret. وضعا تسليم: env (REDIACC_SECRET_<KEY>) وfile (نظام tmpfs في /var/run/rediacc/secrets/<networkId>/<KEY> عبر `secrets:` في compose). الأسرار لا تدخل صورة LUKS المشفرة أبدًا؛ النسخ المتفرعة لا ترث أيًا منها.",
+        "description": "إدارة أسرار كل مستودع المُحقنة وقت النشر. للكتابة فقط: تُعيد get التلخيص فقط (لا القيمة الصريحة أبدًا)، وتتطلب set/unset تطابق تلخيص --current أو --rotate-secret. وضعا تسليم: env (REDIACC_SECRET_<KEY>) وfile (نظام tmpfs في /var/run/rediacc/net-<networkId>/secrets/<KEY> عبر `secrets:` في compose). الأسرار لا تدخل صورة LUKS المشفرة أبدًا؛ النسخ المتفرعة لا ترث أيًا منها.",
         "descriptionShort": "إدارة أسرار وقت النشر لكل مستودع (env / file)",
         "get": {
           "description": "عرض تلخيص SHA-256 لسر. لا تُعاد القيمة الصريحة أبدًا بحكم التصميم (للكتابة فقط). استخدم --current في عملية set/unset لاحقة للتحقق من قيمة تعرفها بالفعل، أو دوّرها عبر `set --rotate-secret`.",
@@ -2290,6 +2290,7 @@
     "ssh": {
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
+      "noNetworkId": "المستودع '{{repository}}' ليس له معرّف شبكة، لذا لا يوجد خادم Docker يمكن الاتصال به",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون"
     },
     "subscription": {

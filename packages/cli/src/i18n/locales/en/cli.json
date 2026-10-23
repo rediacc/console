@@ -1366,7 +1366,7 @@
         "urlOnlyOption": "Print only the local URL once the tunnel is ready (machine-readable)"
       },
       "secret": {
-        "description": "Manage per-repo secrets injected at deploy time. Write-only: get returns digest only (never plaintext), set/unset require --current digest match or --rotate-secret. Two delivery modes: env (REDIACC_SECRET_<KEY>) and file (tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY> via compose `secrets:`). Secrets never enter the encrypted LUKS image; forks inherit none.",
+        "description": "Manage per-repo secrets injected at deploy time. Write-only: get returns digest only (never plaintext), set/unset require --current digest match or --rotate-secret. Two delivery modes: env (REDIACC_SECRET_<KEY>) and file (tmpfs at /var/run/rediacc/net-<networkId>/secrets/<KEY> via compose `secrets:`). Secrets never enter the encrypted LUKS image; forks inherit none.",
         "descriptionShort": "Manage per-repo deploy-time secrets (env / file)",
         "keyOption": "Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.",
         "valueOption": "Secret value. Pass `-` to read from stdin (avoids shell-history exposure).",
@@ -2271,7 +2271,8 @@
     "ssh": {
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
-      "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault"
+      "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
+      "noNetworkId": "Repository '{{repository}}' has no network ID, so it has no Docker daemon to connect to"
     },
     "subscription": {
       "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_TOKEN`.",

@@ -1628,7 +1628,7 @@
       },
       "secret": {
         "currentOption": "先前的明文值（passwd 风格前置条件）。覆盖或删除时必填；与 --rotate-secret 互斥。",
-        "description": "管理部署时注入的每仓库密钥。仅写入：get 仅返回摘要（永不返回明文），set/unset 需要 --current 摘要匹配或 --rotate-secret。两种传递模式：env（REDIACC_SECRET_<KEY>）和 file（通过 compose `secrets:` 挂载的 tmpfs，路径为 /var/run/rediacc/secrets/<networkId>/<KEY>）。密钥永远不会进入加密的 LUKS 镜像；fork 不会继承任何密钥。",
+        "description": "管理部署时注入的每仓库密钥。仅写入：get 仅返回摘要（永不返回明文），set/unset 需要 --current 摘要匹配或 --rotate-secret。两种传递模式：env（REDIACC_SECRET_<KEY>）和 file（通过 compose `secrets:` 挂载的 tmpfs，路径为 /var/run/rediacc/net-<networkId>/secrets/<KEY>）。密钥永远不会进入加密的 LUKS 镜像；fork 不会继承任何密钥。",
         "descriptionShort": "管理每仓库部署时密钥 (env / file)",
         "get": {
           "description": "显示密钥的 SHA-256 摘要。明文值按设计永不返回（仅写入）。可在后续的 set/unset 中使用 --current 验证一个你已知的值，或通过 `set --rotate-secret` 进行轮换。",
@@ -2290,6 +2290,7 @@
     "ssh": {
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
+      "noNetworkId": "仓库 '{{repository}}' 没有网络 ID，因此没有可连接的 Docker 守护进程",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥"
     },
     "subscription": {

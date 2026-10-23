@@ -1628,7 +1628,7 @@
       },
       "secret": {
         "currentOption": "以前の平文値（passwd スタイルの事前条件）。上書き/削除には必須。--rotate-secret とは併用不可。",
-        "description": "デプロイ時に注入されるリポジトリ単位のシークレットを管理する。書き込み専用: get はダイジェストのみを返し（平文は返さない）、set/unset には --current によるダイジェスト一致または --rotate-secret が必要。配信モードは2種類: env（REDIACC_SECRET_<KEY>）と file（compose の `secrets:` 経由で /var/run/rediacc/secrets/<networkId>/<KEY> の tmpfs に配置）。シークレットは暗号化された LUKS イメージには一切入らないため、フォークはシークレットを一切継承しない。",
+        "description": "デプロイ時に注入されるリポジトリ単位のシークレットを管理する。書き込み専用: get はダイジェストのみを返し（平文は返さない）、set/unset には --current によるダイジェスト一致または --rotate-secret が必要。配信モードは2種類: env（REDIACC_SECRET_<KEY>）と file（compose の `secrets:` 経由で /var/run/rediacc/net-<networkId>/secrets/<KEY> の tmpfs に配置）。シークレットは暗号化された LUKS イメージには一切入らないため、フォークはシークレットを一切継承しない。",
         "descriptionShort": "リポジトリ単位のデプロイ時シークレットを管理 (env / file)",
         "get": {
           "description": "シークレットの SHA-256 ダイジェストを表示する。平文値は設計上決して返されない（書き込み専用）。既知の値を確認するには、後続の set/unset で --current を使用するか、`set --rotate-secret` でローテーションすること。",
@@ -2290,6 +2290,7 @@
     "ssh": {
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
+      "noNetworkId": "リポジトリ '{{repository}}' にネットワーク ID がないため、接続先の Docker デーモンがありません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません"
     },
     "subscription": {

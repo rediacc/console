@@ -1628,7 +1628,7 @@
       },
       "secret": {
         "currentOption": "Valor anterior em texto simples (pré-condição estilo passwd). Obrigatório para sobrescrever/remover; mutuamente exclusivo com --rotate-secret.",
-        "description": "Gerir segredos por repositório injectados no momento da implementação. Apenas de escrita: get devolve apenas o resumo (nunca o texto simples); set/unset requerem correspondência do resumo --current ou --rotate-secret. Dois modos de entrega: env (REDIACC_SECRET_<KEY>) e file (tmpfs em /var/run/rediacc/secrets/<networkId>/<KEY> via `secrets:` do compose). Os segredos nunca entram na imagem LUKS encriptada; os forks não herdam nenhum.",
+        "description": "Gerir segredos por repositório injectados no momento da implementação. Apenas de escrita: get devolve apenas o resumo (nunca o texto simples); set/unset requerem correspondência do resumo --current ou --rotate-secret. Dois modos de entrega: env (REDIACC_SECRET_<KEY>) e file (tmpfs em /var/run/rediacc/net-<networkId>/secrets/<KEY> via `secrets:` do compose). Os segredos nunca entram na imagem LUKS encriptada; os forks não herdam nenhum.",
         "descriptionShort": "Gerir segredos por repositório no momento da implementação (env / ficheiro)",
         "get": {
           "description": "Mostrar o resumo SHA-256 de um segredo. O valor em texto simples nunca é devolvido por design (apenas de escrita). Use --current numa operação set/unset subsequente para verificar um valor que já conhece, ou rode via `set --rotate-secret`.",
@@ -2290,6 +2290,7 @@
     "ssh": {
       "noHostKey": "A máquina '{{machine}}' não tem uma chave de anfitrião configurada no cofre",
       "noIpAddress": "A máquina '{{machine}}' não tem um endereço IP configurado",
+      "noNetworkId": "O repositório '{{repository}}' não tem ID de rede, por isso não existe nenhum daemon Docker a que ligar",
       "noPrivateKey": "A equipa '{{team}}' não tem uma chave privada SSH configurada"
     },
     "subscription": {

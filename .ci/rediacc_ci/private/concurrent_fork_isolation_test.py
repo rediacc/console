@@ -176,7 +176,7 @@ sudo bash -c '
 set -e
 for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
     [ -S "$sock" ] || continue
     projects=$(docker -H unix://$sock ps -a --format "{{index .Labels \\"com.docker.compose.project\\"}}" 2>/dev/null | sort -u | grep -v "^$" || true)
     project_count=$(echo "$projects" | grep -c . || true)
@@ -198,7 +198,7 @@ COUNTER_SOCKETS_CMD = (
     """sudo bash -c '
       for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
         [ -S "$sock" ] || continue
         if [ -n "$(docker -H unix://$sock ps --filter name=counter --format "{{.Names}}" 2>/dev/null | grep counter)" ]; then
           echo "$sock"
@@ -216,7 +216,7 @@ DIAG_DB_LOGS = (
     """sudo bash -c '
       for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
         echo "=== $sock ==="
         docker -H unix://$sock ps -a --format "{{.ID}} {{.Names}} {{.Status}}" 2>/dev/null || true
         cid=$(docker -H unix://$sock ps -a --filter name=db --format "{{.ID}}" 2>/dev/null | head -1)

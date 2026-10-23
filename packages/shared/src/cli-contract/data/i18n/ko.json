@@ -1186,7 +1186,7 @@
   "commands.repo.resize.sizeOption": "새 저장소 크기 (예: 10G, 100G, 1T)",
   "commands.repo.resize.starting": "\"{{machine}}\"에서 \"{{repository}}\"를 {{size}}로 크기 조정하는 중...",
   "commands.repo.secret.currentOption": "이전 평문 값 (passwd 방식 사전 조건). 덮어쓰기/삭제 시 필요하며 --rotate-secret과 함께 사용할 수 없습니다.",
-  "commands.repo.secret.description": "배포 시 주입되는 저장소별 시크릿을 관리합니다. 쓰기 전용: get은 다이제스트만 반환합니다 (평문 없음). set/unset은 --current 다이제스트 일치 또는 --rotate-secret이 필요합니다. 두 가지 전달 모드: env (REDIACC_SECRET_<KEY>) 및 file (compose `secrets:`를 통해 /var/run/rediacc/secrets/<networkId>/<KEY>의 tmpfs). 시크릿은 암호화된 LUKS 이미지에 저장되지 않으며, 포크는 시크릿을 상속하지 않습니다.",
+  "commands.repo.secret.description": "배포 시 주입되는 저장소별 시크릿을 관리합니다. 쓰기 전용: get은 다이제스트만 반환합니다 (평문 없음). set/unset은 --current 다이제스트 일치 또는 --rotate-secret이 필요합니다. 두 가지 전달 모드: env (REDIACC_SECRET_<KEY>) 및 file (compose `secrets:`를 통해 /var/run/rediacc/net-<networkId>/secrets/<KEY>의 tmpfs). 시크릿은 암호화된 LUKS 이미지에 저장되지 않으며, 포크는 시크릿을 상속하지 않습니다.",
   "commands.repo.secret.descriptionShort": "저장소별 배포 시 시크릿을 관리합니다 (env / file)",
   "commands.repo.secret.get.description": "시크릿의 SHA-256 다이제스트를 표시합니다. 평문 값은 설계상 반환되지 않습니다 (쓰기 전용). 이미 알고 있는 값을 확인하려면 후속 set/unset에서 --current를 사용하거나 `set --rotate-secret`으로 교체하십시오.",
   "commands.repo.secret.get.descriptionShort": "시크릿의 다이제스트를 표시합니다 (값은 반환되지 않음)",

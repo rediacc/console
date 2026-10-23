@@ -12,6 +12,11 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
+import {
+  repoDockerHost,
+  repoDockerSocketFallbackShell,
+  repoDockerSocketPath,
+} from '@rediacc/shared/config/runtime-paths';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
@@ -57,6 +62,38 @@ afterAll(() => {
 });
 
 describe('ensureVSCodeEnvSetup secret delivery', () => {
+  it('appends the flat-socket test after the exports for a derived net-<N> socket only', async () => {
+    const env = {
+      REDIACC_REPOSITORY: 'app',
+      REDIACC_NETWORK_ID: '3136',
+      DOCKER_SOCKET: repoDockerSocketPath(3136),
+      DOCKER_HOST: repoDockerHost(3136),
+    };
+    recorded.length = 0;
+    await ensureVSCodeEnvSetup({
+      sshDestination: 'repo@h',
+      sshOptions: [],
+      envVars: env,
+      universalUser: 'rediacc',
+      sshUser: 'rediacc',
+      serverInstallPath: `${WK_DATASTORE_PATH}/mounts/x`,
+    });
+    const derived = (JSON.parse(recorded[0].stdin) as { envBlock: string }).envBlock;
+    expect(derived.endsWith(repoDockerSocketFallbackShell(env))).toBe(true);
+    expect(derived.indexOf('export DOCKER_SOCKET=')).toBeLessThan(derived.indexOf('[ -S'));
+
+    recorded.length = 0;
+    await ensureVSCodeEnvSetup({
+      sshDestination: 'repo@h',
+      sshOptions: [],
+      envVars: { ...env, DOCKER_SOCKET: '/srv/d.sock', DOCKER_HOST: 'unix:///srv/d.sock' },
+      universalUser: 'rediacc',
+      sshUser: 'rediacc',
+      serverInstallPath: `${WK_DATASTORE_PATH}/mounts/x`,
+    });
+    expect((JSON.parse(recorded[0].stdin) as { envBlock: string }).envBlock).not.toContain('[ -S');
+  });
+
   it('sends the config on stdin and no secret in the ssh argv', async () => {
     recorded.length = 0;
     const result = await ensureVSCodeEnvSetup({

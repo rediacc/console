@@ -197,8 +197,7 @@ export async function acquireRemoteRenet(
     return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp);
   }
 
-  // Auto-restart rediacc-router after a binary update so the long-running router daemon picks up new code without manual `systemctl restart`. systemctl try-restart is a no-op when the unit is not running, so this is safe on machines without the
-  // router daemon. Opt out via skipRouterRestart=true or
+  // After a binary update an active rediacc-router is re-installed from the new binary (`renet proxy install`, which re-renders its unit) and restarted, so it runs the new code under the new unit text; see RenetProvisionerService.restartRunningServices. A machine whose router is not running is left alone. Opt out via skipRouterRestart=true or
   // REDIACC_SKIP_ROUTER_RESTART=1.
   const skipRestart = options.skipRouterRestart ?? !!process.env.REDIACC_SKIP_ROUTER_RESTART;
   const restartServices = skipRestart ? false : (options.restartServices ?? true);
@@ -319,7 +318,7 @@ interface RepoEntryConfig {
   /**
    * File-mode secrets to materialize on the host at deploy time. Renet's
    * repository_up reads these from the vault payload and writes them to
-   * /var/run/rediacc/secrets/<networkID>/<NAME>. Tmpfs only; never enters
+   * /var/run/rediacc/net-<networkID>/secrets/<NAME>. Tmpfs only; never enters
    * the LUKS image; never inherited by forks.
    */
   secretFiles?: { name: string; value: string }[];

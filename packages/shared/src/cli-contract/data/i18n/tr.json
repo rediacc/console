@@ -1186,7 +1186,7 @@
   "commands.repo.resize.sizeOption": "Yeni depo boyutu (ör. 10G, 100G, 1T)",
   "commands.repo.resize.starting": "\"{{machine}}\" üzerinde \"{{repository}}\" {{size}} olarak yeniden boyutlandırılıyor...",
   "commands.repo.secret.currentOption": "Önceki değerin SHA-256 özeti (passwd tarzı önkoşul). Aracı bağlamında üzerine yazma için zorunludur; ilk yazma için isteğe bağlıdır.",
-  "commands.repo.secret.description": "Dağıtım sırasında enjekte edilen depo başına sırları yönet. İki mod: env (compose ${VAR} enterpolasyonu ile REDIACC_SECRET_<KEY>) ve file (ana bilgisayarda tmpfs, /var/run/rediacc/secrets/<networkId>/<KEY>, Docker compose `secrets:` bloğu ile bağlanır). Sırlar hiçbir zaman şifreli LUKS imajına girmez, bu yüzden fork'lar hiçbirini miras almaz. Dış sistemler fork'u farklı bir kimlik (principal) olarak görür.",
+  "commands.repo.secret.description": "Dağıtım sırasında enjekte edilen depo başına sırları yönet. İki mod: env (compose ${VAR} enterpolasyonu ile REDIACC_SECRET_<KEY>) ve file (ana bilgisayarda tmpfs, /var/run/rediacc/net-<networkId>/secrets/<KEY>, Docker compose `secrets:` bloğu ile bağlanır). Sırlar hiçbir zaman şifreli LUKS imajına girmez, bu yüzden fork'lar hiçbirini miras almaz. Dış sistemler fork'u farklı bir kimlik (principal) olarak görür.",
   "commands.repo.secret.descriptionShort": "Depo başına dağıtım sırrı yönetimi (env / file)",
   "commands.repo.secret.get.description": "Tek bir gizli anahtarı oku. Politikadan bağımsız olarak, aracı bağlamında redakte edilmiş bir stub döndürür (`<redacted:secret>:<digest8>`).",
   "commands.repo.secret.get.descriptionShort": "Sırrın özetini göster (değer asla döndürülmez)",

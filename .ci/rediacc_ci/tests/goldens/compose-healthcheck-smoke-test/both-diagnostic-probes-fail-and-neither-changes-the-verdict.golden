@@ -104,7 +104,7 @@ ss: cannot open netlink
     "-o",
     "ConnectTimeout=15",
     "labuser@192.168.111.11",
-    "sudo bash -c '\n      for sock in /var/run/rediacc/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
+    "sudo bash -c '\n      for sock in /var/run/rediacc/net-*/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
   ],
   [
     "sleep",
@@ -123,7 +123,7 @@ ss: cannot open netlink
     "-o",
     "ConnectTimeout=15",
     "labuser@192.168.111.11",
-    "sudo bash -c '\n      for sock in /var/run/rediacc/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
+    "sudo bash -c '\n      for sock in /var/run/rediacc/net-*/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
   ],
   [
     "sleep",
@@ -142,7 +142,7 @@ ss: cannot open netlink
     "-o",
     "ConnectTimeout=15",
     "labuser@192.168.111.11",
-    "sudo bash -c '\n      for sock in /var/run/rediacc/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
+    "sudo bash -c '\n      for sock in /var/run/rediacc/net-*/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
   ],
   [
     "sleep",
@@ -161,7 +161,7 @@ ss: cannot open netlink
     "-o",
     "ConnectTimeout=15",
     "labuser@192.168.111.11",
-    "sudo bash -c '\n      for sock in /var/run/rediacc/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
+    "sudo bash -c '\n      for sock in /var/run/rediacc/net-*/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
   ],
   [
     "sleep",
@@ -180,7 +180,7 @@ ss: cannot open netlink
     "-o",
     "ConnectTimeout=15",
     "labuser@192.168.111.11",
-    "sudo bash -c '\n      for sock in /var/run/rediacc/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
+    "sudo bash -c '\n      for sock in /var/run/rediacc/net-*/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
   ],
   [
     "sleep",
@@ -199,7 +199,7 @@ ss: cannot open netlink
     "-o",
     "ConnectTimeout=15",
     "labuser@192.168.111.11",
-    "sudo bash -c '\n      for sock in /var/run/rediacc/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          echo \"=== $sock ===\"\n          docker -H unix://$sock inspect --format \"State={{.State.Status}} Health={{.State.Health.Status}}/{{.State.Health.FailingStreak}}\" \"$cid\"\n          echo \"--- last 5 health log entries ---\"\n          docker -H unix://$sock inspect --format \"{{json .State.Health.Log}}\" \"$cid\" 2>&1 | head -100\n          echo \"--- last 30 container log lines ---\"\n          docker -H unix://$sock logs --tail 30 \"$cid\" 2>&1\n        fi\n      done\n    '"
+    "sudo bash -c '\n      for sock in /var/run/rediacc/net-*/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          echo \"=== $sock ===\"\n          docker -H unix://$sock inspect --format \"State={{.State.Status}} Health={{.State.Health.Status}}/{{.State.Health.FailingStreak}}\" \"$cid\"\n          echo \"--- last 5 health log entries ---\"\n          docker -H unix://$sock inspect --format \"{{json .State.Health.Log}}\" \"$cid\" 2>&1 | head -100\n          echo \"--- last 30 container log lines ---\"\n          docker -H unix://$sock logs --tail 30 \"$cid\" 2>&1\n        fi\n      done\n    '"
   ],
   [
     "ssh",

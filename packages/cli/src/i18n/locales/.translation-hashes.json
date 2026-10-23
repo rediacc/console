@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1853,
-    "sourceCommit": "0c08b07e86ad99a6881432863c1b8b8d8e828dcf"
+    "keyCount": 1854,
+    "sourceCommit": "17c55af8b3be76e660ddf3d2f0e56030a726e85a"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1194,7 +1194,7 @@
     "commands.repo.resize.sizeOption": "91bc536e",
     "commands.repo.resize.starting": "ce81c05e",
     "commands.repo.secret.currentOption": "2ab64b49",
-    "commands.repo.secret.description": "a5347402",
+    "commands.repo.secret.description": "151b3d5a",
     "commands.repo.secret.descriptionShort": "025f7c83",
     "commands.repo.secret.get.description": "f63088ec",
     "commands.repo.secret.get.descriptionShort": "ca228a77",
@@ -1661,6 +1661,7 @@
     "errors.repositoryNotFound": "920337ed",
     "errors.ssh.noHostKey": "0512cdf3",
     "errors.ssh.noIpAddress": "a4d64fb1",
+    "errors.ssh.noNetworkId": "bace4d88",
     "errors.ssh.noPrivateKey": "5ac83b14",
     "errors.subscription.activationFailed": "8de746b0",
     "errors.subscription.ipRebind.attemptsExhausted": "d2ff037c",

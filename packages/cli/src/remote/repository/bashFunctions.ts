@@ -54,7 +54,7 @@ status() {
   echo "Datastore:  \${REDIACC_DATASTORE_PATH:-not set}"
   echo ""
   echo "=== Docker Info ==="
-  echo "Socket:     \${DOCKER_SOCKET:-/var/run/docker.sock}"
+  echo "Socket:     \${DOCKER_SOCKET:-not set}"
   echo "Data:       \${DOCKER_DATA:-not set}"
 }
 export -f status 2>/dev/null || true

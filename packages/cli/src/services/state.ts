@@ -6,7 +6,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
+import { repoDockerHost, repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { configService } from './config/config-resources.js';
 import { readSSHKey } from './renet/renet-execution.js';
 
@@ -204,13 +204,16 @@ class LocalVaultProvider implements VaultProvider {
         );
       }
       const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-      machineVault.dockerHost = `unix://${WK_RUNTIME_DIR}/docker-${repoConfig.networkId}.sock`;
-      machineVault.dockerSocket = `${WK_RUNTIME_DIR}/docker-${repoConfig.networkId}.sock`;
+      // A repo with no network id gets no socket here; getSSHConnectionDetails refuses it rather than aim the session at the host's system Docker.
+      if (repoConfig.networkId !== undefined) {
+        machineVault.dockerHost = repoDockerHost(repoConfig.networkId);
+        machineVault.dockerSocket = repoDockerSocketPath(repoConfig.networkId);
+      }
 
       // Resolve per-repo secrets into the two delivery channels:
       //   env  → REDIACC_SECRET_<NAME> in the SSH/renet shell; compose
       //          interpolation picks them up via existing ${REDIACC_*} allowlist.
-      // file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<NAME> (materialized by renet at repo-up time). Carried in vault but never leaked into the SSH session env.
+      // file → tmpfs file at /var/run/rediacc/net-<networkId>/secrets/<NAME> (materialized by renet at repo-up time). Carried in vault but never leaked into the SSH session env.
       const envSecrets: Record<string, string> = {};
       const secretFiles: { name: string; value: string }[] = [];
       for (const [name, entry] of Object.entries(repoConfig.secrets ?? {})) {

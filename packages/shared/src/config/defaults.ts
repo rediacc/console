@@ -92,17 +92,6 @@ export const REPOSITORY_DEFAULTS = {
 } as const;
 
 /**
- * Docker and system paths
- */
-export const DOCKER_DEFAULTS = {
-  /** Default Docker host socket path */
-  SOCKET_PATH: '/var/run/docker.sock',
-
-  /** Default Docker host URI */
-  HOST_URI: 'unix:///var/run/docker.sock',
-} as const;
-
-/**
  * Shell and binary paths
  */
 export const SHELL_DEFAULTS = {
@@ -517,7 +506,6 @@ export const DEFAULTS = {
   BACKUP: BACKUP_DEFAULTS,
   BATCH: BATCH_DEFAULTS,
   REPOSITORY: REPOSITORY_DEFAULTS,
-  DOCKER: DOCKER_DEFAULTS,
   SHELL: SHELL_DEFAULTS,
   TELEMETRY: TELEMETRY_DEFAULTS,
   TIMEOUT: TIMEOUT_DEFAULTS,

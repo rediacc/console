@@ -95,7 +95,7 @@ exit: 0
     "-o",
     "ConnectTimeout=15",
     "labuser@192.168.111.11",
-    "sudo bash -c '\n      for sock in /var/run/rediacc/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
+    "sudo bash -c '\n      for sock in /var/run/rediacc/net-*/docker-*.sock; do\n        [ -S \"$sock\" ] || continue\n        cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n        if [ -n \"$cid\" ]; then\n          docker -H unix://$sock inspect --format \"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}\" \"$cid\" 2>/dev/null && exit 0\n        fi\n      done\n      echo \"missing|\"\n    '"
   ],
   [
     "ssh",
@@ -106,7 +106,7 @@ exit: 0
     "-o",
     "ConnectTimeout=15",
     "labuser@192.168.111.11",
-    "sudo bash -c '\n  for sock in /var/run/rediacc/docker-*.sock; do\n    [ -S \"$sock\" ] || continue\n    cid=$(docker -H unix://$sock ps -a --filter name=^app$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n    if [ -n \"$cid\" ]; then\n      docker -H unix://$sock inspect --format \"{{.State.Status}}\" \"$cid\" 2>/dev/null && exit 0\n    fi\n  done\n  echo \"missing\"\n'"
+    "sudo bash -c '\n  for sock in /var/run/rediacc/net-*/docker-*.sock; do\n    [ -S \"$sock\" ] || continue\n    cid=$(docker -H unix://$sock ps -a --filter name=^app$ --format \"{{.ID}}\" 2>/dev/null | head -1)\n    if [ -n \"$cid\" ]; then\n      docker -H unix://$sock inspect --format \"{{.State.Status}}\" \"$cid\" 2>/dev/null && exit 0\n    fi\n  done\n  echo \"missing\"\n'"
   ],
   [
     "rdc",

@@ -29,7 +29,7 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
-import { WK_DATASTORE_PATH, WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { getSSHConnectionDetails } from '../machine/ssh-connection.js';
 
 const baseMachineVault = {
@@ -46,7 +46,7 @@ const baseTeamVault = {
 
 const baseRepoVault = {
   path: '/home/my-app',
-  networkId: 'abc123',
+  networkId: '7104',
   networkMode: 'bridge',
   tag: 'latest',
   workingDirectory: `${WK_DATASTORE_PATH}/mounts/guid-1234`,
@@ -94,16 +94,17 @@ describe('getSSHConnectionDetails', () => {
     expect(result.datastore).toBe(WK_DATASTORE_PATH);
     expect(result.universalUser).toBe('rediacc');
     expect(result.repositoryPath).toBe('/home/my-app');
-    expect(result.networkId).toBe('abc123');
+    expect(result.networkId).toBe('7104');
     expect(result.workingDirectory).toBe(`${WK_DATASTORE_PATH}/mounts/guid-1234`);
     expect(result.environment).toMatchObject({
       REDIACC_TEAM: 'team1',
       REDIACC_MACHINE: 'server-1',
       REDIACC_REPOSITORY: 'my-app',
-      REDIACC_NETWORK_ID: 'abc123',
+      REDIACC_NETWORK_ID: '7104',
       REDIACC_WORKING_DIR: `${WK_DATASTORE_PATH}/mounts/guid-1234`,
-      DOCKER_SOCKET: `${WK_RUNTIME_DIR}/docker-abc123.sock`,
-      DOCKER_HOST: `unix://${WK_RUNTIME_DIR}/docker-abc123.sock`,
+      // Spelled out: the per-network directory layout is the contract with renet's runpaths.
+      DOCKER_SOCKET: '/var/run/rediacc/net-7104/docker-7104.sock',
+      DOCKER_HOST: 'unix:///var/run/rediacc/net-7104/docker-7104.sock',
       REDIACC_DATASTORE_PATH: WK_DATASTORE_PATH,
     });
     // REDIACC_DATASTORE names a datastore on the machine; a path never travels under it.
@@ -163,16 +164,31 @@ describe('getSSHConnectionDetails', () => {
     expect(result.host).toBe('server.example.com');
   });
 
-  it('handles missing repositoryVault gracefully', async () => {
+  it('refuses a repository session with no network id instead of using the system Docker socket', async () => {
     mockGetConnectionVaults.mockResolvedValue({
       machineVault: baseMachineVault,
       teamVault: baseTeamVault,
       repositoryVault: undefined,
     });
 
+    await expect(getSSHConnectionDetails('team1', 'server-1', 'my-app')).rejects.toThrow(
+      'errors.ssh.noNetworkId repository=my-app'
+    );
+  });
+
+  it('keeps the socket the vault resolved when the repository has one', async () => {
+    mockGetConnectionVaults.mockResolvedValue({
+      machineVault: {
+        ...baseMachineVault,
+        dockerSocket: '/var/run/rediacc/net-7104/docker-7104.sock',
+        dockerHost: 'unix:///var/run/rediacc/net-7104/docker-7104.sock',
+      },
+      teamVault: baseTeamVault,
+      repositoryVault: baseRepoVault,
+    });
+
     const result = await getSSHConnectionDetails('team1', 'server-1', 'my-app');
-    expect(result.repositoryPath).toBe('/home/my-app');
-    expect(result.environment?.REDIACC_REPOSITORY).toBe('my-app');
+    expect(result.environment?.DOCKER_SOCKET).toBe('/var/run/rediacc/net-7104/docker-7104.sock');
   });
 
   it('env-mode secrets from repositoryVault.environment splat into the SSH env', async () => {

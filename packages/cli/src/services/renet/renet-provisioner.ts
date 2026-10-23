@@ -69,6 +69,21 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 /** Systemd service name for the route server */
 const ROUTER_SERVICE = 'rediacc-router';
 
+/**
+ * The remote command that refreshes an active router after a binary update. A router that is not active is left
+ * alone (`is-active` short-circuits the chain, and `|| true` keeps the command from failing the provision). An
+ * active one is re-installed with `renet proxy install` before the restart: the updated binary re-renders the
+ * rediacc-router unit, whose text carries the Docker socket glob, so a restart alone would leave an upgraded router
+ * scanning the old socket layout (agent/plans/PLAN-renet-cross-repo-isolation.md, D5).
+ */
+export function buildRouterRefreshCommand(remoteRenetPath: string): string {
+  return (
+    `sudo systemctl is-active --quiet ${ROUTER_SERVICE}` +
+    ` && sudo ${shellQuote(remoteRenetPath)} proxy install >/dev/null 2>&1` +
+    ` && sudo systemctl restart ${ROUTER_SERVICE} && echo RESTARTED || true`
+  );
+}
+
 /** Result of a provisioning operation */
 interface ProvisionResult {
   /** Whether provisioning succeeded */
@@ -315,7 +330,7 @@ class RenetProvisionerService {
     // Best-effort: restart route server so it picks up the new binary
     let servicesRestarted = false;
     if (options?.restartServices === true && installResult.currentUpdated) {
-      servicesRestarted = await this.restartRunningServices(sftp);
+      servicesRestarted = await this.restartRunningServices(sftp, context.remoteInstallPath);
     }
 
     // Remember the proven-current state so consecutive rdc commands skip the whole cold path.
@@ -535,12 +550,12 @@ class RenetProvisionerService {
    * Restart services that use the renet binary, if they are currently running.
    * Returns true if any service was restarted.
    */
-  private async restartRunningServices(sftp: SFTPClient): Promise<boolean> {
+  private async restartRunningServices(
+    sftp: SFTPClient,
+    remoteInstallPath: string
+  ): Promise<boolean> {
     try {
-      // Only restart if the service is active, is-active returns non-zero otherwise, so the && short-circuits and || true ensures the command always succeeds.
-      const output = await sftp.exec(
-        `sudo systemctl is-active --quiet ${ROUTER_SERVICE} && sudo systemctl restart ${ROUTER_SERVICE} && echo RESTARTED || true`
-      );
+      const output = await sftp.exec(buildRouterRefreshCommand(remoteInstallPath));
       return output.trim().includes('RESTARTED');
     } catch {
       return false;

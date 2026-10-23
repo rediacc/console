@@ -1628,7 +1628,7 @@
       },
       "secret": {
         "currentOption": "Eelmine lihttekstiline väärtus (parool-stiilis eeltingimus). Nõutav ülekirjutamisel/unset puhul; vastastikku välistav lipuga --rotate-secret.",
-        "description": "Halda hoidlapõhiseid saladusi, mis süstitakse juurutamisel. Ainult kirjutamine: get tagastab ainult räsi (mitte lihtteksti), set/unset nõuavad --current räsi vastavust või --rotate-secret. Kaks edastusrežiimi: env (REDIACC_SECRET_<KEY>) ja file (tmpfs asukohas /var/run/rediacc/secrets/<networkId>/<KEY> läbi compose `secrets:`). Saladused ei satu kunagi krüpteeritud LUKS-kujutisesse; forkid ei päri neid.",
+        "description": "Halda hoidlapõhiseid saladusi, mis süstitakse juurutamisel. Ainult kirjutamine: get tagastab ainult räsi (mitte lihtteksti), set/unset nõuavad --current räsi vastavust või --rotate-secret. Kaks edastusrežiimi: env (REDIACC_SECRET_<KEY>) ja file (tmpfs asukohas /var/run/rediacc/net-<networkId>/secrets/<KEY> läbi compose `secrets:`). Saladused ei satu kunagi krüpteeritud LUKS-kujutisesse; forkid ei päri neid.",
         "descriptionShort": "Halda hoidlapõhiseid juurutusajasaladusi (env / file)",
         "get": {
           "description": "Näita saladuse SHA-256 räsi. Lihttekstilist väärtust ei tagastata kunagi disaini järgi (ainult kirjutamine). Kasuta --current järgneval set/unset puhul, et kontrollida väärtust, mida juba tead, või roteerige käsuga `set --rotate-secret`.",
@@ -2290,6 +2290,7 @@
     "ssh": {
       "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
       "noIpAddress": "Masinal '{{machine}}' ei ole IP-aadressi seadistatud",
+      "noNetworkId": "Hoidlal '{{repository}}' puudub võrgu ID, seega pole Dockeri deemonit, millega ühenduda",
       "noPrivateKey": "Meeskonnal '{{team}}' ei ole SSH privaatvõtit seadistatud"
     },
     "subscription": {

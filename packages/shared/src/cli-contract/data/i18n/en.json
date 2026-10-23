@@ -1186,7 +1186,7 @@
   "commands.repo.resize.sizeOption": "New repository size (e.g., 10G, 100G, 1T)",
   "commands.repo.resize.starting": "Resizing \"{{repository}}\" to {{size}} on \"{{machine}}\"...",
   "commands.repo.secret.currentOption": "Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.",
-  "commands.repo.secret.description": "Manage per-repo secrets injected at deploy time. Write-only: get returns digest only (never plaintext), set/unset require --current digest match or --rotate-secret. Two delivery modes: env (REDIACC_SECRET_<KEY>) and file (tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY> via compose `secrets:`). Secrets never enter the encrypted LUKS image; forks inherit none.",
+  "commands.repo.secret.description": "Manage per-repo secrets injected at deploy time. Write-only: get returns digest only (never plaintext), set/unset require --current digest match or --rotate-secret. Two delivery modes: env (REDIACC_SECRET_<KEY>) and file (tmpfs at /var/run/rediacc/net-<networkId>/secrets/<KEY> via compose `secrets:`). Secrets never enter the encrypted LUKS image; forks inherit none.",
   "commands.repo.secret.descriptionShort": "Manage per-repo deploy-time secrets (env / file)",
   "commands.repo.secret.get.description": "Show the SHA-256 digest of a secret. The plaintext value is never returned by design (write-only). Use --current on a subsequent set/unset to verify a value you already know, or rotate via `set --rotate-secret`.",
   "commands.repo.secret.get.descriptionShort": "Show digest of a secret (value never returned)",

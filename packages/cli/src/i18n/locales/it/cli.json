@@ -1628,7 +1628,7 @@
       },
       "secret": {
         "currentOption": "Valore in chiaro precedente (precondizione stile passwd). Obbligatorio per sovrascrittura/rimozione; mutuamente esclusivo con --rotate-secret.",
-        "description": "Gestisci i segreti per repo iniettati al momento del deploy. Solo in scrittura: get restituisce solo il digest (mai il testo in chiaro), set/unset richiedono la corrispondenza del digest --current o --rotate-secret. Due modalità di consegna: env (REDIACC_SECRET_<KEY>) e file (tmpfs in /var/run/rediacc/secrets/<networkId>/<KEY> tramite compose `secrets:`). I segreti non entrano mai nell'immagine LUKS cifrata; i fork non li ereditano.",
+        "description": "Gestisci i segreti per repo iniettati al momento del deploy. Solo in scrittura: get restituisce solo il digest (mai il testo in chiaro), set/unset richiedono la corrispondenza del digest --current o --rotate-secret. Due modalità di consegna: env (REDIACC_SECRET_<KEY>) e file (tmpfs in /var/run/rediacc/net-<networkId>/secrets/<KEY> tramite compose `secrets:`). I segreti non entrano mai nell'immagine LUKS cifrata; i fork non li ereditano.",
         "descriptionShort": "Gestisci i segreti per repo al momento del deploy (env / file)",
         "get": {
           "description": "Mostra il digest SHA-256 di un segreto. Il valore in chiaro non viene mai restituito by design (solo scrittura). Usa --current su un successivo set/unset per verificare un valore già noto, oppure ruota tramite `set --rotate-secret`.",
@@ -2290,6 +2290,7 @@
     "ssh": {
       "noHostKey": "La macchina '{{machine}}' non ha una host key configurata nel vault",
       "noIpAddress": "La macchina '{{machine}}' non ha un indirizzo IP configurato",
+      "noNetworkId": "Il repository '{{repository}}' non ha un ID di rete, quindi non c'è alcun daemon Docker a cui collegarsi",
       "noPrivateKey": "Il team '{{team}}' non ha una chiave privata SSH configurata"
     },
     "subscription": {

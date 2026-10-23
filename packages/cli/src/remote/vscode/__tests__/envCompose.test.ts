@@ -11,9 +11,37 @@ describe('VS Code session environment', () => {
       datastore: '/srv/ds',
       repositoryPath: '/mounts/guid',
       universalUser: 'rediacc',
+      networkId: '7104',
     });
     expect(env.REDIACC_DATASTORE_PATH).toBe('/srv/ds');
     expect(env).not.toHaveProperty('REDIACC_DATASTORE');
+  });
+
+  it("points DOCKER_SOCKET at the repository's own daemon in its network directory", () => {
+    const env = buildRepositoryEnvironment({
+      teamName: 't',
+      machineName: 'm',
+      repositoryName: 'app',
+      datastore: '/srv/ds',
+      repositoryPath: '/mounts/guid',
+      universalUser: 'rediacc',
+      networkId: '7104',
+    });
+    expect(env.DOCKER_SOCKET).toBe('/var/run/rediacc/net-7104/docker-7104.sock');
+    expect(env.DOCKER_HOST).toBe('unix:///var/run/rediacc/net-7104/docker-7104.sock');
+  });
+
+  it('refuses a repository with no network id instead of using the system Docker socket', () => {
+    expect(() =>
+      buildRepositoryEnvironment({
+        teamName: 't',
+        machineName: 'm',
+        repositoryName: 'app',
+        datastore: '/srv/ds',
+        repositoryPath: '/mounts/guid',
+        universalUser: 'rediacc',
+      })
+    ).toThrow(/network ID/);
   });
 
   it('sends the datastore path as REDIACC_DATASTORE_PATH for a machine', () => {

@@ -8,6 +8,7 @@
 
 import { spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { repoDockerSocketFallbackShell } from '@rediacc/shared/config/runtime-paths';
 import { BASHRC_REDIACC_CONTENT } from '../repository/bashFunctions.js';
 import { formatBashExports, needsUserSwitch } from './envCompose.js';
 
@@ -206,7 +207,11 @@ export async function ensureVSCodeEnvSetup(
     log('Preparing VS Code environment setup...');
 
     // Generate environment block
-    const envBlock = formatBashExports(envVars);
+    // The env file is sourced by every VS Code shell, so the flat-socket test re-runs and follows the daemon's layout.
+    const socketFallback = repoDockerSocketFallbackShell(envVars);
+    const envBlock = socketFallback
+      ? `${formatBashExports(envVars)}\n${socketFallback}`
+      : formatBashExports(envVars);
 
     // The script is a fixed program; only the config varies.
     const script = shellSingleQuote(await loadSetupScript());
