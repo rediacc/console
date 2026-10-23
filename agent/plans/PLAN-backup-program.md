@@ -103,7 +103,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 
 ### Phase A: records, folds and doc truth
 
-- [ ] A1: Mark docs/backup-storage/CHECKLIST.md superseded by this plan; carry w8 and the w3/w4/w5 leftovers (preview smoke, e2e corruption-injection control, suite 26 never run, stale locales) into boxes here. Owns: docs/backup-storage/CHECKLIST.md. Accept: header line names this plan; check:ci-plan-citations rc=0.
+- [x] A1: Mark docs/backup-storage/CHECKLIST.md superseded by this plan; carry w8 and the w3/w4/w5 leftovers (preview smoke, e2e corruption-injection control, suite 26 never run, stale locales) into boxes here. Owns: docs/backup-storage/CHECKLIST.md. Accept: header line names this plan; check:ci-plan-citations rc=0.
+    (ticked) 2026-10-23T07:36:27Z by d778be9d: commit:ee2ac7589 CHECKLIST.md line 2 names this plan; leftovers carried as A1a, A1b, K11a and Q0 (w8 cutover is Phase Q, suite 26 is J6); check:ci-plan-citations rc=0
 - [ ] A1a: Preview smoke for the portal quota page: run `stepQuotaPageShipped` (.ci/scripts/test/smoke-test-preview.ts, asserting the served bundle carries the `backup-storage` route) against a real preview deployment; carried from CHECKLIST w3. Accept: a green deploy-preview run id recorded here.
 - [ ] A1b: Locale freshness for the chunk-restore and quota docs (backup-restore.md, limits.md): the 12 non-English locales re-translated by delta and the hashes regenerated; carried from CHECKLIST w5. Accept: validate-translation-freshness rc=0 and check:i18n rc=0.
 - [ ] A2: After PR #600 merges, fold PLAN-chunk-store-browse-toc-and-remote.md: copy its 11 boxes verbatim into Phase O, leave a Status: moved + Moved-To: stub, run check_plan_boxes.py --update in the same commit. Accept: check:ci-plan-boxes rc=0, G-A1 finds every signature.
