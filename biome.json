@@ -112,6 +112,10 @@
       "private/account/src/**/*.ts",
       "private/account/tests/**/*.ts",
       "private/account/scripts/**/*.ts",
+      "private/account/e2e/src/**/*.ts",
+      "private/account/e2e/tests/**/*.ts",
+      "private/account/e2e/scripts/**/*.ts",
+      "private/account/e2e/playwright.config.ts",
       "private/account/web/src/**/*.ts",
       "private/account/web/src/**/*.tsx",
       "private/account/web/src/**/*.css"

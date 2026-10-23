@@ -147,9 +147,9 @@ describe('acquireRemoteRenet', () => {
     mockExecFileSync.mockImplementation((_cmd: string, args: string[]) =>
       args.includes('rev-parse') ? '/src/renet\n' : ' M pkg/list.go\n?? pkg/new.go\n'
     );
-    const { acquireRemoteRenet } = await load();
-    await acquireRemoteRenet('provision', CONFIG, MACHINE, 'key', {});
-    const { uploadGuard } = mockProvision.mock.calls[0][1] as { uploadGuard: () => void };
+    // A tree dirty at selection time gets a clean HEAD build instead (renet-clean-build.test.ts); the guard still refuses a tree that turned dirty after that choice.
+    const { assertRenetSourceClean } = await load();
+    const uploadGuard = () => assertRenetSourceClean('/src/renet/bin/renet', MACHINE);
 
     expect(() => uploadGuard()).toThrow(/REDIACC_ALLOW_DIRTY_RENET/);
     expect(() => uploadGuard()).toThrow(/pkg\/new\.go/);
