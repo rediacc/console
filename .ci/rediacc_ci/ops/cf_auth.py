@@ -50,7 +50,7 @@ READY_PROBES = {
 }
 MINTED_NAME = "auto-rotation-management"
 
-# Account-scoped permission groups: Account API Tokens Read + Write, Turnstile Sites Write, Workers Scripts Read + Write, D1 Write, Workers R2 Storage Write.
+# Account-scoped permission groups: Account API Tokens Read + Write, Turnstile Sites Write, Workers Scripts Read + Write, D1 Write, Workers R2 Storage Write, Workers Observability Read.
 ACCOUNT_PERMISSION_GROUPS = (
     "eb56a6953c034b9d97dd838155666f06",
     "5bc3f8b21c554832afc660159ab75fa4",
@@ -60,6 +60,8 @@ ACCOUNT_PERMISSION_GROUPS = (
     "09b2857d1c31407795e75e3fed8617a1",
     # Workers R2 Storage Write: `wrangler r2 bucket list|create`, which `bench_preflight buckets` runs. The bash token lacked it.
     "bf7481a1826f439697cb59a20b22293e",
+    # Workers Observability Read: the post-deploy `rotation check --for=bench` lists the otlp-bench Workers export destinations' jobStatus (scripts/rotation/commands/check.ts checkOtelDestinations). Without it the check reports could-not-check and the secret push is refused.
+    "66c1ed49f4ed46098b75696a6d4ee3c9",
 )
 # Zone-scoped: Workers Routes Write, DNS Read (wrangler validates a custom domain's DNS before deploying).
 ZONE_PERMISSION_GROUPS = (
