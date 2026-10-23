@@ -90,6 +90,15 @@ Because the gate is a real Docker API response, `docker run --privileged` prints
 - [ ] T6 [lead] `npm run vm:check -- --changed` VERIFIED for the renet side across the full distro matrix (the proxy runs on every supported dockerd/containerd; CRIU, build and compose paths exercised) -- Owns: agent/plans/PLAN-dockerd-api-privilege-gate.md. Accept: the receipt line reads VERIFIED for the renet side and its run id is recorded here.
 - [ ] T7 [docs] Document the API gate: close `private/renet/docs/DOCKERD_SANDBOX.md` known limitation 1's "on request" gap and record why the authz-plugin rejection (:43-45) stands while a socket proxy is chosen; update the privileged/pid/ipc language in packages/www/src/content/docs/en/rules-of-rediacc.md:59, :169, packages/www/src/content/docs/en/services.md:100 and ai-agents-safety.md to say the block holds on the Docker API, not only in compose; note the operator opt-in; then the locale delta through the naturalization pipeline -- Owns: private/renet/docs/DOCKERD_SANDBOX.md, private/renet/README.md, private/renet/CLAUDE.md, docs/design/spec/02-reporuntime-contract.md, packages/www/src/content/docs/en/rules-of-rediacc.md, packages/www/src/content/docs/en/services.md, packages/www/src/content/docs/en/ai-agents-safety.md. Accept: `npm run check:i18n` exits 0; `python3 .ci/scripts/quality/check_prose_style.py check private/renet/docs/DOCKERD_SANDBOX.md` reports no new finding.
 
+## Findings from T1 (2026-10-23, private/renet 031d303)
+
+These bind T2-T4; each box's writer reads this section with its box.
+
+1. The Session Hub binds a per-user Docker socket into its own container (`private/renet/pkg/hub/containers.go:797`, socket from `provisionUserDaemon` at `private/renet/pkg/hub/containers.go:251`). That socket belongs to another network id, so the hard tier refuses it as a cross-network bind and the proxy would 403 the hub's own create. T2/T4 need an explicit delegation (an operator-granted list of networks a repo may bind), never a relaxation of the hard tier.
+2. Named volumes bypass a create-only gate: `POST /volumes/create` with the local driver and `o=bind,device=/` makes a named volume aimed at a host path, and a later create that uses it by name passes. T2 also gates `POST /volumes/create`, running `dockerpolicy.ClassifyBindSource` on the `device` option.
+3. `Evaluate` is pure, so a symlink inside the repo mount aimed into `/run/...` is invisible to it; the per-network sandbox narrowing of PLAN-renet-cross-repo-isolation stays the backstop for that case.
+4. T1 already narrowed `runpaths.DockerSocketGlob` to `net-*/docker-*[0-9].sock` so discovery never picks up `DockerInternalSocket` once T3 moves dockerd.
+
 ## Risks
 
 - The proxy is on the hot path for every Docker API call a repo makes; a splice bug would break exec/attach/logs/build streaming. T2's hijack test and T6's live build/exec on ops-worker are the gate.
