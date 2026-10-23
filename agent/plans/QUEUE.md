@@ -77,7 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 6 plans done, 33 of 274 boxes done (12%).
+Promoted: 0 of 11 plans done, 85 of 332 boxes done (25%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -87,6 +87,11 @@ Promoted: 0 of 6 plans done, 33 of 274 boxes done (12%).
 | 4 | PLAN-sync-remote-file-ownership.md | 0/6 | 6 open |
 | 5 | PLAN-telemetry-export.md | 2/19 | 17 open |
 | 6 | PLAN-renet-bridge-leftovers.md | 0/14 | 14 open |
+| 7 | PLAN-app-wide-org-selection.md | 2/3 | 1 open |
+| 8 | PLAN-config-handoff-relay-only.md | 9/11 | 2 open |
+| 9 | PLAN-token-ip-rebind.md | 9/10 | 1 open |
+| 10 | PLAN-config-sync-hardening.md | 18/19 | 1 open |
+| 11 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -95,34 +100,34 @@ Promoted: 0 of 6 plans done, 33 of 274 boxes done (12%).
 4. agent/plans/PLAN-sync-remote-file-ownership.md -- operator 2026-10-23 (plan prompt /tmp/prompt-sync-remote-file-ownership.md): rdc repo sync upload --remote-file leaves the parent directories it creates root:root; fix through a skeleton rsync of only the missing segments so they get the universal user and existing directories are never re-owned; P1; Depends-On none; approved by operator /ask 2026-10-23 ("Approve both", "Commit as usual")
 5. agent/plans/PLAN-telemetry-export.md -- operator 2026-10-23 (plan prompt /tmp/prompt-telemetry-export-plan.md; /ask: "Approve both", "Accept all defaults", no operator steps): the account Workers and the executor proxy export traces and logs to otlp.rediacc.io through Cloudflare's native OTLP destinations, per region and channel, with a scheduled delivery check; P2; Depends-On none (its proxy box T15 waits on PLAN-cloudflare-proxy.md#P2a)
 6. agent/plans/PLAN-renet-bridge-leftovers.md -- operator 2026-10-23 (plan prompt /tmp/prompt-bridge-leftovers.md; /ask: "Commit as usual"): the broken renet ops self-test (bridge once plus three unregistered function names), 65 dead and 20 renamed bridge.* keys, stale renet and console docs, the 12 www policy translations naming the middleware and web app, and the bridge-functions wording; P2; approved with Q1 "(b) Also rename the harness", Q3 "Historical banner", Q4 "Change it" (/ask 2026-10-23)
+7. agent/plans/PLAN-app-wide-org-selection.md -- pulled in as an unfinished prerequisite of PLAN-config-handoff-relay-only.md (Depends-On), 2026-10-23
+8. agent/plans/PLAN-config-handoff-relay-only.md -- pulled in as an unfinished prerequisite of PLAN-token-ip-rebind.md (Depends-On), 2026-10-23
+9. agent/plans/PLAN-token-ip-rebind.md -- pulled in as an unfinished prerequisite of PLAN-config-sync-hardening.md (Depends-On), 2026-10-23
+10. agent/plans/PLAN-config-sync-hardening.md -- operator 2026-10-23 ("Pick some new close to finish plans that have progressed, and promote them"): 18/19, closure box T15 left; --promote brings its unfinished prerequisites PLAN-token-ip-rebind (9/10), PLAN-config-handoff-relay-only (9/11) and PLAN-app-wide-org-selection (2/3) ahead of it
+11. agent/plans/PLAN-stop-hook-one-plan-scope.md -- operator 2026-10-23 ("Pick some new close to finish plans ... promote them"): 14/15, the last box SC13b is evidence from a real run after this PR merges
 
 ## Generated
 
 <!-- queue:generated:begin -->
-1. agent/plans/PLAN-app-wide-org-selection.md -- P0, approved, in progress (2 of 3 boxes ticked)
-2. agent/plans/PLAN-config-handoff-relay-only.md -- P0, draft, in progress (9 of 11 boxes ticked), dep-blocked
-3. agent/plans/PLAN-token-ip-rebind.md -- P0, draft, in progress (9 of 10 boxes ticked), dep-blocked
-4. agent/plans/PLAN-config-sync-hardening.md -- P0, draft, in progress (18 of 19 boxes ticked), dep-blocked
-5. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
-6. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-7. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
-8. agent/plans/PLAN-stop-hook-one-plan-scope.md -- P1, approved, in progress (14 of 15 boxes ticked)
-9. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-10. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (8 of 9 boxes ticked)
-11. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-12. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, in progress (6 of 7 boxes ticked)
-13. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
-14. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-15. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-16. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-18. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-19. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- P1, draft, not started
-20. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
-21. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-22. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-23. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-24. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-25. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
+2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
+3. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
+4. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
+5. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (8 of 9 boxes ticked)
+6. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+7. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, in progress (6 of 7 boxes ticked)
+8. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
+9. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+10. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+11. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+12. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+13. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+14. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- P1, draft, not started
+15. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
+16. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+17. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+18. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+19. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+21. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
