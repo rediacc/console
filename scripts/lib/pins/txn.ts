@@ -474,12 +474,18 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
   if (o.mutant !== 'no-dirty-check') {
     const byRepo = new Map<string, string[]>();
     for (const p of touched.values()) byRepo.set(p.repo, [...(byRepo.get(p.repo) ?? []), p.file]);
-    // --adopt is spelled as the refusal prints a path; `./x` and backslashes are normalised, and a value naming no file this run
-    // writes is refused by name rather than silently ignored (it would otherwise read as "adopted" while protecting nothing).
+    // --adopt is spelled as the refusal prints a path; backslashes become slashes and path.posix.normalize collapses `./`, `//`, `/./` and `x/..`.
+    // A value naming no file this run writes is refused by name, as typed, rather than silently ignored (it would otherwise read as "adopted" while protecting nothing).
     const shownOf = (p: RepoPath): string => (p.repo === '.' ? p.file : `${p.repo}/${p.file}`);
-    const adopt = (o.adopt ?? []).map((a) => path.posix.normalize(a.replace(/\\/g, '/')));
+    const adoptArgs = (o.adopt ?? []).map((raw) => ({
+      raw,
+      norm: path.posix.normalize(raw.replace(/\\/g, '/')),
+    }));
+    const adopt = adoptArgs.map((a) => a.norm);
     const writes = new Set([...touched.values()].map(shownOf));
-    const unmatched = adopt.filter((a) => !writes.has(a));
+    const unmatched = adoptArgs
+      .filter((a) => !writes.has(a.norm))
+      .map((a) => (a.raw === '' ? "''" : a.raw));
     if (unmatched.length > 0) {
       res.failure = `refused: --adopt ${unmatched.join(', ')} names no file this run writes (${writes.size ? `it writes: ${[...writes].sort().join(', ')}` : 'it writes no files'})`;
       j.state = 'refused';
