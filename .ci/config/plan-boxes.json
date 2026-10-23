@@ -1183,14 +1183,15 @@
       ]
     },
     "agent/plans/PLAN-renet-bridge-leftovers.md": {
-      "status": "proposed",
+      "status": "approved",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
+      "open": 14,
       "done": 0,
       "open_sigs": [
         "2535dcf1",
+        "378cc6c4",
         "48f7650a",
         "4b9f0e29",
         "502b16c3",
