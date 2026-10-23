@@ -1,3 +1,4 @@
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import { buildMachineEnvironment, buildRepositoryEnvironment } from '../envCompose.js';
 
@@ -27,8 +28,8 @@ describe('VS Code session environment', () => {
       universalUser: 'rediacc',
       networkId: '7104',
     });
-    expect(env.DOCKER_SOCKET).toBe('/var/run/rediacc/net-7104/docker-7104.sock');
-    expect(env.DOCKER_HOST).toBe('unix:///var/run/rediacc/net-7104/docker-7104.sock');
+    expect(env.DOCKER_SOCKET).toBe(`${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`);
+    expect(env.DOCKER_HOST).toBe(`unix://${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`);
   });
 
   it('refuses a repository with no network id instead of using the system Docker socket', () => {

@@ -58,7 +58,9 @@
         // The pin drivers' selftests are run BY PATH from .ci/rediacc_ci/tests/gates/test_gate_pin_drivers.py and test_gate_pin_family_drivers.py (npx tsx <file>), which no npm script names; toolchain-fixture.ts is imported only by toolchain-selftest.ts.
         "scripts/lib/pins/drivers/*selftest.ts",
         // Run BY PATH from scripts/gates/check-standalone-selftests.ts (npx tsx <file>), like the driver selftests above.
-        "scripts/lib/pins/txn-selftest.ts"
+        "scripts/lib/pins/txn-selftest.ts",
+        // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like txn-selftest.ts.
+        "scripts/lib/pins/ran-line-selftest.ts"
       ],
       // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
       // usually load-bearing. `check-doc-region-parity.ts:297` matches

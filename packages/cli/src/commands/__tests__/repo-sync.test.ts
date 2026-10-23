@@ -4,13 +4,13 @@ import { join } from 'node:path';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RsyncExecutorOptions } from '../../remote/sync/index.js';
-import { ensureRemoteParents } from '../repo-sync.js';
 import {
   buildSyncRemotePaths,
   resolveUploadLocalPaths,
   validateDownloadOptions,
   validateUploadOptions,
 } from '../repo-sync-helpers.js';
+import { ensureRemoteParents } from '../repo-sync-parents.js';
 
 describe('resolveUploadLocalPaths', () => {
   let root: string;

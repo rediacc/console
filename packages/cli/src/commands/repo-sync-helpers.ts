@@ -2,6 +2,7 @@ import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import chalk from 'chalk';
 import { t } from '../i18n/index.js';
+import type { SFTPClientConfig } from '../remote/sftp/index.js';
 import {
   formatChangesSummary,
   formatDetailedChanges,
@@ -10,6 +11,7 @@ import {
   type RsyncExecutorOptions,
 } from '../remote/sync/index.js';
 import { writeStdout } from '../services/core/request-context.js';
+import type { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 
 export interface SyncUploadOptions {
   team?: string;
@@ -242,4 +244,23 @@ export async function handleDryRun(rsyncOptions: RsyncExecutorOptions): Promise<
   writeStdout(`${t('commands.sync.dryRunHeader')}\n`);
   const changes = await getRsyncPreview(rsyncOptions);
   writeStdout(`${formatChangesSummary(changes)}\n`);
+}
+
+export interface SyncConnectionContext {
+  details: Awaited<ReturnType<typeof getSSHConnectionDetails>>;
+  remotePath: string;
+  sftpRemotePath: string;
+  /** The repo's remote root that `--remote`/`--remote-file` are relative to. */
+  baseRemotePath?: string;
+  /** Connect options for the SFTP fallback; leased from the pool when rsync is absent. */
+  sftpConfig: SFTPClientConfig;
+}
+
+export function isRsyncNotFoundError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.message.includes('rsync not found')) return true;
+  // Older rsync (<3.2.3) doesn't recognize --mkpath; treat that as a
+  // "fallback to SFTP" signal rather than failing the upload outright. The error surface from rsync is an unrecognized-option message on stderr which carries through to the wrapped Error.message.
+  if (err.message.includes('--mkpath')) return true;
+  return false;
 }

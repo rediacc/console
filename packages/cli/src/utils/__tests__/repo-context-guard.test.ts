@@ -57,7 +57,7 @@ describe('detectRepoContextCommand', () => {
     it('does not treat the retired flat socket path as a runtime dir', () => {
       expect(
         REPO_CONTEXT_PATTERNS.find((p) => p.label === 'repo runtime dir')!.pattern.test(
-          '/var/run/rediacc/docker-3072.sock'
+          `${WK_RUNTIME_DIR}/docker-3072.sock`
         )
       ).toBe(false);
     });

@@ -5,7 +5,6 @@
 
 import { execFileSync, execSync, spawn } from 'node:child_process';
 import * as fsSync from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
@@ -18,8 +17,23 @@ import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
+import {
+  CLEAN_BUILD_MARKER,
+  cleanBuildEnv,
+  cleanBuildFiles,
+  cleanBuildRoot,
+  copyEmbeddedAssets,
+  isCompleteCleanBuild,
+  pinCommittedEbpfObjects,
+  pruneOtherCleanBuilds,
+} from './renet-clean-build-fs.js';
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
+import {
+  buildRepositories,
+  buildStorageSystems,
+  type RepoEntryConfig,
+} from './renet-vault-sections.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
 export { readOptionalSSHKey, readSSHKey } from '../machine/ssh-key.js';
@@ -193,10 +207,6 @@ const realCleanBuildDeps: RenetCleanBuildDeps = {
     }),
 };
 
-/** Marker written last into a finished clean build directory; holds the commit. */
-const CLEAN_BUILD_MARKER = '.complete';
-const LINUX_ARCHES = ['amd64', 'arm64'] as const;
-
 /**
  * Pick the renet binary to upload. A dirty renet working tree no longer blocks the upload: the
  * binary is built from the committed HEAD in a scratch clone and THAT is uploaded, so another
@@ -228,34 +238,6 @@ export async function selectRenetUploadBinary(
     excludedPaths: state.dirty.length,
     guarded: false,
   };
-}
-
-/** Where clean builds live: the console's gitignored .ci/cache, or the temp dir for a standalone renet. */
-function cleanBuildRoot(top: string, deps: RenetCleanBuildDeps): string {
-  let superproject = '';
-  try {
-    superproject = deps.git(['rev-parse', '--show-superproject-working-tree'], top);
-  } catch {
-    // Not a submodule.
-  }
-  return superproject
-    ? path.join(superproject, '.ci', 'cache', 'renet-head')
-    : path.join(os.tmpdir(), 'rediacc-renet-head');
-}
-
-function cleanBuildFiles(ext: string): string[] {
-  return [`renet${ext}`, ...LINUX_ARCHES.map((arch) => `renet-linux-${arch}`)];
-}
-
-function isCompleteCleanBuild(dir: string, commit: string, ext: string): boolean {
-  try {
-    if (fsSync.readFileSync(path.join(dir, CLEAN_BUILD_MARKER), 'utf-8').trim() !== commit) {
-      return false;
-    }
-    return cleanBuildFiles(ext).every((name) => fsSync.existsSync(path.join(dir, name)));
-  } catch {
-    return false;
-  }
 }
 
 /**
@@ -322,63 +304,6 @@ export async function buildRenetAtCommit(
     fsSync.rmSync(stage, { recursive: true, force: true });
   }
   return hostBinary;
-}
-
-/** The gitignored staged assets (311 MB): copy-on-write where the filesystem supports it. */
-function copyEmbeddedAssets(top: string, work: string): void {
-  const src = path.join(top, 'pkg', 'embed', 'assets');
-  if (!fsSync.existsSync(src)) return;
-  fsSync.cpSync(src, path.join(work, 'pkg', 'embed', 'assets'), {
-    recursive: true,
-    force: true,
-    mode: fsSync.constants.COPYFILE_FICLONE,
-  });
-}
-
-/**
- * A fresh clone gives the committed BPF objects and their C source the same mtime, so build.sh's
- * `-nt` check would regenerate the objects with the local clang and could change tracked files.
- * Dating the source back keeps the committed objects, which is what HEAD means.
- */
-function pinCommittedEbpfObjects(work: string): void {
-  const dir = path.join(work, 'pkg', 'ebpf');
-  if (!fsSync.existsSync(dir)) return;
-  const past = new Date('2000-01-01T00:00:00Z');
-  for (const name of fsSync.readdirSync(dir)) {
-    if (name.endsWith('.c') || name.endsWith('.h')) {
-      fsSync.utimesSync(path.join(dir, name), past, past);
-    }
-  }
-}
-
-/**
- * build.sh reads the licence public key from `<renet>/../account/.cache/public-keys.env`, which
- * does not exist beside the clone, so the working tree's key is handed over in the environment,
- * exactly as the working-tree build would have read it. A public key; never printed.
- */
-function cleanBuildEnv(top: string): NodeJS.ProcessEnv {
-  const env = { ...process.env };
-  if (env.ACCOUNT_ED25519_PUBLIC_KEY) return env;
-  try {
-    const cache = fsSync.readFileSync(
-      path.join(top, '..', 'account', '.cache', 'public-keys.env'),
-      'utf-8'
-    );
-    const line = cache.split('\n').find((l) => l.startsWith('ACCOUNT_ED25519_PUBLIC_KEY='));
-    const key = line?.slice('ACCOUNT_ED25519_PUBLIC_KEY='.length).trim();
-    if (key) env.ACCOUNT_ED25519_PUBLIC_KEY = key;
-  } catch {
-    // No cache: build.sh builds keyless, as it would in the working tree.
-  }
-  return env;
-}
-
-function pruneOtherCleanBuilds(root: string, keep: string): void {
-  for (const name of fsSync.readdirSync(root)) {
-    if (name !== keep && /^[0-9a-f]{40}([0-9a-f]{24})?$/.test(name)) {
-      fsSync.rmSync(path.join(root, name), { recursive: true, force: true });
-    }
-  }
 }
 
 function shortHash(hash: string | null): string {
@@ -564,19 +489,6 @@ export async function verifyMachineSetup(
   );
 }
 
-interface RepoEntryConfig {
-  guid: string;
-  name: string;
-  networkId?: number;
-  /**
-   * File-mode secrets to materialize on the host at deploy time. Renet's
-   * repository_up reads these from the vault payload and writes them to
-   * /var/run/rediacc/net-<networkID>/secrets/<NAME>. Tmpfs only; never enters
-   * the LUKS image; never inherited by forks.
-   */
-  secretFiles?: { name: string; value: string }[];
-}
-
 interface BuildLocalVaultOptions {
   functionName: string;
   machineName: string;
@@ -615,103 +527,6 @@ function buildExtraMachines(
     };
   }
   return result;
-}
-
-function buildStorageSection(vault: Record<string, unknown>): Record<string, unknown> | null {
-  const provider = String(vault.provider ?? '');
-  if (!provider) return null;
-
-  const section: Record<string, unknown> = { backend: provider };
-  if (vault.bucket) section.bucket = String(vault.bucket);
-  if (vault.region) section.region = String(vault.region);
-  if (vault.folder !== undefined && vault.folder !== null) {
-    section.folder = String(vault.folder);
-  }
-
-  const parameters: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(vault)) {
-    if (['provider', 'bucket', 'region', 'folder'].includes(key)) continue;
-    parameters[key] = value;
-  }
-  if (Object.keys(parameters).length > 0) {
-    section.parameters = parameters;
-  }
-
-  return section;
-}
-
-function buildStorageSystems(
-  storages: Record<string, { vaultContent: Record<string, unknown> }> | undefined
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  if (!storages) return result;
-  for (const [name, storage] of Object.entries(storages)) {
-    const section = buildStorageSection(storage.vaultContent);
-    if (section) result[name] = section;
-  }
-  return result;
-}
-
-/** Build a single repository entry from config and params. */
-function buildSingleRepoEntry(
-  repoName: string,
-  params: Record<string, unknown>,
-  repositoryConfigs?: Record<string, RepoEntryConfig>
-): Record<string, unknown> {
-  const repoConfig = repositoryConfigs?.[repoName];
-  const repoEntry: Record<string, unknown> = {
-    guid: repoConfig?.guid ?? (typeof params.guid === 'string' ? params.guid : repoName),
-    name: repoName,
-  };
-  const networkId = repoConfig?.networkId ?? params.network_id;
-  if (networkId !== undefined && networkId !== '' && networkId !== 0) {
-    repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
-  }
-  if (repoConfig?.secretFiles && repoConfig.secretFiles.length > 0) {
-    repoEntry.secret_files = repoConfig.secretFiles;
-  }
-  return repoEntry;
-}
-
-/** Build repository entries for all repos in config (multi-repo mode). */
-function buildAllRepoEntries(
-  repositoryConfigs: Record<string, RepoEntryConfig>
-): Record<string, unknown> {
-  const repositories: Record<string, unknown> = {};
-  for (const [name, config] of Object.entries(repositoryConfigs)) {
-    const repoEntry: Record<string, unknown> = {
-      guid: config.guid,
-      name,
-    };
-    if (config.networkId !== undefined && config.networkId !== 0) {
-      repoEntry.network_id = config.networkId;
-    }
-    if (config.secretFiles && config.secretFiles.length > 0) {
-      repoEntry.secret_files = config.secretFiles;
-    }
-    repositories[name] = repoEntry;
-  }
-  return repositories;
-}
-
-function buildRepositories(
-  params: Record<string, unknown>,
-  repositoryConfigs?: Record<string, RepoEntryConfig>
-): { repoName: string; repositories: Record<string, unknown> } {
-  const repoName = (params.repository ?? '') as string;
-
-  if (repoName) {
-    return {
-      repoName,
-      repositories: { [repoName]: buildSingleRepoEntry(repoName, params, repositoryConfigs) },
-    };
-  }
-
-  if (repositoryConfigs) {
-    return { repoName, repositories: buildAllRepoEntries(repositoryConfigs) };
-  }
-
-  return { repoName, repositories: {} };
 }
 
 /**

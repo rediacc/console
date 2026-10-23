@@ -99,6 +99,7 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   'scripts/lib/pins/drivers/embed-selftest.ts': { args: [], submodules: PRIVATE },
   'scripts/lib/pins/drivers/selftest.ts': { args: ['--selftest'] },
   'scripts/lib/pins/drivers/toolchain-selftest.ts': { args: [], submodules: PRIVATE },
+  'scripts/lib/pins/ran-line-selftest.ts': { args: [] },
   'scripts/lib/pins/txn-selftest.ts': { args: [] },
   'scripts/ci-runner/typecheck-incremental.ts': {
     args: ['--selftest'],

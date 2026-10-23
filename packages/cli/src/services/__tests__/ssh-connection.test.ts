@@ -29,7 +29,7 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
-import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import { WK_DATASTORE_PATH, WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { getSSHConnectionDetails } from '../machine/ssh-connection.js';
 
 const baseMachineVault = {
@@ -103,8 +103,8 @@ describe('getSSHConnectionDetails', () => {
       REDIACC_NETWORK_ID: '7104',
       REDIACC_WORKING_DIR: `${WK_DATASTORE_PATH}/mounts/guid-1234`,
       // Spelled out: the per-network directory layout is the contract with renet's runpaths.
-      DOCKER_SOCKET: '/var/run/rediacc/net-7104/docker-7104.sock',
-      DOCKER_HOST: 'unix:///var/run/rediacc/net-7104/docker-7104.sock',
+      DOCKER_SOCKET: `${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`,
+      DOCKER_HOST: `unix://${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`,
       REDIACC_DATASTORE_PATH: WK_DATASTORE_PATH,
     });
     // REDIACC_DATASTORE names a datastore on the machine; a path never travels under it.
@@ -180,15 +180,15 @@ describe('getSSHConnectionDetails', () => {
     mockGetConnectionVaults.mockResolvedValue({
       machineVault: {
         ...baseMachineVault,
-        dockerSocket: '/var/run/rediacc/net-7104/docker-7104.sock',
-        dockerHost: 'unix:///var/run/rediacc/net-7104/docker-7104.sock',
+        dockerSocket: `${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`,
+        dockerHost: `unix://${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`,
       },
       teamVault: baseTeamVault,
       repositoryVault: baseRepoVault,
     });
 
     const result = await getSSHConnectionDetails('team1', 'server-1', 'my-app');
-    expect(result.environment?.DOCKER_SOCKET).toBe('/var/run/rediacc/net-7104/docker-7104.sock');
+    expect(result.environment?.DOCKER_SOCKET).toBe(`${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`);
   });
 
   it('env-mode secrets from repositoryVault.environment splat into the SSH env', async () => {
