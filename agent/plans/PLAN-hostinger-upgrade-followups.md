@@ -1,6 +1,7 @@
 # PLAN: product follow-ups from the 2026-10-22/23 hostinger CVE response: Traefik v3.7.16, two template fixes, and the /run docker.sock isolation write-up
 
 Status: in-progress
+Depends-On: no-dep -- it only cites PLAN-renet-run-docker-sock-isolation.md as a write-up of a gap it does not fix
 Owner: 5008cebe
 First-Seen: 2026-10-23
 Priority: P1 -- asked by the operator 2026-10-23. The production proxy image `traefik:v3.6` was built with go1.25.7 (before the CVE-2026-111943 crypto/x509 eMudhra denylist in go1.26.10/1.27.3), the v3.6 line no longer gets releases, and v3.7.16 (2026-10-20) also fixes GHSA-hrpp-p4fc-wwf8.

@@ -21,15 +21,11 @@ self-improving: true
 
 `--wait --worklist-item <id> --session <sid8>` also writes the final verdict (head, run, attempt, cause, next command) onto that worklist item, and every final `--wait` verdict lands in the branch's verdict cache, so a later turn or another session reads it without a network call. The git-push PostToolUse hook (`arm_ci_watch.py`) arms exactly that `--wait --until-final` in the background after each push of the live branch. `--worklist-script <path>` is a hidden test seam that replaces the worklist CLI in the tracer's tests; it is never passed by hand.
 
-**`--timeout` requires a unit suffix**: `90m`, `5400s` or `1h`, default `5400s`. A bare number is refused, because its unit would have to be guessed.
-
-Ad-hoc `gh` watch commands are **refused**, and a hand-rolled watch left running **blocks the Stop hook** ([incidents.md](incidents.md): five incidents in one week). It keys on the **PR head commit**, so a watchdog rerun *replaces* the old attempt.
+**`--timeout` requires a unit suffix**: `90m`, `5400s` or `1h`, default `5400s`. A bare number is refused, because its unit would have to be guessed. Ad-hoc `gh` watch commands are **refused**, and a hand-rolled watch left running **blocks the Stop hook** ([incidents.md](incidents.md): five incidents in one week). It keys on the **PR head commit**, so a watchdog rerun *replaces* the old attempt.
 
 Raw CI **reads** are refused too, by the pre-bash guard `block_raw_ci_read`: `gh pr checks`, `gh run list` and `gh run view`, `gh api` GETs on actions runs, jobs, logs, check-runs and annotations, and GraphQL rollup queries. Each refusal prints the tracer verb that answers it, from the `CI_READ_VERBS` table in `.claude/hooks/lib/sanctioned.py`. Writes are not refused (`gh run rerun`, `cancel`, `download`, `gh api -X POST`), nor are PR edits, `pulls/<n>`, issues, releases, artifacts or a run list of another workflow. <!-- raw-ci-read-ok: names what is refused -->
 
-**Poll the head before arming**: `gh api .../pulls/<n> --jq .head.sha` lagged a push by 30-60s repeatedly on 2026-09-01, and a watch armed early traces the stale head.
-
-**A dispatched run needs `--run <id>`.** A branch's `statusCheckRollup` does NOT contain a `workflow_dispatch` run's checks: `--wait --ref main` reported GREEN while a Release run was still tagging. **A submodule PR needs `--repo OWNER/NAME`**, run from inside its checkout: `.ci/scripts/ci/ci-trace.py --repo rediacc/account` traces that repo's open PR for the checkout's branch, and a head with no check contexts at all (account has no workflows) reads `NO-CI`, exit 4, once the 180 s grace has passed.
+**Poll the head before arming**: `gh api .../pulls/<n> --jq .head.sha` lagged a push by 30-60s repeatedly on 2026-09-01, and a watch armed early traces the stale head. **A dispatched run needs `--run <id>`.** A branch's `statusCheckRollup` does NOT contain a `workflow_dispatch` run's checks: `--wait --ref main` reported GREEN while a Release run was still tagging. **A submodule PR needs `--repo OWNER/NAME`**, run from inside its checkout: `.ci/scripts/ci/ci-trace.py --repo rediacc/account` traces that repo's open PR for the checkout's branch, and a head with no check contexts at all (account has no workflows) reads `NO-CI`, exit 4, once the 180 s grace has passed.
 
 ## Diagnosing
 

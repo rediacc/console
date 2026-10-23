@@ -46,14 +46,14 @@ rdc storage:    add remove list import browse prune
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
-rdc subscription: login logout status refresh
+rdc subscription: login logout status refresh proxy-token
 rdc job:        list status logs cancel gc          (see §9)
 rdc doctor | credits | update | serve | mcp serve | run (hidden)
 ```
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Nine differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The last two are a whole program landing after this transcript was drawn.
+Eleven differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last two are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -67,6 +67,7 @@ Nine differences. The first six are deliberate and each is traceable to a ruling
 | `backup` with no chunk-store verbs | `backup {snapshot verify manifests usage browse}` + `backup retention {set clear}` | The backup-storage program replaced the rclone/OneDrive push with a content-addressed chunk store, and seven leaves came with it: `snapshot` writes, `verify` checks a stored snapshot end to end, `manifests` and `usage` read the store, `browse` lists what a repository actually contains, and `retention {set clear}` is the policy the pruner reads. `restore` was already drawn, but it now materializes a chunk-store snapshot rather than a pushed image. Not drift in the §1.1 sense: the program is documented at `docs/backup-storage/`, and this transcript simply postdates it. |
 | `storage browse` as the only file listing | `backup browse` (local, read-only) | `storage browse` remains, and browses a live rclone remote. `backup browse` answers a different question — what is inside a REPOSITORY — and it answers it without a server, a network, or credentials, which is what makes it usable in a disaster. It cannot be served from the chunk store: the manifest maps grid cells to the SHA-256 of their CIPHERTEXT and carries no filesystem data at all, so a listing has to come from opening the image. The reasoning and the staged plan are at `agent/plans/PLAN-chunk-store-browse-DECISION.md`. |
 | `config remote {enable disable status refresh}` | `config remote {enable disable status refresh versions restore}` | PLAN-config-sync-hardening T16 (operator ruling 2026-09-25, "plus versioning"): the server kept every pushed version but no client could reach one. `versions` lists them; `restore <version>` publishes an old version as the NEWEST one through the normal compare-and-swap push, so the rollback defences stay intact. |
+| `subscription {login logout status refresh}` | `subscription {login logout status refresh proxy-token}` | PLAN-cloudflare-proxy: `proxy-token` mints a short-lived `proxy:exec` token from the device's login for `rdc --proxy`; stdout carries only the token. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

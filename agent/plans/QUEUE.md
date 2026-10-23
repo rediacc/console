@@ -69,8 +69,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 10 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 4: #3e67ad6d (worker:b9l5avyq9, d778be9d), #8971d8b7 (worker:b9l5avyq9, d778be9d), #8cb01693 (worker:a228a95cf539d3922, d778be9d), #a20e5207 (worker:a43b7cf1c8a1db286, d778be9d).
+- Writers: 7 live of writer_cap 15 (session d778be9d): worker:a025305aa1e240a9d, worker:a53c284b658e58a73, worker:a36174a9684ede289, worker:a633cf76d5ee5efd8, worker:a6f77e9a417daaff9, worker:af5f238e614497802, worker:a3bdea7aaf43fc56c.
+- Leased items: 7: #0902d655 (worker:a025305aa1e240a9d, d778be9d), #22648514 (worker:a6f77e9a417daaff9, d778be9d), #350a013e (worker:a633cf76d5ee5efd8, d778be9d), #831b7e48 (worker:a36174a9684ede289, d778be9d), #8cb01693 (worker:a53c284b658e58a73, d778be9d), #d821092c (worker:af5f238e614497802, d778be9d), #f1def08c (worker:a3bdea7aaf43fc56c, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -110,12 +110,12 @@ Promoted: 1 of 19 plans done, 132 of 392 boxes done (33%).
 6. agent/plans/PLAN-renet-bridge-leftovers.md -- operator 2026-10-23 (plan prompt /tmp/prompt-bridge-leftovers.md; /ask: "Commit as usual"): the broken renet ops self-test (bridge once plus three unregistered function names), 65 dead and 20 renamed bridge.* keys, stale renet and console docs, the 12 www policy translations naming the middleware and web app, and the bridge-functions wording; P2; approved with Q1 "(b) Also rename the harness", Q3 "Historical banner", Q4 "Change it" (/ask 2026-10-23)
 7. agent/plans/PLAN-config-handoff-relay-only.md -- pulled in as an unfinished prerequisite of PLAN-token-ip-rebind.md (Depends-On), 2026-10-23
 8. agent/plans/PLAN-token-ip-rebind.md -- pulled in as an unfinished prerequisite of PLAN-config-sync-hardening.md (Depends-On), 2026-10-23
-9. agent/plans/PLAN-config-sync-hardening.md -- operator 2026-10-23 ("Pick some new close to finish plans that have progressed, and promote them"): 18/19, closure box T15 left; --promote brings its unfinished prerequisites PLAN-token-ip-rebind (9/10), PLAN-config-handoff-relay-only (9/11) and PLAN-app-wide-org-selection (2/3) ahead of it
+9. agent/plans/PLAN-config-sync-hardening.md -- operator 2026-10-23 ("Pick some new close to finish plans that have progressed, and promote them"): 18/19, closure box T15 left; --promote brings its prerequisites PLAN-token-ip-rebind (9/10), PLAN-config-handoff-relay-only (9/11) and PLAN-app-wide-org-selection (2/3) ahead of it
 10. agent/plans/PLAN-stop-hook-one-plan-scope.md -- operator 2026-10-23 ("Pick some new close to finish plans ... promote them"): 14/15, the last box SC13b is evidence from a real run after this PR merges
-11. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
-12. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
-13. agent/plans/PLAN-plan-preflight.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
-14. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
+11. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
+12. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
+13. agent/plans/PLAN-plan-preflight.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
+14. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
 15. agent/plans/PLAN-config-networkid-discovery.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
 16. agent/plans/PLAN-renet-fetch-retries.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
 17. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report

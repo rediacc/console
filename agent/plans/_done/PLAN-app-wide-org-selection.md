@@ -151,7 +151,7 @@ The org list is not included in the 409; the client already has `/portal/org/lis
 - `AuthContext` listens for the event, sets `orgSelectionRequired=true` and opens the chooser.
 - Result: deep links that make org-scoped calls get the chooser. Resource-anchored pages (config member-accept with `storeId`, invite accept) never receive a 409, so the chooser does not block them.
 - Add `orgSelectionRequired?: boolean` to `MeResponse` (`private/account/web/src/api/types.ts:258`).
-- New chooser strings need all 14 locales and a re-baseline of `.translation-hashes.json`, following the pattern of commit `2d1da22`.
+- New chooser strings need all 14 locales and a re-baseline of `.translation-hashes.json`, following the pattern of the earlier chooser-string re-baselines.
 
 ## 4. The CLI: no change needed
 

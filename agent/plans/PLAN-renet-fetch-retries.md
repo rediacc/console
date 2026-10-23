@@ -18,7 +18,7 @@ Validated against `private/renet` on 2026-10-23.
 
 - Rsync tarball curls in `private/renet/Dockerfile` (`rsync-builder-amd64`, `rsync-builder-arm64`): the 5x/15s loops and the non-empty check are in.
 - The apt install in `kube_fork_dest_prep` (`private/renet/cmd/renet/kube_fork_dest_prep.go`): goes through `retryPkgInstall` (`private/renet/cmd/renet/pkg_install_retry.go`).
-- `ensureRclone` (`private/renet/pkg/infra/docker/service.go`): the retry loops are in, with a post-loop check.
+- The VM tool-install helper (`private/renet/pkg/infra/docker/service.go`): the retry loops are in, with a post-loop check.
 - The `get.docker.com` fetch in `private/renet/cmd/renet/ops_host.go`: split into a retried fetch and a single execute.
 - Superseded: the Ceph prerequisites apt in `InstallPrerequisites`. The node prep now runs `renet ceph install --profile node`, whose package install goes through `retryPkgInstall` in `private/renet/cmd/renet/ceph_install.go`.
 - Superseded: the CRIU runtime-deps apt in `private/renet/pkg/infra/worker/service.go`. It is delegated to `renet setup`, which retries it.

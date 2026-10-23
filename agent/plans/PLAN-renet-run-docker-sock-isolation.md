@@ -1,6 +1,7 @@
 # PLAN: a repo compose can likely reach the host's system Docker through /run/docker.sock, because the dockerd sandbox binds host /run read-write and the compose validator does not flag /run
 
 Status: draft -- write-up only (operator decision 2026-10-23: record it, do not fix in the hostinger follow-up); needs a repro on a throwaway fork before a fix is chosen
+Depends-On: no-dep -- a write-up that cites no other plan's work
 Owner: 5008cebe
 First-Seen: 2026-10-23
 Priority: P1 -- proposed by AI. If the repro confirms it, any repo (including a fork or a third-party template) can drive the system Docker daemon that runs `rediacc-proxy` (Traefik) and therefore every machine's routing, and through it start a privileged container on the host. That breaks the per-repo isolation renet's sandbox exists to provide.
