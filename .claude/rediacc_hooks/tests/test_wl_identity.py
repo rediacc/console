@@ -29,7 +29,7 @@ XDIST_GROUP = "wl-identity-l1"
 
 
 #: Exit codes an ACCEPTED run of a verb ends with when the git-less fixture makes it answer with a refusal of its own (see the 184 loop).
-ACCEPTED_RC = {"--batch-body": 1}
+ACCEPTED_RC = {"--batch-body": 1, "--promote": 1}
 
 
 def l1run(fix, *argv: str, peer: str = "") -> wlfix.Result:
@@ -503,6 +503,8 @@ def drive_l1(fix) -> L1Drive:
         ("--queue-set", "--queue-set @WHO@", "effort: "),
         # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
         ("--batch-body", "--batch-body @WHO@", "no live branch is checked out"),
+        # Writes QUEUE.md (#dd9b7624): the fixture holds no such plan, so the accepted run answers with the does-not-exist refusal after the same _identity_or_die a real promote passes.
+        ("--promote", "--promote @WHO@ PLAN-l1-absent.md l1-note", "does not exist"),
         # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.
         ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
         ("--review-commit", "--review-commit @WHO@", "no finished review file"),

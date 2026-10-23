@@ -1325,6 +1325,17 @@ def _item_cli(argv, worklist):
                 "a [?] without a DEFAULT: is a note, not a decision; append "
                 "'DEFAULT: <what you will do if unanswered>'"
             )
+        # A HOLD IS CHECKED AT WRITE TIME (#f2402dba). An over-cap or impossible NOT-BEFORE was accepted and then silently ignored, so the DEFAULT executed on the ordinary window while the author believed it held; the Stop hook named the problem only stops later. A `NOT-BEFORE:` that is not the `YYYY-MM-DDTHH:MM[:SS]Z` shape holds nothing either.
+        # The Stop hook's wording ends "and is ignored"; at write time nothing is ignored yet, it is refused.
+        hold_problem = C.not_before_problem(rest).replace(" and is ignored", "")
+        if not hold_problem and "NOT-BEFORE:" in rest and not C.NOT_BEFORE.search(rest):
+            hold_problem = "NOT-BEFORE: is not followed by a YYYY-MM-DDTHH:MMZ instant"
+        if hold_problem:
+            die(
+                "%s. A NOT-BEFORE: may hold a DEFAULT at most %d days past the deferral "
+                "(the cap is wl_core.NOT_BEFORE_MAX_DAYS); give an instant within it, or defer "
+                "again nearer the date" % (hold_problem, C.NOT_BEFORE_MAX_DAYS)
+            )
         # v12: a deferral must EARN its seat at creation time, the same way --tick refuses evidence-free completion. The cheap shape gate lives here; whether the WHY is TRUE is the judge audit's question later.
         just = C.parse_justification(rest)
         why, how = just.get("why", ""), just.get("how", "")
@@ -1341,10 +1352,21 @@ def _item_cli(argv, worklist):
         if _ds and _ds.get("verdict") == "settled" and not _ds_err:
             die(M.CLI_DEFER_ALREADY_SETTLED % (_ds["fact_cite"], _ds["reason"]))
         S.set_state(worklist, me, item_id, "?", rest, extra={"j": just})
+        if C.not_before_pending(rest):
+            # The Stop hook demands the DEFAULT only once the window has closed AND the hold has passed (wl_checks `defer-expired`), so the hold is what the confirmation names.
+            when = (
+                "its DEFAULT cannot run before %s (NOT-BEFORE), and executes at the first stop after that instant once the %d min window has also closed"
+                % (
+                    C.NOT_BEFORE.findall(rest)[-1],
+                    S.DEFER_WINDOW_MIN,
+                )
+            )
+        else:
+            when = "its DEFAULT executes after %d min" % S.DEFER_WINDOW_MIN
         print(
             "deferred #%s with its justification on record; it is reported "
-            "every stop, its WHY faces the judge's audit after %d min, and "
-            "its DEFAULT executes after %d min" % (item_id, S.DEFER_AUDIT_MIN, S.DEFER_WINDOW_MIN)
+            "every stop, its WHY faces the judge's audit after %d min, and %s"
+            % (item_id, S.DEFER_AUDIT_MIN, when)
         )
         return
     if mode == "--reopen":
@@ -2207,6 +2229,92 @@ def _rule_cli(argv):
     )
 
 
+def _plan_record_gate():
+    """`.ci/scripts/quality/check_plan_record.py` loaded as a module, for the RQ-DEPS repair the `--promote` verb shares with `check:ci-plan-record -- --update`. Resolved from THIS file's checkout, never from the project root, the stance the gate takes for its own library: a fixture root must not swap the repair out. Its directory goes on sys.path first, because the gate's `import _cipath` resolves from there."""
+    import importlib.util
+
+    folder = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "quality"
+    if str(folder) not in sys.path:
+        sys.path.insert(0, str(folder))
+    spec = importlib.util.spec_from_file_location(
+        "_wl_check_plan_record", folder / "check_plan_record.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % (folder / "check_plan_record.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _promote_cli(argv):
+    """`--promote <me> <plan> <note...>`: append a live, unfinished plan to `agent/plans/QUEUE.md` `## Promoted` (#dd9b7624, operator 2026-10-23).
+
+    ONE WRITE, THE REPAIR'S PATH. The entry is appended last, then `check_plan_record.promoted_dep_order` (the RQ-DEPS repair `--update` runs) pulls every unfinished prerequisite in ahead of it, deepest first, and the progress block and the generated section are re-rendered, so the file that lands is one check:ci-plan-record accepts. The read is repeated just before the atomic write, as `retire_promoted` does, so a concurrent writer is never overwritten.
+
+    Refused, with nothing written: a path that is not a live `agent/plans/PLAN-<slug>.md`, a moved stub, a finished plan (nothing left to order), a plan already Promoted, and an empty note (a Promoted entry carries who ordered it). The verb never commits; it ends with the `git add` line.
+    """
+    if len(argv) < 4 or not C.PREFIX_RE.match(argv[1]):
+        sys.stderr.write(
+            "usage: worklist.py --promote <me> <agent/plans/PLAN-<slug>.md | PLAN-<slug>.md> "
+            "<note: who ordered it and why>\n"
+        )
+        sys.exit(2)
+    me = argv[1]
+    _identity_or_die(me, _die2)
+    import wl_planqueue as PQ
+    import wl_planrec as R
+
+    arg = argv[2].strip().strip("`")
+    rel = arg if "/" in arg else "agent/plans/%s" % arg
+    note = " ".join(" ".join(argv[3:]).split())
+    root = pathlib.Path(C.project_root(C.project_start()) or os.getcwd())
+
+    def refuse(why):
+        sys.stderr.write("--promote refused: %s; nothing was written\n" % why)
+        sys.exit(1)
+
+    if not re.fullmatch(r"agent/plans/PLAN-[A-Za-z0-9._-]+\.md", rel):
+        refuse("%s is not a live agent/plans/PLAN-<slug>.md path" % rel)
+    if not (root / rel).is_file():
+        refuse("%s does not exist" % rel)
+    if not note:
+        refuse("a Promoted entry carries a note naming who ordered it")
+    try:
+        gate = _plan_record_gate()
+        graph = gate.deps_graph(root)
+    except Exception as exc:
+        refuse("the plan dependency graph could not load (%s: %s)" % (type(exc).__name__, exc))
+    info = graph.plans.get(rel)
+    if info is None or info.stub:
+        refuse("%s is a moved stub or not a tracked plan; promote the plan it moved to" % rel)
+    if not gate.unfinished_why(root, graph, rel):
+        refuse("%s is finished, so it has nothing left to order" % rel)
+    path = root / PQ.QUEUE_REL
+    for _attempt in range(2):
+        try:
+            got = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            refuse("%s is unreadable: %s" % (PQ.QUEUE_REL, exc))
+        have = {r: n for n, r in PQ.promoted_numbered(got)}
+        if rel in have:
+            refuse("%s is already Promoted entry %s" % (rel, have[rel]))
+        try:
+            new = PQ.with_promoted_entry(got, rel, note)
+        except ValueError as exc:
+            refuse(str(exc))
+        new, said = gate.promoted_dep_order(root, new, graph)
+        new = PQ.render(PQ.with_fresh_progress(root, new), PQ.live_plans(root))
+        if path.read_text(encoding="utf-8") == got:
+            R.write_atomic(path, new)
+            num = {r: n for n, r in PQ.promoted_numbered(new)}.get(rel, "?")
+            print("promoted %s as Promoted entry %s" % (rel, num))
+            for line in said:
+                print(line)
+            print("  git add %s" % PQ.QUEUE_REL)
+            return
+    refuse("%s changed under both reads" % PQ.QUEUE_REL)
+
+
 def _queue_set_cli(argv):
     """`--queue-set <me> [key=value ...] [--note "<text>"]`: the one writer of `agent/plans/QUEUE.md` `## Settings` (agent/plans/PLAN-stop-hook-turbo.md D9).
 
@@ -2997,6 +3105,9 @@ def main():
         return
     if sys.argv[1:2] == ["--queue-set"]:
         _queue_set_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--promote"]:
+        _promote_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--batch-body"]:
         _batch_body_cli(sys.argv[1:])

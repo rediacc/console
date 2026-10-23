@@ -405,6 +405,9 @@ jobs:
       - name: Portal site-key guard
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_portal_sitekey_guard.py
+      - name: Proxy cost guard
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_proxy_cost_guard.py
       - name: Python control plants
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_python_control_plants.py
@@ -671,6 +674,16 @@ jobs:
       - name: Decision ids
         if: ${{ !cancelled() }}
         run: npm run check:ci-decision-ids
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+
+      # Hand-written for the same reason as its neighbours: quality-branch has no
+      # `- id: setup` (invariant 11). It needs the full commit graph and
+      # origin/<base>, which only this lane fetches; it reads commit topology
+      # only, so the blob:none clone answers it exactly as a full clone would.
+      - name: Commit citations
+        if: ${{ !cancelled() }}
+        run: npm run check:ci-commit-citations
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
 

@@ -2166,6 +2166,37 @@
     }
   },
   {
+    "id": "check:ci-proxy-cost-guard",
+    "run": "npm run check:ci-proxy-cost-guard",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_proxy_cost_guard.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Proxy cost guard"
+    }
+  },
+  {
+    "id": "check:ci-commit-citations",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-commit-citations",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_commit_citations.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Commit citations"
+    }
+  },
+  {
     "id": "check:ci-plan-citations",
     "env": {
       "GITHUB_BASE_REF": "${{ github.base_ref }}"

@@ -750,6 +750,71 @@ check(
     True,
 )
 
+# #f412fdb8: a spawn serving a plan, and a live plan's writers, are judged on a declared Owns subset that lies inside the plan's Owns.
+XI.update({
+    "PLAN-t.md": px_("PLAN-t.md", owns=("src/t/**", "src/proxy/**")),
+    "PLAN-p.md": px_("PLAN-p.md", owns=("src/proxy/**",)),
+})  # fmt: skip
+LIVE_P = {"PLAN-p.md": ["writer p1p1p1p1 (general-purpose)"]}
+check(
+    "narrow s0: the whole plan Owns overlap a live plan, as before",
+    sv({"PLAN-t.md"}, LIVE_P).kind,
+    "overlap",
+)
+check(
+    "narrow s1: a declared subset inside the plan, disjoint from the live plan, is allowed",
+    sv({"PLAN-t.md"}, LIVE_P, declared=("src/t/a.py", "src/t/sub/**")).allow,
+    True,
+)
+check(
+    "narrow s1: the allow says it was judged on the declared Owns",
+    "declared Owns" in sv({"PLAN-t.md"}, LIVE_P, declared=("src/t/**",)).note,
+    True,
+)
+check(
+    "narrow s2: a declared subset that still meets the live plan is refused",
+    sv({"PLAN-t.md"}, LIVE_P, declared=("src/proxy/x.py",)).kind,
+    "overlap",
+)
+check(
+    "narrow s3: a declared glob OUTSIDE the plan's Owns narrows nothing",
+    sv({"PLAN-t.md"}, LIVE_P, declared=("src/t/**", "docs/elsewhere.md")).kind,
+    "overlap",
+)
+check(
+    "narrow s4: a wildcard under a literal dir that the plan does not own as `dir/**` narrows nothing",
+    X.narrowed_owns(("src/*/a.py",), ("src/t/**",)),
+    None,
+)
+check(
+    "narrow s4: a wildcard-free path is matched against the plan's glob",
+    X.narrowed_owns(("src/t/deep/a.py",), ("src/*/deep/*.py",)),
+    ("src/t/deep/a.py",),
+)
+LIVE_T = X.LivePlans({"PLAN-t.md": ["writer t1t1t1t1 (general-purpose)"]})
+check(
+    "narrow l0: a live plan with no declared holder Owns overlaps on its whole Owns",
+    sv({"PLAN-p.md"}, LIVE_T).kind,
+    "overlap",
+)
+LIVE_T.owns["PLAN-t.md"] = ("src/t/**",)
+check(
+    "narrow l1: a live plan whose writers declared a disjoint subset is allowed beside",
+    sv({"PLAN-p.md"}, LIVE_T).allow,
+    True,
+)
+LIVE_T.owns["PLAN-t.md"] = ("src/t/**", "src/proxy/api.py")
+check(
+    "narrow l2: a live subset that meets the spawn is refused",
+    sv({"PLAN-p.md"}, LIVE_T).kind,
+    "overlap",
+)
+check(
+    "narrow m: an exclusive plan never narrows its mutex",
+    sv({"PLAN-f.md"}, LIVE_E, declared=("src/f/zz.py",)).kind,
+    "mutex",
+)
+
 # --------------------------------------------------------------------------- rank and order_key (section 2).
 
 

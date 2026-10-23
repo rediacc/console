@@ -2086,6 +2086,35 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // PLAN-cloudflare-proxy A5. The proxy's one real cost risk is container instances pinned awake: max_instances and sleepAfter were lowered on purpose (the plan's section 4), and a raise reads like a capacity tweak in review.
+    id: 'check:ci-proxy-cost-guard',
+    run: 'npm run check:ci-proxy-cost-guard',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_proxy_cost_guard.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Proxy cost guard',
+    },
+  },
+  {
+    // Worklist #f7b8953f. A rebase-merge rewrites every commit of the branch, so a SHA a tracked file cites for one of the branch's own commits points at nothing once the PR lands; two such SHAs sat in tests and a plan inventory until a hand remap. Every commit SHA cited in tracked code, test and plan files must be a commit of origin/main (one only on the branch is printed as pending); today's dead citations are frozen shrink-only in .ci/config/commit-citations-baseline.json. In quality-branch because it needs the full commit graph and origin/<base>, which only this lane fetches.
+    id: 'check:ci-commit-citations',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
+    run: 'npm run check:ci-commit-citations',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_commit_citations.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Commit citations',
+    },
+  },
+  {
     // The third plan gate, and it judges only lines a change ADDS. It was written, landed and then sat inert: it appeared in neither package.json nor the manifest, so it had never once run. That is the registration bottleneck's signature -- a worker finishes the logic in parallel and the last mile waits on the one file only the driver writes. Scope is plans and agent/INDEX.md
     // only. agent/<session>/STATE.md is deliberately excluded: it is read-only to every session but its owner, so a red there would name a line the reader is forbidden to fix.
     id: 'check:ci-plan-citations',

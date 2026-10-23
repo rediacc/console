@@ -364,12 +364,15 @@ def next_turbo(
     rev: str = "",
     in_set=(),
     ceiling: bool = True,
+    writers: int = 0,
 ) -> list[str]:
     """The plans the turbo loop names to start now (agent/plans/PLAN-stop-hook-turbo.md D5), at most `open_slots` of them, [] when turbo is off at `rev`.
 
     Walked in `queue` order (Promoted, then Generated). An entry is eligible when it exists, has an open box, is not held (`wl_planenforce.plan_held`, the rule P-A1 keeps off the clock), is not in `in_set` (the PR's plan set), is not served by a live writer already, is not picked already, and has an open box a writer can do (`writer_startable`). The pick is the entry's deepest unfinished prerequisite when it has one (the first member of its `pr_plan_set`, as `wl_prscope.next_queued` does), and an entry with a held prerequisite is skipped, since nothing of it can start. Each pick must pass `wl_planconc.spawn_verdict` against `live_plans` (the plans live writers serve, paths or basenames) plus the picks before it, so an exclusive plan is never paired with a live writer's plan and two picks never claim one file.
 
-    A ` -- solo` entry (D11) is eligible only for an empty PR with no pick before it, and then it is the only pick; a PR whose plan set holds a solo plan takes no further plan."""
+    A ` -- solo` entry (D11) is eligible only for an empty PR with no pick before it, and then it is the only pick; a PR whose plan set holds a solo plan takes no further plan.
+
+    THE PICK ITSELF MUST BE STARTABLE (#1e3ac977: on 2026-10-23 the hook named the exclusive, dep-blocked PLAN-backup-program while two writers were live). The chain drops a prerequisite that is in `in_set`, already picked or served by a live writer, so the pick's own `pr_plan_set` closure is read again: any member other than the pick is a prerequisite still unfinished, and the pick waits for it. An exclusive pick is skipped while `writers` (the live writer count) is above zero, because `spawn_verdict` weighs only the plans live writers serve and a writer serving no plan left the exclusive plan free."""
     slots = int(open_slots or 0)
     if slots <= 0:
         return []
@@ -426,7 +429,16 @@ def next_turbo(
         if not chain or any(held(m) for m in chain):
             continue
         pick = chain[0]
+        if pick != rel:
+            own, own_problems = pr_plan_set(root, "Plan: %s" % pick, rev)
+            if own_problems or any(m != pick for m in own):
+                continue
+        elif any(m != pick for m in members):
+            # The chain lost an unfinished prerequisite to `taken`, `picks` or a live writer: it is being worked, not finished.
+            continue
         if not writer_startable(_read(root, pick, rev) or ""):
+            continue
+        if int(writers or 0) > 0 and wl_planconc.plan_x(root, _base(pick)).exclusive:
             continue
         if _base(pick) in live:
             # A live writer already serves it: it is started, not a plan to start.

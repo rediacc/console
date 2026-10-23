@@ -490,6 +490,21 @@ def test_a_full_plan_concurrency_ceiling_names_none_but_keeps_more(world):
     assert got.turbo_more is True
 
 
+def test_turbo_holds_an_exclusive_plan_while_a_planless_writer_runs(world):
+    """#1e3ac977: the live writer count reaches `plan_gate.next_turbo`, so one writer serving no plan holds an exclusive queued plan back."""
+    turbo_live(world)
+    b = world.root / "agent" / "plans" / "PLAN-b.md"
+    b.write_text(
+        b.read_text(encoding="utf-8").replace(
+            "Concurrency: parallel", "Concurrency: exclusive -- one program across every package"
+        ),
+        "utf-8",
+    )
+    assert turbo_state(world, ((), 1)).turbo_picks == (rel("c"), rel("d"))
+    # CONTROL: no writer live, so the exclusive plan is the one pick.
+    assert turbo_state(world, ((), 0)).turbo_picks == (rel("b"),)
+
+
 def test_turbo_off_equals_today(world):
     turbo_live(world, turbo="off")
     got = turbo_state(world, ((), 0))

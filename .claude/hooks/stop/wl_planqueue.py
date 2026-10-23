@@ -926,6 +926,27 @@ def without_promoted(text: str, rels) -> tuple[str, list[str]]:
     return text[:start] + "".join(out) + text[end:], removed
 
 
+def with_promoted_entry(text: str, rel: str, note: str) -> str:
+    """`text` with `<n>. <rel> -- <note>` appended as the last numbered Promoted entry, numbered one past the entries already there, below the last entry's continuation lines and above the section's trailing blank lines. With no entry yet it lands at the end of the section, after the progress block. Every other byte is kept. Raises ValueError without a `## Promoted` heading. The one caller is `worklist.py --promote` (#dd9b7624), which runs the RQ-DEPS repair over the result so the plan's unfinished prerequisites are pulled in ahead of it."""
+    bounds = _promoted_bounds(text)
+    if not bounds:
+        raise ValueError("%s has no %s heading" % (QUEUE_REL, PROMOTED_HEADING))
+    start, end = bounds
+    lines = text[start:end].splitlines(keepends=True)
+    count = sum(1 for ln in lines if ENTRY.match(ln.rstrip("\r\n")))
+    at = len(lines)
+    while at > 0 and not lines[at - 1].strip():
+        at -= 1
+    if at and not lines[at - 1].endswith("\n"):
+        lines[at - 1] += "\n"
+    entry = "%d. %s -- %s\n" % (count + 1, rel, " ".join(note.split()))
+    if count == 0 and at and lines[at - 1].strip():
+        # After a progress block or prose: one blank line keeps the entry a list of its own.
+        entry = "\n" + entry
+    lines.insert(at, entry)
+    return text[:start] + "".join(lines) + text[end:]
+
+
 def moved_entries(root, text: str) -> list[tuple[str, str, str]]:
     """[(number as written, plan path, Moved-To target)] of the Promoted entries whose plan file under `root` is a moved stub. A missing file is not a stub: the progress block already names it unreadable."""
     import wl_store

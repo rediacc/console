@@ -2296,6 +2296,11 @@ Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
                                 every plan the Stop hook named for the branch),
                                 for `gh pr create --body-file` when the batch
                                 completes
+  --promote <me> <plan> <note...>
+                                append a live, unfinished plan to `## Promoted`
+                                with its unfinished prerequisites pulled in
+                                ahead of it (the check:ci-plan-record RQ-DEPS
+                                repair); one atomic write, nothing committed
 
 Maintenance:
   --compact                     drop tombstones and fold the event log

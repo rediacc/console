@@ -112,18 +112,22 @@ def next_queued(root, exclude=()):
 
 
 def turbo_picks(root, state, live_plans, writers):
-    """(picks, more): the plans `state`'s turbo loop names now, `plan_gate.next_turbo` over `writer_cap - writers` free slots with the PR's plan set excluded, and whether any queued plan is eligible at all (for one slot when none is free), which is what decides that the batch has nothing left to take. ((), False) with turbo off or off the loop."""
+    """(picks, more): the plans `state`'s turbo loop names now, `plan_gate.next_turbo` over `writer_cap - writers` free slots with the PR's plan set excluded, and whether any queued plan is eligible at all (for one slot when none is free), which is what decides that the batch has nothing left to take. ((), False) with turbo off or off the loop. `writers` also reaches `next_turbo`, which holds an exclusive plan back while any writer is live, planless ones included (#1e3ac977)."""
     if not state.turbo or state.kind == OFF_LOOP:
         return (), False
     slots = int(state.writer_cap) - int(writers or 0)
     plan_gate, _cp = _hooks_pkg()
     in_set = state.plans if state.kind in (LIVE, UNREADABLE) or state.local_batch else ()
     picks = (
-        plan_gate.next_turbo(str(root), live_plans or (), slots, in_set=in_set) if slots > 0 else []
+        plan_gate.next_turbo(str(root), live_plans or (), slots, in_set=in_set, writers=writers)
+        if slots > 0
+        else []
     )
     # `more` asks whether the queue still holds an eligible plan, so it ignores the plan_concurrency ceiling: a full ceiling is a reason to wait, not proof that the batch has nothing left to take (review 3619cbe0).
     more = bool(picks) or bool(
-        plan_gate.next_turbo(str(root), live_plans or (), 1, in_set=in_set, ceiling=False)
+        plan_gate.next_turbo(
+            str(root), live_plans or (), 1, in_set=in_set, ceiling=False, writers=writers
+        )
     )
     return tuple(picks), more
 

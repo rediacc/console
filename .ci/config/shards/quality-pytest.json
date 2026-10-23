@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-23T10:47:37.769Z",
+  "generatedAt": "2026-10-23T13:21:36.718Z",
   "legs": [
     {
       "index": 1,
@@ -408,6 +408,7 @@
         "pytest:.ci/rediacc_ci/tests/test_build_cli_musl.py",
         "pytest:.ci/rediacc_ci/tests/test_build_generate_cli_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_catalog_generate.py",
+        "pytest:.ci/rediacc_ci/tests/test_check_proxy_cost_guard.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_channel_for_event.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_budget_report.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_dispatch_watchdog.py",
@@ -464,6 +465,7 @@
         "pytest:.ci/rediacc_ci/tests/test_named_paths.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_portal_health.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_probe_receipt_stability.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_telemetry_delivery.py",
         "pytest:.ci/rediacc_ci/tests/test_paths.py",
         "pytest:.ci/rediacc_ci/tests/test_pr_sync_epic_block.py",
         "pytest:.ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
@@ -520,7 +522,9 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_fidelity.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_priority.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_tracked_enumeration.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_planconc_narrow.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_pr_scope_stop.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_promote.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_prscope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_progress.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_deferrals.py",

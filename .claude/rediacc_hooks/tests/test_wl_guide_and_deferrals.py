@@ -287,6 +287,52 @@ def test_147_defer_refuses_a_deferral_that_cannot_justify_its_seat(wl):
     assert '"blocked_on":"operator"' in events, events[-300:]
 
 
+GOOD_JUSTIFICATION = (
+    "WHY: flipping it changes billing for live users, an operator-only call HOW: operator "
+    "confirms, or the DEFAULT keeps it"
+)
+
+
+def test_147b_defer_refuses_a_not_before_it_would_ignore_and_names_a_hold_it_keeps(wl):
+    """#f2402dba: a NOT-BEFORE past the 7-day cap, an impossible date, or a malformed token was accepted and then silently ignored, and every deferral was confirmed as "executes after 120 min" whatever it held."""
+    nid = added_id(wl.cli("--add", "deadbeef", "choose the flag default"))
+
+    def defer(hold):
+        return wl.cli(
+            "--defer",
+            "deadbeef",
+            nid,
+            "keep the flag? DEFAULT: keep it %s %s" % (hold, GOOD_JUSTIFICATION),
+        )
+
+    for hold, said in (
+        ("NOT-BEFORE:%s" % stamp(-8 * 24 * 60, "%Y-%m-%dT%H:%MZ"), "more than 7 days out"),
+        ("NOT-BEFORE:2026-02-30T00:00Z", "not a valid instant"),
+        ("NOT-BEFORE:2026-10-31", "not followed by a YYYY-MM-DDTHH:MMZ instant"),
+    ):
+        got = defer(hold)
+        both = got.out + got.err
+        assert got.rc != 0, "--defer accepted %s: %s" % (hold, both[:300])
+        assert said in both, both[:300]
+        assert "at most 7 days" in both, both[:300]
+        assert '"ev":"state"' not in wl.wl_events(), "a refused defer wrote an event"
+
+    held_until = stamp(-3 * 24 * 60, "%Y-%m-%dT%H:%MZ")
+    held = defer("NOT-BEFORE:%s" % held_until)
+    assert held.rc == 0, (held.out + held.err)[:300]
+    assert "cannot run before %s" % held_until in held.out, held.out[:400]
+    assert "executes after" not in held.out, held.out[:400]
+
+    # CONTROL: no hold, so the ordinary window is what the confirmation names.
+    other = added_id(wl.cli("--add", "deadbeef", "choose the other flag default"))
+    plain = wl.cli(
+        "--defer", "deadbeef", other, "keep it? DEFAULT: keep it %s" % GOOD_JUSTIFICATION
+    )
+    assert plain.rc == 0, (plain.out + plain.err)[:300]
+    assert "its DEFAULT executes after 120 min" in plain.out, plain.out[:400]
+    assert "cannot run before" not in plain.out, plain.out[:400]
+
+
 def test_148_an_aged_deferral_with_no_justification_is_demanded(wl):
     """An AGED `[?]` with no justification is demanded, bounded, and THE HONEST-ANSWER EXIT is the anti-deadlock property: re-deferring with a WHY and a HOW is completable alone in one turn, and it reaches an allowed stop."""
     wl.brief_now()
