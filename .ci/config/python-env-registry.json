@@ -714,6 +714,9 @@
       "CLOUDFLARE_R2_ENDPOINT",
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
     ],
+    ".ci/rediacc_ci/ops/telemetry_delivery.py": [
+      "OBS_GRAFANA_READ_TOKEN"
+    ],
     ".ci/rediacc_ci/paths.py": [
       "REDIACC_CI_ROOT"
     ],
