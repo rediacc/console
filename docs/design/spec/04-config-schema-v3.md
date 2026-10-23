@@ -543,8 +543,8 @@ repo isolation unit, 02 §8), renet materializes at `up()`:
      in-container names are byte-identical to the docker world's
      `REDIACC_SECRET_<KEY>` contract.
    - Secret `rediacc-files` (type Opaque): all file-mode keys. Mounted as a volume at
-     `/var/run/rediacc/secrets/` (one file per KEY, mode 0400), matching the docker
-     world's tmpfs path shape (no `<networkId>` segment: the namespace is the scope).
+     the `secrets/` directory under `/var/run/rediacc` (one file per KEY, mode 0400), matching the tail of the docker
+     world's tmpfs path `/var/run/rediacc/net-<networkId>/secrets/` (no `net-<networkId>` segment: the namespace is the scope).
      k8s Secret volumes are tmpfs-backed on the node, preserving the never-on-disk
      property at the node level.
    - Both objects carry the CONTRACT label **`rediacc.io/injected=true`** (gate C4:
