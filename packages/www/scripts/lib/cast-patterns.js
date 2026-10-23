@@ -52,6 +52,8 @@ export function overflowIsOneUnbreakablePath(line, width) {
   const withoutIt = line.replace(longest, '').trimEnd();
   return displayWidth(withoutIt) <= width;
 }
+
+/** Patterns that indicate a command produced error output. */
 export const ERROR_PATTERNS = [
   /^error:\s/i,
   /unknown command/i,

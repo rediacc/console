@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "c814bc0e0e3151cc"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "e9ad52ea1248d04c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Rediacc Kuralları
@@ -58,7 +58,7 @@ down() {
 - **`rediacc.*` etiketleri ayarlamayın**, renet otomatik olarak `rediacc.network_id`, `rediacc.service_ip` ve `rediacc.service_name` enjekte eder.
 - **`ports:` eşlemeleri** host ağ modunda yok sayılır. HTTP yönlendirmesi için `rediacc.service_port` etiketini ekleyin (bu etikete sahip olmayan servisler HTTP rotaları almaz). TCP/UDP yönlendirme için `rediacc.tcp_ports`/`rediacc.udp_ports` etiketlerini kullanın.
 - **Yeniden başlatma politikaları (`restart: always`, `on-failure`, vb.) kullanmak güvenlidir**, renet bunları CRIU uyumluluğu için otomatik olarak kaldırır. Router watchdog, `.rediacc.json` içinde kaydedilen orijinal politikaya göre durmuş konteynerleri otomatik olarak kurtarır.
-- **Tehlikeli ayarlar varsayılan olarak engellenir**, `privileged: true`, `pid: host`, `ipc: host` ve sistem yollarına host bind mount'ları reddedilir. Kendi sorumluluğunuzda geçersiz kılmak için `renet compose --unsafe` kullanın.
+- **Tehlikeli ayarlar varsayılan olarak engellenir**, `privileged: true`, `pid: host`, `ipc: host` ve sistem yollarına host bind mount'ları reddedilir. `privileged` ile host `pid`, `ipc` ve `uts` engeli Docker API'sinde de geçerlidir: `${DOCKER_SOCKET}` adresini doğrudan çağıran bir konteyner bunlar için `403` alır ve hiçbir bayrak bunu geçersiz kılmaz. `renet compose --unsafe` yalnızca salt okunur host yolu denetimlerini geçersiz kılar.
 
 ### Konteyner içindeki ortam değişkenleri
 
@@ -168,7 +168,7 @@ Sonuç: `rdc` ve `renet` çalışan işletim sistemini otomatik algılar ve beş
 
 - `renet compose` yerine `docker compose` kullanmak, konteynerler ağ izolasyonu alamaz.
 - Yeniden başlatma politikaları güvenlidir, renet bunları otomatik olarak kaldırır ve watchdog kurtarmayı üstlenir.
-- `privileged: true` kullanmak, gerekli değildir, renet bunun yerine belirli CRIU capability'lerini enjekte eder.
+- `privileged: true` kullanmak, gerekli değildir, renet bunun yerine belirli CRIU capability'lerini enjekte eder. Deponun Docker daemon'ı bunu hem compose'da hem de Docker API'sinde reddeder.
 - Ham IP'leri kalıcı yapılandırma dosyalarına sabit kodlamak, fork izolasyonunu sağlam tutmak için bağlantılarda servis adlarını kullanın.
 - Başarısız komutlar için geçici çözüm olarak `rdc term connect -c` kullanmak, bunun yerine hataları bildirin.
 - `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune <name>` çalıştırın.

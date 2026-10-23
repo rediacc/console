@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # サービス
@@ -98,7 +98,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` を使うと、サービスからWireGuardトンネルを確立できます。たとえば、特定のプロセスのトラフィックをリモートエンドポイント経由でルーティングする場合などに活用できます。すべてのサービスはホストネットワーキングで動作するため、ホストのルーティングに影響が出ないよう、トンネルはコンテナ内のネットワーク名前空間に閉じ込めてください。`privileged: true`、`pid: host`、`ipc: host` などの広範な特権オプションは、ラベルに関わらずバリデーションで拒否されます。
+`rediacc.wireguard` を使うと、サービスからWireGuardトンネルを確立できます。たとえば、特定のプロセスのトラフィックをリモートエンドポイント経由でルーティングする場合などに活用できます。すべてのサービスはホストネットワーキングで動作するため、ホストのルーティングに影響が出ないよう、トンネルはコンテナ内のネットワーク名前空間に閉じ込めてください。`privileged: true`、`pid: host`、`ipc: host` などの広範な特権オプションは、ラベルに関わらず、composeのバリデーションでもDocker API上でも拒否されます。Docker APIではリポジトリのデーモンが `403` を返します。
 
 ### マルチサービスレイアウト
 

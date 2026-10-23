@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: it
-sourceHash: "c814bc0e0e3151cc"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "e9ad52ea1248d04c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Regole di Rediacc
@@ -58,7 +58,7 @@ down() {
 - **Non impostare etichette `rediacc.*`**: renet inietta automaticamente `rediacc.network_id`, `rediacc.service_ip` e `rediacc.service_name`.
 - **I mapping `ports:` vengono ignorati** in modalità host networking. Aggiungi l'etichetta `rediacc.service_port` per il routing HTTP (i servizi senza questa etichetta non ottengono route HTTP). Usa le etichette `rediacc.tcp_ports`/`rediacc.udp_ports` per il forwarding TCP/UDP.
 - **Le policy di restart (`restart: always`, `on-failure`, ecc.) sono sicure da usare**: renet le rimuove automaticamente per compatibilità con CRIU. Il watchdog del router ripristina automaticamente i container fermi in base alla policy originale salvata in `.rediacc.json`.
-- **Le impostazioni pericolose sono bloccate per impostazione predefinita**: `privileged: true`, `pid: host`, `ipc: host` e i bind mount dell'host verso percorsi di sistema vengono rifiutati. Usa `renet compose --unsafe` per sovrascrivere a tuo rischio.
+- **Le impostazioni pericolose sono bloccate per impostazione predefinita**: `privileged: true`, `pid: host`, `ipc: host` e i bind mount dell'host verso percorsi di sistema vengono rifiutati. Il blocco di `privileged` e di `pid`, `ipc` e `uts` dell'host vale anche sull'API Docker: un container che chiama direttamente `${DOCKER_SOCKET}` riceve un `403` per queste opzioni, e nessun flag lo aggira. `renet compose --unsafe` aggira solo i controlli sui percorsi dell'host in sola lettura.
 
 ### Variabili d'ambiente all'interno dei container
 
@@ -168,7 +168,7 @@ In sintesi: `rdc` e `renet` rilevano automaticamente il sistema operativo in ese
 
 - Usare `docker compose` invece di `renet compose`: i container non otterranno l'isolamento di rete.
 - Le policy di restart sono sicure; renet le rimuove automaticamente e il watchdog gestisce il ripristino.
-- Usare `privileged: true`: non necessario, renet inietta le capability CRIU specifiche al suo posto.
+- Usare `privileged: true`: non necessario, renet inietta le capability CRIU specifiche al suo posto. Il daemon Docker del repository lo rifiuta, sia in compose sia sull'API Docker.
 - Inserire IP grezzi in file di configurazione persistenti - usa i nomi dei servizi per le connessioni per mantenere l'isolamento del fork.
 - Usare `rdc term connect -c` come workaround per comandi falliti: segnala invece i bug.
 - `repo delete` esegue una pulizia completa inclusi IP loopback e unità systemd. Esegui `rdc machine prune <name>` per ripulire i residui di eliminazioni legacy.

@@ -11,8 +11,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: et
-sourceHash: "f3439296da3e97f1"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "34d12ee4f0a3791c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 Niisiis suunad AI-koodiabistaja oma infrastruktuuri peale. Kui Claude Code, Cursor, Gemini CLI, Copilot CLI või mõni muu sarnane tööriist juhib `rdc`-d, kohtleb CLI seda klaviatuuri taga olevast inimesest erinevalt. Sellel lehel selgitatakse, mida agent saab teha, mida mitte, ja kuidas turvamehhanismid kehtivad isegi siis, kui agent üritab neist mööda rääkida.
@@ -216,7 +216,7 @@ See on jagatud vastutuse piir:
 
 Peamine leevendus on sisseehitatud: **[repo-kohased saladused](/et/docs/repositories#secrets)** on salvestatud eraldiseisvasse tasandisse krüpteeritud repositooriumi pildist ja neid ei kopeerita fork-piiri üle. Fork'i konteinerid käivituvad tühja saladuste kaardiga ja identifitseerivad end väliste süsteemide jaoks erinevate põhisubjektidena kui vanem. Sea need käsuga `rdc repo secret set` (env-režiim compose interpoleerimiseks, faili-režiim tmpfs `secrets:` plokkideks). Muudatuste värav on sümmeetriline. Nii inimesed kui agendid peavad olemasoleva väärtuse üle kirjutamiseks või kustutamiseks esitama `--current` (passwd-stiilis eeltingimus) või `--rotate-secret` (logitud pööramine).
 
-**Repo-vaheline isoleerimine on jõustatud.** Pahatahtlik või hooletu compose-fail repo B-s ei saa viidata repo A saladuste kataloogile. Renet'i compose-validaator keeldub kõvakoodiliselt igast `secrets: file:`, `configs: file:` või `env_file:` teest, mis viitab väljapoole praeguse repo `${REDIACC_NETWORK_ID}` kataloogi, ja keeldumine EI ole `--unsafe`-ga ületatav. Kaitsemehaanikate kihistamine: Landlock-liivakast Rediaccfile bash-alamprotsessi ümber piirab failisüsteemi lugemist ainult praeguse võrgu saladuste kataloogiga, nii et `cat /var/run/rediacc/net-<other>/secrets/X` pahatahtlikust Rediaccfile'ist ebaõnnestub EACCES-iga kerneli tasemel.
+**Repo-vaheline isoleerimine on jõustatud.** Pahatahtlik või hooletu compose-fail repo B-s ei saa viidata repo A saladuste kataloogile. Renet'i compose-validaator keeldub kõvakoodiliselt igast `secrets: file:`, `configs: file:` või `env_file:` teest, mis viitab väljapoole praeguse repo `${REDIACC_NETWORK_ID}` kataloogi, ja keeldumine EI ole `--unsafe`-ga ületatav. Kaitsemehaanikate kihistamine: Landlock-liivakast Rediaccfile bash-alamprotsessi ümber piirab failisüsteemi lugemist ainult praeguse võrgu saladuste kataloogiga, nii et `cat /var/run/rediacc/net-<other>/secrets/X` pahatahtlikust Rediaccfile'ist ebaõnnestub EACCES-iga kerneli tasemel. Sama kehtib Docker API kohta: iga repo Dockeri sokkelt teenindab renet'i poliitikaproksi, mis keeldub `403`-ga `--privileged`-ist, hosti `pid`-ist, `ipc`-st ja `uts`-ist, seadmetaotlustest ning sidumistest, mis ulatuvad teise repo käituskeskkonna või andmeteni. Seega ei saa konteiner, millel on `${DOCKER_SOCKET}`, API kaudu teise reponi jõuda, ning kontrollitakse mitte ainult compose-faili. Sidumisreeglit saab laiendada ainult operaator, nimetatud hosti kataloogide jaoks, root'ile kuuluva loaga, kuhu ükski konteiner kirjutada ei saa.
 
 Kaks täiendavat mustrit sulgevad äärjuhtumid:
 

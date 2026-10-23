@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: it
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Servizi
@@ -99,7 +99,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` permette a un servizio di avviare un tunnel WireGuard, ad esempio per instradare un singolo processo verso un endpoint remoto. Poiché ogni servizio usa il networking dell'host, limita il tunnel a un network namespace interno al container in modo da non modificare il routing dell'host. Opzioni privilegiate generiche come `privileged: true`, `pid: host` e `ipc: host` restano rifiutate dalla validazione indipendentemente dalle etichette.
+`rediacc.wireguard` permette a un servizio di avviare un tunnel WireGuard, ad esempio per instradare un singolo processo verso un endpoint remoto. Poiché ogni servizio usa il networking dell'host, limita il tunnel a un network namespace interno al container in modo da non modificare il routing dell'host. Opzioni privilegiate generiche come `privileged: true`, `pid: host` e `ipc: host` restano rifiutate indipendentemente dalle etichette, sia dalla validazione di compose sia sull'API Docker, dove il daemon del repository risponde con un `403`.
 
 ### Layout multi-servizio
 

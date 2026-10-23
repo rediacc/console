@@ -43,9 +43,6 @@ const colors = {
   bold: (s) => `\x1b[1m${s}\x1b[0m`,
 };
 
-/** Patterns that indicate a command produced error output. */
-/** Cursor-home / erase-line, which restart a display line just as `\r` does. */
-
 /** Must match run.sh's TUTORIAL_COLS. A cast recorded at another width is a bug. */
 const TUTORIAL_COLS = 107;
 
@@ -83,10 +80,7 @@ function validateCastFile(castFile, errors, expectFailLabels) {
     return;
   }
 
-  // The header is line 1. Every other consumer of a cast reads it
-  // (scenes/cast.ts passes header.width into the renderer); this validator used
-  // to skip it, which is precisely why `width` was the one field no check could
-  // see, and why ~200 wrapped lines shipped unnoticed.
+  // The header is line 1. Every other consumer of a cast reads it (scenes/cast.ts passes header.width into the renderer); this validator used to skip it, which is precisely why `width` was the one field no check could see, and why ~200 wrapped lines shipped unnoticed.
   let headerWidth = TUTORIAL_COLS;
   try {
     const header = JSON.parse(lines[0]);
@@ -220,17 +214,9 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
     }
   }
 
-  // Structured logs below error level: never intended for a viewer, and the
-  // widest lines in the whole corpus.
+  // Structured logs below error level: never intended for a viewer, and the widest lines in the whole corpus.
   //
-  // EXCEPT in a failure demo. When a command fails, the CLI deliberately replays
-  // the info-level diagnostics it withheld while the command was running,
-  // because dropping them outright was tried and made real failures unreadable
-  // (executor/output-lines.ts). In a `run_cmd_expect_fail` scene the failure IS
-  // the demo, so that explanation is the payoff the viewer came for, and this
-  // rule would otherwise require deleting it. Scoped to the noise class ONLY:
-  // an over-width line or a raw JSON dump is still a defect in a failure demo,
-  // which is why those checks run above this point and are not exempted.
+  // EXCEPT in a failure demo. When a command fails, the CLI deliberately replays the info-level diagnostics it withheld while the command was running, because dropping them outright was tried and made real failures unreadable (executor/output-lines.ts). In a `run_cmd_expect_fail` scene the failure IS the demo, so that explanation is the payoff the viewer came for, and this rule would otherwise require deleting it. Scoped to the noise class ONLY: an over-width line or a raw JSON dump is still a defect in a failure demo, which is why those checks run above this point and are not exempted.
   const isFailureDemo = expectFailLabels.some((re) => re.test(markerLabel));
   for (const line of isFailureDemo ? [] : drawnSegments(outputChunks.join(''))) {
     if (NOISE_PATTERNS.some((re) => re.test(line))) {
@@ -468,9 +454,7 @@ function selftest() {
     console.log('ok    a cast recorded at 100 columns is reported');
   }
 
-  // The failure-demo exemption, pinned in BOTH directions. It is the only place
-  // this gate is allowed to stay quiet about a logrus line, so a widening of it
-  // has to show up here rather than silently disarming the noise class.
+  // The failure-demo exemption, pinned in BOTH directions. It is the only place this gate is allowed to stay quiet about a logrus line, so a widening of it has to show up here rather than silently disarming the noise class.
   const demoLabel = 'rdc repo up my-app:test';
   const demoCases = [
     [
@@ -523,8 +507,7 @@ function selftest() {
     console.error(`\nselftest: ${failed} control(s) failed. This gate is not trustworthy.`);
     process.exit(1);
   }
-  // COUNTED, not hardcoded: the literal said 6 while 8 controls ran, which is a
-  // gate quietly misreporting its own coverage.
+  // COUNTED, not hardcoded: the literal said 6 while 8 controls ran, which is a gate quietly misreporting its own coverage.
   console.log(
     `\nselftest: ${ran} controls passed -- fires on width, noise, JSON and drift; quiet on clean output and spinners.`
   );
@@ -587,8 +570,7 @@ function main() {
     process.exit(0);
   }
 
-  // Reached even when errors is empty: a cleared recording with a surviving baseline entry is
-  // the stale case the ratchet exists to catch.
+  // Reached even when errors is empty: a cleared recording with a surviving baseline entry is the stale case the ratchet exists to catch.
   const regressions = findRegressions(
     errors,
     loadBacklog(BASELINE_PATH),

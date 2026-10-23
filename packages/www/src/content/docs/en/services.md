@@ -97,7 +97,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` lets a service bring up a WireGuard tunnel, for example to route a single process out through a remote endpoint. Because every service runs with host networking, confine the tunnel to an in-container network namespace so it does not change the host's routing. Broad privileged options such as `privileged: true`, `pid: host`, and `ipc: host` stay rejected by validation regardless of labels.
+`rediacc.wireguard` lets a service bring up a WireGuard tunnel, for example to route a single process out through a remote endpoint. Because every service runs with host networking, confine the tunnel to an in-container network namespace so it does not change the host's routing. Broad privileged options such as `privileged: true`, `pid: host`, and `ipc: host` stay rejected regardless of labels, both by compose validation and on the Docker API, where the repository's daemon answers a `403`.
 
 ### Multi-Service Layout
 

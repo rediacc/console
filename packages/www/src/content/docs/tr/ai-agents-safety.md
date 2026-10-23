@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: tr
-sourceHash: "f3439296da3e97f1"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "34d12ee4f0a3791c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 Altyapınızı yönetmek için bir AI kodlama asistanını kullanıyorsanız. Claude Code, Cursor, Gemini CLI, Copilot CLI veya benzer herhangi bir araç `rdc` komutunu çalıştırdığında, CLI onu klavye başındaki bir insandan farklı ele alır ve farklı bir kural seti uygular. Bu sayfa ajanın yapabileceğini, yapamayacağını ve ajan bu koruma önlemlerini atlatmaya çalışsa bile bunların nasıl geçerli kaldığını açıklar.
@@ -213,7 +213,7 @@ Bu, paylaşılan sorumluluk çizgisidir:
 
 Birincil azaltma yerleştirilmiş olarak gelir: **[depo başına sırlar](/tr/docs/repositories#secrets)** şifreli depo görüntüsünden ayrı bir düzlemde saklanır ve çatal sınırı arasında kopyalanmaz. Bir çatalın konteynerleri boş bir sırlar haritasıyla önyüklenir ve kendilerini üst konteynere göre farklı bir harici asıl olarak tanımlarlar. `rdc repo secret set` ile ayarlayın (compose interpolasyonu için env-modu, tmpfs `secrets:` blokları için file-modu). Mutasyon kapısı simetrik olarak uzanan ve insanlar ve ajanlar varolan bir değerin üzerine yazmak veya silmek için `--current` (passwd-stili ön koşulu) veya `--rotate-secret` (denetlenen rotasyon) sağlamak zorundadır.
 
-**Depo arasında izolasyon zorlanır.** Depo B'deki kötü niyetli veya dikkatsiz bir compose dosyası depo A'nın sırlar dizinine referans veremez. Renet'in compose doğrulayıcısı, geçerli depo dışındaki `${REDIACC_NETWORK_ID}` dizinine işaret eden herhangi bir `secrets: file:`, `configs: file:` veya `env_file:` yolunu zor şekilde reddeder ve red `--unsafe` tarafından geçersiz kılınamaz. Savunma derinliği: Rediaccfile bash alt işlemi etrafındaki Landlock sandbox'ı dosya sistem okumasını yalnızca geçerli ağın sırlar dizinine kapsam alır; bu nedenle kötü niyetli bir Rediaccfile'dan `cat /var/run/rediacc/net-<other>/secrets/X` çekirdek katmanında EACCES ile başarısız olur.
+**Depo arasında izolasyon zorlanır.** Depo B'deki kötü niyetli veya dikkatsiz bir compose dosyası depo A'nın sırlar dizinine referans veremez. Renet'in compose doğrulayıcısı, geçerli depo dışındaki `${REDIACC_NETWORK_ID}` dizinine işaret eden herhangi bir `secrets: file:`, `configs: file:` veya `env_file:` yolunu zor şekilde reddeder ve red `--unsafe` tarafından geçersiz kılınamaz. Savunma derinliği: Rediaccfile bash alt işlemi etrafındaki Landlock sandbox'ı dosya sistem okumasını yalnızca geçerli ağın sırlar dizinine kapsam alır; bu nedenle kötü niyetli bir Rediaccfile'dan `cat /var/run/rediacc/net-<other>/secrets/X` çekirdek katmanında EACCES ile başarısız olur. Aynısı Docker API'si için de geçerlidir: her deponun Docker soketine bir renet politika proxy'si hizmet verir ve bu proxy `--privileged`, host `pid`, `ipc` ve `uts` değerlerini, aygıt isteklerini ve başka bir deponun çalışma zamanına ya da verisine ulaşan bind'ları `403` ile reddeder. Böylece `${DOCKER_SOCKET}` tutan bir konteyner API'yi kullanarak başka bir depoya ulaşamaz; denetlenen yalnızca bir compose dosyası da değildir. Bind kuralını yalnızca operatör, adı verilmiş host dizinleri için, hiçbir konteynerin yazamayacağı root sahipli bir izinle genişletebilir.
 
 İki ek desen kenar durumlarını kapatır:
 

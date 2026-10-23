@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: de
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Dienste
@@ -99,7 +99,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` ermöglicht es einem Dienst, einen WireGuard-Tunnel aufzubauen, um beispielsweise einen einzelnen Prozess über einen entfernten Endpunkt zu routen. Da jeder Dienst mit Host-Networking läuft, sollte der Tunnel auf einen Container-internen Network-Namespace beschränkt werden, damit er das Routing des Hosts nicht verändert. Umfassende Privilegierungsoptionen wie `privileged: true`, `pid: host` und `ipc: host` bleiben unabhängig von Labels durch die Validierung abgelehnt.
+`rediacc.wireguard` ermöglicht es einem Dienst, einen WireGuard-Tunnel aufzubauen, um beispielsweise einen einzelnen Prozess über einen entfernten Endpunkt zu routen. Da jeder Dienst mit Host-Networking läuft, sollte der Tunnel auf einen Container-internen Network-Namespace beschränkt werden, damit er das Routing des Hosts nicht verändert. Umfassende Privilegierungsoptionen wie `privileged: true`, `pid: host` und `ipc: host` bleiben unabhängig von Labels abgelehnt, sowohl von der Compose-Validierung als auch auf der Docker-API, wo der Daemon des Repositories mit `403` antwortet.
 
 ### Multi-Service-Layout
 

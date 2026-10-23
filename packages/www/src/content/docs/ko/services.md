@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # 서비스
@@ -98,7 +98,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard`를 사용하면 서비스가 WireGuard 터널을 구성할 수 있습니다. 예를 들어 특정 프로세스의 트래픽을 원격 엔드포인트를 통해 라우팅할 때 유용합니다. 모든 서비스는 호스트 네트워킹으로 실행되므로, 호스트 라우팅에 영향을 주지 않도록 터널은 컨테이너 내부 네트워크 네임스페이스에 한정해야 합니다. `privileged: true`, `pid: host`, `ipc: host`와 같은 광범위한 특권 옵션은 레이블 여부와 관계없이 유효성 검사에서 계속 거부됩니다.
+`rediacc.wireguard`를 사용하면 서비스가 WireGuard 터널을 구성할 수 있습니다. 예를 들어 특정 프로세스의 트래픽을 원격 엔드포인트를 통해 라우팅할 때 유용합니다. 모든 서비스는 호스트 네트워킹으로 실행되므로, 호스트 라우팅에 영향을 주지 않도록 터널은 컨테이너 내부 네트워크 네임스페이스에 한정해야 합니다. `privileged: true`, `pid: host`, `ipc: host`와 같은 광범위한 특권 옵션은 레이블 여부와 관계없이 compose 유효성 검사와 Docker API 모두에서 계속 거부되며, Docker API에서는 저장소의 데몬이 `403`으로 응답합니다.
 
 ### 다중 서비스 레이아웃
 

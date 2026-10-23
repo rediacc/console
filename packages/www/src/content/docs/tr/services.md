@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Servisler
@@ -99,7 +99,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard`, bir servisin WireGuard tüneli açmasına izin verir; örneğin tek bir süreci uzak bir uç nokta üzerinden yönlendirmek için. Her servis host ağıyla çalıştığı için tüneli konteyner içindeki bir ağ ad alanıyla sınırlayın, aksi hâlde host'un yönlendirmesi değişir. `privileged: true`, `pid: host` ve `ipc: host` gibi geniş ayrıcalık seçenekleri, etiketlerden bağımsız olarak doğrulama tarafından reddedilmeye devam eder.
+`rediacc.wireguard`, bir servisin WireGuard tüneli açmasına izin verir; örneğin tek bir süreci uzak bir uç nokta üzerinden yönlendirmek için. Her servis host ağıyla çalıştığı için tüneli konteyner içindeki bir ağ ad alanıyla sınırlayın, aksi hâlde host'un yönlendirmesi değişir. `privileged: true`, `pid: host` ve `ipc: host` gibi geniş ayrıcalık seçenekleri, etiketlerden bağımsız olarak hem compose doğrulaması hem de Docker API'si tarafından reddedilmeye devam eder; API'de deponun daemon'ı `403` yanıtı verir.
 
 ### Çoklu Servis Düzeni
 

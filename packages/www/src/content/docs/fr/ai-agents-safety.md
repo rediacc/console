@@ -11,8 +11,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: fr
-sourceHash: "f3439296da3e97f1"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "34d12ee4f0a3791c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 Vous pointez un assistant de codage IA vers votre infrastructure. Lorsque Claude Code, Cursor, Gemini CLI, Copilot CLI ou tout outil similaire pilote `rdc`, la CLI le détecte et applique un ensemble de règles différent de celui applicable à un humain au clavier. Cette page explique ce que l'agent peut faire, ce qu'il ne peut pas faire, et comment les garde-fous tiennent même lorsqu'il cherche à les contourner.
@@ -216,7 +216,7 @@ Voici la ligne de responsabilité partagée :
 
 La principale atténuation est intégrée : les **[secrets par dépôt](/fr/docs/repositories#secrets)** sont stockés dans un plan séparé de l'image de dépôt chiffrée et ne sont pas copiés à travers la limite du fork. Les conteneurs d'un fork démarrent avec une carte de secrets vide et s'identifient comme un principal externe différent de celui du parent. Définissez-les avec `rdc repo secret set` (mode env pour l'interpolation compose, mode fichier pour les blocs `secrets:` tmpfs). La porte de mutation est symétrique. Les humains et les agents doivent également fournir `--current` (précondition de style passwd) ou `--rotate-secret` (rotation auditée) pour écraser ou supprimer une valeur existante.
 
-**L'isolation inter-dépôts est imposée.** Un fichier compose malveillant ou négligent dans le dépôt B ne peut pas référencer le répertoire de secrets du dépôt A. Le validateur compose de renet rejette catégoriquement tout chemin `secrets: file:`, `configs: file:` ou `env_file:` qui pointe en dehors du répertoire `${REDIACC_NETWORK_ID}` du dépôt courant, et ce rejet n'est PAS contournable par `--unsafe`. Défense en profondeur : le bac à sable Landlock autour du sous-processus bash du Rediaccfile restreint les lectures du système de fichiers au seul répertoire de secrets du réseau courant, de sorte qu'un `cat /var/run/rediacc/net-<other>/secrets/X` depuis un Rediaccfile malveillant échoue avec EACCES au niveau du noyau.
+**L'isolation inter-dépôts est imposée.** Un fichier compose malveillant ou négligent dans le dépôt B ne peut pas référencer le répertoire de secrets du dépôt A. Le validateur compose de renet rejette catégoriquement tout chemin `secrets: file:`, `configs: file:` ou `env_file:` qui pointe en dehors du répertoire `${REDIACC_NETWORK_ID}` du dépôt courant, et ce rejet n'est PAS contournable par `--unsafe`. Défense en profondeur : le bac à sable Landlock autour du sous-processus bash du Rediaccfile restreint les lectures du système de fichiers au seul répertoire de secrets du réseau courant, de sorte qu'un `cat /var/run/rediacc/net-<other>/secrets/X` depuis un Rediaccfile malveillant échoue avec EACCES au niveau du noyau. Il en va de même sur l'API Docker : le socket Docker de chaque dépôt est servi par un proxy de politiques renet qui refuse par un `403` `--privileged`, `pid`, `ipc` et `uts` de l'hôte, les demandes de périphériques et les binds qui atteignent l'environnement d'exécution ou les données d'un autre dépôt. Un conteneur qui détient `${DOCKER_SOCKET}` ne peut donc pas passer par l'API pour atteindre un autre dépôt, et la vérification ne porte pas que sur un fichier compose. Seul l'opérateur peut élargir la règle des binds, pour des répertoires hôte nommés, au moyen d'une autorisation appartenant à root où aucun conteneur ne peut écrire.
 
 Deux patterns supplémentaires comblent les cas limites :
 

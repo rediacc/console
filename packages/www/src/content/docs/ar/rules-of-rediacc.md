@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ar
-sourceHash: "c814bc0e0e3151cc"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "e9ad52ea1248d04c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # قواعد Rediacc
@@ -60,7 +60,7 @@ down() {
 - **لا تقم بتعيين تسميات `rediacc.*`**, يقوم renet بالحقن التلقائي لـ `rediacc.network_id` و `rediacc.service_ip` و `rediacc.service_name`.
 - **يتم تجاهل تعيينات `ports:`** في وضع شبكة المضيف. أضف تسمية `rediacc.service_port` لتوجيه HTTP (الخدمات بدون هذه التسمية لا تحصل على مسارات HTTP). استخدم تسميات `rediacc.tcp_ports`/`rediacc.udp_ports` لإعادة توجيه TCP/UDP.
 - **سياسات إعادة التشغيل (`restart: always`، `on-failure`، إلخ) آمنة للاستخدام**, يقوم renet بإزالتها تلقائياً لتوافق CRIU. يقوم watchdog الموجّه باستعادة الحاويات الموقوفة تلقائياً بناءً على السياسة الأصلية المحفوظة في `.rediacc.json`.
-- **الإعدادات الخطرة محظورة بشكل افتراضي**, يتم رفض `privileged: true` و `pid: host` و `ipc: host` والـ bind mounts إلى مسارات النظام. استخدم `renet compose --unsafe` للتجاوز على مسؤوليتك الخاصة.
+- **الإعدادات الخطرة محظورة بشكل افتراضي**, يتم رفض `privileged: true` و `pid: host` و `ipc: host` والـ bind mounts إلى مسارات النظام. ويسري حظر `privileged` وقيم `pid` و`ipc` و`uts` الخاصة بالمضيف على واجهة Docker البرمجية أيضاً: فالحاوية التي تستدعي `${DOCKER_SOCKET}` مباشرة تتلقى `403` عليها، ولا يتجاوز ذلك أي خيار. أما `renet compose --unsafe` فيتجاوز فقط فحوص مسارات المضيف للقراءة فقط.
 
 ### متغيرات البيئة داخل الحاويات
 
@@ -170,7 +170,7 @@ down() {
 
 - استخدام `docker compose` بدلاً من `renet compose`, لن تحصل الحاويات على عزل الشبكة.
 - سياسات إعادة التشغيل آمنة, يقوم renet بإزالتها تلقائياً ويتولى watchdog الاستعادة.
-- استخدام `privileged: true`, غير ضروري، إذ يقوم renet بحقن صلاحيات CRIU المحددة عوضاً عن ذلك.
+- استخدام `privileged: true`, غير ضروري، إذ يقوم renet بحقن صلاحيات CRIU المحددة عوضاً عن ذلك. يرفضه خادم Docker الخاص بالمستودع، في compose وعلى واجهة Docker البرمجية.
 - ترميز عناوين IP الخام في ملفات التكوين الدائمة - استخدم أسماء الخدمات للاتصالات للحفاظ على عزل الـ fork سليماً.
 - استخدام `rdc term connect -c` كحل بديل للأوامر الفاشلة, أبلغ عن الأخطاء بدلاً من ذلك.
 - `repo delete` ينفذ تنظيفاً كاملاً يشمل عناوين IP loopback ووحدات systemd. شغّل `rdc machine prune <name>` لتنظيف بقايا عمليات الحذف القديمة.

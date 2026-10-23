@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ar
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # الخدمات
@@ -98,7 +98,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-تتيح `rediacc.wireguard` للخدمة إنشاء نفق WireGuard، لتوجيه عملية واحدة مثلاً عبر نقطة نهاية بعيدة. بما أن كل خدمة تعمل بشبكة المضيف، احصر النفق في نطاق شبكة داخل الحاوية حتى لا يُغير توجيه المضيف. خيارات الامتياز الواسعة كـ `privileged: true` و`pid: host` و`ipc: host` تبقى مرفوضة بالتحقق بصرف النظر عن التسميات.
+تتيح `rediacc.wireguard` للخدمة إنشاء نفق WireGuard، لتوجيه عملية واحدة مثلاً عبر نقطة نهاية بعيدة. بما أن كل خدمة تعمل بشبكة المضيف، احصر النفق في نطاق شبكة داخل الحاوية حتى لا يُغير توجيه المضيف. خيارات الامتياز الواسعة كـ `privileged: true` و`pid: host` و`ipc: host` تبقى مرفوضة بصرف النظر عن التسميات، سواء عند التحقق من compose أو على واجهة Docker البرمجية، حيث يرد خادم المستودع بالرمز `403`.
 
 ### تخطيط متعدد الخدمات
 

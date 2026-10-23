@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Teenused
@@ -99,7 +99,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` võimaldab teenusel luua WireGuard-tunneli, näiteks ühe protsessi liikluse suunamiseks läbi kaugotspunkti. Kuna iga teenus töötab hosti võrgundusega, piira tunnel konteinerisisesel võrgunimeruumiga, et see ei muudaks hosti marsruutimist. Laiad privilegeeritud suvandid, nagu `privileged: true`, `pid: host` ja `ipc: host`, lükatakse valideerimisega siltidest hoolimata tagasi.
+`rediacc.wireguard` võimaldab teenusel luua WireGuard-tunneli, näiteks ühe protsessi liikluse suunamiseks läbi kaugotspunkti. Kuna iga teenus töötab hosti võrgundusega, piira tunnel konteinerisisesel võrgunimeruumiga, et see ei muudaks hosti marsruutimist. Laiad privilegeeritud suvandid, nagu `privileged: true`, `pid: host` ja `ipc: host`, lükatakse siltidest hoolimata tagasi, nii compose'i valideerimisel kui ka Docker API-s, kus repo deemon vastab `403`-ga.
 
 ### Mitmeteenuseline paigutus
 

@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: fr
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Services
@@ -99,7 +99,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` permet à un service de monter un tunnel WireGuard, par exemple pour faire sortir un processus précis par un point de terminaison distant. Comme tous les services utilisent le réseau hôte, confinir le tunnel dans un espace de noms réseau interne au conteneur afin qu'il ne modifie pas le routage de l'hôte. Les options privilégiées larges comme `privileged: true`, `pid: host` et `ipc: host` restent refusées par la validation quel que soit le label utilisé.
+`rediacc.wireguard` permet à un service de monter un tunnel WireGuard, par exemple pour faire sortir un processus précis par un point de terminaison distant. Comme tous les services utilisent le réseau hôte, confinir le tunnel dans un espace de noms réseau interne au conteneur afin qu'il ne modifie pas le routage de l'hôte. Les options privilégiées larges comme `privileged: true`, `pid: host` et `ipc: host` restent refusées quel que soit le label utilisé, aussi bien par la validation compose que sur l'API Docker, où le démon du dépôt répond par un `403`.
 
 ### Disposition multi-services
 

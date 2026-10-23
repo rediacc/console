@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # 服务
@@ -98,7 +98,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` 允许服务建立 WireGuard 隧道，例如将某个进程的流量通过远端节点转发出去。由于所有服务均使用主机网络，应将隧道限制在容器内的网络命名空间中，避免影响宿主机的路由表。`privileged: true`、`pid: host`、`ipc: host` 等宽泛特权选项无论是否添加标签，均会被验证器拒绝。
+`rediacc.wireguard` 允许服务建立 WireGuard 隧道，例如将某个进程的流量通过远端节点转发出去。由于所有服务均使用主机网络，应将隧道限制在容器内的网络命名空间中，避免影响宿主机的路由表。`privileged: true`、`pid: host`、`ipc: host` 等宽泛特权选项无论是否添加标签，都会被拒绝，compose 验证器和 Docker API 均如此，在 Docker API 上由仓库的守护进程返回 `403`。
 
 ### 多服务布局
 

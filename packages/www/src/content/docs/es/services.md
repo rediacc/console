@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: es
-sourceHash: "4e5a0abadf84cd5f"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Servicios
@@ -99,7 +99,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` permite que un servicio establezca un túnel WireGuard, por ejemplo para enrutar un proceso concreto a través de un endpoint remoto. Como todos los servicios usan red de host, confine el túnel a un namespace de red dentro del contenedor para no modificar el enrutamiento del host. Las opciones de privilegio amplio como `privileged: true`, `pid: host` e `ipc: host` siguen siendo rechazadas por la validación independientemente de las etiquetas.
+`rediacc.wireguard` permite que un servicio establezca un túnel WireGuard, por ejemplo para enrutar un proceso concreto a través de un endpoint remoto. Como todos los servicios usan red de host, confine el túnel a un namespace de red dentro del contenedor para no modificar el enrutamiento del host. Las opciones de privilegio amplio como `privileged: true`, `pid: host` e `ipc: host` siguen siendo rechazadas independientemente de las etiquetas, tanto por la validación de compose como en la API de Docker, donde el daemon del repositorio responde con un `403`.
 
 ### Diseño Multi-Servicio
 

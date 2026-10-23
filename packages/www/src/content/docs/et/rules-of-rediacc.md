@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "c814bc0e0e3151cc"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "e9ad52ea1248d04c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Rediacci reeglid
@@ -58,7 +58,7 @@ down() {
 - **Ärge määrake `rediacc.*`-silte**, renet süstib automaatselt `rediacc.network_id`, `rediacc.service_ip` ja `rediacc.service_name`.
 - **`ports:`-kaardistused eiratakse** hosti võrguühenduse režiimis. Lisage `rediacc.service_port`-silt HTTP-marsruutimiseks (teenused ilma selle sildita ei saa HTTP-marsruute). Kasutage `rediacc.tcp_ports`/`rediacc.udp_ports`-silte TCP/UDP-edasisuunamiseks.
 - **Taaskäivituspoliitikad (`restart: always`, `on-failure` jne) on ohutu kasutada**, renet eemaldab need automaatselt CRIU ühilduvuse jaoks. Marsruuteri valvekoer taastab peatatud konteinerid automaatselt `.rediacc.json`-sse salvestatud algse poliitika alusel.
-- **Ohtlikud seadistused on vaikimisi blokeeritud**, `privileged: true`, `pid: host`, `ipc: host` ja süsteemiteede hosti sidumiskohad lükatakse tagasi. Kasutage `renet compose --unsafe`, et tühistada omal vastutusel.
+- **Ohtlikud seadistused on vaikimisi blokeeritud**, `privileged: true`, `pid: host`, `ipc: host` ja süsteemiteede hosti sidumiskohad lükatakse tagasi. `privileged` ning hosti `pid`, `ipc` ja `uts` blokk kehtib ka Docker API-s: konteiner, mis kutsub `${DOCKER_SOCKET}` otse, saab nende eest vastuseks `403` ja ükski lipp seda ei tühista. `renet compose --unsafe` tühistab ainult hosti kirjutuskaitstud teede kontrollid.
 
 ### Keskkonna muutujad konteinerite sees
 
@@ -168,7 +168,7 @@ Kokkuvõte: `rdc` ja `renet` tuvastavad käitatava OS-i automaatselt ja toodavad
 
 - `docker compose` kasutamine `renet compose` asemel - konteinerid ei saa võrgu isoleerimist.
 - Taaskäivituspoliitikad on ohutud, renet eemaldab need automaatselt ja valvekoer käsitseb taastamist.
-- `privileged: true` kasutamine - pole vajalik, renet süstib spetsiifilised CRIU võimalused.
+- `privileged: true` kasutamine - pole vajalik, renet süstib spetsiifilised CRIU võimalused. Repo Dockeri deemon keeldub sellest nii compose'is kui ka Docker API-s.
 - Toorte IP-de hardkodeerimine püsivatesse konfiguratsioonifailidesse - kasutage ühenduste jaoks teenuste nimesid, et hoida forki isoleerimine puutumata.
 - `rdc term connect -c` kasutamine lahendusena ebaõnnestunud käskude jaoks - teatage vigadest.
 - `repo delete` teeb täieliku puhastuse, sealhulgas loopback-IP-d ja systemd-üksused. Käivitage `rdc machine prune <name>`, et puhastada pärand-kustutamiste järelejäänud.
