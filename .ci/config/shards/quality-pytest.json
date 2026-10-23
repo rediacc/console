@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-23T16:28:57.605Z",
+  "generatedAt": "2026-10-23T18:58:50.664Z",
   "legs": [
     {
       "index": 1,
@@ -628,6 +628,7 @@
         "pytest:.ci/rediacc_ci/tests/test_dev_www.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_create_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_run_in_image.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_license_seed.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_vm_check_receipt.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_github_deployments.py",

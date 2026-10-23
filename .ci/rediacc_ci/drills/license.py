@@ -420,14 +420,34 @@ class License:
         if self.repo_guid:
             d.note("this run's licensed repository: %s" % self.repo_guid)
 
+    def license_blob_guids(self, host: str) -> set[str]:
+        """The repository guids that hold an installed licence blob under `lib.LICENSE_ROOT/repos` on `host`. A failed create rolls the repo back, so `license-status` stops listing it, but the blob it installed stays; only this listing sees it."""
+        _, out = self.ssh_out(host, "sudo ls -1 %s/repos 2>/dev/null" % lib.LICENSE_ROOT)
+        return {line.strip() for line in out.splitlines() if lib.is_repo_guid(line.strip())}
+
+    def purge_failed_seed(self, before_blobs: set[str]) -> None:
+        """A create that failed after issuance left a blob for a repo that no longer exists, and every later `renet license renew` tries it (Rule T 9). Purge each new blob guid through the same proof-before-deletion script the removal step uses; a purge failure is reported, not asserted, because the create's own failure is already the finding."""
+        o = self.o
+        orphans = sorted(self.license_blob_guids(o.vm_ip) - before_blobs)
+        if not orphans:
+            return
+        code, out = self.ssh_out(
+            o.vm_ip, "bash -s", stdin=lib.purge_license_state_script(orphans, o.vm_renet)
+        )
+        self.capture(
+            "purge the licence blobs the failed create left on %s (rc %d)" % (o.vm_ip, code), out
+        )
+
     def seed_licensed_repo(self) -> None:
         """Leg a's issuance step on its own, for a basic fleet (Rule T 7): the repo is created on the machine's default datastore, no Ceph, against the gateway address the machine can reach (`setup_gateway_address`)."""
         d = self.d
         d.step("Seeding the licensed repo on %s (--seed-repo)" % self.o.vm_ip)
         before = self.status_guids(self.o.vm_ip)
+        before_blobs = self.license_blob_guids(self.o.vm_ip)
         d.run([self.rdc, "repo", "create", REPO_NAME, "-m", MACHINE_NAME, "--size", "1G"])
         d.assert_exit(0, "a repo is created on the machine (issuance happens here)")
         if d.code != 0:
+            self.purge_failed_seed(before_blobs)
             return
         self.seeded = True
         self.learn_repo_guid(before, "the create added exactly one repository to the machine")
