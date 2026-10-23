@@ -77,7 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 11 plans done, 95 of 332 boxes done (28%).
+Promoted: 0 of 19 plans done, 138 of 416 boxes done (33%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -92,6 +92,14 @@ Promoted: 0 of 11 plans done, 95 of 332 boxes done (28%).
 | 9 | PLAN-token-ip-rebind.md | 9/10 | 1 open |
 | 10 | PLAN-config-sync-hardening.md | 18/19 | 1 open |
 | 11 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
+| 12 | PLAN-secret-namespace-migration.md | 29/34 | 5 open |
+| 13 | PLAN-w7p5a-real-run-dispatch.md | 8/9 | 1 open |
+| 14 | PLAN-pin-awscli-toolchain-python-compatible.md | 6/7 | 1 open |
+| 15 | PLAN-config-networkid-sync.md | 0/8 | 8 open |
+| 16 | PLAN-plan-preflight.md | 0/9 | 9 open |
+| 17 | PLAN-renet-run-docker-sock-isolation.md | 0/3 | 3 open |
+| 18 | PLAN-ci-watch-enforcement.md | 0/6 | 6 open |
+| 19 | PLAN-renet-fetch-hardening.md | 0/8 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -105,29 +113,29 @@ Promoted: 0 of 11 plans done, 95 of 332 boxes done (28%).
 9. agent/plans/PLAN-token-ip-rebind.md -- pulled in as an unfinished prerequisite of PLAN-config-sync-hardening.md (Depends-On), 2026-10-23
 10. agent/plans/PLAN-config-sync-hardening.md -- operator 2026-10-23 ("Pick some new close to finish plans that have progressed, and promote them"): 18/19, closure box T15 left; --promote brings its unfinished prerequisites PLAN-token-ip-rebind (9/10), PLAN-config-handoff-relay-only (9/11) and PLAN-app-wide-org-selection (2/3) ahead of it
 11. agent/plans/PLAN-stop-hook-one-plan-scope.md -- operator 2026-10-23 ("Pick some new close to finish plans ... promote them"): 14/15, the last box SC13b is evidence from a real run after this PR merges
+12. agent/plans/PLAN-secret-namespace-migration.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
+13. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
+14. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
+15. agent/plans/PLAN-config-networkid-sync.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
+16. agent/plans/PLAN-plan-preflight.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
+17. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
+18. agent/plans/PLAN-ci-watch-enforcement.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
+19. agent/plans/PLAN-renet-fetch-hardening.md -- operator 2026-10-23 ("I don't see enough writers in parallel. Let's promote those as well"): promoted for a parallel wave, each plan validated against the tree first
 
 ## Generated
 
 <!-- queue:generated:begin -->
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
 2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-3. agent/plans/PLAN-secret-namespace-migration.md -- P1, executing, in progress (29 of 34 boxes ticked)
-4. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-5. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (8 of 9 boxes ticked)
-6. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-7. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, executing, in progress (6 of 7 boxes ticked)
-8. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
-9. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-10. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-11. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-12. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-13. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-14. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- P1, draft, not started
-15. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
-16. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-17. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-18. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-19. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-21. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
+4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+5. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
+6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+7. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+8. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+9. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
+10. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+11. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+12. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+13. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
