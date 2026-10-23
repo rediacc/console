@@ -7,7 +7,19 @@ Depends-On: PLAN-renet-cross-repo-isolation.md -- this plan assumes the per-netw
 Priority: P1 -- verified live on ops-worker 2026-10-23 (renet 0c3a88a + an uncommitted /etc mask): repo A's per-repo dockerd accepted `docker run --privileged --pid=host` through `${DOCKER_SOCKET}`; that container reached repo B's daemon at `/proc/1/root/run/rediacc/net-8576/docker-8576.sock` and read `/proc/1/root/etc/rediacc`. The compose validator guards compose files only (private/renet/pkg/compose/validate.go:160-181, :331-357); the Docker API path has no gate, so every per-repo boundary is moot for a repo that asks.
 Concurrency: parallel -- the boxes share private/renet/pkg/compose/validate.go, wrapper.go, pkg/daemon/systemd.go, start_foreground.go and cmd/renet/* with PLAN-renet-cross-repo-isolation, and the `Owns:` line below names them, so the overlap guard refuses a writer that would touch them while one of this plan's writers is live; a docs-only or otherwise disjoint writer of another plan runs beside it. Was `exclusive` until 2026-10-23, which also refused disjoint docs writers.
 Owns: private/renet/pkg/dockerpolicy/policy.go, private/renet/pkg/dockerpolicy/policy_test.go, private/renet/pkg/dockerproxy/proxy.go, private/renet/pkg/dockerproxy/intercept.go, private/renet/pkg/dockerproxy/proxy_test.go, private/renet/cmd/renet/daemon_dockerproxy_exec.go, private/renet/cmd/renet/daemon_dockerproxy_exec_test.go, private/renet/pkg/daemon/start_foreground.go, private/renet/pkg/daemon/systemd.go, private/renet/pkg/daemon/systemd_test.go, private/renet/pkg/daemon/testdata/daemon_config/*.golden, private/renet/pkg/runpaths/runpaths.go, private/renet/pkg/runpaths/runpaths_test.go, private/renet/pkg/compose/validate.go, private/renet/pkg/compose/wrapper.go, private/renet/pkg/compose/validate_test.go, private/renet/pkg/repository/repository.go, private/renet/cmd/renet/main.go, private/renet/docs/DOCKERD_SANDBOX.md, private/renet/README.md, private/renet/CLAUDE.md, packages/www/src/content/docs/en/rules-of-rediacc.md, packages/www/src/content/docs/en/services.md, packages/www/src/content/docs/en/ai-agents-safety.md, docs/design/spec/02-reporuntime-contract.md, agent/plans/PLAN-dockerd-api-privilege-gate.md
+Revalidated: 2026-10-23 @ daab83af1f31
 Worklist: #8cb01693
+
+<!-- preflight:begin -->
+```text
+preflight 2026-10-23 @ daab83af1f31
+open boxes: 2 (absent 2)
+citations: 0 unresolved, 0 drifted, 0 relocated
+overlap since none: 0 commit(s)
+dependencies: 1
+  ok PLAN-renet-cross-repo-isolation.md -- Status done
+```
+<!-- preflight:end -->
 
 ## The finding
 
