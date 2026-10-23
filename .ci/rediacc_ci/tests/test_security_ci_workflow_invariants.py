@@ -2189,6 +2189,11 @@ def test_the_default_token_is_exempt_only_in_its_exact_spelling() -> None:
         "curl --data-binary @f https://api.github.com/x",
         "curl -F f=@x https://api.github.com/x",
         "curl --json '{}' https://api.github.com/x",
+        "curl -d'{\"a\":1}' https://api.github.com/x",
+        "curl -d@body.json https://api.github.com/x",
+        "curl -sSd x https://api.github.com/x",
+        "curl -Tfile https://api.github.com/x",
+        "curl --form-string f=x https://api.github.com/x",
     ],
 )
 def test_a_curl_method_or_body_flag_is_a_write(run) -> None:
@@ -2203,6 +2208,7 @@ def test_a_curl_method_or_body_flag_is_a_write(run) -> None:
         "curl -fsSL https://example.com/delete-notes -o notes",
         "curl -fsSL https://example.com/put/patch/post.txt",
         "curl -x http://proxy:3128 -D headers.txt https://example.com/a",
+        "curl -fsSL -o out https://example.com/a",
     ],
 )
 def test_a_method_word_in_a_curl_url_is_a_read(run) -> None:
