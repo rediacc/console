@@ -300,6 +300,34 @@ Under the 2026-10-23 ruling the proxy is kept. Run this only if the operator she
 2. Phase 2 steps 0-5, recorded in "Phase 2 results" (P2a and step 5).
 3. C2 eu console wiring after Phase 2 is green.
 
+## Phase 2 results (bench, 2026-10-24, sub-agent of lead session d778be9d)
+
+Run on bench under the operator's bench-only bypass order (2026-10-24), not against hostinger: the eu proxy and hostinger stay untouched until the converge plan's H1 window (PLAN-renet-runtime-converge).
+
+| | Before | After | Rollback |
+|---|---|---|---|
+| Account worker `rediacc-account-bench` (carries the CloudflareInternal entrypoint, account 9fb73f0) | 9acd4c8d | dfe865fb-974c-4c6d-bda1-031ee48aa40e, then secret change 10818332-b24c-44a8-9230-820f35c140c3 | `wrangler rollback 9acd4c8d`; D1 bookmark `000000bd-00000000-0000510e-7231ac96b7367046489c2029f87ccdfc` |
+| Proxy worker `rediacc-proxy-bench` (ACCOUNT binding with `entrypoint = "CloudflareInternal"`) | 89b9e1f2 | 358bb286, then secret changes to eecfe3c1-f798-4a9d-989a-d3ecfb28bc5f | `wrangler rollback 89b9e1f2` |
+
+`EXECUTOR_TOKEN` is token 5375a8fe: scopes `proxy:exec` and `audit:write`, IP binding `cloudflare` (`private/account/src/types/api-token.ts:18,22`), owned by a fresh bench org owner.
+
+| Step | rc | Result |
+|---|---|---|
+| 1. `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` | 0 | account deployed |
+| 2. `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench` | 0 | the DoH pin answered past a cached NXDOMAIN; `/v1/health` 200, unauthenticated `/v1/server-info` 401 |
+| 3. `/v1/server-info` with a fresh owner's caller token | 0 | 200 `{"cliVersion":"2.4.0","contractVersion":"dev","mode":"container"}`, 3.07 s cold, 0.56 s warm; the account tail shows `entrypoint CloudflareInternal ... /proxy/introspect 200` |
+| 4. `rdc --proxy https://proxy.bench.rediacc.com machine status vm12` | 1 | "The executor could not verify this token with the account server (403)": the container's own account calls went out its public egress and met the `cloudflare` binding |
+
+Step 4 findings and their fixes:
+- Container account egress refused with 403: fixed in f379e5b75 (the container addresses `http://account.internal`, intercepted by `ExecutorContainer.outboundByHost` and forwarded over the ACCOUNT binding). A bounded diagnostic with an `unbound` token (since revoked) showed every container call answering 200 once the binding question is out of the way, and the config decrypting.
+- Executor audit events all rejected 400 (null type, data shape outside AuditEventSchema): fixed in 77c2518c2 and 069eeb770 (`cli.command` type, schema-valid payload, one event per command including a throwing dispatch).
+- A Cloudflare container cannot reach the ops VMs (192.168.111.0/24 is private to the dev box), so `machine status`, fork, `repo up` and `repo down` end-to-end need a publicly reachable test machine. hostinger is excluded until H1.
+- A new secret reaches a container only after its Durable Object idles out (`sleepAfter = 2m`): a container started a minute after `secret put` still ran the previous script version.
+
+## Phase 2 step 5 measurements (bench, 2026-10-24)
+
+Instance type `basic` (0.25 vCPU, 1 GiB, 4 GB disk). The GraphQL `containersMetricsAdaptiveGroups` maximum memory was 237-242 MiB per minute while idle and serving server-info, disk 465 MiB, about 122 s up per wake (the 2 m sleep holds). `wrangler containers info` reports no RSS. Cold start, Worker wall time / container wall time on the first request after idle: 3000/2270, 2493/1967, 4909/4281 and 2348/1619 ms; warm 487 ms. Verdict: `lite` (256 MiB) is not viable, since idle use already sits at about 240 MiB before any `repo up`; keep `basic`.
+
 ## Phase 0 results (2026-10-24, lead session d778be9d)
 
 | Check | rc | Output |
