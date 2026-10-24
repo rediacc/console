@@ -19,6 +19,8 @@ ACCOUNT_URL = "https://eu.rediacc.com"
 [[services]]
 binding = "ACCOUNT"
 service = "rediacc-account-eu"
+# The account Worker's named entrypoint, which only a service binding can reach: it marks the request as Cloudflare-internal, so the `cloudflare`-bound EXECUTOR_TOKEN is accepted on introspection (private/account src/utils/request.ts markServiceBindingEnv).
+entrypoint = "CloudflareInternal"
 
 # EXECUTOR_TOKEN is a secret, never a var:
 #   npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.toml

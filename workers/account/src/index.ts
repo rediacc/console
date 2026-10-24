@@ -1,3 +1,4 @@
+import { WorkerEntrypoint } from 'cloudflare:workers';
 import accountApp from '../../../private/account/src/entry/cloudflare.js';
 
 interface Env {
@@ -62,6 +63,21 @@ function serveAccountPortal(request: Request, url: URL, env: Env): Promise<Respo
     return env.ASSETS.fetch(spaRequest);
   }
   return env.ASSETS.fetch(request);
+}
+
+/**
+ * The account API for Workers in this Cloudflare account, reached ONLY through a service binding that names it (`entrypoint = "CloudflareInternal"` in the caller's `[[services]]` block; workers/proxy is the one caller). Cloudflare routes every internet request to the default export below, never to a named entrypoint, so a request here never left Cloudflare's network, and the app is told so (private/account/src/utils/request.ts markServiceBindingEnv): a 'cloudflare'-bound API token is then accepted although a binding request carries no client address. A binding without `entrypoint` (workers/www's ACCOUNT, which forwards the public contact/newsletter forms on behalf of internet clients) keeps reaching the default export, unmarked.
+ */
+export class CloudflareInternal extends WorkerEntrypoint<Env> {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    if (!url.pathname.startsWith('/account/api/')) {
+      return withSecurityHeaders(new Response('Not Found', { status: 404 }));
+    }
+    return withSecurityHeaders(
+      await accountApp.fetchViaServiceBinding(request, this.env, this.ctx)
+    );
+  }
 }
 
 export default {
