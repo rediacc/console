@@ -21,4 +21,4 @@ Body-Sig: 067625bff1994cf3
 ### 2d4c5df5.1 [medium] .claude/hooks/stop/wl_planconc.py:645
 Anchor: in-diff
 Claim: In live_plans, a lease held by this session (`mine` true) adds a holder but appends no entry to `declared`, so `all(o for o in owns)` ignores that holder; when the writer rows for the plan all declared a subset Owns, LivePlans.owns narrows the plan to that subset even though a live holder with no declared Owns still runs on the whole plan. The `if not mine:` guard should cover every new holder, not only peer leases, and no test in the diff exercises a live_plans lease holder (test narrow l1/l2 set LIVE_T.owns by hand).
-Resolution: open
+Resolution: fixed eb053fda0841286135bc41b3c0bccc446e93dd9f | d778be9d 2026-10-24T20:30:24Z
