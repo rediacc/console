@@ -4,7 +4,7 @@
  * it live.
  */
 
-import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
+import { formatStepDuration, getActiveLabel, getDoneText } from '../../utils/timeline.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
 import type { JobOutputCollector } from './job-client.js';
@@ -235,9 +235,9 @@ function renderStepEvent(
     const s = parsed.step_start as { name?: string };
     if (s.name) write(`⠋ ${getActiveLabel(s.name)}...`);
   } else if (parsed.step_done && typeof parsed.step_done === 'object') {
-    const s = parsed.step_done as { name?: string; duration_ms?: number };
+    const s = parsed.step_done as { name?: string; duration_ms?: number; detail?: string };
     if (s.name && s.duration_ms != null) {
-      write(`\r✔ ${getDoneLabel(s.name)} (${formatStepDuration(s.duration_ms)})\n`);
+      write(`\r✔ ${getDoneText(s.name, s.detail)} (${formatStepDuration(s.duration_ms)})\n`);
     }
   }
 }

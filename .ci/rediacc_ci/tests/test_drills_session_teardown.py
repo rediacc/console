@@ -30,14 +30,13 @@ GUID_B = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
 @pytest.mark.parametrize(
     ("text", "want"),
     [
-        ("Ended 2 sessions (5 processes) of repository abc\n", (2, 5)),
-        (
-            'time="x" level=info msg="Ended 1 sessions (3 processes) of repository g"\n',
-            (1, 3),
-        ),
+        ("\r✔ Sessions ended: 2 sessions (5 processes) (40ms)\n", (2, 5)),
+        ("✔ Sessions ended: 1 sessions (3 processes) (1.2s)\n", (1, 3)),
+        # renet's own log line is not the step the CLI prints.
+        ("Ended 2 sessions (5 processes) of repository abc\n", None),
         # The last line wins: the BeforeClose sweep can log a second one.
         (
-            "Ended 1 sessions (2 processes) of repository g\nEnded 1 sessions (1 processes) of repository g",
+            "✔ Sessions ended: 1 sessions (2 processes) (3ms)\n✔ Sessions ended: 1 sessions (1 processes) (2ms)",
             (1, 1),
         ),
         ("Stopping repository services\n", None),
@@ -262,7 +261,7 @@ class FakeCtx:
                 text = (
                     ""
                     if "noline" in b
-                    else "Ended 2 sessions (%d processes) of repository %s\n" % (ended, GUID_A)
+                    else "✔ Sessions ended: 2 sessions (%d processes) (40ms)\n" % ended
                 )
                 return Res(0, "Stopping repository services\n" + text)
             # A bare down: `barekills` is the defect of ending sessions without an unmount.

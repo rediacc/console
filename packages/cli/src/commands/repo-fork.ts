@@ -44,10 +44,20 @@ import {
   formatStepDuration,
   getActiveLabel,
   getDoneLabel,
+  getDoneText,
+  PARALLEL_STEP_DETAIL,
   recordTimelineStep,
   type TimelineStep,
 } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
+
+/** A finished step's text: a parallel step keeps its `(∥)` marker, any other detail follows the label. */
+function doneLine(name: string, detail?: string): string {
+  return detail === PARALLEL_STEP_DETAIL
+    ? `${getDoneLabel(name)} (${detail})`
+    : getDoneText(name, detail);
+}
+
 import { ensureDns, postRepoUpTasks } from './repo-batch-utils.js';
 
 interface ForkActionOptions {
@@ -84,8 +94,7 @@ const UP_PHASE_STEP_NAMES = new Set([
 
 /** Print one completed-step line in the streamed timeline format. */
 function printStepLine(step: TimelineStep): void {
-  const detail = step.detail ? ` (${step.detail})` : '';
-  writeStdout(`✔ ${getDoneLabel(step.name)}${detail} (${formatStepDuration(step.duration_ms)})\n`);
+  writeStdout(`✔ ${doneLine(step.name, step.detail)} (${formatStepDuration(step.duration_ms)})\n`);
 }
 
 /** Print "Total: <wall>" once at the true end and mark the timeline rendered. */
@@ -108,9 +117,9 @@ function handleStepDoneEvent(
   startedAtMs?: number
 ): void {
   if (!event.name || event.duration_ms === undefined) return;
-  const label = getDoneLabel(event.name);
-  const detail = event.detail ? ` (${event.detail})` : '';
-  writeStdout(`\r✔ ${label}${detail} (${formatStepDuration(event.duration_ms)})\n`);
+  writeStdout(
+    `\r✔ ${doneLine(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`
+  );
   allSteps.push({
     name: event.name,
     duration_ms: event.duration_ms,

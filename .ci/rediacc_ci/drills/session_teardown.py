@@ -1,10 +1,10 @@
 """I2: a repository's teardown ends its terminal and VS Code sessions on purpose, and a bare `repo down` leaves them alone.
 
-Since renet 8e5ecd2 a sandbox session's PID-namespace init lingers after the shell exits, until its last process is gone, so a nohup job or a VS Code server outlives its ssh channel. Every one of those processes sits in the shared exec cgroup `rediacc.slice/renet-exec-<N>`. `repo down --unmount` (and delete, takeover, autostart stop) reaches renet's SafeShutdown, which now ends them first through `ebpf.EndExecSessions` (SIGTERM, then cgroup.kill) and logs `Ended N sessions (M processes) of repository <name>`; before that only a racy SIGKILL net inside the LUKS close caught them, and a slow one failed the down.
+Since renet 8e5ecd2 a sandbox session's PID-namespace init lingers after the shell exits, until its last process is gone, so a nohup job or a VS Code server outlives its ssh channel. Every one of those processes sits in the shared exec cgroup `rediacc.slice/renet-exec-<N>`. `repo down --unmount` (and delete, takeover, autostart stop) reaches renet's SafeShutdown, which now ends them first through `ebpf.EndExecSessions` (SIGTERM, then cgroup.kill) and records the `sessions_end` step, which the CLI prints as `Sessions ended: N sessions (M processes)`; before that only a racy SIGKILL net inside the LUKS close caught them, and a slow one failed the down.
 
 `vm_check.py` registers this module once, through `EXTRA_RENET_STEPS`, as the `I2` step of the renet phase, after I1; `--only I2` drags in V1.2 (and with it P5 and V1.1), so fork A exists and is up when `run(ctx)` is called. `ctx` is the running `VmCheck`, driven the way tenant_isolation.py drives it: `./rdc.sh` through `rdc` and `shell`, root probes through `vm_ssh.ssh_argv` and `host_run`, rows through `check` and `record`. Every row records under `I2` and asserts the FIXED behaviour; a defect is a FAIL row.
 
-THE ROWS. I2.1 a nohup sleep started in A's session is alive after the channel closed, and renet-exec-<N>/cgroup.procs is not empty; I2.2 a held-open `rdc term connect -c 'sleep N'` runs (and returns once A goes down); I2.3 `rdc repo down <A> --unmount` exits 0; I2.4 its output carries the "Ended N sessions" line with N >= 1; I2.5 a root probe finds neither sleep alive, the exec cgroup unpopulated or gone, and /dev/mapper/<guid> absent; I2.6 `rdc repo up <A>` exits 0 and a fresh session works; I2.7 a bare `rdc repo down <A>` leaves a fresh nohup job alive, then `rdc repo up <A>` again.
+THE ROWS. I2.1 a nohup sleep started in A's session is alive after the channel closed, and renet-exec-<N>/cgroup.procs is not empty; I2.2 a held-open `rdc term connect -c 'sleep N'` runs (and returns once A goes down); I2.3 `rdc repo down <A> --unmount` exits 0; I2.4 its output carries the "Sessions ended: N sessions (M processes)" step line with N >= 1; I2.5 a root probe finds neither sleep alive, the exec cgroup unpopulated or gone, and /dev/mapper/<guid> absent; I2.6 `rdc repo up <A>` exits 0 and a fresh session works; I2.7 a bare `rdc repo down <A>` leaves a fresh nohup job alive, then `rdc repo up <A>` again.
 
 TEARDOWN. Every `sleep` this step started is killed by root at the end; one still running, or an ssh failure that proves nothing, rides `ctx.sweep_leftovers`, so the run cannot reach VERIFIED over it. A that is left down is brought up again (best effort; the run's teardown deletes the fork either way).
 """
@@ -28,8 +28,8 @@ HOLD_TIMEOUT_S = 900
 # How long, after the down returned, the held-open connect gets to notice its channel is gone.
 HOLD_JOIN_S = 60
 REPO_VERB_TIMEOUT_S = 900
-# renet's orchestration.sessions_ended line (English catalog): "Ended %d sessions (%d processes) of repository %s".
-ENDED_RE = re.compile(r"Ended (\d+) sessions \((\d+) processes\) of repository")
+# The CLI's rendering of renet's sessions_end step (English catalog): "✔ Sessions ended: 2 sessions (3 processes) (40ms)".
+ENDED_RE = re.compile(r"Sessions ended: (\d+) sessions \((\d+) processes\)")
 FRESH_MARK = "VMC-I2-FRESH"
 
 
@@ -37,7 +37,7 @@ FRESH_MARK = "VMC-I2-FRESH"
 
 
 def sessions_ended(text: str) -> tuple[int, int] | None:
-    """(sessions, processes) of the last "Ended N sessions (M processes)" line in `text`, or None when no such line printed."""
+    """(sessions, processes) of the last "Sessions ended: N sessions (M processes)" step line in `text`, or None when no such line printed."""
     found = ENDED_RE.findall(text)
     if not found:
         return None
@@ -269,9 +269,9 @@ class _LiveI2:
             got is not None and got[0] >= 1,
             self.down,
             (
-                "Ended %d sessions (%d processes)" % got
+                "Sessions ended: %d sessions (%d processes)" % got
                 if got
-                else "no 'Ended N sessions' line; %s" % self.ev(self.down)
+                else "no 'Sessions ended: N sessions' step line; %s" % self.ev(self.down)
             ),
         )
 

@@ -4,6 +4,8 @@ import {
   buildTimingBars,
   buildTimingSummary,
   buildTimingWaterfall,
+  getActiveLabel,
+  getDoneText,
   PARALLEL_STEP_DETAIL,
   type TimelineStep,
   unattributedMs,
@@ -155,5 +157,19 @@ describe('zero/negative wall guards', () => {
     expect(buildTimingBars(s, 0)).toBe('');
     expect(buildTimingWaterfall(s, -5, T0)).toBeNull();
     expect(buildTimingSummary(s, 0, { minWallMs: 0 })).toBeNull();
+  });
+});
+
+describe('getDoneText', () => {
+  it('labels the sessions_end step and appends its detail', () => {
+    expect(getActiveLabel('sessions_end')).toBe('Ending sessions');
+    expect(getDoneText('sessions_end', '2 sessions (3 processes)')).toBe(
+      'Sessions ended: 2 sessions (3 processes)'
+    );
+  });
+
+  it('adds nothing without a detail or for the parallel marker', () => {
+    expect(getDoneText('docker_stop')).toBe('Docker stopped');
+    expect(getDoneText('dns', PARALLEL_STEP_DETAIL)).toBe('DNS records ensured');
   });
 });
