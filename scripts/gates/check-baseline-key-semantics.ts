@@ -195,7 +195,7 @@ function main(): number {
   }
 
   let anyOffenders = false;
-  for (const rel of candidates.sort()) {
+  for (const rel of candidates.sort((a, b) => Number(a > b) - Number(a < b))) {
     const abs = path.join(REPO_ROOT, rel);
     if (!existsSync(abs)) continue;
     let parsed: unknown;

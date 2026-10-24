@@ -353,7 +353,7 @@ function main(argv: string[]): void {
   }
 
   const read = (f: string): string => readFileSync(path.join(ROOT, f), 'utf8');
-  const current = findings(read, files).sort();
+  const current = findings(read, files).sort((a, b) => Number(a > b) - Number(a < b));
 
   if (argv.includes('--write-baseline')) {
     // The shared plumbing, not a fourth hand-rolled copy: check:ci-shape-duplication refused this file the first time precisely because the read/verdict/refuse/write sequence had reached three copies across the consumers.

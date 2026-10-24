@@ -308,11 +308,11 @@ function lineHasArticleContext(line: string): boolean {
 }
 
 function extractArticleRef(line: string): string | null {
-  const a = line.match(ARTICLE_REF);
+  const a = ARTICLE_REF.exec(line);
   if (a) return a[0];
-  const r = line.match(RECITAL_REF);
+  const r = RECITAL_REF.exec(line);
   if (r) return r[0];
-  const x = line.match(ANNEX_REF);
+  const x = ANNEX_REF.exec(line);
   if (x) return x[0];
   return null;
 }
@@ -341,7 +341,7 @@ function extractQuotesFromFile(
     lang: SnapshotLang;
     source: 'file' | 'marker' | 'fallback';
   } {
-    const m = line.match(QUOTE_LANG_MARKER) ?? prevLine.match(QUOTE_LANG_MARKER);
+    const m = QUOTE_LANG_MARKER.exec(line) ?? QUOTE_LANG_MARKER.exec(prevLine);
     if (m) {
       const requested = m[1]!.toLowerCase() as SnapshotLang;
       if ((SNAPSHOT_LANGS as readonly string[]).includes(requested)) {

@@ -338,7 +338,9 @@ export function compareStep(
       });
     }
   }
-  for (const [k, e] of [...expected].sort()) {
+  for (const [k, e] of [...expected].sort(
+    (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))
+  )) {
     if (!(k in actual)) {
       out.push({
         kind: 'lock-only',
@@ -489,7 +491,7 @@ function main(): number {
   for (const f of shape.findings) byKind.set(f.kind, (byKind.get(f.kind) ?? 0) + 1);
   console.error(
     `  ${[...byKind]
-      .sort()
+      .sort((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
       .map(([k, n]) => `${k}: ${n}`)
       .join(', ')}`
   );
@@ -553,7 +555,7 @@ function selftest(): number {
   const kinds = (f: Finding[]): string =>
     f
       .map((x) => `${x.kind}:${x.key}`)
-      .sort()
+      .sort((a, b) => Number(a > b) - Number(a < b))
       .join(',');
   const full = { GH_TOKEN: '${{ github.token }}', QUOTED: '0.36.0' };
 

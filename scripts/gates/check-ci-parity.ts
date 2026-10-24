@@ -510,7 +510,7 @@ function analyze(inp: Inputs): Finding[] {
 
   // --- 3. R1: every defined check:ci-* gate is in the manifest -------------
   for (const key of Object.keys(rootScripts)) {
-    if (!/^check:ci-/.test(key)) continue;
+    if (!key.startsWith('check:ci-')) continue;
     if (byId.has(key) || exempt.has(key)) continue;
     add(
       'R1',
@@ -601,8 +601,10 @@ function analyze(inp: Inputs): Finding[] {
       );
     }
     if (isKey) {
-      const declared = [...g.leaves].sort().join('|');
-      const actual = [...resolveLeaves(rootScripts[g.id] ?? '', inp.scripts)].sort().join('|');
+      const declared = [...g.leaves].sort((a, b) => Number(a > b) - Number(a < b)).join('|');
+      const actual = [...resolveLeaves(rootScripts[g.id] ?? '', inp.scripts)]
+        .sort((a, b) => Number(a > b) - Number(a < b))
+        .join('|');
       if (declared !== actual) {
         add(
           'hygiene',

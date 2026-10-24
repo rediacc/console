@@ -103,7 +103,7 @@ export function scopeOf(root: string): string[] {
   )
     .split('\n')
     .filter(Boolean);
-  return [...new Set(out)].sort();
+  return [...new Set(out)].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** Everything the incoming-* rules point at, which lives outside `scripts/` until P2 runs. */
@@ -119,7 +119,7 @@ export function incomingOf(root: string, partition: DomainPartition): string[] {
     if (file.startsWith('scripts/')) continue;
     if (classify(partition, file).rule !== null) out.add(file);
   }
-  return [...out].sort();
+  return [...out].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 export interface Report {
@@ -191,11 +191,11 @@ export function judge(
     .map((r) => `${r.id}: ${r.home}`);
 
   return {
-    unclassified: unclassified.sort(),
-    shadowed: shadowed.sort(),
-    dead: dead.sort(),
-    missingHomes: missingHomes.sort(),
-    outOfPlace: outOfPlace.sort(),
+    unclassified: unclassified.sort((a, b) => Number(a > b) - Number(a < b)),
+    shadowed: shadowed.sort((a, b) => Number(a > b) - Number(a < b)),
+    dead: dead.sort((a, b) => Number(a > b) - Number(a < b)),
+    missingHomes: missingHomes.sort((a, b) => Number(a > b) - Number(a < b)),
+    outOfPlace: outOfPlace.sort((a, b) => Number(a > b) - Number(a < b)),
     inPlace,
   };
 }
@@ -209,7 +209,7 @@ export function groupByRule(partition: DomainPartition, files: readonly string[]
     byRule.set(id, [...(byRule.get(id) ?? []), f]);
   }
   return [...byRule.entries()]
-    .sort()
+    .sort((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
     .map(([id, fs_]) => `${id}: ${fs_.length} file(s) -> ${classify(partition, fs_[0]).home}`);
 }
 

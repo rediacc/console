@@ -340,7 +340,9 @@ function invocationShapes(value: string): string[] {
 
     // Only invocations that actually name a command are compared. `rdc para usar ...` names nothing, so it is prose in every language, including English.
     if (parts.length > 0) {
-      shapes.push(`${parts.join(' ')} [${flags.sort().join(' ')}]`);
+      shapes.push(
+        `${parts.join(' ')} [${flags.sort((a, b) => Number(a > b) - Number(a < b)).join(' ')}]`
+      );
       continue;
     }
 
@@ -352,7 +354,7 @@ function invocationShapes(value: string): string[] {
     if (head && /^[a-z][a-z0-9-]*$/.test(head)) shapes.push(`?${head}`);
   }
 
-  return shapes.sort();
+  return shapes.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 function checkI18nCommandExamples(out: Violation[]): void {

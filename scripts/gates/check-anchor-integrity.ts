@@ -80,8 +80,8 @@ interface PageScan {
  *  the other way round elsewhere, so anything that assumes an order silently misses half
  *  the tags -- the first draft of this gate did exactly that and reported ZERO duplicate
  *  TOC fragments on a page that has seven `#set` links. */
-function attrs(tag: string): Record<string, string> {
-  const out: Record<string, string> = {};
+function attrs(tag: string): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
   for (const m of tag.matchAll(/([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*("([^"]*)"|'([^']*)')/g)) {
     out[m[1].toLowerCase()] = m[3] ?? m[4] ?? '';
   }

@@ -295,7 +295,7 @@ function buildHeaders(url: string): Record<string, string> {
   // Either name: this site read only GITHUB_TOKEN and was the reason every local
   // invocation set the same value twice. See scripts/lib/github-token.ts.
   const token = githubToken();
-  if (token && /^https:\/\/api\.github\.com\//.test(url)) {
+  if (token && url.startsWith('https://api.github.com/')) {
     headers['Authorization'] = `Bearer ${token}`;
     headers['Accept'] = 'application/vnd.github+json';
   }
@@ -328,14 +328,15 @@ const GH_NON_REPO_OWNERS = new Set([
 
 export function toApiUrl(url: string): string | null {
   // A bare repo page (optional trailing slash, query or fragment) maps to the repos endpoint.
-  const bare = url.match(/^https:\/\/github\.com\/([^/?#]+)\/([^/?#]+)\/?(?:[?#].*)?$/);
+  const bare = /^https:\/\/github\.com\/([^/?#]+)\/([^/?#]+)\/?(?:[?#].*)?$/.exec(url);
   if (bare) {
     if (GH_NON_REPO_OWNERS.has(bare[1].toLowerCase())) return null;
     return `${WK_GH_API_BASE}/repos/${bare[1]}/${bare[2]}`;
   }
-  const m = url.match(
-    /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(issues|pull|tree|blob)\/(.+?)(?:[?#].*)?$/
-  );
+  const m =
+    /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(issues|pull|tree|blob)\/(.+?)(?:[?#].*)?$/.exec(
+      url
+    );
   if (!m) return null;
   const [, owner, repo, kind, rest] = m;
   if (kind === 'issues' || kind === 'pull') {
@@ -372,7 +373,8 @@ async function ask(url: string, method: 'GET' | 'HEAD', maxAttempts?: number): P
 
 async function checkUrl(original: string): Promise<LinkVerdict> {
   // Rewrite github.com HTML URLs to api.github.com so GITHUB_TOKEN actually authorises the request. Only used when GITHUB_TOKEN is available.
-  const url = (githubToken() && toApiUrl(original)) || original;
+  const apiUrl = githubToken() ? toApiUrl(original) : null;
+  const url = apiUrl ?? original;
   let headFailure: NotCompared;
   try {
     await ask(url, 'HEAD');
@@ -442,7 +444,7 @@ async function probeOnce(url: string): Promise<ProbeOutcome> {
     await res.text().catch(() => {});
     return res.ok ? { kind: 'ok', status: res.status } : { kind: 'blocked', status: res.status };
   } catch (err) {
-    const cause = (err as { cause?: { code?: string } })?.cause;
+    const cause = (err as { cause?: { code?: string } } | undefined)?.cause;
     const code = cause?.code ?? '';
     // A name that no longer resolves is categorically different from a name that resolves and refuses us. The allowlist claims "reachable from a browser"; NXDOMAIN says nothing is reachable from anywhere.
     if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
@@ -715,7 +717,7 @@ export function failureKeys(f: FailureInputs): string[] {
     keys.add(hostKey(u).replace('link:', 'known-broken-stale:'));
   if (f.zeroProbes) keys.add('link:liveness-zero-probes');
   if (f.checkedNothing) keys.add('link:nothing-checked');
-  return [...keys].sort();
+  return [...keys].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 function selftestFailureKeys(): number {
@@ -881,7 +883,7 @@ async function main() {
   if (skipped.length > 0) {
     console.log(`\n  Allowlisted domains (verified manually):`);
     const domains = new Set(skipped.map((e) => new URL(e.url).hostname));
-    for (const domain of [...domains].sort()) {
+    for (const domain of [...domains].sort((a, b) => Number(a > b) - Number(a < b))) {
       console.log(`    - ${domain}`);
     }
   }

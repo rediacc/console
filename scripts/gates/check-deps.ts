@@ -740,7 +740,7 @@ async function withRegistrySlot<T>(task: () => Promise<T>): Promise<T> {
 
 function fetchPackument(name: string): Promise<Packument | null> {
   const cached = packumentCache.get(name);
-  if (cached) return cached;
+  if (cached !== undefined) return cached;
   const loaded = FIXTURE_ROOT
     ? withRegistrySlot(async () => {
         // A fixture still goes through the pool, with a tick of latency, so the selftest drives the same concurrency path a real run does.
@@ -2153,7 +2153,7 @@ async function selftest(): Promise<void> {
   const names = (l: PackageInfo[]) =>
     l
       .map((p) => p.name)
-      .sort()
+      .sort((a, b) => Number(a > b) - Number(a < b))
       .join(',');
   expect(
     'a sub-manifest major is HELD, not must-upgrade',
@@ -2248,13 +2248,14 @@ async function selftest(): Promise<void> {
     '/r',
     { 'node_modules/vite': { version: '6.4.2' } }
   );
+  const normEntries: Record<string, OutdatedPackageInfo | undefined> = norm.entries;
   expect(
     'an ARRAY entry (several workspaces) is judged, not dropped',
-    norm.entries.tsx?.current === '4.22.1'
+    normEntries.tsx?.current === '4.22.1'
   );
   expect(
     'an entry with no `current` (CI, no node_modules) takes it from the lockfile',
-    norm.entries.vite?.current === '6.4.2'
+    normEntries.vite?.current === '6.4.2'
   );
   expect(
     'an entry neither source can place is reported unknown',
@@ -2373,7 +2374,7 @@ async function selftest(): Promise<void> {
   );
   const upMajors = planJsonOf(incident)
     .majors.map((m) => m.key)
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
   expect(
     'e2e pins: the majors are offered as releases of their own, named by the allow key a `--to` takes',
     upMajors.join() === 'private/account/web:lucide-react@1,private/account/web:vite@8',
@@ -2577,7 +2578,9 @@ async function selftest(): Promise<void> {
         },
       ]
     );
-    const shown = steps.map((s) => `${s.label} :: ${s.args.join(' ')}`).sort();
+    const shown = steps
+      .map((s) => `${s.label} :: ${s.args.join(' ')}`)
+      .sort((a, b) => Number(a > b) - Number(a < b));
     const want = [
       'packages/www (install) :: install -w=packages/www --save-exact tsx@4.23.15',
       'private/account (update) :: update react-hook-form',

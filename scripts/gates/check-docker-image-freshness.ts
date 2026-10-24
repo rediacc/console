@@ -200,7 +200,7 @@ export function parsePins(src: string, file: string): Pin[] {
 
 /** A numeric series, so `3.9-slim` and `3.13-slim` are comparable but `bookworm` is not. */
 export function series(tag: string): number[] | null {
-  const m = tag.match(/^v?(\d+)(?:\.(\d+))?/);
+  const m = /^v?(\d+)(?:\.(\d+))?/.exec(tag);
   if (!m) return null;
   return [Number(m[1]), m[2] === undefined ? -1 : Number(m[2])];
 }
@@ -498,7 +498,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const files = gitVisible(findDockerfiles(ROOT).sort());
+  const files = gitVisible(findDockerfiles(ROOT).sort((a, b) => Number(a > b) - Number(a < b)));
   const pins: Pin[] = [];
   for (const f of files) pins.push(...parsePins(readFileSync(f, 'utf8'), path.relative(ROOT, f)));
 

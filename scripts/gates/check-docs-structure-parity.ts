@@ -164,7 +164,9 @@ for (const m of mismatches) {
 }
 
 const problems: string[] = [];
-for (const [doc, list] of [...byDoc].sort()) {
+for (const [doc, list] of [...byDoc].sort(
+  (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))
+)) {
   const allowed = BASELINE[doc] ?? 0;
   if (list.length > allowed) {
     problems.push(
