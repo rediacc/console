@@ -602,8 +602,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 1,
+      "open": 15,
+      "done": 2,
       "open_sigs": [
         "1b27a3ae",
         "1d51cecc",
@@ -617,13 +617,13 @@
         "9cbf1906",
         "a97866e0",
         "abbd7b20",
-        "b46df911",
         "d61fcd63",
         "ec8aabe0",
         "fcb61e61"
       ],
       "done_sigs": [
-        "5b93fe0a"
+        "5b93fe0a",
+        "b46df911"
       ]
     },
     "agent/plans/PLAN-deletion-budget.md": {
