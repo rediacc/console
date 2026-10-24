@@ -29,7 +29,8 @@
       "index": 4,
       "ids": [
         "e2e-workers:05-rediaccfiles-updown.test.ts",
-        "e2e-workers:10-backup-checkpoint.test.ts"
+        "e2e-workers:10-backup-checkpoint.test.ts",
+        "e2e-workers:29-proxy-local-executor.test.ts"
       ]
     },
     {

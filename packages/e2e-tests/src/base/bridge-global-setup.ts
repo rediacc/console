@@ -292,7 +292,8 @@ async function configureRustFSWorkers(opsManager: ReturnType<typeof getOpsManage
  */
 async function prepareWorkerServices(
   opsManager: ReturnType<typeof getOpsManager>,
-  infra: InfrastructureManager
+  infra: InfrastructureManager,
+  keepDatastores: boolean
 ) {
   console.warn('');
   console.warn('Steps 5-8: RustFS (bridge), rclone then CRIU (workers), datastores (workers)...');
@@ -312,7 +313,7 @@ async function prepareWorkerServices(
       name: 'Step 7: datastores on the workers',
       run: () =>
         timed('Step 7 datastores', () =>
-          opsManager.initializeAllDatastores('10G', DEFAULT_DATASTORE_PATH)
+          opsManager.initializeAllDatastores('10G', DEFAULT_DATASTORE_PATH, keepDatastores)
         ),
     },
   ]);
@@ -444,7 +445,7 @@ async function bridgeGlobalSetup(_config: FullConfig) {
 
     // Steps 5-8 need Step 4 and nothing from each other beyond what prepareWorkerServices orders. A run without workers is the Ceph-only topology, whose suites under tests/ceph never touch RustFS, datastores on workers or CRIU.
     if (opsManager.getWorkerVMIps().length > 0) {
-      await timed('Steps 5-8 total', () => prepareWorkerServices(opsManager, infra));
+      await timed('Steps 5-8 total', () => prepareWorkerServices(opsManager, infra, skipReset));
     } else {
       console.warn('');
       console.warn('Steps 5-8: skipped (no workers in this topology)');

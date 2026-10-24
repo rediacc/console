@@ -116,11 +116,14 @@ export class OpsManager extends BaseOpsManager {
    */
   async initializeAllDatastores(
     size = '10G',
-    datastorePath = DEFAULT_DATASTORE_PATH
+    datastorePath = DEFAULT_DATASTORE_PATH,
+    keepExisting = false
   ): Promise<void> {
     console.warn('[OpsManager] Initializing datastores on all worker VMs...');
     await Promise.all(
-      this.getWorkerVMIps().map((ip) => this.initializeDatastore(ip, size, datastorePath))
+      this.getWorkerVMIps().map((ip) =>
+        this.initializeDatastore(ip, size, datastorePath, keepExisting)
+      )
     );
     console.warn('[OpsManager] All datastores initialized');
   }
@@ -131,9 +134,21 @@ export class OpsManager extends BaseOpsManager {
   async initializeDatastore(
     ip: string,
     size = '10G',
-    datastorePath = DEFAULT_DATASTORE_PATH
+    datastorePath = DEFAULT_DATASTORE_PATH,
+    keepExisting = false
   ): Promise<void> {
     console.warn(`  Initializing datastore on ${ip}...`);
+
+    // `--force` deletes an existing datastore first (private/renet cmd/renet/datastore_init.go:105-117). A run that asked
+    // to keep the fleet (BRIDGE_TEST_SKIP_RESET=1 or KEEP_CLUSTER=1) leaves a mounted datastore and every repo on it alone:
+    // on 2026-10-24 an unconditional init wiped a repo on worker .11 although the reset was skipped.
+    if (keepExisting) {
+      const mounted = await this.executeOnVM(ip, `mountpoint -q ${datastorePath}`, 30000);
+      if (mounted.code === 0) {
+        console.warn(`  ✓ Datastore already mounted on ${ip}; kept (fleet reuse)`);
+        return;
+      }
+    }
 
     // Initialize the base BTRFS datastore pool via the `renet datastore init` CLI. The datastore-centric redesign removed the `datastore_init` BRIDGE function (only named-datastore verbs — datastore_create/attach/... — are registered now), so the old `functions once --function datastore_init` path fails with "no command builder registered". The CLI command (needs root for the BTRFS mount, like `sudo renet setup`) is the surviving way to lay down /mnt/rediacc.
     const result = await this.executeOnVM(

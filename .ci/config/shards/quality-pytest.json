@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-23T19:58:09.754Z",
+  "generatedAt": "2026-10-24T05:53:59.076Z",
   "legs": [
     {
       "index": 1,
@@ -647,6 +647,7 @@
         "pytest:.ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_cli_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_ops_host_check.py",
+        "pytest:.ci/rediacc_ci/tests/test_proxy_wrangler_dev_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_account_env_retired.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_branch.py",

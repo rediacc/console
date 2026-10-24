@@ -36,7 +36,7 @@ PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --grep "@backup"
 
 `--test <substring>` is the one that turns a 40-minute suite into a 60-second one. Use it while iterating, then run the whole thing once before pushing.
 
-**A run resets the fleet unless told not to.** The suite's global setup runs `renet ops up --force --parallel`, which destroys and recreates VMs 1, 11 and 12 and every repo on them (the vm:check `vmcheck-base` grand included), because the generated `.env` does not set `BRIDGE_TEST_SKIP_RESET`. Prefix the run with `BRIDGE_TEST_SKIP_RESET=1` on a fleet that is already up and set up; measured on 2026-10-24, when one unprefixed run wiped the vm:check fixtures.
+**A run resets the fleet unless told not to.** The suite's global setup runs `renet ops up --force --parallel`, which destroys and recreates VMs 1, 11 and 12 and every repo on them (the vm:check `vmcheck-base` grand included), because the generated `.env` does not set `BRIDGE_TEST_SKIP_RESET`. Prefix the run with `BRIDGE_TEST_SKIP_RESET=1` on a fleet that is already up and set up; measured on 2026-10-24, when one unprefixed run wiped the vm:check fixtures. With the flag, setup Step 7 also leaves an already-mounted datastore alone instead of running `renet datastore init --force` over it (the init deletes every repo on the datastore; a prefixed run did exactly that on worker .11 before the fix).
 
 ## The three traps that only bite locally
 
