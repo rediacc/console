@@ -110,7 +110,7 @@ describe('device token refresh (T11)', () => {
   });
 
   it('refreshes the four dead-chain reasons and never decryption_failed', () => {
-    expect([...REFRESHABLE_AUTH_REASONS].sort()).toEqual([
+    expect([...REFRESHABLE_AUTH_REASONS].sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
       'invalid_token',
       'ip_mismatch',
       'token_exhausted',

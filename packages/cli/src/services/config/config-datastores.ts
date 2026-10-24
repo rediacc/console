@@ -102,7 +102,7 @@ export async function getDatastore(ref: string): Promise<DatastoreConfig> {
   const all = await listDatastores();
   const record = at(all, ref);
   if (!record) {
-    const known = Object.keys(all).sort();
+    const known = Object.keys(all).sort((a, b) => Number(a > b) - Number(a < b));
     throw notFound(`datastore "${ref}" is not in this config.`, {
       details:
         known.length > 0
@@ -188,5 +188,5 @@ export async function reposInDatastore(ref: string): Promise<string[]> {
       found.push(tag === family.grand ? name : `${name}:${tag}`);
     }
   }
-  return found.sort();
+  return found.sort((a, b) => Number(a > b) - Number(a < b));
 }

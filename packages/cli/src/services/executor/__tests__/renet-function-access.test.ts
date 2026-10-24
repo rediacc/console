@@ -36,19 +36,21 @@ const EXPECTED_READ_ONLY = [
   'repository_policy_get',
   'repository_status',
   'repository_validate',
-].sort();
+].sort((a, b) => Number(a > b) - Number(a < b));
 
 describe('RENET_FUNCTION_ACCESS', () => {
   it('classifies exactly the expected functions as read-only, in both directions', () => {
     const readOnly = Object.entries(RENET_FUNCTION_ACCESS)
       .filter(([, access]) => access === 'read-only')
       .map(([name]) => name)
-      .sort();
+      .sort((a, b) => Number(a > b) - Number(a < b));
     expect(readOnly).toEqual(EXPECTED_READ_ONLY);
   });
 
   it('classifies every contract function', () => {
-    expect(Object.keys(RENET_FUNCTION_ACCESS).sort()).toEqual([...RENET_FUNCTIONS].sort());
+    expect(
+      Object.keys(RENET_FUNCTION_ACCESS).sort((a, b) => Number(a > b) - Number(a < b))
+    ).toEqual([...RENET_FUNCTIONS].sort((a, b) => Number(a > b) - Number(a < b)));
   });
 
   it('keeps arbitrary-command functions on the provision side', () => {

@@ -97,7 +97,7 @@ export interface ResolvedMachine {
 function resolveStoredTag(name: string, family: RepoFamily, parsedTag: string | undefined): string {
   if (parsedTag === undefined) return family.grand;
   if (!(parsedTag in family.tags)) {
-    const known = Object.keys(family.tags).sort();
+    const known = Object.keys(family.tags).sort((a, b) => Number(a > b) - Number(a < b));
     throw notFound(`repository "${name}" has no tag "${parsedTag}".`, {
       details:
         known.length > 0
@@ -121,7 +121,7 @@ function resolveFamilyTag(
 ): { family: RepoFamily; tag: string } {
   // `in` guards, not `?.`, the PlacementView maps are typed non-undefined at the value (noUncheckedIndexedAccess is off), so a membership test is the codebase's lint-clean way to detect a missing key (as resolveStoredTag does).
   if (!(name in view.families)) {
-    const known = Object.keys(view.families).sort();
+    const known = Object.keys(view.families).sort((a, b) => Number(a > b) - Number(a < b));
     throw notFound(`repository "${name}" is not in this config.`, {
       details: known.length > 0 ? [`known repositories: ${known.join(', ')}`] : undefined,
     });

@@ -75,11 +75,11 @@ describe('concurrent writers of one config keep every record', () => {
     longRepos.other = repo(2);
     await long.setRepositories(longRepos);
 
-    expect(Object.keys(onDisk().resources?.repositories ?? {}).sort()).toEqual([
-      'other',
-      'rca74-a',
-      'seed',
-    ]);
+    expect(
+      Object.keys(onDisk().resources?.repositories ?? {}).sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )
+    ).toEqual(['other', 'rca74-a', 'seed']);
   });
 
   it('a removal and an addition by two stale views both land, and other buckets are untouched', async () => {
@@ -96,7 +96,9 @@ describe('concurrent writers of one config keep every record', () => {
 
     const doc = onDisk();
     expect(doc.resources?.repositories).toBeUndefined();
-    expect(Object.keys(doc.resources?.machines ?? {}).sort()).toEqual(['m1', 'm2']);
+    expect(
+      Object.keys(doc.resources?.machines ?? {}).sort((a, b) => Number(a > b) - Number(a < b))
+    ).toEqual(['m1', 'm2']);
   });
 
   it('twenty concurrent writers, each loaded before any persisted, lose nothing', async () => {
@@ -130,7 +132,11 @@ describe('concurrent writers of one config keep every record', () => {
     delete second['mine:latest'];
     await view.setRepositories(second);
 
-    expect(Object.keys(onDisk().resources?.repositories ?? {}).sort()).toEqual(['seed', 'theirs']);
+    expect(
+      Object.keys(onDisk().resources?.repositories ?? {}).sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )
+    ).toEqual(['seed', 'theirs']);
   });
 
   it('archive records appended by two stale views both land', async () => {
@@ -141,7 +147,9 @@ describe('concurrent writers of one config keep every record', () => {
     await second.setDeletedRepositories([...second.getDeletedRepositories(), archived(6)]);
 
     expect(
-      (onDisk().resources?.deletedRepositories ?? []).map((r) => r.repositoryGuid).sort()
+      (onDisk().resources?.deletedRepositories ?? [])
+        .map((r) => r.repositoryGuid)
+        .sort((a, b) => Number(a > b) - Number(a < b))
     ).toEqual([archived(5).repositoryGuid, archived(6).repositoryGuid]);
   });
 

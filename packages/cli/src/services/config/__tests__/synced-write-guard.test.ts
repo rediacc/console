@@ -136,7 +136,7 @@ describe('synced-write guard', () => {
       'services/config/synced-write.ts',
       `${files.get('services/config/synced-write.ts') ?? ''}\nconfigFileStorage.save(cfg, name);\n`
     );
-    expect(violations(countWrites(files)).sort()).toEqual([
+    expect(violations(countWrites(files)).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
       `${planted}: 1 direct config write(s); use updateSyncedConfig (synced-write.ts)`,
       'services/config/synced-write.ts: 4 direct config writes, 3 allowed',
     ]);

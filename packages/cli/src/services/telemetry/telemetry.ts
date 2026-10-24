@@ -69,9 +69,9 @@ class CliTelemetryService {
   private tracer: Tracer | null = null;
   private logger: Logger | null = null;
   private metricReader: PeriodicExportingMetricReader | null = null;
-  private isEnabled = true;
-  private isInitialized = false;
-  private profilingStarted = false;
+  private isEnabled = true as boolean;
+  private isInitialized = false as boolean;
+  private profilingStarted = false as boolean;
   private readonly sessionId: string;
   private userContext: Partial<UserContext> = {};
   private readonly activeSpans: Map<string, Span> = new Map();
@@ -441,7 +441,7 @@ class CliTelemetryService {
     }
 
     // Prevent multiple shutdown calls
-    if (this.pendingShutdown) {
+    if (this.pendingShutdown !== null) {
       return this.pendingShutdown;
     }
 

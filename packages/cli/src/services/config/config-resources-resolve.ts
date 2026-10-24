@@ -85,7 +85,7 @@ function derivedGrandTag(
 ): string | undefined {
   const keys = Object.keys(repos)
     .filter((key) => parseRepoRef(key).name === baseName)
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
   const grands = keys.filter((key) => !isForkConfig(repos[key])).map((k) => parseRepoRef(k).tag);
   if (grands.includes(RESERVED_GRAND_TAG)) return RESERVED_GRAND_TAG;
   const pick = grands[0] ?? (keys.length > 0 ? parseRepoRef(keys[0]).tag : undefined);

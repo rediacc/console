@@ -78,7 +78,7 @@ describe('generateClusterTfJson', () => {
   it('materializes one instance per member as <cluster>-<pool>-<n>', () => {
     const tf = generateClusterTfJson({ ...twoPoolSpec, mapping: linodeMapping });
     const instances = (tf.resource as Record<string, Record<string, unknown>>).linode_instance;
-    expect(Object.keys(instances).sort()).toEqual([
+    expect(Object.keys(instances).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
       'prod-ceph-1',
       'prod-ceph-2',
       'prod-ceph-3',
@@ -131,7 +131,7 @@ describe('generateClusterTfJson', () => {
     const resources = tf.resource as Record<string, Record<string, Record<string, unknown>>>;
     const volumes = resources.linode_volume;
     // One volume per ceph member; k8s members (no disks) get none.
-    expect(Object.keys(volumes).sort()).toEqual([
+    expect(Object.keys(volumes).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
       'prod-ceph-1-osd1',
       'prod-ceph-2-osd1',
       'prod-ceph-3-osd1',
@@ -167,13 +167,9 @@ describe('generateClusterTfJson', () => {
     const resources = tf.resource as Record<string, Record<string, unknown>>;
     expect(resources.hcloud_network).toBeDefined();
     expect(resources.hcloud_network_subnet).toBeDefined();
-    expect(Object.keys(resources.hcloud_server_network).sort()).toEqual([
-      'prod-ceph-1',
-      'prod-ceph-2',
-      'prod-ceph-3',
-      'prod-k8s-1',
-      'prod-k8s-2',
-    ]);
+    expect(
+      Object.keys(resources.hcloud_server_network).sort((a, b) => Number(a > b) - Number(a < b))
+    ).toEqual(['prod-ceph-1', 'prod-ceph-2', 'prod-ceph-3', 'prod-k8s-1', 'prod-k8s-2']);
     // resource_id ssh: exactly one shared key resource for the cluster.
     expect(resources.hcloud_ssh_key).toBeDefined();
     expect(Object.keys(resources.hcloud_ssh_key)).toEqual(['cluster']);

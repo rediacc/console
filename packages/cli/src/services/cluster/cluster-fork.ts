@@ -116,7 +116,10 @@ async function listClusterCephDatastores(
   }
   // Deterministic order: control datastore first, then data datastores sorted.
   const control = controlDatastore(clusterName);
-  return [...members.filter((m) => m === control), ...members.filter((m) => m !== control).sort()];
+  return [
+    ...members.filter((m) => m === control),
+    ...members.filter((m) => m !== control).sort((a, b) => Number(a > b) - Number(a < b)),
+  ];
 }
 
 /**

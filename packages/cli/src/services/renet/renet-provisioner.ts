@@ -185,7 +185,7 @@ class RenetProvisionerService {
     }
 
     const inflight = this.inflight.get(cacheKey);
-    if (inflight) {
+    if (inflight !== undefined) {
       return inflight;
     }
 

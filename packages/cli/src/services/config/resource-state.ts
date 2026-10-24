@@ -101,7 +101,7 @@ function flattenRepositories(
 
 /** Which tag is the production (grand) line: grandGuid unset or self-referential. */
 function deriveGrand(tags: Record<string, RepoRecord>): string {
-  const keys = Object.keys(tags).sort();
+  const keys = Object.keys(tags).sort((a, b) => Number(a > b) - Number(a < b));
   const grands = keys.filter((t) => {
     const g = tags[t].grandGuid;
     return !g || g === tags[t].repositoryGuid;

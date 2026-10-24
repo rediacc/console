@@ -272,7 +272,7 @@ export interface AccountFetchError extends Error {
  * Used during login to auto-sync update channel and discover e2e keys.
  */
 export interface ServerInfo {
-  e2e: { keys: { keyId: string; publicKeySpki: string }[] };
+  e2e?: { keys: { keyId: string; publicKeySpki: string }[] };
   apiVersion: number;
   minCliVersion: string;
   warnCliVersion: string | null;

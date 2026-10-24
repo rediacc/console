@@ -221,7 +221,7 @@ function handleAuthedFrame(
         pid: process.pid,
         uptimeMs: Date.now() - ctx.startedAt,
         identity: ctx.identity,
-        warmHosts: [...ctx.warmHosts.keys()].sort(),
+        warmHosts: [...ctx.warmHosts.keys()].sort((a, b) => Number(a > b) - Number(a < b)),
       });
       return;
     case 'stop':

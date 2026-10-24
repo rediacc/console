@@ -130,7 +130,10 @@ describe('addRepository credential collision guard', { timeout: 30000 }, () => {
       credential: 'cred-b',
     });
 
-    expect(Object.keys(mockRepos).sort()).toEqual(['shop:latest', 'shop:staging']);
+    expect(Object.keys(mockRepos).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      'shop:latest',
+      'shop:staging',
+    ]);
   });
 
   it('allows rewriting a record in place under its own key', async () => {

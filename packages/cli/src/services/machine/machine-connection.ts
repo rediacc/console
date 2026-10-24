@@ -222,7 +222,7 @@ class MachineConnectionManager {
    * a fresh SFTPClient replaces it. Concurrent callers share the reconnect.
    */
   private ensureLive(entry: ConnectionEntry): Promise<void> {
-    if (entry.connectPromise) return entry.connectPromise;
+    if (entry.connectPromise !== null) return entry.connectPromise;
     if (entry.sftp.isConnected()) return Promise.resolve();
     try {
       entry.sftp.close();
