@@ -28,7 +28,7 @@ HOLD_TIMEOUT_S = 900
 # How long, after the down returned, the held-open connect gets to notice its channel is gone.
 HOLD_JOIN_S = 60
 REPO_VERB_TIMEOUT_S = 900
-# The CLI's rendering of renet's sessions_end step (English catalog): "✔ Sessions ended: 2 sessions (3 processes) (40ms)".
+# The CLI's rendering of renet's sessions_end step: the label is hard-coded in packages/cli/src/utils/timeline.ts doneLabels, the counts come from renet's English orchestration.sessions_ended_detail text: "✔ Sessions ended: 2 sessions (3 processes) (40ms)".
 ENDED_RE = re.compile(r"Sessions ended: (\d+) sessions \((\d+) processes\)")
 FRESH_MARK = "VMC-I2-FRESH"
 

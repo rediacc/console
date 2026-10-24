@@ -141,6 +141,13 @@ export function getDoneText(name: string, detail?: string): string {
   return detail && detail !== PARALLEL_STEP_DETAIL ? `${label}: ${detail}` : label;
 }
 
+/** A finished step's line text where parallel steps stay visible: a parallel step reads `Label (∥)`, any other detail follows as `Label: detail`. */
+export function getDoneLine(name: string, detail?: string): string {
+  return detail === PARALLEL_STEP_DETAIL
+    ? `${getDoneLabel(name)} (${detail})`
+    : getDoneText(name, detail);
+}
+
 // --------------------------------------------------------------------------- End-of-command timing summary: proportional bars + waterfall.
 // Pure string builders so they are unit-testable; callers decide whether to
 // print (TTY only) and pass the wall-clock duration they displayed as Total. ---------------------------------------------------------------------------

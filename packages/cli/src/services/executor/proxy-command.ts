@@ -16,13 +16,7 @@
 import type { ContractCommand } from '@rediacc/shared/cli-contract';
 import { getCommand } from '@rediacc/shared/cli-contract';
 import type { Command } from 'commander';
-import {
-  formatStepDuration,
-  getActiveLabel,
-  getDoneLabel,
-  getDoneText,
-  PARALLEL_STEP_DETAIL,
-} from '../../utils/timeline.js';
+import { formatStepDuration, getActiveLabel, getDoneLine } from '../../utils/timeline.js';
 import { exitProcess, writeStderr, writeStdout } from '../core/request-context.js';
 import { ProxyClient, type ProxyCommandOutcome } from './proxy-client.js';
 import type { RenetEvent } from './types.js';
@@ -189,11 +183,7 @@ function renderEvent(event: RenetEvent): void {
     case 'step_done':
       if (!event.name || event.duration_ms === undefined) break;
       writeStdout(
-        `\r✔ ${
-          event.detail === PARALLEL_STEP_DETAIL
-            ? `${getDoneLabel(event.name)} (${event.detail})`
-            : getDoneText(event.name, event.detail)
-        } ` + `(${formatStepDuration(event.duration_ms)})\n`
+        `\r✔ ${getDoneLine(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`
       );
       break;
     case 'log':
