@@ -29,7 +29,9 @@ describe('RESOURCE_DISCOVERY completeness', () => {
 
   it('covers all 12 kinds and no more', () => {
     expect(RESOURCE_KINDS).toHaveLength(12);
-    expect(Object.keys(RESOURCE_DISCOVERY).sort()).toEqual([...RESOURCE_KINDS].sort());
+    expect(Object.keys(RESOURCE_DISCOVERY).sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      [...RESOURCE_KINDS].sort((a, b) => Number(a > b) - Number(a < b))
+    );
   });
 });
 

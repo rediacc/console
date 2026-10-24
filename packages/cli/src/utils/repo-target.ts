@@ -325,8 +325,10 @@ function clusterCollisionError(name: string) {
 /** The exit-5 candidate listing for an unknown connect target (§3.3 step 3). */
 function candidateLines(ns: ConnectNamespaces): string[] {
   const lines: string[] = [];
-  const repos = Object.keys(ns.families).sort();
-  const places = [...Object.keys(ns.machines), ...Object.keys(ns.clusters)].sort();
+  const repos = Object.keys(ns.families).sort((a, b) => Number(a > b) - Number(a < b));
+  const places = [...Object.keys(ns.machines), ...Object.keys(ns.clusters)].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   if (repos.length > 0) lines.push(`known repositories: ${repos.join(', ')}`);
   if (places.length > 0) lines.push(`known machines and clusters: ${places.join(', ')}`);
   return lines;

@@ -749,10 +749,10 @@ function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
     const inOrder = keys
       .filter((k) => orderMap.has(k))
       .sort((a, b) => orderMap.get(a)! - orderMap.get(b)!);
-    const rest = keys.filter((k) => !orderMap.has(k)).sort();
+    const rest = keys.filter((k) => !orderMap.has(k)).sort((a, b) => Number(a > b) - Number(a < b));
     sortedKeys = [...inOrder, ...rest];
   } else {
-    sortedKeys = [...keys].sort();
+    sortedKeys = [...keys].sort((a, b) => Number(a > b) - Number(a < b));
   }
   const sorted: Record<string, unknown> = {};
   for (const k of sortedKeys) {

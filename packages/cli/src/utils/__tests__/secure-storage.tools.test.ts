@@ -388,7 +388,7 @@ describe('secure storage: the Keychain backend against a stand-in for `security`
       const storage = host.storage();
       const long = randomBytes(6000).toString('base64');
       await storage.set('rdc:pw:parts', long);
-      expect(Object.keys(host.keychain()).sort()).toEqual([
+      expect(Object.keys(host.keychain()).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
         'rdc-config\nrdc:pw:parts',
         'rdc-config:1\nrdc:pw:parts',
         'rdc-config:2\nrdc:pw:parts',

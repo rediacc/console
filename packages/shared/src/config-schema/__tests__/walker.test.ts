@@ -69,7 +69,7 @@ describe('walker', () => {
 
   it('walkSensitive yields entries for every registered concrete path in the config', () => {
     const entries = Array.from(walkSensitive(sampleConfig));
-    const pointers = entries.map((e) => e.pointer).sort();
+    const pointers = entries.map((e) => e.pointer).sort((a, b) => Number(a > b) - Number(a < b));
     expect(pointers).toContain('/account/userEmail');
     expect(pointers).toContain('/credentials/ssh/privateKey');
     expect(pointers).toContain('/credentials/cfDnsApiToken');
@@ -83,7 +83,7 @@ describe('walker', () => {
 
   it('pathsToCommit excludes public fields and returns sorted pointers', () => {
     const paths = pathsToCommit(sampleConfig);
-    expect(paths).toEqual([...paths].sort()); // sorted
+    expect(paths).toEqual([...paths].sort((a, b) => Number(a > b) - Number(a < b))); // sorted
     expect(paths).not.toContain('/schemaVersion');
     expect(paths).not.toContain('/version');
     expect(paths).toContain('/resources/machines/web-1/ip');

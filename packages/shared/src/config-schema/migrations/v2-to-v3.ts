@@ -108,7 +108,7 @@ type TagEntry = { tag: string; grandish: boolean; rec: Obj };
 
 /** Choose a grand tag when no bare/latest record survived (lexicographic + warn). */
 function fallbackGrand(base: string, tags: Obj): string {
-  const grand = [...Object.keys(tags)].sort()[0];
+  const grand = [...Object.keys(tags)].sort((a, b) => Number(a > b) - Number(a < b))[0];
   warn(`repository "${base}" has no grand (production) record; pointing grand at tag "${grand}".`);
   return grand;
 }

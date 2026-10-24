@@ -222,7 +222,9 @@ describe('resource families round trip', () => {
   it('every top-level section is classified envelope, carried, or host-local', () => {
     const classified = [...ENVELOPE_SECTIONS, ...CARRIED_SECTIONS, ...HOST_LOCAL_SECTIONS];
     // If this fails, a NEW top-level section was added to RdcConfigSchema: decide whether it syncs (add to CARRIED_SECTIONS + SENSITIVE_FIELDS + both projections) or stays host-local (add to HOST_LOCAL_SECTIONS and make sure none of its leaves are committed in sensitivity.ts).
-    expect([...Object.keys(RdcConfigSchema.shape)].sort()).toEqual([...classified].sort());
+    expect(
+      [...Object.keys(RdcConfigSchema.shape)].sort((a, b) => Number(a > b) - Number(a < b))
+    ).toEqual([...classified].sort((a, b) => Number(a > b) - Number(a < b)));
   });
 
   it('every family survives push → pull field-by-field', async () => {

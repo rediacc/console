@@ -96,7 +96,9 @@ describe('CLI contract', () => {
   });
 
   it('ships a bundle for every declared language', () => {
-    expect([...CLI_CONTRACT.languages].sort()).toEqual([...CONTRACT_LANGUAGES].sort());
+    expect([...CLI_CONTRACT.languages].sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      [...CONTRACT_LANGUAGES].sort((a, b) => Number(a > b) - Number(a < b))
+    );
 
     for (const lang of CLI_CONTRACT.languages) {
       const path = fileURLToPath(new URL(`../data/i18n/${lang}.json`, import.meta.url));
@@ -182,8 +184,8 @@ describe('CLI contract', () => {
     const blocked = CLI_CONTRACT.commands
       .filter((c) => c.plane === 'machine' && !c.interactive && !c.proxyCapable)
       .map((c) => c.pathKey)
-      .sort();
-    expect(blocked).toEqual([...excluded].sort());
+      .sort((a, b) => Number(a > b) - Number(a < b));
+    expect(blocked).toEqual([...excluded].sort((a, b) => Number(a > b) - Number(a < b)));
 
     // Reads a local file but ships the bytes inside the renet params, which crosses the wire fine — param building, not a transfer.
     expect(getCommand('repo admin template apply')?.proxyCapable).toBe(true);
@@ -227,7 +229,7 @@ describe('CLI contract', () => {
       .flatMap((c) => c.options.map((o) => ({ cmd: c.pathKey, opt: o })))
       .filter(({ opt }) => opt.choices)
       .map(({ cmd, opt }) => `${cmd} --${opt.long}=${opt.choices?.join('|')}`)
-      .sort();
+      .sort((a, b) => Number(a > b) - Number(a < b));
 
     expect(enums).toEqual([
       'backup strategy set --mode=hot|cold',

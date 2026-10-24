@@ -50,7 +50,9 @@ const LOADERS: Record<ContractLanguage, BundleLoader> = {
   zh: () => import('./data/i18n/zh.json'),
 };
 
-export const CONTRACT_LANGUAGES = Object.keys(LOADERS).sort() as ContractLanguage[];
+export const CONTRACT_LANGUAGES = Object.keys(LOADERS).sort(
+  (a, b) => Number(a > b) - Number(a < b)
+) as ContractLanguage[];
 
 export function isContractLanguage(lang: string): lang is ContractLanguage {
   return lang in LOADERS;

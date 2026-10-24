@@ -64,7 +64,7 @@ describe('config push payload', () => {
     const entries = buildCommitEntries(sampleConfig());
     const pointers = entries.map((e) => e.pointer);
 
-    expect(pointers).toEqual([...pointers].sort());
+    expect(pointers).toEqual([...pointers].sort((a, b) => Number(a > b) - Number(a < b)));
     expect(pointers).toContain('/credentials/ssh/privateKey');
     expect(pointers).toContain('/resources/machines/web-1/ip');
     // Public fields are never committed.

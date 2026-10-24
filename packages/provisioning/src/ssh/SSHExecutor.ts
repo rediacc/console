@@ -45,7 +45,7 @@ export interface SSHResult {
  * 4. Proper command escaping for nested SSH
  */
 export class SSHExecutor {
-  private keyLogged = false;
+  private keyLogged = false as boolean;
   private readonly sshConfigOptions?: SSHConfigOptions;
 
   /**
