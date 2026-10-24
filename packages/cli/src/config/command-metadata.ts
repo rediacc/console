@@ -315,6 +315,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['grace-days', 'debug'],
     },
   },
+  // Restarts every stale repo daemon on the machine (a short outage per repo), destroys no data, and a second run finds nothing stale.
+  'machine converge': {
+    mcp: {
+      destructive: true,
+      idempotent: true,
+      timeout: 'write',
+      excludeOptions: ['json', 'debug'],
+    },
+  },
 
   'storage prune': {
     mcp: {

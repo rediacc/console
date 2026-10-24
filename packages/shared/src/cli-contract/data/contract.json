@@ -5142,6 +5142,113 @@
     {
       "path": [
         "machine",
+        "converge"
+      ],
+      "pathKey": "machine converge",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.converge.description",
+      "label": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or restart after any renet binary change.",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.converge.dryRunOption",
+          "label": "Print the plan without restarting anything"
+        },
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.converge.jsonOption",
+          "label": "Print the converge report as JSON"
+        },
+        {
+          "flags": "--include-unknown",
+          "long": "include-unknown",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.converge.includeUnknownOption",
+          "label": "Also restart stale repositories missing from the local config (their env secrets are unknown)"
+        },
+        {
+          "flags": "--policy <policy>",
+          "long": "policy",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": "epoch",
+          "choices": [
+            "epoch",
+            "always"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.machine.converge.policyOption",
+          "label": "Restart policy: epoch (layout changes only) or always (also any renet binary change)"
+        },
+        {
+          "flags": "--continue-on-error",
+          "long": "continue-on-error",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.converge.continueOnErrorOption",
+          "label": "Keep going after a repository fails instead of stopping the pass"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "name",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
         "deprovision"
       ],
       "pathKey": "machine deprovision",
@@ -6415,6 +6522,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.machine.setup.datastoreSizeOption",
           "label": "Datastore size (e.g., 95%, 100G)"
+        },
+        {
+          "flags": "--no-converge",
+          "long": "no-converge",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.setup.noConvergeOption",
+          "label": "Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)"
         },
         {
           "flags": "--debug",

@@ -10,6 +10,7 @@
  * Delegates to shared utilities in renet-execution.ts.
  */
 
+import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
@@ -33,6 +34,17 @@ import {
   parseRenetLicenseFailure,
   type RenetLicenseFailure,
 } from '../renet/renet-license-contract.js';
+import { renetProvisioner } from '../renet/renet-provisioner.js';
+import {
+  type AutoConvergeDeps,
+  CONVERGE_FUNCTION,
+  convergeIfStale,
+  parseConvergeReport,
+  prepareConvergeVault,
+  readRuntimeStatus,
+  routerRefreshAfterPass,
+  shouldCheckRuntimeAfterUpload,
+} from '../renet/runtime-converge.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
 import { runDetachedExecution } from './detached-execution.js';
@@ -67,6 +79,14 @@ export { buildRemoteRenetCommand, buildRenetEnv } from './renet-command.js';
 export { parseCapturedJson } from './renet-output.js';
 // ExecuteResult only. The other seam types are consumed from executor-factory, which is the entry point to this layer; re-exporting them here as well just gave callers two doors to the same room.
 export type { ExecuteResult } from './types.js';
+
+/** What `buildLocalVault` reads besides the function and its params, kept to build a second vault (the converge pass) in the same session. */
+type VaultInputs = Omit<Parameters<typeof buildLocalVault>[0], 'functionName' | 'params'>;
+
+/** The datastore renet resolves for this run: the caller's, else the machine's, else the default. */
+function sessionDatastore(options: ExecuteOptions, machine: { datastore?: string }): string {
+  return options.datastore ?? machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+}
 
 /** Run a step with spinner + timing. Shows "Loading..." then "✓ Loaded (1.2s)" on the same line. */
 async function timedStep<T>(
@@ -309,7 +329,7 @@ class LocalExecutorService {
     sftp: SFTPClient,
     cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[],
     quiet: boolean
-  ): Promise<{ remoteRenetPath: string; renetUploaded: boolean }> {
+  ): Promise<{ remoteRenetPath: string; renetUploaded: boolean; routerRefreshDue: boolean }> {
     const provStart = Date.now();
     // The dispatched function decides whether this run may replace the machine's renet (RENET_FUNCTION_ACCESS).
     const access = renetAccessFor(options.functionName);
@@ -322,11 +342,17 @@ class LocalExecutorService {
         {
           debug: options.debug,
           skipRouterRestart: options.skipRouterRestart,
+          // The router refresh waits for the runtime converge pass (executeSession).
+          deferRouterRefresh: true,
           machineName: options.machineName,
         },
         sftp
       );
-    const { remotePath: remoteRenetPath, uploaded: renetUploaded } = quiet
+    const {
+      remotePath: remoteRenetPath,
+      uploaded: renetUploaded,
+      routerRefreshDue,
+    } = quiet
       ? await provisionFn()
       : await timedStep(t('timing.step.provisioning'), 'timing.step.renetProvisioned', provisionFn);
     cliSteps.push({
@@ -391,7 +417,7 @@ class LocalExecutorService {
       sftp
     );
 
-    return { remoteRenetPath, renetUploaded };
+    return { remoteRenetPath, renetUploaded, routerRefreshDue: routerRefreshDue === true };
   }
 
   /**
@@ -422,8 +448,7 @@ class LocalExecutorService {
     const params = options.params ?? {};
     const extraMachines = options.extraMachines ?? (await resolveExtraMachines(params));
 
-    const vault = buildLocalVault({
-      functionName: options.functionName,
+    const vaultInputs: VaultInputs = {
       machineName: options.machineName,
       // #74: a caller that KNOWS the repo's placement declares its datastore here, and it must land in the MACHINE VAULT, that is the only datastore renet ever reads (`p.Datastore()` -> `machineDatastore`, set by WithMachineVault). A `datastore` PARAM would not do it: `repository_create` resolves the datastore through AddDatastore, which reads the vault, not the params bag. The
       // fallback below is untouched and still correct: a machine with no named datastore keeps its own default. This only lets a caller stop staying silent.
@@ -431,14 +456,42 @@ class LocalExecutorService {
       sshPrivateKey,
       sshPublicKey,
       sshKnownHosts,
-      params,
       extraMachines,
       storages,
       repositoryCredentials,
       repositoryConfigs,
-    });
+    };
+    const vault = buildLocalVault({ ...vaultInputs, functionName: options.functionName, params });
     cliSteps.push({ name: 'config', duration_ms: Date.now() - startTime, startedAtMs: startTime });
-    return { config, machine, sshPrivateKey, vault };
+    return { config, machine, sshPrivateKey, vault, vaultInputs };
+  }
+
+  /** The remote effects of the runtime converge pass, bound to this session. */
+  private convergeDeps(
+    sftp: SFTPClient,
+    remoteRenetPath: string,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    vaultInputs: VaultInputs,
+    options: ExecuteOptions
+  ): AutoConvergeDeps {
+    return {
+      sftp,
+      remoteRenetPath,
+      machineName: options.machineName,
+      datastore: sessionDatastore(options, machine),
+      debug: options.debug,
+      buildBaseVault: (params) =>
+        buildLocalVault({ ...vaultInputs, functionName: CONVERGE_FUNCTION, params }),
+      run: (convergeVault, params) =>
+        this.runRemoteExecution(sftp, remoteRenetPath, convergeVault, {
+          functionName: CONVERGE_FUNCTION,
+          machineName: options.machineName,
+          params,
+          debug: options.debug,
+          captureOutput: true,
+        }),
+      refreshRouter: () => renetProvisioner.refreshRouter(sftp, remoteRenetPath),
+    };
   }
 
   private async executeSession(
@@ -446,13 +499,13 @@ class LocalExecutorService {
     config: Awaited<ReturnType<typeof configService.getLocalConfig>>,
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string,
-    vault: ReturnType<typeof buildLocalVault>,
+    built: { vault: string; vaultInputs: VaultInputs },
     options: ExecuteOptions,
     cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[],
     quiet: boolean,
     startTime: number
   ): Promise<ExecuteResult> {
-    const { remoteRenetPath } = await this.provisionAndVerify(
+    const { remoteRenetPath, renetUploaded, routerRefreshDue } = await this.provisionAndVerify(
       config,
       machine,
       sshPrivateKey,
@@ -461,6 +514,22 @@ class LocalExecutorService {
       cliSteps,
       quiet
     );
+
+    const deps = this.convergeDeps(sftp, remoteRenetPath, machine, built.vaultInputs, options);
+    const isConverge = options.functionName === CONVERGE_FUNCTION;
+    let vault = built.vault;
+    if (isConverge) {
+      // The converge vault carries env secrets only for the repos this machine reports.
+      const status = await readRuntimeStatus(sftp, remoteRenetPath, deps.datastore);
+      vault = await prepareConvergeVault(vault, status);
+    } else {
+      // A new renet may change the runtime layout: move stale repo daemons first, then the router (PLAN-renet-runtime-converge D5, decision 2).
+      await convergeIfStale(deps, {
+        checkRuntime: shouldCheckRuntimeAfterUpload(options.functionName, renetUploaded),
+        routerRefreshDue,
+        skipRouterRestart: options.skipRouterRestart,
+      });
+    }
 
     const result = await this.executeWithConnectedSftp(
       sftp,
@@ -471,6 +540,15 @@ class LocalExecutorService {
       sshPrivateKey,
       startTime
     );
+    if (isConverge) {
+      const refresh = routerRefreshAfterPass({
+        due: routerRefreshDue,
+        dryRun: options.params?.dry_run === true,
+        summary: parseConvergeReport(result.stdout)?.summary ?? null,
+        skipRouterRestart: options.skipRouterRestart,
+      });
+      if (refresh) await deps.refreshRouter();
+    }
     result.cliSteps = [...cliSteps];
     result.allSteps = [...cliSteps, ...(result.steps ?? [])];
 
@@ -508,11 +586,8 @@ class LocalExecutorService {
     const cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[] = [];
 
     try {
-      const { config, machine, sshPrivateKey, vault } = await this.loadConfigAndBuildVault(
-        options,
-        startTime,
-        cliSteps
-      );
+      const { config, machine, sshPrivateKey, vault, vaultInputs } =
+        await this.loadConfigAndBuildVault(options, startTime, cliSteps);
       const configText = t('timing.step.configLoaded', {
         duration: formatDuration(cliSteps[0].duration_ms),
       });
@@ -537,7 +612,7 @@ class LocalExecutorService {
           config,
           machine,
           sshPrivateKey,
-          vault,
+          { vault, vaultInputs },
           options,
           cliSteps,
           quiet,

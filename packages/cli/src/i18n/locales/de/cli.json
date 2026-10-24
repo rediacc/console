@@ -1024,6 +1024,29 @@
         "unknownFound": "{{count}} unbekannte(s) Repository/Repositories gefunden ({{deletable}} löschbar nach Mount-Sicherheitsprüfung)",
         "unknownStarting": "Suche nach unbekannten Repositories auf {{machine}} (nicht in lokaler Konfiguration + kein fork-markierter Mirror)..."
       },
+      "converge": {
+        "autoFailed": "Runtime-Angleichung auf '{{machine}}' fehlgeschlagen: {{error}}. Fortsetzen mit: {{command}}",
+        "autoStarting": "{{stale}} Repository-Daemons auf '{{machine}}' laufen noch mit einem älteren Runtime-Layout und werden nacheinander neu gestartet (mit {{envVar}}=1 überspringen)",
+        "completed": "Runtime-Angleichung auf '{{machine}}' abgeschlossen",
+        "continueOnErrorOption": "Nach einem fehlgeschlagenen Repository weitermachen, statt den Durchlauf abzubrechen",
+        "description": "Startet jeden Repository-Daemon, der noch mit einem älteren Runtime-Layout läuft, nacheinander neu, damit er auf das aktuelle wechselt. Die CLI erledigt das nach einem renet-Upload selbst; von Hand lässt sich damit der Plan vorab ansehen, ein abgebrochener Durchlauf fortsetzen oder nach jeder Änderung am renet-Binary neu starten.",
+        "descriptionShort": "Veraltete Repository-Daemons auf das aktuelle Runtime-Layout bringen",
+        "dryRunOption": "Nur den Plan ausgeben, nichts neu starten",
+        "failed": "Runtime-Angleichung auf '{{machine}}' fehlgeschlagen",
+        "includeUnknownOption": "Auch veraltete Repositories neu starten, die in der lokalen Konfiguration fehlen (ihre Env-Secrets sind unbekannt)",
+        "jsonOption": "Bericht der Angleichung als JSON ausgeben",
+        "nothingStale": "Alle Repository-Daemons auf '{{machine}}' laufen bereits mit dem aktuellen Runtime-Layout",
+        "planLine": "Plan: {{stale}} von {{total}} Repositories veraltet (Richtlinie {{policy}}, Runtime-Epoche {{epoch}})",
+        "policyOption": "Neustart-Richtlinie: epoch (nur bei Layout-Änderungen) oder always (auch bei jeder Änderung am renet-Binary)",
+        "repoLine": "[{{index}}/{{count}}] {{name}} (Netzwerk {{networkId}}): {{detail}}",
+        "resume": "Fortsetzen mit: {{command}}",
+        "routerRefreshed": "rediacc-router auf '{{machine}}' für das aktuelle Runtime-Layout neu gestartet",
+        "setupStarting": "{{stale}} Repository-Daemons auf '{{machine}}' laufen noch mit einem älteren Runtime-Layout und werden nacheinander neu gestartet",
+        "starting": "Runtime auf '{{machine}}' wird angeglichen...",
+        "startingDryRun": "Runtime-Angleichung auf '{{machine}}' wird geplant (Probelauf)...",
+        "statusUnreadable": "Runtime-Status von '{{machine}}' nicht lesbar, daher wurde kein Repository neu gestartet: {{error}}",
+        "summaryLine": "Angeglichen {{converged}}, übersprungen {{skipped}}, fehlgeschlagen {{failed}}, ausstehend {{pending}}"
+      },
       "remove": {
         "confirm": "Maschine \"{{name}}\" aus der Konfiguration entfernen?",
         "description": "Maschine aus der aktuellen Konfiguration entfernen",
@@ -1050,6 +1073,7 @@
         "description": "Remote-Maschine für Repositories einrichten (installiert renet, konfiguriert Docker, BTRFS-Datenspeicher). Idempotent. Erforderlich nach config machine add und vor repo create",
         "descriptionShort": "Remote-Maschine für Repositories bereitstellen",
         "failed": "Einrichtung von Maschine \"{{machine}}\" fehlgeschlagen: {{error}}",
+        "noConvergeOption": "Repository-Daemons mit älterem Runtime-Layout nicht neu starten (wie REDIACC_SKIP_RUNTIME_CONVERGE=1)",
         "starting": "Maschine \"{{machine}}\" wird eingerichtet..."
       },
       "status": {

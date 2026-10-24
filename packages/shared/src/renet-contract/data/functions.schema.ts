@@ -370,6 +370,19 @@ export const KubeKubeconfigParamsSchema = z.object({
   mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
 });
 
+/** Restart stale repository daemons onto the current runtime layout */
+export const MachineConvergeRuntimeParamsSchema = z.object({
+  dryRun: z.boolean().optional().describe('Print the plan without restarting anything'),
+  policy: z
+    .enum(['epoch', 'always'])
+    .default('epoch')
+    .optional()
+    .describe('Restart policy'),
+  includeUnknown: z.boolean().optional().describe('Also converge stale repositories missing from the payload'),
+  continueOnError: z.boolean().optional().describe('Keep going after a repository fails'),
+  repoTimeout: z.string().optional().describe('Deadline of one repository\'s restart (Go duration, e.g. 15m)'),
+});
+
 /** Test SSH connectivity */
 export const MachinePingParamsSchema = z.object({});
 
@@ -680,6 +693,7 @@ export const FUNCTION_SCHEMAS = {
   container_unpause: ContainerUnpauseParamsSchema,
   kube_health: KubeHealthParamsSchema,
   kube_kubeconfig: KubeKubeconfigParamsSchema,
+  machine_converge_runtime: MachineConvergeRuntimeParamsSchema,
   machine_ping: MachinePingParamsSchema,
   machine_ssh_test: MachineSshTestParamsSchema,
   machine_uninstall: MachineUninstallParamsSchema,

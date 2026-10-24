@@ -636,6 +636,29 @@
         "dryRunHint": "{{count}} resource(s) would be removed. Rerun without --dry-run to remove them.",
         "datastorePrunedSummary": "Pruned {{count}} orphaned datastore resource(s)"
       },
+      "converge": {
+        "autoFailed": "Runtime converge on '{{machine}}' failed: {{error}}. Resume with: {{command}}",
+        "autoStarting": "{{stale}} repository daemons on '{{machine}}' run an older runtime layout; restarting them one at a time (set {{envVar}}=1 to skip)",
+        "completed": "Runtime converge on '{{machine}}' finished",
+        "continueOnErrorOption": "Keep going after a repository fails instead of stopping the pass",
+        "description": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or restart after any renet binary change.",
+        "descriptionShort": "Move stale repository daemons onto the current runtime layout",
+        "dryRunOption": "Print the plan without restarting anything",
+        "failed": "Runtime converge on '{{machine}}' failed",
+        "includeUnknownOption": "Also restart stale repositories missing from the local config (their env secrets are unknown)",
+        "jsonOption": "Print the converge report as JSON",
+        "nothingStale": "Every repository daemon on '{{machine}}' already runs the current runtime layout",
+        "planLine": "Plan: {{stale}} of {{total}} repositories stale (policy {{policy}}, runtime epoch {{epoch}})",
+        "policyOption": "Restart policy: epoch (layout changes only) or always (also any renet binary change)",
+        "repoLine": "[{{index}}/{{count}}] {{name}} (network {{networkId}}): {{detail}}",
+        "resume": "Resume with: {{command}}",
+        "routerRefreshed": "Restarted rediacc-router on '{{machine}}' for the current runtime layout",
+        "setupStarting": "{{stale}} repository daemons on '{{machine}}' run an older runtime layout; restarting them one at a time",
+        "starting": "Converging the runtime on '{{machine}}'...",
+        "startingDryRun": "Planning the runtime converge on '{{machine}}' (dry run)...",
+        "statusUnreadable": "Could not read the runtime status of '{{machine}}', so no repository was restarted: {{error}}",
+        "summaryLine": "Converged {{converged}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}"
+      },
       "add": {
         "description": "Register an existing machine you can reach over SSH.",
         "descriptionShort": "Add a machine to the current config",
@@ -751,6 +774,7 @@
         "description": "Install renet and prepare a registered machine for repositories.",
         "descriptionShort": "Provision a remote machine for repositories",
         "failed": "Machine '{{machine}}' setup failed: {{error}}",
+        "noConvergeOption": "Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)",
         "starting": "Setting up machine '{{machine}}'..."
       },
       "status": {

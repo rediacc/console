@@ -16,6 +16,7 @@ import { assertResourceName, MachineConfigSchema, parseConfig } from '../../util
 import { handleError } from '../../utils/errors.js';
 import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
 import { shellQuote } from '../../utils/shell-quote.js';
+import { convergeAfterSetup } from './converge.js';
 
 async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
   // Deploy all per-repo SSH keys to the newly set up machine
@@ -274,6 +275,7 @@ function registerSetup(machine: Command): void {
       WK_DATASTORE_PATH
     )
     .option('--datastore-size <size>', t('commands.machine.setup.datastoreSizeOption'), '95%')
+    .option('--no-converge', t('commands.machine.setup.noConvergeOption'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options) => {
       try {
@@ -284,12 +286,13 @@ function registerSetup(machine: Command): void {
 
         outputService.info(t('commands.machine.setup.starting', { machine: name }));
 
-        const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+        // The router refresh waits for the converge pass after setup (convergeAfterSetup).
+        const { remotePath: remoteRenetPath, routerRefreshDue } = await acquireRemoteRenet(
           'provision',
           localConfig,
           machineObj,
           sshPrivateKey,
-          { debug: options.debug }
+          { debug: options.debug, deferRouterRefresh: true }
         );
 
         const lease = await machineConnections.acquireFor(machineObj, sshPrivateKey);
@@ -313,10 +316,22 @@ function registerSetup(machine: Command): void {
           });
           stderrPump.flush(exitCode !== 0);
 
+          const session = {
+            sftp: lease.sftp,
+            remoteRenetPath,
+            datastore: options.datastorePath,
+            routerRefreshDue: routerRefreshDue === true,
+          };
           if (exitCode === 0) {
             outputService.success(t('commands.machine.setup.completed', { machine: name }));
             await postSetupMachineTasks(name, options.debug);
+            await convergeAfterSetup(name, session, {
+              converge: options.converge,
+              debug: options.debug,
+            });
           } else {
+            // No converge on a failed setup, but the router still follows the installed binary.
+            await convergeAfterSetup(name, session, { converge: false });
             outputService.error(
               t('commands.machine.setup.failed', { machine: name, error: `exit code ${exitCode}` })
             );

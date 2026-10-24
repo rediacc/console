@@ -95,6 +95,10 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
     "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
   'config reconcile':
     "It queries every machine but writes the result into the CALLER's local state bucket; a remote executor would rebuild its own state and the caller would be none the wiser. Run it without --proxy.",
+
+  // ── Caller-held secrets ───────────────────────────────────────────────
+  'machine converge':
+    "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",
 };
 
 /**

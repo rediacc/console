@@ -1024,6 +1024,29 @@
         "unknownFound": "Encontrados {{count}} repositorio(s) desconocido(s) ({{deletable}} eliminables tras verificación de seguridad de montaje)",
         "unknownStarting": "Buscando repositorios desconocidos en {{machine}} (no en configuración local + sin espejo marcado como fork)..."
       },
+      "converge": {
+        "autoFailed": "La convergencia del runtime en '{{machine}}' falló: {{error}}. Para continuar: {{command}}",
+        "autoStarting": "{{stale}} daemons de repositorio en '{{machine}}' siguen con un diseño de runtime antiguo; se reiniciarán uno a uno (usa {{envVar}}=1 para omitirlo)",
+        "completed": "Convergencia del runtime en '{{machine}}' terminada",
+        "continueOnErrorOption": "Seguir adelante cuando falla un repositorio en lugar de detener la pasada",
+        "description": "Reinicia, uno a uno, cada daemon de repositorio que aún funciona con un diseño de runtime antiguo para que pase al actual. La CLI lo hace sola tras subir renet; a mano sirve para ver el plan antes, retomar una pasada fallida o reiniciar tras cualquier cambio del binario de renet.",
+        "descriptionShort": "Pasar los daemons de repositorio desfasados al diseño de runtime actual",
+        "dryRunOption": "Mostrar el plan sin reiniciar nada",
+        "failed": "La convergencia del runtime en '{{machine}}' falló",
+        "includeUnknownOption": "Reiniciar también los repositorios desfasados que no están en la configuración local (sus secretos de entorno se desconocen)",
+        "jsonOption": "Mostrar el informe de convergencia en JSON",
+        "nothingStale": "Todos los daemons de repositorio de '{{machine}}' ya usan el diseño de runtime actual",
+        "planLine": "Plan: {{stale}} de {{total}} repositorios desfasados (política {{policy}}, época de runtime {{epoch}})",
+        "policyOption": "Política de reinicio: epoch (solo cambios de diseño) o always (también cualquier cambio del binario de renet)",
+        "repoLine": "[{{index}}/{{count}}] {{name}} (red {{networkId}}): {{detail}}",
+        "resume": "Para continuar: {{command}}",
+        "routerRefreshed": "rediacc-router reiniciado en '{{machine}}' para el diseño de runtime actual",
+        "setupStarting": "{{stale}} daemons de repositorio en '{{machine}}' siguen con un diseño de runtime antiguo; se reiniciarán uno a uno",
+        "starting": "Haciendo converger el runtime en '{{machine}}'...",
+        "startingDryRun": "Planificando la convergencia del runtime en '{{machine}}' (simulación)...",
+        "statusUnreadable": "No se pudo leer el estado del runtime de '{{machine}}', así que no se reinició ningún repositorio: {{error}}",
+        "summaryLine": "Convergidos {{converged}}, omitidos {{skipped}}, fallidos {{failed}}, pendientes {{pending}}"
+      },
       "remove": {
         "confirm": "¿Eliminar la máquina \"{{name}}\" de la configuración?",
         "description": "Eliminar una máquina de la configuración actual",
@@ -1050,6 +1073,7 @@
         "description": "Aprovisionar una máquina remota para repositorios (instala renet, configura Docker, almacén BTRFS). Idempotente. Requerido después de config machine add y antes de repo create",
         "descriptionShort": "Aprovisionar una máquina remota para repositorios",
         "failed": "Configuración de máquina \"{{machine}}\" fallida: {{error}}",
+        "noConvergeOption": "No reiniciar los daemons de repositorio que siguen con un diseño de runtime antiguo (igual que REDIACC_SKIP_RUNTIME_CONVERGE=1)",
         "starting": "Configurando máquina \"{{machine}}\"..."
       },
       "status": {

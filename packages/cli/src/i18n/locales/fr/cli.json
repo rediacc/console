@@ -1024,6 +1024,29 @@
         "unknownFound": "{{count}} dépôt(s) inconnu(s) trouvé(s) ({{deletable}} supprimables après vérification de sécurité de montage)",
         "unknownStarting": "Recherche de dépôts inconnus sur {{machine}} (pas dans la configuration locale + pas de miroir marqué fork)..."
       },
+      "converge": {
+        "autoFailed": "La convergence du runtime sur '{{machine}}' a échoué : {{error}}. Pour reprendre : {{command}}",
+        "autoStarting": "{{stale}} daemons de dépôt sur '{{machine}}' tournent encore avec une ancienne disposition du runtime ; redémarrage un par un (définir {{envVar}}=1 pour l'ignorer)",
+        "completed": "Convergence du runtime sur '{{machine}}' terminée",
+        "continueOnErrorOption": "Continuer après l'échec d'un dépôt au lieu d'arrêter la passe",
+        "description": "Redémarre un par un chaque daemon de dépôt qui tourne encore avec une ancienne disposition du runtime, pour le faire passer à l'actuelle. La CLI s'en charge seule après un envoi de renet ; à la main, la commande sert à voir le plan, reprendre une passe échouée ou redémarrer après tout changement du binaire renet.",
+        "descriptionShort": "Passer les daemons de dépôt obsolètes à la disposition actuelle du runtime",
+        "dryRunOption": "Afficher le plan sans rien redémarrer",
+        "failed": "La convergence du runtime sur '{{machine}}' a échoué",
+        "includeUnknownOption": "Redémarrer aussi les dépôts obsolètes absents de la configuration locale (leurs secrets d'environnement sont inconnus)",
+        "jsonOption": "Afficher le rapport de convergence en JSON",
+        "nothingStale": "Tous les daemons de dépôt de '{{machine}}' utilisent déjà la disposition actuelle du runtime",
+        "planLine": "Plan : {{stale}} dépôts obsolètes sur {{total}} (politique {{policy}}, époque du runtime {{epoch}})",
+        "policyOption": "Politique de redémarrage : epoch (changements de disposition uniquement) ou always (aussi tout changement du binaire renet)",
+        "repoLine": "[{{index}}/{{count}}] {{name}} (réseau {{networkId}}) : {{detail}}",
+        "resume": "Pour reprendre : {{command}}",
+        "routerRefreshed": "rediacc-router redémarré sur '{{machine}}' pour la disposition actuelle du runtime",
+        "setupStarting": "{{stale}} daemons de dépôt sur '{{machine}}' tournent encore avec une ancienne disposition du runtime ; redémarrage un par un",
+        "starting": "Convergence du runtime sur '{{machine}}'...",
+        "startingDryRun": "Préparation du plan de convergence du runtime sur '{{machine}}' (simulation)...",
+        "statusUnreadable": "Impossible de lire l'état du runtime de '{{machine}}', aucun dépôt n'a donc été redémarré : {{error}}",
+        "summaryLine": "Convergés {{converged}}, ignorés {{skipped}}, en échec {{failed}}, en attente {{pending}}"
+      },
       "remove": {
         "confirm": "Supprimer la machine \"{{name}}\" de la configuration ?",
         "description": "Supprimer une machine de la configuration actuelle",
@@ -1050,6 +1073,7 @@
         "description": "Provisionner une machine distante pour les dépôts (installe renet, configure Docker, datastore BTRFS). Idempotent. Requis après config machine add et avant repo create",
         "descriptionShort": "Provisionner une machine distante pour les dépôts",
         "failed": "Échec de la configuration de la machine \"{{machine}}\" : {{error}}",
+        "noConvergeOption": "Ne pas redémarrer les daemons de dépôt encore sur une ancienne disposition du runtime (équivaut à REDIACC_SKIP_RUNTIME_CONVERGE=1)",
         "starting": "Configuration de la machine \"{{machine}}\"..."
       },
       "status": {

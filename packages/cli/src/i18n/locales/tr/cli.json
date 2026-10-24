@@ -1024,6 +1024,29 @@
         "unknownFound": "{{count}} bilinmeyen depo bulundu (bağlama güvenlik kontrolünden sonra {{deletable}} silinebilir)",
         "unknownStarting": "{{machine}} üzerinde bilinmeyen depolar taranıyor (yerel yapılandırmada yok + fork işaretli ayna yok)..."
       },
+      "converge": {
+        "autoFailed": "'{{machine}}' üzerinde runtime eşitlemesi başarısız oldu: {{error}}. Kaldığı yerden sürdürmek için: {{command}}",
+        "autoStarting": "'{{machine}}' üzerindeki {{stale}} depo daemon'u hâlâ eski runtime düzeniyle çalışıyor; tek tek yeniden başlatılıyor (atlamak için {{envVar}}=1 ayarlayın)",
+        "completed": "'{{machine}}' üzerinde runtime eşitlemesi tamamlandı",
+        "continueOnErrorOption": "Bir depo başarısız olduğunda turu durdurmak yerine devam et",
+        "description": "Hâlâ eski runtime düzeniyle çalışan her depo daemon'unu, güncel düzene geçmesi için tek tek yeniden başlatır. CLI bunu renet yüklemesinden sonra kendiliğinden yapar; elle çalıştırmak planı önceden görmek, yarım kalan bir turu sürdürmek ya da renet ikili dosyasındaki herhangi bir değişiklikten sonra yeniden başlatmak için işe yarar.",
+        "descriptionShort": "Eski kalmış depo daemon'larını güncel runtime düzenine taşı",
+        "dryRunOption": "Hiçbir şeyi yeniden başlatmadan yalnızca planı göster",
+        "failed": "'{{machine}}' üzerinde runtime eşitlemesi başarısız oldu",
+        "includeUnknownOption": "Yerel yapılandırmada bulunmayan eski depoları da yeniden başlat (ortam sırları bilinmiyor)",
+        "jsonOption": "Eşitleme raporunu JSON olarak göster",
+        "nothingStale": "'{{machine}}' üzerindeki tüm depo daemon'ları zaten güncel runtime düzeniyle çalışıyor",
+        "planLine": "Plan: {{total}} deponun {{stale}} tanesi eski (ilke {{policy}}, runtime dönemi {{epoch}})",
+        "policyOption": "Yeniden başlatma ilkesi: epoch (yalnızca düzen değişiklikleri) ya da always (renet ikili dosyasındaki her değişiklik de)",
+        "repoLine": "[{{index}}/{{count}}] {{name}} (ağ {{networkId}}): {{detail}}",
+        "resume": "Kaldığı yerden sürdürmek için: {{command}}",
+        "routerRefreshed": "rediacc-router, '{{machine}}' üzerinde güncel runtime düzeni için yeniden başlatıldı",
+        "setupStarting": "'{{machine}}' üzerindeki {{stale}} depo daemon'u hâlâ eski runtime düzeniyle çalışıyor; tek tek yeniden başlatılıyor",
+        "starting": "'{{machine}}' üzerinde runtime eşitleniyor...",
+        "startingDryRun": "'{{machine}}' için runtime eşitleme planı hazırlanıyor (deneme)...",
+        "statusUnreadable": "'{{machine}}' runtime durumu okunamadı, bu yüzden hiçbir depo yeniden başlatılmadı: {{error}}",
+        "summaryLine": "Eşitlenen {{converged}}, atlanan {{skipped}}, başarısız {{failed}}, bekleyen {{pending}}"
+      },
       "remove": {
         "confirm": "\"{{name}}\" makinesi yapılandırmadan kaldırılsın mı?",
         "description": "Mevcut yapılandırmadan makine kaldır",
@@ -1050,6 +1073,7 @@
         "description": "Uzak makineyi depolar için hazırla (renet kurar, Docker yapılandırır, BTRFS veri deposu). Tekrarlanabilir. config machine add sonrası ve repo create öncesi gereklidir",
         "descriptionShort": "Uzak makineyi depolar için hazırla",
         "failed": "Makine \"{{machine}}\" kurulumu başarısız: {{error}}",
+        "noConvergeOption": "Hâlâ eski runtime düzeninde çalışan depo daemon'larını yeniden başlatma (REDIACC_SKIP_RUNTIME_CONVERGE=1 ile aynı)",
         "starting": "Makine \"{{machine}}\" ayarlanıyor..."
       },
       "status": {

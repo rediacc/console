@@ -60,6 +60,7 @@ export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   container_unpause: 'provision',
   kube_health: 'read-only',
   kube_kubeconfig: 'read-only',
+  machine_converge_runtime: 'provision',
   machine_ping: 'read-only',
   machine_ssh_test: 'read-only',
   machine_uninstall: 'provision',

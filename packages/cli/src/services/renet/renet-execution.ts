@@ -106,6 +106,8 @@ export interface RenetAcquireResult {
   uploaded: boolean;
   /** Drift seen by a read-only probe; null for provision, which removes it. */
   drift: RenetDrift | null;
+  /** A router refresh the caller deferred (`deferRouterRefresh`) and still owes. */
+  routerRefreshDue?: boolean;
 }
 
 /** Hosts already warned about drift in this process (one line per host). */
@@ -353,6 +355,8 @@ export async function acquireRemoteRenet(
   sshPrivateKey: string,
   options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & {
     restartServices?: boolean;
+    /** Report the owed router refresh as `routerRefreshDue` instead of running it. */
+    deferRouterRefresh?: boolean;
     /** Name used in operator-facing messages; defaults to the machine IP. */
     machineName?: string;
   },
@@ -382,6 +386,7 @@ export async function acquireRemoteRenet(
     {
       localBinaryPath: uploadPath,
       restartServices,
+      deferRouterRefresh: options.deferRouterRefresh,
       debug: options.debug,
       ...(selection?.guarded === true && {
         uploadGuard: () => assertRenetSourceClean(selection.localBinaryPath, machine),
@@ -409,7 +414,12 @@ export async function acquireRemoteRenet(
     outputService.info(`Renet verified on ${machine.ip} (${elapsed}s)`);
   }
 
-  return { remotePath: result.remotePath, uploaded: result.action === 'uploaded', drift: null };
+  return {
+    remotePath: result.remotePath,
+    uploaded: result.action === 'uploaded',
+    drift: null,
+    routerRefreshDue: result.routerRefreshDue === true,
+  };
 }
 
 /** Check whether a bridge function requires the BTRFS datastore. */

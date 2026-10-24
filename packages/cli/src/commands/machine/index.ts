@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
+import { registerConvergeCommand } from './converge.js';
 import { registerHealthCommand } from './health.js';
 import { registerInfraCommands } from './infra.js';
 import { registerProviderCommands } from './provider.js';
@@ -21,6 +22,7 @@ export function registerMachineCommands(program: Command): void {
   registerHealthCommand(machine, program);
   registerCloudCommands(machine, program);
   registerPruneCommand(machine);
+  registerConvergeCommand(machine);
   registerProviderCommands(machine, program);
   registerInfraCommands(machine, program);
 

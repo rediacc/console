@@ -96,6 +96,12 @@ interface ProvisionResult {
   error?: string;
   /** Whether running services were restarted after binary update */
   servicesRestarted?: boolean;
+  /**
+   * The router refresh this provision owed and did not run because the caller
+   * asked to defer it (`deferRouterRefresh`); the caller runs
+   * {@link RenetProvisionerService.refreshRouter} once its own work is done.
+   */
+  routerRefreshDue?: boolean;
   /** Exact remote binary path that was verified or installed */
   remotePath: string;
 }
@@ -124,6 +130,14 @@ interface ProvisionOptions {
   localBinaryPath?: string;
   /** Restart running services after binary update. Default: false. */
   restartServices?: boolean;
+  /**
+   * With `restartServices`, report the owed router refresh as
+   * `routerRefreshDue` instead of running it. The executor defers it past the
+   * runtime converge pass, so the router switches to the new socket layout only
+   * after the repo daemons moved there (agent/plans/PLAN-renet-runtime-converge.md,
+   * decision 2).
+   */
+  deferRouterRefresh?: boolean;
   debug?: boolean;
   /**
    * Called only when the remote hash differs from the local one, immediately
@@ -327,10 +341,12 @@ class RenetProvisionerService {
     );
     this.logInstallResult(config.host, installResult, options?.debug === true);
 
-    // Best-effort: restart route server so it picks up the new binary
+    // Best-effort: restart route server so it picks up the new binary, now or, when deferred, by the caller.
     let servicesRestarted = false;
-    if (options?.restartServices === true && installResult.currentUpdated) {
-      servicesRestarted = await this.restartRunningServices(sftp, context.remoteInstallPath);
+    const routerRefreshOwed = options?.restartServices === true && installResult.currentUpdated;
+    const routerRefreshDue = routerRefreshOwed && options?.deferRouterRefresh === true;
+    if (routerRefreshOwed && !routerRefreshDue) {
+      servicesRestarted = await this.refreshRouter(sftp, context.remoteInstallPath);
     }
 
     // Remember the proven-current state so consecutive rdc commands skip the whole cold path.
@@ -345,6 +361,7 @@ class RenetProvisionerService {
       action: installResult.binaryUpdated ? 'uploaded' : 'verified',
       arch: context.arch,
       servicesRestarted,
+      routerRefreshDue,
       remotePath: context.remoteInstallPath,
     };
   }
@@ -547,13 +564,11 @@ class RenetProvisionerService {
   }
 
   /**
-   * Restart services that use the renet binary, if they are currently running.
-   * Returns true if any service was restarted.
+   * Re-install and restart an active rediacc-router from `remoteInstallPath`
+   * ({@link buildRouterRefreshCommand}). Best-effort: returns true only when
+   * the router was restarted.
    */
-  private async restartRunningServices(
-    sftp: SFTPClient,
-    remoteInstallPath: string
-  ): Promise<boolean> {
+  async refreshRouter(sftp: Pick<SFTPClient, 'exec'>, remoteInstallPath: string): Promise<boolean> {
     try {
       const output = await sftp.exec(buildRouterRefreshCommand(remoteInstallPath));
       return output.trim().includes('RESTARTED');

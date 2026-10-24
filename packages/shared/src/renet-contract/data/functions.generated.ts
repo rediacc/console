@@ -500,6 +500,20 @@ export interface KubeKubeconfigParams {
   mountPath: string;
 }
 
+/** Restart stale repository daemons onto the current runtime layout */
+export interface MachineConvergeRuntimeParams {
+  /** Print the plan without restarting anything */
+  dryRun?: boolean;
+  /** Restart policy */
+  policy?: string;
+  /** Also converge stale repositories missing from the payload */
+  includeUnknown?: boolean;
+  /** Keep going after a repository fails */
+  continueOnError?: boolean;
+  /** Deadline of one repository's restart (Go duration, e.g. 15m) */
+  repoTimeout?: string;
+}
+
 /** Test SSH connectivity */
 export interface MachinePingParams {}
 
@@ -870,6 +884,7 @@ export const RENET_FUNCTIONS = [
   'container_unpause',
   'kube_health',
   'kube_kubeconfig',
+  'machine_converge_runtime',
   'machine_ping',
   'machine_ssh_test',
   'machine_uninstall',
@@ -914,7 +929,7 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v1.2.25';
+export const RENET_FUNCTIONS_VERSION = 'dev';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
@@ -1037,6 +1052,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'machine_check_system',
   'machine_check_tools',
   'machine_check_users',
+  'machine_converge_runtime',
   'machine_fix_groups',
   'machine_ping',
   'machine_ssh_test',
@@ -1137,6 +1153,7 @@ export type FunctionParamsMap = {
   container_unpause: ContainerUnpauseParams;
   kube_health: KubeHealthParams;
   kube_kubeconfig: KubeKubeconfigParams;
+  machine_converge_runtime: MachineConvergeRuntimeParams;
   machine_ping: MachinePingParams;
   machine_ssh_test: MachineSshTestParams;
   machine_uninstall: MachineUninstallParams;
@@ -1316,6 +1333,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   },
   'kube_kubeconfig': {
     requirements: { machine: true, team: true },
+  },
+  'machine_converge_runtime': {
+    requirements: { machine: true },
   },
   'machine_ping': {
     requirements: { machine: true, team: true },
@@ -2662,6 +2682,40 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'machine_converge_runtime': {
+    name: 'machine_converge_runtime',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      dryRun: {
+        type: 'bool',
+        help: 'Print the plan without restarting anything',
+        options: ['true', 'false'],
+      },
+      policy: {
+        type: 'string',
+        default: 'epoch',
+        help: 'Restart policy',
+        options: ['epoch', 'always'],
+        enum: ['epoch', 'always'],
+      },
+      includeUnknown: {
+        type: 'bool',
+        help: 'Also converge stale repositories missing from the payload',
+        options: ['true', 'false'],
+      },
+      continueOnError: {
+        type: 'bool',
+        help: 'Keep going after a repository fails',
+        options: ['true', 'false'],
+      },
+      repoTimeout: {
+        type: 'string',
+        help: 'Deadline of one repository\'s restart (Go duration, e.g. 15m)',
+      },
+    },
+  },
   'machine_ping': {
     name: 'machine_ping',
     category: 'machine',
@@ -3481,6 +3535,7 @@ export const queueFunctions: QueueFunctionsType = {
   container_unpause: (params) => ({ functionName: 'container_unpause', params }),
   kube_health: (params) => ({ functionName: 'kube_health', params }),
   kube_kubeconfig: (params) => ({ functionName: 'kube_kubeconfig', params }),
+  machine_converge_runtime: (params) => ({ functionName: 'machine_converge_runtime', params }),
   machine_ping: (params) => ({ functionName: 'machine_ping', params }),
   machine_ssh_test: (params) => ({ functionName: 'machine_ssh_test', params }),
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
