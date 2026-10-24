@@ -2,7 +2,7 @@
 
 `vm_check.py` registers this module once, through `EXTRA_RENET_STEPS`, as the `I1` step of the renet phase; `--only I1` drags in V1.2 (and with it P5 and V1.1), so the run's forks A and B exist when `run(ctx)` is called. `ctx` is the running `VmCheck`: every VM action goes through its `./rdc.sh` helpers (`rdc`, `shell`), its raw ssh probe recipe (`vm_ssh.ssh_argv` through `host_run`, the U1 pattern) and its ledger (`check`, `record`). Every row records under the step id `I1`, its plan row named in the description, and asserts the FIXED behaviour; a defect is a FAIL row, never papered over.
 
-THE ROWS. I1.1 the sandbox's group list; I1.2 the own Docker socket answers and the neighbour's refuses; I1.3 the gate's peer-cgroup check (403 from A's exec cgroup, 200 from outside every repo cgroup); I1.4 the gate seeds a never-seen compose service and the repository default; I1.5 a plain `docker run` in B cannot connect to a listener on an A address (EPERM) while A itself can; I1.6 the mount view and the session PID namespace; I1.8 a session's background job dies with it while VS Code's connection keeps its server; I1.7 deleting a fork removes its cgroups, map entries and socket group.
+THE ROWS. I1.1 the sandbox's group list; I1.2 the own Docker socket answers and the neighbour's refuses; I1.3 the gate's peer-cgroup check (403 from A's exec cgroup, 200 from outside every repo cgroup); I1.4 the gate seeds a never-seen compose service and the repository default; I1.5 a plain `docker run` in B cannot connect to a listener on an A address (EPERM) while A itself can; I1.6 the mount view and the session PID namespace; I1.8 a session's nohup background job outlives the session in that session's own PID namespace and private view, invisible to B and to a fresh A session, and the namespace ends with its last job, while VS Code's connection keeps its server and its exec channel returns at once; I1.7 deleting a fork removes its cgroups, map entries and socket group.
 
 THE ROOT GO TESTS (rows `I1.R`). RB's and RC's acceptance lines (`TestPrivateRepoViewLinux`, the `ebpf_e2e` tests) need root on a real kernel. A pre-bash guard refuses hand-copying binaries to a VM with scp/ssh, so they travel the way vm_check already moves files: `go test -c` builds the test binaries on the host (the way U1 builds its pre-isolation renet), `rdc repo sync upload` puts them into the throwaway fork C's mount, and the run's ssh probe executes them under sudo from a private staging directory it removes again. Fork C's deletion (I1.7) takes the uploaded copies with it. A test that SKIPs (no root, missing kernel prerequisite) is a FAIL row: only `--- PASS` counts.
 
@@ -50,7 +50,13 @@ URI_PREFIX = "vscode-remote://ssh-remote+"
 
 # RB's and RC's root acceptance tests: (row label, test binary name, go package, build tags, test names).
 ROOT_TESTS: tuple[tuple[str, str, str, str, tuple[str, ...]], ...] = (
-    ("RB", "renet-cmd.test", "./cmd/renet", "nolicense", ("TestPrivateRepoViewLinux",)),
+    (
+        "RB",
+        "renet-cmd.test",
+        "./cmd/renet",
+        "nolicense",
+        ("TestPrivateRepoViewLinux", "TestPrivateRepoViewBackgroundJobOutlivesTheTarget"),
+    ),
     (
         "RC",
         "renet-ebpf.test",
@@ -60,6 +66,7 @@ ROOT_TESTS: tuple[tuple[str, str, str, str, tuple[str, ...]], ...] = (
             "TestEBPF_DeepestEntryWins",
             "TestEBPF_RepoDefaultBlocksCrossRepo",
             "TestEBPF_Bind4LoopbackRewrite",
+            "TestEBPF_ExecEntryStaysWhileACgroupHoldsProcesses",
         ),
     ),
 )
@@ -67,6 +74,8 @@ ROOT_TEST_DIR = "vmc-i1-tests"
 ROOT_TEST_TIMEOUT_S = 900
 # How the test binaries are built: static, for the ops VMs' architecture, the way build.sh builds renet itself.
 GO_TEST_ENV = {"CGO_ENABLED": "0", "GOOS": "linux", "GOARCH": "amd64"}
+# VS Code Remote-SSH's exec channel must return once its background job is started, not when the job ends.
+ALIAS_CHANNEL_MAX_MS = 30000
 
 
 # --------------------------------------------------------------------------- pure helpers
@@ -317,13 +326,51 @@ def root_test_script(src: str, binary: str, names: Sequence[str], timeout_s: int
     )
 
 
-def gone_script(seconds: int, tries: int = 5) -> str:
-    """Root on the worker: prints GONE once no `sleep <seconds>` process exists, ALIVE (exit 1) when one still does after `tries` seconds. The `^...$` anchor keeps the probe's own command line out of the match."""
+def ns_gone_script(seconds: int, pidns: str, tries: int = 5) -> str:
+    """Root on the worker: kills the `sleep <seconds>` job, then prints NSGONE once no `/proc/*/ns/pid` points at `pidns` (the job's namespace, whose lingering init exits with its last process), NSLINGERS (exit 1) when one still does after `tries` seconds."""
+    pat = shlex.quote("^sleep %d$" % seconds)
+    ns = shlex.quote(pidns)
+    return (
+        "pkill -f %(pat)s; "
+        "for i in $(seq %(tries)d); do found=; "
+        'for f in /proc/[0-9]*/ns/pid; do [ "$(readlink "$f" 2>/dev/null)" = %(ns)s ] && { found=$f; break; }; done; '
+        '[ -z "$found" ] && { echo NSGONE; exit 0; }; sleep 1; done; '
+        'echo "NSLINGERS $found"; exit 1' % {"pat": pat, "ns": ns, "tries": tries}
+    )
+
+
+def job_view_script(seconds: int) -> str:
+    """Root on the worker: the `sleep <seconds>` job's PID namespace, the worker's own, and the job's mountinfo, cut by `===` lines. NOJOB (exit 3) when no such job runs."""
     pat = shlex.quote("^sleep %d$" % seconds)
     return (
-        "for i in $(seq %d); do pgrep -f %s >/dev/null || { echo GONE; exit 0; }; sleep 1; done; "
-        "echo ALIVE; exit 1" % (tries, pat)
+        'p=$(pgrep -f %s | head -n1); test -n "$p" || { echo NOJOB; exit 3; }; '
+        'readlink "/proc/$p/ns/pid"; echo ===; readlink /proc/self/ns/pid; echo ===; '
+        'cat "/proc/$p/mountinfo"' % pat
     )
+
+
+def job_view_verdict(text: str, guid_b: str) -> tuple[bool, str, str]:
+    """(ok, evidence, the job's namespace) of job_view_script's output: the job runs in a PID namespace other than the worker's, and its mountinfo has no mount point under B's guid."""
+    sections = split_sections(text)
+    job_ns = sections[0].strip() if sections else ""
+    host_ns = sections[1].strip() if len(sections) > 1 else ""
+    guids = mount_guids(sections[2] if len(sections) > 2 else "")
+    why = []
+    if not job_ns.startswith("pid:[") or not host_ns.startswith("pid:["):
+        why.append("no namespaces read (job %r, worker %r)" % (job_ns, host_ns))
+    elif job_ns == host_ns:
+        why.append("the job runs in the worker's PID namespace %s" % host_ns)
+    if guid_b in guids:
+        why.append("B's guid %s is mounted in the job's view" % guid_b)
+    ev = "job %s, worker %s, guids %s" % (job_ns or "-", host_ns or "-", guids)
+    if why:
+        return False, "; ".join(why) + " (%s)" % ev, ""
+    return True, ev, job_ns
+
+
+def absent_script(seconds: int) -> str:
+    """A sandbox shell's probe for the `sleep <seconds>` job: its pid when visible, ABSENT otherwise."""
+    return "pgrep -f %s || echo ABSENT" % shlex.quote("^sleep %d$" % seconds)
 
 
 def alive_script(seconds: int) -> str:
@@ -649,14 +696,55 @@ class _LiveI1:
             started,
             "" if started.rc == 0 else self.ev(started),
         ):
-            gone = self.root(gone_script(secs))
-            self.check(
-                "I1.8 the session's background job died with the session",
-                gone.rc == 0 and "GONE" in gone.out,
-                gone,
-                gone.text(),
-            )
+            alive = self.root(alive_script(secs))
+            if self.check(
+                "I1.8 a session's nohup background job outlives its session",
+                alive.rc == 0 and "ALIVE" in alive.out,
+                alive,
+                alive.text(),
+            ):
+                self._lingering_job(secs)
         self._vscode_keeps_server()
+
+    def _lingering_job(self, secs: int) -> None:
+        """The job A's ended session left behind keeps that session's PID namespace and private view, is invisible to every other session, and its namespace ends with it."""
+        view = self.root(job_view_script(secs))
+        ok, why, job_ns = job_view_verdict(view.out if view.rc == 0 else "", self.guid["b"])
+        self.check(
+            "I1.8 the lingering job keeps its session's PID namespace and a view without B's mount",
+            ok,
+            view,
+            why if view.rc == 0 else "%s; %s" % (why, view.text()),
+        )
+        b_sees = self.ctx.shell(self.ref_b, absent_script(secs))
+        self.check(
+            "I1.8 B's session does not see A's lingering job",
+            b_sees.rc == 0 and "ABSENT" in b_sees.out,
+            b_sees,
+            b_sees.text() if b_sees.rc == 0 else self.ev(b_sees),
+        )
+        a_sees = self.ctx.shell(self.ref_a, absent_script(secs))
+        self.check(
+            "I1.8 a fresh A session does not see the job either (each session has its own PID namespace)",
+            a_sees.rc == 0 and "ABSENT" in a_sees.out,
+            a_sees,
+            a_sees.text() if a_sees.rc == 0 else self.ev(a_sees),
+        )
+        if not job_ns:
+            self.check(
+                "I1.8 the job's PID namespace ends with the job",
+                False,
+                view,
+                "the namespace was not read",
+            )
+            return
+        gone = self.root(ns_gone_script(secs, job_ns))
+        self.check(
+            "I1.8 the job's PID namespace ends with the job",
+            gone.rc == 0 and "NSGONE" in gone.out,
+            gone,
+            gone.text(),
+        )
 
     def _vscode_connect(self, attempt: str) -> bool | None:
         """One `rdc vscode connect --url-only`: it prepares the per-repo VS Code server and the ssh alias, prints the URI and exits, so no session outlives the command. None when VS Code is absent here (a skip row)."""
@@ -731,6 +819,13 @@ class _LiveI1:
             "" if launched.rc == 0 else self.ev(launched),
         ):
             return
+        self.check(
+            "I1.8 the alias exec channel returned in under %ds, not when its job ends"
+            % (ALIAS_CHANNEL_MAX_MS // 1000),
+            launched.ms < ALIAS_CHANNEL_MAX_MS,
+            launched,
+            "%d ms" % launched.ms,
+        )
         alive = self.root(alive_script(secs))
         self.check(
             "I1.8 the job VS Code's connection started outlives its channel (the server's lifetime)",
@@ -905,6 +1000,7 @@ __all__ = [
     "ROOT_TESTS",
     "STEP",
     "STEP_ID",
+    "absent_script",
     "alive_script",
     "build_tests_script",
     "compose_body",
@@ -914,13 +1010,15 @@ __all__ = [
     "find_entry",
     "fork_c_tag",
     "go_test_verdict",
-    "gone_script",
     "groups_verdict",
     "http_status",
     "inspection_count",
     "ip_at_offset",
+    "job_view_script",
+    "job_view_verdict",
     "mount_guids",
     "net_group",
+    "ns_gone_script",
     "parse_inspection",
     "peer_curl_script",
     "repo_cgroup_rel",

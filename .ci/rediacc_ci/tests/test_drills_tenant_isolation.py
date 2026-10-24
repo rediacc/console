@@ -275,9 +275,65 @@ def test_root_test_script_stages_privately_and_cleans_up() -> None:
 
 
 def test_process_scripts_anchor_the_pattern() -> None:
-    for script in (ti.gone_script(612345), ti.alive_script(612345)):
+    for script in (ti.alive_script(612345), ti.job_view_script(612345), ti.absent_script(612345)):
         assert "pgrep -f '^sleep 612345$'" in script
-    assert "echo ALIVE; exit 1" in ti.gone_script(612345)
+    assert "pkill -f '^sleep 612345$'" in ti.ns_gone_script(612345, "pid:[4026532800]")
+    assert ti.absent_script(612345) == "pgrep -f '^sleep 612345$' || echo ABSENT"
+
+
+def test_ns_gone_script_waits_for_no_process_in_the_namespace() -> None:
+    script = ti.ns_gone_script(612345, "pid:[4026532800]", tries=3)
+    assert "for i in $(seq 3)" in script
+    # The namespace is quoted: its brackets are a glob otherwise.
+    assert "= 'pid:[4026532800]' ]" in script
+    assert "/proc/[0-9]*/ns/pid" in script
+    assert "echo NSGONE; exit 0" in script
+    assert script.rstrip().endswith("exit 1")
+    # The kill comes first, so the wait is for the namespace to end with the job.
+    assert script.index("pkill") < script.index("for i in")
+
+
+JOB_NS, HOST_NS = "pid:[4026532800]", "pid:[4026531836]"
+
+
+def _job_view(job_ns: str = JOB_NS, host_ns: str = HOST_NS, extra: str = "") -> str:
+    return "%s\n===\n%s\n===\n%s%s" % (
+        job_ns,
+        host_ns,
+        MOUNTINFO % {"a": GUID_A, "b": GUID_B},
+        extra,
+    )
+
+
+def test_job_view_script_reads_the_jobs_namespace_and_mounts() -> None:
+    script = ti.job_view_script(612345)
+    assert 'readlink "/proc/$p/ns/pid"' in script
+    assert "readlink /proc/self/ns/pid" in script
+    assert 'cat "/proc/$p/mountinfo"' in script
+    assert "echo NOJOB; exit 3" in script
+
+
+def test_job_view_verdict() -> None:
+    ok, why, ns = ti.job_view_verdict(_job_view(), GUID_B)
+    assert ok, why
+    assert ns == JOB_NS
+    # The job in the worker's own namespace: the view was never built.
+    ok, why, ns = ti.job_view_verdict(_job_view(job_ns=HOST_NS), GUID_B)
+    assert not ok
+    assert ns == ""
+    assert "worker's PID namespace" in why
+    # B's mount in the job's view.
+    leaked = "60 22 0:36 / /mnt/rediacc/mounts/%s rw - ext4 x rw\n" % GUID_B
+    ok, why, ns = ti.job_view_verdict(_job_view(extra=leaked), GUID_B)
+    assert not ok
+    assert ns == ""
+    assert GUID_B in why
+    # Nothing read (a failed probe, NOJOB) proves nothing.
+    for text in ("", "NOJOB\n"):
+        ok, why, ns = ti.job_view_verdict(text, GUID_B)
+        assert not ok
+        assert ns == ""
+        assert "no namespaces read" in why
 
 
 def test_peer_curl_script_moves_into_the_cgroup_first() -> None:
@@ -525,6 +581,9 @@ class FakeCtx:
             return Res(
                 0, "pid:[4026532999]\n===\n" + MOUNTINFO % {"a": GUID_A, "b": GUID_B} + extra
             )
+        if "|| echo ABSENT" in line:
+            # `visible`: a session sees another session's lingering job.
+            return Res(0, "4242\n") if "visible" in b else Res(0, "ABSENT\n")
         if "nohup sleep" in line:
             return Res(0, "STARTED\n")
         if "test -f" in line and ".vscode-server/.vmc-i1-" in line:
@@ -563,12 +622,28 @@ class FakeCtx:
                     ],
                 ),
             )
+        if argv[:2] == ["ssh", "-F"] and argv[2] != "/dev/null":
+            # The VS Code alias channel; `slowalias`: it returns only when its job ends.
+            res = Res()
+            res.ms = 40000 if "slowalias" in self.broken else 1200
+            return res
+        if "NOJOB" in command:
+            # `nsview`: the job runs in the worker's own PID namespace.
+            return Res(0, _job_view(job_ns=HOST_NS if "nsview" in self.broken else JOB_NS))
+        if "NSGONE" in command:
+            # `nslingers`: a process still holds the job's namespace.
+            if "nslingers" in self.broken:
+                return Res(1, "NSLINGERS /proc/77/ns/pid\n")
+            return Res(0, "NSGONE\n")
+        if "echo ALIVE" in command:
+            # `lingerdies`: the job died with its session (the defect of vmc-10241051-440c3f I1.8).
+            if "lingerdies" in self.broken:
+                return Res(1, "GONE\n")
+            return Res(0, "ALIVE\n")
         if "readlink /proc/self/ns/pid" in command:
             return Res(0, "pid:[4026531836]\n")
-        if "pkill" in command and "ssh-cleanup" in self.broken:
+        if "pkill" in command and "! pgrep" in command and "ssh-cleanup" in self.broken:
             return Res(vm_ssh.SSH_FAILED, "", "ssh: connect to host: Connection timed out")
-        if "^sleep" in command and "pkill" not in command:
-            return Res(0, "GONE\n")
         if "test -d /sys/fs/cgroup" in command:
             return Res(0, "ABSENT\n")
         if "getent group" in command:
@@ -634,6 +709,10 @@ def test_the_live_step_passes_on_the_fixed_behaviour_and_tears_down(tmp_path: pa
         ("peer", "I1.3 root in renet-exec"),
         ("connect", "I1.5 a plain docker run in B"),
         ("mounts", "I1.6 A's mountinfo"),
+        ("lingerdies", "I1.8 a session's nohup background job outlives its session"),
+        ("nsview", "I1.8 the lingering job keeps its session's PID namespace"),
+        ("visible", "I1.8 B's session does not see A's lingering job"),
+        ("nslingers", "I1.8 the job's PID namespace ends with the job"),
     ],
 )
 def test_each_defect_is_a_fail_row(tmp_path: pathlib.Path, broken: str, row: str) -> None:
@@ -690,8 +769,69 @@ def test_a_second_vscode_connect_that_wipes_the_server_fails(tmp_path: pathlib.P
 
 
 def test_dead_helpers_are_gone() -> None:
-    """Review 81e15b4f.4: the unused repo-list parser was removed (the live step reads ctx.repo_list)."""
+    """Review 81e15b4f.4: the unused repo-list parser was removed (the live step reads ctx.repo_list). gone_script asserted the defect I1.8 now refutes (a session's job dying with it)."""
     assert not hasattr(ti, "_data_list")
+    assert not hasattr(ti, "gone_script")
+
+
+def test_the_lingering_job_rows_pass_and_run_in_order(tmp_path: pathlib.Path) -> None:
+    ctx = FakeCtx(tmp_path)
+    ti.run(ctx)
+    descs = [d for _s, d, ok in ctx.rows if ok]
+    want = [
+        "I1.8 a session's nohup background job outlives its session",
+        "I1.8 the lingering job keeps its session's PID namespace and a view without B's mount",
+        "I1.8 B's session does not see A's lingering job",
+        "I1.8 a fresh A session does not see the job either (each session has its own PID namespace)",
+        "I1.8 the job's PID namespace ends with the job",
+    ]
+    assert [d for d in descs if d in want] == want
+    # The namespace probe waits on the namespace the view probe read.
+    assert any("NSGONE" in c and JOB_NS in c for c in ctx.calls)
+    # B is probed from B's session, the fresh A from A's.
+    absent = [c for c in ctx.calls if c.startswith("rdc ") and "|| echo ABSENT" in c]
+    assert len(absent) == 2
+    assert ctx.ref(ctx.tags[1]) in absent[0]
+    assert ctx.ref(ctx.tags[0]) in absent[1]
+
+
+def test_a_dead_job_skips_the_lingering_rows(tmp_path: pathlib.Path) -> None:
+    ctx = FakeCtx(tmp_path, frozenset({"lingerdies"}))
+    ti.run(ctx)
+    assert not any("lingering job" in d or "namespace ends" in d for _s, d, _ok in ctx.rows)
+    assert not [c for c in ctx.calls if "NOJOB" in c or "NSGONE" in c]
+
+
+def test_an_unread_namespace_fails_the_namespace_row(tmp_path: pathlib.Path) -> None:
+    ctx = FakeCtx(tmp_path, frozenset({"nsview"}))
+    ti.run(ctx)
+    assert ("I1", "I1.8 the job's PID namespace ends with the job", False) in ctx.rows
+    assert not [c for c in ctx.calls if "NSGONE" in c]
+
+
+ALIAS_ROW = "I1.8 the alias exec channel returned in under 30s, not when its job ends"
+
+
+def _with_alias(ctx: FakeCtx) -> FakeCtx:
+    ctx.connection = "alias-a"
+    (ctx.work / "ssh_config").write_text("Host alias-a\n")
+    return ctx
+
+
+def test_the_alias_channel_returns_quickly(tmp_path: pathlib.Path) -> None:
+    ctx = _with_alias(FakeCtx(tmp_path))
+    ti.run(ctx)
+    failed = [d for _s, d, ok in ctx.rows if ok is False]
+    assert not failed, failed
+    assert ("I1", ALIAS_ROW, True) in ctx.rows
+    assert any("outlives its channel" in d and ok for _s, d, ok in ctx.rows)
+
+
+def test_a_slow_alias_channel_fails(tmp_path: pathlib.Path) -> None:
+    ctx = _with_alias(FakeCtx(tmp_path, frozenset({"slowalias"})))
+    ti.run(ctx)
+    failed = [d for _s, d, ok in ctx.rows if ok is False]
+    assert failed == [ALIAS_ROW]
 
 
 def test_nc_evidence_keeps_the_nc_docker_and_marker_lines() -> None:
