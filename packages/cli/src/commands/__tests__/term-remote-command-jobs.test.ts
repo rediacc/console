@@ -34,7 +34,14 @@ const details: ConnectionDetails = {
 /** Pids whose argv[0] is `marker`, read from /proc so no external tool is needed. */
 function survivors(marker: string): number[] {
   const out: number[] = [];
-  for (const entry of readdirSync('/proc')) {
+  let entries: string[];
+  try {
+    entries = readdirSync('/proc');
+  } catch {
+    // No /proc (macOS): the scan cannot look, so it reports nothing rather than failing the test on a filesystem error.
+    return out;
+  }
+  for (const entry of entries) {
     if (!/^\d+$/.test(entry)) continue;
     try {
       if (readFileSync(`/proc/${entry}/cmdline`, 'utf8').split('\0')[0] === marker)
@@ -92,7 +99,13 @@ describe('buildRemoteCommand with a backgrounded job', () => {
       }
     }
     // A job that left the group (a future setsid in the preamble) would survive the kill: fail on it rather than leak it.
-    expect(survivors(marker), 'the background job outlived its process group').toEqual([]);
+    // A SIGKILLed job can still show its argv for a moment while it is reaped, so poll briefly before judging.
+    let left = survivors(marker);
+    for (let i = 0; i < 20 && left.length > 0; i++) {
+      await new Promise((r) => setTimeout(r, 100));
+      left = survivors(marker);
+    }
+    expect(left, 'the background job outlived its process group').toEqual([]);
     expect(out).toContain('STARTED');
     expect(ms, 'stdout stayed open: the background job held the channel').not.toBeNull();
     expect(ms as number).toBeLessThan(10_000);
