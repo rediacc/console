@@ -24,6 +24,9 @@
 
 import { Container, getContainer } from '@cloudflare/containers';
 
+// Outbound interception (ExecutorContainer.outboundByHost) runs through this entrypoint; without the re-export a container start fails with "ctx.exports.ContainerProxy is undefined".
+export { ContainerProxy } from '@cloudflare/containers';
+
 export interface Env {
   EXECUTOR: DurableObjectNamespace<ExecutorContainer>;
   /** Account server base URL, e.g. https://eu.rediacc.com */
@@ -44,11 +47,36 @@ export interface Env {
 export function executorEnvVars(env: Env): Record<string, string> {
   return {
     REDIACC_TOKEN: env.EXECUTOR_TOKEN,
-    REDIACC_ACCOUNT_SERVER: env.ACCOUNT_URL,
+    REDIACC_ACCOUNT_SERVER: env.ACCOUNT ? `http://${ACCOUNT_EGRESS_HOST}` : env.ACCOUNT_URL,
   };
 }
 
+/**
+ * The host the container addresses the account server by when the Worker holds the ACCOUNT binding.
+ *
+ * EXECUTOR_TOKEN is bound to Cloudflare IP ranges, and a container's own public egress is outside them: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post the container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. So the container talks to this name instead, `ExecutorContainer.outboundByHost` intercepts it, and `forwardAccountEgress` sends it over the binding, where the account worker's CloudflareInternal entrypoint admits the `cloudflare`-bound token. The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than carrying the token over plain HTTP to the internet. Not exported: workerd treats every export of the main module as an entrypoint and refuses to start on a plain string (caught by check:ci-proxy-wrangler-dev-e2e).
+ */
+const ACCOUNT_EGRESS_HOST = 'account.internal';
+
+/** Forward one intercepted container request for ACCOUNT_EGRESS_HOST to the account server, over the binding when there is one. Only account API paths pass. */
+export function forwardAccountEgress(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  if (!url.pathname.startsWith('/account/')) {
+    return Promise.resolve(
+      Response.json({ error: 'only account paths are forwarded' }, { status: 403 })
+    );
+  }
+  const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, request);
+  return env.ACCOUNT ? env.ACCOUNT.fetch(forwarded) : fetch(forwarded);
+}
+
 export class ExecutorContainer extends Container<Env> {
+  /** The container's account traffic, routed through the Worker's binding (ACCOUNT_EGRESS_HOST says why). */
+  static outboundByHost = {
+    [ACCOUNT_EGRESS_HOST]: (request: Request, env: unknown) =>
+      forwardAccountEgress(request, env as Env),
+  };
+
   /** `rdc serve` listens here. */
   defaultPort = 8080;
 

@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const routed = vi.hoisted(() => ({ tenants: [] as string[] }));
 
 vi.mock('@cloudflare/containers', () => ({
+  ContainerProxy: class {},
   Container: class {
     constructor(
       readonly ctx: unknown,
@@ -26,7 +27,7 @@ vi.mock('@cloudflare/containers', () => ({
   },
 }));
 
-import worker, { type Env, ExecutorContainer } from '../index';
+import worker, { type Env, ExecutorContainer, forwardAccountEgress } from '../index';
 
 const ACCOUNT_URL = 'https://account.test';
 const EXECUTOR_TOKEN = 'rdt_executor_secret';
@@ -188,5 +189,60 @@ describe('ExecutorContainer (B1)', () => {
 
   it('keeps the sleep timeout at the budgeted two minutes', () => {
     expect(new ExecutorContainer({} as never, env()).sleepAfter).toBe('2m');
+  });
+});
+
+/** The host src/index.ts intercepts; a literal because the Worker module may export only entrypoints. */
+const ACCOUNT_EGRESS_HOST = 'account.internal';
+
+describe('container account egress (bench Phase 2, 2026-10-24)', () => {
+  function boundEnv(seen: Request[]): Env {
+    const binding = {
+      fetch: (input: Request) => {
+        seen.push(input);
+        return Promise.resolve(Response.json({ via: 'binding' }));
+      },
+    };
+    return env({ ACCOUNT: binding as unknown as Fetcher });
+  }
+
+  it('points the container at the intercepted host when the Worker holds the ACCOUNT binding', () => {
+    const container = new ExecutorContainer({} as never, boundEnv([]));
+    expect(container.envVars.REDIACC_ACCOUNT_SERVER).toBe(`http://${ACCOUNT_EGRESS_HOST}`);
+  });
+
+  it('intercepts exactly that host', () => {
+    expect(Object.keys(ExecutorContainer.outboundByHost)).toEqual([ACCOUNT_EGRESS_HOST]);
+  });
+
+  it('forwards an intercepted account call over the binding, keeping method, path, query, headers and body', async () => {
+    const seen: Request[] = [];
+    const response = await forwardAccountEgress(
+      new Request(`http://${ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/introspect?x=1`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${EXECUTOR_TOKEN}` },
+        body: JSON.stringify({ token: CALLER }),
+      }),
+      boundEnv(seen)
+    );
+
+    expect(await response.json()).toEqual({ via: 'binding' });
+    expect(accountFetch).not.toHaveBeenCalled();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.url).toBe(`${ACCOUNT_URL}/account/api/v1/proxy/introspect?x=1`);
+    expect(seen[0]?.method).toBe('POST');
+    expect(seen[0]?.headers.get('authorization')).toBe(`Bearer ${EXECUTOR_TOKEN}`);
+    expect(await seen[0]?.json()).toEqual({ token: CALLER });
+  });
+
+  it('refuses a path outside the account API and forwards nothing', async () => {
+    const seen: Request[] = [];
+    const response = await forwardAccountEgress(
+      new Request(`http://${ACCOUNT_EGRESS_HOST}/admin/secrets`),
+      boundEnv(seen)
+    );
+
+    expect(response.status).toBe(403);
+    expect(seen).toEqual([]);
   });
 });
