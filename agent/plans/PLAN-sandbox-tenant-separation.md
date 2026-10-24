@@ -68,6 +68,8 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
 - [ ] DR [drill] wave 3, after U1 is ticked and CX lands. Owns: .ci/rediacc_ci/drills/tenant_isolation.py, .ci/rediacc_ci/tests/test_drills_tenant_isolation.py, the I1 registration in vm_check.py: step I1 below -- Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_drills_tenant_isolation.py -q` rc 0; `npm run check:ci-pytest` rc 0; `npm run vm:check -- --only I1` with every I1 row ok; then a full `npm run vm:check` VERIFIED.
 - [ ] H1 [operator window] after release, on one machine: `rdc machine converge <m> --dry-run` lists every repo stale (epoch 2), then the real pass -- Accept: converge-last.json shows every repo converged or pending with a reason, and `stat -c %G /var/run/rediacc/net-*/docker-*[0-9].sock` prints only `rediacc-net-*`.
 
+RB and RC's sudo acceptance lines (`TestPrivateRepoViewLinux`, the `ebpf_e2e` tests) run on an ops VM through the drill harness's sanctioned path (vm_check's own helpers), never by hand-copying test binaries: a pre-bash guard refuses scp/ssh deployment of binaries. RB and RC stay open until those lines and I1 pass.
+
 ### Drill registration
 `vm_check.py` has no plug-in hook (U1 edits it at several points). DR exports `STEP = ("I1", ("V1.2",), run)` from `tenant_isolation.py`, adds `EXTRA_RENET_STEPS = (tenant_isolation.STEP,)` after U1 is ticked, and once turns `PHASE_STEPS[SIDE_RENET]`, `_ONLY_DEPS` and the dispatch into reads of that tuple so each later drill is one line.
 
@@ -77,7 +79,8 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
 - I1.3 Second layer, root on the worker: a shell in `renet-exec-<A>/cgroup.procs` curls B's socket `/_ping` and gets the gate's 403.
 - I1.4 B's sandbox brings up a never-seen service `vmc-i1-<run>`; `renet ebpf inspect --network-id <B> --json` shows entries for `rediacc-<B>/vmc-i1-<run>` (B's /26, the label IP) and `rediacc-<B>`.
 - I1.5 A `docker run --rm --network host` in B with no cgroup parent cannot connect to a listener A's sandbox opened on an A-subnet IP (EPERM).
-- I1.6 A's sandbox `/proc/self/mountinfo` names only A's guid under `/mounts/`; `<ds>/mounts/<B-guid>` is not a mount point there; `/proc/1/mountinfo` is absent.
+- I1.6 A's sandbox `/proc/self/mountinfo` names only A's guid under `/mounts/`; `<ds>/mounts/<B-guid>` is not a mount point there; `/proc/self/ns/pid` differs from the worker's own (the session has its own PID namespace; its PID 1 is the root init stage, hidden by hidepid rather than absent).
+- I1.8 Behaviour change from RB: a session's leftover background processes die with it on disconnect. Assert it for a `nohup sleep` job, and check `rdc vscode <repo>` still connects and keeps its server across a reconnect; if the VS Code server dies with the launching session, that is a defect to fix in RB's init stage before this plan closes.
 - I1.7 Fork C compose up then `rdc repo delete C`: `rediacc.slice/rediacc-<C>` absent, `ebpf inspect --network-id <C>` counts 0, `getent group rediacc-net-<C>` rc 2.
 
 ## Tests (Go, with fakes)
