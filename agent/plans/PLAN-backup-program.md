@@ -62,7 +62,7 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 | A restore reuses the source GUID and renames over an unmounted source image | private/renet/cmd/renet/backup_restore.go:259-305, packages/cli/src/commands/backup.ts:166-170 | E1, K5 |
 | Retention keep set and newest-kept floor are per lineage, so forks or a second machine prune another stream | backup-gc.service.ts retentionKeepSet | E2, K3 |
 | Commit accepts a missing or foreign parent; restore fails later | backup-storage.service.ts commitManifest | E3 |
-| `restore --at` picks another fork's or machine's snapshot | packages/cli/src/commands/backup.ts:337-352 (the stream scope E4 added; the defect was the unscoped lineage pick) | E4 |
+| `restore --at` picks another fork's or machine's snapshot | the unscoped lineage pick in packages/cli/src/commands/backup.ts before b8fa5ef7e (E4); E4 scoped it to the stream at backup.ts:337-352 | E4 |
 | A first seed runs on the 30 s I/O budget | private/renet/cmd/renet/functions_commands.go:902 | E5 |
 | No default retention; strategy.retention is never sent | packages/shared/src/config-schema/schemas.ts:482-499 | F2, F4, A8 |
 | Schedules pass repo names to the GUID-only `--repo`, and refuse `exclude` | packages/cli/src/services/backup/backup-schedule-unit-generator.ts:136-161 | G1, G9 |
