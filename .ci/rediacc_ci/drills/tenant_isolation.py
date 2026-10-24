@@ -591,10 +591,11 @@ class _LiveI1:
             "" if own.rc == 0 else self.ev(own),
         ):
             return
+        # busybox 1.36 nc exits 1 silently on a failed connect; -vv makes it name the errno (`nc: <ip> (<ip>:<port>): Operation not permitted`).
         marker = "VMC-I1-FROM-B-%s" % self.ctx.run_id[-6:]
         cross = self.ctx.shell(
             self.ref_b,
-            "echo %s | docker run --rm -i --network host %s nc -w 3 %s %d 2>&1; echo NC_RC=$?"
+            "echo %s | docker run --rm -i --network host %s nc -vv -w 3 %s %d 2>&1; echo NC_RC=$?"
             % (marker, IMAGE, ip, LISTEN_PORT),
         )
         logs = self.ctx.shell(self.ref_a, "docker logs %s 2>&1" % self.listener)

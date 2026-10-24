@@ -504,11 +504,14 @@ class FakeCtx:
             return Res(1, "", "permission denied while trying to connect")
         if "--format" in line:
             return Res(0, self.label_ip + "\n")
-        if "nc -w 3" in line:
+        if "nc -vv -w 3" in line:
             if "connect" in b:
                 self.received = line.split("echo ", 1)[1].split(" ", 1)[0]
                 return Res(0, "NC_RC=0\n")
-            return Res(0, "nc: can't connect to remote host: Operation not permitted\nNC_RC=1\n")
+            return Res(
+                0,
+                "nc: 127.0.42.60 (127.0.42.60:47123): Operation not permitted\nsent 0, rcvd 0\nNC_RC=1\n",
+            )
         if "docker logs" in line:
             return Res(0, getattr(self, "received", "") + "\n")
         if "/dev/tcp" in line:
@@ -740,3 +743,10 @@ def test_cross_connect_verdict_unreadable_log_fails() -> None:
 def test_nc_rc_reads_the_last_marker() -> None:
     assert ti.nc_rc("NC_RC=125\n") == 125
     assert ti.nc_rc("no marker") is None
+
+
+def test_cross_connect_verdict_reads_busybox_vv_output() -> None:
+    out = "nc: 127.0.42.60 (127.0.42.60:47123): Operation not permitted\nsent 0, rcvd 0\nNC_RC=1\n"
+    assert ti.cross_connect_verdict(out, "", MARK)[0]
+    refused = "nc: 127.0.42.60 (127.0.42.60:47123): Connection refused\nsent 0, rcvd 0\nNC_RC=1\n"
+    assert not ti.cross_connect_verdict(refused, "", MARK)[0]
