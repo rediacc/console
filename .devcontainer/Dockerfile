@@ -668,7 +668,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Both sides are pinned now: the workflow names a version instead of `@latest`, and
 # this ARG names the same one. They must move together -- a devbox that disagrees
 # with CI is worse than one that is merely behind, because it answers confidently.
-ARG AGENT_BROWSER_VERSION=0.39.1
+ARG AGENT_BROWSER_VERSION=0.39.2
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
     && npm cache clean --force
 
