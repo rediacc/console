@@ -51,10 +51,10 @@ import subprocess
 import sys
 import time
 import traceback
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
-from rediacc_ci.drills import lib, vm_ssh, wire
+from rediacc_ci.drills import lib, upgrade_converge, vm_ssh, wire
 from rediacc_ci.drills import vm_check_receipt as receipt_mod
 from rediacc_ci.drills import vm_check_trigger as trigger
 from rediacc_ci.well_known import DATASTORE_PATH
@@ -228,7 +228,7 @@ SIDE_RENET = trigger.SIDE_RENET
 SIDE_ACCOUNT = trigger.SIDE_ACCOUNT
 # Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
 PHASE_STEPS: dict[str, tuple[str, ...]] = {
-    SIDE_RENET: ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7"),
+    SIDE_RENET: ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7", "U1"),
     SIDE_ACCOUNT: ("A1.1", "A1.2", "A1.3", "A1.4", "A0", "A2.1", "A2.2", "A2.3"),
 }
 # The account suites of A1: (step id, npm script, the package that holds it, None for the console root).
@@ -775,6 +775,8 @@ class Options:
     selftest: bool = False
     keep_work: bool = False
     net_base: str = DEFAULT_NET_BASE
+    # `--only <id>[,...]` runs P0 plus the named steps alone, to iterate one step without a full run; a run so narrowed writes a run record, never receipt.json, and never reaches VERIFIED (`_finish`), so the push guard never admits it.
+    only: frozenset[str] = frozenset()
 
 
 def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) -> Options:
@@ -788,7 +790,9 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     parser.add_argument("--parent", default=env.get("VM_CHECK_PARENT") or DEFAULT_PARENT)
     parser.add_argument("--machine", default="")
     parser.add_argument("--wait", dest="wait_s", type=float, default=DEFAULT_WAIT_S)
+    parser.add_argument("--only", default="")
     ns = parser.parse_args(rest)
+    only = frozenset(s.strip() for s in ns.only.split(",") if s.strip())
     return Options(
         changed=ns.changed,
         os_image=ns.os_image,
@@ -798,6 +802,7 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         selftest=selftest,
         keep_work=keep_work,
         net_base=env.get("VM_NET_BASE") or DEFAULT_NET_BASE,
+        only=only,
     )
 
 
@@ -818,6 +823,7 @@ class VmCheck:
         inputs_fn: Callable[[pathlib.Path], str | None] = trigger.inputs,
         account_modified_fn: Callable[[pathlib.Path], bool | None] = trigger.account_modified,
         account_digest_fn: Callable[[pathlib.Path], str | None] = trigger.account_worktree_digest,
+        u1_fn: Callable[[VmCheck], None] = upgrade_converge.run,
     ) -> None:
         self.root = root
         self.opts = opts
@@ -830,6 +836,8 @@ class VmCheck:
         self.inputs_fn = inputs_fn
         self.account_modified_fn = account_modified_fn
         self.account_digest_fn = account_digest_fn
+        # The live U1 step; a test injects a stub so the fake host never meets U1's own CLI calls (the pure U1 helpers are tested directly).
+        self.u1_fn = u1_fn
         self.rdc_sh = str(root / "rdc.sh")
         self.renet_bin = root / trigger.RENET_SUBMODULE / "bin" / "renet"
         self.ssh_user = vm_ssh.default_user(self.environ)
@@ -1063,6 +1071,15 @@ class VmCheck:
             timeout=60,
         )
 
+    def host_run(
+        self,
+        argv: Sequence[str],
+        env: Mapping[str, str] | None = None,
+        timeout: float | None = None,
+    ) -> Result:
+        """A raw host command for the U1 step (`git archive`, `go build`, an ssh probe), through the same `Host` the tests replace."""
+        return self.host.run(argv, env=env if env is not None else self.environ, timeout=timeout)
+
     def ref(self, tag: str) -> str:
         return "%s:%s" % (self.opts.parent, tag)
 
@@ -1197,7 +1214,32 @@ class VmCheck:
                 % (old, receipt_mod.CACHE_DIR, receipt_mod.SCHEMA)
             )
 
+    # Every terminal (non-infra) step a `--only` run may name, with the extra steps it drags in. The infra chain (P0-P4) always runs under `--only`, since nothing reaches the worker without it.
+    _V_WITH_FORKS: ClassVar[tuple[str, ...]] = ("V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7")
+    _ONLY_DEPS: ClassVar[dict[str, tuple[str, ...]]] = {
+        "V1.1": ("P5",),
+        "U1": (),
+        "A1.1": (),
+        "A1.2": (),
+        "A1.3": (),
+        "A1.4": (),
+        "A0": (),
+        "A2.1": ("A0",),
+        "A2.2": ("A0",),
+        "A2.3": ("A0",),
+        **dict.fromkeys(_V_WITH_FORKS, ("P5", "V1.1")),
+    }
+
+    def _only_wants(self, step: str) -> bool:
+        """Under `--only`, whether `step` runs: it was named, or a named step drags it in."""
+        if step in self.opts.only:
+            return True
+        return any(step in self._ONLY_DEPS.get(named, ()) for named in self.opts.only)
+
     def _steps(self) -> None:
+        if self.opts.only:
+            self._steps_only()
+            return
         renet = self.phases[SIDE_RENET]["required"]
         account = self.phases[SIDE_ACCOUNT]["required"]
         self.say(
@@ -1233,6 +1275,44 @@ class VmCheck:
         self.v1_5_sync()
         self.v1_6_vscode()
         self.v1_7_sftp()
+        self.u1_converge()
+
+    def _steps_only(self) -> None:
+        """A `--only <ids>` run: the infra chain to reach the worker, then just the named steps (and their declared prerequisites). The verdict path never writes receipt.json for it (`_finish`)."""
+        self.say(
+            "vm:check: --only %s (iteration run; no receipt.json written)"
+            % ", ".join(sorted(self.opts.only))
+        )
+        account_named = any(s.startswith("A") for s in self.opts.only) or self._only_wants("A0")
+        self.p0_lock()
+        self.p1_renet()
+        if account_named or self._only_wants("A0"):
+            self.a0_gateway()
+        self.p4_account()
+        self.p2_fleet()
+        self.p4_rebind()
+        self.p3_keys()
+        if account_named:
+            self.a1_suites()
+            self.a2_drills()
+        if self._only_wants("P5"):
+            self.p5_parent()
+        if self._only_wants("V1.1") and not self.v1_1_forks():
+            return
+        if self._only_wants("V1.2"):
+            self.v1_2_cross_repo()
+        if self._only_wants("V1.3"):
+            self.v1_3_positive()
+        if self._only_wants("V1.4"):
+            self.v1_4_isolation()
+        if self._only_wants("V1.5"):
+            self.v1_5_sync()
+        if self._only_wants("V1.6"):
+            self.v1_6_vscode()
+        if self._only_wants("V1.7"):
+            self.v1_7_sftp()
+        if self._only_wants("U1"):
+            self.u1_converge()
 
     # ------------------------------------------------------------------ P
 
@@ -2326,6 +2406,10 @@ class VmCheck:
             evidence="before %s after %s" % (self.b_stat, after.out.strip()),
         )
 
+    def u1_converge(self) -> None:
+        """U1: a renet upgrade converges pre-isolation daemons onto the per-network layout, and the cross-repo reach the flat layout allowed is gone. The whole step lives in `upgrade_converge.run`, which drives this run's own `./rdc.sh` helpers and ssh probe; a defect it finds is a FAIL row, never papered over."""
+        self.u1_fn(self)
+
     def _sftp_config(self) -> pathlib.Path | None:
         """An ssh config holding only the alias block `vscode connect` wrote, with Windows drive paths spelled for WSL and the identity copied to a 0600 file (a key under /mnt/c reads as 0777, which ssh refuses). None after a failed row when no block or no identity can be read."""
         drive_root = self.host.drive_root()
@@ -2542,9 +2626,19 @@ class VmCheck:
         status, reason = verdict(
             self.assertions, self.failures, self.reason, self.leftovers, self.phases
         )
+        if self.opts.only and status == receipt_mod.VERIFIED:
+            # An `--only` run judged just the named steps, so it can never stand for the whole check: it is NOT_VERIFIED and writes a run record, never receipt.json, so the push guard never admits it.
+            status, reason = (
+                receipt_mod.NOT_VERIFIED,
+                {
+                    "class": "only-partial",
+                    "detail": "a --only %s run judges just the named steps, not the whole check"
+                    % ", ".join(sorted(self.opts.only)),
+                },
+            )
         path: pathlib.Path | None = None
-        if self.tree and self.lock_lost:
-            # A lock loser's record is for the record only (VC7(a)): the holder's receipt.json and tree archive stay as they are.
+        if self.tree and (self.lock_lost or self.opts.only):
+            # A lock loser's or an `--only` run's record is for the record only: the holder's receipt.json and tree archive stay as they are.
             fresh = not self.run_dir().is_dir()
             self.run_dir().mkdir(parents=True, exist_ok=True)
             if fresh:
@@ -2685,6 +2779,7 @@ def main(
     inputs_fn: Callable[[pathlib.Path], str | None] = trigger.inputs,
     account_modified_fn: Callable[[pathlib.Path], bool | None] = trigger.account_modified,
     account_digest_fn: Callable[[pathlib.Path], str | None] = trigger.account_worktree_digest,
+    u1_fn: Callable[[VmCheck], None] = upgrade_converge.run,
 ) -> int:
     opts = parse_args(argv, environ)
     if opts.selftest:
@@ -2703,6 +2798,7 @@ def main(
         inputs_fn=inputs_fn,
         account_modified_fn=account_modified_fn,
         account_digest_fn=account_digest_fn,
+        u1_fn=u1_fn,
     )
     try:
         return check.run()

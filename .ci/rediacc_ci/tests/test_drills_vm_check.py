@@ -44,7 +44,12 @@ GATEWAY_STARTED = "1792000000"
 DRILL_ENV_SCRUB = ("REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER", "RDC_DEV", "DRILL_EXPECT_NO_KEYRING")
 DRILL_NAMES = ("universe", "transfer", "license")
 A_STEPS = ("A1.1", "A1.2", "A1.3", "A1.4", "A0", "A2.1", "A2.2", "A2.3")
-V_STEPS = ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7")
+V_STEPS = ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7", "U1")
+
+
+def stub_u1(check: Any) -> None:
+    """The U1 step a fake-driven run gets: one ok assertion row and no VM call. The live step is `upgrade_converge.run`, and its CLI-free helpers are tested directly in test_drills_upgrade_converge.py."""
+    check.check("U1", "stub U1: a renet upgrade converges the fleet", True)
 
 
 def drill_passed(name: str, count: int = 12) -> tuple[int, str]:
@@ -75,6 +80,10 @@ PARENT = "vmcheck-base"
 NOW = 1792000800.0
 
 MUTANTS = {
+    "only-writes-receipt-json": (
+        "        if self.tree and (self.lock_lost or self.opts.only):\n",
+        "        if self.tree and self.lock_lost:\n",
+    ),
     "skip-teardown": ("            self._teardown()\n", "            pass\n"),
     "pass-on-zero-steps": ("    if assertions == 0:\n", "    if False:\n"),
     "print-token": (
@@ -815,6 +824,7 @@ def run_check(
         inputs_fn=lambda _root: DIGEST,
         account_modified_fn=lambda _root: modified,
         account_digest_fn=lambda _root: digest,
+        u1_fn=stub_u1,
     )
     latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
     receipt = json.loads(latest.read_text()) if latest.exists() else {}
@@ -1193,7 +1203,34 @@ def scenario_no_drill_or_suite_env_carries_a_credential(
             assert TOKEN.encode() not in path.read_bytes(), path
 
 
+def scenario_only_writes_no_receipt_json(m: types.ModuleType, tmp_path: pathlib.Path) -> None:
+    """A `--only` run judges just the named steps, so it must write a run record, never receipt.json."""
+    world = make_world(tmp_path, stored_ok=True)
+    out = io.StringIO()
+    environ = {
+        "HOME": str(tmp_path / "home"),
+        "PATH": os.environ.get("PATH", ""),
+        "VM_NET_BASE": NET,
+    }
+    m.main(
+        ["--only", "U1", "--keep-work", "--wait", "0"],
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=m.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ=environ,
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=lambda check: check.check("U1", "stub U1", True),
+    )
+    latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
+    assert not latest.exists(), "a --only run must not write receipt.json"
+
+
 SCENARIOS = {
+    "only-writes-receipt-json": scenario_only_writes_no_receipt_json,
     "skip-account-phase": scenario_account_only_runs_the_account_phase_and_no_renet_step,
     "renet-steps-on-account-only": scenario_account_only_runs_the_account_phase_and_no_renet_step,
     "skipped-drill-passes": scenario_a_skipped_drill_is_not_verified,
@@ -1292,6 +1329,77 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
         for name in ("REDIACC_AGENT", "CLAUDECODE"):
             assert name not in env
         assert not [k for k in env if k.startswith("REDIACC_ALLOW_")]
+
+
+def _run_only(tmp_path: pathlib.Path, world: World, only: str) -> tuple[int, str, dict[str, Any]]:
+    out = io.StringIO()
+    environ = {
+        "HOME": str(tmp_path / "home"),
+        "PATH": os.environ.get("PATH", ""),
+        "VM_NET_BASE": NET,
+    }
+    recorded: list[str] = []
+
+    def stub(check: Any) -> None:
+        recorded.append("U1")
+        check.check("U1", "stub U1", True)
+
+    rc = vm_check.main(
+        ["--only", only, "--keep-work", "--wait", "0"],
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=vm_check.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ=environ,
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=stub,
+    )
+    latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
+    receipt = json.loads(latest.read_text()) if latest.exists() else {}
+    return rc, out.getvalue(), receipt
+
+
+def test_only_u1_runs_the_infra_and_u1_and_writes_no_receipt_json(tmp_path: pathlib.Path) -> None:
+    """`--only U1` runs P0-P4 plus U1, skips P5 and the V-steps, and writes a run record, never receipt.json, so it can never be VERIFIED."""
+    world = make_world(tmp_path, stored_ok=True)
+    _rc, out, receipt = _run_only(tmp_path, world, "U1")
+    assert receipt == {}, "no receipt.json"
+    assert not (world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST).exists()
+    assert "--only U1" in out
+    assert "vm:check VERIFIED" not in out
+    ids = [ln.split()[0] for ln in out.splitlines() if ln.strip().startswith(("P", "U1"))]
+    assert "U1" in ids
+    # No P5, no V-steps, no account suites.
+    assert not [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+    assert not world.npm_calls()
+
+
+def test_only_writes_a_run_record_under_its_run_id(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, stored_ok=True)
+    rc, out, _ = _run_only(tmp_path, world, "U1")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    runs = list((world.root / receipt_mod.CACHE_DIR / receipt_mod.RUNS_DIR).glob("vmc-*"))
+    records = [p / "receipt.json" for p in runs if (p / "receipt.json").exists()]
+    assert records, "a run record under the run id"
+    doc = json.loads(records[0].read_text())
+    # Never VERIFIED: either the named set left a required phase un-run, or (every phase run)
+    # the explicit `only-partial` downgrade.
+    assert doc["status"] == receipt_mod.NOT_VERIFIED, doc
+    assert doc["reason"]["class"] in ("phase-not-run", "only-partial"), doc["reason"]
+
+
+def test_only_v13_drags_in_p5_and_v11(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, stored_ok=True)
+    _rc, text, _ = _run_only(tmp_path, world, "V1.3")
+    assert "P5" in text
+    assert "V1.1" in text
+    assert "V1.3" in text
+    # V1.3 forks exist (V1.1 ran); U1 was not named, so the stub U1 row is absent.
+    assert [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+    assert "stub U1" not in text
 
 
 def test_a_writable_neighbour_fails_v12_and_still_tears_down(tmp_path: pathlib.Path) -> None:
