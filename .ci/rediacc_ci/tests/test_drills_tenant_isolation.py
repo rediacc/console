@@ -301,6 +301,9 @@ def test_job_view_verdict_returns_the_namespace_when_only_the_view_fails() -> No
     ok, _why, ns = ti.job_view_verdict(text, GUID_B)
     assert not ok
     assert ns == "pid:[4026532800]"
+    # The worker's namespace unread: nothing proves the job's differs, so none counts (review 661409e8.2).
+    unread = text.replace("pid:[4026531836]", "")
+    assert ti.job_view_verdict(unread, GUID_B)[2] == ""
 
 
 def test_ns_gone_script_waits_for_no_process_in_the_namespace() -> None:

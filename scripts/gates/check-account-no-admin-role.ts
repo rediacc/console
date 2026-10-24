@@ -9,10 +9,13 @@
  * grows) never matched a single-line pattern. Both are green-without-running.
  *
  * THE RULE. In each target file, every enum array (`enum: [...]` for drizzle,
- * `z.enum([...])` for zod), wrapped or not, that holds `customer` (the user
- * role enum) must not also hold `admin`. Each file must contain at least one
- * such user-role enum, or the gate refuses: a file whose role enum was renamed
- * away would otherwise pass with nothing checked.
+ * `z.enum([...])` for zod), wrapped or not, literal or passed by name through a
+ * same-file `const NAME = [...]`, that holds `customer` or `root` (the user-role
+ * vocabulary) must not also hold `admin`. Each file must contain at least one
+ * such user-role enum, and every enum reference must resolve to a list of
+ * string literals, or the gate refuses: a file whose role enum was renamed
+ * away, or whose list is built from identifiers, would otherwise pass with
+ * nothing checked.
  *
  * ---- gate ----
  * step: Check no admin user role (must be root)
@@ -40,7 +43,17 @@ const quotedValues = (body: string): string[] =>
 function constArrays(src: string): Map<string, string[]> {
   const out = new Map<string, string[]>();
   const re = /\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*\[([^\]]*)\]/g;
-  for (let m = re.exec(src); m; m = re.exec(src)) out.set(m[1] as string, quotedValues(m[2] ?? ''));
+  for (let m = re.exec(src); m; m = re.exec(src)) {
+    const body = m[2] ?? '';
+    const elements = body
+      .split(',')
+      .map((e) => e.trim())
+      .filter((e) => e !== '');
+    // Only a list of string literals is readable; one built from identifiers (`[CUSTOMER, ADMIN]`)
+    // stays unresolved, so the enum that uses it is refused rather than read as empty (review ed8786f4.3).
+    if (elements.every((e) => /^(['"`])[^'"`]*\1$/.test(e)))
+      out.set(m[1] as string, quotedValues(body));
+  }
   return out;
 }
 
@@ -137,12 +150,17 @@ function selftest(): void {
   if (judge('z.enum(IMPORTED_ROLES)').unresolved.length !== 1)
     fail('an unresolvable enum reference was not reported');
   console.log('  PASS  an unresolvable enum reference is reported (main() refuses it)');
+
+  const idents = 'const R = [CUSTOMER, ADMIN];\nconst UserRole = z.enum(R);';
+  if (judge(idents).unresolved.length !== 1)
+    fail('a list built from identifiers was read as resolved');
+  console.log('  PASS  a list built from identifiers is reported unresolved, not read as empty');
 }
 
 function main(): void {
   if (process.argv.includes('--selftest')) {
     selftest();
-    console.log('check-account-no-admin-role: selftest ok (9 controls)');
+    console.log('check-account-no-admin-role: selftest ok (10 controls)');
     return;
   }
   let checked = 0;

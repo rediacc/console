@@ -364,17 +364,20 @@ def job_view_verdict(text: str, guid_b: str) -> tuple[bool, str, str]:
         why.append("B's guid %s is mounted in the job's view" % guid_b)
     ev = "job %s, worker %s, guids %s" % (job_ns or "-", host_ns or "-", guids)
     if why:
-        # A namespace of the job's own is returned even when only the view failed, so the drain row still runs (review 55ab6cf1.2); the worker's own namespace never is.
-        own = job_ns if re.fullmatch(r"pid:\[\d+\]", job_ns) and job_ns != host_ns else ""
+        # A namespace of the job's own is returned even when only the view failed, so the drain row still runs (review 55ab6cf1.2); it counts as the job's own only when the worker's namespace was read too and differs (661409e8.2).
+        ns_shape = r"pid:\[\d+\]"
+        read_both = re.fullmatch(ns_shape, job_ns) and re.fullmatch(ns_shape, host_ns)
+        own = job_ns if read_both and job_ns != host_ns else ""
         return False, "; ".join(why) + " (%s)" % ev, own
     return True, ev, job_ns
 
 
 def absent_script(seconds: int) -> str:
-    """A sandbox shell's probe for the `sleep <seconds>` job, with a positive control: the shell starts its own `sleep <seconds+1>` and must see that one (CONTROL_SEEN), so a pgrep that cannot look at processes at all never reads as the job being absent; PGREP_RC is the status of the search for the job (1 = not found)."""
+    """A sandbox shell's probe for the `sleep <seconds>` job, with a positive control: the shell starts its own `sleep <seconds+1>` and must see that one within 2 s (CONTROL_SEEN; the retry covers the fork before the child execs sleep, review 661409e8.1), so a pgrep that cannot look at processes at all never reads as the job being absent; PGREP_RC is the status of the search for the job (1 = not found)."""
     control = shlex.quote("^sleep %d$" % (seconds + 1))
     return (
-        "sleep %d & c=$!; pgrep -f %s >/dev/null && echo CONTROL_SEEN || echo CONTROL_MISSING; "
+        "sleep %d & c=$!; s=CONTROL_MISSING; for i in 1 2 3 4 5 6 7 8 9 10; do "
+        "pgrep -f %s >/dev/null && { s=CONTROL_SEEN; break; }; sleep 0.2; done; echo $s; "
         "pgrep -f %s >/dev/null; r=$?; kill $c 2>/dev/null; echo PGREP_RC=$r"
         % (seconds + 1, control, shlex.quote("^sleep %d$" % seconds))
     )
