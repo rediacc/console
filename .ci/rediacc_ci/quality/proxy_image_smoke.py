@@ -30,6 +30,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -208,7 +209,8 @@ def _fake_account_control() -> bool:
                 with https.urlopen(req, timeout=5, http="loopback") as r:
                     return r.status, json.loads(r.read())
             except urllib.error.HTTPError as e:
-                return e.code, {}
+                with e:
+                    return e.code, {}
 
         caller = ask(EXECUTOR_TOKEN, CALLER_TOKEN)
         wrong = ask("not-the-executor", CALLER_TOKEN)
@@ -407,6 +409,27 @@ def main(argv: list[str]) -> int:
     rc = controls_first("proxy image smoke", selftest)
     if rc or "--selftest" in argv:
         return rc
+    # SIGTERM becomes an exception so the `finally` blocks that remove the containers, network and image
+    # still run when a runner terminates the gate; a 2026-10-06 run killed this way left all four behind.
+    previous = signal.signal(signal.SIGTERM, _on_sigterm)
+    try:
+        return _smoke()
+    except _TerminatedError:
+        print("✗ terminated; teardown ran", file=sys.stderr)
+        return 143
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
+class _TerminatedError(Exception):
+    pass
+
+
+def _on_sigterm(_signum: int, _frame: object) -> None:
+    raise _TerminatedError("SIGTERM")
+
+
+def _smoke() -> int:
     if shutil.which("docker") is None or _docker("version").returncode != 0:
         print(
             "✗ docker is not available here, so the image cannot be built: no verdict",
