@@ -779,6 +779,11 @@ class Battery:
         return 0
 
 
+def is_scratch_store(license_root: str) -> bool:
+    """True when `license_root` is not the machine's real store, compared by realpath so a trailing slash or a symlink naming the real store still counts as the real store."""
+    return os.path.realpath(license_root) != os.path.realpath(LICENSE_ROOT)
+
+
 def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
     """Run the battery. Arguments are ignored, as the bash ignored them; `license_root` exists so a test can point the in-process path checks at a scratch tree."""
     del argv
@@ -793,7 +798,7 @@ def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
     key = hashlib.sha256(os.path.realpath(license_root).encode()).hexdigest()[:16]
     lock_path = f"/tmp/rediacc-license-e2e-{key}.lock"
     # A scratch store (a test's tree) has its lock file removed by the run that held it, so a waiter can wake on an unlinked inode: after taking the flock, the fd must still be the file at lock_path, or the run reopens and waits again (otherwise a waiter on the old inode and a newcomer on a fresh file would hold the store at once, review 37ecbdd5.2).
-    is_scratch = os.path.realpath(license_root) != os.path.realpath(LICENSE_ROOT)
+    is_scratch = is_scratch_store(license_root)
     deadline = time.monotonic() + LOCK_WAIT_S
     while True:
         try:
@@ -806,21 +811,22 @@ def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            os.close(fd)
-            if time.monotonic() >= deadline:
-                log.error(
-                    f"another license battery still holds the store {license_root} after {LOCK_WAIT_S}s; not running beside it"
-                )
-                return 1
-            time.sleep(1)
-            continue
-        try:
-            current = os.stat(lock_path, follow_symlinks=False).st_ino
-        except OSError:
-            current = None
-        if current == os.fstat(fd).st_ino:
-            break
+            pass
+        else:
+            try:
+                current = os.stat(lock_path, follow_symlinks=False).st_ino
+            except OSError:
+                current = None
+            if current == os.fstat(fd).st_ino:
+                break
+        # Busy, or the locked inode is no longer the file at lock_path: either way the next try waits and the deadline holds (review 768f6e50.3: a stat that keeps failing must not loop past LOCK_WAIT_S).
         os.close(fd)
+        if time.monotonic() >= deadline:
+            log.error(
+                f"another license battery still holds the store {license_root} after {LOCK_WAIT_S}s; not running beside it"
+            )
+            return 1
+        time.sleep(1)
     try:
         return battery.run()
     finally:

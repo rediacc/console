@@ -143,7 +143,7 @@ def shell_mktemp(tag: str) -> str:
 
 
 # THE DEFAULT BASE STAYS SHALLOW. Run directories nest (a hook suite inside a pytest leg inside a gate run), each level adding a ~40-byte stamp, and a tsx child listens on $TMPDIR/tsx-<uid>/<pid>.pipe while Linux keeps only the first ~107 bytes of a socket path: once the prefix passes that, every tsx under it truncates to ONE socket and the second dies `listen EADDRINUSE` (test-judge-schema control 6o, three CI runs, 2026-09-27). Past DEEP_TMPDIR bytes a new run directory is rooted at /tmp instead; it is still pid-stamped, swept and removed at exit.
-# THE BUDGET behind 24. A gate's children get `<base>/<stamp>/tmp` as TMPDIR (stamp is the prefix plus pid, pid-namespace id and random suffix, about 50 bytes) and tsx appends `/tsx-<uid>/<pid>.pipe` (22 bytes), so base + 1 + 50 + 4 + 22 must stay under the ~107 socket bytes: 29 at most, 24 with margin (the stamp length is asserted on a real run dir by test_runtmp's deepest-kept-base test). At the earlier 48 a documented `TMPDIR=$PWD/.ci/cache/u1-tmp` (36 bytes) kept the run dir under it and every tsx-based gate died `listen EINVAL` (2026-10-24).
+# THE BUDGET behind 24. A gate's children get `<base>/<stamp>/tmp` as TMPDIR (stamp is the prefix plus pid, pid-namespace id and random suffix, about 50 bytes) and tsx appends `/tsx-<uid>/<pid>.pipe` (22 bytes), so base + 1 + 50 + 4 + 22 must stay under the ~107 socket bytes: 29 at most, 24 with margin (test_runtmp's deepest-kept-base test measures the full socket path built on a real kept run dir, which bounds the stamp in practice). At the earlier 48 a documented `TMPDIR=$PWD/.ci/cache/u1-tmp` (36 bytes) kept the run dir under it and every tsx-based gate died `listen EINVAL` (2026-10-24).
 DEEP_TMPDIR = 24
 
 

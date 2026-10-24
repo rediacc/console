@@ -303,8 +303,10 @@ def test_a_deep_inherited_tempdir_roots_the_run_dir_at_tmp(tmp_path, monkeypatch
 
 def _exact_base(length: int) -> pathlib.Path:
     """A fresh directory under /tmp whose absolute path is exactly `length` bytes (tmp_path is far longer than DEEP_TMPDIR, so it cannot stand in for the boundary)."""
-    stem = "/tmp/rt-%s" % uuid.uuid4().hex
+    stem = "/tmp/rt-" + uuid.uuid4().hex * 4
     path = pathlib.Path(stem[:length])
+    # The stem is longer than any plausible DEEP_TMPDIR; a length it cannot reach fails here instead of testing a shorter boundary (review 768f6e50.2).
+    assert len(str(path)) == length, (len(str(path)), length)
     path.mkdir()
     return path
 

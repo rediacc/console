@@ -847,3 +847,84 @@ def test_a_symlink_at_the_lock_path_fails_the_run_with_its_reason(tmp_path, monk
         os.unlink(lock)
     assert started == []
     assert lock in capsys.readouterr().err
+
+
+def test_the_real_store_is_recognised_through_a_trailing_slash_or_a_symlink(tmp_path, monkeypatch):
+    """A non-canonical spelling of the real store is the real store, so its fixed lock file is never unlinked (review 768f6e50.1); a different directory is a scratch store."""
+    real = tmp_path / "license"
+    real.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(real)
+    monkeypatch.setattr(port_module, "LICENSE_ROOT", str(real))
+    assert not port_module.is_scratch_store(str(real) + "/")
+    assert not port_module.is_scratch_store(str(link))
+    assert port_module.is_scratch_store(str(tmp_path / "other"))
+
+
+def test_a_lock_taken_on_an_unlinked_inode_is_retried_on_the_live_file(tmp_path, monkeypatch):
+    """A waiter that wins the flock on an inode a previous holder already unlinked must reopen and lock the file now at the lock path, not run beside the newcomer (review 768f6e50.1/.2): the first stat reports a different inode, the run reopens, and the battery runs once."""
+    root = str(tmp_path / "store")
+    key = hashlib.sha256(os.path.realpath(root).encode()).hexdigest()[:16]
+    lock = f"/tmp/rediacc-license-e2e-{key}.lock"
+    started: list[bool] = []
+    opens: list[str] = []
+    real_open = os.open
+    real_stat = os.stat
+    stats = {"n": 0}
+
+    def counting_open(path, *args, **kwargs):
+        if path == lock:
+            opens.append(path)
+        return real_open(path, *args, **kwargs)
+
+    def first_stat_mismatches(path, *args, **kwargs):
+        result = real_stat(path, *args, **kwargs)
+        if path == lock:
+            stats["n"] += 1
+            if stats["n"] == 1:
+                return os.stat_result((result.st_mode, result.st_ino + 1, *tuple(result)[2:]))
+        return result
+
+    def fake_run(_self: object) -> int:
+        started.append(True)
+        return 0
+
+    monkeypatch.setattr(port_module.os, "open", counting_open)
+    monkeypatch.setattr(port_module.os, "stat", first_stat_mismatches)
+    monkeypatch.setattr(port_module.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(port_module.Battery, "run", fake_run)
+    try:
+        assert port_module.run([], license_root=root) == 0
+        assert started == [True]
+        assert len(opens) == 2
+        assert not os.path.lexists(lock)
+    finally:
+        pathlib.Path(lock).unlink(missing_ok=True)
+
+
+def test_a_stat_that_keeps_failing_ends_at_the_deadline(tmp_path, monkeypatch, capsys):
+    """When the lock path cannot be stat'ed after a successful lock, the run waits and fails at LOCK_WAIT_S with its reason instead of looping (review 768f6e50.3)."""
+    root = str(tmp_path / "store")
+    key = hashlib.sha256(os.path.realpath(root).encode()).hexdigest()[:16]
+    lock = f"/tmp/rediacc-license-e2e-{key}.lock"
+    real_stat = os.stat
+    clock = {"t": 0.0}
+
+    def failing_stat(path, *args, **kwargs):
+        if path == lock:
+            raise FileNotFoundError(path)
+        return real_stat(path, *args, **kwargs)
+
+    def advance(_s: float) -> None:
+        clock["t"] += 1.0
+
+    monkeypatch.setattr(port_module.os, "stat", failing_stat)
+    monkeypatch.setattr(port_module.time, "sleep", advance)
+    monkeypatch.setattr(port_module.time, "monotonic", lambda: clock["t"])
+    monkeypatch.setattr(port_module, "LOCK_WAIT_S", 3)
+    monkeypatch.setattr(port_module.Battery, "run", lambda _self: 0)
+    try:
+        assert port_module.run([], license_root=root) == 1
+        assert root in capsys.readouterr().err
+    finally:
+        pathlib.Path(lock).unlink(missing_ok=True)
