@@ -1,27 +1,21 @@
-## SESSION d778be9d 2026-10-24T19:30:20Z
+## SESSION d778be9d 2026-10-24T20:45:11Z
 
-# STATE d778be9d, branch 1023-1 (no PR, never pushed), 2026-10-24 ~20:35Z
+# STATE d778be9d (branch 1023-1, no PR, never pushed; turbo on, effort ultra)
 
 ## Big pieces
-- HOSTINGER INCIDENT (#d0928775). mail 3264 and observability 3136 have 0 containers; nextcloud 2880 is half-built (Collabora). Data is intact. Before-state: /tmp/hostinger-before.json.
-  - Plan: agent/plans/PLAN-converge-preflight-and-repo-recovery.md.
-  - Ticked: C1, P2, M1, O1, N1, D1. Open: P1, P3, P4, P5 (writer running), V1, H1-H5.
-  - OPERATOR RULING ASKED:2026-10-24T19:40Z: H1-H5 run without asking once V1 is VERIFIED. The operator is away.
-- PLAN-backup-program S7 is done (account 8a86225, CLI f7af8d367).
-- RENET I18N RED (#ded06481): 80 new hardcoded strings in pkg/certexport, pkg/hostmetrics and cmd/renet cert/host-metrics. Translate them into all 13 catalogs AFTER the P writer releases pkg/i18n/locales.
-- REVIEW DRAIN (#5da4f55e). Phase 1 is complete; every needs-fix id is listed by repo and file in agent/d778be9d/review-drain.md. Phase 2 has four writers (below).
-- Found and fixed: three gates were vacuous (isEntryPoint(import.meta.url)), fixed in 07e56c446.
-- GPU plan (#98e7f50f) comes after the incident. Push #831b7e48 comes after the recovery, the review drain and ci:quick.
+- HOSTINGER INCIDENT (#d0928775): mail 3264 and observability 3136 have 0 containers, nextcloud 2880 half-built (Collabora). Data intact; before-state /tmp/hostinger-before.json. Plan agent/plans/PLAN-converge-preflight-and-repo-recovery.md: C1, P1-P5, M1, O1, N1, D1 ticked; open V1 (running), H1-H5, M2. OPERATOR RULING ASKED:2026-10-24T19:40Z: H1-H5 run without asking once V1 is VERIFIED.
+- Review drain (#5da4f55e): groups 1-4 committed and marked; leftovers #a7ed7c4d (renet), #54fdd6d2 (console); tool gap #d67795af.
+- GPU device grants (#98e7f50f) after hostinger; local WSL nvidia test.
+
+## Landed this context
+- renet a536594 (P1/P3/P5), d17fe52 (preflight fails closed + 74 i18n keys), e6a3e5c0, baa37e5b (group 1 + i18n call sites + test-order fix + windows lint tag + os.Root probe); pointers 8c87495f, a5241093.
+- console 6d8763362 (P4), eb053fda + e5410f55 + da99ee2e (group 3), defb586d + aee63ccd + 4b7f04cf (group 4, converge fixture repair, P ticks).
 
 ## Delegated
-- a5a99906e77033f93 #3eabcddc: P3, then P1, P4, P5. Owns runtime_converge*.go, runtime_commands.go, convergeguard, workflows.go, daemon/setup.go, dockerproxy/symlink.go, renet i18n locales, and the CLI runtime-converge/converge/register files.
-- Phase-2 writers. Each fixes only its group and reports `id -> files`; the lead commits, then runs --review-mark fixed <sha>.
-  - a3b4a86d855d9dfbe #6dd33cfe: group 1, private/renet.
-  - ade294ad83feaac48 #e0c35276: group 2, private/account.
-  - a7a5a0a2f4018d6be #3c24567c: group 3, console .ci, scripts, .claude, .github, workers.
-  - a5d613445bb088382 #ff383059: group 4, console packages, docs, plans, ledgers.
+- none; every writer reported. Background: vm:check V1 shell blkvce5f7 (#0787c7df, /tmp/vmcheck-v1.out).
 
 ## Next action
-1. As each report lands: spot-check, run the accept, commit by path, bump the pointer, and mark findings fixed with the sha (the verb needs a commit that touches the anchored file).
-2. After P3/P1/P4/P5: the i18n translation writer for #ded06481, then tick P boxes.
-3. Run the full npm run vm:check (V1), then H1-H5 on hostinger via ./rdc.sh --config eu-remote.
+1. While V1 runs (no renet/CLI edits): #54fdd6d2 items outside renet and packages: check_proxy_cost_guard.py's two failing controls (ecbb046f.1), the T1 box of PLAN-renet-run-docker-sock-isolation (c0364b61.3), elite 19ac922a review findings.
+2. V1 lands: VERIFIED -> tick V1, then H1-H5 on hostinger via ./rdc.sh --config eu-remote without asking; stop only on a failure, record it on #d0928775. Not VERIFIED -> diagnose, fix, rerun.
+3. After V1: commit the held account lint fix (backup-s3-env.test.ts) and bump the pointer; renet leftovers #a7ed7c4d.
+- S6 #53b05748 NOT-BEFORE 2026-10-31T06:00Z (cron bbf56276 06:07Z).
