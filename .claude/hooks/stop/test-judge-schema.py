@@ -3189,11 +3189,14 @@ _prev_run = wl_judge.wl_proc
 wl_judge.wl_proc = types.SimpleNamespace(
     run=fake_run, TIMEOUT_RC=wl_proc.TIMEOUT_RC, SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC
 )
-_long = judged(
-    "",
-    {"verdict": "continue", "reason": ("word " * 80).strip(), "next_action": ("go " * 90).strip()},
-)
-wl_judge.wl_proc = _prev_run
+try:
+    _long = judged(
+        "",
+        {"verdict": "continue", "reason": ("word " * 80).strip(), "next_action": ("go " * 90).strip()},
+    )
+finally:
+    # A raise in judged() must not leave the fake installed for later controls (review ced51132.2).
+    wl_judge.wl_proc = _prev_run
 control(
     "PART 8: the argv's schema has no maxLength",
     "maxLength" in set(_walk_keys(CAPTURED["schema"])),
@@ -3223,6 +3226,31 @@ control(
     "CONTROL: a short string is not touched",
     wl_judge.clamp_to_schema("abc", {"maxLength": 5}),
     "abc",
+)
+
+# wire_schema strips maxLength at every depth, so clamp must reach every node that can carry one (review ced51132.1).
+_cut = {"maxLength": 4}
+control(
+    "PART 8: a maxLength under anyOf is clamped",
+    wl_judge.clamp_to_schema({"a": "abcdefgh"}, {"properties": {"a": {"anyOf": [_cut, {"type": "null"}]}}}),
+    {"a": "abcd"},
+)
+control(
+    "PART 8: a maxLength under additionalProperties is clamped",
+    wl_judge.clamp_to_schema({"x": "abcdefgh"}, {"properties": {}, "additionalProperties": _cut}),
+    {"x": "abcd"},
+)
+control(
+    "PART 8: a maxLength behind a $ref into $defs is clamped",
+    wl_judge.clamp_to_schema(
+        {"a": "abcdefgh"}, {"$defs": {"s": _cut}, "properties": {"a": {"$ref": "#/$defs/s"}}}
+    ),
+    {"a": "abcd"},
+)
+control(
+    "CONTROL: additionalProperties false leaves an unknown key alone",
+    wl_judge.clamp_to_schema({"x": "abcdefgh"}, {"properties": {}, "additionalProperties": False}),
+    {"x": "abcdefgh"},
 )
 
 if Tally.fails:

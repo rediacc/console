@@ -235,10 +235,22 @@ def wire_schema(schema):
     return out
 
 
-def clamp_to_schema(value, schema):
+def clamp_to_schema(value, schema, _root=None):
     """`value` with every string cut to its schema `maxLength` (dicts and lists are changed in place and returned). The cut falls on the last word boundary that fits, and a limit with no boundary in its second half is a hard slice."""
     if not isinstance(schema, dict):
         return value
+    # wire_schema strips maxLength at every depth, so every node that can hold one is walked here too: a combinator branch clamps the value it applies to (all branches, the conservative reading for anyOf/oneOf), and a $ref resolves against the root's $defs/definitions (review ced51132.1).
+    root = _root if _root is not None else schema
+    ref = schema.get("$ref")
+    if isinstance(ref, str) and ref.startswith("#/"):
+        target = root
+        for part in ref[2:].split("/"):
+            target = target.get(part) if isinstance(target, dict) else None
+        if isinstance(target, dict):
+            value = clamp_to_schema(value, target, root)
+    for key in ("allOf", "anyOf", "oneOf"):
+        for branch in schema.get(key) or ():
+            value = clamp_to_schema(value, branch, root)
     if isinstance(value, str):
         limit = schema.get("maxLength")
         if isinstance(limit, int) and not isinstance(limit, bool) and len(value) > limit:
@@ -248,14 +260,17 @@ def clamp_to_schema(value, schema):
         return value
     if isinstance(value, dict):
         props = schema.get("properties") or {}
+        extra = schema.get("additionalProperties")
         for k in list(value):
             if k in props:
-                value[k] = clamp_to_schema(value[k], props[k])
+                value[k] = clamp_to_schema(value[k], props[k], root)
+            elif isinstance(extra, dict):
+                value[k] = clamp_to_schema(value[k], extra, root)
         return value
     if isinstance(value, list):
         item = schema.get("items")
         for i, v in enumerate(value):
-            value[i] = clamp_to_schema(v, item)
+            value[i] = clamp_to_schema(v, item, root)
         return value
     return value
 
