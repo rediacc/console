@@ -28,7 +28,7 @@ On hostinger (2026-10-23), the observability repo's Alloy bound `/var/run/docker
 
 ## Fix options (to decide after the repro)
 
-- **A (validator):** add `/run` (and `/var/run` is already covered) to `dangerousHostPaths`, and treat `*/docker.sock` / `*/containerd.sock` outside `/var/run/rediacc/` as a hard error, not a soft one. Cheap, but it guards only compose files renet validates.
+- **A (validator):** add `/run` and `/var/run` to `dangerousHostPaths` (T1 found a `/var/run` bind draws only the soft "outside the repo" notice, not a hard error, so it is not covered today), and treat `*/docker.sock` / `*/containerd.sock` outside `/var/run/rediacc/` as a hard error, not a soft one. Cheap, but it guards only compose files renet validates.
 - **B (sandbox):** stop binding all of host `/run`. Bind only what dockerd/containerd need (`/run/containerd` if still needed, or nothing), so the host sockets do not exist in the sandbox at all. This is the real isolation fix; it needs the containerd/dockerd startup re-tested on Ubuntu 24.04 and Debian.
 - Both together are likely right: B for isolation, A so users get a clear error instead of an empty directory.
 - Also document the supported way for a container to reach its own repo's daemon: `${DOCKER_SOCKET}:/var/run/docker.sock` (`private/renet/pkg/orchestration/up_down_workflows.go:224`).

@@ -59,9 +59,9 @@ The SFTP fallback (`packages/cli/src/remote/sync/sftp-fallback.ts:150-157` and `
 | Path | Same pattern? | Disposition |
 |---|---|---|
 | `packages/cli/src/commands/repo-sync.ts:370` upload `mkpath: isFileMode` plus `sudo rsync` | Yes, the bug | Fixed by T1 to T3 |
-| `commands/repo-sync.ts` download file mode | No: rsync's receiver is local, so `--mkpath` does not apply | Unchanged; T2 adds a guard test that download args carry neither `--mkpath` nor `--chown` |
+| `packages/cli/src/commands/repo-sync.ts` download file mode | No: rsync's receiver is local, so `--mkpath` does not apply | Unchanged; T2 adds a guard test that download args carry neither `--mkpath` nor `--chown` |
 | `packages/cli/src/remote/sync/rsync.ts:431` dry-run `buildRsyncArgs` with `mkpath` | Dry run creates nothing | Unchanged; the skeleton step is skipped on `--dry-run` |
-| `remote/sync/sftp-fallback.ts` `ensureFileParent` | Different mechanism (session user, no root), and the file itself carries no chown there | Not changed; a known gap on team-key (plain SSH) machines |
+| `packages/cli/src/remote/sync/sftp-fallback.ts` `ensureFileParent` | Different mechanism (session user, no root), and the file itself carries no chown there | Not changed; a known gap on team-key (plain SSH) machines |
 | `packages/cli/src/services/renet/renet-binary-transfer.ts:181` `executeRsync` | No `mkpath`, `universalUser` unset | Unaffected |
 | `packages/cli/src/commands/vscode.ts:218-220` | Already `sudo mkdir -p` then `sudo chown -R universalUser` on the created path | Correct; the model for the pattern |
 | `packages/cli/src/services/core/vscode-server-remote.ts:226` `mkdir -p "$(dirname ...)"` | Runs in the repo shell as the repo user | Unaffected (T3 re-reads and confirms) |

@@ -299,8 +299,8 @@ Under the 2026-10-23 ruling the proxy is kept. Run this only if the operator she
 
 **Operator (M-live), in order.**
 1. Phase 0, recorded.
-2. Phase 2 steps 0-5, recorded in "Phase 2 results" (P2a and step 5).
-3. C2 eu console wiring after Phase 2 is green.
+2. Phase 2 steps 1-3 recorded green on bench in "Phase 2 results" (P2a), and step 5 in its own box. Step 4 is recorded rc 1 on both runs (it fails only at SSH, because the test machine is private to the dev box) and has no green run yet; it needs a publicly reachable test machine, hostinger at H1.
+3. C2 eu console wiring after Phase 2 is green, which waits on a green step 4.
 
 ## Phase 2 results (bench, 2026-10-24, sub-agent of lead session d778be9d)
 
@@ -308,8 +308,8 @@ Run on bench under the operator's bench-only bypass order (2026-10-24), not agai
 
 | | Before | After | Rollback |
 |---|---|---|---|
-| Account worker `rediacc-account-bench` (carries the CloudflareInternal entrypoint, account 9fb73f0) | 9acd4c8d | dfe865fb-974c-4c6d-bda1-031ee48aa40e, then secret change 10818332-b24c-44a8-9230-820f35c140c3 | `wrangler rollback 9acd4c8d`; D1 bookmark `000000bd-00000000-0000510e-7231ac96b7367046489c2029f87ccdfc` |
-| Proxy worker `rediacc-proxy-bench` (ACCOUNT binding with `entrypoint = "CloudflareInternal"`) | 89b9e1f2 | 358bb286, then secret changes to eecfe3c1-f798-4a9d-989a-d3ecfb28bc5f | `wrangler rollback 89b9e1f2` |
+| Account worker `rediacc-account-bench` (carries the CloudflareInternal entrypoint, account 9fb73f0) | 9acd4c8d | dfe865fb-974c-4c6d-bda1-031ee48aa40e, then secret change 10818332-b24c-44a8-9230-820f35c140c3 | `wrangler rollback 9acd4c8d` (a secret change is a version of its own, so rolling back to the Before version also drops the secret change; confirm with `wrangler deployments list` after rolling back); D1 bookmark `000000bd-00000000-0000510e-7231ac96b7367046489c2029f87ccdfc` |
+| Proxy worker `rediacc-proxy-bench` (ACCOUNT binding with `entrypoint = "CloudflareInternal"`) | 89b9e1f2 | 358bb286, then secret changes to eecfe3c1-f798-4a9d-989a-d3ecfb28bc5f | `wrangler rollback 89b9e1f2` (same: the Before version predates the secret changes) |
 
 `EXECUTOR_TOKEN` is token 5375a8fe: scopes `proxy:exec` and `audit:write`, IP binding `cloudflare` (`private/account/src/types/api-token.ts:18,22`), owned by a fresh bench org owner.
 

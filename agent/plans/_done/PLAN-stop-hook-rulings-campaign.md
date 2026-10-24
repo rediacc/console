@@ -113,6 +113,7 @@ Declined by the operator's ruling on #373907ed; its five boxes live unchanged in
       refused by BOTH write paths; with it, accepted; a section naming a finished plan fires
       the drift check; a section agreeing with the census is silent.
     (ticked) 2026-10-23T23:35:39Z by d778be9d: commit:f8840f98f .claude/rediacc_hooks/tests/test_wl_state_document.py:586; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    Evidence added 2026-10-24 (review cc581e80.3): `.claude/hooks/stop/worklist-cases/16-triage-and-plans.sh` is no longer in the tree (the shell cases were ported to pytest), so that half has no shell run to cite; the pytest half was re-run: `.claude/rediacc_hooks/tests/test_wl_state_document.py` with `test_wl_triage_and_plans.py`, 30 passed, rc 0.
 
 ## 6. Cron: NO
 
