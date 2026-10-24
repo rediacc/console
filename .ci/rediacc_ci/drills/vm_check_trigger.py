@@ -38,6 +38,10 @@ CONSOLE_PATHS: dict[str, frozenset[str]] = {
     ".ci/rediacc_ci/drills/transfer.py": frozenset({SIDE_ACCOUNT}),
     ".ci/rediacc_ci/drills/vm_check.py": frozenset({SIDE_RENET, SIDE_ACCOUNT}),
     ".ci/rediacc_ci/drills/lib.py": frozenset({SIDE_RENET, SIDE_ACCOUNT}),
+    ".ci/rediacc_ci/drills/upgrade_converge.py": frozenset({SIDE_RENET}),
+    ".ci/rediacc_ci/drills/tenant_isolation.py": frozenset({SIDE_RENET}),
+    ".ci/rediacc_ci/drills/vm_ssh.py": frozenset({SIDE_RENET, SIDE_ACCOUNT}),
+    ".ci/rediacc_ci/drills/wire.py": frozenset({SIDE_RENET, SIDE_ACCOUNT}),
 }
 # Relative to private/renet: every input of the binary `./rdc.sh` deploys.
 RENET_PATHS = (

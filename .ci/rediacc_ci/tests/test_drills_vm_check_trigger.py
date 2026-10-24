@@ -5,7 +5,9 @@ Fixture repositories are real: a console repo with `private/renet` and `private/
 
 from __future__ import annotations
 
+import ast
 import hashlib
+import pathlib
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -14,7 +16,6 @@ import pytest
 from rediacc_ci.drills import vm_check_trigger as trig
 
 if TYPE_CHECKING:
-    import pathlib
     from collections.abc import Callable, Sequence
 
 ENV = {
@@ -694,3 +695,29 @@ def test_account_worktree_digest_sees_untracked_and_deleted_files(world: World) 
 def test_account_worktree_digest_is_stable_across_calls(world: World) -> None:
     _write(world.acc, "src/index.ts", "export const one = 1;\n")
     assert trig.account_worktree_digest(world.root) == trig.account_worktree_digest(world.root)
+
+
+def test_every_drill_module_vm_check_runs_is_a_trigger() -> None:
+    """A change to a drill module that vm:check runs needs a vm:check receipt: upgrade_converge.py (U1) and
+    tenant_isolation.py (I1) were missing from the map, so a push touching only them required none (found by the
+    DR writer, 2026-10-24). Every drills/*.py that vm_check.py imports must charge a side."""
+    drills = pathlib.Path(trig.__file__).resolve().parent
+    tree = ast.parse((drills / "vm_check.py").read_text(encoding="utf-8"))
+    imported = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module and node.module.endswith("drills"):
+            imported.update(alias.name for alias in node.names)
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module
+            and node.module.startswith("rediacc_ci.drills.")
+        ):
+            imported.add(node.module.rsplit(".", 1)[1])
+    for name in sorted(imported):
+        # The receipt and trigger modules judge a run; they change nothing on a VM, so they charge no side by design.
+        if (drills / ("%s.py" % name)).is_file() and name not in (
+            "vm_check_trigger",
+            "vm_check_receipt",
+        ):
+            path = ".ci/rediacc_ci/drills/%s.py" % name
+            assert trig.console_sides(path), "%s is run by vm:check but charges no side" % path
