@@ -35,7 +35,8 @@ On hostinger (2026-10-23), the observability repo's Alloy bound `/var/run/docker
 
 ## Tasks
 
-- [ ] T1 [lead] Run the repro above on a throwaway fork and record the outcome here.
+- [x] T1 [lead] Run the repro above on a throwaway fork and record the outcome here.
+    (ticked) 2026-10-24T20:48:00Z by d778be9d: T1 ran 2026-10-23 on fork vmcheck-base:t1sock (ops-worker network 8000), outcome at agent/plans/PLAN-renet-run-docker-sock-isolation.md:41 (T1 result: host /run/docker.sock reachable, CONFIRMED)
 - [ ] T2 [R] Implement the chosen fix (A and/or B) with `validate_test.go` cases for `/run/docker.sock`, `/run/containerd/containerd.sock` and `${DOCKER_SOCKET}` (allowed).
 - [ ] T3 [R] Update `docs/DOCKERD_SANDBOX.md` with the outcome and the `${DOCKER_SOCKET}` guidance.
 

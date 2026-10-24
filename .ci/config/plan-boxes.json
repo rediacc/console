@@ -1262,14 +1262,15 @@
       "owner": "5008cebe",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 0,
+      "open": 2,
+      "done": 1,
       "open_sigs": [
-        "b3f4f606",
         "ecc64210",
         "f084228e"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "b3f4f606"
+      ]
     },
     "agent/plans/PLAN-renet-runtime-converge.md": {
       "status": "approved",
