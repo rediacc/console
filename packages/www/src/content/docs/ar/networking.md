@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 6
 language: ar
-sourceHash: "467198b382846bca"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "bbb1852c28d70d69"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # الشبكات
@@ -208,7 +208,14 @@ rdc machine infra set server-1 \
 
 1. **الإصدار على المضيف.** حاوية Traefik على مستوى الجهاز (`rediacc-proxy`، منشورة في `/opt/rediacc/proxy/`) تمتلك تجديد ACME. تُخزّن كل الحالة في `/opt/rediacc/proxy/letsencrypt/acme.json` على المضيف. يُطلق التجديد تلقائياً قبل انتهاء الصلاحية بحوالي 30 يوماً، لا يلزم أي إجراء من المشغّل طالما تم تكوين `--cf-dns-token`.
 
-2. **التفريغ لكل مستودع (اختياري).** الخدمات التي تحتاج إلى ملفات شهادات داخل حاويتها الخاصة (مثل خادم بريد يقرأ `.pem` مباشرة) تنشر حاوية `traefik-certs-dumper` صغيرة بجانبها. يقوم المفرِّغ بتثبيت `/opt/rediacc/proxy/letsencrypt` للقراءة فقط ويكتب الشهادة والمفتاح المُستخرجَين في مجلد بيانات المستودع كـ `cert.pem` / `key.pem`. لهذا أن يعمل، يجب أن يكون Docker daemon الخاص بالمستودع قد أُضيف `/opt/rediacc/proxy` إلى قائمة السماح بمساحة الاسم. هذا مُضمَّن افتراضياً.
+2. **التصدير لكل مستودع (اختياري).** تشترك الخدمة التي تحتاج ملفات الشهادة داخل حاويتها (مثل خادم بريد يقرأ ملف `.pem` مباشرة) بإضافة الوسم `rediacc.cert_export=true` إلى حاويتها الموجَّهة. يعمل `renet cert export` بصلاحيات root على الجهاز، بمؤقّت كل 5 دقائق ومرة أخرى كلما تغيّرت مسارات الموجِّه (يثبّتهما `renet cert export-install` أثناء إعداد الجهاز). يقرأ `acme.json` ويكتب شهادات المستودع الخاصة به فقط، أي المضيفات التي تسمّيها قواعد Traefik `Host`/`HostSNI` لديه، إلى `<repo mount>/data/tls/<domain>/cert.pem` و`key.pem`. تُكتب الملفات بشكل ذرّي وتعود ملكيتها لمالك نقطة الربط. تبقى مضيفات المستودع المتوقف محسوبة له، فلا يستطيع أي مستودع استلام شهادة مستودع آخر. لا تحتاج أي حاوية إلى الوصول إلى `/opt/rediacc/proxy`: فبوابة Docker API الخاصة بكل مستودع ترفض هذا الربط، ولذلك لم يعد `traefik-certs-dumper` قادرًا على العمل.
+
+   يُركَّب الدليل للقراءة فقط من ملف compose. يكتب التصدير في جذر نقطة ربط المستودع، لذا يصل إليه ملف compose الموجود في دليل فرعي مثل `mail/` عبر `../data/tls/<domain>/`:
+
+   ```yaml
+   volumes:
+     - ../data/tls/mail.example.com/:/etc/dms/tls-acme/:ro
+   ```
 
 3. **ذاكرة التخزين المؤقت من جانب العميل (`rediacc.json`).** يُخزّن CLI نسخة مضغوطة من `acme.json` تحت `acmeCertCache` في ملف تكوينك، مفهرسة بـ `baseDomain`. يتيح ذلك لأجهزة متعددة مشاركة الشهادات (عبر `rdc machine infra cert push <machine>`) ويعمل كسجل غير متصل بالشبكة.
 
@@ -224,7 +231,7 @@ rdc machine infra set server-1 \
 - الشهادات التي انتهت صلاحيتها `notAfter` بأكثر من 7 أيام تُزال تماماً. إنها خاملة وتُضخّم ذاكرة التخزين المؤقت فقط.
 - `rdc config prune --certs-only` يمسح كل شيء؛ `rdc config prune --certs-only` يُظهر السجل.
 
-**استكشاف الأخطاء:** إذا انهار `traefik-certs-dumper` مع `/traefik/acme.json: no such file or directory`، فإن daemon المستودع لا يستطيع رؤية مخزن letsencrypt الخاص بالمضيف. تحقق من (أ) وجود `/opt/rediacc/proxy/letsencrypt/acme.json` على المضيف (هذه مسؤولية `rediacc-proxy` على مستوى المضيف)، و(ب) بدء تشغيل daemon المستودع بإصدار renet حديث بما يكفي يُدرج `/opt/rediacc/proxy` في قائمة السماح. أعد نشر المستودع باستخدام `rdc repo up` بعد ترقية renet للتطبيق.
+**استكشاف الأخطاء:** إذا بقي `data/tls/<domain>/` فارغًا، فتحقق من أن (أ) الحاوية الموجَّهة تحمل `rediacc.cert_export=true`، و(ب) النطاق وارد في إحدى قواعد Traefik `Host`/`HostSNI` لديها وله شهادة في `/opt/rediacc/proxy/letsencrypt/acme.json` على المضيف، و(ج) `systemctl status rediacc-cert-export.timer` يُظهر المؤقّت نشطًا. يعيد `sudo renet cert export-install` تثبيت الوحدات، ويصدّر `sudo systemctl start rediacc-cert-export.service` فورًا.
 
 > **تجريبي:** شُحنت وتيرة المزامنة التلقائية والحذف القائم على انتهاء الصلاحية في renet 0.9+. إصدارات CLI/renet الأقدم تستخدم مزامنة يدوية بحتة عبر `rdc config prune --certs-only`.
 

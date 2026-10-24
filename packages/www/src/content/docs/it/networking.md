@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 6
 language: it
-sourceHash: "467198b382846bca"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "bbb1852c28d70d69"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Rete
@@ -206,7 +206,14 @@ Il percorso completo che un certificato Let's Encrypt percorre dall'emissione ai
 
 1. **Emissione sull'host.** Un container Traefik a livello di macchina (`rediacc-proxy`, distribuito in `/opt/rediacc/proxy/`) gestisce il rinnovo ACME. Memorizza tutto lo stato in `/opt/rediacc/proxy/letsencrypt/acme.json` sull'host. Il rinnovo si attiva automaticamente circa 30 giorni prima della scadenza; nessuna azione dell'operatore necessaria finché `--cf-dns-token` è configurato.
 
-2. **Dump per repository (opzionale).** I servizi che necessitano di file di certificato all'interno del proprio container (ad esempio, un server di posta che legge direttamente un `.pem`) distribuiscono un piccolo container `traefik-certs-dumper` insieme a sé stessi. Il dumper monta in bind `/opt/rediacc/proxy/letsencrypt` in sola lettura e scrive il certificato estratto + la chiave nel volume di dati del repository come `cert.pem` / `key.pem`. Perché questo funzioni, il daemon Docker per repository deve avere `/opt/rediacc/proxy` nella sua lista di autorizzazioni mount-namespace. Questo è già incluso per impostazione predefinita.
+2. **Esportazione per repository (opzionale).** Un servizio che ha bisogno dei file del certificato dentro il proprio container (ad esempio un mail server che legge direttamente un `.pem`) aderisce con l'etichetta `rediacc.cert_export=true` sul container instradato. `renet cert export` gira come root sulla macchina, con un timer di 5 minuti e di nuovo a ogni cambio delle rotte del router (entrambi installati da `renet cert export-install` durante la configurazione della macchina). Legge `acme.json` e scrive i certificati propri del repository, solo gli host citati dalle sue regole Traefik `Host`/`HostSNI`, in `<repo mount>/data/tls/<domain>/cert.pem` e `key.pem`. I file vengono scritti in modo atomico e appartengono al proprietario del mount. Gli host di un repository fermo contano comunque come suoi, quindi nessun repository può ricevere il certificato di un altro. Nessun container ha bisogno di accedere a `/opt/rediacc/proxy`: il gate dell'API Docker per repository rifiuta quel bind, perciò `traefik-certs-dumper` non può più girare.
+
+   La directory si monta in sola lettura dal file compose. L'esportazione scrive nella radice del mount del repository, quindi un file compose in una sottodirectory come `mail/` la raggiunge con `../data/tls/<domain>/`:
+
+   ```yaml
+   volumes:
+     - ../data/tls/mail.example.com/:/etc/dms/tls-acme/:ro
+   ```
 
 3. **Cache lato client (`rediacc.json`).** La CLI memorizza nella cache una copia compressa di `acme.json` sotto `acmeCertCache` nel tuo file di configurazione, indicizzata per `baseDomain`. Questo consente a più macchine di condividere i certificati (tramite `rdc machine infra cert push <machine>`) e funge da inventario offline.
 
@@ -222,7 +229,7 @@ Il percorso completo che un certificato Let's Encrypt percorre dall'emissione ai
 - I certificati il cui `notAfter` è a più di 7 giorni nel passato vengono rimossi definitivamente. Sono inerti e gonfiano solo la cache.
 - `rdc config prune --certs-only` cancella tutto; `rdc config prune --certs-only` mostra l'inventario.
 
-**Risoluzione dei problemi:** se `traefik-certs-dumper` va in crashloop con `/traefik/acme.json: no such file or directory`, il daemon per repository non riesce a vedere il letsencrypt store dell'host. Verifica (a) che `/opt/rediacc/proxy/letsencrypt/acme.json` esista sull'host (questa è responsabilità del `rediacc-proxy` a livello host), e (b) che il daemon per repository sia stato avviato con un renet abbastanza recente da autorizzare `/opt/rediacc/proxy`. Ridistribuisci il repository con `rdc repo up` dopo aver aggiornato renet per applicare.
+**Risoluzione dei problemi:** se `data/tls/<domain>/` resta vuota, verificare che (a) il container instradato abbia `rediacc.cert_export=true`, (b) il dominio compaia in una delle sue regole Traefik `Host`/`HostSNI` e abbia un certificato in `/opt/rediacc/proxy/letsencrypt/acme.json` sull'host, e (c) `systemctl status rediacc-cert-export.timer` mostri il timer attivo. `sudo renet cert export-install` reinstalla le unit e `sudo systemctl start rediacc-cert-export.service` esporta subito.
 
 > **Sperimentale:** La cadenza di auto-sincronizzazione e la potatura basata sulla scadenza sono state rilasciate in renet 0.9+. Le versioni precedenti di CLI/renet usano la sincronizzazione puramente manuale tramite `rdc config prune --certs-only`.
 
