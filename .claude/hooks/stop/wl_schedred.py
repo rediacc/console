@@ -252,11 +252,16 @@ def _failed_jobs(root, owner, name, run_id):
     )
 
 
-def _absent_on_main(root, file):
-    """True only when origin/main resolves and has no `.github/workflows/<file>`: a 404 for a workflow main does carry (a wrong owner, a deleted workflow) stays an unreadable read, never a silent row (review e9054dfa.1)."""
-    if not C._git(root, "rev-parse", "--verify", "-q", "origin/main"):
-        return False
-    return not C._git(root, "ls-tree", "--name-only", "origin/main", "--", str(WORKFLOW_DIR / file))
+def _absent_on_main(root, owner, name, file):
+    """True only when GitHub itself answers 404 for main's `.github/workflows/<file>`: a 404 runs read for a workflow main does carry (a wrong owner, a deleted workflow) stays an unreadable read, never a silent row (review e9054dfa.1). GitHub, not the local origin/main, because a local ref is only as fresh as the last fetch (review 4dbc9b48.1), and any other answer, a failure included, reads as present (4dbc9b48.2)."""
+    data, err = wl_gh.call(
+        [
+            "api",
+            "repos/%s/%s/contents/%s?ref=main" % (owner, name, (WORKFLOW_DIR / file).as_posix()),
+        ],
+        cwd=root,
+    )
+    return data is None and NOT_ON_MAIN_MARK in (err or "")
 
 
 def _fetch(root, owner, name, workflows, jobs_cache):
@@ -290,7 +295,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
                 ],
                 cwd=root,
             )
-            if ferr and NOT_ON_MAIN_MARK in ferr and _absent_on_main(root, wf["file"]):
+            if ferr and NOT_ON_MAIN_MARK in ferr and _absent_on_main(root, owner, name, wf["file"]):
                 # A scheduled workflow added on the live branch is not registered on main yet, so it has no scheduled run there; one such file must not blind the whole read (2026-10-24, cf-usage-report.yml hid five red Console CI nightlies).
                 row = _run_row(wf, None, False)
                 row["not_on_main"] = True

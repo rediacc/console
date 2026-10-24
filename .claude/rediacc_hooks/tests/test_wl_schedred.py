@@ -318,6 +318,7 @@ def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_ver
         gh.route("/jobs", {"jobs": []})
         gh.route("/actions/workflows/branchonly.yml/", rc=1, err=err)
         gh.route("/actions/workflows/", {"workflow_runs": []})
+        gh.route("contents/.github/workflows/branchonly.yml", rc=1, err="gh: Not Found (HTTP 404)")
         gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
 
     routes("gh: Not Found (HTTP 404)")
@@ -332,18 +333,34 @@ def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_ver
     # Control: any other fallback error still makes the read unreadable, never a silent pass.
     routes("gh: Bad credentials (HTTP 401)")
     doc = SR.refresh(repo, tmp_path / "wl2.md", force=True)
-    assert doc["state"] != "ok", doc
+    assert doc["state"] == "unreadable", doc
+    assert "HTTP 401" in doc["error"], doc
 
 
 def test_a_404_for_a_workflow_main_carries_stays_unreadable(repo, tmp_path, gh):
-    # housekeeping.yml is on origin/main in the fixture, so a 404 for it is a wrong owner or a deleted workflow, not a branch-only file (review e9054dfa.1).
+    # GitHub serves housekeeping.yml on main, so a 404 runs read for it is a wrong owner or a deleted workflow, not a branch-only file (review e9054dfa.1).
     gh.reset()
     gh.route("runs?event=push&branch=main", {"workflow_runs": []})
     gh.route("/jobs", {"jobs": []})
     gh.route("/actions/workflows/", rc=1, err="gh: Not Found (HTTP 404)")
+    gh.route("contents/.github/workflows/", {"name": "housekeeping.yml", "type": "file"})
     gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
     doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
-    assert doc["state"] != "ok", doc
+    assert doc["state"] == "unreadable", doc
+    assert "HTTP 404" in doc["error"], doc
+
+
+def test_a_failed_contents_read_counts_as_present(repo, tmp_path, gh):
+    # Only GitHub's own 404 proves absence; a contents read that fails any other way keeps the read unreadable (review 4dbc9b48.2).
+    gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+    gh.route("/jobs", {"jobs": []})
+    gh.route("/actions/workflows/", rc=1, err="gh: Not Found (HTTP 404)")
+    gh.route("contents/.github/workflows/", rc=1, err="gh: Bad credentials (HTTP 401)")
+    gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "unreadable", doc
+    assert "HTTP 404" in doc["error"], doc
 
 
 def test_an_in_flight_rerun_is_reported_without_becoming_the_verdict(repo, tmp_path, gh):
