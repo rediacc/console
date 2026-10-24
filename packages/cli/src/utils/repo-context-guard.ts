@@ -103,17 +103,21 @@ function runsArgumentsAsCommand(cmd: string, words: string[]): boolean {
   return name === 'find' && words.some((w) => FIND_EXEC_FLAGS.has(w));
 }
 
-/** True when the segment's command word matches, or a whole argument of a runner command (`watch`, `find -exec`) does; `sh -c '<string>'` is read too. */
+/**
+ * True when the segment's command word matches; for a runner (`watch`, `su -c`, `flock ... -c`, `find -exec`), when any
+ * word of its arguments does once quotes are dropped; and for a shell given a `-c` flag (alone or in a cluster such as
+ * `-lc` or `-ec`), when a segment of its command string does.
+ */
 function segmentRunsCommand(segment: string, wordPattern: RegExp): boolean {
   const words = segmentCommandWords(segment);
   if (words.length === 0) return false;
   const cmd = basename(words[0]);
   if (wordPattern.test(cmd)) return true;
   if (runsArgumentsAsCommand(cmd, words)) {
-    const bare = words.slice(1).map((token) => basename(token.replace(/^['"]+|['"]+$/g, '')));
-    if (bare.some((token) => wordPattern.test(token))) return true;
+    const payload = words.slice(1).join(' ').replaceAll(/['"]/g, ' ');
+    if (payload.split(/\s+/).some((token) => wordPattern.test(basename(token)))) return true;
   }
-  const flag = words.indexOf('-c');
+  const flag = words.findIndex((w) => /^-[A-Za-z]*c[A-Za-z]*$/.test(w));
   if (SHELL_WORDS.has(cmd.toLowerCase()) && flag !== -1) {
     const inner = words
       .slice(flag + 1)
