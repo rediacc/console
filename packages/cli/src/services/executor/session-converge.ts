@@ -65,14 +65,25 @@ async function readConvergeStatus(
   try {
     return await readRuntimeStatus(sftp, deps.remoteRenetPath, deps.datastore);
   } catch (error) {
-    if (!dryRun) throw error;
+    // Only a renet that does not know the command is "too old"; an SSH, SFTP or timeout failure keeps its own error (review 435e9831.1).
+    if (!dryRun || !isUnknownRuntimeCommand(error)) throw error;
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
       `A dry run plans with the renet already on ${deps.machineName} and does not upload one, ` +
         `and that renet cannot report its runtime (${detail}). ` +
-        `Run 'rdc machine setup ${deps.machineName}' or 'rdc machine converge ${deps.machineName}' (without --dry-run) to update it.`
+        `Run 'rdc machine setup ${deps.machineName}' or 'rdc machine converge ${deps.machineName}' (without --dry-run) to update it.`,
+      { cause: error }
     );
   }
+}
+
+/** True for cobra's refusal of an unknown `runtime` subcommand or flag, the signature of a renet older than the converge commands. */
+function isUnknownRuntimeCommand(error: unknown): boolean {
+  const text = error instanceof Error ? error.message : String(error);
+  return (
+    /unknown (command|flag|shorthand flag)[^\n]*/i.test(text) &&
+    /runtime|status|--datastore|--json/i.test(text)
+  );
 }
 
 /**

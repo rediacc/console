@@ -321,6 +321,19 @@ describe('the runtime converge trigger', () => {
     expect(calls).not.toContain('run:machine_converge_runtime');
   });
 
+  it('keeps an SSH failure during a dry-run status read as its own error, not a too-old renet', async () => {
+    provisioned(false);
+    mockExec.mockImplementationOnce(() => Promise.reject(new Error('SSH connection timed out')));
+
+    const outcome = await run('machine_converge_runtime', { dry_run: true }).then(
+      (r) => r.error ?? '',
+      (e: unknown) => (e instanceof Error ? e.message : String(e))
+    );
+
+    expect(outcome).toContain('SSH connection timed out');
+    expect(outcome).not.toContain('rdc machine setup hostinger');
+    expect(calls).not.toContain('run:machine_converge_runtime');
+  });
   it('keeps going with the requested function when the converge pass fails', async () => {
     provisioned(true);
     mockExecStreaming.mockImplementationOnce((_cmd: string, opts: { stdin?: string }) => {
