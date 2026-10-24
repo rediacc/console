@@ -245,7 +245,7 @@ export function createServeApp(deps: ServeDeps): Hono {
         await deps.audit?.({
           principal,
           commandPath: request.pathKey,
-          functionName: functionName ?? request.pathKey,
+          ...(functionName ? { functionName } : {}),
           // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside
           // the action body); fall back to the request for verbs that still name
           // the machine explicitly (backup, job).
@@ -259,6 +259,7 @@ export function createServeApp(deps: ServeDeps): Hono {
             ),
           params: request.params,
           success: result.success,
+          exitCode: result.exitCode,
           durationMs: result.durationMs,
           destructive: entry.destructive ?? false,
         });
@@ -280,6 +281,22 @@ export function createServeApp(deps: ServeDeps): Hono {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
+        // A dispatch that threw still ran, or tried to run, on the caller's behalf: one event per command holds on this path too. The function it may have reached is unknown here, so it records by path.
+        await deps.audit?.({
+          principal,
+          commandPath: request.pathKey,
+          machineName: targetFrom(
+            entry.machineOption,
+            entry.machinePositional,
+            request.params,
+            request.positionals
+          ),
+          params: request.params,
+          success: false,
+          exitCode: 1,
+          durationMs: Date.now() - started,
+          destructive: entry.destructive ?? false,
+        });
         await write({
           kind: 'result',
           result: {

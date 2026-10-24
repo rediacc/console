@@ -21,7 +21,8 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { functionNameToEventType } from '@rediacc/shared';
+import { type AuditEvent, functionNameToEventType } from '@rediacc/shared';
+import { VERSION } from '../../version.js';
 import type { ExecutorAuditEvent } from './deps.js';
 
 export interface ExecutorAuditOptions {
@@ -32,6 +33,73 @@ export interface ExecutorAuditOptions {
   fetchImpl?: typeof fetch;
   /** Called when an event cannot be delivered, so the failure is visible. */
   onFailure?: (error: unknown, event: ExecutorAuditEvent) => void;
+}
+
+/**
+ * The wire event for one executed command, in the shape the account server's
+ * AuditEventsRequestSchema accepts.
+ *
+ * A command whose function maps to an event type records under that type, so
+ * a proxied `repo up` and a local one land in the same SIEM bucket. Every other
+ * command (one that reached no bridge function, or whose function maps to no
+ * type, or that resolved no machine) records as `cli.command`, keyed by its
+ * path: the one-event-per-command guarantee does not depend on the mapping.
+ *
+ * Params are NOT shipped: they routinely carry repository names, and can carry
+ * a secret value on a `repo secret set`. The audit trail records WHAT ran and
+ * WHO ran it, not the payload.
+ */
+export function buildExecutorAuditEvent(
+  event: ExecutorAuditEvent,
+  idempotencyKey: string = randomUUID()
+): AuditEvent {
+  const envelope = {
+    idempotencyKey,
+    ...(event.principal.tokenId ? { onBehalfOfTokenId: event.principal.tokenId } : {}),
+  };
+  const outcome = {
+    success: event.success,
+    exitCode: event.exitCode,
+    durationMs: Math.max(0, Math.round(event.durationMs)),
+    cliVersion: VERSION,
+    commandPath: event.commandPath,
+    destructive: event.destructive,
+  };
+
+  const { functionName, machineName } = event;
+  const mapped = functionName ? functionNameToEventType(functionName) : null;
+  if (mapped && functionName && machineName) {
+    return mappedEvent(mapped, { functionName, machineName, ...outcome }, envelope);
+  }
+
+  return {
+    type: 'cli.command',
+    data: {
+      ...(functionName ? { functionName } : {}),
+      ...(machineName ? { machineName } : {}),
+      ...outcome,
+    },
+    ...envelope,
+  };
+}
+
+type MappedType = NonNullable<ReturnType<typeof functionNameToEventType>>;
+/** The plain baseData every function-mapped branch accepts (the machine-op branch's data). */
+type MappedData = Exclude<
+  AuditEvent,
+  { type: 'cli.command' | 'cli.sync.upload' | 'cli.sync.download' | 'cli.term.session' }
+>['data'];
+
+// The same data for every branch; the split only narrows `type` to one discriminated-union member, which TypeScript cannot do for the whole union at once.
+function mappedEvent(
+  type: MappedType,
+  data: MappedData,
+  envelope: Pick<AuditEvent, 'idempotencyKey' | 'onBehalfOfTokenId'>
+): AuditEvent {
+  if (type === 'cli.sync.upload' || type === 'cli.sync.download')
+    return { type, data, ...envelope };
+  if (type === 'cli.term.session') return { type, data, ...envelope };
+  return { type, data, ...envelope };
 }
 
 /**
@@ -50,25 +118,7 @@ export function createExecutorAudit(
 
   return async (event: ExecutorAuditEvent): Promise<void> => {
     try {
-      const payload = {
-        events: [
-          {
-            type: functionNameToEventType(event.functionName),
-            idempotencyKey: randomUUID(),
-            ...(event.principal.tokenId ? { onBehalfOfTokenId: event.principal.tokenId } : {}),
-            timestamp: new Date().toISOString(),
-            data: {
-              command: event.commandPath,
-              function: event.functionName,
-              machine: event.machineName,
-              success: event.success,
-              durationMs: event.durationMs,
-              destructive: event.destructive,
-              // Params are NOT shipped: they routinely carry repository names, and can carry a secret value on a `repo secret set`. The audit trail records WHAT ran and WHO ran it, not the payload.
-            },
-          },
-        ],
-      };
+      const payload = { events: [buildExecutorAuditEvent(event)] };
 
       const response = await fetchImpl(`${accountUrl}/account/api/v1/licenses/audit-events`, {
         method: 'POST',

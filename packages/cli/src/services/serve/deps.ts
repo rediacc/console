@@ -19,10 +19,12 @@ import type { SessionPrincipal, SessionStore } from './sessions.js';
 export interface ExecutorAuditEvent {
   principal: SessionPrincipal;
   commandPath: string;
-  functionName: string;
+  /** The bridge function the command called, absent when it reached none. */
+  functionName?: string;
   machineName?: string;
   params: Record<string, unknown>;
   success: boolean;
+  exitCode: number;
   durationMs: number;
   destructive: boolean;
 }

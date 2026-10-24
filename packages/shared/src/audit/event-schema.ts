@@ -4,10 +4,11 @@
  * route (private/account/src/routes/license.ts).
  *
  * The event-type union is closed: every renet function the CLI
- * may invoke through localExecutorService, plus three explicit
- * non-bridge events (sync.upload, sync.download, term.session). New
- * event types must be added here AND covered by a Sigma rule stub —
- * the CI gate check:ci-audit-coverage enforces both.
+ * may invoke through localExecutorService, three explicit non-bridge
+ * events (sync.upload, sync.download, term.session), and `cli.command`,
+ * the executor's (rdc serve) record of a relayed command. New event types
+ * must be added here; the CI gate check:ci-audit-coverage fails when a
+ * functionName the CLI emits maps to a type this union does not carry.
  */
 
 import { z } from 'zod';
@@ -129,14 +130,22 @@ export const MACHINE_OP_EVENT_TYPES = [
   ...containerEventTypes,
 ] as const;
 
-export const ALL_EVENT_TYPES = [
+/** Every type a renet function name maps to, the range of functionNameToEventType. */
+const FUNCTION_EVENT_TYPES = [
   ...MACHINE_OP_EVENT_TYPES,
   ...clusterEventTypes,
   ...explicitEventTypes,
 ] as const;
+type FunctionEventType = (typeof FUNCTION_EVENT_TYPES)[number];
+
+// The executor (rdc serve) records one event per relayed command, including a command that reached no mapped function (`machine status`, a config read). That command has no function-derived type, so it records under this one, keyed by its command path.
+const commandEventTypes = ['cli.command'] as const;
+
+export const ALL_EVENT_TYPES = [...FUNCTION_EVENT_TYPES, ...commandEventTypes] as const;
 
 export const auditEventTypeEnum = z.enum(ALL_EVENT_TYPES);
 type AuditEventType = z.infer<typeof auditEventTypeEnum>;
+
 export type { AuditEventType };
 
 const baseData = z.object({
@@ -148,6 +157,9 @@ const baseData = z.object({
   durationMs: z.number().int().min(0),
   cliVersion: z.string().min(1).max(50),
   error: z.string().max(500).optional(),
+  // Set by the executor (rdc serve) only: the command path that ran (`repo up`) and whether the contract marks it destructive. The CLI's own emitter omits both.
+  commandPath: z.string().min(1).max(200).optional(),
+  destructive: z.boolean().optional(),
 });
 
 /**
@@ -194,36 +206,54 @@ const termEvent = z.object({
   ...eventEnvelope,
 });
 
+// A relayed command that reached no mapped function: the command path is the identity, and a function or machine is recorded when the command observed one.
+const commandEvent = z.object({
+  type: z.literal('cli.command'),
+  data: baseData.extend({
+    functionName: z.string().min(1).max(100).optional(),
+    machineName: z.string().min(1).max(200).optional(),
+    commandPath: z.string().min(1).max(200),
+    destructive: z.boolean(),
+  }),
+  ...eventEnvelope,
+});
+
 export const AuditEventSchema = z.discriminatedUnion('type', [
   machineOpEvent,
   syncEvent,
   termEvent,
+  commandEvent,
 ]);
 type AuditEvent = z.infer<typeof AuditEventSchema>;
+
 export type { AuditEvent };
 
 export const AuditEventsRequestSchema = z.object({
   events: z.array(AuditEventSchema).min(1).max(50),
 });
 type AuditEventsRequest = z.infer<typeof AuditEventsRequestSchema>;
+
 export type { AuditEventsRequest };
 
 export const AuditEventsResponseSchema = z.object({
   accepted: z.number().int().min(0),
 });
 type AuditEventsResponse = z.infer<typeof AuditEventsResponseSchema>;
+
 export type { AuditEventsResponse };
 
 /**
  * Map a renet function name to its canonical event type.
- * Returns `null` if the function isn't in the closed union — callers
- * should drop the event rather than emit an unrecognized type that
- * would fail server-side validation.
+ * Returns `null` if the function maps to no type in the closed union, so a
+ * caller never emits an unrecognized type that would fail server-side
+ * validation. The CLI's own emitter drops such an event; the executor records
+ * it as `cli.command` instead, keeping its one-event-per-command guarantee.
+ * `cli.command` itself is never returned: no function name maps to it.
  */
-export function functionNameToEventType(functionName: string): AuditEventType | null {
+export function functionNameToEventType(functionName: string): FunctionEventType | null {
   const candidate = mapToEventTypeString(functionName);
-  return (ALL_EVENT_TYPES as readonly string[]).includes(candidate)
-    ? (candidate as AuditEventType)
+  return (FUNCTION_EVENT_TYPES as readonly string[]).includes(candidate)
+    ? (candidate as FunctionEventType)
     : null;
 }
 
