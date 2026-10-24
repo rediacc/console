@@ -1285,6 +1285,29 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-retired-terms-submodule-scan.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 12,
+      "done": 0,
+      "open_sigs": [
+        "0dfe44a5",
+        "1b96d600",
+        "1b98608c",
+        "2e19492c",
+        "349a583e",
+        "83d612e9",
+        "8c14799e",
+        "a3cd5e26",
+        "ae588429",
+        "c0f68823",
+        "c7185323",
+        "edfd4e34"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-review-red-stop-hook-check.md": {
       "status": "compacted",
       "owner": "unowned",
