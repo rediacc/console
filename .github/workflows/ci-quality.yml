@@ -2336,6 +2336,9 @@ jobs:
       - name: GitHub Actions variables
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_actions_vars.py
+      - name: Override ranges
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-override-ranges
       - name: PR-condition ledger is current
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:

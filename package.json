@@ -152,6 +152,7 @@
     "install:natives": "npm rebuild ssh2 cpu-features esbuild --foreground-scripts --ignore-scripts=false",
     "check:ci-peer-deps": ".ci/scripts/quality/check_peer_deps.py",
     "check:ci-overrides-reasons": "tsx scripts/gates/check-overrides-reasons.ts",
+    "check:ci-override-ranges": "tsx scripts/gates/check-override-ranges.ts --selftest && tsx scripts/gates/check-override-ranges.ts",
     "check:ci-knip-blockers": "tsx scripts/gates/check-knip-blockers.ts",
     "check:ci-syncpack-reasons": "tsx scripts/gates/check-syncpack-reasons.ts",
     "check:ci-quality-complete": "tsx scripts/gates/check-quality-complete.ts --selftest && tsx scripts/gates/check-quality-complete.ts",

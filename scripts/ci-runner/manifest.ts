@@ -4549,6 +4549,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-override-ranges',
+    run: 'npm run check:ci-override-ranges',
+    gate: true,
+    leaves: ['scripts/gates/check-override-ranges.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Override ranges',
+    },
+  },
+  {
     id: 'check:ci-syncpack-reasons',
     run: 'npm run check:ci-syncpack-reasons',
     gate: true,
