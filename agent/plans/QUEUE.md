@@ -79,7 +79,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 20 plans done, 182 of 409 boxes done (44%).
+Promoted: 1 of 20 plans done, 183 of 409 boxes done (44%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -101,7 +101,7 @@ Promoted: 1 of 20 plans done, 182 of 409 boxes done (44%).
 | 16 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
 | 17 | PLAN-renet-runtime-converge.md | 3/4 | 1 open |
 | 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
-| 19 | PLAN-converge-preflight-and-repo-recovery.md | 16/18 | 2 open |
+| 19 | PLAN-converge-preflight-and-repo-recovery.md | 17/18 | 1 open |
 | 20 | PLAN-gpu-device-grants.md | 3/12 | 9 open |
 <!-- queue:progress:end -->
 
