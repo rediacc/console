@@ -602,11 +602,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 2,
+      "open": 13,
+      "done": 4,
       "open_sigs": [
         "1b27a3ae",
-        "1d51cecc",
         "28a11bd0",
         "4440feb5",
         "5f1af841",
@@ -618,12 +617,13 @@
         "a97866e0",
         "abbd7b20",
         "d61fcd63",
-        "ec8aabe0",
-        "fcb61e61"
+        "ec8aabe0"
       ],
       "done_sigs": [
+        "1d51cecc",
         "5b93fe0a",
-        "b46df911"
+        "b46df911",
+        "fcb61e61"
       ]
     },
     "agent/plans/PLAN-deletion-budget.md": {
