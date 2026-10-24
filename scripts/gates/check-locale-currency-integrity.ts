@@ -60,7 +60,7 @@ export function findCorruptions(
   return out;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
   const bad = findCorruptions();
   if (bad.length === 0) {
     console.log('✓ No currency amounts eaten by a $<digit> substitution.');

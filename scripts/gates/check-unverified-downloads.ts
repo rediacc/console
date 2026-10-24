@@ -306,6 +306,6 @@ function main(): void {
 }
 
 // Only run when invoked directly. Importing this module (the gate test does, and so does any sibling that wants `scan`) must not execute the whole check.
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
   main();
 }

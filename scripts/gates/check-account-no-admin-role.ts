@@ -16,7 +16,8 @@
  *
  * ---- gate ----
  * step: Check no admin user role (must be root)
- * needs: node
+ * needs: node, submodules
+ * lane: quality-go
  * selftest: true
  * ---- end gate ----
  */
@@ -32,25 +33,60 @@ export interface EnumHit {
   values: string[];
 }
 
-/** Every `enum: [..]` / `enum([..])` array in `src`, wrapped or not. */
-export function enumArrays(src: string): EnumHit[] {
-  const out: EnumHit[] = [];
-  const re = /\benum\s*(?::|\()\s*\[([^\]]*)\]/g;
-  for (let m = re.exec(src); m; m = re.exec(src)) {
-    const values = [...(m[1] ?? '').matchAll(/['"`]([^'"`]*)['"`]/g)].map((v) => v[1] as string);
-    out.push({ line: src.slice(0, m.index).split('\n').length, values });
+const quotedValues = (body: string): string[] =>
+  [...body.matchAll(/['"`]([^'"`]*)['"`]/g)].map((v) => v[1] as string);
+
+/** Every `const NAME = [..]` array in `src` (an `as const` suffix or a type annotation allowed), by name. */
+function constArrays(src: string): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  const re = /\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*\[([^\]]*)\]/g;
+  for (let m = re.exec(src); m; m = re.exec(src)) out.set(m[1] as string, quotedValues(m[2] ?? ''));
+  return out;
+}
+
+/**
+ * Every enum in `src`, wrapped or not: an `enum: [..]` / `enum([..])` literal, or an
+ * `enum(NAME)` / `enum: NAME` reference resolved through a same-file `const NAME = [..]`
+ * (review 5fe6ca54.3). A reference that does not resolve is returned in `unresolved`.
+ */
+export function enumArrays(src: string): EnumHit[] & { unresolved?: EnumHit[] } {
+  const out: EnumHit[] & { unresolved?: EnumHit[] } = [];
+  const unresolved: EnumHit[] = [];
+  const consts = constArrays(src);
+  const lineOf = (index: number): number => src.slice(0, index).split('\n').length;
+  const literal = /\benum\s*(?::|\()\s*\[([^\]]*)\]/g;
+  for (let m = literal.exec(src); m; m = literal.exec(src)) {
+    out.push({ line: lineOf(m.index), values: quotedValues(m[1] ?? '') });
   }
+  const reference = /\benum\s*(?::|\()\s*([A-Za-z_$][\w$]*)\b/g;
+  for (let m = reference.exec(src); m; m = reference.exec(src)) {
+    const values = consts.get(m[1] as string);
+    if (values) out.push({ line: lineOf(m.index), values });
+    else unresolved.push({ line: lineOf(m.index), values: [m[1] as string] });
+  }
+  out.unresolved = unresolved;
   return out;
 }
 
 export interface Verdict {
   userEnums: number;
   bad: EnumHit[];
+  unresolved: EnumHit[];
 }
 
+/**
+ * A user-role enum is one holding 'customer' or 'root', the user-role vocabulary, so a list
+ * that dropped 'customer' but kept 'root' beside 'admin' is still policed (review 5fe6ca54.4);
+ * the org ('owner','admin','member') and partner roles hold neither.
+ */
 export function judge(src: string): Verdict {
-  const user = enumArrays(src).filter((e) => e.values.includes('customer'));
-  return { userEnums: user.length, bad: user.filter((e) => e.values.includes('admin')) };
+  const all = enumArrays(src);
+  const user = all.filter((e) => e.values.includes('customer') || e.values.includes('root'));
+  return {
+    userEnums: user.length,
+    bad: user.filter((e) => e.values.includes('admin')),
+    unresolved: all.unresolved ?? [],
+  };
 }
 
 function selftest(): void {
@@ -60,12 +96,14 @@ function selftest(): void {
   };
   const clean = "role: text('role', { enum: ['customer', 'root'] })\nz.enum(['customer', 'root'])";
   const c = judge(clean);
-  if (c.userEnums !== 2 || c.bad.length !== 0) fail(`CONTROL: clean enums misjudged ${JSON.stringify(c)}`);
+  if (c.userEnums !== 2 || c.bad.length !== 0)
+    fail(`CONTROL: clean enums misjudged ${JSON.stringify(c)}`);
   console.log('  PASS  CONTROL: customer/root enums are accepted and counted');
 
   const other = "role: text('role', { enum: ['owner', 'admin', 'member'] })";
   const o = judge(other);
-  if (o.userEnums !== 0 || o.bad.length !== 0) fail('CONTROL: an org-role enum with admin was policed');
+  if (o.userEnums !== 0 || o.bad.length !== 0)
+    fail('CONTROL: an org-role enum with admin was policed');
   console.log('  PASS  CONTROL: admin in a non-user enum is out of scope');
 
   const single = "role: text('role', { enum: ['customer', 'admin'] })";
@@ -76,19 +114,35 @@ function selftest(): void {
   if (judge(reorder).bad.length !== 1) fail('reordered plant not caught');
   console.log('  PASS  reordered plant is caught');
 
-  const wrapped = "role: text('role', {\n  enum: [\n    'customer',\n    'root',\n    'admin',\n  ],\n})";
+  const wrapped =
+    "role: text('role', {\n  enum: [\n    'customer',\n    'root',\n    'admin',\n  ],\n})";
   const w = judge(wrapped);
-  if (w.bad.length !== 1 || w.bad[0]?.line !== 2) fail(`wrapped plant not caught ${JSON.stringify(w)}`);
+  if (w.bad.length !== 1 || w.bad[0]?.line !== 2)
+    fail(`wrapped plant not caught ${JSON.stringify(w)}`);
   console.log('  PASS  wrapped multi-line plant is caught');
 
   if (judge('const x = 1;').userEnums !== 0) fail('no-enum source counted an enum');
   console.log('  PASS  a file with no user-role enum reports zero (main() refuses it)');
+
+  const byRef =
+    "const USER_ROLES = ['customer', 'admin'] as const;\nconst UserRole = z.enum(USER_ROLES);";
+  if (judge(byRef).bad.length !== 1) fail('a role list passed by reference was not caught');
+  console.log('  PASS  an enum passed by reference is resolved and caught');
+
+  const noCustomer =
+    "role: text('role', { enum: ['root', 'admin'] })\nz.enum(['customer', 'root'])";
+  if (judge(noCustomer).bad.length !== 1) fail("a user-role enum without 'customer' escaped");
+  console.log("  PASS  a user-role enum that lost 'customer' but kept 'root' is still policed");
+
+  if (judge('z.enum(IMPORTED_ROLES)').unresolved.length !== 1)
+    fail('an unresolvable enum reference was not reported');
+  console.log('  PASS  an unresolvable enum reference is reported (main() refuses it)');
 }
 
 function main(): void {
   if (process.argv.includes('--selftest')) {
     selftest();
-    console.log('check-account-no-admin-role: selftest ok (6 controls)');
+    console.log('check-account-no-admin-role: selftest ok (9 controls)');
     return;
   }
   let checked = 0;
@@ -96,24 +150,38 @@ function main(): void {
   for (const rel of TARGETS) {
     const p = path.join(ROOT, rel);
     if (!fs.existsSync(p)) {
-      console.error(`✗ ${rel} does not exist, so the admin-role rule checked NOTHING there. Update TARGETS if it moved.`);
+      console.error(
+        `✗ ${rel} does not exist, so the admin-role rule checked NOTHING there. Update TARGETS if it moved.`
+      );
       failed = true;
       continue;
     }
     const v = judge(fs.readFileSync(p, 'utf-8'));
     if (v.userEnums === 0) {
-      console.error(`✗ ${rel} holds no enum containing 'customer'; the user-role enum moved or was renamed, so this gate sees nothing. Update TARGETS.`);
+      console.error(
+        `✗ ${rel} holds no enum containing 'customer' or 'root'; the user-role enum moved or was renamed, so this gate sees nothing. Update TARGETS.`
+      );
       failed = true;
       continue;
     }
+    for (const u of v.unresolved) {
+      console.error(
+        `✗ ${rel}:${u.line} enum(${u.values[0]}) references a list this gate cannot resolve in the file, so it checked nothing there. Declare it as a same-file const array or extend the gate.`
+      );
+      failed = true;
+    }
     checked += v.userEnums;
     for (const b of v.bad) {
-      console.error(`✗ ${rel}:${b.line} user-role enum [${b.values.join(', ')}] contains 'admin'. The privileged user role is 'root'; remove 'admin' (org and partner roles are separate enums).`);
+      console.error(
+        `✗ ${rel}:${b.line} user-role enum [${b.values.join(', ')}] contains 'admin'. The privileged user role is 'root'; remove 'admin' (org and partner roles are separate enums).`
+      );
       failed = true;
     }
   }
   if (failed) process.exit(1);
-  console.log(`✓ no admin user role: ${checked} user-role enum(s) across ${TARGETS.length} file(s), none contain 'admin'`);
+  console.log(
+    `✓ no admin user role: ${checked} user-role enum(s) across ${TARGETS.length} file(s), none contain 'admin'`
+  );
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) main();

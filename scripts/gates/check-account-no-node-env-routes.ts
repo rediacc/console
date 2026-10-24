@@ -16,7 +16,8 @@
  *
  * ---- gate ----
  * step: Assert no NODE_ENV branching in account routes
- * needs: node
+ * needs: node, submodules
+ * lane: quality-go
  * selftest: true
  * ---- end gate ----
  */
@@ -28,10 +29,11 @@ const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const ROUTES = 'private/account/src/routes';
 const MIN_FILES = 10;
 
+// `?.` counts as a dot everywhere: process.env?.NODE_ENV and process?.env?.['NODE_ENV'] read the same value.
 const PATTERNS: RegExp[] = [
-  /process\s*\.\s*env\s*\.\s*NODE_ENV\b/,
-  /process\s*\.\s*env\s*\[\s*['"`]NODE_ENV['"`]\s*\]/,
-  /\{[^}]*\bNODE_ENV\b[^}]*\}\s*=\s*process\s*\.\s*env\b/,
+  /process\s*\??\.\s*env\s*\??\.\s*NODE_ENV\b/,
+  /process\s*\??\.\s*env\s*(?:\?\.)?\s*\[\s*['"`]NODE_ENV['"`]\s*\]/,
+  /\{[^}]*\bNODE_ENV\b[^}]*\}\s*=\s*process\s*\??\.\s*env\b/,
 ];
 
 export interface Hit {
@@ -68,32 +70,49 @@ function selftest(): void {
     console.error(`  FAIL  ${m}`);
     process.exit(1);
   };
-  if (findNodeEnv("const a = process.env.JWT_SECRET;\nconst b = c.env.NODE_ENVIRONMENT_X;").length !== 0)
+  if (
+    findNodeEnv('const a = process.env.JWT_SECRET;\nconst b = c.env.NODE_ENVIRONMENT_X;').length !==
+    0
+  )
     fail('CONTROL: a clean route was reported');
   console.log('  PASS  CONTROL: a clean route is accepted');
-  if (findNodeEnv("if (process.env.NODE_ENV === 'production') {}").length !== 1) fail('dotted plant not caught');
+  if (findNodeEnv("if (process.env.NODE_ENV === 'production') {}").length !== 1)
+    fail('dotted plant not caught');
   console.log('  PASS  dotted plant is caught');
-  if (findNodeEnv("const x = process.env['NODE_ENV'];").length !== 1) fail('bracket plant not caught');
+  if (findNodeEnv("const x = process.env['NODE_ENV'];").length !== 1)
+    fail('bracket plant not caught');
   console.log('  PASS  bracket plant is caught');
-  const wrapped = "const {\n  PORT,\n  NODE_ENV,\n} = process.env;";
+  const wrapped = 'const {\n  PORT,\n  NODE_ENV,\n} = process.env;';
   if (findNodeEnv(wrapped).length !== 1) fail('wrapped destructuring plant not caught');
   console.log('  PASS  wrapped destructuring plant is caught');
+  for (const plant of [
+    "if (process.env?.NODE_ENV === 'test') {}",
+    "if (process?.env?.NODE_ENV === 'test') {}",
+    "const y = process?.env?.['NODE_ENV'];",
+  ]) {
+    if (findNodeEnv(plant).length !== 1) fail(`optional-chaining plant not caught: ${plant}`);
+  }
+  console.log('  PASS  optional-chaining plants are caught');
 }
 
 function main(): void {
   if (process.argv.includes('--selftest')) {
     selftest();
-    console.log('check-account-no-node-env-routes: selftest ok (4 controls)');
+    console.log('check-account-no-node-env-routes: selftest ok (5 controls)');
     return;
   }
   const dir = path.join(ROOT, ROUTES);
   if (!fs.existsSync(dir)) {
-    console.error(`✗ ${ROUTES} does not exist, so this gate checked NOTHING. Update ROUTES if it moved.`);
+    console.error(
+      `✗ ${ROUTES} does not exist, so this gate checked NOTHING. Update ROUTES if it moved.`
+    );
     process.exit(1);
   }
   const files = tsFiles(dir);
   if (files.length < MIN_FILES) {
-    console.error(`✗ VACUOUS: only ${files.length} .ts file(s) under ${ROUTES}, below the floor of ${MIN_FILES}.`);
+    console.error(
+      `✗ VACUOUS: only ${files.length} .ts file(s) under ${ROUTES}, below the floor of ${MIN_FILES}.`
+    );
     process.exit(1);
   }
   let bad = 0;
@@ -104,10 +123,12 @@ function main(): void {
     }
   }
   if (bad > 0) {
-    console.error(`\n  ${bad} NODE_ENV reference(s) in account routes. Routes behave the same in every environment; move the switch into configuration injected at startup.`);
+    console.error(
+      `\n  ${bad} NODE_ENV reference(s) in account routes. Routes behave the same in every environment; move the switch into configuration injected at startup.`
+    );
     process.exit(1);
   }
   console.log(`✓ no NODE_ENV branching in account routes: ${files.length} route file(s) scanned`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) main();

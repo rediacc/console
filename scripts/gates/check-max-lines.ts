@@ -73,7 +73,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 import { parseSync } from 'oxc-parser';
-import { GREEN, RED, NC } from '../lib/console.js';
+import { GREEN, NC, RED } from '../lib/console.js';
 import { reportFindings } from '../lib/findings-report.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -413,6 +413,6 @@ function main(argv: string[]): number {
 // planted-fixture control under `.ci/cache/biome-parity/maxlines/` does
 // exactly this) without also running the whole gate as a side effect of the
 // import.
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
   process.exit(main(process.argv.slice(2)));
 }
