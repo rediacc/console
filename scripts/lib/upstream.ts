@@ -279,7 +279,8 @@ export async function retryUpstream<T>(
         answer.unreachable
       );
     }
-    console.log(
+    // Progress, so stderr: a caller printing `--json` on stdout must stay parseable.
+    console.error(
       `${YELLOW}? ${target.who}: attempt ${tries} of ${limit} failed (${answer.what}), asking again in ${waitMs / 1000} s${NC}`
     );
     await sleep(waitMs);
