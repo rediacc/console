@@ -13,7 +13,7 @@ import typing
 
 import pytest
 
-from rediacc_ci.ops import cf_auth, reset_bench
+from rediacc_ci.ops import cf_auth, deploy_bench, reset_bench
 from rediacc_ci.tests import ops_cf_harness as h
 
 if typing.TYPE_CHECKING:
@@ -25,7 +25,14 @@ GLOBAL_ENV = {"CF_GLOBAL_API_KEY": "gk", "CF_EMAIL": "ops@example.invalid"}
 
 @pytest.fixture
 def world(tmp_path: pathlib.Path) -> h.World:
-    return h.World(tmp_path)
+    scratch = h.World(tmp_path)
+    # deploy_bench reads the bench bucket from the BACKUP_BUCKET binding (PLAN-backup-presign-bucket-require-and-wrangler-vars B4), which the harness's minimal bench config does not declare.
+    config = scratch.root / "workers/account/wrangler.bench.toml"
+    config.write_text(
+        config.read_text()
+        + '\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "rediacc-backups-bench"\n'
+    )
+    return scratch
 
 
 def _curl_calls(world: h.World, mask: bool = True) -> list[dict]:
@@ -711,6 +718,9 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
     for raw in h.normalise_calls(calls):
         if raw["tool"] == "sleep":
             continue
+        # DECLARED DELTA (b7d7bdfe0): the port prints the D1 bookmark before migrating, a `wrangler d1 time-travel info` call the retired bash never made.
+        if raw["tool"] == "npx" and raw["argv"][1:4] == ["d1", "time-travel", "info"]:
+            continue
         kept = [n for n in raw.get("cf_env") or () if n not in R2_TO_BACKUP]
         out.append({**raw, "cf_env": kept} if raw.get("cf_env") else raw)
     return out
@@ -746,9 +756,14 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_build = "→ Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)"
     bash_lines = _quiet_selfdestruct(err_b)
     assert bash_lines.count(bash_build) == 1
-    assert [port_build if ln == bash_build else ln for ln in bash_lines] == _quiet_selfdestruct(
-        err_p
-    )
+    # DECLARED DELTAS since the bash was retired (b7d7bdfe0 and the portal-health step): the port reports the D1 bookmark (here a missing one, the fake wrangler prints none), and the bash's closing live-host line is gone from the port's output.
+    port_lines = [
+        ln
+        for ln in _quiet_selfdestruct(err_p)
+        if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") and not ln.startswith("✓ bench is live")
+    ]
+    bash_lines = [ln for ln in bash_lines if not ln.startswith("✓ bench is live")]
+    assert [port_build if ln == bash_build else ln for ln in bash_lines] == port_lines
     assert "r2-secret" not in err_p
     assert "ses-secret" not in err_p
 
@@ -882,3 +897,43 @@ def test_deploy_bench_still_refuses_on_drift_and_never_pushes(world: h.World) ->
         c["tool"] == "npx" and c["argv"][:3] == ["wrangler", "secret", "bulk"]
         for c in world.calls()
     )
+
+
+# PLAN-backup-presign-bucket-require-and-wrangler-vars B4: the bench bucket is the BACKUP_BUCKET binding in wrangler.bench.toml, not an env override or a literal.
+def _bench_repo(monkeypatch: pytest.MonkeyPatch, tmp_path, toml_text: str) -> None:
+    worker = tmp_path / "workers" / "account"
+    worker.mkdir(parents=True)
+    (worker / deploy_bench.CONFIG).write_text(toml_text, encoding="utf-8")
+    monkeypatch.setattr(deploy_bench.paths, "repo_root", lambda: tmp_path)
+
+
+BENCH_TOML = (
+    'name = "rediacc-account-bench"\n\n'
+    "[[r2_buckets]]\n"
+    'binding = "BACKUP_BUCKET"\n'
+    'bucket_name = "bound-backups-bench"\n'
+)
+
+
+def test_deploy_bench_bucket_comes_from_the_binding(monkeypatch, tmp_path) -> None:
+    _bench_repo(monkeypatch, tmp_path, BENCH_TOML)
+    monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
+    assert deploy_bench.bench_bucket() == "bound-backups-bench"
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_BUCKET", "bound-backups-bench")
+    assert deploy_bench.bench_bucket() == "bound-backups-bench"
+
+
+def test_deploy_bench_refuses_an_env_bucket_that_differs_from_the_binding(
+    monkeypatch, tmp_path
+) -> None:
+    _bench_repo(monkeypatch, tmp_path, BENCH_TOML)
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_BUCKET", "some-other-bucket")
+    with pytest.raises(deploy_bench.DeployError, match="bound-backups-bench"):
+        deploy_bench.bench_bucket()
+
+
+def test_deploy_bench_refuses_a_config_with_no_backup_binding(monkeypatch, tmp_path) -> None:
+    _bench_repo(monkeypatch, tmp_path, 'name = "rediacc-account-bench"\n')
+    monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
+    with pytest.raises(deploy_bench.DeployError, match="BACKUP_BUCKET"):
+        deploy_bench.bench_bucket()

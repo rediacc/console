@@ -9,7 +9,8 @@
  *      workers/account/wrangler.<channel><region>.toml — this is what the
  *      Worker reads, lists and GCs;
  *   2. the presign signer built in
- *      private/account/src/services/backup-chunk-store.ts:977-985 from
+ *      private/account/src/services/backup-chunk-store.ts (createBackupPlane's
+ *      Workers branch, via presignCredentials) from
  *      ACCOUNT_BACKUP_S3_BUCKET — this is what every presigned PUT URL
  *      points at.
  *
@@ -40,6 +41,14 @@
  * wrangler .toml at all — verified 2026-09-02. So the binding side had no
  * reader and the drift had nowhere to be noticed.
  *
+ * TWO MORE ROWS (PLAN-backup-presign-bucket-require-and-wrangler-vars). A source-shape row
+ * refuses a `?? ''` fallback for the bucket or the secret in createBackupPlane's Workers
+ * branch: an empty Bucket makes every presign throw at request time while a non-null minter
+ * keeps the cron warning silent, so the branch must build the minter only from all four
+ * values. A bench row holds wrangler.bench.toml's BACKUP_BUCKET binding to a non-empty
+ * bucket and refuses a `rediacc-backups-` literal in .ci/rediacc_ci/ops/deploy_bench.py, which
+ * derives the bucket from that binding.
+ *
  * Run: npx tsx scripts/gates/check-backup-bucket-conformance.ts
  *
  * Control-first: every run first proves the .toml extractor BOTH ways against
@@ -53,7 +62,7 @@
  * ---- end gate ----
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { joinReport } from '../lib/console.js';
@@ -173,6 +182,108 @@ export function extractBinding(
   }
 }
 
+// ── Source-shape and bench rows: pure checks, controlled both ways ─────────
+const STORE_SRC = 'private/account/src/services/backup-chunk-store.ts';
+const BENCH_TOML = 'workers/account/wrangler.bench.toml';
+const BENCH_DEPLOY = '.ci/rediacc_ci/ops/deploy_bench.py';
+
+/** The text of createBackupPlane's Workers branch plus presignCredentials, or null when a marker is gone. */
+export function workersBranch(src: string): string | null {
+  const helper = src.indexOf('function presignCredentials');
+  const start = src.indexOf('export function createBackupPlane');
+  const open = src.indexOf('if (r2Binding) {', start);
+  const end = src.indexOf('return { store, grantMinter: null };', open);
+  if (helper < 0 || start < 0 || open < 0 || end < 0 || helper > start) return null;
+  return src.slice(helper, start) + src.slice(open, end);
+}
+
+/** A `?? ''` fallback on the bucket or the secret: an empty value would reach the signer. */
+export function emptyFallbacks(branch: string): string[] {
+  const re = /ACCOUNT_BACKUP_S3_(?:BUCKET|SECRET_ACCESS_KEY)\s*\?\?\s*(?:''|"")/g;
+  return branch.match(re) ?? [];
+}
+
+/** A hardcoded backup bucket name in the bench deploy tool. */
+export function benchLiterals(py: string): string[] {
+  return py.match(/rediacc-backups-[\w-]+/g) ?? [];
+}
+
+{
+  const clean = [
+    'function presignCredentials(env) { return null; }',
+    'export function createBackupPlane(env, r2Binding) {',
+    '  if (r2Binding) {',
+    '    const presign = presignCredentials(env);',
+    '    return { store, grantMinter: null };',
+    '  }',
+    "  accessKeyId: env.ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY ?? '',",
+    '}',
+  ].join('\n');
+  const branch = workersBranch(clean);
+  if (branch === null || emptyFallbacks(branch).length !== 0) {
+    console.error(
+      '✗ source-shape control: a clean Workers branch was refused (or its markers were not\n' +
+        "  found). The Node branch below it carries a legal `?? ''` that must stay out of scope."
+    );
+    process.exit(1);
+  }
+  const planted = clean.replace(
+    'const presign = presignCredentials(env);',
+    "bucket: env.ACCOUNT_BACKUP_S3_BUCKET ?? '',"
+  );
+  const plantedBranch = workersBranch(planted);
+  if (plantedBranch === null || emptyFallbacks(plantedBranch).length !== 1) {
+    console.error(
+      "✗ source-shape control did not fire: a planted `?? ''` bucket fallback in the Workers\n" +
+        '  branch was not reported.'
+    );
+    process.exit(1);
+  }
+  if (workersBranch('nothing here') !== null) {
+    console.error('✗ source-shape control: a source without the markers was not refused.');
+    process.exit(1);
+  }
+  if (benchLiterals('x = "rediacc-backups-bench"').length !== 1 || benchLiterals('x = 1').length) {
+    console.error('✗ bench control: the literal scan is wrong in one direction.');
+    process.exit(1);
+  }
+}
+
+const rowProblems: string[] = [];
+let benchRows = 0;
+{
+  const storePath = join(ROOT, STORE_SRC);
+  const branch = existsSync(storePath) ? workersBranch(readFileSync(storePath, 'utf8')) : null;
+  if (branch === null) {
+    rowProblems.push(`    source-shape: ${STORE_SRC} or the Workers-branch markers are missing`);
+  } else {
+    for (const hit of emptyFallbacks(branch)) {
+      rowProblems.push(
+        `    source-shape: ${STORE_SRC} Workers branch falls back to an empty value: ${hit}`
+      );
+    }
+  }
+  const tomlPath = join(ROOT, BENCH_TOML);
+  const bench = existsSync(tomlPath)
+    ? extractBinding(readFileSync(tomlPath, 'utf8'), BINDING)
+    : null;
+  if (!bench?.bucket) {
+    rowProblems.push(`    bench: ${BENCH_TOML} declares no ${BINDING} binding with a bucket_name`);
+  } else {
+    benchRows++;
+  }
+  const pyPath = join(ROOT, BENCH_DEPLOY);
+  if (!existsSync(pyPath)) {
+    rowProblems.push(`    bench: ${BENCH_DEPLOY} does not exist`);
+  } else {
+    for (const lit of benchLiterals(readFileSync(pyPath, 'utf8'))) {
+      rowProblems.push(
+        `    bench: ${BENCH_DEPLOY} quotes the bucket "${lit}"; derive it from ${BENCH_TOML}`
+      );
+    }
+  }
+}
+
 const regionsPath = join(ROOT, 'regions.json');
 if (!existsSync(regionsPath)) {
   console.error(`✗ regions.json not found at ${regionsPath}; refusing to pass vacuously.`);
@@ -201,19 +312,19 @@ for (const r of regions) {
   });
 }
 
-// Anti-vacuity floor: three regions x two channels. If regions.json ever loses
-// a region this trips rather than silently checking less.
-const EXPECTED = 6;
-if (deployments.length !== EXPECTED) {
+// Anti-vacuity floor: three regions x two channels plus the bench Worker. If regions.json
+// ever loses a region, or the bench binding goes, this trips rather than silently checking less.
+const EXPECTED = 7;
+if (deployments.length + benchRows !== EXPECTED) {
   console.error(
-    `✗ expected ${EXPECTED} deployments (3 regions x stable+edge), built ${deployments.length}.\n` +
+    `✗ expected ${EXPECTED} deployments (3 regions x stable+edge, plus bench), built ${deployments.length + benchRows}.\n` +
       '  Either regions.json changed shape or this gate is out of date. Refusing to\n' +
       '  report a verdict over a set this gate does not recognise.'
   );
   process.exit(1);
 }
 
-const problems: string[] = [];
+const problems: string[] = [...rowProblems];
 for (const d of deployments) {
   const path = join(ROOT, d.toml);
   if (!existsSync(path)) {
@@ -261,9 +372,9 @@ if (problems.length > 0) {
 
 console.log(
   joinReport(
-    `✓ backup bucket conformance: ${deployments.length} deployment(s), bucket and\n`,
+    `✓ backup bucket conformance: ${deployments.length + benchRows} deployment(s) (bench included), bucket and\n`,
     '  jurisdiction agree between regions.json and every wrangler binding\n',
-    '  (extractor control fired both ways).\n',
+    '  (extractor, source-shape and bench controls fired both ways).\n',
     '  Blind spot, stated so a green is not read as more than it is: this proves the\n',
     '  two DECLARATIONS agree. It does not prove either bucket exists in Cloudflare,\n',
     '  nor that the R2 credential is scoped to reach it.'

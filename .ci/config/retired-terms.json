@@ -145,6 +145,270 @@
     }
   ],
   "plan_baseline": [],
-  "file_baseline": [],
-  "file_exclusions": []
+  "file_baseline": [
+    {
+      "path": "private/account/src/data/exam-question-bank.json",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone text in private/account/src/data/exam-question-bank.json is account content that agent/plans/PLAN-backup-program.md H13 rewrites when the rclone payload is removed"
+    },
+    {
+      "path": "private/account/src/pricing/catalog.default.ts",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone text in private/account/src/pricing/catalog.default.ts is account content that agent/plans/PLAN-backup-program.md H13 rewrites when the rclone payload is removed"
+    },
+    {
+      "path": "private/account/web/src/data/study-content/mt6-backup.ts",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone text in private/account/web/src/data/study-content/mt6-backup.ts is account content that agent/plans/PLAN-backup-program.md H13 rewrites when the rclone payload is removed"
+    },
+    {
+      "path": "private/renet/cmd/renet/backup_list_test.go",
+      "term": "rclone",
+      "count": 9,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/cmd/renet/backup_list_test.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
+    },
+    {
+      "path": "private/renet/cmd/renet/backup_pull.go",
+      "term": "rclone",
+      "count": 2,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/cmd/renet/backup_pull.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
+    },
+    {
+      "path": "private/renet/cmd/renet/backup_pull_test.go",
+      "term": "rclone",
+      "count": 9,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/cmd/renet/backup_pull_test.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
+    },
+    {
+      "path": "private/renet/cmd/renet/backup_push_test.go",
+      "term": "rclone",
+      "count": 8,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/cmd/renet/backup_push_test.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
+    },
+    {
+      "path": "private/renet/cmd/renet/image_build_command.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/cmd/renet/image_build_command.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/cmd/renet/ops_rustfs.go",
+      "term": "rclone",
+      "count": 4,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/cmd/renet/ops_rustfs.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/config/VAULT_PARSING.md",
+      "term": "rclone",
+      "count": 21,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/config/VAULT_PARSING.md is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/config/config.go",
+      "term": "rclone",
+      "count": 31,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/config/config.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/config/config_vault_example_test.go",
+      "term": "rclone",
+      "count": 20,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/config/config_vault_example_test.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/config/config_vault_test.go",
+      "term": "rclone",
+      "count": 25,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/config/config_vault_test.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/functions/commands/backup.go",
+      "term": "rclone",
+      "count": 2,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/pkg/functions/commands/backup.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
+    },
+    {
+      "path": "private/renet/pkg/functions/executor_local.go",
+      "term": "rclone",
+      "count": 6,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/functions/executor_local.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/functions/executor_local_test.go",
+      "term": "rclone",
+      "count": 9,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/functions/executor_local_test.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/functions/vault/schema.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/functions/vault/schema.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/i18n/baseline.json",
+      "term": "rclone",
+      "count": 10,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/baseline.json are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/ar.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/ar.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/de.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/de.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/en.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/en.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/es.go",
+      "term": "rclone",
+      "count": 15,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/es.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/et.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/et.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/fr.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/fr.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/hashes.json",
+      "term": "rclone",
+      "count": 8,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/hashes.json are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/it.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/it.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/ja.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/ja.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/ko.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/ko.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/pt.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/pt.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/ru.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/ru.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/tr.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/tr.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/locales/zh.go",
+      "term": "rclone",
+      "count": 16,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/locales/zh.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/i18n/rules.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/rules.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/infra/ceph/provisioner.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/pkg/infra/ceph/provisioner.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/infra/docker/rclone_install_behavior_test.go",
+      "term": "rclone",
+      "count": 49,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/pkg/infra/docker/rclone_install_behavior_test.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/infra/docker/service.go",
+      "term": "rclone",
+      "count": 88,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/pkg/infra/docker/service.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/infra/image/one_shot_builder.go",
+      "term": "rclone",
+      "count": 2,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/pkg/infra/image/one_shot_builder.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/infra/image/post_setup_test.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/pkg/infra/image/post_setup_test.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/infra/pkgset/pkgset.go",
+      "term": "rclone",
+      "count": 7,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/pkg/infra/pkgset/pkgset.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/infra/pkgset/pkgset_test.go",
+      "term": "rclone",
+      "count": 2,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/pkg/infra/pkgset/pkgset_test.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/output/progress.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/output/progress.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/toolexec/ssh.go",
+      "term": "rclone",
+      "count": 7,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/toolexec/ssh.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/renet/pkg/toolexec/ssh_test.go",
+      "term": "rclone",
+      "count": 5,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/toolexec/ssh_test.go is removed by agent/plans/PLAN-backup-program.md H9"
+    }
+  ],
+  "file_exclusions": [
+    {
+      "prefix": "private/account/drizzle/",
+      "blocker": "BLOCKER: drizzle migrations are append-only applied history; 0034_partner_offers.sql and 0037_exam_question_seed.sql keep the rclone text forever and agent/plans/PLAN-backup-program.md H13 supersedes them with a new migration"
+    }
+  ]
 }

@@ -16,7 +16,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   4. THE SIX REQUIRED SIGNING KEYS REPORT THROUGH THE LOGGER with the same wording, instead of bash's `script: line N: NAME: message` text, which named a line number that no longer meant anything after any edit.
   5. THE SECRETS ARE VALIDATED BEFORE THE FIRST REMOTE WRITE. The six signing keys, the non-empty checks and the OTLP probe ran after the migrations and the deploy, so a missing value left bench on new code with the old secrets, the 2026-09-24 failure shape (state changed, then refused). Only the rotation drift check still runs after the deploy, as it did.
   6. A FAILED STEP NAMES ITSELF. Under `set -e` a failing `npm install`, `vite build`, migration or deploy ended the script silently with that command's status; each exits 1 with `<step> failed (exit N)`.
-  7. THE BACKUP CREDENTIAL HAS NO FALLBACK. The bash filled each empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account. Only the three `ACCOUNT_BACKUP_S3_*` names are read now, bound from the bench-scoped store entries, and a missing one is a DeployError naming it before the first remote write (agent/plans/PLAN-backup-credential-isolation.md B2).
+  7. THE BACKUP CREDENTIAL HAS NO FALLBACK, AND THE BUCKET COMES FROM THE BINDING (`bench_bucket`: `wrangler.bench.toml`'s BACKUP_BUCKET, not an env override or a literal; a differing exported value or a missing binding is a DeployError). The bash filled each empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account. Only the three `ACCOUNT_BACKUP_S3_*` names are read now, bound from the bench-scoped store entries, and a missing one is a DeployError naming it before the first remote write (agent/plans/PLAN-backup-credential-isolation.md B2).
 
 THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, and are never logged; the `OBS_OTLP_CREDENTIALS` validity probe reports only that the value is not a JSON {user, pass} object, never the value.
 """
@@ -31,7 +31,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
-from rediacc_ci.ops import bench_preflight, cf_auth
+from rediacc_ci.ops import bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
@@ -86,6 +86,25 @@ def _backup_values() -> tuple[str, str, str]:
                 "account-wide R2 token is never a fallback for it" % name
             )
     return endpoint, key_id, secret
+
+
+def bench_bucket() -> str:
+    """The bench backup bucket, read from the BACKUP_BUCKET binding in wrangler.bench.toml, the bucket the Worker reads and sweeps. An exported ACCOUNT_BACKUP_S3_BUCKET that differs from it, or a config with no such binding, is a DeployError."""
+    config_path = paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, CONFIG)
+    try:
+        _, bucket, _ = push_backup_credentials._config_binding(config_path)
+    except push_backup_credentials.PushError as exc:
+        raise DeployError(str(exc)) from exc
+    if not bucket:
+        raise DeployError("%s binds %s with no bucket_name" % (CONFIG, "BACKUP_BUCKET"))
+    override = os.environ.get("ACCOUNT_BACKUP_S3_BUCKET") or ""
+    if override and override != bucket:
+        raise DeployError(
+            "ACCOUNT_BACKUP_S3_BUCKET is %r but %s binds %r: the presign signer and the Worker's "
+            "binding must name one bucket. Unset the variable; the bucket comes from the binding"
+            % (override, CONFIG, bucket)
+        )
+    return bucket
 
 
 def require_nonempty(name: str, value: str) -> None:
@@ -155,8 +174,7 @@ def secrets_payload() -> dict[str, str]:
         "AWS_SES_CONFIGURATION_SET": os.environ.get("AWS_SES_CONFIGURATION_SET") or "",
         "CLOUDFLARE_TURNSTILE_SECRET_KEY": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or "",
         "ACCOUNT_BACKUP_S3_ENDPOINT": endpoint,
-        "ACCOUNT_BACKUP_S3_BUCKET": os.environ.get("ACCOUNT_BACKUP_S3_BUCKET")
-        or "rediacc-backups-bench",
+        "ACCOUNT_BACKUP_S3_BUCKET": bench_bucket(),
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": backup_key,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": backup_secret,
         "OBS_OTLP_CREDENTIALS": otlp,
