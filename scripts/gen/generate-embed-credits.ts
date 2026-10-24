@@ -159,7 +159,7 @@ function main(): void {
     if (check) {
       stale.push(path.relative(CONSOLE_ROOT, file));
     } else {
-      // tree-write: safe the generator's own output, reachable only without --check; the registered CI invocation always passes --check
+      // tree-write: safe the generator's own output: the gate check:ci-embed-credits imports generatedArtifacts and LOCKFILE only, and this write runs only from main when the script is the entry point without --check
       fs.writeFileSync(file, want);
       console.log(`${GREEN}✓${NC} wrote ${path.relative(CONSOLE_ROOT, file)}`);
     }
