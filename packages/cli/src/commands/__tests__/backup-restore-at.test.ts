@@ -29,6 +29,7 @@ vi.mock('../../services/core/output.js', () => ({
   outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), error: vi.fn(), print: vi.fn() },
 }));
 
+const ALL = { anyStream: true } as const;
 const LINEAGE = 'f6545d49-c46e-4c14-8006-0ad5b37f3e08';
 
 /** One index row; only the two fields the resolver reads are meaningful. */
@@ -51,7 +52,7 @@ describe('resolveSnapshotAt', () => {
   it('passes a snapshot id through without consulting the server', async () => {
     const { resolveSnapshotAt } = await import('../backup.js');
     const id = '20260814T120000Z-0011223344556677';
-    await expect(resolveSnapshotAt(LINEAGE, id)).resolves.toBe(id);
+    await expect(resolveSnapshotAt(LINEAGE, id, ALL)).resolves.toBe(id);
     // THE DEFECT: treating a snapshot id as a time. It would parse as NaN and refuse, or worse, round-trip through Date and select something else.
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
@@ -66,7 +67,7 @@ describe('resolveSnapshotAt', () => {
     });
     const { resolveSnapshotAt } = await import('../backup.js');
     // THE DEFECT: picking the OLDEST match, or the newest overall. Both restore a real snapshot and exit zero, so neither looks like a failure.
-    await expect(resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z')).resolves.toBe('snap-mid');
+    await expect(resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z', ALL)).resolves.toBe('snap-mid');
   });
 
   it('treats an EXACTLY equal timestamp as eligible', async () => {
@@ -79,7 +80,9 @@ describe('resolveSnapshotAt', () => {
     const { resolveSnapshotAt } = await import('../backup.js');
     // THE DEFECT: a strict `<` instead of `<=`. "Restore to 12:00" would then
     // skip the snapshot taken AT 12:00 and silently return the earlier one.
-    await expect(resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z')).resolves.toBe('snap-exact');
+    await expect(resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z', ALL)).resolves.toBe(
+      'snap-exact'
+    );
   });
 
   it('reads createdAt, NOT the timestamp embedded in the snapshot id', async () => {
@@ -92,7 +95,7 @@ describe('resolveSnapshotAt', () => {
       ],
     });
     const { resolveSnapshotAt } = await import('../backup.js');
-    await expect(resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z')).resolves.toBe(
+    await expect(resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z', ALL)).resolves.toBe(
       '20260814T080000Z-aaaaaaaaaaaaaaaa'
     );
   });
@@ -103,12 +106,12 @@ describe('resolveSnapshotAt', () => {
     });
     const { resolveSnapshotAt } = await import('../backup.js');
     // THE DEFECT: falling back to the oldest snapshot. That restores data the operator did not ask for, successfully.
-    await expect(resolveSnapshotAt(LINEAGE, '2026-08-13T00:00:00Z')).rejects.toThrow();
+    await expect(resolveSnapshotAt(LINEAGE, '2026-08-13T00:00:00Z', ALL)).rejects.toThrow();
   });
 
   it('refuses a value that is neither a snapshot id nor a time', async () => {
     const { resolveSnapshotAt } = await import('../backup.js');
-    await expect(resolveSnapshotAt(LINEAGE, 'yesterdayish')).rejects.toThrow();
+    await expect(resolveSnapshotAt(LINEAGE, 'yesterdayish', ALL)).rejects.toThrow();
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 
@@ -117,10 +120,52 @@ describe('resolveSnapshotAt', () => {
       manifests: [manifest('snap-a', '2026-08-14T09:00:00.000Z')],
     });
     const { resolveSnapshotAt } = await import('../backup.js');
-    await resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z');
+    await resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z', ALL);
     // THE DEFECT: an unscoped query, which would let ANOTHER repository's snapshot win the "newest at or before" race and be restored over this one.
     expect(String(mockAccountServerFetch.mock.calls[0][0])).toContain(
       `lineage=${encodeURIComponent(LINEAGE)}`
     );
+  });
+});
+
+describe('resolveSnapshotAt stream scope', () => {
+  const stream = (snapshotId: string, streamId: string, createdAt: string) => ({
+    ...manifest(snapshotId, createdAt),
+    streamId,
+  });
+  // Two machines back up the same lineage. B's snapshot is the NEWEST at the
+  // requested time, so a lineage-only filter restores B's bytes onto A.
+  const manifests = [
+    stream('a-old', 'stream-A', '2026-08-14T09:00:00.000Z'),
+    stream('a-anchor', 'stream-A', '2026-08-14T10:00:00.000Z'),
+    stream('b-newer', 'stream-B', '2026-08-14T11:00:00.000Z'),
+  ];
+
+  it('by default picks only the stream of the source machine anchor', async () => {
+    mockAccountServerFetch.mockResolvedValue({ manifests });
+    const { resolveSnapshotAt } = await import('../backup.js');
+    await expect(
+      resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z', {
+        anyStream: false,
+        anchorSnapshotId: 'a-anchor',
+      })
+    ).resolves.toBe('a-anchor');
+  });
+
+  it('--any-stream widens the choice to every stream of the lineage', async () => {
+    mockAccountServerFetch.mockResolvedValue({ manifests });
+    const { resolveSnapshotAt } = await import('../backup.js');
+    await expect(resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z', ALL)).resolves.toBe('b-newer');
+  });
+
+  it('refuses rather than guessing when the anchor is not in the index', async () => {
+    mockAccountServerFetch.mockResolvedValue({ manifests });
+    const { resolveSnapshotAt } = await import('../backup.js');
+    await expect(
+      resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z', {
+        anyStream: false,
+        anchorSnapshotId: undefined,
+      })
+    ).rejects.toThrow(/--any-stream/);
   });
 });

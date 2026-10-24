@@ -387,6 +387,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)"
         },
         {
+          "flags": "--any-stream",
+          "long": "any-stream",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": null,
+          "label": "With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)"
+        },
+        {
           "flags": "--up",
           "long": "up",
           "valueTaking": false,

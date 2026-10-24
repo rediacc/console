@@ -17,9 +17,11 @@ import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
+import { executeRepoFunction } from '../utils/repo-executor.js';
 import { assertMachineExists } from './_validate.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
 import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
+import { parseVerifyVerdict } from './backup-storage-parser.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
@@ -81,6 +83,7 @@ interface RestoreOptions {
   machine?: string;
   datastore?: string;
   at?: string;
+  anyStream?: boolean;
   up?: boolean;
   healthWindow?: string;
   healthTimeout?: string;
@@ -133,6 +136,11 @@ function registerBackupRestore(backup: Command): void {
     .option('-m, --machine <name>', t('options.machine'))
     .option('--datastore <name>', t('commands.backup.restore.optionDatastore'))
     .option('--at <time>', t('commands.backup.restore.optionAt'))
+    // Inline English, not a locale key: packages/cli/src/i18n/locales/** is held by other live plans (renet-bridge-leftovers T12, cloudflare-proxy, token-ip-rebind, config-sync-hardening, backup-toc-exact-opt-in). The key moves to cli.json and its 12 derived locales when that file is free.
+    .option(
+      '--any-stream',
+      'With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)'
+    )
     .option('--up', t('commands.backup.restore.optionUp'))
     .option('--health-window <seconds>', t('options.healthWindow'))
     .option('--health-timeout <seconds>', t('options.healthTimeout'))
@@ -182,6 +190,8 @@ function registerBackupRestore(backup: Command): void {
               datastore,
               lineage,
               at: options.at,
+              anyStream: options.anyStream ?? false,
+              source: { repoName: ref.name, machine: from },
               debug: options.debug,
             })
           : await runRestorePull({
@@ -325,7 +335,12 @@ const SNAPSHOT_ID_RE = /^\d{8}T\d{6}Z-[0-9a-f]{16}$/;
  * the id was MINTED, and the manifest commits when the upload finishes, so on a
  * long upload the two differ by the length of the transfer.
  */
-export async function resolveSnapshotAt(lineage: string, at: string): Promise<string> {
+export async function resolveSnapshotAt(
+  lineage: string,
+  at: string,
+  // Omitted means every stream: read-only `backup browse --at` calls it this way (plan E4 scopes restore only). `restore --at` always passes a scope.
+  scope: StreamScope = { anyStream: true }
+): Promise<string> {
   if (SNAPSHOT_ID_RE.test(at)) return at;
 
   const when = new Date(at);
@@ -336,7 +351,9 @@ export async function resolveSnapshotAt(lineage: string, at: string): Promise<st
   const result = await accountServerFetch<BackupManifestsResponse>(
     `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
   );
+  const streamId = scope.anyStream ? undefined : ownStreamOf(result.manifests, scope);
   const candidates = result.manifests
+    .filter((m) => streamId === undefined || m.streamId === streamId)
     .filter((m) => new Date(m.createdAt).getTime() <= when.getTime())
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -358,6 +375,58 @@ export async function resolveSnapshotAt(lineage: string, at: string): Promise<st
 }
 
 /**
+ * Which snapshots `--at` may pick from. The lineage is shared by every fork and
+ * every machine that backs up a repo (that is what makes them dedup), so a time
+ * alone can land on a snapshot some OTHER stream wrote, and the restore then
+ * succeeds with the wrong machine's bytes. A stream is one (repo GUID, machine)
+ * pair, minted by the server, so the default scope names it by the one snapshot
+ * the source machine itself records as its anchor: that snapshot's stream is
+ * this repo's stream on that machine. `--any-stream` widens it on purpose.
+ */
+export type StreamScope =
+  | { anyStream: true }
+  | { anyStream: false; anchorSnapshotId: string | undefined };
+
+function ownStreamOf(
+  manifests: BackupManifestsResponse['manifests'],
+  scope: { anchorSnapshotId: string | undefined }
+): string {
+  const anchor = manifests.find((m) => m.snapshotId === scope.anchorSnapshotId);
+  if (!anchor) {
+    throw new ValidationError(
+      'Cannot tell which backup stream is this repo on its source machine (the machine reports no committed snapshot that the index lists). Pass --any-stream to choose among every stream of this lineage.'
+    );
+  }
+  return anchor.streamId;
+}
+
+/**
+ * The snapshot the SOURCE machine's journal anchors for this repo, read through
+ * `backup_verify` (the verb already reports it). Undefined when the machine has
+ * no committed snapshot or the verdict cannot be read.
+ */
+async function readSourceAnchor(
+  source: { repoName: string; machine: string },
+  debug?: boolean
+): Promise<string | undefined> {
+  const result = await executeRepoFunction(
+    'backup_verify',
+    source.repoName,
+    source.machine,
+    { level: 'spot' },
+    { debug, captureOutput: true },
+    {
+      starting: t('commands.backup.verify.starting', { name: source.repoName, level: 'spot' }),
+      completed: t('commands.backup.verify.completed', { name: source.repoName }),
+      failed: t('commands.backup.verify.failed', { name: source.repoName }),
+    }
+  );
+  if (!result.success) return undefined;
+  const verdict = parseVerifyVerdict(result.stdout) as { snapshotId?: string } | undefined;
+  return verdict?.snapshotId;
+}
+
+/**
  * Run `backup_restore` for a point-in-time restore from the chunk store, and
  * unwind the just-registered record on failure exactly as the pull path does,
  * so a retry is not blocked by target-exists.
@@ -368,10 +437,17 @@ async function runChunkRestore(args: {
   datastore: string | undefined;
   lineage: string;
   at: string;
+  anyStream: boolean;
+  source: { repoName: string; machine: string };
   debug?: boolean;
 }): Promise<boolean> {
-  const { targetName, targetMachine, datastore, lineage, at, debug } = args;
-  const snapshotId = await resolveSnapshotAt(lineage, at);
+  const { targetName, targetMachine, datastore, lineage, at, anyStream, source, debug } = args;
+  // An explicit snapshot id is a deliberate choice and needs no stream scope; only a TIME does.
+  const scope: StreamScope =
+    anyStream || SNAPSHOT_ID_RE.test(at)
+      ? { anyStream: true }
+      : { anyStream: false, anchorSnapshotId: await readSourceAnchor(source, debug) };
+  const snapshotId = await resolveSnapshotAt(lineage, at, scope);
 
   outputService.info(
     t('commands.backup.restore.restoringSnapshot', { name: targetName, snapshot: snapshotId })
