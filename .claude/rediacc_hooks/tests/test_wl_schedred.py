@@ -302,6 +302,33 @@ def test_a_workflow_missing_from_the_page_gets_one_fallback_call(repo, tmp_path,
     assert gh.calls("runs?event=schedule&status=completed") == []
 
 
+def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_verdict(
+    repo, tmp_path, gh
+):
+    # A scheduled workflow added on the live branch is not registered on main, so its per-workflow fallback answers HTTP 404. On 2026-10-24 that 404 (cf-usage-report.yml) made the whole `ci-trace.py --scheduled` read unreadable, hiding five red Console CI nightlies.
+    gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+    gh.route("/jobs", {"jobs": []})
+    gh.route("/actions/workflows/", rc=1, err="gh: Not Found (HTTP 404)")
+    gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "ok", doc
+    hk = row_of(doc, "housekeeping")
+    assert hk["run_id"] is None
+    assert hk["red"] is False
+    assert hk["not_on_main"] is True
+    assert row_of(doc, "ci")["run_id"] == RED_RUN
+    assert row_of(doc, "ci")["red"] is True
+    # Control: any other fallback error still makes the read unreadable, never a silent pass.
+    gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+    gh.route("/jobs", {"jobs": []})
+    gh.route("/actions/workflows/", rc=1, err="gh: Bad credentials (HTTP 401)")
+    gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+    doc = SR.refresh(repo, tmp_path / "wl2.md", force=True)
+    assert doc["state"] != "ok", doc
+
+
 def test_an_in_flight_rerun_is_reported_without_becoming_the_verdict(repo, tmp_path, gh):
     serve(
         gh,

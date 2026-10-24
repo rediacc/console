@@ -42,6 +42,8 @@ MAX_JOBS_SHOWN = 6
 # 50, not 100: GitHub answers HTTP 502 after about 11 s when it builds a 100-job page of a large run (measured 2026-10-19 on Console CI runs of 141 and 179 jobs), and one page also dropped every job past it.
 PAGE = 50
 MAX_PAGES = 20
+# gh's stderr for a workflow file the default branch does not have (the per-workflow runs endpoint answers 404 for it).
+NOT_ON_MAIN_MARK = "(HTTP 404)"
 WORKFLOW_DIR = pathlib.Path(".github") / "workflows"
 
 # The tracking vocabulary. A display name counts only beside one of these words, so "fix Console CI lint" (a PR red) never reads as tracking the nightly.
@@ -281,6 +283,12 @@ def _fetch(root, owner, name, workflows, jobs_cache):
                 ],
                 cwd=root,
             )
+            if ferr and NOT_ON_MAIN_MARK in ferr:
+                # A scheduled workflow added on the live branch is not registered on main yet, so it has no scheduled run there; one such file must not blind the whole read (2026-10-24, cf-usage-report.yml hid five red Console CI nightlies).
+                row = _run_row(wf, None, False)
+                row["not_on_main"] = True
+                rows.append(row)
+                continue
             if ferr:
                 return [], ferr, jobs_cache
             done = [

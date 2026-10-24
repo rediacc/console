@@ -1396,6 +1396,8 @@ def _sched_lines(w):
     crons = ", ".join(w.get("crons") or []) or "?"
     where = "%s (%s)  cron %s" % (w.get("name") or w.get("stem"), w.get("file") or "?", crons)
     if not w.get("run_id"):
+        if w.get("not_on_main"):
+            return ["  NONE   %s  not on main yet, so no scheduled run there" % where]
         return ["  NONE   %s  no completed scheduled run" % where]
     red = _is_red(w)
     lines = [
