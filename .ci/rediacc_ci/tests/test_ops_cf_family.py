@@ -756,13 +756,12 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_build = "→ Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)"
     bash_lines = _quiet_selfdestruct(err_b)
     assert bash_lines.count(bash_build) == 1
-    # DECLARED DELTAS since the bash was retired (b7d7bdfe0 and the portal-health step): the port reports the D1 bookmark (here a missing one, the fake wrangler prints none), and the bash's closing live-host line is gone from the port's output.
-    port_lines = [
-        ln
-        for ln in _quiet_selfdestruct(err_p)
-        if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") and not ln.startswith("✓ bench is live")
-    ]
-    bash_lines = [ln for ln in bash_lines if not ln.startswith("✓ bench is live")]
+    # DECLARED DELTAS since the bash was retired (b7d7bdfe0 and the portal-health step): the port reports the D1 bookmark (here a missing one, the fake wrangler prints none). The live-host line is no delta: both outputs carry it once and it stays in the comparison.
+    all_port_lines = _quiet_selfdestruct(err_p)
+    # The delta is asserted before it is filtered, so a port that stops printing the bookmark warning, or drops the live-host line, still fails here.
+    assert sum(ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") for ln in all_port_lines) == 1
+    assert sum(ln.startswith("✓ bench is live") for ln in all_port_lines) == 1
+    port_lines = [ln for ln in all_port_lines if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED")]
     assert [port_build if ln == bash_build else ln for ln in bash_lines] == port_lines
     assert "r2-secret" not in err_p
     assert "ses-secret" not in err_p

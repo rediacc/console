@@ -197,9 +197,10 @@ export function workersBranch(src: string): string | null {
   return src.slice(helper, start) + src.slice(open, end);
 }
 
-/** A `?? ''` fallback on the bucket or the secret: an empty value would reach the signer. */
+/** A `?? ''` or `|| ''` fallback on any of the four values: an empty value would reach the signer. */
 export function emptyFallbacks(branch: string): string[] {
-  const re = /ACCOUNT_BACKUP_S3_(?:BUCKET|SECRET_ACCESS_KEY)\s*\?\?\s*(?:''|"")/g;
+  const re =
+    /ACCOUNT_BACKUP_S3_(?:ENDPOINT|BUCKET|ACCESS_KEY_ID|SECRET_ACCESS_KEY)\s*(?:\?\?|\|\|)\s*(?:''|"")/g;
   return branch.match(re) ?? [];
 }
 
@@ -235,6 +236,19 @@ export function benchLiterals(py: string): string[] {
   if (plantedBranch === null || emptyFallbacks(plantedBranch).length !== 1) {
     console.error(
       "✗ source-shape control did not fire: a planted `?? ''` bucket fallback in the Workers\n" +
+        '  branch was not reported.'
+    );
+    process.exit(1);
+  }
+  const plantedOr = workersBranch(
+    clean.replace(
+      'const presign = presignCredentials(env);',
+      "endpoint: env.ACCOUNT_BACKUP_S3_ENDPOINT || '',"
+    )
+  );
+  if (plantedOr === null || emptyFallbacks(plantedOr).length !== 1) {
+    console.error(
+      "✗ source-shape control did not fire: a planted `|| ''` endpoint fallback in the Workers\n" +
         '  branch was not reported.'
     );
     process.exit(1);
@@ -312,12 +326,13 @@ for (const r of regions) {
   });
 }
 
-// Anti-vacuity floor: three regions x two channels plus the bench Worker. If regions.json
-// ever loses a region, or the bench binding goes, this trips rather than silently checking less.
-const EXPECTED = 7;
-if (deployments.length + benchRows !== EXPECTED) {
+// Anti-vacuity floor: three regions x two channels. If regions.json ever loses a region this
+// trips rather than silently checking less. The bench binding is judged by its own row above,
+// so a missing bench binding prints its specific problem instead of tripping this count.
+const EXPECTED = 6;
+if (deployments.length !== EXPECTED) {
   console.error(
-    `✗ expected ${EXPECTED} deployments (3 regions x stable+edge, plus bench), built ${deployments.length + benchRows}.\n` +
+    `✗ expected ${EXPECTED} deployments (3 regions x stable+edge), built ${deployments.length}.\n` +
       '  Either regions.json changed shape or this gate is out of date. Refusing to\n' +
       '  report a verdict over a set this gate does not recognise.'
   );

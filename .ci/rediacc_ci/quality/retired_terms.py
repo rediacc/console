@@ -667,7 +667,9 @@ def scan_submodules(
             continue
         try:
             data = (root / key).read_bytes()
-        except OSError:
+        except OSError as exc:
+            # A tracked file the worktree cannot give (deleted but still indexed): its hits cannot be counted, so it is refused rather than dropped from `files_read` in silence.
+            problems.append("%s: tracked file could not be read, NOT CHECKED (%s)" % (key, exc.strerror or exc))
             continue
         if b"\0" in data[:4096]:
             continue
@@ -1375,6 +1377,15 @@ def _enumeration_controls(check: Checker, terms: list[Term], clean: str) -> None
             "PLANT: a tracked text file naming rclone is a hit; binary and symlink are skipped",
             set(scan.hits) == {("sub/a/doc.md", "rclone"), ("sub/a/mig/0001.sql", "rclone")}
             and scan.files_read == 3,
+        )
+        gone = tree / "sub/a/clean.md"
+        gone.unlink()
+        vanished = scan_submodules(tree, terms, [], env={})
+        gone.write_text(clean, encoding="utf-8")
+        check(
+            "PLANT: a tracked file deleted from the worktree is refused, not dropped in silence",
+            vanished.files_read == 2
+            and any("sub/a/clean.md" in m for m in vanished.marker_problems),
         )
         excl = scan_submodules(tree, terms, ["sub/a/mig/"], env={})
         check(

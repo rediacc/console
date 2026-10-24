@@ -24,12 +24,18 @@ Worklist #ca9be012 said Workers deploys push only three ACCOUNT_BACKUP_S3_* valu
 
 ## Boxes
 
-- [ ] B1: The Workers branch requires all four ACCOUNT_BACKUP_S3_* values, with no `?? ''` for bucket or secret. Accept: `cd private/account && npx vitest run tests/integration/backup-plane-selection.test.ts tests/integration/backup-presign-grant.test.ts` rc=0
-- [ ] B2: Plane-selection tests with the R2 binding: no BUCKET gives a null grantMinter; an empty BUCKET gives null; no SECRET_ACCESS_KEY gives null; the full set gives an S3PresignGrantMinter whose store.bucket is set (control). Accept: `cd private/account && npx vitest run tests/integration/backup-plane-selection.test.ts` rc=0
-- [ ] B3: cron-wiring test: BACKUP_BUCKET bound with ENDPOINT, KEY_ID and SECRET but no BUCKET logs "grant minter is unusable"; the quiet cases stay green. Accept: `cd private/account && npx vitest run tests/integration/cron-wiring.test.ts` rc=0
-- [ ] B4: deploy_bench derives the bucket from wrangler.bench.toml; an env mismatch and a missing binding are DeployErrors, each with a test. Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_cf_family.py -q` rc=0
-- [ ] B5: check:ci-backup-bucket-conformance gains the source-shape and bench rows with controls, the new floor and the fixed cite. Accept: `npm run check:ci-backup-bucket-conformance` rc=0
-- [ ] B6: docs/backup-storage/07-execution-record.md:325 says deploy_bench pushes four values, the bucket derived from the binding. Accept: `grep -n "pushes four" docs/backup-storage/07-execution-record.md` rc=0
+- [x] B1: The Workers branch requires all four ACCOUNT_BACKUP_S3_* values, with no `?? ''` for bucket or secret. Accept: `cd private/account && npx vitest run tests/integration/backup-plane-selection.test.ts tests/integration/backup-presign-grant.test.ts` rc=0
+    (ticked) 2026-10-24T13:52:55Z by d778be9d: account 5dd6b14 under d2953620b; B1 accept: vitest backup-plane-selection + backup-presign-grant rc=0 (16 passed)
+- [x] B2: Plane-selection tests with the R2 binding: no BUCKET gives a null grantMinter; an empty BUCKET gives null; no SECRET_ACCESS_KEY gives null; the full set gives an S3PresignGrantMinter whose store.bucket is set (control). Accept: `cd private/account && npx vitest run tests/integration/backup-plane-selection.test.ts` rc=0
+    (ticked) 2026-10-24T13:52:58Z by d778be9d: account 5dd6b14 under d2953620b; B2 accept: vitest backup-plane-selection rc=0
+- [x] B3: cron-wiring test: BACKUP_BUCKET bound with ENDPOINT, KEY_ID and SECRET but no BUCKET logs "grant minter is unusable"; the quiet cases stay green. Accept: `cd private/account && npx vitest run tests/integration/cron-wiring.test.ts` rc=0
+    (ticked) 2026-10-24T13:53:00Z by d778be9d: account 5dd6b14 under d2953620b; B3 accept: vitest cron-wiring rc=0
+- [x] B4: deploy_bench derives the bucket from wrangler.bench.toml; an env mismatch and a missing binding are DeployErrors, each with a test. Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_cf_family.py -q` rc=0
+    (ticked) 2026-10-24T13:53:03Z by d778be9d: d2953620b; pytest test_ops_cf_family.py rc=0 (41 passed)
+- [x] B5: check:ci-backup-bucket-conformance gains the source-shape and bench rows with controls, the new floor and the fixed cite. Accept: `npm run check:ci-backup-bucket-conformance` rc=0
+    (ticked) 2026-10-24T13:53:22Z by d778be9d: d2953620b; npm run check:ci-backup-bucket-conformance rc=0 (7 deployments)
+- [x] B6: docs/backup-storage/07-execution-record.md:325 says deploy_bench pushes four values, the bucket derived from the binding. Accept: `grep -n "pushes four" docs/backup-storage/07-execution-record.md` rc=0
+    (ticked) 2026-10-24T13:53:06Z by d778be9d: d2953620b; grep 'pushes four' 07-execution-record.md rc=0 at :325
 
 ## Risks
 

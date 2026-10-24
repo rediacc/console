@@ -36,7 +36,7 @@
   "terms": [
     {
       "id": "rclone",
-      "pattern": "(?:(?<![a-z])r|R)(?i:clone)",
+      "pattern": "rclone|R(?i:clone)",
       "case_sensitive": true,
       "retired": "2026-10-15",
       "reason": "rclone is being removed completely, payload and feature: backups move to the S3/R2 chunk store and nothing may plan new rclone work (operator 2026-10-15).",
@@ -49,7 +49,8 @@
         "bake rclone into the E2E VM image",
         "RCLONE_CONFIG",
         "ensureRclone",
-        "Rclone remote"
+        "Rclone remote",
+        "myrclone"
       ],
       "must_not_match": [
         "a plain backup to the chunk store",
@@ -407,8 +408,12 @@
   ],
   "file_exclusions": [
     {
-      "prefix": "private/account/drizzle/",
-      "blocker": "BLOCKER: drizzle migrations are append-only applied history; 0034_partner_offers.sql and 0037_exam_question_seed.sql keep the rclone text forever and agent/plans/PLAN-backup-program.md H13 supersedes them with a new migration"
+      "prefix": "private/account/drizzle/0034_partner_offers.sql",
+      "blocker": "BLOCKER: 0034_partner_offers.sql is an applied, append-only drizzle migration that keeps its rclone text forever and agent/plans/PLAN-backup-program.md H13 supersedes it with a new migration"
+    },
+    {
+      "prefix": "private/account/drizzle/0037_exam_question_seed.sql",
+      "blocker": "BLOCKER: 0037_exam_question_seed.sql is an applied, append-only drizzle migration that keeps its rclone text forever and agent/plans/PLAN-backup-program.md H13 supersedes it with a new migration"
     }
   ]
 }

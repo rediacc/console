@@ -85,17 +85,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
         "26e0e91d",
         "341dbb5b",
         "5e004140",
         "90622cbf",
         "bfe10930",
         "ef7feae1"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-backup-program.md": {
       "status": "approved",
@@ -1307,9 +1307,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 12,
+      "open_sigs": [],
+      "done_sigs": [
         "0dfe44a5",
         "1b96d600",
         "1b98608c",
@@ -1322,8 +1323,7 @@
         "c0f68823",
         "c7185323",
         "edfd4e34"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-review-red-stop-hook-check.md": {
       "status": "compacted",
