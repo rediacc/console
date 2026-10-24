@@ -642,9 +642,8 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
         )
         if label not in holders.get(plan, []):
             holders.setdefault(plan, []).append(label)
-            if not mine:
-                # A peer's lease: no prompt is readable here, so nothing narrows its plan.
-                declared.setdefault(plan, []).append(None)
+            # Any lease holder: no prompt is readable here, so nothing narrows its plan.
+            declared.setdefault(plan, []).append(None)
     if rows is None and not peers:
         return None
     out = LivePlans(holders)

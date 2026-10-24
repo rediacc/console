@@ -951,9 +951,12 @@ _BASH_MAYBE_WRITES = re.compile(
 )
 # A Python body that writes, deletes or moves a file. Its presence makes every repo-path literal in the body count as written, which errs toward subtracting (Decision 2): a missed subtraction costs the lead a blocked turn, an extra one only defers the question to the writer's own tick.
 _PY_WRITES = re.compile(
-    r"open\((?:[^()]|\([^()]*\))*?,\s*(?:mode\s*=\s*)?['\"][rbt]*[wax+][rbtwax+]*['\"]"
-    r"|\.write_(?:text|bytes)\(|\.unlink\(|\.rename\(|\.touch\("
-    r"|\bos\.(?:open|remove|unlink|rename|replace|rmdir)\(|\bshutil\.(?:rmtree|move|copy\w*)\("
+    r"open\((?:[^()]|\([^()]*\))*?,\s*(?:mode\s*=\s*)?['\"][rbt]*[wax+][rbtwax+]*(?::\w*)?['\"]"
+    r"|\.write_(?:text|bytes)\(|\.unlink\(|\.rename\(|\.touch\(|\.rmdir\(|\.mkdir\("
+    r"|\bos\.(?:open|remove|unlink|rename|replace|rmdir|mkdir|makedirs|removedirs|symlink|link|truncate)\("
+    r"|\bshutil\.(?:rmtree|move|copy\w*)\("
+    r"|\.(?:to_(?:csv|json|pickle|parquet|excel|feather|hdf|html|xml|latex|markdown)|savefig|symlink_to|hardlink_to)\("
+    r"|\b(?:copy|copy2|copyfile|copytree|move|rmtree)\(|\bsubprocess\.\w+\("
 )
 # A string literal that reads as a repo path: path characters only, with a `/` or a file extension. `HEAD:x` and `utf-8` are not.
 _PY_PATH_LIT = re.compile(r"""['"]([A-Za-z0-9_.@+-][A-Za-z0-9_./@+-]*)['"]""")
@@ -1126,6 +1129,51 @@ def _is_path_lit(lit):
     return "/" in lit or re.search(r"\.[A-Za-z0-9]{1,8}$", lit) is not None
 
 
+# Write-shaped calls `_py_written_paths` does not resolve to a target. One of them in a body means the targets are unknowable, so the old reading stands (every path literal counts) rather than the literal being dropped.
+_WRITE_LIKE_ATTRS = frozenset(
+    {
+        "to_csv",
+        "to_json",
+        "to_pickle",
+        "to_parquet",
+        "to_excel",
+        "to_feather",
+        "to_hdf",
+        "to_html",
+        "to_xml",
+        "to_latex",
+        "to_markdown",
+        "savefig",
+        "symlink_to",
+        "hardlink_to",
+        "symlink",
+        "link",
+    }
+)
+# The same, imported by name (`from shutil import copy`).
+_WRITE_LIKE_NAMES = frozenset({"copy", "copy2", "copyfile", "copytree", "move", "rmtree"})
+
+
+def _unlisted_write(node):
+    """Whether the call is a write whose target `_py_written_paths` cannot name: a pandas or matplotlib writer, a symlink, a shutil function imported bare, or a subprocess carrying a write verb or a redirect."""
+    import ast
+
+    f = node.func
+    if isinstance(f, ast.Name):
+        return f.id in _WRITE_LIKE_NAMES
+    if not isinstance(f, ast.Attribute):
+        return False
+    owner = f.value.id if isinstance(f.value, ast.Name) else None
+    if owner == "subprocess" and node.args:
+        for sub in ast.walk(node.args[0]):
+            if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                words = sub.value.split()
+                if ">" in sub.value or any(w in BASH_WRITE_VERBS or w == "sed" for w in words):
+                    return True
+        return False
+    return f.attr in _WRITE_LIKE_ATTRS
+
+
 def _py_written_paths(text):
     """The repo-path literals a Python body writes, deletes or moves.
 
@@ -1201,7 +1249,8 @@ def _py_written_paths(text):
         if mode is None:
             return False
         if isinstance(mode, ast.Constant) and isinstance(mode.value, str):
-            return any(c in mode.value for c in "wax+")
+            # The part before `:` is the access mode; after it comes the compression of `tarfile.open` (`r:xz` reads, `w:gz` writes).
+            return any(c in mode.value.split(":", 1)[0] for c in "wax+")
         return True  # a computed mode may write
 
     found, unresolved = [], False
@@ -1251,12 +1300,26 @@ def _py_written_paths(text):
         ):
             if mode_writes(node, 0):
                 take(recv)
-        elif attr in ("write_text", "write_bytes", "unlink", "touch"):
+        elif (
+            attr in ("write_text", "write_bytes", "unlink", "touch", "rmdir", "mkdir")
+            and owner != "os"
+        ):
+            # `os.unlink(x)` and `os.rmdir(x)` carry the path as an argument, handled below, not as the receiver (`os` is no path).
             take(recv)
         elif attr in ("rename", "replace") and len(args) == 1 and owner not in ("os", "shutil"):
             take(recv)
             take(args[0])
-        elif owner == "os" and attr in ("remove", "unlink", "rmdir", "rename", "replace"):
+        elif owner == "os" and attr in (
+            "remove",
+            "unlink",
+            "rmdir",
+            "rename",
+            "replace",
+            "mkdir",
+            "makedirs",
+            "removedirs",
+            "truncate",
+        ):
             for a in args[:2]:
                 take(a)
         elif owner == "shutil" and (attr in ("rmtree", "move") or (attr or "").startswith("copy")):
@@ -1267,7 +1330,7 @@ def _py_written_paths(text):
                     take(a)
             elif len(args) > 1:
                 take(args[1])
-    if unresolved:
+    if unresolved or any(_unlisted_write(n) for n in ast.walk(tree) if isinstance(n, ast.Call)):
         return every
     return [lit for lit in found if _is_path_lit(lit)]
 

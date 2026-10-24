@@ -14,6 +14,8 @@ import shutil
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_hooks.tests import wlfix
 
 NEEDLE = "SUBMODULE POINTER MOVED"
@@ -232,3 +234,18 @@ def test_the_gate_agrees_with_the_verb_and_fails_on_a_planted_drift(wl, tmp_path
     edited = _gate(tree)
     assert edited.returncode == 1
     assert "O3" in edited.stderr
+
+
+def test_record_refuses_a_malformed_row_before_writing_anything(tmp_path):
+    """f8840f98.1: `rule_row` returns whatever it is given; `record`, the only door to the ledger, runs `row_problem` first. An empty text or an unlisted check writes no ledger file."""
+    ru = wlfix.import_wl("wl_ruling")
+    check = min(ru.RULABLE_CHECKS)
+    for bad in (
+        ru.rule_row("d778be9d", check, "subject", "   "),
+        ru.rule_row("d778be9d", "no-such-check", "subject", "text"),
+    ):
+        with pytest.raises(ValueError, match="malformed"):
+            ru.record(tmp_path, "d778be9d", bad)
+    assert not list(ru.rulings_dir(tmp_path).glob("*.jsonl"))
+    ru.record(tmp_path, "d778be9d", ru.rule_row("d778be9d", check, "subject", "text"))
+    assert len(list(ru.rulings_dir(tmp_path).glob("*.jsonl"))) == 1

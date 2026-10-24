@@ -1626,3 +1626,30 @@ def test_mark_fixed_test_flag_admits_a_test_for_any_claim(world):
     R.mark(world.repo, BRANCH, fid, "fixed", [test_fix, "--test", "tests/test_f.py"], "deadbeef")
     review = R.parse(world.review_file(sha).read_text())
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % test_fix)
+
+
+def test_mark_fixed_refuses_an_unrelated_test_file(world):
+    """79cf9eed.1/.2: a test of some OTHER module closes nothing, neither through `--test` nor through a claim that mentions a test; a claim that a test is missing is admitted only by a test whose name carries the anchored file's stem."""
+    world.answer(
+        [{"severity": "high", "file": "f.py", "line": 2, "claim": "no test covers this bump"}]
+    )
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    other = world.commit("tests/test_other.py", body="def test_o():\n    assert True\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [other], "deadbeef")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(
+            world.repo, BRANCH, fid, "fixed", [other, "--test", "tests/test_other.py"], "deadbeef"
+        )
+
+
+def test_a_claim_that_merely_mentions_a_test_is_not_a_missing_test_claim():
+    assert R.TEST_CLAIM_RE.search("no test covers this bump")
+    assert R.TEST_CLAIM_RE.search("the new path is untested")
+    assert R.TEST_CLAIM_RE.search("lacks coverage for the empty list")
+    assert not R.TEST_CLAIM_RE.search(
+        "the guard returns the wrong value when the test fixture is stale"
+    )
+    assert not R.TEST_CLAIM_RE.search("calls load() twice, which the existing test hides")

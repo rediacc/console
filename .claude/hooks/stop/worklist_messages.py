@@ -2797,8 +2797,8 @@ CLI_PLANPREFLIGHT_WROTE = (
     "NOT COMMITTED. The plan, the investigation rows the survey wrote and the\n"
     "renders this run refreshed land in ONE commit:\n"
     "\n"
-    "  git add -- %(rel)s %(investigation)s %(index)s %(queue)s\n"
-    "  git commit -F <msg> -- %(rel)s %(investigation)s %(index)s %(queue)s\n"
+    "  git add -- %(rel)s %(investigation)s %(ledger)s %(index)s %(queue)s\n"
+    "  git commit -F <msg> -- %(rel)s %(investigation)s %(ledger)s %(index)s %(queue)s\n"
     "  # subject: chore(plan): preflight %(slug)s @ %(base)s\n"
 )
 

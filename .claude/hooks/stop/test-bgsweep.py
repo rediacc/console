@@ -370,6 +370,21 @@ ck(
     kinds(got) == [(2, B.ORPHAN)],
     got,
 )
+LONGRUN = WRAP % "python3 .ci/scripts/ci-trace.py 123 --wait"
+got = run([(2, 1, LONGRUN, LIM * 2), (3, 2, "sleep 15", LIM * 2)], {}, set())
+ck(
+    "an UNDECLARED LONG_WORK run, and its sleep child, are not orphans (8b10b204.1)",
+    got == [],
+    got,
+)
+ck(
+    "a redirecting echo does not make a pure wait loop (8b10b204.4)",
+    B.wait_target("until [ -s /tmp/x ]; do echo tick >> /tmp/log; sleep 5; done") == "",
+)
+ck(
+    "control: a plain echo in the body still does",
+    B.wait_target("until [ -s /tmp/x ]; do echo tick; sleep 5; done") != "",
+)
 
 print("== 10. THE KILL COMMAND AND THE TARGET NOTE ==")
 F = B.Finding

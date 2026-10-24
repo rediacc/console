@@ -375,7 +375,7 @@ def anchored_roots(finding: dict, root: dict, inline: list[dict], claimed: set[A
     """
     title = str(finding.get("title") or "").strip()
     line = finding.get("line")
-    out = list(duplicate_roots(finding, root, inline))
+    out = [c for c in duplicate_roots(finding, root, inline) if c.get("id") not in claimed]
     seen = {c.get("id") for c in out} | {root.get("id")}
     for c in inline:
         if (

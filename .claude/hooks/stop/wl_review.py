@@ -2953,7 +2953,14 @@ def _waive(finding_id, args, items, asked_ok):
     return "waived #%s ASKED:%sZ" % (item, minute)
 
 
-TEST_CLAIM_RE = re.compile(r"\b(tests?|untested|coverage)\b", re.IGNORECASE)
+# A claim that a test is MISSING, not one that merely mentions a test: "no test covers this", "untested", "lacks coverage". A claim about a wrong or flaky test is anchored at the test file, so the plain touch rule already closes it.
+TEST_CLAIM_RE = re.compile(
+    r"\b(?:untested|uncovered|unverified)\b"
+    r"|\bnot (?:covered|tested|exercised|driven|asserted)\b"
+    r"|\b(?:no|not|never|without|lacks?|lacking|missing|absent|zero)\b[^.;]{0,80}?\b(?:tests?|coverage)\b"
+    r"|\b(?:tests?|coverage)\b[^.;]{0,40}?\b(?:missing|absent|lacks?)\b",
+    re.IGNORECASE,
+)
 _TEST_PATH_RE = re.compile(
     r"(^|/)(tests?|__tests__)/|(^|/)test[_-][^/]*$|[_.-]tests?\.[A-Za-z]+$|\.(test|spec)\.[A-Za-z]+$"
 )
@@ -2962,6 +2969,18 @@ _TEST_PATH_RE = re.compile(
 def is_test_path(path):
     """True for a path that names a test file (a tests/ directory, test_*, *_test.*, *.test.*, *.spec.*)."""
     return bool(_TEST_PATH_RE.search(path))
+
+
+def _norm_stem(path):
+    """The anchored file's name without directory or extension, lowercased and with `-` read as `_`."""
+    return pathlib.PurePosixPath(path).stem.lower().replace("-", "_")
+
+
+def related_test(test_path, anchored):
+    """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`). A test of some other module never closes this finding."""
+    stem = _norm_stem(anchored)
+    name = pathlib.PurePosixPath(test_path).name.lower().replace("-", "_")
+    return bool(stem) and stem in name
 
 
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
@@ -3028,10 +3047,16 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             and not set(renamed.splitlines()) & set(touched)
             and not (moved and moved in touched)
             # A "no test for this change" finding is closed by a test elsewhere: the fix may touch a test file instead of the anchored one, named by --test or found among the paths the fix touches.
-            and not test_path
-            and not (TEST_CLAIM_RE.search(finding.claim) and any(map(is_test_path, touched)))
+            and not (test_path and related_test(test_path, finding.file))
+            and not (
+                TEST_CLAIM_RE.search(finding.claim)
+                and any(is_test_path(t) and related_test(t, finding.file) for t in touched)
+            )
         ):
-            raise ValueError("%s does not touch %s" % (fix[:12], finding.file))
+            raise ValueError(
+                "%s does not touch %s, nor a test whose name carries `%s`"
+                % (fix[:12], finding.file, _norm_stem(finding.file))
+            )
         resolution = "fixed %s | %s" % (fix, stamp)
     elif kind == "not-a-bug":
         evidence = normalise_claim(" ".join(args), 400).replace("|", "/")

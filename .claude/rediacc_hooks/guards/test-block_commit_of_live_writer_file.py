@@ -86,7 +86,11 @@ for repo in (REPO, OUTSIDE):
 (REPO / "subm").mkdir()
 git(REPO / "subm", "init", "-q", "--initial-branch=main")
 (REPO / "subm/inner.ts").write_text("writer edit\n", encoding="utf-8")
-(REPO / ".git/info/exclude").write_text("subm/\n", encoding="utf-8")
+# A submodule one directory down: a directory pathspec over `wrap` contains it without naming it.
+(REPO / "wrap/nested").mkdir(parents=True)
+git(REPO / "wrap/nested", "init", "-q", "--initial-branch=main")
+(REPO / "wrap/nested/inner.ts").write_text("writer edit\n", encoding="utf-8")
+(REPO / ".git/info/exclude").write_text("subm/\nwrap/\n", encoding="utf-8")
 
 SESSION = "c0ffee00-live-writer-suite-000000000000"
 CONFIG = pathlib.Path(tempfile.mkdtemp(prefix="config-", dir=RUN_TMP))
@@ -105,6 +109,13 @@ guard.write_session(
             "",
         ),
         (DONE, "suite finished writer", [str(REPO / "src/done.ts")], False, ""),
+        (
+            "asuitenestwriter00005",
+            "suite nested-submodule writer",
+            [str(REPO / "wrap/nested/inner.ts")],
+            True,
+            "",
+        ),
         # Finished, but its parent is live: its edit is part of unfinished work.
         (CHILD, "suite sub-writer", [str(REPO / "lib/child.py")], False, LIVE),
         # Finished under a finished parent, two levels below the live writer.
@@ -188,6 +199,23 @@ CASES = [
         None,
         False,
         "",
+        SESSION,
+    ),
+    # A directory pathspec that CONTAINS a submodule takes the gitlink, not the files inside it (a2e29702.2).
+    (
+        "a directory containing a submodule does not cover the submodule's files",
+        "git commit -F m -- wrap",
+        None,
+        False,
+        "",
+        SESSION,
+    ),
+    (
+        "CONTROL: the same file named directly inside the nested submodule",
+        "git commit -F m -- wrap/nested/inner.ts",
+        None,
+        True,
+        "asuitenestwriter00005",
         SESSION,
     ),
     # CONTROL: a writer's file named INSIDE the submodule is still that writer's file.

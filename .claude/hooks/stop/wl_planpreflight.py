@@ -280,13 +280,13 @@ def merge_base(root) -> str | None:
     return None
 
 
-def _log(root, rng: str, pathspecs: list[str]) -> list[tuple[str, str]]:
-    """[(sha, subject)] newest first for `rng` restricted to `pathspecs`; [] when there is nothing to restrict to."""
+def _log(root, rng: str, pathspecs: list[str]) -> list[tuple[str, str]] | None:
+    """[(sha, subject)] newest first for `rng` restricted to `pathspecs`; [] when there is nothing to restrict to, None when `git log` itself failed (a timeout, a broken range), which no caller may read as "no commits"."""
     if not pathspecs:
         return []
     rc, out = _git(root, "log", "--format=%H%x09%s", rng, "--", *pathspecs)
     if rc != 0:
-        return []
+        return None
     rows = []
     for line in out.splitlines():
         sha, _, subject = line.partition("\t")
@@ -384,6 +384,13 @@ def revalidation_state(root, rel, text=None, base=None) -> RevalidationState:
             % (stamp.sha, base[:12]),
         )
     hits = _log(root, "%s..%s" % (full, base), watched_paths(root, rel, text))
+    if hits is None:
+        return RevalidationState(
+            UNKNOWN,
+            base,
+            stamp.sha,
+            detail="`git log` over %s..%s failed" % (stamp.sha[:12], base[:12]),
+        )
     commits = tuple(sha for sha, _s in hits)
     if commits:
         return RevalidationState(
@@ -446,7 +453,7 @@ def overlap(root, rel, text=None, base=None, since=None, cap=OVERLAP_CAP) -> Ove
             since = out.strip() if rc == 0 and out.strip() else None
     if not since:
         return Overlap(None, base, 0)
-    hits = _log(root, "%s..%s" % (since, base), watched_paths(root, rel, text))
+    hits = _log(root, "%s..%s" % (since, base), watched_paths(root, rel, text)) or []
     commits = tuple(OverlapCommit(sha, subj, _plans_changed(root, sha)) for sha, subj in hits[:cap])
     return Overlap(since, base, len(hits), commits)
 

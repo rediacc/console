@@ -1570,6 +1570,29 @@ def test_q3c_control_two_live_writers_on_disjoint_parallel_plans_are_not(wl):
     assert "PLAN CONCURRENCY BROKEN" not in wl.run().out
 
 
+def declared_world(wl, owns1: str, owns2: str):
+    """Two live writers on two parallel plans whose WHOLE Owns overlap on `src/a/**`; each prompt may declare a narrower `Owns:`."""
+    wl.brief_now()
+    wl.hand_now()
+    write_plan(wl, "p", owns="src/a/**")
+    write_plan(wl, "r", owns="src/a/**")
+    mk_sub(wl, W1, "general-purpose", 1, prompt="Plan: PLAN-p.md\n%s" % owns1)
+    mk_sub(wl, W2, "general-purpose", 1, prompt="Plan: PLAN-r.md\n%s" % owns2)
+    plant_lease(wl, "d1000001", W1, text=linked("PLAN-p.md", "one"))
+    plant_lease(wl, "d1000002", W2, text=linked("PLAN-r.md", "two"))
+
+
+def test_q3e_roster_judges_writers_on_their_declared_owns(wl):
+    """The `plan_declared` wiring in `roster()` itself (483392a8.2): disjoint declared subsets of overlapping plans are no conflict. Passing no declared map restores whole-plan comparison and fails this."""
+    declared_world(wl, "Owns: src/a/x.py", "Owns: src/a/y.py")
+    assert verdict(wl)["plan_conflicts"] == []
+
+
+def test_q3f_control_roster_without_declared_owns_compares_whole_plans(wl):
+    declared_world(wl, "", "")
+    assert {aid for aid, _p, _l in verdict(wl)["plan_conflicts"]} == {W1, W2}
+
+
 def test_q3d_a_peers_lease_is_never_a_roster_concurrency_conflict(wl):
     """A clash with ANOTHER session's lease is the spawn guard's and the queue's question; a stale peer lease must never make this session stop a writer."""
     wl.brief_now()
@@ -1827,6 +1850,45 @@ PY_TARGET_CASES = [
     (
         "python3 - <<'EOF'\nimport sys\nopen(sys.argv[1],'w').write('docs/o.md')\nEOF",
         ["docs/o.md"],
+    ),
+    # A compressed tarfile mode writes (4a39d8be.1); a compressed READ mode does not, though `r:xz` holds an `x`.
+    (
+        "python3 - <<'EOF'\nimport tarfile\ntarfile.open('docs/out.tar.gz','w:gz').close()\nEOF",
+        ["docs/out.tar.gz"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport tarfile\nprint(tarfile.open('docs/in.tar.xz','r:xz'), 'docs/o.md')\nEOF",
+        [],
+    ),
+    # `os.unlink(x)` resolves its argument instead of reading the bare name `os` as unresolved (43119d35.3).
+    (
+        "python3 - <<'EOF'\nimport os\nos.unlink('docs/a.md')\nprint('docs/b.md')\nEOF",
+        ["docs/a.md"],
+    ),
+    # A write API with no resolver here keeps the conservative reading (43119d35.2).
+    (
+        "python3 - <<'EOF'\nimport pandas\ndf.to_csv('docs/x.csv')\nEOF",
+        ["docs/x.csv"],
+    ),
+    (
+        "python3 - <<'EOF'\nfrom shutil import copy\ncopy('src/a.md','docs/y.md')\nEOF",
+        ["docs/y.md", "src/a.md"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport os\nos.symlink('src/a','docs/l')\nEOF",
+        ["docs/l", "src/a"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['tee','docs/z.md'])\nEOF",
+        ["docs/z.md"],
+    ),
+    (
+        "python3 - <<'EOF'\nfrom pathlib import Path\nPath('docs/d').rmdir()\nprint('docs/b.md')\nEOF",
+        ["docs/d"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['git','status'])\nprint('docs/b.md')\nEOF",
+        [],
     ),
 ]
 

@@ -213,12 +213,25 @@ def live_writers(cwd, session_id, now=None):
     return root, out
 
 
+def _in_nested_repo(spec, writer):
+    """Whether a directory between `spec` (exclusive) and `writer` is a repository root, a submodule `.git` file or directory. A directory pathspec over it commits the gitlink, never the files inside."""
+    here = os.path.dirname(writer)
+    top = spec.rstrip("/")
+    while here != top and here.startswith(top + "/"):
+        if os.path.exists(os.path.join(here, ".git")):
+            return True
+        here = os.path.dirname(here)
+    return False
+
+
 def overlap(committed, writer_paths):
-    """The writer paths a commit takes: equal to a committed path, or under a committed directory pathspec."""
+    """The writer paths a commit takes: equal to a committed path, or under a committed directory pathspec that does not cross into a nested repository."""
     hits = []
     for writer in sorted(writer_paths):
         for spec in committed:
-            if writer == spec or writer.startswith(spec.rstrip("/") + "/"):
+            if writer == spec or (
+                writer.startswith(spec.rstrip("/") + "/") and not _in_nested_repo(spec, writer)
+            ):
                 hits.append(writer)
                 break
     return hits

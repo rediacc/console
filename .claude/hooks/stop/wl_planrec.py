@@ -1996,7 +1996,14 @@ PREFLIGHT_TICK_WARN = (
     "    worklist.py --plan-preflight %(me)s %(rel)s"
 )
 #: What revalidating can raise short of a bug in this file: a missing or broken module, an unreadable plan, a git child that failed.
-_PREFLIGHT_ERRORS = (ImportError, OSError, ValueError, AttributeError, subprocess.SubprocessError)
+_PREFLIGHT_ERRORS = (
+    ImportError,
+    OSError,
+    ValueError,
+    AttributeError,
+    RuntimeError,
+    subprocess.SubprocessError,
+)
 
 
 def preflight_warning(root, rel, text, me):

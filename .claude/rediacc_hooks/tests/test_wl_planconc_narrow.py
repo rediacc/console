@@ -5,6 +5,7 @@ The roster read and the transcript read are stubbed: the subject is how the prom
 
 from __future__ import annotations
 
+import datetime
 import types
 
 from rediacc_hooks.tests import wlfix
@@ -102,3 +103,41 @@ def test_the_roster_backstop_without_declarations_compares_whole_plans():
     """CONTROL: a writer that declared nothing keeps the whole-plan comparison."""
     xi, serving, live = _roster_world()
     assert {aid for aid, _v in PO.conflicts(serving, live, xi.__getitem__)} == {"wb", "wd"}
+
+
+def test_a_lease_held_by_this_session_keeps_the_whole_plan(monkeypatch):
+    """A fresh lease of this session on a plan-linked item is a holder with no readable prompt, so it must stop the narrowing exactly like a peer's lease. Before the fix only a peer's lease recorded `None`, and the writer's subset narrowed the plan under a live holder that declared nothing."""
+    until = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=30)).strftime(
+        "%Y-%m-%dT%H:%MZ"
+    )
+    rec = {
+        "id": "abcd1234",
+        "state": ">",
+        "worker": "w1",
+        "owner": None,
+        "text": "fix it PLAN-t.md [abcd1234]",
+        "line": "- [>] fix it PLAN-t.md [abcd1234] until:%s worker:w1" % until,
+    }
+    prompts = {"w1": "Plan: PLAN-t.md\nOwns: src/t/a.py"}
+    rows = [{"id": "w1", "writer": True, "desc": "", "type": "general-purpose"}]
+    monkeypatch.setattr(ROSTER, "live_estimate", lambda *_a, **_k: (rows, {"w1": {"jsonl": "w1"}}))
+    monkeypatch.setattr(LH, "first_prompt", lambda jsonl: prompts[jsonl])
+    got = X.live_plans("/nonexistent", "d778be9d-0000", types.SimpleNamespace(items=[rec]))
+    assert any("lease #abcd1234" in h for h in got["PLAN-t.md"])
+    assert got.owns == {}
+
+
+def test_the_roster_backstop_keeps_the_whole_plan_when_one_holder_declares_nothing():
+    """MIXED HOLDERS (483392a8.3): one writer of plan B declares Owns, another does not, so `all(owns)` is false and B keeps its whole-plan Owns, which overlaps D's file. CONTROL: with the undeclared holder gone, B narrows and there is no conflict."""
+    xi, serving, live = _roster_world()
+    serving = {**serving, "wx": {"PLAN-b.md"}}
+    live = {**live, "PLAN-b.md": [*live["PLAN-b.md"], "writer wx (general-purpose)"]}
+    declared = {
+        "wb": ("private/renet/pkg/chunkstore/**",),
+        "wd": ("private/renet/pkg/compose/validate.go",),
+        "wx": None,
+    }
+    assert "wd" in {aid for aid, _v in PO.conflicts(serving, live, xi.__getitem__, declared)}
+    del serving["wx"]
+    live["PLAN-b.md"] = ["writer wb (backup-storage)"]
+    assert PO.conflicts(serving, live, xi.__getitem__, declared) == []

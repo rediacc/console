@@ -510,3 +510,42 @@ def test_control_the_same_main_commit_plus_a_cited_path_makes_the_plan_stale(rep
     got = PP.revalidation_state(repo.root, PLAN, cites_renders(repo.read(PLAN)))
     assert got.state == PP.STALE, got
     assert got.commits == (sha,)
+
+
+def test_a_failing_git_log_is_unknown_not_fresh(repo, monkeypatch):
+    """`_git` answers rc 1 with no output on a timeout; `_log` used to turn that into `[]`, so a plan whose history could not be read was reported FRESH. CONTROL: the same repo is FRESH when `git log` works."""
+    assert state(repo) == PP.FRESH
+    real = PP._git
+
+    def broken(root, *args):
+        return (1, "") if args and args[0] == "log" else real(root, *args)
+
+    monkeypatch.setattr(PP, "_git", broken)
+    assert state(repo) == PP.UNKNOWN
+
+
+def test_preflight_warning_never_raises_on_a_runtime_error(monkeypatch):
+    """`preflight_warning` promises to never raise; a RuntimeError out of `revalidation_state` (which `_LOAD_ERRORS` allows for) must be reported as `not judged`."""
+
+    def boom(*_a, **_k):
+        raise RuntimeError("gate module would not load")
+
+    monkeypatch.setattr(PP, "revalidation_state", boom)
+    out = PR.preflight_warning("/nonexistent", PLAN, "", "d778be9d")
+    assert "not judged" in out
+    assert "RuntimeError" in out
+
+
+def test_the_written_message_names_the_ledger_beside_the_plan_and_renders():
+    messages = import_wl("worklist_messages")
+    shown = messages.CLI_PLANPREFLIGHT_WROTE % {
+        "rel": "a",
+        "base": "b",
+        "relocated": 0,
+        "investigation": "inv",
+        "ledger": ".ci/config/plan-boxes.json",
+        "index": "idx",
+        "queue": "q",
+        "slug": "s",
+    }
+    assert shown.count(".ci/config/plan-boxes.json") == 2

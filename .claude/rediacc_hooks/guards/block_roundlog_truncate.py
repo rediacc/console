@@ -1254,7 +1254,7 @@ _SPELLS_LOG_DIR = re.compile(r"(?<![\w.-])(?:agent|reports)/?(?=['\"`\s;)&|,]|\Z
 
 
 def _recursive_reaches_log_dir(alt, context=""):
-    """Can a `**` glob descend into a round-log directory? Only from where its fixed directory prefix (the whole segments before the first glob character) leaves the log directories reachable: no prefix, an absolute or `~` one, one holding `.` or `..`, one whose first segment can be a log directory (`agent/**`, `reports/**`), or any prefix in a program or command that changes directory with `chdir` (`os.chdir('/')` then `home/u/console/**`).
+    """Can a `**` glob descend into a round-log directory? A `.` or `..` segment ANYWHERE in the glob counts (it climbs out of the fixed tree, even after the `**`). Otherwise only from where its fixed directory prefix (the whole segments before the first glob character) leaves the log directories reachable: no prefix, an absolute or `~` one, one holding `.` or `..`, one whose first segment can be a log directory (`agent/**`, `reports/**`), or any prefix in a program or command that changes directory with `chdir` (`os.chdir('/')` then `home/u/console/**`).
 
     #3df07b02: a python heredoc that only printed a call holding `workers/account/src/telemetry/**` as a declared-ownership string was refused as a round-log truncation (rc 2); `**` under a fixed relative directory that is not a log directory walks only that tree. NAMED RESIDUAL: a directory named `agent` nested inside such a tree, and a shell `cd` to an ancestor of the repository before the program runs.
     """

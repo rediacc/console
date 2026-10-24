@@ -908,3 +908,22 @@ def test_answer_replies_to_every_thread_anchoring_a_finding(repo):
     assert len(replies) == 3
     assert all(t[1] for t in gh.threads.values())
     assert P.cmd_check(None, gh) == 0
+
+
+def test_anchored_roots_leaves_a_claimed_duplicate_alone():
+    """79cf9eed.3/.6: a root `match_inline` gave to another finding is that finding's, even when it also reads as a title-and-line duplicate of this one. Before the fix `duplicate_roots` results skipped the `claimed` filter and the other finding's thread was replied to and resolved as this one's."""
+    finding = {
+        "path": "a.py",
+        "line": 2,
+        "severity": "high",
+        "title": "guard the empty list",
+        "body": "",
+    }
+    root = inline_root(900, finding)
+    mine_too = dict(root, id=901)
+    theirs = dict(root, id=902)
+    got = P.anchored_roots(finding, root, [root, mine_too, theirs], claimed={902})
+    assert [c["id"] for c in got] == [901]
+    assert [
+        c["id"] for c in P.anchored_roots(finding, root, [root, mine_too, theirs], claimed=set())
+    ] == [901, 902]

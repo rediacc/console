@@ -90,10 +90,11 @@ NO_DEP_RE = re.compile(r"^no-dep(?:\s+(?:--|\u2014)(?:\s+(.*))?)?$")
 PRIORITY_VALUE_RE = re.compile(r"^(P[0-3])(?: \((operator)\))?(?: (?:--|\u2014) (\S.*))?$")
 CONCURRENCY_VALUE_RE = re.compile(r"^(parallel|exclusive)(?: (?:--|\u2014) (\S.*))?$")
 OWNS_NONE_RE = re.compile(r"^none(?:\s+(?:--|\u2014)(?:\s+(.*))?)?$")
-# An Owns item's optional trailing note: `path (new)`, `file.ts (one mount line)`.
+# The Revalidated value: `<date> @ <sha>` with an optional ` -- reason`.
 REVALIDATED_VALUE_RE = re.compile(
     r"^(\d{4}-\d{2}-\d{2}) @ ([0-9a-f]{12,40})(?: (?:--|\u2014) (\S.*))?$"
 )
+# An Owns item's optional trailing note: `path (new)`, `file.ts (one mount line)`.
 OWNS_NOTE_RE = re.compile(r"^(\S+)(?:\s+\(([^()]*)\))?$")
 # A worklist item implements a plan box when the plan's basename is IMMEDIATELY followed by ` [<8hex>]`, the existing `PLAN-x.md [41f56150]` convention. A bare mention links nothing.
 LINK_RE = re.compile(r"(PLAN-[A-Za-z0-9._-]+\.md) \[([0-9a-f]{8})\]")

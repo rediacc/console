@@ -275,7 +275,7 @@ _LOOP = re.compile(
 _SPLIT = re.compile(r"\s*(?:;|&&|\|\||\n)\s*")
 _BODY_OK = re.compile(
     r"^(?:sleep\s+\S+|:|true|break|fi|else|if\s+.+|then(?:\s+(?:break|:|true|exit\b.*))?"
-    r"|echo\b.*|printf\b.*|\[\[?\s.*|test\s.*|)$",
+    r"|echo\b[^>]*|printf\b[^>]*|\[\[?\s.*|test\s.*|)$",
     re.DOTALL,
 )
 _TAIL_OK = re.compile(
@@ -399,10 +399,23 @@ def findings(
         )
 
     # UNDECLARED: every unowned row old enough, collapsed to the top of each flagged subtree (one kill ends the rest). The wake timer is split out of the declared set by the hook itself, so it is excused here by shape.
+    # LONG_WORK is excused here as well, with its whole subtree: an undeclared `ci-trace --wait` or render is a long run by shape, and its `sleep` child must not be reported on its own.
+    exempt = {
+        pid
+        for pid, _pp, cmd, _age in rows
+        if wl_wake.WAKER_RE.search(cmd) or long_work(inner_command(cmd))
+    }
+    grew = True
+    while grew:
+        grew = False
+        for pid, ppid, _cmd, _age in rows:
+            if ppid in exempt and pid not in exempt:
+                exempt.add(pid)
+                grew = True
     flagged = {
         pid
-        for pid, _pp, cmd, age in rows
-        if pid not in owned and (age is None or age >= limit) and not wl_wake.WAKER_RE.search(cmd)
+        for pid, _pp, _cmd, age in rows
+        if pid not in owned and (age is None or age >= limit) and pid not in exempt
     }
     for pid, ppid, cmd, age in rows:
         if pid in flagged and ppid not in flagged:

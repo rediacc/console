@@ -259,7 +259,12 @@ def _new_id(*parts):
 
 
 def record(root, me, row):
-    """Append one row to this writer's ledger and re-render the RULES.md section, both under one flock on the ledger directory, the tempfile plus `os.replace` discipline `--state` uses. Returns the RULES.md path."""
+    """Append one row to this writer's ledger and re-render the RULES.md section, both under one flock on the ledger directory, the tempfile plus `os.replace` discipline `--state` uses. Returns the RULES.md path.
+
+    A row `row_problem` rejects raises ValueError before anything is written: this is the one place a row reaches the ledger, so a malformed rule (empty text, an unlisted check) can never make `check:ci-operator-rulings` fail with O2 whoever the caller is."""
+    why = row_problem(row)
+    if why:
+        raise ValueError("refusing to record a malformed ruling row: %s" % why)
     directory = rulings_dir(root)
     directory.mkdir(parents=True, exist_ok=True)
     target = rules_md_path(root)
@@ -274,7 +279,7 @@ def record(root, me, row):
 
 
 def rule_row(me, check, subject, text, until=None):
-    """A `rule` row, validated by `row_problem` before it is returned so a malformed one never reaches the ledger."""
+    """A `rule` row. It is not validated here: `record` runs `row_problem` before it appends, so a malformed row never reaches the ledger."""
     at = _stamp()
     row = {
         "ev": "rule",

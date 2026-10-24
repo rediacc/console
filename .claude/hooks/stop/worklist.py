@@ -1081,6 +1081,7 @@ def _planpreflight_cli(argv):
             "base": (pf.base or "")[:12],
             "relocated": len(result.relocated),
             "investigation": "/".join(R.INVESTIGATION_REL),
+            "ledger": R.LEDGER_REL,
             "index": R.INDEX_REL,
             "queue": PP.QUEUE_REL,
             "slug": rel.rsplit("/", 1)[-1].removeprefix("PLAN-").removesuffix(".md"),
