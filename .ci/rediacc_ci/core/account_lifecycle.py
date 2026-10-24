@@ -684,7 +684,8 @@ def live_stack_port(state: str) -> int | None:
     pids = grep_cut(text, "pids").replace(",", " ").split()
     if not writer or writer != account.writer_stamp() or not port.isdigit():
         return None
-    if not pids or not all(p.isdigit() and _pid_alive(int(p)) for p in pids):
+    # A pid of 0 or 1 is never a recorded job: os.kill(0, 0) signals our own group and would read as alive.
+    if not pids or not all(p.isdigit() and int(p) > 1 and _pid_alive(int(p)) for p in pids):
         return None
     return int(port) if _server_info_ok(int(port)) else None
 

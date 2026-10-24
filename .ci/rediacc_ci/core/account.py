@@ -508,12 +508,18 @@ def _kill_quiet(pid: str, sig: int) -> None:
 
 
 def _children(pid: int) -> list[int]:
-    """Direct children of `pid`, from /proc. Empty where /proc has no such answer."""
+    """Direct children of `pid`, from /proc, or from `pgrep -P` where there is no /proc (macOS)."""
     found: list[int] = []
     try:
         entries = os.listdir("/proc")
     except OSError:
-        return found
+        try:
+            proc = subprocess.run(
+                ["pgrep", "-P", str(pid)], capture_output=True, text=True, check=False
+            )
+        except FileNotFoundError:
+            return found
+        return [int(line) for line in proc.stdout.split() if line.isdigit()]
     for entry in entries:
         if not entry.isdigit():
             continue
@@ -527,12 +533,14 @@ def _children(pid: int) -> list[int]:
     return found
 
 
-def _kill_tree(pid: str, sig: int) -> None:
-    """Signal `pid`, its process group when it leads one other than ours, and every descendant."""
+def _tree(pid: str) -> list[int]:
+    """`pid` and every descendant, collected while the tree is still intact (a dead leader orphans its children to init)."""
     try:
         target = int(pid)
     except ValueError:
-        return
+        return []
+    if target <= 1:
+        return []
     seen: list[int] = []
     queue = [target]
     while queue:
@@ -541,10 +549,22 @@ def _kill_tree(pid: str, sig: int) -> None:
             continue
         seen.append(current)
         queue.extend(_children(current))
+    return seen
+
+
+def _kill_tree(pid: str, sig: int, members: list[int] | None = None) -> None:
+    """Signal `pid`, its process group when it leads one other than ours, and every descendant.
+
+    `members` is the tree collected earlier, so an escalation after SIGTERM still reaches children whose leader already exited and which were reparented.
+    """
+    tree = members if members is not None else _tree(pid)
+    if not tree:
+        return
+    target = tree[0]
     with contextlib.suppress(OSError):
         if os.getpgid(target) == target != os.getpgrp():
             os.killpg(target, sig)
-    for victim in seen:
+    for victim in tree:
         if victim != os.getpid():
             _kill_quiet(str(victim), sig)
 
@@ -588,19 +608,24 @@ def stop(env: dict[str, str] | None = None) -> int:
         if old_pids and state_owned(text, path):
             # `for pid in ${old_pids//,/ }`: unquoted, so word-splitting drops any empty field the comma substitution leaves behind.
             pids = old_pids.replace(",", " ").split()
-            # Every recorded job leads its own process group (`spawn_background`), so the group signal ends the whole tree (npm exec -> sh -> vite/astro -> node), not only the pid.
+            # Every recorded job leads its own process group (`spawn_background`), so the group signal ends the whole tree (npm exec -> sh -> vite/astro -> node), not only the pid. The trees are collected BEFORE the SIGTERM, so the SIGKILL pass still reaches a child that ignored it after its leader exited.
+            trees = {pid: _tree(pid) for pid in pids}
             for pid in pids:
-                _kill_tree(pid, signal.SIGTERM)
+                _kill_tree(pid, signal.SIGTERM, trees[pid])
             time.sleep(1)
             for pid in pids:
-                _kill_tree(pid, signal.SIGKILL)
+                _kill_tree(pid, signal.SIGKILL, trees[pid])
 
         if old_gateway:
-            # The gateway, Vite and Astro hold consecutive ports from the gateway's; the occupants and everything under them go too.
-            if old_gateway.isdigit():
+            # The gateway, Vite and Astro hold consecutive ports from the gateway's. Only a state file this worktree wrote licenses killing the whole tree under each; a foreign or stale one gets the old behaviour, the gateway occupant alone.
+            if old_gateway.isdigit() and state_owned(text, path):
                 for offset in (0, 1, 2):
                     for port_pid in _lsof_port_pids(str(int(old_gateway) + offset)):
                         _kill_tree(port_pid, signal.SIGKILL)
+            elif old_gateway.isdigit():
+                port_pid = _lsof_port_pid(old_gateway)
+                if port_pid:
+                    _kill_quiet(port_pid, signal.SIGKILL)
             else:
                 port_pid = _lsof_port_pid(old_gateway)
                 if port_pid:

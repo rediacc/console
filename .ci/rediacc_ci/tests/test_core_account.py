@@ -1919,3 +1919,42 @@ def test_an_absent_lockfile_is_a_recorded_state(monkeypatch, tmp_path):
     with pytest.raises(_LaunchedError):
         account_lifecycle.test_e2e([])
     assert reached
+
+
+def test_tree_refuses_pid_zero_and_one():
+    """Review 4fb75de4.3: a recorded pid of 0 or 1 is never a job; os.kill(0, 0) would signal our own group."""
+    assert account._tree("0") == []
+    assert account._tree("1") == []
+    assert account._tree("not-a-pid") == []
+
+
+def test_sigkill_pass_reaches_a_child_after_its_leader_exits():
+    """Review 4fb75de4.1: the tree is collected before SIGTERM, so a child that ignores SIGTERM and is orphaned
+    when its leader dies is still in the SIGKILL pass."""
+    child = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import signal, sys, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); print('ready', flush=True); time.sleep(60)",
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    # Wait until the SIGTERM handler is installed, or the signal can land first and end the child early.
+    assert child.stdout is not None
+    assert child.stdout.readline().strip() == "ready"
+    try:
+        # The child stands in for an orphaned grandchild: its "leader" is a pid that no longer exists.
+        members = [999999, child.pid]
+        account._kill_tree("999999", account.signal.SIGTERM, members)
+        time.sleep(0.3)
+        assert child.poll() is None, "the child ignores SIGTERM, so it must still be alive here"
+        account._kill_tree("999999", account.signal.SIGKILL, members)
+        child.wait(timeout=5)
+        assert child.returncode is not None
+    finally:
+        with contextlib.suppress(OSError):
+            child.kill()
+        child.wait(timeout=5)
+        if child.stdout is not None:
+            child.stdout.close()
