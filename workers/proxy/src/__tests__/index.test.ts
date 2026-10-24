@@ -12,10 +12,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const routed = vi.hoisted(() => ({ tenants: [] as string[] }));
+/** The real library's handler registry: an inherited static setter files handlers under the class name, and ContainerProxy reads them back by that name. */
+const outboundRegistry = vi.hoisted(() => new Map<string, Record<string, unknown>>());
 
 vi.mock('@cloudflare/containers', () => ({
   ContainerProxy: class {},
   Container: class {
+    static get outboundByHost(): Record<string, unknown> | undefined {
+      return outboundRegistry.get(this.name);
+    }
+    static set outboundByHost(handlers: Record<string, unknown>) {
+      outboundRegistry.set(this.name, handlers);
+    }
     constructor(
       readonly ctx: unknown,
       readonly env: unknown
@@ -211,8 +219,12 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     expect(container.envVars.REDIACC_ACCOUNT_SERVER).toBe(`http://${ACCOUNT_EGRESS_HOST}`);
   });
 
-  it('intercepts exactly that host', () => {
-    expect(Object.keys(ExecutorContainer.outboundByHost)).toEqual([ACCOUNT_EGRESS_HOST]);
+  it('files its handler in the library registry, where ContainerProxy looks it up, for exactly that host', () => {
+    // An own `outboundByHost` property would shadow the setter and leave the registry empty (the bench 530).
+    expect(Object.hasOwn(ExecutorContainer, 'outboundByHost')).toBe(false);
+    expect(Object.keys(outboundRegistry.get('ExecutorContainer') ?? {})).toEqual([
+      ACCOUNT_EGRESS_HOST,
+    ]);
   });
 
   it('forwards an intercepted account call over the binding, keeping method, path, query, headers and body', async () => {

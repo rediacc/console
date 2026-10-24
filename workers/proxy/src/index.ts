@@ -86,11 +86,13 @@ export async function forwardAccountEgress(request: Request, env: Env): Promise<
 }
 
 export class ExecutorContainer extends Container<Env> {
-  /** The container's account traffic, routed through the Worker's binding (ACCOUNT_EGRESS_HOST says why). */
-  static outboundByHost = {
-    [ACCOUNT_EGRESS_HOST]: (request: Request, env: unknown) =>
-      forwardAccountEgress(request, env as Env),
-  };
+  // The container's account traffic, routed through the Worker's binding (ACCOUNT_EGRESS_HOST says why). An ASSIGNMENT in a static block, never a `static outboundByHost = ...` field: @cloudflare/containers keeps the handlers in a registry behind an inherited static setter keyed by class name, and under ES2022 define semantics a field becomes an own property that shadows the setter, so the registry stays empty, ContainerProxy finds no handler and the request falls through to a plain fetch of account.internal that dies at DNS with a 530 (bench, 2026-10-24, two deploys).
+  static {
+    ExecutorContainer.outboundByHost = {
+      [ACCOUNT_EGRESS_HOST]: (request: Request, env: unknown) =>
+        forwardAccountEgress(request, env as Env),
+    };
+  }
 
   /** `rdc serve` listens here. */
   defaultPort = 8080;
