@@ -268,8 +268,9 @@ describe('proxy loopback', () => {
 
     // The operator sees the same timeline they would have seen locally, because these are renet's own events rendered through the same helpers.
     expect(stdout).toContain('Snapshot');
-    // ...and renet's output, rendered live as it streamed.
-    expect(stdout).toContain('STATUS: running');
+    // renet's raw `output` events are NOT rendered for `repo status`: a local run drops them too, and the verb prints its own record (here the plain-text capture) once, exactly as a local run does.
+    expect(stdout).not.toContain('STATUS: running');
+    expect(stdout.match(/done/g)).toHaveLength(1);
   });
 
   it('prints the captured output when a run streamed none of it live', async () => {

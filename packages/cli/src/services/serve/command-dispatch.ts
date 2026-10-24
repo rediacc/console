@@ -385,8 +385,11 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   // Every machine call a served command makes runs detached and is FOLLOWED to completion: the executor cannot assume the client's connection outlives the work, so it starts a job that survives a drop and streams its spool back. `onJobStarted` fires once per job so the route can announce a re-attach point. The detach decision defaults to the contract's `detachable` and is
   // overridden by the route when it must (deps.detach).
   const detached = args.detached ?? entry.detachable;
+  // Renet's own stdout is the command's answer only for a verb that asked for it live (`passthroughOutput`: repo exec, repo logs) or under --debug. For every other verb a local run drops it (the step detector keeps step lines only, and a captureOutput verb prints what it chose from `result.stdout` itself), so a proxied run must not carry it either: the proxy client prints `output` events, which put renet's full repository-list JSON (the machine probe's answer) on the stdout of `repo up` and `repo down`. Events are therefore dropped here for such a verb; the raw `result.stdout` still travels on the wire for clients that want it.
+  let forwardRenetOutput = false;
   const recordingExecutor: Executor = {
     async execute(options) {
+      if (options.passthroughOutput || options.debug) forwardRenetOutput = true;
       functionName = options.functionName;
       machineName = options.machineName;
       const result = await args.executor.execute({
@@ -404,7 +407,10 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     output: createOutputState(),
     stdout: [],
     stderr: [],
-    onEvent: args.onEvent,
+    onEvent: (event, line) => {
+      if (event.type === 'output' && !forwardRenetOutput) return;
+      args.onEvent(event, line);
+    },
     executor: recordingExecutor,
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };

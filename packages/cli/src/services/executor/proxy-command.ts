@@ -292,13 +292,7 @@ function writeOutcome(outcome: ProxyCommandOutcome): void {
   else if (outcome.stdout) writeStdout(`${outcome.stdout}\n`);
   if (outcome.stderr) writeStderr(`${outcome.stderr}\n`);
 
-  // Renet's own output has normally been rendered live already, arriving as `output` events the same way it streams to a terminal locally. Print the capture only when none of it came through, so a run never ends silently and nothing is ever shown twice.
-  // Never after raw bytes: those ARE the answer (`repo cat`), and renet's capture is the base64 envelope they were decoded from, which appended would corrupt the file.
-  if (!outcome.stdoutBytes && !outcome.renderedLiveOutput && outcome.renetStdout) {
-    writeStdout(
-      outcome.renetStdout.endsWith('\n') ? outcome.renetStdout : `${outcome.renetStdout}\n`
-    );
-  }
+  // Renet's raw capture (`outcome.renetStdout`) is deliberately NOT printed. A local run drops every renet line that is not a step (or that a captureOutput verb did not choose to print itself), so printing the capture here put renet's own JSON (the machine probe's repository list) on the stdout of `repo up` and `repo down`. What a verb wants shown is in `outcome.stdout` (what its action body printed) or arrives live as `output` events (passthroughOutput verbs).
 
   if (outcome.error) writeStderr(`${outcome.error}\n`);
 }

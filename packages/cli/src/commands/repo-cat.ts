@@ -99,7 +99,7 @@ export function registerRepoCatCommand(repo: Command): void {
           // Progress goes to stderr (outputService.info), keeping stdout pure.
           outputService.info(
             t('commands.repo.cat.starting', {
-              repository: name,
+              repository: ref,
               machine: machineName,
               path: options.remoteFile,
             })

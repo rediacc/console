@@ -8,6 +8,7 @@ import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
+import { parseCapturedJson } from '../services/executor/renet-output.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { createRepoAdminCommand } from './repo-admin.js';
@@ -82,12 +83,12 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
   const functionName = noStart ? 'repository_mount' : 'repository_up';
   const messages = noStart
     ? {
-        starting: t('commands.repo.mount.starting', { repository: name, machine: machineName }),
+        starting: t('commands.repo.mount.starting', { repository: ref, machine: machineName }),
         completed: t('commands.repo.mount.completed'),
         failed: t('commands.repo.mount.failed'),
       }
     : {
-        starting: t('commands.repo.up.starting', { repository: name, machine: machineName }),
+        starting: t('commands.repo.up.starting', { repository: ref, machine: machineName }),
         completed: t('commands.repo.up.completed'),
         failed: t('commands.repo.up.failed'),
       };
@@ -111,6 +112,22 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
 }
 
 // executeRepoFunction imported from ../utils/repo-executor.js
+
+/**
+ * Print what `repository_status` reported, as data on stdout in every output format (the record is structured, so a table would only say less). Renet's text is passed through untouched when it is not JSON.
+ */
+function printRepoStatusRecord(stdout: string | undefined): void {
+  if (!stdout?.trim()) return;
+  let record: unknown;
+  try {
+    record = parseCapturedJson<unknown>(stdout);
+  } catch {
+    outputService.print(stdout.trimEnd());
+    return;
+  }
+  const format = getOutputFormat();
+  outputService.print(record, format === 'table' ? 'json' : format);
+}
 
 export function registerRepoCommands(program: Command): void {
   const repo = program
@@ -248,7 +265,7 @@ export function registerRepoCommands(program: Command): void {
               { ...options, kubeCluster },
               {
                 starting: t('commands.repo.down.starting', {
-                  repository: name,
+                  repository: ref,
                   machine: machineName,
                 }),
                 completed: t('commands.repo.down.completed'),
@@ -290,21 +307,24 @@ export function registerRepoCommands(program: Command): void {
           const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, {
             readOnly: true,
           });
-          await executeRepoFunction(
+          const result = await executeRepoFunction(
             'repository_status',
             repoKey,
             machineName,
             {},
-            { ...options, kubeCluster },
+            // captureOutput: the repo record IS the answer. The step detector drops it, so a local `repo status` printed nothing even with `-o json` while the proxied one (which streams renet's output) printed the record.
+            { ...options, kubeCluster, captureOutput: true },
             {
               starting: t('commands.repo.status.starting', {
-                repository: name,
+                repository: ref,
                 machine: machineName,
               }),
               completed: t('commands.repo.status.completed'),
               failed: t('commands.repo.status.failed'),
             }
           );
+          if (!result.success) return;
+          printRepoStatusRecord(result.stdout);
           // Managed replica sets are CRUD-from-birth state (R2-F17): surface any set built on this repo alongside its status.
           const replicaSets = Object.entries(await listReplicaSets()).filter(
             ([, set]) => set.repo === name

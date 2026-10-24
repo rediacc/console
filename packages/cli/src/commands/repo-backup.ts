@@ -326,7 +326,7 @@ async function pushRepo(ref: string, options: Record<string, unknown>): Promise<
   );
 
   // Show the human-readable target name; the dest GUID/path is renet detail.
-  outputService.info(t('commands.repo.push.pushing', { repo: name, dest: targetName }));
+  outputService.info(t('commands.repo.push.pushing', { repo: ref, dest: targetName }));
   const { ok, local } = await executeFunction('backup_push', params, execOptions);
   if (ok) {
     reportPushStats(name, targetName, resolvedType, local, !!execOptions.json);
@@ -398,7 +398,7 @@ async function postPullDeploy(
  * with `--up`, deploys); `--from` names the source place or storage.
  */
 async function pullRepo(ref: string, options: Record<string, unknown>): Promise<void> {
-  const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+  const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
   await assertCommandPolicy(CMD.REPO_PULL, repoKey);
   const params: Record<string, unknown> = { repository: repoKey };
 
@@ -426,7 +426,7 @@ async function pullRepo(ref: string, options: Record<string, unknown>): Promise<
 
   await deployRepoKeyIfNeeded(repoKey, machineName);
 
-  outputService.info(t('commands.repo.pull.pulling', { repo: name }));
+  outputService.info(t('commands.repo.pull.pulling', { repo: ref }));
   await executeFunction('backup_pull', params, execOptions);
 
   if (execOptions.up) {
