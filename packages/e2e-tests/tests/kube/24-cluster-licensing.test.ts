@@ -239,7 +239,9 @@ test.describe
 
       const machineNames = async (): Promise<string[]> => {
         const cfg = JSON.parse(await readFile(cli.configPath, 'utf8')) as CliConfigFile;
-        return Object.keys(cfg.resources?.machines ?? {}).sort();
+        return Object.keys(cfg.resources?.machines ?? {}).sort(
+          (a, b) => Number(a > b) - Number(a < b)
+        );
       };
 
       // A kvm declaration needs a network, and it must not be one the ops fleet or any other cluster uses (192.168.111 is the harness's own). The pool is k8s-agent, not k8s-server, because test 4 scales it: only k8s-agent pools scale in place (cluster-provision.ts), so a server pool is refused for its ROLE before the slot pre-flight is ever consulted, and test 4 would be measuring
@@ -415,7 +417,9 @@ test.describe
       };
 
       const datastoreIds = (statuses: LicenseStatus[]): string[] =>
-        [...new Set(statuses.map((s) => s.datastoreId).filter((d): d is string => !!d))].sort();
+        [...new Set(statuses.map((s) => s.datastoreId).filter((d): d is string => !!d))].sort(
+          (a, b) => Number(a > b) - Number(a < b)
+        );
 
       /**
        * The monthly issuance counter, from `subscription status`. Every reissue

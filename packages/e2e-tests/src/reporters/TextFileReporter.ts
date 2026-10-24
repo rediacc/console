@@ -306,7 +306,7 @@ export default class TextFileReporter implements Reporter {
     lines.push('-'.repeat(40));
 
     const byFile = this.groupTestsByFile();
-    const sortedFiles = Array.from(byFile.keys()).sort();
+    const sortedFiles = Array.from(byFile.keys()).sort((a, b) => Number(a > b) - Number(a < b));
 
     for (const file of sortedFiles) {
       lines.push('');

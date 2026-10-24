@@ -220,7 +220,7 @@ test.describe
       const comparable = (rows: unknown): string[] =>
         (Array.isArray(rows) ? (rows as { name: string; type: string }[]) : [])
           .map((row) => `${row.type} ${row.name}`)
-          .sort();
+          .sort((a, b) => Number(a > b) - Number(a < b));
 
       const disableAutostart = async (): Promise<void> => {
         await w1.executeViaBridge(

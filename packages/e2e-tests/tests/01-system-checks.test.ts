@@ -152,7 +152,7 @@ test.describe('System Functions @bridge @smoke', () => {
     const result = await runner.executeOnWorker('renet sandbox-exec --detect');
     const output = runner.getCombinedOutput(result);
 
-    const abi = output.match(/landlock abi version:\s*(\d+)/)?.[1] ?? 'unreported';
+    const abi = /landlock abi version:\s*(\d+)/.exec(output)?.[1] ?? 'unreported';
     test.info().annotations.push({
       type: 'landlock-abi',
       description: `ABI ${abi} on ${runner.getTargetVM()} (${os})`,
