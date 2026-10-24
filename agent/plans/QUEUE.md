@@ -62,24 +62,24 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 8 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/_done/PLAN-stop-hook-rulings-campaign.md -- 17 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-program.md -- 32 of 195 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 34 of 195 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (4 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 376 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 388 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a91161622907783c4, worker:a923cefa87f4c60e8.
-- Leased items: 2: #74a00f21 (worker:a91161622907783c4, d778be9d), #bbc78353 (worker:a923cefa87f4c60e8, d778be9d).
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a3426ed8c78b9bd3a, worker:a33eb7ebde442683f, worker:a90e3e4b9b504b5d1.
+- Leased items: 4: #25885740 (worker:a90e3e4b9b504b5d1, d778be9d), #358e097d (worker:a3426ed8c78b9bd3a, d778be9d), #98e7f50f (worker:a33eb7ebde442683f, d778be9d), #d0928775 (worker:a3426ed8c78b9bd3a, d778be9d).
 - Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 18 plans done, 160 of 379 boxes done (42%).
+Promoted: 1 of 20 plans done, 160 of 408 boxes done (39%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -101,6 +101,8 @@ Promoted: 1 of 18 plans done, 160 of 379 boxes done (42%).
 | 16 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
 | 17 | PLAN-renet-runtime-converge.md | 2/4 | 2 open |
 | 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
+| 19 | PLAN-converge-preflight-and-repo-recovery.md | 0/17 | 17 open |
+| 20 | PLAN-gpu-device-grants.md | 0/12 | 12 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -121,6 +123,8 @@ Promoted: 1 of 18 plans done, 160 of 379 boxes done (42%).
 16. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report
 17. agent/plans/PLAN-renet-runtime-converge.md -- operator 2026-10-24: asked whether hostinger repos need down/up after the layout change, then ordered autonomous continuation; worklist #d0928775
 18. agent/plans/PLAN-sandbox-tenant-separation.md -- live QA on .11 2026-10-24: cross-repo docker socket access, unisolated first sandbox compose, foreign mounts, delete leaks; P1 security, fix this session
+19. agent/plans/PLAN-converge-preflight-and-repo-recovery.md -- operator 2026-10-24 (ASKED:2026-10-24T17:45Z after the hostinger converge took down mail, observability and nextcloud): converge preflight with compose/gate parity, per-repo cert export for mail, a machine-level host metrics exporter for observability, Collabora without capabilities, then vm:check, deploy and recovery; P0; Depends-On none
+20. agent/plans/PLAN-gpu-device-grants.md -- operator 2026-10-24 (ASKED:2026-10-24T18:05Z): CDI inventory and per-repo device grants for NVIDIA and AMD GPUs, tested on the local WSL RTX 3060 and a fake-device drill; P2; Depends-On PLAN-converge-preflight-and-repo-recovery.md
 
 ## Generated
 
