@@ -861,10 +861,6 @@ def test_stop_kills_the_whole_tree_not_only_the_recorded_pid(monkeypatch, tmp_pa
 FOREIGN_WRITER = "some-devbox/pid:[4026532999]"
 
 
-def _shquote(text: str) -> str:
-    return shlex.quote(text)
-
-
 def _fake_docker(directory: pathlib.Path) -> str:
     """A `docker` that fails every call, so the two tests below need no skip: `account_stop`'s unscoped container teardown and ghost clean reach this instead of the machine's real daemon, and the pid handling under test runs exactly as it would."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -1949,12 +1945,13 @@ def test_stop_kills_a_sigterm_ignoring_child_whose_leader_exited(monkeypatch, tm
             "open(%r, 'w').write(str(os.getpid())); time.sleep(30)" % str(childfile)
         )
         leader = _spawn_reaped(
-            ["sh", "-c", "%s -c %s & wait" % (sys.executable, _shquote(ignorer))]
+            ["sh", "-c", "%s -c %s & wait" % (sys.executable, shlex.quote(ignorer))]
         )
         for _ in range(100):
             if childfile.is_file() and childfile.read_text().strip():
                 break
             time.sleep(0.05)
+        assert childfile.is_file(), "the SIGTERM-ignoring child never wrote its pid file"
         child = int(childfile.read_text().strip())
         assert _alive(child)
         state.write_text(
@@ -2051,3 +2048,45 @@ def test_kill_tree_with_members_never_signals_a_dropped_leader():
             with contextlib.suppress(OSError):
                 proc.kill()
             proc.wait(timeout=5)
+
+
+def test_stop_does_not_sigkill_a_member_whose_pid_was_reused(monkeypatch, tmp_path) -> None:
+    """Review 4cb0f2b2.2, end to end through stop(): a recorded process that survives SIGTERM but whose start time
+    changes before the SIGKILL pass (its pid was reused) is not killed. Red if stop() passes the unfiltered tree."""
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); print('ready', flush=True); time.sleep(30)",
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert proc.stdout is not None
+        assert proc.stdout.readline().strip() == "ready"
+        calls: dict[int, int] = {}
+
+        def changing_start_time(pid: int) -> str:
+            calls[pid] = calls.get(pid, 0) + 1
+            return "first" if calls[pid] == 1 else "reused"
+
+        monkeypatch.setattr(account, "_start_time", changing_start_time)
+        monkeypatch.setattr(account, "_tree", lambda pid: [int(pid)])
+        env = shadow_driver.sandbox_env(work)
+        pathlib.Path(account.state_file(env)).write_text(
+            "gateway_port=1\npids=%d\nwriter=%s\n" % (proc.pid, account.writer_stamp()),
+            encoding="utf-8",
+        )
+        assert account.stop(env) == 0
+        assert proc.poll() is None, (
+            "stop() SIGKILLed a member whose start time changed (a reused pid)"
+        )
+    finally:
+        with contextlib.suppress(OSError):
+            proc.kill()
+        proc.wait(timeout=5)
+        proc.stdout.close()
+        shutil.rmtree(work, ignore_errors=True)
