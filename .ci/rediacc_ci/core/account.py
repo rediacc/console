@@ -572,9 +572,9 @@ def _still_same(members: list[int], started: dict[int, str | None]) -> list[int]
 
 
 def _kill_tree(pid: str, sig: int, members: list[int] | None = None) -> None:
-    """Signal `pid`, its process group when it leads one other than ours, and every descendant.
+    """Signal a process tree: `pid` and every descendant, plus the group of the first member when it leads one other than ours.
 
-    `members` is the tree collected earlier, so an escalation after SIGTERM still reaches children whose leader already exited and which were reparented.
+    With `members` (the tree collected earlier, filtered by _still_same), ONLY those members are signalled and `pid` itself is not: an escalation after SIGTERM still reaches children whose leader exited and were reparented, while a leader pid that was reused, and so dropped from `members`, is never touched.
     """
     tree = members if members is not None else _tree(pid)
     if not tree:

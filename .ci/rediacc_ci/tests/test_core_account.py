@@ -2034,3 +2034,20 @@ def test_still_same_drops_a_reused_pid():
     me = os.getpid()
     assert account._still_same([me], {me: account._start_time(me)}) == [me]
     assert account._still_same([me], {me: "not-the-real-start-time"}) == []
+
+
+def test_kill_tree_with_members_never_signals_a_dropped_leader():
+    """Review 4cb0f2b2.1: when the leader pid was reused and _still_same dropped it, _kill_tree(pid, sig, survivors)
+    signals the survivors only; the process now holding the leader pid is left alone."""
+    bystander = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    survivor = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        account._kill_tree(str(bystander.pid), account.signal.SIGKILL, [survivor.pid])
+        survivor.wait(timeout=5)
+        time.sleep(0.2)
+        assert bystander.poll() is None, "the reused leader pid was signalled"
+    finally:
+        for proc in (bystander, survivor):
+            with contextlib.suppress(OSError):
+                proc.kill()
+            proc.wait(timeout=5)
