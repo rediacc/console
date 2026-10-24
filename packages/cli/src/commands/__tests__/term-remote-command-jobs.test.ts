@@ -12,6 +12,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { ConnectionDetails } from '../../services/machine/ssh-connection.js';
 import { buildRemoteCommand } from '../term.js';
@@ -25,7 +26,7 @@ const details: ConnectionDetails = {
   port: 22,
   privateKey: 'k',
   known_hosts: 'kh',
-  datastore: '/mnt/rediacc',
+  datastore: WK_DATASTORE_PATH,
   universalUser: 'u',
   environment: { REDIACC_REPOSITORY: 'app' },
   workingDirectory: home,
