@@ -8,6 +8,17 @@ Date: 2026-09-24
 Priority: P3 -- seed: Status draft, 16 open box(es)
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/hooks/stop/*.py, agent/RULES.md, .ci/scripts/quality/check_operator_rulings.py, .claude/rediacc_hooks/tests/*.py
+Revalidated: 2026-10-24 @ daab83af1f31
+
+<!-- preflight:begin -->
+```text
+preflight 2026-10-24 @ daab83af1f31
+open boxes: 0 (none)
+citations: 0 unresolved, 1 drifted, 0 relocated
+overlap since none: 0 commit(s)
+dependencies: 0
+```
+<!-- preflight:end -->
 
 Split out byte-identical on 2026-09-24 from `agent/plans/PLAN-stop-hook-overhaul.md`, which keeps section 1 (the noise fixes the decision said to execute) and its sections 7 to 9. The split exists because an adopted plan makes every open box a blocking mission, so these parked boxes demanded fresh trackers on every stop; five add-and-tick rounds had not ended that.
 

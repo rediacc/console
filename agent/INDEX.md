@@ -677,7 +677,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-stop-hook-plan-backlog-nudge.md` | done | 329 | 0 | 20 | 46013 |
 | `agent/plans/_done/PLAN-stop-hook-retro-20260924.md` | done | 617 | 0 | 23 | 67079 |
 | `agent/plans/_done/PLAN-stop-hook-retro-20260925.md` | done | 259 | 0 | 10 | 25162 |
-| `agent/plans/_done/PLAN-stop-hook-rulings-campaign.md` | done | 120 | 0 | 17 | 13478 |
+| `agent/plans/_done/PLAN-stop-hook-rulings-campaign.md` | done | 131 | 0 | 17 | 13731 |
 | `agent/plans/_done/PLAN-stop-hook-task-verification.md` | done | 273 | 0 | 15 | 37694 |
 | `agent/plans/_done/PLAN-stop-hook-turbo.md` | done | 191 | 0 | 23 | 31391 |
 | `agent/plans/_done/PLAN-subscription-status-error-swallowing.md` | done | 89 | 0 | 5 | 4684 |
