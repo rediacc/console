@@ -28,6 +28,7 @@ import type { ExecuteOptions, ExecuteResult, RenetEvent } from '../types.js';
  * client re-emits, and `onJobStarted` as a `jobStarted` frame.
  */
 type WireExecuteOptions = Omit<ExecuteOptions, 'onEvent' | 'onJobStarted'>;
+
 export type { WireExecuteOptions };
 
 /** The callback fields that are transported as frames rather than serialized. */
