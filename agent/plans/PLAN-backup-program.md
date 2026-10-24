@@ -278,7 +278,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [ ] K5: A same-machine restore leaves the source byte-identical (E1). Accept: suite 26 case.
 - [ ] K6: Cold round trip T3: a container writes a counter, a `--cold` backup runs, the restore shows no gap and no torn write. Accept: suite 26 case.
 - [ ] K7: A scheduled timer fires: `backup schedule`, then `systemctl start` the unit, and a manifest commits. Accept: suite 26 case.
-- [ ] K8: verifyReconcile: plant a deleted chunk and a ledger drift and assert driftBytes; wire a nightly caller into runMaintenance. Accept: vitest; cron wiring test.
+- [x] K8: verifyReconcile: plant a deleted chunk and a ledger drift and assert driftBytes; wire a nightly caller into runMaintenance. Accept: vitest; cron wiring test.
+    (ticked) 2026-10-24T15:56:11Z by d778be9d: commit:677aad399 (account 62e2e29) verifyReconcile drift tests (deleted chunk -100, overcount -200, clean 0) and the nightly verify-reconcile phase; vitest 49 passed rc=0, cron-wiring mutation fails without the call
 - [ ] K9: Key rotation: a passphrase change keeps dedup (same master key); a reencrypt forces a full seed and still restores. Accept: btrfs/LUKS tier test.
 - [ ] K10: Large-repo performance: a nightly VM job seeds 50 GB and runs an incremental against a time and byte budget, recording durationMs. Accept: the first nightly result recorded.
 - [ ] K11: Corruption injection at e2e level: flip a byte in a stored chunk; restore refuses and verify reports it. Accept: suite 26 case.

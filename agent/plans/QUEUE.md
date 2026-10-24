@@ -67,24 +67,24 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (4 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 353 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 356 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a2105f2905cc69ed1, worker:af461b4a8ddfafdfd, worker:a14b68db1d155484c.
-- Leased items: 3: #1a473af0 (worker:a14b68db1d155484c, d778be9d), #7a4cd641 (worker:a2105f2905cc69ed1, d778be9d), #8fd8e5e3 (worker:af461b4a8ddfafdfd, d778be9d).
+- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a14b68db1d155484c, worker:ad155aa91520b7862, worker:a28ff2171a9ae8da3, worker:a1e92ee4ce9242ae1.
+- Leased items: 4: #162ae969 (worker:a28ff2171a9ae8da3, d778be9d), #1a473af0 (worker:a14b68db1d155484c, d778be9d), #c03a2a7d (worker:a1e92ee4ce9242ae1, d778be9d), #c5d1792d (worker:ad155aa91520b7862, d778be9d).
 - Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 18 plans done, 152 of 379 boxes done (40%).
+Promoted: 1 of 18 plans done, 153 of 379 boxes done (40%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 16/16 | done |
-| 2 | PLAN-backup-program.md | 26/195 | 169 open |
+| 2 | PLAN-backup-program.md | 27/195 | 168 open |
 | 3 | PLAN-cloudflare-proxy.md | 26/29 | 3 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 5/6 | 1 open |
 | 5 | PLAN-telemetry-export.md | 8/19 | 11 open |
