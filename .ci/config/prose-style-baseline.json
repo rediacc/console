@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2810,
- "files": 686,
+ "count": 2806,
+ "files": 683,
  "by_rule": {
-  "R1": 1537,
+  "R1": 1533,
   "R11": 148,
   "R14": 1,
   "R18": 13,
@@ -3355,16 +3355,6 @@
     "3afc937f8ced5fe9"
    ]
   },
-  "docs/backup-storage/01-verified-context.md": {
-   "R1": [
-    "b4775abd199629c7"
-   ]
-  },
-  "docs/backup-storage/06-execution-guide.md": {
-   "R1": [
-    "f823a2157ef2ed85"
-   ]
-  },
   "docs/backup-storage/07-execution-record.md": {
    "R1": [
     "9682b2dcf63ee8d8",
@@ -3411,12 +3401,6 @@
   "docs/backup-storage/CHECKLIST.md": {
    "R2": [
     "9a18bd2b6c008ad9"
-   ]
-  },
-  "docs/backup-storage/PROMPT.md": {
-   "R1": [
-    "2d13fa8ae96b125c",
-    "89de28a268ff01cf"
    ]
   },
   "docs/caption-sync-flat-cues.md": {

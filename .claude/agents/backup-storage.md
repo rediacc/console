@@ -14,10 +14,10 @@ You own the backup and restore stack: the Rediacc-native chunk store that replac
 | file | what it is |
 |---|---|
 | `07-execution-record.md` | status, operator decisions, the bugs found in the built system, and every correction to the rest |
-| `01-verified-context.md` | what existed before the campaign, plus the findings ledger |
-| `02-design.md` | architecture and the 14 scored decisions (superseded in places by 07) |
-| `03-implementation-map.md` | per-surface seams with file:line, schema plan, traps by name |
-| `04-testing-and-local-loop.md` | the three-tier battery and the local VM topology |
+| `archive/01-verified-context.md` | what existed before the campaign, plus the findings ledger |
+| `archive/02-design.md` | architecture and the 14 scored decisions (superseded in places by 07) |
+| `archive/03-implementation-map.md` | per-surface seams with file:line, schema plan, traps by name |
+| `archive/04-testing-and-local-loop.md` | the three-tier battery and the local VM topology |
 | `08-cutover-runbook.md` | wave 5, the credentialed legs the operator still has to run |
 
 Every `file:line` in those documents is a hypothesis. Re-verify before editing.

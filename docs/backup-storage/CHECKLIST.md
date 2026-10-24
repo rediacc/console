@@ -4,14 +4,14 @@ Status: superseded by agent/plans/PLAN-backup-program.md (2026-10-23)
 Owner: 97604f47
 
 ## Deliverables
-- [x] d1 file:docs/backup-storage/README.md
-- [x] d2 file:docs/backup-storage/01-verified-context.md
-- [x] d3 file:docs/backup-storage/02-design.md
-- [x] d4 file:docs/backup-storage/03-implementation-map.md
-- [x] d5 file:docs/backup-storage/04-testing-and-local-loop.md
-- [x] d6 file:docs/backup-storage/05-docs-and-decommission.md
-- [x] d7 file:docs/backup-storage/06-execution-guide.md
-- [x] d8 file:docs/backup-storage/PROMPT.md
+- [x] d1 file:docs/backup-storage/archive/README.md
+- [x] d2 file:docs/backup-storage/archive/01-verified-context.md
+- [x] d3 file:docs/backup-storage/archive/02-design.md
+- [x] d4 file:docs/backup-storage/archive/03-implementation-map.md
+- [x] d5 file:docs/backup-storage/archive/04-testing-and-local-loop.md
+- [x] d6 file:docs/backup-storage/archive/05-docs-and-decommission.md
+- [x] d7 file:docs/backup-storage/archive/06-execution-guide.md
+- [x] d8 file:docs/backup-storage/archive/PROMPT.md
 - [x] d9 file:~/.claude/projects/-home-muhammed-monorepo-console/programs/backup-storage/MANIFEST.md
 
 ## Waves

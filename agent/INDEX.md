@@ -281,9 +281,9 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `docs/agent-reference/ci-gates.md` | agent/plans/PLAN-npm-ci-parallel-parity.md, agent/plans/PLAN-remove-autopilot.md |
 | `docs/agent-reference/local-env.md` | agent/plans/PLAN-devbox-uid-derived-image.md |
 | `docs/agent-reference/suppressions.md` | agent/plans/PLAN-npm-ci-parallel-parity.md |
-| `docs/backup-storage/02-design.md` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-quota-delta-gc.md |
-| `docs/backup-storage/05-docs-and-decommission.md` | agent/plans/PLAN-chunk-store-browse-server.md, agent/plans/PLAN-rclone-decommission.md |
-| `docs/backup-storage/README.md` | agent/plans/PLAN-chunk-store-browse-server.md |
+| `docs/backup-storage/archive/02-design.md` | agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-quota-delta-gc.md |
+| `docs/backup-storage/archive/05-docs-and-decommission.md` | agent/plans/PLAN-chunk-store-browse-server.md, agent/plans/PLAN-rclone-decommission.md |
+| `docs/backup-storage/archive/README.md` | agent/plans/PLAN-chunk-store-browse-server.md |
 | `docs/ci-overhaul/06-progress.md` | agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-resprofile-wave2.md |
 | `docs/design/06-cli-reshape.md` | agent/plans/PLAN-add-chunkstore-backup-verb.md |
 | `eslint-rules/e2e-test-naming-convention.js` | agent/plans/PLAN-lint-rule-matrix-probe.md |
@@ -464,7 +464,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
-| `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5643 |
+| `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5651 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
@@ -472,13 +472,13 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-program.md` | approved | 374 | 177 | 18 | 72950 |
-| `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5576 |
+| `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
 | `agent/plans/PLAN-backup-toc-exact-opt-in.md` | proposed | 69 | 8 | 0 | 11399 |
 | `agent/plans/PLAN-bump-k3s-upstream-1-36-4.md` | compacted | 35 | 0 | 0 | 2420 |
 | `agent/plans/PLAN-chunk-store-browse-DECISION.md` | compacted | 37 | 0 | 0 | 2572 |
 | `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5233 |
-| `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4897 |
+| `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4913 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 76 | 3 | 2 | 10341 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
@@ -524,7 +524,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
-| `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3019 |
+| `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 99 | 14 | 0 | 23753 |
