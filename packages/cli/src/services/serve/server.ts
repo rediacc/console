@@ -219,10 +219,10 @@ export function createServeApp(deps: ServeDeps): Hono {
       };
 
       const started = Date.now();
-      // Set once the success path has shipped its event, so a later throw (a closed stream on the result write) cannot ship a second one for the same command.
-      let audited = false;
+      // Only the dispatch sits in the try: the success audit and the result write come after it, so a throw while writing the result (a closed stream) can never reach the failure audit and ship a second event for the same command.
+      let dispatched: Awaited<ReturnType<typeof dispatchCommand>>;
       try {
-        const dispatched = await dispatchCommand({
+        dispatched = await dispatchCommand({
           prepared,
           executor: deps.executor,
           ...(requestConfig ? { config: requestConfig } : {}),
@@ -241,67 +241,25 @@ export function createServeApp(deps: ServeDeps): Hono {
             void write({ kind: 'event', event, ...(line == null ? {} : { line }) });
           },
         });
-        const { result, functionName, machineName, stdout, stderr } = dispatched;
-
-        // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
-        await deps.audit?.({
-          principal,
-          commandPath: request.pathKey,
-          ...(functionName ? { functionName } : {}),
-          // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside
-          // the action body); fall back to the request for verbs that still name
-          // the machine explicitly (backup, job).
-          machineName:
-            machineName ??
-            targetFrom(
-              entry.machineOption,
-              entry.machinePositional,
-              request.params,
-              request.positionals
-            ),
-          params: request.params,
-          success: result.success,
-          exitCode: result.exitCode,
-          durationMs: result.durationMs,
-          destructive: entry.destructive ?? false,
-        });
-        audited = true;
-
-        await write({
-          kind: 'result',
-          result,
-          stdout,
-          ...(dispatched.stdoutBytes
-            ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
-            : {}),
-          stderr: withNotices(stderr, [
-            auditWarning,
-            dispatched.unpersistedConfigWrites > 0
-              ? `WARNING: "rdc ${request.pathKey}" changed its config, and the executor did not save the change: it runs against the config granted for this session and does not write it back to config storage.`
-              : undefined,
-          ]),
-        });
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
         // A dispatch that threw still ran, or tried to run, on the caller's behalf: one event per command holds on this path too. The function it may have reached is unknown here, so it records by path.
-        if (!audited) {
-          await deps.audit?.({
-            principal,
-            commandPath: request.pathKey,
-            machineName: targetFrom(
-              entry.machineOption,
-              entry.machinePositional,
-              request.params,
-              request.positionals
-            ),
-            params: request.params,
-            success: false,
-            exitCode: 1,
-            durationMs: Date.now() - started,
-            destructive: entry.destructive ?? false,
-          });
-        }
+        await deps.audit?.({
+          principal,
+          commandPath: request.pathKey,
+          machineName: targetFrom(
+            entry.machineOption,
+            entry.machinePositional,
+            request.params,
+            request.positionals
+          ),
+          params: request.params,
+          success: false,
+          exitCode: 1,
+          durationMs: Date.now() - started,
+          destructive: entry.destructive ?? false,
+        });
         await write({
           kind: 'result',
           result: {
@@ -311,7 +269,47 @@ export function createServeApp(deps: ServeDeps): Hono {
             durationMs: Date.now() - started,
           },
         });
+        return;
       }
+      const { result, functionName, machineName, stdout, stderr } = dispatched;
+
+      // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
+      await deps.audit?.({
+        principal,
+        commandPath: request.pathKey,
+        ...(functionName ? { functionName } : {}),
+        // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside
+        // the action body); fall back to the request for verbs that still name
+        // the machine explicitly (backup, job).
+        machineName:
+          machineName ??
+          targetFrom(
+            entry.machineOption,
+            entry.machinePositional,
+            request.params,
+            request.positionals
+          ),
+        params: request.params,
+        success: result.success,
+        exitCode: result.exitCode,
+        durationMs: result.durationMs,
+        destructive: entry.destructive ?? false,
+      });
+
+      await write({
+        kind: 'result',
+        result,
+        stdout,
+        ...(dispatched.stdoutBytes
+          ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
+          : {}),
+        stderr: withNotices(stderr, [
+          auditWarning,
+          dispatched.unpersistedConfigWrites > 0
+            ? `WARNING: "rdc ${request.pathKey}" changed its config, and the executor did not save the change: it runs against the config granted for this session and does not write it back to config storage.`
+            : undefined,
+        ]),
+      });
     });
   });
 
