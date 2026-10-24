@@ -2847,9 +2847,20 @@ def _has_line(path, number):
 CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
 
 
+def _superproject_prefix(repo):
+    """`private/account/` when `repo` is a submodule checked out at that path of its superproject, else "". A finding of a submodule commit is read from the console root, so its evidence often cites `private/account/src/x.ts:12`; without this only the submodule-relative `src/x.ts:12` resolved (worklist #37f915ff: the renet form seemed to work only because its evidence also named a renet sha)."""
+    sup = git_out(repo, "rev-parse", "--show-superproject-working-tree")
+    if not sup:
+        return ""
+    rel = os.path.relpath(os.path.abspath(repo), sup)
+    return "" if rel.startswith("..") or rel == "." else rel.replace(os.sep, "/") + "/"
+
+
 def _citation_ok(repo, evidence):
     root = os.path.abspath(repo)
-    for cited, number in _cited_paths(evidence):
+    prefix = _superproject_prefix(repo)
+    for raw, number in _cited_paths(evidence):
+        cited = raw[len(prefix) :] if prefix and raw.startswith(prefix) else raw
         # A citation is of THIS repository: an absolute path replaces the root in a join, and `..` climbs out of it, so the path's LOCATION, normalised lexically, must sit inside the root (`/etc/hosts:1` cites nothing). Lexically, not through realpath: a tracked symlink whose target lies elsewhere is still a path of this repository.
         located = os.path.normpath(os.path.join(root, cited))
         if not located.startswith(root + os.sep):

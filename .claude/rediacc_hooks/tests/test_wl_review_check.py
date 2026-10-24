@@ -558,6 +558,25 @@ def test_a_submodule_label_ignores_the_console_tip_pin(tmp_path):
     assert reasons == ["stale-tip"], reasons
 
 
+def test_a_submodule_citation_may_name_the_console_root_path(tmp_path, monkeypatch):
+    """A submodule finding's evidence read from the console root names `private/account/src/x.ts:1` (worklist #37f915ff); it resolves inside the submodule, while a path under another prefix, a line past the end, and a prefix that climbs out still cite nothing."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "x.ts").write_text("export const x = 1;\n", encoding="utf-8")
+    monkeypatch.setattr(R, "_superproject_prefix", lambda _repo: "private/account/")
+    assert R._citation_ok(str(tmp_path), "the rule is private/account/src/x.ts:1 as written")
+    assert R._citation_ok(str(tmp_path), "the rule is src/x.ts:1 as written")
+    assert not R._citation_ok(str(tmp_path), "the rule is private/renet/src/x.ts:1 as written")
+    assert not R._citation_ok(str(tmp_path), "the rule is private/account/src/x.ts:9 past the end")
+    assert not R._citation_ok(str(tmp_path), "the rule is private/account/../x.ts:1 outside")
+    monkeypatch.setattr(R, "_superproject_prefix", lambda _repo: "")
+    assert not R._citation_ok(str(tmp_path), "the rule is private/account/src/x.ts:1 as written")
+
+
+def test_the_superproject_prefix_of_a_plain_repo_is_empty(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    assert R._superproject_prefix(str(tmp_path)) == ""
+
+
 def test_a_citation_may_name_an_extensionless_file(tmp_path):
     """`Dockerfile:83` is a path:line like any other (worklist item on the refused not-a-bug mark, 2026-10-11); a line past the file's end, a missing file and a bare clock time still cite nothing."""
     (tmp_path / "Dockerfile").write_text("FROM x\nRUN y\n", encoding="utf-8")
