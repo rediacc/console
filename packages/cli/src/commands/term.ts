@@ -179,7 +179,8 @@ export function buildRemoteCommand(
   const rcfile = `--rcfile <(echo "source ~/.bashrc 2>/dev/null; ${sourceCmd}")`;
 
   if (userCmd) {
-    return `${envPrefix}${ensureBashSetup}; ${sourceCmd} && ${userCmd}`;
+    // `;`, not `&&`: sourceCmd already ends in `|| true`, and `&&` made the user's first command part of one AND-list with it, so `X & Y` backgrounded `source … || true && X` as a SUBSHELL that kept the channel's stdout and stderr and waited on X, and the ssh channel never closed (vm:check I1.8, 2026-10-24).
+    return `${envPrefix}${ensureBashSetup}; ${sourceCmd}; ${userCmd}`;
   }
   return `${envPrefix}${ensureBashSetup}; exec bash ${rcfile}`;
 }
