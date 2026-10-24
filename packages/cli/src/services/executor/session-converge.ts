@@ -1,7 +1,8 @@
 /**
  * The runtime converge pass as one executor session runs it (PLAN-renet-runtime-converge D5): the
  * deps bound to the session, the vault a `runtime_converge` call carries, and the converge-if-stale
- * step every other function takes after a renet upload. Split out of local-executor.ts, which owns
+ * step every other function takes first (it reads the runtime only after a renet upload, and it
+ * still repays a deferred router refresh without one). Split out of local-executor.ts, which owns
  * the session itself.
  */
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
