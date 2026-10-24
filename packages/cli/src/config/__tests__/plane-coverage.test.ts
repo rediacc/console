@@ -114,8 +114,10 @@ describe('command plane coverage', () => {
     // against the control plane, never a machine. Inheriting the backup domain's machine default would have made them proxyCapable, offering the command that decides what gets DELETED for remote execution.
     // 175 -> 177, other 25 -> 27: `config remote versions` and `config remote restore` (PLAN-config-sync-hardening T16) inherit `config remote`'s `other` plane: both talk to the config store on the account server, never a machine.
     // 177 -> 178, other 27 -> 28: `subscription proxy-token` mints a proxy:exec token from this device's login against the account server, never a machine, so it inherits `subscription`'s `other` plane.
-    expect(COMMANDS.length).toBe(178);
-    expect(counts).toEqual({ config: 54, machine: 96, other: 28 });
+    //
+    // 178 -> 179, machine 96 -> 97: `machine converge` restarts stale repo daemons on a machine, so it is a machine-plane leaf.
+    expect(COMMANDS.length).toBe(179);
+    expect(counts).toEqual({ config: 54, machine: 97, other: 28 });
   });
 
   it('records the interactive commands', () => {
@@ -154,7 +156,9 @@ describe('command plane coverage', () => {
     // executor can no longer be handed them. They were never machine commands, the relocation out of the `config` noun silently gave them repo's machine default, and this list is exactly the set the proxy will run remotely, which is why an archive verb appearing in it was a wrong-target data-loss bug (§4.9). 89 -> 90: `backup verify` is a machine-plane, non-interactive read (the
     // backup_verify verb runs on the machine that holds the anchor). 90 -> 91: `backup snapshot` is machine-plane and non-interactive, so a remote executor can run it, exactly like its `backup verify` sibling. 91 -> 92: `backup browse` reads the repository IMAGE, which only exists on the machine holding it, so it is machine-plane for the same reason `backup verify` is. Note it is
     // NOT `other` like `usage`/`manifests`: those ask the account server, this one cannot be answered without the image.
-    expect(machineNonInteractive.length).toBe(92);
+    //
+    // 92 -> 93: `machine converge` is machine-plane and non-interactive; the contract excludes it from proxying separately (caller-held env secrets).
+    expect(machineNonInteractive.length).toBe(93);
   });
 
   it('plane and interactive entries all point at real commands', () => {

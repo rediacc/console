@@ -171,6 +171,8 @@ describe('CLI contract', () => {
       'machine scan-keys',
       'config reconcile',
     ];
+    // Caller-held secrets: the executor would restart repo daemons with its own env secrets, not the caller's.
+    excluded.push('machine converge');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);
@@ -240,6 +242,7 @@ describe('CLI contract', () => {
       'datastore attach --writes=local|ceph',
       'datastore create --backend=local|rbd',
       'datastore fork --writes=local|ceph',
+      'machine converge --policy=epoch|always',
       // A4 .choices() sweep: machine list --sort, machine provider add --ssh-key-format, repo migrate/pull/push --strategy, and the three vscode --server-provider commands are the eight enums added this wave.
       'machine list --sort=name|ip|user|port|datastore',
       'machine provider add --ssh-key-format=inline_list|resource_id',

@@ -111,7 +111,12 @@ function machine(stdout: string): { executor: Executor; calls: ExecuteOptions[] 
       execute(options): Promise<ExecuteResult> {
         calls.push(options);
         for (const line of stdout.split('\n')) options.onEvent?.({ type: 'output', msg: line });
-        return Promise.resolve({ success: true, exitCode: 0, durationMs: 3, stdout: `${stdout}\n` });
+        return Promise.resolve({
+          success: true,
+          exitCode: 0,
+          durationMs: 3,
+          stdout: `${stdout}\n`,
+        });
       },
     },
   };

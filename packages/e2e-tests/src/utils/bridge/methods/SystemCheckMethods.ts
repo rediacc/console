@@ -75,6 +75,11 @@ export class SystemCheckMethods {
     return this.testFunction({ function: 'machine_check_cli' });
   }
 
+  /** Dry-run converge: plans the daemon restarts without restarting any repository. */
+  convergeRuntimeDryRun(): Promise<ExecResult> {
+    return this.testFunction({ function: 'machine_converge_runtime', dryRun: true });
+  }
+
   checkDatastore(datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_status',

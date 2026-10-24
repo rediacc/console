@@ -112,6 +112,8 @@ export interface TestFunctionOptions {
   docker?: boolean;
   dockerVolumes?: boolean;
   reportOnly?: boolean;
+  /** machine_converge_runtime: print the restart plan without restarting any repository daemon. */
+  dryRun?: boolean;
 }
 
 /**

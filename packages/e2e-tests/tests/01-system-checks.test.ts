@@ -18,7 +18,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * - machine_check_kernel, machine_check_setup, machine_check_memory
  * - machine_check_sudo, machine_check_tools, machine_check_renet, machine_check_criu
  * - machine_check_btrfs, machine_check_drivers, machine_check_system, machine_check_users
- * - machine_check_cli, machine_fix_groups
+ * - machine_check_cli, machine_fix_groups, machine_converge_runtime (dry run)
  * Note: datastore_status is tested in 03-datastore-lifecycle.test.ts
  */
 
@@ -206,6 +206,13 @@ test.describe('System Functions @bridge @smoke', () => {
 
   test('check_rediacc_cli should verify CLI', async () => {
     const result = await runner.checkRediaccCli();
+
+    expect(runner.isSuccess(result)).toBe(true);
+    expect(result.code).toBe(0);
+  });
+
+  test('converge_runtime dry run should plan without restarting anything', async () => {
+    const result = await runner.convergeRuntimeDryRun();
 
     expect(runner.isSuccess(result)).toBe(true);
     expect(result.code).toBe(0);

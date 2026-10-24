@@ -748,6 +748,8 @@ export class BridgeTestRunner {
     if (opts.docker) flags += ` --docker`;
     if (opts.dockerVolumes) flags += ` --docker-volumes`;
     if (opts.reportOnly) flags += ` --report-only`;
+    // machine_converge_runtime: derived from the renet ParamDef registry as a boolean flag.
+    if (opts.dryRun) flags += ` --dry-run`;
     return flags;
   }
 
@@ -1044,6 +1046,7 @@ export class BridgeTestRunner {
   checkSystem = () => this.systemCheckMethods.checkSystem();
   checkUsers = () => this.systemCheckMethods.checkUsers();
   checkRediaccCli = () => this.systemCheckMethods.checkRediaccCli();
+  convergeRuntimeDryRun = () => this.systemCheckMethods.convergeRuntimeDryRun();
   checkDatastore = (datastorePath?: string) =>
     this.systemCheckMethods.checkDatastore(datastorePath);
 
