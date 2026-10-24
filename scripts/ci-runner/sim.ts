@@ -806,8 +806,7 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
     `survivor: a:first ${ga.grants.get('a:first')}, b ${gb.grants.get('b:short')}, a:second after b exited ${ga.grants.get('a:second')}`
   );
   check(
-    (ga.grants.get('a:first') ?? 99) <= 12 &&
-      (gb.endMs ?? Number.POSITIVE_INFINITY) < (ga.starts.get('a:second') ?? 0),
+    (ga.grants.get('a:first') ?? 99) <= 12 && gb.endMs < (ga.starts.get('a:second') ?? 0),
     `CONTROL: a's first gate must share with b, and b must exit before a's second gate, got ${ga.grants.get('a:first')}, b ended ${gb.endMs}`
   );
   check(

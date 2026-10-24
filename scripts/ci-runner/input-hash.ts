@@ -28,7 +28,9 @@ function sortKeys(x: unknown): unknown {
   if (Array.isArray(x)) return x.map(sortKeys);
   if (x !== null && typeof x === 'object') {
     const out: Record<string, unknown> = {};
-    for (const k of Object.keys(x as Record<string, unknown>).sort()) {
+    for (const k of Object.keys(x as Record<string, unknown>).sort(
+      (a, b) => Number(a > b) - Number(a < b)
+    )) {
       out[k] = sortKeys((x as Record<string, unknown>)[k]);
     }
     return out;
@@ -130,7 +132,9 @@ export function saltHash(root: string, tree: string): string {
 }
 
 export function inputHash(def: string, files: string, salt: string, needs: string[]): string {
-  return sha(`input\n${def}\n${files}\n${salt}\n${[...needs].sort().join('\n')}`);
+  return sha(
+    `input\n${def}\n${files}\n${salt}\n${[...needs].sort((a, b) => Number(a > b) - Number(a < b)).join('\n')}`
+  );
 }
 
 export interface GateHash {
@@ -207,7 +211,11 @@ export function computeGateHashes(
       inputHash: null,
       defHash: def,
       filesHash: fh,
-      inputs: { globs, files, scripts: Object.keys(scripts).sort() },
+      inputs: {
+        globs,
+        files,
+        scripts: Object.keys(scripts).sort((a, b) => Number(a > b) - Number(a < b)),
+      },
       reason: null,
     };
     result.set(id, gh);
@@ -233,7 +241,7 @@ export function computeGateHashes(
     } else {
       inProgress.add(id);
       const needHashes: string[] = [];
-      for (const n of [...(entry.needs ?? [])].sort()) {
+      for (const n of [...(entry.needs ?? [])].sort((a, b) => Number(a > b) - Number(a < b))) {
         const nh = compute(n);
         if (nh.inputHash === null) {
           gh.reason = `needs-null:${n}`;
@@ -522,7 +530,7 @@ export function exemptIdsOf(text: string | null): Set<string> {
   if (doc.schema !== 1 || !Array.isArray(doc.exempt))
     throw new Error(`${CARRY_EXEMPT_REL}: expected {"schema": 1, "exempt": [...]}`);
   const ids = new Set<string>();
-  for (const row of doc.exempt as Array<{ id?: unknown }>) {
+  for (const row of doc.exempt as Array<{ id?: unknown } | null>) {
     if (typeof row?.id !== 'string' || row.id === '')
       throw new Error(`${CARRY_EXEMPT_REL}: every exempt row needs a string "id"`);
     ids.add(row.id);

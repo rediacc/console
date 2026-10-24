@@ -619,7 +619,7 @@ function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) 
 // iteration order cannot change the answer, and NUL-delimited so no path can forge a different map's serialization by containing the delimiter.
 function closureHashOf(shaByPath) {
   const h = createHash('sha256');
-  for (const p of Object.keys(shaByPath).sort()) {
+  for (const p of Object.keys(shaByPath).sort((a, b) => Number(a > b) - Number(a < b))) {
     h.update(p);
     h.update('\0');
     h.update(String(shaByPath[p]));

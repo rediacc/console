@@ -322,7 +322,7 @@ function buildPlan(classification) {
   return {
     engine: 'scope-engine/1',
     mode,
-    modules: [...modules].sort(),
+    modules: [...modules].sort((a, b) => Number(a > b) - Number(a < b)),
     reasons,
     full_reasons,
     jobs,

@@ -243,7 +243,7 @@ export function placeUnits(
     const home = new Set<number>();
     for (const id of ids) for (const h of homes.get(id) ?? []) home.add(h);
     return {
-      ids: [...ids].sort(),
+      ids: [...ids].sort((a, b) => Number(a > b) - Number(a < b)),
       ms: ids.reduce((a, id) => a + costOf(id), 0),
       home: [...home].sort((a, b) => a - b),
     };
@@ -260,7 +260,12 @@ export function placeUnits(
       (a, b) =>
         (byId.get(a)?.needs ?? []).length - (byId.get(b)?.needs ?? []).length || a.localeCompare(b)
     );
-    legs.set(leg, appendOnly ? [...held, ...ordered] : [...held, ...ordered].sort());
+    legs.set(
+      leg,
+      appendOnly
+        ? [...held, ...ordered]
+        : [...held, ...ordered].sort((a, b) => Number(a > b) - Number(a < b))
+    );
     for (const id of ordered) {
       placed.push({ id, leg, why });
       legOf.set(id, leg);
@@ -663,7 +668,8 @@ async function selftest(): Promise<number> {
   }
   {
     // The real tree: placing twice is a no-op the second time, and every placement is a real unit.
-    const units = await LANE_ENUMERATORS[L]?.(ROOT);
+    const enumerate: ((root: string) => Promise<Unit[]>) | undefined = LANE_ENUMERATORS[L];
+    const units = enumerate === undefined ? undefined : await enumerate(ROOT);
     const text = fs.readFileSync(path.join(ROOT, shardManifestPath(L)), 'utf8');
     try {
       const first = placeText(text, L, units ?? [], realPricing(L, units ?? []), NOW);

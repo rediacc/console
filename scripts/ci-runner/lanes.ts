@@ -409,7 +409,9 @@ function orderUnit(
     }
   }
   if (out.length !== ids.length) {
-    const stuck = ids.filter((id) => !out.includes(id)).sort();
+    const stuck = ids
+      .filter((id) => !out.includes(id))
+      .sort((a, b) => Number(a > b) - Number(a < b));
     return {
       error:
         `a \`needs\` cycle inside one shard unit: ${stuck.join(', ')}. ` +
@@ -766,7 +768,7 @@ export function committedPlanFindings(
       }
     }
   }
-  for (const id of [...laneIds].sort()) {
+  for (const id of [...laneIds].sort((a, b) => Number(a > b) - Number(a < b))) {
     if (!legOf.has(id)) findings.push(`${lane}: ${id} is in no committed leg`);
   }
   return findings;
@@ -805,7 +807,8 @@ export function stickyShardPlan(
   const fresh = (freshPlan.lanes[0] as LaneShards).shards;
   const laneIds = lock.filter((e) => laneJobOf(e) === lane).map((e) => e.id);
   const livePriced: Record<string, number | null> = {};
-  for (const id of [...laneIds].sort()) livePriced[id] = live[id] ?? null;
+  for (const id of [...laneIds].sort((a, b) => Number(a > b) - Number(a < b)))
+    livePriced[id] = live[id] ?? null;
   const replan = (reason: string, findings: string[] = [], gainMs: number | null = null) => ({
     shards: fresh,
     pricedMs: livePriced,
@@ -884,7 +887,7 @@ export function shardPlan(
   shards: Readonly<Record<string, number>>,
   durations?: Readonly<Record<string, number>>
 ): ShardPlan | { error: string } {
-  const laneNames = Object.keys(shards).sort();
+  const laneNames = Object.keys(shards).sort((a, b) => Number(a > b) - Number(a < b));
   if (laneNames.length === 0) {
     return {
       error:

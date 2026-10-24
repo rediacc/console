@@ -528,7 +528,7 @@ async function selftest(): Promise<number> {
 
   // THE REAL SCRIPT PARSES, and into the projects named. A parser that returned [] would turn this gate green over nothing.
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf-8')) as {
-    scripts: Record<string, string>;
+    scripts: Partial<Record<string, string>>;
   };
   const www = JSON.parse(
     fs.readFileSync(path.join(REPO_ROOT, 'packages', 'www', 'package.json'), 'utf-8')

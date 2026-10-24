@@ -175,7 +175,9 @@ export function classOf(file: string, anchors: readonly Anchor[]): string {
 
 /** The diff's classes, sorted and deduplicated. */
 export function classesOf(files: readonly string[], anchors: readonly Anchor[]): string[] {
-  return [...new Set(files.map((f) => classOf(f, anchors)))].sort();
+  return [...new Set(files.map((f) => classOf(f, anchors)))].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
 }
 
 // ---------------------------------------------------------------- cold start and probabilities

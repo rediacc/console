@@ -98,7 +98,7 @@ class BrokerLink {
       this.drain();
     });
     const die = (why: string): void => {
-      if (this.dead === undefined) this.dead = why;
+      this.dead ??= why;
       const w = this.waiting;
       this.waiting = undefined;
       w?.(undefined);
@@ -127,8 +127,7 @@ class BrokerLink {
       const line = await new Promise<string | undefined>((resolve) => {
         const timer = setTimeout(() => {
           this.waiting = undefined;
-          if (this.dead === undefined)
-            this.dead = `no reply to ${JSON.stringify(body)} within ${timeoutMs} ms`;
+          this.dead ??= `no reply to ${JSON.stringify(body)} within ${timeoutMs} ms`;
           resolve(undefined);
         }, timeoutMs);
         this.waiting = (l) => {

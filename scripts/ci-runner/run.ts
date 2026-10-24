@@ -1727,7 +1727,7 @@ async function selftest(): Promise<number> {
   // THE TIMELINE (report.ts timelineOf): every launched gate has a start and an end relative to the run's start, a skipped one has none, and the footer prints the tail with them. The footer above had no startedAt, which is the control: it must print no timeline.
   {
     const t0 = Math.min(...results.flatMap((r) => (r.readyAt === undefined ? [] : [r.readyAt])));
-    const tl = timelineOf(results, t0);
+    const tl = sparse(timelineOf(results, t0));
     const pass = tl['selftest:pass'];
     require_(
       pass !== undefined &&
@@ -2500,8 +2500,8 @@ async function selftest(): Promise<number> {
     require_(
       green !== undefined &&
         green.whole === true &&
-        green.droppedVerified.x?.exitCode === 0 &&
-        green.droppedVerified.x?.headTree === 't' &&
+        sparse(green.droppedVerified).x?.exitCode === 0 &&
+        sparse(green.droppedVerified).x?.headTree === 't' &&
         green.exitCode === 0 &&
         green.failed.length === 0,
       `a passing --only x at the receipt's tree must land in droppedVerified and keep whole, got ${JSON.stringify(green)}`
@@ -2556,7 +2556,7 @@ async function selftest(): Promise<number> {
     require_(
       red?.failed.includes('x') === true &&
         red.exitCode === 1 &&
-        red.droppedVerified.x?.exitCode === 1 &&
+        sparse(red.droppedVerified).x?.exitCode === 1 &&
         JSON.stringify(red.findings.x) === '["k1"]',
       `a red --only x must land in failed with exitCode 1 and its findings, got ${JSON.stringify(red)}`
     );
@@ -3354,12 +3354,18 @@ function mergeVerdicts(
     findings[id] = pg.findings;
   }
   const sorted: Record<string, string[] | null> = {};
-  for (const id of Object.keys(findings).sort()) sorted[id] = findings[id];
+  for (const id of Object.keys(findings).sort((a, b) => Number(a > b) - Number(a < b)))
+    sorted[id] = findings[id];
   return {
     failed,
     findings: sorted,
     exitCode: failed.length > 0 ? Math.max(freshExit, 1) : freshExit,
   };
+}
+
+/** A `Record<string, T>` read the way an index access really behaves: an absent key is `undefined` (noUncheckedIndexedAccess is off, so the plain type claims otherwise). */
+function sparse<T>(record: Record<string, T>): Partial<Record<string, T>> {
+  return record;
 }
 
 /** Every gate the run knows about gets an entry: ran, carried, deferred (slow, not selected) or ciOnly. */
@@ -3535,7 +3541,7 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
     );
     const r2 = receiptOf(t2, second, {});
     check(
-      r2.gates['g:b']?.carriedFrom?.headTree === t1 && r2.gates['g:b'].judgedTree === t1,
+      sparse(r2.gates)['g:b']?.carriedFrom?.headTree === t1 && r2.gates['g:b'].judgedTree === t1,
       'a carried receipt entry keeps its origin tree and judgedTree'
     );
 
@@ -3622,9 +3628,9 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
       disposable: false,
     });
     check(
-      mixed['s:slow']?.verdict === 'deferred' &&
-        mixed['s:ci']?.verdict === 'ciOnly' &&
-        mixed['s:ran']?.verdict === 'blocked' &&
+      sparse(mixed)['s:slow']?.verdict === 'deferred' &&
+        sparse(mixed)['s:ci']?.verdict === 'ciOnly' &&
+        sparse(mixed)['s:ran']?.verdict === 'blocked' &&
         mixed['s:ran'].inputHash === null,
       `receiptGates must name deferred, ciOnly and blocked (a skipped gate), got ${JSON.stringify(mixed)}`
     );
@@ -4188,7 +4194,9 @@ function planAdvance(input: {
       kind: 'full',
       why: `${outside.length} changed path(s) lie outside the record set, e.g. ${outside.slice(0, 3).join(', ')}`,
     };
-  const readers = [...new Set(paths.flatMap((p) => matching(p).flatMap((g) => g.readers)))].sort();
+  const readers = [...new Set(paths.flatMap((p) => matching(p).flatMap((g) => g.readers)))].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   const unknown = readers.filter((id) => !input.known.has(id));
   if (unknown.length > 0)
     return {
@@ -4272,12 +4280,13 @@ async function runAdvance(
     finishedAt: new Date().toISOString(),
   };
   try {
+    const priorAdvances = receipt.advances as Advance[] | undefined;
     fs.writeFileSync(
       dest,
-      `${JSON.stringify({ ...receipt, advances: [...(receipt.advances ?? []), step] }, null, 2)}\n`
+      `${JSON.stringify({ ...receipt, advances: [...(priorAdvances ?? []), step] }, null, 2)}\n`
     );
     humanOut(
-      `ci-runner: receipt at ${dest} advanced to tree ${plan.to.slice(0, 9)} (advances[${(receipt.advances ?? []).length}])\n`
+      `ci-runner: receipt at ${dest} advanced to tree ${plan.to.slice(0, 9)} (advances[${(priorAdvances ?? []).length}])\n`
     );
   } catch (err) {
     humanOut(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
@@ -4533,7 +4542,7 @@ function narrowPlan(
     `  F  non-carried fails ${list(F)}\n`,
     `  C  their learned clusters ${list(C)}${modelNote}\n`,
     changed === undefined
-      ? `  T  UNKNOWN: git could not list what changed since the receipt's head '${head || '(none)'}', so no touched gate is in the set\n`
+      ? `  T  UNKNOWN: git could not list what changed since the receipt's head '${head === '' ? '(none)' : head}', so no touched gate is in the set\n`
       : `  T  inputs the fix touched (quick-select rules 1-3, ${changed.length} changed file(s) since ${head.slice(0, 9)}) ${list(T)}\n`,
     `  A  associated with the changed classes ${list(A)}${modelNote}\n`,
     `  narrow set: ${ids.size} gate(s)\n`,

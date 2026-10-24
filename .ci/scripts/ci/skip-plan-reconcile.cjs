@@ -291,7 +291,7 @@ function reconcile(plan, jobs, ctx = {}) {
     if (claimedCond !== derivedCond) {
       failures.push(
         `preexisting-claim-mismatch: '${key}' claims '${claimedCond || '<none>'}',` +
-          ` the plan's conditions yield '${derivedCond || '<none>'}'`
+          ` the plan's conditions yield '${derivedCond === null || derivedCond === '' ? '<none>' : derivedCond}'`
       );
       continue;
     }
