@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -123,7 +123,10 @@
     "ignoreUnknown": true
   },
   "plugins": [
-    { "path": "biome-plugins/no-d1-transaction.grit", "includes": ["**/private/account/**"] },
+    {
+      "path": "biome-plugins/no-d1-transaction.grit",
+      "includes": ["**/private/account/**"]
+    },
     {
       "path": "biome-plugins/no-route-db-dynamic-import.grit",
       "includes": ["**/private/account/src/routes/**", "!**/private/account/src/routes/test.ts"]
@@ -139,7 +142,7 @@
       "linter": {
         "enabled": true,
         "rules": {
-          "recommended": true,
+          "preset": "recommended",
           "nursery": {
             "noFloatingPromises": "error"
           },
@@ -211,7 +214,7 @@
           "react": "none"
         },
         "rules": {
-          "recommended": false,
+          "preset": "none",
           "correctness": {
             "noUnusedVariables": "error",
             "noUnusedImports": "error",
@@ -234,7 +237,8 @@
                   "select": "Use antd Select component."
                 }
               }
-            }
+            },
+            "noComponentHookFactories": "error"
           },
           "suspicious": {
             "noTsIgnore": "error",
@@ -264,7 +268,8 @@
             "noVar": "error",
             "noGlobalIsNan": "error",
             "noGlobalIsFinite": "error",
-            "noDuplicateObjectKeys": "error"
+            "noDuplicateObjectKeys": "error",
+            "noReactStringRefs": "error"
           },
           "complexity": {
             "useOptionalChain": "error",
@@ -283,7 +288,13 @@
             },
             "noUselessFragments": "error",
             "noAdjacentSpacesInRegex": "error",
-            "noUselessEscapeInRegex": "error"
+            "noUselessEscapeInRegex": "error",
+            "noExcessiveNestedCallbacks": {
+              "level": "error",
+              "options": {
+                "max": 3
+              }
+            }
           },
           "nursery": {
             "noFloatingPromises": "error",
@@ -292,15 +303,7 @@
             "useNullishCoalescing": "error",
             "useIncludes": "error",
             "useStringStartsEndsWith": "error",
-            "useRegexpExec": "error",
-            "noComponentHookFactories": "error",
-            "noReactStringRefs": "error",
-            "noExcessiveNestedCallbacks": {
-              "level": "error",
-              "options": {
-                "max": 3
-              }
-            }
+            "useRegexpExec": "error"
           },
           "style": {
             "noInferrableTypes": "error",
@@ -378,7 +381,7 @@
       "includes": ["**/*.js", "**/*.mjs", "**/*.cjs", "!private/account/**"],
       "linter": {
         "rules": {
-          "recommended": true,
+          "preset": "recommended",
           "correctness": {
             "noUndeclaredVariables": "error"
           }
@@ -474,22 +477,23 @@
       ],
       "linter": {
         "rules": {
-          "nursery": {
+          "nursery": {},
+          "suspicious": {
+            "noFocusedTests": "error",
             "noPlaywrightWaitForTimeout": "error",
-            "noPlaywrightMissingAwait": "error",
-            "useExpect": "off",
+            "useExpect": "off"
+          },
+          "correctness": {
+            "noRestrictedElements": "off",
+            "noPlaywrightMissingAwait": "error"
+          },
+          "complexity": {
             "noExcessiveNestedCallbacks": {
               "level": "error",
               "options": {
                 "max": 5
               }
             }
-          },
-          "suspicious": {
-            "noFocusedTests": "error"
-          },
-          "correctness": {
-            "noRestrictedElements": "off"
           }
         }
       }
@@ -502,7 +506,8 @@
       ],
       "linter": {
         "rules": {
-          "nursery": {
+          "nursery": {},
+          "suspicious": {
             "useExpect": "off"
           }
         }
