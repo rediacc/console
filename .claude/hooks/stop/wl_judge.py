@@ -235,22 +235,67 @@ def wire_schema(schema):
     return out
 
 
-def clamp_to_schema(value, schema, _root=None):
+_JSON_TYPES = {
+    "string": str,
+    "object": dict,
+    "array": list,
+    "boolean": bool,
+    "null": type(None),
+    "integer": int,
+    "number": (int, float),
+}
+
+
+def _type_admits(schema, value):
+    """False only when `schema` declares a `type` that `value` cannot be, so an anyOf branch for another type (a `{"type": "null"}` beside a string limit) never wins the least-lossy pick by leaving a string uncut."""
+    if not isinstance(schema, dict) or "type" not in schema:
+        return True
+    names = schema["type"] if isinstance(schema["type"], list) else [schema["type"]]
+    for name in names:
+        kind = _JSON_TYPES.get(name)
+        if kind is None:
+            return True
+        if isinstance(value, bool) and name in ("integer", "number"):
+            continue
+        if isinstance(value, kind):
+            return True
+    return False
+
+
+def _resolve_ref(root, ref):
+    """The node a local JSON pointer (`#/...`) names, stepping through dicts and list indices with ~1 and ~0 decoded, or None."""
+    if not (isinstance(ref, str) and ref.startswith("#/")):
+        return None
+    target = root
+    for raw in ref[2:].split("/"):
+        part = raw.replace("~1", "/").replace("~0", "~")
+        if isinstance(target, dict):
+            target = target.get(part)
+        elif isinstance(target, list) and part.isdigit() and int(part) < len(target):
+            target = target[int(part)]
+        else:
+            return None
+    return target if isinstance(target, dict) else None
+
+
+def clamp_to_schema(value, schema, _root=None, _refs=()):
     """`value` with every string cut to its schema `maxLength` (dicts and lists are changed in place and returned). The cut falls on the last word boundary that fits, and a limit with no boundary in its second half is a hard slice."""
     if not isinstance(schema, dict):
         return value
-    # wire_schema strips maxLength at every depth, so every node that can hold one is walked here too: a combinator branch clamps the value it applies to (all branches, the conservative reading for anyOf/oneOf), and a $ref resolves against the root's $defs/definitions (review ced51132.1).
+    # wire_schema strips maxLength at every depth, so every node that can hold one is walked here too (reviews ced51132.1, 7734d259.1-.3). allOf applies every branch. anyOf/oneOf keep the least lossy branch, so a value a longer sibling allows is not cut to the shortest limit. A $ref resolves as a local JSON pointer; `_refs` holds the pointers followed without descending into the value, so a self-referencing pointer stops instead of recursing forever.
     root = _root if _root is not None else schema
     ref = schema.get("$ref")
-    if isinstance(ref, str) and ref.startswith("#/"):
-        target = root
-        for part in ref[2:].split("/"):
-            target = target.get(part) if isinstance(target, dict) else None
-        if isinstance(target, dict):
-            value = clamp_to_schema(value, target, root)
-    for key in ("allOf", "anyOf", "oneOf"):
-        for branch in schema.get(key) or ():
-            value = clamp_to_schema(value, branch, root)
+    if isinstance(ref, str) and ref not in _refs:
+        target = _resolve_ref(root, ref)
+        if target is not None:
+            value = clamp_to_schema(value, target, root, (*_refs, ref))
+    for branch in schema.get("allOf") or ():
+        value = clamp_to_schema(value, branch, root, _refs)
+    for key in ("anyOf", "oneOf"):
+        branches = [b for b in schema.get(key) or () if _type_admits(b, value)]
+        if branches:
+            outcomes = [clamp_to_schema(copy.deepcopy(value), b, root, _refs) for b in branches]
+            value = max(outcomes, key=lambda v: len(json.dumps(v, default=str)))
     if isinstance(value, str):
         limit = schema.get("maxLength")
         if isinstance(limit, int) and not isinstance(limit, bool) and len(value) > limit:

@@ -3248,6 +3248,29 @@ control(
     {"a": "abcd"},
 )
 control(
+    "PART 8: a self-referencing $ref stops instead of recursing forever",
+    wl_judge.clamp_to_schema("abcdefgh", {"$defs": {"a": {"$ref": "#/$defs/a"}}, "$ref": "#/$defs/a"}),
+    "abcdefgh",
+)
+control(
+    "PART 8: a $ref into an array index with an escaped key resolves",
+    wl_judge.clamp_to_schema(
+        {"a": "abcdefgh"},
+        {"$defs": {"x/y": [{"maxLength": 4}]}, "properties": {"a": {"$ref": "#/$defs/x~1y/0"}}},
+    ),
+    {"a": "abcd"},
+)
+control(
+    "PART 8: anyOf keeps the least lossy branch a longer sibling allows",
+    wl_judge.clamp_to_schema("abcdefgh", {"anyOf": [{"maxLength": 4}, {"maxLength": 300}]}),
+    "abcdefgh",
+)
+control(
+    "CONTROL: anyOf with every branch shorter still cuts to the longest limit",
+    wl_judge.clamp_to_schema("abcdefgh", {"anyOf": [{"maxLength": 4}, {"maxLength": 6}]}),
+    "abcdef",
+)
+control(
     "CONTROL: additionalProperties false leaves an unknown key alone",
     wl_judge.clamp_to_schema({"x": "abcdefgh"}, {"properties": {}, "additionalProperties": False}),
     {"x": "abcdefgh"},
