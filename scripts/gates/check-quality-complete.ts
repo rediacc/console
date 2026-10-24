@@ -901,8 +901,16 @@ const PART_UNDECIDED: readonly string[] = ['quality-go'];
 const PART_SETUP = (lane: string): boolean => lane !== 'quality-branch';
 
 function selftest(): number {
-  // Every on-disk control makes its own scratch directory; they are removed after the summary so a selftest run leaves /tmp as it found it (1,108 qc-selftest-* directories had piled up by 2026-10-24).
+  // Every on-disk control makes its own scratch directory; they are removed in the finally even when building a case throws, so a selftest run leaves /tmp as it found it (1,108 qc-selftest-* directories had piled up by 2026-10-24; review 37ecbdd5.6).
   const scratch: string[] = [];
+  try {
+    return selftestControls(scratch);
+  } finally {
+    for (const dir of scratch) rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function selftestControls(scratch: string[]): number {
   const scratchDir = (): string => {
     const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
     scratch.push(dir);
@@ -1408,11 +1416,7 @@ function selftest(): number {
     },
   ];
 
-  try {
-    return summarizeControls(cases);
-  } finally {
-    for (const dir of scratch) rmSync(dir, { recursive: true, force: true });
-  }
+  return summarizeControls(cases);
 }
 
 process.exit(process.argv.includes('--selftest') ? selftest() : main(process.argv.slice(2)));
