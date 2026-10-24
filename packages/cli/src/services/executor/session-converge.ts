@@ -13,6 +13,7 @@ import {
   CONVERGE_FUNCTION,
   convergeIfStale,
   prepareConvergeVault,
+  type RuntimeStatus,
   readRuntimeStatus,
   shouldCheckRuntimeAfterUpload,
 } from '../renet/runtime-converge.js';
@@ -53,6 +54,28 @@ export function sessionConvergeDeps(session: {
 }
 
 /**
+ * The runtime status a converge vault is scoped by. A dry run never replaced the machine's renet, so
+ * a renet too old for `runtime status` is reported with the real commands that update it.
+ */
+async function readConvergeStatus(
+  sftp: SFTPClient,
+  deps: AutoConvergeDeps,
+  dryRun: boolean
+): Promise<RuntimeStatus> {
+  try {
+    return await readRuntimeStatus(sftp, deps.remoteRenetPath, deps.datastore);
+  } catch (error) {
+    if (!dryRun) throw error;
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `A dry run plans with the renet already on ${deps.machineName} and does not upload one, ` +
+        `and that renet cannot report its runtime (${detail}). ` +
+        `Run 'rdc machine setup ${deps.machineName}' or 'rdc machine converge ${deps.machineName}' (without --dry-run) to update it.`
+    );
+  }
+}
+
+/**
  * The vault this session's function runs with. A `runtime_converge` call carries env secrets only
  * for the repos the machine reports; any other function first moves stale repo daemons, then the
  * router, because a new renet may change the runtime layout (PLAN-renet-runtime-converge D5, decision 2).
@@ -65,7 +88,7 @@ export async function prepareSessionVault(
   upload: { renetUploaded: boolean; routerRefreshDue: boolean }
 ): Promise<string> {
   if (options.functionName === CONVERGE_FUNCTION) {
-    const status = await readRuntimeStatus(sftp, deps.remoteRenetPath, deps.datastore);
+    const status = await readConvergeStatus(sftp, deps, options.params?.dry_run === true);
     return prepareConvergeVault(vault, status);
   }
   await convergeIfStale(deps, {

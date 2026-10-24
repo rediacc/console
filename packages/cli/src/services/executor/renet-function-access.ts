@@ -110,8 +110,14 @@ const KNOWN_FUNCTIONS: ReadonlySet<string> = new Set<string>(RENET_FUNCTIONS);
 /**
  * The access a dispatch of `functionName` needs. A name outside the contract is
  * `'read-only'`: an unclassified function must never swap the machine's binary.
+ * A converge dispatched with `dry_run` only plans, so it runs the remote renet
+ * as it is (an upload would mutate the machine the dry run promised to leave alone).
  */
-export function renetAccessFor(functionName: string | undefined): RenetAccess {
+export function renetAccessFor(
+  functionName: string | undefined,
+  params?: Record<string, unknown>
+): RenetAccess {
   if (functionName === undefined || !KNOWN_FUNCTIONS.has(functionName)) return 'read-only';
+  if (functionName === 'machine_converge_runtime' && params?.dry_run === true) return 'read-only';
   return RENET_FUNCTION_ACCESS[functionName as RenetFunctionName];
 }

@@ -64,4 +64,12 @@ describe('RENET_FUNCTION_ACCESS', () => {
     expect(renetAccessFor('repository_up')).toBe('provision');
     expect(renetAccessFor('repository_list')).toBe('read-only');
   });
+
+  it('reads a dry-run converge as read-only and any other converge as provision', () => {
+    expect(renetAccessFor('machine_converge_runtime', { dry_run: true })).toBe('read-only');
+    expect(renetAccessFor('machine_converge_runtime', { dry_run: false })).toBe('provision');
+    expect(renetAccessFor('machine_converge_runtime')).toBe('provision');
+    // Only the converge is plan-only under dry_run; another function keeps its class.
+    expect(renetAccessFor('repository_prune', { dry_run: true })).toBe('provision');
+  });
 });

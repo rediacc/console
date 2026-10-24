@@ -278,13 +278,47 @@ describe('the runtime converge trigger', () => {
   });
 
   it('passes dry_run through and refreshes nothing on a dry run that would move a repo', async () => {
-    provisioned(true);
+    provisioned(false);
     state.convergeStdout = reportJson({ would_converge: 1 });
 
     await run('machine_converge_runtime', { dry_run: true });
 
     expect(vaultOf('machine_converge_runtime').params).toEqual({ dry_run: true });
     expect(calls).toEqual(['status', 'run:machine_converge_runtime']);
+  });
+
+  it('plans a dry run with the remote renet as it is: read-only access, never a provision', async () => {
+    provisioned(false);
+    state.convergeStdout = reportJson({ would_converge: 1 });
+
+    await run('machine_converge_runtime', { dry_run: true });
+
+    expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('read-only');
+  });
+
+  it('still provisions for a real converge', async () => {
+    provisioned(true);
+
+    await run('machine_converge_runtime', {});
+    await run('machine_converge_runtime', { dry_run: false });
+
+    expect(mockAcquireRemoteRenet.mock.calls.map((c) => c[0])).toEqual(['provision', 'provision']);
+  });
+
+  it('tells the operator to run the real setup or converge when the remote renet is too old to plan a dry run', async () => {
+    provisioned(false);
+    mockExec.mockImplementationOnce(() =>
+      Promise.reject(new Error('Error: unknown command "runtime" for "renet"'))
+    );
+
+    const outcome = await run('machine_converge_runtime', { dry_run: true }).then(
+      (r) => r.error ?? '',
+      (e: unknown) => (e instanceof Error ? e.message : String(e))
+    );
+
+    expect(outcome).toContain('rdc machine setup hostinger');
+    expect(outcome).toContain('machine converge hostinger');
+    expect(calls).not.toContain('run:machine_converge_runtime');
   });
 
   it('keeps going with the requested function when the converge pass fails', async () => {

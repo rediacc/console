@@ -321,7 +321,7 @@ class LocalExecutorService {
   ): Promise<{ remoteRenetPath: string; renetUploaded: boolean; routerRefreshDue: boolean }> {
     const provStart = Date.now();
     // The dispatched function decides whether this run may replace the machine's renet (RENET_FUNCTION_ACCESS).
-    const access = renetAccessFor(options.functionName);
+    const access = renetAccessFor(options.functionName, options.params);
     const provisionFn = () =>
       acquireRemoteRenet(
         access,
