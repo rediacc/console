@@ -59,15 +59,30 @@ export function executorEnvVars(env: Env): Record<string, string> {
 const ACCOUNT_EGRESS_HOST = 'account.internal';
 
 /** Forward one intercepted container request for ACCOUNT_EGRESS_HOST to the account server, over the binding when there is one. Only account API paths pass. */
-export function forwardAccountEgress(request: Request, env: Env): Promise<Response> {
+export async function forwardAccountEgress(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/account/')) {
-    return Promise.resolve(
-      Response.json({ error: 'only account paths are forwarded' }, { status: 403 })
+    return Response.json({ error: 'only account paths are forwarded' }, { status: 403 });
+  }
+  // Fresh headers without `host`: copied from the container's request it still names account.internal, and a public fetch carrying it fails at DNS with a 530 (bench, 2026-10-24, the first deploy of this forward).
+  const headers = new Headers(request.headers);
+  headers.delete('host');
+  const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
+  const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, {
+    method: request.method,
+    headers,
+    ...(hasBody ? { body: await request.arrayBuffer() } : {}),
+    redirect: 'manual',
+  });
+  const via = env.ACCOUNT ? 'binding' : 'fetch';
+  const response = await (env.ACCOUNT ? env.ACCOUNT.fetch(forwarded) : fetch(forwarded));
+  // A failed call logs its path and transport only, never a header or a body: this is what `wrangler tail` shows when a container call fails.
+  if (!response.ok) {
+    console.warn(
+      `proxy: account egress ${request.method} ${url.pathname} via ${via} -> ${response.status}`
     );
   }
-  const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, request);
-  return env.ACCOUNT ? env.ACCOUNT.fetch(forwarded) : fetch(forwarded);
+  return response;
 }
 
 export class ExecutorContainer extends Container<Env> {

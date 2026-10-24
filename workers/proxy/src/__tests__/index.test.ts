@@ -220,7 +220,7 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     const response = await forwardAccountEgress(
       new Request(`http://${ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/introspect?x=1`, {
         method: 'POST',
-        headers: { authorization: `Bearer ${EXECUTOR_TOKEN}` },
+        headers: { authorization: `Bearer ${EXECUTOR_TOKEN}`, host: ACCOUNT_EGRESS_HOST },
         body: JSON.stringify({ token: CALLER }),
       }),
       boundEnv(seen)
@@ -232,6 +232,8 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     expect(seen[0]?.url).toBe(`${ACCOUNT_URL}/account/api/v1/proxy/introspect?x=1`);
     expect(seen[0]?.method).toBe('POST');
     expect(seen[0]?.headers.get('authorization')).toBe(`Bearer ${EXECUTOR_TOKEN}`);
+    // The container's Host names account.internal; carried onward it breaks a public fetch at DNS.
+    expect(seen[0]?.headers.get('host')).toBeNull();
     expect(await seen[0]?.json()).toEqual({ token: CALLER });
   });
 
