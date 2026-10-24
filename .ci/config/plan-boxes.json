@@ -602,10 +602,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
+      "open": 8,
       "done": 10,
       "open_sigs": [
         "28a11bd0",
+        "5fe0b109",
         "61092d42",
         "6395a951",
         "6d49473a",
