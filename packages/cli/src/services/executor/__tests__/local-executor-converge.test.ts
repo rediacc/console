@@ -334,6 +334,20 @@ describe('the runtime converge trigger', () => {
     expect(outcome).not.toContain('rdc machine setup hostinger');
     expect(calls).not.toContain('run:machine_converge_runtime');
   });
+
+  it('keeps an error that only echoes the word status as its own error', async () => {
+    provisioned(false);
+    mockExec.mockImplementationOnce(() =>
+      Promise.reject(new Error('sftp: unknown command status 255 from the remote shell'))
+    );
+
+    const outcome = await run('machine_converge_runtime', { dry_run: true }).then(
+      (r) => r.error ?? '',
+      (e: unknown) => (e instanceof Error ? e.message : String(e))
+    );
+
+    expect(outcome).not.toContain('rdc machine setup hostinger');
+  });
   it('keeps going with the requested function when the converge pass fails', async () => {
     provisioned(true);
     mockExecStreaming.mockImplementationOnce((_cmd: string, opts: { stdin?: string }) => {

@@ -57,7 +57,7 @@ export function sessionConvergeDeps(session: {
  * The runtime status a converge vault is scoped by. A dry run never replaced the machine's renet, so
  * a renet too old for `runtime status` is reported with the real commands that update it.
  */
-async function readConvergeStatus(
+export async function readConvergeStatus(
   sftp: SFTPClient,
   deps: AutoConvergeDeps,
   dryRun: boolean
@@ -65,7 +65,7 @@ async function readConvergeStatus(
   try {
     return await readRuntimeStatus(sftp, deps.remoteRenetPath, deps.datastore);
   } catch (error) {
-    // Only a renet that does not know the command is "too old"; an SSH, SFTP or timeout failure keeps its own error (review 435e9831.1).
+    // Only a renet that does not know the command is "too old"; an SSH, SFTP or timeout failure keeps its own error.
     if (!dryRun || !isUnknownRuntimeCommand(error)) throw error;
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
@@ -80,9 +80,8 @@ async function readConvergeStatus(
 /** True for cobra's refusal of an unknown `runtime` subcommand or flag, the signature of a renet older than the converge commands. */
 function isUnknownRuntimeCommand(error: unknown): boolean {
   const text = error instanceof Error ? error.message : String(error);
-  return (
-    /unknown (command|flag|shorthand flag)[^\n]*/i.test(text) &&
-    /runtime|status|--datastore|--json/i.test(text)
+  return /unknown command "runtime" for "renet"|unknown command "status" for "renet runtime"|unknown flag: --(datastore|json|policy)\b/.test(
+    text
   );
 }
 
