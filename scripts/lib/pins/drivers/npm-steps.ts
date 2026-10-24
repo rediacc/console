@@ -32,6 +32,7 @@ import {
   MAJOR_ALLOW_REL,
   readLockPackages,
 } from '../../deps/shared.js';
+import { isEntryPoint } from '../../entry-point.js';
 import { movedPinGroups, planManifestPins, sourceManifests } from './pin-manifests.js';
 
 const decode = (b64: string): InstallStep[] =>
@@ -112,7 +113,7 @@ function sync(steps: InstallStep[]): number {
   return 0;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   const [verb, payload] = process.argv.slice(2);
   if ((verb !== 'guard' && verb !== 'sync') || !payload) {
     console.error('usage: npm-steps.ts guard|sync <base64 json>');

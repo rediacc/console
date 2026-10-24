@@ -4,8 +4,8 @@
  *   npx tsx scripts/lib/pins/ran-line-selftest.ts
  */
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { type ControlCase, summarizeControls } from '../controls.js';
+import { isEntryPoint } from '../entry-point.js';
 import { ranLine } from './ran-line.js';
 
 const ROOT = '/repo';
@@ -62,6 +62,6 @@ export function ranLineCases(): ControlCase[] {
   ];
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(summarizeControls(ranLineCases()));
 }

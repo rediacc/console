@@ -35,6 +35,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { GATES, type GateSpec } from '../ci-runner/manifest.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LOCK = 'scripts/ci-runner/gates.lock.json';
@@ -237,6 +238,6 @@ function main(argv: string[]): number {
 }
 
 // THE IMPORT GUARD. This module exports `render` and `describeDrift` so the lock's consumers and its tests can use them; without the guard, importing either would run the whole gate and `process.exit` inside the importer.
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(main(process.argv.slice(2)));
 }

@@ -64,6 +64,7 @@ import {
   parseBlockeredList,
   validateBlockerQuality,
 } from '../lib/blocker-validator.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1089,4 +1090,4 @@ function main(): void {
 }
 
 // Imported by `scripts/lib/tree-write-sites.ts` for `resolveInvocations`, so the gate runs only when it is the entry point.
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) main();
+if (isEntryPoint(import.meta.filename)) main();

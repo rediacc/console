@@ -71,6 +71,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { driverFor, type PinDriver, registerDrivers } from '../lib/pins/driver.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { FAMILY_GATES } from '../lib/pins/family-gates.js';
@@ -812,6 +813,6 @@ async function main(): Promise<number> {
   return r.rc;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(await main());
 }

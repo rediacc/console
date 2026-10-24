@@ -56,7 +56,8 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { GREEN, NC, RED } from '../lib/console.js';
-import { parseShardManifest, shardManifestPath, type ShardManifestFile } from './shard-manifest.js';
+import { isEntryPoint } from '../lib/entry-point.js';
+import { parseShardManifest, type ShardManifestFile, shardManifestPath } from './shard-manifest.js';
 import { LANE_ENUMERATORS, type Unit } from './unit-enumerators.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -706,7 +707,7 @@ async function selftest(): Promise<number> {
   return 0;
 }
 
-const invoked = process.argv[1] && import.meta.url === `file://${path.resolve(process.argv[1])}`;
+const invoked = isEntryPoint(import.meta.filename);
 if (invoked) {
   const args = process.argv.slice(2);
   process.exit(args.includes('--selftest') ? await selftest() : await main(args));

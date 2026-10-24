@@ -26,6 +26,7 @@ import {
   RULE_INSTANCES,
   type RuleInstance,
 } from '../data/source-rules.ts';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { type Finding, type RuleModule, runJsonRule, runSourceRule } from '../lib/rule-host.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -982,7 +983,7 @@ async function main(): Promise<number> {
   return findings.length === 0 && stale.length === 0 ? 0 : 1;
 }
 
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   main()
     .then((code) => process.exit(code))
     .catch((error: unknown) => {

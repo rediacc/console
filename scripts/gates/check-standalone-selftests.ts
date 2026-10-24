@@ -108,6 +108,8 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   'scripts/gates/check-env-credential-drift.ts': { args: ['--selftest'] },
   '.ci/scripts/quality/check_proxy_image_smoke.py': { args: ['--selftest'] },
   '.ci/scripts/housekeeping/retire-shadowed-secrets.py': { args: ['--selftest'] },
+  // isEntryPoint (scripts/lib/entry-point.ts) through a symlink and a spaced path, with the old comparison as the control.
+  'scripts/__tests__/entry-point.control.ts': { args: [] },
 };
 
 /** Where the table and the tree disagree over the pins selftests. */

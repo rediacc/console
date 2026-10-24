@@ -52,6 +52,7 @@ import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 
 import { parseRange, parseVersion, rangeAdmits } from '../lib/deps/shared.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { parseRegistry } from '../lib/pins/registry.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -624,6 +625,6 @@ function main(argv: string[]): number {
   return run(at >= 0 ? path.resolve(argv[at + 1] as string) : REPO);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(main(process.argv.slice(2)));
 }

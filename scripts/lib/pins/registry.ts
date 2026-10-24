@@ -34,6 +34,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { type ControlCase, runControls } from '../controls.js';
+import { isEntryPoint } from '../entry-point.js';
 import { envRoot } from '../repo-root.js';
 
 /** The scanners of check:ci-pin-registry. An ignore names one of these, or `literal`. */
@@ -774,6 +775,6 @@ function main(): number {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(main());
 }

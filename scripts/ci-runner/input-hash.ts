@@ -12,6 +12,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
 
 export const SCHEMA = 2;
@@ -566,10 +567,7 @@ function printCorpus(tree: string): void {
   process.stdout.write(`${JSON.stringify(out)}\n`);
 }
 
-if (
-  process.argv[1] &&
-  path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)
-) {
+if (isEntryPoint(import.meta.filename)) {
   const args = process.argv.slice(2);
   if (args[0] === '--selftest') {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'input-hash-st-'));

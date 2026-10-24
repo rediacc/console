@@ -7,12 +7,12 @@
  * Each refusal is proved by a mutant that removes it: the clean run passes every control, and
  * each mutant run must fail at least one.
  */
+import { isEntryPoint } from '../../entry-point.js';
 import '../driver.js';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { WK_GH_API_BASE } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { type ControlCase, runControls } from '../../controls.js';
 import { policyPath } from '../../policy-paths.js';
@@ -420,5 +420,4 @@ async function main(): Promise<number> {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
-  main().then((n) => process.exit(n === 0 ? 0 : 1));
+if (isEntryPoint(import.meta.filename)) main().then((n) => process.exit(n === 0 ? 0 : 1));

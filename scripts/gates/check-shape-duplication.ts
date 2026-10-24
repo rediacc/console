@@ -77,6 +77,7 @@ import { pathToFileURL } from 'node:url';
 import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { refuseIfEmpty, runControls } from '../lib/controls.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 // THE ROOT IS A BINDING RATHER THAN A CONSTANT, and the probe is the reason. `--emit-index` bundles this same file into `probe.mjs`, and inside that bundle `import.meta.dirname` is the CACHE directory rather than `scripts/gates`, so a constant computed at module load would resolve the seed and every corpus read against a path that does not exist. The probe sets the root from its
 // request and the gate sets it from `--root`; the default below is what a plain run has always used.
@@ -2226,7 +2227,7 @@ async function main(): Promise<void> {
 // ENTRY-POINT GUARD, and it is not decoration. This module exports `normalise`, `windows`, `judge` and `coalesce` so a consumer can drive the REAL judgement rather than a reimplementation -- and until this line existed, importing any of them ran a full 320-file scan as a side effect and printed the gate's verdict. Found by doing exactly that from the calibration replay.
 //
 // The other 23 `scripts/gates/check-*.ts` that both export and call `main()` bare are left alone deliberately: swept 2026-09-01, NONE of them is imported anywhere (the apparent hits in `ci-runner/manifest.ts` are script-name strings, not imports). This one is the only member of the class with a consumer, so it is the only one where the defect is live rather than latent.
-if (process.argv[1] && import.meta.filename === path.resolve(process.argv[1])) {
+if (isEntryPoint(import.meta.filename)) {
   // `main` BECAME ASYNC when `--emit-index` did, so the rejection has to be caught here: an unhandled rejection exits non-zero with a stack and no sentence, and this gate's contract is that a failure names what broke.
   main().catch((err: unknown) => {
     console.error(`${RED}✗${NC} ${err instanceof Error ? err.message : String(err)}`);

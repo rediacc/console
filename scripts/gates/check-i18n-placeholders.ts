@@ -50,6 +50,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -320,6 +321,6 @@ function main(): void {
   );
 }
 
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   main();
 }

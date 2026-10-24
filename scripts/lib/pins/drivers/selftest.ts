@@ -17,6 +17,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { WK_CEPH_IMAGE_REPO } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { runControls } from '../../controls.js';
+import { isEntryPoint } from '../../entry-point.js';
 import { policyPath } from '../../policy-paths.js';
 import { REPO_ROOT } from '../../repo-root.js';
 // driver.js first: the driver modules use its exports only inside functions, but a driver as
@@ -903,7 +904,7 @@ async function main(): Promise<number> {
   return failed === 0 ? 0 : 1;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   main().then(
     (rc) => process.exit(rc),
     (err) => {

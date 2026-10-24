@@ -10,7 +10,7 @@
  *
  * Run directly for the comparison table: `npx tsx scripts/ci-runner/sim.ts`.
  */
-import { fileURLToPath } from 'node:url';
+import { isEntryPoint } from '../lib/entry-point.js';
 import type { GateSpec } from './manifest';
 import {
   admit,
@@ -970,7 +970,7 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
   return { failures, assertions, table };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isEntryPoint(import.meta.filename)) {
   const { failures, assertions, table } = schedulerSelftest();
   for (const row of table) process.stdout.write(`${row}\n`);
   for (const f of failures) process.stderr.write(`FAIL: ${f}\n`);

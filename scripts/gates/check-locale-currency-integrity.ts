@@ -26,6 +26,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 // ANCHORED ON THIS FILE, not on cwd: the same gate would otherwise read a different translations directory depending on where it was started.
 const DIR = path.resolve(import.meta.dirname, '..', '..', 'packages/www/src/i18n/translations');
@@ -60,7 +61,7 @@ export function findCorruptions(
   return out;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
+if (isEntryPoint(import.meta.filename)) {
   const bad = findCorruptions();
   if (bad.length === 0) {
     console.log('✓ No currency amounts eaten by a $<digit> substitution.');

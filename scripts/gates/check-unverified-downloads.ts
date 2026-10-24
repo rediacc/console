@@ -50,6 +50,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { declaredSubmoduleMarkers, requireSubmodule } from '../lib/submodule-presence.js';
 
@@ -306,6 +307,6 @@ function main(): void {
 }
 
 // Only run when invoked directly. Importing this module (the gate test does, and so does any sibling that wants `scan`) must not execute the whole check.
-if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
+if (isEntryPoint(import.meta.filename)) {
   main();
 }

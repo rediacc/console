@@ -78,6 +78,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { isEntryPoint } from './entry-point.js';
 
 // --------------------------------------------------------------------------- Types ---------------------------------------------------------------------------
 
@@ -1796,5 +1797,5 @@ export function main(argv: string[]): number {
 }
 
 // `import.meta.url` under tsx is the file URL; process.argv[1] is the path.
-const invoked = process.argv[1] && import.meta.url === `file://${path.resolve(process.argv[1])}`;
+const invoked = isEntryPoint(import.meta.filename);
 if (invoked) process.exit(main(process.argv.slice(2)));

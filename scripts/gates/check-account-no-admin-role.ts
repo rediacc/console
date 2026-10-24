@@ -27,6 +27,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 export const TARGETS = ['private/account/src/db/schema.ts', 'private/account/src/types/user.ts'];
@@ -202,4 +203,4 @@ function main(): void {
   );
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) main();
+if (isEntryPoint(import.meta.filename)) main();

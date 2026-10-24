@@ -24,6 +24,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const ROUTES = 'private/account/src/routes';
@@ -62,7 +63,7 @@ function tsFiles(dir: string): string[] {
     if (e.isDirectory()) out.push(...tsFiles(p));
     else if (e.name.endsWith('.ts')) out.push(p);
   }
-  return out.sort();
+  return out.sort((a, b) => a.localeCompare(b));
 }
 
 function selftest(): void {
@@ -131,4 +132,4 @@ function main(): void {
   console.log(`✓ no NODE_ENV branching in account routes: ${files.length} route file(s) scanned`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) main();
+if (isEntryPoint(import.meta.filename)) main();

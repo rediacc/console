@@ -54,6 +54,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import {
   driverFor,
   type FileWrite,
@@ -3565,6 +3566,6 @@ async function main(): Promise<number> {
   return r.rc;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(await main());
 }

@@ -27,6 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseSync } from 'oxc-parser';
 import { loadScripts, resolveInvocations, type ScriptUniverse } from '../gates/check-ci-parity.js';
+import { isEntryPoint } from './entry-point.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.resolve(HERE, '..', '..');
@@ -2256,6 +2257,6 @@ function main(argv: string[]): number {
   return 2;
 }
 
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   process.exitCode = main(process.argv.slice(2));
 }

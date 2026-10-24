@@ -60,7 +60,9 @@
         // Run BY PATH from scripts/gates/check-standalone-selftests.ts (npx tsx <file>), like the driver selftests above.
         "scripts/lib/pins/txn-selftest.ts",
         // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like txn-selftest.ts.
-        "scripts/lib/pins/ran-line-selftest.ts"
+        "scripts/lib/pins/ran-line-selftest.ts",
+        // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the two above.
+        "scripts/__tests__/entry-point.control.ts"
       ],
       // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
       // usually load-bearing. `check-doc-region-parity.ts:297` matches

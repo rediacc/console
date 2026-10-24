@@ -8,12 +8,12 @@
  * check:ci-toolchain-env-dockerfile-sync gate over it (REDIACC_CI_ROOT), and runs the same gate
  * over a tree where only toolchain.env moved, to show the gate can fail on what the plan prevents.
  */
+import { isEntryPoint } from '../../entry-point.js';
 import '../driver.js';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import {
   WK_GH_API_BASE,
   WK_GO_DL_BASE,
@@ -438,5 +438,4 @@ async function main(): Promise<number> {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
-  main().then((n) => process.exit(n === 0 ? 0 : 1));
+if (isEntryPoint(import.meta.filename)) main().then((n) => process.exit(n === 0 ? 0 : 1));

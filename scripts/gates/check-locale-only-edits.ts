@@ -63,6 +63,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { flattenAndHash } from '../lib/crc32.js';
+import { exitWithMainIfEntryPoint } from '../lib/entry-point.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -912,6 +913,4 @@ function main(argv: string[]): number {
 
 // Run only as the entry point: scanLocale and isProtectedAtBase are exported, and an
 // unguarded call here exited the importing process the moment it loaded this module.
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
-  process.exit(main(process.argv.slice(2)));
-}
+exitWithMainIfEntryPoint(import.meta.filename, main);
