@@ -28,6 +28,12 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
+from rediacc_ci.well_known import (
+    ACCOUNT_DEFAULT_ORIGIN,
+    BENCH_ORIGIN,
+    PROXY_BENCH_HOST,
+    PROXY_EU_HOST,
+)
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -694,16 +700,16 @@ def test_the_smoke_url_is_the_route_wrangler_toml_names(tmp_path: pathlib.Path) 
     assert "https://%s/v1/health\n" % SMOKE_HOST in new_calls
     assert (
         port.smoke_host(
-            'routes = [\n  { pattern = "proxy.eu.rediacc.com", custom_domain = true }\n]\n'
+            f'routes = [\n  {{ pattern = "{PROXY_EU_HOST}", custom_domain = true }}\n]\n'
         )
-        == "proxy.eu.rediacc.com"
+        == PROXY_EU_HOST
     )
 
 
 def test_the_real_wrangler_toml_names_a_route_the_smoke_can_reach(tmp_path: pathlib.Path) -> None:
     del tmp_path
     toml = (ROOT / "workers" / "proxy" / "wrangler.toml").read_text(encoding="utf-8")
-    assert port.smoke_host(toml) == "proxy.eu.rediacc.com"
+    assert port.smoke_host(toml) == PROXY_EU_HOST
 
 
 def test_an_unhealthy_deploy_fails_the_smoke_and_prints_no_closing_lines(
@@ -782,8 +788,8 @@ def test_a_bench_deploy_names_its_config_and_smokes_the_bench_route(tmp_path: pa
         "  cwd=proxy\n"
         "npx\twrangler\tdeploy\t--config\twrangler.bench.toml\n"
         "  cwd=proxy\n"
-        f"{BENCH_CURL}https://proxy.bench.rediacc.com/v1/health\n"
-        f"{BENCH_CURL}https://proxy.bench.rediacc.com/v1/server-info\n"
+        f"{BENCH_CURL}https://{PROXY_BENCH_HOST}/v1/health\n"
+        f"{BENCH_CURL}https://{PROXY_BENCH_HOST}/v1/server-info\n"
     )
     assert "(config: wrangler.bench.toml)" in proc.stderr
     assert "(region: eu)" not in proc.stderr
@@ -810,14 +816,14 @@ def test_a_bench_dry_run_names_its_config(tmp_path: pathlib.Path) -> None:
 def test_the_real_bench_config_passes_the_bench_gate() -> None:
     text = BENCH_TOML.read_text(encoding="utf-8")
     assert port.bench_refusals(text) == []
-    assert port.smoke_host(text) == port.BENCH_ROUTE == "proxy.bench.rediacc.com"
+    assert port.smoke_host(text) == port.BENCH_ROUTE == PROXY_BENCH_HOST
 
 
 def test_the_eu_config_is_refused_as_a_bench_config() -> None:
     """The control in the other direction: the eu file, handed to the bench gate, fails on every name."""
     reasons = port.bench_refusals((ROOT / "workers" / "proxy" / "wrangler.toml").read_text())
     joined = "\n".join(reasons)
-    for fragment in ("rediacc-proxy-eu", "proxy.eu.rediacc.com", "https://eu.rediacc.com"):
+    for fragment in ("rediacc-proxy-eu", PROXY_EU_HOST, ACCOUNT_DEFAULT_ORIGIN):
         assert fragment in joined
     assert "rediacc-account-eu" in joined
 
@@ -825,16 +831,19 @@ def test_the_eu_config_is_refused_as_a_bench_config() -> None:
 BENCH_PLANTS = (
     (
         "account-url-eu",
-        ('ACCOUNT_URL = "https://bench.rediacc.com"', 'ACCOUNT_URL = "https://eu.rediacc.com"'),
-        "vars.ACCOUNT_URL is 'https://eu.rediacc.com'",
+        (
+            f'ACCOUNT_URL = "{BENCH_ORIGIN}"',
+            f'ACCOUNT_URL = "{ACCOUNT_DEFAULT_ORIGIN}"',
+        ),
+        f"vars.ACCOUNT_URL is '{ACCOUNT_DEFAULT_ORIGIN}'",
     ),
     (
         "account-url-suffix",
         (
-            'ACCOUNT_URL = "https://bench.rediacc.com"',
-            'ACCOUNT_URL = "https://bench.rediacc.com/x"',
+            f'ACCOUNT_URL = "{BENCH_ORIGIN}"',
+            f'ACCOUNT_URL = "{BENCH_ORIGIN}/x"',
         ),
-        "vars.ACCOUNT_URL is 'https://bench.rediacc.com/x'",
+        f"vars.ACCOUNT_URL is '{BENCH_ORIGIN}/x'",
     ),
     (
         "binding-eu",
@@ -843,12 +852,12 @@ BENCH_PLANTS = (
     ),
     (
         "route-eu",
-        ('pattern = "proxy.bench.rediacc.com"', 'pattern = "proxy.eu.rediacc.com"'),
-        "route 'proxy.eu.rediacc.com' names eu",
+        (f'pattern = "{PROXY_BENCH_HOST}"', f'pattern = "{PROXY_EU_HOST}"'),
+        f"route '{PROXY_EU_HOST}' names eu",
     ),
     (
         "route-production",
-        ('pattern = "proxy.bench.rediacc.com"', 'pattern = "proxy.rediacc.com"'),
+        (f'pattern = "{PROXY_BENCH_HOST}"', 'pattern = "proxy.rediacc.com"'),
         "routes are ['proxy.rediacc.com']",
     ),
     (

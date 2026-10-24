@@ -57,6 +57,11 @@ from rediacc_ci import paths
 from rediacc_ci.controls import Checker, controls_first
 from rediacc_ci.core import https
 from rediacc_ci.quality import proxy_image_smoke
+from rediacc_ci.well_known import (
+    ACCOUNT_DEFAULT_ORIGIN,
+    APEX_DOMAIN,
+    PROXY_EU_HOST,
+)
 
 WORKER_DIR = ("workers", "proxy")
 DEV_CONFIG = "wrangler.dev.toml"
@@ -123,7 +128,7 @@ def dev_config_findings(dev: dict, deploy: dict) -> list[str]:
         if dev.get(key) != deploy.get(key)
     )
     account = str(dev.get("vars", {}).get("ACCOUNT_URL", ""))
-    if "rediacc.com" in account:
+    if APEX_DOMAIN in account:
         out.append(
             "%s vars.ACCOUNT_URL is %r; a hand-run `wrangler dev` would introspect against "
             "production. Point it at loopback" % (DEV_CONFIG, account)
@@ -423,8 +428,8 @@ def selftest() -> bool:
         "main": "src/index.ts",
         "compatibility_date": "2026-01-20",
         "compatibility_flags": ["nodejs_compat"],
-        "routes": [{"pattern": "proxy.eu.rediacc.com"}],
-        "vars": {"ACCOUNT_URL": "https://eu.rediacc.com"},
+        "routes": [{"pattern": PROXY_EU_HOST}],
+        "vars": {"ACCOUNT_URL": ACCOUNT_DEFAULT_ORIGIN},
         "services": [{"binding": "ACCOUNT", "service": "rediacc-account-eu"}],
         "containers": [{"class_name": "ExecutorContainer", "image": "./Dockerfile"}],
         "durable_objects": {"bindings": [{"name": "EXECUTOR", "class_name": "ExecutorContainer"}]},
@@ -445,7 +450,7 @@ def selftest() -> bool:
         ),
         (
             "a production ACCOUNT_URL is a finding",
-            {"vars": {"ACCOUNT_URL": "https://eu.rediacc.com"}},
+            {"vars": {"ACCOUNT_URL": ACCOUNT_DEFAULT_ORIGIN}},
         ),
     ):
         check(label, len(dev_config_findings({**dev, **patch}, deploy)) == 1)

@@ -57,6 +57,7 @@ import tomllib
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.version import resolve_version
+from rediacc_ci.well_known import BENCH_ORIGIN, PROXY_BENCH_HOST
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.deploy_proxy"
@@ -96,8 +97,8 @@ BENCH_CONFIG_REL = "workers/proxy/" + BENCH_CONFIG
 
 # What the bench config must name, exactly (workers/account/wrangler.bench.toml is the account Worker it reaches).
 BENCH_NAME = "rediacc-proxy-bench"
-BENCH_ROUTE = "proxy.bench.rediacc.com"
-BENCH_ACCOUNT_URL = "https://bench.rediacc.com"
+BENCH_ROUTE = PROXY_BENCH_HOST
+BENCH_ACCOUNT_URL = BENCH_ORIGIN
 BENCH_ACCOUNT_BINDING = "ACCOUNT"
 BENCH_ACCOUNT_SERVICE = "rediacc-account-bench"
 # Tokens of a name or route (split on `.`, `-`, `_`) that mean "not bench": the regions and the production words.
@@ -227,7 +228,8 @@ CLOSING_LINES = (
 BENCH_CLOSING_LINES = (
     CLOSING_LINES[0],
     "  npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.bench.toml",
-    "That token must carry the proxy:exec and audit:write scopes and belong to a bench.rediacc.com org.",
+    "That token must carry the proxy:exec and audit:write scopes and belong to a %s org."
+    % BENCH_ORIGIN.removeprefix("https://"),
 )
 
 # The real-deploy refusal when renet could not be built with the licence key.

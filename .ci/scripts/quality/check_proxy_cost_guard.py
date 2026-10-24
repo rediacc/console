@@ -41,6 +41,7 @@ import tomllib
 
 import _cipath
 from rediacc_ci.deploy import deploy_proxy
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, PROXY_BENCH_HOST
 
 # THE BUDGET (PLAN-cloudflare-proxy.md section 4, recommendations 1 and 2). Raise either only together with the pricing that justifies it.
 MAX_INSTANCES_BUDGET = 2
@@ -289,7 +290,7 @@ max_instances = %s
 
 SELFTEST_BENCH_TOML = """
 name = "rediacc-proxy-bench"
-routes = [{ pattern = "proxy.bench.rediacc.com", custom_domain = true }]
+routes = [{ pattern = "%s", custom_domain = true }]
 
 [vars]
 ACCOUNT_URL = "%s"
@@ -361,11 +362,16 @@ def selftest() -> bool:
     bench_rel = "/".join(BENCH_WRANGLER_REL)
     control(
         "a bench config naming bench only is clean",
-        not bench_name_findings(SELFTEST_BENCH_TOML % "https://bench.rediacc.com", bench_rel),
+        not bench_name_findings(SELFTEST_BENCH_TOML % (PROXY_BENCH_HOST, BENCH_ORIGIN), bench_rel),
     )
     control(
-        "a bench config reaching eu.rediacc.com fires",
-        len(bench_name_findings(SELFTEST_BENCH_TOML % "https://eu.rediacc.com", bench_rel)) == 1,
+        "a bench config reaching the eu origin fires",
+        len(
+            bench_name_findings(
+                SELFTEST_BENCH_TOML % (PROXY_BENCH_HOST, ACCOUNT_DEFAULT_ORIGIN), bench_rel
+            )
+        )
+        == 1,
     )
     return ok
 

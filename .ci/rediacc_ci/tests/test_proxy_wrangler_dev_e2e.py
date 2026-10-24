@@ -20,6 +20,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import https
 from rediacc_ci.quality import proxy_wrangler_dev_e2e as gate
+from rediacc_ci.well_known import PROXY_EU_HOST
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -85,7 +86,7 @@ def test_real_dev_config_mirrors_the_deployed_one() -> None:
         ),
         (
             "routes",
-            '\nroutes = [{ pattern = "proxy.eu.rediacc.com", custom_domain = true }]\n',
+            f'\nroutes = [{{ pattern = "{PROXY_EU_HOST}", custom_domain = true }}]\n',
             "routes",
         ),
     ],

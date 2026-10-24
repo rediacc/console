@@ -16,6 +16,12 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import (
+    ACCOUNT_DEFAULT_ORIGIN,
+    BENCH_ORIGIN,
+    PROXY_BENCH_HOST,
+    PROXY_EU_HOST,
+)
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -209,9 +215,9 @@ def test_a_deleted_bench_max_instances_fails(tmp_path: pathlib.Path) -> None:
     ("old", "new", "fragment"),
     [
         (
-            'ACCOUNT_URL = "https://bench.rediacc.com"',
-            'ACCOUNT_URL = "https://eu.rediacc.com"',
-            "vars.ACCOUNT_URL is 'https://eu.rediacc.com'",
+            f'ACCOUNT_URL = "{BENCH_ORIGIN}"',
+            f'ACCOUNT_URL = "{ACCOUNT_DEFAULT_ORIGIN}"',
+            f"vars.ACCOUNT_URL is '{ACCOUNT_DEFAULT_ORIGIN}'",
         ),
         (
             'service = "rediacc-account-bench"',
@@ -219,9 +225,9 @@ def test_a_deleted_bench_max_instances_fails(tmp_path: pathlib.Path) -> None:
             "[[services]] binds 'rediacc-account-eu'",
         ),
         (
-            'pattern = "proxy.bench.rediacc.com"',
-            'pattern = "proxy.eu.rediacc.com"',
-            "route 'proxy.eu.rediacc.com' names eu",
+            f'pattern = "{PROXY_BENCH_HOST}"',
+            f'pattern = "{PROXY_EU_HOST}"',
+            f"route '{PROXY_EU_HOST}' names eu",
         ),
         (
             'name = "rediacc-proxy-bench"',
