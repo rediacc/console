@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -6,6 +7,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
+import { AuditEventsRequestSchema } from '@rediacc/shared';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import { type CliResult, CliRunner } from '../src/utils/CliRunner';
@@ -67,7 +69,9 @@ const SERVICE_IMAGE = 'alpine:3.20';
 // Fixed, run-scoped credentials of the stub account server. They grant nothing anywhere else.
 const EXECUTOR_TOKEN = `e2e-executor-${RUN_ID}`;
 const CALLER_TOKEN = `e2e-caller-${RUN_ID}`;
-const CALLER_TOKEN_ID = `tok-caller-${RUN_ID}`;
+// UUIDs, as real token ids are: the stub's ingest schema refuses anything else in onBehalfOfTokenId.
+const CALLER_TOKEN_ID = randomUUID();
+const EXECUTOR_TOKEN_ID = randomUUID();
 const WRONG_TOKEN = `e2e-unknown-${RUN_ID}`;
 
 const REDIACCFILE = `#!/bin/bash
@@ -88,7 +92,7 @@ const COMPOSE = `services:
 interface AuditEvent {
   type: string;
   onBehalfOfTokenId?: string;
-  data: { command: string; machine?: string; success: boolean };
+  data: { commandPath?: string; machineName?: string; success: boolean };
 }
 
 interface StubAccountServer {
@@ -107,7 +111,7 @@ function introspect(token: string | undefined): Record<string, unknown> {
       scopes: ['proxy:exec', 'audit:write'],
       createdByUserId: 'user-executor',
       userEmail: 'executor@e2e.invalid',
-      tokenId: `tok-executor-${RUN_ID}`,
+      tokenId: EXECUTOR_TOKEN_ID,
     };
   }
   if (token === CALLER_TOKEN) {
@@ -138,8 +142,12 @@ function route(
   if (url === '/account/api/v1/proxy/introspect') {
     return [200, introspect((JSON.parse(body) as { token?: string }).token)];
   }
-  audits.push(...(JSON.parse(body) as { events: AuditEvent[] }).events);
-  return [200, { accepted: true }];
+  // The real ingest route parses with this schema and answers 400 otherwise; a stub that took any shape is how every executor event shipped invalid until 2026-10-24 while this suite stayed green.
+  const parsed = AuditEventsRequestSchema.safeParse(JSON.parse(body));
+  if (!parsed.success)
+    return [400, { error: 'audit payload rejected', issues: parsed.error.issues }];
+  audits.push(...(parsed.data.events as AuditEvent[]));
+  return [200, { accepted: parsed.data.events.length }];
 }
 
 /** The two account-server routes the executor calls, with the tokens described above. */
@@ -304,7 +312,7 @@ test.describe
     let caller: CliRunner;
     let stranger: CliRunner;
     let runner: BridgeTestRunner;
-    let stub: StubAccountServer;
+    let stub: StubAccountServer | undefined;
     let executor: Executor | undefined;
     let forkGuid = '';
     let forkSocket = '';
@@ -331,13 +339,14 @@ test.describe
       return listed.stdout.trim();
     };
 
-    const auditFor = (command: string) => stub.audits.filter((e) => e.data.command === command);
+    const auditFor = (command: string) =>
+      (stub?.audits ?? []).filter((e) => e.data.commandPath === command);
 
     const expectAudited = (command: string) => {
       const events = auditFor(command);
       expect(events, `exactly one audit event for "${command}"`).toHaveLength(1);
       expect(events[0].data.success, `the "${command}" audit event records success`).toBe(true);
-      expect(events[0].data.machine).toBe(MACHINE);
+      expect(events[0].data.machineName).toBe(MACHINE);
       expect(events[0].onBehalfOfTokenId, 'attributed to the caller token').toBe(CALLER_TOKEN_ID);
     };
 
@@ -428,7 +437,7 @@ test.describe
         'proxy rejected this request (401)'
       );
       expect(output).toContain('this token is not valid for the executor');
-      expect(stub.audits, 'a refused call records no audit event').toHaveLength(0);
+      expect(stub?.audits, 'a refused call records no audit event').toHaveLength(0);
       expect(await forkContainerStatus(), 'nothing started on the machine').toBe('');
     });
 
