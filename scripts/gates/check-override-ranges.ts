@@ -200,7 +200,13 @@ export function projects(root: string): { projects: Project[]; absentRepos: stri
     for (const sc of entry.scope ?? []) {
       if (sc.scanner !== 'npm-lockfile') continue;
       const base = path.join(root, sc.repo);
-      if (!fs.existsSync(base)) {
+      // A submodule git has not initialised is an empty directory, so a non-root repo counts as
+      // checked out only with its `.git` entry (review 7f94da40.1).
+      const checkedOut =
+        sc.repo === '.' || sc.repo === ''
+          ? fs.existsSync(base)
+          : fs.existsSync(path.join(base, '.git'));
+      if (!checkedOut) {
         absentRepos.push(sc.repo);
         continue;
       }
@@ -585,11 +591,19 @@ function selftest(): number {
     { scanner: 'npm-lockfile', repo: 'private/account', files: ['package-lock.json'] },
   ]);
   check('run: a scoped repo whose checkout is absent exits 1', run(absentRoot, quiet, quiet) === 1);
+  const uninitRoot = mk('6.16.1', [
+    { scanner: 'npm-lockfile', repo: 'private/account', files: ['package-lock.json'] },
+  ]);
+  fs.mkdirSync(path.join(uninitRoot, 'private/account'), { recursive: true });
+  check(
+    'run: an uninitialised submodule (an empty directory, no .git) exits 1',
+    run(uninitRoot, quiet, quiet) === 1
+  );
   const emptyRoot = mk('6.16.1');
   fs.rmSync(path.join(emptyRoot, 'package-lock.json'));
   fs.rmSync(path.join(emptyRoot, 'workers'), { recursive: true });
   check('run: zero lockfiles is a FAILURE, never a pass', run(emptyRoot, quiet, quiet) === 1);
-  for (const d of [redRoot, greenRoot, absentRoot, emptyRoot])
+  for (const d of [redRoot, greenRoot, absentRoot, uninitRoot, emptyRoot])
     fs.rmSync(d, { recursive: true, force: true });
 
   console.log(
