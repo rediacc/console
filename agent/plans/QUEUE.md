@@ -67,19 +67,19 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (4 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 443 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 444 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 2: #0787c7df (worker:bpzz18xpp, d778be9d), #8c238707 (worker:af7207c343bf0bb26, d778be9d).
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:ad02ee8e67796f72d, worker:adc7738c23c34ad64.
+- Leased items: 3: #0787c7df (worker:bpzz18xpp, d778be9d), #8c238707 (worker:ad02ee8e67796f72d, d778be9d), #98e7f50f (worker:adc7738c23c34ad64, d778be9d).
 - Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 20 plans done, 172 of 409 boxes done (42%).
+Promoted: 1 of 20 plans done, 173 of 409 boxes done (42%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -101,7 +101,7 @@ Promoted: 1 of 20 plans done, 172 of 409 boxes done (42%).
 | 16 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
 | 17 | PLAN-renet-runtime-converge.md | 2/4 | 2 open |
 | 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
-| 19 | PLAN-converge-preflight-and-repo-recovery.md | 10/18 | 8 open |
+| 19 | PLAN-converge-preflight-and-repo-recovery.md | 11/18 | 7 open |
 | 20 | PLAN-gpu-device-grants.md | 0/12 | 12 open |
 <!-- queue:progress:end -->
 
