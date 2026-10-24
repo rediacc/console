@@ -1,0 +1,60 @@
+# The proxy Worker for bench.rediacc.com, the internal-only environment (workers/account/wrangler.bench.toml).
+# Deployed only by `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench`, which
+# runs under the deploy-proxy-bench Bitwarden profile and REFUSES this file before any build unless
+# ACCOUNT_URL is https://bench.rediacc.com, the ACCOUNT binding is rediacc-account-bench, the name is
+# rediacc-proxy-bench and the only route is proxy.bench.rediacc.com. check:ci-proxy-cost-guard reads
+# it too. Bench exists so PLAN-cloudflare-proxy Phase 2 runs end to end without production
+# (operator order 2026-10-24).
+#
+# It differs from wrangler.toml in exactly the four names above. The container and Durable Object
+# blocks are the same: a class name is scoped to its Worker, so ExecutorContainer here never
+# shares state or instances with rediacc-proxy-eu's.
+name = "rediacc-proxy-bench"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+routes = [
+  { pattern = "proxy.bench.rediacc.com", custom_domain = true }
+]
+
+[vars]
+ACCOUNT_URL = "https://bench.rediacc.com"
+
+# The same-zone reason as wrangler.toml: introspection goes through the binding, never a public fetch.
+[[services]]
+binding = "ACCOUNT"
+service = "rediacc-account-bench"
+
+# EXECUTOR_TOKEN is a secret, never a var, minted on bench by a bench org owner:
+#   npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.bench.toml
+
+[[containers]]
+class_name = "ExecutorContainer"
+image = "./Dockerfile"
+image_build_context = "../.."
+instance_type = "basic"
+# Bench serves one test org; the budget is the same 2 as eu (PLAN-cloudflare-proxy.md section 4).
+max_instances = 2
+
+[[durable_objects.bindings]]
+name = "EXECUTOR"
+class_name = "ExecutorContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ExecutorContainer"]
+
+# Logs and traces off, as on eu (operator ruling 2026-10-23): no OTLP destination exists for the proxy.
+[observability]
+enabled = false
+
+[observability.logs]
+enabled = false
+invocation_logs = false
+persist = false
+
+[observability.traces]
+enabled = false
+persist = false

@@ -23,12 +23,14 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 GATE = ROOT / ".ci" / "scripts" / "quality" / "check_proxy_cost_guard.py"
 WRANGLER = ROOT / "workers" / "proxy" / "wrangler.toml"
+BENCH_WRANGLER = ROOT / "workers" / "proxy" / "wrangler.bench.toml"
 SRC = ROOT / "workers" / "proxy" / "src"
 INDEX_REL = ("workers", "proxy", "src", "index.ts")
 
 
 def _digest() -> str:
     h = hashlib.sha256(WRANGLER.read_bytes())
+    h.update(BENCH_WRANGLER.read_bytes())
     for path in sorted(SRC.rglob("*")):
         if path.is_file():
             h.update(path.as_posix().encode())
@@ -57,6 +59,7 @@ def _copy(tmp_path: pathlib.Path) -> pathlib.Path:
     root = tmp_path / "root"
     (root / "workers" / "proxy").mkdir(parents=True)
     shutil.copy2(WRANGLER, root / "workers" / "proxy" / "wrangler.toml")
+    shutil.copy2(BENCH_WRANGLER, root / "workers" / "proxy" / "wrangler.bench.toml")
     shutil.copytree(SRC, root / "workers" / "proxy" / "src")
     return root
 
@@ -70,7 +73,8 @@ def _replace(path: pathlib.Path, old: str, new: str) -> None:
 def test_the_real_tree_is_within_budget() -> None:
     proc = _run()
     assert proc.returncode == 0, proc.stderr
-    assert "1 container(s) at max_instances <= 2" in proc.stdout
+    assert "2 container(s) at max_instances <= 2 in 2 config(s)" in proc.stdout
+    assert "the bench config naming bench only" in proc.stdout
     assert "1 sleepAfter assignment(s)" in proc.stdout
 
 
@@ -171,3 +175,88 @@ def test_the_selftest_passes_on_its_own() -> None:
     proc = _run("--selftest")
     assert proc.returncode == 0, proc.stderr
     assert "FAIL" not in proc.stderr
+
+
+# ---- the bench config (workers/proxy/wrangler.bench.toml): the same budget, and bench names only ----
+
+
+def _bench(root: pathlib.Path) -> pathlib.Path:
+    return root / "workers" / "proxy" / "wrangler.bench.toml"
+
+
+def test_a_planted_bench_max_instances_of_twenty_fails(tmp_path: pathlib.Path) -> None:
+    root = _copy(tmp_path)
+    _replace(_bench(root), "max_instances = 2\n", "max_instances = 20\n")
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "workers/proxy/wrangler.bench.toml:" in proc.stderr
+    assert "max_instances = 20 is over the budget of 2" in proc.stderr
+    assert "workers/proxy/wrangler.toml:" not in proc.stderr, "the eu config is unplanted"
+
+
+def test_a_deleted_bench_max_instances_fails(tmp_path: pathlib.Path) -> None:
+    root = _copy(tmp_path)
+    _replace(_bench(root), "max_instances = 2\n", "")
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1
+    assert (
+        "workers/proxy/wrangler.bench.toml: [[containers]] ExecutorContainer sets no max_instances"
+        in (proc.stderr)
+    )
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "fragment"),
+    [
+        (
+            'ACCOUNT_URL = "https://bench.rediacc.com"',
+            'ACCOUNT_URL = "https://eu.rediacc.com"',
+            "vars.ACCOUNT_URL is 'https://eu.rediacc.com'",
+        ),
+        (
+            'service = "rediacc-account-bench"',
+            'service = "rediacc-account-eu"',
+            "[[services]] binds 'rediacc-account-eu'",
+        ),
+        (
+            'pattern = "proxy.bench.rediacc.com"',
+            'pattern = "proxy.eu.rediacc.com"',
+            "route 'proxy.eu.rediacc.com' names eu",
+        ),
+        (
+            'name = "rediacc-proxy-bench"',
+            'name = "rediacc-proxy-production"',
+            "names production",
+        ),
+    ],
+    ids=["account-url", "binding", "route", "name"],
+)
+def test_a_bench_config_naming_anything_but_bench_fails(
+    tmp_path: pathlib.Path, old: str, new: str, fragment: str
+) -> None:
+    root = _copy(tmp_path)
+    _replace(_bench(root), old, new)
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "FAIL  workers/proxy/wrangler.bench.toml: " in proc.stderr
+    assert fragment in proc.stderr
+
+
+def test_a_missing_bench_config_is_no_verdict(tmp_path: pathlib.Path) -> None:
+    root = _copy(tmp_path)
+    _bench(root).unlink()
+    proc = _run("--root", str(root))
+    assert proc.returncode == 2
+    assert "wrangler.bench.toml is missing" in proc.stderr
+
+
+def test_zero_bench_containers_is_no_verdict(tmp_path: pathlib.Path) -> None:
+    root = _copy(tmp_path)
+    bench = _bench(root)
+    bench.write_text(
+        bench.read_text(encoding="utf-8").replace("[[containers]]", "[containers_gone]"),
+        encoding="utf-8",
+    )
+    proc = _run("--root", str(root))
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+    assert "wrangler.bench.toml declares zero [[containers]] entries" in proc.stderr

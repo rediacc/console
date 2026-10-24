@@ -39,6 +39,8 @@ absent one does. Driven, and pinned in the differential.
 
 A REAL DEPLOY ALSO BUILDS RENET AND SMOKE-TESTS (2026-09-24, PLAN-cloudflare-proxy.md B2 and missing test 10). The image runs the CLI outside a SEA, which executes the renet on PATH and uploads that same binary to a machine whose renet differs, so the deploy builds a release renet at the current version (`rediacc_ci.version.resolve_version --current` in process, then `python3 -m rediacc_ci.build.build_renet --version V` as a child, so its working directory changes stay out of this process) and stages it in `workers/proxy/renet/`. That is why a real deploy refuses before any build without `ACCOUNT_ED25519_PUBLIC_KEY`: a renet built without it cannot verify a licence. After `wrangler deploy` both twins GET `/v1/health` (must be 200) and an unauthenticated `/v1/server-info` (must be 401) through `curl`, at the host `wrangler.toml`'s route names. A dry run does none of this, because `wrangler deploy --dry-run` never builds the image.
 
+A BENCH TARGET, AND THE BENCH-ONLY GATE IN FRONT OF IT (operator order 2026-10-24, so PLAN-cloudflare-proxy Phase 2 runs on bench without the operator). `--target bench` deploys `workers/proxy/wrangler.bench.toml` with `--config`, smokes the route that file names, and runs under the `deploy-proxy-bench` Bitwarden profile (`.ci/config/secret-supply.json`), re-executing itself under it when the profile is not already bound, so the image's renet verifies with the DEV public key bench signs with. Before the profile, the token or any build, `bench_refusals` reads that file and refuses (exit 1) unless the name is exactly `rediacc-proxy-bench`, the only route `proxy.bench.rediacc.com`, `ACCOUNT_URL` exactly `https://bench.rediacc.com`, and every `[[services]]` entry a bench Worker with `ACCOUNT` bound to `rediacc-account-bench`; a name or route naming eu, another region or production refuses by name, and an `[env.*]` table refuses because it could rename the Worker. That is the shape the account server gives `EMAIL_CAPTURE_D1`: a bench-only switch refused off bench. `--target eu` (the default) is untouched, byte for byte.
+
 K=5 LEDGER: `.ci/shadow/w7p6-deploy-proxy.observations.jsonl`.
 """
 
@@ -50,6 +52,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tomllib
 
 from rediacc_ci import log
 from rediacc_ci.core import common
@@ -83,6 +86,124 @@ def region_refusal(region: str) -> str:
     )
 
 
+# `--target`: which Worker config deploys. `eu` is `wrangler.toml` and the twin's whole behaviour; `bench` is `wrangler.bench.toml`, admitted only through `bench_refusals`.
+DEFAULT_TARGET = "eu"
+BENCH_TARGET = "bench"
+SUPPORTED_TARGETS = (DEFAULT_TARGET, BENCH_TARGET)
+EU_CONFIG = "wrangler.toml"
+BENCH_CONFIG = "wrangler.bench.toml"
+BENCH_CONFIG_REL = "workers/proxy/" + BENCH_CONFIG
+
+# What the bench config must name, exactly (workers/account/wrangler.bench.toml is the account Worker it reaches).
+BENCH_NAME = "rediacc-proxy-bench"
+BENCH_ROUTE = "proxy.bench.rediacc.com"
+BENCH_ACCOUNT_URL = "https://bench.rediacc.com"
+BENCH_ACCOUNT_BINDING = "ACCOUNT"
+BENCH_ACCOUNT_SERVICE = "rediacc-account-bench"
+# Tokens of a name or route (split on `.`, `-`, `_`) that mean "not bench": the regions and the production words.
+NOT_BENCH_TOKENS = ("eu", "us", "asia", "prod", "production", "stable", "edge")
+NAME_TOKEN_SPLIT = re.compile(r"[.\-_]")
+
+# The Bitwarden profile a bench deploy runs under: the Workers token, the account id, and the DEV public key bench signs with, renamed to the name the renet build reads.
+BENCH_PROFILE = "deploy-proxy-bench"
+PROFILES_ENV = "REDIACC_BWS_PROFILES"
+
+
+def target_refusal(target: str) -> str:
+    return "--target %s is not supported: only %s deploys." % (
+        target,
+        " or ".join(SUPPORTED_TARGETS),
+    )
+
+
+def _routes(config: dict) -> list[str]:
+    """Every route pattern a wrangler config names, through `routes` or `route`, string or table form."""
+    raw = config.get("routes")
+    entries = list(raw) if isinstance(raw, list) else []
+    if "route" in config:
+        entries.append(config["route"])
+    return [str(e.get("pattern", "")) if isinstance(e, dict) else str(e) for e in entries]
+
+
+def _not_bench_tokens(value: str) -> list[str]:
+    return [t for t in NAME_TOKEN_SPLIT.split(value.lower()) if t in NOT_BENCH_TOKENS]
+
+
+def bench_refusals(text: str) -> list[str]:
+    """Why a bench deploy of this `wrangler.bench.toml` text must not run; empty when it may."""
+    try:
+        config = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        return ["%s does not parse as TOML: %s" % (BENCH_CONFIG_REL, exc)]
+    out: list[str] = []
+    name = config.get("name")
+    if name != BENCH_NAME:
+        out.append("name is %r, not %r" % (name, BENCH_NAME))
+    routes = _routes(config)
+    if routes != [BENCH_ROUTE]:
+        out.append("routes are %r, not exactly [%r]" % (routes, BENCH_ROUTE))
+    for label, value in [("name", str(name or ""))] + [("route", r) for r in routes]:
+        hits = _not_bench_tokens(value)
+        if hits:
+            out.append("%s %r names %s, which is not bench" % (label, value, "/".join(hits)))
+    account_url = (config.get("vars") or {}).get("ACCOUNT_URL")
+    if account_url != BENCH_ACCOUNT_URL:
+        out.append("vars.ACCOUNT_URL is %r, not %r" % (account_url, BENCH_ACCOUNT_URL))
+    services = config.get("services") or []
+    account = [
+        s for s in services if isinstance(s, dict) and s.get("binding") == BENCH_ACCOUNT_BINDING
+    ]
+    if [s.get("service") for s in account] != [BENCH_ACCOUNT_SERVICE]:
+        out.append(
+            "the %s service binding is %r, not exactly one binding to %r"
+            % (BENCH_ACCOUNT_BINDING, [s.get("service") for s in account], BENCH_ACCOUNT_SERVICE)
+        )
+    for entry in services:
+        service = str(entry.get("service", "")) if isinstance(entry, dict) else str(entry)
+        if not service.endswith("-" + BENCH_TARGET):
+            out.append("[[services]] binds %r, which is not a bench Worker" % service)
+    if "env" in config:
+        out.append(
+            "an [env.*] table can rename the Worker or its routes; a bench config carries none"
+        )
+    return out
+
+
+def bench_gate(worker_dir: pathlib.Path) -> int:
+    """The bench-only gate: 0 when `wrangler.bench.toml` names bench and nothing else, else 1 with every reason."""
+    path = worker_dir / BENCH_CONFIG
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        reasons = ["%s cannot be read: %s" % (BENCH_CONFIG_REL, exc.strerror or exc)]
+    else:
+        reasons = bench_refusals(text)
+    for reason in reasons:
+        log.error("--target bench refused: %s" % reason)
+    return 1 if reasons else 0
+
+
+def reexec_argv(argv: list[str]) -> list[str]:
+    """This same run under the deploy-proxy-bench profile."""
+    return [
+        sys.executable,
+        "-m",
+        "rediacc_ci.core.bws_env",
+        "exec",
+        "--profile",
+        BENCH_PROFILE,
+        "--",
+        sys.executable,
+        "-m",
+        SELF,
+        *argv,
+    ]
+
+
+def profile_bound() -> bool:
+    return BENCH_PROFILE in (os.environ.get(PROFILES_ENV) or "").split(",")
+
+
 # `DRY_RUN="${ARG_DRY_RUN:-false}"` (:36) and the one value that branches (:52).
 # The comparison is against the literal `true`, which is also what a bare `--dry-run` with no value produces through `parse_args`. Anything else -- `1`, `yes`, `True` -- IS A REAL DEPLOY.
 TRUE = "true"
@@ -100,6 +221,13 @@ CLOSING_LINES = (
     "Deployed. The executor still needs its own account token:",
     "  npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.toml",
     "That token must carry the proxy:exec and audit:write scopes and belong to the Rediacc org.",
+)
+
+# The bench deploy's closing lines: the same three, naming the bench config and a bench org.
+BENCH_CLOSING_LINES = (
+    CLOSING_LINES[0],
+    "  npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.bench.toml",
+    "That token must carry the proxy:exec and audit:write scopes and belong to a bench.rediacc.com org.",
 )
 
 # The real-deploy refusal when renet could not be built with the licence key.
@@ -136,14 +264,16 @@ def build_argv(workspace: str) -> list[str]:
     return ["npm", "run", "build", "--workspace", workspace]
 
 
-def dry_run_argv() -> list[str]:
-    """`npx wrangler deploy --dry-run --outdir /tmp/rediacc-proxy-dry-run` (:54)."""
-    return ["npx", "wrangler", "deploy", "--dry-run", "--outdir", DRY_RUN_OUTDIR]
+def dry_run_argv(config: str | None = None) -> list[str]:
+    """`npx wrangler deploy --dry-run --outdir /tmp/rediacc-proxy-dry-run` (:54), plus `--config` for bench."""
+    argv = ["npx", "wrangler", "deploy", "--dry-run", "--outdir", DRY_RUN_OUTDIR]
+    return [*argv, "--config", config] if config else argv
 
 
-def deploy_argv() -> list[str]:
-    """`npx wrangler deploy` (:65). NO `--config`, unlike both siblings."""
-    return ["npx", "wrangler", "deploy"]
+def deploy_argv(config: str | None = None) -> list[str]:
+    """`npx wrangler deploy` (:65). NO `--config` for eu, unlike both siblings; bench names its file."""
+    argv = ["npx", "wrangler", "deploy"]
+    return [*argv, "--config", config] if config else argv
 
 
 def build_renet_argv(repo_root: pathlib.Path, version: str) -> list[str]:
@@ -179,9 +309,9 @@ def _http_code(url: str) -> str:
     return subprocess.run(curl_argv(url), stdout=subprocess.PIPE, text=True, check=False).stdout
 
 
-def smoke(worker_dir: pathlib.Path) -> int:
+def smoke(worker_dir: pathlib.Path, config: str = EU_CONFIG) -> int:
     """The post-deploy smoke: /v1/health 200, then an unauthenticated /v1/server-info 401."""
-    url = "https://" + smoke_host((worker_dir / "wrangler.toml").read_text(encoding="utf-8"))
+    url = "https://" + smoke_host((worker_dir / config).read_text(encoding="utf-8"))
     log.step("Smoke-testing %s..." % url)
     health = _http_code(url + "/v1/health")
     if health != "200":
@@ -246,11 +376,25 @@ def main(argv: list[str]) -> int:
     worker_dir = repo_root.joinpath(*WORKER_SUBDIR)
     region = args.get("ARG_REGION") or DEFAULT_REGION
     dry_run = args.get("ARG_DRY_RUN") or DEFAULT_DRY_RUN
+    target = args.get("ARG_TARGET") or DEFAULT_TARGET
+    bench = target == BENCH_TARGET
+    config = BENCH_CONFIG if bench else None
 
     if region not in SUPPORTED_REGIONS:
         # Refused first, before the token check and before any build: it is an argument error, and a deploy of the wrong region's config is not one a caller asked for.
         log.error(region_refusal(region))
         return 1
+
+    if target not in SUPPORTED_TARGETS:
+        log.error(target_refusal(target))
+        return 1
+
+    if bench:
+        # The bench-only gate: before the profile, the token and any build, so a config that reaches eu or production never gets credentials.
+        if bench_gate(worker_dir) != 0:
+            return 1
+        if not profile_bound():
+            return _run(reexec_argv(argv), env=package_env())
 
     if not os.environ.get("CLOUDFLARE_API_TOKEN"):
         # THE DIVERGENCE: bash prefixes this with `<script>: line 29: `.
@@ -277,7 +421,7 @@ def main(argv: list[str]) -> int:
 
     if dry_run == TRUE:
         log.step("Dry run: type-checking and compiling the worker without deploying...")
-        status = _run(dry_run_argv())
+        status = _run(dry_run_argv(config))
         if status != 0:
             return status  # `set -e`
         log.info("Dry run passed. Nothing was deployed.")
@@ -287,16 +431,19 @@ def main(argv: list[str]) -> int:
     if status != 0:
         return status
 
-    log.step("Deploying the proxy worker and container image (region: %s)..." % region)
-    status = _run(deploy_argv())
+    if bench:
+        log.step("Deploying the bench proxy worker and container image (config: %s)..." % config)
+    else:
+        log.step("Deploying the proxy worker and container image (region: %s)..." % region)
+    status = _run(deploy_argv(config))
     if status != 0:
         return status  # `set -e`
 
-    status = smoke(worker_dir)
+    status = smoke(worker_dir, config or EU_CONFIG)
     if status != 0:
         return status
 
-    for line in CLOSING_LINES:
+    for line in BENCH_CLOSING_LINES if bench else CLOSING_LINES:
         log.info(line)
     return 0
 

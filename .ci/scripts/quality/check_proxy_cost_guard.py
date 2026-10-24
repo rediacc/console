@@ -8,13 +8,15 @@ WHY THIS EXISTS. The proxy Worker (`workers/proxy`) runs its executor in Cloudfl
     the idle time before an instance sleeps. `@cloudflare/containers` defaults it to
     `'10m'`, so a class that drops the line silently quintuples the idle bill.
 
+The bench Worker (`workers/proxy/wrangler.bench.toml`, operator order 2026-10-24) is held to the same budget, and to one more rule: it names bench and nothing else. Its name, route, `ACCOUNT_URL` and `[[services]]` bindings go through `rediacc_ci.deploy.deploy_proxy.bench_refusals`, the same function `deploy_proxy --target bench` refuses a deploy with, so the gate and the deploy cannot disagree about what a bench config is.
+
 Nothing else noticed a raise: a reviewer reads `max_instances = 20` as a capacity tweak. This is missing test 9 of the plan (box A5).
 
 THE RULE. Every `[[containers]]` entry names `max_instances`, an integer at or under MAX_INSTANCES_BUDGET (absent means the platform default, which is not a budget). Every container class it names is defined under `workers/proxy/src/` and sets `sleepAfter` in its own body, and EVERY `sleepAfter` assignment in that source, the class field or any override, is a literal the library parses (`'<n>s|m|h'`, or a number of seconds) at or under SLEEP_AFTER_BUDGET_S. A value this gate cannot read (a variable, a call) is a finding, never a pass: an unknown idle time is an unchecked one.
 
 RAISING THE BUDGET is a decision, not a fix: change the constant below in the same commit as the section 4 pricing that justifies it.
 
-ANTI-VACUITY. Zero `[[containers]]` entries, zero source files, or a missing config is exit 2 (no verdict), never a green. The instrument controls (`--selftest`) run before every real check, in both directions. The success line prints the counts it judged.
+ANTI-VACUITY. Zero `[[containers]]` entries in either config, zero source files, or a missing config is exit 2 (no verdict), never a green. The instrument controls (`--selftest`) run before every real check, in both directions. The success line prints the counts it judged.
 
 `--root <dir>` points the gate at a copy of the tree; the pytest module (`.ci/rediacc_ci/tests/test_check_proxy_cost_guard.py`) plants violations into fixture copies and never edits the real config.
 
@@ -37,6 +39,9 @@ import re
 import sys
 import tomllib
 
+import _cipath
+from rediacc_ci.deploy import deploy_proxy
+
 # THE BUDGET (PLAN-cloudflare-proxy.md section 4, recommendations 1 and 2). Raise either only together with the pricing that justifies it.
 MAX_INSTANCES_BUDGET = 2
 SLEEP_AFTER_BUDGET_S = 120
@@ -45,6 +50,9 @@ SLEEP_AFTER_BUDGET_S = 120
 LIBRARY_DEFAULT_SLEEP_AFTER = "10m"
 
 WRANGLER_REL = ("workers", "proxy", "wrangler.toml")
+BENCH_WRANGLER_REL = ("workers", "proxy", "wrangler.bench.toml")
+# Each config the gate judges, and whether it must also name bench and nothing else.
+CONFIGS = ((WRANGLER_REL, False), (BENCH_WRANGLER_REL, True))
 SOURCE_REL = ("workers", "proxy", "src")
 SOURCE_SUFFIXES = (".ts", ".mts", ".js", ".mjs")
 # Tests assert the value; they do not set it for the deployed Worker.
@@ -201,26 +209,40 @@ def read_sources(root: pathlib.Path) -> dict[str, str]:
     return out
 
 
+def bench_name_findings(wrangler_text: str, rel: str) -> list[str]:
+    """The bench-only rule: `deploy_proxy.bench_refusals`, each reason prefixed with the file."""
+    return ["%s: %s" % (rel, reason) for reason in deploy_proxy.bench_refusals(wrangler_text)]
+
+
 def check(root: pathlib.Path) -> int:
-    wrangler = root.joinpath(*WRANGLER_REL)
-    if not wrangler.is_file():
-        print(
-            "NO VERDICT: %s is missing; the gate is not seeing the proxy config." % wrangler,
-            file=sys.stderr,
-        )
-        return 2
-    try:
-        containers, findings = container_findings(wrangler.read_text(encoding="utf-8"))
-    except tomllib.TOMLDecodeError as exc:
-        print("NO VERDICT: %s does not parse as TOML: %s" % (wrangler, exc), file=sys.stderr)
-        return 2
-    if not containers:
-        print(
-            "NO VERDICT: %s declares zero [[containers]] entries; the gate is not seeing the container "
-            "config, and its green would mean nothing." % wrangler,
-            file=sys.stderr,
-        )
-        return 2
+    containers: list[dict] = []
+    findings: list[str] = []
+    for rel_parts, bench in CONFIGS:
+        wrangler = root.joinpath(*rel_parts)
+        rel = "/".join(rel_parts)
+        if not wrangler.is_file():
+            print(
+                "NO VERDICT: %s is missing; the gate is not seeing the proxy config." % wrangler,
+                file=sys.stderr,
+            )
+            return 2
+        text = wrangler.read_text(encoding="utf-8")
+        try:
+            these, these_findings = container_findings(text, rel)
+        except tomllib.TOMLDecodeError as exc:
+            print("NO VERDICT: %s does not parse as TOML: %s" % (wrangler, exc), file=sys.stderr)
+            return 2
+        if not these:
+            print(
+                "NO VERDICT: %s declares zero [[containers]] entries; the gate is not seeing the "
+                "container config, and its green would mean nothing." % wrangler,
+                file=sys.stderr,
+            )
+            return 2
+        containers += these
+        findings += these_findings
+        if bench:
+            findings += bench_name_findings(text, rel)
     sources = read_sources(root)
     if not sources:
         print(
@@ -229,22 +251,30 @@ def check(root: pathlib.Path) -> int:
             file=sys.stderr,
         )
         return 2
-    names = [str(c.get("class_name", "")) for c in containers if c.get("class_name")]
+    names = sorted({str(c.get("class_name", "")) for c in containers if c.get("class_name")})
     judged, sleep_findings = sleep_after_findings(sources, names)
     findings += sleep_findings
     if findings:
         for finding in findings:
             print("FAIL  %s" % finding, file=sys.stderr)
         print(
-            "proxy cost guard: %d finding(s) over %d container(s), %d sleepAfter assignment(s), "
-            "%d source file(s)." % (len(findings), len(containers), judged, len(sources)),
+            "proxy cost guard: %d finding(s) over %d container(s) in %d config(s), %d sleepAfter "
+            "assignment(s), %d source file(s)."
+            % (len(findings), len(containers), len(CONFIGS), judged, len(sources)),
             file=sys.stderr,
         )
         return 1
     print(
-        "proxy cost guard: OK, %d container(s) at max_instances <= %d, %d sleepAfter assignment(s) "
-        "<= %ds across %d source file(s)."
-        % (len(containers), MAX_INSTANCES_BUDGET, judged, SLEEP_AFTER_BUDGET_S, len(sources))
+        "proxy cost guard: OK, %d container(s) at max_instances <= %d in %d config(s), the bench "
+        "config naming bench only, %d sleepAfter assignment(s) <= %ds across %d source file(s)."
+        % (
+            len(containers),
+            MAX_INSTANCES_BUDGET,
+            len(CONFIGS),
+            judged,
+            SLEEP_AFTER_BUDGET_S,
+            len(sources),
+        )
     )
     return 0
 
@@ -254,6 +284,19 @@ SELFTEST_TOML = """
 class_name = "C"
 image = "./Dockerfile"
 max_instances = %s
+"""
+
+
+SELFTEST_BENCH_TOML = """
+name = "rediacc-proxy-bench"
+routes = [{ pattern = "proxy.bench.rediacc.com", custom_domain = true }]
+
+[vars]
+ACCOUNT_URL = "%s"
+
+[[services]]
+binding = "ACCOUNT"
+service = "rediacc-account-bench"
 """
 
 
@@ -314,6 +357,15 @@ def selftest() -> bool:
     control(
         "a class the config names and no file defines fires",
         len(sleep_after_findings({"s.ts": "class D {\n  sleepAfter = '1m';\n}\n"}, ["C"])[1]) == 1,
+    )
+    bench_rel = "/".join(BENCH_WRANGLER_REL)
+    control(
+        "a bench config naming bench only is clean",
+        not bench_name_findings(SELFTEST_BENCH_TOML % "https://bench.rediacc.com", bench_rel),
+    )
+    control(
+        "a bench config reaching eu.rediacc.com fires",
+        len(bench_name_findings(SELFTEST_BENCH_TOML % "https://eu.rediacc.com", bench_rel)) == 1,
     )
     return ok
 

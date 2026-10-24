@@ -15,11 +15,14 @@ required.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
 import sys
 import typing
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy as port
@@ -741,3 +744,243 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.deploy_proxy"
     assert port.__name__ == port.SELF
+
+
+# --------------------------------------------------------------------------- The bench target and its bench-only gate (operator order 2026-10-24) ---------------------------------------------------------------------------
+
+BENCH_TOML = ROOT / "workers" / "proxy" / "wrangler.bench.toml"
+BENCH_PROFILE_ENV = {"REDIACC_BWS_PROFILES": "deploy-proxy-bench"}
+BENCH_CURL = "curl\t-sS\t-o\t/dev/null\t-w\t%{http_code}\t--max-time\t30\t"
+
+
+def _bench_root(tmp_path: pathlib.Path, text: str | None = None) -> pathlib.Path:
+    """The fixture root plus a `wrangler.bench.toml`: the REAL one unless `text` plants another."""
+    root = _fixture_root(tmp_path)
+    body = BENCH_TOML.read_text(encoding="utf-8") if text is None else text
+    (root / "workers" / "proxy" / "wrangler.bench.toml").write_text(body, encoding="utf-8")
+    return root
+
+
+def _plant(old: str, new: str) -> str:
+    text = BENCH_TOML.read_text(encoding="utf-8")
+    assert text.count(old) == 1, "the plant's anchor %r must occur exactly once" % old
+    return text.replace(old, new)
+
+
+def test_a_bench_deploy_names_its_config_and_smokes_the_bench_route(tmp_path: pathlib.Path) -> None:
+    root = _bench_root(tmp_path)
+    proc, calls = _run(PORT, tmp_path, root, ("--target", "bench"), **BENCH_PROFILE_ENV)
+    assert proc.returncode == 0, proc.stderr
+    assert calls == (
+        "npm\trun\tbuild\t--workspace\t@rediacc/shared\n"
+        "  cwd=root\n"
+        "npm\trun\tbuild\t--workspace\t@rediacc/cli\n"
+        "  cwd=root\n"
+        "resolve-version.sh\t--current\n"
+        "  cwd=proxy\n"
+        "build-renet.sh\t--version\t1.2.3\n"
+        "  cwd=proxy\n"
+        "npx\twrangler\tdeploy\t--config\twrangler.bench.toml\n"
+        "  cwd=proxy\n"
+        f"{BENCH_CURL}https://proxy.bench.rediacc.com/v1/health\n"
+        f"{BENCH_CURL}https://proxy.bench.rediacc.com/v1/server-info\n"
+    )
+    assert "(config: wrangler.bench.toml)" in proc.stderr
+    assert "(region: eu)" not in proc.stderr
+    for line in port.BENCH_CLOSING_LINES:
+        assert "✓ %s\n" % line in proc.stderr
+    assert "--config workers/proxy/wrangler.toml" not in proc.stderr
+
+
+def test_a_bench_dry_run_names_its_config(tmp_path: pathlib.Path) -> None:
+    root = _bench_root(tmp_path)
+    proc, calls = _run(
+        PORT, tmp_path, root, ("--target", "bench", "--dry-run"), **BENCH_PROFILE_ENV
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert (
+        "npx\twrangler\tdeploy\t--dry-run\t--outdir\t%s\t--config\twrangler.bench.toml\n"
+        % port.DRY_RUN_OUTDIR
+        in calls
+    )
+    assert "curl" not in calls
+    assert "build-renet.sh" not in calls
+
+
+def test_the_real_bench_config_passes_the_bench_gate() -> None:
+    text = BENCH_TOML.read_text(encoding="utf-8")
+    assert port.bench_refusals(text) == []
+    assert port.smoke_host(text) == port.BENCH_ROUTE == "proxy.bench.rediacc.com"
+
+
+def test_the_eu_config_is_refused_as_a_bench_config() -> None:
+    """The control in the other direction: the eu file, handed to the bench gate, fails on every name."""
+    reasons = port.bench_refusals((ROOT / "workers" / "proxy" / "wrangler.toml").read_text())
+    joined = "\n".join(reasons)
+    for fragment in ("rediacc-proxy-eu", "proxy.eu.rediacc.com", "https://eu.rediacc.com"):
+        assert fragment in joined
+    assert "rediacc-account-eu" in joined
+
+
+BENCH_PLANTS = (
+    (
+        "account-url-eu",
+        ('ACCOUNT_URL = "https://bench.rediacc.com"', 'ACCOUNT_URL = "https://eu.rediacc.com"'),
+        "vars.ACCOUNT_URL is 'https://eu.rediacc.com'",
+    ),
+    (
+        "account-url-suffix",
+        (
+            'ACCOUNT_URL = "https://bench.rediacc.com"',
+            'ACCOUNT_URL = "https://bench.rediacc.com/x"',
+        ),
+        "vars.ACCOUNT_URL is 'https://bench.rediacc.com/x'",
+    ),
+    (
+        "binding-eu",
+        ('service = "rediacc-account-bench"', 'service = "rediacc-account-eu"'),
+        "the ACCOUNT service binding is ['rediacc-account-eu']",
+    ),
+    (
+        "route-eu",
+        ('pattern = "proxy.bench.rediacc.com"', 'pattern = "proxy.eu.rediacc.com"'),
+        "route 'proxy.eu.rediacc.com' names eu",
+    ),
+    (
+        "route-production",
+        ('pattern = "proxy.bench.rediacc.com"', 'pattern = "proxy.rediacc.com"'),
+        "routes are ['proxy.rediacc.com']",
+    ),
+    (
+        "name-eu",
+        ('name = "rediacc-proxy-bench"', 'name = "rediacc-proxy-eu"'),
+        "name 'rediacc-proxy-eu' names eu",
+    ),
+    (
+        "name-production",
+        ('name = "rediacc-proxy-bench"', 'name = "rediacc-proxy-production"'),
+        "name 'rediacc-proxy-production' names production",
+    ),
+    (
+        "env-table",
+        ("[observability]\n", '[env.production]\nname = "rediacc-proxy"\n\n[observability]\n'),
+        "an [env.*] table",
+    ),
+    (
+        "second-service",
+        (
+            'service = "rediacc-account-bench"',
+            'service = "rediacc-account-bench"\n\n[[services]]\nbinding = "WWW"\nservice = "rediacc-www"',
+        ),
+        "[[services]] binds 'rediacc-www'",
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("label", "plant", "fragment"), BENCH_PLANTS, ids=[p[0] for p in BENCH_PLANTS]
+)
+def test_a_bench_config_that_names_anything_but_bench_refuses_before_any_build(
+    tmp_path: pathlib.Path, label: str, plant: tuple[str, str], fragment: str
+) -> None:
+    """Each plant refuses with exit 1, no stdout and an empty call log, WITH NO TOKEN AND NO PROFILE: the gate runs before both, so a config that reaches eu or production is never handed credentials."""
+    del label
+    root = _bench_root(tmp_path, _plant(*plant))
+    proc, calls = _run(
+        PORT, tmp_path, root, ("--target", "bench"), drop_env=("CLOUDFLARE_API_TOKEN",)
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert proc.stdout == ""
+    assert calls == ""
+    lines = proc.stderr.splitlines()
+    assert lines, "a refusal names its reason"
+    assert all(line.startswith("✗ --target bench refused: ") for line in lines), (
+        "nothing may run after the gate, not even the profile re-exec: %r" % proc.stderr
+    )
+    assert fragment in proc.stderr, proc.stderr
+
+
+def test_a_missing_bench_config_refuses_before_any_build(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(PORT, tmp_path, root, ("--target", "bench"))
+    assert proc.returncode == 1
+    assert calls == ""
+    assert proc.stderr.startswith(
+        "✗ --target bench refused: workers/proxy/wrangler.bench.toml cannot be read"
+    )
+    assert proc.stderr.count("\n") == 1, proc.stderr
+
+
+def test_an_unparsable_bench_config_refuses(tmp_path: pathlib.Path) -> None:
+    root = _bench_root(tmp_path, "name = \n")
+    proc, calls = _run(PORT, tmp_path, root, ("--target", "bench"))
+    assert proc.returncode == 1
+    assert calls == ""
+    assert proc.stderr.startswith(
+        "✗ --target bench refused: workers/proxy/wrangler.bench.toml does not parse as TOML"
+    )
+    assert proc.stderr.count("\n") == 1, proc.stderr
+
+
+def test_an_unknown_target_refuses_before_any_build(tmp_path: pathlib.Path) -> None:
+    root = _bench_root(tmp_path)
+    proc, calls = _run(PORT, tmp_path, root, ("--target", "production"))
+    assert proc.returncode == 1
+    assert proc.stderr == "✗ %s\n" % port.target_refusal("production")
+    assert calls == ""
+
+
+def test_an_explicit_eu_target_deploys_exactly_as_the_default(tmp_path: pathlib.Path) -> None:
+    """`--target eu` is the twin's run, byte for byte: no `--config`, wrangler.toml's route, the eu closing lines."""
+    root = _bench_root(tmp_path)
+    for side in ("d", "e"):
+        (tmp_path / side).mkdir()
+    default, default_calls = _run(PORT, tmp_path / "d", root, ())
+    explicit, explicit_calls = _run(PORT, tmp_path / "e", root, ("--target", "eu"))
+    assert explicit.returncode == 0, explicit.stderr
+    assert explicit.stderr == default.stderr == DEPLOY_STDERR
+    assert explicit_calls == default_calls != ""
+    assert "--config" not in default_calls
+
+
+def test_a_bench_run_without_its_profile_reexecutes_under_it(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unbound, the run hands itself to `bws_env exec --profile deploy-proxy-bench` and returns that child's status; nothing else runs in this process."""
+    root = _bench_root(tmp_path)
+    monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    seen: list[tuple[list[str], dict | None]] = []
+
+    def fake_run(argv: list[str], *, env: dict | None = None) -> int:
+        seen.append((argv, env))
+        return 7
+
+    monkeypatch.setattr(port, "_run", fake_run)
+    assert port.main(["--target", "bench"]) == 7
+    assert len(seen) == 1
+    argv, env = seen[0]
+    assert argv == port.reexec_argv(["--target", "bench"])
+    assert argv[1:7] == [
+        "-m",
+        "rediacc_ci.core.bws_env",
+        "exec",
+        "--profile",
+        "deploy-proxy-bench",
+        "--",
+    ]
+    assert argv[-4:] == ["-m", "rediacc_ci.deploy.deploy_proxy", "--target", "bench"]
+    assert env is not None
+    assert env["PYTHONPATH"].split(os.pathsep)[0] == port.PACKAGE_PARENT
+
+
+def test_the_bench_profile_binds_the_dev_public_key_and_the_workers_token() -> None:
+    """Bench signs licences with the DEV keypair, so the image's renet must verify with the DEV public key, under the name the build reads."""
+    spec = json.loads((ROOT / ".ci" / "config" / "secret-supply.json").read_text(encoding="utf-8"))
+    profile = spec["consumers"][port.BENCH_PROFILE]
+    assert set(profile["required"]) == {
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
+    }

@@ -43,6 +43,7 @@ MUST_NOT_MATCH = (
     "rediacc-www",  # workers/www/wrangler.toml:1
     "edge-rediacc-www",  # workers/www/wrangler.edge.toml:1
     "rediacc-proxy-eu",  # workers/proxy/wrangler.toml:1
+    "rediacc-proxy-bench",  # workers/proxy/wrangler.bench.toml:12
     "mta-sts-policy",  # workers/mta-sts/wrangler.toml:1
     "pr-main",  # pr- prefix, not a number
     "pr-574-old",  # trailing junk
