@@ -1306,18 +1306,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 1,
+      "open": 5,
+      "done": 2,
       "open_sigs": [
         "40820c64",
         "43ae1021",
         "67b7dece",
-        "b3908820",
         "dfd33f28",
         "e89f926a"
       ],
       "done_sigs": [
-        "31520157"
+        "31520157",
+        "b3908820"
       ]
     },
     "agent/plans/PLAN-scope-gate-sort-collation.md": {
