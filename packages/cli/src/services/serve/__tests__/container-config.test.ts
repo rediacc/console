@@ -43,7 +43,7 @@ import {
 import { resetProxySessions } from '../../executor/proxy-client.js';
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
-import { createContainerConfigLoader } from '../container-config.js';
+import { createContainerConfigLoader, createExecutorGrantRecorder } from '../container-config.js';
 import { serveCrypto } from '../crypto.js';
 import type { ServeDeps } from '../deps.js';
 import { authorize } from '../policy.js';
@@ -211,6 +211,13 @@ describe('container-tier config loading', () => {
   /** Configs that reached policy. Proves what the executor actually decrypted. */
   let authorizedAgainst: RdcConfig[];
   let accountCalls: string[];
+  /** The fake account server's grant records (PLAN-backup-program S7): sessionId -> grantor userId. */
+  let grants: Map<string, string>;
+  /** Bodies the executor posted to /configs/executor-grant and /configs/executor-token. */
+  let grantBodies: { sessionId: string; token: string }[];
+  let mintBodies: { userId: string; sessionId: string }[];
+  /** When set, the fake account server refuses to record grants. */
+  let refuseGrants: boolean;
 
   async function boot(config: RdcConfig): Promise<void> {
     cek = await generateCek();
@@ -218,6 +225,10 @@ describe('container-tier config loading', () => {
     resolvedAtExecution = [];
     authorizedAgainst = [];
     accountCalls = [];
+    grants = new Map();
+    grantBodies = [];
+    mintBodies = [];
+    refuseGrants = false;
 
     // Real ciphertext, built exactly as a CLI push builds it.
     const sdkEpoch = 12345;
@@ -231,8 +242,38 @@ describe('container-tier config loading', () => {
     });
     const sdkDerivedB64 = toBase64(await exportAesKey(sdkDerived));
 
-    const accountFetch = vi.fn((url: string | URL, init?: RequestInit) => {
-      const href = String(url);
+    /** The fake /configs/executor-grant. Mirrors the server: the grantor is the presented bearer's creator. */
+    const recordGrantCall = (init?: RequestInit): Response => {
+      expect(init?.headers).toMatchObject({ authorization: `Bearer ${EXECUTOR_TOKEN}` });
+      const body = JSON.parse(init?.body as string) as { sessionId: string; token: string };
+      grantBodies.push(body);
+      const grantor = (PRINCIPALS[body.token] as { createdByUserId?: string } | undefined)
+        ?.createdByUserId;
+      if (refuseGrants || !grantor) {
+        return new Response(JSON.stringify({ error: 'refused' }), { status: 403 });
+      }
+      grants.set(body.sessionId, grantor);
+      return json({ ok: true });
+    };
+
+    /** The fake /configs/executor-token. S7: the mint names the session it serves, and only its recorded grantor is served. */
+    const mintCall = (init?: RequestInit): Response => {
+      expect(init?.headers).toMatchObject({ authorization: `Bearer ${EXECUTOR_TOKEN}` });
+      const body = JSON.parse(init?.body as string) as { userId: string; sessionId: string };
+      mintBodies.push(body);
+      if (grants.get(body.sessionId) !== body.userId) {
+        return new Response(JSON.stringify({ error: 'not granted' }), { status: 403 });
+      }
+      return json({
+        token: 'rct_executor_scoped',
+        storeId: 'store-1',
+        serverSecret: toBase64(new Uint8Array(32)),
+        configs: [{ configId: CONFIG_ID, teamId: null, version: 4 }],
+      });
+    };
+
+    /** Every account call but the grant record, which stays out of accountCalls so the pull/mint counts below measure what they say. */
+    const countedCall = (href: string, init?: RequestInit): Response => {
       accountCalls.push(href);
 
       if (href.includes('/proxy/introspect')) {
@@ -241,15 +282,7 @@ describe('container-tier config loading', () => {
       }
 
       // Checked BEFORE the generic /configs/ pull: the literal path is a prefix match.
-      if (href.includes('/configs/executor-token')) {
-        expect(init?.headers).toMatchObject({ authorization: `Bearer ${EXECUTOR_TOKEN}` });
-        return json({
-          token: 'rct_executor_scoped',
-          storeId: 'store-1',
-          serverSecret: toBase64(new Uint8Array(32)),
-          configs: [{ configId: CONFIG_ID, teamId: null, version: 4 }],
-        });
-      }
+      if (href.includes('/configs/executor-token')) return mintCall(init);
 
       if (href.includes('/configs/')) {
         // The executor must present the token it was just minted, not its own.
@@ -266,6 +299,13 @@ describe('container-tier config loading', () => {
       }
 
       throw new Error(`unexpected account call: ${href}`);
+    };
+
+    const accountFetch = vi.fn((url: string | URL, init?: RequestInit) => {
+      const href = String(url);
+      return href.includes('/configs/executor-grant')
+        ? recordGrantCall(init)
+        : countedCall(href, init);
     }) as unknown as typeof fetch;
 
     sessions = new SessionStore();
@@ -297,6 +337,11 @@ describe('container-tier config loading', () => {
         accountUrl: 'https://account.test',
         executorToken: EXECUTOR_TOKEN,
         sessions,
+        fetchImpl: accountFetch,
+      }),
+      recordGrant: createExecutorGrantRecorder({
+        accountUrl: 'https://account.test',
+        executorToken: EXECUTOR_TOKEN,
         fetchImpl: accountFetch,
       }),
       authorize: (args) => {
@@ -515,6 +560,57 @@ describe('container-tier config loading', () => {
     // and the mint asserted the executor's own bearer. Both were exercised.
     expect(accountCalls.some((u) => u.includes('/configs/executor-token'))).toBe(true);
     expect(accountCalls.some((u) => u.includes(`/configs/${CONFIG_ID}`))).toBe(true);
+  });
+
+  // ── S7: the config token is minted only under the session the user granted ──
+
+  it('records the grant with the bearer that completed it, and mints naming that session', async () => {
+    const sessionId = await grantKey();
+    expect(grantBodies).toEqual([{ sessionId, token: OWNER_TOKEN }]);
+
+    await (await runCommand()).text();
+    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId }]);
+    expect(executed).toHaveLength(1);
+  });
+
+  it('sends the session the X-Config-Session header names', async () => {
+    const first = await grantKey();
+    await grantKey();
+
+    await (await runCommand(OWNER_TOKEN, { 'X-Config-Session': first })).text();
+    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId: first }]);
+  });
+
+  it('drops the session when the account server refuses to record the grant', async () => {
+    refuseGrants = true;
+    const opened = await fetch(`${baseUrl}/v1/session`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${OWNER_TOKEN}` },
+    });
+    const { sessionId, publicKey } = (await opened.json()) as {
+      sessionId: string;
+      publicKey: string;
+    };
+    const executorPublicKey = await crypto.subtle.importKey(
+      'spki',
+      buf(fromBase64(publicKey)),
+      { name: 'X25519' },
+      false,
+      []
+    );
+    const blob = await cekHandoffEncrypt(await exportAesKey(cek), executorPublicKey);
+    const granted = await fetch(`${baseUrl}/v1/session/${sessionId}/cek`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${OWNER_TOKEN}`, 'content-type': 'application/json' },
+      body: JSON.stringify(blob),
+    });
+
+    expect(granted.status).toBe(403);
+    // The key the server will not serve a config under is not held.
+    expect(sessions.size()).toBe(0);
+    const response = await runCommand();
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(executed).toHaveLength(0);
   });
 
   // ── Without a grant there is nothing to run against ──────────────────

@@ -117,7 +117,18 @@ export function createServeApp(deps: ServeDeps): Hono {
       // The grant is bound to the principal who OPENED the session: this is the same identity, resolved by the account server, that grantCek checks the session against. A valid token for a different user cannot complete someone else's grant.
       const principal = await authenticate(c.req.header('authorization'), deps);
       const blob = CekHandoffBlobSchema.parse(await c.req.json());
-      await deps.sessions.grantCek(c.req.param('id'), blob, principal);
+      const sessionId = c.req.param('id');
+      await deps.sessions.grantCek(sessionId, blob, principal);
+      if (deps.recordGrant) {
+        try {
+          // The bearer that completed the grant is the account server's proof that this user granted the session; without the record no config token is minted for it (PLAN-backup-program S7).
+          await deps.recordGrant(sessionId, bearerOf(c.req.header('authorization')));
+        } catch (error) {
+          // A key the account server will not serve a config under is dropped rather than held: nothing in RAM outlives a grant the server refused.
+          deps.sessions.close(sessionId);
+          throw error;
+        }
+      }
       return c.json({ ok: true });
     } catch (error) {
       const { status, message } = statusFor(error);
@@ -505,8 +516,13 @@ function targetFrom(
   return typeof fromPositional === 'string' ? fromPositional : undefined;
 }
 
+/** The raw bearer token of an Authorization header, or '' when there is none. */
+function bearerOf(header: string | undefined): string {
+  return header?.replace(/^Bearer\s+/i, '').trim() ?? '';
+}
+
 function authenticate(header: string | undefined, deps: ServeDeps) {
-  const token = header?.replace(/^Bearer\s+/i, '').trim();
+  const token = bearerOf(header);
   if (!token) {
     throw new AuthError(
       'This request carried no token. Authenticate with the account server.',

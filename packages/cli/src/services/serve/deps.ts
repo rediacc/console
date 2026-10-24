@@ -58,6 +58,14 @@ export interface ServeDeps {
    * latest grant. A loader with its own config (the daemon tier) ignores it.
    */
   loadConfig: (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig>;
+  /**
+   * Record with the account server that the bearer's user granted this session
+   * its config key (PLAN-backup-program S7). Called once the CEK grant leg
+   * succeeds; a failure undoes the grant. Set by the container tier, whose
+   * config token is minted only under a recorded grant; the daemon tier, which
+   * reads its own enrolled config, leaves it unset.
+   */
+  recordGrant?: (sessionId: string, bearerToken: string) => Promise<void>;
   /** Throws PolicyDenied when the principal may not run the command. */
   authorize: (args: AuthorizeArgs) => PolicyDecision;
   /** Ships one audit event per command. Awaited, so a killed process cannot lose it. */

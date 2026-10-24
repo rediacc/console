@@ -29,7 +29,10 @@ import { outputService } from '../services/core/output.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
 import { createExecutorAudit } from '../services/serve/audit.js';
 import { AuthVerifier } from '../services/serve/auth.js';
-import { createContainerConfigLoader } from '../services/serve/container-config.js';
+import {
+  createContainerConfigLoader,
+  createExecutorGrantRecorder,
+} from '../services/serve/container-config.js';
 import { serveCrypto } from '../services/serve/crypto.js';
 import type { ServeDeps } from '../services/serve/deps.js';
 import { authorize } from '../services/serve/policy.js';
@@ -83,6 +86,10 @@ export function registerServeCommand(program: Command): void {
           executor: localExecutorService,
           crypto: serveCrypto,
           loadConfig,
+          // The container's config token is minted only under a grant the account server recorded (PLAN-backup-program S7).
+          ...(options.mode === 'container'
+            ? { recordGrant: createExecutorGrantRecorder({ accountUrl, executorToken }) }
+            : {}),
           authorize,
           audit: createExecutorAudit({
             accountUrl,
