@@ -325,6 +325,14 @@ Step 4 findings and their fixes:
 - A Cloudflare container cannot reach the ops VMs (192.168.111.0/24 is private to the dev box), so `machine status`, fork, `repo up` and `repo down` end-to-end need a publicly reachable test machine. hostinger is excluded until H1.
 - A new secret reaches a container only after its Durable Object idles out (`sleepAfter = 2m`): a container started a minute after `secret put` still ran the previous script version.
 
+Re-run after the fixes (bench, 2026-10-24 07:05-07:13Z): proxy `rediacc-proxy-bench` 0432aa69-c448-4940-b38b-65eaad70d7bb (carries f379e5b75, 5a047c9c3, 3763bad34; rollback 4fb58b44), account `rediacc-account-bench` 83e0c016-40c6-4447-8ead-723e42f1fa6c (carries 77c2518c2; rollback 10818332, D1 bookmark `000000c5-00000000-0000510e-1d0a055499205be40954a9fca240beda`).
+
+| Step | rc | Result |
+|---|---|---|
+| 4. `rdc --proxy https://proxy.bench.rediacc.com machine status vm12` (three runs, one from cold) | 1 | fails only at SSH, `Timed out while waiting for handshake` (vm12 is private to the dev box); the account tail shows the container's `.well-known/server-info`, `proxy/introspect`, `configs/executor-token`, the config pull and `licenses/audit-events` all 200 via the CloudflareInternal entrypoint |
+
+event_log gained rows 9577d702-88d4-48e6-ad8d-4a5058a3c2ea and 75d402ca-c849-40f3-96ce-143277e1518c, both `type=cli.command`, attributed to the caller's proxy token through `onBehalfOfTokenId`. One earlier run right after a deploy ended with a client-side `fetch failed` that two cold runs did not reproduce; the proxy client calls `fetch` with no timeout and drops the error cause (worklist item).
+
 ## Phase 2 step 5 measurements (bench, 2026-10-24)
 
 Instance type `basic` (0.25 vCPU, 1 GiB, 4 GB disk). The GraphQL `containersMetricsAdaptiveGroups` maximum memory was 237-242 MiB per minute while idle and serving server-info, disk 465 MiB, about 122 s up per wake (the 2 m sleep holds). `wrangler containers info` reports no RSS. Cold start, Worker wall time / container wall time on the first request after idle: 3000/2270, 2493/1967, 4909/4281 and 2348/1619 ms; warm 487 ms. Verdict: `lite` (256 MiB) is not viable, since idle use already sits at about 240 MiB before any `repo up`; keep `basic`.
