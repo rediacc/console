@@ -46,7 +46,7 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
 
 ### D3. The sandbox sees only its own repo's mount
 - `cmd/renet/sandbox_repo_view_linux.go` (+ `_other`): pure `planForeignDetach(mountinfo, ds, workDir)` (every mount strictly under `<ds>/mounts/` not at or below `workDir`, deepest first; refuses a `workDir` that is not `<ds>/mounts/<guid>`; legacy `<ds>/home/<name>` gets a warning and no view).
-- `applyPrivateRepoView(workDir)`: `umount2(p, MNT_DETACH)` per planned mount, then a fresh procfs on `/proc` with `hidepid=invisible`; any failure fatal.
+- `applyPrivateRepoView(workDir)`: `umount2(p, MNT_DETACH)` per planned mount, then a fresh procfs on `/proc`; any failure fatal. `hidepid` alone hides only other uids, and every repo shell runs as one account (decision 1), so the session gets its own PID namespace (`CLONE_NEWPID`) before that procfs mount; RB first checks whether sandbox-exec already unshares one and adds it if not, so `/proc` shows only the session's processes.
 - sandbox-exec flag `--private-repo-view <workDir>` after `setupSandboxMounts` and before `readOnlyExcept` (sandbox_exec.go:124-147), refused without a namespace; passed by `buildGatewaySandboxArgs` (sandbox_gateway.go:192-243) and the transfer argv (sandbox_gateway_transfer.go:~221).
 
 ### D4. Repo delete removes the repo's cgroups and map entries
@@ -54,7 +54,7 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
 - Callers: `daemon.TeardownDaemon` step 4 (setup.go:305-308) calls it and `RemoveNetworkGroup(N)` (delete reaches it via `DeleteWithCleanup` -> `SafeShutdown{Teardown:true}`, workflows.go:742 -> 428-433; prune at prune.go:288); `pkg/prune` also sweeps `rediacc-<N>` dirs no daemon unit claims (pre-fix leftovers).
 
 ### D5. Accurate message
-`warnManagerUnavailable` (manager.go:599-607) becomes an Info line: "this process (uid %d) cannot write eBPF isolation entries; the repository's Docker API gate seeds each container's entry at create time and the repository default entry covers the rest". Correct the `DetachRepoCgroup` (manager.go:258-266) and `CgroupConfigMap` (manager.go:435, no caller) docstrings; RB updates the `setupRepoEbpf` docstring (sandbox_exec.go:456-470).
+`warnManagerUnavailable` (manager.go:599-607) becomes an Info line that states only what holds: when the gate reports seeding active, "this process (uid %d) cannot write eBPF isolation entries; the repository's Docker API gate seeds each container's entry at create time and the repository default entry covers the rest"; when eBPF was unavailable at gate start (decision 4's log-and-pass branch), a Warn line saying loopback isolation is NOT in force on this machine. Correct the `DetachRepoCgroup` (manager.go:258-266) and `CgroupConfigMap` (manager.go:435, no caller) docstrings; RB updates the `setupRepoEbpf` docstring (sandbox_exec.go:456-470).
 
 ## Tasks
 
@@ -81,7 +81,7 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
 ## Tests (Go, with fakes)
 - RA: `sandboxGroups` table (user {rediacc, docker, net-7, net-9} with socket net-7 -> {rediacc, net-7}; no socket -> {rediacc}; socket gid docker -> legacy error; lookup miss -> error); `dropPrivileges` returns the Setgroups error through a seam; `networkOfCgroup` table; proxy with a fake `PeerResolver` (own served, foreign 403 and backend never dialed, outside rediacc served, delegated allows H and refuses N); `EnsureNetworkGroup` argv through a fake runner; goldens carry `--socket-group=rediacc-net-<N>` and epoch 2.
 - RB: planner tables (nested submounts deepest first, own submounts kept, outside-datastore ignored, legacy path); gateway and transfer argv carry `--private-repo-view`; root-gated namespace test with two fake bind mounts.
-- RC: fake `Seeder` plus an order-recording backend (seed before the backend reads); label outside the /26 -> `service_ip=""`; seed error -> 500 with no dial; the 62nd service -> 403; empty or deeper `CgroupParent` -> no service seed; `PreSeedServiceCgroups` without `.rediacc.json` still calls `SeedRepoDefault`; `warnManagerUnavailable` no longer says "in force"; e2e `DeepestEntryWins`, `RepoDefaultBlocksCrossRepo`.
+- RC: fake `Seeder` plus an order-recording backend (seed before the backend reads); label outside the /26 -> `service_ip=""`; seed error -> 500 with no dial; the 62nd service -> 403; empty or deeper `CgroupParent` -> no service seed; `PreSeedServiceCgroups` without `.rediacc.json` still calls `SeedRepoDefault`; `warnManagerUnavailable` no longer claims coverage it lacks, and names the not-in-force case; eBPF unavailable at gate start: the gate logs once, wires no seeder, creates pass, and the sandbox prints the not-in-force warning (decision 4's fail-open branch, tested rather than implied); e2e `DeepestEntryWins`, `RepoDefaultBlocksCrossRepo`.
 - RD: fake cgroup tree and map (bottom-up order, busy dir skipped, sweep keeps other subnets and alias matches, deletes dead keys in N's subnet); `TeardownDaemon` calls both cleanups through seams.
 
 ## Risks
@@ -90,6 +90,6 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
 - The gate needs root capabilities for BPF and cgroup writes; a future capability limit on the unit would make creates fail closed (RC's e2e run is the guard).
 - The BPF walk does up to 7 helper calls per bind/connect; exec-cgroup and leaf keys are matched exactly first, so their precedence is unchanged. Regenerating objects needs clang on the writer's host.
 - The map is a shared LRU: the 61-directory cap bounds gate seeding; leaf entries from exec.go:390 stay unbounded per container, as before.
-- hidepid limits `ps` to the session's processes; compose's binding check reads the session's own `/proc/net/tcp` (procnet.go:25-26).
+- The session PID namespace limits `ps` and `/proc` to the session's processes (hidepid alone would not, since all repo shells share one uid); compose's binding check reads the session's own `/proc/net/tcp` (procnet.go:25-26).
 - D3 leaves `/dev/mapper` names (device nodes stay permission-protected) and `/sys/fs/cgroup` `rediacc-<N>` names visible; follow-up: mask `/dev/mapper` in the session namespace.
 - The `vm_check.py` refactor lands after U1, which owns that file until ticked.
