@@ -811,10 +811,11 @@ export function classifyDrops(
   manifest: string
 ): { claimed: string[]; unclaimed: string[] } {
   const stepOf = (d: string) => d.slice(d.indexOf(': ') + 2);
-  // A step dropped from one lane's region and emitted into another lane of the same workflow MOVED: the rewrite regenerates it, `env:` and `if:` included, from the same gate, so nothing is lost (#d8e23921: the retired-terms lane move quality-static -> quality-security needed --allow-drop).
-  const emittedSteps = new Set([...emitted].map(stepOf));
+  // MOVED, not dropped: the same rewrite emits the step into another lane where it was NOT before. `dropped` lists every step the rewritten regions held before the rewrite, so an emitted `<lane>: <step>` absent from it is new to that lane. A same-named step another lane already had (a generic `Lint`) excuses nothing, and `emitted` comes from one workflow's lanes, so the step is regenerated from its gate in the new lane.
+  const before = new Set(dropped);
+  const arrived = new Set([...emitted].filter((e) => !before.has(e)).map(stepOf));
   const live = dropped.filter(
-    (d) => !emitted.has(d) && !emittedSteps.has(stepOf(d)) && !allowDrop.has(stepOf(d))
+    (d) => !emitted.has(d) && !arrived.has(stepOf(d)) && !allowDrop.has(stepOf(d))
   );
   return {
     claimed: live.filter((d) => manifest.includes(`step: '${stepOf(d)}'`)),
@@ -1877,6 +1878,15 @@ function selftest(endToEnd = false): number {
     classifyDrops(DROP, new Set(['quality-security: Check X']), none, MANIFEST_WITH).claimed
       .length === 0 &&
       classifyDrops(DROP, new Set(['quality-security: Check X']), none, '').unclaimed.length === 0
+  );
+  ck(
+    'CONTROL: a same-named step another lane ALREADY held does not excuse a real drop',
+    classifyDrops(
+      [...DROP, 'quality-security: Check X'],
+      new Set(['quality-security: Check X']),
+      none,
+      MANIFEST_WITH
+    ).claimed.length === 1
   );
   ck(
     'CONTROL: a different step emitted elsewhere does not excuse the drop',
