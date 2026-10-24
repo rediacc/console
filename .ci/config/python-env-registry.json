@@ -337,7 +337,10 @@
     ],
     ".ci/rediacc_ci/deploy/deploy_proxy.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY",
-      "CLOUDFLARE_API_TOKEN"
+      "CLOUDFLARE_API_TOKEN",
+      "REDIACC_BWS_PROFILES",
+      "REDIACC_SMOKE_DOH_URL",
+      "REDIACC_SMOKE_RESOLVE_WINDOW_S"
     ],
     ".ci/rediacc_ci/deploy/deploy_www.py": [
       "CLOUDFLARE_ACCOUNT_ID",
@@ -1447,6 +1450,9 @@
       "PYTEST_BIN"
     ],
     ".ci/rediacc_ci/tests/test_bench_preflight.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_bootstrap_agg.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_bootstrap_aws_resolver.py": [
