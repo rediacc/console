@@ -1,23 +1,23 @@
-## SESSION d778be9d 2026-10-24T05:02:57Z
+## SESSION d778be9d 2026-10-24T06:00:08Z
 
-# STATE d778be9d, branch 1023-1 (unpushed, ~210 commits), 2026-10-24 ~05:00Z
+# STATE d778be9d, branch 1023-1 (unpushed, ~240 commits), 2026-10-24 ~06:05Z
 
 ## Big pieces
-- Backup push (#831b7e48): vm:check VERIFIED at renet 9583351 (receipt tree 4fcb98e4589f). ci:quick bq77acbs6 is running on a still tree. When it is green: `TURBO_PUSH_REASON='backup: ...' git push -u origin 1023-1`, as its own call. Do not edit tracked files while ci:quick runs.
-- Bench proxy (#f1e9acc4), operator order 2026-10-24: extend the bench-only bypass so Phase 2 runs on bench. Investigation: bench already allows register, owner and token mint (captcha off by the 2026-10-13 ruling, EMAIL_CAPTURE_D1), so only a proxy bench target is missing. Writer a662e381 works in /tmp/benchproxy (scratch export); the lead copies its files in after ci:quick. Then: deploy_bench (bench is at migration 0058, the tree at 0060), register a rediacc.io owner, mint a proxy:exec+audit:write cloudflare-bound token, wrangler secret put on wrangler.bench.toml, deploy_proxy --target bench, Phase 2 on an ops VM. #93b9c7dc's DEFAULT is that bench sequence. Never the eu secret, production accounts or hostinger.
-- Hostinger upgrade restart (#d0928775): Plan agent a7dce118 is designing the restart of every repo daemon after a renet binary change. Hostinger runs renet 7e6a8588 with 11 repos. A mutating rdc verb against hostinger uploads this branch's renet: forbidden until this lands (hint proposed).
-- Managing-secrets publish (#d975df90, operator ASKED "Publish now"): media agent af701b43 renders the 13 locale mp4s from the audio held at /home/developer/ms-audio-hold/audio and syncs them to R2. That closes the high review finding 8cd35fd2.1.
+- Backup push (#831b7e48): never pushed. Needs ci:quick on a STILL tree (no writer editing), then `TURBO_PUSH_REASON='backup: ...' git push -u origin 1023-1` as its own call. Every code red from today's ci:quick is fixed. Carry the merge-time reds in .ci/config/carried-reds.json with reasons: P-A1 open boxes, review-resolutions 8cd35fd2.1 (closes when #d975df90 publishes), and check:deps if the npm bump has not landed. vm:check last VERIFIED at renet 9583351; renet has moved since (de9a60a and fixes), so re-run `npm run vm:check -- --changed` before the push.
+- Operator order 2026-10-24, bench-only bypass (done 2f2fd3add): bench needs no account bypass (captcha off, EMAIL_CAPTURE_D1); the proxy got a bench target. Bench Phase 2 (#93b9c7dc) found that a service-binding request carries no client IP. Fixed in account 9fb73f0 and console 82a27dd6d: the CloudflareInternal named entrypoint marks binding requests, and the proxy's ACCOUNT binding names it. A re-run agent (a73f99ae) is deploying bench and running Phase 2; deploy the account worker first, then the proxy.
+- Hostinger restart (#d0928775): PLAN-renet-runtime-converge (8fb732573). R1 is done in renet de9a60a (pointer a6adbead6, ticked 622017b43). High review finding de9a60a2.1 (secrets on child argv) has writer a75b3680 on #57ea59b5. Then C1 (CLI trigger + `rdc machine converge`, after the bench run stops rebuilding the CLI) and U1 (vm:check upgrade drill). hostinger runs renet 7e6a8588: NEVER run a mutating rdc verb against it from this branch.
+- Account security fixes (#1ca66139 Node trusted-proxy, #dcef4d5e binding-call rate limit): ready in /tmp/acctfix (11 files, listed in the writer report). Copy them into private/account after the bench re-run, re-run the vitest suite, commit, bump the pointer.
+- Dependencies (#ca67d80e): 5 pins done in 343e21c7c. `npm run pins -- bump npm` (12 upgrades, rewrites private/account too) runs after the account tree frees.
+- Biome 2.6.2 (#36498fd3): Plan agent aa050a54 is designing it. The reformat touches nearly every file, so implement only on a still tree.
 
 ## Delegated
-- a662e3818266fce61 -> #f1e9acc4; owns the scratch copies of workers/proxy/wrangler.bench.toml, deploy_proxy.py and its test, the cost guard, secret-supply.json; accept the deploy_proxy pytest, cost guard, secret-supply and ruff.
-- a7dce118c46c691bc (Plan) -> #d0928775; output is a design plus at most 2 writer batches.
-- af701b43afb45e126 -> #d975df90; accept the CDN shows the new objects and check:ci-i18n-media rc 0.
-
-## Rulings this context
-- Drift-only backup activation kept (#2eecf961). Proxy Phase 2: run it myself, then redirected to bench. Managing-secrets: publish now.
+- a73f99ae002b568e0 -> #93b9c7dc bench Phase 2 re-run; output is a `## Phase 2 results (bench)` section for PLAN-cloudflare-proxy, rollback handles, and the container-egress verdict.
+- a75b3680507b8247c -> #57ea59b5; owns cmd/renet/runtime_converge*.go; accept go test -run Converge plus check:ci-renet.
+- ac080393ca8a30be3 -> #dd06e30a and #29d6d961; owns cmd/renet/main.go, command_errors.go and pkg/daemon/systemd_test.go; renet errors printed twice, stale test helper.
+- aa050a547d39b5418 (Plan) -> #36498fd3 biome design.
+- af701b43afb45e126 -> #d975df90 managing-secrets render + R2 publish (operator ASKED "Publish now"). It modified packages/www/scripts/lib/ffmpeg-video.ts; review that before committing.
 
 ## Next action
-1. When ci:quick lands: read its failures (rerun on a still tree before believing one), fix, then the backup push.
-2. Copy the bench writer's scratch files in, re-run its accept commands in the real tree, commit, then run the bench Phase 2 sequence.
-3. When the #d0928775 design lands: spawn its writers (renet; no renet edits during a vm:check), then a vm:check drill.
-4. When the media agent reports: verify the CDN, then review-mark 8cd35fd2.1 fixed.
+1. As each report lands: spot-check, commit by path (renet first, then the console pointer), and tick its item and plan box with the sha.
+2. Bench report: write `## Phase 2 results (bench)` into PLAN-cloudflare-proxy and tick its boxes. If the container calls get 403, plan the outboundByHost fix.
+3. Then copy in the account fixes, run the npm bump, run C1, ci:quick and vm:check, and push.
