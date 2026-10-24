@@ -21,4 +21,4 @@ Body-Sig: b7971f8a7be4434c
 ### bfb48c99.1 [low] src/routes/proxy.ts:192
 Anchor: in-diff
 Claim: The new /cli-token route adds its own rate limiter (30 per minute, cliTokenLimit) but no test exercises it, so a regression that drops or mis-wires the limiter would not fail the suite.
-Resolution: open
+Resolution: fixed 3844cb0a8675b2712c2c8b06ef05161dbf3e94b7 | d778be9d 2026-10-24T19:46:25Z
