@@ -84,7 +84,7 @@ RB and RC's sudo acceptance lines (`TestPrivateRepoViewLinux`, the `ebpf_e2e` te
 - I1.4 B's sandbox brings up a never-seen service `vmc-i1-<run>`; `renet ebpf inspect --network-id <B> --json` shows entries for `rediacc-<B>/vmc-i1-<run>` (B's /26, the label IP) and `rediacc-<B>`.
 - I1.5 A `docker run --rm --network host` in B with no cgroup parent cannot connect to a listener A's sandbox opened on an A-subnet IP (EPERM).
 - I1.6 A's sandbox `/proc/self/mountinfo` names only A's guid under `/mounts/`; `<ds>/mounts/<B-guid>` is not a mount point there; `/proc/self/ns/pid` differs from the worker's own (the session has its own PID namespace; its PID 1 is the root init stage, hidden by hidepid rather than absent).
-- I1.8 Behaviour change reported by RB's writer (unverified until this row runs): a session's leftover background processes die with it on disconnect. Assert it for a `nohup sleep` job, and check `rdc vscode <repo>` still connects and keeps its server across a reconnect; if the VS Code server dies with the launching session, that is a defect to fix in RB's init stage before this plan closes.
+- I1.8 Behaviour change reported by RB's writer (unverified until this row runs): a session's leftover background processes die with it on disconnect. Assert it for a `nohup sleep` job, and check `rdc vscode connect <repo>` still connects and keeps its server across a reconnect; if the VS Code server dies with the launching session, that is a defect to fix in RB's init stage before this plan closes.
 - I1.7 Fork C compose up then `rdc repo delete C`: `rediacc.slice/rediacc-<C>` absent, `ebpf inspect --network-id <C>` counts 0, `getent group rediacc-net-<C>` rc 2.
 
 ## Tests (Go, with fakes)
