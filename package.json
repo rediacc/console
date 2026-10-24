@@ -454,7 +454,7 @@
     "node": ">=24.11.0"
   },
   "overrides": {
-    "body-parser": "2.3.0",
+    "body-parser": "2.4.0",
     "glob": "^13.0.6",
     "rimraf": "^6.0.0",
     "rollup": "^4.59.0",
@@ -466,7 +466,7 @@
     "@hono/node-server": ">=1.19.13",
     "vite": ">=8.3.1 <9",
     "postcss": ">=8.5.18",
-    "fast-uri": ">=3.1.6 <4",
+    "fast-uri": ">=3.1.9 <4",
     "qs": ">=6.16.0 <7",
     "fast-xml-builder": ">=1.1.7",
     "ip-address": "^10.5.1",
@@ -483,7 +483,7 @@
     "brace-expansion@^5.0.5": "5.0.12"
   },
   "_overridesReasons": {
-    "body-parser": "BLOCKER: force 2.3.0 to clear GHSA-v422-hmwv-36x6 (DoS via an invalid limit value that silently disables body-size enforcement; vulnerable >=2.0.0 <2.3.0 and <1.20.6). express@5 pulls body-parser ^2.2.1 which froze the lockfile at 2.2.2; 2.3.0 is the patched 2.x line and satisfies express's range. Advisory published after 2.3.0 (2026-06-15) had already aged past minimum-release-age, so this is a straight patched-version bump, not a deferral.",
+    "body-parser": "BLOCKER: force 2.4.0 to clear GHSA-27r3-jxmh-p828 (DoS via trailing bytes after a compressed request body; vulnerable >=2.0.0 <2.4.0) on top of GHSA-v422-hmwv-36x6 (an invalid limit value silently disabling body-size enforcement, fixed in 2.3.0). express@5 declares body-parser ^2.2.1, which 2.4.0 satisfies, and the lockfile does not move on its own. 2.4.0 (published 2026-10-22) had aged past minimum-release-age when the scheduled audit on main went red (run 40066114421).",
     "glob": "BLOCKER: force glob ^13 everywhere to avoid the deprecated transitive glob <9 chain pulled in via older tooling paths (^11 until 2026-10-01; 12 and 13 changed only the CLI, which moved to glob-bin and nothing here runs, so the API every consumer calls is unchanged)",
     "rimraf": "BLOCKER: force rimraf ^6 to avoid unmaintained v2/v3 transitive chains still referenced by older build tooling",
     "rollup": "BLOCKER: pin rollup ^4.59 to ensure all workspaces resolve the same native binary set and avoid platform-specific optional-dep drift",
@@ -495,7 +495,7 @@
     "@hono/node-server": "BLOCKER: force >=1.19.13 to pair with hono >=4.12.25 override; pre-1.19 cannot start against hono 4.12.x",
     "vite": "BLOCKER: bound >=8.3.1 <9 so the whole tree shares the one vite major astro 7 requires (astro ^8.0.13, @astrojs/react ^8.3.0) and carries the dev-server path-traversal + fs.deny fixes; vitest 5 declares vite ^6.4.0 || ^7.0.0 || ^8.0.0, so the cli/shared/provisioning/e2e-tests vitest suites run on the same copy. Bounded <9 so an untested vite major is never adopted implicitly",
     "postcss": "BLOCKER: force >=8.5.18 to include GHSA-qx2v-qp2m-jg93 XSS-via-unescaped-style-tag and GHSA-r28c-9q8g-f849 sourceMappingURL path-traversal (arbitrary .map file disclosure, patched 8.5.18) fixes; vite/marpit transitives otherwise hold tree at 8.5.8",
-    "fast-uri": "BLOCKER: force >=3.1.3 to include GHSA-q3j6-qgpj-74h6 (encoded path-separator normalization), GHSA-v39h-62p7-jpjc (encoded authority delimiter), and GHSA-4c8g-83qw-93j6 (host confusion via failed IDN canonicalization; vulnerable >=3.0.0 <3.1.3) fixes; transitive consumers (fastify-swagger, ajv-formats) otherwise hold older versions. Bounded <4 because the only consumer in this tree is ajv@8.20.0, which declares fast-uri ^3.0.1; an unbounded range would drag the untested 4.x major into the MCP SDK's schema validator.",
+    "fast-uri": "BLOCKER: force >=3.1.9 to include GHSA-w74x-v6f9-j3xg (scheme spoofing via percent-encoded scheme decoding), GHSA-xhq7-xmqj-769h (relative-reference dot-segment normalization), GHSA-wjr9-j795-jxcr (host confusion via unchecked WHATWG host canonicalization) and GHSA-333x-w4r6-6crp (scheme injection via a first-segment colon), all fixed in 3.1.9. It also carries the 3.1.3 fixes GHSA-q3j6-qgpj-74h6, GHSA-v39h-62p7-jpjc and GHSA-4c8g-83qw-93j6; ajv@8.20.0 otherwise holds the older 3.1.8. Bounded <4 because the only consumer in this tree is ajv@8.20.0, which declares fast-uri ^3.0.1; an unbounded range would drag the untested 4.x major into the MCP SDK's schema validator.",
     "fast-xml-builder": "BLOCKER: force >=1.1.7 to include GHSA-5wm8-gmm8-39j9 attribute-quote injection fix; aws-sdk @aws-sdk/xml-builder transitively pulls older fast-xml-parser/fast-xml-builder",
     "ip-address": "BLOCKER: force ^10.5.1 to include GHSA-v2v4-37r5-5v8g (XSS in Address6 HTML-emitting methods, affected <= 10.1.0), GHSA-rpw4-54j3-4h4q (Address6.isLinkLocal matches fe80::/64 instead of fe80::/10) and GHSA-2vr4-cq9g-pvrc (no classifier recognizes the NAT64 local-use range 64:ff9b:1::/48), the last two affected <= 10.5.0 and patched in 10.5.1; express-rate-limit (production) declares ip-address ^10.2.0 and froze the lockfile at 10.4.0, so the caret alone never moves it",
     "protobufjs": "BLOCKER: force >=7.5.6 to clear the 7.x advisories (GHSA-66ff/2pr8/fx83/75px/jvwf/685m/q6x5/xq3m all affected <= 7.5.5) — npm picks 8.2.0+ for the otlp-transformer chain which also clears the 8.0.0-8.0.1 critical RCE; @opentelemetry/sdk-node is pinned in .syncpackrc.json so we cannot bump the outer tree",
