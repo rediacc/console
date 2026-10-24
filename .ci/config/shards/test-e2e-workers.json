@@ -52,7 +52,8 @@
       "index": 7,
       "ids": [
         "e2e-workers:04-repository-lifecycle.test.ts",
-        "e2e-workers:06-daemon-operations.test.ts"
+        "e2e-workers:06-daemon-operations.test.ts",
+        "e2e-workers:28-dockerd-privilege-gate.test.ts"
       ]
     },
     {

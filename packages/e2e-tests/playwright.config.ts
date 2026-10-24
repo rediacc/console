@@ -123,5 +123,7 @@ export default test.defineConfig({
     ...(process.env.BACKUP_BROWSE_AT_SUITE === '1'
       ? [{ name: 'test-27', testMatch: '27-*.test.ts' }]
       : []),
+    // Docker API privilege gate (suite 28): the per-repo socket proxy refuses privileged, host-namespace and cross-repo binds (PLAN-dockerd-api-privilege-gate). Unconditional: it needs only a worker VM, which every E2E Workers leg has.
+    { name: 'test-28', testMatch: '28-*.test.ts' },
   ],
 });
