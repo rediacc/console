@@ -290,6 +290,7 @@ max_instances = %s
 
 SELFTEST_BENCH_TOML = """
 name = "rediacc-proxy-bench"
+main = "src/index.ts"
 routes = [{ pattern = "%s", custom_domain = true }]
 
 [vars]
