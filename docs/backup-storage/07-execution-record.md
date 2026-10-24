@@ -113,10 +113,10 @@ invented figures narrated in the PAST TENSE about a real dated event. Fixed in E
 - **"Verification cadence day vs week" and "queue vs drop"** match nothing.
 - **"Destination flag semantics"** are correct as documented.
 - **The "stale commandFactory line"** does not exist anywhere in the repo.
-- **Point-in-time restore is listed under BECOMES TRUE**; it is not true and
-cannot be written until restore ships.
-- **`hosted-service`** (added in wave 2) is UNREACHABLE dead surface: it appears
-in `packages/cli/src` only in `utils/__tests__/config-schema.test.ts:349`, and three sites hard-refuse any non-`storage` destination.
+- **Point-in-time restore is listed under BECOMES TRUE.** It is now true as a
+capability: `rdc backup restore --at` resolves a time to a manifest and `renet backup restore` rebuilds the repo (§1). What stays unwritten is a claim that it was exercised, since no machine has restored from a real bucket.
+- **`hosted-service`** (added in wave 2) was judged unreachable dead surface
+when this section was first written; that was wrong, and it is the live chunk-store destination kind. `backup-strategy.ts` creates it, `backup-ops.ts` requires it for an ad-hoc run, and `backup-schedule-unit-generator.ts` emits the chunk-store command for it. The rclone `storage` kind is the one that is gone: a `storage` destination now throws in the generator (§9.1).
 
 ---
 
@@ -317,15 +317,15 @@ Same shape as the gate earlier in this program that printed its failure and exit
 
 ### 9.7 Still open after this session
 
-- **Cold mode has no chunk-store path.** `weekly-cold` is unschedulable until it
-grows one. Not a regression from the removal; the cold path never existed on the new store.
+- **Cold mode is built but not proven end to end.** `renet backup snapshot --cold`
+runs one barrier for the whole datastore (stop, freeze, restart, then upload), and the schedule generator emits `--cold` for `mode: cold`. No cold round trip (a container writing a counter, a cold backup, a restore with no gap) has run; that is box K6 of `agent/plans/PLAN-backup-program.md`.
 - **The operator-only cutover item** (`#a450387d`): four `ACCOUNT_BACKUP_S3_*` Worker
 secrets, the bucket-scoped `cf-r2-backup` rotation slug, the migration, and the cutover itself. Default is HOLD.
-- **Bench deploy is plumbed, not run.** `scripts/ops/deploy-bench.sh` now carries
-the four `ACCOUNT_BACKUP_S3_*` entries in its `wrangler secret bulk` payload, defaulting from the `R2_*` values in `.env`. It cannot run from here because `lib/cf-auth.sh` needs `CLOUDFLARE_API_TOKEN` or `CF_GLOBAL_API_KEY` + `CF_EMAIL`, and `.env` appeared to carry only `CF_EMAIL`. The operator runs it. (Later finding: `.env` did carry the global key, under the name
+- **Bench deploy is plumbed, not run.** The bench deploy is now
+`.ci/rediacc_ci/ops/deploy_bench.py` (the bash script is gone). It pushes three `ACCOUNT_BACKUP_S3_*` values (endpoint, key id, secret) in its `wrangler secret bulk` payload, read by those names only and bound from bench-scoped store entries; the earlier fallback to the account-wide `R2_*` token was removed because it put an account-wide key on the public bench Worker. It cannot run from here because `cf_auth` needs `CF_MANAGEMENT_TOKEN` or `CF_GLOBAL_API_KEY` + `CF_EMAIL`, and `.env` appeared to carry only `CF_EMAIL`. The operator runs it. (Later finding: `.env` did carry the global key, under the name
 `CF_GLOBAL_API_KEY`, while every consumer read the name `CF_API_KEY`. That variable-name drift was repaired by renaming all consumers to `CF_GLOBAL_API_KEY`.)
 - One earlier claim in this program that `wrangler.bench.toml` was missing was
-**wrong**. It is at `workers/account/`, which `deploy-bench.sh:52` points at via `WORKER_DIR`. The search that produced the claim only looked inside the submodule.
+**wrong**. It is at `workers/account/`, which the bench deploy reaches through its `CONFIG = "wrangler.bench.toml"` setting. The search that produced the claim only looked inside the submodule.
 
 ### 9.8 The full `npm run ci` sweep: 223 gates, 14 red, 11 fixed
 
