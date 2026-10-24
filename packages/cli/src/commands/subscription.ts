@@ -154,7 +154,7 @@ export async function resolveAndSyncServer(options: { server?: string }): Promis
   if (info) {
     await patchActiveAccount({
       updateChannel: info.updateChannel,
-      e2ePublicKey: info.e2e?.keys[0]?.publicKeySpki,
+      e2ePublicKey: info.e2e?.keys?.[0]?.publicKeySpki,
     });
     if (info.updateChannel) {
       outputService.info(

@@ -219,6 +219,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       };
 
       const started = Date.now();
+      // Set once the success path has shipped its event, so a later throw (a closed stream on the result write) cannot ship a second one for the same command.
+      let audited = false;
       try {
         const dispatched = await dispatchCommand({
           prepared,
@@ -263,6 +265,7 @@ export function createServeApp(deps: ServeDeps): Hono {
           durationMs: result.durationMs,
           destructive: entry.destructive ?? false,
         });
+        audited = true;
 
         await write({
           kind: 'result',
@@ -282,21 +285,23 @@ export function createServeApp(deps: ServeDeps): Hono {
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
         // A dispatch that threw still ran, or tried to run, on the caller's behalf: one event per command holds on this path too. The function it may have reached is unknown here, so it records by path.
-        await deps.audit?.({
-          principal,
-          commandPath: request.pathKey,
-          machineName: targetFrom(
-            entry.machineOption,
-            entry.machinePositional,
-            request.params,
-            request.positionals
-          ),
-          params: request.params,
-          success: false,
-          exitCode: 1,
-          durationMs: Date.now() - started,
-          destructive: entry.destructive ?? false,
-        });
+        if (!audited) {
+          await deps.audit?.({
+            principal,
+            commandPath: request.pathKey,
+            machineName: targetFrom(
+              entry.machineOption,
+              entry.machinePositional,
+              request.params,
+              request.positionals
+            ),
+            params: request.params,
+            success: false,
+            exitCode: 1,
+            durationMs: Date.now() - started,
+            destructive: entry.destructive ?? false,
+          });
+        }
         await write({
           kind: 'result',
           result: {
