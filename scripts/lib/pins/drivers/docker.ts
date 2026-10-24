@@ -154,7 +154,7 @@ export function dockerDriver(
         const steps: PlanStep[] = [];
         let listed = false;
         try {
-          listed = ((JSON.parse(ctx.read(BASELINE) ?? '[]') as string[]) ?? []).includes(
+          listed = ((JSON.parse(ctx.read(BASELINE) ?? '[]') as string[] | null) ?? []).includes(
             `${image}:${oldTag}`
           );
         } catch {

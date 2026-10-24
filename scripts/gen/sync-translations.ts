@@ -55,7 +55,7 @@ function sortKeys(obj: TranslationValue): TranslationValue {
     );
   }
 
-  if (typeof obj !== 'object' || obj === null) {
+  if (typeof obj !== 'object' || (obj as TranslationValue | null) === null) {
     return obj;
   }
 

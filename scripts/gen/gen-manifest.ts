@@ -91,10 +91,11 @@ type Entry = Record<string, unknown>;
  */
 function serialise(leaf: string, h: GateHeader, workflow: string): string {
   const src = fs.readFileSync(path.join(ROOT, leaf), 'utf-8');
-  const id = (h.id as string) ?? derivedId(leaf);
-  const needs: string[] = h.needs?.length
-    ? h.needs
-    : inferredNeeds(src).filter((n: string) => !(h.needsNot ?? []).includes(n));
+  const id = h.id ?? derivedId(leaf);
+  const needs: string[] =
+    h.needs.length > 0
+      ? h.needs
+      : inferredNeeds(src).filter((n: string) => !h.needsNot.includes(n));
   const placed = h.lane
     ? { lane: h.lane as string }
     : placeGate(laneCapabilities(fs.readFileSync(WORKFLOW, 'utf-8')), needs);

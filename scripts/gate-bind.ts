@@ -285,7 +285,7 @@ export function bind(file: string, source: string): Bound | null {
   const denied = new Set(h.needsNot);
   const needs = [...new Set([...h.needs, ...inferredNeeds(source)])]
     .filter((n) => !denied.has(n))
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
   return {
     file,
     id: h.id ?? derivedId(file),
@@ -760,7 +760,7 @@ export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[
       ? [
           '        env:',
           ...Object.keys(b.env)
-            .sort()
+            .sort((a, b) => Number(a > b) - Number(a < b))
             .map((k) => `          ${k}: ${(b.env as Record<string, string>)[k]}`),
         ]
       : [];
@@ -1090,7 +1090,7 @@ export function headerLines(
   // `tsx X --selftest && tsx X`, and `tsx X && tsx <a different control file>`. The
   // second is `selftest: true`; the other two are genuinely per-gate, and inventing
   // derivation rules for them would encode five gates' habits as a convention.
-  const wanted = r.run ?? '';
+  const wanted = r.run;
   // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because derivedRun branches on the flag only there. For a .sh or .py gate derivedRun(f, true) equals derivedRun(f), so the first arm always matched and every such header asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's briefs cite as the model: check-npmrc.sh carried `selftest: true` while containing ZERO
   // occurrences of --selftest. Roughly 30 headers claimed a leg that does not exist. Inert for binding, and a declaration that lies is worse than a missing one, because the next reader trusts it.
   const selftestIsReal = r.file.endsWith('.ts');
@@ -1517,7 +1517,7 @@ function selftest(endToEnd = false): number {
       kind: 'step',
       step: 'Unused exports (knip)',
       needs: [],
-    }).some((l) => l === '        run: npm run lint:unused')
+    }).includes('        run: npm run lint:unused')
   );
 
   // The guard step is a PER-LANE fact. quality-www-build's gates hang on
@@ -2842,7 +2842,7 @@ function main(argv: string[]): void {
     if (onlyLane !== undefined && scoped.size === 0) {
       console.error(
         `✗ --lane ${onlyLane}: no declared gate places into that lane. Lanes holding ` +
-          `declared gates right now: ${[...byLane.keys()].sort().join(', ')}`
+          `declared gates right now: ${[...byLane.keys()].sort((a, b) => Number(a > b) - Number(a < b)).join(', ')}`
       );
       process.exit(1);
     }

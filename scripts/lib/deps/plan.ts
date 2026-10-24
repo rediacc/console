@@ -249,7 +249,9 @@ export function planInstalls(
   }
   const updateSteps: InstallStep[] = [];
   for (const { cwd, label, workspaces, root: withRoot, checks } of updates.values()) {
-    const wsFlags = [...new Set(workspaces)].sort().map((ws) => `-w=${ws}`);
+    const wsFlags = [...new Set(workspaces)]
+      .sort((a, b) => Number(a > b) - Number(a < b))
+      .map((ws) => `-w=${ws}`);
     const names = [...new Set(checks.map((c) => c.pkg.name))];
     updateSteps.push({
       cwd,

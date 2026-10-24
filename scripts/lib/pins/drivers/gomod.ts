@@ -175,7 +175,7 @@ export function gomodDriver(
       ];
       const changes: string[] = [];
       const probed = new Set(moving.map((m) => m.dir));
-      for (const dir of [...probed].sort()) {
+      for (const dir of [...probed].sort((a, b) => Number(a > b) - Number(a < b))) {
         const d = dirs.find((x) => x.cwd === dir) as (typeof dirs)[number];
         const mods = moving.filter((m) => m.dir === dir);
         steps.push({

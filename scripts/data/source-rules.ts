@@ -784,4 +784,6 @@ export const RULE_INSTANCES: RuleInstance[] = [
 ];
 
 /** Every ruleId this table can ever produce a finding for -- the H universe. */
-export const RULE_IDS: string[] = [...new Set(RULE_INSTANCES.map((r) => r.ruleId))].sort();
+export const RULE_IDS: string[] = [...new Set(RULE_INSTANCES.map((r) => r.ruleId))].sort(
+  (a, b) => Number(a > b) - Number(a < b)
+);

@@ -217,7 +217,7 @@ function build(repoRoot: string): string {
 
   const spdxIds = [...new Set(credits.components.map((c) => c.spdx))]
     .filter((s) => s && s !== 'various')
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
 
   const parts: string[] = [];
   parts.push(RULE);
