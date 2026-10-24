@@ -298,3 +298,28 @@ def test_a_deep_inherited_tempdir_roots_the_run_dir_at_tmp(tmp_path, monkeypatch
         assert e.parent == shallow
     finally:
         runtmp.remove_tree(str(e))
+
+
+def test_the_deepest_kept_base_leaves_a_tsx_socket_path_under_the_kernel_limit(
+    tmp_path, monkeypatch
+):
+    """A base exactly at DEEP_TMPDIR is kept, and the child TMPDIR run dir plus tsx's `/tsx-<uid>/<pid>.pipe` still fits sun_path (107 bytes); one byte more is rooted at /tmp. This is the `TMPDIR=<checkout>/.ci/cache/u1-tmp` case that died `listen EINVAL` at the old limit of 48."""
+    base = tmp_path / ("b" * runtmp.DEEP_TMPDIR)
+    base.mkdir()
+    monkeypatch.setattr(runtmp.tempfile, "tempdir", str(base))
+    # The long prefix is the longest one a gate harness uses.
+    kept = pathlib.Path(runtmp.run_dir("gate-harness-children-", str(base)))
+    try:
+        socket_path = "%s/tmp/tsx-1000/1234567.pipe" % ("x" * runtmp.DEEP_TMPDIR + "/" + kept.name)
+        assert len(socket_path) < 107
+    finally:
+        runtmp.remove_tree(str(kept))
+    monkeypatch.setattr(
+        runtmp.tempfile, "tempdir", str(tmp_path / ("c" * (runtmp.DEEP_TMPDIR + 1)))
+    )
+    (tmp_path / ("c" * (runtmp.DEEP_TMPDIR + 1))).mkdir()
+    rooted = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
+    try:
+        assert rooted.parent == pathlib.Path("/tmp")
+    finally:
+        runtmp.remove_tree(str(rooted))

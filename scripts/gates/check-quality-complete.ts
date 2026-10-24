@@ -95,7 +95,7 @@
  * ---- end gate ----
  */
 
-import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -901,6 +901,13 @@ const PART_UNDECIDED: readonly string[] = ['quality-go'];
 const PART_SETUP = (lane: string): boolean => lane !== 'quality-branch';
 
 function selftest(): number {
+  // Every on-disk control makes its own scratch directory; they are removed after the summary so a selftest run leaves /tmp as it found it (1,108 qc-selftest-* directories had piled up by 2026-10-24).
+  const scratch: string[] = [];
+  const scratchDir = (): string => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+    scratch.push(dir);
+    return dir;
+  };
   const two = [shard('quality-security', 1, 2, 40), shard('quality-security', 2, 2, 42)];
   const bothReported = [
     receipt('quality-security', 1, 2, 40),
@@ -1349,7 +1356,7 @@ function selftest(): number {
     {
       name: 'readReceipts: a real units-currency file on disk parses with no problem',
       ok: (() => {
-        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        const dir = scratchDir();
         writeFileSync(
           path.join(dir, 'a.json'),
           JSON.stringify({
@@ -1367,7 +1374,7 @@ function selftest(): number {
     {
       name: 'readReceipts: a receipt with BOTH gates and units is a problem, not a silent pick',
       ok: (() => {
-        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        const dir = scratchDir();
         writeFileSync(
           path.join(dir, 'a.json'),
           JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success', gates: 1, units: [] })
@@ -1378,7 +1385,7 @@ function selftest(): number {
     {
       name: 'readReceipts: a receipt with NEITHER gates nor units is a problem',
       ok: (() => {
-        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        const dir = scratchDir();
         writeFileSync(
           path.join(dir, 'a.json'),
           JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success' })
@@ -1389,7 +1396,7 @@ function selftest(): number {
     {
       name: 'readReceipts: a unit entry missing outcome is a problem',
       ok: (() => {
-        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        const dir = scratchDir();
         writeFileSync(
           path.join(dir, 'a.json'),
           JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success', units: [{ id: 'g0' }] })
@@ -1401,7 +1408,11 @@ function selftest(): number {
     },
   ];
 
-  return summarizeControls(cases);
+  try {
+    return summarizeControls(cases);
+  } finally {
+    for (const dir of scratch) rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 process.exit(process.argv.includes('--selftest') ? selftest() : main(process.argv.slice(2)));

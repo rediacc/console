@@ -24,6 +24,7 @@ SET -E SEMANTICS ARE KEPT. The bash ran `run_battery` inside `if`, where `set -e
 
 from __future__ import annotations
 
+import contextlib
 import fcntl
 import glob
 import hashlib
@@ -798,11 +799,13 @@ def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
             f"cannot open the license-store lock {lock_path} ({exc.strerror}); a symlink or another user's unreadable file sits there"
         )
         return 1
+    held = False
     try:
         deadline = time.monotonic() + LOCK_WAIT_S
         while True:
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                held = True
                 break
             except BlockingIOError:
                 if time.monotonic() >= deadline:
@@ -814,6 +817,11 @@ def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
         return battery.run()
     finally:
         os.close(fd)
+        # A scratch store (a test's tree, unique per run) never has a second contender, so its lock file is removed here; without that every test run left one file in /tmp (2,066 by 2026-10-24). The real store keeps its single fixed file.
+        # Only a run that took the lock removes it: a run that timed out must not unlink the file a live holder still has locked.
+        if held and license_root != LICENSE_ROOT:
+            with contextlib.suppress(OSError):
+                os.unlink(lock_path)
 
 
 def main(argv: list[str]) -> int:

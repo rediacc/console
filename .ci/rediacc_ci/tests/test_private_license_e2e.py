@@ -822,8 +822,10 @@ def test_a_battery_holding_the_store_makes_a_second_run_fail_after_the_bound(
     try:
         assert port_module.run([], license_root=root) == 0
         assert started == [True]
+        # A scratch store's lock file is removed on exit, so a run leaves nothing in /tmp.
+        assert not os.path.lexists(lock)
     finally:
-        os.unlink(lock)
+        pathlib.Path(lock).unlink(missing_ok=True)
 
 
 def test_a_symlink_at_the_lock_path_fails_the_run_with_its_reason(tmp_path, monkeypatch, capsys):
