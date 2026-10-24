@@ -215,12 +215,18 @@ function read(rel: string): string {
   }
 }
 
-/** Top-level keys of a `export const <name> = z.object({...})` declaration. */
+/**
+ * Top-level keys of a `export const <name> = z.object({...})` declaration.
+ * The formatter splits a refined schema as `z\n  .object({...})\n  .superRefine(fn)`
+ * (backupGrantRequest since plan S5), so whitespace around `.object(` is allowed;
+ * the walk below still starts at the object literal and ignores the refinement.
+ */
 function zodKeys(source: string, schema: string): string[] | null {
-  const at = source.indexOf(`export const ${schema} = z.object({`);
-  if (at === -1) return null;
+  const decl = new RegExp(`export const ${schema} = z\\s*\\.object\\(\\{`).exec(source);
+  if (!decl) return null;
   // Walk braces from the opening of the object literal so nested objects and unions do not truncate the scan early.
-  const open = source.indexOf('{', source.indexOf('z.object(', at));
+  // The opener is the match's last character: searching for the literal `z.object(` again would skip a split chain and land in the NEXT schema.
+  const open = decl.index + decl[0].length - 1;
   let depth = 0;
   let end = open;
   for (let i = open; i < source.length; i++) {
