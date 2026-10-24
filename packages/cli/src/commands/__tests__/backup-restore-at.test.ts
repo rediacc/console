@@ -13,6 +13,7 @@
  * two-worker fleet and a real bucket and therefore never runs in CI.
  */
 
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../i18n/index.js', () => ({
@@ -167,5 +168,29 @@ describe('resolveSnapshotAt stream scope', () => {
         anchorSnapshotId: undefined,
       })
     ).rejects.toThrow(/commands.backup.restore.streamUnknown/);
+  });
+
+  it('refuses an anchor row that carries no streamId rather than widening to every stream', async () => {
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [
+        ...manifests,
+        { ...stream('a-bare', 'x', '2026-08-14T10:30:00.000Z'), streamId: '' },
+      ],
+    });
+    const { resolveSnapshotAt } = await import('../backup.js');
+    await expect(
+      resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z', {
+        anyStream: false,
+        anchorSnapshotId: 'a-bare',
+      })
+    ).rejects.toThrow(/commands.backup.restore.streamUnknown/);
+  });
+
+  it('the refusal text in the English catalog points the user at --any-stream', () => {
+    // The mocked t() above echoes the key, so the guidance itself is read from the real catalog.
+    const cli = JSON.parse(
+      readFileSync(new URL('../../i18n/locales/en/cli.json', import.meta.url), 'utf8')
+    ) as { commands: { backup: { restore: { streamUnknown: string } } } };
+    expect(cli.commands.backup.restore.streamUnknown).toContain('--any-stream');
   });
 });

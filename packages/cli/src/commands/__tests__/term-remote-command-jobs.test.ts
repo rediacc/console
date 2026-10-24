@@ -38,9 +38,10 @@ function survivors(marker: string): number[] {
   let entries: string[];
   try {
     entries = readdirSync('/proc');
-  } catch {
-    // No /proc (macOS): the scan cannot look, so it reports nothing rather than failing the test on a filesystem error.
-    return out;
+  } catch (error) {
+    // No /proc (macOS): the scan cannot look, so it reports nothing. Any other failure (an unreadable /proc on Linux) must surface, or the leak assertion would pass vacuously.
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return out;
+    throw error;
   }
   for (const entry of entries) {
     if (!/^\d+$/.test(entry)) continue;

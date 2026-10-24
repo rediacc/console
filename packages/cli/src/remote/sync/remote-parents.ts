@@ -23,7 +23,7 @@ function segmentsOf(subPath: string): string[] {
 }
 
 /**
- * Probes the parent chain of `remoteSubPath` top-down from `baseRemotePath`. The sub path's own last component is NOT probed: pass the file's (or the destination directory's) path and its dirname is checked. Stops at the first missing segment, since everything below is missing too. A probe that throws counts as "exists", so an unreachable probe plans nothing and the transfer proceeds as before.
+ * Probes the parent chain of `remoteSubPath` top-down from `baseRemotePath`. The sub path's own last component is NOT probed: pass the file's (or the destination directory's) path and its dirname is checked. Stops at the first missing segment, since everything below is missing too. A probe that throws ends the walk with nothing planned (a later clean miss would otherwise plan a skeleton under an ancestor that may not exist), so the transfer proceeds as before. A sub path with a `..` segment plans nothing either: its ancestors cannot be named lexically, and a skeleton would try to create a `..` directory.
  */
 export async function planMissingParents(
   baseRemotePath: string,
@@ -31,7 +31,9 @@ export async function planMissingParents(
   exists: (remotePath: string) => Promise<boolean>
 ): Promise<MissingParents> {
   const base = baseRemotePath.replace(/\/+$/, '');
-  const parents = segmentsOf(remoteSubPath).slice(0, -1);
+  const segments = segmentsOf(remoteSubPath);
+  if (segments.includes('..')) return { existingAncestor: base, missing: [] };
+  const parents = segments.slice(0, -1);
   let ancestor = base;
   for (let i = 0; i < parents.length; i++) {
     const candidate = `${ancestor}/${parents[i]}`;
@@ -39,7 +41,7 @@ export async function planMissingParents(
     try {
       present = await exists(candidate);
     } catch {
-      present = true;
+      return { existingAncestor: ancestor, missing: [] };
     }
     if (!present) {
       return { existingAncestor: ancestor, missing: parents.slice(i) };

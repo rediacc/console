@@ -213,6 +213,8 @@ export function cropFramePng(
 }
 
 export function extractLastFrame(mp4Path: string, pngPath: string): void {
+  // A png left by an earlier render would make the first attempt (which can write nothing) look successful, and the stale frame would be returned without the fallback ever running.
+  rmSync(pngPath, { force: true });
   run(FFMPEG_BIN, [
     '-y',
     '-sseof',

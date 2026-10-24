@@ -7,7 +7,9 @@
 
 import type { Command } from 'commander';
 import { VERSION } from '../../version.js';
-import type { TelemetryInitConfig } from './telemetry.js';
+import { getSubscriptionServerUrl } from '../account/subscription-auth.js';
+import { fetchOtlpCredentials } from './otlp-credentials.js';
+import { isTelemetryDisabled, type TelemetryInitConfig, telemetryService } from './telemetry.js';
 
 const CONTAINER_EXECUTOR_SERVICE_NAME = 'rediacc-proxy-executor';
 
@@ -29,4 +31,16 @@ export function containerTelemetryConfig(): TelemetryInitConfig {
     environment: 'production',
     ...(region ? { region } : {}),
   };
+}
+
+/**
+ * Start the container's telemetry. The credential is fetched from the container's
+ * own account server, and only when telemetry is enabled: CI and
+ * REDIACC_TELEMETRY_DISABLED=1 must not cost a network call or start the SDK.
+ */
+export async function initContainerTelemetry(): Promise<void> {
+  if (isTelemetryDisabled()) return;
+  const otlpCreds = await fetchOtlpCredentials(getSubscriptionServerUrl());
+  telemetryService.setRuntimeOtlpCredentials(otlpCreds);
+  await telemetryService.initialize(containerTelemetryConfig());
 }

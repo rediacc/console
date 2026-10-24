@@ -26,11 +26,23 @@ describe('planMissingParents', () => {
     expect(plan).toEqual({ existingAncestor: '/m', missing: [] });
   });
 
-  it('treats a probe error as existing', async () => {
+  it('plans nothing on a probe error', async () => {
     const plan = await planMissingParents('/m', 'a/b/f.txt', () =>
       Promise.reject(new Error('sftp down'))
     );
     expect(plan.missing).toEqual([]);
+  });
+
+  it('plans nothing when a probe fails on a shallow segment, even if a deeper one would miss', async () => {
+    const probe = (p: string) =>
+      p === '/m/a' ? Promise.reject(new Error('sftp down')) : Promise.resolve(false);
+    const plan = await planMissingParents('/m', 'a/b/c/f.txt', probe);
+    expect(plan).toEqual({ existingAncestor: '/m', missing: [] });
+  });
+
+  it('plans nothing for a sub path with a .. segment', async () => {
+    const plan = await planMissingParents('/m', 'x/../y/f.txt', probeOf([]));
+    expect(plan).toEqual({ existingAncestor: '/m', missing: [] });
   });
 
   it('leaves the last component of a directory destination to the transfer', async () => {

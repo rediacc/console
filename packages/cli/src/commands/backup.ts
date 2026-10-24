@@ -166,7 +166,7 @@ function registerBackupRestore(backup: Command): void {
         const networkId = await configService.allocateNetworkId();
         const lineage = source.grandGuid ?? source.repositoryGuid;
         await configService.addRepository(compositeKey(targetName, 'latest'), {
-          ...restoredIdentity(source, lineage),
+          ...restoredIdentity(lineage),
           tag: 'latest',
           // The image bytes are the source's ciphertext, so the restored repo unlocks with the source's passphrase whatever GUID it lands under. Inherit, exactly as `repo fork` does; under a fresh GUID this is a NEW credential map entry (the map is keyed by GUID), not a second claim on the source's slot.
           credential: source.credential,
@@ -225,10 +225,7 @@ function registerBackupRestore(backup: Command): void {
  * The pull route addresses the source image by its own GUID (`backup_pull`'s
  * `src` parameter), separately from the destination name.
  */
-function restoredIdentity(
-  _source: { repositoryGuid: string; grandGuid?: string },
-  lineage: string
-): { repositoryGuid: string; grandGuid?: string } {
+function restoredIdentity(lineage: string): { repositoryGuid: string; grandGuid?: string } {
   return { repositoryGuid: randomUUID(), grandGuid: lineage };
 }
 
@@ -388,7 +385,8 @@ function ownStreamOf(
   scope: { anchorSnapshotId: string | undefined }
 ): string {
   const anchor = manifests.find((m) => m.snapshotId === scope.anchorSnapshotId);
-  if (!anchor) {
+  // A row without a streamId would make the caller's filter match every stream, the widening this scope exists to prevent.
+  if (!anchor?.streamId) {
     throw new ValidationError(t('commands.backup.restore.streamUnknown'));
   }
   return anchor.streamId;

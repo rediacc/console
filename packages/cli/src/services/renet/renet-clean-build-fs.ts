@@ -2,7 +2,7 @@ import * as fsSync from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-/** Marker written last into a finished clean build directory; holds the commit. */
+/** Marker written last into a finished clean build directory; first line the commit, second `keyed` or `keyless`. */
 export const CLEAN_BUILD_MARKER = '.complete';
 const LINUX_ARCHES = ['amd64', 'arm64'] as const;
 
@@ -26,11 +26,27 @@ export function cleanBuildFiles(ext: string): string[] {
   return [`renet${ext}`, ...LINUX_ARCHES.map((arch) => `renet-linux-${arch}`)];
 }
 
-export function isCompleteCleanBuild(dir: string, commit: string, ext: string): boolean {
+/** The marker body of a finished build: the commit, and whether the licence public key was compiled in. */
+export function cleanBuildMarker(commit: string, keyed: boolean): string {
+  return `${commit}\n${keyed ? 'keyed' : 'keyless'}\n`;
+}
+
+/**
+ * True when `dir` holds a finished build of `commit`. A keyless build (no licence public key at build time) is not reused once the key is available (`keyAvailable`), or every upload at that commit would ship a binary that cannot verify licences.
+ */
+export function isCompleteCleanBuild(
+  dir: string,
+  commit: string,
+  ext: string,
+  keyAvailable = false
+): boolean {
   try {
-    if (fsSync.readFileSync(path.join(dir, CLEAN_BUILD_MARKER), 'utf-8').trim() !== commit) {
-      return false;
-    }
+    const [markedCommit, markedKey] = fsSync
+      .readFileSync(path.join(dir, CLEAN_BUILD_MARKER), 'utf-8')
+      .trim()
+      .split('\n');
+    if (markedCommit !== commit) return false;
+    if (keyAvailable && markedKey !== 'keyed') return false;
     return cleanBuildFiles(ext).every((name) => fsSync.existsSync(path.join(dir, name)));
   } catch {
     return false;

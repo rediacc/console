@@ -21,10 +21,7 @@ import { registerTermCommands } from './commands/term.js';
 import { registerUpdateCommand } from './commands/update.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
-import {
-  getSubscriptionServerUrl,
-  getSubscriptionTokenState,
-} from './services/account/subscription-auth.js';
+import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
 import { configService } from './services/config/config-resources.js';
 import { auditService } from './services/core/audit.js';
 import { outputService } from './services/core/output.js';
@@ -36,12 +33,11 @@ import {
   runCommandThroughProxy,
 } from './services/executor/proxy-command.js';
 import {
-  containerTelemetryConfig,
+  initContainerTelemetry,
   isContainerServe,
 } from './services/telemetry/container-telemetry.js';
 import {
   fetchCommandOtlpCredentials,
-  fetchOtlpCredentials,
   serverOptionOf,
 } from './services/telemetry/otlp-credentials.js';
 import { currentRequestTelemetry } from './services/telemetry/request-telemetry.js';
@@ -287,9 +283,7 @@ export function createCli(): Command {
         }
         if (containerServe) {
           // The container fetches its credential from its own account server (REDIACC_ACCOUNT_SERVER), initialises once under its own service name, and never profiles. There is no command span: `serve` runs until the container stops.
-          const otlpCreds = await fetchOtlpCredentials(getSubscriptionServerUrl());
-          telemetryService.setRuntimeOtlpCredentials(otlpCreds);
-          await telemetryService.initialize(containerTelemetryConfig());
+          await initContainerTelemetry();
           return;
         }
         if (!isTelemetryDisabled()) {

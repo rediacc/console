@@ -228,12 +228,18 @@ async function startExecutor(accountUrl: string): Promise<Executor> {
   child.stdout?.on('data', collect);
   child.stderr?.on('data', collect);
   let exited = false;
-  const exitedPromise = new Promise<void>((resolve) =>
+  const exitedPromise = new Promise<void>((resolve) => {
     child.on('exit', () => {
       exited = true;
       resolve();
-    })
-  );
+    });
+    // A spawn failure (ENOENT for the CLI binary) emits 'error' and no 'exit'; unhandled it would crash the test process instead of reaching waitForHealth's report.
+    child.on('error', (error) => {
+      output += `spawn failed: ${error.message}\n`;
+      exited = true;
+      resolve();
+    });
+  });
 
   const url = `http://127.0.0.1:${port}`;
   try {
@@ -296,9 +302,15 @@ test.describe
 
     /** The fork's container as the fork's own Docker daemon reports it, '' when absent. */
     const forkContainerStatus = async (): Promise<string> => {
+      // An absent socket (no daemon yet) is a clean '' ; a docker failure against a present socket must not read as "container gone", so it throws.
       const listed = await runner.executeViaBridge(
-        `sudo test -S ${forkSocket} && sudo docker -H unix://${forkSocket} ps --filter name=${CONTAINER} --format '{{.Status}}' || true`
+        `if sudo test -S ${forkSocket}; then sudo docker -H unix://${forkSocket} ps --filter name=${CONTAINER} --format '{{.Status}}'; fi`
       );
+      if (listed.code !== 0) {
+        throw new Error(
+          `docker ps on the fork's daemon failed: ${listed.stdout}\n${listed.stderr}`
+        );
+      }
       return listed.stdout.trim();
     };
 
@@ -386,9 +398,12 @@ test.describe
             `executor output:\n${serveOutput}`
         );
       }
-      const residue = await runner.executeViaBridge(
-        `ls ${DEFAULT_DATASTORE_PATH}/repositories/ 2>/dev/null | grep -F ${forkGuid} || true`
-      );
+      // An empty guid (beforeAll failed before it was read) would make `grep -F ''` match every line.
+      const residue = forkGuid
+        ? await runner.executeViaBridge(
+            `ls ${DEFAULT_DATASTORE_PATH}/repositories/ 2>/dev/null | grep -F ${forkGuid} || true`
+          )
+        : { stdout: '' };
       expect(residue.stdout.trim(), `${FORK_REF} residue on the machine`).toBe('');
     });
 

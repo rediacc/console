@@ -81,14 +81,22 @@ function program(): Command {
   return p;
 }
 
+/** A report whose results match its summary, the way renet writes one: the CLI counts from results. */
 function convergeStdout(summary: Record<string, number>): string {
+  const statuses = ['converged', 'would_converge', 'skipped', 'failed', 'pending'];
+  const results = statuses.flatMap((status) =>
+    Array.from({ length: summary[status] ?? 0 }, (_, i) => ({
+      network_id: 2816 + i,
+      status,
+    }))
+  );
   return JSON.stringify({
     policy: 'epoch',
     runtime_epoch: 1,
     dry_run: false,
     aborted: false,
     plan: [],
-    results: [],
+    results,
     summary: {
       total: 1,
       converged: 0,

@@ -138,6 +138,14 @@ describe('backup restore --as --at mints a fresh GUID (E1)', () => {
     );
   });
 
+  it('refuses a restore with no --as, since the default target is the source name itself', async () => {
+    // The source must exist in the config to be restored, so without --as the target collides with it. No record is registered and no GUID is minted.
+    await expect(run(['restore', 'm1:src', '-m', 'm1', '--at', SNAPSHOT])).rejects.toThrow(
+      /targetExists/
+    );
+    expect(mockAddRepository).not.toHaveBeenCalled();
+  });
+
   it('two restores of one source get two distinct GUIDs', async () => {
     await run(SAME_MACHINE_RESTORE);
     await run(['restore', 'm1:src', '--as', 'copy2', '-m', 'm1', '--at', SNAPSHOT]);

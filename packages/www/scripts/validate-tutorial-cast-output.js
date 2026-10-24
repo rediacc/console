@@ -18,8 +18,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WK_DATASTORE_PATH } from '../../shared/src/config/well-known.generated.ts';
-import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
-import { displayWidth, drawnSegments, stripAnsi } from './lib/terminal-cells.js';
 import {
   ERROR_PATTERNS,
   FORBIDDEN_SCRIPT_PATTERNS,
@@ -28,6 +26,8 @@ import {
   overflowIsOneUnbreakablePath,
   overflowIsOneUnbreakableUrl,
 } from './lib/cast-patterns.js';
+import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
+import { displayWidth, drawnSegments, stripAnsi } from './lib/terminal-cells.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -377,6 +377,26 @@ function selftest() {
         ],
       ]),
       false,
+    ],
+    [
+      'an over-long path with short text beside it still FAILS (it would hard-wrap mid-path)',
+      cast([
+        [1, 'm', 'rdc repo up my-app:test'],
+        [
+          1,
+          'o',
+          `-f ${WK_DATASTORE_PATH}/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`,
+        ],
+      ]),
+      true,
+    ],
+    [
+      'a lone over-long token with base64 characters and slashes still FAILS',
+      cast([
+        [1, 'm', 'rdc repo list'],
+        [1, 'o', `/${'Ab+/'.repeat(40)}==\n`],
+      ]),
+      true,
     ],
     [
       'a long line of prose still FAILS',

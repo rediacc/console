@@ -21,6 +21,7 @@ import {
   CLEAN_BUILD_MARKER,
   cleanBuildEnv,
   cleanBuildFiles,
+  cleanBuildMarker,
   cleanBuildRoot,
   copyEmbeddedAssets,
   isCompleteCleanBuild,
@@ -192,7 +193,8 @@ const realCleanBuildDeps: RenetCleanBuildDeps = {
   build: (cwd, env) =>
     new Promise((resolve, reject) => {
       // stdout is the CLI command's; build progress goes to stderr.
-      const child = spawn(path.join(cwd, 'build.sh'), ['dev'], {
+      // Relative to the child's cwd: a cwd-joined path would be resolved against cwd a second time when cwd is relative.
+      const child = spawn('./build.sh', ['dev'], {
         cwd,
         env,
         stdio: ['ignore', 2, 2],
@@ -260,7 +262,9 @@ export async function buildRenetAtCommit(
   const ext = process.platform === 'win32' ? '.exe' : '';
   const finalDir = path.join(root, commit);
   const hostBinary = path.join(finalDir, `renet${ext}`);
-  if (isCompleteCleanBuild(finalDir, commit, ext)) return hostBinary;
+  const buildEnv = cleanBuildEnv(top);
+  const keyed = Boolean(buildEnv.ACCOUNT_ED25519_PUBLIC_KEY);
+  if (isCompleteCleanBuild(finalDir, commit, ext, keyed)) return hostBinary;
 
   fsSync.mkdirSync(root, { recursive: true });
   const work = path.join(root, `work-${commit.slice(0, 12)}-${process.pid}`);
@@ -274,7 +278,7 @@ export async function buildRenetAtCommit(
     pinCommittedEbpfObjects(work);
 
     outputService.info(`Building renet ${commit.slice(0, 12)} from a clean clone...`);
-    await deps.build(work, cleanBuildEnv(top));
+    await deps.build(work, buildEnv);
 
     const left = deps.git(['status', '--porcelain'], work);
     if (left) {
@@ -293,12 +297,16 @@ export async function buildRenetAtCommit(
       }
       fsSync.renameSync(built, path.join(stage, name));
     }
-    fsSync.writeFileSync(path.join(stage, CLEAN_BUILD_MARKER), `${commit}\n`);
+    fsSync.writeFileSync(path.join(stage, CLEAN_BUILD_MARKER), cleanBuildMarker(commit, keyed));
+    // A leftover directory (a cached build missing a binary, or a keyless one superseded by this keyed build) would make the rename fail with ENOTEMPTY on every run; a rename only ever publishes a whole directory, so what is there is stale.
+    if (!isCompleteCleanBuild(finalDir, commit, ext, keyed)) {
+      fsSync.rmSync(finalDir, { recursive: true, force: true });
+    }
     try {
       fsSync.renameSync(stage, finalDir);
     } catch (err) {
       // A concurrent process finished the same commit first; its build is as good as ours.
-      if (!isCompleteCleanBuild(finalDir, commit, ext)) throw err;
+      if (!isCompleteCleanBuild(finalDir, commit, ext, keyed)) throw err;
     }
     pruneOtherCleanBuilds(root, commit);
   } finally {

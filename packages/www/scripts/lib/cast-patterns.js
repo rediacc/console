@@ -34,23 +34,24 @@ export function overflowIsOneUnbreakableUrl(line, width) {
 }
 
 /**
- * Same exemption for ONE absolute filesystem path in an otherwise-short line.
+ * Same exemption for ONE absolute filesystem path on a line of its own.
  * `rdc repo up` prints `docker compose ... -f /mnt/rediacc/mounts/<guid>/
  * .rediacc/compose-tmp/run-<pid>-<rand>/compose-<id>.yml`, and the path lands on
- * a line of its own: a single unbreakable token. Scoped like the URL case: the
- * line must be over-long only because of that token. The token must also look
- * like a real path, every segment at most 64 columns, so a long joined field or
- * hash that merely starts with `/` (the gate's own long-token control) still fails.
+ * a line of its own: a single unbreakable token. Scoped like the URL case but
+ * stricter: the path must be the ONLY content of the line (any other text beside
+ * it leaves the line over-width and the terminal hard-wraps it mid-path), and it
+ * must look like a path: at least three segments, each at most 64 columns and
+ * made of path-safe characters only. A joined field or base64 blob (`+`, `=`) or
+ * a one-segment token does not qualify. A slash-separated blob of letters and
+ * digits alone would still qualify; the own-line rule is what bounds that.
  */
+const PATH_SEGMENT = /^[A-Za-z0-9._@~-]{1,64}$/;
+
 export function overflowIsOneUnbreakablePath(line, width) {
-  const tokens = line.split(/\s+/).filter(Boolean);
-  const paths = tokens.filter(
-    (tok) => tok.startsWith('/') && tok.split('/').every((seg) => seg.length <= 64)
-  );
-  const longest = paths.reduce((a, b) => (b.length > a.length ? b : a), '');
-  if (longest.length <= width) return false;
-  const withoutIt = line.replace(longest, '').trimEnd();
-  return displayWidth(withoutIt) <= width;
+  const token = line.trim();
+  if (token.length <= width || /\s/.test(token) || !token.startsWith('/')) return false;
+  const segments = token.slice(1).split('/');
+  return segments.length >= 3 && segments.every((seg) => PATH_SEGMENT.test(seg));
 }
 
 /** Patterns that indicate a command produced error output. */

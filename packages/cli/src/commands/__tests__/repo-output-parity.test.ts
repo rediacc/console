@@ -205,6 +205,7 @@ describe('repo up|down|status stdout parity between a local run and --proxy', ()
     expect(run.proxiedExit).toBe(0);
     expect(run.proxiedOut).not.toContain('repositories');
     expect(run.proxiedOut).toBe(run.localOut);
+    expect(run.proxiedOut).toBe('');
   });
 
   it('repo up prints nothing on stdout either way, not the renet repository list', async () => {
@@ -214,6 +215,7 @@ describe('repo up|down|status stdout parity between a local run and --proxy', ()
     expect(run.proxiedExit).toBe(0);
     expect(run.proxiedOut).not.toContain('repositories');
     expect(run.proxiedOut).toBe(run.localOut);
+    expect(run.proxiedOut).toBe('');
   });
 
   it('repo status prints the record on stdout either way, as a single JSON document', async () => {

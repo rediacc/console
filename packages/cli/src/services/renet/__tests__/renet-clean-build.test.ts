@@ -227,6 +227,38 @@ describe('selectRenetUploadBinary', () => {
     expect(second.deps.build).not.toHaveBeenCalled();
   });
 
+  it('rebuilds over an incomplete cached directory instead of failing the rename', async () => {
+    porcelain(' M pkg/list.go\n');
+    const finalDir = path.join(cacheRoot(), SHA);
+    fs.mkdirSync(finalDir, { recursive: true });
+    // A finished marker with two binaries missing: not complete, and not empty.
+    fs.writeFileSync(path.join(finalDir, 'renet'), 'partial');
+    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\nkeyed\n`);
+    const { selectRenetUploadBinary } = await load();
+    const { deps } = fakeDeps();
+    await selectRenetUploadBinary(workingBinary, deps);
+    expect(deps.build).toHaveBeenCalledTimes(1);
+    expect(fs.readFileSync(path.join(finalDir, 'renet-linux-arm64'), 'utf-8')).toBe(
+      'built renet-linux-arm64'
+    );
+  });
+
+  it('does not reuse a keyless build once the licence key is available', async () => {
+    porcelain(' M pkg/list.go\n');
+    const finalDir = path.join(cacheRoot(), SHA);
+    fs.mkdirSync(finalDir, { recursive: true });
+    for (const name of ['renet', 'renet-linux-amd64', 'renet-linux-arm64']) {
+      fs.writeFileSync(path.join(finalDir, name), 'keyless');
+    }
+    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\nkeyless\n`);
+    const { selectRenetUploadBinary } = await load();
+    const { deps } = fakeDeps();
+    await selectRenetUploadBinary(workingBinary, deps);
+    expect(deps.build).toHaveBeenCalledTimes(1);
+    expect(fs.readFileSync(path.join(finalDir, 'renet'), 'utf-8')).toBe('built renet');
+    expect(fs.readFileSync(path.join(finalDir, '.complete'), 'utf-8')).toBe(`${SHA}\nkeyed\n`);
+  });
+
   it('a build of a new commit prunes the previous commit build', async () => {
     porcelain(' M pkg/list.go\n');
     fs.mkdirSync(path.join(cacheRoot(), OLD_SHA), { recursive: true });
@@ -272,7 +304,7 @@ describe('acquireRemoteRenet with a dirty renet tree', () => {
     for (const name of ['renet', 'renet-linux-amd64', 'renet-linux-arm64']) {
       fs.writeFileSync(path.join(finalDir, name), 'built');
     }
-    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\n`);
+    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\nkeyed\n`);
     const answers: [string, string][] = [
       ['--show-toplevel', `${top}\n`],
       ['--porcelain', ' M pkg/list.go\n'],

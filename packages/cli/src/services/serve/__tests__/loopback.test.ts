@@ -270,11 +270,12 @@ describe('proxy loopback', () => {
     expect(stdout).toContain('Snapshot');
     // renet's raw `output` events are NOT rendered for `repo status`: a local run drops them too, and the verb prints its own record (here the plain-text capture) once, exactly as a local run does.
     expect(stdout).not.toContain('STATUS: running');
-    expect(stdout.match(/done/g)).toHaveLength(1);
+    // The record is the one line that is exactly `done`; a substring count would also match any other text containing it.
+    expect(stdout.split('\n').filter((line) => line.trim() === 'done')).toHaveLength(1);
   });
 
-  it('prints the captured output when a run streamed none of it live', async () => {
-    // A run that emits no output events must still show what renet said, rather than ending in silence. It is printed once, never twice.
+  it('repo status prints its record from the captured output when no output event streamed', async () => {
+    // Only the verbs that print a record of their own (here `repo status` through its status record) show the captured text: the raw-capture fallback is gone, so a silent non-status verb prints nothing. The record is printed once, never twice.
     const { executor } = fakeExecutor([], { stdout: 'the whole answer' });
     boot({ executor });
 

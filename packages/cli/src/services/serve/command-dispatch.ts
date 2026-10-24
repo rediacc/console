@@ -337,7 +337,10 @@ function endFailedCommandSpan(error: unknown, durationMs: number): void {
     {
       success: exitCode === 0,
       exitCode,
-      error: error instanceof Error ? error.message : 'The command failed.',
+      // A DispatchExit with code 0 is a clean early exit, so it carries no error.
+      ...(exitCode === 0
+        ? {}
+        : { error: error instanceof Error ? error.message : 'The command failed.' }),
       duration: durationMs,
     },
     open.spanKey

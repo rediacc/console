@@ -111,7 +111,10 @@ vi.mock('../../telemetry/otlp-credentials.js', async (original) => ({
 
 import { SpanStatusCode } from '@opentelemetry/api';
 import type { ExecuteOptions, ExecuteResult, Executor } from '../../executor/types.js';
-import { containerTelemetryConfig } from '../../telemetry/container-telemetry.js';
+import {
+  containerTelemetryConfig,
+  initContainerTelemetry,
+} from '../../telemetry/container-telemetry.js';
 import { telemetryService } from '../../telemetry/telemetry.js';
 import { dispatchCommand, prepareCommand } from '../command-dispatch.js';
 
@@ -228,5 +231,40 @@ describe('container executor telemetry', () => {
     expect(credentialFetch.command).not.toHaveBeenCalled();
     expect(credentialFetch.plain).not.toHaveBeenCalled();
     expect(profiling.start).not.toHaveBeenCalled();
+  });
+});
+
+describe('initContainerTelemetry (serve --mode container start)', () => {
+  beforeEach(() => {
+    delete process.env.CI;
+    delete process.env.REDIACC_TELEMETRY_DISABLED;
+    vi.clearAllMocks();
+    credentialFetch.plain.mockResolvedValue({ user: 'u', pass: 'p' });
+  });
+
+  afterEach(() => {
+    process.env = { ...SAVED_ENV };
+  });
+
+  it('fetches the credential and initialises the SDK when telemetry is enabled', async () => {
+    const init = vi.spyOn(telemetryService, 'initialize').mockResolvedValue(undefined);
+    await initContainerTelemetry();
+    expect(credentialFetch.plain).toHaveBeenCalledTimes(1);
+    expect(init).toHaveBeenCalledWith(
+      expect.objectContaining({ serviceName: 'rediacc-proxy-executor' })
+    );
+    init.mockRestore();
+  });
+
+  it.each([
+    ['CI', { CI: 'true' }],
+    ['REDIACC_TELEMETRY_DISABLED', { REDIACC_TELEMETRY_DISABLED: '1' }],
+  ])('makes no credential fetch and starts no SDK when %s is set', async (_name, env) => {
+    Object.assign(process.env, env);
+    const init = vi.spyOn(telemetryService, 'initialize').mockResolvedValue(undefined);
+    await initContainerTelemetry();
+    expect(credentialFetch.plain).not.toHaveBeenCalled();
+    expect(init).not.toHaveBeenCalled();
+    init.mockRestore();
   });
 });
