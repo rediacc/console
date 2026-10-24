@@ -147,6 +147,12 @@ def eperm(text: str) -> bool:
     return EPERM_TEXT in text.lower()
 
 
+def nc_evidence(text: str) -> str:
+    """The `nc:` lines and the `NC_RC=` marker of a cross-repo connect, which the 200-byte evidence otherwise spends on the CLI's progress lines (I1.5, 2026-10-24)."""
+    keep = [ln.strip() for ln in text.splitlines() if ln.strip().startswith(("nc:", "NC_RC="))]
+    return " | ".join(keep)
+
+
 def http_status(text: str) -> int | None:
     """The status curl's `-w '%{http_code}'` printed: the last line that is exactly three digits."""
     for raw in reversed(text.strip().splitlines()):
@@ -562,13 +568,14 @@ class _LiveI1:
             return
         cross = self.ctx.shell(
             self.ref_b,
-            "docker run --rm --network host %s nc -w 3 %s %d </dev/null" % (IMAGE, ip, LISTEN_PORT),
+            "docker run --rm --network host %s nc -w 3 %s %d </dev/null 2>&1; echo NC_RC=$?"
+            % (IMAGE, ip, LISTEN_PORT),
         )
         self.check(
             "I1.5 a plain docker run in B cannot connect to A's %s:%d (EPERM)" % (ip, LISTEN_PORT),
-            cross.rc != 0 and eperm(cross.text()),
+            eperm(cross.text()) and "NC_RC=0" not in cross.out,
             cross,
-            self.ev(cross),
+            nc_evidence(cross.out) or self.ev(cross),
         )
 
     def i1_6_mount_view(self) -> None:

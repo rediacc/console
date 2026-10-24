@@ -690,3 +690,11 @@ def test_a_second_vscode_connect_that_wipes_the_server_fails(tmp_path: pathlib.P
 def test_dead_helpers_are_gone() -> None:
     """Review 81e15b4f.4: the unused repo-list parser was removed (the live step reads ctx.repo_list)."""
     assert not hasattr(ti, "_data_list")
+
+
+def test_nc_evidence_keeps_the_nc_line_and_marker() -> None:
+    out = '{"durationMs": 9}\nnc: can\'t connect to remote host (127.0.40.188): Operation not permitted\nNC_RC=1\n'
+    assert ti.nc_evidence(out) == (
+        "nc: can't connect to remote host (127.0.40.188): Operation not permitted | NC_RC=1"
+    )
+    assert ti.nc_evidence('{"x": 1}\n') == ""
