@@ -106,6 +106,8 @@ FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[ab]$")
 MOUNTS = DATASTORE_PATH + "/mounts"
 GUARDED_FILE = ".rediacc.json"
 READ_ONLY = "Read-only file system"
+# Since the private repo view (PLAN-sandbox-tenant-separation RB, renet 20a7c86) another repo's mount is detached from a session, so its files are not there at all: the stronger refusal.
+NOT_VISIBLE = "No such file or directory"
 VSCODE_ABSENT = "VS Code not found"
 URI_PREFIX = "vscode-remote://ssh-remote+"
 SYNC_BIG_BYTES = 1024 * 1024
@@ -117,7 +119,10 @@ PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
 SFTP_BATCH = ("sftp", "-o", "BatchMode=yes")
 # A refused sftp leg counts as confinement only when the server says so; a dropped connection or a missing path is not a refusal.
 SFTP_DENIAL = re.compile(
-    r"permission denied|read-only file system|operation not permitted", re.IGNORECASE
+    r"permission denied|read-only file system|operation not permitted"
+    # The server's own path-bearing answer for a file the session cannot see (the private repo view detaches other repos' mounts). Never a bare "no such file", which ssh also prints for a missing identity file.
+    r"""|(?:couldn't \w+(?: on)?|remote \w+)[^\n]*"[^"\n]+"[^\n]*: no such file""",
+    re.IGNORECASE,
 )
 # sftp-server answers a refused write with the bare SSH2_FX_FAILURE status, which sftp prints as `dest open "<path>": Failure` (put) or `remote setstat "<path>": Failure` (chmod). Such a line is a refusal only when its path is the neighbour's; the 2026-10-15 run's legs were confined but read as "not refused".
 SFTP_STATUS_FAILURE = re.compile(
@@ -2081,8 +2086,9 @@ class VmCheck:
             res = self.shell(self.ref(a), command)
             self.check(
                 "V1.2",
-                "A: `%s` on B's file fails read-only" % command.split()[0],
-                res.rc != 0 and READ_ONLY in res.text(),
+                "A: `%s` on B's file fails (read-only, or B's mount not visible)"
+                % command.split()[0],
+                res.rc != 0 and (READ_ONLY in res.text() or NOT_VISIBLE in res.text()),
                 res,
                 evidence=res.text(),
             )

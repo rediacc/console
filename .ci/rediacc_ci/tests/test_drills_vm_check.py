@@ -1568,6 +1568,17 @@ def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None
     assert vm_check.sftp_refused('remote open("/mnt/x"): Permission denied')
     assert vm_check.sftp_refused('Couldn\'t setstat on "/x": Operation not permitted')
     assert vm_check.sftp_refused("remote open: Read-only file system")
+    # The private repo view: the server says the other repo's file is not there.
+    assert vm_check.sftp_refused(
+        'Couldn\'t setstat on "/mnt/rediacc/mounts/g/.rediacc.json": No such file or directory'
+    )
+    assert vm_check.sftp_refused(
+        'remote open("/mnt/rediacc/mounts/g/vmc-sftp"): No such file or directory'
+    )
+    # ssh's own client-side warning is never a server refusal.
+    assert not vm_check.sftp_refused(
+        "Warning: Identity file /home/u/.ssh/id_x not accessible: No such file or directory."
+    )
     assert not vm_check.sftp_refused("u@h: Permission denied (publickey).")
     assert not vm_check.sftp_refused("Received disconnect: Too many authentication failures")
     assert not vm_check.sftp_refused("Connection closed")
