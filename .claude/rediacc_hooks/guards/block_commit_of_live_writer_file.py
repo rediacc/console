@@ -35,8 +35,8 @@ ORDER = 59
 
 # The overlap test itself. With it never matching, a live writer's file rides a commit again, which is the 252e5e1d1 shape.
 DEFECT = (
-    'if writer == spec or writer.startswith(spec.rstrip("/") + "/"):',
-    "if False:",
+    "if writer == spec or (",
+    "if False and (",
 )
 
 # What a roster read can raise, including TypeError and AttributeError for a transcript or meta file of an unexpected shape. Each one fails open, and the stderr note carries the exception text, so a bug in this guard's own code inside the same read is visible there rather than silent; any other exception type is reported as a crash by the dispatcher.
