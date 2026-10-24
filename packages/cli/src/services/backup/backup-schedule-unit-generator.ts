@@ -14,6 +14,11 @@ import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import { envFilePath } from './backup-env-file.js';
+import {
+  assertStrategySchedulable,
+  bandwidthToBytesPerSecond,
+  invalidCronReason,
+} from './backup-strategy-validate.js';
 
 /** SHA-256 hex digest for UTF-8 content, used by the reconciler for diff. */
 export function sha256Hex(content: string): string {
@@ -22,10 +27,9 @@ export function sha256Hex(content: string): string {
 
 /** Convert a 5-field cron expression to systemd OnCalendar format. */
 export function cronToOnCalendar(cron: string): string {
+  const invalid = invalidCronReason(cron);
+  if (invalid) throw new Error(invalid);
   const parts = cron.trim().split(/\s+/);
-  if (parts.length !== 5) {
-    throw new Error(`Invalid cron expression: "${cron}" (expected 5 fields)`);
-  }
 
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
   const dowMap: Record<string, string> = {
@@ -103,31 +107,6 @@ interface BackupBuild {
 }
 
 /**
- * Why a destination cannot be scheduled, or undefined when it can.
- *
- * Also exported for `backup strategy set`, which warns with it at creation
- * time rather than letting the operator discover at deploy time that the
- * destination they just made can never run.
- *
- * `kind` is OPTIONAL on the parameter on purpose: a destination that came from
- * the config loader has been through the schema and always carries one, but a
- * hand-edited entry (and the operator's live config) has no `kind` field at
- * all, and this must name it correctly rather than print "undefined".
- */
-export function unschedulableDestinationReason(dest: {
-  name: string;
-  kind?: string;
-}): string | undefined {
-  const kind = dest.kind ?? BACKUP_DEFAULTS.DESTINATION_KIND;
-  if (kind === BACKUP_DEFAULTS.NEW_DESTINATION_KIND) return undefined;
-  return (
-    `Backup destination "${dest.name}" has kind "${kind}". The ` +
-    'rclone/OneDrive path was removed on 2026-08-15; change it to a ' +
-    '`hosted-service` destination so the schedule uses the chunk store.'
-  );
-}
-
-/**
  * The scheduled command for a chunk-store (hosted-service) destination.
  *
  * Carries NO credentials, which is the whole point of the destination kind:
@@ -145,14 +124,6 @@ function buildChunkStoreCommand(
   datastore: string,
   remoteRenetPath: string
 ): string {
-  if (strategy.exclude?.length) {
-    throw new Error(
-      'This backup strategy sets exclude, which a hosted-service destination ' +
-        'cannot express: `backup snapshot` selects ' +
-        'repositories with --repo and has no exclude flag. List the repositories ' +
-        'to back up with include instead, so the scheduled scope is explicit.'
-    );
-  }
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
   // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
   //
@@ -162,38 +133,6 @@ function buildChunkStoreCommand(
   const bwlimit = bandwidthToBytesPerSecond(strategy.bandwidthLimit);
   if (bwlimit !== undefined) parts.push(`--bwlimit ${bwlimit}`);
   return parts.join(' ');
-}
-
-/**
- * `bandwidthLimit` is an RCLONE-STYLE STRING ('6M'), because that is what the
- * old rclone path took and what the schema still declares
- * (config-schema/schemas.ts:434,505). `renet backup snapshot --bwlimit` is an
- * Int64 in BYTES PER SECOND (cmd/renet/backup_snapshot.go:132), so passing the
- * string through unchanged emits `--bwlimit 6M`, which dies at cobra's flag
- * parse, at RUN time, inside a systemd timer, not at deploy time.
- *
- * Measured on the operator's live config 2026-08-15: both strategies carry
- * '6M', so every unit generated for them would have failed this way.
- *
- * Suffixes follow rclone's convention (binary: 6M = 6 MiB/s). A value that
- * cannot be parsed is REFUSED rather than dropped or passed through: dropping
- * it silently lifts a cap the operator set deliberately.
- */
-function bandwidthToBytesPerSecond(limit: string | undefined): number | undefined {
-  if (!limit) return undefined;
-  const m = /^(\d+(?:\.\d+)?)\s*([KMGTkmgt])?i?[Bb]?$/.exec(limit.trim());
-  if (!m) {
-    throw new Error(
-      `Backup strategy bandwidthLimit "${limit}" is not a size this can convert. ` +
-        'Use a plain number of bytes/second, or a suffixed value such as "6M". ' +
-        'Refusing rather than dropping it, because dropping would silently remove ' +
-        'a cap you set.'
-    );
-  }
-  const scale: Record<string, number> = { k: 1024, m: 1024 ** 2, g: 1024 ** 3, t: 1024 ** 4 };
-  // .at(2) rather than m[2]: the group is OPTIONAL, and this repo does not set noUncheckedIndexedAccess, so m[2] is typed as always-present and lint calls the guard redundant. .at() returns string | undefined, which is the truth.
-  const unit = m.at(2)?.toLowerCase() ?? '';
-  return Math.round(Number(m[1]) * (unit ? scale[unit] : 1));
 }
 
 /** One command per destination + merged RCLONE_* env-vars for the whole unit. */
@@ -206,15 +145,11 @@ export function buildBackupCommands(
   const commands: string[] = [];
   const envVars: Record<string, string> = {};
 
-  for (const dest of destinations) {
-    // A HARD ERROR, not a skip. Emitting nothing is exactly the defect the hosted-service branch was written to fix: an operator declared a destination, deployed the schedule, and got a timer that backed up nothing with no error anywhere. If this path is reached, the strategy still names an rclone/storage destination and must be migrated.
-    const reason = unschedulableDestinationReason(dest);
-    if (reason) {
-      throw new Error(`${reason} Refusing to generate a unit that would back up nothing.`);
-    }
-    // The CHUNK STORE is now the only destination kind. The rclone/OneDrive emission was removed 2026-08-15 on an explicit operator decision.
-    commands.push(buildChunkStoreCommand(strategy, datastore, remoteRenetPath));
-  }
+  // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`. The CHUNK STORE is the only destination kind (rclone/OneDrive emission removed 2026-08-15 on an explicit operator decision), so each destination yields one command.
+  assertStrategySchedulable(strategy, destinations);
+  commands.push(
+    ...destinations.map(() => buildChunkStoreCommand(strategy, datastore, remoteRenetPath))
+  );
   return { commands, envVars };
 }
 

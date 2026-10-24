@@ -1,7 +1,10 @@
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
-import { unschedulableDestinationReason } from '../services/backup/backup-schedule-unit-generator.js';
+import {
+  strategyUnschedulableReason,
+  unschedulableDestinationReason,
+} from '../services/backup/backup-strategy-validate.js';
 import { configService } from '../services/config/config-resources.js';
 import {
   bindBackupStrategy,
@@ -211,7 +214,39 @@ export function buildStrategyUpdate(
   return u;
 }
 
-async function applyBackupStrategyOptions(
+/**
+ * Refuse repo names the active config does not know. A typo in --include would otherwise schedule a backup of nothing (or, for exclude, of everything), and surface only as a missing snapshot. Every unknown name is reported at once, and the check runs before anything is written.
+ */
+async function assertKnownRepoNames(names: string[] | undefined): Promise<void> {
+  const unknown: string[] = [];
+  for (const name of names ?? []) {
+    if (!(await configService.getRepository(name))) unknown.push(name);
+  }
+  if (unknown.length > 0) {
+    throw new ValidationError(
+      `Unknown repository ${unknown.length === 1 ? 'name' : 'names'}: ${unknown.map((n) => `"${n}"`).join(', ')}. Names must match repositories in the active config (rdc repo list).`
+    );
+  }
+}
+
+/**
+ * Refuse to bind a strategy `backup schedule` could not turn into a unit, through the same rules schedule applies (strategyUnschedulableReason). Disabled destinations are skipped, as the scheduler skips them.
+ */
+export async function assertStrategyBindable(strategyName: string): Promise<void> {
+  const strategy = await configService.getBackupStrategy(strategyName);
+  if (!strategy) return;
+  const reason = strategyUnschedulableReason(
+    strategy,
+    strategy.destinations.filter((d) => d.enabled !== false)
+  );
+  if (reason) {
+    throw new ValidationError(
+      `Strategy "${strategyName}" cannot be scheduled, not bound. ${reason}`
+    );
+  }
+}
+
+export async function applyBackupStrategyOptions(
   name: string,
   options: {
     destination?: string;
@@ -236,6 +271,9 @@ async function applyBackupStrategyOptions(
     { ...options, bwlimit: targetsDestination ? undefined : options.bwlimit },
     targetsDestination ? undefined : enabled
   );
+
+  await assertKnownRepoNames(update.include);
+  await assertKnownRepoNames(update.exclude);
 
   // Order matters: upsertBackupDestination reads the stored strategy to merge destination defaults, so the strategy has to exist before the destination is attached. These cannot run in parallel.
   if (!targetsDestination || Object.keys(update).length > 0) {
@@ -351,6 +389,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .description(t('commands.backup.strategy.bind.description'))
     .action(async (strategy: string, options: { machine: string }) => {
       try {
+        await assertStrategyBindable(strategy);
         const bound = await bindBackupStrategy(options.machine, strategy);
         outputService.success(
           bound
