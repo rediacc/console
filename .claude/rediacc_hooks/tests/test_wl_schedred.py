@@ -306,26 +306,43 @@ def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_ver
     repo, tmp_path, gh
 ):
     # A scheduled workflow added on the live branch is not registered on main, so its per-workflow fallback answers HTTP 404. On 2026-10-24 that 404 (cf-usage-report.yml) made the whole `ci-trace.py --scheduled` read unreadable, hiding five red Console CI nightlies.
+    (repo / ".github" / "workflows" / "branchonly.yml").write_text(
+        HK_YML.replace("Housekeeping", "Branch Only"), encoding="utf-8"
+    )
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", "branch-only workflow")
+
+    def routes(err):
+        gh.reset()
+        gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+        gh.route("/jobs", {"jobs": []})
+        gh.route("/actions/workflows/branchonly.yml/", rc=1, err=err)
+        gh.route("/actions/workflows/", {"workflow_runs": []})
+        gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+
+    routes("gh: Not Found (HTTP 404)")
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "ok", doc
+    bo = row_of(doc, "branchonly")
+    assert bo["run_id"] is None
+    assert bo["red"] is False
+    assert bo["not_on_main"] is True
+    assert row_of(doc, "ci")["run_id"] == RED_RUN
+    assert row_of(doc, "ci")["red"] is True
+    # Control: any other fallback error still makes the read unreadable, never a silent pass.
+    routes("gh: Bad credentials (HTTP 401)")
+    doc = SR.refresh(repo, tmp_path / "wl2.md", force=True)
+    assert doc["state"] != "ok", doc
+
+
+def test_a_404_for_a_workflow_main_carries_stays_unreadable(repo, tmp_path, gh):
+    # housekeeping.yml is on origin/main in the fixture, so a 404 for it is a wrong owner or a deleted workflow, not a branch-only file (review e9054dfa.1).
     gh.reset()
     gh.route("runs?event=push&branch=main", {"workflow_runs": []})
     gh.route("/jobs", {"jobs": []})
     gh.route("/actions/workflows/", rc=1, err="gh: Not Found (HTTP 404)")
     gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
     doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
-    assert doc["state"] == "ok", doc
-    hk = row_of(doc, "housekeeping")
-    assert hk["run_id"] is None
-    assert hk["red"] is False
-    assert hk["not_on_main"] is True
-    assert row_of(doc, "ci")["run_id"] == RED_RUN
-    assert row_of(doc, "ci")["red"] is True
-    # Control: any other fallback error still makes the read unreadable, never a silent pass.
-    gh.reset()
-    gh.route("runs?event=push&branch=main", {"workflow_runs": []})
-    gh.route("/jobs", {"jobs": []})
-    gh.route("/actions/workflows/", rc=1, err="gh: Bad credentials (HTTP 401)")
-    gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
-    doc = SR.refresh(repo, tmp_path / "wl2.md", force=True)
     assert doc["state"] != "ok", doc
 
 
