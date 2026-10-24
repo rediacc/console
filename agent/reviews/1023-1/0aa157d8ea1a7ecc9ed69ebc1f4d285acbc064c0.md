@@ -21,4 +21,4 @@ Body-Sig: 6dbdd3a51a530b15
 ### 0aa157d8.1 [low] packages/cli/src/remote/vscode/__tests__/sshConfig.test.ts:35
 Anchor: in-diff
 Claim: The comment hard-codes a measured count (3,623 sshconfig-* directories as of 2026-10-24) that is a snapshot of one machine's /tmp and will go stale; the diff itself shows the figure changing from 3,255 to 3,623, so it is already a number that moved once.
-Resolution: open
+Resolution: not-a-bug | the comment at packages/cli/src/remote/vscode/__tests__/sshConfig.test.ts:35 dates the measurement (by 2026-10-24) as a snapshot, explanatory only | d778be9d 2026-10-24T19:21:31Z
