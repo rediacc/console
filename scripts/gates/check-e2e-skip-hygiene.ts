@@ -23,6 +23,16 @@
  * base config must ignore it. If a subdir is ever meant to run in the base
  * worker job, add it to BASE_ALLOWED below with a reason.
  *
+ * SECOND DIRECTION (every test is SELECTED somewhere). The first direction
+ * only proves the base config does not collect topology suites. It cannot see
+ * the opposite loss: a `*.test.ts` that NO playwright*.config.ts selects, which
+ * is never run by anything and still reads as coverage (ops-lifecycle was in
+ * exactly that state). So every `*.test.ts` under tests/ must be selected by
+ * at least one config (inside its testDir, matched by a testMatch, not caught
+ * by that config's testIgnore) or be named in DELIBERATE_OMISSIONS with a
+ * reason. The omission list lives in this file, so dropping an entry fails the
+ * gate rather than hiding the file.
+ *
  * TEST SEAM. E2E_HYGIENE_ROOT overrides the repo root.
  *
  * ---- gate ----
@@ -77,6 +87,80 @@ function baseTestIgnore(): string[] {
   return [...m[1].matchAll(/['"`]([^'"`]+)['"`]/g)].map((x) => x[1]);
 }
 
+// Test files no config selects ON PURPOSE, keyed by path relative to packages/e2e-tests/tests, each with the reason it stays unselected.
+const DELIBERATE_OMISSIONS = new Map<string, string>([
+  [
+    'ops-lifecycle/18-ops-lifecycle.test.ts',
+    'DESTRUCTIVE: stops/resets the very VMs the shared bridge topology uses, so no CI job may select it; run it locally by pointing Playwright at the file.',
+  ],
+]);
+
+function allTestFiles(dir: string, prefix = ''): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir).sort()) {
+    const p = join(dir, entry);
+    const rel = prefix ? `${prefix}/${entry}` : entry;
+    if (statSync(p).isDirectory()) out.push(...allTestFiles(p, rel));
+    else if (entry.endsWith('.test.ts')) out.push(rel);
+  }
+  return out;
+}
+
+function globToRegExp(glob: string): RegExp {
+  const body = glob
+    .replace(/[.+^${}()|\\]/g, '\\$&')
+    .replace(/\*\*\//g, '\u0000')
+    .replace(/\*\*/g, '\u0001')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\u0000/g, '(?:.*/)?')
+    .replace(/\u0001/g, '.*');
+  return new RegExp(`^${body}$`);
+}
+
+function quoted(src: string): string[] {
+  return [...src.matchAll(/['"`]([^'"`]+)['"`]/g)].map((x) => x[1]);
+}
+
+/** String entries of every `key: [..]` / `key: '..'` occurrence (top level and per project). */
+function configValues(src: string, key: string): string[] {
+  const out: string[] = [];
+  const re = new RegExp(`\\b${key}:\\s*(\\[[^\\]]*\\]|['"\`][^'"\`]+['"\`])`, 'g');
+  for (const m of src.matchAll(re)) out.push(...quoted(m[1]));
+  return out;
+}
+
+/** Test files (relative to tests/) that this one config selects. */
+function selectedBy(configPath: string, files: string[]): Set<string> {
+  const src = readFileSync(configPath, 'utf8');
+  const dirM = src.match(/testDir:\s*['"]\.\/tests(?:\/([^'"]+))?['"]/);
+  if (!dirM) return new Set();
+  const sub = dirM[1] ? `${dirM[1].replace(/\/$/, '')}/` : '';
+  const declared = configValues(src, 'testMatch').map(globToRegExp);
+  // No testMatch means Playwright's own default, every *.spec / *.test script.
+  const matchers = declared.length > 0 ? declared : [/\.(?:spec|test)\.[cm]?[jt]sx?$/];
+  const ignorers = configValues(src, 'testIgnore').map(globToRegExp);
+  const selected = new Set<string>();
+  for (const f of files) {
+    if (!f.startsWith(sub)) continue;
+    const inDir = f.slice(sub.length);
+    const hit = (re: RegExp): boolean => re.test(inDir) || re.test(inDir.split('/').pop() ?? inDir);
+    if (!matchers.some(hit)) continue;
+    if (ignorers.some((re) => re.test(f) || re.test(`tests/${f}`) || re.test(inDir))) continue;
+    selected.add(f);
+  }
+  return selected;
+}
+
+function unselectedTests(): string[] {
+  const files = allTestFiles(TESTS_DIR);
+  const configs = readdirSync(E2E)
+    .filter((e) => /^playwright.*\.config\.ts$/.test(e))
+    .map((e) => join(E2E, e));
+  const selected = new Set<string>();
+  for (const c of configs) for (const f of selectedBy(c, files)) selected.add(f);
+  return files.filter((f) => !selected.has(f) && !DELIBERATE_OMISSIONS.has(f));
+}
+
 function main(): void {
   const subdirs = topologySubdirs();
   const ignores = baseTestIgnore();
@@ -97,6 +181,18 @@ function main(): void {
     console.error('');
     console.error('Without the exclusion the E2E Workers job collects these and skips them');
     console.error('(invisible coverage loss). Each has its own playwright.<topology>.config.ts.');
+    process.exit(1);
+  }
+  const orphans = unselectedTests();
+  if (orphans.length > 0) {
+    console.error('');
+    console.error(
+      `FAIL: ${orphans.length} test file(s) selected by NO playwright*.config.ts and not in DELIBERATE_OMISSIONS:`
+    );
+    for (const f of orphans) console.error(`  tests/${f}`);
+    console.error('');
+    console.error('A test no config selects never runs. Select it from a config, or name it in');
+    console.error('DELIBERATE_OMISSIONS with the reason it stays unselected.');
     process.exit(1);
   }
   console.log('');
