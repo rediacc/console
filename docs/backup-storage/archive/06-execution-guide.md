@@ -5,7 +5,7 @@ top to bottom.
 
 ## Before anything
 
-1. Read README.md and 01 through 05 in order; re-verify any file:line you build on.
+1. Read README.md and 01 through 05 in order; re-verify any file:line the work builds on.
 2. Ask the README's operator decision points in ONE early round (AskUserQuestion,
 no previews so the write-in box stays available); park deferred answers as `- [?]` worklist items with DEFAULTs.
 3. Settle packaging with the operator: worktree/branch per repo, PRs vs uncommitted

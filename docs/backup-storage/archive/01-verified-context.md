@@ -1,7 +1,7 @@
 # 01. Verified context
 
 Status: verified 2026-08-09 on branch main (console + private/renet + private/account
-at that day's HEADs). RE-VERIFY BANNER: every file:line below was confirmed by a read-only agent on that date; the tree moves, so re-check any line you are about to build on. Provider facts cite official docs fetched the same day.
+at that day's HEADs). RE-VERIFY BANNER: every file:line below was confirmed by a read-only agent on that date; the tree moves, so any line a change builds on is re-checked first. Provider facts cite official docs fetched the same day.
 
 ## The system being replaced (measured, not theory)
 

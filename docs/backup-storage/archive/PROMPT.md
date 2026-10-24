@@ -1,8 +1,8 @@
 # Prompt: execute the backup-storage program
 
-Your mission: implement the Rediacc-native chunk-store backup system as specified in `docs/backup-storage/archive/README.md`. Read its read order first (01 context, 02 design, 03 implementation map, 04 testing, 05 docs/decommission, 06 execution guide); the design decisions are made and scored, so build, do not re-debate.
+The mission: implement the Rediacc-native chunk-store backup system as specified in `docs/backup-storage/archive/README.md`. Read its read order first (01 context, 02 design, 03 implementation map, 04 testing, 05 docs/decommission, 06 execution guide); the design decisions are made and scored, so build, do not re-debate.
 
-Validate, do not believe: every file:line in those docs is a hypothesis to re-verify against the live tree before you build on it; run the real thing and read stdout and stderr separately; plant a control before trusting any zero or any green.
+Validate, do not believe: every file:line in those docs is a hypothesis to re-verify against the live tree before anything builds on it; run the real thing and read stdout and stderr separately; plant a control before trusting any zero or any green.
 
 Ask the README's operator decision points EARLY, in one round, before wave 1; park deferrals as `- [?]` items with DEFAULTs.
 

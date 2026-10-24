@@ -19,7 +19,7 @@ Owner: 97604f47
 - [x] w2 Wave 1: renet chunk engine + account control plane (parallel writers)
 - [x] w3 Wave 2: CLI/schema surfaces + portal quota UI (parallel writers)
       UNTICKED 2026-08-15 (RE-APPLIED after a silent revert, see 07 §9.17):
-      (a) `04-testing-and-local-loop.md:96` claimed the portal quota page smoke
+      (a) `archive/04-testing-and-local-loop.md:96` claimed the portal quota page smoke
       rides deploy-preview/smoke-test-preview; it did not, so BackupStorage.tsx
       (router.tsx:269) had NO coverage. **FIXED**: `stepQuotaPageShipped` in
       `.ci/scripts/test/smoke-test-preview.ts` now asserts the SERVED BUNDLE
@@ -30,7 +30,7 @@ Owner: 97604f47
       against a real preview deployment.
 - [x] w4 Wave 3: test battery (vitest + drill, e2e byte-verify)
       UNTICKED 2026-08-15 (RE-APPLIED after a silent revert): the battery runs,
-      but the control `06-execution-guide.md:49-51` calls non-negotiable was
+      but the control `archive/06-execution-guide.md:49-51` calls non-negotiable was
       never built. No corruption-injection helper exists anywhere (no
       flipByte/corruptChunk/injectCorruption under packages, scripts or .ci), so
       nothing proves chunk verification can FAIL — 'a battery that cannot fail is
