@@ -19,12 +19,11 @@ describe('detectRepoContextCommand', () => {
       ['docker ps', 'docker'],
       ['docker compose up -d', 'docker'],
       ['Docker ps', 'docker'],
-      ['docker-compose up -d', 'docker'],
+      ['docker-compose up -d', 'docker-compose'],
       ['DOCKER_HOST=unix:///tmp/other.sock docker ps', 'docker'],
-      [`ls ${repoDockerSocketPath(3072)}`, 'docker'],
+      [`ls ${repoDockerSocketPath(3072)}`, 'repo runtime dir'],
       [`cat ${repoSecretsDir(3072)}/STRIPE_KEY`, 'repo runtime dir'],
       ['sudo renet compose -- up -d', 'renet compose'],
-      [`ls ${WK_DATASTORE_PATH}/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890/`, 'repo mount path'],
       ['docker ps | grep nginx', 'docker'],
       ['echo start && docker logs web', 'docker'],
       ['bash -c "docker ps"', 'docker'],
@@ -44,7 +43,7 @@ describe('detectRepoContextCommand', () => {
 
     it('detects repo docker socket path without docker word', () => {
       const result = detectRepoContextCommand(`ls ${repoDockerSocketPath(3072)}`);
-      // matches 'docker' pattern (word boundary before hyphen)
+      // matches the runtime dir pattern (the socket lives inside net-<N>/)
       expect(result).not.toBeNull();
     });
 
@@ -66,14 +65,6 @@ describe('detectRepoContextCommand', () => {
       const result = detectRepoContextCommand('sudo renet compose -- up -d');
       expect(result).not.toBeNull();
       expect(result!.label).toBe('renet compose');
-    });
-
-    it('detects repo mount path with GUID', () => {
-      const result = detectRepoContextCommand(
-        `cat ${WK_DATASTORE_PATH}/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890/config.yml`
-      );
-      expect(result).not.toBeNull();
-      expect(result!.label).toBe('repo mount path');
     });
   });
 
@@ -111,7 +102,7 @@ describe('detectRepoContextCommand', () => {
       // An assignment exported in an earlier segment does not travel.
       [`export DOCKER_HOST=${moved}; docker ps`, 'docker'],
       // The host names a socket, but the segment runs something else.
-      [`DOCKER_HOST=${moved} curl localhost`, 'docker'],
+      [`DOCKER_HOST=${moved} curl localhost`, 'DOCKER_HOST'],
     ])('%s → still detects "%s"', (command, expectedLabel) => {
       const result = detectRepoContextCommand(command);
       expect(result).not.toBeNull();
@@ -125,6 +116,44 @@ describe('detectRepoContextCommand', () => {
       `DOCKER_HOST=${flat} docker compose up -d`,
     ])('leaves %s to the compose guard, which refuses it', (command) => {
       expect(detectDockerComposeCommand(command)).toBe(true);
+    });
+  });
+
+  describe('commands that only NAME docker in a unit or path (not docker client calls)', () => {
+    const mount = `${WK_DATASTORE_PATH}/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890`;
+    it.each([
+      "systemctl list-units 'rediacc-docker-*'",
+      'systemctl status rediacc-docker-12288',
+      'find / -path /var/lib/docker',
+      'ls /var/lib/docker',
+      'cat /etc/docker/daemon.json',
+      // Mount metadata reads need no DOCKER_HOST.
+      `ls -la ${mount}`,
+      `stat ${mount}`,
+      `du -sh ${mount}`,
+      `df ${mount}`,
+      `findmnt ${mount}`,
+      `cat ${mount}/some-file`,
+      `cat ${mount}/docker-compose.yml`,
+    ])('%s → admitted', (command) => {
+      expect(detectRepoContextCommand(command)).toBeNull();
+    });
+
+    it.each([
+      ['sudo docker ps', 'docker'],
+      ['nice -n 5 docker ps', 'docker'],
+      ['timeout 10 docker ps', 'docker'],
+      ['ls | xargs docker rm', 'docker'],
+      ['sudo /usr/bin/docker-compose up', 'docker-compose'],
+      ['bash -c "docker ps"', 'docker'],
+      ['docker compose up -d', 'docker'],
+      [`docker run -v ${mount}:/data nginx`, 'docker'],
+      [`DOCKER_HOST=unix:///tmp/x.sock ls ${mount}`, 'DOCKER_HOST'],
+      ['echo $(docker ps -q)', 'docker'],
+      ['echo `docker ps -q`', 'docker'],
+      ['echo $(sudo $(which true) && docker info)', 'docker'],
+    ])('%s → still detects "%s"', (command, label) => {
+      expect(detectRepoContextCommand(command)?.label).toBe(label);
     });
   });
 
@@ -146,8 +175,8 @@ describe('detectRepoContextCommand', () => {
     expect(detectRepoContextCommand('')).toBeNull();
   });
 
-  it('has 6 patterns defined', () => {
-    expect(REPO_CONTEXT_PATTERNS).toHaveLength(6);
+  it('has 5 patterns defined', () => {
+    expect(REPO_CONTEXT_PATTERNS).toHaveLength(5);
   });
 });
 

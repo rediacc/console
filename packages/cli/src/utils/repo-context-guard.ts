@@ -4,16 +4,26 @@ import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 export interface RepoContextPattern {
   label: string;
   pattern: RegExp;
+  /** When true the pattern is tested against the command word of each shell segment, not the raw text. */
+  commandWord?: boolean;
 }
 
+/**
+ * Rule: a command needs repository context only when it would reach a repo's Docker daemon or runtime state.
+ * `docker` and `docker-compose` count only as the command word of a shell segment (after env assignments and
+ * wrappers such as `sudo`, `env`, `timeout`, `xargs`, and inside `sh -c '...'`), so a unit or path that merely
+ * contains the word (`systemctl status rediacc-docker-12288`, `ls /var/lib/docker`) is machine-level. The repo
+ * mount path alone is not a pattern: reading mount metadata (`ls`, `stat`, `du`, `df`, `findmnt`, `cat`) needs no
+ * DOCKER_HOST, while a docker call naming the mount path is still a docker command word, and `DOCKER_HOST=`,
+ * the repo runtime dir and `renet compose` stay refused wherever they appear.
+ */
 export const REPO_CONTEXT_PATTERNS: RepoContextPattern[] = [
-  { label: 'docker', pattern: /\bdocker\b/i },
-  { label: 'docker-compose', pattern: /\bdocker-compose\b/i },
+  { label: 'docker', pattern: /^docker$/i, commandWord: true },
+  { label: 'docker-compose', pattern: /^docker-compose$/i, commandWord: true },
   { label: 'DOCKER_HOST', pattern: /\bDOCKER_HOST=/ },
   // Any path inside a repo's runtime directory: its Docker socket and its file-mode secrets.
   { label: 'repo runtime dir', pattern: REPO_NET_DIR_PATTERN },
   { label: 'renet compose', pattern: /\brenet\s+compose\b/i },
-  { label: 'repo mount path', pattern: /\/mnt\/rediacc\/mounts\/[0-9a-f-]{36}/i },
 ];
 
 /**
@@ -25,15 +35,54 @@ export const REPO_CONTEXT_PATTERNS: RepoContextPattern[] = [
  * checked. `docker compose` stays refused by {@link detectDockerComposeCommand}, which runs first.
  */
 export function detectRepoContextCommand(command: string): RepoContextPattern | null {
-  const unexplained = splitShellSegments(command)
-    .filter((segment) => !namesRepoDockerSocket(segment))
-    .join('\n');
+  const segments = [command, ...commandSubstitutions(command)]
+    .flatMap(splitShellSegments)
+    .filter((segment) => !namesRepoDockerSocket(segment));
+  const unexplained = segments.join('\n');
   for (const entry of REPO_CONTEXT_PATTERNS) {
-    if (entry.pattern.test(unexplained)) {
+    const hit = entry.commandWord
+      ? segments.some((segment) => segmentRunsCommand(segment, entry.pattern))
+      : entry.pattern.test(unexplained);
+    if (hit) {
       return entry;
     }
   }
   return null;
+}
+
+/** The bodies of `$(...)` and backtick substitutions, so `echo $(docker ps)` still shows `docker` as a command word. */
+function commandSubstitutions(command: string): string[] {
+  const bodies = [...command.matchAll(/`([^`]*)`/g)].map((m) => m[1]);
+  for (let i = command.indexOf('$('); i !== -1; i = command.indexOf('$(', i + 2)) {
+    let depth = 0;
+    for (let j = i + 1; j < command.length; j++) {
+      if (command[j] === '(') depth++;
+      else if (command[j] === ')' && --depth === 0) {
+        bodies.push(command.slice(i + 2, j));
+        break;
+      }
+    }
+  }
+  return bodies;
+}
+
+const SHELL_WORDS = new Set(['sh', 'bash', 'zsh', 'dash', 'ash']);
+
+/** True when the segment's command word matches, looking through wrappers and into `sh -c '<string>'`. */
+function segmentRunsCommand(segment: string, wordPattern: RegExp): boolean {
+  const words = segmentCommandWords(segment);
+  if (words.length === 0) return false;
+  const cmd = basename(words[0]);
+  if (wordPattern.test(cmd)) return true;
+  const flag = words.indexOf('-c');
+  if (SHELL_WORDS.has(cmd.toLowerCase()) && flag !== -1) {
+    const inner = words
+      .slice(flag + 1)
+      .join(' ')
+      .replace(/^['"]|['"]$/g, '');
+    return splitShellSegments(inner).some((part) => segmentRunsCommand(part, wordPattern));
+  }
+  return false;
 }
 
 const escapedRuntimeDir = WK_RUNTIME_DIR.replaceAll(/[.*+?^${}()|[\]\\/]/g, String.raw`\$&`);
@@ -98,6 +147,8 @@ const COMMAND_PREFIXES = new Set([
   'command',
   'exec',
   'doas',
+  'timeout',
+  'xargs',
 ]);
 
 /**
@@ -124,6 +175,8 @@ const PREFIX_FLAGS_WITH_ARGS: Record<string, Set<string>> = {
   nice: new Set(['-n', '--adjustment']),
   time: new Set(['-o', '--output', '-f', '--format']),
   exec: new Set(['-a']),
+  timeout: new Set(['-k', '--kill-after', '-s', '--signal']),
+  xargs: new Set(['-I', '-n', '-P', '-d', '-L', '-s', '-E', '-a', '--max-args', '--max-procs']),
 };
 
 /** Strip a leading path from a command token: `/usr/bin/docker` -> `docker`. */
@@ -182,6 +235,7 @@ function segmentCommandWords(segment: string): string[] {
       i++; // consume the wrapper prefix itself
       const flagsWithArgs = PREFIX_FLAGS_WITH_ARGS[prefixName] ?? new Set<string>();
       i = skipPrefixArgs(tokens, i, flagsWithArgs);
+      if (prefixName === 'timeout') i++; // the positional duration
       continue;
     }
     break;
