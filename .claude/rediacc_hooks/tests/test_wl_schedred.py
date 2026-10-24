@@ -302,6 +302,16 @@ def test_a_workflow_missing_from_the_page_gets_one_fallback_call(repo, tmp_path,
     assert gh.calls("runs?event=schedule&status=completed") == []
 
 
+REGISTERED = [
+    {
+        "workflows": [
+            {"path": ".github/workflows/ci.yml"},
+            {"path": ".github/workflows/housekeeping.yml"},
+        ]
+    }
+]
+
+
 def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_verdict(
     repo, tmp_path, gh
 ):
@@ -318,7 +328,7 @@ def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_ver
         gh.route("/jobs", {"jobs": []})
         gh.route("/actions/workflows/branchonly.yml/", rc=1, err=err)
         gh.route("/actions/workflows/", {"workflow_runs": []})
-        gh.route("contents/.github/workflows/branchonly.yml", rc=1, err="gh: Not Found (HTTP 404)")
+        gh.route("actions/workflows?per_page", REGISTERED)
         gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
 
     routes("gh: Not Found (HTTP 404)")
@@ -337,30 +347,50 @@ def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_ver
     assert "HTTP 401" in doc["error"], doc
 
 
-def test_a_404_for_a_workflow_main_carries_stays_unreadable(repo, tmp_path, gh):
-    # GitHub serves housekeeping.yml on main, so a 404 runs read for it is a wrong owner or a deleted workflow, not a branch-only file (review e9054dfa.1).
+def test_a_404_for_a_registered_workflow_stays_unreadable(repo, tmp_path, gh):
+    # GitHub lists housekeeping.yml as registered, so a 404 runs read for it is a wrong owner or a deleted workflow, not a branch-only file (reviews e9054dfa.1, bebb89ad.1).
     gh.reset()
     gh.route("runs?event=push&branch=main", {"workflow_runs": []})
     gh.route("/jobs", {"jobs": []})
     gh.route("/actions/workflows/", rc=1, err="gh: Not Found (HTTP 404)")
-    gh.route("contents/.github/workflows/", {"name": "housekeeping.yml", "type": "file"})
+    gh.route("actions/workflows?per_page", REGISTERED)
     gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
     doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
     assert doc["state"] == "unreadable", doc
     assert "HTTP 404" in doc["error"], doc
 
 
-def test_a_failed_contents_read_counts_as_present(repo, tmp_path, gh):
-    # Only GitHub's own 404 proves absence; a contents read that fails any other way keeps the read unreadable (review 4dbc9b48.2).
+def test_an_unreadable_workflow_list_keeps_the_404_unreadable(repo, tmp_path, gh):
+    # Only a readable registered-workflow list that lacks the file proves absence; a failed list read keeps the scheduled read unreadable.
     gh.reset()
     gh.route("runs?event=push&branch=main", {"workflow_runs": []})
     gh.route("/jobs", {"jobs": []})
     gh.route("/actions/workflows/", rc=1, err="gh: Not Found (HTTP 404)")
-    gh.route("contents/.github/workflows/", rc=1, err="gh: Bad credentials (HTTP 401)")
+    gh.route("actions/workflows?per_page", rc=1, err="gh: Bad credentials (HTTP 401)")
     gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
     doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
     assert doc["state"] == "unreadable", doc
     assert "HTTP 404" in doc["error"], doc
+
+
+def test_the_workflow_list_is_read_once_per_refresh(repo, tmp_path, gh):
+    # Two branch-only workflows cost one list read, not one call each (review bebb89ad.2).
+    for stem in ("bo1", "bo2"):
+        (repo / ".github" / "workflows" / ("%s.yml" % stem)).write_text(
+            HK_YML.replace("Housekeeping", stem), encoding="utf-8"
+        )
+    gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+    gh.route("/jobs", {"jobs": []})
+    gh.route("/actions/workflows/bo", rc=1, err="gh: Not Found (HTTP 404)")
+    gh.route("/actions/workflows/", {"workflow_runs": []})
+    gh.route("actions/workflows?per_page", REGISTERED)
+    gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "ok", doc
+    assert row_of(doc, "bo1")["not_on_main"] is True
+    assert row_of(doc, "bo2")["not_on_main"] is True
+    assert len(gh.calls("actions/workflows?per_page")) == 1
 
 
 def test_an_in_flight_rerun_is_reported_without_becoming_the_verdict(repo, tmp_path, gh):

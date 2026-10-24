@@ -42,7 +42,7 @@ MAX_JOBS_SHOWN = 6
 # 50, not 100: GitHub answers HTTP 502 after about 11 s when it builds a 100-job page of a large run (measured 2026-10-19 on Console CI runs of 141 and 179 jobs), and one page also dropped every job past it.
 PAGE = 50
 MAX_PAGES = 20
-# gh's stderr for a workflow file the default branch does not have (the per-workflow runs endpoint answers 404 for it).
+# gh's stderr for a workflow file the per-workflow runs endpoint does not know; it counts as not-on-main only when GitHub's registered-workflow list lacks the file too.
 NOT_ON_MAIN_MARK = "(HTTP 404)"
 WORKFLOW_DIR = pathlib.Path(".github") / "workflows"
 
@@ -252,16 +252,19 @@ def _failed_jobs(root, owner, name, run_id):
     )
 
 
-def _absent_on_main(root, owner, name, file):
-    """True only when GitHub itself answers 404 for main's `.github/workflows/<file>`: a 404 runs read for a workflow main does carry (a wrong owner, a deleted workflow) stays an unreadable read, never a silent row (review e9054dfa.1). GitHub, not the local origin/main, because a local ref is only as fresh as the last fetch (review 4dbc9b48.1), and any other answer, a failure included, reads as present (4dbc9b48.2)."""
-    data, err = wl_gh.call(
-        [
-            "api",
-            "repos/%s/%s/contents/%s?ref=main" % (owner, name, (WORKFLOW_DIR / file).as_posix()),
-        ],
+def _registered_files(root, owner, name):
+    """The set of workflow files GitHub has registered for the repo, or None when the list cannot be read. It is read through the Actions permission the runs read already holds, once per refresh, so it can neither be denied where the runs read was allowed (review bebb89ad.1) nor cost one call per workflow (bebb89ad.2)."""
+    docs, err = wl_gh.call_list(
+        ["api", "repos/%s/%s/actions/workflows?per_page=100" % (owner, name)],
         cwd=root,
     )
-    return data is None and NOT_ON_MAIN_MARK in (err or "")
+    if err or docs is None:
+        return None
+    files = set()
+    for doc in docs:
+        for wf in (doc or {}).get("workflows") or []:
+            files.add(pathlib.PurePosixPath(str(wf.get("path") or "")).name)
+    return files
 
 
 def _fetch(root, owner, name, workflows, jobs_cache):
@@ -282,6 +285,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
         by_file.setdefault(_file_of(run), []).append(run)
     rows = []
     new_jobs = {}
+    registered = None
     for wf in workflows:
         runs = by_file.get(wf["file"], [])
         done = [r for r in runs if r.get("status") == "completed"]
@@ -295,7 +299,13 @@ def _fetch(root, owner, name, workflows, jobs_cache):
                 ],
                 cwd=root,
             )
-            if ferr and NOT_ON_MAIN_MARK in ferr and _absent_on_main(root, owner, name, wf["file"]):
+            if ferr and NOT_ON_MAIN_MARK in ferr:
+                if registered is None:
+                    registered = _registered_files(root, owner, name)
+                absent = registered is not None and wf["file"] not in registered
+            else:
+                absent = False
+            if absent:
                 # A scheduled workflow added on the live branch is not registered on main yet, so it has no scheduled run there; one such file must not blind the whole read (2026-10-24, cf-usage-report.yml hid five red Console CI nightlies).
                 row = _run_row(wf, None, False)
                 row["not_on_main"] = True
