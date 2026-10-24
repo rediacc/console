@@ -321,17 +321,6 @@ def tcp_connect_script(ip: str, port: int, tries: int = 5) -> str:
     )
 
 
-def _data_list(raw: str) -> list[dict[str, Any]]:
-    try:
-        doc = json.loads(raw or "{}")
-    except (ValueError, TypeError):
-        return []
-    data = doc.get("data") if isinstance(doc, dict) else doc
-    if isinstance(data, dict):
-        data = data.get("repositories") or []
-    return [e for e in data if isinstance(e, dict)] if isinstance(data, list) else []
-
-
 # --------------------------------------------------------------------------- live
 
 
@@ -361,6 +350,8 @@ class _LiveI1:
         self.sleep_term = sleep_seconds(ctx.run_id, 1)
         self.sleep_vscode = sleep_seconds(ctx.run_id, 2)
         self.listener_up = False
+        # Set before either background `sleep` is launched, so the cleanup knows a process may be left to kill.
+        self.sleeps_started = False
         self.b_compose_up = False
         self.built = False
 
@@ -610,6 +601,7 @@ class _LiveI1:
 
     def i1_8_session_lifetime(self) -> None:
         secs = self.sleep_term
+        self.sleeps_started = True
         started = self.ctx.shell(
             self.ref_a,
             "nohup sleep %d >/dev/null 2>&1 & sleep 1; pgrep -f %s >/dev/null && echo STARTED"
@@ -630,29 +622,47 @@ class _LiveI1:
             )
         self._vscode_keeps_server()
 
-    def _vscode_keeps_server(self) -> None:
-        uris = []
-        for attempt in ("connect", "reconnect"):
-            res = self.ctx.rdc("vscode", "connect", self.ref_a, "--url-only")
-            if res.rc != 0 and VSCODE_ABSENT in res.text():
-                self.skip("I1.8 rdc vscode not run: VS Code is not installed here", res.text())
-                return
-            uri = next(
-                (ln.strip() for ln in res.out.splitlines() if ln.strip().startswith(URI_PREFIX)), ""
-            )
-            uris.append(uri)
-            if not self.check(
-                "I1.8 rdc vscode %s %s prints a remote URI" % (attempt, self.ref_a),
-                res.rc == 0 and bool(uri),
-                res,
-                uri or self.ev(res),
-            ):
-                return
-        server = self.ctx.shell(
-            self.ref_a, "test -d %s/.vscode-server" % shlex.quote(self.mount("a"))
+    def _vscode_connect(self, attempt: str) -> bool | None:
+        """One `rdc vscode connect --url-only`: it prepares the per-repo VS Code server and the ssh alias, prints the URI and exits, so no session outlives the command. None when VS Code is absent here (a skip row)."""
+        res = self.ctx.rdc("vscode", "connect", self.ref_a, "--url-only")
+        if res.rc != 0 and VSCODE_ABSENT in res.text():
+            self.skip("I1.8 rdc vscode not run: VS Code is not installed here", res.text())
+            return None
+        uri = next(
+            (ln.strip() for ln in res.out.splitlines() if ln.strip().startswith(URI_PREFIX)), ""
         )
+        return self.check(
+            "I1.8 rdc vscode connect %s (%s) prints a remote URI" % (self.ref_a, attempt),
+            res.rc == 0 and bool(uri),
+            res,
+            uri or self.ev(res),
+        )
+
+    def _vscode_keeps_server(self) -> None:
+        if not self._vscode_connect("first"):
+            return
+        # A marker inside the server directory the first connect prepared: a second connect, after the first command has exited, must re-prepare A without wiping it.
+        server_dir = "%s/.vscode-server" % self.mount("a")
+        marker = "%s/.vmc-i1-%s" % (server_dir, self.ctx.run_id)
+        placed = self.ctx.shell(
+            self.ref_a,
+            "test -d %s && touch %s" % (shlex.quote(server_dir), shlex.quote(marker)),
+        )
+        if not self.check(
+            "I1.8 the first connect prepared %s" % server_dir,
+            placed.rc == 0,
+            placed,
+            "" if placed.rc == 0 else self.ev(placed),
+        ):
+            return
+        if not self._vscode_connect("second, after the first exited"):
+            return
+        kept = self.ctx.shell(self.ref_a, "test -f %s" % shlex.quote(marker))
         self.check(
-            "I1.8 the VS Code server directory survives the reconnect", server.rc == 0, server
+            "I1.8 a second rdc vscode connect keeps the prepared VS Code server directory",
+            kept.rc == 0,
+            kept,
+            "" if kept.rc == 0 else self.ev(kept),
         )
         config = pathlib.Path(self.ctx.work) / "ssh_config"
         connection = getattr(self.ctx, "connection", "")
@@ -664,6 +674,7 @@ class _LiveI1:
             return
         # VS Code Remote-SSH starts its server as a background job of an exec channel on the alias, then disconnects; the job must outlive that channel.
         secs = self.sleep_vscode
+        self.sleeps_started = True
         launched = self.ctx.host_run(
             [
                 "ssh",
@@ -771,6 +782,7 @@ class _LiveI1:
         res = self.ctx.rdc("repo", "delete", self.ref_c, "-y", timeout=1800)
         if not self.check("I1.7 rdc repo delete %s" % self.ref_c, res.rc == 0, res):
             return
+        self._forget_fork_c()
         cg = "%s/%s" % (CGROUP_ROOT, repo_cgroup_rel(nid))
         gone = self.root("test -d %s && echo PRESENT || echo ABSENT" % shlex.quote(cg))
         self.check(
@@ -795,6 +807,25 @@ class _LiveI1:
             group.text(),
         )
 
+    def _forget_fork_c(self) -> None:
+        """Fork C is gone: once the list confirms it, its `ctx.forks` entry is marked deleted and handed over, so the run's teardown, which deletes every fork it holds (vm_check `_teardown_steps`), never deletes it a second time. Its licence state is purged here instead, the purge that teardown gives every deleted fork, and a purge that fails rides `ctx.sweep_leftovers`. A C still listed stays in `ctx.forks` for teardown."""
+        listed, entries = self.ctx.repo_list()
+        still = any(e.get("name") == self.ref_c for e in entries)
+        if not self.check(
+            "I1.7 fork C no longer listed after the delete",
+            listed.rc == 0 and not still,
+            listed,
+            "repo list rc=%d, listed %s" % (listed.rc, still),
+        ):
+            return
+        for fork in list(self.ctx.forks):
+            if fork.get("tag") == self.tag_c:
+                fork["deleted"] = True
+                self.ctx.forks.remove(fork)
+        leftover = self.ctx.purge_licences([self.guid.get("c", "")], "I1 fork C")
+        if leftover:
+            self.ctx.sweep_leftovers.append(self.ctx.scrub(leftover))
+
     # -- teardown --------------------------------------------------------------
 
     def _cleanup(self) -> None:
@@ -814,12 +845,21 @@ class _LiveI1:
                 left.append(
                     "I1 compose service %s in %s (down rc=%d)" % (self.svc_b, self.ref_b, res.rc)
                 )
-        pattern = "^sleep (%d|%d)$" % (self.sleep_term, self.sleep_vscode)
-        res = self.root(
-            "pkill -f %s; sleep 1; ! pgrep -f %s" % (shlex.quote(pattern), shlex.quote(pattern))
-        )
-        if res.rc not in (0, vm_ssh.SSH_FAILED):
-            left.append("I1 background sleep processes still running on the worker (%s)" % pattern)
+        if self.sleeps_started:
+            pattern = "^sleep (%d|%d)$" % (self.sleep_term, self.sleep_vscode)
+            res = self.root(
+                "pkill -f %s; sleep 1; ! pgrep -f %s" % (shlex.quote(pattern), shlex.quote(pattern))
+            )
+            # An ssh failure proves nothing was killed, so it is a leftover like a surviving process.
+            if res.rc == vm_ssh.SSH_FAILED:
+                left.append(
+                    "I1 background sleep processes (%s) not checked: the root ssh probe failed (rc=%d)"
+                    % (pattern, res.rc)
+                )
+            elif res.rc != 0:
+                left.append(
+                    "I1 background sleep processes still running on the worker (%s)" % pattern
+                )
         shutil.rmtree(self.tmp, ignore_errors=True)
         self.ctx.sweep_leftovers.extend(self.ctx.scrub(x) for x in left)
 

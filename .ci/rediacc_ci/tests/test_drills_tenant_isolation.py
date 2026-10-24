@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from rediacc_ci.drills import tenant_isolation as ti
-from rediacc_ci.drills import vm_check
+from rediacc_ci.drills import vm_check, vm_ssh
 from rediacc_ci.drills import vm_check_receipt as receipt_mod
 from rediacc_ci.tests import test_drills_vm_check as harness
 
@@ -458,6 +458,10 @@ class FakeCtx:
     def remote_evidence(self, res: Any) -> str:
         return "rc=%d" % res.rc
 
+    def purge_licences(self, guids: Sequence[str], what: str) -> str:
+        self.calls.append("purge %s %s" % (",".join(guids), what))
+        return ""
+
     def keep_log(self, *_a: Any) -> str:
         return ""
 
@@ -484,7 +488,8 @@ class FakeCtx:
         self.calls.append("rdc " + line)
         b = self.broken
         if args[:2] == ("repo", "delete"):
-            self.c_deleted = True
+            # `undeleted`: the delete answers rc 0 and the fork stays listed.
+            self.c_deleted = "undeleted" not in b
             return Res()
         if args[:1] == ("vscode",):
             return Res(0, ti.URI_PREFIX + "alias-a/mnt\n")
@@ -520,6 +525,9 @@ class FakeCtx:
             )
         if "nohup sleep" in line:
             return Res(0, "STARTED\n")
+        if "test -f" in line and ".vscode-server/.vmc-i1-" in line:
+            # `wipe`: the second connect removed what the first prepared.
+            return Res(1) if "wipe" in b else Res()
         return Res()
 
     def host_run(self, argv: Sequence[str], **_kw: Any) -> Res:
@@ -555,6 +563,8 @@ class FakeCtx:
             )
         if "readlink /proc/self/ns/pid" in command:
             return Res(0, "pid:[4026531836]\n")
+        if "pkill" in command and "ssh-cleanup" in self.broken:
+            return Res(vm_ssh.SSH_FAILED, "", "ssh: connect to host: Connection timed out")
         if "^sleep" in command and "pkill" not in command:
             return Res(0, "GONE\n")
         if "test -d /sys/fs/cgroup" in command:
@@ -590,9 +600,13 @@ def test_the_live_step_passes_on_the_fixed_behaviour_and_tears_down(tmp_path: pa
         "I1.R RC",
     ):
         assert row in descs, row
-    # Fork C joined the run's forks, so the run's teardown deletes and purges it even after a crash.
-    assert [f["tag"] for f in ctx.forks][-1] == ti.fork_c_tag(ctx.tags)
-    assert ctx.forks[-1]["guid"] == GUID_C
+    # Fork C, deleted and confirmed gone by I1.7, left the run's forks, so teardown never deletes it twice; I1 purged its licence state instead.
+    assert ti.fork_c_tag(ctx.tags) not in [f["tag"] for f in ctx.forks]
+    assert [c for c in ctx.calls if c.startswith("purge %s " % GUID_C)]
+    assert len([c for c in ctx.calls if c.startswith("rdc repo delete ")]) == 1
+    # The VS Code rows: two connects, the marker placed after the first and found after the second.
+    assert len([c for c in ctx.calls if c.startswith("rdc vscode connect")]) == 2
+    assert any("a second rdc vscode connect keeps" in d and ok for _s, d, ok in ctx.rows)
     # The cleanup removed the listener and B's compose service and killed the sleeps; nothing was left.
     assert any("docker rm -f vmc-i1-listen-" in c for c in ctx.calls)
     assert any("renet compose -- down" in c for c in ctx.calls)
@@ -633,3 +647,46 @@ def test_missing_forks_stop_before_any_vm_command(tmp_path: pathlib.Path) -> Non
     ti.run(ctx)
     assert [ok for _s, _d, ok in ctx.rows] == [False]
     assert not [c for c in ctx.calls if c.startswith("rdc ")]
+    # No background sleep was started, so the cleanup has nothing to kill and probes nothing.
+    assert not [c for c in ctx.calls if "pkill" in c]
+    assert ctx.sweep_leftovers == []
+
+
+def test_a_failed_cleanup_probe_is_a_leftover_not_a_pass(tmp_path: pathlib.Path) -> None:
+    """Review 81e15b4f.1: an ssh failure (rc 255) during the sleep cleanup proves nothing was killed, so it must reach sweep_leftovers and keep the run from VERIFIED."""
+    ctx = FakeCtx(tmp_path, frozenset({"ssh-cleanup"}))
+    ti.run(ctx)
+    assert len(ctx.sweep_leftovers) == 1, ctx.sweep_leftovers
+    assert "root ssh probe failed (rc=255)" in ctx.sweep_leftovers[0]
+
+
+def test_a_fork_c_still_listed_stays_for_teardown(tmp_path: pathlib.Path) -> None:
+    """Review 81e15b4f.2: only a delete the list confirms hands C over; a C still listed stays in ctx.forks, undeleted, for the run's teardown, and the failed row says so."""
+    ctx = FakeCtx(tmp_path, frozenset({"undeleted"}))
+    ti.run(ctx)
+    c = [f for f in ctx.forks if f["tag"] == ti.fork_c_tag(ctx.tags)]
+    assert len(c) == 1
+    assert c[0]["deleted"] is False
+    assert not [x for x in ctx.calls if x.startswith("purge ")]
+    assert any(
+        d == "I1.7 fork C no longer listed after the delete" and ok is False
+        for _s, d, ok in ctx.rows
+    )
+
+
+def test_a_second_vscode_connect_that_wipes_the_server_fails(tmp_path: pathlib.Path) -> None:
+    """Review 81e15b4f.3: the server-directory row is proved across two separate connects with a marker the first left, not by a bare `test -d` after both."""
+    ctx = FakeCtx(tmp_path, frozenset({"wipe"}))
+    ti.run(ctx)
+    failed = [d for _s, d, ok in ctx.rows if ok is False]
+    assert failed == [
+        "I1.8 a second rdc vscode connect keeps the prepared VS Code server directory"
+    ]
+    connects = [i for i, c in enumerate(ctx.calls) if c.startswith("rdc vscode connect")]
+    touch = next(i for i, c in enumerate(ctx.calls) if "touch " in c and ".vmc-i1-" in c)
+    assert connects[0] < touch < connects[1]
+
+
+def test_dead_helpers_are_gone() -> None:
+    """Review 81e15b4f.4: the unused repo-list parser was removed (the live step reads ctx.repo_list)."""
+    assert not hasattr(ti, "_data_list")
