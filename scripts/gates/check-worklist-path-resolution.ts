@@ -64,7 +64,7 @@ function pyFiles(dir: string): string[] {
     }
   };
   walk(dir);
-  return out.sort();
+  return out.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /**

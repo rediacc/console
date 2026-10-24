@@ -45,7 +45,7 @@ interface HashManifest {
   $meta?: {
     sourceCommit?: string;
   };
-  hashes: Record<string, string>;
+  hashes?: Record<string, string>;
 }
 
 interface LocaleCheckConfig {
@@ -172,7 +172,7 @@ function checkLocaleDir(config: LocaleCheckConfig): string[] {
   }
 
   const manifest = JSON.parse(fs.readFileSync(hashFile, 'utf-8')) as HashManifest;
-  const storedHashes = manifest.hashes || {};
+  const storedHashes = manifest.hashes ?? {};
   const sourceCommit = manifest.$meta?.sourceCommit;
 
   // Compute current hashes using the same algorithm as the generator
