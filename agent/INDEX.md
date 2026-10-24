@@ -540,7 +540,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-retired-terms-submodule-scan.md` | executing | 53 | 12 | 0 | 10826 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
-| `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 101 | 4 | 3 | 22207 |
+| `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 104 | 1 | 6 | 22964 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |

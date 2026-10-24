@@ -67,19 +67,19 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (4 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 321 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 328 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:ac90c988ea9c00995.
-- Leased items: 5: #17254293 (worker:a0707366e0ff5836b, d778be9d), #2f9533de (worker:ac90c988ea9c00995, d778be9d), #831b7e48 (worker:a0707366e0ff5836b, d778be9d), #ca9be012 (worker:ac5270907cfddb385, d778be9d), #cd79c6c2 (worker:a0707366e0ff5836b, d778be9d).
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a425db843eadd7a59.
+- Leased items: 5: #17254293 (worker:bsipewhwt, d778be9d), #2f9533de (worker:ac90c988ea9c00995, d778be9d), #831b7e48 (worker:bsipewhwt, d778be9d), #ca9be012 (worker:a425db843eadd7a59, d778be9d), #cd79c6c2 (worker:bsipewhwt, d778be9d).
 - Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 18 plans done, 145 of 379 boxes done (38%).
+Promoted: 1 of 18 plans done, 148 of 379 boxes done (39%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -100,7 +100,7 @@ Promoted: 1 of 18 plans done, 145 of 379 boxes done (38%).
 | 15 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
 | 16 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
 | 17 | PLAN-renet-runtime-converge.md | 2/4 | 2 open |
-| 18 | PLAN-sandbox-tenant-separation.md | 3/7 | 4 open |
+| 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
