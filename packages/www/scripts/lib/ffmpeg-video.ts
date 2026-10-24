@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import { probeDurationSec, videoDimensions } from './ffprobe.ts';
 import { stdio } from './spawn-stdio.ts';
 
@@ -225,6 +225,10 @@ export function extractLastFrame(mp4Path: string, pngPath: string): void {
     '1',
     pngPath,
   ]);
+  // ffmpeg exits 0 and writes NOTHING when the seek target lies past the last frame's start: a variable-frame-rate mp4 whose final frame is a long hold (agg --last-frame-duration) has a container duration shorter than that frame's end, so `-sseof -0.1` lands after it. Measured 2026-10-24 on a 4498 px tall cast frame: no png, exit 0, then `ffprobe dims failed` in the caller. Seek further back and let `-update 1` overwrite the image on every frame, which leaves the true final frame (byte-identical to decoding frame n-1).
+  if (!existsSync(pngPath)) {
+    run(FFMPEG_BIN, ['-y', '-sseof', '-1', '-i', mp4Path, '-update', '1', pngPath]);
+  }
 }
 
 export function makeFreezeMp4(
@@ -360,28 +364,52 @@ export function muxNarratedSegment(
  * Lead pad clones the first frame, tail pad clones the last frame.
  */
 export function addEdgePad(inMp4: string, outMp4: string, leadSec: number, trailSec: number): void {
-  run(FFMPEG_BIN, [
-    '-y',
-    '-i',
-    inMp4,
-    '-vf',
-    `tpad=start_mode=clone:start_duration=${leadSec.toFixed(3)}:stop_mode=clone:stop_duration=${trailSec.toFixed(3)}`,
-    '-af',
-    `adelay=${Math.round(leadSec * 1000)}|${Math.round(leadSec * 1000)},apad=pad_dur=${trailSec.toFixed(3)}`,
-    ...videoCodecArgs(),
-    '-c:a',
-    'aac',
-    '-b:a',
-    '128k',
-    '-ar',
-    '44100',
-    '-ac',
-    '2',
-    // Name the container explicitly rather than letting ffmpeg infer it from the extension. This is the LAST render step, and its caller writes to a staging path ending in `.partial`, renaming into place only once every sidecar exists — so the output filename deliberately is not `.mp4`, and inference fails with "Error initializing the muxer ... Invalid argument".
-    '-f',
-    'mp4',
-    outMp4,
-  ]);
+  // TWO PASSES, because one pass hangs. `adelay,apad` in the same `-af` as a video stream deadlocks ffmpeg 8.0.1 (Ubuntu 8.0.1-3ubuntu2) on these mp4s: 0 % CPU, an empty `.partial`, no exit, for 20+ minutes (measured 2026-10-24; it reproduces with `-c:v copy`, with the previously published mp4 as input, and with `apad=pad_len`, while `adelay` alone, `apad` alone, or the same chain with `-vn` all finish in seconds). So the audio chain runs alone, then the video pass takes that AAC untouched. Same timeline as before: audio starts leadSec late and ends trailSec after the video, which tpad extends by the same amounts.
+  const padAudio = `${outMp4}.pad-audio.m4a`;
+  const leadMs = Math.round(leadSec * 1000);
+  try {
+    run(FFMPEG_BIN, [
+      '-y',
+      '-i',
+      inMp4,
+      '-vn',
+      '-af',
+      `adelay=${leadMs}|${leadMs},apad=pad_dur=${trailSec.toFixed(3)}`,
+      '-c:a',
+      'aac',
+      '-b:a',
+      '128k',
+      '-ar',
+      '44100',
+      '-ac',
+      '2',
+      '-f',
+      'ipod',
+      padAudio,
+    ]);
+    run(FFMPEG_BIN, [
+      '-y',
+      '-i',
+      inMp4,
+      '-i',
+      padAudio,
+      '-map',
+      '0:v',
+      '-map',
+      '1:a',
+      '-vf',
+      `tpad=start_mode=clone:start_duration=${leadSec.toFixed(3)}:stop_mode=clone:stop_duration=${trailSec.toFixed(3)}`,
+      ...videoCodecArgs(),
+      '-c:a',
+      'copy',
+      // Name the container explicitly rather than letting ffmpeg infer it from the extension. This is the LAST render step, and its caller writes to a staging path ending in `.partial`, renaming into place only once every sidecar exists — so the output filename deliberately is not `.mp4`, and inference fails with "Error initializing the muxer ... Invalid argument".
+      '-f',
+      'mp4',
+      outMp4,
+    ]);
+  } finally {
+    rmSync(padAudio, { force: true });
+  }
 }
 
 /**
