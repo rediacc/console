@@ -21,4 +21,4 @@ Body-Sig: ee365d64dcd6caec
 ### 8cd35fd2.1 [high] packages/www/src/data/tutorial-timeline/ar/tutorial-managing-secrets.json:20
 Anchor: in-diff
 Claim: The commit lands re-timed timelines (audioDurationSec and wordTimings changed for every step, transcriptHash changed) while every audioSrc path is unchanged (e.g. the step-01 audioSrc on line 18 keeps textHash 0229e4ac). Once this tree deploys before the new mp3s are uploaded to R2, the site plays the old audio against the new word timings, which the commit message itself says will happen. The same applies to all 13 locale timelines.
-Resolution: open
+Resolution: not-a-bug | resolved by publishing before any deploy: commit:04847f53d records the managing-secrets re-render; the 351 new mp3s behind packages/www/src/data/tutorial-timeline/ar/tutorial-managing-secrets.json:18 and the 13 mp4 sets are on R2 (sync dry-runs 0 pending, CDN byte-identical to local after a purge, 2026-10-24 07:35Z), so the timelines and the served audio agree; nothing deployed in between | d778be9d 2026-10-24T07:39:35Z

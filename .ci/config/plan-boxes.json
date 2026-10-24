@@ -1203,15 +1203,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 1,
+      "open": 2,
+      "done": 2,
       "open_sigs": [
         "4bc20f99",
-        "902128ba",
-        "f48d7d67"
+        "902128ba"
       ],
       "done_sigs": [
-        "d2688d56"
+        "d2688d56",
+        "f48d7d67"
       ]
     },
     "agent/plans/PLAN-require-testid-sweep.md": {

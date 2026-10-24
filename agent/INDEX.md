@@ -484,7 +484,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 393 | 4 | 25 | 57034 |
+| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 394 | 3 | 26 | 57300 |
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 90 | 8 | 0 | 26942 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
@@ -530,7 +530,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 99 | 14 | 0 | 23753 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 48 | 2 | 0 | 5317 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 93 | 3 | 0 | 9323 |
-| `agent/plans/PLAN-renet-runtime-converge.md` | approved | 37 | 3 | 1 | 7095 |
+| `agent/plans/PLAN-renet-runtime-converge.md` | approved | 38 | 2 | 2 | 7309 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |

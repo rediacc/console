@@ -1,24 +1,22 @@
-## SESSION d778be9d 2026-10-24T07:08:41Z
+## SESSION d778be9d 2026-10-24T07:40:12Z
 
-# STATE d778be9d (branch 1023-1, unpushed; rewritten 2026-10-24 ~07:15Z)
+# STATE d778be9d (branch 1023-1, unpushed; rewritten 2026-10-24 ~07:50Z)
 
 ## Big pieces
-- Backup push (#831b7e48): never pushed. After C1 and the parity writer land: generate:cli-contract, ci:quick on a still tree, carried reds in .ci/config/carried-reds.json (P-A1 open boxes, review-resolutions 8cd35fd2.1 until #d975df90 publishes), `npm run vm:check -- --changed` (renet now 230dea5), then `TURBO_PUSH_REASON='backup: ...' git push -u origin 1023-1` as its own call.
-- Proxy Phase 2 (#93b9c7dc): egress fixed (f379e5b75, 5a047c9c3, 3763bad34), proven on bench; agent a0dc2203 redeploys the bench account (audit 400 was version skew) and reruns; then tick P2a. step 4 against hostinger waits for converge H1.
-- Hostinger converge (#d0928775): R1 done; C1 writer a1a65d63 live; then U1 vm:check drill; H1 is the operator window. NEVER run a mutating rdc verb against hostinger from this branch.
+- Sandbox cross-repo isolation gaps (#17254293): live on .11, B's term-connect shell drives A's docker socket (group docker), first compose via term connect not isolated, other mounts visible ro, delete leaks cgroup state. Plan agent ab3fd2ac designing; then commit the plan, promote, fan out writers.
+- Backup push (#831b7e48): never pushed. After the live writers land: ci:quick on a still tree, carried reds, `npm run vm:check -- --changed` (renet 230dea5), `TURBO_PUSH_REASON='backup: ...' git push -u origin 1023-1` as its own call.
+- Hostinger converge (#d0928775): R1 and C1 done (0b78361a1, 6c9a2b204, ticked); U1 drill writer a690ee1c; H1 is the operator window. NEVER run a mutating rdc verb against hostinger.
 
-## Landed this context (PR-TASK 9f92c43e)
-- renet 766799c, 7ab695c, 5fdae3a, 230dea5 (errors once; converge, repository up, kube join/install/identity-rewrite, k3s secrets off argv).
-- account c185e93 trusted proxies + binding-keyed limit; biome 2.6.2 fully landed (868729454); npm pins 6cfd0b6a9.
-- executor audit 77c2518c2 + 069eeb770; suite 29 schema-validating stub 5c581c26d, live 4/4.
-- PLAN-cloudflare-proxy Phase 2 results + step 5 recorded and ticked (f68c4aa8b, 2fd5b4c74).
+## Landed since the last state
+- account 10f0fc6 (review c185e931.1/.2 fixed), C1 converge 0b78361a1 + docs 6c9a2b204, parity bd376292e, CliRunner.spawn ea93b1395, proxy Phase 2 P2a ticked 74953c57d, managing-secrets published (04847f53d, review 8cd35fd2.1 closed, #d975df90 ticked).
+- Leftover shells, duplicate account dev stacks and stub.mjs killed by hand; root causes delegated.
 
 ## Delegated
-- a0dc220386eb583d9 #93b9c7dc: bench account redeploy + rerun (audit-events 200, one event_log row) + diagnose first-attempt client `fetch failed`.
-- a1a65d63f63ea4fc3 #d0928775 C1: owns packages/cli/src/services/{renet,executor}/**, commands/machine/**; accept tsc, vitest src/services/renet src/services/executor src/commands, check:lint, check:i18n.
-- af9b4bdba052494ab #7415f670 + #7a2773d9: proxy stdout parity, fork-ref progress lines; owns commands/repo*.ts, serve/command-dispatch.ts.
-- af701b43afb45e126 #d975df90: managing-secrets render + R2 publish (review ffmpeg-video.ts before commit).
-- bg btat0aibq: suite 29 rerun for #325568e2 (CliRunner.spawn, uncommitted e2e files).
+- a0a76b89e339b3e78 #2810bdc3: why the Stop hook never blocked on stacked wait loops (bg-orphan stood down x158); owns wl_bgsweep.py, the bg-orphan block of wl_checks.py, wl_standdown.py stand-down entry, its message, tests.
+- a7c68318aede03092 #9e005657: ./run.sh account dev reuses a live stack instead of starting another; owns .ci/rediacc_ci/core/account.py, account_lifecycle.py, tests.
+- a690ee1cb2fb94000 #d0928775 U1: .ci/rediacc_ci/drills/upgrade_converge.py + vm_check.py U1 hook; accept vm:check U1 VERIFIED.
+- a00ba0bd4679bb972 #35719f23: tutorial render lock scope, agg pin, check:ci-i18n-media logic, report R2 drift.
+- ab3fd2ac26354c904 (Plan) #17254293: sandbox isolation plan.
 
 ## Next action
-- Commit #325568e2 when suite 29 passes; then as each report lands: spot-check, commit by path (renet first, then pointer), tick with the sha, mark review findings; then the push sequence above.
+- As each report lands: spot-check, commit by path, tick with the sha, mark review findings; write the sandbox plan file from ab3fd2ac's text, commit, promote, spawn writers with disjoint Owns; then the push sequence.
