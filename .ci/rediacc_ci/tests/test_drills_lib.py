@@ -895,3 +895,31 @@ def test_purge_removes_nothing_when_renet_cannot_enumerate(tmp_path: pathlib.Pat
 def test_purge_refuses_anything_but_a_lowercase_guid(bad: str) -> None:
     with pytest.raises(ValueError, match="not a repository guid"):
         lib.purge_license_state_script([PURGE_A, bad])
+
+
+@pytest.mark.parametrize(
+    ("state", "healthy", "expect_stop"),
+    [(True, True, True), (True, False, False), (False, True, False)],
+)
+def test_restart_stops_a_live_worktree_stack_first(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    state: bool,
+    healthy: bool,
+    expect_stop: bool,
+) -> None:
+    """`./run.sh account dev` reuses a live stack (4fb75de47), so the drill's fresh restart first runs
+    `./run.sh account stop` when this worktree records a healthy stack, and never otherwise (2026-10-24: the full
+    vm:check stopped at account-gateway because the restart was handed the running 4800 stack)."""
+    calls = tmp_path / "calls"
+    run_sh = '#!/bin/bash\necho "$*" >>"%s"\nexit 0\n' % calls
+    root = _fake_root(tmp_path, run_sh)
+    if state:
+        (root / ".account-state").write_text("gateway_port=4800\n")
+    monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
+    drill = lib.Drill("t")
+    drill.init()
+    monkeypatch.setattr(drill, "gateway_alive", lambda: healthy)
+    drill.stop_worktree_stack()
+    seen = calls.read_text().split("\n") if calls.exists() else []
+    assert ("account stop" in seen) is expect_stop

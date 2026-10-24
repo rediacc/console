@@ -543,6 +543,7 @@ class Drill:
         log_file = target.open("ab")
         self.active_gateway_log = target
         self.stop_gateway()
+        self.stop_worktree_stack()
         log_file.truncate(0)
         started = int(time.time())
         # Its own process group (setsid): the tsx child must not survive a kill of the run.sh wrapper and keep the port bound.
@@ -556,6 +557,22 @@ class Drill:
             )
         self.note("gateway log: %s" % self.active_gateway_log)
         self.wait_gateway_started(started)
+
+    def stop_worktree_stack(self) -> None:
+        """Stop a dev stack this worktree already runs that this run did not start, so the start below is fresh.
+
+        `./run.sh account dev` reuses a live stack for the worktree (4fb75de47), which would hand this restart the stale server code it exists to replace. Only a recorded stack that answers health is stopped, through the documented `./run.sh account stop`; with no state file, or none healthy, nothing runs.
+        """
+        if not (self.root / ".account-state").is_file() or not self.gateway_alive():
+            return
+        with contextlib.suppress(subprocess.TimeoutExpired, OSError):
+            subprocess.run(
+                [str(self.root / "run.sh"), "account", "stop"],
+                env=self.gateway_env(),
+                capture_output=True,
+                timeout=120,
+                check=False,
+            )
 
     def wait_gateway_started(self, since: int) -> None:
         """Wait for a state file NEWER than `since` (account_dev writes `started=` last), then for /health."""
