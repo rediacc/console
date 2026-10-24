@@ -1048,7 +1048,8 @@
         "startingDryRun": "Runtime-Angleichung auf '{{machine}}' wird geplant (Probelauf)...",
         "statusUnreadable": "Runtime-Status von '{{machine}}' nicht lesbar, daher wurde kein Repository neu gestartet: {{error}}",
         "summaryLine": "Angeglichen {{converged}}, übersprungen {{skipped}}, fehlgeschlagen {{failed}}, ausstehend {{pending}}",
-        "summaryLineDryRun": "Würde umstellen: {{would}}, übersprungen: {{skipped}}, fehlgeschlagen: {{failed}}, ausstehend: {{pending}}"
+        "summaryLineDryRun": "Würde umstellen: {{would}}, übersprungen: {{skipped}}, fehlgeschlagen: {{failed}}, ausstehend: {{pending}}",
+        "unmanagedLine": "    nicht neu erstellt: {{service}}: {{message}}"
       },
       "remove": {
         "confirm": "Maschine \"{{name}}\" aus der Konfiguration entfernen?",

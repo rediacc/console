@@ -623,6 +623,7 @@
   "commands.machine.converge.statusUnreadable": "Impossibile leggere lo stato del runtime di '{{machine}}', quindi nessun repository è stato riavviato: {{error}}",
   "commands.machine.converge.summaryLine": "Convergiti {{converged}}, saltati {{skipped}}, falliti {{failed}}, in sospeso {{pending}}",
   "commands.machine.converge.summaryLineDryRun": "Da convergere {{would}}, saltati {{skipped}}, falliti {{failed}}, in attesa {{pending}}",
+  "commands.machine.converge.unmanagedLine": "    non ricreato: {{service}}: {{message}}",
   "commands.machine.deprovision.completed": "Macchina {{name}} distrutta e rimossa dalla configurazione",
   "commands.machine.deprovision.confirm": "Questa operazione distruggera permanentemente la macchina \"{{name}}\" e tutti i suoi dati. Continuare?",
   "commands.machine.deprovision.description": "Distruggi una macchina provisioned nel cloud e rimuovila dalla configurazione",

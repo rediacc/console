@@ -623,6 +623,7 @@
   "commands.machine.converge.statusUnreadable": "Impossible de lire l'état du runtime de '{{machine}}', aucun dépôt n'a donc été redémarré : {{error}}",
   "commands.machine.converge.summaryLine": "Convergés {{converged}}, ignorés {{skipped}}, en échec {{failed}}, en attente {{pending}}",
   "commands.machine.converge.summaryLineDryRun": "Seraient convergés : {{would}}, ignorés : {{skipped}}, en échec : {{failed}}, en attente : {{pending}}",
+  "commands.machine.converge.unmanagedLine": "    non recréé : {{service}} : {{message}}",
   "commands.machine.deprovision.completed": "Machine {{name}} détruite et supprimée de la configuration",
   "commands.machine.deprovision.confirm": "Cela détruira définitivement la machine \"{{name}}\" et toutes ses données. Continuer ?",
   "commands.machine.deprovision.description": "Détruire une machine provisionnée dans le cloud et la supprimer de la configuration",

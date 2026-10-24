@@ -1,8 +1,8 @@
 """U2 of agent/plans/PLAN-converge-preflight-and-repo-recovery.md (box D1): a converge pass skips a repo whose services the Docker gate would refuse, instead of restarting it into a wiped runtime.
 
-`vm_check.py` registers this module once, through `EXTRA_RENET_STEPS`, as the `U2` step of the renet phase, after U1. The step builds the pre-isolation renet (the way U1 does), brings a grand and two forks up on it, gives one fork a compose service the gate refuses (a bind of the machine proxy root plus `cap_add: MKNOD`) and the other a clean service (the control), then runs `rdc machine setup` with the current renet, whose converge pass is the code under test. Two forks of one throwaway grand are the isolation unit; nothing here touches the run's own forks.
+`vm_check.py` registers this module once, through `EXTRA_RENET_STEPS`, as the `U2` step of the renet phase, after U1. The step builds the pre-isolation renet (the way U1 does), brings a grand and three forks up on it, gives one fork a compose service the gate refuses (a bind of the machine proxy root plus `cap_add: MKNOD`), another a clean service (the control), and the third a clean service started by hand with no Rediaccfile (the unmanaged one), then runs `rdc machine setup` with the current renet, whose converge pass is the code under test. Two forks of one throwaway grand are the isolation unit; nothing here touches the run's own forks.
 
-THE ROWS. U2.1 the refused fork is `skipped (gate_refused)` in the setup summary; U2.2 converge-last.json names it `skipped` with reason `gate_refused` and a non-empty denial list, and the control fork `converged`; U2.3 the refused fork's containers are still running with the very ids they had before the setup; U2.4 the control fork's daemon is on the per-network layout again; U2.5 `rdc repo up` on the refused fork fails and leaves its container ids unchanged (the P5 refusal before `CleanDockerRuntimeState`).
+THE ROWS. U2.1 the refused fork is `skipped (gate_refused)` in the setup summary; U2.2 converge-last.json names it `skipped` with reason `gate_refused` and a non-empty denial list, and the control fork `converged`; U2.3 the refused fork's containers are still running with the very ids they had before the setup; U2.4 the control fork's daemon is on the per-network layout again; U2.5 `rdc repo up` on the refused fork fails and leaves its container ids unchanged (the P5 refusal before `CleanDockerRuntimeState`); U2.6 the unmanaged fork is `skipped (unmanaged_containers)` in the setup summary; U2.7 converge-last.json names it `skipped` with reason `unmanaged_containers` and a denial naming its container; U2.8 its container ids are unchanged; U2.9 `rdc repo up` on it fails and leaves its container ids unchanged.
 
 The CLI-free pieces (compose bodies, the id probe, and the parsers of the summary and of converge-last.json) are pure functions so `tests/test_drills_converge_preflight.py` pins them without a machine. The parsers read the fields P1, P3 and P4 produce (`results[].status`, `results[].reason`, a denial list, `summary.would_converge/converged/skipped`) and ignore any other field.
 """
@@ -28,6 +28,7 @@ PROXY_ROOT = "/opt/rediacc/proxy"
 IMAGE = "busybox:1.36"
 COMPOSE_FILE = "docker-compose.yml"
 REASON_GATE_REFUSED = "gate_refused"
+REASON_UNMANAGED = "unmanaged_containers"
 STATUS_SKIPPED = "skipped"
 STATUS_CONVERGED = "converged"
 ID_PREFIX = "CID:"
@@ -142,13 +143,27 @@ def result_denials(entry: dict[str, Any] | None) -> list[str]:
     return [x for x in lines if x]
 
 
-def is_gate_refused(entry: dict[str, Any] | None) -> bool:
-    """True for a result that is `skipped` with reason `gate_refused` and names at least one denial."""
+def is_skipped_for(entry: dict[str, Any] | None, reason: str) -> bool:
+    """True for a result that is `skipped` with `reason` and names at least one denial."""
     return (
         bool(entry)
         and (entry or {}).get("status") == STATUS_SKIPPED
-        and (entry or {}).get("reason") == REASON_GATE_REFUSED
+        and (entry or {}).get("reason") == reason
         and bool(result_denials(entry))
+    )
+
+
+def is_gate_refused(entry: dict[str, Any] | None) -> bool:
+    """True for a result that is `skipped` with reason `gate_refused` and names at least one denial."""
+    return is_skipped_for(entry, REASON_GATE_REFUSED)
+
+
+def is_unmanaged(entry: dict[str, Any] | None, service: str) -> bool:
+    """True for a result that is `skipped` with reason `unmanaged_containers` and a denial naming `service` (the container's name contains the compose service)."""
+    return (
+        bool(service)
+        and is_skipped_for(entry, REASON_UNMANAGED)
+        and any(service in line for line in result_denials(entry))
     )
 
 
@@ -165,19 +180,25 @@ def summary_counts(report: dict[str, Any] | None) -> dict[str, int]:
     return {k: v for k, v in summary.items() if isinstance(v, int) and not isinstance(v, bool)}
 
 
-def summary_skips_refused(text: str, *names: str) -> bool:
-    """True when a line of the CLI's setup summary reads `skipped (gate_refused)` and names one of `names` (the fork's name, tag or guid). The line shape is the P4 renderer's; only the two facts are matched."""
+def summary_skips(text: str, reason: str, *names: str) -> bool:
+    """True when a line of the CLI's setup summary reads `skipped (<reason>)` and names one of `names` (the fork's name, tag or guid). The line shape is the P4 renderer's; only the two facts are matched."""
     # A name matches only as a whole token: a bare `u2r` inside another repo's name (`xu2rx`, `u2r-b`) is not this fork.
     wanted = [re.compile(r"(?<![\w.-])%s(?![\w-])" % re.escape(n)) for n in names if n]
     for line in text.splitlines():
         low = line.lower()
-        if (
-            STATUS_SKIPPED in low
-            and REASON_GATE_REFUSED in low
-            and any(w.search(line) for w in wanted)
-        ):
+        if STATUS_SKIPPED in low and reason in low and any(w.search(line) for w in wanted):
             return True
     return False
+
+
+def summary_skips_refused(text: str, *names: str) -> bool:
+    """`summary_skips` for reason `gate_refused`."""
+    return summary_skips(text, REASON_GATE_REFUSED, *names)
+
+
+def summary_skips_unmanaged(text: str, *names: str) -> bool:
+    """`summary_skips` for reason `unmanaged_containers`."""
+    return summary_skips(text, REASON_UNMANAGED, *names)
 
 
 def names_gate_denial(text: str, service: str) -> bool:
@@ -205,8 +226,10 @@ class _LiveU2:
         self.parent = "u2base-%s" % ctx.run_id[-6:]
         self.tag_r = "u2r"
         self.tag_c = "u2c"
+        self.tag_u = "u2u"
         self.svc_r = "u2-refused-%s" % ctx.run_id[-6:]
         self.svc_c = "u2-control-%s" % ctx.run_id[-6:]
+        self.svc_u = "u2-unmanaged-%s" % ctx.run_id[-6:]
         self.tmp = pathlib.Path(ctx.work) / ("u2-%s" % ctx.run_id)
         self.old_bin = self.tmp / "renet-old"
         self.new_bin = self.tmp / "renet-new"
@@ -219,6 +242,10 @@ class _LiveU2:
         self.before_ids: dict[str, list[str] | None] = {}
 
     # -- helpers ---------------------------------------------------------------
+
+    @property
+    def all_tags(self) -> tuple[str, ...]:
+        return (self.tag_r, self.tag_c, self.tag_u)
 
     def check(self, desc: str, ok: bool, res: Any = None, evidence: str = "") -> bool:
         return self.ctx.check(STEP_ID, desc, ok, res, evidence)
@@ -273,6 +300,7 @@ class _LiveU2:
                 return
             self._assert_after_setup()
             self._assert_repo_up_refused()
+            self._assert_unmanaged()
         finally:
             self._teardown()
 
@@ -345,34 +373,36 @@ class _LiveU2:
         ):
             return False
         self.created_grand = True
-        for tag in (self.tag_r, self.tag_c):
+        for tag in self.all_tags:
             res = self.crdc("repo", "fork", self.parent, "--tag", tag, "--up", timeout=1800)
             if not self.check("fork %s --up (old renet)" % self.ref(tag), res.rc == 0, res):
                 return False
         listed = self.crdc("repo", "list", "-m", self.ctx.machine, "-o", "json")
         for entry in _data_list(listed.out) if listed.rc == 0 else []:
-            for tag in (self.tag_r, self.tag_c):
+            for tag in self.all_tags:
                 if entry.get("name") == self.ref(tag):
                     nid = entry.get("networkId", entry.get("network_id"))
                     if nid is not None:
                         self.net_ids[tag] = int(nid)
                     self.guids[tag] = str(entry.get("guid", ""))
         return self.check(
-            "both U2 forks have a network id and guid",
-            all(self.net_ids.get(t) and self.guids.get(t) for t in (self.tag_r, self.tag_c)),
+            "all U2 forks have a network id and guid",
+            all(self.net_ids.get(t) and self.guids.get(t) for t in self.all_tags),
             evidence="net_ids=%s" % self.net_ids,
         )
 
     def _deploy_services(self) -> bool:
-        """The old renet has no gate, so both compose files come up; the refused one is what the new gate would refuse."""
-        for tag, body in (
-            (self.tag_r, refused_compose(self.svc_r)),
-            (self.tag_c, control_compose(self.svc_c)),
+        """The old renet has no gate, so every compose file comes up; the refused one is what the new gate would refuse, and the unmanaged one has no Rediaccfile so nothing would recreate it."""
+        for tag, body, with_rediaccfile in (
+            (self.tag_r, refused_compose(self.svc_r), True),
+            (self.tag_c, control_compose(self.svc_c), True),
+            (self.tag_u, control_compose(self.svc_u), False),
         ):
             up = self.tmp / ("up-" + tag)
             up.mkdir(parents=True, exist_ok=True)
             (up / COMPOSE_FILE).write_text(body)
-            (up / REDIACCFILE).write_text(rediaccfile())
+            if with_rediaccfile:
+                (up / REDIACCFILE).write_text(rediaccfile())
             sent = self.crdc(
                 "repo", "sync", "upload", self.ref(tag), "--local", str(up) + "/", timeout=900
             )
@@ -392,8 +422,8 @@ class _LiveU2:
                 return False
             self.before_ids[tag] = self.container_ids(tag)
         return self.check(
-            "both forks run a container before the upgrade",
-            all(self.before_ids.get(t) for t in (self.tag_r, self.tag_c)),
+            "all forks run a container before the upgrade",
+            all(self.before_ids.get(t) for t in self.all_tags),
             evidence="ids=%s" % {t: len(v or []) for t, v in self.before_ids.items()},
         )
 
@@ -409,6 +439,12 @@ class _LiveU2:
         self.check(
             "U2.1 the setup summary lists the refused fork as skipped (gate_refused)",
             summary_skips_refused(text, self.ref(self.tag_r), self.tag_r, self.guids[self.tag_r]),
+            setup,
+            evidence=_clip(text),
+        )
+        self.check(
+            "U2.6 the setup summary lists the unmanaged fork as skipped (unmanaged_containers)",
+            summary_skips_unmanaged(text, self.ref(self.tag_u), self.tag_u, self.guids[self.tag_u]),
             setup,
             evidence=_clip(text),
         )
@@ -460,6 +496,34 @@ class _LiveU2:
             sock,
         )
 
+    def _assert_unmanaged(self) -> None:
+        """U2.7 to U2.9: the fork whose container no Rediaccfile started is skipped as unmanaged, keeps its containers, and `repo up` on it fails without touching them."""
+        last = self.root(
+            "cat %s/converge-last.json" % shlex.quote(upgrade_converge.RUNTIME_STATE_DIR)
+        )
+        report = parse_converge_report(last.out) if last.rc == 0 else None
+        entry = result_for(report, self.guids[self.tag_u], self.ref(self.tag_u))
+        self.check(
+            "U2.7 converge-last.json: unmanaged fork skipped with reason unmanaged_containers and a denial naming its container",
+            is_unmanaged(entry, self.svc_u),
+            last,
+            evidence="entry=%s" % _clip(json.dumps(entry)),
+        )
+        after = self.container_ids(self.tag_u)
+        self.check(
+            "U2.8 the unmanaged fork's containers still run with unchanged ids",
+            ids_unchanged(self.before_ids.get(self.tag_u), after),
+            evidence="before=%s after=%s" % (self.before_ids.get(self.tag_u), after),
+        )
+        res = self.crdc("repo", "up", self.ref(self.tag_u), timeout=900)
+        again = self.container_ids(self.tag_u)
+        self.check(
+            "U2.9 repo up on the unmanaged fork fails and leaves its container ids unchanged",
+            res.rc != 0 and ids_unchanged(after, again),
+            res,
+            evidence="rc=%d before=%s after=%s" % (res.rc, after, again),
+        )
+
     def _assert_repo_up_refused(self) -> None:
         """P5: `repo up` on the refused fork fails with the denial list before it touches a container."""
         before = self.container_ids(self.tag_r)
@@ -478,7 +542,7 @@ class _LiveU2:
     def _teardown(self) -> None:
         left: list[str] = []
         if self.created_grand:
-            for tag in (self.tag_c, self.tag_r):
+            for tag in (self.tag_c, self.tag_u, self.tag_r):
                 # The refused fork's service is down first so the delete cannot meet a running gate-refused container.
                 self.crdc(
                     "term",
@@ -554,6 +618,8 @@ __all__ = [
     "ids_unchanged",
     "is_converged",
     "is_gate_refused",
+    "is_skipped_for",
+    "is_unmanaged",
     "names_gate_denial",
     "parse_container_ids",
     "parse_converge_report",
@@ -563,5 +629,7 @@ __all__ = [
     "result_for",
     "run",
     "summary_counts",
+    "summary_skips",
     "summary_skips_refused",
+    "summary_skips_unmanaged",
 ]

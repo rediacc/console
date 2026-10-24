@@ -623,6 +623,7 @@
   "commands.machine.converge.statusUnreadable": "Не удалось прочитать состояние runtime на '{{machine}}', поэтому ни один репозиторий не перезапущен: {{error}}",
   "commands.machine.converge.summaryLine": "Переведено {{converged}}, пропущено {{skipped}}, сбоев {{failed}}, ожидает {{pending}}",
   "commands.machine.converge.summaryLineDryRun": "Будет перенесено: {{would}}, пропущено: {{skipped}}, с ошибкой: {{failed}}, в ожидании: {{pending}}",
+  "commands.machine.converge.unmanagedLine": "    не будет создан заново: {{service}}: {{message}}",
   "commands.machine.deprovision.completed": "Машина {{name}} уничтожена и удалена из конфигурации",
   "commands.machine.deprovision.confirm": "Это навсегда уничтожит машину \"{{name}}\" и все её данные. Продолжить?",
   "commands.machine.deprovision.description": "Уничтожить облачную машину и удалить из конфигурации",

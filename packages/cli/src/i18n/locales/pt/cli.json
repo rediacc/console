@@ -1048,7 +1048,8 @@
         "startingDryRun": "Planejando a convergência do runtime em '{{machine}}' (simulação)...",
         "statusUnreadable": "Não foi possível ler o estado do runtime de '{{machine}}', por isso nenhum repositório foi reiniciado: {{error}}",
         "summaryLine": "Convergidos {{converged}}, pulados {{skipped}}, com falha {{failed}}, pendentes {{pending}}",
-        "summaryLineDryRun": "Seriam convergidos {{would}}, ignorados {{skipped}}, com falha {{failed}}, pendentes {{pending}}"
+        "summaryLineDryRun": "Seriam convergidos {{would}}, ignorados {{skipped}}, com falha {{failed}}, pendentes {{pending}}",
+        "unmanagedLine": "    não será recriado: {{service}}: {{message}}"
       },
       "remove": {
         "confirm": "Remover a máquina \"{{name}}\" da configuração?",

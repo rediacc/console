@@ -1048,7 +1048,8 @@
         "startingDryRun": "Составляем план перевода runtime на '{{machine}}' (пробный запуск)...",
         "statusUnreadable": "Не удалось прочитать состояние runtime на '{{machine}}', поэтому ни один репозиторий не перезапущен: {{error}}",
         "summaryLine": "Переведено {{converged}}, пропущено {{skipped}}, сбоев {{failed}}, ожидает {{pending}}",
-        "summaryLineDryRun": "Будет перенесено: {{would}}, пропущено: {{skipped}}, с ошибкой: {{failed}}, в ожидании: {{pending}}"
+        "summaryLineDryRun": "Будет перенесено: {{would}}, пропущено: {{skipped}}, с ошибкой: {{failed}}, в ожидании: {{pending}}",
+        "unmanagedLine": "    не будет создан заново: {{service}}: {{message}}"
       },
       "remove": {
         "confirm": "Удалить машину \"{{name}}\" из конфигурации?",

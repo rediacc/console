@@ -1048,7 +1048,8 @@
         "startingDryRun": "Masina '{{machine}}' runtime'i ühtlustamise plaani koostamine (proovikäivitus)...",
         "statusUnreadable": "Masina '{{machine}}' runtime'i olekut ei õnnestunud lugeda, seega ühtegi hoidlat ei taaskäivitatud: {{error}}",
         "summaryLine": "Ühtlustatud {{converged}}, vahele jäetud {{skipped}}, nurjunud {{failed}}, ootel {{pending}}",
-        "summaryLineDryRun": "Üle viidaks {{would}}, vahele jäetud {{skipped}}, ebaõnnestunud {{failed}}, ootel {{pending}}"
+        "summaryLineDryRun": "Üle viidaks {{would}}, vahele jäetud {{skipped}}, ebaõnnestunud {{failed}}, ootel {{pending}}",
+        "unmanagedLine": "    jääb taasloomata: {{service}}: {{message}}"
       },
       "remove": {
         "confirm": "Eemaldada masin \"{{name}}\" konfiguratsioonist?",

@@ -623,6 +623,7 @@
   "commands.machine.converge.statusUnreadable": "无法读取 '{{machine}}' 的运行时状态，因此未重启任何仓库：{{error}}",
   "commands.machine.converge.summaryLine": "已收敛 {{converged}}，已跳过 {{skipped}}，失败 {{failed}}，待处理 {{pending}}",
   "commands.machine.converge.summaryLineDryRun": "将迁移 {{would}}，跳过 {{skipped}}，失败 {{failed}}，待处理 {{pending}}",
+  "commands.machine.converge.unmanagedLine": "    不会重新创建：{{service}}：{{message}}",
   "commands.machine.deprovision.completed": "机器 {{name}} 已销毁并从配置中移除",
   "commands.machine.deprovision.confirm": "这将永久销毁机器 \"{{name}}\" 及其所有数据。是否继续？",
   "commands.machine.deprovision.description": "销毁云配置的机器并从配置中移除",

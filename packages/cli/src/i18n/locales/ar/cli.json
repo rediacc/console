@@ -1048,7 +1048,8 @@
         "startingDryRun": "جارٍ إعداد خطة مواءمة بيئة التشغيل على '{{machine}}' (تشغيل تجريبي)...",
         "statusUnreadable": "تعذرت قراءة حالة بيئة التشغيل على '{{machine}}'، لذا لم يُعد تشغيل أي مستودع: {{error}}",
         "summaryLine": "تمت المواءمة {{converged}}، تم التخطي {{skipped}}، فشل {{failed}}، قيد الانتظار {{pending}}",
-        "summaryLineDryRun": "سيُنقل {{would}}، تم التخطي {{skipped}}، فشل {{failed}}، قيد الانتظار {{pending}}"
+        "summaryLineDryRun": "سيُنقل {{would}}، تم التخطي {{skipped}}، فشل {{failed}}، قيد الانتظار {{pending}}",
+        "unmanagedLine": "    لن يُعاد إنشاؤه: {{service}}: {{message}}"
       },
       "remove": {
         "confirm": "إزالة الجهاز \"{{name}}\" من التكوين؟",

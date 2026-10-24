@@ -623,6 +623,7 @@
   "commands.machine.converge.statusUnreadable": "Could not read the runtime status of '{{machine}}', so no repository was restarted: {{error}}",
   "commands.machine.converge.summaryLine": "Converged {{converged}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}",
   "commands.machine.converge.summaryLineDryRun": "Would converge {{would}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}",
+  "commands.machine.converge.unmanagedLine": "    not recreated: {{service}}: {{message}}",
   "commands.machine.deprovision.completed": "Machine {{name}} destroyed and removed from config",
   "commands.machine.deprovision.confirm": "This will permanently destroy machine \"{{name}}\" and all its data. Continue?",
   "commands.machine.deprovision.description": "Destroy a cloud-provisioned machine and remove from config",

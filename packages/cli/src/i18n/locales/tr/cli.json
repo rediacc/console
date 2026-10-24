@@ -1048,7 +1048,8 @@
         "startingDryRun": "'{{machine}}' için runtime eşitleme planı hazırlanıyor (deneme)...",
         "statusUnreadable": "'{{machine}}' runtime durumu okunamadı, bu yüzden hiçbir depo yeniden başlatılmadı: {{error}}",
         "summaryLine": "Eşitlenen {{converged}}, atlanan {{skipped}}, başarısız {{failed}}, bekleyen {{pending}}",
-        "summaryLineDryRun": "Taşınacak {{would}}, atlanan {{skipped}}, başarısız {{failed}}, bekleyen {{pending}}"
+        "summaryLineDryRun": "Taşınacak {{would}}, atlanan {{skipped}}, başarısız {{failed}}, bekleyen {{pending}}",
+        "unmanagedLine": "    yeniden oluşturulmayacak: {{service}}: {{message}}"
       },
       "remove": {
         "confirm": "\"{{name}}\" makinesi yapılandırmadan kaldırılsın mı?",

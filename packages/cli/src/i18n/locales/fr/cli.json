@@ -1048,7 +1048,8 @@
         "startingDryRun": "Préparation du plan de convergence du runtime sur '{{machine}}' (simulation)...",
         "statusUnreadable": "Impossible de lire l'état du runtime de '{{machine}}', aucun dépôt n'a donc été redémarré : {{error}}",
         "summaryLine": "Convergés {{converged}}, ignorés {{skipped}}, en échec {{failed}}, en attente {{pending}}",
-        "summaryLineDryRun": "Seraient convergés : {{would}}, ignorés : {{skipped}}, en échec : {{failed}}, en attente : {{pending}}"
+        "summaryLineDryRun": "Seraient convergés : {{would}}, ignorés : {{skipped}}, en échec : {{failed}}, en attente : {{pending}}",
+        "unmanagedLine": "    non recréé : {{service}} : {{message}}"
       },
       "remove": {
         "confirm": "Supprimer la machine \"{{name}}\" de la configuration ?",

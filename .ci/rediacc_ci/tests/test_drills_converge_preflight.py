@@ -195,3 +195,45 @@ def test_both_forks_carry_a_rediaccfile_whose_up_starts_the_compose_file():
     assert body.startswith("#!/bin/bash\n")
     assert "up() {\n  renet compose -- up -d\n}" in body
     assert c.REDIACCFILE == "Rediaccfile"
+
+
+UNMANAGED = {
+    "guid": "g3",
+    "name": "base:u2u",
+    "status": "skipped",
+    "reason": "unmanaged_containers",
+    "denials": [
+        {
+            "service": "u2-unmanaged-94d613-u2-unmanaged-94d613-1",
+            "source": "rediaccfile",
+            "field": "Rediaccfile",
+            "message": "container is started by no Rediaccfile",
+            "kind": "unmanaged_containers",
+        }
+    ],
+}
+
+
+def test_is_unmanaged_needs_reason_denials_and_the_container_name() -> None:
+    assert c.is_unmanaged(UNMANAGED, "u2-unmanaged-94d613")
+    assert not c.is_unmanaged(UNMANAGED, "other-service")
+    assert not c.is_unmanaged(UNMANAGED, "")
+    assert not c.is_unmanaged({**UNMANAGED, "denials": []}, "u2-unmanaged-94d613")
+    assert not c.is_unmanaged({**UNMANAGED, "reason": "gate_refused"}, "u2-unmanaged-94d613")
+    assert not c.is_unmanaged({**UNMANAGED, "status": "failed"}, "u2-unmanaged-94d613")
+    assert not c.is_unmanaged(None, "u2-unmanaged-94d613")
+
+
+def test_is_skipped_for_keeps_the_reasons_apart() -> None:
+    assert c.is_skipped_for(UNMANAGED, c.REASON_UNMANAGED)
+    assert not c.is_skipped_for(UNMANAGED, c.REASON_GATE_REFUSED)
+    assert not c.is_gate_refused(UNMANAGED)
+    assert c.is_skipped_for(REFUSED, c.REASON_GATE_REFUSED)
+
+
+def test_summary_skips_unmanaged_reads_the_reason_and_the_whole_token() -> None:
+    text = "  base:u2u  skipped (unmanaged_containers)\n  base:u2r  skipped (gate_refused)\n"
+    assert c.summary_skips_unmanaged(text, "base:u2u", "u2u")
+    assert not c.summary_skips_unmanaged(text, "base:u2r")
+    assert not c.summary_skips_refused(text, "base:u2u")
+    assert not c.summary_skips_unmanaged("  base:u2u-b  skipped (unmanaged_containers)\n", "u2u")

@@ -623,6 +623,7 @@
   "commands.machine.converge.statusUnreadable": "Masina '{{machine}}' runtime'i olekut ei õnnestunud lugeda, seega ühtegi hoidlat ei taaskäivitatud: {{error}}",
   "commands.machine.converge.summaryLine": "Ühtlustatud {{converged}}, vahele jäetud {{skipped}}, nurjunud {{failed}}, ootel {{pending}}",
   "commands.machine.converge.summaryLineDryRun": "Üle viidaks {{would}}, vahele jäetud {{skipped}}, ebaõnnestunud {{failed}}, ootel {{pending}}",
+  "commands.machine.converge.unmanagedLine": "    jääb taasloomata: {{service}}: {{message}}",
   "commands.machine.deprovision.completed": "Masin {{name}} hävitatud ja konfiguratsioonist eemaldatud",
   "commands.machine.deprovision.confirm": "See hävitab masina \"{{name}}\" ja kõik selle andmed jäädavalt. Jätkad?",
   "commands.machine.deprovision.description": "Hävitab pilves ettevalmistatud masina ja eemaldab konfiguratsioonist",

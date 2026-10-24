@@ -1048,7 +1048,8 @@
         "startingDryRun": "正在规划 '{{machine}}' 上的运行时收敛（试运行）...",
         "statusUnreadable": "无法读取 '{{machine}}' 的运行时状态，因此未重启任何仓库：{{error}}",
         "summaryLine": "已收敛 {{converged}}，已跳过 {{skipped}}，失败 {{failed}}，待处理 {{pending}}",
-        "summaryLineDryRun": "将迁移 {{would}}，跳过 {{skipped}}，失败 {{failed}}，待处理 {{pending}}"
+        "summaryLineDryRun": "将迁移 {{would}}，跳过 {{skipped}}，失败 {{failed}}，待处理 {{pending}}",
+        "unmanagedLine": "    不会重新创建：{{service}}：{{message}}"
       },
       "remove": {
         "confirm": "从配置中移除机器 \"{{name}}\"？",

@@ -1048,7 +1048,8 @@
         "startingDryRun": "'{{machine}}' のランタイム収束を計画しています（ドライラン）...",
         "statusUnreadable": "'{{machine}}' のランタイム状態を読み取れなかったため、リポジトリは再起動していません: {{error}}",
         "summaryLine": "収束 {{converged}}、スキップ {{skipped}}、失敗 {{failed}}、保留 {{pending}}",
-        "summaryLineDryRun": "移行予定 {{would}}、スキップ {{skipped}}、失敗 {{failed}}、保留 {{pending}}"
+        "summaryLineDryRun": "移行予定 {{would}}、スキップ {{skipped}}、失敗 {{failed}}、保留 {{pending}}",
+        "unmanagedLine": "    再作成されません: {{service}}: {{message}}"
       },
       "remove": {
         "confirm": "マシン \"{{name}}\" を設定から削除しますか？",

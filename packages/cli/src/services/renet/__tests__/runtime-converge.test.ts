@@ -413,6 +413,39 @@ describe('renderConvergeReport', () => {
     expect(lines.some((l) => l.includes('rdc machine converge hostinger'))).toBe(true);
   });
 
+  it('prints an unmanaged-containers denial as not recreated and names the resume command', () => {
+    const denial = {
+      service: 'web-1',
+      source: 'rediaccfile',
+      field: 'Rediaccfile',
+      tier: 'hard',
+      message: 'container web-1 is started by no Rediaccfile',
+      kind: 'unmanaged_containers',
+    };
+    const r = report({
+      results: [
+        {
+          guid: GUID_A,
+          name: 'legacy',
+          status: 'skipped',
+          reason: 'unmanaged_containers',
+          network_id: 2880,
+          denials: [denial],
+          stale_unhandled: true,
+        },
+      ],
+    });
+    renderConvergeReport(r, 'hostinger');
+    const lines = printed();
+    const repoLine = lines.findIndex((l) => l.includes('skipped (unmanaged_containers)'));
+    expect(repoLine).toBeGreaterThanOrEqual(0);
+    expect(lines[repoLine + 1]).toBe(
+      '    not recreated: web-1: container web-1 is started by no Rediaccfile'
+    );
+    expect(lines.some((l) => l.includes('refused:'))).toBe(false);
+    expect(lines.some((l) => l.includes('rdc machine converge hostinger'))).toBe(true);
+  });
+
   it('names no resume command for a manual-only stale pass or a dry run', () => {
     const manual = report({
       results: [

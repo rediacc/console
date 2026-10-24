@@ -623,6 +623,7 @@
   "commands.machine.converge.statusUnreadable": "Runtime-Status von '{{machine}}' nicht lesbar, daher wurde kein Repository neu gestartet: {{error}}",
   "commands.machine.converge.summaryLine": "Angeglichen {{converged}}, übersprungen {{skipped}}, fehlgeschlagen {{failed}}, ausstehend {{pending}}",
   "commands.machine.converge.summaryLineDryRun": "Würde umstellen: {{would}}, übersprungen: {{skipped}}, fehlgeschlagen: {{failed}}, ausstehend: {{pending}}",
+  "commands.machine.converge.unmanagedLine": "    nicht neu erstellt: {{service}}: {{message}}",
   "commands.machine.deprovision.completed": "Maschine {{name}} zerstört und aus Konfiguration entfernt",
   "commands.machine.deprovision.confirm": "Dies wird Maschine \"{{name}}\" und alle ihre Daten dauerhaft zerstören. Fortfahren?",
   "commands.machine.deprovision.description": "Cloud-bereitgestellte Maschine zerstören und aus Konfiguration entfernen",

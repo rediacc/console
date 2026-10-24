@@ -623,6 +623,7 @@
   "commands.machine.converge.statusUnreadable": "'{{machine}}' のランタイム状態を読み取れなかったため、リポジトリは再起動していません: {{error}}",
   "commands.machine.converge.summaryLine": "収束 {{converged}}、スキップ {{skipped}}、失敗 {{failed}}、保留 {{pending}}",
   "commands.machine.converge.summaryLineDryRun": "移行予定 {{would}}、スキップ {{skipped}}、失敗 {{failed}}、保留 {{pending}}",
+  "commands.machine.converge.unmanagedLine": "    再作成されません: {{service}}: {{message}}",
   "commands.machine.deprovision.completed": "マシン {{name}} が破棄され、設定から削除されました",
   "commands.machine.deprovision.confirm": "マシン \"{{name}}\" とそのすべてのデータが完全に破棄されます。続行しますか？",
   "commands.machine.deprovision.description": "クラウドでプロビジョニングされたマシンを破棄し、設定から削除する",

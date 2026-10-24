@@ -64,7 +64,7 @@ export interface RuntimeStatus {
 /**
  * One refusal of the converge preflight (renet pkg/convergeguard): a container
  * the current layout's Docker API gate would refuse, so the repo was skipped
- * as `gate_refused` or `needs_device_grant` and keeps running on the old layout.
+ * as `gate_refused`, `unmanaged_containers` or `needs_device_grant` and keeps running on the old layout.
  */
 export interface ConvergeDenial {
   /** The compose service, or the container name for a live container; empty for a whole-file refusal. */
@@ -74,7 +74,7 @@ export interface ConvergeDenial {
   field: string;
   tier: string;
   message: string;
-  /** `gate_refused` or `needs_device_grant`. */
+  /** `gate_refused`, `unmanaged_containers` (a running container no Rediaccfile up() recreates) or `needs_device_grant`. */
   kind: string;
 }
 
@@ -291,6 +291,14 @@ export function convergeResumeCommand(machineName: string): string {
   return `rdc machine converge ${machineName}`;
 }
 
+/** One preflight denial as a line: an unmanaged container is "not recreated", any other kind "refused". */
+function denialText(d: ConvergeDenial): string {
+  const service = d.service || d.source;
+  return d.kind === 'unmanaged_containers'
+    ? t('commands.machine.converge.unmanagedLine', { service, message: d.message })
+    : t('commands.machine.converge.denialLine', { service, field: d.field, message: d.message });
+}
+
 /**
  * Print the plan line, one line per repository (a skipped repo with its
  * reason and each preflight denial), the error that stopped the pass early,
@@ -320,15 +328,7 @@ export function renderConvergeReport(report: ConvergeReport, machineName: string
         detail,
       })
     );
-    for (const d of r.denials ?? []) {
-      outputService.info(
-        t('commands.machine.converge.denialLine', {
-          service: d.service || d.source,
-          field: d.field,
-          message: d.message,
-        })
-      );
-    }
+    for (const d of r.denials ?? []) outputService.info(denialText(d));
   });
   if (report.error) {
     outputService.warn(t('commands.machine.converge.passError', { error: report.error }));

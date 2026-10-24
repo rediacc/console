@@ -660,7 +660,8 @@
         "startingDryRun": "Planning the runtime converge on '{{machine}}' (dry run)...",
         "statusUnreadable": "Could not read the runtime status of '{{machine}}', so no repository was restarted: {{error}}",
         "summaryLine": "Converged {{converged}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}",
-        "summaryLineDryRun": "Would converge {{would}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}"
+        "summaryLineDryRun": "Would converge {{would}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}",
+        "unmanagedLine": "    not recreated: {{service}}: {{message}}"
       },
       "add": {
         "description": "Register an existing machine you can reach over SSH.",
