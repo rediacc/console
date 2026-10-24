@@ -1198,6 +1198,21 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-renet-runtime-converge.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 4,
+      "done": 0,
+      "open_sigs": [
+        "4bc20f99",
+        "902128ba",
+        "d2688d56",
+        "f48d7d67"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-require-testid-sweep.md": {
       "status": "compacted",
       "owner": "97604f47",

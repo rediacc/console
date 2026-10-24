@@ -1,0 +1,36 @@
+# PLAN: a renet upgrade restarts every repo daemon onto the current runtime layout (`renet runtime converge`)
+
+Status: approved -- operator order 2026-10-24 to proceed autonomously; worklist #d0928775. Design by a Plan agent, 2026-10-24.
+Owner: d778be9d
+Updated: 2026-10-24
+Depends-On: no-dep -- builds on the per-network layout of PLAN-renet-cross-repo-isolation (done) and the API gate of PLAN-dockerd-api-privilege-gate (done)
+First-Seen: 2026-10-24
+Priority: P1 -- a machine upgraded without it keeps pre-isolation daemons that reach repos already moved to net-<N>/ (live 2026-10-23: from repo 2944 a writer read net-8576's daemon id and secrets)
+Concurrency: parallel -- batch R owns private/renet, batch C owns the console; C starts after R's pointer bump
+Owns: private/renet/pkg/daemon/runtime_epoch*.go, private/renet/pkg/daemon/start_foreground.go, private/renet/pkg/daemon/systemd.go, private/renet/pkg/daemon/testdata/**, private/renet/cmd/renet/runtime_*.go, private/renet/cmd/renet/main.go, private/renet/cmd/renet/repository_reconcile.go, private/renet/pkg/functions/commands/**, private/renet/pkg/functions/provider/vault_provider.go, private/renet/pkg/license/tiermap.go, packages/cli/src/services/renet/runtime-converge.ts, packages/cli/src/services/executor/**, packages/cli/src/commands/machine/register.ts, .ci/rediacc_ci/drills/upgrade_converge.py, .ci/rediacc_ci/drills/vm_check.py
+
+## Why
+
+The cross-repo isolation moved each repo's runtime to `/var/run/rediacc/net-<N>/`, put a policy proxy in front of each repo dockerd, narrowed each daemon's sandbox to its own `net-<N>/`, and changed the router's discovery glob. A renet upgrade today only refreshes `rediacc-router` (packages/cli/src/services/renet/renet-provisioner.ts:79-85, on `binaryUpdated`). No repo daemon restarts, so every pre-isolation daemon keeps its old socket, its whole-`/var/run/rediacc` sandbox and no API gate until someone restarts it by hand. hostinger runs renet 7e6a8588 with 11 repos.
+
+A renet-only restart cannot do it. Env-mode secrets (`REDIACC_SECRET_*`) exist only in the CLI process (packages/cli/src/services/state.ts:214-221), and `UpServices` without them recreates containers with empty values. So the CLI triggers, and renet plans and executes.
+
+## Decisions (taken by the lead under the operator's order to proceed autonomously; recorded for veto)
+
+1. Restart policy `epoch` (default): a hand-bumped `RuntimeEpoch` marks a layout change; a routine renet upload does not bounce running repos. `--policy=always` also restarts on any binary hash change.
+2. Router: no transitional dual-layout glob (CLAUDE.md clean break). The router refresh moves to AFTER the converge pass, so each moved repo has a short route gap while it restarts.
+
+## Design
+
+- D1. New `renet runtime converge` (bridge function `machine_converge_runtime`, provision access). Stdin payload extends up-all's: per repo `{guid, network_id, password?, secret_files[], env_secrets{}}`. Each repo runs as a child `renet repository up --name <guid> --network-id N ...` with only its own `REDIACC_SECRET_*`, reusing the repo lock, `ensureSystemdUnit`'s layout-crossing stop/restart (pkg/daemon/setup.go:698-724) and secret materialisation.
+- D2. `pkg/daemon/runtime_epoch.go`: `const RuntimeEpoch = 1`; `StartForeground` writes `/var/lib/rediacc/runtime/net-<N>.json` = `{epoch, renet_sha256, pid, started_at}` when ready. Stale = unit active AND (no stamp, stamp pid != MainPID, epoch < RuntimeEpoch, daemon.json hosts outside net-<N>, or a legacy socket exists). `Environment=RENET_RUNTIME_EPOCH=<n>` in the rediacc-docker-<N> unit, so a plain `repo up` also restarts a stale unit.
+- D3. Order: forks first (canaries), then grands by ascending container count, then any repo with a container labelled `rediacc.converge=last` (hostinger's observability). Router refresh after the pass.
+- D4. Safety: hold the reconcile lock and `/var/run/rediacc/converge.lock`; skip with a reason (cold backup, `RepoBusyError`, immutable forks, kube, hub/systemd-installed, inactive units); autostart repos missing from the payload get their legacy secrets copied into net-<N>/secrets before the child; health check after each repo (new socket answers, legacy gone, stamp current, prior containers running, health not worse); abort on first failure (no binary rollback: the old binary reopens the breach), report the resume command; never delete or create `.rediacc/checkpoint/`.
+- D5. Trigger in packages/cli local-executor after `acquireRemoteRenet` returns uploaded, and in `machine setup`: `renet runtime status --json`; if stale and not opted out, run converge before the requested function. Opt-out `REDIACC_SKIP_RUNTIME_CONVERGE=1` / `--no-converge`. Manual `rdc machine converge <m> [--dry-run] [--json] [--include-unknown] [--policy] [--continue-on-error]`. Report: plan line, one line per repo, summary; `/var/lib/rediacc/runtime/converge-last.json` and a `converge-pending` marker that reconcile logs every tick (report-only).
+
+## Tasks
+
+- [ ] R1 [renet] runtime_epoch.go + stamp in StartForeground + epoch line in the unit (goldens); `renet runtime status --json`; `renet runtime converge` with --dry-run/--policy/--include-unknown/--continue-on-error, ordering, locks, skips, health, abort, report files; `machine_converge_runtime` bridge function + vault env secrets for all repos; reconcile logs the pending marker; tiermap; i18n strings; DOCKERD_SANDBOX.md upgrade section -- Accept: `cd private/renet && go test -tags nolicense ./pkg/daemon/... ./cmd/renet/ -run 'Runtime|Converge|Systemd' -count=1` rc 0 with fakes covering staleness, ordering, one-at-a-time, abort, skips, dry-run zero mutations, per-repo env secrets, legacy secret relocation, checkpoint untouched, lock held; `npm run check:ci-renet` rc 0.
+- [ ] C1 [console] runtime-converge.ts + trigger in local-executor (uploaded AND stale AND not opted out, never for converge itself), `rdc machine converge`, `--no-converge` on setup, router refresh after converge, regenerated renet-contract and cli-contract, CLI locale keys -- Accept: `npx tsc --noEmit --project packages/cli/tsconfig.json`; `cd packages/cli && npx vitest run src/services/renet/__tests__/runtime-converge.test.ts src/services/executor/__tests__` rc 0; `npm run check:i18n` rc 0.
+- [ ] U1 [drill] .ci/rediacc_ci/drills/upgrade_converge.py + a U1 hook in vm_check.py: install the pre-isolation renet (0c3a88a^) on a worker, up two forks, show the old-layout breach, `rdc machine setup` with the new renet, assert both converged (new socket, legacy gone, stamp current, containers running), cross-reach gone, a second dry-run reports zero stale -- Accept: `npm run vm:check` VERIFIED with the U1 rows.
+- [ ] H1 [operator window] `rdc machine converge hostinger --dry-run` lists 11 stale with observability last; then the real pass -- Accept: converge-last.json shows every repo converged or pending with a reason.
