@@ -3710,7 +3710,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-account-no-node-env-routes',
     run: 'npm run check:ci-account-no-node-env-routes',
     gate: true,
-    leaves: ['grep', 'echo'],
+    leaves: ['scripts/gates/check-account-no-node-env-routes.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3722,7 +3722,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-account-no-admin-role',
     run: 'npm run check:ci-account-no-admin-role',
     gate: true,
-    leaves: ['grep', 'echo'],
+    leaves: ['scripts/gates/check-account-no-admin-role.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

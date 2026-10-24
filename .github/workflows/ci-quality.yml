@@ -1004,6 +1004,9 @@ jobs:
         id: gate_check_ci_app_admin_perm
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_no_app_admin_perm.py
+      - name: Assert no NODE_ENV branching in account routes
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-no-node-env-routes
       - name: AWS credential bridge
         id: gate_check_ci_aws_credential_bridge
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1036,6 +1039,9 @@ jobs:
         id: gate_check_ci_changed_selection
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:ci-changed-selection
+      - name: Check no admin user role (must be root)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-no-admin-role
       - name: CI fetch integrity
         id: gate_check_ci_fetch_integrity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}

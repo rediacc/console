@@ -3944,8 +3944,7 @@
     "run": "npm run check:ci-account-no-node-env-routes",
     "gate": true,
     "leaves": [
-      "grep",
-      "echo"
+      "scripts/gates/check-account-no-node-env-routes.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3959,8 +3958,7 @@
     "run": "npm run check:ci-account-no-admin-role",
     "gate": true,
     "leaves": [
-      "grep",
-      "echo"
+      "scripts/gates/check-account-no-admin-role.ts"
     ],
     "ci": {
       "kind": "step",
