@@ -597,6 +597,35 @@
         "f7d91e90"
       ]
     },
+    "agent/plans/PLAN-converge-preflight-and-repo-recovery.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 16,
+      "done": 1,
+      "open_sigs": [
+        "1b27a3ae",
+        "1d51cecc",
+        "28a11bd0",
+        "4440feb5",
+        "5f1af841",
+        "61092d42",
+        "6395a951",
+        "6d49473a",
+        "8277cf58",
+        "9cbf1906",
+        "a97866e0",
+        "abbd7b20",
+        "b46df911",
+        "d61fcd63",
+        "ec8aabe0",
+        "fcb61e61"
+      ],
+      "done_sigs": [
+        "5b93fe0a"
+      ]
+    },
     "agent/plans/PLAN-deletion-budget.md": {
       "status": "draft",
       "owner": "d778be9d",
@@ -782,6 +811,29 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-gpu-device-grants.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 12,
+      "done": 0,
+      "open_sigs": [
+        "1044ecaf",
+        "23fefe44",
+        "3cb5b506",
+        "45956b61",
+        "4df60921",
+        "8920e043",
+        "b9e9f08f",
+        "c8ad5a77",
+        "d887f03c",
+        "d9add0ec",
+        "eb12263c",
+        "f4ee3b66"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-greenlight-verify-at-read.md": {
