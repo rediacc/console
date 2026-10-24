@@ -3595,6 +3595,19 @@ export const GATES: readonly GateSpec[] = [
       step: 'Retention knob parity',
     },
   },
+  // Each gate's own control proves its detector on a synthetic fixture; this proves the GATE goes red on the real file when the real code regresses (testing-surface-audit F6, PLAN-backup-program A4b). The four backup gates above are copied into a sandbox with their headline defect planted, and an UNSEEN mutant fails the run.
+  {
+    id: 'check:ci-gate-mutations',
+    run: 'npm run check:ci-gate-mutations',
+    gate: true,
+    leaves: ['scripts/gates/check-gate-mutations.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Gate mutations',
+    },
+  },
   // The CLASS behind four separate findings this program hit: an unrun test suite reads exactly like a passing one. private/account/web ran 1 of 34 files, packages/www ran none, packages/shared ran in CI but never locally, and packages/json runs nowhere. This gate makes a suite impossible to be invisible to BOTH CI and the omissions record.
   {
     id: 'check:ci-test-scripts-reachable',

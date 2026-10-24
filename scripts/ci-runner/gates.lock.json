@@ -3818,6 +3818,20 @@
     }
   },
   {
+    "id": "check:ci-gate-mutations",
+    "run": "npm run check:ci-gate-mutations",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-gate-mutations.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate mutations"
+    }
+  },
+  {
     "id": "check:ci-test-scripts-reachable",
     "run": "npm run check:ci-test-scripts-reachable",
     "gate": true,

@@ -94,6 +94,7 @@
     "check:ci-backup-protocol-conformance": "tsx scripts/gates/check-backup-protocol-conformance.ts",
     "check:ci-no-client-key-composition": "tsx scripts/gates/check-no-client-key-composition.ts",
     "check:ci-retention-knob-parity": "tsx scripts/gates/check-retention-knob-parity.ts",
+    "check:ci-gate-mutations": "tsx scripts/gates/check-gate-mutations.ts --selftest && tsx scripts/gates/check-gate-mutations.ts",
     "check:ci-test-scripts-reachable": "tsx scripts/gates/check-test-scripts-reachable.ts",
     "check:ci-e2e-coverage": ".ci/scripts/quality/check_e2e_coverage.py",
     "check:ci-e2e-skip-hygiene": "tsx scripts/gates/check-e2e-skip-hygiene.ts",
