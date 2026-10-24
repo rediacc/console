@@ -72,7 +72,7 @@
         "restoringSnapshot": "Restauration de {{name}} depuis l'instantané {{snapshot}}...",
         "sourceUnknown": "Aucun dépôt nommé \"{{name}}\" n'est connu dans cette configuration, son artefact de sauvegarde est donc introuvable.",
         "storageRetired": "La restauration depuis un backend de stockage est retirée : le bras cloud rclone a été supprimé. La restauration ponctuelle passe par `rdc backup restore <repo> --at <snapshot>` via le magasin de blocs",
-        "streamUnknown": "Impossible de déterminer quel flux de sauvegarde correspond à ce dépôt sur sa machine source (la machine ne signale aucun instantané validé que l'index répertorie). Utilisez --any-stream pour choisir parmi tous les flux de cette lignée.",
+        "streamUnknown": "Impossible de déterminer quel flux de sauvegarde correspond à ce dépôt sur sa machine source (la vérification de sauvegarde a échoué sur la machine, ou elle ne signale aucun instantané validé que l'index répertorie). Utilisez --any-stream pour choisir parmi tous les flux de cette lignée.",
         "targetExists": "\"{{name}}\" existe déjà. Restaurez sous un autre nom (--as) ou supprimez d'abord le dépôt existant."
       },
       "retention": {
@@ -1030,7 +1030,7 @@
         "completed": "Convergence du runtime sur '{{machine}}' terminée",
         "continueOnErrorOption": "Continuer après l'échec d'un dépôt au lieu d'arrêter la passe",
         "denialLine": "    refusé : {{service}}, {{field}} : {{message}}",
-        "description": "Redémarre un par un chaque daemon de dépôt qui tourne encore avec une ancienne disposition du runtime, pour le faire passer à l'actuelle. La CLI s'en charge seule après un envoi de renet ; à la main, la commande sert à voir le plan, reprendre une passe échouée ou redémarrer après tout changement du binaire renet.",
+        "description": "Redémarre un par un chaque daemon de dépôt qui tourne encore avec une ancienne disposition du runtime, pour le faire passer à l'actuelle. La CLI s'en charge seule après un envoi de renet ; à la main, la commande sert à voir le plan, reprendre une passe échouée ou, avec --policy always, redémarrer après tout changement du binaire renet.",
         "descriptionShort": "Passer les daemons de dépôt obsolètes à la disposition actuelle du runtime",
         "dryRunOption": "Afficher le plan sans rien redémarrer",
         "failed": "La convergence du runtime sur '{{machine}}' a échoué",

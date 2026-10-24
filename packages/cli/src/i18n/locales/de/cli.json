@@ -72,7 +72,7 @@
         "restoringSnapshot": "{{name}} wird aus Snapshot {{snapshot}} wiederhergestellt...",
         "sourceUnknown": "Kein Repository mit dem Namen \"{{name}}\" ist in dieser Konfiguration bekannt, daher kann sein Backup-Artefakt nicht gefunden werden.",
         "storageRetired": "Die Wiederherstellung aus einem Storage-Backend ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Point-in-Time-Wiederherstellung läuft über `rdc backup restore <repo> --at <snapshot>` im Chunk-Store",
-        "streamUnknown": "Es lässt sich nicht bestimmen, welcher Backup-Stream zu diesem Repository auf seiner Quellmaschine gehört (die Maschine meldet keinen committeten Snapshot, den der Index auflistet). Mit --any-stream wählen Sie unter allen Streams dieser Linie.",
+        "streamUnknown": "Es lässt sich nicht bestimmen, welcher Backup-Stream zu diesem Repository auf seiner Quellmaschine gehört (die Backup-Prüfung auf der Maschine ist fehlgeschlagen, oder sie meldet keinen committeten Snapshot, den der Index auflistet). Mit --any-stream wählen Sie unter allen Streams dieser Linie.",
         "targetExists": "\"{{name}}\" existiert bereits. Stellen Sie unter einem anderen Namen wieder her (--as) oder löschen Sie zuerst das vorhandene Repository."
       },
       "retention": {
@@ -1030,7 +1030,7 @@
         "completed": "Runtime-Angleichung auf '{{machine}}' abgeschlossen",
         "continueOnErrorOption": "Nach einem fehlgeschlagenen Repository weitermachen, statt den Durchlauf abzubrechen",
         "denialLine": "    abgelehnt: {{service}}, {{field}}: {{message}}",
-        "description": "Startet jeden Repository-Daemon, der noch mit einem älteren Runtime-Layout läuft, nacheinander neu, damit er auf das aktuelle wechselt. Die CLI erledigt das nach einem renet-Upload selbst; von Hand lässt sich damit der Plan vorab ansehen, ein abgebrochener Durchlauf fortsetzen oder nach jeder Änderung am renet-Binary neu starten.",
+        "description": "Startet jeden Repository-Daemon, der noch mit einem älteren Runtime-Layout läuft, nacheinander neu, damit er auf das aktuelle wechselt. Die CLI erledigt das nach einem renet-Upload selbst; von Hand lässt sich damit der Plan vorab ansehen, ein abgebrochener Durchlauf fortsetzen oder mit --policy always nach jeder Änderung am renet-Binary neu starten.",
         "descriptionShort": "Veraltete Repository-Daemons auf das aktuelle Runtime-Layout bringen",
         "dryRunOption": "Nur den Plan ausgeben, nichts neu starten",
         "failed": "Runtime-Angleichung auf '{{machine}}' fehlgeschlagen",

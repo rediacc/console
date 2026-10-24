@@ -72,7 +72,7 @@
         "restoringSnapshot": "Restaurando {{name}} desde la instantánea {{snapshot}}...",
         "sourceUnknown": "No se conoce ningún repositorio llamado \"{{name}}\" en esta configuración, así que no se puede localizar su artefacto de copia de seguridad.",
         "storageRetired": "Restaurar desde un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. La restauración puntual se hace con `rdc backup restore <repo> --at <snapshot>` sobre el almacén de bloques",
-        "streamUnknown": "No se puede determinar qué flujo de copia de seguridad corresponde a este repositorio en su máquina de origen (la máquina no informa de ninguna instantánea confirmada que el índice liste). Usa --any-stream para elegir entre todos los flujos de este linaje.",
+        "streamUnknown": "No se puede determinar qué flujo de copia de seguridad corresponde a este repositorio en su máquina de origen (la verificación de la copia en la máquina falló, o no informa de ninguna instantánea confirmada que el índice liste). Usa --any-stream para elegir entre todos los flujos de este linaje.",
         "targetExists": "\"{{name}}\" ya existe. Restaura con otro nombre (--as) o elimina primero el repositorio existente."
       },
       "retention": {
@@ -1030,7 +1030,7 @@
         "completed": "Convergencia del runtime en '{{machine}}' terminada",
         "continueOnErrorOption": "Seguir adelante cuando falla un repositorio en lugar de detener la pasada",
         "denialLine": "    rechazado: {{service}}, {{field}}: {{message}}",
-        "description": "Reinicia, uno a uno, cada daemon de repositorio que aún funciona con un diseño de runtime antiguo para que pase al actual. La CLI lo hace sola tras subir renet; a mano sirve para ver el plan antes, retomar una pasada fallida o reiniciar tras cualquier cambio del binario de renet.",
+        "description": "Reinicia, uno a uno, cada daemon de repositorio que aún funciona con un diseño de runtime antiguo para que pase al actual. La CLI lo hace sola tras subir renet; a mano sirve para ver el plan antes, retomar una pasada fallida o, con --policy always, reiniciar tras cualquier cambio del binario de renet.",
         "descriptionShort": "Pasar los daemons de repositorio desfasados al diseño de runtime actual",
         "dryRunOption": "Mostrar el plan sin reiniciar nada",
         "failed": "La convergencia del runtime en '{{machine}}' falló",

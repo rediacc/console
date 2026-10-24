@@ -72,7 +72,7 @@
         "restoringSnapshot": "{{name}}, {{snapshot}} anlık görüntüsünden geri yükleniyor...",
         "sourceUnknown": "Bu yapılandırmada \"{{name}}\" adlı bir depo bilinmiyor, bu yüzden yedek artefaktı bulunamıyor.",
         "storageRetired": "Depolama arka ucundan geri yükleme kaldırıldı: rclone bulut kolu artık yok. Belirli bir ana geri dönüş `rdc backup restore <repo> --at <snapshot>` ile, parça deposu üzerinden yapılır",
-        "streamUnknown": "Bu deponun kaynak makinesindeki yedek akışı hangisi, belirlenemiyor (makine, dizinin listelediği işlenmiş bir anlık görüntü bildirmiyor). Bu soyun tüm akışları arasından seçmek için --any-stream kullanın.",
+        "streamUnknown": "Bu deponun kaynak makinesindeki yedek akışı hangisi, belirlenemiyor (makinedeki yedek doğrulaması başarısız oldu ya da makine, dizinin listelediği işlenmiş bir anlık görüntü bildirmiyor). Bu soyun tüm akışları arasından seçmek için --any-stream kullanın.",
         "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin."
       },
       "retention": {
@@ -1030,7 +1030,7 @@
         "completed": "'{{machine}}' üzerinde runtime eşitlemesi tamamlandı",
         "continueOnErrorOption": "Bir depo başarısız olduğunda turu durdurmak yerine devam et",
         "denialLine": "    reddedildi: {{service}}, {{field}}: {{message}}",
-        "description": "Hâlâ eski runtime düzeniyle çalışan her depo daemon'unu, güncel düzene geçmesi için tek tek yeniden başlatır. CLI bunu renet yüklemesinden sonra kendiliğinden yapar; elle çalıştırmak planı önceden görmek, yarım kalan bir turu sürdürmek ya da renet ikili dosyasındaki herhangi bir değişiklikten sonra yeniden başlatmak için işe yarar.",
+        "description": "Hâlâ eski runtime düzeniyle çalışan her depo daemon'unu, güncel düzene geçmesi için tek tek yeniden başlatır. CLI bunu renet yüklemesinden sonra kendiliğinden yapar; elle çalıştırmak planı önceden görmek, yarım kalan bir turu sürdürmek ya da --policy always ile renet ikili dosyasındaki herhangi bir değişiklikten sonra yeniden başlatmak için işe yarar.",
         "descriptionShort": "Eski kalmış depo daemon'larını güncel runtime düzenine taşı",
         "dryRunOption": "Hiçbir şeyi yeniden başlatmadan yalnızca planı göster",
         "failed": "'{{machine}}' üzerinde runtime eşitlemesi başarısız oldu",

@@ -413,6 +413,41 @@ describe('renderConvergeReport', () => {
     expect(lines.some((l) => l.includes('rdc machine converge hostinger'))).toBe(true);
   });
 
+  it('names no resume command for a manual-only stale pass or a dry run', () => {
+    const manual = report({
+      results: [
+        {
+          guid: GUID_A,
+          name: 'miscellaneous',
+          status: 'skipped',
+          reason: 'manual',
+          network_id: 2944,
+          stale_unhandled: true,
+          manual: true,
+        },
+      ],
+    });
+    renderConvergeReport(manual, 'hostinger');
+    expect(printed().some((l) => l.includes('rdc machine converge hostinger'))).toBe(false);
+
+    const dry = report({
+      dry_run: true,
+      results: [
+        {
+          guid: GUID_A,
+          name: 'nextcloud',
+          status: 'skipped',
+          reason: 'gate_refused',
+          network_id: 2880,
+          denials: [GATE_DENIAL],
+          stale_unhandled: true,
+        },
+      ],
+    });
+    renderConvergeReport(dry, 'hostinger');
+    expect(printed().some((l) => l.includes('rdc machine converge hostinger'))).toBe(false);
+  });
+
   it('prints would converge apart from converged on a dry run', () => {
     const r = report({
       dry_run: true,

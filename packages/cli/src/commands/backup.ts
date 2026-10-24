@@ -395,7 +395,8 @@ function ownStreamOf(
 /**
  * The snapshot the SOURCE machine's journal anchors for this repo, read through
  * `backup_verify` (the verb already reports it). Undefined when the machine has
- * no committed snapshot or the verdict cannot be read.
+ * no committed snapshot, its verify fails, or the verdict cannot be read;
+ * the streamUnknown refusal names both causes.
  */
 async function readSourceAnchor(
   source: { repoName: string; machine: string },

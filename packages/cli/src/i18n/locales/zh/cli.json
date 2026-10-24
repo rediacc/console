@@ -72,7 +72,7 @@
         "restoringSnapshot": "正在从快照 {{snapshot}} 恢复 {{name}}...",
         "sourceUnknown": "此配置中没有名为 \"{{name}}\" 的仓库，因此无法定位其备份产物。",
         "storageRetired": "从存储后端恢复已停用：rclone 云分支已移除。时间点恢复改用 `rdc backup restore <repo> --at <snapshot>`，走块存储",
-        "streamUnknown": "无法确定此仓库在其源机器上对应哪条备份流（该机器没有报告索引中列出的已提交快照）。请传入 --any-stream，从该谱系的所有备份流中选择。",
+        "streamUnknown": "无法确定此仓库在其源机器上对应哪条备份流（该机器上的备份校验失败，或它没有报告索引中列出的已提交快照）。请传入 --any-stream，从该谱系的所有备份流中选择。",
         "targetExists": "\"{{name}}\" 已存在。请使用其他名称恢复（--as），或先删除现有仓库。"
       },
       "retention": {
@@ -1030,7 +1030,7 @@
         "completed": "'{{machine}}' 上的运行时收敛已完成",
         "continueOnErrorOption": "某个仓库失败后继续执行，而不是停止整轮处理",
         "denialLine": "    已拒绝：{{service}}，{{field}}：{{message}}",
-        "description": "逐个重启仍在使用旧运行时布局的仓库守护进程，让它们切换到当前布局。上传 renet 后 CLI 会自动执行；手动运行可用于预览计划、继续失败的处理，或在 renet 二进制文件变更后重启。",
+        "description": "逐个重启仍在使用旧运行时布局的仓库守护进程，让它们切换到当前布局。上传 renet 后 CLI 会自动执行；手动运行可用于预览计划、继续失败的处理，或配合 --policy always 在 renet 二进制文件变更后重启。",
         "descriptionShort": "将过时的仓库守护进程迁移到当前运行时布局",
         "dryRunOption": "只显示计划，不重启任何内容",
         "failed": "'{{machine}}' 上的运行时收敛失败",

@@ -72,7 +72,7 @@
         "restoringSnapshot": "\"{{name}}\" taastamine hetktõmmisest {{snapshot}}...",
         "sourceUnknown": "Hoidlat nimega \"{{name}}\" ei tunta selles konfiguratsioonis, seega selle varukoopia artefakti ei õnnestu leida.",
         "storageRetired": "Salvestusteenusest taastamine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke taaste käib käsuga `rdc backup restore <repo> --at <snapshot>` tükihoidla kaudu",
-        "streamUnknown": "Ei õnnestu kindlaks teha, milline varundusvoog kuulub sellele hoidlale selle lähtemasinas (masin ei teata ühestki kinnitatud hetktõmmisest, mille indeks loetleb). Kasuta --any-stream, et valida selle liini kõigi voogude seast.",
+        "streamUnknown": "Ei õnnestu kindlaks teha, milline varundusvoog kuulub sellele hoidlale selle lähtemasinas (varunduse kontroll masinas nurjus või see ei teata ühestki kinnitatud hetktõmmisest, mille indeks loetleb). Kasuta --any-stream, et valida selle liini kõigi voogude seast.",
         "targetExists": "\"{{name}}\" on juba olemas. Taasta teise nime all (--as) või kustuta esmalt olemasolev hoidla."
       },
       "retention": {
@@ -1030,7 +1030,7 @@
         "completed": "Runtime'i ühtlustamine masinas '{{machine}}' on lõpetatud",
         "continueOnErrorOption": "Jätka pärast hoidla nurjumist, selle asemel et läbimine peatada",
         "denialLine": "    keelatud: {{service}}, {{field}}: {{message}}",
-        "description": "Taaskäivitab ükshaaval iga hoidla deemoni, mis töötab veel vana runtime'i paigutusega, et see läheks üle praegusele. CLI teeb seda pärast renet'i üleslaadimist ise; käsitsi saab sellega plaani eelnevalt vaadata, nurjunud läbimist jätkata või taaskäivitada pärast mis tahes muudatust renet'i binaarfailis.",
+        "description": "Taaskäivitab ükshaaval iga hoidla deemoni, mis töötab veel vana runtime'i paigutusega, et see läheks üle praegusele. CLI teeb seda pärast renet'i üleslaadimist ise; käsitsi saab sellega plaani eelnevalt vaadata, nurjunud läbimist jätkata või --policy always abil taaskäivitada pärast mis tahes muudatust renet'i binaarfailis.",
         "descriptionShort": "Vii aegunud hoidla deemonid praegusele runtime'i paigutusele",
         "dryRunOption": "Näita plaani ilma midagi taaskäivitamata",
         "failed": "Runtime'i ühtlustamine masinas '{{machine}}' ebaõnnestus",

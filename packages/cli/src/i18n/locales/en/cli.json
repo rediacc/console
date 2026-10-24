@@ -642,7 +642,7 @@
         "completed": "Runtime converge on '{{machine}}' finished",
         "continueOnErrorOption": "Keep going after a repository fails instead of stopping the pass",
         "denialLine": "    refused: {{service}}, {{field}}: {{message}}",
-        "description": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or restart after any renet binary change.",
+        "description": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change.",
         "descriptionShort": "Move stale repository daemons onto the current runtime layout",
         "dryRunOption": "Print the plan without restarting anything",
         "failed": "Runtime converge on '{{machine}}' failed",
@@ -1637,7 +1637,7 @@
         "sourceUnknown": "No repository named \"{{name}}\" is known in this config, so its backup artifact cannot be located.",
         "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first.",
         "storageRetired": "Restoring from a storage backend is retired: the rclone cloud arm has been removed. Point-in-time restore is `rdc backup restore <repo> --at <snapshot>` over the chunk store",
-        "streamUnknown": "Cannot tell which backup stream is this repo on its source machine (the machine reports no committed snapshot that the index lists). Pass --any-stream to choose among every stream of this lineage."
+        "streamUnknown": "Cannot tell which backup stream is this repo on its source machine (its backup verify failed, or it reports no committed snapshot that the index lists). Pass --any-stream to choose among every stream of this lineage."
       },
       "retention": {
         "clear": {

@@ -210,6 +210,19 @@ describe('machine setup converge pass', () => {
     expect(calls).toEqual(['setup', 'router']);
   });
 
+  it('a pass that throws still warns with the resume command and refreshes the router', async () => {
+    const { outputService } = await import('../../services/core/output.js');
+    mockExecute.mockImplementation(() => {
+      calls.push('converge');
+      return Promise.reject(new Error('ssh dropped'));
+    });
+
+    await program().parseAsync(['machine', 'setup', 'm1'], { from: 'user' });
+
+    expect(calls).toEqual(['setup', 'status', 'converge', 'router']);
+    expect(outputService.warn).toHaveBeenCalledWith('commands.machine.converge.autoFailed');
+  });
+
   it('runs no pass when nothing is stale', async () => {
     state.stale = 0;
 

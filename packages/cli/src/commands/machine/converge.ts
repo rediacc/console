@@ -160,24 +160,31 @@ async function runSetupPass(
   if (stale === 0) return null;
 
   outputService.info(t('commands.machine.converge.setupStarting', { machine: machineName, stale }));
-  const result = await getExecutor().execute({
-    functionName: CONVERGE_FUNCTION,
-    machineName,
-    params: {},
-    debug,
-    captureOutput: true,
-    quietSpinners: true,
-  });
-  const report = parseConvergeReport(result.stdout);
-  if (report) renderConvergeReport(report, machineName);
-  else if (!result.success) {
+  const warnFailed = (error: string) =>
     outputService.warn(
       t('commands.machine.converge.autoFailed', {
         machine: machineName,
-        error: result.error ?? '',
+        error,
         command: convergeResumeCommand(machineName),
       })
     );
+  let result: Awaited<ReturnType<ReturnType<typeof getExecutor>['execute']>>;
+  try {
+    result = await getExecutor().execute({
+      functionName: CONVERGE_FUNCTION,
+      machineName,
+      params: {},
+      debug,
+      captureOutput: true,
+      quietSpinners: true,
+    });
+  } catch (error) {
+    // Setup already succeeded: a thrown pass still gets the resume command and the router refresh.
+    warnFailed(error instanceof Error ? error.message : String(error));
+    return null;
   }
+  const report = parseConvergeReport(result.stdout);
+  if (report) renderConvergeReport(report, machineName);
+  else if (!result.success) warnFailed(result.error ?? '');
   return report;
 }
