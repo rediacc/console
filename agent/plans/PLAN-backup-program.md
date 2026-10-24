@@ -248,11 +248,15 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 
 ### Phase I: the self-hosted backup plane
 
-- [ ] I1: ACCOUNT_BACKUP_S3_REGION env (default us-east-1, "auto" for R2) passed to S3BackupChunkStore and blob-storage.service. Owns: types/env.ts, private/account/src/services/backup-chunk-store.ts:171-187, private/account/src/services/blob-storage.service.ts:49. Accept: vitest that the signer uses the configured region.
-- [ ] I2: ACCOUNT_BACKUP_S3_PUBLIC_ENDPOINT used for presigned grant URLs (S3PresignGrantMinter, private/account/src/services/backup-chunk-store.ts:1001,1018); the server keeps the internal endpoint for its own calls. Accept: vitest that a grant URL carries the public host.
+- [x] I1: ACCOUNT_BACKUP_S3_REGION env (default us-east-1, "auto" for R2) passed to S3BackupChunkStore and blob-storage.service. Owns: types/env.ts, private/account/src/services/backup-chunk-store.ts:171-187, private/account/src/services/blob-storage.service.ts:49. Accept: vitest that the signer uses the configured region.
+    (ticked) 2026-10-24T15:59:59Z by d778be9d: commit:166ba413e (account 8e7d44e, elite 4d69f70) I1 ACCOUNT_BACKUP_S3_REGION reaches the S3 store and blob client, signer uses the configured region; vitest rc=0 (35 passed), 16 of 19 failed before the fix
+- [x] I2: ACCOUNT_BACKUP_S3_PUBLIC_ENDPOINT used for presigned grant URLs (S3PresignGrantMinter, private/account/src/services/backup-chunk-store.ts:1001,1018); the server keeps the internal endpoint for its own calls. Accept: vitest that a grant URL carries the public host.
+    (ticked) 2026-10-24T16:00:00Z by d778be9d: commit:166ba413e (account 8e7d44e, elite 4d69f70) I2 presigned grants signed on ACCOUNT_BACKUP_S3_PUBLIC_ENDPOINT while the store keeps the internal endpoint; vitest rc=0 (35 passed), 16 of 19 failed before the fix
 - [ ] I3: Elite stack exposure: an nginx /s3/ location or a published port for RustFS, PUBLIC_SITE_URL and the public endpoint set in private/elite docker-compose.yml, and an operator-facing elite backup doc. Accept: elite compose up; a machine outside the docker network completes a snapshot.
-- [ ] I4: Startup validation on the node and on-premise entries: a partial ACCOUNT_BACKUP_S3_* set refuses to start naming the missing keys, and misspelled keys are reported (zod strict for that prefix). Accept: vitest for each partial set.
-- [ ] I5: CI_MODE parity: on-premise.ts skips maintenance under CI_MODE like node.ts; BACKUP_MAINTENANCE_INTERVAL_MS exposed in elite compose. Accept: vitest.
+- [x] I4: Startup validation on the node and on-premise entries: a partial ACCOUNT_BACKUP_S3_* set refuses to start naming the missing keys, and misspelled keys are reported (zod strict for that prefix). Accept: vitest for each partial set.
+    (ticked) 2026-10-24T16:00:01Z by d778be9d: commit:166ba413e (account 8e7d44e, elite 4d69f70) I4 assertBackupS3Env refuses a partial or misspelled ACCOUNT_BACKUP_S3_ set at node and on-premise start; vitest rc=0 (35 passed), 16 of 19 failed before the fix
+- [x] I5: CI_MODE parity: on-premise.ts skips maintenance under CI_MODE like node.ts; BACKUP_MAINTENANCE_INTERVAL_MS exposed in elite compose. Accept: vitest.
+    (ticked) 2026-10-24T16:00:01Z by d778be9d: commit:166ba413e (account 8e7d44e, elite 4d69f70) I5 on-premise skips maintenance under CI_MODE through the shared helper, elite compose exposes BACKUP_MAINTENANCE_INTERVAL_MS; vitest rc=0 (35 passed), 16 of 19 failed before the fix
 - [ ] I6: The startup log names the public endpoint and region. Accept: a test pins the log line.
 - [ ] I7: A drill variant that boots entry/on-premise.ts (not dev-gateway) against RustFS and runs private/elite/scripts/s3-conformance-probe.sh; it becomes part of the backup receipt (J4). Accept: drill rc=0 locally.
 

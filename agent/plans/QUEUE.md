@@ -79,12 +79,12 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 18 plans done, 153 of 379 boxes done (40%).
+Promoted: 1 of 18 plans done, 157 of 379 boxes done (41%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 16/16 | done |
-| 2 | PLAN-backup-program.md | 27/195 | 168 open |
+| 2 | PLAN-backup-program.md | 31/195 | 164 open |
 | 3 | PLAN-cloudflare-proxy.md | 26/29 | 3 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 5/6 | 1 open |
 | 5 | PLAN-telemetry-export.md | 8/19 | 11 open |
