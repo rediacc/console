@@ -59,10 +59,10 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 
 | Defect | Evidence | Box |
 |---|---|---|
-| A restore reuses the source GUID and renames over an unmounted source image | private/renet/cmd/renet/backup_restore.go:259-305, packages/cli/src/commands/backup.ts:162 | E1, K5 |
+| A restore reuses the source GUID and renames over an unmounted source image | private/renet/cmd/renet/backup_restore.go:259-305, packages/cli/src/commands/backup.ts:166-170 | E1, K5 |
 | Retention keep set and newest-kept floor are per lineage, so forks or a second machine prune another stream | backup-gc.service.ts retentionKeepSet | E2, K3 |
 | Commit accepts a missing or foreign parent; restore fails later | backup-storage.service.ts commitManifest | E3 |
-| `restore --at` picks another fork's or machine's snapshot | packages/cli/src/commands/backup.ts:311-318 | E4 |
+| `restore --at` picks another fork's or machine's snapshot | packages/cli/src/commands/backup.ts:337-352 (the stream scope E4 added; the defect was the unscoped lineage pick) | E4 |
 | A first seed runs on the 30 s I/O budget | private/renet/cmd/renet/functions_commands.go:902 | E5 |
 | No default retention; strategy.retention is never sent | packages/shared/src/config-schema/schemas.ts:482-499 | F2, F4, A8 |
 | Schedules pass repo names to the GUID-only `--repo`, and refuse `exclude` | packages/cli/src/services/backup/backup-schedule-unit-generator.ts:136-161 | G1, G9 |
@@ -81,7 +81,7 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 | The server counts 0 valid licences of 35 while hostinger reports 11 valid | live `subscription status` vs `machine status --licenses` | R3 |
 | hermes is 100% full | live `machine status --storage-health` | R4 |
 | Config blob keys carry no store id, so one org can delete another org's configs | private/account/src/services/config.service.ts:2681-2698 | S1 (fixed by another session) |
-| An account-wide R2 key can reach bench; one backup key serves stable, edge and bench | .ci/rediacc_ci/ops/deploy_bench.py:74-86 | S1 (fixed by another session) |
+| An account-wide R2 key can reach bench; one backup key serves stable, edge and bench | .ci/rediacc_ci/ops/deploy_bench.py:76-90 | S1 (fixed by another session) |
 | A licence never expires as a backup credential, and the machineId check trusts the client | private/account/src/services/repo-license-verify.service.ts:79 | S2 |
 | A backup session reaches every lineage of the subscription, not only its own repo | private/account/src/services/backup-storage.service.ts:187-195 | S3 |
 | Team-scoped tokens can read and prune other teams' backups | private/account/src/routes/backups.ts:126-208 | S4 |

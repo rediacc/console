@@ -7,7 +7,19 @@ Depends-On: PLAN-app-wide-org-selection.md -- its uncommitted working-tree edits
 Priority: P1 -- proposed by AI. The operator is blocked: `rdc config remote enable` from WSL with a Windows browser ends in "Setup failed / Failed to fetch".
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/account/src/routes/device-codes.ts, private/account/src/services/device-code.service.ts, private/account/src/dto/device-code.dto.ts, private/account/src/db/schema.ts (device_codes block only), private/account/drizzle/0053_*.sql, private/account/drizzle/meta/**, private/account/src/constants.ts (DEVICE_CODE_* only), private/account/tests/integration/config-remote.test.ts, private/account/tests/integration/device-code-handoff.test.ts, private/account/web/src/pages/{ConfigRemote,ConfigSetup,DeviceConfigSetup}.tsx, private/account/web/src/lib/{config-handoff,cli-handoff-request}.ts, private/account/web/src/lib/__tests__/**, private/account/web/src/pages/__tests__/config-remote*.test.tsx, private/account/web/src/router.tsx (config routes only), private/account/web/src/auth/ProtectedRoute.tsx (the redirect line only), private/account/web/src/i18n/locales/*/configStorage.json, private/account/e2e/src/utils/config-store-helpers.ts, private/account/e2e/tests/20-config-storage/{20-03,20-11}-*.test.ts, packages/cli/src/commands/config-remote*.ts, packages/cli/src/commands/__tests__/config-remote-*.test.ts, packages/cli/src/i18n/locales/*/cli.json, packages/cli/src/config/command-planes.ts (one comment), packages/shared/src/config-crypto/handoff.ts, packages/shared/src/config-crypto/__tests__/handoff-pairing.test.ts, packages/shared/src/cli-contract/data/**, packages/www/src/content/docs/*/{config-storage,account-security,cli-application}.md, docs/DESIGN-CONFIG-STORAGE.md, docs/design/spec/03-cli-contracts.md, .claude/skills/rdc/config-storage.md
+Revalidated: 2026-10-24 @ daab83af1f31
 Worklist: (lead adds this with `worklist.py --add`)
+
+<!-- preflight:begin -->
+```text
+preflight 2026-10-24 @ daab83af1f31
+open boxes: 0 (none)
+citations: 0 unresolved, 0 drifted, 0 relocated
+overlap since none: 0 commit(s)
+dependencies: 1
+  ok PLAN-app-wide-org-selection.md -- Status done
+```
+<!-- preflight:end -->
 
 ## Status on 2026-09-26 (session d778be9d), before the plan was held
 
@@ -103,7 +115,7 @@ The brief's context holds, with these additions and corrections:
    - `storeConfigHandoff` runs select, check, then update (:88-111).
 7. **The CLI hides every polling error.** `pollOnce` treats any non-ValidationError as "pending": network down, 404 on an unknown route, 429 or 5xx. The operator waits the full 10 minutes (`DEVICE_CODE_TTL_MS`, `private/account/src/constants.ts:53`) with no signal.
 8. **The login redirect drops the URL hash.** `private/account/web/src/auth/ProtectedRoute.tsx:31` stores `from: location.pathname + location.search`. The fragment design in section 4 needs `+ location.hash`.
-9. **A factual error in `agent/plans/PLAN-app-wide-org-selection.md:142`.** It says the `config-handoff` fetches "have no auth by design (`private/account/src/routes/device-codes.ts:34`)". Line 34 uses `auth` (`sessionAuth`), so they do require auth. That plan's `ORG_SCOPED_PREFIXES` will add `X-Org-Id` to the new `/device-codes/*` calls, which is harmless. Tell that plan's owner.
+9. **A factual error in `agent/plans/_done/PLAN-app-wide-org-selection.md:145`.** It says the `config-handoff` fetches "have no auth by design (`private/account/src/routes/device-codes.ts:34`)". Line 34 uses `auth` (`sessionAuth`), so they do require auth. That plan's `ORG_SCOPED_PREFIXES` will add `X-Org-Id` to the new `/device-codes/*` calls, which is harmless. Tell that plan's owner.
 10. **The prerequisite check stays.** `checkEnablePrerequisites` (`packages/cli/src/commands/config-remote-enable.ts:85-122`, route `/configs/enable-requirements` at `private/account/src/routes/configs.ts:438-458`) is kept. Its no-token branch (:88-95) becomes a refusal (decision D1).
 
 ## 1. Target flow (one transport)
