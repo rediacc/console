@@ -152,6 +152,7 @@ describe('detectRepoContextCommand', () => {
       ['echo $(docker ps -q)', 'docker'],
       ['echo `docker ps -q`', 'docker'],
       ['echo $(sudo $(which true) && docker info)', 'docker'],
+      ['/usr/bin/docker ps', 'docker'],
       ['watch docker ps', 'docker'],
       ['eval docker ps', 'docker'],
       ['setsid docker ps', 'docker'],
@@ -173,6 +174,10 @@ describe('detectRepoContextCommand', () => {
       'cat /etc/hostname',
       'free -m',
       'cat .dockerignore',
+      'systemctl restart docker',
+      'journalctl -u docker --since today',
+      'sudo systemctl status docker',
+      'grep -c docker /etc/group',
       'sudo renet list all --json',
       `ls ${WK_DATASTORE_PATH}/mounts/`,
     ])('%s → no match', (command) => {

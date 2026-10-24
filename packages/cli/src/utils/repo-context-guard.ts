@@ -8,18 +8,18 @@ export interface RepoContextPattern {
   commandWord?: boolean;
 }
 
+const escapedRuntimeDir = WK_RUNTIME_DIR.replaceAll(/[.*+?^${}()|[\]\\/]/g, String.raw`\$&`);
+
 /**
  * Rule: a command needs repository context only when it would reach a repo's Docker daemon or runtime state.
- * `docker` and `docker-compose` count only as a whole word of a shell segment (any position, so `watch docker ps`,
- * `eval docker ps` and `find / -exec docker ps {} ;` stay refused whatever the wrapper) or as the basename of its
- * command word (`/usr/bin/docker ps`), so a unit or path that merely contains the word
- * (`systemctl status rediacc-docker-12288`, `ls /var/lib/docker`) is machine-level. The repo
+ * `docker` and `docker-compose` count as the basename of a segment's command word (`/usr/bin/docker ps`, through
+ * `sudo`/`env`/`timeout`/`xargs` and `sh -c`), or as a whole word after a command that runs its arguments as a
+ * command (`watch`, `eval`, `setsid`, `ionice`, `find -exec`, ...), so `systemctl restart docker`,
+ * `journalctl -u docker`, `systemctl status rediacc-docker-12288` and `ls /var/lib/docker` are machine-level. The repo
  * mount path alone is not a pattern: reading mount metadata (`ls`, `stat`, `du`, `df`, `findmnt`, `cat`) needs no
  * DOCKER_HOST, while a docker call naming the mount path is still a docker command word, and `DOCKER_HOST=`,
  * the repo runtime dir, a repo Docker socket on either layout and `renet compose` stay refused wherever they appear.
  */
-const escapedRuntimeDir = WK_RUNTIME_DIR.replaceAll(/[.*+?^${}()|[\]\\/]/g, String.raw`\$&`);
-
 export const REPO_CONTEXT_PATTERNS: RepoContextPattern[] = [
   { label: 'docker', pattern: /^docker$/i, commandWord: true },
   { label: 'docker-compose', pattern: /^docker-compose$/i, commandWord: true },
@@ -76,14 +76,43 @@ function commandSubstitutions(command: string): string[] {
 
 const SHELL_WORDS = new Set(['sh', 'bash', 'zsh', 'dash', 'ash']);
 
-/** True when a whole word of the segment, or its command word's basename, matches; `sh -c '<string>'` is read too. */
+/** Commands whose arguments name another command to run, so a bare `docker` among them is a docker invocation. */
+const RUNNER_WORDS = new Set([
+  'watch',
+  'eval',
+  'setsid',
+  'ionice',
+  'chrt',
+  'taskset',
+  'stdbuf',
+  'unbuffer',
+  'flock',
+  'chroot',
+  'nsenter',
+  'runuser',
+  'strace',
+  'ltrace',
+  'parallel',
+  'su',
+]);
+const FIND_EXEC_FLAGS = new Set(['-exec', '-execdir', '-ok', '-okdir']);
+
+function runsArgumentsAsCommand(cmd: string, words: string[]): boolean {
+  const name = cmd.toLowerCase();
+  if (RUNNER_WORDS.has(name)) return true;
+  return name === 'find' && words.some((w) => FIND_EXEC_FLAGS.has(w));
+}
+
+/** True when the segment's command word matches, or a whole argument of a runner command (`watch`, `find -exec`) does; `sh -c '<string>'` is read too. */
 function segmentRunsCommand(segment: string, wordPattern: RegExp): boolean {
-  if (segment.split(/\s+/).some((token) => wordPattern.test(token.replace(/^['"]+|['"]+$/g, ''))))
-    return true;
   const words = segmentCommandWords(segment);
   if (words.length === 0) return false;
   const cmd = basename(words[0]);
   if (wordPattern.test(cmd)) return true;
+  if (runsArgumentsAsCommand(cmd, words)) {
+    const bare = words.slice(1).map((token) => basename(token.replace(/^['"]+|['"]+$/g, '')));
+    if (bare.some((token) => wordPattern.test(token))) return true;
+  }
   const flag = words.indexOf('-c');
   if (SHELL_WORDS.has(cmd.toLowerCase()) && flag !== -1) {
     const inner = words
