@@ -3145,6 +3145,86 @@ _work = judged(
 )
 control("CONTROL: a work order stays continue", _work["verdict"], "continue")
 
+# ---- a length limit is a size BUDGET, never a reason for the CLI to bounce the verdict --------------
+#
+# THE INCIDENT, 2026-10-24 (session d778be9d): "subtype=error_max_structured_output_retries; stop_reason=tool_use; turns=6; cost=$0.0132", twice in a row, with `--tools ""` already in the argv. The child's StructuredOutput tool results read "/reason: must NOT have more than 300 characters (got 310)", then 321, then 345: the hard `maxLength` bounced a sound verdict a few characters over, five times. wire_schema moves each limit into the schema's `description` and clamp_to_schema enforces it after the answer arrives.
+
+
+def _walk_keys(node):
+    if isinstance(node, dict):
+        for k, v in node.items():
+            yield k
+            yield from _walk_keys(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _walk_keys(v)
+
+
+_ml_all = wl_judge.judge_schema_for(
+    wl_judge._REGGATE_MARKER + wl_classsweep.SWEEP_MARKER + wl_bravedefault.BRAVE_MARKER
+)
+control(
+    "PART 8: the real schema DOES declare maxLength somewhere",
+    "maxLength" in set(_walk_keys(_ml_all)),
+    True,
+)
+_wired = wl_judge.wire_schema(_ml_all)
+control(
+    "PART 8: the wire schema carries no maxLength anywhere",
+    "maxLength" in set(_walk_keys(_wired)),
+    False,
+)
+control(
+    "PART 8: the limit survives as prose",
+    _wired["properties"]["reason"].get("description"),
+    "Keep under 300 characters.",
+)
+control(
+    "PART 8: wire_schema leaves the module schema untouched",
+    _ml_all["properties"]["reason"].get("maxLength"),
+    300,
+)
+
+_prev_run = wl_judge.wl_proc
+wl_judge.wl_proc = types.SimpleNamespace(
+    run=fake_run, TIMEOUT_RC=wl_proc.TIMEOUT_RC, SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC
+)
+_long = judged(
+    "",
+    {"verdict": "continue", "reason": ("word " * 80).strip(), "next_action": ("go " * 90).strip()},
+)
+wl_judge.wl_proc = _prev_run
+control(
+    "PART 8: the argv's schema has no maxLength",
+    "maxLength" in set(_walk_keys(CAPTURED["schema"])),
+    False,
+)
+control(
+    "PART 8: an overlong reason is clamped, not rejected",
+    _long is not None and len(_long["reason"]) <= 300,
+    True,
+)
+control(
+    "PART 8: an overlong next_action is clamped, not rejected",
+    _long is not None and len(_long["next_action"]) <= 200,
+    True,
+)
+control(
+    "PART 8: the clamp cuts on a word boundary",
+    _long is not None and _long["reason"].endswith("word"),
+    True,
+)
+control(
+    "PART 8: the argv still carries the tool restriction",
+    CAPTURED["argv"][CAPTURED["argv"].index("--tools") + 1],
+    "",
+)
+control(
+    "CONTROL: a short string is not touched",
+    wl_judge.clamp_to_schema("abc", {"maxLength": 5}),
+    "abc",
+)
+
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
     sys.exit(1)

@@ -214,6 +214,52 @@ def _sample_failed(env_out):
     )
 
 
+def wire_schema(schema):
+    """The schema as the CLI receives it: every `maxLength` becomes a prose limit in `description`, so the model SEES the limit but the CLI no longer REJECTS an overshoot.
+
+    THE BUG THIS FIXES, measured 2026-10-24 (stop of session d778be9d): "judge exited 1; subtype=error_max_structured_output_retries; stop_reason=tool_use; turns=6; cost=$0.0132", twice in a row, so the single retry did not help. Reproducing the real call with --output-format stream-json showed the child's StructuredOutput tool results: "Output does not match required schema: /reason: must NOT have more than 300 characters (got 310)", then 321, then 345, and so on. A hard `maxLength` makes the CLI bounce a verdict over the limit by a few characters, up to five times, and a model writing a dense multi-fact verdict overshoots 300 again on most re-asks (3 of 6 live runs of one realistic prompt needed a re-ask, one needed two). Tools were never the cause (`--tools ""` is in every argv) and the model was healthy.
+
+    The limit is a size budget for the session-facing text, not a validity condition, so it is enforced HERE, after the answer arrives (`clamp_to_schema`), never by rejecting the answer. A judge that fails still blocks; this only stops a verdict that exists from being thrown away for being 10 characters long.
+    """
+    if isinstance(schema, list):
+        return [wire_schema(v) for v in schema]
+    if not isinstance(schema, dict):
+        return schema
+    out = {k: wire_schema(v) for k, v in schema.items() if k != "maxLength"}
+    limit = schema.get("maxLength")
+    if isinstance(limit, int) and not isinstance(limit, bool):
+        note = "Keep under %d characters." % limit
+        out["description"] = (
+            ("%s %s" % (out["description"], note)) if out.get("description") else note
+        )
+    return out
+
+
+def clamp_to_schema(value, schema):
+    """`value` with every string cut to its schema `maxLength` (dicts and lists are changed in place and returned). The cut falls on the last word boundary that fits, and a limit with no boundary in its second half is a hard slice."""
+    if not isinstance(schema, dict):
+        return value
+    if isinstance(value, str):
+        limit = schema.get("maxLength")
+        if isinstance(limit, int) and not isinstance(limit, bool) and len(value) > limit:
+            cut = value[:limit]
+            space = cut.rfind(" ")
+            return (cut[:space] if space >= limit // 2 else cut).rstrip()
+        return value
+    if isinstance(value, dict):
+        props = schema.get("properties") or {}
+        for k in list(value):
+            if k in props:
+                value[k] = clamp_to_schema(value[k], props[k])
+        return value
+    if isinstance(value, list):
+        item = schema.get("items")
+        for i, v in enumerate(value):
+            value[i] = clamp_to_schema(v, item)
+        return value
+    return value
+
+
 def retry_schema_exhaustion(label, proc, call):
     """(proc, None) to carry on, or (None, why) to give up, for a NON-ZERO exit.
 
@@ -361,7 +407,7 @@ def run_triage(finding, context):
                 "--output-format",
                 "json",
                 "--json-schema",
-                json.dumps(TRIAGE_SCHEMA),
+                json.dumps(wire_schema(TRIAGE_SCHEMA)),
                 "--model",
                 wl_models.haiku_model(),
                 # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
@@ -398,7 +444,7 @@ def run_triage(finding, context):
             env_out.get("subtype"),
             env_out.get("api_error_status"),
         )
-    out = env_out.get("structured_output")
+    out = clamp_to_schema(env_out.get("structured_output"), TRIAGE_SCHEMA)
     if not isinstance(out, dict) or out.get("verdict") not in TRIAGE_VERDICTS:
         return None, _explain_no_output("triage", env_out, out)
     return out, None
@@ -453,7 +499,7 @@ def _run_structured(label, prompt, schema, extract):
                 "--output-format",
                 "json",
                 "--json-schema",
-                json.dumps(schema),
+                json.dumps(wire_schema(schema)),
                 "--model",
                 wl_models.haiku_model(),
                 # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
@@ -491,7 +537,7 @@ def _run_structured(label, prompt, schema, extract):
             env_out.get("subtype"),
             env_out.get("api_error_status"),
         )
-    out = env_out.get("structured_output")
+    out = clamp_to_schema(env_out.get("structured_output"), schema)
     payload = extract(out) if isinstance(out, dict) else None
     if payload is None:
         return None, _explain_no_output(label, env_out, out)
@@ -555,7 +601,7 @@ def run_admission(message):
                 "--output-format",
                 "json",
                 "--json-schema",
-                json.dumps(ADMISSION_SCHEMA),
+                json.dumps(wire_schema(ADMISSION_SCHEMA)),
                 "--model",
                 wl_models.haiku_model(),
                 # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
@@ -589,7 +635,7 @@ def run_admission(message):
         return None, "admission returned unparseable stdout: %s" % (proc.stdout or "")[-300:]
     if env_out.get("is_error"):
         return None, "admission reported is_error (subtype=%s)" % env_out.get("subtype")
-    out = env_out.get("structured_output")
+    out = clamp_to_schema(env_out.get("structured_output"), ADMISSION_SCHEMA)
     if not isinstance(out, dict) or not isinstance(out.get("admission"), dict):
         return None, _explain_no_output("admission", env_out, out)
     return out["admission"], None
@@ -930,7 +976,7 @@ def run_judge(
         "--output-format",
         "json",
         "--json-schema",
-        json.dumps(schema),
+        json.dumps(wire_schema(schema)),
         "--model",
         wl_models.haiku_model(),
         # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a model that
@@ -974,7 +1020,7 @@ def run_judge(
             env_out.get("subtype"),
             env_out.get("api_error_status"),
         )
-    out = env_out.get("structured_output")
+    out = clamp_to_schema(env_out.get("structured_output"), schema)
     if not isinstance(out, dict) or out.get("verdict") not in ("stop", "continue"):
         # ONE RETRY, and only on THIS path. The call succeeded at every level the code can check -- exit 0, is_error false, subtype success -- and simply ended its turn without emitting the schema. That is a sample, not a broken gate, and treating it as a broken gate is worse than the flake: the message
         # this would otherwise print ends by offering to set WORKLIST_JUDGE=off.
@@ -998,7 +1044,11 @@ def run_judge(
                     env_out = json.loads(proc.stdout)
                 except ValueError:
                     env_out = {}
-                out = env_out.get("structured_output") if isinstance(env_out, dict) else None
+                out = (
+                    clamp_to_schema(env_out.get("structured_output"), schema)
+                    if isinstance(env_out, dict)
+                    else None
+                )
             if not isinstance(out, dict) or out.get("verdict") not in ("stop", "continue"):
                 return (
                     None,
