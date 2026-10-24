@@ -488,7 +488,7 @@ function main(): number {
   return 0;
 }
 
-if (isEntryPoint(import.meta.url)) {
+if (isEntryPoint(import.meta.filename)) {
   for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     process.on(sig, () => {
       for (const box of [...sandboxes]) dropSandbox(box);

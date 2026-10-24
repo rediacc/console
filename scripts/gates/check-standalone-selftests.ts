@@ -345,4 +345,4 @@ function main(argv: string[]): number {
   return 0;
 }
 
-if (isEntryPoint(import.meta.url)) process.exit(main(process.argv.slice(2)));
+if (isEntryPoint(import.meta.filename)) process.exit(main(process.argv.slice(2)));
