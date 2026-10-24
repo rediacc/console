@@ -62,29 +62,29 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 8 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/_done/PLAN-stop-hook-rulings-campaign.md -- 17 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-program.md -- 12 of 190 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 13 of 195 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (5 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 259 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 263 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic e35e767c, plan agent/plans/PLAN-sync-remote-file-ownership.md, outside the set, 10 commit(s) on the branch, 0 open item(s): repo sync upload --remote-file creates parent directories owned by the universal user
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
 - Writers: 1 live of writer_cap 15 (session d778be9d): worker:addec4555ab29f860.
-- Leased items: 5: #17254293 (worker:bfsvqlhc2, d778be9d), #5f43e8c8 (worker:addec4555ab29f860, d778be9d), #831b7e48 (worker:bfsvqlhc2, d778be9d), #cba857c9 (worker:addec4555ab29f860, d778be9d), #e0d8fd77 (worker:addec4555ab29f860, d778be9d).
+- Leased items: 6: #17254293 (worker:bngzq4cf1, d778be9d), #5f43e8c8 (worker:addec4555ab29f860, d778be9d), #831b7e48 (worker:bngzq4cf1, d778be9d), #c47517be (worker:acfabab4835b55438, d778be9d), #cba857c9 (worker:addec4555ab29f860, d778be9d), #e0d8fd77 (worker:addec4555ab29f860, d778be9d).
 - Next plan: agent/plans/PLAN-sync-remote-file-ownership.md, Promoted entry 4; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 18 plans done, 135 of 374 boxes done (36%).
+Promoted: 0 of 18 plans done, 136 of 379 boxes done (35%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
-| 2 | PLAN-backup-program.md | 13/190 | 177 open |
+| 2 | PLAN-backup-program.md | 14/195 | 181 open |
 | 3 | PLAN-cloudflare-proxy.md | 26/29 | 3 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 5/6 | 1 open |
 | 5 | PLAN-telemetry-export.md | 8/19 | 11 open |
