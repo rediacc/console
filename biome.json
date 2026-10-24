@@ -477,7 +477,6 @@
       ],
       "linter": {
         "rules": {
-          "nursery": {},
           "suspicious": {
             "noFocusedTests": "error",
             "noPlaywrightWaitForTimeout": "error",
@@ -506,7 +505,6 @@
       ],
       "linter": {
         "rules": {
-          "nursery": {},
           "suspicious": {
             "useExpect": "off"
           }
