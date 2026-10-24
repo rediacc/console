@@ -84,11 +84,13 @@ def script_machine(bindir, cores: int, gib: int) -> None:
 
 
 def script_renderer(bindir, trace, code: int = 0) -> None:
-    """flock and nice become transparent passthroughs; npx becomes the renderer.
+    """nice becomes a transparent passthrough; flock becomes a TRIPWIRE; npx becomes the renderer.
 
-    The real flock and nice would need a lock file and a priority change that prove nothing here. The renderer records the moment it starts and the moment it stops, and that trace is what makes the concurrency claim MEASURABLE instead of asserted.
+    flock used to be a passthrough here, which is exactly why the suite stayed green while the real per-tutorial flock serialised every locale of one tutorial. The pool must not take that lock around a whole render any more (the render takes it itself, only while recording), so a flock call from the pool path now exits 99 and fails the pair. The real nice would need a priority change that proves nothing here. The renderer records the moment it starts and the moment it stops, and that trace is what makes the concurrency claim MEASURABLE instead of asserted.
     """
-    write_exec(bindir / "flock", '#!/bin/bash\nshift\nexec "$@"\n')
+    write_exec(
+        bindir / "flock", "#!/bin/bash\necho 'pool.sh must not flock a whole render' >&2\nexit 99\n"
+    )
     write_exec(bindir / "nice", '#!/bin/bash\nshift 2\nexec "$@"\n')
     write_exec(
         bindir / "npx",
@@ -210,7 +212,7 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
             trace.write_text("", encoding="utf-8")
             result = run_pool(
                 d,
-                "printf 'a\\ten\\nb\\ten\\nc\\ten\\nd\\ten\\ne\\ten\\n' | "
+                "printf 'a\\ten\\na\\tde\\na\\ttr\\na\\tru\\na\\tet\\n' | "
                 "_tutorial_video_pool 2 '%s/fail'" % d,
             )
             if result.rc != 0:

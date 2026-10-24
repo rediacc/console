@@ -118,6 +118,8 @@ _PR_LOOP_ONLY = frozenset(
         "plan-unimplemented",
         "plan-adopted",
         "loop-next",
+        # Session hygiene, not plan scope (2026-10-24): twelve hung wait loops a sub-agent armed lived for hours while every stop printed "Stood down: bg-orphan x158". The shells are this session's own process tree on every PR, so the loop keeps the check. FOCUS and CAP_WAIT still park it, as their plans' hygiene tables list it.
+        "bg-orphan",
     }
 ) | {_DEFER_EXPIRED}
 

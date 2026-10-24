@@ -288,12 +288,18 @@ V_MANY_WORK_CRONS = (
 )
 
 V_BG_ORPHAN = (
-    "%d ORPHAN BACKGROUND SHELL(S) FOUND UNDER THIS SESSION'S OWN HARNESS, %d minute(s) or "
-    "older, that nothing currently bookkeeps:\n%s"
-    "ADVISORY ONLY -- this check never kills anything. Each row is a real OS process, still "
-    "alive, resolved as a descendant of this session's own harness pid (never a sibling "
-    "session's tree). Read the command line, decide whether it is still needed, and if not, "
-    "kill it by hand; `worklist.py --reap` retires bookkeeping only, never an OS process."
+    "%d BACKGROUND SHELL(S) UNDER THIS SESSION'S OWN HARNESS NEED KILLING (threshold %d minute(s)):\n%s"
+    "Each row is a live OS process under this session's own harness pid, never a sibling session's "
+    "tree. A declared task is not excused: a pure wait loop does no work (the harness already "
+    "notifies when a task ends), one waiter per target is enough, and a finished sub-agent's "
+    "shell has nobody left to read it. Exempt by command shape: the wake timer (wl_wake.py), "
+    "ci-trace --wait, wl_prreview --wait, wl_wait.py, renders and test runs. Run each kill "
+    "command; this check kills nothing itself, and `worklist.py --reap` retires bookkeeping "
+    "only, never an OS process."
+)
+# One row of V_BG_ORPHAN: the pid, its age in minutes, why it is reported (wl_bgsweep.describe), the command as typed, and the exact kill command (wl_bgsweep.kill_command).
+V_BG_ORPHAN_ROW = (
+    "    pid %(pid)s, %(age)s min old, %(why)s:\n        %(cmd)s\n        kill: %(kill)s\n"
 )
 
 V_AGENT_STATE = (

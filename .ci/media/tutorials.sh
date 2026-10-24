@@ -708,8 +708,9 @@ www_tutorials_watch() {
     local log_file
     log_file="$watch_dir/watch-$(date -u +%Y%m%dT%H%M%SZ).log"
 
-    # SINGLE INSTANCE, enforced by the kernel. The per-tutorial flock inside
-    # _tutorial_video_render_one serialises two renders of the SAME tutorial; it does
+    # SINGLE INSTANCE, enforced by the kernel. The per-tutorial recording lock
+    # (taken inside generate-tutorial-video.ts, only while recording) serialises two
+    # RECORDINGS of the SAME tutorial; it does
     # nothing to stop two daemons from both deciding to rewrite the same mp4. The kernel
     # lock is the truth and is released when the holder dies, so a killed watch leaves
     # nothing to clean up. The pid file is observability only -- written after the lock is

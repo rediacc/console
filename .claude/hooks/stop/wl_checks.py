@@ -5415,20 +5415,30 @@ def run_stop(event, event_ok, worklist, hook_file):
         _deflect_fired, _deflect_text = False, ""
     if _deflect_fired:
         vadd("deflected-finding", False, M.V_DEFLECTED_FINDING % _deflect_text)
+    # BACKGROUND SHELL HYGIENE (wl_bgsweep.findings): undeclared orphans, plus the declared shells no declaration excuses -- pure wait loops past BGSWEEP_AGE_MIN, duplicate waiters on one target, and shells a finished sub-agent left running. Kept by the PR loop's stand-down (wl_standdown._PR_LOOP_ONLY): hygiene of this session's own process tree is not plan scope.
     try:
-        _bg_orphans = wl_bgsweep.sweep(live_ids={str(b.get("id")) for b in live_bg})
-    except Exception:
-        _bg_orphans = []
-    if _bg_orphans:
-        _rows = "\n".join(
-            "    pid %d, %s min old: %s"
-            % (pid, ("%.1f" % age_min) if age_min is not None else "unknown", cmdline[:70])
-            for pid, age_min, cmdline in _bg_orphans
+        _bg_find = wl_bgsweep.findings(
+            live_ids={str(b.get("id")) for b in live_bg},
+            owners=lambda ages: wl_bgsweep.owner_context(event, event.get("cwd"), session_id, ages),
         )
+    except Exception:
+        _bg_find = []
+    if _bg_find:
+        _bg_rows = [
+            M.V_BG_ORPHAN_ROW
+            % {
+                "pid": _f.pid,
+                "age": ("%.1f" % _f.age_min) if _f.age_min is not None else "unknown",
+                "why": wl_bgsweep.describe(_f),
+                "cmd": _f.cmd[:160],
+                "kill": wl_bgsweep.kill_command(_f),
+            }
+            for _f in _bg_find
+        ]
         vadd(
             "bg-orphan",
             False,
-            M.V_BG_ORPHAN % (len(_bg_orphans), wl_bgsweep.BGSWEEP_AGE_MIN, _rows + "\n"),
+            M.V_BG_ORPHAN % (len(_bg_find), wl_bgsweep.BGSWEEP_AGE_MIN, "".join(_bg_rows)),
         )
     if unstated:
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))

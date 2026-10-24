@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-24T05:53:59.076Z",
+  "generatedAt": "2026-10-24T07:59:54.800Z",
   "legs": [
     {
       "index": 1,
@@ -403,6 +403,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_twin_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_bench_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_blocker_implementations.py",
+        "pytest:.ci/rediacc_ci/tests/test_bootstrap_agg.py",
         "pytest:.ci/rediacc_ci/tests/test_build_build_json.py",
         "pytest:.ci/rediacc_ci/tests/test_build_cli.py",
         "pytest:.ci/rediacc_ci/tests/test_build_cli_musl.py",
@@ -451,6 +452,7 @@
         "pytest:.ci/rediacc_ci/tests/test_doc_providers_test_path.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_lib.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_universe_transfer.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_upgrade_converge.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_ledger.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model_replay.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py",
@@ -706,6 +708,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_project_dir_containment.py",
         "pytest:.claude/rediacc_hooks/tests/test_project_dir_fallback.py",
         "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_bgsweep_stop.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_checklists.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_cite_extensions.py",

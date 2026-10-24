@@ -608,6 +608,30 @@ TOOLS: tuple[Tool, ...] = (
         ),
     ),
     Tool(
+        name="agg",
+        purpose=(
+            "asciinema's gif generator, which the tutorial renderer "
+            "(packages/www/scripts/lib/ffmpeg-video.ts) runs on every terminal cast to make the cast scenes"
+        ),
+        pin_key="AGG_VERSION",
+        install={
+            "apt": ".ci/bootstrap.sh install agg",
+            "dnf": ".ci/bootstrap.sh install agg",
+            "pacman": ".ci/bootstrap.sh install agg",
+            "apk": ".ci/bootstrap.sh install agg",
+            "brew": ".ci/bootstrap.sh install agg",
+            "repo": ".ci/bootstrap.sh install agg   # upstream release binary, sha256-checked, into .ci/cache/toolchain/agg/<pin>",
+        },
+        provenance=(".ci/bootstrap.sh install_agg and .devcontainer/toolchain.env AGG_VERSION"),
+        probe=("agg", "--version"),
+        note=(
+            "OPTIONAL ON A DEVELOPER HOST: only the tutorial video render needs it, and the render "
+            "refuses to start without it, naming this install line. It lives in a cache directory "
+            "rather than on PATH, so it reads ABSENT here while the render works; "
+            "`.ci/bootstrap.sh which agg` owns the resolution."
+        ),
+    ),
+    Tool(
         name="gitleaks",
         purpose="the tracked-credentials scan",
         pin_key=None,

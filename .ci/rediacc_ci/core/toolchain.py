@@ -144,6 +144,7 @@ TOOL_KEYS = {
     "uv": "UV_VERSION",
     "pytest": "PYTEST_VERSION",
     "aws": "AWSCLI_VERSION",
+    "agg": "AGG_VERSION",
 }
 
 # The two Node keys, named because they are different KINDS of number and the difference is the one this file's history is made of. NODE_VERSION is the major CI installs; NODE_VERSION_MIN is the oldest release the repo agrees to run on, and nothing installs it -- every consumer only compares against it.

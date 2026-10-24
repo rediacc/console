@@ -1798,6 +1798,82 @@
       "literals": []
     },
     {
+      "id": "toolchain:agg",
+      "kind": "leaf",
+      "name": "agg (asciinema gif generator)",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "asciinema/agg",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "AGG_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-x86-64",
+          "env": "AGG_SHA256_LINUX_X86_64",
+          "asset": "agg-x86_64-unknown-linux-gnu",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-aarch64",
+          "env": "AGG_SHA256_LINUX_AARCH64",
+          "asset": "agg-aarch64-unknown-linux-gnu",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:darwin-x86-64",
+          "env": "AGG_SHA256_DARWIN_X86_64",
+          "asset": "agg-x86_64-apple-darwin",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:darwin-aarch64",
+          "env": "AGG_SHA256_DARWIN_AARCH64",
+          "asset": "agg-aarch64-apple-darwin",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/gen-docs.ts --write",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": ".",
+              "file": "scripts/data/doc-registry.md"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
       "id": "toolchain:shfmt",
       "kind": "leaf",
       "name": "shfmt",

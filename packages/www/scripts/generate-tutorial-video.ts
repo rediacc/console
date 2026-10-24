@@ -15,6 +15,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { assertAggAvailable } from './lib/agg-preflight.ts';
 import { castDurationSec, markerTimestamps, parseCast } from './lib/cast-splitter.ts';
 import {
   addEdgePad,
@@ -34,6 +35,7 @@ import {
   type SceneContext,
   type SceneOutput,
 } from './lib/scenes/index.ts';
+import { acquireSegLock, type SegLock } from './lib/seg-lock.ts';
 import { readStoryboard } from './lib/storyboard.ts';
 import { emitChaptersVtt, emitSubtitlesVtt, emitWordTimingsJson } from './lib/vtt-emit.ts';
 
@@ -106,6 +108,8 @@ async function main(): Promise<void> {
     cacheRefresh,
     captionsOnly,
   } = parseArgs(process.argv.slice(2));
+  // Fail before any scene work. --captions-only never rasterises a cast, so it does not need agg.
+  if (!captionsOnly) assertAggAvailable();
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
   const wwwRoot = path.resolve(scriptDir, '..');
   const wwwPublicRoot = path.join(wwwRoot, 'public');
@@ -179,11 +183,23 @@ async function main(): Promise<void> {
   //
   // Skip the lab hooks entirely when every browser scene reuses a cached silent segment — a fully-cached locale render needs no live resources.
   const browserCache = { dir: browserCacheDir, reuse: cacheReuse, refresh: cacheRefresh };
-  const needsLab = storyboard.scenes.some(
-    (s) =>
-      (s.type === 'browser' || s.type === 'browser-split') &&
-      browserSceneWillRecord(storyboard, tutorial, browserCache, s)
-  );
+  const willRecord = (): boolean =>
+    storyboard.scenes.some(
+      (s) =>
+        (s.type === 'browser' || s.type === 'browser-split') &&
+        browserSceneWillRecord(storyboard, tutorial, browserCache, s)
+    );
+  // Only a render that will live-record needs the per-tutorial lock (lab resources and cache writes). Re-check once it is held: a sibling locale may have filled the cache while this one waited, in which case the lab is skipped and the lock is dropped immediately.
+  let needsLab = willRecord();
+  let segLock: SegLock | undefined;
+  if (needsLab) {
+    segLock = await acquireSegLock(tutorial);
+    needsLab = willRecord();
+    if (!needsLab) {
+      segLock.release();
+      segLock = undefined;
+    }
+  }
   const repoRoot = path.resolve(wwwRoot, '..', '..');
   if (storyboard.setupCommand && needsLab) {
     const setup = substituteEnv(storyboard.setupCommand);
@@ -446,6 +462,7 @@ async function main(): Promise<void> {
         console.error(`[video] teardownCommand failed: ${String(teardownErr)}`);
       }
     }
+    segLock?.release();
     if (!keep) rmSync(tmp, { recursive: true, force: true });
   }
 }

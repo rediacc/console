@@ -68,18 +68,30 @@ _tutorial_video_render_one() {
     local failure_file="$3"
     shift 3
 
-    # Guards the language-independent browser-segments cache described above. With
-    # lang-major emission this lock is essentially never contended; it exists so that a
-    # hand-run invocation, or two orchestrator languages straddling a batch boundary,
-    # cannot both record the same scene and copyFileSync over each other.
-    local seg_lock="/tmp/rediacc-tut-seg.${t}.lock"
+    # No lock here. The per-tutorial recording lock (/tmp/rediacc-tut-seg.<t>.lock) is
+    # taken inside generate-tutorial-video.ts (lib/seg-lock.ts) and only while that render
+    # will live-record browser scenes, because that is the sole critical section: lab
+    # setup/teardown and the first write of the language-independent segment cache.
+    # Holding it here for the whole ~7 minute render serialised every locale of one
+    # tutorial and made --jobs N a no-op for the usual single-tutorial run.
+
+    # agg: hand the renderer the pinned cache install when AGG_BIN is not already set, so
+    # `.ci/bootstrap.sh install agg` is all a fresh host needs. Best effort on purpose: a
+    # miss here changes nothing, because generate-tutorial-video.ts refuses to start
+    # without an executable agg and names the install command (lib/agg-preflight.ts).
+    if [[ -z "${AGG_BIN:-}" && -f "$ROOT_DIR/.ci/bootstrap.sh" ]]; then
+        local agg_resolved
+        if agg_resolved="$(bash "$ROOT_DIR/.ci/bootstrap.sh" which agg 2>/dev/null)" && [[ -n "$agg_resolved" ]]; then
+            export AGG_BIN="$agg_resolved"
+        fi
+    fi
 
     log_step "  → $t × $l"
     (
         cd "$ROOT_DIR/packages/www" || exit 1
         # nice: renders must never starve the GPU job's own CPU work (the audio VAE, the
         # ffmpeg mastering chain, ASR). Narration is deliberately NOT niced.
-        flock "$seg_lock" nice -n 10 \
+        nice -n 10 \
             npx tsx scripts/generate-tutorial-video.ts --cast "$t" --lang "$l" "$@"
     ) || {
         log_error "  ✗ failed: $t × $l"

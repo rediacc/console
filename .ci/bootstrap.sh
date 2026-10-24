@@ -120,6 +120,10 @@ TOOL_BIN_DIR="$TOOL_DIR/bin"
 # install: `bin/aws` is what the resolvers' cache rung asks for.
 AWS_DIR="$ROOT/.ci/cache/toolchain/aws-cli/${AWSCLI_VERSION}"
 AWS_CACHE_BIN="$AWS_DIR/bin/aws"
+# The pinned agg (asciinema gif generator, the tutorial renderer's cast rasteriser): one
+# directory per version, a single static binary in it.
+AGG_DIR="$ROOT/.ci/cache/toolchain/agg/${AGG_VERSION}"
+AGG_CACHE_BIN="$AGG_DIR/agg"
 
 # The wrapper's inputs: uv's real pytest and the interpreter of the same tool
 # environment (the pinned Python, so core_lease.py runs on what pytest runs on),
@@ -418,6 +422,100 @@ install_aws() {
     printf '%s' "$AWS_CACHE_BIN"
 }
 
+# THE agg RUNGS, mirrored by packages/www/scripts/lib/agg-preflight.ts and by the
+# render's own default in lib/ffmpeg-video.ts (AGG_BIN, else ~/.local/bin/agg): AGG_BIN
+# (set but not executable is a refusal), then this repo's cache at the pin, then
+# ~/.local/bin/agg ONLY when it reports the pin -- the path a hand install used before
+# this existed.
+resolve_agg() {
+    if [ -n "${AGG_BIN:-}" ]; then
+        [ -f "$AGG_BIN" ] && [ -x "$AGG_BIN" ] || {
+            echo "bootstrap: AGG_BIN=$AGG_BIN is not an executable file" >&2
+            return 1
+        }
+        printf '%s' "$AGG_BIN"
+        return 0
+    fi
+    resolve_agg_pinned && return 0
+    local home_bin="${HOME:-/nonexistent}/.local/bin/agg"
+    if [ -x "$home_bin" ] &&
+        [ "$(toolchain_probe_version agg "$home_bin" 2>/dev/null)" = "$AGG_VERSION" ]; then
+        printf '%s' "$home_bin"
+        return 0
+    fi
+    return 1
+}
+
+# The cache rung alone, at the pin. `install agg` asks this, so a stray agg elsewhere never
+# makes the install a no-op.
+resolve_agg_pinned() {
+    if [ -x "$AGG_CACHE_BIN" ] &&
+        [ "$(toolchain_probe_version agg "$AGG_CACHE_BIN" 2>/dev/null)" = "$AGG_VERSION" ]; then
+        printf '%s' "$AGG_CACHE_BIN"
+        return 0
+    fi
+    return 1
+}
+
+# The upstream release binary for this platform, verified against its sha256 in
+# toolchain.env BEFORE it is made executable, staged beside its final path and renamed
+# into place so a killed download never leaves a half-written agg that resolves.
+install_agg() {
+    local os_sfx triple sha_var want url tmp got
+    case "$(uname -s):$(uname -m)" in
+        Linux:x86_64 | Linux:amd64)
+            os_sfx=LINUX_X86_64
+            triple=x86_64-unknown-linux-gnu
+            ;;
+        Linux:aarch64 | Linux:arm64)
+            os_sfx=LINUX_AARCH64
+            triple=aarch64-unknown-linux-gnu
+            ;;
+        Darwin:x86_64)
+            os_sfx=DARWIN_X86_64
+            triple=x86_64-apple-darwin
+            ;;
+        Darwin:arm64 | Darwin:aarch64)
+            os_sfx=DARWIN_AARCH64
+            triple=aarch64-apple-darwin
+            ;;
+        *)
+            echo "bootstrap: no pinned agg build for $(uname -s) $(uname -m)" >&2
+            return 1
+            ;;
+    esac
+    sha_var="AGG_SHA256_${os_sfx}"
+    want="${!sha_var:-}"
+    [ -n "$want" ] || {
+        echo "bootstrap: no checksum for this platform -- define ${sha_var} in .devcontainer/toolchain.env rather than downloading unverified" >&2
+        return 1
+    }
+    url="https://github.com/asciinema/agg/releases/download/v${AGG_VERSION}/agg-${triple}"
+    tmp="$(mktemp -d)" || return 1
+    trap 'rm -rf -- "$tmp"; trap - RETURN' RETURN
+    echo "bootstrap: downloading agg ${AGG_VERSION} (agg-${triple})" >&2
+    curl -fsSL --max-time 600 --retry 3 --retry-delay 5 -o "$tmp/agg" "$url" || {
+        echo "${RED}bootstrap${NC}: could not download agg from $url" >&2
+        return 1
+    }
+    got="$(sha256_of "$tmp/agg")" || return 1
+    [ "$got" = "$want" ] || {
+        echo "${RED}bootstrap${NC}: agg checksum MISMATCH -- refusing to install" >&2
+        echo "  expected $want" >&2
+        echo "  actual   $got" >&2
+        return 1
+    }
+    chmod +x "$tmp/agg" || return 1
+    mkdir -p "$AGG_DIR" || return 1
+    mv -f "$tmp/agg" "$AGG_CACHE_BIN" || return 1
+    got="$(toolchain_probe_version agg "$AGG_CACHE_BIN" 2>/dev/null)"
+    [ "$got" = "$AGG_VERSION" ] || {
+        echo "${RED}bootstrap${NC}: $AGG_CACHE_BIN reports '${got:-none}', not ${AGG_VERSION}" >&2
+        return 1
+    }
+    printf '%s' "$AGG_CACHE_BIN"
+}
+
 install_uv() {
     local triple sfx sha_var want url tmp got
     read -r triple sfx < <(uv_target) || return 1
@@ -673,6 +771,13 @@ report() {
     else
         report_row aws "$AWSCLI_VERSION" "${YELLOW}ABSENT${NC} (optional; '.ci/bootstrap.sh install aws')"
     fi
+    # OPTIONAL like aws: only the tutorial renderer needs agg.
+    local agg
+    if agg="$(resolve_agg 2>/dev/null)"; then
+        report_row agg "$AGG_VERSION" "$agg"
+    else
+        report_row agg "$AGG_VERSION" "${YELLOW}ABSENT${NC} (optional; '.ci/bootstrap.sh install agg')"
+    fi
     report_row python3 "-" "$(command -v python3 || echo "${YELLOW}ABSENT${NC}")"
     return "$rc"
 }
@@ -700,8 +805,10 @@ case "${1:-install}" in
         case "${2:-}:${3:-}" in
             aws:) resolve_aws || exit 1 ;;
             aws:--pin) resolve_aws_pinned || exit 1 ;;
+            agg:) resolve_agg || exit 1 ;;
+            agg:--pin) resolve_agg_pinned || exit 1 ;;
             *)
-                echo "usage: bootstrap.sh which aws [--pin]" >&2
+                echo "usage: bootstrap.sh which aws|agg [--pin]" >&2
                 exit 2
                 ;;
         esac
@@ -721,8 +828,16 @@ case "${1:-install}" in
                 echo "${GREEN}ok${NC}   aws ${AWSCLI_VERSION} installed at $aws_bin"
             fi
             exit 0
+        elif [ "${2:-}" = agg ]; then
+            if agg_bin="$(resolve_agg_pinned)"; then
+                echo "${GREEN}ok${NC}   agg ${AGG_VERSION} already at $agg_bin"
+            else
+                agg_bin="$(install_agg)" || exit 1
+                echo "${GREEN}ok${NC}   agg ${AGG_VERSION} installed at $agg_bin"
+            fi
+            exit 0
         elif [ -n "${2:-}" ]; then
-            echo "usage: bootstrap.sh install [aws]" >&2
+            echo "usage: bootstrap.sh install [aws|agg]" >&2
             exit 2
         fi
         # No `| ""` arm: ${1:-install} substitutes the default for an EMPTY
@@ -764,7 +879,7 @@ case "${1:-install}" in
         exit 0
         ;;
     *)
-        echo "usage: bootstrap.sh [install [aws]|which aws [--pin]|--check|doctor]" >&2
+        echo "usage: bootstrap.sh [install [aws|agg]|which aws|agg [--pin]|--check|doctor]" >&2
         exit 2
         ;;
 esac
