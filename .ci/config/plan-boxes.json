@@ -957,16 +957,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 15,
-      "open_sigs": [
-        "4d91dd68"
-      ],
+      "open": 0,
+      "done": 16,
+      "open_sigs": [],
       "done_sigs": [
         "1feb206a",
         "2dd2429a",
         "4b8321e0",
         "4d461643",
+        "4d91dd68",
         "5157363b",
         "6f4a1a63",
         "7fb23a48",
