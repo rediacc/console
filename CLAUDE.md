@@ -315,8 +315,8 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | step / quality-i18n | 40 | 38 | 4 |
 | step / quality-packages | 13 | 13 | 5 |
 | step / quality-pytest | 1 | 1 | 1 |
-| step / quality-security | 22 | 22 | 2 |
-| step / quality-static | 66 | 66 | 7 |
+| step / quality-security | 23 | 23 | 2 |
+| step / quality-static | 65 | 65 | 7 |
 | step / quality-wiring | 1 | 1 | 0 |
 | step / quality-www-build | 16 | 13 | 15 |
 | test (a gate test drives it) | 11 | 11 | 0 |

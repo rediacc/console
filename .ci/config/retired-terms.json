@@ -17,13 +17,27 @@
     "plan_baseline is SHRINK-ONLY debt: live plans that named a term on the day this gate",
     "landed. A new (plan, term) pair is a refusal and is never added here; a baselined pair",
     "that stops firing is a refusal too, drained with --write-baseline (which only ever removes).",
-    "Each entry carries a BLOCKER reason, checked by rediacc_ci.core.allowlist.validate_reason."
+    "Each entry carries a BLOCKER reason, checked by rediacc_ci.core.allowlist.validate_reason.",
+    "",
+    "FILES. Every checked-out submodule's tracked text files are a third subject. A file gets",
+    "no retired_by excuse: it is the shipped system, not a plan for changing it.",
+    "file_baseline is SHRINK-ONLY debt keyed {path, term, count, blocker}, never a line number:",
+    "a count above its ceiling, or an unlisted (path, term), is NEW; a count below it is STALE",
+    "until --write-baseline lowers it (that verb lowers and removes, never raises or adds, and",
+    "refuses while a submodule is NOT CHECKED). file_exclusions {prefix, blocker} drops a",
+    "subtree; a prefix matching no tracked file of a checked-out submodule is CANNOT RUN.",
+    "Both carry a BLOCKER reason checked by validate_reason.",
+    "",
+    "THE MARKER. A line that must keep naming a term (a history comment recording the",
+    "removal) carries `retired-term-ok(<term id>): <reason>` under any comment leader. It",
+    "suppresses only that term on that line, and is refused with no reason, a low-effort",
+    "reason, an unknown term id, or when the text before it no longer names the term."
   ],
   "terms": [
     {
       "id": "rclone",
-      "pattern": "rclone",
-      "case_sensitive": false,
+      "pattern": "(?:(?<![a-z])r|R)(?i:clone)",
+      "case_sensitive": true,
       "retired": "2026-10-15",
       "reason": "rclone is being removed completely, payload and feature: backups move to the S3/R2 chunk store and nothing may plan new rclone work (operator 2026-10-15).",
       "retired_by": [
@@ -34,10 +48,12 @@
       "must_match": [
         "bake rclone into the E2E VM image",
         "RCLONE_CONFIG",
-        "ensureRclone"
+        "ensureRclone",
+        "Rclone remote"
       ],
       "must_not_match": [
-        "a plain backup to the chunk store"
+        "a plain backup to the chunk store",
+        "discoverCloneState"
       ]
     },
     {
@@ -85,7 +101,7 @@
     },
     {
       "id": "edge-rediacc-configs",
-      "pattern": "(?<![A-Za-z0-9-])edge-rediacc-configs(?![A-Za-z0-9_]|-[A-Za-z0-9])",
+      "pattern": "(?<![A-Za-z0-9-])edge-rediacc-configs(?![A-Za-z0-9_]|-[A-Za-z0-9<{$])",
       "case_sensitive": true,
       "retired": "2026-10-15",
       "reason": "the bare R2 bucket edge-rediacc-configs is deleted; the regional buckets edge-rediacc-configs-<region> are live and are not this term.",
@@ -103,7 +119,9 @@
         "edge-rediacc-configs-us",
         "edge-rediacc-configs-asia",
         "edge-rediacc-configs-bench",
-        "edge-rediacc-configs-staging"
+        "edge-rediacc-configs-staging",
+        "edge-rediacc-configs-<region>",
+        "edge-rediacc-configs-${region}"
       ]
     },
     {
@@ -126,5 +144,7 @@
       ]
     }
   ],
-  "plan_baseline": []
+  "plan_baseline": [],
+  "file_baseline": [],
+  "file_exclusions": []
 }

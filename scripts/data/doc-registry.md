@@ -288,7 +288,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-resprofile | quality-branch / Resource profile (previous run's captures) | yes | no |
 | check:ci-retention-knob-parity | quality-code / Retention knob parity | yes | no |
 | check:ci-retired-commands | quality-content / Retired commands in docs | yes | no |
-| check:ci-retired-terms | quality-static / Retired terms | yes | no |
+| check:ci-retired-terms | quality-security / Retired terms | yes | no |
 | check:ci-review-resolutions | quality-branch / Review resolutions | yes | no |
 | check:ci-rubric-calibration | quality-code / Rubric calibration | yes | no |
 | check:ci-runner-advice | quality-static / Runner sizing advice | yes | no |

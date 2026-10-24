@@ -2,7 +2,13 @@
 
 WHY THIS EXISTS. On 2026-10-15 rclone was ordered removed completely, and worklist item #fcd7316f ("bake rclone into the E2E VM image") stayed OPEN beside that order: a queued unit of work whose subject no longer exists. Nothing connects a retirement to the work already queued against it, so the stale item survives until a human happens to read it. The operator's ask (#1201d7b9): "If an open worklist item can be matched against retired features (e.g. a retired-terms list containing rclone), flag that too."
 
-THE RULE. `.ci/config/retired-terms.json` lists retired terms, each with a pattern, a date, a reason and `retired_by`: the plans and worklist items doing the retiring. A SUBJECT is an OPEN worklist item (state ' ', '?' or '>') or a LIVE plan (active or backlog, outside `_done/` and `_removed/`, not a stub, not a compaction record). A subject naming a retired term is a finding UNLESS its text cites one of that term's `retired_by` references, or it IS one of them: the work doing the retiring has to name the thing it retires.
+THE RULE. `.ci/config/retired-terms.json` lists retired terms, each with a pattern, a date, a reason and `retired_by`: the plans and worklist items doing the retiring. A SUBJECT is an OPEN worklist item (state ' ', '?' or '>'), a LIVE plan (active or backlog, outside `_done/` and `_removed/`, not a stub, not a compaction record), or a FILE tracked by a checked-out submodule. An item or a plan naming a retired term is a finding UNLESS its text cites one of that term's `retired_by` references, or it IS one of them: the work doing the retiring has to name the thing it retires. A file gets no such excuse, because a file is the shipped system itself rather than a plan for changing it.
+
+THE FILE SUBJECT. Every submodule `.gitmodules` declares (`gitx.submodules`, never a hardcoded list) passes through `common.require_submodule` on its `.git` marker: absent under `CI=true` is CANNOT RUN (rc 2), absent locally prints `NOT CHECKED <path>` and the run continues without it. A checked-out submodule's files are `git -C <sm> ls-files -s -z`, keyed `<sm path>/<rel>`; symlinks, gitlinks and binary files (a NUL in the first 4096 bytes) are skipped. Zero declared submodules, or a checked-out submodule listing zero files, is CANNOT RUN. The shape line `N submodule(s) declared, M checked out, F file(s) read; NOT CHECKED: ...` prints every run. The file half never runs under `--owner`, which is the Stop hook's per-session call and judges items only.
+
+A FILE FINDING IS A COUNT, keyed (path, term id) and never a line number, so a paragraph moving above a hit does not re-key it. `file_baseline` entries `{path, term, count, blocker}` are SHRINK-ONLY debt: a count above its ceiling, or a pair with no entry, is NEW; a count below its ceiling is STALE until drained; an entry under a NOT CHECKED submodule is SKIPPED and printed. `file_exclusions` entries `{prefix, blocker}` drop a whole subtree (append-only applied migrations), and a prefix that matches no tracked file of a checked-out submodule is CANNOT RUN, so an exclusion cannot outlive what it excuses.
+
+THE MARKER, `retired-term-ok(<term id>): <reason>`, on the line it excuses, under any comment leader (a trailing `-->` or `*/` is stripped from the reason). It suppresses only the named term on that line, and only in files. It is refused (rc 1) when the reason is missing or empty, when `allowlist.validate_reason` rejects the reason, when the term id names no term, and when it is DEAD: the line before the marker no longer names its term. It carries a reason where `style-ok` and `slop-ok` do not, because it excuses a retired thing rather than a style choice.
 
 WHERE IT REFUSES AND WHERE IT ADVISES, and the split follows ownership:
 
@@ -19,6 +25,10 @@ WHERE IT REFUSES AND WHERE IT ADVISES, and the split follows ownership:
     landed are a SHRINK-ONLY baseline keyed on (plan path, term id), never on a line
     number: a NEW pair refuses, and a baselined pair that stopped firing refuses until
     it is drained with `--write-baseline`, which can only remove.
+  * FILES REFUSE IN CI, against `file_baseline`. `--write-baseline` lowers a count to
+    what fires and removes an entry that reached zero; it never raises one and never
+    adds one, and it refuses while any submodule is NOT CHECKED, because a drain
+    judged without a submodule would read that submodule's debt as fixed.
 
 THE IDENTITY OF A SUBJECT IS ITS OWN CITATION. An item whose id appears in `retired_by`, and a plan whose stem does, are the retirement itself and are never findings. A path in `retired_by` is matched by its STEM (`PLAN-backup-program`), because a plan moves exactly once at close, from `agent/plans/` into `_done/`, and a citation must survive that move.
 
@@ -31,13 +41,14 @@ ANTI-VACUITY, in the gate rather than in anybody's memory of having checked:
   * every pattern runs its own `must_match` and `must_not_match` texts first, so a
     pattern edited into matching nothing, or into matching the live
     `ACCOUNT_BACKUP_S3_*` family, is refused before it judges anything;
-  * a store that folds zero items, or a plan corpus with zero live plans, is CANNOT
-    RUN, never a clean tree;
+  * a store that folds zero items, a plan corpus with zero live plans, a `.gitmodules`
+    declaring zero submodules, or a checked-out submodule listing zero files, is
+    CANNOT RUN, never a clean tree;
   * every `retired_by` reference must resolve: a path to a file in the tree, an item
     id to an item in the store. An unresolvable citation would excuse any text that
     happens to repeat it.
 
-READING ANOTHER CHECKOUT. `--root <path>` judges that tree's plans and that tree's store (the store directory is pinned through `WORKLIST_STORE_DIR`, the override `wl_store.store_dir` documents for exactly this), so a disposable clone can measure the live checkout without writing to it. The fold is `wl_store.load(..., sync=False)`, which never writes, and `wl_store` itself always comes from THIS checkout, the instrument. `--config <path>` swaps the term list, which is how the pytest module drives fixture terms against fixture trees; `--write-baseline` refuses all three flags, because a drain judged against another tree must not rewrite this one's baseline.
+READING ANOTHER CHECKOUT. `--root <path>` judges that tree's plans, that tree's store and that tree's submodules (the store directory is pinned through `WORKLIST_STORE_DIR`, the override `wl_store.store_dir` documents for exactly this), so a disposable clone can measure the live checkout without writing to it. The fold is `wl_store.load(..., sync=False)`, which never writes, and `wl_store` itself always comes from THIS checkout, the instrument. `--config <path>` swaps the term list, which is how the pytest module drives fixture terms against fixture trees; `--write-baseline` refuses all three flags, because a drain judged against another tree must not rewrite this one's baseline.
 
 THE STOP HOOK'S CALL, described rather than wired here: `.ci/scripts/quality/check_retired_terms.py --owner <session prefix>` from the stop checks, as a blocking check for the stopping session. It exits 1 only on that session's own open items, which is the one refusal a session can always act on (withdraw the item, or cite the retirement it belongs to).
 """
@@ -55,9 +66,9 @@ import re
 import sys
 import tempfile
 
-from rediacc_ci import log, paths
-from rediacc_ci.controls import Checker, controls_first, plant
-from rediacc_ci.core import allowlist
+from rediacc_ci import gitx, log, paths, proc
+from rediacc_ci.controls import Checker, controls_first, fixture_git_env, git_isolated, plant
+from rediacc_ci.core import allowlist, common
 from rediacc_ci.quality import plan_lifecycle as PL
 from rediacc_ci.quality import shrink_only
 
@@ -284,6 +295,188 @@ def owned(owner: str, prefix: str) -> bool:
     return bool(owner) and bool(prefix) and (owner.startswith(prefix) or prefix.startswith(owner))
 
 
+# --------------------------------------------------------------------------- the file subject, pure
+
+MARKER_OPENER = "retired-term-ok("
+MARKER_RE = re.compile(r"retired-term-ok\((?P<term>[^)]*)\)(?P<rest>.*)$")
+#: A comment closer after the reason, stripped so `<!-- retired-term-ok(t): why -->` reads as `why`.
+MARKER_TRAILER_RE = re.compile(r"\s*(?:-->|\*/)\s*$")
+
+#: (path, term id) -> the 1-based line number of every counted hit. The count is `len`.
+FileHits = dict[tuple[str, str], list[int]]
+
+
+def parse_marker(line: str) -> tuple[str, str, int] | None:
+    """(term id, reason, column where the marker starts), or None when the line carries no marker."""
+    m = MARKER_RE.search(line)
+    if not m:
+        return None
+    rest = m.group("rest")
+    reason = MARKER_TRAILER_RE.sub("", rest[1:]).strip() if rest.startswith(":") else ""
+    return m.group("term").strip(), reason, m.start()
+
+
+def scan_text(key: str, text: str, terms: list[Term]) -> tuple[FileHits, list[str]]:
+    """Every counted hit in one file, and every refused marker. Pure: the caller read the file.
+
+    A marked line is judged twice. The marked term is searched in the text BEFORE the marker, so a reason that merely repeats the term cannot keep a marker alive; zero hits there is a DEAD marker. Every other term is searched over the whole line, so a reason cannot smuggle a second retired term past the gate.
+    """
+    hits: FileHits = {}
+    problems: list[str] = []
+    if MARKER_OPENER not in text and not any(t.regex.search(text) for t in terms):
+        return hits, problems
+    by_id = {t.id: t for t in terms}
+    for number, line in enumerate(text.splitlines(), 1):
+        marker = parse_marker(line)
+        marked = ""
+        if marker is not None:
+            tid, reason, col = marker
+            where = "%s:%d" % (key, number)
+            term = by_id.get(tid)
+            if term is None:
+                problems.append(
+                    "%s: retired-term-ok(%s) names no term in %s (known: %s)"
+                    % (where, tid, CONFIG_REL, ", ".join(sorted(by_id)))
+                )
+            else:
+                marked = tid
+                if not term.regex.search(line[:col]):
+                    problems.append(
+                        "%s: DEAD marker retired-term-ok(%s): the line before it no longer "
+                        "names %r, so delete the marker" % (where, tid, tid)
+                    )
+            if not reason:
+                problems.append(
+                    "%s: retired-term-ok(%s) carries no reason; write "
+                    "`retired-term-ok(%s): <why this line must keep naming it>`" % (where, tid, tid)
+                )
+            else:
+                rejection = allowlist.validate_reason(where, reason, key)
+                if rejection is not None:
+                    problems.append(
+                        "%s: retired-term-ok(%s) reason refused: %s"
+                        % (where, tid, rejection.message)
+                    )
+        for term in terms:
+            if term.id == marked:
+                continue
+            n = sum(1 for _ in term.regex.finditer(line))
+            if n:
+                hits.setdefault((key, term.id), []).extend([number] * n)
+    return hits, problems
+
+
+def _blocker_problem(entry: str, blocker: str) -> str | None:
+    if not blocker.startswith("BLOCKER:"):
+        return "%s carries no `BLOCKER:` reason" % entry
+    rejection = allowlist.validate_reason(
+        entry, blocker.removeprefix("BLOCKER:").strip(), CONFIG_REL
+    )
+    return None if rejection is None else rejection.message
+
+
+def file_baseline_entries(
+    doc: dict, term_ids: set[str]
+) -> tuple[dict[tuple[str, str], int], list[str]]:
+    """{(path, term): ceiling} from `file_baseline`, and every entry that cannot be trusted."""
+    out: dict[tuple[str, str], int] = {}
+    problems: list[str] = []
+    raw = doc.get("file_baseline") or []
+    if not isinstance(raw, list):
+        return out, ["file_baseline must be a list"]
+    for i, entry in enumerate(raw):
+        path, term = str(entry.get("path") or ""), str(entry.get("term") or "")
+        count = entry.get("count")
+        if not path or not term:
+            problems.append("file_baseline[%d] needs both path and term" % i)
+            continue
+        name = "file_baseline %s/%s" % (path, term)
+        if term not in term_ids:
+            problems.append("%s names no term in %s" % (name, CONFIG_REL))
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            problems.append("%s: count must be a positive integer, got %r" % (name, count))
+            continue
+        if (path, term) in out:
+            problems.append("%s is listed twice" % name)
+        problem = _blocker_problem(name, str(entry.get("blocker") or ""))
+        if problem:
+            problems.append(problem)
+        out[(path, term)] = count
+    return out, problems
+
+
+def file_exclusion_prefixes(doc: dict) -> tuple[list[str], list[str]]:
+    """The excluded path prefixes from `file_exclusions`, and every entry that cannot be trusted."""
+    out: list[str] = []
+    problems: list[str] = []
+    raw = doc.get("file_exclusions") or []
+    if not isinstance(raw, list):
+        return out, ["file_exclusions must be a list"]
+    for i, entry in enumerate(raw):
+        prefix = str(entry.get("prefix") or "")
+        if not prefix:
+            problems.append("file_exclusions[%d] has no prefix" % i)
+            continue
+        problem = _blocker_problem("file_exclusions %s" % prefix, str(entry.get("blocker") or ""))
+        if problem:
+            problems.append(problem)
+        out.append(prefix)
+    return out, problems
+
+
+def under(path: str, prefixes: list[str]) -> bool:
+    """True when `path` is one of `prefixes` or sits beneath one (a prefix is a submodule path or ends in `/`)."""
+    return any(path == p or path.startswith(p if p.endswith("/") else p + "/") for p in prefixes)
+
+
+@dataclasses.dataclass(frozen=True)
+class FileVerdict:
+    new: list[tuple[str, str, int, int]]  # (path, term, have, ceiling)
+    held: list[tuple[str, str, int]]  # (path, term, have == ceiling)
+    stale: list[tuple[str, str, int, int]]  # (path, term, have, ceiling), have < ceiling
+    skipped: list[tuple[str, str, int]]  # (path, term, ceiling) under a NOT CHECKED submodule
+
+
+def file_verdict(
+    hits: FileHits, baseline: dict[tuple[str, str], int], not_checked: list[str]
+) -> FileVerdict:
+    """The file hits split against the count-keyed shrink-only baseline."""
+    new, held, stale, skipped = [], [], [], []
+    for (path, term), lines in sorted(hits.items()):
+        have, ceiling = len(lines), baseline.get((path, term), 0)
+        if have > ceiling:
+            new.append((path, term, have, ceiling))
+        elif have < ceiling:
+            stale.append((path, term, have, ceiling))
+        else:
+            held.append((path, term, have))
+    for (path, term), ceiling in sorted(baseline.items()):
+        if (path, term) in hits:
+            continue
+        if under(path, not_checked):
+            skipped.append((path, term, ceiling))
+        else:
+            stale.append((path, term, 0, ceiling))
+    return FileVerdict(new, held, stale, skipped)
+
+
+def drained_file_baseline(entries: list[dict], hits: FileHits) -> list[dict]:
+    """The `file_baseline` a drain writes: each count LOWERED to what fires, an entry at zero removed.
+
+    Never raises a count and never adds an entry: a count above its ceiling is NEW and stays at the old ceiling, so the refusal survives the drain.
+    """
+    out = []
+    for entry in entries:
+        key = (str(entry.get("path")), str(entry.get("term")))
+        have = len(hits.get(key, []))
+        if have == 0:
+            continue
+        kept = dict(entry)
+        kept["count"] = min(int(entry.get("count") or 0), have)
+        out.append(kept)
+    return out
+
+
 # --------------------------------------------------------------------------- the tree-reading half
 
 
@@ -383,6 +576,108 @@ def tracked_paths(root: pathlib.Path, refs: list[str]) -> set[str]:
     return {ref for ref in refs if not ID_REF_RE.match(ref) and _resolves(root, ref)}
 
 
+#: Index modes that are not a regular file's text: a symlink and a gitlink (a nested submodule).
+SKIPPED_MODES = frozenset({"120000", "160000"})
+
+
+def submodule_files(root: pathlib.Path, sm_path: str) -> list[str]:
+    """Every tracked regular file of one checked-out submodule, keyed `<sm path>/<rel>`.
+
+    The environment drops `GIT_INDEX_FILE` and its siblings (`fixture_git_env`): a commit through a scratch index exports the SUPERPROJECT's index, which describes console and never this submodule, so honouring it here would list console's paths as the submodule's.
+    """
+    env = fixture_git_env()
+    env.update(gitx.NONINTERACTIVE)
+    result = proc.run(["git", "-C", str(root / sm_path), "ls-files", "-s", "-z"], env=env)
+    if not result.ok:
+        raise CannotRunError(
+            "`git -C %s ls-files` failed (rc=%s): %s"
+            % (sm_path, result.returncode, result.stderr.strip())
+        )
+    out = []
+    for entry in result.stdout.split("\0"):
+        meta, _, rel = entry.partition("\t")
+        fields = meta.split()
+        if not rel or not fields or fields[0] in SKIPPED_MODES:
+            continue
+        out.append("%s/%s" % (sm_path, rel))
+    if not out:
+        raise CannotRunError(
+            "checked-out submodule %s lists ZERO tracked files; the file half is not seeing "
+            "it and its green would mean nothing" % sm_path
+        )
+    return out
+
+
+@dataclasses.dataclass
+class FileScan:
+    declared: list[str]
+    checked: list[str]
+    not_checked: list[str]
+    tracked: list[str]
+    files_read: int
+    excluded: int
+    hits: FileHits
+    marker_problems: list[str]
+
+
+def scan_submodules(
+    root: pathlib.Path,
+    terms: list[Term],
+    exclusions: list[str],
+    env: dict[str, str] | None = None,
+) -> FileScan:
+    """The file subject: every checked-out submodule's tracked text files, counted against `terms`.
+
+    `env` reaches `common.require_submodule` only, which reads `CI` from it; the selftest passes one in each direction so the CI fail-closed branch is proven without exporting anything.
+    """
+    declared = [sm.path for sm in gitx.submodules(root)]
+    if not declared:
+        raise CannotRunError(
+            "%s declares ZERO submodules; the file half has nothing to read and its green "
+            "would mean nothing" % (root / ".gitmodules")
+        )
+    checked, not_checked = [], []
+    for sm_path in declared:
+        try:
+            present = common.require_submodule(
+                root / sm_path / ".git", "retired terms: submodule %s" % sm_path, env
+            )
+        except common.RefusalError as exc:
+            raise CannotRunError("\n  ".join(exc.lines)) from exc
+        (checked if present else not_checked).append(sm_path)
+    tracked: list[str] = []
+    for sm_path in checked:
+        tracked.extend(submodule_files(root, sm_path))
+    dead = [
+        p
+        for p in exclusions
+        if not under(p, not_checked) and not any(under(f, [p]) for f in tracked)
+    ]
+    if dead:
+        raise CannotRunError(
+            "file_exclusions prefix(es) match no tracked file of a checked-out submodule: %s. "
+            "Delete the dead entry; an exclusion must not outlive what it excuses" % ", ".join(dead)
+        )
+    hits: FileHits = {}
+    problems: list[str] = []
+    read = excluded = 0
+    for key in tracked:
+        if under(key, exclusions):
+            excluded += 1
+            continue
+        try:
+            data = (root / key).read_bytes()
+        except OSError:
+            continue
+        if b"\0" in data[:4096]:
+            continue
+        read += 1
+        file_hits, file_problems = scan_text(key, data.decode("utf-8", "replace"), terms)
+        hits.update(file_hits)
+        problems.extend(file_problems)
+    return FileScan(declared, checked, not_checked, tracked, read, excluded, hits, problems)
+
+
 @dataclasses.dataclass
 class Report:
     terms: list[Term]
@@ -393,14 +688,22 @@ class Report:
     findings: list[Finding]
     baseline: list[tuple[str, str]]
     unresolved_ids: list[str]
+    #: None under `--owner`: the Stop hook's call judges that session's items and nothing else.
+    files: FileScan | None = None
+    file_baseline: dict[tuple[str, str], int] = dataclasses.field(default_factory=dict)
 
 
-def gather(root: pathlib.Path, config: pathlib.Path) -> Report:
-    """The verdict's inputs: the terms from `config`, the subjects (store and plans) from `root`."""
+def gather(
+    root: pathlib.Path, config: pathlib.Path, owner: str = "", env: dict[str, str] | None = None
+) -> Report:
+    """The verdict's inputs: the terms from `config`, the subjects (store, plans and, outside `--owner`, submodule files) from `root`."""
     doc = load_config(config)
     terms, problems = parse_terms(doc)
     baseline, base_problems = baseline_pairs(doc)
     problems += base_problems
+    file_baseline, fb_problems = file_baseline_entries(doc, {t.id for t in terms})
+    exclusions, ex_problems = file_exclusion_prefixes(doc)
+    problems += fb_problems + ex_problems
     records = fold_items(root)
     if not records:
         raise CannotRunError(
@@ -422,36 +725,97 @@ def gather(root: pathlib.Path, config: pathlib.Path) -> Report:
             "not seeing the corpus" % (enumerated, root)
         )
     findings = judge(items + plans, terms)
-    return Report(terms, len(records), items, plans, enumerated, findings, baseline, missing_ids)
+    files = None if owner else scan_submodules(root, terms, exclusions, env)
+    return Report(
+        terms,
+        len(records),
+        items,
+        plans,
+        enumerated,
+        findings,
+        baseline,
+        missing_ids,
+        files,
+        file_baseline,
+    )
 
 
 def write_baseline(config: pathlib.Path, report: Report) -> int:
-    """Drain: drop baselined pairs that no longer fire. NEVER adds; a new pair is fixed, not baselined."""
+    """Drain both baselines. NEVER adds and never raises a count; a new finding is fixed, not baselined.
+
+    Refuses (rc 2) while any submodule is NOT CHECKED: that submodule's files were never read, so every one of its entries would look fixed and be drained away.
+    """
+    files = report.files
+    if files is None:
+        log.error("retired terms: --write-baseline needs the file half, which did not run")
+        return 2
+    if files.not_checked:
+        log.error(
+            "retired terms: refusing --write-baseline while submodule(s) are NOT CHECKED (%s): "
+            "their files were never read, so their baseline entries would drain as fixed. "
+            "Run `git submodule update --init %s` first."
+            % (", ".join(files.not_checked), " ".join(files.not_checked))
+        )
+        return 2
     new, _held, stale = plan_verdict(report.findings, report.baseline)
+    fv = file_verdict(files.hits, report.file_baseline, files.not_checked)
     doc = load_config(config)
     kept = [
         e
         for e in doc.get("plan_baseline") or []
         if (str(e.get("plan")), str(e.get("term"))) not in set(stale)
     ]
-    old_ids = ["%s %s" % p for p in report.baseline]
-    new_ids = ["%s %s" % (e.get("plan"), e.get("term")) for e in kept]
+    old_files = list(doc.get("file_baseline") or [])
+    kept_files = drained_file_baseline(old_files, files.hits)
+    old_ids = ["plan %s %s" % p for p in report.baseline] + [
+        "file %s %s" % key for key in report.file_baseline
+    ]
+    new_ids = ["plan %s %s" % (e.get("plan"), e.get("term")) for e in kept] + [
+        "file %s %s" % (e.get("path"), e.get("term")) for e in kept_files
+    ]
     added = shrink_only.baseline_additions(old_ids, new_ids)
+    raised = [
+        "file %s %s" % (e.get("path"), e.get("term"))
+        for e in kept_files
+        if e["count"] > report.file_baseline.get((str(e.get("path")), str(e.get("term"))), 0)
+    ]
     verdict = shrink_only.write_verdict(baseline_exists=True, first_seed=False, additions=added)
-    if verdict is not None or added:
-        log.error("retired terms: refusing --write-baseline (%s): %s" % (verdict, added))
+    if verdict is not None or added or raised:
+        log.error(
+            "retired terms: refusing --write-baseline (%s): added %s, raised %s"
+            % (verdict, added, raised)
+        )
         return 1
     for f in new:
         log.warn(
             "  NOT ADDED %s names %r: fix the plan; a new finding is never baselined"
             % (f.subject.key, f.term.id)
         )
+    for path, term, have, ceiling in fv.new:
+        log.warn(
+            "  NOT ADDED %s names %r %d time(s), ceiling %d: fix the file or mark the line; "
+            "a new finding is never baselined" % (path, term, have, ceiling)
+        )
     doc["plan_baseline"] = kept
+    doc["file_baseline"] = kept_files
     # tree-write: mode --write-baseline the drain verb a human runs by name, never reached by the default check
     config.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    lowered = sum(
+        1
+        for e in kept_files
+        if e["count"] < report.file_baseline.get((str(e.get("path")), str(e.get("term"))), 0)
+    )
     log.success(
-        "retired terms: baseline %d -> %d pair(s), %d drained, 0 added"
-        % (len(report.baseline), len(kept), len(report.baseline) - len(kept))
+        "retired terms: plan baseline %d -> %d pair(s); file baseline %d -> %d entr(ies), "
+        "%d lowered, %d removed; 0 added, 0 raised"
+        % (
+            len(report.baseline),
+            len(kept),
+            len(old_files),
+            len(kept_files),
+            lowered,
+            len(old_files) - len(kept_files),
+        )
     )
     return 0
 
@@ -505,20 +869,97 @@ def render(report: Report, owner: str) -> int:
                 "`.ci/scripts/quality/check_retired_terms.py --write-baseline`" % (plan, term)
             )
     refused = len(refused_items) + (0 if owner else len(new) + len(stale))
+    files_note = ""
+    if report.files is not None:
+        refused += render_files(report, report.files)
+        fv = file_verdict(report.files.hits, report.file_baseline, report.files.not_checked)
+        files_note = ", %d file pair(s) baselined, %d skipped as NOT CHECKED" % (
+            len(fv.held),
+            len(fv.skipped),
+        )
     if refused:
         log.error("retired terms: %d refusal(s)" % refused)
         return 1
     log.success(
         "retired terms: no %s names a retired term without citing its retirement%s"
         % (
-            "open item of %s" % owner if owner else "new live plan",
+            "open item of %s" % owner if owner else "new live plan or submodule file",
             ""
             if owner
-            else " (%d item advisory(ies), %d plan pair(s) baselined)"
-            % (len(advised_items), len(held)),
+            else " (%d item advisory(ies), %d plan pair(s) baselined%s)"
+            % (len(advised_items), len(held), files_note),
         )
     )
     return 0
+
+
+def _lines(numbers: list[int], limit: int = 8) -> str:
+    shown = ", ".join(str(n) for n in numbers[:limit])
+    return shown + (" (+%d more)" % (len(numbers) - limit) if len(numbers) > limit else "")
+
+
+def render_files(report: Report, files: FileScan) -> int:
+    """The file half's shape line and findings. Returns its refusal count."""
+    fv = file_verdict(files.hits, report.file_baseline, files.not_checked)
+    by_id = {t.id: t for t in report.terms}
+    log.info(
+        "  %d submodule(s) declared, %d checked out, %d file(s) read (%d tracked, %d excluded); "
+        "NOT CHECKED: %s; %d file pair(s) firing (%d baselined, %d new, %d stale, %d skipped), "
+        "%d refused marker(s)"
+        % (
+            len(files.declared),
+            len(files.checked),
+            files.files_read,
+            len(files.tracked),
+            files.excluded,
+            ", ".join(files.not_checked) or "none",
+            len(files.hits),
+            len(fv.held),
+            len(fv.new),
+            len(fv.stale),
+            len(fv.skipped),
+            len(files.marker_problems),
+        )
+    )
+    for sm_path in files.not_checked:
+        log.warn(
+            "  NOT CHECKED %s: not checked out, so none of its files were read "
+            "(`git submodule update --init %s`)" % (sm_path, sm_path)
+        )
+    for path, term, ceiling in fv.skipped:
+        log.warn(
+            "  SKIPPED baseline %s %r (ceiling %d): its submodule is NOT CHECKED"
+            % (path, term, ceiling)
+        )
+    for path, term, have in fv.held:
+        log.warn("  BASELINED file %s names %r %d time(s)" % (path, term, have))
+    for path, term, have, ceiling in fv.new:
+        t = by_id[term]
+        log.error(
+            "  NEW file %s names retired term %r %d time(s), baseline allows %d (retired %s: %s)\n"
+            "      lines: %s\n"
+            "      fix: remove the stale text, or mark a line that must keep it with "
+            "`retired-term-ok(%s): <reason>`. Do not add it to the baseline."
+            % (
+                path,
+                term,
+                have,
+                ceiling,
+                t.retired,
+                t.reason,
+                _lines(files.hits[(path, term)]),
+                term,
+            )
+        )
+    for path, term, have, ceiling in fv.stale:
+        log.error(
+            "  STALE file baseline %s %r allows %d, now %d: drain it with "
+            "`.ci/scripts/quality/check_retired_terms.py --write-baseline`"
+            % (path, term, ceiling, have)
+        )
+    for problem in files.marker_problems:
+        log.error("  MARKER %s" % problem)
+    return len(fv.new) + len(fv.stale) + len(files.marker_problems)
 
 
 def _arg(argv: list[str], flag: str) -> str:
@@ -544,7 +985,7 @@ def main(argv=None) -> int:
         here = pathlib.Path(paths.repo_root())
         root = pathlib.Path(root_arg).resolve() if root_arg else here
         config = pathlib.Path(config_arg).resolve() if config_arg else here / CONFIG_REL
-        report = gather(root, config)
+        report = gather(root, config, owner)
     except CannotRunError as exc:
         log.error("retired terms: CANNOT RUN: %s" % exc)
         return 2
@@ -578,6 +1019,7 @@ def _flagged(subjects: list[Subject], terms: list[Term]) -> set[tuple[str, str]]
     return {(f.subject.key, f.term.id) for f in judge(subjects, terms)}
 
 
+@git_isolated
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
     check = Checker()
@@ -727,6 +1169,8 @@ def selftest() -> bool:
     blank = baseline_pairs({"plan_baseline": [{"plan": "p", "term": "t", "blocker": "later"}]})[1]
     check("PLANT: a baseline entry without a BLOCKER reason is refused", blank != [])
 
+    _file_controls(check, terms, by_id)
+
     # The real fold: a closed item is ignored and an open one is seen, written through the real writer verbs.
     try:
         check(
@@ -737,6 +1181,234 @@ def selftest() -> bool:
         check("CONTROL: the real wl_store fold is reachable (%s)" % exc, False)
     print("  %d control(s) ran" % check.count)
     return not check.ok
+
+
+REASON = "this comment records the removal so nobody re-adds it"
+
+
+def _counts(key: str, text: str, terms: list[Term]) -> tuple[dict[str, int], list[str]]:
+    hits, problems = scan_text(key, text, terms)
+    return {term: len(lines) for (_k, term), lines in hits.items()}, problems
+
+
+def _fixture_tree(base: pathlib.Path, *, declared: list[str], present: dict[str, dict]) -> None:
+    """A superproject with `.gitmodules` naming `declared`, and each of `present` a git repo whose index holds its files.
+
+    A value of None in a file map plants a symlink to `doc.md` (a READABLE target naming the term, so a gate that stopped skipping symlinks would count it); bytes plant a binary file. The files are only `git add`ed, never committed: `ls-files` reads the index, and a commit would need an identity the CI runner may not carry.
+    """
+    base.mkdir(parents=True, exist_ok=True)
+    (base / ".gitmodules").write_text(
+        "".join(
+            '[submodule "%s"]\n\tpath = %s\n\turl = https://example.invalid/x.git\n' % (p, p)
+            for p in declared
+        ),
+        encoding="utf-8",
+    )
+    env = fixture_git_env()
+    for sm_path, files in present.items():
+        repo = base / sm_path
+        repo.mkdir(parents=True, exist_ok=True)
+        proc.run(["git", "init", "-q", str(repo)], env=env)
+        for rel, body in files.items():
+            target = repo / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if body is None:
+                target.symlink_to("doc.md")
+            elif isinstance(body, bytes):
+                target.write_bytes(body)
+            else:
+                target.write_text(body, encoding="utf-8")
+        if files:
+            proc.run(["git", "-C", str(repo), "add", "-A"], env=env)
+
+
+def _file_controls(check: Checker, terms: list[Term], by_id: dict[str, Term]) -> None:
+    """The file subject in both directions: patterns, the marker, the count baseline, the drain and the enumeration."""
+    # X1: the narrowed patterns.
+    check(
+        "CONTROL: discoverCloneState is not rclone",
+        _counts("f", "x := discoverCloneState(y)", terms)[0] == {},
+    )
+    check(
+        "PLANT: an Rclone in prose is rclone",
+        _counts("f", "the Rclone remote", terms)[0] == {"rclone": 1},
+    )
+    for live in ("edge-rediacc-configs-<region>", "edge-rediacc-configs-${region}"):
+        check(
+            "CONTROL: %s is a live regional bucket" % live,
+            _counts("f", "copy into %s now" % live, terms)[0] == {},
+        )
+
+    # X3: the marker.
+    clean = "a plain backup to the chunk store\n"
+    check("CONTROL: a clean file has no hit and no problem", _counts("f", clean, terms) == ({}, []))
+    planted = plant(clean, "chunk store", "chunk store through rclone")
+    check(
+        "PLANT: a file naming rclone counts one hit on its line",
+        scan_text("f", planted, terms) == ({("f", "rclone"): [1]}, []),
+    )
+    marked = planted.rstrip("\n") + "  // retired-term-ok(rclone): %s\n" % REASON
+    check("CONTROL: a marked line with a reason is silent", _counts("f", marked, terms) == ({}, []))
+    html = planted.rstrip("\n") + " <!-- retired-term-ok(rclone): %s -->\n" % REASON
+    check(
+        "CONTROL: a trailing `-->` is no part of the reason",
+        _counts("f", html, terms) == ({}, []),
+    )
+    html_empty = plant(html, REASON, "")
+    check(
+        "PLANT: `<!-- retired-term-ok(t): -->` is a marker with no reason, not a reason of `-->`",
+        any("carries no reason" in p for p in _counts("f", html_empty, terms)[1]),
+    )
+    no_reason = plant(marked, ": %s" % REASON, "")
+    check(
+        "PLANT: a marker with no reason is refused",
+        any("carries no reason" in p for p in _counts("f", no_reason, terms)[1]),
+    )
+    low = plant(marked, REASON, "no fix")
+    check(
+        "PLANT: a marker with a low-effort reason is refused",
+        _counts("f", low, terms)[1] != [],
+    )
+    unknown = plant(marked, "retired-term-ok(rclone)", "retired-term-ok(zzz)")
+    unknown_counts, unknown_problems = _counts("f", unknown, terms)
+    check(
+        "PLANT: a marker naming no term is refused and suppresses nothing",
+        any("names no term" in p for p in unknown_problems) and unknown_counts == {"rclone": 1},
+    )
+    dead = plant(marked, "through rclone", "through the chunk client")
+    check(
+        "PLANT: a marker whose line no longer names its term is DEAD",
+        any("DEAD marker" in p for p in _counts("f", dead, terms)[1]),
+    )
+    echo = plant(dead, REASON, REASON + " after rclone")
+    check(
+        "PLANT: a reason that only repeats the term keeps no marker alive",
+        any("DEAD marker" in p for p in _counts("f", echo, terms)[1]),
+    )
+    two = plant(marked, "through rclone", "through rclone and BACKUP_S3_BUCKET")
+    check(
+        "PLANT: a marker suppresses only its own term",
+        _counts("f", two, terms) == ({"BACKUP_S3_pre-rename": 1}, []),
+    )
+
+    # X4: the count baseline and its drain.
+    hits: FileHits = {("s/a", "rclone"): [3, 9]}
+    check(
+        "PLANT: an unlisted file pair is NEW",
+        file_verdict(hits, {}, []).new == [("s/a", "rclone", 2, 0)],
+    )
+    v = file_verdict(hits, {("s/a", "rclone"): 2}, [])
+    check("CONTROL: a count at its ceiling is held", v.held and not v.new and not v.stale)
+    check(
+        "PLANT: a count above its ceiling is NEW",
+        file_verdict(hits, {("s/a", "rclone"): 1}, []).new == [("s/a", "rclone", 2, 1)],
+    )
+    check(
+        "PLANT: a count below its ceiling is STALE",
+        file_verdict(hits, {("s/a", "rclone"): 3}, []).stale == [("s/a", "rclone", 2, 3)],
+    )
+    gone = file_verdict({}, {("s/a", "rclone"): 3, ("t/b", "rclone"): 1}, ["t"])
+    check(
+        "CONTROL: an entry under a NOT CHECKED submodule is skipped, a fixed one is STALE",
+        gone.skipped == [("t/b", "rclone", 1)] and gone.stale == [("s/a", "rclone", 0, 3)],
+    )
+    entries = [
+        {"path": "s/a", "term": "rclone", "count": 5, "blocker": "x"},
+        {"path": "s/b", "term": "rclone", "count": 1, "blocker": "x"},
+        {"path": "s/c", "term": "rclone", "count": 1, "blocker": "x"},
+    ]
+    drained = drained_file_baseline(entries, {("s/a", "rclone"): [1, 2], ("s/c", "rclone"): [1, 2]})
+    check(
+        "CONTROL: the drain lowers, removes at zero, and never raises a count",
+        [(e["path"], e["count"]) for e in drained] == [("s/a", 2), ("s/c", 1)],
+    )
+    good_blocker = "BLOCKER: removed by PLAN-backup-program H7 with the rest of the rclone code"
+    ok_entry = {"path": "s/a", "term": "rclone", "count": 1, "blocker": good_blocker}
+    check(
+        "CONTROL: a well-formed file_baseline entry parses clean",
+        file_baseline_entries({"file_baseline": [ok_entry]}, set(by_id))[1] == [],
+    )
+    check(
+        "PLANT: a file_baseline entry without a BLOCKER reason is refused",
+        file_baseline_entries({"file_baseline": [dict(ok_entry, blocker="later")]}, set(by_id))[1]
+        != [],
+    )
+    check(
+        "PLANT: a file_baseline entry naming no term is refused",
+        file_baseline_entries({"file_baseline": [dict(ok_entry, term="zzz")]}, set(by_id))[1] != [],
+    )
+    check(
+        "PLANT: a file_exclusions entry without a BLOCKER reason is refused",
+        file_exclusion_prefixes({"file_exclusions": [{"prefix": "s/x/", "blocker": ""}]})[1] != [],
+    )
+
+    # X2: the enumeration, through the real git against fixture repos.
+    try:
+        _enumeration_controls(check, terms, clean)
+    except CannotRunError as exc:
+        check("CONTROL: the fixture enumeration reaches a verdict (%s)" % exc, False)
+
+
+def _enumeration_controls(check: Checker, terms: list[Term], clean: str) -> None:
+    with tempfile.TemporaryDirectory(prefix="retired-terms-files-") as tmp:
+        base = pathlib.Path(tmp)
+        tree = base / "tree"
+        _fixture_tree(
+            tree,
+            declared=["sub/a", "sub/gone"],
+            present={
+                "sub/a": {
+                    "doc.md": "uses rclone\n",
+                    "clean.md": clean,
+                    "blob.bin": b"\0rclone",
+                    "link": None,
+                    "mig/0001.sql": "-- rclone\n",
+                }
+            },
+        )
+        scan = scan_submodules(tree, terms, [], env={})
+        check(
+            "CONTROL: a checked-out submodule is read, an absent one is NOT CHECKED locally",
+            scan.checked == ["sub/a"] and scan.not_checked == ["sub/gone"],
+        )
+        check(
+            "PLANT: a tracked text file naming rclone is a hit; binary and symlink are skipped",
+            set(scan.hits) == {("sub/a/doc.md", "rclone"), ("sub/a/mig/0001.sql", "rclone")}
+            and scan.files_read == 3,
+        )
+        excl = scan_submodules(tree, terms, ["sub/a/mig/"], env={})
+        check(
+            "CONTROL: an excluded prefix is not read",
+            set(excl.hits) == {("sub/a/doc.md", "rclone")} and excl.excluded == 1,
+        )
+        try:
+            scan_submodules(tree, terms, ["sub/a/nothing/"], env={})
+            dead_ok = False
+        except CannotRunError:
+            dead_ok = True
+        check("PLANT: an exclusion matching no tracked file is CANNOT RUN", dead_ok)
+        try:
+            scan_submodules(tree, terms, [], env={"CI": "true"})
+            ci_ok = False
+        except CannotRunError:
+            ci_ok = True
+        check("PLANT: an absent submodule under CI=true is CANNOT RUN", ci_ok)
+        empty = base / "empty"
+        _fixture_tree(empty, declared=[], present={})
+        try:
+            scan_submodules(empty, terms, [], env={})
+            zero_ok = False
+        except CannotRunError:
+            zero_ok = True
+        check("PLANT: zero declared submodules is CANNOT RUN", zero_ok)
+        bare = base / "bare"
+        _fixture_tree(bare, declared=["sub/e"], present={"sub/e": {}})
+        try:
+            scan_submodules(bare, terms, [], env={})
+            nofile_ok = False
+        except CannotRunError:
+            nofile_ok = True
+        check("PLANT: a checked-out submodule listing zero files is CANNOT RUN", nofile_ok)
 
 
 def _fold_control(terms: list[Term]) -> bool:

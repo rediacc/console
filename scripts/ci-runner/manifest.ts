@@ -1701,7 +1701,8 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     // An OPEN worklist item or a LIVE plan naming a term .ci/config/retired-terms.json retires (rclone, the pre-rename BACKUP_S3_* worker secrets, R2_TOKEN_AUTH_API, two deleted R2 buckets) must cite the plan or item doing the retiring. Plans refuse against a shrink-only (plan, term) baseline; items ADVISE here, because the store is shared and a session may not close another's item, and refuse only under `--owner <prefix>`.
-    // NO `paths:` DELIBERATELY. Its subjects are the worklist store (a record path, committed in record-only pushes) and every live plan, and a retirement lands in the config, so a path table would have to name all three and would drop the gate on the record-only commit that queues stale work.
+    // Every checked-out submodule's tracked files are a third subject, refused against a count-keyed shrink-only file_baseline (agent/plans/PLAN-retired-terms-submodule-scan.md), which is why the step sits in quality-security: quality-static checks out no submodules, and an absent one fails closed under CI=true.
+    // NO `paths:` DELIBERATELY. Its subjects are the worklist store (a record path, committed in record-only pushes), every live plan and every submodule file, and a retirement lands in the config, so a path table would have to name all of them and would drop the gate on the record-only commit that queues stale work.
     id: 'check:ci-retired-terms',
     run: 'npm run check:ci-retired-terms',
     gate: true,
@@ -1709,7 +1710,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      job: 'quality-security',
       step: 'Retired terms',
     },
   },
