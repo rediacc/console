@@ -38,10 +38,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # changes nothing about what gets installed today and everything about whether the
 # same Dockerfile builds the same image tomorrow.
 #
-# NOTE THE SKEW, deliberately left rather than quietly unified: .devcontainer's
-# ARG AGENT_BROWSER_VERSION is 0.26.0, ten minors behind this. They are different
-# images with different jobs, and picking one number for both is a behaviour change
-# to whichever loses -- a decision, not a tidy-up.
+# The same version is pinned in .devcontainer/Dockerfile and in the Install agent-browser step of
+# .github/workflows/ci-quality.yml; the three move together.
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
 # npm-before`, passed by every build site as a build-arg). A global install resolves live, with

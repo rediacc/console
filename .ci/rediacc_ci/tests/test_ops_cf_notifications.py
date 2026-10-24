@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 import sys
+import types
 
 import pytest
 
@@ -253,3 +254,68 @@ def test_the_repo_config_loads_and_names_positive_limits() -> None:
     want = cf_notifications.desired_policies(section)
     assert "spend-guard:worker_standard_cpu_ms" in want
     assert all(int(p["filters"]["limit"][0]) >= 1 for p in want.values())
+
+
+class _ScriptedApi:
+    """`Api` over a scripted `cf_auth.curl_json`: answers in order, records (method, url)."""
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch, answers: list[dict], listed=None) -> None:
+        self.calls: list[tuple[str, str]] = []
+        self.sleeps: list[float] = []
+        answers = list(answers)
+
+        def fake(method, url, _headers, _data=None, **_kw):
+            self.calls.append((method, url))
+            if method == "GET":
+                return {"success": True, "result": listed or []}
+            return answers.pop(0)
+
+        monkeypatch.setattr(cf_notifications.cf_auth, "curl_json", fake)
+        auth = types.SimpleNamespace(headers={})
+        self.api = cf_notifications.Api(auth, "acct", sleep=self.sleeps.append)
+
+
+REFUSED = {"success": False, "errors": [{"code": 10000, "message": "transient"}]}
+OK = {"success": True, "result": {"id": "p1"}}
+PRODUCT_REFUSED = {"success": False, "errors": [{"code": 17106, "message": "Invalid product"}]}
+
+
+def test_write_retries_a_transient_refusal_then_succeeds(monkeypatch) -> None:
+    """Review 5c376038.3: two refusals then success is three attempts with two sleeps."""
+    s = _ScriptedApi(monkeypatch, [REFUSED, REFUSED, OK])
+    assert s.api.write("PUT", "u", {})["success"] is True
+    assert len(s.calls) == 3
+    assert s.sleeps == [cf_notifications.RETRY_SLEEP_S] * 2
+
+
+def test_write_gives_up_after_the_attempt_cap(monkeypatch) -> None:
+    s = _ScriptedApi(monkeypatch, [REFUSED] * cf_notifications.WRITE_ATTEMPTS)
+    with pytest.raises(cf_notifications.NotificationError):
+        s.api.write("DELETE", "u/x", None)
+    assert len(s.calls) == cf_notifications.WRITE_ATTEMPTS
+
+
+def test_write_never_retries_a_product_refusal(monkeypatch) -> None:
+    s = _ScriptedApi(monkeypatch, [PRODUCT_REFUSED])
+    with pytest.raises(cf_notifications.UnavailableError):
+        s.api.write("POST", "u", {})
+    assert len(s.calls) == 1
+    assert s.sleeps == []
+
+
+def test_a_create_cloudflare_stored_but_reported_as_an_error_is_not_posted_twice(
+    monkeypatch,
+) -> None:
+    """Review 5c376038.2: before a POST retry the policy list is read, and a policy of that name already there ends the retries."""
+    s = _ScriptedApi(monkeypatch, [REFUSED], listed=[{"name": "spend-guard:x", "id": "stored1"}])
+    assert s.api.create({"name": "spend-guard:x"}) == "stored1"
+    assert [m for m, _ in s.calls].count("POST") == 1
+
+
+def test_a_refused_product_is_not_counted_as_a_change(
+    cf: Cf, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 5c376038.1: only the two policies that landed count."""
+    monkeypatch.setenv("FAKE_REFUSED", "r2_storage")
+    _rc, out, _err = cf.run(capsys)
+    assert out.rstrip().endswith("2 change(s)")

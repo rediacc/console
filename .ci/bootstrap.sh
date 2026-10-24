@@ -491,7 +491,9 @@ install_agg() {
         return 1
     }
     url="https://github.com/asciinema/agg/releases/download/v${AGG_VERSION}/agg-${triple}"
-    tmp="$(mktemp -d)" || return 1
+    # Staged in a directory INSIDE $AGG_DIR, the same filesystem as the final path, so the closing `mv` is a rename(2) and atomic.
+    mkdir -p "$AGG_DIR" || return 1
+    tmp="$(mktemp -d "$AGG_DIR/.stage.XXXXXX")" || return 1
     trap 'rm -rf -- "$tmp"; trap - RETURN' RETURN
     echo "bootstrap: downloading agg ${AGG_VERSION} (agg-${triple})" >&2
     curl -fsSL --max-time 600 --retry 3 --retry-delay 5 -o "$tmp/agg" "$url" || {
@@ -506,7 +508,6 @@ install_agg() {
         return 1
     }
     chmod +x "$tmp/agg" || return 1
-    mkdir -p "$AGG_DIR" || return 1
     mv -f "$tmp/agg" "$AGG_CACHE_BIN" || return 1
     got="$(toolchain_probe_version agg "$AGG_CACHE_BIN" 2>/dev/null)"
     [ "$got" = "$AGG_VERSION" ] || {

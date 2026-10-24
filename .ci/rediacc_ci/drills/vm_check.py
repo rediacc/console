@@ -130,7 +130,8 @@ SFTP_BATCH = ("sftp", "-o", "BatchMode=yes")
 SFTP_DENIAL = re.compile(
     r"permission denied|read-only file system|operation not permitted"
     # The server's own path-bearing answer for a file the session cannot see (the private repo view detaches other repos' mounts). Never a bare "no such file", which ssh also prints for a missing identity file.
-    r"""|(?:couldn't \w+(?: on)?|remote \w+)[^\n]*"[^"\n]+"[^\n]*: no such file""",
+    # Every run is bounded: the lead-in holds no quote, the path is quote-free, and the tail is a few characters, so a long line from the server cannot backtrack quadratically.
+    r"""|(?:couldn't \w+(?: on)?|remote \w+)[^"\n]*"[^"\n]+"[^"\n:]{0,16}: no such file""",
     re.IGNORECASE,
 )
 # sftp-server answers a refused write with the bare SSH2_FX_FAILURE status, which sftp prints as `dest open "<path>": Failure` (put) or `remote setstat "<path>": Failure` (chmod). Such a line is a refusal only when its path is the neighbour's; the 2026-10-15 run's legs were confined but read as "not refused".
@@ -156,6 +157,12 @@ def sftp_refused(output: str, path: str = "") -> bool:
         m.group(1) == path or m.group(1).startswith(prefix)
         for m in SFTP_STATUS_FAILURE.finditer(text)
     )
+
+
+def shell_refused(text: str, path: str) -> bool:
+    """True when a failed remote shell command was refused by the server's side: a read-only filesystem, or the other repo's file absent for NAMING `path`. A `No such file` line that names another path (ssh's own `Warning: Identity file ... not accessible`) is not a refusal."""
+    lines = [ln for ln in text.splitlines() if not ln.lstrip().lower().startswith("warning:")]
+    return any(READ_ONLY in ln or (NOT_VISIBLE in ln and path in ln) for ln in lines)
 
 
 # The CLI's file-write guard, and the one override the V1.3 write rows pass (see THE RULES).
@@ -829,6 +836,11 @@ class Options:
     only: frozenset[str] = frozenset()
 
 
+def only_step_ids() -> frozenset[str]:
+    """The step ids `--only` accepts: every terminal step of `VmCheck._ONLY_DEPS`, and P5. The infra chain (P0-P4) always runs, so it is not nameable."""
+    return frozenset(VmCheck._ONLY_DEPS) | {"P5"}
+
+
 def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) -> Options:
     env = os.environ if environ is None else environ
     selftest, keep_work, rest = lib.parse_common_args(list(argv))
@@ -843,6 +855,12 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     parser.add_argument("--only", default="")
     ns = parser.parse_args(rest)
     only = frozenset(s.strip() for s in ns.only.split(",") if s.strip())
+    unknown = sorted(only - only_step_ids())
+    if unknown:
+        parser.error(
+            "--only names no step: %s (known: %s)"
+            % (", ".join(unknown), ", ".join(sorted(only_step_ids())))
+        )
     return Options(
         changed=ns.changed,
         os_image=ns.os_image,
@@ -1878,10 +1896,12 @@ class VmCheck:
     # ------------------------------------------------------------------ A
 
     def a1_suites(self) -> bool:
-        """The four account suites, each an assertion row; True when all four exited 0."""
+        """The four account suites, each an assertion row; True when all exited 0. Under `--only` just the named ones run."""
         env = self.drill_env()
         green = True
         for step_id, script, package in ACCOUNT_SUITES:
+            if self.opts.only and not self._only_wants(step_id):
+                continue
             prefix = self.root / package if package else self.root
             res = self.host.run(
                 ["npm", "--prefix", str(prefix), "run", script], env=env, timeout=SUITE_TIMEOUT_S
@@ -2040,11 +2060,13 @@ class VmCheck:
         )
 
     def a2_drills(self) -> bool:
-        """The three account drills, each judged by `classify_drill`. False after a failed row; a could-not-judge drill raises once all three ran."""
+        """The three account drills, each judged by `classify_drill` (under `--only`, the named ones). False after a failed row; a could-not-judge drill raises once all ran."""
         env = self.drill_env()
         pending: tuple[str, str] | None = None
         green = True
         for step_id, name, argv in self.drill_argvs():
+            if self.opts.only and not self._only_wants(step_id):
+                continue
             res = self.host.run(argv, env=env, timeout=DRILL_TIMEOUT_S)
             outcome, detail = classify_drill(res)
             desc = "drill %s (%d s): %s" % (name, res.ms // 1000, outcome)
@@ -2147,7 +2169,7 @@ class VmCheck:
                 "V1.2",
                 "A: `%s` on B's file fails (read-only, or B's mount not visible)"
                 % command.split()[0],
-                res.rc != 0 and (READ_ONLY in res.text() or NOT_VISIBLE in res.text()),
+                res.rc != 0 and shell_refused(res.text(), target),
                 res,
                 evidence=res.text(),
             )
@@ -2472,7 +2494,7 @@ class VmCheck:
         )
 
     def u1_converge(self) -> None:
-        """U1: a renet upgrade converges pre-isolation daemons onto the per-network layout, and the cross-repo reach the flat layout allowed is gone. The whole step lives in `upgrade_converge.run`, which drives this run's own `./rdc.sh` helpers and ssh probe; a defect it finds is a FAIL row, never papered over."""
+        """U1: a renet upgrade converges pre-isolation daemons onto the per-network layout (the cross-repo reach the flat layout allowed is asserted by drill I1, not here). The whole step lives in `upgrade_converge.run`, which drives this run's own `./rdc.sh` helpers and ssh probe; a defect it finds is a FAIL row, never papered over."""
         self.u1_fn(self)
 
     def _sftp_config(self) -> pathlib.Path | None:

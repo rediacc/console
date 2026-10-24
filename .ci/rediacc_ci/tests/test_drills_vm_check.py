@@ -18,6 +18,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from typing import TYPE_CHECKING, Any, cast
 
@@ -1393,6 +1394,34 @@ def test_only_u1_runs_the_infra_and_u1_and_writes_no_receipt_json(tmp_path: path
     assert not world.npm_calls()
 
 
+def test_only_an_account_step_runs_just_that_step_and_what_it_drags_in(
+    tmp_path: pathlib.Path,
+) -> None:
+    """`--only A1.1` runs the one suite, not all four and not the drills (review accb48d9.4)."""
+    world = make_world(tmp_path, stored_ok=True)
+    _rc, _out, _ = _run_only(tmp_path, world, "A1.1")
+    assert len(world.npm_calls()) == 1, world.npm_calls()
+    assert not world.drill_calls(), world.drill_calls()
+
+
+def test_only_a_drill_runs_that_drill_alone(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, stored_ok=True)
+    _run_only(tmp_path, world, "A2.2")
+    assert len(world.drill_calls()) == 1, world.drill_calls()
+    assert not world.npm_calls()
+
+
+@pytest.mark.parametrize("typo", ["u1", "V1.9", "U1,nope"])
+def test_only_refuses_an_id_that_names_no_step(
+    typo: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A typo must not silently run just the infra chain (review accb48d9.5)."""
+    with pytest.raises(SystemExit) as stopped:
+        vm_check.parse_args(["--only", typo], {})
+    assert stopped.value.code == 2
+    assert "names no step" in capsys.readouterr().err
+
+
 def test_only_writes_a_run_record_under_its_run_id(tmp_path: pathlib.Path) -> None:
     world = make_world(tmp_path, stored_ok=True)
     rc, out, _ = _run_only(tmp_path, world, "U1")
@@ -1602,6 +1631,28 @@ def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None
     assert vm_check.sftp_refused(
         'u@h: Permission denied (publickey).\nremote open("/x"): Permission denied'
     )
+
+
+def test_shell_refused_needs_the_target_path_for_a_not_visible_answer() -> None:
+    t = "/mnt/rediacc/mounts/g/.rediacc.json"
+    assert vm_check.shell_refused(
+        "chmod: changing permissions of '%s': Read-only file system" % t, t
+    )
+    assert vm_check.shell_refused("chmod: cannot access '%s': No such file or directory" % t, t)
+    # ssh's identity-file warning is not the server's answer.
+    assert not vm_check.shell_refused(
+        "Warning: Identity file /h/.ssh/id_x not accessible: No such file or directory.", t
+    )
+    # An unrelated missing path is not either.
+    assert not vm_check.shell_refused("touch: cannot touch '/other': No such file or directory", t)
+    assert not vm_check.shell_refused("", t)
+
+
+def test_sftp_denial_is_linear_on_a_long_server_line() -> None:
+    line = "Couldn't x " * 4000 + 'on "/p" '
+    started = time.monotonic()
+    assert not vm_check.sftp_refused(line)
+    assert time.monotonic() - started < 2.0
 
 
 def test_a_valid_stored_token_mints_nothing_and_keeps_the_default_config(

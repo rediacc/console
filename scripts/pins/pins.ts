@@ -202,13 +202,15 @@ export interface DraftInput {
   task: string | null;
   /** The shared-message mutant: the drafting before 2026-10-15, one change list for every repository. */
   shared?: boolean;
+  /** The tree the recorded commands ran in; the Ran: labels are relative to it, not to the caller's working directory. */
+  root?: string;
 }
 
 /**
  * One repository's drafted commit message. Each draft lists only what that repository's own commit changes: its own site lines and the commands run in it. A submodule's subject names the repository and its own changes, and the run's release lines appear in a submodule draft only for a plan whose every site lies in that submodule. The console draft carries the run's subject and release lines, and one pointer line per submodule naming that submodule's own commit. Pure.
  */
 export function draftMessage(d: DraftInput): string {
-  const cmdLine = (c: CommandRecord): string => ranLine(c);
+  const cmdLine = (c: CommandRecord): string => ranLine(c, d.root);
   const gateLines = (): string[] =>
     d.ungated.length > 0
       ? [
@@ -339,6 +341,7 @@ function writeDrafts(
       stamp: res.stamp,
       task,
       shared: w.mutant === 'shared-message',
+      root: w.root,
     });
     const draft = path.join(res.dir, `${slug(c.repo)}.msg`);
     fs.writeFileSync(draft, `${body}\n`);

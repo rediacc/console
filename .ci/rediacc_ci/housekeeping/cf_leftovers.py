@@ -46,8 +46,16 @@ def fetch(path: str, token: str) -> dict:
         with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
     except urllib.error.HTTPError as exc:
-        raw = exc.read()
-    except (urllib.error.URLError, TimeoutError) as exc:
+        try:
+            raw = exc.read()
+        except OSError as read_exc:
+            raise CfError(
+                "GET %s: HTTP %s, body unreadable: %s" % (path, exc.code, read_exc)
+            ) from None
+        finally:
+            exc.close()
+    except OSError as exc:
+        # URLError, a timeout and a connection reset while reading the body are all OSErrors.
         raise CfError("GET %s: %s" % (path, exc)) from None
     try:
         body = json.loads(raw)
@@ -99,7 +107,10 @@ def configured(root) -> tuple[set, set]:
     if not files:
         raise CfError("no wrangler config found under %s" % root)
     for path in files:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+        except (tomllib.TOMLDecodeError, OSError) as exc:
+            raise CfError("%s cannot be read: %s" % (path, exc)) from None
         top = data.get("name")
         if isinstance(top, str):
             scripts.add(top)
@@ -137,7 +148,11 @@ def find_leftovers(
         if any(fnmatch.fnmatchcase(name, pat) for pat in D1_PATTERNS) and name not in known_dbs:
             out.append(("d1", name, "bound by no wrangler config (uuid %s)" % db.get("uuid", "?")))
 
-    for zone in listing("/zones", token, get):
+    # Only this account's zones: a route in another account's zone may name a script that lives here and is not a leftover of this account.
+    for zone in listing("/zones?account.id=%s" % account, token, get):
+        owner = (zone.get("account") or {}).get("id")
+        if owner is not None and owner != account:
+            continue
         zid, zname = zone.get("id"), zone.get("name", "?")
         zone_routes = listing("/zones/%s/workers/routes" % zid, token, get)
         counts["routes"] += len(zone_routes)

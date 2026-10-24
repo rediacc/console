@@ -51,6 +51,8 @@ if TYPE_CHECKING:
     import http.cookiejar
 
 GATEWAY_START_TIMEOUT = 300
+# Health polls after `account stop` before the stack counts as still running.
+STACK_STOP_POLLS = 10
 GATEWAY_POLL_SECONDS = 2
 
 
@@ -565,14 +567,28 @@ class Drill:
         """
         if not (self.root / ".account-state").is_file() or not self.gateway_alive():
             return
-        with contextlib.suppress(subprocess.TimeoutExpired, OSError):
-            subprocess.run(
+        outcome = "no answer"
+        try:
+            proc = subprocess.run(
                 [str(self.root / "run.sh"), "account", "stop"],
                 env=self.gateway_env(),
                 capture_output=True,
+                text=True,
                 timeout=120,
                 check=False,
             )
+            outcome = "exit %d: %s" % (proc.returncode, (proc.stdout + proc.stderr).strip()[-300:])
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            outcome = "%s: %s" % (type(exc).__name__, exc)
+        # The stop is confirmed, not assumed: a stack still answering health would be reused by `account dev` and the drill would verify stale server code.
+        for _ in range(STACK_STOP_POLLS):
+            if not self.gateway_alive():
+                return
+            time.sleep(GATEWAY_POLL_SECONDS)
+        raise GatewayError(
+            "`./run.sh account stop` did not stop the worktree's dev stack (%s); it is still answering health, so a restart would reuse its stale server code"
+            % outcome
+        )
 
     def wait_gateway_started(self, since: int) -> None:
         """Wait for a state file NEWER than `since` (account_dev writes `started=` last), then for /health."""

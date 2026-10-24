@@ -212,6 +212,30 @@ def test_failed_add_raises():
         r2.run_mode(failing, "apply")
 
 
+def test_a_failed_replacement_restores_the_drifted_rule():
+    """Review d945e387.2: remove-then-add must not leave the bucket without the prefix's rule when the add fails."""
+    w = FakeWrangler(BUCKETS)
+    r2.run_mode(w, "apply")
+    old = next(r for r in w.rules[r2.RELEASES_BUCKET] if r.name == "spend-guard-pr-npm")
+    w.rules[r2.RELEASES_BUCKET] = [
+        r2.Rule(r.name, r.prefix, 30 if r is old else r.expire_days, r.abort_days)
+        for r in w.rules[r2.RELEASES_BUCKET]
+    ]
+    drifted = next(r for r in w.rules[r2.RELEASES_BUCKET] if r.name == "spend-guard-pr-npm")
+    adds = {"n": 0}
+
+    def flaky(*args):
+        if args[:3] == ("bucket", "lifecycle", "add") and args[4] == "spend-guard-pr-npm":
+            adds["n"] += 1
+            if adds["n"] == 1:
+                return 1, "boom"
+        return w(*args)
+
+    with pytest.raises(RuntimeError, match="was restored"):
+        r2.run_mode(flaky, "apply")
+    assert drifted in w.rules[r2.RELEASES_BUCKET], "the rule that existed is back"
+
+
 def test_protected_pattern_refuses_even_if_the_allowlist_were_widened(monkeypatch):
     monkeypatch.setattr(
         r2, "ALLOWED_BUCKETS", (*r2.ALLOWED_BUCKETS, "rediacc-backups-eu", "rediacc-configs")

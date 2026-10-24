@@ -1219,11 +1219,15 @@ def _git_hist(root, *args):
     r = subprocess.run(
         ["git", "-C", str(root), *args],
         capture_output=True,
-        text=True,
         check=False,
         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
     )
-    return r.returncode, r.stdout, r.stderr
+    # Bytes, decoded leniently: an author name or a cited blob in a legacy encoding must not raise mid-run, and a replacement character cannot change which line a citation points at.
+    return (
+        r.returncode,
+        r.stdout.decode("utf-8", errors="replace"),
+        r.stderr.decode("utf-8", errors="replace"),
+    )
 
 
 def _split_lines(text):

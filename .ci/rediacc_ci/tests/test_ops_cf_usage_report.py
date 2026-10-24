@@ -7,6 +7,8 @@ import json
 import urllib.parse
 from datetime import UTC, datetime
 
+import pytest
+
 from rediacc_ci.ops import cf_usage_report as ur
 
 NOW = datetime(2026, 10, 23, 12, 0, tzinfo=UTC)
@@ -179,3 +181,11 @@ def test_ceilings_come_from_the_json_report_object(tmp_path):
     assert got["workers_requests_month"] == ur.DEFAULT_CEILINGS["workers_requests_month"]
     assert "bogus" not in got
     assert ur.load_ceilings(tmp_path / "missing") == ur.DEFAULT_CEILINGS
+
+
+def test_malformed_ceiling_json_is_an_error_not_the_defaults(tmp_path):
+    """Review d945e387.3: a present-but-broken config must not silently yield the default ceilings."""
+    (tmp_path / ".ci/config").mkdir(parents=True)
+    (tmp_path / ur.CONFIG_REL).write_text("{not json")
+    with pytest.raises(ur.ReportError, match="not valid JSON"):
+        ur.load_ceilings(tmp_path)

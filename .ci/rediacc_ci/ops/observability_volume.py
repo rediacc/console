@@ -145,8 +145,12 @@ def event_counts(
             },
         },
     )
+    calculations = result.get("calculations")
+    # An answer without a calculations list is malformed, not an empty window: reading it as zero would exit 0 on a broken response.
+    if not isinstance(calculations, list):
+        raise VolumeError("telemetry query returned no calculations list")
     out: dict[str, dict[str, int]] = {}
-    for calc in result.get("calculations") or []:
+    for calc in calculations:
         for agg in calc.get("aggregates") or []:
             groups = {g.get("key"): g.get("value") for g in agg.get("groups") or []}
             service = groups.get("$metadata.service")

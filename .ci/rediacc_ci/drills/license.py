@@ -420,15 +420,28 @@ class License:
         if self.repo_guid:
             d.note("this run's licensed repository: %s" % self.repo_guid)
 
-    def license_blob_guids(self, host: str) -> set[str]:
-        """The repository guids that hold an installed licence blob under `lib.LICENSE_ROOT/repos` on `host`. A failed create rolls the repo back, so `license-status` stops listing it, but the blob it installed stays; only this listing sees it."""
-        _, out = self.ssh_out(host, "sudo ls -1 %s/repos 2>/dev/null" % lib.LICENSE_ROOT)
+    def license_blob_guids(self, host: str) -> set[str] | None:
+        """The repository guids that hold an installed licence blob under `lib.LICENSE_ROOT/repos` on `host`, or None when the listing itself failed. A failed create rolls the repo back, so `license-status` stops listing it, but the blob it installed stays; only this listing sees it. An absent directory is an empty set (nothing installed), not a failure, so None always means "unknown"."""
+        root = "%s/repos" % lib.LICENSE_ROOT
+        code, out = self.ssh_out(
+            host, "if sudo test -d %(r)s; then sudo ls -1 %(r)s; fi" % {"r": root}
+        )
+        if code != 0:
+            return None
         return {line.strip() for line in out.splitlines() if lib.is_repo_guid(line.strip())}
 
-    def purge_failed_seed(self, before_blobs: set[str]) -> None:
-        """A create that failed after issuance left a blob for a repo that no longer exists, and every later `renet license renew` tries it (Rule T 9). Purge each new blob guid through the same proof-before-deletion script the removal step uses; a purge failure is reported, not asserted, because the create's own failure is already the finding."""
+    def purge_failed_seed(self, before_blobs: set[str] | None) -> None:
+        """A create that failed after issuance left a blob for a repo that no longer exists, and every later `renew` tries it (Rule T 9). Purge each new blob guid through the same proof-before-deletion script the removal step uses; a purge failure is reported, not asserted, because the create's own failure is already the finding. When either listing failed nothing is purged: an unknown baseline would hand every pre-existing blob on the host to the purge as if this create had left it."""
         o = self.o
-        orphans = sorted(self.license_blob_guids(o.vm_ip) - before_blobs)
+        after = self.license_blob_guids(o.vm_ip)
+        if before_blobs is None or after is None:
+            self.capture(
+                "licence blob listing failed on %s; nothing purged (baseline known: %s)"
+                % (o.vm_ip, before_blobs is not None),
+                "",
+            )
+            return
+        orphans = sorted(after - before_blobs)
         if not orphans:
             return
         code, out = self.ssh_out(

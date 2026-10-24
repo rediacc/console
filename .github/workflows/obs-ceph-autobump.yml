@@ -19,8 +19,11 @@ run-name: "OBS Ceph autobump: ${{ github.event_name }}"
 # Triggers: every completed CI - OBS Mirror run on main (each capture is followed
 # by a bump within minutes), and on demand. `workflow_run` always executes this file
 # from the default branch, but `workflow_dispatch` executes it from whichever branch
-# the dispatcher selects, so both jobs refuse any ref but the default branch: the
-# write job only ever runs reviewed code (per-commit finding e28e2f8d.1).
+# the dispatcher selects, so both jobs refuse any ref but the default branch. That
+# `if:` stops an accidental dispatch from another branch; it is not a defence against
+# a branch that edits this very file, since the dispatched copy enforces its own check.
+# The write credentials are bounded by the App token's repository scope, not by this
+# guard (per-commit findings e28e2f8d.1 and f8d18480.3).
 
 on:
   workflow_run:

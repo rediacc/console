@@ -47,6 +47,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-deploy-proxy.observations.jsonl`.
 from __future__ import annotations
 
 import json
+import math
 import os
 import pathlib
 import re
@@ -55,7 +56,6 @@ import subprocess
 import sys
 import time
 import tomllib
-import urllib.error
 import urllib.parse
 
 from rediacc_ci import log
@@ -108,6 +108,24 @@ BENCH_ACCOUNT_SERVICE = "rediacc-account-bench"
 # Tokens of a name or route (split on `.`, `-`, `_`) that mean "not bench": the regions and the production words.
 NOT_BENCH_TOKENS = ("eu", "us", "asia", "prod", "production", "stable", "edge")
 NAME_TOKEN_SPLIT = re.compile(r"[.\-_]")
+# The only top-level keys the bench config may carry: anything else (an `account_id` naming another Cloudflare account, a `workers_dev` or `zone_id` switch) could point the deploy off bench, so it refuses by name.
+BENCH_ALLOWED_KEYS = frozenset(
+    {
+        "name",
+        "main",
+        "compatibility_date",
+        "compatibility_flags",
+        "upload_source_maps",
+        "routes",
+        "vars",
+        "services",
+        "containers",
+        "durable_objects",
+        "migrations",
+        "observability",
+    }
+)
+BENCH_MAIN = "src/index.ts"
 
 # The Bitwarden profile a bench deploy runs under: the Workers token, the account id, and the DEV public key bench signs with, renamed to the name the renet build reads.
 BENCH_PROFILE = "deploy-proxy-bench"
@@ -144,6 +162,12 @@ def bench_refusals(text: str) -> list[str]:
     name = config.get("name")
     if name != BENCH_NAME:
         out.append("name is %r, not %r" % (name, BENCH_NAME))
+    out.extend(
+        "top-level key %r is not one a bench config may carry" % key
+        for key in sorted(set(config) - BENCH_ALLOWED_KEYS - {"env"})
+    )
+    if config.get("main") != BENCH_MAIN:
+        out.append("main is %r, not %r" % (config.get("main"), BENCH_MAIN))
     routes = _routes(config)
     if routes != [BENCH_ROUTE]:
         out.append("routes are %r, not exactly [%r]" % (routes, BENCH_ROUTE))
@@ -167,6 +191,9 @@ def bench_refusals(text: str) -> list[str]:
         service = str(entry.get("service", "")) if isinstance(entry, dict) else str(entry)
         if not service.endswith("-" + BENCH_TARGET):
             out.append("[[services]] binds %r, which is not a bench Worker" % service)
+        hits = _not_bench_tokens(service)
+        if hits:
+            out.append("[[services]] %r names %s, which is not bench" % (service, "/".join(hits)))
     if "env" in config:
         out.append(
             "an [env.*] table can rename the Worker or its routes; a bench config carries none"
@@ -316,10 +343,12 @@ DOH_TIMEOUT_S = 10.0
 
 
 def _resolve_window() -> float:
+    """The retry window in seconds; a value that is not a finite number (`inf`, `nan`, text) falls back to the default, since an infinite deadline would retry a persistent exit 6 forever."""
     try:
-        return max(0.0, float(os.environ.get(RESOLVE_WINDOW_ENV, DEFAULT_RESOLVE_WINDOW_S)))
+        value = float(os.environ.get(RESOLVE_WINDOW_ENV, DEFAULT_RESOLVE_WINDOW_S))
     except ValueError:
         return float(DEFAULT_RESOLVE_WINDOW_S)
+    return max(0.0, value) if math.isfinite(value) else float(DEFAULT_RESOLVE_WINDOW_S)
 
 
 def _sleep(seconds: float) -> None:
@@ -378,6 +407,11 @@ class _Fetcher:
                     if os.environ.get(DOH_URL_ENV, DEFAULT_DOH_URL):
                         log.error(
                             "%s does not resolve locally (retried %gs) and DNS-over-HTTPS has no answer for it either; the DNS record may not exist yet"
+                            % (self.host, _resolve_window())
+                        )
+                    else:
+                        log.error(
+                            "%s does not resolve locally (retried %gs); DNS-over-HTTPS is disabled"
                             % (self.host, _resolve_window())
                         )
                     return out

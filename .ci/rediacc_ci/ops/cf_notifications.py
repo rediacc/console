@@ -122,11 +122,24 @@ class Api:
             )
         return [p for p in result if isinstance(p, dict)]
 
-    def write(self, method: str, url: str, payload: dict | None) -> dict:
-        """Send one write, retrying a refusal that is not a product refusal (measured 2026-10-23: back-to-back DELETEs were refused, then accepted a second later)."""
+    def write(
+        self,
+        method: str,
+        url: str,
+        payload: dict | None,
+        stored: typing.Callable[[], dict | None] | None = None,
+    ) -> dict:
+        """Send one write, retrying a refusal that is not a product refusal (measured 2026-10-23: back-to-back DELETEs were refused, then accepted a second later).
+
+        `stored` is for a non-idempotent write (a POST): before each retry it answers with the result when an earlier attempt was in fact recorded although Cloudflare reported an error, so the retry cannot create a second policy of the same name.
+        """
         data = json.dumps(payload) if payload is not None else None
         body: dict = {}
         for attempt in range(WRITE_ATTEMPTS):
+            if attempt and stored is not None:
+                recorded = stored()
+                if recorded is not None:
+                    return {"success": True, "result": recorded}
             body = cf_auth.curl_json(method, url, self.auth.headers, data)
             if body.get("success") is True:
                 return body
@@ -140,7 +153,12 @@ class Api:
         )
 
     def create(self, want: dict) -> str:
-        body = self.write("POST", self.base, want)
+
+        def stored() -> dict | None:
+            same = [p for p in self.list() if p.get("name") == want.get("name")]
+            return {"id": same[0].get("id")} if same else None
+
+        body = self.write("POST", self.base, want, stored)
         result = body.get("result")
         return str(result.get("id")) if isinstance(result, dict) else "?"
 
@@ -172,14 +190,15 @@ def run(api: Api, section: dict, dry_run: bool, out: typing.TextIO | None = None
         product = body["filters"]["product"][0]
         try:
             if not have:
-                changes += 1
                 if dry_run:
+                    changes += 1
                     print(
                         "CREATE %s limit=%s (dry run)" % (name, body["filters"]["limit"][0]),
                         file=out,
                     )
                     continue
                 pid = api.create(body)
+                changes += 1
                 print(
                     "CREATE %s id=%s limit=%s" % (name, pid, body["filters"]["limit"][0]), file=out
                 )
@@ -189,14 +208,15 @@ def run(api: Api, section: dict, dry_run: bool, out: typing.TextIO | None = None
             if not diffs:
                 print("UNCHANGED %s id=%s" % (name, current.get("id")), file=out)
                 continue
-            changes += 1
             if dry_run:
+                changes += 1
                 print(
                     "UPDATE %s id=%s: %s (dry run)" % (name, current.get("id"), "; ".join(diffs)),
                     file=out,
                 )
                 continue
             api.update(str(current.get("id")), body)
+            changes += 1
             print("UPDATE %s id=%s: %s" % (name, current.get("id"), "; ".join(diffs)), file=out)
         except UnavailableError as exc:
             unavailable.append(product)
@@ -205,11 +225,12 @@ def run(api: Api, section: dict, dry_run: bool, out: typing.TextIO | None = None
         if not name.startswith(prefix) or name in want:
             continue
         for policy in policies:
-            changes += 1
             if dry_run:
+                changes += 1
                 print("DELETE %s id=%s (dry run)" % (name, policy.get("id")), file=out)
                 continue
             api.delete(str(policy.get("id")))
+            changes += 1
             print(
                 "DELETE %s id=%s (no longer in %s)" % (name, policy.get("id"), CONFIG_REL), file=out
             )

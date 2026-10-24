@@ -2378,6 +2378,18 @@ def test_a_pipefail_after_the_pipe_or_in_text_does_not_count(run) -> None:
     assert pipe_kinds(pipe_doc(run)) == ["pipe-no-pipefail"]
 
 
+def test_a_pipefail_set_after_the_pipe_on_the_same_line_does_not_count() -> None:
+    """`a | b; set -o pipefail`: the pipeline already ran without pipefail."""
+    assert pipe_kinds(pipe_doc("echo x | tee y; set -o pipefail\n")) == ["pipe-no-pipefail"]
+
+
+def test_a_here_string_does_not_blank_the_rest_of_the_script() -> None:
+    """`<<<foo` is a here-string, not a heredoc with delimiter `foo`; the pipe on the next line must still be counted."""
+    run = "cat <<<foo | tee x\necho y | tee z\n"
+    assert ci_workflow_invariants.pipe_lines(run) == [1, 2]
+    assert pipe_kinds(pipe_doc(run)) == ["pipe-no-pipefail"]
+
+
 @pytest.mark.parametrize(
     "run",
     [
@@ -2602,6 +2614,46 @@ def test_an_empty_estate_is_an_error_never_a_pass(tmp_path, monkeypatch) -> None
     assert info == []
     assert len(errors) == 1, errors
     assert "no `run:` step found" in errors[0]
+
+
+def test_a_dispatch_analysis_setup_error_is_a_finding_not_a_traceback(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setattr(ci_workflow_invariants, "load_workflow", workflows.load)
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    (tmp_path / ".github/workflows/x.yml").write_text(
+        "on: push\njobs:\n  a:\n    steps:\n      - run: echo hi\n"
+    )
+
+    def boom(_doc, _load=None):
+        raise ci_workflow_invariants.SetupExitError("SETUP: reusable does not parse\n")
+
+    monkeypatch.setattr(ci_workflow_invariants, "analyse_dispatch", boom)
+    errors, _info = ci_workflow_invariants._estate_phase(str(tmp_path))
+    assert errors == ["INVARIANT-FAIL: workflow-estate: SETUP: reusable does not parse"]
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        'curl "https://x?a=1&b=2" | jq .',
+        "curl -sL 'https://x?a=1;b=2' | cut -d: -f2",
+        'curl -s "https://x?a=1&b=2" --fail | tee out',
+    ],
+)
+def test_a_curl_read_with_a_quoted_separator_stays_a_read(run) -> None:
+    assert ci_workflow_invariants._pins_writes(run) is False
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        'curl "https://x?a=1&b=2" -X POST',
+        "curl 'https://x?a=1;b=2' -d @body",
+    ],
+)
+def test_a_curl_write_after_a_quoted_separator_is_still_a_write(run) -> None:
+    assert ci_workflow_invariants._pins_writes(run) is True
 
 
 ESTATE_PROBE = (

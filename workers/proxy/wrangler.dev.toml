@@ -1,12 +1,13 @@
 # The proxy Worker for LOCAL `wrangler dev` only, driven by the check:ci-proxy-wrangler-dev-e2e gate
 # (.ci/rediacc_ci/quality/proxy_wrangler_dev_e2e.py). Never deployed.
 #
-# It differs from wrangler.toml in exactly three ways, and each is why it exists:
+# It differs from wrangler.toml in exactly four ways, and each is why it exists:
 #   - no [[services]] ACCOUNT binding: `rediacc-account-eu` is not resolvable under `wrangler dev`,
 #     and with the binding absent src/index.ts falls back to fetch(ACCOUNT_URL), which the gate
 #     points at a fake account server on loopback;
 #   - no routes and no custom domain;
-#   - a distinct name, so a dev image tag can never be mistaken for the deployed Worker's.
+#   - a distinct name, so a dev image tag can never be mistaken for the deployed Worker's;
+#   - an ACCOUNT_URL that is a dead loopback address, so a hand-run cannot reach production.
 # EXECUTOR_TOKEN is passed by the gate as `--var` on the command line, never written to a file here.
 name = "rediacc-proxy-dev"
 main = "src/index.ts"

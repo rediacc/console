@@ -526,7 +526,7 @@ jobs:
     # Plain checkout and an artifact from this same run. No registry, no secrets.
     permissions:
       contents: read
-    if: always() && (needs.build-renet.result == 'success' || needs.extract-renet.result == 'success')
+    if: ${{ !cancelled() && (needs.build-renet.result == 'success' || needs.extract-renet.result == 'success') }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

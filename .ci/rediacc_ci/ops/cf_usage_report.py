@@ -90,9 +90,14 @@ def load_ceilings(root: Path | None = None) -> dict[str, float]:
     ceilings = dict(DEFAULT_CEILINGS)
     path = (root or Path(__file__).resolve().parents[3]) / CONFIG_REL
     try:
-        data = json.loads(path.read_text())
-    except (OSError, ValueError):
+        text = path.read_text()
+    except OSError:
         return ceilings
+    # A file that exists but does not parse must not fall back to the defaults silently: the operator's ceilings would be ignored and the report could pass against thresholds nobody chose.
+    try:
+        data = json.loads(text)
+    except ValueError as exc:
+        raise ReportError("%s is not valid JSON: %s" % (CONFIG_REL, exc)) from exc
     report = data.get("report") if isinstance(data, dict) else None
     if isinstance(report, dict):
         for key in ceilings:
@@ -227,7 +232,11 @@ def run(
     out = out or sys.stdout
     err = sys.stderr
     now = now or datetime.now(UTC)
-    ceilings = dict(ceilings if ceilings is not None else load_ceilings())
+    try:
+        ceilings = dict(ceilings if ceilings is not None else load_ceilings())
+    except ReportError as exc:
+        print("cf_usage_report: %s" % exc, file=err)
+        return 2
     account = env.get("CLOUDFLARE_ACCOUNT_ID") or ov.DEFAULT_ACCOUNT_ID
     try:
         headers = ov.cf_headers(env)

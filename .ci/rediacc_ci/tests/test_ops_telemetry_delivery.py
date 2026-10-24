@@ -191,3 +191,55 @@ def test_unanswered_probe_is_not_polled(make_fake):
     rc, _ = drive(fake, hosts=["eu.example"])
     assert rc == 1
     assert fake.auth == []
+
+
+def _stub_run(grafana_status: int, hosts=("a.example",)):
+    """`run` over a stub `get`: every host answers its probe 200, every Grafana query answers `grafana_status` with an empty body."""
+
+    def get(url, _headers):
+        if "/api/datasources/proxy/" in url:
+            return td.Reply(grafana_status, b"{}")
+        return td.Reply(200, b'{"status":"ok"}')
+
+    out = io.StringIO()
+    rc = td.run(
+        list(hosts),
+        get,
+        "https://g",
+        "tok",
+        timeout_s=0,
+        interval_s=0,
+        sleep=lambda _s: None,
+        out=out,
+    )
+    return rc, out.getvalue()
+
+
+def test_an_empty_host_list_is_not_a_pass(capsys):
+    """Review 65bfe8b4.1: a probe of nothing exits non-zero."""
+    rc, out = _stub_run(200, hosts=())
+    assert rc == 2
+    assert out == ""
+    assert "nothing was verified" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_a_rejected_grafana_credential_is_not_reported_as_silence(status, capsys):
+    """Review 65bfe8b4.2: a revoked token exits 2 naming the rejection, with no SILENT lines."""
+    rc, out = _stub_run(status)
+    assert rc == 2
+    assert "SILENT" not in out
+    assert "rejected" in capsys.readouterr().err
+
+
+def test_a_grafana_404_names_its_status_on_the_silent_line():
+    """Review 65bfe8b4.3: a wrong datasource uid reads differently from an empty result."""
+    rc, out = _stub_run(404)
+    assert rc == 1
+    assert "SILENT a.example traces (grafana query answered 404)" in out
+
+
+def test_an_empty_grafana_result_has_no_query_failure_note():
+    rc, out = _stub_run(200)
+    assert rc == 1
+    assert "grafana query answered" not in out

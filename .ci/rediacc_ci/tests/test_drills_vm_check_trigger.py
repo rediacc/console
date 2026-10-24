@@ -697,25 +697,57 @@ def test_account_worktree_digest_is_stable_across_calls(world: World) -> None:
     assert trig.account_worktree_digest(world.root) == trig.account_worktree_digest(world.root)
 
 
+def _drill_imports(source: pathlib.Path, drills: pathlib.Path) -> set[str]:
+    """The drills/*.py module names `source` imports, in every spelling: `from rediacc_ci.drills import x`, `from rediacc_ci.drills.x import y`, `import rediacc_ci.drills.x`, and the relative forms `from . import x` and `from .x import y`."""
+    found: set[str] = set()
+    for node in ast.walk(ast.parse(source.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.startswith("rediacc_ci.drills."):
+                    found.add(alias.name.split(".")[2])
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if node.level == 1 or module == "rediacc_ci.drills":
+                if module in ("", "rediacc_ci.drills"):
+                    found.update(alias.name for alias in node.names)
+                else:
+                    found.add(module.split(".")[0])
+            elif module.startswith("rediacc_ci.drills."):
+                found.add(module.split(".")[2])
+    return {name for name in found if (drills / ("%s.py" % name)).is_file()}
+
+
 def test_every_drill_module_vm_check_runs_is_a_trigger() -> None:
-    """A change to a drill module that vm:check runs needs a vm:check receipt: upgrade_converge.py (U1) and tenant_isolation.py (I1) were missing from the map, so a push touching only them required none (found by the DR writer, 2026-10-24). Every drills/*.py that vm_check.py imports must charge a side."""
+    """A change to a drill module that vm:check runs needs a vm:check receipt: upgrade_converge.py (U1) and tenant_isolation.py (I1) were missing from the map, so a push touching only them required none (found by the DR writer, 2026-10-24). Every drills/*.py that vm_check.py reaches, directly or through another drill module, must charge a side."""
     drills = pathlib.Path(trig.__file__).resolve().parent
-    tree = ast.parse((drills / "vm_check.py").read_text(encoding="utf-8"))
-    imported: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module and node.module.endswith("drills"):
-            imported.update(alias.name for alias in node.names)
-        elif (
-            isinstance(node, ast.ImportFrom)
-            and node.module
-            and node.module.startswith("rediacc_ci.drills.")
-        ):
-            imported.add(node.module.rsplit(".", 1)[1])
-    for name in sorted(imported):
+    reached: set[str] = set()
+    queue = sorted(_drill_imports(drills / "vm_check.py", drills))
+    while queue:
+        name = queue.pop()
+        if name in reached:
+            continue
+        reached.add(name)
+        queue.extend(_drill_imports(drills / ("%s.py" % name), drills))
+    assert "upgrade_converge" in reached, reached
+    assert "wire" in reached, reached
+    for name in sorted(reached):
         # The receipt and trigger modules judge a run; they change nothing on a VM, so they charge no side by design.
-        if (drills / ("%s.py" % name)).is_file() and name not in (
-            "vm_check_trigger",
-            "vm_check_receipt",
-        ):
+        if name not in ("vm_check_trigger", "vm_check_receipt"):
             path = ".ci/rediacc_ci/drills/%s.py" % name
             assert trig.console_sides(path), "%s is run by vm:check but charges no side" % path
+
+
+def test_drill_imports_reads_absolute_relative_and_plain_import_spellings(
+    tmp_path: pathlib.Path,
+) -> None:
+    for name in ("a", "b", "c", "d"):
+        (tmp_path / ("%s.py" % name)).write_text("")
+    src = tmp_path / "src.py"
+    src.write_text(
+        "from rediacc_ci.drills import a\n"
+        "from .b import x\n"
+        "import rediacc_ci.drills.c\n"
+        "from . import d\n"
+        "from rediacc_ci.drills.missing import z\n"
+    )
+    assert _drill_imports(src, tmp_path) == {"a", "b", "c", "d"}

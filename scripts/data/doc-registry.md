@@ -914,13 +914,13 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 416 | .py 416 |
+| .ci/rediacc_ci/tests | 417 | .py 417 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 24 | .json 16, .log 8 |
 | .ci/rediacc_ci/tests/fixtures/gate_model/20261008 | 3 | .json 2, .jsonl 1 |
-| .ci/rediacc_ci/tests/gates | 195 | .py 194, .fixture 1 |
+| .ci/rediacc_ci/tests/gates | 196 | .py 195, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |

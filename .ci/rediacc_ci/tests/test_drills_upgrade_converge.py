@@ -11,7 +11,7 @@ import pytest
 
 from rediacc_ci.drills import upgrade_converge as u
 from rediacc_ci.drills import vm_check
-from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
+from rediacc_ci.well_known import RUNTIME_DIR
 
 if TYPE_CHECKING:
     import pathlib
@@ -27,7 +27,6 @@ LIVE_STAMP = (
 def test_layout_paths_match_the_per_network_and_flat_forms() -> None:
     assert u.old_docker_socket(8512) == f"{RUNTIME_DIR}/docker-8512.sock"
     assert u.new_docker_socket(8512) == f"{RUNTIME_DIR}/net-8512/docker-8512.sock"
-    assert u.net_dir(8512) == f"{RUNTIME_DIR}/net-8512"
     assert u.runtime_stamp_path(8512) == "/var/lib/rediacc/runtime/net-8512.json"
     assert u.new_docker_socket("8512") == u.new_docker_socket(8512)
 
@@ -53,25 +52,6 @@ def test_build_script_quotes_a_hostile_path() -> None:
     assert "; rm -rf / &&" not in script
 
 
-def test_runtime_status_command() -> None:
-    cmd = u.runtime_status_command("/usr/bin/renet", DATASTORE_PATH)
-    assert cmd == f"sudo /usr/bin/renet runtime status --json --datastore {DATASTORE_PATH}"
-
-
-@pytest.mark.parametrize(
-    ("payload", "want"),
-    [
-        ('{"stale": 3, "repos": []}', 3),
-        ('{"stale": 0, "repos": []}', 0),
-        ("not json", None),
-        ('{"repos": []}', None),
-        ("[1,2]", None),
-    ],
-)
-def test_parse_stale_count(payload: str, want: int | None) -> None:
-    assert u.parse_stale_count(payload) == want
-
-
 def _envelope(report: dict[str, object], success: bool = True) -> str:
     return json.dumps({"success": success, "command": "machine converge", "data": report})
 
@@ -83,7 +63,6 @@ def _envelope(report: dict[str, object], success: bool = True) -> str:
         ('{"summary": {"would_converge": 0}, "plan": [{"name": "a"}]}', True),
         ('{"summary": {"would_converge": 2}, "plan": []}', False),
         ('{"summary": {"would_converge": 0}, "plan": [{"stale_reasons": ["epoch"]}]}', False),
-        ('{"summary": {}, "plan": []}', True),
         ("not json", False),
         ('{"plan": []}', False),
         # The CLI's `--json` envelope, as the 2026-10-24 live run printed it.
@@ -100,6 +79,8 @@ def _envelope(report: dict[str, object], success: bool = True) -> str:
             False,
         ),
         (_envelope({"summary": {"would_converge": 0}, "plan": []}, success=False), False),
+        ('{"summary": {}, "plan": []}', False),
+        ('{"summary": {"would_converge_renamed": 0}, "plan": []}', False),
     ],
 )
 def test_dry_run_reports_zero_stale(payload: str, clean: bool) -> None:

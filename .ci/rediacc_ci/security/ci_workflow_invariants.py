@@ -1067,7 +1067,7 @@ PINS_SOAKED_WORKFLOW = "CI - OBS Mirror"
 _PINS_APPLY_RE = re.compile(r"\bpins\s+--\s+apply-soaked\b")
 # CASE. GitHub resolves context names and the steps context without regard to case (actions/runner DictionaryContextData looks keys up with StringComparer.OrdinalIgnoreCase, and ExecutionContext.ExpressionValues and StepsContext are built from it), and the env context too on a Windows runner (StepsRunner.cs, `#if OS_WINDOWS`).
 # So every pattern below that recognises a READ (secrets, steps, env, BWS_* names, write commands, write actions) matches in any case, since a missed spelling is a hole; every pattern that ADMITS a shape (the access-token, client-id, private-key and token expressions, the preset, the action paths, the blanking and scrub lines) stays exact, since a refused spelling only costs a rewrite.
-# Write commands match in any case as well: a Windows runner resolves `Git` to git. A curl write is a method named by `-X`/`--request` or a body flag (`-d`, `-F`, `-T`, alone, attached to its value as in `-d@body`, or ending a cluster as in `-sSd`, and `-X` likewise as in `-sSX POST`; `--data*`, `--form`, `--form-string`, `--upload-file`, `--json`), read only within the curl command itself (up to a `|`, `;` or `&`, so `curl ... | cut -d:` is a read), never a method word elsewhere on the line, so a URL such as `.../delete-notes` is a read; the short flags stay case-exact because curl's `-x` is the proxy and `-D` dumps headers.
+# Write commands match in any case as well: a Windows runner resolves `Git` to git. A curl write is a method named by `-X`/`--request` or a body flag (`-d`, `-F`, `-T`, alone, attached to its value as in `-d@body`, or ending a cluster as in `-sSd`, and `-X` likewise as in `-sSX POST`; `--data*`, `--form`, `--form-string`, `--upload-file`, `--json`), read only within the curl command itself (up to a `|`, `;` or `&` OUTSIDE quotes, `_pins_writes` blanks those inside quoted arguments first, so `curl ... | cut -d:` is a read), never a method word elsewhere on the line, so a URL such as `.../delete-notes` is a read; the short flags stay case-exact because curl's `-x` is the proxy and `-D` dumps headers.
 _PINS_WRITE_RE = re.compile(
     r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b"
     r"|\bcurl\b[^\n|;&]*(?:\s(?-i:-[A-Za-z]*X)\s*|--request(?:=|\s+))['\"]?(POST|PUT|PATCH|DELETE)\b"
@@ -1532,7 +1532,8 @@ READ_PRESETS = frozenset({"readonly", "pr-read"})
 # Shells whose run body is not a POSIX shell script, so a `|` in it is not a pipeline. `pwsh` is also the implicit shell on a windows runner.
 _NON_SH_SHELLS = ("pwsh", "powershell", "cmd", "python", "node")
 _PIPEFAIL_SET_RE = re.compile(r"\bset\b[^\n;#|&]*?-[A-Za-z]*o\s+pipefail\b")
-_HEREDOC_RE = re.compile(r"<<(-?)\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\2")
+# `(?<!<)` keeps a here-string (`<<<foo`) from matching as a heredoc whose delimiter is `foo`.
+_HEREDOC_RE = re.compile(r"(?<!<)<<(-?)\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\2")
 _EXPR_SPAN_RE = re.compile(r"\$\{\{.*?\}\}", re.DOTALL)
 
 
@@ -1679,6 +1680,14 @@ def pipefail_line(script: str) -> int | None:
     return None
 
 
+def _pipefail_precedes_pipe(script: str, line_no: int) -> bool:
+    """True when, on the shared 1-based line, the pipefail `set` starts before the first pipe operator (`set -o pipefail; a | b`)."""
+    line = _shell_skeleton(script)[line_no - 1]
+    setting = _PIPEFAIL_SET_RE.search(line)
+    pipe = _PIPE_RE.search(line)
+    return bool(setting) and (pipe is None or setting.start() < pipe.start())
+
+
 def _defaults_shell(node: object) -> str:
     defaults = node.get("defaults") if isinstance(node, dict) else None
     run = defaults.get("run") if isinstance(defaults, dict) else None
@@ -1698,7 +1707,9 @@ def _shell_verdict(shell: str, runs_on: str, script: str) -> str | None:
     if first and any(first.startswith(s) for s in _NON_SH_SHELLS):
         return None
     on = pipefail_line(script)
-    if on is not None and on <= lines[0]:
+    if on is not None and (
+        on < lines[0] or (on == lines[0] and _pipefail_precedes_pipe(script, on))
+    ):
         return None
     where = "line %d" % lines[0]
     if on is not None:
@@ -1934,7 +1945,11 @@ def _estate_phase(root_dir: str) -> tuple[list[str], list[str]]:
             continue
         found, r, p = analyse_pipefail(doc)
         runs, pipes = runs + r, pipes + p
-        dfound, w = analyse_dispatch(doc, load)
+        try:
+            dfound, w = analyse_dispatch(doc, load)
+        except SetupExitError as exc:
+            errors.append("INVARIANT-FAIL: workflow-estate: %s" % exc.message.strip())
+            continue
         if isinstance(doc, dict) and "workflow_dispatch" in _pins_triggers(doc):
             dispatchable += 1
         writers += w

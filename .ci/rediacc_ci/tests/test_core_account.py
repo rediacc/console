@@ -17,6 +17,7 @@ import json
 import os
 import pathlib
 import re
+import select
 import shlex
 import shutil
 import socket
@@ -862,7 +863,7 @@ FOREIGN_WRITER = "some-devbox/pid:[4026532999]"
 
 
 def _fake_docker(directory: pathlib.Path) -> str:
-    """A `docker` that fails every call, so the two tests below need no skip: `account_stop`'s unscoped container teardown and ghost clean reach this instead of the machine's real daemon, and the pid handling under test runs exactly as it would."""
+    """A `docker` that fails every call, so every test that calls `account.stop` with it needs no skip: `account_stop`'s unscoped container teardown and ghost clean reach this instead of the machine's real daemon, and the pid handling under test runs exactly as it would."""
     directory.mkdir(parents=True, exist_ok=True)
     fake = directory / "docker"
     fake.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
@@ -1950,6 +1951,7 @@ def test_stop_kills_a_sigterm_ignoring_child_whose_leader_exited(monkeypatch, tm
                 break
             time.sleep(0.05)
         assert childfile.is_file(), "the SIGTERM-ignoring child never wrote its pid file"
+        assert childfile.read_text().strip(), "the SIGTERM-ignoring child's pid file is empty"
         child = int(childfile.read_text().strip())
         assert _alive(child)
         state.write_text(
@@ -2031,15 +2033,23 @@ def test_still_same_drops_a_reused_pid():
     assert account._still_same([me], {me: "not-the-real-start-time"}) == []
 
 
-def test_kill_tree_with_members_never_signals_a_dropped_leader():
+def test_kill_tree_with_members_never_signals_a_dropped_leader(monkeypatch):
     """Review 4cb0f2b2.1: when the leader pid was reused and _still_same dropped it, _kill_tree(pid, sig, survivors)
     signals the survivors only; the process now holding the leader pid is left alone."""
     bystander = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
     survivor = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
     try:
+        # Record the signals instead of timing an exit: a bystander that was signalled but has not yet exited would otherwise pass.
+        sent: list[str] = []
+        real_quiet = account._kill_quiet
+        monkeypatch.setattr(
+            account,
+            "_kill_quiet",
+            lambda victim, sig: (sent.append(victim), real_quiet(victim, sig)),
+        )
         account._kill_tree(str(bystander.pid), account.signal.SIGKILL, [survivor.pid])
         survivor.wait(timeout=5)
-        time.sleep(0.2)
+        assert sent == [str(survivor.pid)], sent
         assert bystander.poll() is None, "the reused leader pid was signalled"
     finally:
         for proc in (bystander, survivor):
@@ -2064,6 +2074,8 @@ def test_stop_does_not_sigkill_a_member_whose_pid_was_reused(monkeypatch, tmp_pa
     )
     try:
         assert proc.stdout is not None
+        # Bounded: a child that stalls before printing fails the test instead of blocking it.
+        assert select.select([proc.stdout], [], [], 10)[0], "the child never printed ready"
         assert proc.stdout.readline().strip() == "ready"
         calls: dict[int, int] = {}
 

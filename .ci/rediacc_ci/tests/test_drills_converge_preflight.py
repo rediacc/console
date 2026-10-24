@@ -102,6 +102,11 @@ def test_parse_converge_report_bare_enveloped_and_noisy() -> None:
     assert c.parse_converge_report("not json") is None
     assert c.parse_converge_report("{broken") is None
     assert c.parse_converge_report("[1]") is None
+    # A log line with braces ahead of, or after, the report must not poison it (review de355ba7.2).
+    assert (
+        c.parse_converge_report("connecting {component}\n" + enveloped + "\ndone {x}\n") == REPORT
+    )
+    assert c.parse_converge_report("{component} " + bare) == REPORT
 
 
 def test_result_for_matches_guid_then_name() -> None:
@@ -155,6 +160,23 @@ def test_summary_skips_refused_reads_the_named_line() -> None:
     assert not c.summary_skips_refused(text, "base:u2c")
     assert not c.summary_skips_refused("base:u2r skipped (needs_device_grant)", "base:u2r")
     assert not c.summary_skips_refused(text, "")
+
+
+def test_summary_skips_refused_needs_the_whole_token() -> None:
+    """Review de355ba7.3: `u2r` inside another repo's name is not the refused fork."""
+    text = "  xu2rx  skipped (gate_refused)\n  base:u2r-b  skipped (gate_refused)\n"
+    assert not c.summary_skips_refused(text, "u2r")
+    assert c.summary_skips_refused("  base:u2r  skipped (gate_refused)\n", "base:u2r", "u2r")
+    assert c.summary_skips_refused("  u2r skipped (gate_refused)\n", "u2r")
+
+
+def test_names_gate_denial_needs_the_service_and_a_refused_reason() -> None:
+    """Review de355ba7.1: a network failure with a non-zero rc is not the P5 refusal."""
+    assert c.names_gate_denial("denied: svc cap_add MKNOD", "svc")
+    assert c.names_gate_denial("svc binds %s" % c.PROXY_ROOT, "svc")
+    assert not c.names_gate_denial("ssh: connect to host failed", "svc")
+    assert not c.names_gate_denial("svc: MKNOD", "")
+    assert not c.names_gate_denial("MKNOD refused", "svc")
 
 
 def test_config_name_is_run_scoped() -> None:

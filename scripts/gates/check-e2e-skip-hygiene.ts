@@ -55,13 +55,16 @@ const BASE_CONFIG = join(E2E, 'playwright.config.ts');
 // Subdirs that intentionally run in the base worker config (none today). Add here with a reason if a non-topology subdir is ever introduced.
 const BASE_ALLOWED = new Set<string>();
 
+// Playwright's default testMatch, used when a config declares none: every *.spec / *.test script. The enumeration below uses the same pattern, so a `.spec.ts` or `.js` test is never invisible to the gate.
+const TEST_FILE_RE = /\.(?:spec|test)\.[cm]?[jt]sx?$/;
+
 function hasTestFiles(dir: string): boolean {
   let found = false;
   const walk = (d: string): void => {
     for (const entry of readdirSync(d)) {
       const p = join(d, entry);
       if (statSync(p).isDirectory()) walk(p);
-      else if (entry.endsWith('.test.ts')) found = true;
+      else if (TEST_FILE_RE.test(entry)) found = true;
     }
   };
   walk(dir);
@@ -101,29 +104,83 @@ function allTestFiles(dir: string, prefix = ''): string[] {
     const p = join(dir, entry);
     const rel = prefix ? `${prefix}/${entry}` : entry;
     if (statSync(p).isDirectory()) out.push(...allTestFiles(p, rel));
-    else if (entry.endsWith('.test.ts')) out.push(rel);
+    else if (TEST_FILE_RE.test(entry)) out.push(rel);
   }
   return out;
 }
 
+/**
+ * The minimatch subset Playwright globs use: `**`, `*`, `?`, `[..]`, `{a,b}` and the extglob `@(a|b)`. Anything outside it is escaped literally. `@`, `?`, brackets and braces were once escaped or passed through wrongly, so `*.@(spec|test).ts` became literal text and real tests read as orphaned.
+ */
 function globToRegExp(glob: string): RegExp {
-  const body = glob
-    .replace(/[.+^${}()|\\]/g, '\\$&')
-    .replace(/\*\*\//g, '\u0000')
-    .replace(/\*\*/g, '\u0001')
-    .replace(/\*/g, '[^/]*')
-    .replace(/\u0000/g, '(?:.*/)?')
-    .replace(/\u0001/g, '.*');
-  return new RegExp(`^${body}$`);
+  let out = '';
+  let braces = 0;
+  let extglobs = 0;
+  for (let i = 0; i < glob.length; i++) {
+    const c = glob[i];
+    if (c === '*' && glob[i + 1] === '*') {
+      if (glob[i + 2] === '/') {
+        out += '(?:.*/)?';
+        i += 2;
+      } else {
+        out += '.*';
+        i += 1;
+      }
+    } else if (c === '*') out += '[^/]*';
+    else if (c === '?') out += '[^/]';
+    else if (c === '@' && glob[i + 1] === '(') {
+      out += '(?:';
+      extglobs++;
+      i += 1;
+    } else if (c === '[') {
+      const close = glob.indexOf(']', i + 2);
+      if (close === -1) out += '\\[';
+      else {
+        out += glob.slice(i, close + 1).replace(/^\[!/, '[^');
+        i = close;
+      }
+    } else if (c === '{') {
+      out += '(?:';
+      braces++;
+    } else if (c === '}' && braces > 0) {
+      out += ')';
+      braces--;
+    } else if (c === ',' && braces > 0) out += '|';
+    else if (c === '|' && extglobs > 0) out += '|';
+    else if (c === ')' && extglobs > 0) {
+      out += ')';
+      extglobs--;
+    } else out += c.replace(/[.+^${}()|\\\][]/g, '\\$&');
+  }
+  return new RegExp(`^${out}$`);
 }
 
 function quoted(src: string): string[] {
   return [...src.matchAll(/['"`]([^'"`]+)['"`]/g)].map((x) => x[1]);
 }
 
-/** String entries of every `key: [..]` / `key: '..'` occurrence (top level and per project). */
+/**
+ * String entries of every `key: [..]` / `key: '..'` occurrence (top level and per project). A value this reader cannot enumerate (a RegExp literal, a variable, a call) makes the gate FAIL: falling back to Playwright's default pattern would count files as selected that the real matcher rejects.
+ */
 function configValues(src: string, key: string): string[] {
   const out: string[] = [];
+  const unreadable = (what: string): never => {
+    console.error(
+      `FAIL: ${key} is not a string or an array of strings (${what.slice(0, 60)}); this gate cannot read it`
+    );
+    return process.exit(1);
+  };
+  for (const m of src.matchAll(new RegExp(`\\b${key}:\\s*(\\[[^\\]]*\\]|\\S[^\\n]*)`, 'g'))) {
+    const head = m[1];
+    if (head.startsWith('[')) {
+      const items = head
+        .slice(1, -1)
+        .split(',')
+        .map((x) => x.trim())
+        .filter((x) => x !== '');
+      for (const item of items) if (!/^(['"`])[^'"`]+\1$/.test(item)) unreadable(item);
+    } else if (!/^(['"`])[^'"`]+\1/.test(head)) unreadable(head);
+  }
   const re = new RegExp(`\\b${key}:\\s*(\\[[^\\]]*\\]|['"\`][^'"\`]+['"\`])`, 'g');
   for (const m of src.matchAll(re)) out.push(...quoted(m[1]));
   return out;
@@ -151,8 +208,22 @@ function selectedBy(configPath: string, files: string[]): Set<string> {
   return selected;
 }
 
+function staleOmissions(files: string[]): string[] {
+  return [...DELIBERATE_OMISSIONS.keys()].filter((k) => !files.includes(k));
+}
+
 function unselectedTests(): string[] {
   const files = allTestFiles(TESTS_DIR);
+  const stale = staleOmissions(files);
+  if (stale.length > 0) {
+    console.error(
+      `FAIL: DELIBERATE_OMISSIONS names ${stale.length} file(s) that no longer exist: ${stale.join(', ')}`
+    );
+    console.error(
+      'A stale key would silently exempt a future test added at that path. Remove or rename it.'
+    );
+    process.exit(1);
+  }
   const configs = readdirSync(E2E)
     .filter((e) => /^playwright.*\.config\.ts$/.test(e))
     .map((e) => join(E2E, e));

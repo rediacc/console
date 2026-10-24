@@ -175,7 +175,10 @@ def nc_evidence(text: str) -> str:
 def cross_connect_verdict(out: str, listener_log: str | None, marker: str) -> tuple[bool, str]:
     """(refused, evidence) of I1.5: the `docker run` in B exited non-zero with nc's EPERM line, and A's listener log (None when it could not be read) never saw B's marker. A marker in the log is a connect that got through, whatever nc printed."""
     rc = nc_rc(out)
-    ev = nc_evidence(out) or "no nc:, docker: or NC_RC= line"
+    # With none of the kept lines present the raw output is the evidence: a `docker run` that failed in some other voice must still show what it said.
+    ev = nc_evidence(out) or "no nc:, docker: or NC_RC= line; output: %s" % (
+        " ".join(out.split())[:200] or "<empty>"
+    )
     if listener_log is None:
         return False, "A's listener log could not be read; %s" % ev
     if marker in listener_log:

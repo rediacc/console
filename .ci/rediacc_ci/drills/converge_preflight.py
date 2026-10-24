@@ -80,17 +80,27 @@ def parse_container_ids(text: str) -> list[str] | None:
 
 
 def parse_converge_report(text: str) -> dict[str, Any] | None:
-    """The converge report in `text`, unwrapping the CLI's `{"success", "data"}` envelope, or None when `text` holds no object. converge-last.json is a bare report; `--json` output is enveloped."""
-    start, end = text.find("{"), text.rfind("}")
-    if start < 0 or end <= start:
-        return None
-    try:
-        doc = json.loads(text[start : end + 1])
-    except ValueError:
-        return None
-    if isinstance(doc, dict) and isinstance(doc.get("data"), dict):
-        doc = doc["data"]
-    return doc if isinstance(doc, dict) else None
+    """The converge report in `text`, unwrapping the CLI's `{"success", "data"}` envelope, or None when `text` holds no report object. converge-last.json is a bare report; `--json` output is enveloped.
+
+    Every `{` is tried as the start of a JSON object, so a log line with a brace (`{component}`) ahead of the report is skipped rather than poisoning one first-to-last slice. The first object that carries `data`, `results` or `summary` is the report; an object without any of them is kept only as a last resort.
+    """
+    decoder = json.JSONDecoder()
+    fallback: dict[str, Any] | None = None
+    pos = text.find("{")
+    while pos >= 0:
+        try:
+            doc, _end = decoder.raw_decode(text, pos)
+        except ValueError:
+            pos = text.find("{", pos + 1)
+            continue
+        if isinstance(doc, dict):
+            if isinstance(doc.get("data"), dict):
+                doc = doc["data"]
+            if any(k in doc for k in ("results", "summary")):
+                return doc
+            fallback = fallback or doc
+        pos = text.find("{", pos + 1)
+    return fallback
 
 
 def report_results(report: dict[str, Any] | None) -> list[dict[str, Any]]:
@@ -149,12 +159,22 @@ def summary_counts(report: dict[str, Any] | None) -> dict[str, int]:
 
 def summary_skips_refused(text: str, *names: str) -> bool:
     """True when a line of the CLI's setup summary reads `skipped (gate_refused)` and names one of `names` (the fork's name, tag or guid). The line shape is the P4 renderer's; only the two facts are matched."""
-    wanted = [n for n in names if n]
+    # A name matches only as a whole token: a bare `u2r` inside another repo's name (`xu2rx`, `u2r-b`) is not this fork.
+    wanted = [re.compile(r"(?<![\w.-])%s(?![\w-])" % re.escape(n)) for n in names if n]
     for line in text.splitlines():
         low = line.lower()
-        if STATUS_SKIPPED in low and REASON_GATE_REFUSED in low and any(n in line for n in wanted):
+        if (
+            STATUS_SKIPPED in low
+            and REASON_GATE_REFUSED in low
+            and any(w.search(line) for w in wanted)
+        ):
             return True
     return False
+
+
+def names_gate_denial(text: str, service: str) -> bool:
+    """True when `repo up`'s output names the P5 refusal of `service`: the service and one of the two things the gate refuses it for (the MKNOD capability, the proxy-root bind). A network or daemon failure names neither."""
+    return bool(service) and service in text and ("MKNOD" in text or PROXY_ROOT in text)
 
 
 def ids_unchanged(before: list[str] | None, after: list[str] | None) -> bool:
@@ -438,9 +458,12 @@ class _LiveU2:
         after = self.container_ids(self.tag_r)
         self.check(
             "U2.5 repo up on the refused fork fails and leaves its container ids unchanged",
-            res.rc != 0 and ids_unchanged(before, after),
+            res.rc != 0
+            and names_gate_denial(res.text(), self.svc_r)
+            and ids_unchanged(before, after),
             res,
-            evidence="rc=%d before=%s after=%s" % (res.rc, before, after),
+            evidence="rc=%d denial_named=%s before=%s after=%s"
+            % (res.rc, names_gate_denial(res.text(), self.svc_r), before, after),
         )
 
     def _teardown(self) -> None:
@@ -522,6 +545,7 @@ __all__ = [
     "ids_unchanged",
     "is_converged",
     "is_gate_refused",
+    "names_gate_denial",
     "parse_container_ids",
     "parse_converge_report",
     "refused_compose",

@@ -511,6 +511,23 @@ def test_plan_mode_an_uncommitted_line_cannot_have_drifted(gate, tmp_path):
     gate.log_pass("an uncommitted citing line is compared with the tree it was written against")
 
 
+def test_plan_mode_a_non_utf8_cited_blob_does_not_crash(gate, tmp_path):
+    """A cited file in a legacy encoding is decoded leniently; strict decoding raised UnicodeDecodeError and printed no verdict."""
+    root = _init(tmp_path)
+    (root / "lib").mkdir()
+    (root / "lib/a.txt").write_bytes(b"caf\xe9\nbravo\n")
+    _write(root, _PLAN, "# PLAN: enc\nStatus: in-progress\n\n- [ ] T1 see `lib/a.txt:2`\n")
+    _commit(root, "base")
+    (root / "lib/a.txt").write_bytes(b"caf\xe9\nBRAVO-rewritten\n")
+    _commit(root, "the cited file changes")
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(1, result, "the drift is judged, not a traceback")
+    data = _plan_json(gate, result)
+    if len(data["drifted"]) != 1:
+        gate.log_fail("expected one drifted row: %s" % data)
+    gate.log_pass("non-UTF-8 cited blobs are decoded leniently")
+
+
 def test_plan_mode_an_unreadable_blob_fails_closed(gate, tmp_path):
     """The partial-clone shape: the tree names the old blob and the blob is not in the clone. The mode must refuse (rc 2), never report "no drift"."""
     root = _drift_fixture(

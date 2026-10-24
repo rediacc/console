@@ -165,6 +165,21 @@ def _remove(run: Runner, bucket: str, name: str) -> None:
         )
 
 
+def _replace(run: Runner, bucket: str, old: Rule, new: Rule) -> None:
+    """Swap a drifted rule for its replacement. A rule name is unique per bucket, so the old one must go first; when the add then fails the old rule is put back, so the bucket never ends the run without its rule for that prefix."""
+    _remove(run, bucket, old.name)
+    try:
+        _add(run, bucket, new)
+    except RuntimeError as exc:
+        try:
+            _add(run, bucket, old)
+        except RuntimeError as restore:
+            raise RuntimeError(
+                "%s; restoring the previous rule failed too: %s" % (exc, restore)
+            ) from exc
+        raise RuntimeError("%s; the previous rule %s was restored" % (exc, old.name)) from exc
+
+
 def diff(existing: list[Rule], wanted: list[Rule]) -> tuple[list[Rule], list[Rule]]:
     """(missing, drifted) among `wanted` given `existing`, matched by name."""
     by_name = {r.name: r for r in existing}
@@ -227,12 +242,13 @@ def run_mode(run: Runner, mode: str, bucket: str | None = None, dry_run: bool = 
             if missing or drifted:
                 status = 1
             continue
-        for r in drifted:
-            if not dry_run:
-                _remove(run, b, r.name)
+        previous = {r.name: r for r in existing}
         for r in [*missing, *drifted]:
             if dry_run:
                 print("WOULD ADD %s: %s" % (b, r.name))
+            elif r.name in previous:
+                _replace(run, b, previous[r.name], r)
+                print("ADDED %s: %s" % (b, r.name))
             else:
                 _add(run, b, r)
                 print("ADDED %s: %s" % (b, r.name))

@@ -19,6 +19,7 @@ ACCOUNT_URL = "https://eu.rediacc.com"
 [[services]]
 binding = "ACCOUNT"
 service = "rediacc-account-eu"
+# DEPLOY ORDER: the account Worker (rediacc-account-eu) first, then this one. CloudflareInternal exists only once the account Worker is deployed with it, so a proxy deployed first has an ACCOUNT binding with nothing behind it and introspection fails.
 # The account Worker's named entrypoint, which only a service binding can reach: it marks the request as Cloudflare-internal, so the `cloudflare`-bound EXECUTOR_TOKEN is accepted on introspection (private/account src/utils/request.ts markServiceBindingEnv).
 entrypoint = "CloudflareInternal"
 

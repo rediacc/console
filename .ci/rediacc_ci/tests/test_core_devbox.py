@@ -435,6 +435,15 @@ PORT_BIND_SPELLING = "/.devcontainer/"
 TWIN_PROXY_IMAGE = '"traefik:v3.6"'
 
 
+def test_devbox_proxy_image_is_the_product_proxy_pin() -> None:
+    """The twin comparison folds the frozen `traefik:v3.6` to `DEVBOX_PROXY_IMAGE`, so the fold would accept any value; this pins the constant to the tag the product proxy's compose file runs (review f72b3c0f.1)."""
+    compose = (paths.repo_root() / "private" / "renet" / "proxy" / "docker-compose.yml").read_text(
+        encoding="utf-8"
+    )
+    pinned = re.findall(r"^\s*image:\s*(traefik:\S+)\s*$", compose, re.MULTILINE)
+    assert pinned == [devbox.DEVBOX_PROXY_IMAGE], (pinned, devbox.DEVBOX_PROXY_IMAGE)
+
+
 def _fold_twin_spellings(scenario: str, old_out: str) -> str:
     if scenario in BIND_SPELLING_SCENARIOS:
         old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)

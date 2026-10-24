@@ -1796,6 +1796,6 @@ export function main(argv: string[]): number {
   return cmp.ok ? 0 : 1;
 }
 
-// `import.meta.url` under tsx is the file URL; process.argv[1] is the path.
+// Run main() only when this file is the launched script (isEntryPoint compares real paths).
 const invoked = isEntryPoint(import.meta.filename);
 if (invoked) process.exit(main(process.argv.slice(2)));

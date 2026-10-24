@@ -460,6 +460,25 @@ if (controlProblems.some((p) => p.includes('"declaredKey"'))) {
   process.exit(1);
 }
 
+/**
+ * Fourth control, for the whitespace-tolerant declaration match in zodKeys. A refined schema is
+ * formatted as `z\n  .object({...})\n  .superRefine(fn)`; a regression back to the literal
+ * `z.object(` search would not find it and would land in the NEXT schema's body.
+ */
+const SPLIT_CHAIN_DTO = `
+export const splitSchema = z
+  .object({ onlyKey: z.string() })
+  .superRefine((v, ctx) => v);
+export const nextSchema = z.object({ nextKey: z.string() });
+`;
+const splitKeys = zodKeys(SPLIT_CHAIN_DTO, 'splitSchema');
+if (splitKeys === null || splitKeys.join(',') !== 'onlyKey') {
+  console.error(
+    `✗ split-chain control did not fire: a schema declared as z\\n.object({...}) read as [${splitKeys}], expected [onlyKey].`
+  );
+  process.exit(1);
+}
+
 // ── Real run ────────────────────────────────────────────────────────────────
 const routes = read(ROUTES_TS);
 const dto = read(DTO_TS);

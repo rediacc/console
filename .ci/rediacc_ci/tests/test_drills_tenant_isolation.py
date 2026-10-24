@@ -906,6 +906,16 @@ def test_cross_connect_verdict_unreadable_log_fails() -> None:
     assert not ti.cross_connect_verdict(EPERM_OUT, None, MARK)[0]
 
 
+def test_cross_connect_verdict_shows_the_raw_output_when_no_known_line_is_present() -> None:
+    """Review f791208c.1: a docker run that fails with none of the nc:/docker:/NC_RC= prefixes keeps its raw text in the evidence."""
+    ok, why = ti.cross_connect_verdict(
+        "Cannot connect to the Docker daemon at unix:///x\n", "", MARK
+    )
+    assert not ok
+    assert "Cannot connect to the Docker daemon" in why
+    assert "<empty>" in ti.cross_connect_verdict("", "", MARK)[1]
+
+
 def test_nc_rc_reads_the_last_marker() -> None:
     assert ti.nc_rc("NC_RC=125\n") == 125
     assert ti.nc_rc("no marker") is None

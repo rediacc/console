@@ -33,6 +33,15 @@ export function ranLineCases(): ControlCase[] {
     { cmd: `${node} /x/npm-steps.ts guard !!notbase64!!notbase64!!`, cwd: '.', rc: 1 },
     ROOT
   );
+  // Base64-charset (so it matches STEP_RE) but not JSON: the decode-failure fallback.
+  const notJson = Buffer.from('this is not json at all').toString('base64');
+  const undecodable = ranLine(
+    { cmd: `${node} /x/npm-steps.ts guard ${notJson}`, cwd: '.', rc: 1 },
+    ROOT
+  );
+  // A JSON value that is not a step list also stays verbatim.
+  const notList = Buffer.from('{"cwd":"/repo"}').toString('base64');
+  const object = ranLine({ cmd: `${node} /x/npm-steps.ts sync ${notList}`, cwd: '.', rc: 0 }, ROOT);
   return [
     {
       name: 'a guard step is labelled and its base64 argument is absent',
@@ -58,6 +67,16 @@ export function ranLineCases(): ControlCase[] {
       name: 'an undecodable payload is left alone rather than mislabelled',
       ok: junk.includes('!!notbase64'),
       detail: junk,
+    },
+    {
+      name: 'a base64-shaped payload that fails to decode keeps its argument',
+      ok: undecodable.includes(notJson) && !undecodable.includes('npm-steps guard ('),
+      detail: undecodable,
+    },
+    {
+      name: 'a decodable payload that is not a step list keeps its argument',
+      ok: object.includes(notList),
+      detail: object,
     },
   ];
 }

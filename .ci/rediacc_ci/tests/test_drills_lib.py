@@ -918,7 +918,28 @@ def test_restart_stops_a_live_worktree_stack_first(
     monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
     drill = lib.Drill("t")
     drill.init()
-    monkeypatch.setattr(drill, "gateway_alive", lambda: healthy)
+    monkeypatch.setattr(drill, "gateway_alive", lambda: healthy and not calls.exists())
     drill.stop_worktree_stack()
     seen = calls.read_text().split("\n") if calls.exists() else []
     assert ("account stop" in seen) is expect_stop
+
+
+@pytest.mark.parametrize("run_sh_body", ["exit 1", "exit 0", "sleep 5"])
+def test_a_stop_that_leaves_the_stack_answering_is_an_error_not_a_reuse(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, run_sh_body: str
+) -> None:
+    """A failed, ineffective or timed-out `account stop` must not fall through to `account dev`, which would reuse the stale stack (review 93157dbc.1, .3, .4)."""
+    root = _fake_root(tmp_path, "#!/bin/bash\n%s\n" % run_sh_body)
+    (root / ".account-state").write_text(f"gateway_port={ACCOUNT_DEV_PORT}\n")
+    monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
+    monkeypatch.setattr(lib, "GATEWAY_POLL_SECONDS", 0)
+    drill = lib.Drill("t")
+    drill.init()
+    monkeypatch.setattr(drill, "gateway_alive", lambda: True)
+    if run_sh_body == "sleep 5":
+        real = lib.subprocess.run
+        monkeypatch.setattr(
+            lib.subprocess, "run", lambda *a, **k: real(*a, **{**k, "timeout": 0.2})
+        )
+    with pytest.raises(lib.GatewayError, match="did not stop"):
+        drill.stop_worktree_stack()

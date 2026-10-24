@@ -411,6 +411,7 @@ def main(argv: list[str]) -> int:
         return rc
     # SIGTERM becomes an exception so the `finally` blocks that remove the containers, network and image
     # still run when a runner terminates the gate; a 2026-10-06 run killed this way left all four behind.
+    _SIGTERM_SEEN[0] = False
     previous = signal.signal(signal.SIGTERM, _on_sigterm)
     try:
         return _smoke()
@@ -425,7 +426,14 @@ class _TerminatedError(Exception):
     pass
 
 
+_SIGTERM_SEEN = [False]
+
+
 def _on_sigterm(_signum: int, _frame: object) -> None:
+    """The first SIGTERM unwinds into the `finally` teardown; any later one is ignored, or it would raise inside that teardown and skip the removals still to run."""
+    if _SIGTERM_SEEN[0]:
+        return
+    _SIGTERM_SEEN[0] = True
     raise _TerminatedError("SIGTERM")
 
 

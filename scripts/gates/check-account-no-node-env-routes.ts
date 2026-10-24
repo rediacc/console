@@ -63,7 +63,8 @@ function tsFiles(dir: string): string[] {
     if (e.isDirectory()) out.push(...tsFiles(p));
     else if (e.name.endsWith('.ts')) out.push(p);
   }
-  return out.sort((a, b) => a.localeCompare(b));
+  // Code-unit order, never localeCompare: the scan order (and any printed finding order) must not depend on the host locale or ICU.
+  return out.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
 function selftest(): void {

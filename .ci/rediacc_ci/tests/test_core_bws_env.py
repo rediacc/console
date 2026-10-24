@@ -17,6 +17,7 @@ THE ONE DELIBERATE DIVERGENCE IS PINNED, NOT PAPERED OVER. See `test_unparseable
 ledger deliberately does not carry that case.
 """
 
+import io
 import json
 import os
 import pathlib
@@ -792,3 +793,27 @@ def test_names_profile_with_no_required_spec_resolves_nothing_not_the_whole_map(
     assert bws_env.main(["names", "--profile", "opt-only"]) == 0
     assert bws_env.main(["names"]) == 0
     assert seen == [[], None]
+
+
+def test_real_load_of_an_empty_list_resolves_nothing_while_none_resolves_the_map(
+    monkeypatch, tmp_path
+) -> None:
+    """The real `load`, not a stub: `[]` must not be read as `None`, or `names --profile <optional-only>` lists the whole map."""
+    mapfile = tmp_path / "map.json"
+    mapfile.write_text("{}")
+    fetched: list[str] = []
+    monkeypatch.setattr(bws_env, "with_token", lambda _env=None: {})
+    monkeypatch.setattr(bws_env, "binary", lambda _env=None: "/bin/true")
+    monkeypatch.setattr(bws_env, "map_path", lambda _env=None: str(mapfile))
+    monkeypatch.setattr(bws_env, "listing", lambda _bws, _env: [])
+    monkeypatch.setattr(bws_env, "mapped_names", lambda _path: ["MAPPED"])
+
+    def pick(_rows, name):
+        fetched.append(name)
+        return "v"
+
+    monkeypatch.setattr(bws_env, "pick", pick)
+    assert bws_env.load([], stderr=io.StringIO())[0] == {}
+    assert fetched == []
+    assert bws_env.load(None, stderr=io.StringIO())[0] == {"MAPPED": "v"}
+    assert fetched == ["MAPPED"]

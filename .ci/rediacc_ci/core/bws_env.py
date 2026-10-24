@@ -708,7 +708,8 @@ def load(
     # A REQUESTED NAME IS NOT CHECKED AGAINST THE MAP, and that is the twin's behaviour rather than an omission: `bws_env_load FOO` looks FOO up in the store directly. The map is consulted only to enumerate the default set.
     #
     # THE DEFAULT SET IS PARSED THROUGH THE SAME GRAMMAR AS AN EXPLICIT ONE, even though a map key can never carry a `>`. Running both paths through `parse_specs` means the alias-free case is not a second code path that could drift; a map name simply parses to `(name, name)`, which is what the twin did implicitly.
-    wanted = parse_specs(list(names) if names else mapped_names(path))
+    # `None` is the whole map; an empty list asks for nothing and resolves nothing.
+    wanted = parse_specs(mapped_names(path) if names is None else list(names))
 
     resolved: dict[str, str] = {}
     missing: list[str] = []

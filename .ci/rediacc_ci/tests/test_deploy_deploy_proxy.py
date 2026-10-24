@@ -20,6 +20,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tomllib
 import types
 import typing
 
@@ -298,8 +299,14 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert as_twin(new.stdout) == old.stdout, (
         f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert as_twin(new.stderr) == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
+    # The one deliberate divergence from the frozen twin: a persistent resolution failure with DoH disabled now says so (review b7d7bdfe.2), where the twin printed only the status line.
+    new_stderr = "".join(
+        ln
+        for ln in as_twin(new.stderr).splitlines(keepends=True)
+        if "DNS-over-HTTPS is disabled" not in ln
+    )
+    assert new_stderr == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new_stderr!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -900,6 +907,24 @@ BENCH_PLANTS = (
         ),
         "[[services]] binds 'rediacc-www'",
     ),
+    (
+        "account-id-key",
+        ("compatibility_date = ", 'account_id = "0123456789abcdef"\ncompatibility_date = '),
+        "top-level key 'account_id'",
+    ),
+    (
+        "main-other",
+        ('main = "src/index.ts"', 'main = "src/other.ts"'),
+        "main is 'src/other.ts'",
+    ),
+    (
+        "service-names-eu",
+        (
+            'service = "rediacc-account-bench"',
+            'service = "rediacc-account-bench"\n\n[[services]]\nbinding = "X"\nservice = "eu-something-bench"',
+        ),
+        "[[services]] 'eu-something-bench' names eu",
+    ),
 )
 
 
@@ -1049,6 +1074,22 @@ def _smoke_fixture(tmp_path: pathlib.Path, monkeypatch, answers, doh=None):
     return fake, sleeps
 
 
+@pytest.mark.parametrize("value", ["inf", "-inf", "nan", "x"])
+def test_a_non_finite_resolve_window_falls_back_to_the_default(monkeypatch, value) -> None:
+    monkeypatch.setenv(port.RESOLVE_WINDOW_ENV, value)
+    assert port._resolve_window() == float(port.DEFAULT_RESOLVE_WINDOW_S)
+
+
+def test_persistent_nxdomain_with_doh_disabled_still_says_it_does_not_resolve(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    _smoke_fixture(tmp_path, monkeypatch, [("000", 6)])
+    monkeypatch.setenv(port.DOH_URL_ENV, "")
+    _clock(monkeypatch, [0.0, 100.0])
+    assert port.smoke(tmp_path) == 1
+    assert "does not resolve locally" in capsys.readouterr().err
+
+
 def test_nxdomain_then_ok_passes_without_a_pin(tmp_path, monkeypatch) -> None:
     fake, sleeps = _smoke_fixture(tmp_path, monkeypatch, [("000", 6), ("200", 0), ("401", 0)])
     assert port.smoke(tmp_path) == 0
@@ -1116,3 +1157,14 @@ def test_the_doh_lookup_reads_the_first_a_record(monkeypatch) -> None:
     monkeypatch.delenv(port.DOH_URL_ENV, raising=False)
     assert port._doh_lookup("proxy.test.example") == "198.51.100.9"
     assert "name=proxy.test.example" in seen["url"]
+
+
+def test_the_eu_account_worker_binds_the_eu_proxy_and_the_proxy_binds_back() -> None:
+    """Review fa7742a0.1: the EXECUTOR binding of workers/account/wrangler.eu.toml names the proxy Worker, and the proxy's ACCOUNT binding names the account Worker, so a dropped or misnamed binding on either side fails here rather than in a deploy."""
+    account = tomllib.loads((ROOT / "workers" / "account" / "wrangler.eu.toml").read_text())
+    proxy = tomllib.loads((ROOT / "workers" / "proxy" / "wrangler.toml").read_text())
+    executor = [s for s in account.get("services", []) if s.get("binding") == "EXECUTOR"]
+    assert [s.get("service") for s in executor] == [proxy["name"]]
+    back = [s for s in proxy.get("services", []) if s.get("binding") == "ACCOUNT"]
+    assert [s.get("service") for s in back] == [account["name"]]
+    assert back[0].get("entrypoint") == "CloudflareInternal"

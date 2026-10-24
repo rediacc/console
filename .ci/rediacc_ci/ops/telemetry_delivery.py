@@ -79,6 +79,8 @@ class Target:
     sent_at: float
     sent: Reply
     seen: dict[str, bool] = field(default_factory=lambda: dict.fromkeys(SIGNALS, False))
+    # The last Grafana answer per signal that was not a 200 (status, or the error class when none arrived): a rejected token or a wrong datasource uid reads differently from an empty result.
+    query_failed: dict[str, str] = field(default_factory=dict)
 
 
 def all_hosts(regions: list[dict] | None = None) -> list[str]:
@@ -149,10 +151,18 @@ def poll_once(targets: list[Target], get: Get, grafana: str, token: str) -> None
     for t in targets:
         if t.sent.status != 200:
             continue
-        if not t.seen["traces"]:
-            t.seen["traces"] = tempo_has(get(_tempo_url(grafana, t, now), headers))
-        if not t.seen["logs"]:
-            t.seen["logs"] = loki_has(get(_loki_url(grafana, t, now), headers))
+        for signal, url, has in (
+            ("traces", _tempo_url(grafana, t, now), tempo_has),
+            ("logs", _loki_url(grafana, t, now), loki_has),
+        ):
+            if t.seen[signal]:
+                continue
+            reply = get(url, headers)
+            if reply.status != 200:
+                t.query_failed[signal] = str(reply.status or reply.error or "nothing")
+            else:
+                t.query_failed.pop(signal, None)
+            t.seen[signal] = has(reply)
 
 
 def run(
@@ -169,6 +179,10 @@ def run(
     out=None,
 ) -> int:
     out = out or sys.stdout
+    if not hosts:
+        # No target means nothing was probed, and a probe that probed nothing proves nothing: not a pass.
+        print("no hosts to probe: nothing was verified", file=sys.stderr)
+        return 2
     targets = [send_probe(h, get, base_for(h)) for h in hosts]
     deadline = clock() + timeout_s
     while True:
@@ -177,6 +191,16 @@ def run(
         if not pending or clock() >= deadline:
             break
         sleep(interval_s)
+    queried = [t for t in targets if t.sent.status == 200]
+    # Every Grafana answer a 401 or 403: the credential is rejected, which is not a telemetry outage and must not read as one.
+    rejected = {t.query_failed.get(sig) for t in queried for sig in SIGNALS}
+    if queried and rejected and rejected <= {"401", "403"}:
+        print(
+            "grafana rejected %s (answered %s to every query): the read credential is revoked or wrong, delivery was not judged"
+            % (READ_CREDENTIAL_ENV, "/".join(sorted(str(r) for r in rejected))),
+            file=sys.stderr,
+        )
+        return 2
     silent = 0
     for t in targets:
         for signal in SIGNALS:
@@ -187,6 +211,8 @@ def run(
             why = ""
             if t.sent.status != 200:
                 why = " (probe answered %s)" % (t.sent.status or t.sent.error or "nothing")
+            elif signal in t.query_failed:
+                why = " (grafana query answered %s)" % t.query_failed[signal]
             print("SILENT %s %s%s" % (t.host, signal, why), file=out)
     print(
         "%d hosts, %d signals, %d silent" % (len(targets), len(targets) * len(SIGNALS), silent),

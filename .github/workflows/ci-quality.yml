@@ -1813,7 +1813,7 @@ jobs:
       - name: Install agent-browser
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
-          AGENT_BROWSER_VERSION: '0.36.0'
+          AGENT_BROWSER_VERSION: '0.39.2'
         # The cutoff is computed BEFORE the cd, from the checkout: --before holds the live resolution to the release-age window.
         run: |
           before="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"

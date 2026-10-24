@@ -1151,7 +1151,28 @@ def _step_sources() -> list[pathlib.Path]:
 
 
 _STEP_NAME_RE = re.compile(r"^\s*-\s+name:\s*(.+?)\s*$", re.MULTILINE)
-_LOCAL_USES_RE = re.compile(r"^\s*(?:-\s+)?uses:\s*(\./\.github/actions/[\w.-]+)\s*$", re.MULTILINE)
+# Only a list item that BEGINS with `uses:` is an unnamed step (a named step carries `name:` first, and the runner labels it by that name). The value may be quoted and may trail a comment.
+_LOCAL_USES_RE = re.compile(
+    r"""^\s*-\s+uses:\s*['"]?(\./\.github/actions/[\w.-]+)['"]?\s*(?:#.*)?$""", re.MULTILINE
+)
+
+
+_ANY_USES_RE = re.compile(
+    r"""^\s*(?:-\s+)?uses:\s*['"]?(\./\.github/actions/[\w.-]+)['"]?\s*(?:#.*)?$""", re.MULTILINE
+)
+# Actions every workflow names at each use. The runner labels those steps by their name, so their `Run ./.github/actions/<x>` pattern is spare cover for a future unnamed use: it still needs a `uses:` line of any form, but no unnamed one.
+_NAMED_AT_EVERY_USE = ("free-disk-space", "apt-mirror")
+
+
+def _any_action_labels() -> list[str]:
+    """Like `_local_action_labels`, for a `uses:` line of any form, named step or not."""
+    return sorted(
+        {
+            "Run " + m.group(1)
+            for f in _step_sources()
+            for m in _ANY_USES_RE.finditer(f.read_text(encoding="utf-8"))
+        }
+    )
 
 
 def _local_action_labels() -> list[str]:
@@ -1386,7 +1407,7 @@ def test_every_infra_pattern_names_a_step_that_exists(gate):
         "const m=require(process.argv[1]);const names=JSON.parse(process.argv[2]);"
         "process.stdout.write(JSON.stringify(m.INFRA_STEP_PATTERNS"
         ".filter((re)=>!names.some((n)=>re.test(n))).map((re)=>re.source)))",
-        json.dumps(names + _local_action_labels()),
+        json.dumps(names + _any_action_labels()),
     )
     gate.assert_eq(
         unmatched,
@@ -1588,12 +1609,15 @@ def test_every_infra_run_action_pattern_has_a_uses_line(gate):
     """Liveness with a fail-before control: a renamed action leaves its 'Run ./.github/actions/<x>' pattern unmatched."""
     live = _local_action_labels()
     gate.assert_eq(len(live) >= 4, True, "the local action uses were read (%r)" % live)
-    infra = ["Run ./.github/actions/" + a for a in _RUN_ACTIONS]
-    unmatched = _node_eval(
-        gate, _UNMATCHED_JS, json.dumps([n for n in live if n not in infra] + live)
-    )
-    run_patterns = [u for u in unmatched if u.startswith("^Run ")]
+    # An UNNAMED use must exist for each action not listed as named at every use, and a use of any form for the listed ones.
+    spare = ["^Run \\.\\/\\.github\\/actions\\/%s$" % a for a in _NAMED_AT_EVERY_USE]
+    unmatched = _node_eval(gate, _UNMATCHED_JS, json.dumps(live))
+    run_patterns = [u for u in unmatched if u.startswith("^Run ") and u not in spare]
     gate.assert_eq(run_patterns, [], "every 'Run ./.github/actions/<x>' pattern has a uses: line")
+    unused_spare = _node_eval(gate, _UNMATCHED_JS, json.dumps(_any_action_labels()))
+    gate.assert_eq(
+        [u for u in unused_spare if u in spare], [], "the spare patterns still have a uses: line"
+    )
     # Control: with the setup-workspace use renamed away the same check must go red.
     renamed = [n for n in live if not n.endswith("/setup-workspace")]
     broken = _node_eval(gate, _UNMATCHED_JS, json.dumps(renamed))
@@ -1603,3 +1627,18 @@ def test_every_infra_run_action_pattern_has_a_uses_line(gate):
         "a renamed setup-workspace action is reported",
     )
     gate.log_pass("each Run ./.github/actions/<x> pattern matches a uses: line, and a rename reds")
+
+
+def test_local_uses_regex_reads_quoted_and_commented_values_but_not_named_steps():
+    """Review a392e3ee.2/.3: an unnamed `- uses:` step counts quoted or with a trailing comment; a named step does not."""
+    text = (
+        "- uses: ./.github/actions/a\n"
+        "- uses: './.github/actions/b'\n"
+        '- uses: "./.github/actions/c" # why\n'
+        "- name: Named\n  uses: ./.github/actions/d\n"
+    )
+    assert [m.group(1) for m in _LOCAL_USES_RE.finditer(text)] == [
+        "./.github/actions/a",
+        "./.github/actions/b",
+        "./.github/actions/c",
+    ]

@@ -14,8 +14,9 @@
  * slice). Each was found by hand. This gate makes the hand check a standing one.
  *
  * WHAT A REGISTRY ENTRY IS. One per gate: the files the gate reads, and an exact
- * find/replace in ONE of them that re-creates the gate's headline defect. Four runs decide
- * the verdict, and only one combination is a pass:
+ * find/replace in ONE of them that re-creates the gate's headline defect. Three gate runs
+ * (1-3) and one check of the mutant's output (4) decide the verdict, and only one
+ * combination is a pass:
  *
  *   1. the gate on the REAL tree              must exit 0   (else: baseline-red)
  *   2. the gate copied into a pristine sandbox must exit 0   (else: sandbox-red; the

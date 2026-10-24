@@ -155,6 +155,19 @@ def test_zero_stored_events_is_exit_0_and_says_so(capsys):
     assert "TOTAL 0 Workers" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("result", [{}, {"calculations": None}, {"calculations": "x"}])
+def test_a_malformed_count_answer_is_exit_1_not_a_zero(capsys, result):
+    """A result with no calculations list must not read as an empty window and exit 0 (review 930f0082.2)."""
+
+    def transport(_method, url, _headers, _body):
+        if "/telemetry/query" in url:
+            return 200, {"success": True, "result": result}
+        return 404, None
+
+    assert ov.run(ENV, transport, hours=24, end_s=END, retention_days=7) == 1
+    assert "no calculations list" in capsys.readouterr().err
+
+
 def test_the_telemetry_query_prefers_the_global_key_over_the_scoped_token():
     both = {"CLOUDFLARE_API_TOKEN": "t", "CF_GLOBAL_API_KEY": "k", "CF_EMAIL": "e"}
     assert set(ov.telemetry_headers(both)) == {"X-Auth-Key", "X-Auth-Email"}

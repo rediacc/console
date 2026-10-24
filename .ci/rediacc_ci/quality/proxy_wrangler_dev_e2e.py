@@ -22,7 +22,7 @@ and then three requests to `GET /v1/server-info` through the Worker, in this ord
 
 The two refusals come FIRST, because after the 200 a container exists and "no container was started" could no longer be read. The `cliVersion` equality is what proves the 200 came from the executor inside the image rather than from anything else answering on the port.
 
-WHY wrangler.dev.toml IS ALSO CHECKED STATICALLY. A dev config that drifts from wrangler.toml would make this gate prove the wrong Worker. Before any docker work the gate requires the dev config to equal the deployed one on `main`, the compatibility date and flags, `[[containers]]`, the Durable Object bindings and the migrations, and to carry no `[[services]]` and no routes.
+WHY wrangler.dev.toml IS ALSO CHECKED STATICALLY. A dev config that drifts from wrangler.toml would make this gate prove the wrong Worker. Before any docker work the gate requires the dev config to equal the deployed `wrangler.toml` of the working tree, the compatibility date and flags, `[[containers]]`, the Durable Object bindings and the migrations, and to carry no `[[services]]` and no routes.
 
 TEARDOWN, ALWAYS. `wrangler dev` does NOT remove its containers when it exits (measured 2026-10-24, wrangler 4.151.3: both the executor and its `-proxy` sidecar were still up after SIGINT and workerd had exited). So the gate stops wrangler's whole process group, removes every `workerd-rediacc-proxy-dev-*` container that did not exist before the run, removes the dev image tag the build log names, stops the fake server and deletes its temp state, and then LISTS the prefix again: a container that survived teardown is a finding. SIGTERM is turned into an exception for the same reason, so a runner that terminates the gate still reaches the teardown; only SIGKILL can leave a container behind, and the next run names any such leftover loudly before it starts.
 
@@ -209,6 +209,11 @@ def verdict(obs: dict) -> list[str]:
         )
 
     # Teardown.
+    if obs.get("wrangler_survived"):
+        out.append(
+            "wrangler (process group %s) was still running after SIGKILL; kill it by hand before the next run"
+            % obs["wrangler_survived"]
+        )
     if obs.get("left_behind"):
         out.append(
             "teardown left container(s) running: %s; remove them with `docker rm -f %s`"
@@ -488,7 +493,14 @@ class _TerminatedError(Exception):
     pass
 
 
+_SIGTERM_SEEN = [False]
+
+
 def _on_sigterm(_signum: int, _frame: object) -> None:
+    """The first SIGTERM unwinds into the `finally` teardown; any later one is ignored, or it would raise inside that teardown and skip the removals still to run."""
+    if _SIGTERM_SEEN[0]:
+        return
+    _SIGTERM_SEEN[0] = True
     raise _TerminatedError("SIGTERM")
 
 
@@ -516,20 +528,21 @@ def _tail(path: pathlib.Path, n: int = 3000) -> str:
         return ""
 
 
-def _stop(proc: subprocess.Popen) -> None:
-    """Stop wrangler and every child it spawned (npm, workerd): they share its session."""
+def _stop(proc: subprocess.Popen) -> bool:
+    """Stop wrangler and every child it spawned (npm, workerd): they share its session. False when the group still ran after SIGKILL, which the caller reports as a leftover."""
     if proc.poll() is not None:
-        return
+        return True
     for sig, grace in ((signal.SIGINT, STOP_GRACE_S), (signal.SIGKILL, 10)):
         try:
             os.killpg(proc.pid, sig)
         except ProcessLookupError:
-            return
+            return True
         try:
             proc.wait(timeout=grace)
-            return
+            return True
         except subprocess.TimeoutExpired:
             continue
+    return False
 
 
 def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) -> tuple[dict, dict]:
@@ -617,8 +630,7 @@ def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) ->
             obs["caller_introspected"] = fake.asked_with_executor_token(tokens["caller"])
             obs["caller_containers"] = sorted(prefixed_containers() - before)
         finally:
-            if proc is not None:
-                _stop(proc)
+            survivor = proc is not None and not _stop(proc)
             ours = prefixed_containers() - before
             if ours:
                 _docker("rm", "-f", *sorted(ours))
@@ -627,6 +639,8 @@ def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) ->
                 if _docker("rmi", tag).returncode == 0:
                     shape["removed_images"] += 1
             obs["left_behind"] = sorted(prefixed_containers() - before)
+            if survivor and proc is not None:
+                obs["wrangler_survived"] = proc.pid
             shutil.rmtree(scratch, ignore_errors=True)
     return obs, shape
 
@@ -723,6 +737,7 @@ def main(argv: list[str]) -> int:
     rc = controls_first("proxy wrangler dev e2e", selftest)
     if rc or "--selftest" in argv:
         return rc
+    _SIGTERM_SEEN[0] = False
     previous = signal.signal(signal.SIGTERM, _on_sigterm)
     try:
         return run(paths.repo_root())

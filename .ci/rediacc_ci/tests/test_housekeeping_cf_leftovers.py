@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import io
+import urllib.error
 from urllib.parse import urlsplit
 
 import pytest
@@ -157,3 +159,92 @@ def test_report_states_how_many_items_were_scanned(monkeypatch, capsys):
         [], get=fake_api([CONFIGURED, "pr-1"], [BOUND_DB], [{"pattern": "p", "script": CONFIGURED}])
     )
     assert "scanned 2 scripts, 1 d1, 1 routes, 0 domains" in capsys.readouterr().out
+
+
+class _Resp:
+    def __init__(self, body: bytes, fail_read: bool = False):
+        self.body, self.fail_read = body, fail_read
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_a):
+        return False
+
+    def read(self):
+        if self.fail_read:
+            raise ConnectionResetError("reset")
+        return self.body
+
+
+def _patch_urlopen(monkeypatch, behaviour):
+    seen: list = []
+
+    def build(url, headers=None, method="GET", **_kw):
+        seen.append((method, url, dict(headers or {})))
+        return object()
+
+    monkeypatch.setattr(cfl.https, "build_request", build)
+    monkeypatch.setattr(cfl.https, "urlopen", lambda _req, **_kw: behaviour())
+    return seen
+
+
+def test_fetch_is_a_get_with_the_bearer_and_returns_the_body(monkeypatch):
+    seen = _patch_urlopen(monkeypatch, lambda: _Resp(b'{"success": true, "result": []}'))
+    assert cfl.fetch("/p", TOKEN)["success"] is True
+    assert seen == [("GET", cfl.CF_API_BASE + "/p", {"Authorization": "Bearer " + TOKEN})]
+
+
+def test_fetch_maps_every_unreadable_answer_to_cf_error(monkeypatch):
+    """Review ce7bd2c4.2 and .4: a timeout, a reset mid-body, non-JSON and a refusal are CfErrors, never tracebacks."""
+
+    def timed_out():
+        raise TimeoutError("slow")
+
+    def http_403():
+        raise urllib.error.HTTPError(
+            "u", 403, "no", {}, io.BytesIO(b'{"success": false, "errors": [{"code": 9109}]}')
+        )
+
+    cases = {
+        "timeout": timed_out,
+        "reset": lambda: _Resp(b"", fail_read=True),
+        "html": lambda: _Resp(b"<html>"),
+        "403": http_403,
+        "url": lambda: (_ for _ in ()).throw(urllib.error.URLError("dns")),
+    }
+    for label, behaviour in cases.items():
+        _patch_urlopen(monkeypatch, behaviour)
+        with pytest.raises(cfl.CfError):
+            cfl.fetch("/p", TOKEN)
+        assert label
+
+
+def test_a_malformed_wrangler_toml_is_a_cf_error_not_a_traceback(tmp_path):
+    (tmp_path / "workers" / "x").mkdir(parents=True)
+    (tmp_path / "workers" / "x" / "wrangler.toml").write_text("name = ")
+    with pytest.raises(cfl.CfError, match="cannot be read"):
+        cfl.configured(tmp_path)
+
+
+def test_zones_are_listed_for_this_account_only():
+    calls: list = []
+    base = fake_api([CONFIGURED], [], [], calls=calls)
+
+    def get(path, token):
+        if path.startswith("/zones?"):
+            calls.append((path, token))
+            return {
+                "success": True,
+                "result": [
+                    {"id": "z1", "name": "mine", "account": {"id": "acct"}},
+                    {"id": "z2", "name": "theirs", "account": {"id": "other"}},
+                ],
+                "result_info": {"total_pages": 1},
+            }
+        if "/zones/z2/" in path:
+            raise AssertionError("another account's zone was read")
+        return base(path, token)
+
+    cfl.find_leftovers(ROOT, "acct", TOKEN, get)
+    assert any("account.id=acct" in p for p, _ in calls)

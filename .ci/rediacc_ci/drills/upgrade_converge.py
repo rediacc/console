@@ -9,17 +9,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import pathlib
 import shlex
 import shutil
 import uuid
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any
 
 from rediacc_ci.drills import lib, vm_ssh
 from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
 STEP = "U1"
 
@@ -39,11 +40,6 @@ def old_docker_socket(network_id: int | str) -> str:
 def new_docker_socket(network_id: int | str) -> str:
     """The per-network Docker socket, `/var/run/rediacc/net-<N>/docker-<N>.sock`."""
     return "%s/net-%s/docker-%s.sock" % (RUNTIME_DIR, network_id, network_id)
-
-
-def net_dir(network_id: int | str) -> str:
-    """The per-network runtime directory, `/var/run/rediacc/net-<N>`."""
-    return "%s/net-%s" % (RUNTIME_DIR, network_id)
 
 
 def runtime_stamp_path(network_id: int | str) -> str:
@@ -69,26 +65,6 @@ def build_old_renet_script(src_dir: str, out_binary: str, commit: str) -> str:
     )
 
 
-def runtime_status_command(renet: str, datastore: str) -> str:
-    """`renet runtime status --json` on the machine, the same shape the CLI reads."""
-    return "sudo %s runtime status --json --datastore %s" % (
-        shlex.quote(renet),
-        shlex.quote(datastore),
-    )
-
-
-def parse_stale_count(status_json: str) -> int | None:
-    """The `stale` count of a `renet runtime status --json` payload, or None when the text is not that payload."""
-    try:
-        doc = json.loads(status_json)
-    except (ValueError, TypeError):
-        return None
-    if not isinstance(doc, dict):
-        return None
-    value = doc.get("stale")
-    return value if isinstance(value, int) else None
-
-
 def dry_run_reports_zero_stale(report_json: str) -> bool:
     """True when a `rdc machine converge --dry-run --json` report shows nothing stale: its summary has `would_converge == 0` and its plan names no stale repo. The CLI prints the report inside its `{"success": ..., "data": {...}}` envelope (measured 2026-10-24), so `data` is unwrapped first; a bare report is read as is."""
     try:
@@ -102,7 +78,8 @@ def dry_run_reports_zero_stale(report_json: str) -> bool:
     if not isinstance(doc, dict):
         return False
     summary = doc.get("summary")
-    if not isinstance(summary, dict) or summary.get("would_converge") not in (0, None):
+    # An absent count is NOT zero: a report whose field was renamed would otherwise pass the gate vacuously.
+    if not isinstance(summary, dict) or summary.get("would_converge") != 0:
         return False
     plan = doc.get("plan")
     if not isinstance(plan, list):
@@ -116,44 +93,6 @@ def config_name(run_id: str) -> str:
 
 
 # --------------------------------------------------------------------------- live
-
-
-class U1Context(Protocol):
-    """The slice of `VmCheck` the live U1 step drives. A test never satisfies this;
-    it injects a stub `run` into `vm_check.main`, and the pure helpers above are tested directly."""
-
-    run_id: str
-    machine: str
-    worker_ip: str
-    ssh_user: str
-    ssh_key: str
-    root: pathlib.Path
-    work: pathlib.Path
-    renet_bin: pathlib.Path
-    sweep_leftovers: list[str]
-    environ: dict[str, str]
-
-    def say(self, text: str = ...) -> None: ...
-
-    def check(
-        self, step_id: str, desc: str, ok: bool, res: Any = ..., evidence: str = ...
-    ) -> bool: ...
-
-    def record(
-        self, step_id: str, desc: str, ok: bool | None, res: Any = ..., evidence: str = ...
-    ) -> bool: ...
-
-    def rdc(
-        self,
-        *args: str,
-        timeout: float | None = ...,
-        refuse: bool = ...,
-        extra_env: Mapping[str, str] | None = ...,
-    ) -> Any: ...
-
-    def host_run(
-        self, argv: Sequence[str], env: Mapping[str, str] | None = ..., timeout: float | None = ...
-    ) -> Any: ...
 
 
 def run(ctx: Any) -> None:
@@ -270,11 +209,23 @@ class _LiveU1:
                 evidence="no %s; P4 did not mint under the dev config" % dev_json,
             )
             return False
-        doc = json.loads(dev_json.read_text())
+        try:
+            doc = json.loads(dev_json.read_text())
+        except (OSError, ValueError) as exc:
+            self.ctx.check(
+                STEP,
+                "the dev config parses to seed the U1 config from",
+                False,
+                evidence="%s: %s" % (dev_json, exc),
+            )
+            return False
         doc["renetPath"] = str(self.symlink)
         # A fresh identity so the two configs are distinct universes on disk; the schema requires a valid UUID here, so set one rather than drop the field.
         doc["id"] = str(uuid.uuid4())
-        target.write_text(json.dumps(doc, indent=2) + "\n")
+        # Created 0600 from the first byte: the copy carries the gateway E2E key, and write-then-chmod leaves a window where another local user can read it.
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as handle:
+            handle.write(json.dumps(doc, indent=2) + "\n")
         target.chmod(0o600)
         self.created_cfg = True
         listed = self.crdc("machine", "list", "-o", "json")
@@ -430,7 +381,11 @@ class _LiveU1:
         left: list[str] = []
         if self.created_grand:
             for tag in (self.tag_b, self.tag_a):
-                self.crdc("repo", "delete", "%s:%s" % (self.parent, tag), "-y")
+                deleted = self.crdc("repo", "delete", "%s:%s" % (self.parent, tag), "-y")
+                if deleted.rc != 0:
+                    left.append(
+                        "U1 fork %s:%s not deleted (rc=%d)" % (self.parent, tag, deleted.rc)
+                    )
             purge = self._purge([self.guids.get(self.tag_a, ""), self.guids.get(self.tag_b, "")])
             if purge:
                 left.append(purge)
@@ -539,13 +494,10 @@ __all__ = [
     "config_name",
     "dry_run_reports_zero_stale",
     "file_sha256",
-    "net_dir",
     "new_docker_socket",
     "old_docker_socket",
-    "parse_stale_count",
     "parse_stamp",
     "run",
     "runtime_stamp_path",
-    "runtime_status_command",
     "stamp_is_current",
 ]
