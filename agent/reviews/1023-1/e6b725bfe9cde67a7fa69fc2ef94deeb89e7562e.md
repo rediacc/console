@@ -21,9 +21,9 @@ Body-Sig: 5de92a22b0c39954
 ### e6b725bf.1 [low] docs/design/01-current-architecture.md:31
 Anchor: in-diff
 Claim: The socket path is written as /run/rediacc/net-<id>/docker-<id>.sock, while spec/02 and spec/05 in the same commit use /var/run/rediacc/...; both resolve to the same place on Linux, but a reader comparing the docs sees two spellings for one path.
-Resolution: open
+Resolution: fixed aee63ccd11bc025872eb1192b448e790b67f4489 | d778be9d 2026-10-24T20:42:32Z
 
 ### e6b725bf.2 [low] docs/design/spec/04-config-schema-v3.md:547
 Anchor: in-diff
 Claim: The k8s Secret mount path is now given only as 'the secrets/ directory under /var/run/rediacc', so the full in-pod mount path the old line stated explicitly is no longer written out anywhere in this bullet and a reader cannot copy it directly.
-Resolution: open
+Resolution: fixed aee63ccd11bc025872eb1192b448e790b67f4489 | d778be9d 2026-10-24T20:42:33Z

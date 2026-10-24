@@ -26,9 +26,9 @@ Resolution: open
 ### ecbb046f.2 [low] agent/ledgers/plan-investigation.jsonl:1707
 Anchor: in-diff
 Claim: For sig 0b907951 (T5) the retro "absent" row at line 1707 is written after the "present" row at line 1703, so the latest verdict for a ticked box is absent; a reader taking the last row sees the box as not done.
-Resolution: open
+Resolution: fixed 4b7f04cf9d11ca294e70a3d97f7489d48faabf6a | d778be9d 2026-10-24T20:42:54Z
 
 ### ecbb046f.3 [low] agent/ledgers/plan-investigation.jsonl:1708
 Anchor: in-diff
 Claim: For sig 7ccd27a0 (T12) the latest row at line 1708 is verdict "partial" (it names the grand-repo docs still listing rediacc-account-server), yet the T12 box is ticked as done in agent/plans/PLAN-telemetry-export.md.
-Resolution: open
+Resolution: fixed 4b7f04cf9d11ca294e70a3d97f7489d48faabf6a | d778be9d 2026-10-24T20:42:55Z
