@@ -1,14 +1,16 @@
-## SESSION d778be9d 2026-10-24T09:49:32Z
+## SESSION d778be9d 2026-10-24T09:50:41Z
 
-# STATE d778be9d (branch 1023-1, unpushed; rewritten 2026-10-24 ~09:55Z)
+# STATE d778be9d (branch 1023-1, unpushed; wisdom hand-over 2026-10-24 ~10:00Z, context 94%)
 
 ## Big pieces
-- Sandbox tenant separation (#17254293, agent/plans/PLAN-sandbox-tenant-separation.md): every renet fix is landed: RA 83482ab, RD cb23ce4, RC 4a685cd, RB 20a7c86, RB review fixes 36510a0 + 2778e73 (renet HEAD 2778e73, pointer 8f18e34ac). Ticked: RA, RD, CX. Open: RB and RC (their acceptance includes sudo tests on an ops VM, which run inside drill I1: hand-copying test binaries is guard-refused), DR (drill I1 applied 81e15b4f3, review fixes 6d764ee1f), H1. Writer a6980d67 is fixing review 36510a09.2/.3 (double SIGINT delivery, Notify registration test) in the live renet tree.
-- Converge T9 (#d0928775): R1, C1, U1 landed; U1 rows all ok in run vmc-10240922-6d06ad; U1 ticks on the final full vm:check VERIFIED. H1 hostinger runs right after the release, without asking (operator 2026-10-24: hostinger always available).
-- Backup push (#831b7e48): never pushed. Sequence: commit the 36510a09.2/.3 fix, `npm run vm:check -- --only I1`, final full `npm run vm:check` VERIFIED (V1.2/V1.7 now accept "not visible", 0c001709c), ci:quick on a still tree, carry #6516dd5b (door: needs the push; fix committed) and P-A1 (merge gate, 202 open boxes), `TURBO_PUSH_REASON='backup: ...' git push -u origin 1023-1` as its own call.
+- Sandbox tenant separation (#17254293, PLAN-sandbox-tenant-separation): all renet fixes landed (RA 83482ab, RD cb23ce4, RC 4a685cd, RB 20a7c86, review fixes 36510a0, 2778e73; console pointer 8f18e34ac). Ticked RA, RD, CX. Open RB, RC (their sudo VM tests run inside drill I1), DR (I1 applied 81e15b4f3 + fixes 6d764ee1f), H1.
+- Converge T9 (#d0928775): R1, C1, U1 landed; U1 rows all ok live; U1 ticks on the final full vm:check VERIFIED. H1 hostinger right after the release, without asking.
+- Backup push (#831b7e48): never pushed. Carry #6516dd5b (door: needs the push, fix committed) and P-A1 (merge gate, 202 open boxes).
 
-## Landed this stretch
-- 93157dbc3 drill restart stops a live worktree stack; 470cafcf3 every drill module vm:check runs is a push trigger (sweep test); 40fce933d plan citations (P-A9, #b2443afb); 5392886f2 rulings-campaign preflight; b506cc5c3/70ac084b0 account stop review closure.
+## Delegated
+- a6980d67f0482ff2d -> #6905feb1 (items #17254293, #831b7e48, #d0928775 gated on it): review 36510a09.2/.3 in private/renet/cmd/renet/sandbox_repo_view_linux.go + _test.go (live tree, uncommitted when it reports); accept gofmt, go test -tags nolicense ./cmd/renet/, GOOS=windows build, check:ci-renet, sudo TestPrivateRepoViewLinux rc 0.
 
 ## Next action
-- When a6980d67 reports: verify (go test cmd/renet, windows build, check:ci-renet, sudo TestPrivateRepoViewLinux), commit in renet then the pointer, mark 36510a09.2/.3 fixed; then run `npm run vm:check -- --only I1` in the background, then the full vm:check and the push sequence above.
+- When a6980d67 reports: verify its accept commands, commit in private/renet then the pointer (message file in its own call, `git commit -F msg -- paths`, PR-TASK 9f92c43e, no Co-Authored-By), mark review 36510a09.2/.3 fixed with the renet sha.
+- Then in order: `npm run vm:check -- --only I1` (background); fix whatever I1 rows fail; full `npm run vm:check` (background) until VERIFIED; tick U1 (PLAN-renet-runtime-converge, investigate first), RB, RC, DR (PLAN-sandbox-tenant-separation) with commit shas; `npm run ci:quick` on a still tree; record carried reds in .ci/config/carried-reds.json; `TURBO_PUSH_REASON='backup: first push of 1023-1' git push -u origin 1023-1` as its own Bash call.
+- S6 sweep #53b05748: wake bbf56276 2026-10-31 06:07Z (session-only; NOT-BEFORE default is the fallback).
