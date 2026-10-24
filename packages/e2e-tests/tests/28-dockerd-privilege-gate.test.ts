@@ -1,5 +1,5 @@
-import { repoDockerHost, repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { expect, test } from '@playwright/test';
+import { repoDockerHost, repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import {
   DEFAULT_DATASTORE_PATH,
   DEFAULT_NETWORK_ID,
@@ -189,13 +189,13 @@ test.describe
       await runner.executeViaBridge(
         `${dockerA} ps -aq --filter label=${ATTACK_LABEL} | xargs -r ${dockerA} rm -f`
       );
-      // A first: repository_unmount carries the harness's default network id (A's), so unmounting B while A still ran would aim at A's daemon.
+      // Each repo is torn down with its own network id, so the harness default (A's) never aims at the wrong daemon. A goes first, then B.
       await runner.repositoryDown(repoA, datastorePath, networkA);
-      await runner.repositoryUnmount(repoA, datastorePath);
-      await runner.repositoryRm(repoA, datastorePath);
+      await runner.repositoryUnmount(repoA, datastorePath, networkA);
+      await runner.repositoryRm(repoA, datastorePath, networkA);
       await runner.daemonTeardown(networkA);
-      await runner.repositoryUnmount(repoB, datastorePath);
-      await runner.repositoryRm(repoB, datastorePath);
+      await runner.repositoryUnmount(repoB, datastorePath, networkB);
+      await runner.repositoryRm(repoB, datastorePath, networkB);
       await runner.daemonTeardown(networkB);
     });
 

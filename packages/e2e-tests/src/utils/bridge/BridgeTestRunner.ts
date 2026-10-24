@@ -8,6 +8,7 @@ import {
   FORK_NETWORK_ID_B,
   RENET_SETUP_TIMEOUT_MS,
 } from '../../constants';
+import { log } from '../log';
 import { getSSHExecutor, SSHExecutor } from '../ssh';
 import type { VaultBuilder } from '../vault/VaultBuilder';
 import { RepositoryHelpers } from './helpers/RepositoryHelpers';
@@ -47,7 +48,6 @@ import { SetupMethods } from './methods/SetupMethods';
 import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
-import { log } from '../log';
 
 const execAsync = promisify(exec);
 
@@ -1127,12 +1127,12 @@ export class BridgeTestRunner {
   // Repository Methods
   repositoryNew = (name: string, size: string, password?: string, datastorePath?: string) =>
     this.repositoryMethods.repositoryNew(name, size, password, datastorePath);
-  repositoryRm = (name: string, datastorePath?: string) =>
-    this.repositoryMethods.repositoryRm(name, datastorePath);
+  repositoryRm = (name: string, datastorePath?: string, networkId?: string) =>
+    this.repositoryMethods.repositoryRm(name, datastorePath, networkId);
   repositoryMount = (name: string, password?: string, datastorePath?: string, networkId?: string) =>
     this.repositoryMethods.repositoryMount(name, password, datastorePath, networkId);
-  repositoryUnmount = (name: string, datastorePath?: string) =>
-    this.repositoryMethods.repositoryUnmount(name, datastorePath);
+  repositoryUnmount = (name: string, datastorePath?: string, networkId?: string) =>
+    this.repositoryMethods.repositoryUnmount(name, datastorePath, networkId);
   repositoryUp = (name: string, datastorePath?: string, networkId?: string) =>
     this.repositoryMethods.repositoryUp(name, datastorePath, networkId);
   repositoryDown = (name: string, datastorePath?: string, networkId?: string) =>

@@ -51,11 +51,12 @@ export class RepositoryMethods {
     });
   }
 
-  repositoryRm(name: string, datastorePath?: string): Promise<ExecResult> {
+  repositoryRm(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_delete',
       repository: name,
       datastorePath,
+      networkId,
     });
   }
 
@@ -75,11 +76,13 @@ export class RepositoryMethods {
     });
   }
 
-  repositoryUnmount(name: string, datastorePath?: string): Promise<ExecResult> {
+  repositoryUnmount(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
+    // Like mount: without networkId the harness default rides along, which is wrong for a repo on another network.
     return this.testFunction({
       function: 'repository_unmount',
       repository: name,
       datastorePath,
+      networkId,
     });
   }
 

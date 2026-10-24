@@ -23,6 +23,8 @@ PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --vm-workers 1
 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 25-backup-chunk-store
 ```
 
+A local run resets the whole fleet: global setup runs `renet ops up --force --parallel`, which destroys VMs 1, 11 and 12 and every repo on them. Set `BRIDGE_TEST_SKIP_RESET=1` to keep the fleet as it is.
+
 `--test <substring>` is what turns 40 minutes into 60 seconds. `--fail-on-skip` stops a skipped case reading as a pass. See the `e2e-local` agent for the three env traps.
 
 ## Proof
