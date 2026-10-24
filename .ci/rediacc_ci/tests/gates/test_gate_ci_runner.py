@@ -858,9 +858,9 @@ def _fixture_repo(gate, work, gates: list[dict], extra_files: dict | None = None
         shutil.copy(src, runner_dir / src.name)
     # input-hash.ts reaches the policy directory through scripts/lib/policy-paths.ts (check:ci-policy-inventory), a sibling the runner copy needs; it imports only node built-ins.
     (repo / "scripts" / "lib").mkdir(parents=True)
-    shutil.copy(
-        RUNNER.parents[1] / "lib" / "policy-paths.ts", repo / "scripts" / "lib" / "policy-paths.ts"
-    )
+    # The runner modules guard their main() through scripts/lib/entry-point.ts (node built-ins only), so the copy carries it beside policy-paths.ts.
+    for lib_name in ("policy-paths.ts", "entry-point.ts"):
+        shutil.copy(RUNNER.parents[1] / "lib" / lib_name, repo / "scripts" / "lib" / lib_name)
     # run.ts refuses to start until `python3 -m rediacc_ci.core.tmp_capacity` answers from REPO_ROOT/.ci; that module imports only the standard library, so the package skeleton around it is all the copy needs.
     for rel in ("__init__.py", "core/__init__.py", "core/tmp_capacity.py"):
         dest = repo / ".ci" / "rediacc_ci" / rel

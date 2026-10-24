@@ -14,6 +14,7 @@ from rediacc_ci.drills import tenant_isolation as ti
 from rediacc_ci.drills import vm_check, vm_ssh
 from rediacc_ci.drills import vm_check_receipt as receipt_mod
 from rediacc_ci.tests import test_drills_vm_check as harness
+from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -188,10 +189,10 @@ def test_service_entry_verdict_wants_default_and_labelled_service() -> None:
     assert ti.service_entry_verdict(None, nid, "svc", ip) == (False, "no inspection JSON")
 
 
-MOUNTINFO = """\
+MOUNTINFO = f"""\
 22 1 0:21 / / rw,relatime - btrfs /dev/sda1 rw
-40 22 0:33 / /mnt/rediacc/mounts/%(a)s rw,relatime - ext4 /dev/mapper/a rw
-41 40 0:34 / /mnt/rediacc/mounts/%(a)s/sub rw,relatime - ext4 /dev/mapper/a2 rw
+40 22 0:33 / {DATASTORE_PATH}/mounts/%(a)s rw,relatime - ext4 /dev/mapper/a rw
+41 40 0:34 / {DATASTORE_PATH}/mounts/%(a)s/sub rw,relatime - ext4 /dev/mapper/a2 rw
 50 22 0:35 /mounts/%(b)s /srv/elsewhere rw - btrfs /dev/sda1 rw
 """
 
@@ -200,7 +201,7 @@ def test_mount_guids_reads_mount_points_only() -> None:
     text = MOUNTINFO % {"a": GUID_A, "b": GUID_B}
     # B's guid appears only in field 4 (the root inside its filesystem), never as a mount point.
     assert ti.mount_guids(text) == [GUID_A]
-    leaked = text + "60 22 0:36 / /mnt/rediacc/mounts/%s rw - ext4 /dev/mapper/b rw\n" % GUID_B
+    leaked = text + f"60 22 0:36 / {DATASTORE_PATH}/mounts/%s rw - ext4 /dev/mapper/b rw\n" % GUID_B
     assert ti.mount_guids(leaked) == [GUID_A, GUID_B]
     assert ti.mount_guids("") == []
 
@@ -257,15 +258,15 @@ def test_build_tests_script_builds_every_root_test_outside_bin() -> None:
             "go test -c -tags %s -o /w/tests/%s %s" % (tags, binary, package) in script
         )
     assert "/bin/renet" not in script
-    tags = {t for _l, _b, _p, t, _n in ti.ROOT_TESTS}
-    assert "nolicense ebpf_e2e" in tags
+    tag_set = {t for _l, _b, _p, t, _n in ti.ROOT_TESTS}
+    assert "nolicense ebpf_e2e" in tag_set
 
 
 def test_root_test_script_stages_privately_and_cleans_up() -> None:
     script = ti.root_test_script(
-        "/mnt/rediacc/mounts/g/vmc-i1-tests/x.test", "x.test", ("TestA", "TestB"), 600
+        f"{DATASTORE_PATH}/mounts/g/vmc-i1-tests/x.test", "x.test", ("TestA", "TestB"), 600
     )
-    assert "test -f /mnt/rediacc/mounts/g/vmc-i1-tests/x.test" in script
+    assert f"test -f {DATASTORE_PATH}/mounts/g/vmc-i1-tests/x.test" in script
     assert "mktemp -d /var/tmp/vmc-i1-XXXXXX" in script
     assert "trap 'rm -rf \"$stage\"' EXIT" in script
     assert "-test.run '^(TestA|TestB)$'" in script
@@ -296,7 +297,7 @@ def test_absent_verdict_needs_the_control_and_a_not_found_search() -> None:
 def test_job_view_verdict_returns_the_namespace_when_only_the_view_fails() -> None:
     text = (
         "pid:[4026532800]\n===\npid:[4026531836]\n===\n"
-        "60 22 0:36 / /mnt/rediacc/mounts/%s rw - ext4 x rw\n" % GUID_B
+        f"60 22 0:36 / {DATASTORE_PATH}/mounts/%s rw - ext4 x rw\n" % GUID_B
     )
     ok, _why, ns = ti.job_view_verdict(text, GUID_B)
     assert not ok
@@ -348,7 +349,7 @@ def test_job_view_verdict() -> None:
     assert ns == ""
     assert "worker's PID namespace" in why
     # B's mount in the job's view.
-    leaked = "60 22 0:36 / /mnt/rediacc/mounts/%s rw - ext4 x rw\n" % GUID_B
+    leaked = f"60 22 0:36 / {DATASTORE_PATH}/mounts/%s rw - ext4 x rw\n" % GUID_B
     ok, why, ns = ti.job_view_verdict(_job_view(extra=leaked), GUID_B)
     assert not ok
     assert ns == JOB_NS
@@ -363,10 +364,10 @@ def test_job_view_verdict() -> None:
 
 def test_peer_curl_script_moves_into_the_cgroup_first() -> None:
     script = ti.peer_curl_script(
-        "/sys/fs/cgroup/rediacc.slice/renet-exec-7", "/var/run/rediacc/net-9/docker-9.sock"
+        "/sys/fs/cgroup/rediacc.slice/renet-exec-7", f"{RUNTIME_DIR}/net-9/docker-9.sock"
     )
     assert script.index("cgroup.procs") < script.index("curl")
-    assert "--unix-socket /var/run/rediacc/net-9/docker-9.sock http://localhost/_ping" in script
+    assert f"--unix-socket {RUNTIME_DIR}/net-9/docker-9.sock http://localhost/_ping" in script
     assert "echo NOCG; exit 3" in script
 
 
@@ -599,7 +600,7 @@ class FakeCtx:
             return Res(0, "CONNECTED\n")
         if "mountinfo" in line:
             extra = (
-                "60 22 0:36 / /mnt/rediacc/mounts/%s rw - ext4 x rw\n" % GUID_B
+                f"60 22 0:36 / {DATASTORE_PATH}/mounts/%s rw - ext4 x rw\n" % GUID_B
                 if "mounts" in b
                 else ""
             )

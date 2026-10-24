@@ -27,6 +27,7 @@ from rediacc_ci import paths, well_known
 from rediacc_ci.core import run_verbs
 from rediacc_ci.drills import vm_check
 from rediacc_ci.drills import vm_check_receipt as receipt_mod
+from rediacc_ci.well_known import DATASTORE_PATH
 
 if TYPE_CHECKING:
     import types
@@ -1585,10 +1586,10 @@ def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None
     assert vm_check.sftp_refused("remote open: Read-only file system")
     # The private repo view: the server says the other repo's file is not there.
     assert vm_check.sftp_refused(
-        'Couldn\'t setstat on "/mnt/rediacc/mounts/g/.rediacc.json": No such file or directory'
+        f'Couldn\'t setstat on "{DATASTORE_PATH}/mounts/g/.rediacc.json": No such file or directory'
     )
     assert vm_check.sftp_refused(
-        'remote open("/mnt/rediacc/mounts/g/vmc-sftp"): No such file or directory'
+        f'remote open("{DATASTORE_PATH}/mounts/g/vmc-sftp"): No such file or directory'
     )
     # ssh's own client-side warning is never a server refusal.
     assert not vm_check.sftp_refused(

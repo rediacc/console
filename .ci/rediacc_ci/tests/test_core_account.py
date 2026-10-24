@@ -2086,5 +2086,6 @@ def test_stop_does_not_sigkill_a_member_whose_pid_was_reused(monkeypatch, tmp_pa
         with contextlib.suppress(OSError):
             proc.kill()
         proc.wait(timeout=5)
-        proc.stdout.close()
+        if proc.stdout is not None:
+            proc.stdout.close()
         shutil.rmtree(work, ignore_errors=True)

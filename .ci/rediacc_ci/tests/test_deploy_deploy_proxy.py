@@ -782,7 +782,13 @@ def _plant(old: str, new: str) -> str:
 
 def test_a_bench_deploy_names_its_config_and_smokes_the_bench_route(tmp_path: pathlib.Path) -> None:
     root = _bench_root(tmp_path)
-    proc, calls = _run(PORT, tmp_path, root, ("--target", "bench"), **BENCH_PROFILE_ENV)
+    proc, calls = _run(
+        PORT,
+        tmp_path,
+        root,
+        ("--target", "bench"),
+        REDIACC_BWS_PROFILES=BENCH_PROFILE_ENV["REDIACC_BWS_PROFILES"],
+    )
     assert proc.returncode == 0, proc.stderr
     assert calls == (
         "npm\trun\tbuild\t--workspace\t@rediacc/shared\n"
@@ -808,7 +814,11 @@ def test_a_bench_deploy_names_its_config_and_smokes_the_bench_route(tmp_path: pa
 def test_a_bench_dry_run_names_its_config(tmp_path: pathlib.Path) -> None:
     root = _bench_root(tmp_path)
     proc, calls = _run(
-        PORT, tmp_path, root, ("--target", "bench", "--dry-run"), **BENCH_PROFILE_ENV
+        PORT,
+        tmp_path,
+        root,
+        ("--target", "bench", "--dry-run"),
+        REDIACC_BWS_PROFILES=BENCH_PROFILE_ENV["REDIACC_BWS_PROFILES"],
     )
     assert proc.returncode == 0, proc.stderr
     assert (

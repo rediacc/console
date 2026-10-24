@@ -11,6 +11,7 @@ import pytest
 
 from rediacc_ci.drills import upgrade_converge as u
 from rediacc_ci.drills import vm_check
+from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
 
 if TYPE_CHECKING:
     import pathlib
@@ -24,9 +25,9 @@ LIVE_STAMP = (
 
 
 def test_layout_paths_match_the_per_network_and_flat_forms() -> None:
-    assert u.old_docker_socket(8512) == "/var/run/rediacc/docker-8512.sock"
-    assert u.new_docker_socket(8512) == "/var/run/rediacc/net-8512/docker-8512.sock"
-    assert u.net_dir(8512) == "/var/run/rediacc/net-8512"
+    assert u.old_docker_socket(8512) == f"{RUNTIME_DIR}/docker-8512.sock"
+    assert u.new_docker_socket(8512) == f"{RUNTIME_DIR}/net-8512/docker-8512.sock"
+    assert u.net_dir(8512) == f"{RUNTIME_DIR}/net-8512"
     assert u.runtime_stamp_path(8512) == "/var/lib/rediacc/runtime/net-8512.json"
     assert u.new_docker_socket("8512") == u.new_docker_socket(8512)
 
@@ -53,8 +54,8 @@ def test_build_script_quotes_a_hostile_path() -> None:
 
 
 def test_runtime_status_command() -> None:
-    cmd = u.runtime_status_command("/usr/bin/renet", "/mnt/rediacc")
-    assert cmd == "sudo /usr/bin/renet runtime status --json --datastore /mnt/rediacc"
+    cmd = u.runtime_status_command("/usr/bin/renet", DATASTORE_PATH)
+    assert cmd == f"sudo /usr/bin/renet runtime status --json --datastore {DATASTORE_PATH}"
 
 
 @pytest.mark.parametrize(

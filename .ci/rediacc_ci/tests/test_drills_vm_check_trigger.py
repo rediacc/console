@@ -701,7 +701,7 @@ def test_every_drill_module_vm_check_runs_is_a_trigger() -> None:
     """A change to a drill module that vm:check runs needs a vm:check receipt: upgrade_converge.py (U1) and tenant_isolation.py (I1) were missing from the map, so a push touching only them required none (found by the DR writer, 2026-10-24). Every drills/*.py that vm_check.py imports must charge a side."""
     drills = pathlib.Path(trig.__file__).resolve().parent
     tree = ast.parse((drills / "vm_check.py").read_text(encoding="utf-8"))
-    imported = set()
+    imported: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module and node.module.endswith("drills"):
             imported.update(alias.name for alias in node.names)

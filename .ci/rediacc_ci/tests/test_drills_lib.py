@@ -27,6 +27,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.drills import lib, wire
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -913,7 +914,7 @@ def test_restart_stops_a_live_worktree_stack_first(
     run_sh = '#!/bin/bash\necho "$*" >>"%s"\nexit 0\n' % calls
     root = _fake_root(tmp_path, run_sh)
     if state:
-        (root / ".account-state").write_text("gateway_port=4800\n")
+        (root / ".account-state").write_text(f"gateway_port={ACCOUNT_DEV_PORT}\n")
     monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
     drill = lib.Drill("t")
     drill.init()

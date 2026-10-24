@@ -55,6 +55,7 @@ function treeFiles(): string[] {
     'scripts/gates/check-embed-credits.ts',
     'scripts/lib/console.ts',
     'scripts/lib/dockerfile-versions.ts',
+    'scripts/lib/entry-point.ts',
     'scripts/lib/repo-root.ts',
     'scripts/lib/submodule-presence.ts',
   ];
