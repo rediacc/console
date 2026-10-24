@@ -203,7 +203,7 @@ export function projects(root: string): { projects: Project[]; absentRepos: stri
       // A submodule git has not initialised is an empty directory, so a non-root repo counts as
       // checked out only with its `.git` entry (review 7f94da40.1).
       const checkedOut =
-        sc.repo === '.' || sc.repo === ''
+        path.resolve(base) === path.resolve(root)
           ? fs.existsSync(base)
           : fs.existsSync(path.join(base, '.git'));
       if (!checkedOut) {
