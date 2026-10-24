@@ -5,7 +5,7 @@ import type { AddressInfo } from 'node:net';
 import net from 'node:net';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
-import { AuditEventsRequestSchema } from '@rediacc/shared';
+import { type AuditEvent, AuditEventsRequestSchema } from '@rediacc/shared';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import { type CliResult, CliRunner } from '../src/utils/CliRunner';
@@ -87,12 +87,6 @@ const COMPOSE = `services:
     command: ["sleep", "infinity"]
 `;
 
-interface AuditEvent {
-  type: string;
-  onBehalfOfTokenId?: string;
-  data: { commandPath?: string; machineName?: string; success: boolean };
-}
-
 interface StubAccountServer {
   url: string;
   audits: AuditEvent[];
@@ -140,11 +134,11 @@ function route(
   if (url === '/account/api/v1/proxy/introspect') {
     return [200, introspect((JSON.parse(body) as { token?: string }).token)];
   }
-  // The real ingest route parses with this schema and answers 400 otherwise; a stub that took any shape is how every executor event shipped invalid until 2026-10-24 while this suite stayed green.
+  // The real ingest route parses with this schema and answers 400 otherwise; a stub that took any shape is how every executor event shipped invalid, past this suite, until 77c2518c2.
   const parsed = AuditEventsRequestSchema.safeParse(JSON.parse(body));
   if (!parsed.success)
     return [400, { error: 'audit payload rejected', issues: parsed.error.issues }];
-  audits.push(...(parsed.data.events as AuditEvent[]));
+  audits.push(...parsed.data.events);
   return [200, { accepted: parsed.data.events.length }];
 }
 
