@@ -187,3 +187,11 @@ def test_no_hardcoded_runtime_or_datastore_paths() -> None:
     # Layout paths come from rediacc_ci.well_known through upgrade_converge and the MOUNTS constant, never a literal.
     source = pathlib.Path(c.__file__).read_text()
     assert not re.search(r'"/var/run/rediacc|"/var/lib/rediacc/(?!runtime)', source)
+
+
+def test_both_forks_carry_a_rediaccfile_whose_up_starts_the_compose_file():
+    """V1 2026-10-24: without a Rediaccfile, `repository up` after a converge restart starts nothing and the control fork fails health (containers_missing)."""
+    body = c.rediaccfile()
+    assert body.startswith("#!/bin/bash\n")
+    assert "up() {\n  renet compose -- up -d\n}" in body
+    assert c.REDIACCFILE == "Rediaccfile"

@@ -57,6 +57,14 @@ def control_compose(service: str) -> str:
     return 'services:\n  %s:\n    image: %s\n    command: ["sleep", "86400"]\n' % (service, IMAGE)
 
 
+REDIACCFILE = "Rediaccfile"
+
+
+def rediaccfile() -> str:
+    """The Rediaccfile both forks carry: `repository up` runs only Rediaccfiles, and a converge restart clears the daemon's container state, so a fork whose compose file no up() starts comes back with no container (vm:check V1, 2026-10-24: the control fork failed health with containers_missing)."""
+    return "#!/bin/bash\n\nup() {\n  renet compose -- up -d\n}\n\ndown() {\n  renet compose -- down\n}\n"
+
+
 def container_ids_script(network_id: int | str) -> str:
     """Root on the worker: one `CID:<full id>` line per running container of the repo's daemon, read from the per-network socket when it exists and from the flat one otherwise (a skipped repo keeps the daemon it had); `NOSOCK` when neither answers."""
     new = shlex.quote(upgrade_converge.new_docker_socket(network_id))
@@ -364,6 +372,7 @@ class _LiveU2:
             up = self.tmp / ("up-" + tag)
             up.mkdir(parents=True, exist_ok=True)
             (up / COMPOSE_FILE).write_text(body)
+            (up / REDIACCFILE).write_text(rediaccfile())
             sent = self.crdc(
                 "repo", "sync", "upload", self.ref(tag), "--local", str(up) + "/", timeout=900
             )
