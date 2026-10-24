@@ -487,7 +487,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
       .filter((a) => !writes.has(a.norm))
       .map((a) => (a.raw === '' ? "''" : a.raw));
     if (unmatched.length > 0) {
-      res.failure = `refused: --adopt ${unmatched.join(', ')} names no file this run writes (${writes.size ? `it writes: ${[...writes].sort().join(', ')}` : 'it writes no files'})`;
+      res.failure = `refused: --adopt ${unmatched.join(', ')} names no file this run writes (${writes.size ? `it writes: ${[...writes].sort((a, b) => Number(a > b) - Number(a < b)).join(', ')}` : 'it writes no files'})`;
       j.state = 'refused';
       saveJournal(dir, j);
       return res;

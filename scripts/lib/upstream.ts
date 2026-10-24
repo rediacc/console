@@ -358,7 +358,11 @@ export function githubAsker(
   return (apiPath, who) => {
     const headers = githubApiHeaders(userAgent);
     if (baseOverride) delete headers.Authorization;
-    return askUpstreamJson({ url: `${baseOverride || WK_GH_API_BASE}${apiPath}`, headers, who });
+    return askUpstreamJson({
+      url: `${baseOverride === undefined || baseOverride === '' ? WK_GH_API_BASE : baseOverride}${apiPath}`,
+      headers,
+      who,
+    });
   };
 }
 

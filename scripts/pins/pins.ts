@@ -2420,7 +2420,9 @@ const CASES: Record<string, Case> = {
       path.join(spacedRoot, '.gitmodules'),
       '[submodule "a"]\n\tpath = private/re net\n\turl = x\n[submodule "b"]\n\tpath = private/other\n\turl = y\n'
     );
-    const spaced = [...declaredSubmodules(spacedRoot)].sort();
+    const spaced = [...declaredSubmodules(spacedRoot)].sort(
+      (a, b) => Number(a > b) - Number(a < b)
+    );
     fs.rmSync(spacedRoot, { recursive: true });
     return [
       {
@@ -2935,7 +2937,7 @@ const CASES: Record<string, Case> = {
           rep.failure === 'gates failed (rc=1): check:fixture-tool (ok: check:fixture-zed)' &&
           JSON.stringify(rep.gates.failed) === '["check:fixture-tool"]' &&
           rep.commands.some((c) => / --events \/\S+\/gates\.jsonl$/.test(c.cmd)),
-        detail: `rc=${r.rc} failure=${rep.failure} failed=${JSON.stringify(rep.gates?.failed)}`,
+        detail: `rc=${r.rc} failure=${rep.failure} failed=${JSON.stringify((rep.gates as typeof rep.gates | undefined)?.failed)}`,
       },
       {
         // Red when siblingHint is dropped, reads gate output instead of the registry, or loses its --to / --major --reason guidance.

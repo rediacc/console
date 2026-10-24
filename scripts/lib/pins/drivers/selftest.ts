@@ -113,7 +113,7 @@ const rejects = async (p: Promise<unknown>): Promise<Error | null> => {
 };
 
 /** What a plan wrote, by file. */
-const written = (plan: PinPlan): Record<string, string> =>
+const written = (plan: PinPlan): Partial<Record<string, string>> =>
   Object.fromEntries(plan.writes.map((w) => [`${w.repo}:${w.file}`, w.after]));
 
 // ---- actions --------------------------------------------------------------------------------
@@ -531,7 +531,7 @@ async function osCases(
         insp.releases[0]?.verdict?.eligible === true &&
         insp.releases[0].publishedMs === null &&
         Object.keys(w).length === 3 &&
-        Object.values(w).every((t) => t.includes(NEW) && !t.includes('lp160.4.1')),
+        Object.values(w).every((t) => t?.includes(NEW) === true && !t.includes('lp160.4.1')),
       detail: JSON.stringify(insp) + Object.keys(w).join(','),
     });
   }

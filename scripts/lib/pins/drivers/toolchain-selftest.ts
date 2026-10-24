@@ -123,7 +123,7 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
     to: string,
     answers: Record<string, string | object>,
     root = tree()
-  ) => {
+  ): Promise<{ root: string; plan?: PinPlan; refused?: string }> => {
     const drv = createToolchainDriver(stubUpstream(answers), mutant);
     try {
       return {
@@ -402,7 +402,7 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
       (sk.refused ?? '').includes('publishes no sha256 digest'),
       sk.refused ?? 'a plan was returned'
     );
-    const wr = (live(CONSTANTS).match(/^readonly WRANGLER_VERSION="([^"]+)"/m) ?? [])[1] ?? '';
+    const wr = (/^readonly WRANGLER_VERSION="([^"]+)"/m.exec(live(CONSTANTS)) ?? [])[1] ?? '';
     const w = await plan('toolchain:wrangler', patchOf(wr), {});
     add(
       'wrangler: the constants.sh version moves',

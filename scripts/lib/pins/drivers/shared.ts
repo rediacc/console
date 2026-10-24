@@ -215,7 +215,9 @@ export function listFiles(root: string, repo: string, globs: string[]): string[]
       `VACUOUS: ${dir} lists no file at all (git and the directory walk both found none), so a match of ${globs.join(', ')} proves nothing`
     );
   const res2 = globs.map(globRe);
-  return all.filter((f) => res2.some((re) => re.test(f))).sort();
+  return all
+    .filter((f) => res2.some((re) => re.test(f)))
+    .sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 export const shq = (s: string): string => `'${s.replace(/'/g, `'\\''`)}'`;

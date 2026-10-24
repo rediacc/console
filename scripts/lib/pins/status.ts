@@ -98,7 +98,9 @@ export function newerMajors(insp: Inspection, ignoreBreaking = false): NewerMajo
     const brk = ignoreBreaking ? undefined : r.breaking;
     if (!brk && cur !== null && m !== null && m <= cur) continue;
     const key = brk ? `b:${brk.line}` : m === null ? `v:${r.version}` : `m:${m}`;
-    const at = r.lineFirstMs !== undefined ? r.lineFirstMs : r.publishedMs;
+    // A null `lineFirstMs` is the driver saying the line's start is unknown, which must stay partial; only an absent one falls back to the release's own date.
+    let at: number | null = r.publishedMs;
+    if (r.lineFirstMs !== undefined) at = r.lineFirstMs;
     const line = lines.get(key) ?? {
       major: m,
       ...(brk ? { line: brk.line } : {}),
@@ -190,7 +192,7 @@ export function repoReach(entry: PinEntry): string[] {
   for (const s of entry.sites) repos.add(s.repo);
   for (const sc of entry.scope ?? []) repos.add(sc.repo);
   for (const d of entry.derive) for (const wr of d.writes) repos.add(wr.repo);
-  return [...repos].sort();
+  return [...repos].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** A submodule checkout is absent when its directory is missing or empty (what a CI checkout without `submodules:` leaves of a gitlink). */
@@ -357,7 +359,7 @@ export async function viewOf(
       if (
         !(sel.onlyInRange
           ? !breaking(r) && inRange(insp.current, r.version)
-          : sel.allowMajor || !isMajor(r))
+          : sel.allowMajor === true || !isMajor(r))
       )
         return {
           ...base,
@@ -380,12 +382,12 @@ export async function viewOf(
   const admitted = pool.filter((r) =>
     sel.onlyInRange
       ? !breaking(r) && inRange(insp.current, r.version)
-      : sel.allowMajor || !isMajor(r)
+      : sel.allowMajor === true || !isMajor(r)
   );
   for (const r of admitted) {
     const v = soak(r);
     if (v.eligible) return bumpable([r], ` (${v.why})`);
-    if (!base.deferred) base.deferred = { ...r, clearsAt: v.clearsAt };
+    base.deferred ??= { ...r, clearsAt: v.clearsAt };
     base.verdict ??= v;
   }
   if (base.deferred)

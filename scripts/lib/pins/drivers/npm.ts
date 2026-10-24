@@ -303,7 +303,9 @@ function stepsOf(
         ...manifests.map((f) => repoPathOf(ctx, path.join(ctx.root, f))),
       ],
     });
-    const locks = [...new Set(manifests.flatMap((f) => lockfileOf(ctx.root, f) ?? []))].sort();
+    const locks = [...new Set(manifests.flatMap((f) => lockfileOf(ctx.root, f) ?? []))].sort(
+      (a, b) => Number(a > b) - Number(a < b)
+    );
     for (const lock of locks)
       out.push({
         label: `lockfile pass after the pin-group ranges: ${lock}`,
@@ -591,7 +593,9 @@ function projectDirs(
       continue;
     }
     for (const pat of sc.files)
-      for (const f of globSync(pat, { cwd: base, posix: true }).sort()) {
+      for (const f of globSync(pat, { cwd: base, posix: true }).sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )) {
         const dir = path.posix.dirname(f) === '.' ? '' : path.posix.dirname(f);
         out.push({ repo: sc.repo, dir, abs: path.join(base, dir) });
       }
@@ -735,7 +739,7 @@ function importersOf(pkg: string, dirs: string[]): string[] {
         '**/.build_cache/**',
         '**/.ci/cache/**',
       ],
-    }).sort())
+    }).sort((a, b) => Number(a > b) - Number(a < b)))
       if (!isOutput(f) && re.test(fs.readFileSync(path.join(d, f), 'utf8')))
         out.push(path.join(d, f));
   }
@@ -768,7 +772,9 @@ export function planRemove(entry: PinEntry, ctx: DriverContext, pkg: string): Pi
     const members: Manifest[] = [];
     const wsGlobs = Array.isArray(root.json.workspaces) ? (root.json.workspaces as string[]) : [];
     for (const g of wsGlobs)
-      for (const d of globSync(g, { cwd: pr.abs, posix: true }).sort()) {
+      for (const d of globSync(g, { cwd: pr.abs, posix: true }).sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )) {
         const m = readManifest(path.join(pr.abs, d));
         if (m) members.push(m);
       }

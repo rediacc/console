@@ -131,7 +131,7 @@ export function sourceManifests(root: string, rcText: string | null): string[] {
   for (const g of globs)
     for (const f of globSync(g, { cwd: root, nodir: true, posix: true }))
       if (path.basename(f) === 'package.json') out.add(f);
-  return [...out].sort();
+  return [...out].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 const readManifest = (m: ManifestText): Record<string, unknown> | null => {
