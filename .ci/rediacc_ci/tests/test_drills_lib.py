@@ -908,9 +908,7 @@ def test_restart_stops_a_live_worktree_stack_first(
     healthy: bool,
     expect_stop: bool,
 ) -> None:
-    """`./run.sh account dev` reuses a live stack (4fb75de47), so the drill's fresh restart first runs
-    `./run.sh account stop` when this worktree records a healthy stack, and never otherwise (2026-10-24: the full
-    vm:check stopped at account-gateway because the restart was handed the running 4800 stack)."""
+    """`./run.sh account dev` reuses a live stack (4fb75de47), so the drill's fresh restart first runs `./run.sh account stop` when this worktree records a healthy stack, and never otherwise (2026-10-24: the full vm:check stopped at account-gateway because the restart was handed the running 4800 stack)."""
     calls = tmp_path / "calls"
     run_sh = '#!/bin/bash\necho "$*" >>"%s"\nexit 0\n' % calls
     root = _fake_root(tmp_path, run_sh)

@@ -1930,9 +1930,7 @@ def test_tree_refuses_pid_zero_and_one():
 
 
 def test_stop_kills_a_sigterm_ignoring_child_whose_leader_exited(monkeypatch, tmp_path) -> None:
-    """Reviews 4fb75de4.1 and a6ac20cd.3, end to end through stop(): the leader dies on SIGTERM, its child ignores
-    SIGTERM and is reparented, and the SIGKILL pass must still reach it. Red if stop() re-collects the tree after the
-    TERM pass, because by then the dead leader has no children."""
+    """Reviews 4fb75de4.1 and a6ac20cd.3, end to end through stop(): the leader dies on SIGTERM, its child ignores SIGTERM and is reparented, and the SIGKILL pass must still reach it. Red if stop() re-collects the tree after the TERM pass, because by then the dead leader has no children."""
     monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
     work = shadow_driver.build_sandbox(paths.repo_root())
     leader = None
