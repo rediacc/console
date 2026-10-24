@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { SFTPClient } from '../../../remote/sftp/index.js';
 import type { AutoConvergeDeps } from '../../renet/runtime-converge.js';
@@ -11,7 +12,7 @@ function deps(error: Error): { sftp: SFTPClient; deps: AutoConvergeDeps } {
       sftp,
       remoteRenetPath: '/usr/bin/renet',
       machineName: 'hostinger',
-      datastore: '/mnt/rediacc',
+      datastore: WK_DATASTORE_PATH,
       buildBaseVault: () => '',
       run: () => Promise.reject(new Error('unused')),
       refreshRouter: () => Promise.resolve(false),
