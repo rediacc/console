@@ -88,7 +88,7 @@ Enrollment is a read: the CLI fetches the slot's public KDF parameters and the w
 5. Unlock with a passkey or the master password. The browser seals the key to the CLI, and the server relays a blob it cannot read.
 6. The CLI decrypts the blob, stores the secret in the OS keyring and reports success.
 
-The request expires after 10 minutes. Press **Ctrl+C** in the CLI to cancel it: the link stops working at once, and the page says to run the command again. If the link is opened after it expired, or after a login redirect dropped the part after `#`, run the command again.
+The request expires after 10 minutes. Press **Ctrl+C** in the CLI to cancel it: the CLI asks the server to drop the link, which then stops working at once, and the page says to run the command again. If that request does not get through, the link stays usable until the request expires. If the link is opened after it expired, or after a login redirect dropped the part after `#`, run the command again.
 
 The pairing code is derived from the key inside the link. If someone swaps the link for their own, the code on the terminal will not match what the page expects, so nothing is released.
 

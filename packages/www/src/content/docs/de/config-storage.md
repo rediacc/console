@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 8
 language: de
-sourceHash: "2ba65230cde4c5e5"
+sourceHash: "5cc07f3849026632"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -90,7 +90,7 @@ Die Einbindung ist ein Lesevorgang: Die CLI ruft die öffentlichen KDF-Parameter
 5. Entsperren Sie mit Ihrem Passkey oder Master-Passwort. Der Browser versiegelt den Schlüssel für die CLI, und der Server leitet einen Datenblock weiter, den er nicht lesen kann.
 6. Die CLI entschlüsselt den Datenblock, legt das Geheimnis im Schlüsselbund des Betriebssystems ab und meldet den Erfolg.
 
-Die Anfrage läuft nach 10 Minuten ab. Mit **Ctrl+C** in der CLI brechen Sie sie ab: Der Link funktioniert sofort nicht mehr, und die Seite weist darauf hin, den Befehl erneut auszuführen. Wird der Link nach Ablauf geöffnet oder hat eine Weiterleitung nach der Anmeldung den Teil nach dem `#` verloren, führen Sie den Befehl einfach noch einmal aus.
+Die Anfrage läuft nach 10 Minuten ab. Mit **Ctrl+C** in der CLI brechen Sie sie ab: Die CLI fordert den Server auf, den Link zu verwerfen, der dann sofort nicht mehr funktioniert, und die Seite weist darauf hin, den Befehl erneut auszuführen. Kommt diese Anfrage nicht an, bleibt der Link bis zum Ablauf der Anfrage nutzbar. Wird der Link nach Ablauf geöffnet oder hat eine Weiterleitung nach der Anmeldung den Teil nach dem `#` verloren, führen Sie den Befehl einfach noch einmal aus.
 
 Der Kopplungscode wird aus dem Schlüssel im Link abgeleitet. Tauscht jemand den Link gegen einen eigenen aus, stimmt der Code in Ihrem Terminal nicht mit dem überein, was die Seite erwartet, und es wird nichts freigegeben.
 

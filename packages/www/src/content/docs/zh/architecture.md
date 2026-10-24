@@ -9,7 +9,7 @@ tags:
 subcategory: architecture
 order: 0
 language: zh
-sourceHash: "30fbad660b050e2f"
+sourceHash: "9f16ecba15b69643"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -107,7 +107,7 @@ Docker 数据和配置存储在仓库的挂载点内部，使每个守护进程�
 
 **共享运行时路径**（不变）：
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 这种统一布局消除了守护进程路径在主机文件系统和加密卷之间分割时出现的只读与读写挂载冲突。每仓库守护进程和独立守护进程遵循相同的目录结构，因此工具和诊断在两种情况下均以相同方式工作。

@@ -2155,8 +2155,8 @@
             },
             "productTelemetry": {
               "content": [
-                "Yazılım ürünlerimiz (CLI ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplanmadan önce anonimleştirilir: e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenip kısaltılır, parolalar ve gizli bilgiler ise asla toplanmaz. Web sitemizin ve hesap hizmetimizin telemetrisi, Cloudflare'in uç ağından alınan şehir düzeyinde konumu (şehir ve bölge) de içerir ve bu bilgi 7 gün saklanır.",
-                "Telemetri, Web Uygulamamızda ve CLI'da varsayılan olarak etkindir ve tüm ürünlerde devre dışı bırakılabilir. Her ürünün ne topladığı ve nasıl devre dışı bırakılacağı hakkında eksiksiz ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+                "Yazılım ürünlerimiz (CLI ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplanmadan önce anonimleştirilir: e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenip kısaltılır, parolalar ve gizli bilgiler ise asla toplanmaz. Web sitemizin ve hesap hizmetimizin telemetrisi, Cloudflare'in uç ağından alınan şehir düzeyinde konumu (şehir ve bölge) de içerir ve bu bilgi 7 gün saklanır.",
+                "Telemetri, CLI'da varsayılan olarak etkindir ve tüm ürünlerde devre dışı bırakılabilir. Her ürünün ne topladığı ve nasıl devre dışı bırakılacağı hakkında eksiksiz ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
               ],
               "title": "2.5 Ürün Telemetri Verileri"
             }
@@ -9445,7 +9445,7 @@
         "legalBasis": {
           "content": [
             "AB Genel Veri Koruma Yönetmeliği (GDPR) ve eGizlilik Yönergesi kapsamında, telemetri toplama için yasal dayanağımız ürün bağlamına bağlıdır:",
-            "<strong>Web Uygulaması</strong> (tarayıcı tabanlı) için: telemetri, hizmet kalitesini sürdürme ve iyileştirme amacıyla <strong>meşru menfaat</strong> (GDPR Md. 6(1)(f)) kapsamında toplanır. İstediğiniz zaman devre dışı bırakabilirsiniz.",
+            "<strong>CLI ve Renet Ajanı</strong> (altyapınıza kurulur) için: telemetri, açık çıkış mekanizmalarıyla birlikte <strong>meşru menfaat</strong> (GDPR Md. 6(1)(f)) kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz.",
             "Açık rıza gerektiren hukuk düzenlerindeki kullanıcılar için (örneğin PIPA kapsamında Güney Kore), herhangi bir veri gönderilmeden önce telemetri ürün yapılandırmasından açıkça etkinleştirilmelidir."
           ],
           "id": "legal-basis",

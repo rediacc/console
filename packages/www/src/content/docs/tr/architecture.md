@@ -10,7 +10,7 @@ tags:
 subcategory: architecture
 order: 0
 language: tr
-sourceHash: "30fbad660b050e2f"
+sourceHash: "9f16ecba15b69643"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -108,7 +108,7 @@ Docker verileri ve yapılandırması deponun bağlama noktasının içinde sakla
 
 **Paylaşılan çalışma zamanı yolu** (değişmez):
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Bu birleşik düzen, daemon yolları ana bilgisayar dosya sistemi ile şifreli birim arasında bölündüğünde oluşan salt okunur ve okuma yazma bağlama çatışmalarını ortadan kaldırır. Hem depo başına hem de bağımsız daemon'lar aynı dizin yapısını izler; bu nedenle araçlar ve tanılama her iki durumda da aynı şekilde çalışır.

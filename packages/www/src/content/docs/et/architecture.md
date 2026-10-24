@@ -10,7 +10,7 @@ tags:
 subcategory: architecture
 order: 0
 language: et
-sourceHash: "30fbad660b050e2f"
+sourceHash: "9f16ecba15b69643"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -108,7 +108,7 @@ Dockeri andmed ja konfiguratsioon salvestatakse repositooriumi ühenduspunkti si
 
 **Jagatud käitusaegne tee** (muutumatu):
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 See ühtne paigutus kõrvaldab kirjutuskaitstud/kirjutatavate ühenduspunktide konfliktid, mis tekkisid siis, kui daemoni teed olid jaotatud hosti failisüsteemi ja krüpteeritud köite vahel. Nii repo-kohased kui ka iseseisvad daemonid järgivad sama kataloogistruktuuri, nii et tööriistad ja diagnostika töötavad mõlemal juhul identselt.

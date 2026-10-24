@@ -59,7 +59,7 @@ histogram_quantile(0.95, sum(rate(traces_spanmetrics_latency_bucket[5m])) by (le
 
 ### Request count by environment and region (Workers)
 
-`rediacc_region` and `deployment_environment` identify the account Worker deployments and the proxy:
+`rediacc_region` and `deployment_environment` identify the account Worker deployments:
 
 ```promql
 sum by (deployment_environment, rediacc_region) (increase(traces_spanmetrics_calls_total{service="rediacc-account-server"}[1h]))

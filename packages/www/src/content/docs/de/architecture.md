@@ -10,7 +10,7 @@ tags:
 subcategory: architecture
 order: 0
 language: de
-sourceHash: "30fbad660b050e2f"
+sourceHash: "9f16ecba15b69643"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -108,7 +108,7 @@ Docker-Daten und -Konfiguration werden innerhalb des Repository-Einhängepunkts 
 
 **Gemeinsamer Laufzeitpfad** (unverändert):
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Diese einheitliche Struktur beseitigt Konflikte zwischen schreibgeschützten und schreibbaren Einhängepunkten, die auftraten, wenn Daemon-Pfade zwischen dem Host-Dateisystem und dem verschlüsselten Volume aufgeteilt waren. Wir sind auf diese Aufteilung mehr als einmal gestoßen, bevor wir uns auf diese Lösung einigten. Sowohl Pro-Repository- als auch Standalone-Daemons folgen derselben Verzeichnisstruktur, sodass Werkzeuge und Diagnosen in beiden Fällen identisch funktionieren.

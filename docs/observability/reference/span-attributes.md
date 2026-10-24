@@ -33,7 +33,7 @@ Standard OpenTelemetry HTTP attributes set by the account server instrumentation
 
 ## Workers Identity and Routing Attributes
 
-Set on spans and logs of the account and proxy Workers (target design, PLAN-telemetry-export.md). Identity attributes are written by the Alloy transform; the rest by the Workers' `ctx.tracing`.
+Set on spans and logs of the account and proxy Workers (target design, PLAN-telemetry-export.md). Identity attributes are written by the Alloy transform (the account middleware also sets `deployment.environment` and `rediacc.region` from its bindings); the rest by the Workers' `ctx.tracing`.
 
 | Attribute | Key | Example |
 |-----------|-----|---------|

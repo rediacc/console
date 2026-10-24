@@ -431,7 +431,7 @@ What each value is for:
 
 The request lives for 10 minutes (`DEVICE_CODE_TTL_MS`). The blob is deleted on the first successful claim, so it rests on the server for at most that long. A user holds at most 5 pending requests.
 
-**Security note**: Everything the page needs to check the request is in the fragment and the server row, never in a server API response the server could rewrite alone. The page must still be served as a static page with Content Security Policy (CSP) and Subresource Integrity (SRI) to prevent script injection. The fingerprint and the pairing code defend against link tampering and relay-side swaps, not against a server that ships modified page code: the JavaScript it serves can read the fragment, skip the pairing check and exfiltrate the unlocked secret. Zero-knowledge here rests on trusting the served page, as it does for every portal page that handles the CEK.
+**Security note**: The page reads the key from the fragment, but `keyHash` and `boundToYou` come from the handoff-request response, which a rogue server controls and can rewrite. Only the pairing code P does not rest on a server answer: the user types it from the terminal and the page compares it with the code derived from the key in the link, so a swapped link or key is caught there. The page must still be served as a static page with Content Security Policy (CSP) and Subresource Integrity (SRI) to prevent script injection. The fingerprint and the pairing code defend against link tampering and relay-side swaps, not against a server that ships modified page code: the JavaScript it serves can read the fragment, skip the pairing check and exfiltrate the unlocked secret. Zero-knowledge here rests on trusting the served page, as it does for every portal page that handles the CEK.
 
 ### Adding a Team Member
 
@@ -973,7 +973,7 @@ The token file contains only **references and wrapped keys**, and no plaintext s
 
 ## Config Setup Portal Security
 
-The browser page used for config setup (`/config-setup` and `/device` endpoints) must be a **minimal static page** with:
+The browser page the CLI link opens (`<portal>/config-remote`) must be a **minimal static page** with:
 
 - **Content Security Policy (CSP)**: strict, no inline scripts, no eval
 - **Subresource Integrity (SRI)**: all loaded scripts verified by hash

@@ -2164,8 +2164,8 @@
             },
             "productTelemetry": {
               "content": [
-                "Nos produits logiciels (CLI et Renet Agent) collectent une télémétrie d'utilisation anonyme afin d'améliorer la qualité, les performances et la fiabilité des produits. Les données de télémétrie comprennent des informations techniques comme la version de l'application, le système d'exploitation, des métriques de performance, les habitudes d'utilisation des fonctionnalités et des rapports d'erreurs. Les identifiants personnels sont anonymisés avant la collecte : les adresses e-mail sont réduites au seul domaine, les identifiants utilisateur sont hachés et tronqués, et les mots de passe ou secrets ne sont jamais collectés. La télémétrie de notre site web et de notre service de comptes inclut aussi la localisation à l'échelle de la ville (ville et région), fournie par le réseau edge de Cloudflare et conservée pendant 7 jours.",
-                "La télémétrie est activée par défaut dans notre Application Web et notre CLI, et peut être désactivée dans tous les produits. Pour plus de détails sur ce que chaque produit collecte et comment vous désinscrire, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
+                "Nos produits logiciels (CLI et Renet Agent) collectent une télémétrie d'utilisation afin d'améliorer la qualité, les performances et la fiabilité des produits. Les données de télémétrie comprennent des informations techniques comme la version de l'application, le système d'exploitation, des métriques de performance, les habitudes d'utilisation des fonctionnalités et des rapports d'erreurs. Les identifiants personnels sont anonymisés avant la collecte : les adresses e-mail sont réduites au seul domaine, les identifiants utilisateur sont hachés et tronqués, et les mots de passe ou secrets ne sont jamais collectés. La télémétrie de notre site web et de notre service de comptes inclut aussi la localisation à l'échelle de la ville (ville et région), fournie par le réseau edge de Cloudflare et conservée pendant 7 jours.",
+                "La télémétrie est activée par défaut dans notre CLI, et peut être désactivée dans tous les produits. Pour plus de détails sur ce que chaque produit collecte et comment vous désinscrire, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
               ],
               "title": "2.5 Données de télémétrie produit"
             }
@@ -9456,7 +9456,7 @@
         "legalBasis": {
           "content": [
             "En vertu du Règlement Général sur la Protection des Données (RGPD) de l'UE et de la Directive ePrivacy, notre base juridique pour la collecte de télémétrie dépend du contexte du produit :",
-            "Pour l'<strong>Application Web</strong> (basée sur le navigateur) : la télémétrie est collectée sur la base de l'<strong>intérêt légitime</strong> (RGPD Art. 6(1)(f)) dans le but de maintenir et d'améliorer la qualité du service. Vous pouvez vous désinscrire à tout moment.",
+            "Pour la <strong>CLI et le Renet Agent</strong> (installés sur votre infrastructure) : la télémétrie est collectée sur la base de l'<strong>intérêt légitime</strong> (RGPD Art. 6(1)(f)), avec des mécanismes de désinscription clairs. Vous pouvez désactiver la télémétrie avant l'envoi de toute donnée.",
             "Pour les utilisateurs de juridictions qui exigent un consentement explicite (par exemple la Corée du Sud avec la PIPA), la télémétrie doit être activée explicitement dans la configuration du produit avant toute transmission de données."
           ],
           "id": "legal-basis",

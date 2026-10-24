@@ -10,7 +10,7 @@ tags:
 subcategory: architecture
 order: 0
 language: pt
-sourceHash: "30fbad660b050e2f"
+sourceHash: "9f16ecba15b69643"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -108,7 +108,7 @@ Os dados e a configuração do Docker são armazenados dentro do mount do reposi
 
 **Caminho de runtime por rede**:
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Este layout unificado elimina colisões de mount só de leitura/leitura-escrita que ocorriam quando os caminhos dos daemons estavam divididos entre o sistema de ficheiros do host e o volume encriptado. Tanto os daemons por repositório como os standalone seguem a mesma estrutura de diretórios, pelo que as ferramentas e os diagnósticos funcionam de forma idêntica em ambos os casos.

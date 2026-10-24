@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 8
 language: tr
-sourceHash: "2ba65230cde4c5e5"
+sourceHash: "5cc07f3849026632"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -90,7 +90,7 @@ Kayıt işlemi bir okumadır: CLI, yuvanın herkese açık KDF parametrelerini v
 5. Passkey'iniz veya ana parolanızla kilidi açın. Tarayıcı anahtarı CLI için mühürler; sunucu ise okuyamadığı bir veri bloğunu iletir.
 6. CLI bloğun şifresini çözer, sırrı işletim sisteminin anahtar zincirinde saklar ve başarıyı bildirir.
 
-İstek 10 dakika sonra sona erer. İptal etmek için CLI'da **Ctrl+C** tuşlarına basın: bağlantı hemen çalışmaz hale gelir ve sayfa komutu yeniden çalıştırmanızı söyler. Bağlantı süresi dolduktan sonra ya da bir oturum açma yönlendirmesi `#` sonrasındaki kısmı düşürdükten sonra açılırsa komutu yeniden çalıştırın.
+İstek 10 dakika sonra sona erer. İptal etmek için CLI'da **Ctrl+C** tuşlarına basın: CLI sunucudan bağlantıyı düşürmesini ister, bağlantı hemen çalışmaz hale gelir ve sayfa komutu yeniden çalıştırmanızı söyler. Bu istek ulaşmazsa bağlantı, istek sona erene kadar kullanılabilir kalır. Bağlantı süresi dolduktan sonra ya da bir oturum açma yönlendirmesi `#` sonrasındaki kısmı düşürdükten sonra açılırsa komutu yeniden çalıştırın.
 
 Eşleştirme kodu, bağlantının içindeki anahtardan türetilir. Biri bağlantıyı kendi bağlantısıyla değiştirirse terminalinizdeki kod sayfanın beklediğiyle eşleşmez ve hiçbir şey serbest bırakılmaz.
 

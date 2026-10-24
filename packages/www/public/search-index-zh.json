@@ -2735,7 +2735,7 @@
   {
     "id": "search-18738",
     "content": "守护进程路径布局",
-    "body": "Docker 数据和配置存储在仓库的挂载点内部，使每个守护进程与主机及其他仓库完全隔离。 每仓库布局： {datastore}/mounts/{guid}/.rediacc/docker/data/ # Docker 数据根目录 {datastore}/mounts/{guid}/.rediacc/docker/config/ # Docker 配置 独立布局（未挂载到仓库挂载点的守护进程）： {datastore}/standalone/{N}/.rediacc/docker/data/ {datastore}/standalone/{N}/.rediacc/docker/config/ 共享运行时路径（不变）： /run/rediacc/net-{N}/docker-{N}.sock 这种统一布局消除了守护进程路径在主机文件系统和加密卷之间分割时出现的只读与读写挂载冲突。每仓库守护进程和独立守护进程遵循相同的目录结构，因此工具和诊断在两种情况下均以相同方式工作。",
+    "body": "Docker 数据和配置存储在仓库的挂载点内部，使每个守护进程与主机及其他仓库完全隔离。 每仓库布局： {datastore}/mounts/{guid}/.rediacc/docker/data/ # Docker 数据根目录 {datastore}/mounts/{guid}/.rediacc/docker/config/ # Docker 配置 独立布局（未挂载到仓库挂载点的守护进程）： {datastore}/standalone/{N}/.rediacc/docker/data/ {datastore}/standalone/{N}/.rediacc/docker/config/ 共享运行时路径（不变）： /var/run/rediacc/net-{N}/docker-{N}.sock 这种统一布局消除了守护进程路径在主机文件系统和加密卷之间分割时出现的只读与读写挂载冲突。每仓库守护进程和独立守护进程遵循相同的目录结构，因此工具和诊断在两种情况下均以相同方式工作。",
     "excerpt": "Docker 数据和配置存储在仓库的挂载点内部，使每个守护进程与主机及其他仓库完全隔离。 每仓库布局： {datastore}/mounts/{guid}/.rediacc/docker/data/ # Docker 数据根目录 {datastore}/mounts/{guid}/.rediacc/...",
     "category": "Documentation",
     "page": "/zh/docs/architecture",
@@ -5574,7 +5574,7 @@
   {
     "id": "search-18978",
     "content": "密钥如何到达CLI",
-    "body": "rdc config remote enable（以及 rdc config rotate-cek）通过账户服务器把解锁密钥交给CLI。CLI和浏览器之间从不直接通信，因此在没有浏览器的服务器上、浏览器在Windows里的WSL中，或者在手机上，用法都一样。 先用 rdc subscription login 登录CLI。服务器会把请求绑定到该账户。 CLI创建一个短时有效的请求，并打印一个链接和一个配对码，例如 7KQ2-M9XD-P4RT。链接携带的所有内容都放在 # 之后，而浏览器从不把这部分发送给服务器。 在登录了同一账户的任意浏览器中打开链接。来自其他账户的请求会被拒绝。 页面提示时，从终端输入配对码。在配对码匹配之前，解锁按钮一直处于禁用状态。 用通行密钥或主密码解锁。浏览器把密钥封装给CLI，服务器转发的是一个它无法读取的数据块。 CLI解密该数据块，把密钥存入系统密钥环，并报告成功。 请求在10分钟后过期。在CLI中按 Ctrl+C 可取消请求：链接立即失效，页面会提示重新运行命令。如果链接在过期后才被打开，或者登录重定向丢掉了 # 之后的部分，请重新运行命令。 配对码由链接内的密钥推导而来。如果有人把链接换成自己的，终端上的配对码就与页面期望的不一致，因此不会放行任何内容。 这可以防止链接被篡改，也可以防止中继方调换或伪造数据块。但它无法防御提供被篡改页面代码的服务器：你打开的页面由账户服务器提供，密钥的安全程度取决于这些代码。所有处理配置密钥的门户页面都适用同样的信任前提。",
+    "body": "rdc config remote enable（以及 rdc config rotate-cek）通过账户服务器把解锁密钥交给CLI。CLI和浏览器之间从不直接通信，因此在没有浏览器的服务器上、浏览器在Windows里的WSL中，或者在手机上，用法都一样。 先用 rdc subscription login 登录CLI。服务器会把请求绑定到该账户。 CLI创建一个短时有效的请求，并打印一个链接和一个配对码，例如 7KQ2-M9XD-P4RT。链接携带的所有内容都放在 # 之后，而浏览器从不把这部分发送给服务器。 在登录了同一账户的任意浏览器中打开链接。来自其他账户的请求会被拒绝。 页面提示时，从终端输入配对码。在配对码匹配之前，解锁按钮一直处于禁用状态。 用通行密钥或主密码解锁。浏览器把密钥封装给CLI，服务器转发的是一个它无法读取的数据块。 CLI解密该数据块，把密钥存入系统密钥环，并报告成功。 请求在10分钟后过期。在CLI中按 Ctrl+C 可取消请求：CLI 会请求服务器作废该链接，链接随即失效，页面会提示重新运行命令。如果这个请求没有送达，链接在请求过期前仍然可用。如果链接在过期后才被打开，或者登录重定向丢掉了 # 之后的部分，请重新运行命令。 配对码由链接内的密钥推导而来。如果有人把链接换成自己的，终端上的配对码就与页面期望的不一致，因此不会放行任何内容。 这可以防止链接被篡改，也可以防止中继方调换或伪造数据块。但它无法防御提供被篡改页面代码的服务器：你打开的页面由账户服务器提供，密钥的安全程度取决于这些代码。所有处理配置密钥的门户页面都适用同样的信任前提。",
     "excerpt": "rdc config remote enable（以及 rdc config rotate-cek）通过账户服务器把解锁密钥交给CLI。CLI和浏览器之间从不直接通信，因此在没有浏览器的服务器上、浏览器在Windows里的WSL中，或者在手机上，用法都一样。 先用 rdc subscription...",
     "category": "Documentation",
     "page": "/zh/docs/config-storage",

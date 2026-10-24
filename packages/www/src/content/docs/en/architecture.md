@@ -106,7 +106,7 @@ Docker data and configuration are stored inside the repository's mount, keeping 
 
 **Per-network runtime path**:
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 This unified layout eliminates read-only/read-write mount collisions that occurred when daemon paths were split across the host filesystem and the encrypted volume. We hit that split more than once before settling on this. Both per-repo and standalone daemons follow the same directory structure, so tooling and diagnostics work identically in both cases.

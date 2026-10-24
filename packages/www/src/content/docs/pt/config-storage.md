@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 8
 language: pt
-sourceHash: "2ba65230cde4c5e5"
+sourceHash: "5cc07f3849026632"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -90,7 +90,7 @@ A inscrição é uma leitura: o CLI obtém os parâmetros KDF públicos do slot 
 5. Desbloqueie com a sua passkey ou palavra-passe mestra. O browser sela a chave para o CLI e o servidor limita-se a retransmitir um blob que não consegue ler.
 6. O CLI desencripta o blob, guarda o segredo no chaveiro do sistema operativo e indica que a operação foi concluída.
 
-O pedido expira ao fim de 10 minutos. Prima **Ctrl+C** no CLI para o cancelar: a ligação deixa de funcionar de imediato e a página indica que deve executar o comando outra vez. Se a ligação for aberta depois de expirar, ou depois de um redirecionamento de início de sessão ter perdido a parte a seguir ao `#`, execute o comando novamente.
+O pedido expira ao fim de 10 minutos. Prima **Ctrl+C** no CLI para o cancelar: o CLI pede ao servidor que descarte a ligação, que deixa de funcionar de imediato, e a página indica que deve executar o comando outra vez. Se esse pedido não chegar, a ligação continua utilizável até o pedido expirar. Se a ligação for aberta depois de expirar, ou depois de um redirecionamento de início de sessão ter perdido a parte a seguir ao `#`, execute o comando novamente.
 
 O código de emparelhamento é derivado da chave que vai dentro da ligação. Se alguém trocar a ligação pela sua, o código no seu terminal não coincidirá com o que a página espera, pelo que nada é libertado.
 

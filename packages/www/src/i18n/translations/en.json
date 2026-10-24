@@ -1081,7 +1081,7 @@
             "productTelemetry": {
               "title": "2.5 Product Telemetry Data",
               "content": [
-                "Our software products (CLI and Renet Agent) collect anonymous usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected. Telemetry from our website and account service also includes city-level location (city and region), taken from Cloudflare's edge and kept for 7 days.",
+                "Our software products (CLI and Renet Agent) collect usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected. Telemetry from our website and account service also includes city-level location (city and region), taken from Cloudflare's edge and kept for 7 days.",
                 "Telemetry is enabled by default in our CLI, and can be disabled in all products. For complete details on what each product collects and how to opt out, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
               ]
             },

@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 8
 language: et
-sourceHash: "2ba65230cde4c5e5"
+sourceHash: "5cc07f3849026632"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -90,7 +90,7 @@ Registreerimine on lugemistoiming: CLI toob pesa avalikud KDF-parameetrid ja mä
 5. Ava pääsuvõtme või ülemparooliga. Brauser pitseerib võtme CLI-le ning server edastab andmeploki, mida ta lugeda ei saa.
 6. CLI dekrüpteerib andmeploki, salvestab saladuse operatsioonisüsteemi võtmehoidlasse (keyring) ja teatab õnnestumisest.
 
-Päring aegub 10 minuti pärast. Selle tühistamiseks vajuta CLI-s **Ctrl+C**: link lakkab kohe töötamast ja leht palub käsu uuesti käivitada. Kui link avatakse pärast aegumist või kui sisselogimise ümbersuunamine kaotas `#` järgse osa, käivita käsk uuesti.
+Päring aegub 10 minuti pärast. Selle tühistamiseks vajuta CLI-s **Ctrl+C**: CLI palub serveril lingi tühistada, mispeale see lakkab kohe töötamast, ja leht palub käsu uuesti käivitada. Kui see päring kohale ei jõua, jääb link kasutatavaks päringu aegumiseni. Kui link avatakse pärast aegumist või kui sisselogimise ümbersuunamine kaotas `#` järgse osa, käivita käsk uuesti.
 
 Sidumiskood tuletatakse lingis olevast võtmest. Kui keegi vahetab lingi enda omaga välja, ei lange sinu terminalis olev kood kokku sellega, mida leht ootab, ja seega ei vabastata midagi.
 

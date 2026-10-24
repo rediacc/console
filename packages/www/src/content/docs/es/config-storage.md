@@ -10,7 +10,7 @@ tags:
 subcategory: account
 order: 8
 language: es
-sourceHash: "2ba65230cde4c5e5"
+sourceHash: "5cc07f3849026632"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -92,7 +92,7 @@ La inscripción es una lectura: el CLI obtiene los parámetros públicos de KDF 
 5. Desbloquea con tu passkey o tu contraseña maestra. El navegador sella la clave para el CLI, y el servidor reenvía un bloque de datos que no puede leer.
 6. El CLI descifra el bloque, guarda el secreto en el llavero del sistema operativo e informa del éxito.
 
-La solicitud caduca a los 10 minutos. Pulsa **Ctrl+C** en el CLI para cancelarla: el enlace deja de funcionar al instante y la página indica que hay que volver a ejecutar el comando. Si el enlace se abre después de que caduque, o después de que una redirección de inicio de sesión haya perdido la parte posterior al `#`, vuelve a ejecutar el comando.
+La solicitud caduca a los 10 minutos. Pulsa **Ctrl+C** en el CLI para cancelarla: el CLI pide al servidor que descarte el enlace, que deja de funcionar al instante, y la página indica que hay que volver a ejecutar el comando. Si esa petición no llega, el enlace sigue siendo válido hasta que caduque la solicitud. Si el enlace se abre después de que caduque, o después de que una redirección de inicio de sesión haya perdido la parte posterior al `#`, vuelve a ejecutar el comando.
 
 El código de emparejamiento se deriva de la clave que va dentro del enlace. Si alguien sustituye el enlace por uno propio, el código de tu terminal no coincidirá con el que espera la página y no se liberará nada.
 

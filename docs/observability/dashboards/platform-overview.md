@@ -15,7 +15,7 @@ First stop for an overall health check. Shows all services at a glance and ident
 | `environment` | `deployment_environment` | `production`, `edge` or `bench` |
 | `region` | `rediacc_region` | `eu`, `us` or `asia` |
 
-The account panels filter on both. Span-attribute panels use `url.path`, `http.route` and `http.response.status_code`.
+Only the account-server panels follow these variables; the CLI and renet panels select by service and do not narrow by environment or region.
 
 ## Panels
 

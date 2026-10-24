@@ -10,7 +10,7 @@ tags:
 subcategory: architecture
 order: 0
 language: es
-sourceHash: "30fbad660b050e2f"
+sourceHash: "9f16ecba15b69643"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -108,7 +108,7 @@ Los datos y la configuración de Docker se almacenan dentro del punto de montaje
 
 **Ruta de tiempo de ejecución compartida** (sin cambios):
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Esta estructura unificada elimina las colisiones de montaje de solo lectura y lectura-escritura que ocurrían cuando las rutas del daemon estaban divididas entre el sistema de archivos del host y el volumen cifrado. Hemos tenido que resolver esa división más de una vez antes de establecernos en esto. Tanto los daemons por repositorio como los independientes siguen la misma estructura de directorios, por lo que las herramientas y los diagnósticos funcionan de forma idéntica en ambos casos.

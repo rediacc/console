@@ -10,7 +10,7 @@ tags:
 subcategory: account
 order: 8
 language: fr
-sourceHash: "2ba65230cde4c5e5"
+sourceHash: "5cc07f3849026632"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -92,7 +92,7 @@ L'enrôlement est une lecture : le CLI récupère les paramètres KDF publics de
 5. Déverrouillez avec votre passkey ou votre mot de passe principal. Le navigateur scelle la clé pour le CLI, et le serveur relaie un blob qu'il ne peut pas lire.
 6. Le CLI déchiffre le blob, stocke le secret dans le trousseau du système (keyring) et confirme la réussite.
 
-La demande expire au bout de 10 minutes. Appuyez sur **Ctrl+C** dans le CLI pour l'annuler : le lien cesse aussitôt de fonctionner et la page indique de relancer la commande. Si le lien est ouvert après son expiration, ou si une redirection de connexion a supprimé la partie après le `#`, relancez la commande.
+La demande expire au bout de 10 minutes. Appuyez sur **Ctrl+C** dans le CLI pour l'annuler : le CLI demande au serveur de supprimer le lien, qui cesse aussitôt de fonctionner, et la page indique de relancer la commande. Si cette requête n'aboutit pas, le lien reste utilisable jusqu'à l'expiration de la demande. Si le lien est ouvert après son expiration, ou si une redirection de connexion a supprimé la partie après le `#`, relancez la commande.
 
 Le code d'appairage est dérivé de la clé contenue dans le lien. Si quelqu'un remplace le lien par le sien, le code affiché dans votre terminal ne correspondra pas à celui attendu par la page, et rien n'est libéré.
 

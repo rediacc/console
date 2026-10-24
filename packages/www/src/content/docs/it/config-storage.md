@@ -8,7 +8,7 @@ tags:
 subcategory: account
 order: 8
 language: it
-sourceHash: "2ba65230cde4c5e5"
+sourceHash: "5cc07f3849026632"
 sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
@@ -90,7 +90,7 @@ L'iscrizione è una lettura: la CLI recupera i parametri KDF pubblici dello slot
 5. Sblocca con la tua passkey o la password principale. Il browser sigilla la chiave per la CLI e il server inoltra un blob che non può leggere.
 6. La CLI decifra il blob, salva il segreto nel portachiavi del sistema operativo (keyring) e segnala il successo.
 
-La richiesta scade dopo 10 minuti. Premi **Ctrl+C** nella CLI per annullarla: il link smette subito di funzionare e la pagina chiede di eseguire di nuovo il comando. Se il link viene aperto dopo la scadenza, o se un reindirizzamento di login ha eliminato la parte dopo il `#`, esegui di nuovo il comando.
+La richiesta scade dopo 10 minuti. Premi **Ctrl+C** nella CLI per annullarla: la CLI chiede al server di eliminare il link, che smette subito di funzionare, e la pagina chiede di eseguire di nuovo il comando. Se questa richiesta non arriva, il link resta utilizzabile fino alla scadenza della richiesta. Se il link viene aperto dopo la scadenza, o se un reindirizzamento di login ha eliminato la parte dopo il `#`, esegui di nuovo il comando.
 
 Il codice di abbinamento deriva dalla chiave contenuta nel link. Se qualcuno sostituisce il link con uno proprio, il codice mostrato nel terminale non corrisponderà a quello atteso dalla pagina, e quindi non viene rilasciato nulla.
 

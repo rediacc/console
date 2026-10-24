@@ -9,7 +9,7 @@ tags:
 subcategory: architecture
 order: 0
 language: ko
-sourceHash: "30fbad660b050e2f"
+sourceHash: "9f16ecba15b69643"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -107,7 +107,7 @@ Docker 데이터와 설정은 레포지토리 마운트 내부에 저장되어 �
 
 **공유 런타임 경로** (변경 없음):
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 이 통합 레이아웃은 데몬 경로가 호스트 파일시스템과 암호화 볼륨으로 분리되었을 때 발생했던 읽기 전용/읽기-쓰기 마운트 충돌을 제거합니다. 레포별 데몬과 독립형 데몬 모두 동일한 디렉토리 구조를 따르므로 툴링과 진단이 두 경우에서 동일하게 작동합니다.

@@ -2168,8 +2168,8 @@
             },
             "productTelemetry": {
               "content": [
-                "Meie tarkvaratooted (CLI ja Renet agent) koguvad anonüümset kasutustelemetriat, et parandada toodete kvaliteeti, jõudlust ja töökindlust. Telemetriaandmed sisaldavad tehnilist teavet, näiteks rakenduse versiooni, operatsioonisüsteemi, jõudlusmõõdikuid, funktsioonide kasutusmustreid ja veaaruandeid. Isikuandmed muudetakse enne kogumist anonüümseks: e-posti aadressidest jäetakse alles ainult domeen, kasutaja ID-d räsitakse ja lühendatakse ning paroole ega saladusi ei koguta kunagi. Meie veebisaidi ja kontoteenuse telemeetria sisaldab ka linnatasemel asukohta (linn ja piirkond), mis pärineb Cloudflare'i servavõrgust ja mida säilitatakse 7 päeva.",
-                "Telemetria on meie veebirakenduses ja CLI-s vaikimisi lubatud ning seda saab kõigis toodetes keelata. Üksikasjaliku teabe saamiseks selle kohta, mida iga toode kogub ja kuidas loobuda, vaata meie <a href=\"telemetry-policy\">telemetria poliitikat</a>."
+                "Meie tarkvaratooted (CLI ja Renet agent) koguvad kasutustelemetriat, et parandada toodete kvaliteeti, jõudlust ja töökindlust. Telemetriaandmed sisaldavad tehnilist teavet, näiteks rakenduse versiooni, operatsioonisüsteemi, jõudlusmõõdikuid, funktsioonide kasutusmustreid ja veaaruandeid. Isikuandmed muudetakse enne kogumist anonüümseks: e-posti aadressidest jäetakse alles ainult domeen, kasutaja ID-d räsitakse ja lühendatakse ning paroole ega saladusi ei koguta kunagi. Meie veebisaidi ja kontoteenuse telemeetria sisaldab ka linnatasemel asukohta (linn ja piirkond), mis pärineb Cloudflare'i servavõrgust ja mida säilitatakse 7 päeva.",
+                "Telemetria on meie CLI-s vaikimisi lubatud ning seda saab kõigis toodetes keelata. Üksikasjaliku teabe saamiseks selle kohta, mida iga toode kogub ja kuidas loobuda, vaata meie <a href=\"telemetry-policy\">telemetria poliitikat</a>."
               ],
               "title": "2.5 Tootetelemetria andmed"
             }
@@ -9468,7 +9468,7 @@
         "legalBasis": {
           "content": [
             "ELi isikuandmete kaitse üldmääruse (GDPR) ja ePrivacy direktiivi kohaselt sõltub meie telemetria kogumise õiguslik alus toote kontekstist:",
-            "<strong>Veebirakenduse</strong> jaoks (brauseripõhine): telemetriat kogutakse <strong>õiguspärase huvi</strong> alusel (GDPR art. 6(1)(f)) teenuse kvaliteedi säilitamise ja parandamise eesmärgil. Saate igal ajal loobuda.",
+            "<strong>CLI</strong> ja <strong>Renet agendi</strong> jaoks (paigaldatud sinu infrastruktuurile): telemetriat kogutakse <strong>õiguspärase huvi</strong> alusel (GDPR art. 6(1)(f)) ning loobumise võimalused on selged. Telemetria saab keelata enne mis tahes andmete saatmist.",
             "Kasutajatele, kelle jurisdiktsioon nõuab selgesõnalist nõusolekut (nt Lõuna-Korea PIPA alusel), tuleks telemetria toote seadistustes selgesõnaliselt sisse lülitada enne mis tahes andmete edastamist."
           ],
           "id": "legal-basis",

@@ -9,7 +9,7 @@ tags:
 subcategory: architecture
 order: 0
 language: ja
-sourceHash: "30fbad660b050e2f"
+sourceHash: "9f16ecba15b69643"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -107,7 +107,7 @@ Dockerデータと設定はリポジトリのマウント内に保存され、�
 
 **共有ランタイムパス**(変更なし):
 ```
-/run/rediacc/net-{N}/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 この統合レイアウトにより、デーモンパスがホストファイルシステムと暗号化ボリュームに分割されていた場合に発生していた読み取り専用/読み書きマウント衝突が排除されます。この分割に複数回遭遇してから落ち着きました。リポジトリごともスタンドアロン両方のデーモンは同じディレクトリ構造に従うため、ツールと診断は両方のケースで同等に機能します。

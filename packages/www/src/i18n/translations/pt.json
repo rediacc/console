@@ -2174,8 +2174,8 @@
             },
             "productTelemetry": {
               "content": [
-                "Os nossos produtos de software (CLI e Agente Renet) recolhem telemetria de utilização anónima para melhorar a qualidade, o desempenho e a fiabilidade dos produtos. Os dados de telemetria incluem informações técnicas como a versão da aplicação, o sistema operativo, métricas de desempenho, padrões de utilização de funcionalidades e relatórios de erros. Os identificadores pessoais são anonimizados antes da recolha: os endereços de e-mail são reduzidos apenas ao domínio, os IDs de utilizador são convertidos em hash e truncados, e as palavras-passe ou segredos nunca são recolhidos. A telemetria do nosso site e do serviço de contas também inclui a localização ao nível da cidade (cidade e região), obtida a partir do edge da Cloudflare e mantida durante 7 dias.",
-                "A telemetria está ativada por omissão na nossa Aplicação Web e na CLI, podendo ser desativada em todos os produtos. Para informações completas sobre o que cada produto recolhe e como optar por não participar, consulte a nossa <a href=\"telemetry-policy\">Política de Telemetria</a>."
+                "Os nossos produtos de software (CLI e Agente Renet) recolhem telemetria de utilização para melhorar a qualidade, o desempenho e a fiabilidade dos produtos. Os dados de telemetria incluem informações técnicas como a versão da aplicação, o sistema operativo, métricas de desempenho, padrões de utilização de funcionalidades e relatórios de erros. Os identificadores pessoais são anonimizados antes da recolha: os endereços de e-mail são reduzidos apenas ao domínio, os IDs de utilizador são convertidos em hash e truncados, e as palavras-passe ou segredos nunca são recolhidos. A telemetria do nosso site e do serviço de contas também inclui a localização ao nível da cidade (cidade e região), obtida a partir do edge da Cloudflare e mantida durante 7 dias.",
+                "A telemetria está ativada por omissão na nossa CLI, podendo ser desativada em todos os produtos. Para informações completas sobre o que cada produto recolhe e como optar por não participar, consulte a nossa <a href=\"telemetry-policy\">Política de Telemetria</a>."
               ],
               "title": "2.5 Dados de Telemetria do Produto"
             }
@@ -9476,7 +9476,7 @@
         "legalBasis": {
           "content": [
             "Ao abrigo do Regulamento Geral sobre a Proteção de Dados (RGPD) da UE e da Diretiva ePrivacy, a base legal para a recolha de telemetria depende do contexto do produto:",
-            "Para a <strong>Aplicação Web</strong> (baseada em browser): a telemetria é recolhida ao abrigo do <strong>interesse legítimo</strong> (RGPD Art. 6.º, n.º 1, al. f)) com a finalidade de manter e melhorar a qualidade do serviço. Pode recusar em qualquer momento.",
+            "Para a <strong>CLI e o Agente Renet</strong> (instalados na sua infraestrutura): a telemetria é recolhida ao abrigo do <strong>interesse legítimo</strong> (RGPD Art. 6.º, n.º 1, al. f)), com mecanismos claros para optar por não participar. Pode desativar a telemetria antes de qualquer dado ser enviado.",
             "Para os utilizadores de jurisdições que exigem consentimento explícito (por exemplo, a Coreia do Sul ao abrigo da PIPA), a telemetria deve ser ativada explicitamente na configuração do produto antes de qualquer dado ser transmitido."
           ],
           "id": "legal-basis",

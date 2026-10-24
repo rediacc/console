@@ -2164,8 +2164,8 @@
             },
             "productTelemetry": {
               "content": [
-                "Unsere Softwareprodukte (CLI und Renet-Agent) erfassen anonyme Nutzungstelemetrie, um Qualität, Leistung und Zuverlässigkeit der Produkte zu verbessern. Die Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Leistungsmetriken, Nutzungsmuster von Funktionen und Fehlerberichte. Persönliche Kennungen werden vor der Erfassung anonymisiert: E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden nie erfasst. Die Telemetrie unserer Website und des Kontodienstes enthält außerdem den Standort auf Stadtebene (Stadt und Region). Er stammt vom Edge-Netzwerk von Cloudflare und wird 7 Tage lang gespeichert.",
-                "Telemetrie ist in unserer Webanwendung und CLI standardmäßig aktiviert und kann in allen Produkten deaktiviert werden. Vollständige Details darüber, was jedes Produkt erfasst und wie Sie sich abmelden können, finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
+                "Unsere Softwareprodukte (CLI und Renet-Agent) erfassen Nutzungstelemetrie, um Qualität, Leistung und Zuverlässigkeit der Produkte zu verbessern. Die Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Leistungsmetriken, Nutzungsmuster von Funktionen und Fehlerberichte. Persönliche Kennungen werden vor der Erfassung anonymisiert: E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden nie erfasst. Die Telemetrie unserer Website und des Kontodienstes enthält außerdem den Standort auf Stadtebene (Stadt und Region). Er stammt vom Edge-Netzwerk von Cloudflare und wird 7 Tage lang gespeichert.",
+                "Telemetrie ist in unserer CLI standardmäßig aktiviert und kann in allen Produkten deaktiviert werden. Vollständige Details darüber, was jedes Produkt erfasst und wie Sie sich abmelden können, finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
               ],
               "title": "2.5 Produkttelemetriedaten"
             }
@@ -9456,7 +9456,7 @@
         "legalBasis": {
           "content": [
             "Gemäß der EU-Datenschutz-Grundverordnung (DSGVO) und der ePrivacy-Richtlinie hängt unsere Rechtsgrundlage für die Telemetrieerfassung vom Produktkontext ab:",
-            "Für die <strong>Webanwendung</strong> (browserbasiert): Die Telemetrie wird unter <strong>berechtigtem Interesse</strong> (DSGVO Art. 6(1)(f)) zum Zweck der Aufrechterhaltung und Verbesserung der Dienstqualität erfasst. Sie können sich jederzeit abmelden.",
+            "Für die <strong>CLI und den Renet-Agent</strong> (auf Ihrer Infrastruktur installiert): Die Telemetrie wird auf Grundlage des <strong>berechtigten Interesses</strong> (DSGVO Art. 6(1)(f)) erfasst, mit klaren Möglichkeiten zur Abmeldung. Sie können die Telemetrie deaktivieren, bevor Daten gesendet werden.",
             "Für Nutzer in Rechtsordnungen, die eine ausdrückliche Einwilligung verlangen (z. B. Südkorea nach dem PIPA), sollte die Telemetrie in der Produktkonfiguration ausdrücklich aktiviert werden, bevor Daten übertragen werden."
           ],
           "id": "legal-basis",

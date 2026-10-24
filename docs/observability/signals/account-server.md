@@ -98,8 +98,8 @@ When `executionCtx.tracing` exists, the middleware sets these on the active span
 |-----------|-------------|
 | `http.route` | Route pattern, not the raw path |
 | `http.response.status_code` | Response status code |
-| `deployment.environment` | `ENVIRONMENT` of the deployment |
-| `rediacc.region` | `REGION` of the deployment |
+| `deployment.environment` | `ENVIRONMENT` of the deployment (the Alloy transform under Identity sets the same attribute from the script name) |
+| `rediacc.region` | `REGION` of the deployment (likewise set by the Alloy transform) |
 | `rediacc.probe` | UUID from the `X-Rediacc-Probe` header, only when the value is a UUID |
 
 The raw user agent and the query string are not copied.
