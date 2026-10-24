@@ -1,0 +1,95 @@
+# PLAN: a repo's shell sandbox reaches only its own repo's Docker socket, network policy, mount and cgroups (`rdc term connect` tenant separation)
+
+Status: approved -- lead d778be9d under the fix-in-session rule (CLAUDE.md rule 2), 2026-10-24; decisions below are recorded for operator veto. Design by a Plan agent from live QA on ops VM .11 (worklist #17254293).
+Depends-On: no-dep -- builds on the finished runtime-converge R1 (RuntimeEpoch bump rides converge) and the done privilege-gate and readonly-view plans; DR waits for converge U1 only because U1 owns vm_check.py until ticked
+Owner: d778be9d
+Updated: 2026-10-24
+First-Seen: 2026-10-24
+Priority: P1 -- one repo's shell can open another repo's Docker API; containers from a sandbox's first compose run have no loopback policy; every repo's mount is listed in every sandbox
+Concurrency: parallel -- waves: RA (D1) alone; then RB (D3), RC (D2+D5), RD (D4) in parallel with the disjoint Owns under Tasks; DR (drill) after U1 is ticked and RA-RD land
+Owns: private/renet/pkg/daemon/netgroup*.go, private/renet/pkg/daemon/start_foreground.go, private/renet/pkg/daemon/runtime_epoch.go, private/renet/pkg/daemon/testdata/**, private/renet/pkg/daemon/setup.go, private/renet/pkg/runpaths/runpaths.go, private/renet/cmd/renet/daemon_dockerproxy_exec.go, private/renet/pkg/dockerproxy/**, private/renet/cmd/renet/sandbox_overlay_linux.go, private/renet/cmd/renet/sandbox_groups*.go, private/renet/cmd/renet/sandbox_exec.go, private/renet/cmd/renet/sandbox_gateway.go, private/renet/cmd/renet/sandbox_gateway_transfer.go, private/renet/cmd/renet/sandbox_repo_view*.go, private/renet/cmd/renet/ebpf_inspect*.go, private/renet/pkg/ebpf/**, private/renet/pkg/orchestration/workflows.go, private/renet/pkg/prune/prune.go, private/renet/pkg/i18n/locales/**, private/renet/docs/DOCKERD_SANDBOX.md, .ci/rediacc_ci/drills/tenant_isolation.py, .ci/rediacc_ci/tests/test_drills_tenant_isolation.py, .ci/rediacc_ci/drills/vm_check.py
+
+## Why
+
+Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/isoc) found the sandbox does not fully separate repos, and the code confirms each finding:
+
+- **Docker sockets.** Every repo's gate socket is `root:docker` 0660 (dockerproxy/proxy.go:67, daemon_dockerproxy_exec.go:38, start_foreground.go:322-352) in a 0755 `net-<N>/` (daemon_dockerproxy_exec.go:133). `dropPrivileges` copies the sandbox user's `/etc/group` list, `docker` included, and ignores a `Setgroups` error (sandbox_overlay_linux.go:167-177); setup adds the user to `docker` (setup_command.go:500-505). Landlock's `RWFiles` grant (pkg/sandbox/landlock.go:88-90) does not control `connect(2)`, and the gate never identifies its caller (proxy.go:197-258, no `SO_PEERCRED` anywhere). Live: B's sandbox listed and exec'd into A's containers through A's socket.
+- **Network policy.** Seeding reads services from `.rediacc.json` (sandbox_exec.go:498-503, workflows.go:244-292) and returns early when it has none (workflows.go:251-255); the compose post-up write (exec.go:390) needs a manager a non-root process cannot load (manager.go:599-624); plain `docker run` lands in `/rediacc.slice/rediacc-<N>` (daemon/systemd.go:593) with no entry; a lookup miss allows everything (socket_isolation.c:59-82, 89-91, 139-140). Live: isoc's first sandbox compose reached isoa and isob until the next sandbox entry.
+- **Mount view.** The readonly view keeps every mount (sandbox_readonly_linux.go), so other repos' `<ds>/mounts/<guid>` stay in the sandbox mount table.
+- **Repo delete.** Teardown step 4 (daemon/setup.go:305-308) removes only `renet-exec-<N>` (manager.go:262-266, 319-327); `rediacc-<N>/<svc>` and their `cgroup_configs` entries stay.
+- **Message.** `warnManagerUnavailable` says "the isolation is in force" (manager.go:599-607), false in the cases above.
+
+## Decisions (recorded for veto)
+
+1. D1 primary: a per-network socket group `rediacc-net-<N>`, and sandbox-exec builds the group list itself from the socket it was handed (drop `docker` and every `rediacc-net-*`, add only its own, fail if `Setgroups` fails). Every repo shell runs as one account (sandbox_gateway.go:223-225), so only the process group list can separate repos. Rejected: removing `rediacc` from `docker` (the sandbox loses its own socket); a per-repo Unix user (re-models every ownership path).
+2. D1 second layer: a peer-cgroup check in the gate (`SO_PEERCRED`, `SO_PEERPIDFD` where available, `/proc/<pid>/cgroup`): a caller in another repo's cgroup gets 403; callers outside repo cgroups are served. Rejected as second layer: mount-namespace hiding (covers gateway sessions only).
+3. D2 primary: the gate seeds the eBPF entry on an allowed `POST /containers/create` with `CgroupParent = CgroupSlice(N)/<svc>` before dockerd sees it. Rejected: seeding from compose-file names at sandbox entry (file unknown at entry, root would parse tenant YAML, slot drift); docker-events watching (asynchronous, first bind can win).
+4. D2 second layer: a default entry per repo at `rediacc-<N>` (repo /26, `service_ip=0`), which requires the BPF walk to go deepest-first (today shallowest wins, socket_isolation.c:68-80, which would hide service entries). eBPF unavailable at gate start: log once and pass; manager loaded and a seed fails: the create gets 500.
+5. Legacy sockets fail closed: a handed socket still `root:docker` makes sandbox-exec refuse with a message naming `rdc machine converge`; `RuntimeEpoch` 1 -> 2 so the next mutating command converges.
+6. D3: lazily detach every other repo's mount in the private namespace and remount `/proc` with `hidepid=invisible`; no tmpfs mask over `<ds>/mounts`.
+7. `rediacc` stays in `docker` (the filtering makes it irrelevant); operator users in `docker` are copied into each `rediacc-net-<N>` at group creation so machine-level `docker -H` keeps working.
+
+## Design
+
+### D1. Docker API socket separation
+- `pkg/daemon/netgroup.go`: `NetworkGroupName(N)`, `EnsureNetworkGroup(N)` (`groupadd --system -f`, members = docker's minus `config.RediaccUser` via `gpasswd -M`, exec seam), `RemoveNetworkGroup(N)`.
+- `dockerProxyCommand` (start_foreground.go:322-349) ensures the group and passes `--socket-group=rediacc-net-<N>`; on failure the socket stays root-only. Drop `dockerSocketGroup`; update the flag default/doc (daemon_dockerproxy_exec.go:38/58); `RuntimeEpoch = 2` (runtime_epoch.go:32) with refreshed goldens.
+- `cmd/renet/sandbox_groups.go` pure `sandboxGroups(userGids, dockerGid, isNetGroup, socket, lookup)`: N from `--docker-socket` via new `runpaths.NetworkIDFromDockerSocket`; the socket's real gid must be `rediacc-net-<N>`, else the legacy-daemon error.
+- `dropPrivileges(username, dockerSocket)` uses it and a `Setgroups` failure is fatal; `applyLandlockAndDrop` passes `opts.DockerSocket` (sandbox_exec.go:260-286); gateway (sandbox_gateway.go:215) and compose re-wrap (main.go:1324-1326) already pass it; transfer simply loses `docker`.
+- `pkg/dockerproxy/peer_linux.go` (+ `peer_other.go`): `peerNetwork(conn)` and pure `networkOfCgroup(path)`; `Serve` becomes `ServeAllowing(ctx, l, allowNet)` (public listener N, delegated listener the holder H); a refused peer gets the gate's 403 JSON before the first request and a log line with pid, uid, cgroup; behind a `PeerResolver` seam.
+- DOCKERD_SANDBOX.md:161: replace the `root:docker` 0660 wording with a short "who can dial a gate" section.
+
+### D2. Network policy for containers the sandbox starts
+- BPF `find_cgroup_config`: exact current-cgroup lookup, then ancestor levels 7 down to 1, skipping misses with `continue`; regenerate both objects with `go generate ./pkg/ebpf`; update the comment at c:42-57.
+- `pkg/ebpf/repo_default.go`: `RepoCgroupPath(N)`, `(*Manager).SeedRepoDefault(N, alias)` (create `rediacc-<N>`, propagate controllers, write an exec-style config keyed by its inode; shared `execStyleConfig(N, alias)` lifted from `SetupExecCgroup`). `PreSeedServiceCgroupsWithAlias` (workflows.go:244) calls it before reading `.rediacc.json`; a `seedManager` interface variable for tests.
+- `pkg/dockerproxy/seed.go` (`Seeder` in `Config`): in `(*gate).containerCreate` (intercept.go:126), after allow, for `CgroupParent = CgroupSlice(N)/<valid svc>`: IPv4 from label `rediacc.service_ip` only inside N's /26 at offset 2-62 (IPv6 at the same offset when on), alias from the root-written mirror (`repository.MirrorStatePath`), then `PreSeedServiceCgroup`; an invalid/missing label seeds `service_ip=""`. Cap 61 seeded service dirs per network (`MaxServiceSlot + 1`), over it 403; seed error 500 with no dial. `serveDockerproxy` builds the real seeder from `renetebpf.GetManager()` and calls `SeedRepoDefault(N)` at gate start. exec.go:390 stays for leaf entries on root paths.
+
+### D3. The sandbox sees only its own repo's mount
+- `cmd/renet/sandbox_repo_view_linux.go` (+ `_other`): pure `planForeignDetach(mountinfo, ds, workDir)` (every mount strictly under `<ds>/mounts/` not at or below `workDir`, deepest first; refuses a `workDir` that is not `<ds>/mounts/<guid>`; legacy `<ds>/home/<name>` gets a warning and no view).
+- `applyPrivateRepoView(workDir)`: `umount2(p, MNT_DETACH)` per planned mount, then a fresh procfs on `/proc` with `hidepid=invisible`; any failure fatal.
+- sandbox-exec flag `--private-repo-view <workDir>` after `setupSandboxMounts` and before `readOnlyExcept` (sandbox_exec.go:124-147), refused without a namespace; passed by `buildGatewaySandboxArgs` (sandbox_gateway.go:192-243) and the transfer argv (sandbox_gateway_transfer.go:~221).
+
+### D4. Repo delete removes the repo's cgroups and map entries
+- `pkg/ebpf/repo_cgroups.go` `(*Manager).RemoveRepoCgroups(N)`: walk `rediacc-<N>` bottom-up deleting each map entry by inode then the dir (busy dirs logged and skipped), then sweep keys with `SubnetBase == subnetBaseNative(N)` that are no live cgroup inode (compare SubnetBase, never alias).
+- Callers: `daemon.TeardownDaemon` step 4 (setup.go:305-308) calls it and `RemoveNetworkGroup(N)` (delete reaches it via `DeleteWithCleanup` -> `SafeShutdown{Teardown:true}`, workflows.go:742 -> 428-433; prune at prune.go:288); `pkg/prune` also sweeps `rediacc-<N>` dirs no daemon unit claims (pre-fix leftovers).
+
+### D5. Accurate message
+`warnManagerUnavailable` (manager.go:599-607) becomes an Info line: "this process (uid %d) cannot write eBPF isolation entries; the repository's Docker API gate seeds each container's entry at create time and the repository default entry covers the rest". Correct the `DetachRepoCgroup` (manager.go:258-266) and `CgroupConfigMap` (manager.go:435, no caller) docstrings; RB updates the `setupRepoEbpf` docstring (sandbox_exec.go:456-470).
+
+## Tasks
+
+- [ ] RA [renet] D1, wave 1. Owns: pkg/daemon/netgroup*.go, pkg/daemon/start_foreground.go, pkg/daemon/runtime_epoch.go, pkg/daemon/testdata/**, pkg/runpaths/runpaths.go, cmd/renet/daemon_dockerproxy_exec.go, pkg/dockerproxy/proxy.go, pkg/dockerproxy/peer*.go, cmd/renet/sandbox_overlay_linux.go, cmd/renet/sandbox_groups*.go, cmd/renet/sandbox_exec.go, pkg/i18n/locales/**, docs/DOCKERD_SANDBOX.md: per-network group, socket chown, group list filtering, fatal Setgroups, legacy-socket refusal, peer-cgroup check on public and delegated listeners, epoch 2 -- Accept: `cd private/renet && go test -tags nolicense ./pkg/daemon/... ./pkg/dockerproxy/... ./pkg/runpaths/... ./cmd/renet/ -run 'NetGroup|SandboxGroups|DropPriv|Peer|NetworkOfCgroup|Delegat|Runtime|Systemd|DockerProxy' -count=1` rc 0; `npm run check:ci-renet` rc 0.
+- [ ] RB [renet] D3, wave 2. Owns: cmd/renet/sandbox_repo_view*.go, cmd/renet/sandbox_exec.go (flag and call order only), cmd/renet/sandbox_gateway.go, cmd/renet/sandbox_gateway_transfer.go, their *_test.go, pkg/i18n/locales/** (wave-2 owner): planner, detach, hidepid procfs, flag on both plans, setupRepoEbpf docstring -- Accept: `cd private/renet && go test -tags nolicense ./cmd/renet/ -run 'RepoView|ForeignDetach|GatewaySandboxArgs|Transfer' -count=1` rc 0; `sudo go test -tags nolicense ./cmd/renet/ -run TestPrivateRepoViewLinux -count=1` rc 0 on an ops VM; `npm run check:ci-renet` rc 0.
+- [ ] RC [renet] D2 and D5, wave 2, after RA. Owns: pkg/ebpf/socket_isolation.c, pkg/ebpf/socketisolation_*_bpfel.{go,o}, pkg/ebpf/manager.go, pkg/ebpf/repo_default*.go, pkg/ebpf/socket_isolation_e2e_test.go, pkg/orchestration/workflows.go (PreSeedServiceCgroups* only), pkg/dockerproxy/intercept.go, pkg/dockerproxy/seed*.go, pkg/dockerproxy/proxy.go (Config.Seeder field), cmd/renet/daemon_dockerproxy_exec.go (seeder wiring), cmd/renet/ebpf_inspect*.go: deepest-first walk, regenerated objects, repo default entry, gate seeding with label validation, cap and fail-closed, hidden read-only `renet ebpf inspect --network-id N --json`, D5 wording -- Accept: `cd private/renet && go generate ./pkg/ebpf && git diff --exit-code -- pkg/ebpf/*.o` clean after the commit; `go test -tags nolicense ./pkg/ebpf/ ./pkg/dockerproxy/ ./pkg/orchestration/ ./cmd/renet/ -run 'RepoDefault|Seed|ContainerCreate|PreSeed|WarnManager|EbpfInspect' -count=1` rc 0; `sudo go test -tags 'nolicense ebpf_e2e' ./pkg/ebpf/ -run 'TestEBPF_(DeepestEntryWins|RepoDefaultBlocksCrossRepo|Bind4LoopbackRewrite)' -count=1` rc 0 on an ops VM; `npm run check:ci-renet` rc 0.
+- [ ] RD [renet] D4, wave 2, after RA. Owns: pkg/ebpf/repo_cgroups*.go, pkg/daemon/setup.go, pkg/prune/prune.go and its tests: bottom-up removal, subnet-keyed map sweep, group removal at teardown, prune sweep of unclaimed rediacc-<N> -- Accept: `cd private/renet && go test -tags nolicense ./pkg/ebpf/ ./pkg/daemon/ ./pkg/prune/ -run 'RemoveRepoCgroups|SweepMap|Teardown|PruneCgroups' -count=1` rc 0; `npm run check:ci-renet` rc 0.
+- [ ] CX [console] renet pointer bump; regenerate the renet contract if `ebpf inspect` appears in it -- Accept: `npm run check:ci-renet` rc 0 and `npm run check:ci-renet-types` rc 0.
+- [ ] DR [drill] wave 3, after U1 is ticked and CX lands. Owns: .ci/rediacc_ci/drills/tenant_isolation.py, .ci/rediacc_ci/tests/test_drills_tenant_isolation.py, the I1 registration in vm_check.py: step I1 below -- Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_drills_tenant_isolation.py -q` rc 0; `npm run check:ci-pytest` rc 0; `npm run vm:check -- --only I1` with every I1 row ok; then a full `npm run vm:check` VERIFIED.
+- [ ] H1 [operator window] after release, on one machine: `rdc machine converge <m> --dry-run` lists every repo stale (epoch 2), then the real pass -- Accept: converge-last.json shows every repo converged or pending with a reason, and `stat -c %G /var/run/rediacc/net-*/docker-*[0-9].sock` prints only `rediacc-net-*`.
+
+### Drill registration
+`vm_check.py` has no plug-in hook (U1 edits it at several points). DR exports `STEP = ("I1", ("V1.2",), run)` from `tenant_isolation.py`, adds `EXTRA_RENET_STEPS = (tenant_isolation.STEP,)` after U1 is ticked, and once turns `PHASE_STEPS[SIDE_RENET]`, `_ONLY_DEPS` and the dispatch into reads of that tuple so each later drill is one line.
+
+### I1 rows (assert the fixed behaviour, on the V1 forks A, B and a throwaway C)
+- I1.1 A's sandbox `id -Gn` holds `rediacc-net-<A>`, neither `docker` nor `rediacc-net-<B>`.
+- I1.2 A's sandbox: `docker -H unix://<own> version` rc 0; B's socket `version` fails permission denied.
+- I1.3 Second layer, root on the worker: a shell in `renet-exec-<A>/cgroup.procs` curls B's socket `/_ping` and gets the gate's 403.
+- I1.4 B's sandbox brings up a never-seen service `vmc-i1-<run>`; `renet ebpf inspect --network-id <B> --json` shows entries for `rediacc-<B>/vmc-i1-<run>` (B's /26, the label IP) and `rediacc-<B>`.
+- I1.5 A `docker run --rm --network host` in B with no cgroup parent cannot connect to a listener A's sandbox opened on an A-subnet IP (EPERM).
+- I1.6 A's sandbox `/proc/self/mountinfo` names only A's guid under `/mounts/`; `<ds>/mounts/<B-guid>` is not a mount point there; `/proc/1/mountinfo` is absent.
+- I1.7 Fork C compose up then `rdc repo delete C`: `rediacc.slice/rediacc-<C>` absent, `ebpf inspect --network-id <C>` counts 0, `getent group rediacc-net-<C>` rc 2.
+
+## Tests (Go, with fakes)
+- RA: `sandboxGroups` table (user {rediacc, docker, net-7, net-9} with socket net-7 -> {rediacc, net-7}; no socket -> {rediacc}; socket gid docker -> legacy error; lookup miss -> error); `dropPrivileges` returns the Setgroups error through a seam; `networkOfCgroup` table; proxy with a fake `PeerResolver` (own served, foreign 403 and backend never dialed, outside rediacc served, delegated allows H and refuses N); `EnsureNetworkGroup` argv through a fake runner; goldens carry `--socket-group=rediacc-net-<N>` and epoch 2.
+- RB: planner tables (nested submounts deepest first, own submounts kept, outside-datastore ignored, legacy path); gateway and transfer argv carry `--private-repo-view`; root-gated namespace test with two fake bind mounts.
+- RC: fake `Seeder` plus an order-recording backend (seed before the backend reads); label outside the /26 -> `service_ip=""`; seed error -> 500 with no dial; the 62nd service -> 403; empty or deeper `CgroupParent` -> no service seed; `PreSeedServiceCgroups` without `.rediacc.json` still calls `SeedRepoDefault`; `warnManagerUnavailable` no longer says "in force"; e2e `DeepestEntryWins`, `RepoDefaultBlocksCrossRepo`.
+- RD: fake cgroup tree and map (bottom-up order, busy dir skipped, sweep keeps other subnets and alias matches, deletes dead keys in N's subnet); `TeardownDaemon` calls both cleanups through seams.
+
+## Risks
+- Converge-skipped repos (kube, hub, systemd-installed) keep `root:docker` sockets and their shells refuse to open (decision 5); the refusal names the restart command and H1 checks for leftovers.
+- Peer pid race on kernels without `SO_PEERPIDFD` (< 6.5; renet floor 6.1): accepted, the group ownership is the primary control.
+- The gate needs root capabilities for BPF and cgroup writes; a future capability limit on the unit would make creates fail closed (RC's e2e run is the guard).
+- The BPF walk does up to 7 helper calls per bind/connect; exec-cgroup and leaf keys are matched exactly first, so their precedence is unchanged. Regenerating objects needs clang on the writer's host.
+- The map is a shared LRU: the 61-directory cap bounds gate seeding; leaf entries from exec.go:390 stay unbounded per container, as before.
+- hidepid limits `ps` to the session's processes; compose's binding check reads the session's own `/proc/net/tcp` (procnet.go:25-26).
+- D3 leaves `/dev/mapper` names (device nodes stay permission-protected) and `/sys/fs/cgroup` `rediacc-<N>` names visible; follow-up: mask `/dev/mapper` in the session namespace.
+- The `vm_check.py` refactor lands after U1, which owns that file until ticked.

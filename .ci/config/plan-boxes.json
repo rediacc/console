@@ -1301,6 +1301,24 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-sandbox-tenant-separation.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "31520157",
+        "40820c64",
+        "43ae1021",
+        "67b7dece",
+        "b3908820",
+        "dfd33f28",
+        "e89f926a"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-scope-gate-sort-collation.md": {
       "status": "compacted",
       "owner": "854ac1c6",
