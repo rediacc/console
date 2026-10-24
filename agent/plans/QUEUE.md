@@ -79,7 +79,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 18 plans done, 131 of 374 boxes done (35%).
+Promoted: 0 of 18 plans done, 132 of 374 boxes done (35%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -100,7 +100,7 @@ Promoted: 0 of 18 plans done, 131 of 374 boxes done (35%).
 | 15 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
 | 16 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
 | 17 | PLAN-renet-runtime-converge.md | 2/4 | 2 open |
-| 18 | PLAN-sandbox-tenant-separation.md | 0/7 | 7 open |
+| 18 | PLAN-sandbox-tenant-separation.md | 1/7 | 6 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge

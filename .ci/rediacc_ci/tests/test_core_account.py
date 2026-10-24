@@ -17,6 +17,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -858,6 +859,10 @@ def test_stop_kills_the_whole_tree_not_only_the_recorded_pid(monkeypatch, tmp_pa
 
 
 FOREIGN_WRITER = "some-devbox/pid:[4026532999]"
+
+
+def _shquote(text: str) -> str:
+    return shlex.quote(text)
 
 
 def _fake_docker(directory: pathlib.Path) -> str:
@@ -1928,9 +1933,75 @@ def test_tree_refuses_pid_zero_and_one():
     assert account._tree("not-a-pid") == []
 
 
+def test_stop_kills_a_sigterm_ignoring_child_whose_leader_exited(monkeypatch, tmp_path) -> None:
+    """Reviews 4fb75de4.1 and a6ac20cd.3, end to end through stop(): the leader dies on SIGTERM, its child ignores
+    SIGTERM and is reparented, and the SIGKILL pass must still reach it. Red if stop() re-collects the tree after the
+    TERM pass, because by then the dead leader has no children."""
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    leader = None
+    try:
+        env = shadow_driver.sandbox_env(work)
+        state = pathlib.Path(account.state_file(env))
+        childfile = tmp_path / "child.pid"
+        ignorer = (
+            "import os, signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+            "open(%r, 'w').write(str(os.getpid())); time.sleep(30)" % str(childfile)
+        )
+        leader = _spawn_reaped(
+            ["sh", "-c", "%s -c %s & wait" % (sys.executable, _shquote(ignorer))]
+        )
+        for _ in range(100):
+            if childfile.is_file() and childfile.read_text().strip():
+                break
+            time.sleep(0.05)
+        child = int(childfile.read_text().strip())
+        assert _alive(child)
+        state.write_text(
+            "gateway_port=1\npids=%d\nwriter=%s\n" % (leader.pid, account.writer_stamp()),
+            encoding="utf-8",
+        )
+        assert account.stop(env) == 0
+        assert _gone(child), "the SIGTERM-ignoring child of the exited leader survived stop()"
+    finally:
+        if leader is not None:
+            with contextlib.suppress(OSError):
+                leader.kill()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def test_stop_with_a_foreign_state_kills_only_the_gateway_occupant(monkeypatch, tmp_path) -> None:
+    """Review a6ac20cd.2: a state file another writer stamped gets the gateway occupant alone, never the trees on
+    gateway+1 and gateway+2."""
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    try:
+        env = shadow_driver.sandbox_env(work)
+        pathlib.Path(account.state_file(env)).write_text(
+            "gateway_port=4900\npids=\nwriter=%s\n" % FOREIGN_WRITER, encoding="utf-8"
+        )
+        tree_kills: list[str] = []
+        single_kills: list[str] = []
+        monkeypatch.setattr(account, "_lsof_port_pids", lambda port: ["70%s" % port[-1]])
+        monkeypatch.setattr(account, "_lsof_port_pid", lambda _port: "7000")
+        monkeypatch.setattr(
+            account, "_kill_tree", lambda pid, _sig, _members=None: tree_kills.append(pid)
+        )
+        monkeypatch.setattr(account, "_kill_quiet", lambda pid, _sig: single_kills.append(pid))
+        assert account.stop(env) == 0
+        assert tree_kills == [], (
+            "a foreign state must not license whole-tree kills on the dev ports"
+        )
+        assert single_kills == ["7000"]
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
 def test_sigkill_pass_reaches_a_child_after_its_leader_exits():
-    """Review 4fb75de4.1: the tree is collected before SIGTERM, so a child that ignores SIGTERM and is orphaned
-    when its leader dies is still in the SIGKILL pass."""
+    """Review 4fb75de4.1: with the members collected before SIGTERM, a SIGTERM-ignoring child is still in the SIGKILL
+    pass. The stand-in leader is a child this test already reaped (review a6ac20cd.4: no hardcoded pid)."""
+    gone = subprocess.Popen([sys.executable, "-c", "pass"])
+    gone.wait(timeout=10)
     child = subprocess.Popen(
         [
             sys.executable,
@@ -1944,17 +2015,22 @@ def test_sigkill_pass_reaches_a_child_after_its_leader_exits():
     assert child.stdout is not None
     assert child.stdout.readline().strip() == "ready"
     try:
-        # The child stands in for an orphaned grandchild: its "leader" is a pid that no longer exists.
-        members = [999999, child.pid]
-        account._kill_tree("999999", account.signal.SIGTERM, members)
+        members = [gone.pid, child.pid]
+        account._kill_tree(str(gone.pid), account.signal.SIGTERM, members)
         time.sleep(0.3)
         assert child.poll() is None, "the child ignores SIGTERM, so it must still be alive here"
-        account._kill_tree("999999", account.signal.SIGKILL, members)
+        account._kill_tree(str(gone.pid), account.signal.SIGKILL, members)
         child.wait(timeout=5)
         assert child.returncode is not None
     finally:
         with contextlib.suppress(OSError):
             child.kill()
         child.wait(timeout=5)
-        if child.stdout is not None:
-            child.stdout.close()
+        child.stdout.close()
+
+
+def test_still_same_drops_a_reused_pid():
+    """Review a6ac20cd.1: a member whose start time changed since collection was reused and is not signalled."""
+    me = os.getpid()
+    assert account._still_same([me], {me: account._start_time(me)}) == [me]
+    assert account._still_same([me], {me: "not-the-real-start-time"}) == []

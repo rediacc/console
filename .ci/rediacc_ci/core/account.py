@@ -517,7 +517,7 @@ def _children(pid: int) -> list[int]:
             proc = subprocess.run(
                 ["pgrep", "-P", str(pid)], capture_output=True, text=True, check=False
             )
-        except FileNotFoundError:
+        except OSError:
             return found
         return [int(line) for line in proc.stdout.split() if line.isdigit()]
     for entry in entries:
@@ -550,6 +550,25 @@ def _tree(pid: str) -> list[int]:
         seen.append(current)
         queue.extend(_children(current))
     return seen
+
+
+def _start_time(pid: int) -> str | None:
+    """The process start time from /proc/<pid>/stat (field 22), or None where there is no /proc or no such pid."""
+    try:
+        stat = pathlib.Path("/proc/%d/stat" % pid).read_text(encoding="utf-8")
+        return stat.rsplit(")", 1)[1].split()[19]
+    except (OSError, IndexError):
+        return None
+
+
+def _still_same(members: list[int], started: dict[int, str | None]) -> list[int]:
+    """The members that are still the processes collected earlier: a pid whose start time changed was reused and is dropped. Without /proc (start time None) nothing can be compared and the member is kept."""
+    kept: list[int] = []
+    for pid in members:
+        before = started.get(pid)
+        if before is None or _start_time(pid) == before:
+            kept.append(pid)
+    return kept
 
 
 def _kill_tree(pid: str, sig: int, members: list[int] | None = None) -> None:
@@ -610,22 +629,22 @@ def stop(env: dict[str, str] | None = None) -> int:
             pids = old_pids.replace(",", " ").split()
             # Every recorded job leads its own process group (`spawn_background`), so the group signal ends the whole tree (npm exec -> sh -> vite/astro -> node), not only the pid. The trees are collected BEFORE the SIGTERM, so the SIGKILL pass still reaches a child that ignored it after its leader exited.
             trees = {pid: _tree(pid) for pid in pids}
+            started = {member: _start_time(member) for tree in trees.values() for member in tree}
             for pid in pids:
                 _kill_tree(pid, signal.SIGTERM, trees[pid])
             time.sleep(1)
             for pid in pids:
-                _kill_tree(pid, signal.SIGKILL, trees[pid])
+                # Only members that are still the same process: a pid that exited during the sleep and was reused is not ours to kill.
+                survivors = _still_same(trees[pid], started)
+                if survivors:
+                    _kill_tree(pid, signal.SIGKILL, survivors)
 
         if old_gateway:
-            # The gateway, Vite and Astro hold consecutive ports from the gateway's. Only a state file this worktree wrote licenses killing the whole tree under each; a foreign or stale one gets the old behaviour, the gateway occupant alone.
+            # The gateway, Vite and Astro hold consecutive ports from the gateway's. Only a state file this worktree wrote licenses killing the whole tree under each; one another writer stamped (or no writer) gets the old behaviour, the gateway occupant alone.
             if old_gateway.isdigit() and state_owned(text, path):
                 for offset in (0, 1, 2):
                     for port_pid in _lsof_port_pids(str(int(old_gateway) + offset)):
                         _kill_tree(port_pid, signal.SIGKILL)
-            elif old_gateway.isdigit():
-                port_pid = _lsof_port_pid(old_gateway)
-                if port_pid:
-                    _kill_quiet(port_pid, signal.SIGKILL)
             else:
                 port_pid = _lsof_port_pid(old_gateway)
                 if port_pid:
