@@ -21,7 +21,7 @@ Body-Sig: 5dd845169902507d
 ### ecbb046f.1 [low] agent/ledgers/plan-investigation.jsonl:1709
 Anchor: in-diff
 Claim: The A5 box is ticked, but the only ledger row for sig a10f8134 is verdict "absent" (this line), with no later "present" row, so the latest verdict for a ticked box contradicts the tick and the commit's claim that every absent row is superseded.
-Resolution: open
+Resolution: fixed 3892656ee5ddad60c5d070c4cae663c1bb39d7b5 | d778be9d 2026-10-24T20:50:23Z
 
 ### ecbb046f.2 [low] agent/ledgers/plan-investigation.jsonl:1707
 Anchor: in-diff
