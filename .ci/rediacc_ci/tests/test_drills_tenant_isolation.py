@@ -278,7 +278,29 @@ def test_process_scripts_anchor_the_pattern() -> None:
     for script in (ti.alive_script(612345), ti.job_view_script(612345), ti.absent_script(612345)):
         assert "pgrep -f '^sleep 612345$'" in script
     assert "pkill -f '^sleep 612345$'" in ti.ns_gone_script(612345, "pid:[4026532800]")
-    assert ti.absent_script(612345) == "pgrep -f '^sleep 612345$' || echo ABSENT"
+    assert "pgrep -f '^sleep 612346$'" in ti.absent_script(612345)
+    assert "echo PGREP_RC=$r" in ti.absent_script(612345)
+
+
+def test_absent_verdict_needs_the_control_and_a_not_found_search() -> None:
+    assert ti.absent_verdict("CONTROL_SEEN\nPGREP_RC=1\n")[0]
+    # Found the job: not absent.
+    assert not ti.absent_verdict("CONTROL_SEEN\nPGREP_RC=0\n")[0]
+    # pgrep could not look (control unseen): never read as absent (review 55ab6cf1.1).
+    assert not ti.absent_verdict("CONTROL_MISSING\nPGREP_RC=1\n")[0]
+    # pgrep failed outright (status 2), or the marker never printed.
+    assert not ti.absent_verdict("CONTROL_SEEN\nPGREP_RC=2\n")[0]
+    assert not ti.absent_verdict("CONTROL_SEEN\n")[0]
+
+
+def test_job_view_verdict_returns_the_namespace_when_only_the_view_fails() -> None:
+    text = (
+        "pid:[4026532800]\n===\npid:[4026531836]\n===\n"
+        "60 22 0:36 / /mnt/rediacc/mounts/%s rw - ext4 x rw\n" % GUID_B
+    )
+    ok, _why, ns = ti.job_view_verdict(text, GUID_B)
+    assert not ok
+    assert ns == "pid:[4026532800]"
 
 
 def test_ns_gone_script_waits_for_no_process_in_the_namespace() -> None:
@@ -326,7 +348,7 @@ def test_job_view_verdict() -> None:
     leaked = "60 22 0:36 / /mnt/rediacc/mounts/%s rw - ext4 x rw\n" % GUID_B
     ok, why, ns = ti.job_view_verdict(_job_view(extra=leaked), GUID_B)
     assert not ok
-    assert ns == ""
+    assert ns == JOB_NS
     assert GUID_B in why
     # Nothing read (a failed probe, NOJOB) proves nothing.
     for text in ("", "NOJOB\n"):
@@ -581,9 +603,9 @@ class FakeCtx:
             return Res(
                 0, "pid:[4026532999]\n===\n" + MOUNTINFO % {"a": GUID_A, "b": GUID_B} + extra
             )
-        if "|| echo ABSENT" in line:
+        if "echo PGREP_RC=" in line:
             # `visible`: a session sees another session's lingering job.
-            return Res(0, "4242\n") if "visible" in b else Res(0, "ABSENT\n")
+            return Res(0, "CONTROL_SEEN\nPGREP_RC=%d\n" % (0 if "visible" in b else 1))
         if "nohup sleep" in line:
             return Res(0, "STARTED\n")
         if "test -f" in line and ".vscode-server/.vmc-i1-" in line:
@@ -789,7 +811,7 @@ def test_the_lingering_job_rows_pass_and_run_in_order(tmp_path: pathlib.Path) ->
     # The namespace probe waits on the namespace the view probe read.
     assert any("NSGONE" in c and JOB_NS in c for c in ctx.calls)
     # B is probed from B's session, the fresh A from A's.
-    absent = [c for c in ctx.calls if c.startswith("rdc ") and "|| echo ABSENT" in c]
+    absent = [c for c in ctx.calls if c.startswith("rdc ") and "echo PGREP_RC=" in c]
     assert len(absent) == 2
     assert ctx.ref(ctx.tags[1]) in absent[0]
     assert ctx.ref(ctx.tags[0]) in absent[1]

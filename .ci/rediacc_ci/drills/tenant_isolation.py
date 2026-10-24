@@ -2,7 +2,7 @@
 
 `vm_check.py` registers this module once, through `EXTRA_RENET_STEPS`, as the `I1` step of the renet phase; `--only I1` drags in V1.2 (and with it P5 and V1.1), so the run's forks A and B exist when `run(ctx)` is called. `ctx` is the running `VmCheck`: every VM action goes through its `./rdc.sh` helpers (`rdc`, `shell`), its raw ssh probe recipe (`vm_ssh.ssh_argv` through `host_run`, the U1 pattern) and its ledger (`check`, `record`). Every row records under the step id `I1`, its plan row named in the description, and asserts the FIXED behaviour; a defect is a FAIL row, never papered over.
 
-THE ROWS. I1.1 the sandbox's group list; I1.2 the own Docker socket answers and the neighbour's refuses; I1.3 the gate's peer-cgroup check (403 from A's exec cgroup, 200 from outside every repo cgroup); I1.4 the gate seeds a never-seen compose service and the repository default; I1.5 a plain `docker run` in B cannot connect to a listener on an A address (EPERM) while A itself can; I1.6 the mount view and the session PID namespace; I1.8 a session's nohup background job outlives the session in that session's own PID namespace and private view, invisible to B and to a fresh A session, and the namespace ends with its last job, while VS Code's connection keeps its server and its exec channel returns at once; I1.7 deleting a fork removes its cgroups, map entries and socket group.
+THE ROWS. I1.1 the sandbox's group list; I1.2 the own Docker socket answers and the neighbour's refuses; I1.3 the gate's peer-cgroup check (403 from A's exec cgroup, 200 from outside every repo cgroup); I1.4 the gate seeds a never-seen compose service and the repository default; I1.5 a plain `docker run` in B cannot connect to a listener on an A address (EPERM) while A itself can; I1.6 the mount view and the session PID namespace; I1.8 a session's nohup background job outlives the session in that session's own PID namespace and private view, invisible to B and to a fresh A session, and the namespace ends with its last job, while VS Code's connection keeps its server and its exec channel returns within ALIAS_CHANNEL_MAX_MS rather than when its job ends; I1.7 deleting a fork removes its cgroups, map entries and socket group.
 
 THE ROOT GO TESTS (rows `I1.R`). RB's and RC's acceptance lines (`TestPrivateRepoViewLinux`, the `ebpf_e2e` tests) need root on a real kernel. A pre-bash guard refuses hand-copying binaries to a VM with scp/ssh, so they travel the way vm_check already moves files: `go test -c` builds the test binaries on the host (the way U1 builds its pre-isolation renet), `rdc repo sync upload` puts them into the throwaway fork C's mount, and the run's ssh probe executes them under sudo from a private staging directory it removes again. Fork C's deletion (I1.7) takes the uploaded copies with it. A test that SKIPs (no root, missing kernel prerequisite) is a FAIL row: only `--- PASS` counts.
 
@@ -364,13 +364,37 @@ def job_view_verdict(text: str, guid_b: str) -> tuple[bool, str, str]:
         why.append("B's guid %s is mounted in the job's view" % guid_b)
     ev = "job %s, worker %s, guids %s" % (job_ns or "-", host_ns or "-", guids)
     if why:
-        return False, "; ".join(why) + " (%s)" % ev, ""
+        # A namespace of the job's own is returned even when only the view failed, so the drain row still runs (review 55ab6cf1.2); the worker's own namespace never is.
+        own = job_ns if re.fullmatch(r"pid:\[\d+\]", job_ns) and job_ns != host_ns else ""
+        return False, "; ".join(why) + " (%s)" % ev, own
     return True, ev, job_ns
 
 
 def absent_script(seconds: int) -> str:
-    """A sandbox shell's probe for the `sleep <seconds>` job: its pid when visible, ABSENT otherwise."""
-    return "pgrep -f %s || echo ABSENT" % shlex.quote("^sleep %d$" % seconds)
+    """A sandbox shell's probe for the `sleep <seconds>` job, with a positive control: the shell starts its own `sleep <seconds+1>` and must see that one (CONTROL_SEEN), so a pgrep that cannot look at processes at all never reads as the job being absent; PGREP_RC is the status of the search for the job (1 = not found)."""
+    control = shlex.quote("^sleep %d$" % (seconds + 1))
+    return (
+        "sleep %d & c=$!; pgrep -f %s >/dev/null && echo CONTROL_SEEN || echo CONTROL_MISSING; "
+        "pgrep -f %s >/dev/null; r=$?; kill $c 2>/dev/null; echo PGREP_RC=$r"
+        % (seconds + 1, control, shlex.quote("^sleep %d$" % seconds))
+    )
+
+
+def absent_verdict(text: str) -> tuple[bool, str]:
+    """(job absent, evidence) from `absent_script`'s output: the control was seen and the job search found nothing (status 1)."""
+    seen = "CONTROL_SEEN" in text
+    rc = re.findall(r"^PGREP_RC=(\d+)\s*$", text, re.MULTILINE)
+    status = rc[-1] if rc else None
+    if not seen:
+        return (
+            False,
+            "the positive control (the shell's own sleep) was not seen, so pgrep did not look",
+        )
+    if status != "1":
+        return False, "the job search returned %s, not 1 (found, or pgrep failed)" % (
+            status or "nothing"
+        )
+    return True, "control seen, job search status 1"
 
 
 def alive_script(seconds: int) -> str:
@@ -717,18 +741,20 @@ class _LiveI1:
             why if view.rc == 0 else "%s; %s" % (why, view.text()),
         )
         b_sees = self.ctx.shell(self.ref_b, absent_script(secs))
+        b_ok, b_why = absent_verdict(b_sees.out)
         self.check(
             "I1.8 B's session does not see A's lingering job",
-            b_sees.rc == 0 and "ABSENT" in b_sees.out,
+            b_sees.rc == 0 and b_ok,
             b_sees,
-            b_sees.text() if b_sees.rc == 0 else self.ev(b_sees),
+            b_why if b_sees.rc == 0 else self.ev(b_sees),
         )
         a_sees = self.ctx.shell(self.ref_a, absent_script(secs))
+        a_ok, a_why = absent_verdict(a_sees.out)
         self.check(
             "I1.8 a fresh A session does not see the job either (each session has its own PID namespace)",
-            a_sees.rc == 0 and "ABSENT" in a_sees.out,
+            a_sees.rc == 0 and a_ok,
             a_sees,
-            a_sees.text() if a_sees.rc == 0 else self.ev(a_sees),
+            a_why if a_sees.rc == 0 else self.ev(a_sees),
         )
         if not job_ns:
             self.check(
@@ -1001,6 +1027,7 @@ __all__ = [
     "STEP",
     "STEP_ID",
     "absent_script",
+    "absent_verdict",
     "alive_script",
     "build_tests_script",
     "compose_body",
