@@ -35,7 +35,7 @@ const sourceDir = path.join(TRANSCRIPT_DIR, SOURCE_LANG);
 const files = fs
   .readdirSync(sourceDir)
   .filter((f) => f.endsWith('.json'))
-  .sort();
+  .sort((a, b) => Number(a > b) - Number(a < b));
 
 for (const file of files) {
   const sourcePath = path.join(sourceDir, file);
@@ -155,9 +155,19 @@ for (const file of files) {
             nextChapters[key] = todoFor('chapter', srcChapters[key]);
           }
         }
-        const beforeKeys = Object.keys(existingChapters).sort().join(',');
-        const afterKeys = Object.keys(nextChapters).sort().join(',');
-        if (beforeKeys !== afterKeys || beforeKeys !== Object.keys(srcChapters).sort().join(',')) {
+        const beforeKeys = Object.keys(existingChapters)
+          .sort((a, b) => Number(a > b) - Number(a < b))
+          .join(',');
+        const afterKeys = Object.keys(nextChapters)
+          .sort((a, b) => Number(a > b) - Number(a < b))
+          .join(',');
+        if (
+          beforeKeys !== afterKeys ||
+          beforeKeys !==
+            Object.keys(srcChapters)
+              .sort((a, b) => Number(a > b) - Number(a < b))
+              .join(',')
+        ) {
           existing.chapters = nextChapters;
           changed = true;
         } else {

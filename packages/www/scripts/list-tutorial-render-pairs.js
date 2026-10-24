@@ -39,7 +39,7 @@ function parseArgs(argv) {
     staleOnly: false,
     requireProvider: null,
     root: REPO_ROOT,
-    selftest: false,
+    selftest: argv.includes('--selftest'),
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -48,7 +48,7 @@ function parseArgs(argv) {
       return argv[i];
     };
     if (arg === '--stale-only') opts.staleOnly = true;
-    else if (arg === '--selftest') opts.selftest = true;
+    else if (arg === '--selftest') continue;
     else if (arg === '--lang') opts.langs = new Set(next().split(','));
     else if (arg === '--cast') opts.cast = next();
     else if (arg === '--require-provider') opts.requireProvider = next();

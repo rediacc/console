@@ -48,9 +48,10 @@ const AUDIO_LANGUAGES = SITE_LOCALES;
 // --lang/--cast/--quiet exist so an orchestrator can ask "is locale X finished and consistent?" between a narration run and dispatching its renders. Everything this file already checks -- transcriptHash vs a recomputed hash, step count vs transcript events, per-step id/markerIndex/narrationText equality, replay monotonicity, audioSrc existence, wordTimings structure and ordering
 // -- is exactly that readiness question, so the alternative (a done-marker file written by the producer) would be a weaker claim about the same thing.
 function parseCliArgs(argv) {
-  // Typed: without it TypeScript infers `null` from the initializer and every `opts.langs ? …` guard below reads as dead code, though `--lang` fills it in.
-  /** @type {{ langs: Set<string> | null; casts: Set<string> | null; quiet: boolean }} */
-  const opts = { langs: null, casts: null, quiet: false };
+  // Collected in lets and arrays, then folded to `Set | null` on return: an object literal seeded with `null` reads as `null` for the whole file and every `CLI.langs ? …` guard below would look dead.
+  const langs = [];
+  const casts = [];
+  let quiet = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     const take = (name) => {
@@ -63,17 +64,17 @@ function parseCliArgs(argv) {
       return null;
     };
     if (arg === '--quiet' || arg === '-q') {
-      opts.quiet = true;
+      quiet = true;
       continue;
     }
     const lang = take('--lang');
     if (lang) {
-      opts.langs = new Set((opts.langs ? [...opts.langs] : []).concat(lang.split(',')));
+      langs.push(...lang.split(','));
       continue;
     }
     const cast = take('--cast');
     if (cast) {
-      opts.casts = new Set((opts.casts ? [...opts.casts] : []).concat(cast.split(',')));
+      casts.push(...cast.split(','));
       continue;
     }
     if (arg === '--help' || arg === '-h') {
@@ -88,7 +89,11 @@ function parseCliArgs(argv) {
     console.error(`validate-tutorial-audio: unknown argument ${arg}`);
     process.exit(2);
   }
-  return opts;
+  return {
+    langs: langs.length > 0 ? new Set(langs) : null,
+    casts: casts.length > 0 ? new Set(casts) : null,
+    quiet,
+  };
 }
 
 const CLI = parseCliArgs(process.argv.slice(2));

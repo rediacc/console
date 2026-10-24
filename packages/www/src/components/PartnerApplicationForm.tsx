@@ -202,8 +202,8 @@ const PartnerApplicationForm: React.FC = () => {
   const phoneRef = useRef<HTMLInputElement>(null);
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
-  const turnstileRef = useRef<TurnstileInstance>(undefined);
-  const hasFiredStart = useRef(false);
+  const turnstileRef = useRef<TurnstileInstance | undefined>(undefined);
+  const hasFiredStart = useRef<boolean>(false);
 
   const togglePartnerType = (value: PartnerType) => {
     setPartnerTypes((prev) =>

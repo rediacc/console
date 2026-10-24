@@ -281,7 +281,8 @@ async function main(): Promise<number> {
           `${MAX_FLAT_CUE_SHARE * 100}% budget. Cause is per-cue alignment coverage, not a ` +
           `missing --subtitle run. Not fatal, but not nothing:\n`
       );
-      for (const u of underBudget.sort()) console.log(`  ${u}`);
+      for (const u of underBudget.sort((a, b) => Number(a > b) - Number(a < b)))
+        console.log(`  ${u}`);
     }
     console.log(
       `\n✓ Caption sync OK: ${targets.length} combos checked, none over the flat-cue budget.`
