@@ -5560,6 +5560,26 @@ export const GATES: readonly GateSpec[] = [
       step: 'Proxy image smoke',
     },
   },
+  // The Worker and its container together (agent/plans/PLAN-cloudflare-proxy.md A6): `wrangler dev` builds the executor image on the local docker host, and a valid bearer must reach `rdc serve --mode container` inside it while a missing or inactive one gets 401 and starts no container. Builds the same image as the smoke above, hence slow and heavy. Hand-registered for the same reason.
+  //
+  // NO `paths`: it depends on the Worker, the Dockerfile, the whole CLI workspace the image bundles and the staged renet, and a partial table would make `--changed` drop it silently.
+  {
+    id: 'check:ci-proxy-wrangler-dev-e2e',
+    run: 'npm run check:ci-proxy-wrangler-dev-e2e',
+    slow: true,
+    gate: true,
+    heavy: true,
+    // Stages renet exactly as check:ci-proxy-image-smoke does (it calls the same `_stage_renet`), into the same build context, so it holds the same claim; the two would otherwise race on one file.
+    mutex: ['tree:repo'],
+    writesTree:
+      'stages workers/proxy/renet/renet-linux-amd64 into the docker build context (Dockerfile:54 COPY) when none is staged',
+    leaves: ['.ci/scripts/quality/check_proxy_wrangler_dev_e2e.py'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: needs docker and wrangler containers: the gate runs the proxy Worker under `wrangler dev`, whose Containers runtime builds workers/proxy/Dockerfile and starts the executor on a local docker daemon. No ci-quality.yml lane has a docker daemon for wrangler to drive, and the image half alone already runs in CI as check:ci-proxy-image-smoke (ci-build-renet.yml proxy-image-smoke). Exits 77 (blocked, never green) on a host without docker or wrangler.',
+    },
+  },
   // >>> gen-manifest: region 49
   {
     id: 'check:ci-cli-proxy-safe-output',

@@ -508,6 +508,7 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `-m, --machine <name>`: Machine name
 - `--datastore <name>`: Restore into this named datastore (its attached machine hosts it)
 - `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
+- `--any-stream`: With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)
 - `--up`: Deploy the restored repository after the transfer
 - `--health-window <seconds>`: Total health-gate window in seconds (default 300)
 - `--health-timeout <seconds>`: Per-attempt health-check timeout in seconds (default 30)

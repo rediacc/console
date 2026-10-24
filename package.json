@@ -194,6 +194,7 @@
     "check:ci-bash-lib-ported": ".ci/scripts/quality/check_bash_lib_ported.py",
     "check:ci-container-build-context": ".ci/scripts/quality/check_container_build_context.py",
     "check:ci-proxy-image-smoke": ".ci/scripts/quality/check_proxy_image_smoke.py",
+    "check:ci-proxy-wrangler-dev-e2e": ".ci/scripts/quality/check_proxy_wrangler_dev_e2e.py",
     "check:ci-proxy-cost-guard": ".ci/scripts/quality/check_proxy_cost_guard.py",
     "check:ci-portal-sitekey-guard": ".ci/scripts/quality/check_portal_sitekey_guard.py",
     "check:ci-cli-proxy-safe-output": ".ci/scripts/quality/check_cli_proxy_safe_output.py",

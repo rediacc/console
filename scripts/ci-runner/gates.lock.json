@@ -5903,6 +5903,24 @@
     }
   },
   {
+    "id": "check:ci-proxy-wrangler-dev-e2e",
+    "run": "npm run check:ci-proxy-wrangler-dev-e2e",
+    "slow": true,
+    "gate": true,
+    "heavy": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "stages workers/proxy/renet/renet-linux-amd64 into the docker build context (Dockerfile:54 COPY) when none is staged",
+    "leaves": [
+      ".ci/scripts/quality/check_proxy_wrangler_dev_e2e.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: needs docker and wrangler containers: the gate runs the proxy Worker under `wrangler dev`, whose Containers runtime builds workers/proxy/Dockerfile and starts the executor on a local docker daemon. No ci-quality.yml lane has a docker daemon for wrangler to drive, and the image half alone already runs in CI as check:ci-proxy-image-smoke (ci-build-renet.yml proxy-image-smoke). Exits 77 (blocked, never green) on a host without docker or wrangler."
+    }
+  },
+  {
     "id": "check:ci-cli-proxy-safe-output",
     "run": "npm run check:ci-cli-proxy-safe-output",
     "gate": true,
