@@ -811,7 +811,11 @@ export function classifyDrops(
   manifest: string
 ): { claimed: string[]; unclaimed: string[] } {
   const stepOf = (d: string) => d.slice(d.indexOf(': ') + 2);
-  const live = dropped.filter((d) => !emitted.has(d) && !allowDrop.has(stepOf(d)));
+  // A step dropped from one lane's region and emitted into another lane of the same workflow MOVED: the rewrite regenerates it, `env:` and `if:` included, from the same gate, so nothing is lost (#d8e23921: the retired-terms lane move quality-static -> quality-security needed --allow-drop).
+  const emittedSteps = new Set([...emitted].map(stepOf));
+  const live = dropped.filter(
+    (d) => !emitted.has(d) && !emittedSteps.has(stepOf(d)) && !allowDrop.has(stepOf(d))
+  );
   return {
     claimed: live.filter((d) => manifest.includes(`step: '${stepOf(d)}'`)),
     unclaimed: live.filter((d) => !manifest.includes(`step: '${stepOf(d)}'`)),
@@ -1867,6 +1871,17 @@ function selftest(endToEnd = false): number {
   ck(
     'CONTROL: --allow-drop matches the STEP, not a prefix of it, so it cannot over-silence',
     classifyDrops(DROP, none, new Set(['Check']), '').unclaimed.length === 1
+  );
+  ck(
+    'a step dropped from one lane and emitted into another lane MOVED, in neither bucket',
+    classifyDrops(DROP, new Set(['quality-security: Check X']), none, MANIFEST_WITH).claimed
+      .length === 0 &&
+      classifyDrops(DROP, new Set(['quality-security: Check X']), none, '').unclaimed.length === 0
+  );
+  ck(
+    'CONTROL: a different step emitted elsewhere does not excuse the drop',
+    classifyDrops(DROP, new Set(['quality-security: Check Y']), none, MANIFEST_WITH).claimed
+      .length === 1
   );
   ck(
     'CONTROL: an empty drop list is silent, so the guard cannot fire on a clean rewrite',
