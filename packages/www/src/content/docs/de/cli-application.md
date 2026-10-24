@@ -7,7 +7,7 @@ order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "69bf8eb459276ef3"
+sourceHash: "27dfafe606682b0a"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2238,6 +2238,7 @@ rdc backup restore <artifact-ref> [options]
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--datastore <name>` | {{t:cli.commands.backup.restore.optionDatastore}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--at <time>` | {{t:cli.commands.backup.restore.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--any-stream` | {{t:cli.commands.backup.restore.optionAnyStream}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.backup.restore.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--health-window <seconds>` | {{t:cli.options.healthWindow}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--health-timeout <seconds>` | {{t:cli.options.healthTimeout}} | {{t:cli.docs.optionLabels.no}} | - |

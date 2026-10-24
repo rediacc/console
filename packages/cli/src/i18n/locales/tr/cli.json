@@ -59,6 +59,7 @@
           "basic": "Bir yedeği bir makineye geri yükle."
         },
         "failed": "{{name}} geri yüklemesi başarısız oldu",
+        "optionAnyStream": "--at ile birlikte, başka makinelerin ve bu soyun fork'larının yazdığı anlık görüntüleri de dikkate alır (varsayılan: yalnızca bu depo, kaynak makinesinde)",
         "optionAs": "Geri yüklenen depo için ad (varsayılan: artefakt adı)",
         "optionAt": "Belirli bir zamana geri yükle: bir anlık görüntü kimliği veya RFC3339 saati (parça depolamadan geri yükleme)",
         "optionDatastore": "Bu adlandırılmış veri deposuna geri yükle (bağlı olduğu makine onu barındırır)",
@@ -71,6 +72,7 @@
         "restoringSnapshot": "{{name}}, {{snapshot}} anlık görüntüsünden geri yükleniyor...",
         "sourceUnknown": "Bu yapılandırmada \"{{name}}\" adlı bir depo bilinmiyor, bu yüzden yedek artefaktı bulunamıyor.",
         "storageRetired": "Depolama arka ucundan geri yükleme kaldırıldı: rclone bulut kolu artık yok. Belirli bir ana geri dönüş `rdc backup restore <repo> --at <snapshot>` ile, parça deposu üzerinden yapılır",
+        "streamUnknown": "Bu deponun kaynak makinesindeki yedek akışı hangisi, belirlenemiyor (makine, dizinin listelediği işlenmiş bir anlık görüntü bildirmiyor). Bu soyun tüm akışları arasından seçmek için --any-stream kullanın.",
         "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin."
       },
       "retention": {

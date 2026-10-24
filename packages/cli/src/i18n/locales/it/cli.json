@@ -59,6 +59,7 @@
           "basic": "Ripristina un backup su una macchina."
         },
         "failed": "Ripristino di {{name}} non riuscito",
+        "optionAnyStream": "Con --at, considera anche gli snapshot scritti da altre macchine e dai fork di questa linea (predefinito: solo questo repository sulla sua macchina di origine)",
         "optionAs": "Nome per il repository ripristinato (predefinito: il nome dell'artefatto)",
         "optionAt": "Ripristina a un punto nel tempo: un ID di snapshot o un orario RFC3339 (ripristino da storage a chunk)",
         "optionDatastore": "Ripristina in questo datastore con nome (la macchina a cui è collegato lo ospita)",
@@ -71,6 +72,7 @@
         "restoringSnapshot": "Ripristino di {{name}} dallo snapshot {{snapshot}} in corso...",
         "sourceUnknown": "Nessun repository chiamato \"{{name}}\" è noto in questa configurazione, quindi il suo artefatto di backup non può essere individuato.",
         "storageRetired": "Il ripristino da un backend di storage è dismesso: il braccio cloud rclone è stato rimosso. Il ripristino puntuale si fa con `rdc backup restore <repo> --at <snapshot>` sul chunk store",
+        "streamUnknown": "Impossibile stabilire quale flusso di backup appartenga a questo repository sulla sua macchina di origine (la macchina non segnala alcuno snapshot confermato che l'indice elenchi). Usa --any-stream per scegliere tra tutti i flussi di questa linea.",
         "targetExists": "\"{{name}}\" esiste già. Ripristina con un altro nome (--as) oppure elimina prima il repository esistente."
       },
       "retention": {

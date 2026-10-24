@@ -59,6 +59,7 @@
           "basic": "Restaurer une sauvegarde sur une machine."
         },
         "failed": "Échec de la restauration de {{name}}",
+        "optionAnyStream": "Avec --at, tient aussi compte des instantanés écrits par d'autres machines et des forks de cette lignée (par défaut : seulement ce dépôt sur sa machine source)",
         "optionAs": "Nom du dépôt restauré (par défaut : le nom de l'artefact)",
         "optionAt": "Restaurer à un instant donné : un identifiant d'instantané ou une heure RFC3339 (restauration depuis le stockage fragmenté)",
         "optionDatastore": "Restaurer dans ce datastore nommé (sa machine attachée l'héberge)",
@@ -71,6 +72,7 @@
         "restoringSnapshot": "Restauration de {{name}} depuis l'instantané {{snapshot}}...",
         "sourceUnknown": "Aucun dépôt nommé \"{{name}}\" n'est connu dans cette configuration, son artefact de sauvegarde est donc introuvable.",
         "storageRetired": "La restauration depuis un backend de stockage est retirée : le bras cloud rclone a été supprimé. La restauration ponctuelle passe par `rdc backup restore <repo> --at <snapshot>` via le magasin de blocs",
+        "streamUnknown": "Impossible de déterminer quel flux de sauvegarde correspond à ce dépôt sur sa machine source (la machine ne signale aucun instantané validé que l'index répertorie). Utilisez --any-stream pour choisir parmi tous les flux de cette lignée.",
         "targetExists": "\"{{name}}\" existe déjà. Restaurez sous un autre nom (--as) ou supprimez d'abord le dépôt existant."
       },
       "retention": {

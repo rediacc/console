@@ -59,6 +59,7 @@
           "basic": "Ein Backup auf einer Maschine wiederherstellen."
         },
         "failed": "Wiederherstellung von {{name}} fehlgeschlagen",
+        "optionAnyStream": "Mit --at auch Snapshots berücksichtigen, die von anderen Maschinen und Forks dieser Linie geschrieben wurden (Standard: nur dieses Repository auf seiner Quellmaschine)",
         "optionAs": "Name für das wiederhergestellte Repository (Standard: Artefaktname)",
         "optionAt": "Zu einem Zeitpunkt wiederherstellen: eine Snapshot-ID oder eine RFC3339-Zeit (Chunk-Store-Wiederherstellung)",
         "optionDatastore": "In diesen benannten Datenspeicher wiederherstellen (dessen angehängte Maschine hostet ihn)",
@@ -71,6 +72,7 @@
         "restoringSnapshot": "{{name}} wird aus Snapshot {{snapshot}} wiederhergestellt...",
         "sourceUnknown": "Kein Repository mit dem Namen \"{{name}}\" ist in dieser Konfiguration bekannt, daher kann sein Backup-Artefakt nicht gefunden werden.",
         "storageRetired": "Die Wiederherstellung aus einem Storage-Backend ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Point-in-Time-Wiederherstellung läuft über `rdc backup restore <repo> --at <snapshot>` im Chunk-Store",
+        "streamUnknown": "Es lässt sich nicht bestimmen, welcher Backup-Stream zu diesem Repository auf seiner Quellmaschine gehört (die Maschine meldet keinen committeten Snapshot, den der Index auflistet). Mit --any-stream wählen Sie unter allen Streams dieser Linie.",
         "targetExists": "\"{{name}}\" existiert bereits. Stellen Sie unter einem anderen Namen wieder her (--as) oder löschen Sie zuerst das vorhandene Repository."
       },
       "retention": {

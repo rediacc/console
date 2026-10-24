@@ -394,7 +394,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": null,
+          "descriptionKey": "commands.backup.restore.optionAnyStream",
           "label": "With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)"
         },
         {

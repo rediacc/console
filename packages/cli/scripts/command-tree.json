@@ -1472,6 +1472,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--any-stream",
+              "descriptionKey": "commands.backup.restore.optionAnyStream",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--up",
               "descriptionKey": "commands.backup.restore.optionUp",
               "mandatory": false,

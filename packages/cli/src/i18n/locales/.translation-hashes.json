@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1854,
+    "keyCount": 1856,
     "sourceCommit": "b3b74547b1b9d3f652cd99a43053aaa7d56e9913"
   },
   "hashes": {
@@ -49,6 +49,7 @@
     "commands.backup.restore.examples.asNewRepo": "4fd5a0ce",
     "commands.backup.restore.examples.basic": "2f262886",
     "commands.backup.restore.failed": "9aa9d821",
+    "commands.backup.restore.optionAnyStream": "35f8afb7",
     "commands.backup.restore.optionAs": "9db21279",
     "commands.backup.restore.optionAt": "d588a339",
     "commands.backup.restore.optionDatastore": "98313260",
@@ -61,6 +62,7 @@
     "commands.backup.restore.restoringSnapshot": "510f88ee",
     "commands.backup.restore.sourceUnknown": "5be0a248",
     "commands.backup.restore.storageRetired": "4d76f81c",
+    "commands.backup.restore.streamUnknown": "0af6cad1",
     "commands.backup.restore.targetExists": "658b0b83",
     "commands.backup.retention.clear.description": "5523f854",
     "commands.backup.retention.cleared": "d9ab604b",

@@ -59,6 +59,7 @@
           "basic": "Taasta varukoopia masinale."
         },
         "failed": "\"{{name}}\" taastamine ebaõnnestus",
+        "optionAnyStream": "Koos valikuga --at arvesta ka teiste masinate ja selle liini forkide kirjutatud hetktõmmiseid (vaikimisi ainult see hoidla oma lähtemasinas)",
         "optionAs": "Taastatud hoidla nimi (vaikimisi artefakti nimi)",
         "optionAt": "Taasta ajahetk: hetktõmmise ID või RFC3339 aeg (chunk-hoidla taastamine)",
         "optionDatastore": "Taasta sellesse nimega andmehoidlasse (seda majutab hoidla ühendatud masin)",
@@ -71,6 +72,7 @@
         "restoringSnapshot": "\"{{name}}\" taastamine hetktõmmisest {{snapshot}}...",
         "sourceUnknown": "Hoidlat nimega \"{{name}}\" ei tunta selles konfiguratsioonis, seega selle varukoopia artefakti ei õnnestu leida.",
         "storageRetired": "Salvestusteenusest taastamine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke taaste käib käsuga `rdc backup restore <repo> --at <snapshot>` tükihoidla kaudu",
+        "streamUnknown": "Ei õnnestu kindlaks teha, milline varundusvoog kuulub sellele hoidlale selle lähtemasinas (masin ei teata ühestki kinnitatud hetktõmmisest, mille indeks loetleb). Kasuta --any-stream, et valida selle liini kõigi voogude seast.",
         "targetExists": "\"{{name}}\" on juba olemas. Taasta teise nime all (--as) või kustuta esmalt olemasolev hoidla."
       },
       "retention": {

@@ -166,6 +166,6 @@ describe('resolveSnapshotAt stream scope', () => {
         anyStream: false,
         anchorSnapshotId: undefined,
       })
-    ).rejects.toThrow(/--any-stream/);
+    ).rejects.toThrow(/commands.backup.restore.streamUnknown/);
   });
 });

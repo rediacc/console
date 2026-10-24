@@ -59,6 +59,7 @@
           "basic": "Restaura uma cópia de segurança numa máquina."
         },
         "failed": "Falha na restauração de {{name}}",
+        "optionAnyStream": "Com --at, considera também os snapshots escritos por outras máquinas e forks desta linhagem (por omissão, só este repositório na sua máquina de origem)",
         "optionAs": "Nome para o repositório restaurado (por omissão, o nome do artefacto)",
         "optionAt": "Restaurar um ponto no tempo: um ID de snapshot ou uma hora RFC3339 (restauro a partir do armazenamento fragmentado)",
         "optionDatastore": "Restaurar para este datastore com nome (é alojado pela máquina a que está anexado)",
@@ -71,6 +72,7 @@
         "restoringSnapshot": "A restaurar {{name}} a partir do snapshot {{snapshot}}...",
         "sourceUnknown": "Não é conhecido nenhum repositório chamado \"{{name}}\" nesta configuração, pelo que o seu artefacto de cópia de segurança não pode ser localizado.",
         "storageRetired": "Restaurar de um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. A restauração pontual é feita com `rdc backup restore <repo> --at <snapshot>` sobre o chunk store",
+        "streamUnknown": "Não é possível determinar qual fluxo de backup pertence a este repositório na sua máquina de origem (a máquina não reporta nenhum snapshot confirmado que o índice liste). Use --any-stream para escolher entre todos os fluxos desta linhagem.",
         "targetExists": "\"{{name}}\" já existe. Restaure com outro nome (--as) ou elimine primeiro o repositório existente."
       },
       "retention": {

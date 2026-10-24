@@ -136,11 +136,7 @@ function registerBackupRestore(backup: Command): void {
     .option('-m, --machine <name>', t('options.machine'))
     .option('--datastore <name>', t('commands.backup.restore.optionDatastore'))
     .option('--at <time>', t('commands.backup.restore.optionAt'))
-    // Inline English, not a locale key: packages/cli/src/i18n/locales/** is held by other live plans (renet-bridge-leftovers T12, cloudflare-proxy, token-ip-rebind, config-sync-hardening, backup-toc-exact-opt-in). The key moves to cli.json and its 12 derived locales when that file is free.
-    .option(
-      '--any-stream',
-      'With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)'
-    )
+    .option('--any-stream', t('commands.backup.restore.optionAnyStream'))
     .option('--up', t('commands.backup.restore.optionUp'))
     .option('--health-window <seconds>', t('options.healthWindow'))
     .option('--health-timeout <seconds>', t('options.healthTimeout'))
@@ -393,9 +389,7 @@ function ownStreamOf(
 ): string {
   const anchor = manifests.find((m) => m.snapshotId === scope.anchorSnapshotId);
   if (!anchor) {
-    throw new ValidationError(
-      'Cannot tell which backup stream is this repo on its source machine (the machine reports no committed snapshot that the index lists). Pass --any-stream to choose among every stream of this lineage.'
-    );
+    throw new ValidationError(t('commands.backup.restore.streamUnknown'));
   }
   return anchor.streamId;
 }
