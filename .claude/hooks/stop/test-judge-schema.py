@@ -3228,12 +3228,32 @@ control(
     "abc",
 )
 
-# wire_schema strips maxLength at every depth, so clamp must reach every node that can carry one (review ced51132.1).
+# wire_schema strips exactly the limits clamp_to_schema enforces; a limit anywhere else stays on the wire for the CLI (reviews ced51132.1, 7734d259, ffba0743).
 _cut = {"maxLength": 4}
+_combo = {
+    "$defs": {"s": _cut},
+    "properties": {
+        "a": {"anyOf": [_cut, {"type": "null"}]},
+        "b": {"$ref": "#/$defs/s"},
+        "c": {"type": "array", "items": _cut},
+    },
+    "additionalProperties": _cut,
+}
+_combo_wire = wl_judge.wire_schema(_combo)
 control(
-    "PART 8: a maxLength under anyOf is clamped",
-    wl_judge.clamp_to_schema({"a": "abcdefgh"}, {"properties": {"a": {"anyOf": [_cut, {"type": "null"}]}}}),
-    {"a": "abcd"},
+    "PART 8: a maxLength under anyOf stays on the wire",
+    _combo_wire["properties"]["a"]["anyOf"][0].get("maxLength"),
+    4,
+)
+control(
+    "PART 8: a maxLength under $defs stays on the wire",
+    _combo_wire["$defs"]["s"].get("maxLength"),
+    4,
+)
+control(
+    "PART 8: a maxLength under items and additionalProperties leaves the wire",
+    (_combo_wire["properties"]["c"]["items"].get("maxLength"), _combo_wire["additionalProperties"].get("maxLength")),
+    (None, None),
 )
 control(
     "PART 8: a maxLength under additionalProperties is clamped",
@@ -3241,39 +3261,80 @@ control(
     {"x": "abcd"},
 )
 control(
-    "PART 8: a maxLength behind a $ref into $defs is clamped",
-    wl_judge.clamp_to_schema(
-        {"a": "abcdefgh"}, {"$defs": {"s": _cut}, "properties": {"a": {"$ref": "#/$defs/s"}}}
-    ),
-    {"a": "abcd"},
-)
-control(
-    "PART 8: a self-referencing $ref stops instead of recursing forever",
-    wl_judge.clamp_to_schema("abcdefgh", {"$defs": {"a": {"$ref": "#/$defs/a"}}, "$ref": "#/$defs/a"}),
-    "abcdefgh",
-)
-control(
-    "PART 8: a $ref into an array index with an escaped key resolves",
-    wl_judge.clamp_to_schema(
-        {"a": "abcdefgh"},
-        {"$defs": {"x/y": [{"maxLength": 4}]}, "properties": {"a": {"$ref": "#/$defs/x~1y/0"}}},
-    ),
-    {"a": "abcd"},
-)
-control(
-    "PART 8: anyOf keeps the least lossy branch a longer sibling allows",
-    wl_judge.clamp_to_schema("abcdefgh", {"anyOf": [{"maxLength": 4}, {"maxLength": 300}]}),
-    "abcdefgh",
-)
-control(
-    "CONTROL: anyOf with every branch shorter still cuts to the longest limit",
-    wl_judge.clamp_to_schema("abcdefgh", {"anyOf": [{"maxLength": 4}, {"maxLength": 6}]}),
-    "abcdef",
+    "PART 8: a maxLength under items is clamped",
+    wl_judge.clamp_to_schema(["abcdefgh"], {"items": _cut}),
+    ["abcd"],
 )
 control(
     "CONTROL: additionalProperties false leaves an unknown key alone",
     wl_judge.clamp_to_schema({"x": "abcdefgh"}, {"properties": {}, "additionalProperties": False}),
     {"x": "abcdefgh"},
+)
+
+
+def _stripped_unclamped(schema, value_for):
+    """Every path where wire_schema dropped a maxLength that clamp_to_schema does not then enforce on an overlong string."""
+    misses = []
+    wired = wl_judge.wire_schema(schema)
+
+    def walk(orig, wire, path):
+        if isinstance(orig, dict):
+            if "maxLength" in orig and "maxLength" not in (wire or {}):
+                probe = "x" * (orig["maxLength"] + 50)
+                if len(value_for(path, probe)) > orig["maxLength"]:
+                    misses.append(path)
+            for k, v in orig.items():
+                walk(v, (wire or {}).get(k) if isinstance(wire, dict) else None, (*path, k))
+        elif isinstance(orig, list):
+            for i, v in enumerate(orig):
+                walk(v, wire[i] if isinstance(wire, list) and i < len(wire) else None, (*path, i))
+
+    walk(schema, wired, ())
+    return misses
+
+
+def _steps(path):
+    """The schema path as value steps: ("key", name), ("item",) or ("extra",)."""
+    out, i = [], 0
+    while i < len(path):
+        if path[i] == "properties" and i + 1 < len(path):
+            out.append(("key", path[i + 1]))
+            i += 2
+        elif path[i] == "items":
+            out.append(("item",))
+            i += 1
+        elif path[i] == "additionalProperties":
+            out.append(("key", "zz_extra"))
+            i += 1
+        else:
+            return None
+    return out
+
+
+def _nest(path, probe):
+    value = probe
+    for step in reversed(_steps(path) or []):
+        value = [value] if step[0] == "item" else {step[1]: value}
+    return value
+
+
+def _dig(value, path):
+    for step in _steps(path) or []:
+        value = value[0] if step[0] == "item" else value[step[1]]
+    return value
+
+
+control(
+    "CONTROL: the stripped-but-unclamped walk sees a limit the clamp cannot reach",
+    _stripped_unclamped({"properties": {"a": {"maxLength": 4}}}, lambda _path, probe: probe),
+    [("properties", "a")],
+)
+control(
+    "PART 8: every limit the real judge schemas lose on the wire is clamped",
+    _stripped_unclamped(
+        _ml_all, lambda path, probe: _dig(wl_judge.clamp_to_schema(_nest(path, probe), _ml_all), path)
+    ),
+    [],
 )
 
 if Tally.fails:

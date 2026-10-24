@@ -214,20 +214,29 @@ def _sample_failed(env_out):
     )
 
 
-def wire_schema(schema):
-    """The schema as the CLI receives it: every `maxLength` becomes a prose limit in `description`, so the model SEES the limit but the CLI no longer REJECTS an overshoot.
+def wire_schema(schema, _clamped=True):
+    """The schema as the CLI receives it: every `maxLength` that `clamp_to_schema` enforces becomes a prose limit in `description`, so the model SEES the limit but the CLI no longer REJECTS an overshoot.
 
     THE BUG THIS FIXES, measured 2026-10-24 (stop of session d778be9d): "judge exited 1; subtype=error_max_structured_output_retries; stop_reason=tool_use; turns=6; cost=$0.0132", twice in a row, so the single retry did not help. Reproducing the real call with --output-format stream-json showed the child's StructuredOutput tool results: "Output does not match required schema: /reason: must NOT have more than 300 characters (got 310)", then 321, then 345, and so on. A hard `maxLength` makes the CLI bounce a verdict over the limit by a few characters, up to five times, and a model writing a dense multi-fact verdict overshoots 300 again on most re-asks (3 of 6 live runs of one realistic prompt needed a re-ask, one needed two). Tools were never the cause (`--tools ""` is in every argv) and the model was healthy.
 
-    The limit is a size budget for the session-facing text, not a validity condition, so it is enforced HERE, after the answer arrives (`clamp_to_schema`), never by rejecting the answer. A judge that fails still blocks; this only stops a verdict that exists from being thrown away for being 10 characters long.
+    The limit is a size budget for the session-facing text, not a validity condition, so it is enforced HERE, after the answer arrives (`clamp_to_schema`), never by rejecting the answer. Only a node `clamp_to_schema` walks (the root, then `properties`, `items` and `additionalProperties`) loses its `maxLength`; a node under a combinator, `$defs` or anything else keeps it on the wire, where the CLI enforces it, so no limit is ever dropped unenforced (reviews ced51132.1, 7734d259, ffba0743: a clamp that chased every combinator and `$ref` grew a new edge case per review, and no judge schema uses either).
     """
     if isinstance(schema, list):
-        return [wire_schema(v) for v in schema]
+        return [wire_schema(v, False) for v in schema]
     if not isinstance(schema, dict):
         return schema
-    out = {k: wire_schema(v) for k, v in schema.items() if k != "maxLength"}
+    out = {}
+    for k, v in schema.items():
+        if k == "maxLength" and _clamped:
+            continue
+        if k == "properties" and isinstance(v, dict):
+            out[k] = {name: wire_schema(sub, _clamped) for name, sub in v.items()}
+        elif k in ("items", "additionalProperties"):
+            out[k] = wire_schema(v, _clamped)
+        else:
+            out[k] = wire_schema(v, False)
     limit = schema.get("maxLength")
-    if isinstance(limit, int) and not isinstance(limit, bool):
+    if _clamped and isinstance(limit, int) and not isinstance(limit, bool):
         note = "Keep under %d characters." % limit
         out["description"] = (
             ("%s %s" % (out["description"], note)) if out.get("description") else note
@@ -235,67 +244,10 @@ def wire_schema(schema):
     return out
 
 
-_JSON_TYPES = {
-    "string": str,
-    "object": dict,
-    "array": list,
-    "boolean": bool,
-    "null": type(None),
-    "integer": int,
-    "number": (int, float),
-}
-
-
-def _type_admits(schema, value):
-    """False only when `schema` declares a `type` that `value` cannot be, so an anyOf branch for another type (a `{"type": "null"}` beside a string limit) never wins the least-lossy pick by leaving a string uncut."""
-    if not isinstance(schema, dict) or "type" not in schema:
-        return True
-    names = schema["type"] if isinstance(schema["type"], list) else [schema["type"]]
-    for name in names:
-        kind = _JSON_TYPES.get(name)
-        if kind is None:
-            return True
-        if isinstance(value, bool) and name in ("integer", "number"):
-            continue
-        if isinstance(value, kind):
-            return True
-    return False
-
-
-def _resolve_ref(root, ref):
-    """The node a local JSON pointer (`#/...`) names, stepping through dicts and list indices with ~1 and ~0 decoded, or None."""
-    if not (isinstance(ref, str) and ref.startswith("#/")):
-        return None
-    target = root
-    for raw in ref[2:].split("/"):
-        part = raw.replace("~1", "/").replace("~0", "~")
-        if isinstance(target, dict):
-            target = target.get(part)
-        elif isinstance(target, list) and part.isdigit() and int(part) < len(target):
-            target = target[int(part)]
-        else:
-            return None
-    return target if isinstance(target, dict) else None
-
-
-def clamp_to_schema(value, schema, _root=None, _refs=()):
-    """`value` with every string cut to its schema `maxLength` (dicts and lists are changed in place and returned). The cut falls on the last word boundary that fits, and a limit with no boundary in its second half is a hard slice."""
+def clamp_to_schema(value, schema):
+    """`value` with every string cut to its schema `maxLength` (dicts and lists are changed in place and returned). The cut falls on the last word boundary that fits, and a limit with no boundary in its second half is a hard slice. It walks exactly the nodes whose limit `wire_schema` strips."""
     if not isinstance(schema, dict):
         return value
-    # wire_schema strips maxLength at every depth, so every node that can hold one is walked here too (reviews ced51132.1, 7734d259.1-.3). allOf applies every branch. anyOf/oneOf keep the least lossy branch, so a value a longer sibling allows is not cut to the shortest limit. A $ref resolves as a local JSON pointer; `_refs` holds the pointers followed without descending into the value, so a self-referencing pointer stops instead of recursing forever.
-    root = _root if _root is not None else schema
-    ref = schema.get("$ref")
-    if isinstance(ref, str) and ref not in _refs:
-        target = _resolve_ref(root, ref)
-        if target is not None:
-            value = clamp_to_schema(value, target, root, (*_refs, ref))
-    for branch in schema.get("allOf") or ():
-        value = clamp_to_schema(value, branch, root, _refs)
-    for key in ("anyOf", "oneOf"):
-        branches = [b for b in schema.get(key) or () if _type_admits(b, value)]
-        if branches:
-            outcomes = [clamp_to_schema(copy.deepcopy(value), b, root, _refs) for b in branches]
-            value = max(outcomes, key=lambda v: len(json.dumps(v, default=str)))
     if isinstance(value, str):
         limit = schema.get("maxLength")
         if isinstance(limit, int) and not isinstance(limit, bool) and len(value) > limit:
@@ -308,14 +260,14 @@ def clamp_to_schema(value, schema, _root=None, _refs=()):
         extra = schema.get("additionalProperties")
         for k in list(value):
             if k in props:
-                value[k] = clamp_to_schema(value[k], props[k], root)
+                value[k] = clamp_to_schema(value[k], props[k])
             elif isinstance(extra, dict):
-                value[k] = clamp_to_schema(value[k], extra, root)
+                value[k] = clamp_to_schema(value[k], extra)
         return value
     if isinstance(value, list):
         item = schema.get("items")
         for i, v in enumerate(value):
-            value[i] = clamp_to_schema(v, item, root)
+            value[i] = clamp_to_schema(v, item)
         return value
     return value
 
