@@ -42,7 +42,7 @@ export interface Env {
 /**
  * The environment `rdc serve --mode container` boots with.
  *
- * `rdc serve` refuses to start without REDIACC_TOKEN (packages/cli/src/commands/serve.ts), and it verifies callers, pulls configs and posts audit events against REDIACC_ACCOUNT_SERVER. The Worker's own EXECUTOR_TOKEN and ACCOUNT_URL are those two values; nothing else hands them to the container, so an instance built without them exits at boot.
+ * `rdc serve` refuses to start without REDIACC_TOKEN (packages/cli/src/commands/serve.ts), and it verifies callers, pulls configs and posts audit events against REDIACC_ACCOUNT_SERVER. The Worker's own EXECUTOR_TOKEN is the first; the second is ACCOUNT_URL, or `http://account.internal` when the Worker holds the ACCOUNT binding (ACCOUNT_EGRESS_HOST says why). Nothing else hands them to the container, so an instance built without them exits at boot.
  */
 export function executorEnvVars(env: Env): Record<string, string> {
   return {

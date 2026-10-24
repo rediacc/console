@@ -235,6 +235,21 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     expect(await seen[0]?.json()).toEqual({ token: CALLER });
   });
 
+  it('without the binding, forwards over a public fetch to ACCOUNT_URL (wrangler dev)', async () => {
+    const forwarded = vi.fn((_input: Request) => Promise.resolve(Response.json({ via: 'fetch' })));
+    vi.stubGlobal('fetch', forwarded);
+
+    const response = await forwardAccountEgress(
+      new Request(`http://${ACCOUNT_EGRESS_HOST}/account/api/v1/configs/executor-token`),
+      env()
+    );
+
+    expect(await response.json()).toEqual({ via: 'fetch' });
+    expect(forwarded.mock.calls[0]?.[0].url).toBe(
+      `${ACCOUNT_URL}/account/api/v1/configs/executor-token`
+    );
+  });
+
   it('refuses a path outside the account API and forwards nothing', async () => {
     const seen: Request[] = [];
     const response = await forwardAccountEgress(
