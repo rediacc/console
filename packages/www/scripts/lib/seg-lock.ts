@@ -15,7 +15,7 @@ import path from 'node:path';
  * a killed render never wedges the next one. The path matches what pool.sh used to take,
  * so a hand-run render and a pooled one still exclude each other.
  */
-export function segLockPath(tutorial: string): string {
+function segLockPath(tutorial: string): string {
   return path.join(tmpdir(), `rediacc-tut-seg.${tutorial}.lock`);
 }
 

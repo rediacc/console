@@ -6,6 +6,7 @@
  * refresh comes after it.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RepositoryConfig } from '../../../types/index.js';
 
@@ -123,7 +124,7 @@ function fakeDeps(opts: { status?: string | Error; runStdout?: string; runSucces
     },
     remoteRenetPath: '/usr/lib/rediacc/renet/1.2.3/renet',
     machineName: 'hostinger',
-    datastore: '/mnt/rediacc',
+    datastore: WK_DATASTORE_PATH,
     buildBaseVault: (params) => baseVault(params),
     run: vi.fn((vault: string) => {
       calls.push('run');
@@ -169,8 +170,8 @@ describe('shouldCheckRuntimeAfterUpload', () => {
 
 describe('buildRuntimeStatusCommand', () => {
   it('reads the status as JSON for the machine datastore', () => {
-    expect(buildRuntimeStatusCommand('/usr/bin/renet', '/mnt/rediacc', 'always')).toBe(
-      "sudo '/usr/bin/renet' runtime status --json --datastore '/mnt/rediacc' --policy 'always'"
+    expect(buildRuntimeStatusCommand('/usr/bin/renet', WK_DATASTORE_PATH, 'always')).toBe(
+      `sudo '/usr/bin/renet' runtime status --json --datastore '${WK_DATASTORE_PATH}' --policy 'always'`
     );
   });
 });

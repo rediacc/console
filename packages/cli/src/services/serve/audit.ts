@@ -49,7 +49,7 @@ export interface ExecutorAuditOptions {
  * a secret value on a `repo secret set`. The audit trail records WHAT ran and
  * WHO ran it, not the payload.
  */
-export function buildExecutorAuditEvent(
+function buildExecutorAuditEvent(
   event: ExecutorAuditEvent,
   idempotencyKey: string = randomUUID()
 ): AuditEvent {

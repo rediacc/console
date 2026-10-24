@@ -6,6 +6,7 @@ import net from 'node:net';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { type AuditEvent, AuditEventsRequestSchema } from '@rediacc/shared';
+import { repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import { type CliResult, CliRunner } from '../src/utils/CliRunner';
@@ -363,7 +364,7 @@ test.describe
       if (!forkGuid || networkId === undefined) {
         throw new Error(`repo fork recorded no GUID or network id for ${FORK_REF}`);
       }
-      forkSocket = `/var/run/rediacc/net-${networkId}/docker-${networkId}.sock`;
+      forkSocket = repoDockerSocketPath(networkId);
 
       stub = await startStubAccountServer();
       executor = await startExecutor(stub.url);

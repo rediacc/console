@@ -295,7 +295,7 @@ function buildHeaders(url: string): Record<string, string> {
   // Either name: this site read only GITHUB_TOKEN and was the reason every local
   // invocation set the same value twice. See scripts/lib/github-token.ts.
   const token = githubToken();
-  if (token && url.startsWith('https://api.github.com/')) {
+  if (token && url.startsWith(`${WK_GH_API_BASE}/`)) {
     headers['Authorization'] = `Bearer ${token}`;
     headers['Accept'] = 'application/vnd.github+json';
   }

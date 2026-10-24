@@ -844,7 +844,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .syncpackrc-reasons.json | 9 | JSON value |
 | agent/ledgers/plan-investigation.jsonl | 2 | inline |
 | agent/plans/PLAN-retire-bash-oracles.inventory.tsv | 35 | prose only (no live entry) |
-| knip.jsonc | 27 | // comment |
+| knip.jsonc | 28 | // comment |
 | package.json | 23 | JSON value |
 | pyproject.toml | 66 | # comment |
 | scripts/ci-runner/gates.lock.json | 31 | JSON value |

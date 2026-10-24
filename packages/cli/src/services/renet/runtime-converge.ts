@@ -38,10 +38,10 @@ const SKIP_ROUTER_RESTART_ENV = 'REDIACC_SKIP_ROUTER_RESTART';
 const NO_AUTO_CONVERGE = new Set<string>([CONVERGE_FUNCTION, 'machine_uninstall']);
 
 export type RuntimePolicy = 'epoch' | 'always';
-export const RUNTIME_POLICIES: readonly RuntimePolicy[] = ['epoch', 'always'];
+export const RUNTIME_POLICIES = ['epoch', 'always'] as const satisfies readonly RuntimePolicy[];
 
 /** One repository in `renet runtime status --json`. */
-export interface RuntimeRepoStatus {
+interface RuntimeRepoStatus {
   guid: string;
   name?: string;
   /** `current`, `stale` or `inactive`. */
@@ -62,7 +62,7 @@ export interface RuntimeStatus {
 }
 
 /** One repository's outcome in `renet runtime converge --json`. */
-export interface ConvergeResultRow {
+interface ConvergeResultRow {
   guid: string;
   name?: string;
   status: string;
@@ -135,7 +135,7 @@ function isRuntimeStatus(value: unknown): value is RuntimeStatus {
   return typeof v.stale === 'number' && Array.isArray(v.repos);
 }
 
-export function parseRuntimeStatus(stdout: string): RuntimeStatus {
+function parseRuntimeStatus(stdout: string): RuntimeStatus {
   const parsed = parseCapturedJson<unknown>(stdout);
   if (!isRuntimeStatus(parsed)) {
     throw new Error(`unexpected runtime status payload: ${stdout.slice(0, 160)}`);
@@ -303,7 +303,7 @@ export function routerRefreshAfterPass(input: {
 }
 
 /** What a dispatched converge run returns; the subset of ExecuteResult this module reads. */
-export interface ConvergeRunResult {
+interface ConvergeRunResult {
   success: boolean;
   stdout?: string;
   error?: string;

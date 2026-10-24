@@ -144,6 +144,10 @@
       "ignore": [
         // BLOCKER: intentionally unreferenced. Its render was disabled in SolutionPage.astro and PersonaPage.astro because every testimonial quote and impact metric behind it is invented and Rediacc has no public customers (rediacc/console#519). The component is kept, not deleted, so restoring it is a copy-paste once honest content exists; delete this entry when the render is re-enabled.
         "src/components/solution-pages/SPSocialProof.astro"
+      ],
+      "ignoreBinaries": [
+        // BLOCKER: the tutorial render takes its recording lock through util-linux flock(1) (scripts/lib/seg-lock.ts), so the kernel drops the lock when a render dies; a host tool, not an npm dependency
+        "flock"
       ]
     },
     "private/account": {
