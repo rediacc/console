@@ -1029,6 +1029,7 @@
         "autoStarting": "'{{machine}}'의 리포지토리 데몬 {{stale}}개가 아직 이전 런타임 구성으로 실행 중입니다. 하나씩 다시 시작합니다 (건너뛰려면 {{envVar}}=1 설정)",
         "completed": "'{{machine}}'의 런타임 수렴이 끝났습니다",
         "continueOnErrorOption": "리포지토리가 실패해도 작업을 멈추지 않고 계속 진행",
+        "denialLine": "    거부됨: {{service}}, {{field}}: {{message}}",
         "description": "이전 런타임 구성으로 실행 중인 리포지토리 데몬을 하나씩 다시 시작해 현재 구성으로 옮깁니다. renet 업로드 후에는 CLI가 알아서 실행하며, 직접 실행하면 계획을 미리 보거나 실패한 작업을 이어서 하거나 renet 바이너리가 바뀐 뒤 다시 시작할 수 있습니다.",
         "descriptionShort": "오래된 리포지토리 데몬을 현재 런타임 구성으로 이전",
         "dryRunOption": "아무것도 다시 시작하지 않고 계획만 표시",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "로컬 설정에 없는 오래된 리포지토리도 다시 시작 (환경 시크릿은 알 수 없음)",
         "jsonOption": "수렴 보고서를 JSON으로 표시",
         "nothingStale": "'{{machine}}'의 모든 리포지토리 데몬이 이미 현재 런타임 구성으로 실행 중입니다",
+        "passError": "converge 패스가 일찍 중단되었습니다: {{error}}",
         "planLine": "계획: 리포지토리 {{total}}개 중 {{stale}}개가 오래됨 (정책 {{policy}}, 런타임 에포크 {{epoch}})",
         "policyOption": "재시작 정책: epoch (구성 변경 시에만) 또는 always (renet 바이너리가 바뀔 때도)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (네트워크 {{networkId}}): {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "'{{machine}}'의 런타임을 수렴하는 중...",
         "startingDryRun": "'{{machine}}'의 런타임 수렴을 계획하는 중 (시험 실행)...",
         "statusUnreadable": "'{{machine}}'의 런타임 상태를 읽지 못해 어떤 리포지토리도 다시 시작하지 않았습니다: {{error}}",
-        "summaryLine": "수렴 {{converged}}, 건너뜀 {{skipped}}, 실패 {{failed}}, 대기 {{pending}}"
+        "summaryLine": "수렴 {{converged}}, 건너뜀 {{skipped}}, 실패 {{failed}}, 대기 {{pending}}",
+        "summaryLineDryRun": "전환 예정 {{would}}, 건너뜀 {{skipped}}, 실패 {{failed}}, 대기 {{pending}}"
       },
       "remove": {
         "confirm": "설정에서 머신 \"{{name}}\"을(를) 제거하시겠습니까?",

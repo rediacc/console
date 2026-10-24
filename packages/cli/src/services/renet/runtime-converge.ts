@@ -61,6 +61,23 @@ export interface RuntimeStatus {
   pending: boolean;
 }
 
+/**
+ * One refusal of the converge preflight (renet pkg/convergeguard): a container
+ * the current layout's Docker API gate would refuse, so the repo was skipped
+ * as `gate_refused` or `needs_device_grant` and keeps running on the old layout.
+ */
+export interface ConvergeDenial {
+  /** The compose service, or the container name for a live container; empty for a whole-file refusal. */
+  service: string;
+  /** `compose` or `container`. */
+  source: string;
+  field: string;
+  tier: string;
+  message: string;
+  /** `gate_refused` or `needs_device_grant`. */
+  kind: string;
+}
+
 /** One repository's outcome in `renet runtime converge --json`. */
 interface ConvergeResultRow {
   guid: string;
@@ -70,6 +87,9 @@ interface ConvergeResultRow {
   error?: string;
   network_id: number;
   duration_ms?: number;
+  denials?: ConvergeDenial[];
+  stale_unhandled?: boolean;
+  manual?: boolean;
 }
 
 export interface ConvergeSummary {
@@ -81,6 +101,8 @@ export interface ConvergeSummary {
   pending: number;
   current?: number;
   inactive?: number;
+  stale_unhandled?: number;
+  manual?: number;
 }
 
 /** `renet runtime converge --json`. */
@@ -90,9 +112,46 @@ export interface ConvergeReport {
   dry_run: boolean;
   aborted: boolean;
   resume_command?: string;
-  plan: { guid: string; name?: string; action: string; stale_reasons?: string[] }[];
+  plan: {
+    guid: string;
+    name?: string;
+    action: string;
+    stale_reasons?: string[];
+    denials?: ConvergeDenial[];
+  }[];
   results: ConvergeResultRow[];
   summary: ConvergeSummary;
+  /** Why the pass stopped before or while planning (a lock it could not take, an unreadable repo list). */
+  error?: string;
+}
+
+/** The counts the summary line prints, taken from the results themselves. */
+export interface ConvergeCounts {
+  converged: number;
+  wouldConverge: number;
+  skipped: number;
+  failed: number;
+  pending: number;
+  staleUnhandled: number;
+  manual: number;
+}
+
+/**
+ * Count the results by status. The summary line reads these, not the
+ * report's own summary, so it always matches the lines printed above it.
+ */
+export function countConvergeResults(report: ConvergeReport): ConvergeCounts {
+  const count = (status: string) => report.results.filter((r) => r.status === status).length;
+  const unhandled = report.results.filter((r) => r.stale_unhandled === true);
+  return {
+    converged: count('converged'),
+    wouldConverge: count('would_converge'),
+    skipped: count('skipped'),
+    failed: count('failed'),
+    pending: count('pending'),
+    staleUnhandled: unhandled.length,
+    manual: unhandled.filter((r) => r.manual === true).length,
+  };
 }
 
 /** The flags of `rdc machine converge`, mapped onto the bridge function's params. */
@@ -232,7 +291,12 @@ export function convergeResumeCommand(machineName: string): string {
   return `rdc machine converge ${machineName}`;
 }
 
-/** Print the plan line, one line per repository and the summary. */
+/**
+ * Print the plan line, one line per repository (a skipped repo with its
+ * reason and each preflight denial), the error that stopped the pass early,
+ * and a summary counted from the results: a real pass reports `converged`, a
+ * dry run `would converge`, never one under the other's name.
+ */
 export function renderConvergeReport(report: ConvergeReport, machineName: string): void {
   const stale = report.plan.filter((e) => (e.stale_reasons ?? []).length > 0).length;
   outputService.info(
@@ -256,17 +320,29 @@ export function renderConvergeReport(report: ConvergeReport, machineName: string
         detail,
       })
     );
+    for (const d of r.denials ?? []) {
+      outputService.info(
+        t('commands.machine.converge.denialLine', {
+          service: d.service || d.source,
+          field: d.field,
+          message: d.message,
+        })
+      );
+    }
   });
-  const s = report.summary;
+  if (report.error) {
+    outputService.warn(t('commands.machine.converge.passError', { error: report.error }));
+  }
+  const c = countConvergeResults(report);
+  const counts = { skipped: c.skipped, failed: c.failed, pending: c.pending };
   outputService.info(
-    t('commands.machine.converge.summaryLine', {
-      converged: s.converged + s.would_converge,
-      skipped: s.skipped,
-      failed: s.failed,
-      pending: s.pending,
-    })
+    report.dry_run
+      ? t('commands.machine.converge.summaryLineDryRun', { would: c.wouldConverge, ...counts })
+      : t('commands.machine.converge.summaryLine', { converged: c.converged, ...counts })
   );
-  if (report.aborted || s.failed > 0) {
+  // A manual-only stale_unhandled pass (hub, immutable) has nothing a resume could fix.
+  const resumable = c.staleUnhandled > c.manual && !report.dry_run;
+  if (report.aborted || report.error || c.failed > 0 || resumable) {
     outputService.warn(
       t('commands.machine.converge.resume', { command: convergeResumeCommand(machineName) })
     );

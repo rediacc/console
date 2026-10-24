@@ -30,12 +30,15 @@ const {
   buildRuntimeStatusCommand,
   collectEnvSecretsByGuid,
   convergeIfStale,
+  countConvergeResults,
   injectConvergeEnvSecrets,
   parseConvergeReport,
+  renderConvergeReport,
   routerRefreshAfterPass,
   shouldCheckRuntimeAfterUpload,
 } = await import('../runtime-converge.js');
 type AutoConvergeDeps = import('../runtime-converge.js').AutoConvergeDeps;
+type ConvergeReport = import('../runtime-converge.js').ConvergeReport;
 
 const GUID_A = 'aaaaaaaa-0000-4000-8000-000000000001';
 const GUID_B = 'bbbbbbbb-0000-4000-8000-000000000002';
@@ -327,5 +330,112 @@ describe('convergeIfStale', () => {
     await convergeIfStale(deps, { checkRuntime: true, routerRefreshDue: false });
 
     expect(mockWarn).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** Every line the report printed, info and warn, in order. */
+function printed(): string[] {
+  const lines: { order: number; text: string }[] = [];
+  for (const mock of [mockInfo, mockWarn]) {
+    mock.mock.calls.forEach((call, i) => {
+      lines.push({ order: mock.mock.invocationCallOrder[i], text: String(call[0]) });
+    });
+  }
+  return lines.sort((a, b) => a.order - b.order).map((l) => l.text);
+}
+
+const GATE_DENIAL = {
+  service: 'collabora',
+  source: 'compose',
+  field: 'CapAdd',
+  tier: 'hard',
+  message: 'capability "MKNOD" is refused',
+  kind: 'gate_refused',
+};
+
+function report(overrides: Partial<ConvergeReport>): ConvergeReport {
+  return {
+    policy: 'epoch',
+    runtime_epoch: 2,
+    dry_run: false,
+    aborted: false,
+    plan: [],
+    results: [],
+    summary: { total: 0, converged: 0, would_converge: 0, skipped: 0, failed: 0, pending: 0 },
+    ...overrides,
+  };
+}
+
+describe('renderConvergeReport', () => {
+  it('counts from the results, not from a summary that disagrees with them', () => {
+    const r = report({
+      plan: [{ guid: GUID_A, action: 'converged', stale_reasons: ['no_stamp'] }],
+      results: [
+        { guid: GUID_A, name: 'mail', status: 'converged', network_id: 3264 },
+        { guid: GUID_B, name: 'git', status: 'failed', network_id: 2880, error: 'boom' },
+      ],
+    });
+    expect(countConvergeResults(r)).toMatchObject({ converged: 1, failed: 1, wouldConverge: 0 });
+    renderConvergeReport(r, 'hostinger');
+    const lines = printed();
+    expect(lines).toContain('Converged 1, skipped 0, failed 1, pending 0');
+    expect(lines.some((l) => l.includes('rdc machine converge hostinger'))).toBe(true);
+  });
+
+  it('prints a skipped repo with its reason and every preflight denial', () => {
+    const r = report({
+      plan: [
+        { guid: GUID_A, action: 'skipped', stale_reasons: ['no_stamp'], denials: [GATE_DENIAL] },
+      ],
+      results: [
+        {
+          guid: GUID_A,
+          name: 'nextcloud',
+          status: 'skipped',
+          reason: 'gate_refused',
+          network_id: 2880,
+          denials: [GATE_DENIAL],
+          stale_unhandled: true,
+        },
+      ],
+    });
+    renderConvergeReport(r, 'hostinger');
+    const lines = printed();
+    const repoLine = lines.findIndex(
+      (l) => l.includes('nextcloud') && l.includes('skipped (gate_refused)')
+    );
+    expect(repoLine).toBeGreaterThanOrEqual(0);
+    expect(lines[repoLine + 1]).toBe(
+      '    refused: collabora, CapAdd: capability "MKNOD" is refused'
+    );
+    expect(lines).toContain('Converged 0, skipped 1, failed 0, pending 0');
+    // A gate-refused stale repo is fixable (compose or grant), so the resume command is named.
+    expect(lines.some((l) => l.includes('rdc machine converge hostinger'))).toBe(true);
+  });
+
+  it('prints would converge apart from converged on a dry run', () => {
+    const r = report({
+      dry_run: true,
+      results: [
+        { guid: GUID_A, status: 'would_converge', network_id: 3264 },
+        { guid: GUID_B, status: 'would_converge', network_id: 2880 },
+      ],
+    });
+    renderConvergeReport(r, 'hostinger');
+    const lines = printed();
+    expect(lines).toContain('Would converge 2, skipped 0, failed 0, pending 0');
+    expect(lines.some((l) => l.startsWith('Converged'))).toBe(false);
+  });
+
+  it('names the error of a pass that stopped before planning (the "Plan: 0 of 0" case)', () => {
+    renderConvergeReport(
+      report({ error: '/var/run/rediacc/reconcile.lock is held by another run: busy' }),
+      'hostinger'
+    );
+    const lines = printed();
+    expect(lines).toContain(
+      'The converge pass stopped early: /var/run/rediacc/reconcile.lock is held by another run: busy'
+    );
+    expect(lines.some((l) => l.includes('rdc machine converge hostinger'))).toBe(true);
   });
 });

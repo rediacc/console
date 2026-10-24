@@ -1029,6 +1029,7 @@
         "autoStarting": "'{{machine}}' 上有 {{stale}} 个仓库守护进程仍在使用旧的运行时布局，正在逐个重启（设置 {{envVar}}=1 可跳过）",
         "completed": "'{{machine}}' 上的运行时收敛已完成",
         "continueOnErrorOption": "某个仓库失败后继续执行，而不是停止整轮处理",
+        "denialLine": "    已拒绝：{{service}}，{{field}}：{{message}}",
         "description": "逐个重启仍在使用旧运行时布局的仓库守护进程，让它们切换到当前布局。上传 renet 后 CLI 会自动执行；手动运行可用于预览计划、继续失败的处理，或在 renet 二进制文件变更后重启。",
         "descriptionShort": "将过时的仓库守护进程迁移到当前运行时布局",
         "dryRunOption": "只显示计划，不重启任何内容",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "同时重启本地配置中没有的过时仓库（其环境密钥未知）",
         "jsonOption": "以 JSON 格式输出收敛报告",
         "nothingStale": "'{{machine}}' 上的所有仓库守护进程都已使用当前运行时布局",
+        "passError": "converge 处理提前停止：{{error}}",
         "planLine": "计划：{{total}} 个仓库中有 {{stale}} 个已过时（策略 {{policy}}，运行时纪元 {{epoch}}）",
         "policyOption": "重启策略：epoch（仅布局变更时） 或 always（renet 二进制文件变更时也重启）",
         "repoLine": "[{{index}}/{{count}}] {{name}}（网络 {{networkId}}）：{{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "正在收敛 '{{machine}}' 上的运行时...",
         "startingDryRun": "正在规划 '{{machine}}' 上的运行时收敛（试运行）...",
         "statusUnreadable": "无法读取 '{{machine}}' 的运行时状态，因此未重启任何仓库：{{error}}",
-        "summaryLine": "已收敛 {{converged}}，已跳过 {{skipped}}，失败 {{failed}}，待处理 {{pending}}"
+        "summaryLine": "已收敛 {{converged}}，已跳过 {{skipped}}，失败 {{failed}}，待处理 {{pending}}",
+        "summaryLineDryRun": "将迁移 {{would}}，跳过 {{skipped}}，失败 {{failed}}，待处理 {{pending}}"
       },
       "remove": {
         "confirm": "从配置中移除机器 \"{{name}}\"？",

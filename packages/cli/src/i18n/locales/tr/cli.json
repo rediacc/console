@@ -1029,6 +1029,7 @@
         "autoStarting": "'{{machine}}' üzerindeki {{stale}} depo daemon'u hâlâ eski runtime düzeniyle çalışıyor; tek tek yeniden başlatılıyor (atlamak için {{envVar}}=1 ayarlayın)",
         "completed": "'{{machine}}' üzerinde runtime eşitlemesi tamamlandı",
         "continueOnErrorOption": "Bir depo başarısız olduğunda turu durdurmak yerine devam et",
+        "denialLine": "    reddedildi: {{service}}, {{field}}: {{message}}",
         "description": "Hâlâ eski runtime düzeniyle çalışan her depo daemon'unu, güncel düzene geçmesi için tek tek yeniden başlatır. CLI bunu renet yüklemesinden sonra kendiliğinden yapar; elle çalıştırmak planı önceden görmek, yarım kalan bir turu sürdürmek ya da renet ikili dosyasındaki herhangi bir değişiklikten sonra yeniden başlatmak için işe yarar.",
         "descriptionShort": "Eski kalmış depo daemon'larını güncel runtime düzenine taşı",
         "dryRunOption": "Hiçbir şeyi yeniden başlatmadan yalnızca planı göster",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "Yerel yapılandırmada bulunmayan eski depoları da yeniden başlat (ortam sırları bilinmiyor)",
         "jsonOption": "Eşitleme raporunu JSON olarak göster",
         "nothingStale": "'{{machine}}' üzerindeki tüm depo daemon'ları zaten güncel runtime düzeniyle çalışıyor",
+        "passError": "Converge geçişi erken durdu: {{error}}",
         "planLine": "Plan: {{total}} deponun {{stale}} tanesi eski (ilke {{policy}}, runtime dönemi {{epoch}})",
         "policyOption": "Yeniden başlatma ilkesi: epoch (yalnızca düzen değişiklikleri) ya da always (renet ikili dosyasındaki her değişiklik de)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (ağ {{networkId}}): {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "'{{machine}}' üzerinde runtime eşitleniyor...",
         "startingDryRun": "'{{machine}}' için runtime eşitleme planı hazırlanıyor (deneme)...",
         "statusUnreadable": "'{{machine}}' runtime durumu okunamadı, bu yüzden hiçbir depo yeniden başlatılmadı: {{error}}",
-        "summaryLine": "Eşitlenen {{converged}}, atlanan {{skipped}}, başarısız {{failed}}, bekleyen {{pending}}"
+        "summaryLine": "Eşitlenen {{converged}}, atlanan {{skipped}}, başarısız {{failed}}, bekleyen {{pending}}",
+        "summaryLineDryRun": "Taşınacak {{would}}, atlanan {{skipped}}, başarısız {{failed}}, bekleyen {{pending}}"
       },
       "remove": {
         "confirm": "\"{{name}}\" makinesi yapılandırmadan kaldırılsın mı?",

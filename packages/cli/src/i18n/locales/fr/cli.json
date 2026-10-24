@@ -1029,6 +1029,7 @@
         "autoStarting": "{{stale}} daemons de dépôt sur '{{machine}}' tournent encore avec une ancienne disposition du runtime ; redémarrage un par un (définir {{envVar}}=1 pour l'ignorer)",
         "completed": "Convergence du runtime sur '{{machine}}' terminée",
         "continueOnErrorOption": "Continuer après l'échec d'un dépôt au lieu d'arrêter la passe",
+        "denialLine": "    refusé : {{service}}, {{field}} : {{message}}",
         "description": "Redémarre un par un chaque daemon de dépôt qui tourne encore avec une ancienne disposition du runtime, pour le faire passer à l'actuelle. La CLI s'en charge seule après un envoi de renet ; à la main, la commande sert à voir le plan, reprendre une passe échouée ou redémarrer après tout changement du binaire renet.",
         "descriptionShort": "Passer les daemons de dépôt obsolètes à la disposition actuelle du runtime",
         "dryRunOption": "Afficher le plan sans rien redémarrer",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "Redémarrer aussi les dépôts obsolètes absents de la configuration locale (leurs secrets d'environnement sont inconnus)",
         "jsonOption": "Afficher le rapport de convergence en JSON",
         "nothingStale": "Tous les daemons de dépôt de '{{machine}}' utilisent déjà la disposition actuelle du runtime",
+        "passError": "La passe de converge s'est arrêtée prématurément : {{error}}",
         "planLine": "Plan : {{stale}} dépôts obsolètes sur {{total}} (politique {{policy}}, époque du runtime {{epoch}})",
         "policyOption": "Politique de redémarrage : epoch (changements de disposition uniquement) ou always (aussi tout changement du binaire renet)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (réseau {{networkId}}) : {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "Convergence du runtime sur '{{machine}}'...",
         "startingDryRun": "Préparation du plan de convergence du runtime sur '{{machine}}' (simulation)...",
         "statusUnreadable": "Impossible de lire l'état du runtime de '{{machine}}', aucun dépôt n'a donc été redémarré : {{error}}",
-        "summaryLine": "Convergés {{converged}}, ignorés {{skipped}}, en échec {{failed}}, en attente {{pending}}"
+        "summaryLine": "Convergés {{converged}}, ignorés {{skipped}}, en échec {{failed}}, en attente {{pending}}",
+        "summaryLineDryRun": "Seraient convergés : {{would}}, ignorés : {{skipped}}, en échec : {{failed}}, en attente : {{pending}}"
       },
       "remove": {
         "confirm": "Supprimer la machine \"{{name}}\" de la configuration ?",

@@ -1029,6 +1029,7 @@
         "autoStarting": "Masinas '{{machine}}' töötab {{stale}} hoidla deemonit veel vana runtime'i paigutusega; need taaskäivitatakse ükshaaval (vahelejätmiseks määra {{envVar}}=1)",
         "completed": "Runtime'i ühtlustamine masinas '{{machine}}' on lõpetatud",
         "continueOnErrorOption": "Jätka pärast hoidla nurjumist, selle asemel et läbimine peatada",
+        "denialLine": "    keelatud: {{service}}, {{field}}: {{message}}",
         "description": "Taaskäivitab ükshaaval iga hoidla deemoni, mis töötab veel vana runtime'i paigutusega, et see läheks üle praegusele. CLI teeb seda pärast renet'i üleslaadimist ise; käsitsi saab sellega plaani eelnevalt vaadata, nurjunud läbimist jätkata või taaskäivitada pärast mis tahes muudatust renet'i binaarfailis.",
         "descriptionShort": "Vii aegunud hoidla deemonid praegusele runtime'i paigutusele",
         "dryRunOption": "Näita plaani ilma midagi taaskäivitamata",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "Taaskäivita ka aegunud hoidlad, mida kohalikus konfiguratsioonis pole (nende keskkonnasaladused on teadmata)",
         "jsonOption": "Näita ühtlustamise aruannet JSON-vormingus",
         "nothingStale": "Kõik masina '{{machine}}' hoidla deemonid töötavad juba praeguse runtime'i paigutusega",
+        "passError": "Converge'i läbimine peatus enneaegselt: {{error}}",
         "planLine": "Plaan: {{total}} hoidlast {{stale}} on aegunud (reegel {{policy}}, runtime'i epohh {{epoch}})",
         "policyOption": "Taaskäivitamise reegel: epoch (ainult paigutuse muutused) või always (ka iga renet'i binaarfaili muutus)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (võrk {{networkId}}): {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "Masina '{{machine}}' runtime'i ühtlustatakse...",
         "startingDryRun": "Masina '{{machine}}' runtime'i ühtlustamise plaani koostamine (proovikäivitus)...",
         "statusUnreadable": "Masina '{{machine}}' runtime'i olekut ei õnnestunud lugeda, seega ühtegi hoidlat ei taaskäivitatud: {{error}}",
-        "summaryLine": "Ühtlustatud {{converged}}, vahele jäetud {{skipped}}, nurjunud {{failed}}, ootel {{pending}}"
+        "summaryLine": "Ühtlustatud {{converged}}, vahele jäetud {{skipped}}, nurjunud {{failed}}, ootel {{pending}}",
+        "summaryLineDryRun": "Üle viidaks {{would}}, vahele jäetud {{skipped}}, ebaõnnestunud {{failed}}, ootel {{pending}}"
       },
       "remove": {
         "confirm": "Eemaldada masin \"{{name}}\" konfiguratsioonist?",

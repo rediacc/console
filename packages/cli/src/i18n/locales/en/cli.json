@@ -641,6 +641,7 @@
         "autoStarting": "{{stale}} repository daemons on '{{machine}}' run an older runtime layout; restarting them one at a time (set {{envVar}}=1 to skip)",
         "completed": "Runtime converge on '{{machine}}' finished",
         "continueOnErrorOption": "Keep going after a repository fails instead of stopping the pass",
+        "denialLine": "    refused: {{service}}, {{field}}: {{message}}",
         "description": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or restart after any renet binary change.",
         "descriptionShort": "Move stale repository daemons onto the current runtime layout",
         "dryRunOption": "Print the plan without restarting anything",
@@ -648,6 +649,7 @@
         "includeUnknownOption": "Also restart stale repositories missing from the local config (their env secrets are unknown)",
         "jsonOption": "Print the converge report as JSON",
         "nothingStale": "Every repository daemon on '{{machine}}' already runs the current runtime layout",
+        "passError": "The converge pass stopped early: {{error}}",
         "planLine": "Plan: {{stale}} of {{total}} repositories stale (policy {{policy}}, runtime epoch {{epoch}})",
         "policyOption": "Restart policy: epoch (layout changes only) or always (also any renet binary change)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (network {{networkId}}): {{detail}}",
@@ -657,7 +659,8 @@
         "starting": "Converging the runtime on '{{machine}}'...",
         "startingDryRun": "Planning the runtime converge on '{{machine}}' (dry run)...",
         "statusUnreadable": "Could not read the runtime status of '{{machine}}', so no repository was restarted: {{error}}",
-        "summaryLine": "Converged {{converged}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}"
+        "summaryLine": "Converged {{converged}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}",
+        "summaryLineDryRun": "Would converge {{would}}, skipped {{skipped}}, failed {{failed}}, pending {{pending}}"
       },
       "add": {
         "description": "Register an existing machine you can reach over SSH.",

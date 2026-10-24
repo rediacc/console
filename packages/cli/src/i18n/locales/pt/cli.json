@@ -1029,6 +1029,7 @@
         "autoStarting": "{{stale}} daemons de repositório em '{{machine}}' ainda usam um layout de runtime antigo; reiniciando um de cada vez (defina {{envVar}}=1 para pular)",
         "completed": "Convergência do runtime em '{{machine}}' concluída",
         "continueOnErrorOption": "Continuar quando um repositório falha em vez de parar a passagem",
+        "denialLine": "    recusado: {{service}}, {{field}}: {{message}}",
         "description": "Reinicia, um de cada vez, cada daemon de repositório que ainda roda com um layout de runtime antigo, para que passe ao atual. A CLI faz isso sozinha depois de enviar o renet; à mão, serve para ver o plano antes, retomar uma passagem que falhou ou reiniciar após qualquer mudança no binário do renet.",
         "descriptionShort": "Levar daemons de repositório desatualizados ao layout de runtime atual",
         "dryRunOption": "Mostrar o plano sem reiniciar nada",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "Reiniciar também repositórios desatualizados que não estão na configuração local (seus segredos de ambiente são desconhecidos)",
         "jsonOption": "Mostrar o relatório de convergência em JSON",
         "nothingStale": "Todos os daemons de repositório em '{{machine}}' já usam o layout de runtime atual",
+        "passError": "A passagem de converge parou antes do tempo: {{error}}",
         "planLine": "Plano: {{stale}} de {{total}} repositórios desatualizados (política {{policy}}, época do runtime {{epoch}})",
         "policyOption": "Política de reinício: epoch (só mudanças de layout) ou always (também qualquer mudança no binário do renet)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (rede {{networkId}}): {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "Convergindo o runtime em '{{machine}}'...",
         "startingDryRun": "Planejando a convergência do runtime em '{{machine}}' (simulação)...",
         "statusUnreadable": "Não foi possível ler o estado do runtime de '{{machine}}', por isso nenhum repositório foi reiniciado: {{error}}",
-        "summaryLine": "Convergidos {{converged}}, pulados {{skipped}}, com falha {{failed}}, pendentes {{pending}}"
+        "summaryLine": "Convergidos {{converged}}, pulados {{skipped}}, com falha {{failed}}, pendentes {{pending}}",
+        "summaryLineDryRun": "Seriam convergidos {{would}}, ignorados {{skipped}}, com falha {{failed}}, pendentes {{pending}}"
       },
       "remove": {
         "confirm": "Remover a máquina \"{{name}}\" da configuração?",

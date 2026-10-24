@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1878,
-    "sourceCommit": "59a7c2d62af906863bb33ef3898815b27b6728dc"
+    "keyCount": 1881,
+    "sourceCommit": "0b78361a1c11bd8de5ad78ab37b9f4b65e3df9d3"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -611,6 +611,7 @@
     "commands.machine.converge.autoStarting": "e0a76ee2",
     "commands.machine.converge.completed": "d3b17b24",
     "commands.machine.converge.continueOnErrorOption": "8816c9c5",
+    "commands.machine.converge.denialLine": "4f624870",
     "commands.machine.converge.description": "93d4ca12",
     "commands.machine.converge.descriptionShort": "ed19bfcc",
     "commands.machine.converge.dryRunOption": "4a628906",
@@ -618,6 +619,7 @@
     "commands.machine.converge.includeUnknownOption": "03cf99cf",
     "commands.machine.converge.jsonOption": "a369e44a",
     "commands.machine.converge.nothingStale": "1d73388a",
+    "commands.machine.converge.passError": "15dfcaf6",
     "commands.machine.converge.planLine": "48768fff",
     "commands.machine.converge.policyOption": "08a1b9e0",
     "commands.machine.converge.repoLine": "34d05de5",
@@ -628,6 +630,7 @@
     "commands.machine.converge.startingDryRun": "b729f5bc",
     "commands.machine.converge.statusUnreadable": "dc24a9db",
     "commands.machine.converge.summaryLine": "8d862aac",
+    "commands.machine.converge.summaryLineDryRun": "f5f89209",
     "commands.machine.deprovision.completed": "e5b9d350",
     "commands.machine.deprovision.confirm": "9241bcef",
     "commands.machine.deprovision.description": "1894d9d6",

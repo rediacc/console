@@ -1029,6 +1029,7 @@
         "autoStarting": "{{stale}} daemons de repositorio en '{{machine}}' siguen con un diseño de runtime antiguo; se reiniciarán uno a uno (usa {{envVar}}=1 para omitirlo)",
         "completed": "Convergencia del runtime en '{{machine}}' terminada",
         "continueOnErrorOption": "Seguir adelante cuando falla un repositorio en lugar de detener la pasada",
+        "denialLine": "    rechazado: {{service}}, {{field}}: {{message}}",
         "description": "Reinicia, uno a uno, cada daemon de repositorio que aún funciona con un diseño de runtime antiguo para que pase al actual. La CLI lo hace sola tras subir renet; a mano sirve para ver el plan antes, retomar una pasada fallida o reiniciar tras cualquier cambio del binario de renet.",
         "descriptionShort": "Pasar los daemons de repositorio desfasados al diseño de runtime actual",
         "dryRunOption": "Mostrar el plan sin reiniciar nada",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "Reiniciar también los repositorios desfasados que no están en la configuración local (sus secretos de entorno se desconocen)",
         "jsonOption": "Mostrar el informe de convergencia en JSON",
         "nothingStale": "Todos los daemons de repositorio de '{{machine}}' ya usan el diseño de runtime actual",
+        "passError": "La pasada de converge se detuvo antes de tiempo: {{error}}",
         "planLine": "Plan: {{stale}} de {{total}} repositorios desfasados (política {{policy}}, época de runtime {{epoch}})",
         "policyOption": "Política de reinicio: epoch (solo cambios de diseño) o always (también cualquier cambio del binario de renet)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (red {{networkId}}): {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "Haciendo converger el runtime en '{{machine}}'...",
         "startingDryRun": "Planificando la convergencia del runtime en '{{machine}}' (simulación)...",
         "statusUnreadable": "No se pudo leer el estado del runtime de '{{machine}}', así que no se reinició ningún repositorio: {{error}}",
-        "summaryLine": "Convergidos {{converged}}, omitidos {{skipped}}, fallidos {{failed}}, pendientes {{pending}}"
+        "summaryLine": "Convergidos {{converged}}, omitidos {{skipped}}, fallidos {{failed}}, pendientes {{pending}}",
+        "summaryLineDryRun": "Se moverían {{would}}, omitidos {{skipped}}, fallidos {{failed}}, pendientes {{pending}}"
       },
       "remove": {
         "confirm": "¿Eliminar la máquina \"{{name}}\" de la configuración?",

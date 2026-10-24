@@ -1029,6 +1029,7 @@
         "autoStarting": "'{{machine}}' の {{stale}} 個のリポジトリデーモンが古いランタイム構成のまま動いています。1 つずつ再起動します（{{envVar}}=1 でスキップ）",
         "completed": "'{{machine}}' のランタイム収束が完了しました",
         "continueOnErrorOption": "リポジトリが失敗しても処理を止めずに続行する",
+        "denialLine": "    拒否: {{service}}, {{field}}: {{message}}",
         "description": "古いランタイム構成のまま動いているリポジトリデーモンを 1 つずつ再起動し、現在の構成に移します。renet のアップロード後は CLI が自動で実行します。手動で実行すると、計画の事前確認、失敗した処理の再開、renet バイナリ変更後の再起動ができます。",
         "descriptionShort": "古いリポジトリデーモンを現在のランタイム構成に移行",
         "dryRunOption": "何も再起動せず計画だけを表示する",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "ローカル設定にない古いリポジトリも再起動する（環境シークレットは不明）",
         "jsonOption": "収束レポートを JSON で表示する",
         "nothingStale": "'{{machine}}' のリポジトリデーモンはすべて現在のランタイム構成で動いています",
+        "passError": "converge のパスが途中で停止しました: {{error}}",
         "planLine": "計画: {{total}} 個中 {{stale}} 個のリポジトリが古い構成です（ポリシー {{policy}}、ランタイムエポック {{epoch}}）",
         "policyOption": "再起動ポリシー: epoch（構成変更時のみ） または always（renet バイナリの変更時も）",
         "repoLine": "[{{index}}/{{count}}] {{name}}（ネットワーク {{networkId}}）: {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "'{{machine}}' のランタイムを収束しています...",
         "startingDryRun": "'{{machine}}' のランタイム収束を計画しています（ドライラン）...",
         "statusUnreadable": "'{{machine}}' のランタイム状態を読み取れなかったため、リポジトリは再起動していません: {{error}}",
-        "summaryLine": "収束 {{converged}}、スキップ {{skipped}}、失敗 {{failed}}、保留 {{pending}}"
+        "summaryLine": "収束 {{converged}}、スキップ {{skipped}}、失敗 {{failed}}、保留 {{pending}}",
+        "summaryLineDryRun": "移行予定 {{would}}、スキップ {{skipped}}、失敗 {{failed}}、保留 {{pending}}"
       },
       "remove": {
         "confirm": "マシン \"{{name}}\" を設定から削除しますか？",

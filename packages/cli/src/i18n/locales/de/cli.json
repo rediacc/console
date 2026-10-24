@@ -1029,6 +1029,7 @@
         "autoStarting": "{{stale}} Repository-Daemons auf '{{machine}}' laufen noch mit einem älteren Runtime-Layout und werden nacheinander neu gestartet (mit {{envVar}}=1 überspringen)",
         "completed": "Runtime-Angleichung auf '{{machine}}' abgeschlossen",
         "continueOnErrorOption": "Nach einem fehlgeschlagenen Repository weitermachen, statt den Durchlauf abzubrechen",
+        "denialLine": "    abgelehnt: {{service}}, {{field}}: {{message}}",
         "description": "Startet jeden Repository-Daemon, der noch mit einem älteren Runtime-Layout läuft, nacheinander neu, damit er auf das aktuelle wechselt. Die CLI erledigt das nach einem renet-Upload selbst; von Hand lässt sich damit der Plan vorab ansehen, ein abgebrochener Durchlauf fortsetzen oder nach jeder Änderung am renet-Binary neu starten.",
         "descriptionShort": "Veraltete Repository-Daemons auf das aktuelle Runtime-Layout bringen",
         "dryRunOption": "Nur den Plan ausgeben, nichts neu starten",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "Auch veraltete Repositories neu starten, die in der lokalen Konfiguration fehlen (ihre Env-Secrets sind unbekannt)",
         "jsonOption": "Bericht der Angleichung als JSON ausgeben",
         "nothingStale": "Alle Repository-Daemons auf '{{machine}}' laufen bereits mit dem aktuellen Runtime-Layout",
+        "passError": "Der Converge-Durchlauf wurde vorzeitig beendet: {{error}}",
         "planLine": "Plan: {{stale}} von {{total}} Repositories veraltet (Richtlinie {{policy}}, Runtime-Epoche {{epoch}})",
         "policyOption": "Neustart-Richtlinie: epoch (nur bei Layout-Änderungen) oder always (auch bei jeder Änderung am renet-Binary)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (Netzwerk {{networkId}}): {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "Runtime auf '{{machine}}' wird angeglichen...",
         "startingDryRun": "Runtime-Angleichung auf '{{machine}}' wird geplant (Probelauf)...",
         "statusUnreadable": "Runtime-Status von '{{machine}}' nicht lesbar, daher wurde kein Repository neu gestartet: {{error}}",
-        "summaryLine": "Angeglichen {{converged}}, übersprungen {{skipped}}, fehlgeschlagen {{failed}}, ausstehend {{pending}}"
+        "summaryLine": "Angeglichen {{converged}}, übersprungen {{skipped}}, fehlgeschlagen {{failed}}, ausstehend {{pending}}",
+        "summaryLineDryRun": "Würde umstellen: {{would}}, übersprungen: {{skipped}}, fehlgeschlagen: {{failed}}, ausstehend: {{pending}}"
       },
       "remove": {
         "confirm": "Maschine \"{{name}}\" aus der Konfiguration entfernen?",

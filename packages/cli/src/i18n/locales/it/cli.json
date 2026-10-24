@@ -1029,6 +1029,7 @@
         "autoStarting": "{{stale}} daemon di repository su '{{machine}}' usano ancora un layout di runtime vecchio; vengono riavviati uno alla volta (imposta {{envVar}}=1 per saltare)",
         "completed": "Convergenza del runtime su '{{machine}}' completata",
         "continueOnErrorOption": "Andare avanti quando un repository fallisce invece di fermare il passaggio",
+        "denialLine": "    rifiutato: {{service}}, {{field}}: {{message}}",
         "description": "Riavvia uno alla volta ogni daemon di repository che gira ancora con un layout di runtime vecchio, così passa a quello attuale. La CLI lo fa da sola dopo un caricamento di renet; a mano serve per vedere prima il piano, riprendere un passaggio fallito o riavviare dopo qualsiasi modifica del binario renet.",
         "descriptionShort": "Portare i daemon di repository obsoleti sul layout di runtime attuale",
         "dryRunOption": "Mostrare il piano senza riavviare nulla",
@@ -1036,6 +1037,7 @@
         "includeUnknownOption": "Riavviare anche i repository obsoleti assenti dalla configurazione locale (i loro segreti d'ambiente non sono noti)",
         "jsonOption": "Mostrare il rapporto di convergenza in JSON",
         "nothingStale": "Tutti i daemon di repository su '{{machine}}' usano già il layout di runtime attuale",
+        "passError": "Il passaggio di converge si è interrotto in anticipo: {{error}}",
         "planLine": "Piano: {{stale}} repository obsoleti su {{total}} (criterio {{policy}}, epoca del runtime {{epoch}})",
         "policyOption": "Criterio di riavvio: epoch (solo modifiche al layout) o always (anche qualsiasi modifica del binario renet)",
         "repoLine": "[{{index}}/{{count}}] {{name}} (rete {{networkId}}): {{detail}}",
@@ -1045,7 +1047,8 @@
         "starting": "Convergenza del runtime su '{{machine}}' in corso...",
         "startingDryRun": "Pianificazione della convergenza del runtime su '{{machine}}' (prova)...",
         "statusUnreadable": "Impossibile leggere lo stato del runtime di '{{machine}}', quindi nessun repository è stato riavviato: {{error}}",
-        "summaryLine": "Convergiti {{converged}}, saltati {{skipped}}, falliti {{failed}}, in sospeso {{pending}}"
+        "summaryLine": "Convergiti {{converged}}, saltati {{skipped}}, falliti {{failed}}, in sospeso {{pending}}",
+        "summaryLineDryRun": "Da convergere {{would}}, saltati {{skipped}}, falliti {{failed}}, in attesa {{pending}}"
       },
       "remove": {
         "confirm": "Rimuovere la macchina \"{{name}}\" dalla configurazione?",

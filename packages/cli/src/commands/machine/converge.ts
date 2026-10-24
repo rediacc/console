@@ -21,6 +21,7 @@ import {
   type ConvergeOptions,
   type ConvergeReport,
   convergeResumeCommand,
+  countConvergeResults,
   isRuntimeConvergeOptedOut,
   parseConvergeReport,
   RUNTIME_POLICIES,
@@ -125,7 +126,7 @@ export async function convergeAfterSetup(
     report = await runSetupPass(machineName, session, options.debug);
   }
   // A pass that moved a repo already refreshed the router (the executor does it after converge).
-  const executorRefreshed = (report?.summary.converged ?? 0) > 0;
+  const executorRefreshed = report !== null && countConvergeResults(report).converged > 0;
   const refresh = routerRefreshAfterPass({ due: session.routerRefreshDue, summary: null });
   if (refresh && !executorRefreshed) {
     if (await renetProvisioner.refreshRouter(session.sftp, session.remoteRenetPath)) {
