@@ -430,17 +430,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 21,
+      "open": 6,
+      "done": 23,
       "open_sigs": [
         "24f82950",
-        "4d954b5b",
         "4ebc4d0b",
         "6ebc8f08",
         "e3150839",
         "e5ff4d4a",
-        "f11a5c8b",
-        "f60157da"
+        "f11a5c8b"
       ],
       "done_sigs": [
         "12d5282f",
@@ -451,6 +449,7 @@
         "2099703b",
         "25bbafd4",
         "4693a81f",
+        "4d954b5b",
         "53cd4e9c",
         "563cb090",
         "7d169d62",
@@ -463,7 +462,8 @@
         "b43c18d0",
         "cc60cdbe",
         "d9ee2442",
-        "ee3a2b7d"
+        "ee3a2b7d",
+        "f60157da"
       ]
     },
     "agent/plans/PLAN-cloudflare-spend-guard.md": {

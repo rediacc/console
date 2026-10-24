@@ -28,7 +28,8 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
     (ticked) 2026-10-23T08:27:57Z by d778be9d: commit:3b96d5133 deploy_proxy.smoke() checks /v1/health 200 and unauthenticated /v1/server-info 401; the bash twin is deleted (cb2908164); test_deploy_deploy_proxy.py 30 passed
 - [x] A5 [P2] Cost-guard gate asserting `max_instances` and `sleepAfter` stay at or under the budgeted values (missing test 9) -- acceptance: the new gate exits 0 on the tree and 1 on a planted `max_instances = 20`
     (ticked) 2026-10-23T13:29:16Z by d778be9d: commit:2d4c5df52 .ci/scripts/quality/check_proxy_cost_guard.py rc=0 on the tree; .ci/rediacc_ci/tests/test_check_proxy_cost_guard.py plants max_instances = 20 and gets rc=1; wired as check:ci-proxy-cost-guard in quality-static
-- [ ] A6 [P2] Local Worker-to-container e2e under `wrangler dev` with containers, where `/v1/server-info` through the Worker answers `mode: "container"` (missing test 5) -- acceptance: that e2e run exits 0 on a docker host
+- [x] A6 [P2] Local Worker-to-container e2e under `wrangler dev` with containers, where `/v1/server-info` through the Worker answers `mode: "container"` (missing test 5) -- acceptance: that e2e run exits 0 on a docker host
+    (ticked) 2026-10-24T04:37:23Z by d778be9d: commit:3c5f450ac .ci/rediacc_ci/quality/proxy_wrangler_dev_e2e.py:1; npm run check:ci-proxy-wrangler-dev-e2e rc=0 (78 s, nothing left), pytest 26 passed, parity rc=0
 - [x] B1 [P0] B3: request-scoped config for dispatch and re-attach, with execution asserted to reach `10.9.9.9` with the decrypted SSH key (missing test 2) -- acceptance: `container-config.test.ts` under `packages/cli/src/services/serve/__tests__/` passes with `configService` unmocked
     (ticked) 2026-10-23T08:28:29Z by d778be9d: commit:3b96d5133 request-scoped config lives in packages/cli/src/services/core/request-context.ts and is threaded into dispatch at packages/cli/src/services/serve/server.ts:204; container-config.test.ts passes
 - [x] B2 [P0] S1: the executor computes `isGrandRepo` and refuses grand-repo mutations by default (missing test 7) -- acceptance: `packages/cli/src/services/serve/__tests__/grand-repo-guard.test.ts` passes
@@ -54,7 +55,8 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
     (ticked) 2026-10-24T04:12:37Z by d778be9d: commit:04da94740 .github/workflows/ci-build-renet.yml:522; job proxy-image-smoke runs the Proxy image smoke step, gates.lock.json carries its ci step entry, no local-only BLOCKER remains; npm run check:ci-parity rc=0 on 2026-10-24
 - [x] B5 (account submodule, separate PR): CLI callers get `proxy:exec`, by a mint command or by the scope at login, with the account contract test pinning which token a CLI presents (missing test 8) -- acceptance: the account integration test for the chosen fix passes
     (ticked) 2026-10-24T04:12:40Z by d778be9d: commit:17c55af8b private/account/tests/integration/proxy-cli-token.test.ts:1; the B5a test meets this box per the plan's ruling; proxy-cli-token and console-session vitest 26 passed rc=0 on 2026-10-24; CLI half packages/cli/src/commands/subscription-proxy-token.ts
-- [ ] Operator Phase 0: `/v1/health` 200, unauthenticated `/v1/server-info` 401, and `wrangler containers list` with no running instance -- acceptance: the three section 3 Phase 0 outputs recorded in this plan
+- [x] Operator Phase 0: `/v1/health` 200, unauthenticated `/v1/server-info` 401, and `wrangler containers list` with no running instance -- acceptance: the three section 3 Phase 0 outputs recorded in this plan
+    (ticked) 2026-10-24T04:37:21Z by d778be9d: the three Phase 0 outputs recorded at agent/plans/PLAN-cloudflare-proxy.md:300 (health ok, 401, containers list 0 live instances), plus rollback handles; run 2026-10-24 on the tree at commit:3c5f450ac
 - [x] Operator Phase 1: the daemon tier on the dev box against hostinger, including `repo up` and `repo down` on `demo-stackoverflow:proxytrial` -- acceptance: the Phase 1 results section records rc 0 for every step
     (ticked) 2026-10-23T08:28:11Z by d778be9d: commit:bcb0f2d7e the Phase 1 results section records rc 0 for status, repo status, fork up and fork down against hostinger
 - [ ] Operator: redeploy after A2, A3, B1, B2 and B3 with `EXECUTOR_TOKEN` (scopes `proxy:exec` and `audit:write`) set, then Phase 2 steps 1-4 against hostinger -- acceptance: `rdc --proxy https://proxy.eu.rediacc.com machine status hostinger` exits 0 with output matching the local run
@@ -296,6 +298,18 @@ Under the 2026-10-23 ruling the proxy is kept. Run this only if the operator she
 1. Phase 0, recorded.
 2. Phase 2 steps 0-5, recorded in "Phase 2 results" (P2a and step 5).
 3. C2 eu console wiring after Phase 2 is green.
+
+## Phase 0 results (2026-10-24, lead session d778be9d)
+
+| Check | rc | Output |
+|---|---|---|
+| `curl -sS https://proxy.eu.rediacc.com/v1/health` | 0 | `{"ok":true}` |
+| `curl -sS -o /dev/null -w '%{http_code}' https://proxy.eu.rediacc.com/v1/server-info` | 0 | `401` |
+| `npx wrangler containers list` in workers/proxy, through `bws_env exec --profile deploy-workers` | 0 | one app, `rediacc-proxy-eu-executorcontainer` (a030433c-f7b8-40aa-adea-d39ed0c87fb3), state `ready`, live instances 0, last modified 2026-09-24T14:26:21Z |
+
+Rollback handles, read with `wrangler deployments list`: live version 9c90605d-b963-4ccf-b952-fda0bab48958, previous upload 17b3164d-f07b-4755-8926-edfdc682bceb (2026-09-24T14:41:57Z). `wrangler secret list` shows an EXECUTOR_TOKEN set by the 2026-09-24T16:13:52Z "Secret Change" deployment. Cloudflare cannot show its scopes, and it may be the Phase 1 token without `audit:write`.
+
+Phase 2 is held on the token. `POST /account/api/v1/api-tokens` is the only route that mints `audit:write` with the `cloudflare` binding. It needs a portal session cookie of an org owner or admin (private/account/src/middleware/session.ts:10, private/account/src/routes/api-tokens.ts:59-72), so a password, a Turnstile captcha and possibly 2FA. The B5 mint grants only `proxy:exec` for 5 minutes. Phase 2 step 4 also cannot run as written while hostinger runs renet 7e6a8588: `repo up` and `repo down` go through `provision` access (packages/cli/src/services/executor/local-executor.ts:304-331), even through the proxy, and would install this branch's renet there (worklist #d0928775). Step 3 and the read-only half of step 4 (`machine status`, `repo status`, `repo list`) never upload renet.
 
 ## Phase 1 results (2026-09-24, lead session d778be9d)
 
