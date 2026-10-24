@@ -507,7 +507,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
 | `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
 | `agent/plans/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 54 | 0 | 0 | 3927 |
-| `agent/plans/PLAN-gpu-device-grants.md` | approved | 65 | 12 | 0 | 22608 |
+| `agent/plans/PLAN-gpu-device-grants.md` | approved | 68 | 9 | 3 | 24399 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-hostinger-upgrade-followups.md` | in-progress | 33 | 3 | 0 | 3529 |
