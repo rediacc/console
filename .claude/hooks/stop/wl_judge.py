@@ -225,7 +225,7 @@ def wire_schema(schema, _clamped=True):
         return [wire_schema(v, False) for v in schema]
     if not isinstance(schema, dict):
         return schema
-    out = {}
+    out: dict = {}
     for k, v in schema.items():
         if k == "maxLength" and _clamped:
             continue

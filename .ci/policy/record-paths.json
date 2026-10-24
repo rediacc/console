@@ -162,6 +162,10 @@
           "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
         },
         {
+          "id": "check:ci-override-ranges",
+          "reason": "It imports scripts/lib/pins/registry.ts through parseRegistry to read .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion; the gate reads package manifests and lockfiles, no file under agent/."
+        },
+        {
           "id": "check:ci-suppression-liveness",
           "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         },
@@ -323,6 +327,10 @@
           "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
         },
         {
+          "id": "check:ci-override-ranges",
+          "reason": "It imports scripts/lib/pins/registry.ts through parseRegistry to read .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion; the gate reads package manifests and lockfiles, no file under agent/."
+        },
+        {
           "id": "check:ci-suppression-liveness",
           "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         },
@@ -461,6 +469,10 @@
         {
           "id": "check:ci-pin-registry",
           "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
+        },
+        {
+          "id": "check:ci-override-ranges",
+          "reason": "It imports scripts/lib/pins/registry.ts through parseRegistry to read .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion; the gate reads package manifests and lockfiles, no file under agent/."
         },
         {
           "id": "check:ci-suppression-liveness",
@@ -621,6 +633,10 @@
         {
           "id": "check:ci-real-provider-pins",
           "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-override-ranges",
+          "reason": "It imports scripts/lib/pins/registry.ts through parseRegistry to read .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion; the gate reads package manifests and lockfiles, no file under agent/."
         },
         {
           "id": "check:ci-suppression-liveness",

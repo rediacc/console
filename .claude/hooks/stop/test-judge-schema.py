@@ -24,7 +24,7 @@ import subprocess
 import sys
 import tempfile
 import types
-from typing import Any
+from typing import Any, cast
 
 import wl_bravedefault
 import wl_classsweep
@@ -688,10 +688,14 @@ def fake_run(cmd, **_kw):
 # intercept nothing and let every control below drive the REAL CLI.
 #
 # `TIMEOUT_RC`/`SPAWN_FAILED_RC` are carried over verbatim rather than invented, because the routed call sites branch on them by name.
-wl_judge.wl_proc = types.SimpleNamespace(
-    run=fake_run,
-    TIMEOUT_RC=wl_proc.TIMEOUT_RC,
-    SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC,
+# cast to Any: the fake is a SimpleNamespace standing in for a module, which a typed assignment refuses.
+wl_judge.wl_proc = cast(
+    "Any",
+    types.SimpleNamespace(
+        run=fake_run,
+        TIMEOUT_RC=wl_proc.TIMEOUT_RC,
+        SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC,
+    ),
 )
 wl_judge.resolve_claude = lambda: "/bin/sh"
 
@@ -3186,13 +3190,20 @@ control(
 )
 
 _prev_run = wl_judge.wl_proc
-wl_judge.wl_proc = types.SimpleNamespace(
-    run=fake_run, TIMEOUT_RC=wl_proc.TIMEOUT_RC, SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC
+wl_judge.wl_proc = cast(
+    "Any",
+    types.SimpleNamespace(
+        run=fake_run, TIMEOUT_RC=wl_proc.TIMEOUT_RC, SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC
+    ),
 )
 try:
     _long = judged(
         "",
-        {"verdict": "continue", "reason": ("word " * 80).strip(), "next_action": ("go " * 90).strip()},
+        {
+            "verdict": "continue",
+            "reason": ("word " * 80).strip(),
+            "next_action": ("go " * 90).strip(),
+        },
     )
 finally:
     # A raise in judged() must not leave the fake installed for later controls (review ced51132.2).
@@ -3252,7 +3263,10 @@ control(
 )
 control(
     "PART 8: a maxLength under items and additionalProperties leaves the wire",
-    (_combo_wire["properties"]["c"]["items"].get("maxLength"), _combo_wire["additionalProperties"].get("maxLength")),
+    (
+        _combo_wire["properties"]["c"]["items"].get("maxLength"),
+        _combo_wire["additionalProperties"].get("maxLength"),
+    ),
     (None, None),
 )
 control(
@@ -3295,7 +3309,8 @@ def _stripped_unclamped(schema, value_for):
 
 def _steps(path):
     """The schema path as value steps: ("key", name), ("item",) or ("extra",)."""
-    out, i = [], 0
+    out: list = []
+    i = 0
     while i < len(path):
         if path[i] == "properties" and i + 1 < len(path):
             out.append(("key", path[i + 1]))
@@ -3332,7 +3347,8 @@ control(
 control(
     "PART 8: every limit the real judge schemas lose on the wire is clamped",
     _stripped_unclamped(
-        _ml_all, lambda path, probe: _dig(wl_judge.clamp_to_schema(_nest(path, probe), _ml_all), path)
+        _ml_all,
+        lambda path, probe: _dig(wl_judge.clamp_to_schema(_nest(path, probe), _ml_all), path),
     ),
     [],
 )

@@ -159,6 +159,7 @@ function main(): void {
     if (check) {
       stale.push(path.relative(CONSOLE_ROOT, file));
     } else {
+      // tree-write: safe the generator's own output, reachable only without --check; the registered CI invocation always passes --check
       fs.writeFileSync(file, want);
       console.log(`${GREEN}✓${NC} wrote ${path.relative(CONSOLE_ROOT, file)}`);
     }

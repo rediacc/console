@@ -636,7 +636,8 @@ def scan_submodules(
             "%s declares ZERO submodules; the file half has nothing to read and its green "
             "would mean nothing" % (root / ".gitmodules")
         )
-    checked, not_checked = [], []
+    checked: list[str] = []
+    not_checked: list[str] = []
     for sm_path in declared:
         try:
             present = common.require_submodule(
@@ -669,7 +670,9 @@ def scan_submodules(
             data = (root / key).read_bytes()
         except OSError as exc:
             # A tracked file the worktree cannot give (deleted but still indexed): its hits cannot be counted, so it is refused rather than dropped from `files_read` in silence.
-            problems.append("%s: tracked file could not be read, NOT CHECKED (%s)" % (key, exc.strerror or exc))
+            problems.append(
+                "%s: tracked file could not be read, NOT CHECKED (%s)" % (key, exc.strerror or exc)
+            )
             continue
         if b"\0" in data[:4096]:
             continue

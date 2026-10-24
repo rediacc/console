@@ -8,14 +8,16 @@ Run: python3 -m pytest .claude/rediacc_hooks/tests/test_wl_bgsweep_stop.py -q
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import json
 import os
-import pathlib
 import signal
 import subprocess
 import sys
 import time
 
+from rediacc_hooks import syspath
+from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_cap_wait import mutated_hook
 from rediacc_hooks.tests.test_wl_pr_scope_stop import (
     PR_SCOPE,
@@ -29,19 +31,17 @@ POLL = "until [ -s %s ]; do sleep 1; done; cat %s"
 
 
 def _children(pid: int) -> list[int]:
-    out = []
-    for name in os.listdir("/proc"):
-        if not name.isdigit():
-            continue
-        try:
-            stat = pathlib.Path("/proc/%s/stat" % name).read_text(
-                encoding="utf-8", errors="replace"
-            )
-        except OSError:
-            continue
-        if int(stat.rsplit(")", 1)[-1].split()[1]) == pid:
-            out.append(int(name))
-    return out
+    # The process table comes from wl_liveness, which owns the /proc read and the `ps` fallback, so this test names no procfs path itself.
+    stop_dir = wlfix.STOP_DIR
+    spec = importlib.util.spec_from_file_location(
+        "_wl_liveness_bgsweep", stop_dir / "wl_liveness.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    syspath.on_sys_path(stop_dir)
+    spec.loader.exec_module(mod)
+    return [row[0] for row in mod.proc_table() if row[1] == pid]
 
 
 class Tree:

@@ -16,7 +16,7 @@ import uuid
 from typing import TYPE_CHECKING, Any, Protocol
 
 from rediacc_ci.drills import lib, vm_ssh
-from rediacc_ci.well_known import DATASTORE_PATH
+from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -28,7 +28,6 @@ STEP = "U1"
 # but the parent is resolved live in `build_old_renet` so a rebase cannot stale it.
 PRE_ISOLATION_COMMIT = "0c3a88a^"
 
-RUNTIME_DIR = "/var/run/rediacc"
 RUNTIME_STATE_DIR = "/var/lib/rediacc/runtime"
 
 
@@ -386,11 +385,11 @@ class _LiveU1:
                 continue
             new_sock = new_docker_socket(nid)
             old_sock = old_docker_socket(nid)
-            stamp = runtime_stamp_path(nid)
+            stamp_path = runtime_stamp_path(nid)
             cmd = ("test -S %s && echo NEWSOCK; test -S %s && echo OLDSOCK; cat %s 2>/dev/null") % (
                 shlex.quote(new_sock),
                 shlex.quote(old_sock),
-                shlex.quote(stamp),
+                shlex.quote(stamp_path),
             )
             res = self.probe("sudo sh -c %s" % shlex.quote(cmd))
             text = res.out + res.err

@@ -554,6 +554,9 @@
     ".ci/rediacc_ci/drills/transfer.py": [
       "DRILL_EXPECT_NO_KEYRING"
     ],
+    ".ci/rediacc_ci/drills/upgrade_converge.py": [
+      "HOME"
+    ],
     ".ci/rediacc_ci/drills/vm_check.py": [
       "CLAUDE_CODE_SESSION_ID",
       "HOME",
@@ -1646,6 +1649,12 @@
     ],
     ".ci/rediacc_ci/tests/test_drills_lib.py": [
       "HOME",
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_session_teardown.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_tenant_isolation.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_drills_universe_transfer.py": [
