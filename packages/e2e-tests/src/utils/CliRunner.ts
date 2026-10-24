@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { type ChildProcess, execFile, spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -167,6 +167,20 @@ export class CliRunner {
         stderr: e.stderr ?? '',
       };
     }
+  }
+
+  /**
+   * Start `rdc --config <namespace> <args>` and hand back the live process, for a command that
+   * must keep running (an `rdc serve` executor) where run() waits for exit. Same binary, prefix and
+   * environment as run(); an `undefined` value in envOverrides removes that variable.
+   */
+  spawn(args: string[], envOverrides: NodeJS.ProcessEnv = {}): ChildProcess {
+    const env: NodeJS.ProcessEnv = { ...this.env, ...envOverrides };
+    for (const [key, value] of Object.entries(env)) if (value === undefined) delete env[key];
+    return spawn(this.bin, [...this.binPrefixArgs, '--config', this.configName, ...args], {
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
   }
 
   /** Run `rdc --config <namespace> <args>`. */

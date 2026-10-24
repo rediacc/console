@@ -1,10 +1,8 @@
-import { type ChildProcess, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import net from 'node:net';
-import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { AuditEventsRequestSchema } from '@rediacc/shared';
@@ -189,47 +187,19 @@ async function freePort(): Promise<number> {
   return port;
 }
 
-/**
- * The argv prefix and environment of the CLI under test, resolved as CliRunner
- * resolves them: `E2E_CLI_BIN`, else the PATH `rdc` on GitHub Actions, else this
- * checkout's bundle. CliRunner only runs a command to completion, and the
- * executor has to keep running for the whole suite.
- */
-function cliCommand(): { bin: string; prefix: string[] } {
-  if (process.env.E2E_CLI_BIN) return { bin: process.env.E2E_CLI_BIN, prefix: [] };
-  if (process.env.GITHUB_ACTIONS === 'true') return { bin: 'rdc', prefix: [] };
-  return {
-    bin: process.execPath,
-    prefix: [path.resolve(__dirname, '../../cli/dist/cli-bundle.cjs')],
-  };
-}
-
-function devRenetDir(): string | undefined {
-  const candidate =
-    process.env.RENET_BINARY_PATH ?? path.resolve(__dirname, '../../../private/renet/bin/renet');
-  return existsSync(candidate) ? path.dirname(candidate) : undefined;
-}
-
 interface Executor {
   url: string;
   output: () => string;
   stop: () => Promise<void>;
 }
 
-/** The executor's environment: the CliRunner defaults, its own token, and the stub as its account server. */
+/** What the executor adds to CliRunner's environment: its own token, the stub as its account server, and no proxy of its own. */
 function executorEnv(accountUrl: string): NodeJS.ProcessEnv {
-  const renetDir = devRenetDir();
-  const env: NodeJS.ProcessEnv = {
-    ...process.env,
-    REDIACC_SKIP_MACHINE_ACTIVATION: '1',
-    REDIACC_YES: '1',
-    REDIACC_MASTER_PASSWORD: process.env.REDIACC_MASTER_PASSWORD ?? 'e2e-cli-master',
+  return {
     REDIACC_TOKEN: EXECUTOR_TOKEN,
     REDIACC_ACCOUNT_SERVER: accountUrl,
+    REDIACC_PROXY_URL: undefined,
   };
-  if (renetDir) env.PATH = `${renetDir}${path.delimiter}${process.env.PATH ?? ''}`;
-  delete env.REDIACC_PROXY_URL;
-  return env;
 }
 
 /** Poll /v1/health until it answers, the process exits, or 60 s pass. */
@@ -251,13 +221,11 @@ async function waitForHealth(url: string, hasExited: () => boolean, output: () =
 /** Start `rdc serve --mode daemon` on loopback and wait until it answers /v1/health. */
 async function startExecutor(accountUrl: string): Promise<Executor> {
   const port = await freePort();
-  const { bin, prefix } = cliCommand();
-  const args = ['--config', CONFIG_NAME, 'serve', '--mode', 'daemon'];
-  args.push('--host', '127.0.0.1', '--port', String(port));
-  const child: ChildProcess = spawn(bin, [...prefix, ...args], {
-    env: executorEnv(accountUrl),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  // CliRunner resolves the binary (E2E_CLI_BIN, the PATH rdc on GitHub Actions, else this checkout's bundle) and pins the dev renet on PATH.
+  const child = CliRunner.create({ configName: CONFIG_NAME }).spawn(
+    ['serve', '--mode', 'daemon', '--host', '127.0.0.1', '--port', String(port)],
+    executorEnv(accountUrl)
+  );
   let output = '';
   const collect = (chunk: Buffer) => {
     output += chunk.toString('utf8');
