@@ -122,6 +122,7 @@ Install renet and prepare a registered machine for repositories.
 
 - `--datastore-path <path>`: Datastore path on remote machine (default: /mnt/rediacc)
 - `--datastore-size <size>`: Datastore size (e.g., 95%, 100G) (default: 95%)
+- `--no-converge`: Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -200,6 +201,21 @@ Remove orphaned datastore resources and stale snapshots from a machine. The base
 - `--force-delete-mounted`: Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown.
 - `--force`: Skip confirmation prompts
 - `--grace-days <days>`: Grace period in days for recently archived repos (default: 7)
+- `--debug`: Enable debug output
+
+> MCP tool
+
+### rdc machine converge <name>
+
+Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or restart after any renet binary change.
+
+**Options:**
+
+- `--dry-run`: Print the plan without restarting anything
+- `--json`: Print the converge report as JSON
+- `--include-unknown`: Also restart stale repositories missing from the local config (their env secrets are unknown)
+- `--policy <policy>`: Restart policy: epoch (layout changes only) or always (also any renet binary change) (default: epoch)
+- `--continue-on-error`: Keep going after a repository fails instead of stopping the pass
 - `--debug`: Enable debug output
 
 > MCP tool

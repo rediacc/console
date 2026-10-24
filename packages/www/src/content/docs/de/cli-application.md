@@ -7,7 +7,7 @@ order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "27dfafe606682b0a"
+sourceHash: "933043d95220205e"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -709,8 +709,27 @@ rdc machine prune <name> [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-machine-converge"></a>
+### 3.6 converge
+
+{{t:cli.commands.machine.converge.description}}
+
+```bash
+rdc machine converge <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--dry-run` | {{t:cli.commands.machine.converge.dryRunOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--json` | {{t:cli.commands.machine.converge.jsonOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--include-unknown` | {{t:cli.commands.machine.converge.includeUnknownOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--policy <policy>` | {{t:cli.commands.machine.converge.policyOption}} | {{t:cli.docs.optionLabels.no}} | `epoch` |
+| `--continue-on-error` | {{t:cli.commands.machine.converge.continueOnErrorOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-machine-add"></a>
-### 3.6 add
+### 3.7 add
 
 {{t:cli.commands.machine.add.description}}
 
@@ -726,7 +745,7 @@ rdc machine add <name> [options]
 
 
 <a id="cli-local-machine-infra"></a>
-### 3.7 infra
+### 3.8 infra
 
 {{t:cli.commands.machine.infra.description}}
 
@@ -825,7 +844,7 @@ rdc machine infra show <machine>
 ```
 
 <a id="cli-local-machine-provider"></a>
-### 3.8 provider
+### 3.9 provider
 
 {{t:cli.commands.machine.provider.description}}
 
@@ -878,7 +897,7 @@ rdc machine provider remove <name>
 ```
 
 <a id="cli-local-machine-remove"></a>
-### 3.9 remove
+### 3.10 remove
 
 {{t:cli.commands.machine.remove.description}}
 
@@ -893,7 +912,7 @@ rdc machine remove <name> [options]
 
 
 <a id="cli-local-machine-scan-keys"></a>
-### 3.10 scan-keys
+### 3.11 scan-keys
 
 {{t:cli.commands.machine.scanKeys.description}}
 
@@ -902,7 +921,7 @@ rdc machine scan-keys [name]
 ```
 
 <a id="cli-local-machine-setup"></a>
-### 3.11 setup
+### 3.12 setup
 
 {{t:cli.commands.machine.setup.description}}
 
@@ -914,11 +933,12 @@ rdc machine setup <name> [options]
 |------|-------------|----------|---------|
 | `--datastore-path <path>` | {{t:cli.commands.machine.setup.datastoreOption}} | {{t:cli.docs.optionLabels.no}} | `/mnt/rediacc` |
 | `--datastore-size <size>` | {{t:cli.commands.machine.setup.datastoreSizeOption}} | {{t:cli.docs.optionLabels.no}} | `95%` |
+| `--no-converge` | {{t:cli.commands.machine.setup.noConvergeOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-machine-status"></a>
-### 3.12 status
+### 3.13 status
 
 {{t:cli.commands.machine.status.description}}
 

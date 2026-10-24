@@ -299,6 +299,12 @@
               "defaultValue": "95%"
             },
             {
+              "flags": "--no-converge",
+              "descriptionKey": "commands.machine.setup.noConvergeOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -568,6 +574,57 @@
             {
               "flags": "--grace-days <days>",
               "descriptionKey": "options.graceDays",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "converge",
+          "descriptionKey": "commands.machine.converge.description",
+          "options": [
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.machine.converge.dryRunOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--json",
+              "descriptionKey": "commands.machine.converge.jsonOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--include-unknown",
+              "descriptionKey": "commands.machine.converge.includeUnknownOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--policy <policy>",
+              "descriptionKey": "commands.machine.converge.policyOption",
+              "mandatory": false,
+              "defaultValue": "epoch"
+            },
+            {
+              "flags": "--continue-on-error",
+              "descriptionKey": "commands.machine.converge.continueOnErrorOption",
               "mandatory": false,
               "defaultValue": null
             },
