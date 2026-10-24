@@ -32,7 +32,10 @@ const details: ConnectionDetails = {
 };
 
 /** Milliseconds until the command's stdout pipe reaches EOF, or null when it is still open after `limitMs`. */
-function stdoutClosesWithin(command: string, limitMs: number): Promise<{ ms: number | null; out: string }> {
+function stdoutClosesWithin(
+  command: string,
+  limitMs: number
+): Promise<{ ms: number | null; out: string; pgid: number | undefined }> {
   return new Promise((resolve) => {
     const started = Date.now();
     const child = spawn('bash', ['-c', command], {
@@ -45,11 +48,11 @@ function stdoutClosesWithin(command: string, limitMs: number): Promise<{ ms: num
       out += String(b);
     });
     const timer = setTimeout(() => {
-      resolve({ ms: null, out });
+      resolve({ ms: null, out, pgid: child.pid });
     }, limitMs);
     child.stdout.on('end', () => {
       clearTimeout(timer);
-      resolve({ ms: Date.now() - started, out });
+      resolve({ ms: Date.now() - started, out, pgid: child.pid });
     });
   });
 }
@@ -57,10 +60,21 @@ function stdoutClosesWithin(command: string, limitMs: number): Promise<{ ms: num
 describe('buildRemoteCommand with a backgrounded job', () => {
   it('lets the channel close while a redirected background job keeps running', async () => {
     const marker = `term-jobs-${process.pid}`;
-    // The job outlives the check by far; it is killed below by its unique argv.
+    // The job outlives the check by far; it is killed below with its process group.
     const user = `nohup bash -c 'exec -a ${marker} sleep 120' >/dev/null 2>&1 & echo STARTED`;
-    const { ms, out } = await stdoutClosesWithin(buildRemoteCommand({ command: user }, details), 10_000);
-    spawn('pkill', ['-f', marker]);
+    const { ms, out, pgid } = await stdoutClosesWithin(
+      buildRemoteCommand({ command: user }, details),
+      10_000
+    );
+    // The child was spawned detached, so it leads a process group the backgrounded job stays in
+    // (bash -c runs without job control); killing the group ends the job with no external tool.
+    if (pgid) {
+      try {
+        process.kill(-pgid, 'SIGKILL');
+      } catch {
+        // already gone
+      }
+    }
     expect(out).toContain('STARTED');
     expect(ms, 'stdout stayed open: the background job held the channel').not.toBeNull();
     expect(ms as number).toBeLessThan(10_000);
