@@ -507,6 +507,59 @@ def _kill_quiet(pid: str, sig: int) -> None:
         os.kill(int(pid), sig)
 
 
+def _children(pid: int) -> list[int]:
+    """Direct children of `pid`, from /proc. Empty where /proc has no such answer."""
+    found: list[int] = []
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        return found
+    for entry in entries:
+        if not entry.isdigit():
+            continue
+        try:
+            stat = pathlib.Path("/proc/%s/stat" % entry).read_text(encoding="utf-8")
+            # `pid (comm) state ppid ...`: comm may hold spaces and parentheses, so split after the LAST `)`.
+            if int(stat.rsplit(")", 1)[1].split()[1]) == pid:
+                found.append(int(entry))
+        except (OSError, ValueError, IndexError):
+            continue
+    return found
+
+
+def _kill_tree(pid: str, sig: int) -> None:
+    """Signal `pid`, its process group when it leads one other than ours, and every descendant."""
+    try:
+        target = int(pid)
+    except ValueError:
+        return
+    seen: list[int] = []
+    queue = [target]
+    while queue:
+        current = queue.pop()
+        if current in seen:
+            continue
+        seen.append(current)
+        queue.extend(_children(current))
+    with contextlib.suppress(OSError):
+        if os.getpgid(target) == target != os.getpgrp():
+            os.killpg(target, sig)
+    for victim in seen:
+        if victim != os.getpid():
+            _kill_quiet(str(victim), sig)
+
+
+def _lsof_port_pids(port: str) -> list[str]:
+    """Every pid `lsof -ti:PORT` lists; empty on a closed port or a missing `lsof`."""
+    try:
+        proc = subprocess.run(
+            ["lsof", "-ti:%s" % port], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        return []
+    return [line for line in proc.stdout.split("\n") if line]
+
+
 def _lsof_port_pid(port: str) -> str:
     """`lsof -ti:"$old_gateway" 2>/dev/null | head -1`. Empty on a closed port, a missing `lsof`, or no match."""
     try:
@@ -535,16 +588,23 @@ def stop(env: dict[str, str] | None = None) -> int:
         if old_pids and state_owned(text, path):
             # `for pid in ${old_pids//,/ }`: unquoted, so word-splitting drops any empty field the comma substitution leaves behind.
             pids = old_pids.replace(",", " ").split()
+            # Every recorded job leads its own process group (`spawn_background`), so the group signal ends the whole tree (npm exec -> sh -> vite/astro -> node), not only the pid.
             for pid in pids:
-                _kill_quiet(pid, signal.SIGTERM)
+                _kill_tree(pid, signal.SIGTERM)
             time.sleep(1)
             for pid in pids:
-                _kill_quiet(pid, signal.SIGKILL)
+                _kill_tree(pid, signal.SIGKILL)
 
         if old_gateway:
-            port_pid = _lsof_port_pid(old_gateway)
-            if port_pid:
-                _kill_quiet(port_pid, signal.SIGKILL)
+            # The gateway, Vite and Astro hold consecutive ports from the gateway's; the occupants and everything under them go too.
+            if old_gateway.isdigit():
+                for offset in (0, 1, 2):
+                    for port_pid in _lsof_port_pids(str(int(old_gateway) + offset)):
+                        _kill_tree(port_pid, signal.SIGKILL)
+            else:
+                port_pid = _lsof_port_pid(old_gateway)
+                if port_pid:
+                    _kill_quiet(port_pid, signal.SIGKILL)
 
     # `(cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true` and the container stop/rm loop below both run unconditionally in the twin, relying on `2>/dev/null || true` to swallow even a missing `docker` binary.
     # Gating the whole section on `shutil.which("docker")` produces the identical observable outcome (no output, nothing torn down) without needing to catch `FileNotFoundError` at every one of the four call sites below.

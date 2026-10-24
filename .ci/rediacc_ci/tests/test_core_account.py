@@ -12,6 +12,7 @@ THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcri
 """
 
 import contextlib
+import http.server
 import json
 import os
 import pathlib
@@ -709,6 +710,150 @@ def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant(
                     proc.kill()
                 if proc.stdout is not None:
                     proc.stdout.close()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def _serve_info(handler) -> None:
+    code = 200 if handler.path == "/account/api/v1/.well-known/server-info" else 404
+    handler.send_response(code)
+    handler.end_headers()
+    handler.wfile.write(b"{}")
+
+
+class _ServerInfo:
+    """A loopback HTTP server that answers the dev gateway's server-info path with 200."""
+
+    def __init__(self) -> None:
+        handler = type(
+            "Handler",
+            (http.server.BaseHTTPRequestHandler,),
+            {"log_message": lambda *_a: None},
+        )
+        setattr(handler, "do_" + "GET", _serve_info)
+        self.server = http.server.HTTPServer(("127.0.0.1", 0), handler)
+        self.port = self.server.server_address[1]
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
+class _SecondStartError(AssertionError):
+    """dev() went past the reuse check into a fresh start."""
+
+
+def _arm_dev(monkeypatch, work, calls: list[str]) -> pathlib.Path:
+    env = shadow_driver.sandbox_env(work)
+    monkeypatch.setenv("CONSOLE_ROOT_DIR", env["CONSOLE_ROOT_DIR"])
+    monkeypatch.setattr(account, "bws_exec", lambda *_a, **_k: calls.append("bws_exec"))
+    monkeypatch.setattr(account_lifecycle, "_check_node", lambda: None)
+
+    def second_start(*_a, **_k):
+        calls.append("allocate_ports")
+        raise _SecondStartError("a second stack was started")
+
+    monkeypatch.setattr(account, "allocate_ports", second_start)
+    monkeypatch.setattr(
+        account_lifecycle, "_stop_previous", lambda _state: calls.append("stop_previous")
+    )
+    return pathlib.Path(account.state_file(env))
+
+
+def test_dev_reuses_a_live_stack_and_starts_no_second(monkeypatch, capsys) -> None:
+    """A state file naming a live pid and a gateway answering server-info is reused: URL printed, rc 0, nothing stopped, nothing spawned, state untouched."""
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    tracked = None
+    gateway = _ServerInfo()
+    try:
+        calls: list[str] = []
+        state = _arm_dev(monkeypatch, work, calls)
+        tracked = _spawn_reaped(["sleep", "15"])
+        body = "gateway_port=%d\npids=%d\nwriter=%s\n" % (
+            gateway.port,
+            tracked.pid,
+            account.writer_stamp(),
+        )
+        state.write_text(body, encoding="utf-8")
+
+        assert account_lifecycle.dev() == 0
+        assert calls == [], calls
+        assert _alive(tracked.pid)
+        assert state.read_text(encoding="utf-8") == body
+        assert "http://localhost:%d" % gateway.port in capsys.readouterr().out
+    finally:
+        gateway.close()
+        if tracked is not None:
+            with contextlib.suppress(OSError):
+                tracked.kill()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+@pytest.mark.parametrize("shape", ["dead-pid", "dead-port", "foreign-writer", "no-pids"])
+def test_dev_replaces_a_stale_state_file(monkeypatch, shape) -> None:
+    """Dead pids, a dead gateway port, another writer's stamp or no pids at all: the state is stale, the previous instance is cleaned and a fresh start begins."""
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    tracked = None
+    gateway = _ServerInfo()
+    try:
+        calls: list[str] = []
+        state = _arm_dev(monkeypatch, work, calls)
+        tracked = _spawn_reaped(["sleep", "15"])
+        port, pids, writer = gateway.port, str(tracked.pid), account.writer_stamp()
+        if shape == "dead-pid":
+            pids = "4194302"
+        elif shape == "dead-port":
+            gateway.close()
+        elif shape == "foreign-writer":
+            writer = FOREIGN_WRITER
+        else:
+            pids = ""
+        state.write_text(
+            "gateway_port=%d\npids=%s\nwriter=%s\n" % (port, pids, writer), encoding="utf-8"
+        )
+
+        assert account_lifecycle.live_stack_port(str(state)) is None
+        with pytest.raises(_SecondStartError):
+            account_lifecycle.dev()
+        assert calls == ["bws_exec", "stop_previous", "allocate_ports"], calls
+    finally:
+        if shape != "dead-port":
+            gateway.close()
+        if tracked is not None:
+            with contextlib.suppress(OSError):
+                tracked.kill()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def test_stop_kills_the_whole_tree_not_only_the_recorded_pid(monkeypatch, tmp_path) -> None:
+    """The recorded pid is a job leader (npm exec -> sh -> server). Its child and grandchild must die with it."""
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    leader = None
+    try:
+        env = shadow_driver.sandbox_env(work)
+        state = pathlib.Path(account.state_file(env))
+        childfile = tmp_path / "child.pid"
+        leader = _spawn_reaped(
+            ["sh", "-c", "sh -c 'sleep 15 & echo $! > %s; wait' & wait" % childfile]
+        )
+        for _ in range(100):
+            if childfile.is_file() and childfile.read_text().strip():
+                break
+            time.sleep(0.05)
+        child = int(childfile.read_text().strip())
+        assert _alive(child)
+        state.write_text(
+            "gateway_port=1\npids=%d\nwriter=%s\n" % (leader.pid, account.writer_stamp()),
+            encoding="utf-8",
+        )
+        assert account.stop(env) == 0
+        assert _gone(leader.pid)
+        assert _gone(child), "stop() left a descendant of the recorded pid running"
+    finally:
+        if leader is not None:
+            with contextlib.suppress(OSError):
+                leader.kill()
         shutil.rmtree(work, ignore_errors=True)
 
 

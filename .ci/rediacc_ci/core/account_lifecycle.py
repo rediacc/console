@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import http.client
 import json
 import os
 import pathlib
@@ -644,6 +645,50 @@ def _arith(value: str) -> int:
     return int(value)
 
 
+SERVER_INFO_PATH = "/account/api/v1/.well-known/server-info"
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return True  # EPERM: it exists
+    return True
+
+
+def _server_info_ok(port: int) -> bool:
+    """True when the gateway on loopback `port` answers server-info with 200. In-process, so it adds no call to a stub farm's transcript."""
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+    try:
+        conn.request("GET", SERVER_INFO_PATH)
+        return conn.getresponse().status == 200
+    except (OSError, http.client.HTTPException):
+        return False
+    finally:
+        conn.close()
+
+
+def live_stack_port(state: str) -> int | None:
+    """The gateway port of a LIVE stack this worktree's state file names, else None.
+
+    Live means: the file is stamped by this writer (a pid is only meaningful in its own pid namespace), it records at least one pid and EVERY recorded pid is alive, and the gateway port answers server-info 200. Anything else is stale and the caller replaces it.
+    """
+    try:
+        text = pathlib.Path(state).read_text(encoding="utf-8", errors="surrogateescape")
+    except OSError:
+        return None
+    writer = grep_cut(text, "writer")
+    port = grep_cut(text, "gateway_port")
+    pids = grep_cut(text, "pids").replace(",", " ").split()
+    if not writer or writer != account.writer_stamp() or not port.isdigit():
+        return None
+    if not pids or not all(p.isdigit() and _pid_alive(int(p)) for p in pids):
+        return None
+    return int(port) if _server_info_ok(int(port)) else None
+
+
 def _stop_previous(state: str) -> None:
     """`.ci/lib/account.sh:330-360`: the previous instance from this worktree's state file."""
     text = pathlib.Path(state).read_text(encoding="utf-8", errors="surrogateescape")
@@ -900,10 +945,19 @@ def dev() -> int:
 
     FROM THE TRAP ON, EVERY EXIT RUNS `cleanup()`. The twin arms `trap account_cleanup EXIT INT TERM` after the shared packages are built, so a death before that point just ends the process, and every exit after it (a normal return included, because the process then exits) kills the remembered jobs and removes the state file.
     """
+    state = account.state_file()
+    # IDEMPOTENT PER WORKTREE: a state file naming a live stack (this writer's, every recorded pid alive, the gateway answering server-info) is reused. A second start used to overwrite the file and orphan the first stack's gateway, Vite and Astro. A restart is `./run.sh account stop` and then `dev`.
+    reused = live_stack_port(state)
+    if reused is not None:
+        log.info("Account dev stack already running for this worktree (gateway:%d)" % reused)
+        print("  Account dev gateway: http://localhost:%d" % reused)
+        print("    Account portal (React):  http://localhost:%d/account/" % reused)
+        print("  To restart it: ./run.sh account stop && ./run.sh account dev")
+        return 0
+
     account.bws_exec("account-dev", ["account", "dev"])
     _check_node()
 
-    state = account.state_file()
     if os.path.isfile(state):
         _stop_previous(state)
 
