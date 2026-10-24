@@ -32,6 +32,9 @@ const {
   removeSSHConfigEntry,
 } = await import('../sshConfig.js');
 
+// Every home this file makes is removed after its test, so a run leaves /tmp as it found it (3,623 sshconfig-* directories had piled up by 2026-10-24).
+const madeHomes: string[] = [];
+
 let tmpHome: string;
 
 beforeEach(() => {
@@ -40,9 +43,6 @@ beforeEach(() => {
   madeHomes.push(tmpHome);
   mockGetSSHHome.mockReturnValue(tmpHome);
 });
-
-// Every home this file makes is removed after its test, so a run leaves /tmp as it found it (3,255 sshconfig-* directories had piled up by 2026-10-24).
-const madeHomes: string[] = [];
 
 afterEach(() => {
   for (const dir of madeHomes.splice(0)) rmSync(dir, { recursive: true, force: true });
