@@ -471,7 +471,7 @@ def test_a_full_run_calls_i1_after_u1_and_needs_its_row(tmp_path: pathlib.Path) 
         check.check("I1", "stub I1", True)
 
     world = harness.make_world(tmp_path)
-    rc, out, receipt = _main(tmp_path, world, [], {"I1": i1}, u1=u1)
+    rc, out, receipt = _main(tmp_path, world, [], {**harness.STUB_EXTRA, "I1": i1}, u1=u1)
     assert order == ["U1", "I1"]
     assert rc == vm_check.EXIT_VERIFIED, out
     assert receipt["status"] == receipt_mod.VERIFIED
@@ -479,7 +479,7 @@ def test_a_full_run_calls_i1_after_u1_and_needs_its_row(tmp_path: pathlib.Path) 
 
 def test_a_full_run_whose_i1_records_nothing_is_not_verified(tmp_path: pathlib.Path) -> None:
     world = harness.make_world(tmp_path)
-    rc, out, receipt = _main(tmp_path, world, [], {"I1": lambda _check: None})
+    rc, out, receipt = _main(tmp_path, world, [], {**harness.STUB_EXTRA, "I1": lambda _check: None})
     assert rc != vm_check.EXIT_VERIFIED, out
     assert receipt.get("status") != receipt_mod.VERIFIED
 

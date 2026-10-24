@@ -54,7 +54,14 @@ import traceback
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
-from rediacc_ci.drills import lib, tenant_isolation, upgrade_converge, vm_ssh, wire
+from rediacc_ci.drills import (
+    lib,
+    session_teardown,
+    tenant_isolation,
+    upgrade_converge,
+    vm_ssh,
+    wire,
+)
 from rediacc_ci.drills import vm_check_receipt as receipt_mod
 from rediacc_ci.drills import vm_check_trigger as trigger
 from rediacc_ci.well_known import DATASTORE_PATH
@@ -235,6 +242,7 @@ SIDE_ACCOUNT = trigger.SIDE_ACCOUNT
 # A drill step that lives in its own module and registers here once: (step id, the steps a `--only` run of it drags in, the live function that takes the running VmCheck and records its rows under that id). The renet phase lists it, `--only` resolves its dependencies (transitively, `only_deps`) and the run calls it after U1, in this order; a later drill is one more entry.
 EXTRA_RENET_STEPS: tuple[tuple[str, tuple[str, ...], Callable[[Any], None]], ...] = (
     tenant_isolation.STEP,
+    session_teardown.STEP,
 )
 # Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
 PHASE_STEPS: dict[str, tuple[str, ...]] = {
