@@ -41,6 +41,7 @@ CONSOLE_PATHS: dict[str, frozenset[str]] = {
     ".ci/rediacc_ci/drills/upgrade_converge.py": frozenset({SIDE_RENET}),
     ".ci/rediacc_ci/drills/tenant_isolation.py": frozenset({SIDE_RENET}),
     ".ci/rediacc_ci/drills/session_teardown.py": frozenset({SIDE_RENET}),
+    ".ci/rediacc_ci/drills/converge_preflight.py": frozenset({SIDE_RENET}),
     ".ci/rediacc_ci/drills/vm_ssh.py": frozenset({SIDE_RENET, SIDE_ACCOUNT}),
     ".ci/rediacc_ci/drills/wire.py": frozenset({SIDE_RENET, SIDE_ACCOUNT}),
 }

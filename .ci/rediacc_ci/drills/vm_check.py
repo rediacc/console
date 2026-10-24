@@ -55,6 +55,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
 from rediacc_ci.drills import (
+    converge_preflight,
     lib,
     session_teardown,
     tenant_isolation,
@@ -243,6 +244,7 @@ SIDE_ACCOUNT = trigger.SIDE_ACCOUNT
 EXTRA_RENET_STEPS: tuple[tuple[str, tuple[str, ...], Callable[[Any], None]], ...] = (
     tenant_isolation.STEP,
     session_teardown.STEP,
+    converge_preflight.STEP,
 )
 # Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
 PHASE_STEPS: dict[str, tuple[str, ...]] = {
