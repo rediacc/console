@@ -10,7 +10,6 @@
  * Delegates to shared utilities in renet-execution.ts.
  */
 
-import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
@@ -34,16 +33,10 @@ import {
   parseRenetLicenseFailure,
   type RenetLicenseFailure,
 } from '../renet/renet-license-contract.js';
-import { renetProvisioner } from '../renet/renet-provisioner.js';
 import {
-  type AutoConvergeDeps,
   CONVERGE_FUNCTION,
-  convergeIfStale,
   parseConvergeReport,
-  prepareConvergeVault,
-  readRuntimeStatus,
   routerRefreshAfterPass,
-  shouldCheckRuntimeAfterUpload,
 } from '../renet/runtime-converge.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
@@ -70,6 +63,7 @@ import {
   extractStepsFromOutput,
   surfaceRenetWarnings,
 } from './renet-output.js';
+import { prepareSessionVault, sessionConvergeDeps } from './session-converge.js';
 import type { ExecuteOptions, ExecuteResult } from './types.js';
 import { loadContextRepositories, loadContextStorages, resolveKnownHosts } from './vault-inputs.js';
 
@@ -82,11 +76,6 @@ export type { ExecuteResult } from './types.js';
 
 /** What `buildLocalVault` reads besides the function and its params, kept to build a second vault (the converge pass) in the same session. */
 type VaultInputs = Omit<Parameters<typeof buildLocalVault>[0], 'functionName' | 'params'>;
-
-/** The datastore renet resolves for this run: the caller's, else the machine's, else the default. */
-function sessionDatastore(options: ExecuteOptions, machine: { datastore?: string }): string {
-  return options.datastore ?? machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-}
 
 /** Run a step with spinner + timing. Shows "Loading..." then "✓ Loaded (1.2s)" on the same line. */
 async function timedStep<T>(
@@ -466,34 +455,6 @@ class LocalExecutorService {
     return { config, machine, sshPrivateKey, vault, vaultInputs };
   }
 
-  /** The remote effects of the runtime converge pass, bound to this session. */
-  private convergeDeps(
-    sftp: SFTPClient,
-    remoteRenetPath: string,
-    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
-    vaultInputs: VaultInputs,
-    options: ExecuteOptions
-  ): AutoConvergeDeps {
-    return {
-      sftp,
-      remoteRenetPath,
-      machineName: options.machineName,
-      datastore: sessionDatastore(options, machine),
-      debug: options.debug,
-      buildBaseVault: (params) =>
-        buildLocalVault({ ...vaultInputs, functionName: CONVERGE_FUNCTION, params }),
-      run: (convergeVault, params) =>
-        this.runRemoteExecution(sftp, remoteRenetPath, convergeVault, {
-          functionName: CONVERGE_FUNCTION,
-          machineName: options.machineName,
-          params,
-          debug: options.debug,
-          captureOutput: true,
-        }),
-      refreshRouter: () => renetProvisioner.refreshRouter(sftp, remoteRenetPath),
-    };
-  }
-
   private async executeSession(
     sftp: SFTPClient,
     config: Awaited<ReturnType<typeof configService.getLocalConfig>>,
@@ -515,21 +476,21 @@ class LocalExecutorService {
       quiet
     );
 
-    const deps = this.convergeDeps(sftp, remoteRenetPath, machine, built.vaultInputs, options);
+    const deps = sessionConvergeDeps({
+      sftp,
+      remoteRenetPath,
+      machine,
+      options,
+      buildVault: (params) =>
+        buildLocalVault({ ...built.vaultInputs, functionName: CONVERGE_FUNCTION, params }),
+      runRemote: (vault, runOptions) =>
+        this.runRemoteExecution(sftp, remoteRenetPath, vault, runOptions),
+    });
     const isConverge = options.functionName === CONVERGE_FUNCTION;
-    let vault = built.vault;
-    if (isConverge) {
-      // The converge vault carries env secrets only for the repos this machine reports.
-      const status = await readRuntimeStatus(sftp, remoteRenetPath, deps.datastore);
-      vault = await prepareConvergeVault(vault, status);
-    } else {
-      // A new renet may change the runtime layout: move stale repo daemons first, then the router (PLAN-renet-runtime-converge D5, decision 2).
-      await convergeIfStale(deps, {
-        checkRuntime: shouldCheckRuntimeAfterUpload(options.functionName, renetUploaded),
-        routerRefreshDue,
-        skipRouterRestart: options.skipRouterRestart,
-      });
-    }
+    const vault = await prepareSessionVault(sftp, deps, options, built.vault, {
+      renetUploaded,
+      routerRefreshDue,
+    });
 
     const result = await this.executeWithConnectedSftp(
       sftp,
