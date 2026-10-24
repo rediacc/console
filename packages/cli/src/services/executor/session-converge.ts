@@ -77,7 +77,7 @@ export async function readConvergeStatus(
   }
 }
 
-/** True for cobra's refusal of an unknown `runtime` subcommand or flag, the signature of a renet older than the converge commands. */
+/** True for cobra's refusal of what buildRuntimeStatusCommand sends (`runtime`, `runtime status`, or one of its long flags --json, --datastore, --policy), the signature of a renet older than the converge commands; the call uses no shorthand flags. */
 function isUnknownRuntimeCommand(error: unknown): boolean {
   const text = error instanceof Error ? error.message : String(error);
   return /unknown command "runtime" for "renet"|unknown command "status" for "renet runtime"|unknown flag: --(datastore|json|policy)\b/.test(

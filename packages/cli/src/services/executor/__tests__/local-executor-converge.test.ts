@@ -346,6 +346,7 @@ describe('the runtime converge trigger', () => {
       (e: unknown) => (e instanceof Error ? e.message : String(e))
     );
 
+    expect(outcome).toContain('sftp: unknown command status 255 from the remote shell');
     expect(outcome).not.toContain('rdc machine setup hostinger');
   });
   it('keeps going with the requested function when the converge pass fails', async () => {
