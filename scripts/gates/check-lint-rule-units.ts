@@ -252,7 +252,9 @@ async function main(): Promise<number> {
   }
 
   const tested = new Set(results.map((r) => r.ruleId));
-  const untested = [...universe].filter((id) => !tested.has(id)).sort();
+  const untested = [...universe]
+    .filter((id) => !tested.has(id))
+    .sort((a, b) => Number(a > b) - Number(a < b));
 
   if (failures.length > 0) {
     console.error(`${RED}✗ lint rule unit specs${NC}`);

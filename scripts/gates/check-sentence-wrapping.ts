@@ -343,7 +343,7 @@ const main = (): number => {
     return 1;
   }
 
-  const ids = findings.map((f) => f.id).sort();
+  const ids = findings.map((f) => f.id).sort((a, b) => Number(a > b) - Number(a < b));
   const baseline = readBaseline();
   const exists = fs.existsSync(BASELINE);
 

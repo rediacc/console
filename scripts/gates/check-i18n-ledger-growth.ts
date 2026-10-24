@@ -114,7 +114,7 @@ export function unfingerprintedNewKeys(input: {
     const stamped = input.ledger[loc] ?? {};
     for (const k of fresh) if (!(k in stamped)) out.push(`${loc}:${k}`);
   }
-  return out.sort();
+  return out.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 const CONTROLS: {

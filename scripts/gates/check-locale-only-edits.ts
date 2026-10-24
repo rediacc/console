@@ -716,8 +716,12 @@ function selftest(): number {
   }
   for (const p of LEDGER_PROBES) {
     const r = scanLocale('xx', p.was, p.now, EN, EN, p.ledger, EN_HASH);
-    const got = r.findings.map((f) => f.trim().split(/\s+/)[1]).sort();
-    const ok = JSON.stringify(got) === JSON.stringify([...p.want].sort());
+    const got = r.findings
+      .map((f) => f.trim().split(/\s+/)[1])
+      .sort((a, b) => Number(a > b) - Number(a < b));
+    const ok =
+      JSON.stringify(got) ===
+      JSON.stringify([...p.want].sort((a, b) => Number(a > b) - Number(a < b)));
     if (!ok) bad++;
     process.stdout.write(
       `  ${ok ? 'PASS' : 'FAIL'}  ${p.name}${ok ? '' : ` (reported ${JSON.stringify(got)})`}\n`

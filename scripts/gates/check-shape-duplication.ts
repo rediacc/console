@@ -886,7 +886,7 @@ export function judge(
     if (files.size < N) continue;
     findings.push({
       shape: h,
-      files: [...files].map(([f, l]) => `${f}:${l}`).sort(),
+      files: [...files].map(([f, l]) => `${f}:${l}`).sort((a, b) => Number(a > b) - Number(a < b)),
       span: WINDOW,
     });
   }
@@ -1792,7 +1792,7 @@ export function nearIndex(
   const out: Record<string, string[]> = {};
   for (const [h, files] of countShapes(perFile, new Set())) {
     if (files.size < N - 1) continue;
-    out[h] = [...files].map(([f, l]) => `${f}:${l}`).sort();
+    out[h] = [...files].map(([f, l]) => `${f}:${l}`).sort((a, b) => Number(a > b) - Number(a < b));
   }
   return out;
 }
@@ -1839,7 +1839,7 @@ export function probeFindings(
     if (files.size < N) continue;
     findings.push({
       shape: h,
-      files: [...files].map(([f, l]) => `${f}:${l}`).sort(),
+      files: [...files].map(([f, l]) => `${f}:${l}`).sort((a, b) => Number(a > b) - Number(a < b)),
       span: WINDOW,
     });
   }
@@ -1939,7 +1939,9 @@ async function emitIndex(
   });
   const code = built.outputFiles[0].text;
   const inputs: Record<string, string> = {};
-  for (const rel of Object.keys(built.metafile.inputs).sort()) {
+  for (const rel of Object.keys(built.metafile.inputs).sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  )) {
     inputs[rel] = sha256(readFileSync(path.join(ROOT, rel), 'utf8'));
   }
   // `git ls-files -s` over the family pathspecs: the blob sha of every tracked corpus path, INCLUDING the opted-out ones. A path that appears, disappears or changes content between the scan and a commit is drift, and the guard says so rather than answering from a corpus that no longer exists.
@@ -1967,8 +1969,8 @@ async function emitIndex(
     corpus,
     opted_out: Object.keys(corpus)
       .filter((f) => !scanned.has(f))
-      .sort(),
-    helpers: [...helpers].sort(),
+      .sort((a, b) => Number(a > b) - Number(a < b)),
+    helpers: [...helpers].sort((a, b) => Number(a > b) - Number(a < b)),
     near: nearIndex(perFile),
   };
   mkdirSync(dir, { recursive: true });
@@ -2146,7 +2148,7 @@ async function main(): Promise<void> {
     for (const h of Object.keys(keep)) shapes.delete(h);
     writeFileSync(
       SEED_FILE,
-      `${JSON.stringify({ generated: new Date().toISOString().slice(0, 10), files: files.length, shapes: [...shapes].sort(), accepted: keep }, null, 2)}\n`
+      `${JSON.stringify({ generated: new Date().toISOString().slice(0, 10), files: files.length, shapes: [...shapes].sort((a, b) => Number(a > b) - Number(a < b)), accepted: keep }, null, 2)}\n`
     );
     console.log(
       `seeded ${shapes.size} shape(s) from ${files.length} file(s), ` +

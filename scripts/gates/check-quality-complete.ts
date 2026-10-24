@@ -275,10 +275,10 @@ export function judgeReceipts(
     const key = shardKey(r.lane, r.index, r.of);
     got.set(key, [...(got.get(key) ?? []), r]);
   }
-  for (const key of [...want.keys()].sort()) {
+  for (const key of [...want.keys()].sort((a, b) => Number(a > b) - Number(a < b))) {
     if (!got.has(key)) findings.push(`shard ${key} was declared and NEVER reported`);
   }
-  for (const key of [...got.keys()].sort()) {
+  for (const key of [...got.keys()].sort((a, b) => Number(a > b) - Number(a < b))) {
     if (!want.has(key)) {
       findings.push(
         `shard ${key} reported but is not in the declared plan. The leg ran against a ` +
@@ -415,7 +415,7 @@ export function wiringFindings(
   needs: ReadonlyMap<string, string[]>
 ): string[] {
   const findings: string[] = [];
-  const sharded = Object.keys(counts).sort();
+  const sharded = Object.keys(counts).sort((a, b) => Number(a > b) - Number(a < b));
   const hasAggregator = needs.has(AGGREGATOR_JOB);
 
   if (sharded.length > 0 && !hasAggregator) {
@@ -620,7 +620,7 @@ export function partitionFindings(
 
   // A NAME NO JOB ANSWERS TO, first: every clause below reads these lists, and a stale entry makes the union look complete while the lane it names is gone.
   for (const [what, members] of sets) {
-    for (const lane of [...members].sort()) {
+    for (const lane of [...members].sort((a, b) => Number(a > b) - Number(a < b))) {
       if (!known.has(lane)) {
         findings.push(
           `${lane} is listed as ${what} but ${WORKFLOW} has no such job. The list and the ` +
@@ -630,7 +630,7 @@ export function partitionFindings(
     }
   }
 
-  for (const lane of [...jobs].sort()) {
+  for (const lane of [...jobs].sort((a, b) => Number(a > b) - Number(a < b))) {
     const inSets = sets.filter(([, members]) => members.includes(lane)).map(([what]) => what);
     if (inSets.length === 0) {
       findings.push(
@@ -715,7 +715,7 @@ function main(argv: readonly string[]): number {
   }
   const needs = parseJobNeeds(workflowText);
 
-  const sharded = Object.keys(SHARD_COUNTS).sort();
+  const sharded = Object.keys(SHARD_COUNTS).sort((a, b) => Number(a > b) - Number(a < b));
   let declared: Shard[] = [];
   if (sharded.length > 0) {
     const plan = shardPlan(lock, caps, SHARD_COUNTS, measuredStepDurations(ROOT));
@@ -746,7 +746,7 @@ function main(argv: readonly string[]): number {
     if (UNDECIDED_LANES.length === 0) return;
     console.log(
       `  OPEN DECISION, ${UNDECIDED_LANES.length} lane(s) hand-written by omission rather ` +
-        `than by design: ${[...UNDECIDED_LANES].sort().join(', ')}.`
+        `than by design: ${[...UNDECIDED_LANES].sort((a, b) => Number(a > b) - Number(a < b)).join(', ')}.`
     );
     console.log(
       '  Each either earns a `# >>> gate-bind` region by having gates registered against ' +

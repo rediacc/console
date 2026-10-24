@@ -168,7 +168,9 @@ if (untranslated.size > 0 || problems.length > 0) {
   console.error('\x1b[31m✗ Untranslated locale values (identical to English)\x1b[0m\n');
   for (const problem of problems) console.error(`  ${problem}\n`);
 
-  for (const [key, where] of [...untranslated].sort()) {
+  for (const [key, where] of [...untranslated].sort(
+    (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))
+  )) {
     const preview = english[key].replace(/\s+/g, ' ').slice(0, 88);
     console.error(`  ${key}\n      ${where.length}/${locales.length} locales: ${where.join(' ')}`);
     console.error(

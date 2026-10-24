@@ -529,8 +529,9 @@ async function selftest(): Promise<number> {
       'selection: the three toolchain leaves are judged',
       sel.judged
         .map((e) => e.id)
-        .sort()
-        .join(',') === [DEFERRED, STALE, DOWN].sort().join(','),
+        .sort((a, b) => Number(a > b) - Number(a < b))
+        .join(',') ===
+        [DEFERRED, STALE, DOWN].sort((a, b) => Number(a > b) - Number(a < b)).join(','),
       sel.judged.map((e) => e.id).join(',')
     );
     add(

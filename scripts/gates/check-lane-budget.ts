@@ -156,10 +156,10 @@ export const MAX_STALENESS_DAYS = 14;
 export const CHECK7_TIMEOUT_MAX_MIN = 15;
 
 /** T4.4 (2026-09-30): check 7 is on. The selftest pins it on, so turning it off is a visible edit, not a drift. */
-export const CHECK7_ENABLED = true;
+export const CHECK7_ENABLED: boolean = true;
 
 /** Check 6 stays advisory: D-W1's text makes it red only once the P4 run-level cancel lands. Printed always, never a finding. */
-export const PIPELINE_ENFORCED = false;
+export const PIPELINE_ENFORCED: boolean = false;
 
 /**
  * Check 3's operator-approved exemptions: a unit whose own cost exceeds the per-leg budget
@@ -544,7 +544,7 @@ export function legFindings(
   const { unknown, perUnit } = legCostMs(ids, units, defaultUnitMs);
   const { ms: totalMs, bound } = parallelLegMs(perUnit, parallel);
   if (unknown.length > 0) {
-    const shown = [...unknown].sort().slice(0, 3);
+    const shown = [...unknown].sort((a, b) => Number(a > b) - Number(a < b)).slice(0, 3);
     findings.push(
       `${lane} leg ${index}/${of}: ${unknown.length} unit(s) have no measured cost and the ` +
         `lane declares no defaultUnitMs: ${shown.join(', ')}` +
@@ -1384,7 +1384,7 @@ function unitCostsOrThrow(model: LaneModel, ids: readonly string[]): Map<string,
   if (unknown.length > 0)
     throw new RebalanceError(
       'unknown',
-      `${model.lane}: ${unknown.length} unit(s) have no measured cost and the lane declares no defaultUnitMs, so no plan can be priced: ${unknown.sort().join(', ')}`
+      `${model.lane}: ${unknown.length} unit(s) have no measured cost and the lane declares no defaultUnitMs, so no plan can be priced: ${unknown.sort((a, b) => Number(a > b) - Number(a < b)).join(', ')}`
     );
   return out;
 }
@@ -1432,7 +1432,7 @@ function buildBlocks(model: LaneModel, ids: readonly string[], c: RebalanceConst
     return r;
   };
   const union = (a: string, b: string): void => {
-    const [ra, rb] = [find(a), find(b)].sort();
+    const [ra, rb] = [find(a), find(b)].sort((a, b) => Number(a > b) - Number(a < b));
     if (ra !== rb) parent.set(rb as string, ra as string);
   };
   const grouped = model.parallel !== undefined && model.parallel.workers > 1;
@@ -1449,7 +1449,8 @@ function buildBlocks(model: LaneModel, ids: readonly string[], c: RebalanceConst
   for (const t of c.together ?? [])
     for (const u of t.units.slice(1)) union(t.units[0] as string, u);
   const byRoot = new Map<string, string[]>();
-  for (const id of [...ids].sort()) byRoot.set(find(id), [...(byRoot.get(find(id)) ?? []), id]);
+  for (const id of [...ids].sort((a, b) => Number(a > b) - Number(a < b)))
+    byRoot.set(find(id), [...(byRoot.get(find(id)) ?? []), id]);
   const blocks: Block[] = [];
   for (const members of byRoot.values()) {
     const allowed = Array.from({ length: model.of }, () => true);
@@ -2143,7 +2144,9 @@ async function loadRebalanceInput(lane: string, durations: LaneDurations): Promi
   const manifest = parseShardManifest(readFileSync(manifestFile, 'utf-8'), lane);
   const committed = [...manifest.legs].sort((a, b) => a.index - b.index).map((l) => [...l.ids]);
   const ids =
-    spec.unitSource === 'enumerator' ? await enumerate() : [...new Set(committed.flat())].sort();
+    spec.unitSource === 'enumerator'
+      ? await enumerate()
+      : [...new Set(committed.flat())].sort((a, b) => Number(a > b) - Number(a < b));
   return {
     model: laneModel(lane, manifest.of, durations, parallel),
     ids,
@@ -2224,7 +2227,10 @@ export function formatRebalance(r: RebalanceResult): string[] {
       if (before.get(id) !== i + 1)
         moves.push(`  ${id}: leg ${before.get(id) ?? 'none'} -> ${i + 1}`);
   });
-  out.push(`diff: ${moves.length} unit(s) move`, ...moves.sort());
+  out.push(
+    `diff: ${moves.length} unit(s) move`,
+    ...moves.sort((a, b) => Number(a > b) - Number(a < b))
+  );
   return out;
 }
 
@@ -2586,7 +2592,7 @@ async function main(): Promise<number> {
     return worst;
   };
 
-  for (const lane of [...allLanes].sort()) {
+  for (const lane of [...allLanes].sort((a, b) => Number(a > b) - Number(a < b))) {
     const contiguous = CONTIGUOUS_LANES[lane];
     const job = contiguous?.job ?? lane;
     // A lane named in TEST_LANE_WORKFLOWS whose job does not exist is inert by that table's own docstring; it is printed below, never silently dropped.
@@ -2699,7 +2705,7 @@ async function main(): Promise<number> {
 
   // The committed plan against the rebalanced one, per rebalanced lane: a broken rule is a finding, a gain over REBALANCE_ADVISORY_MIN is an advisory line, a unit with no cost is left to check 4, which already names it.
   const rebalanceNotes: string[] = [];
-  for (const lane of Object.keys(REBALANCE_LANES).sort()) {
+  for (const lane of Object.keys(REBALANCE_LANES).sort((a, b) => Number(a > b) - Number(a < b))) {
     if (inert.includes(lane)) continue;
     try {
       const { result } = await rebalanceLane(lane, durations);
@@ -2738,7 +2744,7 @@ async function main(): Promise<number> {
   ).length;
   findings.push(...judgeJobSamples(judgedSamples));
   if (unchecked.length > 0) {
-    const shown = [...unchecked].sort();
+    const shown = [...unchecked].sort((a, b) => Number(a > b) - Number(a < b));
     findings.push(
       `check 2: ${unchecked.length} call site(s) in ${CI_WORKFLOW} and its callees are UNCHECKED: no ` +
         `job_p90_minutes entry in ${DURATIONS_PATH} matches their display name (judged per call site, so a measured sibling call site of the same job does not cover them). A job that ` +
@@ -2876,7 +2882,7 @@ async function liveRebalanceControls(
   durations: LaneDurations
 ): Promise<{ name: string; ok: boolean; detail?: string }[]> {
   const out: { name: string; ok: boolean; detail?: string }[] = [];
-  for (const lane of Object.keys(REBALANCE_LANES).sort()) {
+  for (const lane of Object.keys(REBALANCE_LANES).sort((a, b) => Number(a > b) - Number(a < b))) {
     try {
       const { result, input } = await rebalanceLane(lane, durations);
       const again =
@@ -2930,9 +2936,15 @@ async function liveRebalanceControls(
 
 async function selftest(): Promise<number> {
   // The live OPS Provision slicing, read the way main() reads it, for the measured-branch control below.
-  const opsIds = (await LANE_ENUMERATORS['ops-tutorials']?.(ROOT))?.map((u) => u.id) ?? [];
+  const contiguous: Partial<typeof CONTIGUOUS_LANES> = CONTIGUOUS_LANES;
+  const unitIdsOf = async (lane: string): Promise<string[]> => {
+    const enumerator = LANE_ENUMERATORS[lane];
+    if (enumerator === undefined) return [];
+    return (await enumerator(ROOT)).map((u) => u.id);
+  };
+  const opsIds = await unitIdsOf('ops-tutorials');
   const opsSizes = parseShardSizes(
-    readFileSync(path.join(ROOT, CONTIGUOUS_LANES['ops-tutorials']?.sizesFile ?? ''), 'utf-8')
+    readFileSync(path.join(ROOT, contiguous['ops-tutorials']?.sizesFile ?? ''), 'utf-8')
   );
   const liveDurations = readDurations(ROOT);
   const cases = [
@@ -4073,7 +4085,8 @@ async function selftest(): Promise<number> {
     {
       name: 'CONTROL: the live rebalanceConstraints names both hand-kept rules (18/19 together, 06 off leg 1)',
       ok: (() => {
-        const c = liveDurations.rebalanceConstraints ?? {};
+        const c: Record<string, RebalanceConstraints | undefined> =
+          liveDurations.rebalanceConstraints ?? {};
         return (
           (c['test-e2e-workers']?.together ?? []).some(
             (t) =>

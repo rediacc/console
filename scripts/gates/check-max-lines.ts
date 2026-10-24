@@ -233,7 +233,7 @@ export function scanScope(): string[] {
       exempt.add(toPosix(f));
     }
   }
-  return [...found].filter((f) => !exempt.has(f)).sort();
+  return [...found].filter((f) => !exempt.has(f)).sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** One file's finding, or `undefined` if it is within budget. */

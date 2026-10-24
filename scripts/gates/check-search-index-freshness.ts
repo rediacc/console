@@ -71,7 +71,9 @@ const regeneratedFiles = readdirSync(tmpDir)
   .filter((f) => INDEX_PATTERN.test(f))
   .sort();
 
-const allFiles = [...new Set([...committedFiles, ...regeneratedFiles])].sort();
+const allFiles = [...new Set([...committedFiles, ...regeneratedFiles])].sort(
+  (a, b) => Number(a > b) - Number(a < b)
+);
 const stale: { file: string; committedSize: number; regeneratedSize: number; reason: string }[] =
   [];
 

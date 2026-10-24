@@ -158,9 +158,11 @@ export function compareValue(source: string, value: string): Verdict {
   const got = placeholders(value);
   const enSentinels = sentinels(source);
   return {
-    dropped: [...want].filter((p) => !got.has(p)).sort(),
-    invented: [...got].filter((p) => !want.has(p)).sort(),
-    leakedSentinels: [...sentinels(value)].filter((t) => !enSentinels.has(t)).sort(),
+    dropped: [...want].filter((p) => !got.has(p)).sort((a, b) => Number(a > b) - Number(a < b)),
+    invented: [...got].filter((p) => !want.has(p)).sort((a, b) => Number(a > b) - Number(a < b)),
+    leakedSentinels: [...sentinels(value)]
+      .filter((t) => !enSentinels.has(t))
+      .sort((a, b) => Number(a > b) - Number(a < b)),
   };
 }
 

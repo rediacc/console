@@ -76,7 +76,7 @@ function gateFiles(): string[] {
       if (/^check[-_].*\.(ts|sh|py)$/.test(n)) out.push(path.join(d, n));
     }
   }
-  return out.sort();
+  return out.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 function scan(files: string[]): Finding[] {
