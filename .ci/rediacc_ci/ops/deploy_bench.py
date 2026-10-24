@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -186,6 +187,51 @@ def _run(
         raise DeployError("%s failed (exit %d)" % (what, proc.returncode))
 
 
+# A D1 bookmark as `wrangler d1 time-travel info` prints it: three 8-hex groups and a long hex tail.
+BOOKMARK_PATTERN = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{16,}\b")
+
+
+def restore_command(bookmark: str) -> str:
+    return "npx wrangler d1 time-travel restore %s --bookmark=%s --config %s" % (
+        DB_NAME,
+        bookmark,
+        CONFIG,
+    )
+
+
+def capture_bookmark(worker_dir) -> str | None:
+    """Print the D1 bookmark taken BEFORE the migrations, with the exact restore command: a Worker rollback does not undo a migration, so the bookmark is the rollback handle. A failed capture is reported loudly and returns None; the deploy goes on (the migrations are not blocked on a read-only query, and the bash had no bookmark at all)."""
+    try:
+        proc = subprocess.run(
+            ["npx", "wrangler", "d1", "time-travel", "info", DB_NAME, "--config", CONFIG],
+            cwd=str(worker_dir),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        found = BOOKMARK_PATTERN.search(proc.stdout or "")
+        failure = (
+            ""
+            if proc.returncode == 0 and found
+            else "wrangler d1 time-travel info exited %d%s"
+            % (proc.returncode, "" if found else " and printed no bookmark")
+        )
+        detail = (proc.stderr or "").strip()
+    except OSError as exc:
+        found, failure, detail = None, "wrangler d1 time-travel info could not run", str(exc)
+    if failure or not found:
+        log.warn(
+            "NO D1 BOOKMARK CAPTURED for %s (%s%s): the migrations below cannot be rolled back "
+            "to a known point. Continuing."
+            % (DB_NAME, failure, "; " + detail.splitlines()[-1] if detail else "")
+        )
+        return None
+    bookmark = found.group(0)
+    log.info("D1 bookmark before migrations: %s" % bookmark)
+    print("  restore: %s" % restore_command(bookmark))
+    return bookmark
+
+
 def _reexec_under_profile(argv: list[str]) -> int | None:
     """Run the same entry point under the deploy-bench Bitwarden profile and return its exit status; None when already bound."""
     profiles = (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",")
@@ -317,6 +363,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
 
     if not (worker_dir / "node_modules").is_dir():
         _run(["npm", "install"], worker_dir, "npm install")
+    capture_bookmark(worker_dir)
     log.step("Applying D1 migrations to %s (remote)" % DB_NAME)
     _run(
         ["npx", "wrangler", "d1", "migrations", "apply", DB_NAME, "--remote", "--config", CONFIG],

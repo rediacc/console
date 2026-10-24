@@ -20,6 +20,7 @@ import os
 import shutil
 import subprocess
 import sys
+import types
 import typing
 
 import pytest
@@ -155,7 +156,13 @@ else:
 
 SMOKE_HOST = "proxy.test.example"
 
-BASE_ENV = {"CLOUDFLARE_API_TOKEN": "tok", "ACCOUNT_ED25519_PUBLIC_KEY": "pubkey"}
+# The smoke's resolution retry and DoH fallback are off in the subprocess runs: the frozen twin made one curl call per request and never touched the network.
+BASE_ENV = {
+    "CLOUDFLARE_API_TOKEN": "tok",
+    "ACCOUNT_ED25519_PUBLIC_KEY": "pubkey",
+    "REDIACC_SMOKE_RESOLVE_WINDOW_S": "0",
+    "REDIACC_SMOKE_DOH_URL": "",
+}
 
 # The whole stderr of a successful real deploy, in order. Quoted once here because four tests need to say "and not this".
 DEPLOY_STDERR = (
@@ -993,3 +1000,109 @@ def test_the_bench_profile_binds_the_dev_public_key_and_the_workers_token() -> N
         "CLOUDFLARE_ACCOUNT_ID",
         "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
     }
+
+
+# --------------------------------------------------------------------------- The smoke survives a fresh domain's cached NXDOMAIN ---------------------------------------------------------------------------
+
+
+def _clock(monkeypatch, ticks: list[float]) -> None:
+    """Replace the module's `time` with a scripted monotonic clock, so the retry window is exact."""
+    monkeypatch.setenv(port.RESOLVE_WINDOW_ENV, "50")
+    monkeypatch.setattr(
+        port, "time", types.SimpleNamespace(monotonic=iter(ticks).__next__, sleep=lambda _s: None)
+    )
+
+
+class _Curl:
+    """A scripted `_curl`: answers per call, in order, as (code, rc); the last repeats. Records (url, pin)."""
+
+    def __init__(self, answers: list[tuple[str, int]]) -> None:
+        self.answers = answers
+        self.calls: list[tuple[str, str | None]] = []
+
+    def __call__(self, url: str, pin: str | None = None) -> tuple[str, int]:
+        self.calls.append((url, pin))
+        return self.answers[min(len(self.calls), len(self.answers)) - 1]
+
+
+def _smoke_fixture(tmp_path: pathlib.Path, monkeypatch, answers, doh=None):
+    (tmp_path / port.EU_CONFIG).write_text(
+        'routes = [{ pattern = "proxy.test.example", custom_domain = true }]\n', encoding="utf-8"
+    )
+    fake = _Curl(answers)
+    sleeps: list[float] = []
+    monkeypatch.setattr(port, "_curl", fake)
+    monkeypatch.setattr(port, "_sleep", sleeps.append)
+    monkeypatch.setattr(port, "_doh_lookup", lambda _host: doh)
+    monkeypatch.setenv(port.RESOLVE_WINDOW_ENV, "1000")
+    monkeypatch.setenv(port.DOH_URL_ENV, "https://doh.invalid/dns-query")
+    return fake, sleeps
+
+
+def test_nxdomain_then_ok_passes_without_a_pin(tmp_path, monkeypatch) -> None:
+    fake, sleeps = _smoke_fixture(tmp_path, monkeypatch, [("000", 6), ("200", 0), ("401", 0)])
+    assert port.smoke(tmp_path) == 0
+    assert [pin for _, pin in fake.calls] == [None, None, None]
+    assert sleeps == [port.RESOLVE_INTERVAL_S]
+
+
+def test_persistent_nxdomain_with_a_doh_answer_passes_through_a_pin(tmp_path, monkeypatch) -> None:
+    fake, _ = _smoke_fixture(
+        tmp_path, monkeypatch, [("000", 6), ("200", 0), ("401", 0)], doh="203.0.113.7"
+    )
+    _clock(monkeypatch, [0.0, 100.0, 200.0])
+    assert port.smoke(tmp_path) == 0
+    assert [pin for _, pin in fake.calls] == [None, "203.0.113.7", "203.0.113.7"]
+    url = "https://proxy.test.example/v1/health"
+    assert port.curl_argv(url, "203.0.113.7")[-3:] == [
+        "--resolve",
+        "proxy.test.example:443:203.0.113.7",
+        url,
+    ]
+    assert port.curl_argv(url)[-1] == url
+    assert "--resolve" not in port.curl_argv(url)
+
+
+def test_a_500_fails_at_once_without_retry(tmp_path, monkeypatch, capsys) -> None:
+    fake, sleeps = _smoke_fixture(tmp_path, monkeypatch, [("500", 0)])
+    assert port.smoke(tmp_path) == 1
+    assert len(fake.calls) == 1
+    assert sleeps == []
+    assert "/v1/health answered 500, expected 200" in capsys.readouterr().err
+
+
+def test_persistent_resolution_failure_fails_with_a_clear_message(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    _smoke_fixture(tmp_path, monkeypatch, [("000", 6)], doh=None)
+    _clock(monkeypatch, [0.0, 100.0])
+    assert port.smoke(tmp_path) == 1
+    err = capsys.readouterr().err
+    assert "does not resolve locally" in err
+    assert "DNS-over-HTTPS has no answer" in err
+    assert "answered 000, expected 200" in err
+
+
+def test_the_doh_lookup_reads_the_first_a_record(monkeypatch) -> None:
+    class Resp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return json.dumps(
+                {"Answer": [{"type": 5, "data": "x."}, {"type": 1, "data": "198.51.100.9"}]}
+            ).encode()
+
+    seen = {}
+
+    def fake_open(request, **_kw):
+        seen["url"] = request.full_url
+        return Resp()
+
+    monkeypatch.setattr(port.https, "urlopen", fake_open)
+    monkeypatch.delenv(port.DOH_URL_ENV, raising=False)
+    assert port._doh_lookup("proxy.test.example") == "198.51.100.9"
+    assert "name=proxy.test.example" in seen["url"]

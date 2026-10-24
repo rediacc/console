@@ -298,3 +298,46 @@ def test_the_caller_guard_sees_a_quoted_run_sh(tmp_path: Path) -> None:
     assert _invokes_rotation_check(quoted)
     quoted.write_text("# ./run.sh rotation check is documented here\n")
     assert not _invokes_rotation_check(quoted)
+
+
+BOOKMARK = "00000085-0000024c-00004c6d-8e61117bf38d7adb71b3ce8f1351e2d4"
+
+
+def _fake_time_travel(monkeypatch: pytest.MonkeyPatch, rc: int, out: str, err: str = "") -> list:
+    calls: list[list[str]] = []
+
+    def run(argv, **_kw):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, rc, out, err)
+
+    monkeypatch.setattr(deploy_bench.subprocess, "run", run)
+    return calls
+
+
+def test_the_d1_bookmark_and_restore_command_print_before_the_migrations(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    calls = _fake_time_travel(monkeypatch, 0, "The current bookmark is '%s'\n" % BOOKMARK)
+    assert deploy_bench.capture_bookmark(Path(".")) == BOOKMARK
+    assert calls[0][:6] == ["npx", "wrangler", "d1", "time-travel", "info", "account-db-bench"]
+    out = capsys.readouterr()
+    assert BOOKMARK in out.out + out.err
+    assert (
+        "npx wrangler d1 time-travel restore account-db-bench --bookmark=%s" % BOOKMARK in out.out
+    )
+
+
+def test_a_failed_bookmark_capture_is_loud_and_does_not_block(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _fake_time_travel(monkeypatch, 1, "", "auth error")
+    assert deploy_bench.capture_bookmark(Path(".")) is None
+    assert "NO D1 BOOKMARK CAPTURED" in capsys.readouterr().err
+    _fake_time_travel(monkeypatch, 0, "no bookmark here")
+    assert deploy_bench.capture_bookmark(Path(".")) is None
+    assert "printed no bookmark" in capsys.readouterr().err
+
+
+def test_the_bookmark_is_captured_before_the_migrations_apply() -> None:
+    source = inspect.getsource(deploy_bench._deploy)
+    assert source.index("capture_bookmark(") < source.index('"migrations", "apply"')

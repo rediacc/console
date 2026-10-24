@@ -46,16 +46,20 @@ K=5 LEDGER: `.ci/shadow/w7p6-deploy-proxy.observations.jsonl`.
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
 import shutil
 import subprocess
 import sys
+import time
 import tomllib
+import urllib.error
+import urllib.parse
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, https
 from rediacc_ci.version import resolve_version
 from rediacc_ci.well_known import BENCH_ORIGIN, PROXY_BENCH_HOST
 
@@ -292,9 +296,52 @@ def package_env() -> dict[str, str]:
     return env
 
 
-def curl_argv(url: str) -> list[str]:
-    """`curl -sS -o /dev/null -w '%{http_code}' --max-time 30 <url>`."""
-    return ["curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "30", url]
+def curl_argv(url: str, pin: str | None = None) -> list[str]:
+    """`curl -sS -o /dev/null -w '%{http_code}' --max-time 30 <url>`, with `--resolve host:443:<pin>` ahead of the URL when a DoH answer pins the address."""
+    argv = ["curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "30"]
+    if pin:
+        argv += ["--resolve", "%s:443:%s" % (urllib.parse.urlsplit(url).hostname, pin)]
+    return [*argv, url]
+
+
+# A brand-new custom domain is often NXDOMAIN on the local resolver for a while: the zone's negative TTL is up to 1800 s, and the first lookup before the record existed is cached. Only a curl "could not resolve host" (exit 6) is retried, for RESOLVE_WINDOW_S seconds; after that the address is read over DNS-over-HTTPS and pinned with `--resolve`. Both are set by the environment so a test (or an operator) can shorten or disable them; an empty `REDIACC_SMOKE_DOH_URL` disables the DoH step.
+CURL_RESOLVE_RC = 6
+RESOLVE_WINDOW_ENV = "REDIACC_SMOKE_RESOLVE_WINDOW_S"
+RESOLVE_INTERVAL_S = 5.0
+DEFAULT_RESOLVE_WINDOW_S = "90"
+DOH_URL_ENV = "REDIACC_SMOKE_DOH_URL"
+DEFAULT_DOH_URL = "https://1.1.1.1/dns-query"
+DOH_A_RECORD = 1
+DOH_TIMEOUT_S = 10.0
+
+
+def _resolve_window() -> float:
+    try:
+        return max(0.0, float(os.environ.get(RESOLVE_WINDOW_ENV, DEFAULT_RESOLVE_WINDOW_S)))
+    except ValueError:
+        return float(DEFAULT_RESOLVE_WINDOW_S)
+
+
+def _sleep(seconds: float) -> None:
+    time.sleep(seconds)
+
+
+def _doh_lookup(host: str) -> str | None:
+    """The first A record Cloudflare's DoH JSON API holds for `host`, or None (disabled, unreachable, no answer)."""
+    base = os.environ.get(DOH_URL_ENV, DEFAULT_DOH_URL)
+    if not base:
+        return None
+    url = "%s?%s" % (base, urllib.parse.urlencode({"name": host, "type": "A"}))
+    try:
+        request = https.build_request(url, headers={"Accept": "application/dns-json"})
+        with https.urlopen(request, timeout=DOH_TIMEOUT_S) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+    except (OSError, ValueError):
+        return None
+    for answer in body.get("Answer") or [] if isinstance(body, dict) else []:
+        if isinstance(answer, dict) and answer.get("type") == DOH_A_RECORD and answer.get("data"):
+            return str(answer["data"])
+    return None
 
 
 def smoke_host(wrangler_toml: str) -> str:
@@ -306,20 +353,56 @@ def smoke_host(wrangler_toml: str) -> str:
     return ""
 
 
-def _http_code(url: str) -> str:
-    """`$(curl ... || true)`: curl's stdout, whatever its status; stderr inherited."""
-    return subprocess.run(curl_argv(url), stdout=subprocess.PIPE, text=True, check=False).stdout
+def _curl(url: str, pin: str | None = None) -> tuple[str, int]:
+    """`$(curl ... || true)`: curl's stdout and exit status; stderr inherited."""
+    proc = subprocess.run(curl_argv(url, pin), stdout=subprocess.PIPE, text=True, check=False)
+    return proc.stdout, proc.returncode
+
+
+class _Fetcher:
+    """Issues the smoke's requests. A resolution failure is retried for the window, then answered by a DoH pin shared by every later request; any other outcome (a code, or another curl failure) returns at once."""
+
+    def __init__(self, host: str) -> None:
+        self.host = host
+        self.pin: str | None = None
+
+    def code(self, url: str) -> str:
+        deadline = time.monotonic() + _resolve_window()
+        while True:
+            out, rc = _curl(url, self.pin)
+            if rc != CURL_RESOLVE_RC:
+                return out
+            if self.pin is None and time.monotonic() >= deadline:
+                address = _doh_lookup(self.host)
+                if not address:
+                    if os.environ.get(DOH_URL_ENV, DEFAULT_DOH_URL):
+                        log.error(
+                            "%s does not resolve locally (retried %gs) and DNS-over-HTTPS has no answer for it either; the DNS record may not exist yet"
+                            % (self.host, _resolve_window())
+                        )
+                    return out
+                log.info(
+                    "%s does not resolve locally; DNS-over-HTTPS answers %s, pinning it"
+                    % (self.host, address)
+                )
+                self.pin = address
+                return _curl(url, self.pin)[0]
+            if self.pin is not None:
+                return out
+            _sleep(RESOLVE_INTERVAL_S)
 
 
 def smoke(worker_dir: pathlib.Path, config: str = EU_CONFIG) -> int:
     """The post-deploy smoke: /v1/health 200, then an unauthenticated /v1/server-info 401."""
-    url = "https://" + smoke_host((worker_dir / config).read_text(encoding="utf-8"))
+    host = smoke_host((worker_dir / config).read_text(encoding="utf-8"))
+    url = "https://" + host
     log.step("Smoke-testing %s..." % url)
-    health = _http_code(url + "/v1/health")
+    fetch = _Fetcher(host)
+    health = fetch.code(url + "/v1/health")
     if health != "200":
         log.error("Smoke test failed: /v1/health answered %s, expected 200" % (health or "nothing"))
         return 1
-    info = _http_code(url + "/v1/server-info")
+    info = fetch.code(url + "/v1/server-info")
     if info != "401":
         log.error(
             "Smoke test failed: an unauthenticated /v1/server-info answered %s, expected 401"
