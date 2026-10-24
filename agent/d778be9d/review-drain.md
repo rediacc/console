@@ -53,3 +53,9 @@ Already done in this session: f7ab147f.3 (three gates were vacuous, fixed 07e56c
 ## Phase 2
 
 Writers take disjoint groups: (1) private/renet, (2) private/account, (3) console .ci + scripts + hooks, (4) console packages + docs + plans + translations; the lead commits each group and marks findings fixed with the sha.
+
+## Complexity and who designs/implements (open work, 2026-10-24 ~19:30Z)
+- Converge P3/P1/P4/P5 (#3eabcddc): complicated; designed by the plan file (written by an Opus plan writer), implemented by Opus writer a5a99906e77033f93.
+- Renet i18n wrap of 80 strings (#ded06481): simple, mechanical; Sonnet writer afcff9126e0c7fbb6 stages keys, lead merges the catalogs after #3eabcddc.
+- Review drain phase 2 groups 1-4 (#6dd33cfe, #e0c35276, #3c24567c, #ff383059): mostly simple, finding-by-finding; designed by phase-1 triage, implemented by Sonnet writers a3b4a86d855d9dfbe, ade294ad83feaac48, a7a5a0a2f4018d6be, a5d613445bb088382. Complicated ones (fb99c9cd.2 cert-export stopped repos, eabae1be.2 uploader crash resume, cef804ea.3 Accept loop, 031d303c.4 NET_ADMIN with host network) get an Opus Plan agent before any fix if the group writer reports them deferred.
+- V1 then H1-H5 (#0787c7df, #d0928775): sequential operations, lead runs them (operator ruling ASKED:2026-10-24T19:40Z).
