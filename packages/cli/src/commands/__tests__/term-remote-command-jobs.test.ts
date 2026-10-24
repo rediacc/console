@@ -9,7 +9,7 @@
  * it, and the pipe must reach EOF while the backgrounded job is still alive.
  */
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -30,6 +30,21 @@ const details: ConnectionDetails = {
   environment: { REDIACC_REPOSITORY: 'app' },
   workingDirectory: home,
 };
+
+/** Pids whose argv[0] is `marker`, read from /proc so no external tool is needed. */
+function survivors(marker: string): number[] {
+  const out: number[] = [];
+  for (const entry of readdirSync('/proc')) {
+    if (!/^\d+$/.test(entry)) continue;
+    try {
+      if (readFileSync(`/proc/${entry}/cmdline`, 'utf8').split('\0')[0] === marker)
+        out.push(Number(entry));
+    } catch {
+      // the process exited between the listing and the read
+    }
+  }
+  return out;
+}
 
 /** Milliseconds until the command's stdout pipe reaches EOF, or null when it is still open after `limitMs`. */
 function stdoutClosesWithin(
@@ -71,10 +86,13 @@ describe('buildRemoteCommand with a backgrounded job', () => {
     if (pgid) {
       try {
         process.kill(-pgid, 'SIGKILL');
-      } catch {
-        // already gone
+      } catch (err) {
+        // ESRCH: the group already exited. Anything else (EPERM) is a real failure to clean up.
+        if ((err as NodeJS.ErrnoException).code !== 'ESRCH') throw err;
       }
     }
+    // A job that left the group (a future setsid in the preamble) would survive the kill: fail on it rather than leak it.
+    expect(survivors(marker), 'the background job outlived its process group').toEqual([]);
     expect(out).toContain('STARTED');
     expect(ms, 'stdout stayed open: the background job held the channel').not.toBeNull();
     expect(ms as number).toBeLessThan(10_000);
