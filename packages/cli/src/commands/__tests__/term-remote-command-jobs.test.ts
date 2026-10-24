@@ -79,6 +79,28 @@ function stdoutClosesWithin(
   });
 }
 
+/**
+ * Kill the detached child's process group and return the marker's survivors after a short reap window.
+ *
+ * The child was spawned detached, so it leads a process group the backgrounded job stays in (bash -c runs without job control); killing the group ends the job with no external tool. A job that left the group (a future setsid in the preamble) would survive the kill, and the caller fails on it rather than leak it. A SIGKILLed job can still show its argv for a moment while it is reaped, so the survivors are polled briefly before judging.
+ */
+async function killGroupAndWait(pgid: number | undefined, marker: string): Promise<number[]> {
+  if (pgid) {
+    try {
+      process.kill(-pgid, 'SIGKILL');
+    } catch (err) {
+      // ESRCH: the group already exited. Anything else (EPERM) is a real failure to clean up.
+      if ((err as NodeJS.ErrnoException).code !== 'ESRCH') throw err;
+    }
+  }
+  let left = survivors(marker);
+  for (let i = 0; i < 20 && left.length > 0; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    left = survivors(marker);
+  }
+  return left;
+}
+
 describe('buildRemoteCommand with a backgrounded job', () => {
   it('lets the channel close while a redirected background job keeps running', async () => {
     const marker = `term-jobs-${process.pid}`;
@@ -88,23 +110,7 @@ describe('buildRemoteCommand with a backgrounded job', () => {
       buildRemoteCommand({ command: user }, details),
       10_000
     );
-    // The child was spawned detached, so it leads a process group the backgrounded job stays in
-    // (bash -c runs without job control); killing the group ends the job with no external tool.
-    if (pgid) {
-      try {
-        process.kill(-pgid, 'SIGKILL');
-      } catch (err) {
-        // ESRCH: the group already exited. Anything else (EPERM) is a real failure to clean up.
-        if ((err as NodeJS.ErrnoException).code !== 'ESRCH') throw err;
-      }
-    }
-    // A job that left the group (a future setsid in the preamble) would survive the kill: fail on it rather than leak it.
-    // A SIGKILLed job can still show its argv for a moment while it is reaped, so poll briefly before judging.
-    let left = survivors(marker);
-    for (let i = 0; i < 20 && left.length > 0; i++) {
-      await new Promise((r) => setTimeout(r, 100));
-      left = survivors(marker);
-    }
+    const left = await killGroupAndWait(pgid, marker);
     expect(left, 'the background job outlived its process group').toEqual([]);
     expect(out).toContain('STARTED');
     expect(ms, 'stdout stayed open: the background job held the channel').not.toBeNull();

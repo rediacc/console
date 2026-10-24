@@ -152,6 +152,15 @@ describe('detectRepoContextCommand', () => {
       ['echo $(docker ps -q)', 'docker'],
       ['echo `docker ps -q`', 'docker'],
       ['echo $(sudo $(which true) && docker info)', 'docker'],
+      ['watch docker ps', 'docker'],
+      ['eval docker ps', 'docker'],
+      ['setsid docker ps', 'docker'],
+      ['ionice -c3 docker ps', 'docker'],
+      ['find / -name x -exec docker rm {} \\;', 'docker'],
+      [
+        `curl --unix-socket ${WK_RUNTIME_DIR}/docker-3136.sock http://x/containers/json`,
+        'repo docker socket',
+      ],
     ])('%s → still detects "%s"', (command, label) => {
       expect(detectRepoContextCommand(command)?.label).toBe(label);
     });
@@ -175,8 +184,8 @@ describe('detectRepoContextCommand', () => {
     expect(detectRepoContextCommand('')).toBeNull();
   });
 
-  it('has 5 patterns defined', () => {
-    expect(REPO_CONTEXT_PATTERNS).toHaveLength(5);
+  it('has 6 patterns defined', () => {
+    expect(REPO_CONTEXT_PATTERNS).toHaveLength(6);
   });
 });
 

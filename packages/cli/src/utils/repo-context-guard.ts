@@ -4,25 +4,33 @@ import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 export interface RepoContextPattern {
   label: string;
   pattern: RegExp;
-  /** When true the pattern is tested against the command word of each shell segment, not the raw text. */
+  /** When true the pattern is tested against whole words of each shell segment (and the command word's basename), not the raw text. */
   commandWord?: boolean;
 }
 
 /**
  * Rule: a command needs repository context only when it would reach a repo's Docker daemon or runtime state.
- * `docker` and `docker-compose` count only as the command word of a shell segment (after env assignments and
- * wrappers such as `sudo`, `env`, `timeout`, `xargs`, and inside `sh -c '...'`), so a unit or path that merely
- * contains the word (`systemctl status rediacc-docker-12288`, `ls /var/lib/docker`) is machine-level. The repo
+ * `docker` and `docker-compose` count only as a whole word of a shell segment (any position, so `watch docker ps`,
+ * `eval docker ps` and `find / -exec docker ps {} ;` stay refused whatever the wrapper) or as the basename of its
+ * command word (`/usr/bin/docker ps`), so a unit or path that merely contains the word
+ * (`systemctl status rediacc-docker-12288`, `ls /var/lib/docker`) is machine-level. The repo
  * mount path alone is not a pattern: reading mount metadata (`ls`, `stat`, `du`, `df`, `findmnt`, `cat`) needs no
  * DOCKER_HOST, while a docker call naming the mount path is still a docker command word, and `DOCKER_HOST=`,
- * the repo runtime dir and `renet compose` stay refused wherever they appear.
+ * the repo runtime dir, a repo Docker socket on either layout and `renet compose` stay refused wherever they appear.
  */
+const escapedRuntimeDir = WK_RUNTIME_DIR.replaceAll(/[.*+?^${}()|[\]\\/]/g, String.raw`\$&`);
+
 export const REPO_CONTEXT_PATTERNS: RepoContextPattern[] = [
   { label: 'docker', pattern: /^docker$/i, commandWord: true },
   { label: 'docker-compose', pattern: /^docker-compose$/i, commandWord: true },
   { label: 'DOCKER_HOST', pattern: /\bDOCKER_HOST=/ },
   // Any path inside a repo's runtime directory: its Docker socket and its file-mode secrets.
   { label: 'repo runtime dir', pattern: REPO_NET_DIR_PATTERN },
+  // The flat `docker-<N>.sock` a daemon from before the `net-<N>/` layout still serves (review 60bea783.2).
+  {
+    label: 'repo docker socket',
+    pattern: new RegExp(String.raw`${escapedRuntimeDir}/docker-[1-9]\d*\.sock`),
+  },
   { label: 'renet compose', pattern: /\brenet\s+compose\b/i },
 ];
 
@@ -68,8 +76,10 @@ function commandSubstitutions(command: string): string[] {
 
 const SHELL_WORDS = new Set(['sh', 'bash', 'zsh', 'dash', 'ash']);
 
-/** True when the segment's command word matches, looking through wrappers and into `sh -c '<string>'`. */
+/** True when a whole word of the segment, or its command word's basename, matches; `sh -c '<string>'` is read too. */
 function segmentRunsCommand(segment: string, wordPattern: RegExp): boolean {
+  if (segment.split(/\s+/).some((token) => wordPattern.test(token.replace(/^['"]+|['"]+$/g, ''))))
+    return true;
   const words = segmentCommandWords(segment);
   if (words.length === 0) return false;
   const cmd = basename(words[0]);
@@ -84,8 +94,6 @@ function segmentRunsCommand(segment: string, wordPattern: RegExp): boolean {
   }
   return false;
 }
-
-const escapedRuntimeDir = WK_RUNTIME_DIR.replaceAll(/[.*+?^${}()|[\]\\/]/g, String.raw`\$&`);
 
 /**
  * `unix://` plus one repo's Docker socket: `net-<N>/docker-<N>.sock`, or the flat `docker-<N>.sock` a daemon on the
