@@ -487,6 +487,15 @@ def enrolled_refused(w, entry: dict, tag: str) -> tuple[bool, str]:
 
 
 def enrolled_allowed(w, entry: dict, tag: str) -> tuple[bool, str]:
+    """Resets the fixture to its starting commit even when an assertion fires midway: the module-scoped world is shared, so a planted control left behind made the next case fail on `the create control's path already exists`."""
+    head = w.head()
+    try:
+        return _enrolled_allowed(w, entry, tag)
+    finally:
+        w.reset(head)
+
+
+def _enrolled_allowed(w, entry: dict, tag: str) -> tuple[bool, str]:
     """The same control, then the entry's own generator, then the commit of both. When the doc-region check refuses first, because the artifact is itself a provider input (the gate lock is), the regions are regenerated and the commit is made again with them."""
     head = w.head()
     rel = _plant(w, entry)
