@@ -40,8 +40,9 @@ Owner: 97604f47
       UNTICKED 2026-08-15 (RE-APPLIED after a silent revert): English is now
       corrected (backup-restore.md no longer denies a shipped chunk restore;
       limits.md no longer claims no retention is enforced and carries the plan
-      quotas), but the 12 non-English locales are still stale against it —
-      validate-translation-freshness exits 1. Re-tick when they land.
+      quotas). The 12 non-English locales have since caught up:
+      validate-translation-freshness --strict-all and check:i18n exit 0
+      (2026-10-24, PLAN-backup-program A1b).
 - [x] w6 Wave 5a: the credential-free half — cutover preflight (read-only, fails
       closed, proven both directions) + docs/backup-storage/08-cutover-runbook.md
 - [x] w7 Wave 5b-i: the PROBE BUCKET leg. `rediacc-backups-probe` created in R2
