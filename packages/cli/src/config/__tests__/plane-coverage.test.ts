@@ -121,7 +121,7 @@ describe('command plane coverage', () => {
   it('records the interactive commands', () => {
     const interactive = COMMANDS.filter((c) => isInteractiveCommand(c.pathKey))
       .map((c) => c.pathKey)
-      .sort();
+      .sort((a, b) => Number(a > b) - Number(a < b));
 
     // Commands that need a TTY or never return: an interactive shell, $EDITOR, a tunnel or stream held until Ctrl+C, a browser callback, or a daemon that listens until SIGINT.
     expect(interactive).toEqual([

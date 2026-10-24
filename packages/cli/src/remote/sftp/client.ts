@@ -61,7 +61,7 @@ export interface SFTPClientConfig {
 export class SFTPClient {
   private readonly ssh: SSHClient;
   private sftp: SFTPWrapper | null = null;
-  private connected = false;
+  private connected = false as boolean;
 
   constructor(private readonly config: SFTPClientConfig) {
     this.ssh = new SSHClient();

@@ -135,7 +135,7 @@ export async function buildInitAccountUpdate(
   try {
     const { fetchServerInfo } = await import('../services/account/account-client.js');
     const info = await fetchServerInfo(accountServer);
-    const e2ePublicKey = info.e2e.keys[0]?.publicKeySpki;
+    const e2ePublicKey = info.e2e?.keys[0]?.publicKeySpki;
     if (e2ePublicKey) return { accountServer, e2ePublicKey };
     outputService.warn(t('commands.config.init.serverKeyMissing', { server: accountServer }));
   } catch (error) {

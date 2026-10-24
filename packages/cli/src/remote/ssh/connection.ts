@@ -282,7 +282,7 @@ export class SSHConnection {
   private readonly preferAgent: boolean;
   private readonly forceTTY: boolean;
   private setupResult: SSHSetupResult | null = null;
-  private isSetup = false;
+  private isSetup = false as boolean;
 
   /**
    * Creates an SSH connection context

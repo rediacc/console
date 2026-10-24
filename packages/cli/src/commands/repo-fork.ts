@@ -430,7 +430,7 @@ async function handleForkLegFailure(
   dnsPromise: Promise<unknown> | undefined
 ): Promise<void> {
   const { forkKey, options } = plan;
-  if (dnsPromise) await Promise.allSettled([dnsPromise]);
+  if (dnsPromise !== undefined) await Promise.allSettled([dnsPromise]);
   const forkCreated = renetSteps.some((s) => s.name === 'cow_reflink' || s.name === 'cow_clone');
   if (forkCreated) {
     outputService.warn(

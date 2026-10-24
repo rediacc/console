@@ -151,15 +151,19 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
 
     const removed = pruneCertCacheBuckets(cfg, anchors);
 
-    expect(removed.map((r) => r.name).sort()).toEqual(
-      [`*.${deadGuid}.hostinger.rediacc.io`, '*.unknown-machine.rediacc.io'].sort()
+    expect(removed.map((r) => r.name).sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      [`*.${deadGuid}.hostinger.rediacc.io`, '*.unknown-machine.rediacc.io'].sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )
     );
 
     const bucket = cfg.state!.certCache![WK_INFRA_DOMAIN];
     // Derived metadata must follow the cert filtering.
     expect(bucket.certCount).toBe(3);
-    expect(Object.keys(bucket.certs).sort()).toEqual(
-      [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', CLOUD_HOST].sort()
+    expect(Object.keys(bucket.certs).sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', CLOUD_HOST].sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )
     );
 
     // The data blob should round-trip back to a parseable acme.json with the same kept domains. This is the bit that the dry-run path never exercises, gzip → filter → gzip → base64 must not corrupt the chain.
@@ -168,9 +172,13 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
     const parsed = JSON.parse(raw) as {
       letsencrypt: { Certificates: { domain: { main: string } }[] };
     };
-    const finalDomains = parsed.letsencrypt.Certificates.map((c) => c.domain.main).sort();
+    const finalDomains = parsed.letsencrypt.Certificates.map((c) => c.domain.main).sort(
+      (a, b) => Number(a > b) - Number(a < b)
+    );
     expect(finalDomains).toEqual(
-      [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', CLOUD_HOST].sort()
+      [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', CLOUD_HOST].sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )
     );
   });
 

@@ -395,7 +395,7 @@ function assertFamilyMigratable(name: string, tag: string, family: RepoFamily | 
   }
   const forks = Object.keys(family.tags)
     .filter((tg) => tg !== family.grand)
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
   if (forks.length > 0) {
     throw new ValidationError(
       t('commands.repo.migrate.familyHasForks', { name, forks: forks.join(', ') })

@@ -119,7 +119,11 @@ describe('backup browse without --at (regression control)', () => {
     expect(fn).toBe('backup_browse');
     expect(repoKey).toBe('shop');
     expect(machine).toBe('m1');
-    expect(Object.keys(params).sort()).toEqual(['depth', 'limit', 'path']);
+    expect(Object.keys(params).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      'depth',
+      'limit',
+      'path',
+    ]);
     expect(params.path).toBe('');
     expect(options).toEqual({ debug: undefined, captureOutput: true });
     expect(mockGetRepository).not.toHaveBeenCalled();

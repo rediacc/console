@@ -999,7 +999,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     );
     const cmds = recordedCommands();
     expect(cmds.some((c) => c.includes('.new'))).toBe(false);
-    expect(cmds.some((c) => c === 'sudo systemctl daemon-reload')).toBe(false);
+    expect(cmds.includes('sudo systemctl daemon-reload')).toBe(false);
   });
 
   it('test 6: update with in-flight service and --force → proceeds with warning, never stops the service', async () => {
@@ -1109,7 +1109,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(cmds.some((c) => c.includes('systemctl show'))).toBe(true);
     expect(cmds.some((c) => c.includes('tee '))).toBe(false);
     expect(cmds.some((c) => c.startsWith('sudo mv '))).toBe(false);
-    expect(cmds.some((c) => c === 'sudo systemctl daemon-reload')).toBe(false);
+    expect(cmds.includes('sudo systemctl daemon-reload')).toBe(false);
     expect(cmds.some((c) => c.includes('enable --now'))).toBe(false);
     expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();

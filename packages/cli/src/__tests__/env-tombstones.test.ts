@@ -168,7 +168,7 @@ describe('env-var / API tombstones', () => {
     const violations = findViolations();
     const report = violations
       .map((v) => `${relative(join(HERE, '..', '..', '..'), v.file)} :: ${v.token}`)
-      .sort();
+      .sort((a, b) => Number(a > b) - Number(a < b));
     expect(report).toEqual([]);
   });
 });

@@ -131,7 +131,9 @@ const KIND_FIXTURES: Record<string, unknown[]> = {
 describe('prune resource coverage against renet', () => {
   it('has a fixture for every kind renet reports', () => {
     // Guards the guard: a new Go kind with no fixture would otherwise leave the coverage assertion below silently testing one kind fewer.
-    expect(Object.keys(KIND_FIXTURES).sort()).toEqual(renetPruneResourceTags().sort());
+    expect(Object.keys(KIND_FIXTURES).sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      renetPruneResourceTags().sort((a, b) => Number(a > b) - Number(a < b))
+    );
   });
 
   it('emits at least one preview row for every kind renet reports', () => {

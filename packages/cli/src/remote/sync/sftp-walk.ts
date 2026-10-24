@@ -144,7 +144,7 @@ export function collectSubdirs(paths: string[]): string[] {
       dir = next;
     }
   }
-  return [...subdirs].sort();
+  return [...subdirs].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 async function expandFileSource(absolutePath: string): Promise<SftpFileEntry> {

@@ -52,8 +52,12 @@ describe('config/command-registry', () => {
       const live = new Set(cli.commands.map((c) => c.name()).filter((n) => n !== 'help'));
       const registered = new Set(COMMAND_REGISTRY.map((d) => d.name));
 
-      const unregistered = [...live].filter((name) => !registered.has(name)).sort();
-      const orphaned = [...registered].filter((name) => !live.has(name)).sort();
+      const unregistered = [...live]
+        .filter((name) => !registered.has(name))
+        .sort((a, b) => Number(a > b) - Number(a < b));
+      const orphaned = [...registered]
+        .filter((name) => !live.has(name))
+        .sort((a, b) => Number(a > b) - Number(a < b));
 
       expect({ unregistered, orphaned }).toEqual({ unregistered: [], orphaned: [] });
     });

@@ -48,7 +48,9 @@ describe('recordBackupRun', () => {
 
     await recordBackupRun('shop', { kind: 'restore', status: 'ok', lastRunAt: 'T0' });
 
-    expect(Object.keys(written?.state?.backupRuns ?? {}).sort()).toEqual(['other', 'shop']);
+    expect(
+      Object.keys(written?.state?.backupRuns ?? {}).sort((a, b) => Number(a > b) - Number(a < b))
+    ).toEqual(['other', 'shop']);
   });
 
   it('is best-effort: a storage failure never throws', async () => {

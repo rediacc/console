@@ -359,7 +359,10 @@ describe('postRepoUpTasks', () => {
 
     await postRepoUpTasks('app', 'm1', { steps });
 
-    expect(steps.map((s) => s.name).sort()).toEqual(['cert_sync', 'dns']);
+    expect(steps.map((s) => s.name).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      'cert_sync',
+      'dns',
+    ]);
     expect(mockFetchMachineStatus).not.toHaveBeenCalled();
     expect(mockInfo).not.toHaveBeenCalled();
   });

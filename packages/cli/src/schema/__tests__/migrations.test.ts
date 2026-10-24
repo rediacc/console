@@ -190,7 +190,10 @@ describe('migrateV2ToV3 transforms', () => {
     expect(repos.erpnext.grand).toBe('latest');
     expect(repos.erpnext.tags.latest.repositoryGuid).toBe('11111111-1111-4111-8111-111111111111');
     expect(repos.shop.grand).toBe('latest');
-    expect(Object.keys(repos.shop.tags).sort()).toEqual(['latest', 'test']);
+    expect(Object.keys(repos.shop.tags).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      'latest',
+      'test',
+    ]);
     expect(repos.shop.tags.latest.tag).toBeUndefined();
     expect(repos.shop.tags.latest.networkId).toBeUndefined();
     expect(repos.shop.tags.latest.headCommit).toBeUndefined();
