@@ -80,6 +80,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "26e0e91d",
+        "341dbb5b",
+        "5e004140",
+        "90622cbf",
+        "bfe10930",
+        "ef7feae1"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-backup-program.md": {
       "status": "approved",
       "owner": "5cc33087",
