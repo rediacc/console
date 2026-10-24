@@ -147,10 +147,35 @@ def eperm(text: str) -> bool:
     return EPERM_TEXT in text.lower()
 
 
+def nc_rc(text: str) -> int | None:
+    """The status the `NC_RC=` marker printed after the cross-repo `docker run`, or None when the marker never printed."""
+    found = re.findall(r"^NC_RC=(\d+)\s*$", text, re.MULTILINE)
+    return int(found[-1]) if found else None
+
+
 def nc_evidence(text: str) -> str:
-    """The `nc:` lines and the `NC_RC=` marker of a cross-repo connect, which the 200-byte evidence otherwise spends on the CLI's progress lines (I1.5, 2026-10-24)."""
-    keep = [ln.strip() for ln in text.splitlines() if ln.strip().startswith(("nc:", "NC_RC="))]
+    """The `nc:`, `docker:` and `NC_RC=` lines of a cross-repo connect, which the 200-byte evidence otherwise spends on the CLI's progress lines (I1.5, 2026-10-24). `NC_RC` is the `docker run` status, so a docker failure shows as its own `docker:` line beside it."""
+    keep = [
+        ln.strip()
+        for ln in text.splitlines()
+        if ln.strip().startswith(("nc:", "docker:", "NC_RC="))
+    ]
     return " | ".join(keep)
+
+
+def cross_connect_verdict(out: str, listener_log: str | None, marker: str) -> tuple[bool, str]:
+    """(refused, evidence) of I1.5: the `docker run` in B exited non-zero with nc's EPERM line, and A's listener log (None when it could not be read) never saw B's marker. A marker in the log is a connect that got through, whatever nc printed."""
+    rc = nc_rc(out)
+    ev = nc_evidence(out) or "no nc:, docker: or NC_RC= line"
+    if listener_log is None:
+        return False, "A's listener log could not be read; %s" % ev
+    if marker in listener_log:
+        return False, "A's listener RECEIVED %s from B; %s" % (marker, ev)
+    if rc is None:
+        return False, "the NC_RC marker never printed; %s" % ev
+    if rc == 0 or not eperm(out):
+        return False, "B's connect was not refused with EPERM; %s" % ev
+    return True, ev
 
 
 def http_status(text: str) -> int | None:
@@ -566,16 +591,19 @@ class _LiveI1:
             "" if own.rc == 0 else self.ev(own),
         ):
             return
+        marker = "VMC-I1-FROM-B-%s" % self.ctx.run_id[-6:]
         cross = self.ctx.shell(
             self.ref_b,
-            "docker run --rm --network host %s nc -w 3 %s %d </dev/null 2>&1; echo NC_RC=$?"
-            % (IMAGE, ip, LISTEN_PORT),
+            "echo %s | docker run --rm -i --network host %s nc -w 3 %s %d 2>&1; echo NC_RC=$?"
+            % (marker, IMAGE, ip, LISTEN_PORT),
         )
+        logs = self.ctx.shell(self.ref_a, "docker logs %s 2>&1" % self.listener)
+        ok, why = cross_connect_verdict(cross.out, logs.out if logs.rc == 0 else None, marker)
         self.check(
             "I1.5 a plain docker run in B cannot connect to A's %s:%d (EPERM)" % (ip, LISTEN_PORT),
-            eperm(cross.text()) and "NC_RC=0" not in cross.out,
+            ok,
             cross,
-            nc_evidence(cross.out) or self.ev(cross),
+            why,
         )
 
     def i1_6_mount_view(self) -> None:

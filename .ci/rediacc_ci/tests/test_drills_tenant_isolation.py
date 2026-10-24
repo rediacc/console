@@ -505,13 +505,12 @@ class FakeCtx:
         if "--format" in line:
             return Res(0, self.label_ip + "\n")
         if "nc -w 3" in line:
-            return Res(
-                1,
-                "",
-                "nc: can't connect to remote host: Connection refused"
-                if "connect" in b
-                else "nc: can't connect to remote host: Operation not permitted",
-            )
+            if "connect" in b:
+                self.received = line.split("echo ", 1)[1].split(" ", 1)[0]
+                return Res(0, "NC_RC=0\n")
+            return Res(0, "nc: can't connect to remote host: Operation not permitted\nNC_RC=1\n")
+        if "docker logs" in line:
+            return Res(0, getattr(self, "received", "") + "\n")
         if "/dev/tcp" in line:
             return Res(0, "CONNECTED\n")
         if "mountinfo" in line:
@@ -692,9 +691,52 @@ def test_dead_helpers_are_gone() -> None:
     assert not hasattr(ti, "_data_list")
 
 
-def test_nc_evidence_keeps_the_nc_line_and_marker() -> None:
-    out = '{"durationMs": 9}\nnc: can\'t connect to remote host (127.0.40.188): Operation not permitted\nNC_RC=1\n'
+def test_nc_evidence_keeps_the_nc_docker_and_marker_lines() -> None:
+    out = (
+        '{"durationMs": 9}\n'
+        "nc: can't connect to remote host (127.0.40.188): Operation not permitted\n"
+        "docker: Error response from daemon: x\n"
+        "NC_RC=1\n"
+    )
     assert ti.nc_evidence(out) == (
-        "nc: can't connect to remote host (127.0.40.188): Operation not permitted | NC_RC=1"
+        "nc: can't connect to remote host (127.0.40.188): Operation not permitted"
+        " | docker: Error response from daemon: x | NC_RC=1"
     )
     assert ti.nc_evidence('{"x": 1}\n') == ""
+
+
+EPERM_OUT = "nc: can't connect to remote host (127.0.40.188): Operation not permitted\nNC_RC=1\n"
+MARK = "VMC-I1-FROM-B-abc123"
+
+
+def test_cross_connect_verdict_refused_with_eperm() -> None:
+    ok, why = ti.cross_connect_verdict(EPERM_OUT, "", MARK)
+    assert ok
+    assert "Operation not permitted" in why
+
+
+def test_cross_connect_verdict_marker_in_listener_log_fails() -> None:
+    ok, why = ti.cross_connect_verdict(EPERM_OUT, MARK + "\n", MARK)
+    assert not ok
+    assert "RECEIVED" in why
+
+
+def test_cross_connect_verdict_needs_the_marker_and_a_nonzero_rc() -> None:
+    eperm_only = "nc: can't connect to remote host (127.0.40.188): Operation not permitted\n"
+    assert not ti.cross_connect_verdict(eperm_only, "", MARK)[0]
+    assert not ti.cross_connect_verdict(eperm_only + "NC_RC=0\n", "", MARK)[0]
+
+
+def test_cross_connect_verdict_silent_nc_fails() -> None:
+    ok, why = ti.cross_connect_verdict("NC_RC=1\n", "", MARK)
+    assert not ok
+    assert "not refused" in why
+
+
+def test_cross_connect_verdict_unreadable_log_fails() -> None:
+    assert not ti.cross_connect_verdict(EPERM_OUT, None, MARK)[0]
+
+
+def test_nc_rc_reads_the_last_marker() -> None:
+    assert ti.nc_rc("NC_RC=125\n") == 125
+    assert ti.nc_rc("no marker") is None
