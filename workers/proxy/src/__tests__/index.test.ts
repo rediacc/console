@@ -217,14 +217,17 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
 
   it('forwards an intercepted account call over the binding, keeping method, path, query, headers and body', async () => {
     const seen: Request[] = [];
-    const response = await forwardAccountEgress(
-      new Request(`http://${ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/introspect?x=1`, {
+    const intercepted = new Request(
+      `http://${ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/introspect?x=1`,
+      {
         method: 'POST',
         headers: { authorization: `Bearer ${EXECUTOR_TOKEN}`, host: ACCOUNT_EGRESS_HOST },
         body: JSON.stringify({ token: CALLER }),
-      }),
-      boundEnv(seen)
+      }
     );
+    // Precondition: the input really carries the Host the forward must drop.
+    expect(intercepted.headers.get('host')).toBe(ACCOUNT_EGRESS_HOST);
+    const response = await forwardAccountEgress(intercepted, boundEnv(seen));
 
     expect(await response.json()).toEqual({ via: 'binding' });
     expect(accountFetch).not.toHaveBeenCalled();
