@@ -1,25 +1,27 @@
-## SESSION d778be9d 2026-10-24T18:58:19Z
+## SESSION d778be9d 2026-10-24T19:30:20Z
 
-# STATE d778be9d, branch 1023-1 (no PR, never pushed), 2026-10-24 ~19:55Z
+# STATE d778be9d, branch 1023-1 (no PR, never pushed), 2026-10-24 ~20:35Z
 
 ## Big pieces
-- HOSTINGER INCIDENT (#d0928775). The converge to renet 41ff7b0 left three repos broken; their data is intact.
-  - mail 3264 and observability 3136: 0 containers.
-  - nextcloud 2880: half-built (Collabora CAP_MKNOD refused).
-  - Before-state: /tmp/hostinger-before.json. The old binary (7e6a8588) is gone.
-  - Fix plan: agent/plans/PLAN-converge-preflight-and-repo-recovery.md. C1 and P2 are ticked (renet 985b4c0, console 6e73e9e94).
-- OPERATOR RULING ASKED:2026-10-24T19:40Z: H1-H5, including observability's repo up, run WITHOUT asking once V1 is VERIFIED. The operator is away. Stop only on a failure and record it on #d0928775.
-- GPU plan agent/plans/PLAN-gpu-device-grants.md (#98e7f50f) starts after #d0928775.
-- Push #831b7e48 comes after the recovery: a fresh vm:check, ci:quick, then the backup push.
+- HOSTINGER INCIDENT (#d0928775). mail 3264 and observability 3136 have 0 containers; nextcloud 2880 is half-built (Collabora). Data is intact. Before-state: /tmp/hostinger-before.json.
+  - Plan: agent/plans/PLAN-converge-preflight-and-repo-recovery.md.
+  - Ticked: C1, P2, M1, O1, N1, D1. Open: P1, P3, P4, P5 (writer running), V1, H1-H5.
+  - OPERATOR RULING ASKED:2026-10-24T19:40Z: H1-H5 run without asking once V1 is VERIFIED. The operator is away.
+- PLAN-backup-program S7 is done (account 8a86225, CLI f7af8d367).
+- RENET I18N RED (#ded06481): 80 new hardcoded strings in pkg/certexport, pkg/hostmetrics and cmd/renet cert/host-metrics. Translate them into all 13 catalogs AFTER the P writer releases pkg/i18n/locales.
+- REVIEW DRAIN (#5da4f55e). Phase 1 is complete; every needs-fix id is listed by repo and file in agent/d778be9d/review-drain.md. Phase 2 has four writers (below).
+- Found and fixed: three gates were vacuous (isEntryPoint(import.meta.url)), fixed in 07e56c446.
+- GPU plan (#98e7f50f) comes after the incident. Push #831b7e48 comes after the recovery, the review drain and ci:quick.
 
 ## Delegated
-- a5a99906e77033f93 #3eabcddc: P3, then P1, P4, P5. Owns runtime_converge*.go, runtime_commands.go, pkg/convergeguard, pkg/orchestration/workflows.go, renet i18n, and the CLI runtime-converge/converge/register files. Accept: each box's command.
-- a64452e0399ad1359 #8b14df38: M1 cert export. Owns pkg/certexport and cmd/renet/cert_export*.go. Accept: go test ./pkg/certexport/... -run CertExport.
-- a2dfafe395e1bb841 #e26444a6: O1 host-metrics. Owns pkg/hostmetrics, cmd/renet/host_metrics*.go, pkg/proxy/install.go, pkg/dockergrant/grant.go and cmd/renet/daemon_grant.go. It must also change daemon_grant.go:214 to w.SetGrant(g.Policy()).
-- a9b3158f559bfdbf0 #64943d1c: N1 Collabora no-caps. Owns the templates and the new pkg/compose/template_collabora_test.go.
-- af8b62c29eac1d494 #139ea55d: D1 drill. Owns .ci/rediacc_ci/drills/converge_preflight.py and its test, plus vm_check.py registration lines.
+- a5a99906e77033f93 #3eabcddc: P3, then P1, P4, P5. Owns runtime_converge*.go, runtime_commands.go, convergeguard, workflows.go, daemon/setup.go, dockerproxy/symlink.go, renet i18n locales, and the CLI runtime-converge/converge/register files.
+- Phase-2 writers. Each fixes only its group and reports `id -> files`; the lead commits, then runs --review-mark fixed <sha>.
+  - a3b4a86d855d9dfbe #6dd33cfe: group 1, private/renet.
+  - ade294ad83feaac48 #e0c35276: group 2, private/account.
+  - a7a5a0a2f4018d6be #3c24567c: group 3, console .ci, scripts, .claude, .github, workers.
+  - a5d613445bb088382 #ff383059: group 4, console packages, docs, plans, ledgers.
 
 ## Next action
-1. For each report: spot-check the diff, run its Accept, commit by path in the right repo, bump the console pointer, then --plan-investigate and --plan-tick.
-2. When all five have landed: run the full npm run vm:check (V1, #0787c7df). It must not run beside ci:quick.
-3. Then H1-H5 per the plan on hostinger with ./rdc.sh --config eu-remote, verifying each repo against /tmp/hostinger-before.json.
+1. As each report lands: spot-check, run the accept, commit by path, bump the pointer, and mark findings fixed with the sha (the verb needs a commit that touches the anchored file).
+2. After P3/P1/P4/P5: the i18n translation writer for #ded06481, then tick P boxes.
+3. Run the full npm run vm:check (V1), then H1-H5 on hostinger via ./rdc.sh --config eu-remote.
