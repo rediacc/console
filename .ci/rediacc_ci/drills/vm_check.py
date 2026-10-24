@@ -54,7 +54,7 @@ import traceback
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
-from rediacc_ci.drills import lib, upgrade_converge, vm_ssh, wire
+from rediacc_ci.drills import lib, tenant_isolation, upgrade_converge, vm_ssh, wire
 from rediacc_ci.drills import vm_check_receipt as receipt_mod
 from rediacc_ci.drills import vm_check_trigger as trigger
 from rediacc_ci.well_known import DATASTORE_PATH
@@ -102,7 +102,8 @@ STALE_CONFIG_ENTRY = "already exists in config"
 
 TAG_PREFIX = "vmc"
 STALE_FORK_S = 3600
-FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[ab]$")
+# Forks A and B of V1.1, and I1's throwaway fork C (tenant_isolation.fork_c_tag).
+FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[abc]$")
 MOUNTS = DATASTORE_PATH + "/mounts"
 GUARDED_FILE = ".rediacc.json"
 READ_ONLY = "Read-only file system"
@@ -231,9 +232,24 @@ OS_ALIASES = {"oracle": "ol", "opensuse": "opensuse-leap"}
 
 SIDE_RENET = trigger.SIDE_RENET
 SIDE_ACCOUNT = trigger.SIDE_ACCOUNT
+# A drill step that lives in its own module and registers here once: (step id, the steps a `--only` run of it drags in, the live function that takes the running VmCheck and records its rows under that id). The renet phase lists it, `--only` resolves its dependencies (transitively, `only_deps`) and the run calls it after U1, in this order; a later drill is one more entry.
+EXTRA_RENET_STEPS: tuple[tuple[str, tuple[str, ...], Callable[[Any], None]], ...] = (
+    tenant_isolation.STEP,
+)
 # Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
 PHASE_STEPS: dict[str, tuple[str, ...]] = {
-    SIDE_RENET: ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7", "U1"),
+    SIDE_RENET: (
+        "P5",
+        "V1.1",
+        "V1.2",
+        "V1.3",
+        "V1.4",
+        "V1.5",
+        "V1.6",
+        "V1.7",
+        "U1",
+        *(step_id for step_id, _deps, _fn in EXTRA_RENET_STEPS),
+    ),
     SIDE_ACCOUNT: ("A1.1", "A1.2", "A1.3", "A1.4", "A0", "A2.1", "A2.2", "A2.3"),
 }
 # The account suites of A1: (step id, npm script, the package that holds it, None for the console root).
@@ -297,6 +313,25 @@ class Result:
 
     def text(self) -> str:
         return (self.out + "\n" + self.err).strip()
+
+
+def only_deps(
+    base: Mapping[str, tuple[str, ...]],
+    extra: Sequence[tuple[str, tuple[str, ...], object]],
+) -> dict[str, tuple[str, ...]]:
+    """`base` plus each extra step's dependencies closed over `base`: `_only_wants` reads one level, so a step that names V1.2 must also carry the P5 and V1.1 that V1.2 drags in."""
+    deps = dict(base)
+    for step_id, wanted, _fn in extra:
+        closed: list[str] = []
+        queue = list(wanted)
+        while queue:
+            dep = queue.pop(0)
+            if dep in closed:
+                continue
+            closed.append(dep)
+            queue.extend(deps.get(dep, ()))
+        deps[step_id] = tuple(closed)
+    return deps
 
 
 def verdict(
@@ -829,6 +864,7 @@ class VmCheck:
         account_modified_fn: Callable[[pathlib.Path], bool | None] = trigger.account_modified,
         account_digest_fn: Callable[[pathlib.Path], str | None] = trigger.account_worktree_digest,
         u1_fn: Callable[[VmCheck], None] = upgrade_converge.run,
+        extra_fns: Mapping[str, Callable[[VmCheck], None]] | None = None,
     ) -> None:
         self.root = root
         self.opts = opts
@@ -843,6 +879,11 @@ class VmCheck:
         self.account_digest_fn = account_digest_fn
         # The live U1 step; a test injects a stub so the fake host never meets U1's own CLI calls (the pure U1 helpers are tested directly).
         self.u1_fn = u1_fn
+        # The EXTRA_RENET_STEPS live functions, by step id; a test replaces one with a stub the same way.
+        self.extra_fns: dict[str, Callable[[VmCheck], None]] = {
+            step_id: fn for step_id, _deps, fn in EXTRA_RENET_STEPS
+        }
+        self.extra_fns.update(extra_fns or {})
         self.rdc_sh = str(root / "rdc.sh")
         self.renet_bin = root / trigger.RENET_SUBMODULE / "bin" / "renet"
         self.ssh_user = vm_ssh.default_user(self.environ)
@@ -1221,19 +1262,22 @@ class VmCheck:
 
     # Every terminal (non-infra) step a `--only` run may name, with the extra steps it drags in. The infra chain (P0-P4) always runs under `--only`, since nothing reaches the worker without it.
     _V_WITH_FORKS: ClassVar[tuple[str, ...]] = ("V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7")
-    _ONLY_DEPS: ClassVar[dict[str, tuple[str, ...]]] = {
-        "V1.1": ("P5",),
-        "U1": (),
-        "A1.1": (),
-        "A1.2": (),
-        "A1.3": (),
-        "A1.4": (),
-        "A0": (),
-        "A2.1": ("A0",),
-        "A2.2": ("A0",),
-        "A2.3": ("A0",),
-        **dict.fromkeys(_V_WITH_FORKS, ("P5", "V1.1")),
-    }
+    _ONLY_DEPS: ClassVar[dict[str, tuple[str, ...]]] = only_deps(
+        {
+            "V1.1": ("P5",),
+            "U1": (),
+            "A1.1": (),
+            "A1.2": (),
+            "A1.3": (),
+            "A1.4": (),
+            "A0": (),
+            "A2.1": ("A0",),
+            "A2.2": ("A0",),
+            "A2.3": ("A0",),
+            **dict.fromkeys(_V_WITH_FORKS, ("P5", "V1.1")),
+        },
+        EXTRA_RENET_STEPS,
+    )
 
     def _only_wants(self, step: str) -> bool:
         """Under `--only`, whether `step` runs: it was named, or a named step drags it in."""
@@ -1281,6 +1325,8 @@ class VmCheck:
         self.v1_6_vscode()
         self.v1_7_sftp()
         self.u1_converge()
+        for step_id, _deps, _fn in EXTRA_RENET_STEPS:
+            self.extra_fns[step_id](self)
 
     def _steps_only(self) -> None:
         """A `--only <ids>` run: the infra chain to reach the worker, then just the named steps (and their declared prerequisites). The verdict path never writes receipt.json for it (`_finish`)."""
@@ -1318,6 +1364,9 @@ class VmCheck:
             self.v1_7_sftp()
         if self._only_wants("U1"):
             self.u1_converge()
+        for step_id, _deps, _fn in EXTRA_RENET_STEPS:
+            if self._only_wants(step_id):
+                self.extra_fns[step_id](self)
 
     # ------------------------------------------------------------------ P
 
@@ -2786,6 +2835,7 @@ def main(
     account_modified_fn: Callable[[pathlib.Path], bool | None] = trigger.account_modified,
     account_digest_fn: Callable[[pathlib.Path], str | None] = trigger.account_worktree_digest,
     u1_fn: Callable[[VmCheck], None] = upgrade_converge.run,
+    extra_fns: Mapping[str, Callable[[VmCheck], None]] | None = None,
 ) -> int:
     opts = parse_args(argv, environ)
     if opts.selftest:
@@ -2805,6 +2855,7 @@ def main(
         account_modified_fn=account_modified_fn,
         account_digest_fn=account_digest_fn,
         u1_fn=u1_fn,
+        extra_fns=extra_fns,
     )
     try:
         return check.run()

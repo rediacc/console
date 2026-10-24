@@ -44,12 +44,24 @@ GATEWAY_STARTED = "1792000000"
 DRILL_ENV_SCRUB = ("REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER", "RDC_DEV", "DRILL_EXPECT_NO_KEYRING")
 DRILL_NAMES = ("universe", "transfer", "license")
 A_STEPS = ("A1.1", "A1.2", "A1.3", "A1.4", "A0", "A2.1", "A2.2", "A2.3")
-V_STEPS = ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7", "U1")
+EXTRA_IDS = tuple(step_id for step_id, _deps, _fn in vm_check.EXTRA_RENET_STEPS)
+V_STEPS = ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7", "U1", *EXTRA_IDS)
 
 
 def stub_u1(check: Any) -> None:
     """The U1 step a fake-driven run gets: one ok assertion row and no VM call. The live step is `upgrade_converge.run`, and its CLI-free helpers are tested directly in test_drills_upgrade_converge.py."""
     check.check("U1", "stub U1: a renet upgrade converges the fleet", True)
+
+
+def _stub_extra(step_id: str) -> Any:
+    def stub(check: Any) -> None:
+        check.check(step_id, "stub %s" % step_id, True)
+
+    return stub
+
+
+# Every EXTRA_RENET_STEPS drill a fake-driven run gets: one ok row each and no VM call. The live steps' CLI-free helpers are tested in their own test modules (test_drills_tenant_isolation.py).
+STUB_EXTRA = {step_id: _stub_extra(step_id) for step_id in EXTRA_IDS}
 
 
 def drill_passed(name: str, count: int = 12) -> tuple[int, str]:
@@ -825,6 +837,7 @@ def run_check(
         account_modified_fn=lambda _root: modified,
         account_digest_fn=lambda _root: digest,
         u1_fn=stub_u1,
+        extra_fns=STUB_EXTRA,
     )
     latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
     receipt = json.loads(latest.read_text()) if latest.exists() else {}
@@ -1224,6 +1237,7 @@ def scenario_only_writes_no_receipt_json(m: types.ModuleType, tmp_path: pathlib.
         account_modified_fn=lambda _root: False,
         account_digest_fn=lambda _root: ADIGEST,
         u1_fn=lambda check: check.check("U1", "stub U1", True),
+        extra_fns=STUB_EXTRA,
     )
     latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
     assert not latest.exists(), "a --only run must not write receipt.json"
@@ -1356,6 +1370,7 @@ def _run_only(tmp_path: pathlib.Path, world: World, only: str) -> tuple[int, str
         account_modified_fn=lambda _root: False,
         account_digest_fn=lambda _root: ADIGEST,
         u1_fn=stub,
+        extra_fns=STUB_EXTRA,
     )
     latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
     receipt = json.loads(latest.read_text()) if latest.exists() else {}
