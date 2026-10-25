@@ -50,15 +50,21 @@ class_name = "ExecutorContainer"
 tag = "v1"
 new_sqlite_classes = ["ExecutorContainer"]
 
-# Logs and traces off, as on eu (operator ruling 2026-10-23): no OTLP destination exists for the proxy.
+# Telemetry export (agent/plans/PLAN-telemetry-export.md T14): the bench destination pair, which
+# rediacc-account-bench shares. The 2026-10-23 setting kept logs and traces off only until a
+# destination existed; Cloudflare still keeps no copy (persist = false).
 [observability]
-enabled = false
+enabled = true
 
 [observability.logs]
-enabled = false
+enabled = true
 invocation_logs = false
+head_sampling_rate = 1
+destinations = ["otlp-bench-logs"]
 persist = false
 
 [observability.traces]
-enabled = false
+enabled = true
+head_sampling_rate = 1
+destinations = ["otlp-bench-traces"]
 persist = false

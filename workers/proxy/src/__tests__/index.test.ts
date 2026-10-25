@@ -372,6 +372,11 @@ describe('span attributes (telemetry export T14)', () => {
       await worker.fetch(probed(path, token), env(), ctx);
       all.push(attrs);
     }
+    // The walk must cover every outcome, or "on any outcome" is not what this proves.
+    const outcomes = all.map((attrs) => String(attrs['rediacc.proxy.outcome']));
+    expect(outcomes).toContain('health');
+    expect(outcomes).toContain('forwarded');
+    expect(outcomes.some((outcome) => outcome.startsWith('refused:'))).toBe(true);
     const serialized = JSON.stringify(all);
     for (const secret of secrets) expect(serialized).not.toContain(secret);
   });
