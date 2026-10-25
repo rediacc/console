@@ -359,6 +359,17 @@ describe('span attributes (telemetry export T14)', () => {
     expect(attrs).not.toHaveProperty('rediacc.probe');
   });
 
+  /** What a log line would carry for one console argument: an Error keeps its message, an object its fields, and nothing throws. */
+  function asLogText(arg: unknown): string {
+    if (typeof arg === 'string') return arg;
+    if (arg instanceof Error) return `${arg.name}: ${arg.message}`;
+    try {
+      return JSON.stringify(arg) ?? String(arg);
+    } catch {
+      return String(arg);
+    }
+  }
+
   it('no token, org, team or tenant value lands in any attribute or log line, on any outcome', async () => {
     const secrets = [CALLER, EXECUTOR_TOKEN, 'org-1', 'team-1', 'org-1:team-1'];
     const all: Record<string, unknown>[] = [];
@@ -367,9 +378,7 @@ describe('span attributes (telemetry export T14)', () => {
     // so every console line written during the walk is checked with the attributes.
     for (const level of ['log', 'info', 'warn', 'error', 'debug'] as const) {
       vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
-        logged.push(
-          args.map((arg) => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' ')
-        );
+        logged.push(args.map(asLogText).join(' '));
       });
     }
     for (const [path, token] of [
