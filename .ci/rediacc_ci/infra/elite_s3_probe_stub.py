@@ -1,4 +1,4 @@
-"""In-memory S3 stub, the CONTROL for scripts/gates/run-elite-s3-probe.sh --selftest.
+"""In-memory S3 stub, the CONTROL for `python3 -m rediacc_ci.infra.elite_s3_probe --selftest`.
 
 It speaks just the surface private/elite/scripts/s3-conformance-probe.sh exercises (list, PUT/GET/HEAD/DELETE,
 presigned requests, DeleteObjects, multipart) and verifies no signature. Two behaviours, chosen by a flag:

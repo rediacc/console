@@ -605,6 +605,11 @@
       "CI_DOCKER_DIR",
       "GITHUB_OUTPUT"
     ],
+    ".ci/rediacc_ci/infra/elite_s3_probe.py": [
+      "ELITE_S3_PROBE_BUCKET",
+      "ELITE_S3_PROBE_SCRIPT",
+      "INSTANCE_NAME"
+    ],
     ".ci/rediacc_ci/infra/obs_ceph_autobump.py": [
       "GITHUB_OUTPUT",
       "GITHUB_REPOSITORY",
@@ -712,6 +717,10 @@
       "HOME",
       "NETWORK_CIDR",
       "PROVIDER"
+    ],
+    ".ci/rediacc_ci/ops/prune_worker_secrets.py": [
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN"
     ],
     ".ci/rediacc_ci/ops/push_backup_credentials.py": [
       "*name",

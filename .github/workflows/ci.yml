@@ -1357,7 +1357,7 @@ jobs:
       # probe goes red on a store that ignores If-None-Match; the live run then probes the
       # RustFS container this job started.
       - name: Probe the elite object store for S3 conformance
-        run: bash scripts/gates/run-elite-s3-probe.sh --selftest && bash scripts/gates/run-elite-s3-probe.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.elite_s3_probe --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.infra.elite_s3_probe
 
       - name: Final Service Status
         if: always()

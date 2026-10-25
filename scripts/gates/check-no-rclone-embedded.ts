@@ -29,18 +29,12 @@
  * (printed as 0 scanned), but RCLONE_GATE_REQUIRE_BINARIES=1, set by the build lane's
  * step, turns zero scanned binaries into a failure: that step runs right after the build,
  * so an empty scan there means the glob stopped matching the build output.
- *
- * ---- gate ----
- * step: Assert no rclone payload in the embed lockfile, staged assets or built binaries
- * needs: node, submodules
- * lane: quality-go
- * selftest: true
- * ---- end gate ----
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { dispatchSelftest, selftestFailer } from '../lib/controls.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { requireSubmodule, submodulePath, submoduleRoot } from '../lib/submodule-presence.js';
 
@@ -134,10 +128,7 @@ function candidateBinaries(root: string): string[] {
 }
 
 function selftest(): void {
-  const fail = (m: string): never => {
-    console.error(`${RED}selftest FAIL: ${m}${NC}`);
-    process.exit(1);
-  };
+  const fail = selftestFailer((m) => `${RED}selftest FAIL: ${m}${NC}`);
   const ok = (m: string): void => console.log(`  PASS  ${m}`);
 
   if (lockfileFindings('{"components":{"rclone":{"version":"1.2"}}}').length !== 1)
@@ -181,11 +172,7 @@ function selftest(): void {
 }
 
 function main(): void {
-  if (process.argv.includes('--selftest')) {
-    selftest();
-    console.log('check-no-rclone-embedded: selftest ok');
-    return;
-  }
+  if (dispatchSelftest('check-no-rclone-embedded', selftest)) return;
   const lockfile = submodulePath('private/renet/embed-assets.lock.json');
   if (!requireSubmodule('no rclone embedded', [lockfile])) return;
   const root = submoduleRoot();

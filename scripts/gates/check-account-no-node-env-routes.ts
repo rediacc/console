@@ -24,6 +24,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { dispatchSelftest, selftestFailer } from '../lib/controls.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -68,10 +69,7 @@ function tsFiles(dir: string): string[] {
 }
 
 function selftest(): void {
-  const fail = (m: string): never => {
-    console.error(`  FAIL  ${m}`);
-    process.exit(1);
-  };
+  const fail = selftestFailer((m) => `  FAIL  ${m}`);
   if (
     findNodeEnv('const a = process.env.JWT_SECRET;\nconst b = c.env.NODE_ENVIRONMENT_X;').length !==
     0
@@ -98,11 +96,7 @@ function selftest(): void {
 }
 
 function main(): void {
-  if (process.argv.includes('--selftest')) {
-    selftest();
-    console.log('check-account-no-node-env-routes: selftest ok (5 controls)');
-    return;
-  }
+  if (dispatchSelftest('check-account-no-node-env-routes', selftest, ' (5 controls)')) return;
   const dir = path.join(ROOT, ROUTES);
   if (!fs.existsSync(dir)) {
     console.error(

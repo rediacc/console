@@ -25,7 +25,9 @@
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import { WK_GO_DL_BASE } from '../../packages/shared/src/config/well-known.generated.js';
 import { GREEN, NC, RED } from '../lib/console.js';
+import { dispatchSelftest, selftestFailer } from '../lib/controls.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
@@ -83,10 +85,7 @@ export function refusals(v: Verdict): string[] {
 }
 
 function selftest(): void {
-  const fail = (m: string): never => {
-    console.error(`${RED}selftest FAIL: ${m}${NC}`);
-    process.exit(1);
-  };
+  const fail = selftestFailer((m) => `${RED}selftest FAIL: ${m}${NC}`);
   const ev = (a: string, p: string, t?: string): string =>
     JSON.stringify({ Action: a, Package: p, ...(t ? { Test: t } : {}) });
   const many = (n: number): string =>
@@ -111,11 +110,7 @@ function selftest(): void {
 }
 
 function main(): void {
-  if (process.argv.includes('--selftest')) {
-    selftest();
-    console.log('check-renet-chunkstore-unit: selftest ok');
-    return;
-  }
+  if (dispatchSelftest('check-renet-chunkstore-unit', selftest)) return;
   const renet = submodulePath('private/renet');
   if (!requireSubmodule('renet chunkstore unit', [submodulePath('private/renet/pkg/chunkstore')]))
     return;
@@ -124,7 +119,7 @@ function main(): void {
   const probe = spawnSync('go', ['version'], { encoding: 'utf-8' });
   if (probe.error || probe.status !== 0) {
     console.error(
-      `${RED}✗ the go toolchain is not runnable (${probe.error?.message ?? `exit ${probe.status}`}). Install Go at the version in private/renet/go.mod (https://go.dev/dl/), or on a CI job add actions/setup-go.${NC}`
+      `${RED}✗ the go toolchain is not runnable (${probe.error?.message ?? `exit ${probe.status}`}). Install Go at the version in private/renet/go.mod (${WK_GO_DL_BASE}/), or on a CI job add actions/setup-go.${NC}`
     );
     process.exit(1);
   }

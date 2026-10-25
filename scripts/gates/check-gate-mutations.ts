@@ -149,7 +149,7 @@ export const REGISTRY: GateMutation[] = [
       'packages/shared/src/config-schema/schemas.ts',
       'private/account/src/dto/backup.dto.ts',
       'private/account/src/services/backup-gc.service.ts',
-      'packages/cli/src/commands/backup-storage.ts',
+      'packages/cli/src/commands/backup-retention-commands.ts',
     ],
     file: 'private/account/src/services/backup-gc.service.ts',
     find: "  { knob: 'keepWeekly', key: (c) => isoWeekKey(new Date(c)) },\n",

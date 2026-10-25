@@ -73,9 +73,9 @@ def build_fixture(gate, root):
         root.joinpath(*rel.split("/")).mkdir(parents=True, exist_ok=True)
     (root / "functions.generated.ts").write_text(FUNCTIONS_TS, encoding="utf-8")
     (root / "e2e" / "playwright.fixture.config.ts").write_text(CONFIG_TS, encoding="utf-8")
-    (root / "e2e" / "src" / "utils" / "renet-functions" / "methods" / "FixtureMethods.ts").write_text(
-        METHODS_TS, encoding="utf-8"
-    )
+    (
+        root / "e2e" / "src" / "utils" / "renet-functions" / "methods" / "FixtureMethods.ts"
+    ).write_text(METHODS_TS, encoding="utf-8")
     (root / "e2e" / "tests" / "01-live.test.ts").write_text(LIVE_TEST_TS, encoding="utf-8")
     (root / "e2e" / "tests" / "99-dark.test.ts").write_text(DARK_TEST_TS, encoding="utf-8")
     (root / "workflows" / "ci.yml").write_text(WORKFLOW_YML, encoding="utf-8")

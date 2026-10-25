@@ -108,6 +108,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
     "pkg/datastore": EXCLUDE,
     # setup's RepairMirrorModes chmods existing repository state records; a fresh bake has none, so it changes nothing on the disk (renet 7faf671).
     "pkg/repository": EXCLUDE,
+    # setup uses daemon.GetInstalledNetworks and CleanupLegacyPlugins only to clean up legacy existing networks; a fresh bake has none.
+    "pkg/daemon": EXCLUDE,
     "pkg/i18n": EXCLUDE,
     "pkg/infra/vm": EXCLUDE,
     "pkg/infra/vm/kvm": EXCLUDE,

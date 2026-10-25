@@ -453,7 +453,9 @@ export function liveExtraLines(json: string): string[] | null {
 
 // Control: both outcomes and the unreadable case must come out distinct.
 {
-  const withExtra = liveExtraLines('{"workers":[{"worker":"w","extras":["OLD"]},{"worker":"v","extras":[]}]}');
+  const withExtra = liveExtraLines(
+    '{"workers":[{"worker":"w","extras":["OLD"]},{"worker":"v","extras":[]}]}'
+  );
   const none = liveExtraLines('{"workers":[{"worker":"w","extras":[]}]}');
   if (
     withExtra?.join('|') !== 'w: OLD' ||
@@ -462,7 +464,9 @@ export function liveExtraLines(json: string): string[] | null {
     liveExtraLines('not json') !== null ||
     liveExtraLines('{"workers":[]}') !== null
   ) {
-    console.error('✗ instrument control: the live-extras reader does not tell extras, none and unreadable apart.');
+    console.error(
+      '✗ instrument control: the live-extras reader does not tell extras, none and unreadable apart.'
+    );
     process.exit(1);
   }
 }

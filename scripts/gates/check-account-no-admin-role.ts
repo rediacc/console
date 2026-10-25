@@ -27,6 +27,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { dispatchSelftest, selftestFailer } from '../lib/controls.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -104,10 +105,7 @@ export function judge(src: string): Verdict {
 }
 
 function selftest(): void {
-  const fail = (m: string): never => {
-    console.error(`  FAIL  ${m}`);
-    process.exit(1);
-  };
+  const fail = selftestFailer((m) => `  FAIL  ${m}`);
   const clean = "role: text('role', { enum: ['customer', 'root'] })\nz.enum(['customer', 'root'])";
   const c = judge(clean);
   if (c.userEnums !== 2 || c.bad.length !== 0)
@@ -159,11 +157,7 @@ function selftest(): void {
 }
 
 function main(): void {
-  if (process.argv.includes('--selftest')) {
-    selftest();
-    console.log('check-account-no-admin-role: selftest ok (10 controls)');
-    return;
-  }
+  if (dispatchSelftest('check-account-no-admin-role', selftest, ' (10 controls)')) return;
   let checked = 0;
   let failed = false;
   for (const rel of TARGETS) {
