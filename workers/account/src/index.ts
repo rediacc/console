@@ -80,6 +80,15 @@ export class CloudflareInternal extends WorkerEntrypoint<Env> {
   }
 }
 
+/**
+ * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). One RPC method, `issue()`, with no arguments and no `fetch`, so nothing a caller sends can steer what is minted: each call mints a fresh 45-minute token (scopes exactly proxy:exec and audit:write, ip binding 'service-binding', issuer key `executor:<ENVIRONMENT>:<REGION>`) for the ROOT_EMAIL user's org, after re-checking that user's role and the org's subscription (private/account/src/services/executor-issuer.service.ts). A refusal rejects with the reason code as the message and is audited as `executor_token.refused`.
+ */
+export class ExecutorIssuer extends WorkerEntrypoint<Env> {
+  issue(): Promise<{ token: string; expiresAt: string }> {
+    return accountApp.issueExecutorToken(this.env);
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
