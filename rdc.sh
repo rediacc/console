@@ -108,19 +108,7 @@ if [[ "${1:-}" == "--dev" ]]; then
     RDC_DEV=1
     shift
 fi
-# selected_config_name: the config the CLI will use, as the banner names it:
-# --config <name> or --config=<name> wins, then REDIACC_CONFIG, then the
-# default config "rediacc" (which targets production).
-selected_config_name() {
-    local prev=""
-    for arg in "$@"; do
-        if [[ "$prev" == "--config" ]]; then printf '%s' "$arg"; return; fi
-        case "$arg" in --config=*) printf '%s' "${arg#--config=}"; return ;; esac
-        prev="$arg"
-    done
-    printf '%s' "${REDIACC_CONFIG:-rediacc}"
-}
-
+selected_config_name() { local p=""; for a in "$@"; do [[ "$p" == "--config" ]] && { printf '%s' "$a"; return; }; [[ "$a" == --config=* ]] && { printf '%s' "${a#--config=}"; return; }; p="$a"; done; printf '%s' "${REDIACC_CONFIG:-rediacc}"; } # the banner's config: --config <name>|=<name>, then REDIACC_CONFIG, then rediacc (production)
 if [[ "${RDC_DEV:-0}" == "1" ]]; then
     # Two PUBLIC values only, both from the RUNNING gateway: its port from this
     # worktree's .account-state and its X25519 key from /.well-known/server-info.
@@ -186,7 +174,6 @@ fi
 # exec, not a child: signals sent to this wrapper must reach the CLI directly
 # (a bash layer between kill and node defers SIGINT until the child exits,
 # which hangs tutorial prewarm/interrupt patterns — see tutorial-helpers.sh).
-#
 # NODE_COMPILE_CACHE: V8 spends ~120ms compiling the 15MB bundle on EVERY
 # invocation (measured, --cpu-prof); the on-disk compile cache cuts that to a
 # few ms after the first run. Env-var form on purpose — it covers the entry

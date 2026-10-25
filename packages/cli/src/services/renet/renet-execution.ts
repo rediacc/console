@@ -193,8 +193,8 @@ const realCleanBuildDeps: RenetCleanBuildDeps = {
   build: (cwd, env) =>
     new Promise((resolve, reject) => {
       // stdout is the CLI command's; build progress goes to stderr.
-      // Relative to the child's cwd: a cwd-joined path would be resolved against cwd a second time when cwd is relative.
-      const child = spawn('./build.sh', ['dev'], {
+      // build.sh resolves against the child's cwd: a cwd-joined path would be resolved against cwd a second time when cwd is relative.
+      const child = spawn('bash', ['build.sh', 'dev'], {
         cwd,
         env,
         stdio: ['ignore', 2, 2],

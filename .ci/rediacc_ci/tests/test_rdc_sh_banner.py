@@ -13,7 +13,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 
 def _function_text() -> str:
     text = (ROOT / "rdc.sh").read_text()
-    m = re.search(r"^selected_config_name\(\) \{\n.*?^\}\n", text, re.MULTILINE | re.DOTALL)
+    # One line: rdc.sh sits at check:ci-rdc-native's line ceiling.
+    m = re.search(r"^selected_config_name\(\) \{.*\}(?= #|$).*\n", text, re.MULTILINE)
     assert m, "rdc.sh defines selected_config_name"
     return m.group(0)
 

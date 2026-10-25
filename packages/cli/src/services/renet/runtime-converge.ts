@@ -66,7 +66,7 @@ export interface RuntimeStatus {
  * the current layout's Docker API gate would refuse, so the repo was skipped
  * as `gate_refused`, `unmanaged_containers` or `needs_device_grant` and keeps running on the old layout.
  */
-export interface ConvergeDenial {
+interface ConvergeDenial {
   /** The compose service, or the container name for a live container; empty for a whole-file refusal. */
   service: string;
   /** `compose` or `container`. */

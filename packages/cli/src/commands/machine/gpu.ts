@@ -39,7 +39,7 @@ interface GrantList {
 }
 
 /** Mirror of renet `gpuListReport`: the machine's inventory and every network's device grants. */
-export interface GpuListReport {
+interface GpuListReport {
   inventory: {
     platform?: string;
     gpus?: GpuRow[] | null;
@@ -106,7 +106,7 @@ function deviceRows(specs: GpuSpec[], grants: GrantList[], names: Map<number, st
 }
 
 /** Render the report as tables: GPUs, the CDI devices the machine offers, and who holds each. */
-export async function renderGpuList(report: GpuListReport): Promise<void> {
+async function renderGpuList(report: GpuListReport): Promise<void> {
   const grants = report.grants ?? [];
   const names = await repoNamesByNetworkId();
 

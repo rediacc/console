@@ -288,9 +288,10 @@
     "ssh-agent",
     "ssh-keyscan",
 
-    // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing, pdftotext content checks, agent-browser session capture) and by the CLI backup stack (rclone); installed on dev/CI hosts, not npm deps
+    // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing and its ffprobe stream probe, pdftotext content checks, agent-browser session capture) and by the CLI backup stack (rclone); installed on dev/CI hosts, not npm deps
     "agent-browser",
     "ffmpeg",
+    "ffprobe",
     "pdftotext",
     "rclone",
 
