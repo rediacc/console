@@ -200,6 +200,17 @@ if ROLE == "renet":
         sys.stderr.write(ATTR + "\n" + TAIL[op] + "\n")
         sys.exit(1)
 
+    if args[:2] == ["backup", "restore"]:
+        blob = load(LIC + "/repos/" + opt("--repo"))
+        if blob is None:
+            sys.stderr.write(json.dumps({"code": "LICENSE_REQUIRED", "reason": "missing"}, separators=(",", ":")) + "\n")
+            sys.exit(10)
+        if blob["opts"].get("-grand-guid") != opt("--lineage"):
+            print("repository %s belongs to lineage %s" % (opt("--repo"), blob["opts"].get("-grand-guid", "(none)")))
+            sys.stderr.write("restore refused\n")
+            sys.exit(1)
+        sys.exit(1)
+
     if args[:2] == ["repository", "license-status"]:
         ds = opt("--datastore")
         guid = sorted(os.listdir(ds + "/repositories"))[0]
@@ -618,6 +629,8 @@ def test_the_scenario_table_is_complete(tmp_path):
         "S10b",
         "S7",
         "S7b",
+        "S11a",
+        "S11b",
     ]
 
 

@@ -66,6 +66,11 @@ SEQ_GUID_A = "1ce1ce2e-0000-0000-0000-00000000000a"
 SEQ_GUID_B = "1ce1ce2e-0000-0000-0000-00000000000b"
 FP_GUID = "1ce1ce2e-0000-0000-0000-00000000000f"
 
+# Restore scenarios (S11). The target and its lineage are GUIDs because the verb refuses anything else before it reaches the license step. Neither has an image: restore judges the target first, and an absent image passes.
+RESTORE_GUID = "1ce1ce2e-0000-0000-0000-0000000000c1"
+RESTORE_LINEAGE = "1ce1ce2e-0000-0000-0000-0000000000c2"
+RESTORE_SNAPSHOT = "snap-license-e2e"
+
 # Datastore identities. UUID-shaped because that is what `datastore create` mints and what the store's path-segment guard accepts.
 PARENT_DS_ID = "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa"
 FORK_DS_ID = "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb"
@@ -215,6 +220,7 @@ class Battery:
                     self.repo_license_root + "/" + SEQ_GUID_A,
                     self.repo_license_root + "/" + SEQ_GUID_B,
                     self.repo_license_root + "/" + FP_GUID,
+                    self.repo_license_root + "/" + RESTORE_GUID,
                 ]
             )
             _exec(
@@ -500,6 +506,32 @@ class Battery:
             self.errexit = True
         return not self.failed
 
+    def assert_restore_refused_plainly(self, scenario: str, needle: str, *cmd: str) -> None:
+        """A refusal that is NOT LICENSE_REQUIRED: exit 1 with `needle` in the message. Exit 10 here would send the CLI into a reissue that hands back the same license."""
+        stderr = self.run_renet(*cmd)
+        if self.renet_code == 10 or b"LICENSE_REQUIRED" in stderr:
+            self.record_fail(
+                scenario,
+                "expected a plain refusal, got the typed license error (exit %d): %s"
+                % (self.renet_code, _head_flat(stderr)),
+            )
+        elif self.renet_code != 1:
+            self.record_fail(
+                scenario,
+                "expected exit 1, got %d; stderr: %s" % (self.renet_code, _head_flat(stderr)),
+            )
+        elif needle.encode() not in self.stdout_and(stderr):
+            self.record_fail(
+                scenario, "exit 1 but '%s' was not reported: %s" % (needle, _head_flat(stderr))
+            )
+        else:
+            self.record_pass(scenario, "exit 1, refused without LICENSE_REQUIRED (%s)" % needle)
+
+    def stdout_and(self, stderr: bytes) -> bytes:
+        """The restore record on stdout carries the reason in prose; stderr carries the error line."""
+        with open(self.work + "/stdout.txt", "rb") as fh:
+            return fh.read() + stderr
+
     def _scenarios(self, binary: str, label: str) -> None:
         self.label = label
         self.failed = []
@@ -655,6 +687,28 @@ class Battery:
         # S7b: the same mismatch inside the grace window is deliberately tolerated, so a VM migration does not brick a repo.
         self.assert_accepted("S7b", CREATE_TAIL, *create, REPO_PREFIX + "-machine-grace")
 
+        # S11: RESTORE. backup_restore is tier none (a lapsed license must never lock a customer out of disaster recovery), but the verb needs a license of the requested LINEAGE as the credential for its storage session. The retention window is enforced by the account server when the session is minted, so it is outside a battery that talks to no server.
+        restore = [
+            binary,
+            "backup",
+            "restore",
+            "--datastore",
+            work + "/ds-restore",
+            "--repo",
+            RESTORE_GUID,
+            "--lineage",
+            RESTORE_LINEAGE,
+            "--at",
+            RESTORE_SNAPSHOT,
+        ]
+        # S11a: no license of the lineage on the machine is the typed refusal the CLI's recovery path acts on.
+        self._sudo("rm", "-rf", self.repo_license_root + "/" + RESTORE_GUID)
+        self.assert_rejected("S11a", "missing", *restore)
+        # S11b: the target's own license names another lineage (none, here). Reissuing would return the same blob, so this is a plain refusal.
+        self.mint(RESTORE_GUID, "-renewal-url", "http://127.0.0.1:1/license/renew")
+        self.install_license(RESTORE_GUID)
+        self.assert_restore_refused_plainly("S11b", "belongs to lineage", *restore)
+
     def expect_control_failure(self, binary: str, label: str, required: str) -> bool:
         """Run the battery against a binary that MUST NOT pass it. False when it passes, or fails for the wrong reason."""
         if self.run_battery(binary, label):
@@ -724,6 +778,7 @@ class Battery:
         self.describe_datastore(work + "/ds-fork", FORK_DS_ID)
         os.makedirs("%s/ds-parent/repositories/%s" % (work, FORK_GUID), exist_ok=True)
         os.makedirs("%s/ds-fork/repositories/%s" % (work, FORK_GUID), exist_ok=True)
+        os.makedirs(work + "/ds-restore/repositories", exist_ok=True)
 
         self._back_up_chain_state()
 
