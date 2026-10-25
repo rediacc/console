@@ -482,7 +482,7 @@ USER root
 # Pinned to an exact release; the values below are whatever the last bump chose.
 # Bumping is a one-line edit per tool; there is deliberately no freshness gate on
 # these two, because a CLI whose version nothing depends on is not worth a red build.
-ARG CODEX_VERSION=0.163.0
+ARG CODEX_VERSION=0.164.0
 ARG GEMINI_CLI_VERSION=0.65.0
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age

@@ -127,5 +127,7 @@ export default test.defineConfig({
     { name: 'test-28', testMatch: '28-*.test.ts' },
     // rdc --proxy through a local executor (suite 29, PLAN-cloudflare-proxy box B4): `rdc serve --mode daemon` on loopback, with the account server's introspect and audit routes stood in by an in-test stub, drives repo status, up and down on a fork. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
     { name: 'test-29', testMatch: '29-*.test.ts' },
+    // GPU device grants (suite 30, PLAN-gpu-device-grants): machine_gpu_list and repository_gpu_grant|revoke against a fake CDI spec on a worker VM with no GPU. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
+    { name: 'test-30', testMatch: '30-*.test.ts' },
   ],
 });
