@@ -41,6 +41,11 @@ const SPEC = [
   '',
 ].join('\n');
 
+/** The grants-section line of this run's network (gpu.list.grant: `  network <id> (<mount>): <devices>`), or ''. */
+function grantLine(output: string): string {
+  return output.split('\n').find((l) => l.trim().startsWith(`network ${NETWORK_ID} `)) ?? '';
+}
+
 test.describe
   .serial('GPU device grants @bridge', () => {
     let runner: BridgeTestRunner;
@@ -74,6 +79,8 @@ test.describe
         once('repository_gpu_grant', ` --device ${KIND}=missing`)
       );
       expect(result.code, runner.getCombinedOutput(result)).not.toBe(0);
+      // The refusal must be renet's own grant.device_not_defined, not an unknown flag or function.
+      expect(runner.getCombinedOutput(result)).toContain('is not defined by any cdi spec');
     });
 
     test('repository_gpu_grant records the defined device', async () => {
@@ -81,11 +88,14 @@ test.describe
         once('repository_gpu_grant', ` --device ${DEVICE}`)
       );
       expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(true);
+      // `--show` prints the network's grant after the change.
       expect(runner.getCombinedOutput(result)).toContain(DEVICE);
 
+      // The inventory lists every CDI device, granted or not, so the grant is read from
+      // the network's own line of the grants section.
       const listed = await runner.executeOnWorker(listCmd);
       expect(runner.isSuccess(listed), runner.getCombinedOutput(listed)).toBe(true);
-      expect(runner.getCombinedOutput(listed)).toContain(DEVICE);
+      expect(grantLine(runner.getCombinedOutput(listed))).toContain(DEVICE);
     });
 
     test('repository_gpu_revoke removes the device from the grant', async () => {
@@ -96,6 +106,6 @@ test.describe
 
       const listed = await runner.executeOnWorker(listCmd);
       expect(runner.isSuccess(listed), runner.getCombinedOutput(listed)).toBe(true);
-      expect(runner.getCombinedOutput(listed)).not.toContain(`${DEVICE}"`);
+      expect(grantLine(runner.getCombinedOutput(listed))).not.toContain(DEVICE);
     });
   });
