@@ -216,7 +216,7 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
     p90Minutes: 40,
     timeoutMinutes: 45,
     ruling:
-      '#a74699b5 operator ruling ASKED:2026-10-25T19:08Z ("Cap it at 45 min"): suite 26 holds a 30-minute per-test ceiling, so the job cannot fit 15; timeout 45 (.github/workflows/ct-tests.yml)',
+      '#a74699b5 operator ruling ASKED:2026-10-25T19:08Z ("Cap it at 45 min"): suite 26 holds a 30-minute per-test ceiling, so the job cannot fit 15; timeout 45 (.github/workflows/ct-tests.yml). p90 40 is provisional: .ci/config/lane-durations.json holds no measured row for this full-suite-only job yet, so the cap is revisited after 10 measured runs',
   },
   {
     job: 'validate-promote',
