@@ -7,6 +7,11 @@
  * prefix: it lists the bucket and recognizes chunks by the hash-named last segment.
  */
 
+import { execFileSync } from 'node:child_process';
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
 /** A chunk object key: the last path segment is exactly one SHA-256 in lowercase hex. */
 const CHUNK_KEY = /(?:^|\/)[0-9a-f]{64}$/;
 
@@ -31,4 +36,103 @@ export function flipByteScript(file: string, offset: number): string {
     `printf "$(printf '\\\\%03o' "$after")" | dd of=${quoted} bs=1 seek=${offset} conv=notrunc status=none`,
     'printf "%02x %02x\\n" "$before" "$after"',
   ].join('\n');
+}
+
+/** The `<Key>` values of an S3 ListObjectsV2 response, XML entities decoded. */
+export function parseListKeys(xml: string): string[] {
+  return [...xml.matchAll(/<Key>([^<]*)<\/Key>/g)].map((m) =>
+    m[1].replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>')
+  );
+}
+
+/** Chunk objects of one lineage: hash-named keys with the lineage guid as a path segment. */
+export function lineageChunkKeys(keys: readonly string[], lineage: string): string[] {
+  return chunkKeys(keys).filter((key) => key.split('/').includes(lineage));
+}
+
+/** The dev store's coordinates, from the same `E2E_BACKUP_S3_*` variables suite 27 reads. */
+export interface StoreAccess {
+  endpoint: string;
+  bucket: string;
+  accessKey: string;
+  secretKey: string;
+}
+
+/** Store access from the environment, or undefined when the credentials are not both set. */
+export function storeAccessFromEnv(env: NodeJS.ProcessEnv = process.env): StoreAccess | undefined {
+  const accessKey = env.E2E_BACKUP_S3_KEY;
+  const secretKey = env.E2E_BACKUP_S3_SECRET;
+  if (!accessKey || !secretKey) return undefined;
+  return {
+    endpoint: (env.E2E_BACKUP_S3_ENDPOINT || 'http://127.0.0.1:9100').replace(/\/+$/, ''),
+    bucket: env.E2E_BACKUP_S3_BUCKET || 'rediacc-backups-probe',
+    accessKey,
+    secretKey,
+  };
+}
+
+/** An object that was corrupted in the store; `restore` puts the original bytes back. */
+export interface CorruptedChunk {
+  key: string;
+  /** Hex pair printed by the flip, `<before> <after>`. */
+  flipped: string;
+  restore: () => void;
+}
+
+function storeCurl(access: StoreAccess, args: string[], url: string): Buffer {
+  // Credentials ride a curl config on stdin, never argv.
+  return execFileSync(
+    'curl',
+    ['-sS', '--fail', '--aws-sigv4', 'aws:amz:us-east-1:s3', '-K', '-', ...args, url],
+    { input: `user = "${access.accessKey}:${access.secretKey}"\n`, maxBuffer: 256 * 1024 * 1024 }
+  );
+}
+
+/**
+ * Flip one byte of one stored chunk of `lineage` in place (K11a). The caller owns `restore()` and
+ * must call it in a finally block: the store is shared, and a left-over corrupt chunk breaks every
+ * later restore of that lineage.
+ */
+export function corruptStoredChunk(
+  access: StoreAccess,
+  lineage: string,
+  offset = 0
+): CorruptedChunk {
+  const base = `${access.endpoint}/${access.bucket}`;
+  const listing = storeCurl(access, ['-G', '--data-urlencode', 'list-type=2'], base).toString(
+    'utf8'
+  );
+  const keys = lineageChunkKeys(parseListKeys(listing), lineage);
+  if (keys.length === 0) {
+    throw new Error(
+      `no chunk object of lineage ${lineage} in bucket ${access.bucket} (listing: ${listing.slice(0, 400)})`
+    );
+  }
+  const key = keys[0];
+  const dir = mkdtempSync(path.join(tmpdir(), 'chunk-corrupt-'));
+  const original = path.join(dir, 'original');
+  const tampered = path.join(dir, 'tampered');
+  const url = `${base}/${key}`;
+  try {
+    writeFileSync(original, storeCurl(access, [], url));
+    copyFileSync(original, tampered);
+    const flipped = execFileSync('bash', ['-c', flipByteScript(tampered, offset)])
+      .toString()
+      .trim();
+    storeCurl(access, ['-X', 'PUT', '-T', tampered], url);
+    return {
+      key,
+      flipped,
+      restore: () => {
+        try {
+          storeCurl(access, ['-X', 'PUT', '-T', original], url);
+        } finally {
+          rmSync(dir, { recursive: true, force: true });
+        }
+      },
+    };
+  } catch (error) {
+    rmSync(dir, { recursive: true, force: true });
+    throw error;
+  }
 }

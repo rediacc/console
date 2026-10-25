@@ -10,8 +10,8 @@ import {
   type SnapshotRecord,
   verbIsRegistered,
 } from '../backupStorage';
-import { RenetFunctionsTestRunner } from '../renet-functions/RenetFunctionsTestRunner';
 import { CliRunner } from '../CliRunner';
+import { RenetFunctionsTestRunner } from '../renet-functions/RenetFunctionsTestRunner';
 
 // Shared by suites 26 and 27: the account-server and fleet wiring, the CLI login, and the repository provisioning both chunk-store CLI suites build on.
 
@@ -160,6 +160,35 @@ export const loginCli = async (cfg: string): Promise<CliRunner> => {
 /** Read rdc's own config file — the artifact `repo create` just wrote. */
 const readCliConfig = (cli: CliRunner): CliConfigFile =>
   JSON.parse(readFileSync(cli.configPath, 'utf8')) as CliConfigFile;
+
+/**
+ * What the CLI's config holds for one repository tag: its GUID, LUKS credential and network id.
+ * A restored repo and a fork mint their own GUID, so the suites read it back instead of assuming
+ * the source's. The credential falls back to the grand tag's, which is what a fork and a restore inherit.
+ */
+export const repoIdentity = (cli: CliRunner, name: string, tag?: string): ProvisionedRepo => {
+  const cfg = readCliConfig(cli);
+  const family = cfg.resources?.repositories?.[name];
+  const useTag = tag ?? family?.grand ?? 'latest';
+  const entry = family?.tags?.[useTag];
+  const grandEntry = family?.tags?.[family?.grand ?? 'latest'];
+  const guid = entry?.repositoryGuid ?? '';
+  expect(guid, `the config registered no guid for ${name}:${useTag}`).toMatch(/^[0-9a-f-]{36}$/);
+  const networkId = cfg.state?.repos?.[name]?.[useTag]?.networkId;
+  expect(networkId, `the config recorded no network id for ${name}:${useTag}`).toBeDefined();
+  return {
+    name,
+    guid,
+    credential: entry?.credential ?? grandEntry?.credential ?? '',
+    networkId: String(networkId),
+  };
+};
+
+/** Every repository GUID the CLI config holds, across all names and tags. */
+export const allRepoGuids = (cli: CliRunner): string[] =>
+  Object.values(readCliConfig(cli).resources?.repositories ?? {}).flatMap((family) =>
+    Object.values(family.tags ?? {}).flatMap((t) => (t.repositoryGuid ? [t.repositoryGuid] : []))
+  );
 
 /**
  * Lay down the base datastore pool on a worker, WITHOUT destroying one.
