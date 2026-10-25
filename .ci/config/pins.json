@@ -2127,6 +2127,14 @@
           "match": "^readonly WRANGLER_VERSION=\"(?<value>[^\"]+)\"",
           "label": ".ci/config/constants.sh WRANGLER_VERSION",
           "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "workers/account/package.json",
+          "role": "version",
+          "match": "\"wrangler\": \"(?<value>[^\"]+)\"",
+          "label": "workers/account/package.json wrangler",
+          "expect": 1
         }
       ],
       "derive": [],

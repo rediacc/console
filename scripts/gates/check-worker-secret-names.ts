@@ -41,6 +41,14 @@
  * preview builder pushes 15 of 85), so "schema key nobody pushes" is not a
  * finding.
  *
+ * LIVE EXTRAS (advisory). With CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the
+ * environment (`bws_env exec --profile deploy-workers`), the gate also asks
+ * `rediacc_ci.ops.prune_worker_secrets --json` which secrets the live account Workers
+ * hold that the push no longer carries, and prints them. A bulk push only adds, so a
+ * renamed key lingers on the Worker; `prune_worker_secrets --delete` removes it. Without
+ * a token the section is skipped and says so. It never changes the exit code: CI has no
+ * token, and a live Worker is not part of the tree this gate judges.
+ *
  * Run: npx tsx scripts/gates/check-worker-secret-names.ts
  *
  * Control-first: both extractors are proven on synthetic input before any
@@ -420,6 +428,78 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
+/** One surveyed Worker as `prune_worker_secrets --json` prints it. */
+interface LiveRow {
+  worker: string;
+  extras: string[];
+}
+
+/**
+ * The `worker: name name` lines for every Worker that holds a secret the push does not
+ * carry, from the module's JSON. Unreadable input yields null so the caller can say so
+ * instead of reading it as "no extras".
+ */
+export function liveExtraLines(json: string): string[] | null {
+  try {
+    const doc = JSON.parse(json) as { workers?: LiveRow[] };
+    if (!Array.isArray(doc.workers) || doc.workers.length === 0) return null;
+    return doc.workers
+      .filter((w) => Array.isArray(w.extras) && w.extras.length > 0)
+      .map((w) => `${w.worker}: ${w.extras.join(' ')}`);
+  } catch {
+    return null;
+  }
+}
+
+// Control: both outcomes and the unreadable case must come out distinct.
+{
+  const withExtra = liveExtraLines('{"workers":[{"worker":"w","extras":["OLD"]},{"worker":"v","extras":[]}]}');
+  const none = liveExtraLines('{"workers":[{"worker":"w","extras":[]}]}');
+  if (
+    withExtra?.join('|') !== 'w: OLD' ||
+    none === null ||
+    none.length !== 0 ||
+    liveExtraLines('not json') !== null ||
+    liveExtraLines('{"workers":[]}') !== null
+  ) {
+    console.error('✗ instrument control: the live-extras reader does not tell extras, none and unreadable apart.');
+    process.exit(1);
+  }
+}
+
+function reportLiveExtras(): void {
+  if (!process.env.CLOUDFLARE_API_TOKEN || !process.env.CLOUDFLARE_ACCOUNT_ID) {
+    console.log(
+      '  Live extras: skipped (no CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID; run under `bws_env exec --profile deploy-workers`).'
+    );
+    return;
+  }
+  let out = '';
+  try {
+    out = execFileSync('python3', ['-m', 'rediacc_ci.ops.prune_worker_secrets', '--json'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: { ...process.env, PYTHONPATH: join(ROOT, '.ci') },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (err) {
+    // Exit 1 means extras were found and the JSON is still on stdout; exit 2 has none.
+    out = (err as { stdout?: string }).stdout ?? '';
+  }
+  const lines = liveExtraLines(out);
+  if (lines === null) {
+    console.log('  Live extras: no verdict (the listing failed or was unreadable).');
+  } else if (lines.length === 0) {
+    console.log('  Live extras: none on any account Worker.');
+  } else {
+    console.log(
+      `  Live extras (advisory, ${lines.length} Worker(s)): secrets the push no longer carries:\n` +
+        lines.map((l) => `    ${l}`).join('\n') +
+        '\n  Remove with: python3 -m rediacc_ci.ops.prune_worker_secrets --delete'
+    );
+  }
+}
+
 console.log(
   `✓ worker secret names: ${checked} pushed key(s) across ${BUILDERS.length} builder(s) are all\n` +
     `  declared in ${SCHEMA} (${schema.size} schema keys; extractor controls fired both ways).\n` +
@@ -428,3 +508,4 @@ console.log(
     "  normalises to undefined and validates — that is the deploy scripts' non-empty\n" +
     '  guards, not this gate.'
 );
+reportLiveExtras();
