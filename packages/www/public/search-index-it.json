@@ -6772,8 +6772,8 @@
   },
   {
     "id": "search-10544",
-    "content": "gpu",
-    "excerpt": "Tag: gpu",
+    "content": "containers",
+    "excerpt": "Tag: containers",
     "category": "Documentation",
     "page": "/it/docs/gpu",
     "path": "docs.gpu.tags",
@@ -6782,8 +6782,8 @@
   },
   {
     "id": "search-10545",
-    "content": "containers",
-    "excerpt": "Tag: containers",
+    "content": "operations",
+    "excerpt": "Tag: operations",
     "category": "Documentation",
     "page": "/it/docs/gpu",
     "path": "docs.gpu.tags",
