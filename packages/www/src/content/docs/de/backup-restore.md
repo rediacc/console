@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: de
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "b3aeea9301684d79"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Backup & Wiederherstellung
@@ -61,7 +61,7 @@ Maschine-zu-Maschine-Push und -Pull brauchen keins von beidem. Sie sind eine dir
 
 ### Der rclone-Speicherpfad ist verschwunden
 
-`rdc repo push --to <storage>` und Verwandte kopierten früher eine ganze Backup-Datei zu einem Cloud-Anbieter, den Sie selbst registrierten. Diese verweigern jetzt ein Speicherziel und nennen ihren Ersatz. Die Maschine-zu-Maschine-Übertragung lief nie über rclone und ist unbetroffen. Wenn Sie noch ein auf diese Weise geschriebenes Archiv lesen müssen, siehe [Ein vor der Umstellung geschriebenes Archiv lesen](#reading-an-archive-written-before-the-retirement).
+`rdc repo push --to <storage>` und Verwandte kopierten früher eine ganze Backup-Datei zu einem Cloud-Anbieter, den Sie selbst registrierten. Diese verweigern jetzt ein Speicherziel und nennen ihren Ersatz. Die Maschine-zu-Maschine-Übertragung lief nie über rclone und ist unbetroffen. Die Storage-Befehle und das mitgelieferte rclone wurden entfernt, deshalb lässt sich ein auf diese Weise geschriebenes Archiv nicht mehr über die CLI durchsuchen.
 
 ### Chunk-Storage-Befehle
 
@@ -637,25 +637,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | Bandbreitenlimit für die Übertragung (z. B. `50M`) |
 
 Die Migration überträgt die verschlüsselten Repository-Daten in zwei Phasen per rsync: eine Massenübertragung, während das Repository weiterläuft, dann ein kurzer Stopp für das Delta. Die Migration **verschiebt** das Repository, sodass die Quell-Images gelöscht werden, sobald der Umzug gelingt. Übergeben Sie `--keep-source`, um sie zu behalten. Das ist der Unterschied zwischen `repo migrate` und `repo push`: Push lässt die Quelle laufend und unangetastet.
-
-## Ein vor der Umstellung geschriebenes Archiv lesen
-
-`rdc storage` ist das, was vom rclone-Zweig übrig ist, und es ist schreibgeschützt. Es kann kein Backup-Ziel mehr sein, kommt aber weiterhin an ein Archiv heran, das auf diesem Weg geschrieben wurde.
-
-```bash
-# Ein Remote registrieren, das Sie bereits für rclone konfiguriert haben.
-rdc storage import rclone.conf
-rdc storage list
-
-# Ansehen, was darin liegt. Dies führt das rclone auf Ihrem PATH aus.
-rdc storage browse my-storage
-```
-
-`import` liest eine rclone-Konfigurationsdatei und erfasst die Remotes in Ihrer Konfiguration; unterstützte Typen sind S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob und Swift.
-
-**`browse` benötigt `rclone` auf Ihrem PATH.** Es führt das rclone aus, das auf der Maschine installiert ist, an der Sie gerade tippen; eine gebündelte Kopie gibt es nicht mehr. Ohne eine sagt es Ihnen das und tut sonst nichts.
-
-Das Übertragen zu, Abrufen von, Auflisten und Wiederherstellen eines Storage-Backends sind eingestellt; jeder verweigert die Ausführung und nennt den Befehl, der ihn ersetzt.
 
 ## Bewährte Methoden
 

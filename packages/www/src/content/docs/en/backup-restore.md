@@ -109,9 +109,9 @@ two machines already in your config.
 `rdc repo push --to <storage>` and its relatives used to copy a whole backup file
 to a cloud provider you registered yourself. Those now refuse a storage
 destination and name their replacement. Machine-to-machine transfer never went
-through rclone and is unaffected. If you still need to read an archive written
-that way, see [Reading an Archive Written Before the
-Retirement](#reading-an-archive-written-before-the-retirement).
+through rclone and is unaffected. The storage commands and the bundled
+rclone are removed, so an archive written that way can no longer be browsed from
+the CLI.
 
 ### Chunk-storage commands
 
@@ -741,32 +741,6 @@ transfer while the repository keeps running, then a brief stop for the delta.
 Migration **moves** the repository, so the source images are deleted once the move
 succeeds. Pass `--keep-source` to retain them. This is the difference between
 `repo migrate` and `repo push`: push leaves the source running and untouched.
-
-## Reading an Archive Written Before the Retirement
-
-`rdc storage` is what is left of the rclone arm, and it is read-only. It cannot
-be a backup destination any more, but it can still get at an archive that was
-written to one.
-
-```bash
-# Register a remote you already have configured for rclone.
-rdc storage import rclone.conf
-rdc storage list
-
-# Look at what is in it. This runs the rclone on your PATH.
-rdc storage browse my-storage
-```
-
-`import` reads an rclone config file and records the remotes in your config;
-supported types are S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob
-and Swift.
-
-**`browse` requires `rclone` on your PATH.** It runs the rclone installed on the
-machine you are typing on; there is no bundled copy any more. Without one it
-tells you so and does nothing else.
-
-Pushing to, pulling from, listing and restoring a storage backend are retired;
-each refuses and names the command that replaces it.
 
 ## Best Practices
 

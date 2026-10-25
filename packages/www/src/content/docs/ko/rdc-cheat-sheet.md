@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ko
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup verify <repo>` | 레포지토리의 백업 앵커를 청크 스토리지와 대조하여 검증 |
 | `rdc backup usage` | 청크 스토리지에 저장된 바이트를 쿼터와 비교하여 표시 |
 | `rdc backup manifests <repo>` | 서버에 기록된 스냅샷 매니페스트 나열 |
-| `rdc storage browse <storage>` | 스토리지 내용 탐색 |
 
 ## 리포지터리 마이그레이션
 
@@ -137,8 +136,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc config list` | 이 머신의 모든 config 나열 |
 | `rdc config set machine <alias>` | 별칭이 다른 머신을 가리키도록 설정 |
 | `rdc machine add <machine> --ip <host> --user <user>` | config에 머신 추가 |
-| `rdc storage import rclone.conf` | rclone config에서 스토리지 공급자 가져오기 |
-| `rdc storage list` | 구성된 스토리지 공급자 나열 |
 | `rdc backup strategy set ...` | 명명된 백업 전략 정의 |
 | `rdc --config <name> <command>` | 명명된 config 파일 사용 |
 

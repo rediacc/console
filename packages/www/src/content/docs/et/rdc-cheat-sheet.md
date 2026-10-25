@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: et
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc backup verify <repo>` | Kinnita hoidla varunduse ankur tükksalvestuse vastu |
 | `rdc backup usage` | Näita tükksalvestuses hoitud baite sinu kvoodi suhtes |
 | `rdc backup manifests <repo>` | Loenda serverisse salvestatud tõmmiste sisukirjeldused |
-| `rdc storage browse <storage>` | Sirvi mäluhoidla sisu |
 
 ## Hoidla migreerimine
 
@@ -137,8 +136,6 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc config list` | Loenda kõik selle masina konfiguratsioonid |
 | `rdc config set machine <alias>` | Suuna alias teisele masinale |
 | `rdc machine add <machine> --ip <host> --user <user>` | Lisa masin konfiguratsiooni |
-| `rdc storage import rclone.conf` | Impordi mälupakkujad rclone'i konfiguratsioonist |
-| `rdc storage list` | Loenda konfigureeritud mälupakkujad |
 | `rdc backup strategy set ...` | Defineeri nimega varundussstrateegia |
 | `rdc --config <name> <command>` | Kasuta nimega konfiguratsioonifaili |
 

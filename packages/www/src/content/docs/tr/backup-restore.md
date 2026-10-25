@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: tr
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "b3aeea9301684d79"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -62,7 +62,7 @@ Makineler arası push ve pull, ikisine de ihtiyaç duymaz. Zaten yapılandırman
 
 ### rclone depolama yolu ortadan kalktı
 
-`rdc repo push --to <storage>` ve ilgili komutları, eskiden kendi kaydettiğiniz bir bulut sağlayıcısına tüm yedek dosyasını kopyalardı. Artık bir depolama hedefini reddediyor ve yerine geçeni adlandırıyorlar. Makineler arası aktarım hiçbir zaman rclone'dan geçmedi ve bundan etkilenmez. O yöntemle yazılmış bir arşivi hâlâ okumanız gerekiyorsa, [Kaldırılmadan Önce Yazılmış Bir Arşivi Okuma](#reading-an-archive-written-before-the-retirement) bölümüne bakın.
+`rdc repo push --to <storage>` ve ilgili komutları, eskiden kendi kaydettiğiniz bir bulut sağlayıcısına tüm yedek dosyasını kopyalardı. Artık bir depolama hedefini reddediyor ve yerine geçeni adlandırıyorlar. Makineler arası aktarım hiçbir zaman rclone'dan geçmedi ve bundan etkilenmez. Depolama komutları ve paketle gelen rclone kaldırıldı; bu yüzden o yöntemle yazılmış bir arşiv artık CLI üzerinden gezilemez.
 
 ### Chunk depolama komutları
 
@@ -638,25 +638,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | Aktarım için bant genişliği sınırı (örn. `50M`) |
 
 Taşıma, şifreli depo verisini rsync üzerinden iki aşamada aktarır: depo çalışmaya devam ederken toplu bir aktarım, ardından delta için kısa bir durdurma. Taşıma depoyu **taşır**; bu yüzden taşıma başarılı olduğunda kaynak imajlar silinir. Bunları saklamak için `--keep-source` geçirin. Bu, `repo migrate` ile `repo push` arasındaki farktır: push kaynağı çalışır ve dokunulmamış bırakır.
-
-## Kaldırılmadan Önce Yazılmış Bir Arşivi Okuma
-
-`rdc storage`, rclone kolundan geriye kalandır ve salt okunurdur. Artık bir yedekleme hedefi olamaz, ancak buna yazılmış bir arşive hâlâ erişebilir.
-
-```bash
-# rclone için zaten yapılandırdığınız bir remote'u kaydedin.
-rdc storage import rclone.conf
-rdc storage list
-
-# İçinde ne olduğuna bakın. Bu, PATH'inizdeki rclone'u çalıştırır.
-rdc storage browse my-storage
-```
-
-`import`, bir rclone yapılandırma dosyasını okur ve remote'ları yapılandırmanıza kaydeder; desteklenen türler S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ve Swift'tir.
-
-**`browse`, PATH'inizde `rclone` gerektirir.** Komutu yazdığınız makinede kurulu rclone'u çalıştırır; artık paketlenmiş bir kopya yoktur. Yoksa, bunu size söyler ve başka bir şey yapmaz.
-
-Bir depolama arka ucuna gönderme, çekme, listeleme ve geri yükleme kaldırılmıştır; her biri reddedilir ve yerine geçen komutu adlandırır.
 
 ## En İyi Uygulamalar
 

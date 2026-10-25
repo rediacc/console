@@ -981,7 +981,7 @@
   "commands.repo.delete.archived": "Credencial de \"{{repository}}\" arquivada",
   "commands.repo.delete.archiveHint": "Para arquivar as credenciais para recuperação: reexecute com --archive-config",
   "commands.repo.delete.archiveOption": "Mover a entrada de configuração para deletedRepositories para recuperação posterior",
-  "commands.repo.delete.cloudBackupHint": "Os backups na nuvem (se houver) persistem após a exclusão. Remova backups na nuvem órfãos com: rdc storage prune <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "Os backups no armazenamento de blocos sobrevivem ao repositório e expiram conforme a política de retenção. Veja o que ainda ocupam com: rdc backup usage",
   "commands.repo.delete.completed": "Repositório eliminado",
   "commands.repo.delete.configRetained": "Entrada de configuração de \"{{repository}}\" mantida para seus backups e restaurações. Para removê-la, execute novamente com --archive-config e depois \"rdc repo admin archive purge {{repository}}\".",
   "commands.repo.delete.configRetainedElsewhere": "Entrada de configuração de \"{{repository}}\" mantida (cópias enviadas continuam em: {{machines}}). Para removê-la, execute novamente com --archive-config e depois \"rdc repo admin archive purge {{repository}}\".",

@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: it
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ Credenziali di deploy accessibili solo in scrittura. `get` restituisce solo il d
 | `rdc backup verify <repo>` | Verifica l'ancora di backup di un repository rispetto allo storage a chunk |
 | `rdc backup usage` | Mostra i byte memorizzati nello storage a chunk rispetto alla tua quota |
 | `rdc backup manifests <repo>` | Elenca i manifest degli snapshot registrati sul server |
-| `rdc storage browse <storage>` | Esplora il contenuto dello storage |
 
 ## Migrazione dei repository
 
@@ -137,8 +136,6 @@ Credenziali di deploy accessibili solo in scrittura. `get` restituisce solo il d
 | `rdc config list` | Elenca tutte le configurazioni su questa macchina |
 | `rdc config set machine <alias>` | Punta un alias verso un'altra macchina |
 | `rdc machine add <machine> --ip <host> --user <user>` | Aggiungi una macchina alla configurazione |
-| `rdc storage import rclone.conf` | Importa i provider di storage da una configurazione rclone |
-| `rdc storage list` | Elenca i provider di storage configurati |
 | `rdc backup strategy set ...` | Definisci una strategia di backup con nome |
 | `rdc --config <name> <command>` | Usa un file di configurazione con nome |
 

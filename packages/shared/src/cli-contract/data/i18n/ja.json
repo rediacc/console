@@ -981,7 +981,7 @@
   "commands.repo.delete.archived": "\"{{repository}}\" の資格情報をアーカイブしました",
   "commands.repo.delete.archiveHint": "リカバリ用に認証情報をアーカイブするには: --archive-config を付けて再実行",
   "commands.repo.delete.archiveOption": "設定エントリを deletedRepositories に移動して後から復元可能にする",
-  "commands.repo.delete.cloudBackupHint": "クラウドバックアップ（存在する場合）は削除後も残ります。孤立したクラウドバックアップを削除するには: rdc storage prune <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "チャンクストアのバックアップはリポジトリ削除後も残り、保持ポリシーに従って期限切れになります。使用中の容量は次で確認できます: rdc backup usage",
   "commands.repo.delete.completed": "リポジトリを削除しました",
   "commands.repo.delete.configRetained": "\"{{repository}}\" の設定エントリは、バックアップと復元のために保持されました。削除するには --archive-config を付けて再実行し、続けて \"rdc repo admin archive purge {{repository}}\" を実行してください。",
   "commands.repo.delete.configRetainedElsewhere": "\"{{repository}}\" の設定エントリは保持されました（送信済みのコピーが次のマシンに残っています: {{machines}}）。削除するには --archive-config を付けて再実行し、続けて \"rdc repo admin archive purge {{repository}}\" を実行してください。",

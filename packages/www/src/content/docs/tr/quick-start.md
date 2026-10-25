@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: tr
-sourceHash: "05e91da1e94dddfc"
+sourceHash: "657bd1152d18476e"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
@@ -223,7 +223,7 @@ rdc backup usage
 
 Anlık görüntüler parça depolamaya yüklenir; bunun için bir hesap sunucusu ve lisanslı bir depo gerekir. Yalnızca değişen veriler saklanır, bu yüzden aynı deponun ikinci anlık görüntüsü tüm imaj yerine yalnızca farkı maliyet olarak taşır.
 
-`--to <storage>` ile bir depoyu bulut depolamaya gönderme kaldırılmıştır ve artık reddedilir. Bu değişiklikten önce yazılmış bir arşivi okumak için `rdc storage browse` hâlâ çalışır ve PATH'inizde `rclone` gerektirir.
+`--to <storage>` ile bir depoyu bulut depolamaya gönderme kaldırılmıştır ve artık reddedilir. Depolama komutları ve paketle gelen rclone kaldırıldı; bu yüzden o yöntemle yazılmış bir arşiv artık CLI üzerinden gezilemez.
 
 ### 4. Uzaktan Çekme
 

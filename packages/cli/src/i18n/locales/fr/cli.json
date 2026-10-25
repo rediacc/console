@@ -1361,7 +1361,7 @@
         "archived": "Identifiant de \"{{repository}}\" archivé",
         "archiveHint": "Pour archiver les identifiants pour la récupération : relancez avec --archive-config",
         "archiveOption": "Déplacer l'entrée de configuration vers deletedRepositories pour récupération ultérieure",
-        "cloudBackupHint": "Les sauvegardes cloud (le cas échéant) persistent après la suppression. Supprimez les sauvegardes cloud orphelines avec : rdc storage prune <storage> -m {{machine}}",
+        "cloudBackupHint": "Les sauvegardes du magasin de blocs survivent au dépôt et expirent selon sa politique de rétention. Voyez ce qu'elles occupent encore avec : rdc backup usage",
         "completed": "Dépôt supprimé",
         "configRetained": "Entrée de configuration de \"{{repository}}\" conservée pour ses sauvegardes et restaurations. Pour la supprimer, relancez avec --archive-config, puis \"rdc repo admin archive purge {{repository}}\".",
         "configRetainedElsewhere": "Entrée de configuration de \"{{repository}}\" conservée (des copies envoyées restent sur : {{machines}}). Pour la supprimer, relancez avec --archive-config, puis \"rdc repo admin archive purge {{repository}}\".",

@@ -1103,7 +1103,7 @@
         "archiveHint": "To archive credentials for recovery: rerun with --archive-config",
         "archiveOption": "Move config entry to deletedRepositories for later recovery",
         "archived": "Credential for \"{{repository}}\" archived",
-        "cloudBackupHint": "Cloud backups (if any) persist after delete. Remove orphaned cloud backups with: rdc storage prune <storage> -m {{machine}}",
+        "cloudBackupHint": "Chunk-store backups outlive the repository and age out under its retention policy. See what they still use with: rdc backup usage",
         "completed": "Repository deleted",
         "configRetained": "Config entry for \"{{repository}}\" retained for its backups and restores. To drop it, re-run with --archive-config, then \"rdc repo admin archive purge {{repository}}\".",
         "configRetainedElsewhere": "Config entry for \"{{repository}}\" retained (pushed copies remain on: {{machines}}). To drop it, re-run with --archive-config, then \"rdc repo admin archive purge {{repository}}\".",

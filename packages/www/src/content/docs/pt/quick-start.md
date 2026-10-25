@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: pt
-sourceHash: "05e91da1e94dddfc"
+sourceHash: "657bd1152d18476e"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
@@ -223,7 +223,7 @@ rdc backup usage
 
 Os snapshots são enviados para o armazenamento fragmentado, que precisa de um servidor de conta e de um repositório licenciado. Só são armazenados os dados alterados, pelo que um segundo snapshot do mesmo repositório custa apenas a diferença, não a imagem inteira.
 
-Enviar um repositório para armazenamento na nuvem com `--to <storage>` está retirado e agora é recusado. Para ler um arquivo escrito antes dessa alteração, o `rdc storage browse` continua a funcionar e precisa do `rclone` no seu PATH.
+Enviar um repositório para armazenamento na nuvem com `--to <storage>` está retirado e agora é recusado. Os comandos de armazenamento e o rclone incluído foram removidos, por isso um arquivo escrito dessa forma já não pode ser explorado a partir da CLI.
 
 ### 4. Receber de Remoto
 

@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: tr
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc backup verify <repo>` | Bir deponun yedek çıpasını parça depolamaya karşı doğrula |
 | `rdc backup usage` | Parça depolamada saklanan bayt sayısını kotanıza göre göster |
 | `rdc backup manifests <repo>` | Sunucuda kayıtlı anlık görüntü manifestlerini listele |
-| `rdc storage browse <storage>` | Depolama içeriğine göz at |
 
 ## Depo Taşıma
 
@@ -137,8 +136,6 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc config list` | Bu makinedeki tüm yapılandırmaları listele |
 | `rdc config set machine <alias>` | Bir takma adı farklı bir makineye yönlendir |
 | `rdc machine add <machine> --ip <host> --user <user>` | Yapılandırmaya makine ekle |
-| `rdc storage import rclone.conf` | rclone yapılandırmasından depolama sağlayıcıları içe aktar |
-| `rdc storage list` | Yapılandırılmış depolama sağlayıcılarını listele |
 | `rdc backup strategy set ...` | Adlandırılmış yedekleme stratejisi tanımla |
 | `rdc --config <name> <command>` | Adlandırılmış yapılandırma dosyası kullan |
 

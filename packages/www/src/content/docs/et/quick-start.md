@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: et
-sourceHash: "05e91da1e94dddfc"
+sourceHash: "657bd1152d18476e"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
@@ -223,7 +223,7 @@ rdc backup usage
 
 Tõmmised laaditakse üles tükksalvestusse, mis vajab konto-serverit ja litsentseeritud repositooriumi. Salvestatakse ainult muutunud andmed, seega maksab sama repositooriumi teine tõmmis ainult erinevuse, mitte kogu tõmmise hinda.
 
-Repositooriumi lükkamine pilvemällu käsuga `--to <storage>` on kaotatud ja lükatakse nüüd tagasi. Enne seda muudatust kirjutatud arhiivi lugemiseks toimib `rdc storage browse` endiselt ja vajab `rclone`-i sinu PATH-is.
+Repositooriumi lükkamine pilvemällu käsuga `--to <storage>` on kaotatud ja lükatakse nüüd tagasi. Salvestuskäsud ja kaasasolev rclone on eemaldatud, nii et sel viisil kirjutatud arhiivi ei saa enam CLI-st sirvida.
 
 ### 4. Tõmba kaugelt
 

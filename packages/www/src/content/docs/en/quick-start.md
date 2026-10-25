@@ -221,7 +221,7 @@ rdc backup usage
 
 Snapshots upload to the chunk store, which needs an account server and a licensed repository. Only changed data is stored, so a second snapshot of the same repository costs the difference rather than the whole image.
 
-Pushing a repository to cloud storage with `--to <storage>` is retired and now refuses. To read an archive written before that change, `rdc storage browse` still works and needs `rclone` on your PATH.
+Pushing a repository to cloud storage with `--to <storage>` is retired and now refuses. The storage commands and the bundled rclone are removed, so an archive written that way can no longer be browsed from the CLI.
 
 ### 4. Pull from Remote
 

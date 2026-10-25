@@ -1361,7 +1361,7 @@
         "archived": "Учётные данные \"{{repository}}\" архивированы",
         "archiveHint": "Для архивации учётных данных для восстановления: повторите с --archive-config",
         "archiveOption": "Переместить запись конфигурации в deletedRepositories для последующего восстановления",
-        "cloudBackupHint": "Облачные резервные копии (если есть) сохраняются после удаления. Удалите осиротевшие облачные копии командой: rdc storage prune <storage> -m {{machine}}",
+        "cloudBackupHint": "Резервные копии в хранилище блоков переживают репозиторий и удаляются по его политике хранения. Сколько места они ещё занимают, покажет: rdc backup usage",
         "completed": "Репозиторий удалён",
         "configRetained": "Запись конфигурации \"{{repository}}\" сохранена для его резервных копий и восстановления. Чтобы удалить её, запустите команду снова с --archive-config, затем выполните \"rdc repo admin archive purge {{repository}}\".",
         "configRetainedElsewhere": "Запись конфигурации \"{{repository}}\" сохранена (отправленные копии остались на: {{machines}}). Чтобы удалить её, запустите команду снова с --archive-config, затем выполните \"rdc repo admin archive purge {{repository}}\".",

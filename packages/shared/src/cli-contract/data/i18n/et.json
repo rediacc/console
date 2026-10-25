@@ -981,7 +981,7 @@
   "commands.repo.delete.archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
   "commands.repo.delete.archiveHint": "Mandaatide arhiveerimiseks taastamise tarbeks: käivita uuesti lipuga --archive-config",
   "commands.repo.delete.archiveOption": "Teisalda konfiguratsioonikirje deletedRepositories-i hilisemaks taastamiseks",
-  "commands.repo.delete.cloudBackupHint": "Pilvevarukoopiad (kui neid on) säilivad pärast kustutamist. Eemalda orvuks jäänud pilvevarukoopiad käsuga: rdc storage prune <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "Plokihoidla varukoopiad jäävad alles ka pärast hoidla kustutamist ja aeguvad säilituspoliitika järgi. Vaata, kui palju ruumi need veel võtavad: rdc backup usage",
   "commands.repo.delete.completed": "Hoidla kustutatud",
   "commands.repo.delete.configRetained": "Hoidla \"{{repository}}\" konfiguratsioonikirje jäi alles tema varukoopiate ja taastete jaoks. Eemaldamiseks käivitage käsk uuesti lipuga --archive-config ja seejärel \"rdc repo admin archive purge {{repository}}\".",
   "commands.repo.delete.configRetainedElsewhere": "Hoidla \"{{repository}}\" konfiguratsioonikirje jäi alles (saadetud koopiad on endiselt masinates: {{machines}}). Eemaldamiseks käivitage käsk uuesti lipuga --archive-config ja seejärel \"rdc repo admin archive purge {{repository}}\".",

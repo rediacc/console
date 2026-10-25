@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: fr
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc backup verify <repo>` | Vérifier l'ancre de sauvegarde d'un dépôt par rapport au stockage fragmenté |
 | `rdc backup usage` | Afficher les octets stockés dans le stockage fragmenté par rapport à votre quota |
 | `rdc backup manifests <repo>` | Lister les manifestes d'instantanés enregistrés sur le serveur |
-| `rdc storage browse <storage>` | Parcourir le contenu du stockage |
 
 ## Migration de dépôt
 
@@ -137,8 +136,6 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc config list` | Lister toutes les configurations sur cette machine |
 | `rdc config set machine <alias>` | Faire pointer un alias vers une autre machine |
 | `rdc machine add <machine> --ip <host> --user <user>` | Ajouter une machine à la configuration |
-| `rdc storage import rclone.conf` | Importer des fournisseurs de stockage depuis la configuration rclone |
-| `rdc storage list` | Lister les fournisseurs de stockage configurés |
 | `rdc backup strategy set ...` | Définir une stratégie de sauvegarde nommée |
 | `rdc --config <name> <command>` | Utiliser un fichier de configuration nommé |
 

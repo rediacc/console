@@ -981,7 +981,7 @@
   "commands.repo.delete.archived": "Zugangsdaten für \"{{repository}}\" archiviert",
   "commands.repo.delete.archiveHint": "Um Anmeldedaten für die Wiederherstellung zu archivieren: erneut mit --archive-config ausführen",
   "commands.repo.delete.archiveOption": "Konfigurationseintrag nach deletedRepositories verschieben zur späteren Wiederherstellung",
-  "commands.repo.delete.cloudBackupHint": "Cloud-Backups (falls vorhanden) bleiben nach dem Löschen erhalten. Verwaiste Cloud-Backups entfernen mit: rdc storage prune <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "Backups im Chunk-Store bleiben nach dem Löschen des Repositorys erhalten und laufen gemäß der Aufbewahrungsrichtlinie aus. Den belegten Speicher zeigt: rdc backup usage",
   "commands.repo.delete.completed": "Repository gelöscht",
   "commands.repo.delete.configRetained": "Konfigurationseintrag für \"{{repository}}\" bleibt für Backups und Wiederherstellungen erhalten. Zum Entfernen: erneut mit --archive-config ausführen, dann \"rdc repo admin archive purge {{repository}}\".",
   "commands.repo.delete.configRetainedElsewhere": "Konfigurationseintrag für \"{{repository}}\" beibehalten (übertragene Kopien liegen weiter auf: {{machines}}). Zum Entfernen: erneut mit --archive-config ausführen, dann \"rdc repo admin archive purge {{repository}}\".",

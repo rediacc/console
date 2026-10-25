@@ -8,61 +8,45 @@ tags:
 subcategory: data-protection
 order: 12
 language: zh
-sourceHash: "7d9a82ee410c420a"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "5b0bc33572c2d9e2"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 清理
 
-清理会清除不再对应于存活资源的状态。三个命令分别覆盖三个不同的范围：
+清理会清除不再对应于存活资源的状态。两个命令分别覆盖两个不同的范围。分块存储中的快照不在其列：服务器会按[保留策略](#backup-snapshots)清理它们。
 
 | 命令 | 清理内容 | 真实来源所在位置 |
 |---|---|---|
-| `rdc storage prune <storage> -m <machine>` | 云存储中的孤立备份 | 本地 CLI 配置（针对执行机器进行交叉检查以确保挂载安全） |
 | `rdc machine prune <machine>` | 机器上的数据存储工件（始终）；孤立或未知的仓库镜像（可选启用） | 本地 CLI 配置 + 机器的 `.interim/state` 镜像 |
 | `rdc config prune` | 本地配置遗留物（证书缓存、过期归档、悬空交叉引用） | 仅本地 CLI 配置 |
 
-三者相互独立。您可以在不运行其他命令的情况下运行任何一个。它们共享下文 [安全模型](#safety-model) 中描述的通用安全模型。
+这两个命令相互独立，可以只运行其中一个。它们共享一个通用的安全模型，详见下方的[安全模型](#safety-model)。
 
 清理命令清除的是已删除资源遗留的状态。若要回收*存活*仓库占用的空间（即文件系统已释放但存储池仍持有的块），请改用 [`rdc repo trim`](/zh/docs/repositories#reclaim-space-trim)；两者互为补充。
 
 ## 挂载安全预检
 
-`storage prune` 和 `machine prune --prune-unknown` 都会在删除任何内容之前运行 **挂载安全预检**：它们查询执行机器上当前已挂载或正在运行的仓库，将其与删除候选取交集，并 **拒绝删除仍在机器上存活的候选**。删除已挂载仓库的离机备份，或删除存活的仓库镜像，是真实的数据丢失陷阱。预检让这种意外不可能发生。
+`machine prune --prune-unknown` 会在删除任何内容之前运行 **挂载安全预检**：它查询机器上当前已挂载或正在运行的仓库，将其与删除候选取交集，并 **拒绝删除仍在机器上存活的候选**。删除存活的仓库镜像是真实的数据丢失陷阱。预检让这种意外不可能发生。
 
 如要覆盖（罕见；仅当您确实知道存活状态有误时），传入 `--force-delete-mounted`。这是与 `--force`（控制归档宽限期）独立的标志，所以两个逃生口保持区分。
 
-## Storage Prune
+## 备份快照
 
-扫描存储提供商，并删除其 GUID 不再出现在任何本地配置文件中的备份。
+通过 `rdc backup snapshot` 上传的快照存放在分块存储中，由服务器负责清理。客户端没有清理命令：声明要保留多少历史，服务器会删除其余部分。
 
 ```bash
-# 仅预览 — 显示将被删除的内容
-rdc storage prune my-s3 -m server-1 --dry-run
+# 查看当前策略
+rdc backup retention my-app
 
-# 实际删除孤立备份（默认行为）
-rdc storage prune my-s3 -m server-1
+# 保留 7 个每日、4 个每周和 6 个每月快照
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# 覆盖宽限期（默认 7 天）
-rdc storage prune my-s3 -m server-1 --grace-days 14
-
-# 覆盖挂载安全检查（请谨慎使用）
-rdc storage prune my-s3 -m server-1 --force-delete-mounted
+# 重新保留所有快照
+rdc backup retention clear my-app
 ```
 
-`--machine` 是必需的，因为 rclone 调用在执行机器上运行，而不是在您的笔记本电脑上。客户端不必在本地安装 rclone。存储凭据仍来自您的本地配置；机器只是 rclone 的运行者。
-
-### 检查内容
-
-1. 列出指定存储中的所有备份 GUID（横跨 `hot/` 和 `cold/` 子目录。参见 [备份与恢复](/zh/docs/backup-restore#scheduled-backups)）。
-2. 扫描磁盘上的每个配置文件（`~/.config/rediacc/*.json`）。
-3. 如果备份的 GUID 未被任何配置的 repositories 部分引用，则该备份为 **孤立**。
-4. 在宽限期内最近归档的仓库即使已从活跃配置中移除，也会 **受到保护**。
-5. 挂载安全预检：当前挂载在 `--machine` 上的 GUID 会被跳过并报告，永远不会被删除。
-
-### 性能
-
-按存储子路径批量删除：无论删除多少 GUID，每个 `hot/` 或 `cold/` 目录只产生一次 rclone 调用。11 个孤立项的积压会从约 50 秒的 SSH 开销缩减为每个子路径一次往返。
+策略规则见[备份与恢复](/zh/docs/backup-restore#retention)，`rdc backup usage` 会显示存储当前的内容。
 
 ## Machine Prune
 
@@ -155,9 +139,8 @@ rdc config prune --grace-days 30
 
 ### 不会触及的内容
 
-- 活跃资源（机器、存储、仓库、备份策略、云提供商）。
+- 活跃资源（机器、仓库、备份策略、云提供商）。
 - 凭据、account 块、加密块、defaults。
-- 存储 `vaultContent`（包括过期的 OneDrive `access_token`。Refresh_token 仍可铸造新 token；清理会强制重新认证）。
 - `knownHosts` 条目（自动刷新路径为 `rdc machine scan-keys`）。
 - 压缩证书 blob 数组（`infra.acmeCertCache.<base>.data[]`）会从清理后的证书列表自动重建；您不会丢失任何仍覆盖保留名称的证书链。
 
@@ -202,19 +185,19 @@ sudo /usr/local/bin/renet repository backfill-state-mirror \
 
 ### 多配置感知
 
-`storage prune` 和 `machine prune --orphaned-repos` 都会扫描 `~/.config/rediacc/` 中的 **所有** 配置文件，而不仅仅是活跃的配置文件。被 `production.json` 引用的仓库不会被删除，即使它不在 `staging.json` 中。这可以防止配置针对不同环境时发生意外删除。
+`machine prune --orphaned-repos` 会扫描 `~/.config/rediacc/` 中的 **所有** 配置文件，而不仅仅是活跃的配置文件。被 `production.json` 引用的仓库不会被删除，即使它不在 `staging.json` 中。这可以防止配置针对不同环境时发生意外删除。
 
 ### 宽限期
 
-当仓库通过 `--archive-config` 从配置中移除时，其凭据条目会被移到 `resources.deletedRepositories[]` 并带有 `deletedAt` 时间戳。清理命令遵守宽限期（默认 7 天），在此期间最近归档的仓库受到保护，不会被删除。这给您时间在仓库被意外移除时进行恢复（`rdc repo admin archive restore <guid>`）。一旦宽限期过期，`storage prune`、`machine prune` 和 `config prune` 都会自动清除该条目。
+当仓库通过 `--archive-config` 从配置中移除时，其凭据条目会被移到 `resources.deletedRepositories[]` 并带有 `deletedAt` 时间戳。清理命令遵守宽限期（默认 7 天），在此期间最近归档的仓库受到保护，不会被删除。这给您时间在仓库被意外移除时进行恢复（`rdc repo admin archive restore <guid>`）。一旦宽限期过期，`machine prune` 和 `config prune` 都会自动清除该条目。
 
 ### 挂载安全预检
 
-如上所述。`storage prune` 和 `machine prune --prune-unknown` 拒绝删除当前在执行机器上挂载或正在运行的仓库。仅使用 `--force-delete-mounted` 来覆盖。
+如上所述。`machine prune --prune-unknown` 拒绝删除当前在机器上挂载或正在运行的仓库。仅使用 `--force-delete-mounted` 来覆盖。
 
 ### 默认应用；`--dry-run` 用于预览
 
-所有三个 prune 命令默认 **应用** 更改。传入 `--dry-run` 以预览而不写入。这与命令动词相符："prune" 本身具有破坏性，dry-run 标志是显式的退出选项。
+两个 prune 命令默认 **应用** 更改。传入 `--dry-run` 以预览而不写入。这与命令动词相符："prune" 本身具有破坏性，dry-run 标志是显式的退出选项。
 
 ## 配置
 
@@ -237,11 +220,11 @@ CLI 标志 `--grace-days` 在提供时会覆盖此值。
 
 ## 最佳实践
 
-- **在生产环境上先运行 dry-run。** 在执行破坏性清理之前务必先预览，尤其是在生产存储上。
-- **保持多个配置文件为最新状态。** 存储和机器清理会检查配置目录中的所有配置。如果配置文件过期或被删除，其仓库将失去保护。请保持配置文件准确。
+- **在生产环境上先运行 dry-run。** 在执行破坏性清理之前务必先预览。
+- **保持多个配置文件为最新状态。** 机器清理会检查配置目录中的所有配置。如果配置文件过期或被删除，其仓库将失去保护。请保持配置文件准确。
 - **优先使用 `--prune-unknown` 而非 `--orphaned-repos`。** 精准标志尊重 renet 镜像；粗放标志会愉快地删除其他工具创建的复刻。
 - **为生产环境使用较长的宽限期。** 默认的 7 天宽限期适合大多数工作流程。对于维护窗口不频繁的生产环境，建议使用 14 天或 30 天。
-- **在备份运行后安排 storage prune。** 将 `storage prune` 与您的备份计划配对，以在无需手动干预的情况下控制存储成本。
+- **声明保留策略。** `rdc backup retention set` 无需手动干预即可控制快照的存储成本。
 - **将 machine prune 与备份计划结合使用。** 在部署备份计划（`rdc backup schedule`）后，添加定期的机器清理以清除过期快照和孤立的数据存储工件。
 - **定期运行 `config prune`。** 本地配置膨胀（尤其是证书缓存）会悄无声息地累积；每季度一次的 `config prune --dry-run` 足以发现它。
 - **在使用 `--force` 或 `--force-delete-mounted` 之前进行审核。** 这两个标志都会绕过安全检查。仅在您确信没有其他配置引用相关仓库时使用 `--force`；仅在您确信机器上的存活状态有误时使用 `--force-delete-mounted`。

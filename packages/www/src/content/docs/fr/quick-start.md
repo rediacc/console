@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: fr
-sourceHash: "05e91da1e94dddfc"
+sourceHash: "657bd1152d18476e"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
@@ -223,7 +223,7 @@ rdc backup usage
 
 Les instantanés sont envoyés vers le stockage fragmenté, qui nécessite un serveur de compte et un dépôt sous licence. Seules les données modifiées sont stockées, donc un second instantané du même dépôt ne coûte que la différence plutôt que l'image entière.
 
-Pousser un dépôt vers un stockage cloud avec `--to <storage>` est retiré et refuse désormais. Pour lire une archive écrite avant ce changement, `rdc storage browse` fonctionne toujours et nécessite `rclone` dans votre PATH.
+Pousser un dépôt vers un stockage cloud avec `--to <storage>` est retiré et refuse désormais. Les commandes de stockage et le rclone fourni ont été supprimés : une archive écrite de cette façon ne peut donc plus être parcourue depuis la CLI.
 
 ### 4. Récupérer depuis un emplacement distant
 

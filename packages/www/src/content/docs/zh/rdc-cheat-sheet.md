@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: zh
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup verify <repo>` | 对照分块存储验证仓库的备份锚点 |
 | `rdc backup usage` | 显示分块存储中已存储的字节数与配额的对比 |
 | `rdc backup manifests <repo>` | 列出服务器上记录的快照清单 |
-| `rdc storage browse <storage>` | 浏览存储内容 |
 
 ## 仓库迁移
 
@@ -137,8 +136,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc config list` | 列出此机器上的所有配置 |
 | `rdc config set machine <alias>` | 将别名指向另一台机器 |
 | `rdc machine add <machine> --ip <host> --user <user>` | 向配置中添加机器 |
-| `rdc storage import rclone.conf` | 从 rclone 配置导入存储提供商 |
-| `rdc storage list` | 列出已配置的存储提供商 |
 | `rdc backup strategy set ...` | 定义命名备份策略 |
 | `rdc --config <name> <command>` | 使用命名配置文件 |
 

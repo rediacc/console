@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: es
-sourceHash: "05e91da1e94dddfc"
+sourceHash: "657bd1152d18476e"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
@@ -223,7 +223,7 @@ rdc backup usage
 
 Los snapshots se suben al almacenamiento fragmentado, que necesita un servidor de cuenta y un repositorio con licencia. Solo se almacenan los datos que cambiaron, así que un segundo snapshot del mismo repositorio cuesta la diferencia en vez de la imagen completa.
 
-Subir un repositorio a almacenamiento en la nube con `--to <storage>` está retirado y ahora se rechaza. Para leer un archivo escrito antes de ese cambio, `rdc storage browse` sigue funcionando y necesita `rclone` en su PATH.
+Subir un repositorio a almacenamiento en la nube con `--to <storage>` está retirado y ahora se rechaza. Los comandos de almacenamiento y el rclone incluido se han eliminado, así que un archivo escrito de esa forma ya no se puede explorar desde la CLI.
 
 ### 4. Pull desde remoto
 

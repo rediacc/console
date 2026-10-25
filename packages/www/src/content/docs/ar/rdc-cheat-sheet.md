@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ar
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup verify <repo>` | التحقق من مرساة النسخ الاحتياطي لمستودع مقابل التخزين المجزّأ |
 | `rdc backup usage` | عرض البايتات المخزَّنة في التخزين المجزّأ مقابل حصتك |
 | `rdc backup manifests <repo>` | عرض بيانات اللقطات المسجّلة على الخادم |
-| `rdc storage browse <storage>` | تصفح محتويات التخزين |
 
 ## نقل المستودعات
 
@@ -137,8 +136,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc config list` | عرض جميع الإعدادات على هذا الجهاز |
 | `rdc config set machine <alias>` | توجيه اسم مستعار إلى جهاز مختلف |
 | `rdc machine add <machine> --ip <host> --user <user>` | إضافة جهاز إلى الإعدادات |
-| `rdc storage import rclone.conf` | استيراد مزودي التخزين من إعدادات rclone |
-| `rdc storage list` | عرض مزودي التخزين المهيأين |
 | `rdc backup strategy set ...` | تحديد استراتيجية نسخ احتياطي مسماة |
 | `rdc --config <name> <command>` | استخدام ملف إعدادات مسمى |
 

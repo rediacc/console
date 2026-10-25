@@ -1361,7 +1361,7 @@
         "archived": "Credencial de \"{{repository}}\" arquivada",
         "archiveHint": "Para arquivar as credenciais para recuperação: reexecute com --archive-config",
         "archiveOption": "Mover a entrada de configuração para deletedRepositories para recuperação posterior",
-        "cloudBackupHint": "Os backups na nuvem (se houver) persistem após a exclusão. Remova backups na nuvem órfãos com: rdc storage prune <storage> -m {{machine}}",
+        "cloudBackupHint": "Os backups no armazenamento de blocos sobrevivem ao repositório e expiram conforme a política de retenção. Veja o que ainda ocupam com: rdc backup usage",
         "completed": "Repositório eliminado",
         "configRetained": "Entrada de configuração de \"{{repository}}\" mantida para seus backups e restaurações. Para removê-la, execute novamente com --archive-config e depois \"rdc repo admin archive purge {{repository}}\".",
         "configRetainedElsewhere": "Entrada de configuração de \"{{repository}}\" mantida (cópias enviadas continuam em: {{machines}}). Para removê-la, execute novamente com --archive-config e depois \"rdc repo admin archive purge {{repository}}\".",

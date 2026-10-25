@@ -1361,7 +1361,7 @@
         "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
         "archiveHint": "リカバリ用に認証情報をアーカイブするには: --archive-config を付けて再実行",
         "archiveOption": "設定エントリを deletedRepositories に移動して後から復元可能にする",
-        "cloudBackupHint": "クラウドバックアップ（存在する場合）は削除後も残ります。孤立したクラウドバックアップを削除するには: rdc storage prune <storage> -m {{machine}}",
+        "cloudBackupHint": "チャンクストアのバックアップはリポジトリ削除後も残り、保持ポリシーに従って期限切れになります。使用中の容量は次で確認できます: rdc backup usage",
         "completed": "リポジトリを削除しました",
         "configRetained": "\"{{repository}}\" の設定エントリは、バックアップと復元のために保持されました。削除するには --archive-config を付けて再実行し、続けて \"rdc repo admin archive purge {{repository}}\" を実行してください。",
         "configRetainedElsewhere": "\"{{repository}}\" の設定エントリは保持されました（送信済みのコピーが次のマシンに残っています: {{machines}}）。削除するには --archive-config を付けて再実行し、続けて \"rdc repo admin archive purge {{repository}}\" を実行してください。",

@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: de
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc backup verify <repo>` | Backup-Anker eines Repositorys gegen den Chunk-Store verifizieren |
 | `rdc backup usage` | Im Chunk-Store gespeicherte Bytes gegenüber dem Kontingent anzeigen |
 | `rdc backup manifests <repo>` | Auf dem Server erfasste Snapshot-Manifeste auflisten |
-| `rdc storage browse <storage>` | Speicherinhalte durchsuchen |
 
 ## Repository-Migration
 
@@ -137,8 +136,6 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc config list` | Alle Konfigurationen auf dieser Maschine auflisten |
 | `rdc config set machine <alias>` | Einen Alias auf eine andere Maschine verweisen lassen |
 | `rdc machine add <machine> --ip <host> --user <user>` | Maschine zur Konfiguration hinzufügen |
-| `rdc storage import rclone.conf` | Speicheranbieter aus rclone-Konfiguration importieren |
-| `rdc storage list` | Konfigurierte Speicheranbieter auflisten |
 | `rdc backup strategy set ...` | Benannte Sicherungsstrategie definieren |
 | `rdc --config <name> <command>` | Benannte Konfigurationsdatei verwenden |
 

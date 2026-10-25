@@ -58,7 +58,6 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc backup verify <repo>` | Verify a repository's backup anchor against the chunk store |
 | `rdc backup usage` | Show chunk-store bytes stored against your quota |
 | `rdc backup manifests <repo>` | List snapshot manifests recorded on the server |
-| `rdc storage browse <storage>` | Browse storage contents |
 
 ## Repository Migration
 
@@ -135,8 +134,6 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc config list` | List every config on this machine |
 | `rdc config set machine <alias>` | Point an alias at a different machine |
 | `rdc machine add <machine> --ip <host> --user <user>` | Add a machine to config |
-| `rdc storage import rclone.conf` | Import storage providers from rclone config |
-| `rdc storage list` | List configured storage providers |
 | `rdc backup strategy set ...` | Define a named backup strategy |
 | `rdc --config <name> <command>` | Use a named config file |
 

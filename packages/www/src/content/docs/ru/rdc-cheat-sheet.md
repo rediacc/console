@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ru
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup verify <repo>` | Проверить якорь резервной копии репозитория по чанковому хранилищу |
 | `rdc backup usage` | Показать байты, хранящиеся в чанковом хранилище, относительно вашей квоты |
 | `rdc backup manifests <repo>` | Список манифестов снимков, зарегистрированных на сервере |
-| `rdc storage browse <storage>` | Просмотреть содержимое хранилища |
 
 ## Миграция репозитория
 
@@ -137,8 +136,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc config list` | Вывести список всех конфигураций на этой машине |
 | `rdc config set machine <alias>` | Направить алиас на другую машину |
 | `rdc machine add <machine> --ip <host> --user <user>` | Добавить машину в конфигурацию |
-| `rdc storage import rclone.conf` | Импортировать провайдеров хранилища из конфигурации rclone |
-| `rdc storage list` | Вывести список настроенных провайдеров хранилища |
 | `rdc backup strategy set ...` | Определить именованную стратегию резервного копирования |
 | `rdc --config <name> <command>` | Использовать именованный файл конфигурации |
 

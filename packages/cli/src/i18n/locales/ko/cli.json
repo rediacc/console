@@ -1361,7 +1361,7 @@
         "archived": "\"{{repository}}\"의 자격증명이 보관되었습니다",
         "archiveHint": "복구를 위해 자격증명을 보관하려면 --archive-config를 추가하여 다시 실행하십시오",
         "archiveOption": "설정 항목을 나중에 복구할 수 있도록 deletedRepositories로 이동합니다",
-        "cloudBackupHint": "클라우드 백업(있는 경우)은 삭제 후에도 유지됩니다. 고아 클라우드 백업을 제거하려면: rdc storage prune <storage> -m {{machine}}",
+        "cloudBackupHint": "청크 스토어 백업은 저장소를 삭제한 뒤에도 남아 있으며 보존 정책에 따라 만료됩니다. 아직 차지하는 용량은 다음으로 확인하세요: rdc backup usage",
         "completed": "저장소 삭제 완료",
         "configRetained": "\"{{repository}}\"의 설정 항목은 백업과 복원을 위해 유지되었습니다. 삭제하려면 --archive-config 옵션으로 다시 실행한 뒤 \"rdc repo admin archive purge {{repository}}\"를 실행하세요.",
         "configRetainedElsewhere": "\"{{repository}}\"의 설정 항목이 유지되었습니다(전송된 사본이 다음 머신에 남아 있음: {{machines}}). 삭제하려면 --archive-config 옵션으로 다시 실행한 뒤 \"rdc repo admin archive purge {{repository}}\"를 실행하세요.",

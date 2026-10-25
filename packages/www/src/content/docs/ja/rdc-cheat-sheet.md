@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ja
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup verify <repo>` | リポジトリのバックアップアンカーをチャンクストレージと照合して検証する |
 | `rdc backup usage` | チャンクストレージに保存されたバイト数をクォータと比較して表示する |
 | `rdc backup manifests <repo>` | サーバーに記録されたスナップショットマニフェストを一覧表示する |
-| `rdc storage browse <storage>` | ストレージの内容を参照する |
 
 ## リポジトリの移行
 
@@ -137,8 +136,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc config list` | このマシン上のすべての設定を一覧表示する |
 | `rdc config set machine <alias>` | エイリアスを別のマシンに向ける |
 | `rdc machine add <machine> --ip <host> --user <user>` | 設定にマシンを追加する |
-| `rdc storage import rclone.conf` | rclone 設定からストレージプロバイダをインポートする |
-| `rdc storage list` | 設定済みストレージプロバイダを一覧表示する |
 | `rdc backup strategy set ...` | 名前付きバックアップ戦略を定義する |
 | `rdc --config <name> <command>` | 名前付き設定ファイルを使用する |
 

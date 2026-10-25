@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 1873,
-    "sourceCommit": "662bb9a618afaa35ae44fb3dc0cc1432f93200a5"
+    "sourceCommit": "1498835931713e301521fdbd406b9d980b51334e"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -989,7 +989,7 @@
     "commands.repo.delete.archived": "756a85b5",
     "commands.repo.delete.archiveHint": "700820fa",
     "commands.repo.delete.archiveOption": "6bd8b32b",
-    "commands.repo.delete.cloudBackupHint": "2c39aeb2",
+    "commands.repo.delete.cloudBackupHint": "595e2770",
     "commands.repo.delete.completed": "62ef4b3e",
     "commands.repo.delete.configRetained": "44db3127",
     "commands.repo.delete.configRetainedElsewhere": "fd3e8a37",

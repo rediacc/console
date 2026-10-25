@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: de
-sourceHash: "05e91da1e94dddfc"
+sourceHash: "657bd1152d18476e"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
@@ -223,7 +223,7 @@ rdc backup usage
 
 Snapshots werden in den Chunk-Store hochgeladen, wofür ein Account-Server und ein lizenziertes Repository nötig sind. Es werden nur geänderte Daten gespeichert, sodass ein zweiter Snapshot desselben Repositorys nur die Differenz statt des gesamten Images kostet.
 
-Das Pushen eines Repositorys in Cloud-Speicher mit `--to <storage>` ist eingestellt und wird jetzt zurückgewiesen. Um ein vor dieser Änderung geschriebenes Archiv zu lesen, funktioniert `rdc storage browse` weiterhin und benötigt `rclone` in Ihrem PATH.
+Das Pushen eines Repositorys in Cloud-Speicher mit `--to <storage>` ist eingestellt und wird jetzt zurückgewiesen. Die Storage-Befehle und das mitgelieferte rclone wurden entfernt, deshalb lässt sich ein auf diese Weise geschriebenes Archiv nicht mehr über die CLI durchsuchen.
 
 ### 4. Von Remote abrufen
 

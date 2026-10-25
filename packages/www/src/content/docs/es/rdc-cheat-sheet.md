@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: es
-sourceHash: "14ed5791afa44326"
+sourceHash: "bca896d59a353796"
 sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
@@ -60,7 +60,6 @@ Credenciales de solo escritura en tiempo de despliegue. `get` devuelve solo el r
 | `rdc backup verify <repo>` | Verificar el ancla de respaldo de un repositorio contra el almacenamiento fragmentado |
 | `rdc backup usage` | Mostrar los bytes almacenados en el almacenamiento fragmentado frente a tu cuota |
 | `rdc backup manifests <repo>` | Listar los manifiestos de snapshot registrados en el servidor |
-| `rdc storage browse <storage>` | Explorar el contenido del almacenamiento |
 
 ## Migración de repositorios
 
@@ -137,8 +136,6 @@ Credenciales de solo escritura en tiempo de despliegue. `get` devuelve solo el r
 | `rdc config list` | Listar todas las configuraciones de esta máquina |
 | `rdc config set machine <alias>` | Apuntar un alias a otra máquina |
 | `rdc machine add <machine> --ip <host> --user <user>` | Agregar una máquina a la configuración |
-| `rdc storage import rclone.conf` | Importar proveedores de almacenamiento desde la configuración de rclone |
-| `rdc storage list` | Listar los proveedores de almacenamiento configurados |
 | `rdc backup strategy set ...` | Definir una estrategia de copia de seguridad con nombre |
 | `rdc --config <name> <command>` | Usar un archivo de configuración con nombre |
 

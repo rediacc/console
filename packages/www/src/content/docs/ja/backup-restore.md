@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: ja
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "b3aeea9301684d79"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # バックアップと復元
@@ -63,7 +63,7 @@ Rediaccは暗号化されたリポジトリをバックアップし、同じマ�
 
 ### rcloneストレージ経路は廃止されました
 
-`rdc repo push --to <storage>`とその関連コマンドは、かつては自分で登録したクラウドプロバイダにバックアップファイル全体をコピーしていました。これらは現在、ストレージ宛先を拒否し、代わりとなるコマンド名を示します。マシン間転送はもともとrcloneを経由していなかったため影響を受けません。その方法で書かれたアーカイブをまだ読む必要がある場合は、[廃止前に書かれたアーカイブを読む](#reading-an-archive-written-before-the-retirement)を参照してください。
+`rdc repo push --to <storage>`とその関連コマンドは、かつては自分で登録したクラウドプロバイダにバックアップファイル全体をコピーしていました。これらは現在、ストレージ宛先を拒否し、代わりとなるコマンド名を示します。マシン間転送はもともとrcloneを経由していなかったため影響を受けません。storageコマンドと同梱のrcloneは削除されたため、その方法で書かれたアーカイブをCLIから参照することはできなくなりました。
 
 ### チャンクストレージのコマンド
 
@@ -639,25 +639,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | 転送の帯域幅制限(例: `50M`) |
 
 移行はrsyncを介して、2つのフェーズで暗号化されたリポジトリデータを転送します。リポジトリが稼働したままの一括転送と、その後のデルタのための短い停止です。移行はリポジトリを**移動**させるため、移動が成功するとソースイメージは削除されます。それらを保持したい場合は`--keep-source`を渡してください。これが`repo migrate`と`repo push`の違いです。プッシュはソースを稼働させたまま、手を触れずに残します。
-
-## 廃止前に書かれたアーカイブを読む
-
-`rdc storage`は、rcloneの仕組みのうち残っているもので、読み取り専用です。もはやバックアップ宛先にはなれませんが、その方法で書かれたアーカイブにはまだアクセスできます。
-
-```bash
-# すでにrclone用に設定済みのリモートを登録する。
-rdc storage import rclone.conf
-rdc storage list
-
-# 中身を見る。これは自分のPATH上のrcloneを実行する。
-rdc storage browse my-storage
-```
-
-`import`はrclone設定ファイルを読み取り、リモートを自分の設定に記録します。対応する種類はS3、B2、Google Drive、OneDrive、Mega、Dropbox、Box、Azure Blob、Swiftです。
-
-**`browse`はPATH上に`rclone`があることを必要とします。** これは自分がコマンドを入力しているマシンにインストールされたrcloneを実行します。もう埋め込みコピーはありません。なければそう伝え、それ以上は何もしません。
-
-ストレージバックエンドへのプッシュ、プル、一覧表示、復元は廃止されており、それぞれ拒否された上で代わりのコマンドが示されます。
 
 ## ベストプラクティス
 

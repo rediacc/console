@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: pt
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "b3aeea9301684d79"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Backup e Restauro
@@ -62,7 +62,7 @@ O envio e receção máquina a máquina não precisam de nenhum dos dois. São u
 
 ### O caminho de armazenamento rclone desapareceu
 
-`rdc repo push --to <storage>` e afins costumavam copiar um ficheiro de backup inteiro para um fornecedor na nuvem que registava você mesmo. Agora recusam um destino de armazenamento e indicam o substituto. A transferência máquina a máquina nunca passou por rclone e não é afetada. Se ainda precisar de ler um arquivo escrito dessa forma, veja [Ler um Arquivo Escrito Antes da Retirada](#reading-an-archive-written-before-the-retirement).
+`rdc repo push --to <storage>` e afins costumavam copiar um ficheiro de backup inteiro para um fornecedor na nuvem que registava você mesmo. Agora recusam um destino de armazenamento e indicam o substituto. A transferência máquina a máquina nunca passou por rclone e não é afetada. Os comandos de armazenamento e o rclone incluído foram removidos, por isso um arquivo escrito dessa forma já não pode ser explorado a partir da CLI.
 
 ### Comandos de armazenamento em chunks
 
@@ -642,25 +642,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | Limite de largura de banda para a transferência (ex.: `50M`) |
 
 A migração transfere os dados encriptados do repositório via rsync em duas fases: uma transferência em massa enquanto o repositório continua em execução, depois uma breve paragem para o delta. A migração **move** o repositório, pelo que as imagens de origem são apagadas assim que a mudança tem sucesso. Passe `--keep-source` para as reter. Esta é a diferença entre `repo migrate` e `repo push`: o push deixa a origem em execução e intacta.
-
-## Ler um Arquivo Escrito Antes da Retirada
-
-`rdc storage` é o que resta do ramo rclone, e é apenas de leitura. Já não pode ser um destino de backup, mas ainda consegue aceder a um arquivo escrito para um.
-
-```bash
-# Registar um remote que já tenha configurado para rclone.
-rdc storage import rclone.conf
-rdc storage list
-
-# Ver o que lá está. Isto corre o rclone no seu PATH.
-rdc storage browse my-storage
-```
-
-`import` lê um ficheiro de configuração rclone e regista os remotes na sua configuração; os tipos suportados são S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob e Swift.
-
-**`browse` exige `rclone` no seu PATH.** Corre o rclone instalado na máquina onde está a escrever; já não há uma cópia embutida. Sem um, avisa-o disso mesmo e não faz mais nada.
-
-Enviar para, receber de, listar e restaurar um back-end de armazenamento estão retirados; cada um recusa e indica o comando que o substitui.
 
 ## Boas Práticas
 

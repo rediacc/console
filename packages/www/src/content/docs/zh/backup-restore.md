@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: zh
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "b3aeea9301684d79"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 备份与恢复
@@ -62,7 +62,7 @@ Rediacc 会备份加密仓库,并在同一台机器或另一台机器上恢复�
 
 ### rclone 存储路径已经不复存在
 
-`rdc repo push --to <storage>` 及其相关命令过去会把整个备份文件复制到你自己注册的云提供商。现在它们会拒绝存储目标,并指出替代方案的名字。机器到机器的传输从来不经过 rclone,不受影响。如果你仍需要读取以那种方式写入的存档,请参阅[读取废止之前写入的存档](#reading-an-archive-written-before-the-retirement)。
+`rdc repo push --to <storage>` 及其相关命令过去会把整个备份文件复制到你自己注册的云提供商。现在它们会拒绝存储目标,并指出替代方案的名字。机器到机器的传输从来不经过 rclone,不受影响。存储命令和内置的 rclone 均已移除,因此以那种方式写入的存档不能再通过 CLI 浏览。
 
 ### 分块存储命令
 
@@ -638,25 +638,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | 传输的带宽限制(例如 `50M`) |
 
 迁移会分两个阶段通过 rsync 传输加密的仓库数据:先是在仓库继续运行时进行一次批量传输,然后再短暂停止以完成增量部分。迁移会**移动**仓库,因此一旦迁移成功,源镜像就会被删除。传入 `--keep-source` 可以保留它们。这就是 `repo migrate` 和 `repo push` 的区别:push 会让源仓库继续运行,不做任何改动。
-
-## 读取废止之前写入的存档
-
-`rdc storage` 是 rclone 分支残留下来的部分,而且是只读的。它已经不能再作为备份目标,但仍然可以用来访问以那种方式写入的存档。
-
-```bash
-# 注册一个你已经为 rclone 配置好的远程存储。
-rdc storage import rclone.conf
-rdc storage list
-
-# 查看里面有什么。这会运行你 PATH 中的 rclone。
-rdc storage browse my-storage
-```
-
-`import` 会读取一个 rclone 配置文件,并把其中的远程存储记录到你的配置中;支持的类型有 S3、B2、Google Drive、OneDrive、Mega、Dropbox、Box、Azure Blob 和 Swift。
-
-**`browse` 要求你的 PATH 中存在 `rclone`。** 它运行的是你正在操作的这台机器上安装的 rclone;不再内置任何副本。如果没有安装,它会明确告知你这一点,不会再做其他任何事。
-
-向存储后端推送、拉取、列出和恢复的功能均已废止;每一个都会被拒绝,并指出替代它的命令。
 
 ## 最佳实践
 

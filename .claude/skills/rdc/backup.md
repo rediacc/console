@@ -2,7 +2,7 @@
 
 For full command syntax and options, see [reference.md](reference.md).
 
-Backup, restore, transfer, and sync repository images between machines or to/from external storage.
+Backup, restore, transfer, and sync repository images between machines and to the chunk store.
 
 Two nouns are involved:
 - `rdc repo push` / `rdc repo pull` / `rdc repo migrate` / `rdc repo sync`: move a repo's bytes.
@@ -17,12 +17,7 @@ Two nouns are involved:
 
 **Important**: mounting is automatic. The retired `repo up --mount` flag is gone, and forks resolve the parent's credential on their own (no `--grand` flag on `repo up` any more).
 
-### Push to storage
-Backs up to configured external storage (S3, local file, etc.).
-
 ### Pull from another machine
-
-### Pull from storage
 
 ### List backups
 
@@ -118,10 +113,10 @@ rdc repo up <repo>                   # Auto-detects checkpoint, resumes
 ### Configure backup strategy
 The strategy name is a positional argument. Multiple destinations can be configured with different schedules:
 ```bash
-rdc backup strategy set daily --destination my-s3 --storage my-s3 --cron "0 2 * * *" --enable
-rdc backup strategy set offsite --destination azure-backup --storage azure-backup --cron "0 6 * * *" --enable
+rdc backup strategy set daily --destination hosted --cron "0 2 * * *" --enable
+rdc backup strategy set weekly --destination hosted --cron "0 6 * * 0" --include shop --exclude shop:scratch --enable
 ```
-`--storage <name>` is required the first time a destination is created (it names the rclone credentials from `rdc storage add`).
+A destination is a hosted-service chunk store (`kind: hosted-service`); `--include`/`--exclude` take repository names, where a bare name covers the whole fork family and `name:tag` one fork. Retention is set per repository with `rdc backup retention set`.
 
 ### Show / list backup strategies
 ```bash
@@ -143,10 +138,6 @@ rdc backup restore <artifact-ref> --as <new-name> -m <machine> --up
 ```
 
 ## Bulk sync (push/pull all repos)
-
-### Push all repos to storage
-
-### Pull all repos from storage
 
 ## File sync (rsync-based file transfer)
 

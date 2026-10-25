@@ -8,61 +8,45 @@ tags:
 subcategory: data-protection
 order: 12
 language: tr
-sourceHash: "7d9a82ee410c420a"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "5b0bc33572c2d9e2"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Temizleme
 
-Temizleme, artık canlı bir kaynağa karşılık gelmeyen durumu tarar. Üç komut üç farklı kapsamı kapsar:
+Temizleme, artık canlı bir kaynağa karşılık gelmeyen durumu tarar. İki komut iki farklı kapsamı kapsar. Chunk deposundaki anlık görüntüler bunların dışındadır: sunucu onları bir [saklama ilkesine](#backup-snapshots) göre temizler.
 
 | Komut | Neyi temizler | Doğruluk kaynağı nerede yaşar |
 |---|---|---|
-| `rdc storage prune <storage> -m <machine>` | Bulut depolamasındaki sahipsiz yedekler | Yerel CLI yapılandırması (bağlama güvenliği için yürütücü makineye karşı çapraz kontrol edilir) |
 | `rdc machine prune <machine>` | Makine üzerindeki veri deposu yapıtaşları (her zaman); sahipsiz veya unknown depo görüntüleri (isteğe bağlı) | Yerel CLI yapılandırması + makinenin `.interim/state` aynası |
 | `rdc config prune` | Yerel yapılandırma artıkları (sertifika önbelleği, süresi dolmuş arşivler, askıdaki çapraz referanslar) | Yalnızca yerel CLI yapılandırması |
 
-Üçü birbirinden bağımsızdır. Herhangi birini diğerleri olmadan çalıştırabilirsiniz. Aşağıdaki [Güvenlik Modeli](#safety-model) altında açıklanan ortak bir güvenlik modelini paylaşırlar.
+İkisi birbirinden bağımsızdır. Birini diğeri olmadan çalıştırabilirsiniz. Aşağıdaki [Güvenlik Modeli](#safety-model) altında açıklanan ortak bir güvenlik modelini paylaşırlar.
 
 Temizleme, silinen kaynakların geride bıraktığı durumu kaldırır. *Canlı* depoların kapladığı alanı geri kazanmak için (dosya sistemlerinin serbest bıraktığı ancak havuzun hâlâ tuttuğu bloklar) bunun yerine [`rdc repo trim`](/tr/docs/repositories#reclaim-space-trim) kullanın; ikisi birbirini tamamlar.
 
 ## Bağlama güvenliği ön denetimi
 
-`storage prune` ve `machine prune --prune-unknown`, herhangi bir şey silmeden önce bir **bağlama güvenliği ön denetimi** çalıştırır: yürütücü makineyi şu anda bağlı veya çalışan depolar için sorgular, silme adaylarıyla kesişimini alır ve **makinede hâlâ canlı olan bir adayı silmeyi reddeder**. Bağlı bir deponun makine dışı yedeğini silmek veya canlı bir depo görüntüsünü silmek gerçek bir veri kaybı tuzağıdır. Ön denetim bunu kazara yapmayı imkânsız kılar.
+`machine prune --prune-unknown`, herhangi bir şey silmeden önce bir **bağlama güvenliği ön denetimi** çalıştırır: makineyi şu anda bağlı veya çalışan depolar için sorgular, silme adaylarıyla kesişimini alır ve **makinede hâlâ canlı olan bir adayı silmeyi reddeder**. Canlı bir depo görüntüsünü silmek gerçek bir veri kaybı tuzağıdır. Ön denetim bunu kazara yapmayı imkânsız kılar.
 
 Geçersiz kılmak için (nadir; yalnızca canlı durumun yanlış olduğundan gerçekten emin olduğunuzda) `--force-delete-mounted` geçirin. Bu, `--force` bayrağından (arşiv ek süresini kontrol eder) ayrı bir bayraktır, böylece iki kaçış noktası ayrı kalır.
 
-## Storage Prune
+## Yedek Anlık Görüntüleri
 
-Bir depolama sağlayıcısını tarar ve GUID'leri herhangi bir yerel yapılandırma dosyasında artık görünmeyen yedekleri siler.
+`rdc backup snapshot` ile yüklenen anlık görüntüler chunk deposunda durur ve onları sunucu temizler. İstemci tarafında bir prune komutu yoktur: ne kadar geçmişin tutulacağını belirtin, gerisini sunucu siler.
 
 ```bash
-# Yalnızca önizleme — neyin silineceğini gösterir
-rdc storage prune my-s3 -m server-1 --dry-run
+# Geçerli ilkeyi göster
+rdc backup retention my-app
 
-# Sahipsiz yedekleri gerçekten sil (varsayılan davranış)
-rdc storage prune my-s3 -m server-1
+# 7 günlük, 4 haftalık ve 6 aylık anlık görüntü tut
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Ek süreyi geçersiz kıl (varsayılan 7 gün)
-rdc storage prune my-s3 -m server-1 --grace-days 14
-
-# Bağlama güvenliği kontrolünü geçersiz kıl (dikkatli kullanın)
-rdc storage prune my-s3 -m server-1 --force-delete-mounted
+# Tüm anlık görüntüleri yeniden tut
+rdc backup retention clear my-app
 ```
 
-`--machine` zorunludur çünkü rclone çağrıları dizüstü bilgisayarınızda değil, yürütücü makinede çalışır. Istemcilerin yerel olarak rclone yüklü olması beklenmez. Depolama kimlik bilgileri yine yerel yapılandırmanızdan gelir; makine yalnızca rclone çalıştırıcısıdır.
-
-### Ne kontrol edilir
-
-1. Adlandırılmış depolamadaki tüm yedek GUID'lerini listeler (hem `hot/` hem de `cold/` alt dizinlerinde. Bkz. [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore#scheduled-backups)).
-2. Diskteki her yapılandırma dosyasını tarar (`~/.config/rediacc/*.json`).
-3. Bir yedek, GUID'si herhangi bir yapılandırmanın depolar bölümünde referans verilmiyorsa **sahipsizdir**.
-4. Ek süre içinde yakın zamanda arşivlenen depolar, aktif yapılandırmadan kaldırılmış olsalar bile **korunurlar**.
-5. Bağlama güvenliği ön denetimi: `--machine` üzerinde şu anda bağlı olan GUID'ler atlanır ve raporlanır, asla silinmez.
-
-### Performans
-
-Silmeler depolama alt yolu başına gruplandırılır: `hot/` veya `cold/` dizini başına, kaç GUID kaldırıldığından bağımsız olarak tek bir rclone çağrısı yapılır. 11 sahipsiz girişlik bir birikim, ~50 saniye SSH yükünden alt yol başına tek bir gidiş-dönüşe iner.
+İlke kuralları için [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore#retention) bölümüne, deponun şu anda neleri barındırdığı için `rdc backup usage` komutuna bakın.
 
 ## Machine Prune
 
@@ -155,9 +139,8 @@ rdc config prune --grace-days 30
 
 ### Neye dokunmaz
 
-- Aktif kaynaklar (machines, storages, repositories, backup strategies, bulut sağlayıcıları).
+- Aktif kaynaklar (machines, repositories, backup strategies, bulut sağlayıcıları).
 - Kimlik bilgileri, hesap bloğu, şifreleme bloğu, defaults.
-- Depolama `vaultContent` (süresi dolmuş OneDrive `access_token` dahil. Refresh_token yenilerini basmaya devam eder; temizleme yeniden kimlik doğrulamayı zorlardı).
 - `knownHosts` girişleri (otomatik yenileme yolu `rdc machine scan-keys`'tir).
 - Sıkıştırılmış sertifika blob dizisi (`infra.acmeCertCache.<base>.data[]`) temizlenmiş sertifika listesinden otomatik olarak yeniden oluşturulur; korunan bir adı kapsayan herhangi bir zinciri kaybetmezsiniz.
 
@@ -202,19 +185,19 @@ Temizleme, çoklu yapılandırma kurulumlarında varsayılan olarak güvenli ola
 
 ### Çoklu yapılandırma farkındalığı
 
-`storage prune` ve `machine prune --orphaned-repos`, yalnızca aktif olanı değil, `~/.config/rediacc/` içindeki **tüm** yapılandırma dosyalarını tarar. `production.json` tarafından referans verilen bir depo, `staging.json` dosyasında bulunmasa bile silinmez. Bu, yapılandırmalar farklı ortamlara yönelik olduğunda yanlışlıkla silmeyi önler.
+`machine prune --orphaned-repos`, yalnızca aktif olanı değil, `~/.config/rediacc/` içindeki **tüm** yapılandırma dosyalarını tarar. `production.json` tarafından referans verilen bir depo, `staging.json` dosyasında bulunmasa bile silinmez. Bu, yapılandırmalar farklı ortamlara yönelik olduğunda yanlışlıkla silmeyi önler.
 
 ### Ek süre
 
-Bir depo `--archive-config` ile yapılandırmadan kaldırıldığında, kimlik bilgisi girişi `deletedAt` zaman damgasıyla `resources.deletedRepositories[]` listesine taşınır. Temizleme komutları, yakın zamanda arşivlenen depoların silinmeden korunduğu bir ek süreye (varsayılan 7 gün) saygı gösterir. Bu, yanlışlıkla kaldırılan bir depoyu geri yüklemek (`rdc repo admin archive restore <guid>`) için size zaman tanır. Ek süre dolduğunda, `storage prune`, `machine prune` ve `config prune` girişi otomatik olarak siler.
+Bir depo `--archive-config` ile yapılandırmadan kaldırıldığında, kimlik bilgisi girişi `deletedAt` zaman damgasıyla `resources.deletedRepositories[]` listesine taşınır. Temizleme komutları, yakın zamanda arşivlenen depoların silinmeden korunduğu bir ek süreye (varsayılan 7 gün) saygı gösterir. Bu, yanlışlıkla kaldırılan bir depoyu geri yüklemek (`rdc repo admin archive restore <guid>`) için size zaman tanır. Ek süre dolduğunda, `machine prune` ve `config prune` girişi otomatik olarak siler.
 
 ### Bağlama güvenliği ön denetimi
 
-Yukarıda kapsanmıştır. `storage prune` ve `machine prune --prune-unknown`, yürütücü makinede şu anda bağlı veya çalışan depoları silmeyi reddeder. Yalnızca `--force-delete-mounted` ile geçersiz kılın.
+Yukarıda kapsanmıştır. `machine prune --prune-unknown`, makinede şu anda bağlı veya çalışan depoları silmeyi reddeder. Yalnızca `--force-delete-mounted` ile geçersiz kılın.
 
 ### Varsayılan olarak uygula; önizleme için `--dry-run`
 
-Üç temizleme komutu da varsayılan olarak değişiklikleri **uygular**. Yazmadan önizlemek için `--dry-run` geçirin. Bu, fiile uyar: "prune" tek başına yıkıcıdır ve bir dry-run bayrağı açık devre dışı bırakma yoludur.
+İki temizleme komutu da varsayılan olarak değişiklikleri **uygular**. Yazmadan önizlemek için `--dry-run` geçirin. Bu, fiile uyar: "prune" tek başına yıkıcıdır ve bir dry-run bayrağı açık devre dışı bırakma yoludur.
 
 ## Yapılandırma
 
@@ -237,11 +220,11 @@ CLI bayrağı `--grace-days` sağlandığında bu değeri geçersiz kılar.
 
 ## En İyi Uygulamalar
 
-- **Üretimde önce dry-run çalıştırın.** Özellikle üretim depolamasında yıkıcı bir temizleme yürütmeden önce her zaman önizleme yapın.
-- **Birden fazla yapılandırmayı güncel tutun.** Storage ve machine prune, yapılandırma dizinindeki tüm yapılandırmaları kontrol eder. Bir yapılandırma dosyası eskimişse veya silinmişse, depoları korumalarını kaybeder. Yapılandırma dosyalarını doğru tutun.
+- **Üretimde önce dry-run çalıştırın.** Yıkıcı bir temizleme yürütmeden önce her zaman önizleme yapın.
+- **Birden fazla yapılandırmayı güncel tutun.** Machine prune, yapılandırma dizinindeki tüm yapılandırmaları kontrol eder. Bir yapılandırma dosyası eskimişse veya silinmişse, depoları korumalarını kaybeder. Yapılandırma dosyalarını doğru tutun.
 - **`--prune-unknown`'u `--orphaned-repos`'a tercih edin.** Cerrahi bayrak renet aynasına saygı gösterir; kaba bayrak başka araçların oluşturduğu çatalları memnuniyetle siler.
 - **Üretim için cömert ek süreler kullanın.** Varsayılan 7 günlük ek süre çoğu iş akışı için uygundur. Seyrek bakım pencerelerine sahip üretim ortamları için 14 veya 30 günü düşünün.
-- **Storage prune'u yedekleme çalıştırmalarından sonra planlayın.** Manuel müdahale olmadan depolama maliyetlerini kontrol altında tutmak için `storage prune` komutunu yedekleme planınızla eşleştirin.
+- **Bir saklama ilkesi belirleyin.** `rdc backup retention set`, anlık görüntü depolama maliyetlerini manuel müdahale olmadan kontrol altında tutar.
 - **Machine prune'u backup schedule ile birleştirin.** Yedekleme planlarını dağıttıktan sonra (`rdc backup schedule`), eski anlık görüntüleri ve sahipsiz veri deposu yapıtaşlarını temizlemek için periyodik bir makine temizlemesi ekleyin.
 - **`config prune`'u periyodik olarak çalıştırın.** Yerel yapılandırma şişmesi (özellikle sertifika önbelleği) sessizce birikir; üç ayda bir `config prune --dry-run` yakalamak için yeterlidir.
 - **`--force` veya `--force-delete-mounted` kullanmadan önce denetleyin.** Her iki bayrak da güvenlik kontrollerini atlar. `--force`'u yalnızca söz konusu depolara başka hiçbir yapılandırmanın referans vermediğinden emin olduğunuzda kullanın; `--force-delete-mounted`'ı yalnızca makinedeki canlı durumun yanlış olduğundan emin olduğunuzda kullanın.

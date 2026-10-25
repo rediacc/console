@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: zh
-sourceHash: "05e91da1e94dddfc"
+sourceHash: "657bd1152d18476e"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
@@ -223,7 +223,7 @@ rdc backup usage
 
 快照会上传到分块存储，这需要账户服务器和已获许可的仓库。只存储发生变化的数据，因此对同一仓库做第二次快照只需支付差异部分的成本，而不是整份镜像的成本。
 
-使用 `--to <storage>` 将仓库推送到云存储的功能已废止，现在会被拒绝。要读取该变更之前写入的存档，`rdc storage browse` 仍可使用，并且需要在您的 PATH 中安装 `rclone`。
+使用 `--to <storage>` 将仓库推送到云存储的功能已废止，现在会被拒绝。存储命令和内置的 rclone 均已移除，因此以那种方式写入的存档不能再通过 CLI 浏览。
 
 ### 4. 从远程拉取
 

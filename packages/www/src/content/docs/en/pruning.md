@@ -12,55 +12,39 @@ language: en
 
 # Pruning
 
-Pruning sweeps state that no longer corresponds to a live resource. Three commands cover three different scopes:
+Pruning sweeps state that no longer corresponds to a live resource. Two commands cover two different scopes. Snapshots in the chunk store are not one of them: the server prunes those under a [retention policy](#backup-snapshots).
 
 | Command | What it cleans | Where the source of truth lives |
 |---|---|---|
-| `rdc storage prune <storage> -m <machine>` | Orphaned backups in cloud storage | Local CLI config (cross-checked against the executor machine for mount safety) |
 | `rdc machine prune <machine>` | On-machine datastore artifacts (always); orphaned or unknown repo images (opt-in) | Local CLI config + the machine's `.interim/state` mirror |
 | `rdc config prune` | Local-config leftovers (cert cache, expired archives, dangling cross-references) | Local CLI config alone |
 
-The three are independent. You can run any one without the others. They share a common safety model described under [Safety](#safety-model) below.
+The two are independent. You can run any one without the others. They share a common safety model described under [Safety](#safety-model) below.
 
 Pruning removes state left behind by deleted resources. To reclaim space occupied by *live* repositories (blocks their filesystems have freed but the pool still holds), use [`rdc repo trim`](/en/docs/repositories#reclaim-space-trim) instead; the two are complementary.
 
 ## Mount-safety preflight
 
-`storage prune` and `machine prune --prune-unknown` both run a **mount-safety preflight** before deleting anything: they query the executor machine for currently-mounted or running repositories, intersect with the deletion candidates, and **refuse to delete a candidate that's still live on the machine**. Deleting the off-machine backup of a mounted repo, or deleting a live repo image, is a real data-loss footgun. The preflight makes it impossible to do by accident.
+`machine prune --prune-unknown` runs a **mount-safety preflight** before deleting anything: it queries the machine for currently-mounted or running repositories, intersects them with the deletion candidates, and **refuses to delete a candidate that's still live on the machine**. Deleting a live repo image is a real data-loss footgun. The preflight makes it impossible to do by accident.
 
 To override (rare; only when you genuinely know the live state is wrong), pass `--force-delete-mounted`. This is a separate flag from `--force` (which controls the archive grace period) so the two escape hatches stay distinct.
 
-## Storage Prune
+## Backup Snapshots
 
-Scans a storage provider and deletes backups whose GUIDs no longer appear in any local config file.
+Snapshots uploaded with `rdc backup snapshot` live in the chunk store, and the server prunes them. There is no client-side prune command: declare how much history to keep and the server removes the rest.
 
 ```bash
-# Preview only — show what would be deleted
-rdc storage prune my-s3 -m server-1 --dry-run
+# Show the current policy
+rdc backup retention my-app
 
-# Actually delete orphaned backups (default behavior)
-rdc storage prune my-s3 -m server-1
+# Keep 7 daily, 4 weekly and 6 monthly snapshots
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Override grace period (default 7 days)
-rdc storage prune my-s3 -m server-1 --grace-days 14
-
-# Override the mount-safety check (use with care)
-rdc storage prune my-s3 -m server-1 --force-delete-mounted
+# Keep every snapshot again
+rdc backup retention clear my-app
 ```
 
-`--machine` is required because the rclone calls run on the executor machine, not on your laptop. Clients are not expected to have rclone installed locally. The storage credentials still come from your local config; the machine is just the rclone runner.
-
-### What it checks
-
-1. Lists all backup GUIDs in the named storage (across both `hot/` and `cold/` subdirectories. See [Backup & Restore](/en/docs/backup-restore#scheduled-backups)).
-2. Scans every config file on disk (`~/.config/rediacc/*.json`).
-3. A backup is **orphaned** if its GUID is not referenced by any config's repositories section.
-4. Recently archived repos within the grace period are **protected** even if removed from the active config.
-5. Mount-safety preflight: GUIDs currently mounted on `--machine` are skipped and reported, never deleted.
-
-### Performance
-
-Deletes are batched per storage subpath: one rclone call per `hot/` or `cold/` directory regardless of how many GUIDs are being removed. A backlog of 11 orphans collapses from ~50 s of SSH overhead down to a single round-trip per subpath.
+See [Backup & Restore](/en/docs/backup-restore#retention) for the policy rules and `rdc backup usage` for what the store currently holds.
 
 ## Machine Prune
 
@@ -153,9 +137,8 @@ rdc config prune --grace-days 30
 
 ### What it does NOT touch
 
-- Active resources (machines, storages, repositories, backup strategies, cloud providers).
+- Active resources (machines, repositories, backup strategies, cloud providers).
 - Credentials, the account block, the encryption block, defaults.
-- Storage `vaultContent` (including expired OneDrive `access_token`. The refresh_token still mints new ones; pruning would force re-auth).
 - `knownHosts` entries (auto-refresh path is `rdc machine scan-keys`).
 - The compressed cert blob array (`infra.acmeCertCache.<base>.data[]`) is rebuilt from the cleaned cert list automatically; you don't lose any chain that still covers a kept name.
 
@@ -196,23 +179,23 @@ The backfill copies live in-volume state to the mirror for currently-mounted rep
 
 ## Safety Model
 
-All three commands default to safe across multi-config setups.
+Both commands default to safe across multi-config setups.
 
 ### Multi-config awareness
 
-`storage prune` and `machine prune --orphaned-repos` scan **all** config files in `~/.config/rediacc/`, not just the active one. A repo referenced by `production.json` will not be deleted even if it is absent from `staging.json`. This prevents accidental deletion when configs are scoped to different environments.
+`machine prune --orphaned-repos` scans **all** config files in `~/.config/rediacc/`, not just the active one. A repo referenced by `production.json` will not be deleted even if it is absent from `staging.json`. This prevents accidental deletion when configs are scoped to different environments.
 
 ### Grace period
 
-When a repository is removed from a config with `--archive-config`, its credential entry is moved to `resources.deletedRepositories[]` with a `deletedAt` timestamp. The prune commands respect a grace period (default 7 days) during which recently archived repos are protected from deletion. This gives you time to restore a repo (`rdc repo admin archive restore <guid>`) if it was removed accidentally. Once the grace expires, `storage prune`, `machine prune`, and `config prune` all auto-purge the entry.
+When a repository is removed from a config with `--archive-config`, its credential entry is moved to `resources.deletedRepositories[]` with a `deletedAt` timestamp. The prune commands respect a grace period (default 7 days) during which recently archived repos are protected from deletion. This gives you time to restore a repo (`rdc repo admin archive restore <guid>`) if it was removed accidentally. Once the grace expires, `machine prune` and `config prune` auto-purge the entry.
 
 ### Mount-safety preflight
 
-Covered above. `storage prune` and `machine prune --prune-unknown` refuse to delete repos that are currently mounted or running on the executor machine. Override only with `--force-delete-mounted`.
+Covered above. `machine prune --prune-unknown` refuses to delete repos that are currently mounted or running on the machine. Override only with `--force-delete-mounted`.
 
 ### Apply by default; `--dry-run` to preview
 
-All three prune commands default to **applying** changes. Pass `--dry-run` to preview without writing. This matches the verb: "prune" is destructive on its own, and a dry-run flag is the explicit opt-out.
+Both prune commands default to **applying** changes. Pass `--dry-run` to preview without writing. This matches the verb: "prune" is destructive on its own, and a dry-run flag is the explicit opt-out.
 
 ## Configuration
 
@@ -235,11 +218,11 @@ The `--grace-days` CLI flag overrides this value when provided.
 
 ## Best Practices
 
-- **Run dry-run first on production.** Always preview before executing a destructive prune, especially on production storage.
-- **Keep multiple configs current.** Storage and machine prune check all configs in the config directory. If a config file is stale or deleted, its repos lose protection. Keep config files accurate.
+- **Run dry-run first on production.** Always preview before executing a destructive prune.
+- **Keep multiple configs current.** Machine prune checks all configs in the config directory. If a config file is stale or deleted, its repos lose protection. Keep config files accurate.
 - **Prefer `--prune-unknown` over `--orphaned-repos`.** The surgical flag respects the renet mirror; the coarse flag will happily delete forks that other tools created.
 - **Use generous grace periods for production.** The default 7-day grace period suits most workflows. For production environments with infrequent maintenance windows, consider 14 or 30 days.
-- **Schedule storage prune after backup runs.** Pair `storage prune` with your backup schedule to keep storage costs under control without manual intervention.
+- **Declare a retention policy.** `rdc backup retention set` keeps snapshot storage costs under control without manual intervention.
 - **Combine machine prune with the backup schedule.** After deploying backup schedules (`rdc backup schedule`), add a periodic machine prune to clean up stale snapshots and orphaned datastore artifacts.
 - **Run `config prune` periodically.** Local-config bloat (especially cert cache) accumulates silently; a quarterly `config prune --dry-run` is enough to catch it.
 - **Audit before using `--force` or `--force-delete-mounted`.** Both flags bypass safety checks. Use `--force` only when you're certain no other config references the repos in question; use `--force-delete-mounted` only when you're certain the live state on the machine is wrong.

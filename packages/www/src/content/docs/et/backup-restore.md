@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: et
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "b3aeea9301684d79"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Varundamine ja taastamine
@@ -61,7 +61,7 @@ Masina-masina push ja pull ei vaja kumbagi. Need on otsene ülekanne kahe masina
 
 ### rclone salvestustee on kadunud
 
-`rdc repo push --to <storage>` ja tema sugulased kopeerisid varem terve varufaili pilveteenuse pakkujasse, mille sa ise registreerisid. Need keelduvad nüüd salvestussihtmärgist ja nimetavad selle asendaja. Masina-masina ülekanne ei käinud kunagi rclone kaudu ega ole mõjutatud. Kui pead endiselt lugema sel viisil kirjutatud arhiivi, vaata [Enne kaotamist kirjutatud arhiivi lugemine](#reading-an-archive-written-before-the-retirement).
+`rdc repo push --to <storage>` ja tema sugulased kopeerisid varem terve varufaili pilveteenuse pakkujasse, mille sa ise registreerisid. Need keelduvad nüüd salvestussihtmärgist ja nimetavad selle asendaja. Masina-masina ülekanne ei käinud kunagi rclone kaudu ega ole mõjutatud. Salvestuskäsud ja kaasasolev rclone on eemaldatud, nii et sel viisil kirjutatud arhiivi ei saa enam CLI-st sirvida.
 
 ### Tükksalvestuse käsud
 
@@ -637,25 +637,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | Ribalaiuse piirang ülekandele (nt `50M`) |
 
 Migreerimine kannab krüpteeritud repositooriumi andmed üle rsync kaudu kahes faasis: massülekanne, samal ajal kui repositoorium jätkab tööd, seejärel lühike peatus delta jaoks. Migreerimine **liigutab** repositooriumi, seega kustutatakse lähtetõmmised pärast kolimise õnnestumist. Anna `--keep-source`, et need säilitada. See on erinevus `repo migrate` ja `repo push` vahel: push jätab lähte töötama ja puutumatuks.
-
-## Enne kaotamist kirjutatud arhiivi lugemine
-
-`rdc storage` on see, mis jäi rclone-harust järele, ja see on kirjutuskaitstud. See ei saa enam olla varunduse sihtkoht, kuid pääseb endiselt ligi arhiivile, mis kirjutati sinna.
-
-```bash
-# Registreeri remote, mille oled juba rclone jaoks konfigureerinud.
-rdc storage import rclone.conf
-rdc storage list
-
-# Vaata, mis seal on. See käivitab sinu PATH-il oleva rclone'i.
-rdc storage browse my-storage
-```
-
-`import` loeb rclone-konfiguratsioonifaili ja salvestab remote'id sinu konfiguratsiooni; toetatud tüübid on S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ja Swift.
-
-**`browse` vajab `rclone`-i sinu PATH-il.** See käivitab rclone'i, mis on paigaldatud masinasse, kus sa tipid; sisseehitatud koopiat enam ei ole. Ilma selleta ütleb see seda ega tee muud.
-
-Salvestusliidesesse saatmine, sealt tõmbamine, selle loetlemine ja sellest taastamine on kaotatud; iga käsk keeldub ja nimetab tükksalvestuse käsu, mis selle asendab.
 
 ## Parimad praktikad
 

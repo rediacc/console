@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: it
-sourceHash: "05e91da1e94dddfc"
+sourceHash: "657bd1152d18476e"
 sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
@@ -223,7 +223,7 @@ rdc backup usage
 
 Gli snapshot vengono caricati sullo storage a chunk, che richiede un server dell'account e un repository con licenza. Vengono memorizzati solo i dati modificati, quindi un secondo snapshot dello stesso repository costa solo la differenza invece dell'intera immagine.
 
-Il push di un repository su storage cloud con `--to <storage>` è dismesso e ora viene rifiutato. Per leggere un archivio scritto prima di quella modifica, `rdc storage browse` funziona ancora e richiede `rclone` nel tuo PATH.
+Il push di un repository su storage cloud con `--to <storage>` è dismesso e ora viene rifiutato. I comandi di storage e il rclone incluso sono stati rimossi, quindi un archivio scritto in quel modo non può più essere sfogliato dalla CLI.
 
 ### 4. Scarica da Remoto
 

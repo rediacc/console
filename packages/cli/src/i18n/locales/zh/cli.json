@@ -1361,7 +1361,7 @@
         "archived": "\"{{repository}}\" 的凭据已归档",
         "archiveHint": "要归档凭据以便恢复: 使用 --archive-config 重新运行",
         "archiveOption": "将配置条目移至 deletedRepositories 以便后续恢复",
-        "cloudBackupHint": "云备份（如有）在删除后仍会保留。使用以下命令删除孤立的云备份：rdc storage prune <storage> -m {{machine}}",
+        "cloudBackupHint": "块存储中的备份在仓库删除后仍会保留，并按保留策略到期。查看其仍占用的空间：rdc backup usage",
         "completed": "仓库已删除",
         "configRetained": "\"{{repository}}\" 的配置条目已保留，用于其备份和恢复。如需删除，请加上 --archive-config 重新运行，然后执行 \"rdc repo admin archive purge {{repository}}\"。",
         "configRetainedElsewhere": "\"{{repository}}\" 的配置条目已保留（已推送的副本仍在以下机器上：{{machines}}）。如需删除，请加上 --archive-config 重新运行，然后执行 \"rdc repo admin archive purge {{repository}}\"。",

@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: ko
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "b3aeea9301684d79"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # 백업 및 복원
@@ -62,7 +62,7 @@ Rediacc는 암호화된 저장소를 백업하고, 같은 머신 또는 다른 �
 
 ### rclone 스토리지 경로는 사라졌습니다
 
-`rdc repo push --to <storage>`와 그 관련 명령들은 예전에는 직접 등록한 클라우드 프로바이더로 백업 파일 전체를 복사했습니다. 이제는 스토리지 대상을 거부하고 대체 경로의 이름을 알려줍니다. 머신 간 전송은 애초에 rclone을 거친 적이 없으므로 영향을 받지 않습니다. 그 방식으로 작성된 아카이브를 아직 읽어야 한다면 [폐지 이전에 작성된 아카이브 읽기](#reading-an-archive-written-before-the-retirement)를 참조하세요.
+`rdc repo push --to <storage>`와 그 관련 명령들은 예전에는 직접 등록한 클라우드 프로바이더로 백업 파일 전체를 복사했습니다. 이제는 스토리지 대상을 거부하고 대체 경로의 이름을 알려줍니다. 머신 간 전송은 애초에 rclone을 거친 적이 없으므로 영향을 받지 않습니다. 스토리지 명령과 내장 rclone은 제거되었으므로, 그 방식으로 작성된 아카이브는 더 이상 CLI에서 탐색할 수 없습니다.
 
 ### 청크 스토리지 명령
 
@@ -638,25 +638,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | 전송 대역폭 제한(예: `50M`) |
 
 마이그레이션은 rsync를 통해 두 단계에 걸쳐 암호화된 저장소 데이터를 전송합니다. 저장소가 계속 실행되는 동안의 대량 전송과, 그 뒤에 이어지는 델타를 위한 짧은 정지입니다. 마이그레이션은 저장소를 **이동**시키므로, 이동이 성공하면 소스 이미지는 삭제됩니다. 이를 보존하려면 `--keep-source`를 넘기세요. 이것이 `repo migrate`와 `repo push`의 차이입니다. 푸시는 소스를 실행 중인 상태 그대로 건드리지 않고 남겨둡니다.
-
-## 폐지 이전에 작성된 아카이브 읽기
-
-`rdc storage`는 rclone 계열 중 남은 부분이며, 읽기 전용입니다. 더 이상 백업 대상이 될 수는 없지만, 그 방식으로 작성된 아카이브에는 여전히 접근할 수 있습니다.
-
-```bash
-# 이미 rclone용으로 설정해둔 리모트를 등록한다.
-rdc storage import rclone.conf
-rdc storage list
-
-# 안에 무엇이 있는지 본다. 이는 여러분의 PATH에 있는 rclone을 실행한다.
-rdc storage browse my-storage
-```
-
-`import`는 rclone 설정 파일을 읽어 그 리모트들을 여러분의 설정에 기록합니다. 지원되는 종류는 S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob, Swift입니다.
-
-**`browse`는 PATH에 `rclone`이 있어야 합니다.** 이는 여러분이 명령을 입력하는 머신에 설치된 rclone을 실행합니다. 더 이상 번들 사본은 없습니다. 없다면 그렇게 알려주고 그 이상 아무것도 하지 않습니다.
-
-스토리지 백엔드로의 푸시, 풀, 목록 보기, 복원은 폐지되었으며, 각각 거부된 뒤 대체 명령을 알려줍니다.
 
 ## 모범 사례
 
