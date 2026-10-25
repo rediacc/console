@@ -33,7 +33,6 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
       health: {},
     },
   },
-  { name: 'storage', domain: 'INFRASTRUCTURE' },
   { name: 'ops', domain: 'INFRASTRUCTURE' },
   { name: 'datastore', domain: 'INFRASTRUCTURE' },
   { name: 'backup', domain: 'INFRASTRUCTURE' },

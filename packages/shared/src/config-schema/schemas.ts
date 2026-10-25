@@ -185,15 +185,6 @@ const CloudProviderConfigSchema = z.object({
 });
 
 // =============================================================================
-// Storage (rclone backup targets — disjoint from the `datastores` registry)
-// =============================================================================
-
-const StorageConfigSchema = z.object({
-  provider: z.string(),
-  vaultContent: z.record(z.string(), z.unknown()),
-});
-
-// =============================================================================
 // Repository (families of structural tags) + per-repo secrets
 // =============================================================================
 
@@ -426,34 +417,18 @@ const backupDestinationCommon = {
 };
 
 /**
- * A backup destination, discriminated on `kind` (mirrors DatastoreBackendSchema).
- *
- * - `storage`: the classic rclone target. Points at a named /resources/storages
- *   entry by name; that entry's vaultContent holds the credentials. Legacy
- *   destinations carry no `kind`, so it DEFAULTS to 'storage' — the on-disk shape
- *   is unchanged and needs no migration.
- * - `hosted-service`: the content-addressed chunk store. Absent `endpoint` = the
- *   Rediacc-hosted plane (server-stamped URL, license-blob auth, nothing in
- *   config); set `endpoint` for a customer S3 / self-hosted elite plane whose
- *   credentials ride a container-level `vaultContent` bag.
- *
- * NEVER add a `provider` string here: buildRcloneArgs (rclone-args.ts) emits
- * `:{provider}:` unconditionally, so only the `storage` kind may reach it.
+ * A backup destination: the content-addressed chunk store. Absent `endpoint` =
+ * the Rediacc-hosted plane (server-stamped URL, license-blob auth, nothing in
+ * config); set `endpoint` for a customer S3 / self-hosted elite plane whose
+ * credentials ride a container-level `vaultContent` bag. Destinations of the
+ * removed `storage` kind (or without a `kind`) are refused.
  */
-export const BackupDestinationSchema = z.union([
-  z.object({
-    kind: z.literal('storage').default('storage'),
-    ...backupDestinationCommon,
-    storage: z.string().min(1, 'Storage name cannot be empty'),
-    folder: z.string().optional(),
-  }),
-  z.object({
-    kind: z.literal('hosted-service'),
-    ...backupDestinationCommon,
-    endpoint: z.string().optional(),
-    vaultContent: z.record(z.string(), z.unknown()).optional(),
-  }),
-]);
+export const BackupDestinationSchema = z.object({
+  kind: z.literal('hosted-service'),
+  ...backupDestinationCommon,
+  endpoint: z.string().optional(),
+  vaultContent: z.record(z.string(), z.unknown()).optional(),
+});
 
 /**
  * GFS-style retention policy for a strategy's manifests.
@@ -488,15 +463,19 @@ const RetentionPolicySchema = z.object({
   keepYearly: z.number().int().min(0).optional(),
 });
 
+const CronSchema = z.string().refine(isValidCron, 'Must be a valid 5-field cron expression');
+
 const BackupStrategyConfigSchema = z.object({
   destinations: z.array(BackupDestinationSchema),
-  schedule: z.string().refine(isValidCron, 'Must be a valid 5-field cron expression'),
+  schedule: CronSchema,
   mode: z.enum(['hot', 'cold']).optional(),
   enabled: z.boolean().optional(),
   bandwidthLimit: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
   retention: RetentionPolicySchema.optional(),
+  /** Per-repo cadence override (G10): repo ref -> cron. The repo gets its own unit on that schedule. */
+  repoSchedules: z.record(z.string(), CronSchema).optional(),
 });
 
 // =============================================================================
@@ -538,7 +517,13 @@ const CredentialsSchema = z.object({
 const ResourcesSchema = z.object({
   machines: z.record(resourceName, MachineConfigSchema).optional(),
   datastores: z.record(datastoreRef, DatastoreConfigSchema).optional(),
-  storages: z.record(resourceName, StorageConfigSchema).optional(),
+  // Removed field: a config still carrying it is refused by name instead of silently stripped.
+  storages: z
+    .never({
+      error:
+        'resources.storages was removed: backup targets are backup strategy destinations of kind hosted-service',
+    })
+    .optional(),
   repositories: z.record(resourceName, RepoFamilySchema).optional(),
   deletedRepositories: z.array(ArchivedRepositorySchema).optional(),
   backupStrategies: z.record(resourceName, BackupStrategyConfigSchema).optional(),
@@ -612,7 +597,6 @@ export const RdcConfigSchema = z
 
 type RdcConfig = z.infer<typeof RdcConfigSchema>;
 type MachineConfig = z.infer<typeof MachineConfigSchema>;
-type StorageConfig = z.infer<typeof StorageConfigSchema>;
 type Placement = z.infer<typeof PlacementSchema>;
 type RepoRecord = z.infer<typeof RepoRecordSchema>;
 type RepoFamily = z.infer<typeof RepoFamilySchema>;
@@ -649,7 +633,6 @@ export type {
   RepoFamily,
   RepoRecord,
   SecretEntry,
-  StorageConfig,
 };
 
 /**

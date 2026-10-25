@@ -1,7 +1,7 @@
 /**
  * ResourceState interface and implementations.
  *
- * ResourceState abstracts access to machines, storages, repositories, and SSH
+ * ResourceState abstracts access to machines, repositories, and SSH
  * keys. It presents repositories as a FLAT map keyed by the legacy composite
  * `name` / `name:tag` string, with the on-disk v3 spec record (RepoRecord under
  * `resources.repositories[name].tags[tag]`) merged with its runtime status
@@ -30,7 +30,6 @@ import type {
   MachineConfig,
   RepositoryConfig,
   SSHContent,
-  StorageConfig,
 } from '../../types/index.js';
 import { mergeRemoteIntoCache, writeRemoteCache } from './remote-cache.js';
 
@@ -174,8 +173,6 @@ function nonEmpty<T extends object>(rec: T): T | undefined {
 export interface ResourceState {
   getMachines(): Record<string, MachineConfig>;
   setMachines(machines: Record<string, MachineConfig>): Promise<void>;
-  getStorages(): Record<string, StorageConfig>;
-  setStorages(storages: Record<string, StorageConfig>): Promise<void>;
   getRepositories(): Record<string, RepositoryConfig>;
   setRepositories(repos: Record<string, RepositoryConfig>): Promise<void>;
   getDeletedRepositories(): ArchivedRepository[];
@@ -186,7 +183,6 @@ export interface ResourceState {
 
 interface LocalState {
   machines: Record<string, MachineConfig>;
-  storages: Record<string, StorageConfig>;
   repositories: Record<string, RepositoryConfig>;
   deletedRepositories: ArchivedRepository[];
   sshContent: SSHContent | null;
@@ -194,7 +190,6 @@ interface LocalState {
 
 const LOCAL_STATE_BUCKETS = [
   'machines',
-  'storages',
   'repositories',
   'deletedRepositories',
   'sshContent',
@@ -205,7 +200,6 @@ function loadLocalState(source: RdcConfig): LocalState {
   const config = structuredClone(source);
   return {
     machines: config.resources?.machines ?? {},
-    storages: config.resources?.storages ?? {},
     repositories: flattenRepositories(config.resources?.repositories, config.state?.repos),
     deletedRepositories: config.resources?.deletedRepositories ?? [],
     sshContent: sshContentFrom(config),
@@ -221,7 +215,6 @@ function persistPatch(state: LocalState, cfg: RdcConfig): RdcConfig {
     resources: {
       ...(cfg.resources ?? {}),
       machines: nonEmpty(state.machines),
-      storages: nonEmpty(state.storages),
       repositories: nonEmpty(families),
       deletedRepositories:
         state.deletedRepositories.length > 0 ? state.deletedRepositories : undefined,
@@ -272,10 +265,6 @@ export class LocalResourceState implements ResourceState {
     return this.state.machines;
   }
 
-  getStorages(): Record<string, StorageConfig> {
-    return this.state.storages;
-  }
-
   getRepositories(): Record<string, RepositoryConfig> {
     return this.state.repositories;
   }
@@ -290,11 +279,6 @@ export class LocalResourceState implements ResourceState {
 
   async setMachines(machines: Record<string, MachineConfig>): Promise<void> {
     this.state.machines = machines;
-    await this.persist();
-  }
-
-  async setStorages(storages: Record<string, StorageConfig>): Promise<void> {
-    this.state.storages = storages;
     await this.persist();
   }
 
@@ -401,8 +385,6 @@ function rebaseBucket(
   switch (bucket) {
     case 'machines':
       return { ...fresh, machines: rebaseRecord(fresh.machines, base.machines, mine.machines) };
-    case 'storages':
-      return { ...fresh, storages: rebaseRecord(fresh.storages, base.storages, mine.storages) };
     case 'repositories':
       return {
         ...fresh,
@@ -471,10 +453,6 @@ export class RemoteResourceState implements ResourceState {
     return this.state.machines;
   }
 
-  getStorages(): Record<string, StorageConfig> {
-    return this.state.storages;
-  }
-
   getRepositories(): Record<string, RepositoryConfig> {
     return this.state.repositories;
   }
@@ -490,11 +468,6 @@ export class RemoteResourceState implements ResourceState {
   async setMachines(machines: Record<string, MachineConfig>): Promise<void> {
     this.state.machines = machines;
     await this.persist('machines');
-  }
-
-  async setStorages(storages: Record<string, StorageConfig>): Promise<void> {
-    this.state.storages = storages;
-    await this.persist('storages');
   }
 
   async setRepositories(repos: Record<string, RepositoryConfig>): Promise<void> {

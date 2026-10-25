@@ -47,7 +47,6 @@ function sampleConfig(): RdcConfig {
     resources: {
       machines: { 'web-1': { ip: '10.0.0.1', user: 'deploy', port: 22 } },
       repositories: {},
-      storages: {},
     },
     encryption: { mode: 'plaintext' },
   };

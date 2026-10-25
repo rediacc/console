@@ -52,8 +52,6 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // schedule/run/status/cancel/list/restore all reach a machine (systemd timers, renet, SSH). Only the `strategy` subgroup is config-only (see below).
   backup: { plane: 'machine' },
   config: { plane: 'config' },
-  // Mostly CRUD over the local storage list; only `prune` reaches a machine and only `browse` shells out to a local rclone.
-  storage: { plane: 'config' },
   // login/logout/status are account-server HTTPS; the -m subcommands are not.
   subscription: { plane: 'other' },
   // Local KVM/QEMU dev VMs, driven by spawning the *local* renet binary (services/executor/ops-executor). Never uses the machine-plane services.
@@ -100,11 +98,6 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'repo admin template list': { plane: 'other' },
   // Holds an SSH tunnel open until Ctrl+C.
   'repo tunnel': { interactive: true },
-
-  // ── storage ───────────────────────────────────────────────────────────
-  'storage prune': { plane: 'machine' },
-  // Lists a bucket by spawning the operator's local rclone against the vault credentials, it reaches the storage backend, never a machine.
-  'storage browse': { plane: 'other' },
 
   // ── cluster ─────────────────────────────────────────────────────────── Prints the cluster's config block (configService.listClusters); it does not query the live cluster, so it is the one config-plane leaf in the domain.
   'cluster status': { plane: 'config' },

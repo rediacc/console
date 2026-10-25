@@ -41,7 +41,7 @@ function doc(machines: Record<string, { ip: string; user: string }>): RdcConfig 
     schemaVersion: 3,
     id: CONFIG,
     version: 1,
-    resources: { machines, repositories: {}, storages: {} },
+    resources: { machines, repositories: {} },
     credentials: { ssh: { privateKey: 'PRIVATE-KEY-BYTES', publicKey: 'ssh-ed25519 AAA' } },
   };
 }

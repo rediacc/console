@@ -32,7 +32,7 @@ function buildConfig(opts: {
   stateDatastores?: Record<string, { attachedTo?: string }>;
 }): RdcConfig {
   const cfg = createEmptyRdcConfig();
-  cfg.resources = { machines: opts.machines ?? {}, storages: {}, clusters: { prod: cluster } };
+  cfg.resources = { machines: opts.machines ?? {}, clusters: { prod: cluster } };
   if (opts.stateDatastores) {
     cfg.state = { ...(cfg.state ?? {}), datastores: opts.stateDatastores };
   }
@@ -77,14 +77,19 @@ describe('joinCluster', () => {
 
     const calls = exec.mock.calls.map((c) => c[0]);
     // ★ #25: no repository_create. An agent's k3s state is a disposable cache and `renet kube join` MkdirAll's its own data-dir, so the per-node "cluster image" repo bought nothing and cost a LUKS volume + GUID + config record per node.
-    expect(calls.map((c) => c.functionName)).toEqual(['kube_join_token', 'kube_join']);
+    // network_used: the agent's network ID starts above every ID the machine already uses.
+    expect(calls.map((c) => c.functionName)).toEqual([
+      'kube_join_token',
+      'network_used',
+      'kube_join',
+    ]);
     // Token read from the control plane's anchor datastore mount.
     expect(calls[0]).toMatchObject({
       machineName: 'prod-cp-1',
       params: { mount_path: '/mnt/rediacc-ds/ds-control-prod' },
     });
     // Agent joins on the cluster mount path (a plain dir now), bound to its real NIC.
-    expect(calls[1]).toMatchObject({
+    expect(calls[2]).toMatchObject({
       machineName: 'adopted',
       params: {
         mount_path: `${WK_DATASTORE_PATH}/mounts/prod`,

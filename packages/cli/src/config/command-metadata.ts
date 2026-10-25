@@ -328,15 +328,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
-  'storage prune': {
-    mcp: {
-      destructive: true,
-      idempotent: true,
-      timeout: 'write',
-      excludeOptions: ['grace-days', 'debug', 'skip-router-restart'],
-    },
-  },
-
   'machine provision': {
     mcp: {
       destructive: true,
@@ -788,26 +779,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     agentBlocked: true,
     mcpExcludeReason: 'Escape hatch for raw renet functions: agents should use typed tools',
   },
-
-  // ── Subcommands ───────────────────────────────────────────────────
-  'storage browse': { mcpExcludeReason: 'Interactive file browser: requires TTY' },
-
-  // ── Factory-generated CRUD (covered by higher-level operations) ──
-  'storage list': {
-    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['reveal'] },
-  },
-  'storage add': {
-    mcp: { destructive: false, idempotent: false, timeout: 'write' },
-  },
-  'storage remove': {
-    mcp: {
-      destructive: true,
-      idempotent: false,
-      timeout: 'write',
-      excludeOptions: ['yes', 'dry-run'],
-    },
-  },
-  'storage import': { mcpExcludeReason: 'Reads a local rclone definition file; use CLI directly.' },
 
   // ── repo logs / repo exec (R2-F14): the first-class replacements for the container side door `term connect` used to carry. These are what make the `term` MCP exclusion honest: an agent that wants a log line or a command run asks for exactly that, instead of asking for an interactive shell.
   'repo logs': {

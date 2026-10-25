@@ -97,10 +97,6 @@
       "types": "./dist/ref/index.d.ts",
       "default": "./dist/ref/index.js"
     },
-    "./storage-browser": {
-      "types": "./dist/storage-browser/index.d.ts",
-      "default": "./dist/storage-browser/index.js"
-    },
     "./encryption": {
       "types": "./dist/encryption/index.d.ts",
       "default": "./dist/encryption/index.js"

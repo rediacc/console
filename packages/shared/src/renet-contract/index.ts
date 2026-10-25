@@ -37,11 +37,10 @@ export type {
   RenetVault,
   RepositoryInfo,
   SSHSection,
-  StorageSection,
   TaskSection,
   VaultContent,
 } from './types/index.js';
-// Utils Rclone config parsing IP/Port validation
+// Utils: IP/Port validation
 export {
   formatSizeBytes,
   getParamArray,
@@ -57,17 +56,10 @@ export {
   isValidSSHPrivateKey,
   // Network ID validation
   MIN_NETWORK_ID,
-  mapRcloneToStorageProvider,
   minifyJSON,
   NETWORK_ID_INCREMENT,
-  PROVIDER_MAPPING,
-  parseRcloneConfig,
   // Size format validation
   parseSize,
-  processConfigValue,
-  type RcloneConfig,
-  type RcloneConfigFields,
-  type RcloneConfigFieldValue,
   validateNetworkId,
   validateSize,
   validateSizeWithMin,

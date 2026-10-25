@@ -17,6 +17,7 @@ import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
@@ -105,7 +106,7 @@ async function executePush(
   datastore: SourceDatastore,
   debug?: boolean
 ): Promise<PushResultStats | undefined> {
-  await configService.ensureRepositoryNetworkId(repoName);
+  await ensureRepositoryNetworkId(repoName);
   const result = await getExecutor().execute({
     functionName: 'backup_push',
     machineName,
@@ -129,7 +130,7 @@ async function executeQuiet(
   datastore: SourceDatastore,
   debug?: boolean
 ): Promise<void> {
-  await configService.ensureRepositoryNetworkId(repoName);
+  await ensureRepositoryNetworkId(repoName);
   const result = await getExecutor().execute({
     functionName,
     machineName,

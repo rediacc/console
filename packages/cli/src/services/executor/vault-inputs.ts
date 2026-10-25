@@ -1,6 +1,6 @@
 /**
  * The config-side inputs `buildLocalVault` needs besides the machine itself:
- * known hosts, storages, and every repository's credential and vault entry.
+ * known hosts, and every repository's credential and vault entry.
  */
 
 import * as fs from 'node:fs/promises';
@@ -14,22 +14,6 @@ export function resolveKnownHosts(machineKnownHosts: string | undefined): Promis
   if (hosts) return Promise.resolve(hosts);
   const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts');
   return fs.readFile(knownHostsPath, 'utf-8').catch(() => '');
-}
-
-export async function loadContextStorages(): Promise<
-  Record<string, { vaultContent: Record<string, unknown> }> | undefined
-> {
-  try {
-    const storageList = await configService.listStorages();
-    if (storageList.length === 0) return undefined;
-    const storages: Record<string, { vaultContent: Record<string, unknown> }> = {};
-    for (const s of storageList) {
-      storages[s.name] = { vaultContent: s.config.vaultContent };
-    }
-    return storages;
-  } catch {
-    return undefined;
-  }
 }
 
 interface LoadedRepoEntry {

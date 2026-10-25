@@ -99,7 +99,6 @@ const DOMAIN_MODULES = new Map<string, string>([
   ['ops', 'commands/ops/index.ts'],
   ['repo', 'commands/repo.ts'],
   ['serve', 'commands/serve.ts'],
-  ['storage', 'commands/storage.ts'],
   ['subscription', 'commands/subscription.ts'],
   ['term', 'commands/term.ts'],
   ['update', 'commands/update.ts'],

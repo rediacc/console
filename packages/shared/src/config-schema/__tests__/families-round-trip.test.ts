@@ -45,10 +45,10 @@ function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
   };
 }
 
-/** The authoritative family list, straight from the schema. */
+/** The authoritative family list, straight from the schema. `storages` is a removed field the schema refuses (z.never), not a family. */
 function resourceFamilyKeys(): string[] {
   const resources = RdcConfigSchema.shape.resources as z.ZodOptional<z.ZodObject<z.ZodRawShape>>;
-  return Object.keys(resources.unwrap().shape);
+  return Object.keys(resources.unwrap().shape).filter((key) => key !== 'storages');
 }
 
 /**
@@ -105,7 +105,6 @@ function allFamiliesConfig(): RdcConfig {
           parent: { datastore: 'ds1', snapshot: 'snap-1' },
         },
       },
-      storages: { s1: { provider: 's3', vaultContent: { accessKey: 'AKID', secret: 'SEC' } } },
       repositories: {
         shop: {
           grand: 'base',
@@ -136,10 +135,10 @@ function allFamiliesConfig(): RdcConfig {
         nightly: {
           destinations: [
             {
-              kind: 'storage',
+              kind: 'hosted-service',
               name: 'offsite',
-              storage: 's1',
-              folder: 'backups/shop',
+              endpoint: 'https://s3.example.com',
+              vaultContent: { accessKeyId: 'AKID', secretAccessKey: 'SEC' },
               enabled: true,
             },
           ],
@@ -197,6 +196,16 @@ async function pushPullRoundTrip(config: RdcConfig): Promise<RdcConfig> {
 }
 
 describe('resource families round trip', () => {
+  it('refuses a config carrying the removed resources.storages, naming the field', () => {
+    const config = allFamiliesConfig();
+    (config.resources as Record<string, unknown>).storages = {
+      s1: { provider: 's3', vaultContent: {} },
+    };
+    const result = RdcConfigSchema.safeParse(config);
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).toContain('resources.storages was removed');
+  });
+
   it('fixture is schema-valid and populates every family and top-level section', () => {
     const config = allFamiliesConfig();
     expect(() => RdcConfigSchema.parse(config)).not.toThrow();

@@ -25,13 +25,16 @@ vi.mock('../../i18n/index.js', () => ({
 
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 
+vi.mock('../../services/config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getCurrent: mockGetCurrent,
     getRepository: vi
       .fn()
       .mockResolvedValue({ repositoryGuid: 'guid-app', tag: 'latest', networkId: 100 }),
-    ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
     listRepositories: vi.fn().mockResolvedValue([]),
   },
 }));

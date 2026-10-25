@@ -31,6 +31,7 @@ import {
   recordProvisionVerified,
 } from './provision-state.js';
 import { stageRenetBinary } from './renet-binary-transfer.js';
+import { reportDaemonUpgrade, upgradeDaemons } from './renet-daemons.js';
 import {
   classifyInspect,
   matchedInspect,
@@ -565,16 +566,21 @@ class RenetProvisionerService {
 
   /**
    * Re-install and restart an active rediacc-router from `remoteInstallPath`
-   * ({@link buildRouterRefreshCommand}). Best-effort: returns true only when
-   * the router was restarted.
+   * ({@link buildRouterRefreshCommand}), then move the other renet daemons onto
+   * the new binary (`upgradeDaemons`, renet-daemons.ts). Both halves run after every binary
+   * update, deferred or not, so no hub keeps running a deleted binary.
+   * Best-effort: returns true only when the router was restarted.
    */
   async refreshRouter(sftp: Pick<SFTPClient, 'exec'>, remoteInstallPath: string): Promise<boolean> {
+    let restarted = false;
     try {
       const output = await sftp.exec(buildRouterRefreshCommand(remoteInstallPath));
-      return output.trim().includes('RESTARTED');
+      restarted = output.trim().includes('RESTARTED');
     } catch {
-      return false;
+      restarted = false;
     }
+    reportDaemonUpgrade(await upgradeDaemons(sftp, remoteInstallPath, REMOTE_CURRENT_PATH));
+    return restarted;
   }
 
   /**

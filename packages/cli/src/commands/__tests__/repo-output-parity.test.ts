@@ -81,21 +81,20 @@ const CONFIG = {
         tags: {
           latest: {
             repositoryGuid: '11111111-1111-4111-8111-111111111111',
-            networkId: 2816,
             credential: 'set',
           },
           px: {
             repositoryGuid: '22222222-2222-4222-8222-222222222222',
             grandGuid: '11111111-1111-4111-8111-111111111111',
             parentGuid: '11111111-1111-4111-8111-111111111111',
-            networkId: 2832,
             credential: 'set',
           },
         },
       },
     },
-    storages: {},
   },
+  // v3 keeps a repo's network ID in state; a record without one asks its machine first.
+  state: { repos: { shop: { latest: { networkId: 2816 }, px: { networkId: 2832 } } } },
   encryption: { mode: 'plaintext' },
 } as unknown as RdcConfig;
 

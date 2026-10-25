@@ -38,13 +38,16 @@ import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // The dispatched command runs the real CLI, which would otherwise read the developer's own config from disk. This is the config the EXECUTOR holds.
+vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn(() => Promise.resolve(7)),
+}));
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
     getRepository: vi.fn((name: string) =>
       Promise.resolve({ repositoryGuid: `guid-${name}`, credential: 'set', networkId: 7 })
     ),
-    ensureRepositoryNetworkId: vi.fn(() => Promise.resolve(7)),
     getLanguage: vi.fn(() => Promise.resolve('en')),
     applyDefaults: vi.fn((options: Record<string, unknown>) => Promise.resolve(options)),
     setRuntimeConfig: vi.fn(),

@@ -7,7 +7,7 @@ order: 2
 language: en
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/en/cli.json
-sourceHash: "abcd3e97daaff791"
+sourceHash: "09b04ab863d28176"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2436,13 +2436,11 @@ rdc backup strategy set <strategy> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--destination <name>` | {{t:cli.commands.backup.strategy.set.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--storage <name>` | {{t:cli.commands.backup.strategy.set.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--cron <expression>` | {{t:cli.commands.backup.strategy.set.optionCron}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mode <mode>` | {{t:cli.commands.backup.strategy.set.optionMode}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include <repos>` | {{t:cli.commands.backup.strategy.set.optionInclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--exclude <repos>` | {{t:cli.commands.backup.strategy.set.optionExclude}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--folder <path>` | {{t:cli.commands.backup.strategy.set.optionFolder}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--enable` | {{t:cli.commands.backup.strategy.set.optionEnable}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--disable` | {{t:cli.commands.backup.strategy.set.optionDisable}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -2533,111 +2531,13 @@ rdc backup verify <repo-ref> [options]
 
 ---
 
-<a id="cli-local-group-storage"></a>
-## 9. {{t:cli.docs.sectionTitles.storage}}
-
-{{t:cli.commands.storage.description}}
-
-<a id="cli-local-storage-list"></a>
-### 9.1 list
-
-{{t:cli.commands.storage.list.description}}
-
-```bash
-rdc storage list [name] [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--reveal` | {{t:cli.commands.storage.list.optionReveal}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-storage-browse"></a>
-### 9.2 browse
-
-{{t:cli.commands.storage.browse.description}}
-
-```bash
-rdc storage browse <storage> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--path <subpath>` | {{t:cli.commands.storage.browse.pathOption}} | {{t:cli.docs.optionLabels.no}} | `` |
-
-
-<a id="cli-local-storage-prune"></a>
-### 9.3 prune
-
-{{t:cli.commands.storage.prune.description}}
-
-```bash
-rdc storage prune <storage> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.storage.prune.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--force` | {{t:cli.options.force}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--force-delete-mounted` | {{t:cli.commands.storage.prune.forceDeleteMountedOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--grace-days <days>` | {{t:cli.options.graceDays}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-storage-add"></a>
-### 9.4 add
-
-{{t:cli.commands.storage.add.description}}
-
-```bash
-rdc storage add <name> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--vault <json>` | {{t:cli.options.vaultContent}} | {{t:cli.docs.optionLabels.yes}} | - |
-
-
-<a id="cli-local-storage-import"></a>
-### 9.5 import
-
-{{t:cli.commands.storage.import.description}}
-
-```bash
-rdc storage import <file> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.storage.import.optionName}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-storage-remove"></a>
-### 9.6 remove
-
-{{t:cli.commands.storage.remove.description}}
-
-```bash
-rdc storage remove <name> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
----
-
 <a id="cli-local-group-vscode"></a>
-## 10. {{t:cli.docs.sectionTitles.vscode}}
+## 9. {{t:cli.docs.sectionTitles.vscode}}
 
 {{t:cli.commands.vscode.description}}
 
 <a id="cli-local-vscode-connect"></a>
-### 10.1 connect
+### 9.1 connect
 
 {{t:cli.commands.vscode.connect.description}}
 
@@ -2660,7 +2560,7 @@ rdc vscode connect <target> [options]
 
 
 <a id="cli-local-vscode-list"></a>
-### 10.2 list
+### 9.2 list
 
 {{t:cli.commands.vscode.list.description}}
 
@@ -2669,7 +2569,7 @@ rdc vscode list
 ```
 
 <a id="cli-local-vscode-cleanup"></a>
-### 10.3 cleanup
+### 9.3 cleanup
 
 {{t:cli.commands.vscode.cleanup.description}}
 
@@ -2684,7 +2584,7 @@ rdc vscode cleanup [options]
 
 
 <a id="cli-local-vscode-check"></a>
-### 10.4 check
+### 9.4 check
 
 {{t:cli.commands.vscode.check.description}}
 
@@ -2698,7 +2598,7 @@ rdc vscode check [options]
 
 
 <a id="cli-local-vscode-serve"></a>
-### 10.5 serve
+### 9.5 serve
 
 {{t:cli.commands.vscode.serve.description}}
 
@@ -2733,12 +2633,12 @@ rdc vscode serve stop <target> [options]
 ---
 
 <a id="cli-local-group-term"></a>
-## 11. {{t:cli.docs.sectionTitles.term}}
+## 10. {{t:cli.docs.sectionTitles.term}}
 
 {{t:cli.commands.term.description}}
 
 <a id="cli-local-term-connect"></a>
-### 11.1 connect
+### 10.1 connect
 
 {{t:cli.commands.term.connect.description}}
 
@@ -2756,10 +2656,10 @@ rdc term connect <target> [options]
 ---
 
 <a id="cli-local-group-shortcuts"></a>
-## 12. {{t:cli.docs.sectionTitles.shortcuts}}
+## 11. {{t:cli.docs.sectionTitles.shortcuts}}
 
 <a id="cli-local-shortcuts-run"></a>
-### 12.1 run
+### 11.1 run
 
 {{t:cli.commands.shortcuts.run.description}}
 
@@ -2768,7 +2668,7 @@ rdc run
 ```
 
 <a id="cli-local-shortcuts-trace"></a>
-### 12.2 trace
+### 11.2 trace
 
 {{t:cli.commands.shortcuts.trace.description}}
 
@@ -2777,7 +2677,7 @@ rdc trace
 ```
 
 <a id="cli-local-shortcuts-cancel"></a>
-### 12.3 cancel
+### 11.3 cancel
 
 {{t:cli.commands.shortcuts.cancel.description}}
 
@@ -2786,7 +2686,7 @@ rdc cancel
 ```
 
 <a id="cli-local-shortcuts-retry"></a>
-### 12.4 retry
+### 11.4 retry
 
 {{t:cli.commands.shortcuts.retry.description}}
 
@@ -2797,12 +2697,12 @@ rdc retry
 ---
 
 <a id="cli-local-group-subscription"></a>
-## 13. {{t:cli.docs.sectionTitles.subscription}}
+## 12. {{t:cli.docs.sectionTitles.subscription}}
 
 {{t:cli.commands.subscription.description}}
 
 <a id="cli-local-subscription-login"></a>
-### 13.1 login
+### 12.1 login
 
 {{t:cli.commands.subscription.login.description}}
 
@@ -2817,7 +2717,7 @@ rdc subscription login [options]
 
 
 <a id="cli-local-subscription-logout"></a>
-### 13.2 logout
+### 12.2 logout
 
 {{t:cli.commands.subscription.logout.description}}
 
@@ -2826,7 +2726,7 @@ rdc subscription logout
 ```
 
 <a id="cli-local-subscription-proxy-token"></a>
-### 13.3 proxy-token
+### 12.3 proxy-token
 
 {{t:cli.commands.subscription.proxyToken.description}}
 
@@ -2840,7 +2740,7 @@ rdc subscription proxy-token [options]
 
 
 <a id="cli-local-subscription-status"></a>
-### 13.4 status
+### 12.4 status
 
 {{t:cli.commands.subscription.status.description}}
 
@@ -2854,7 +2754,7 @@ rdc subscription status [options]
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 13.5 refresh
+### 12.5 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
@@ -2871,7 +2771,7 @@ rdc subscription refresh [options]
 ---
 
 <a id="cli-local-group-update"></a>
-## 14. {{t:cli.docs.sectionTitles.update}}
+## 13. {{t:cli.docs.sectionTitles.update}}
 
 {{t:cli.commands.update.description}}
 
@@ -2892,7 +2792,7 @@ rdc update [options]
 ---
 
 <a id="cli-local-group-credits"></a>
-## 15. {{t:cli.docs.sectionTitles.credits}}
+## 14. {{t:cli.docs.sectionTitles.credits}}
 
 {{t:cli.commands.credits.description}}
 
@@ -2909,7 +2809,7 @@ rdc credits [options]
 ---
 
 <a id="cli-local-group-doctor"></a>
-## 16. {{t:cli.docs.sectionTitles.doctor}}
+## 15. {{t:cli.docs.sectionTitles.doctor}}
 
 {{t:cli.commands.doctor.description}}
 
@@ -2921,12 +2821,12 @@ rdc doctor
 ---
 
 <a id="cli-local-group-ops"></a>
-## 17. {{t:cli.docs.sectionTitles.ops}}
+## 16. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
 <a id="cli-local-ops-up"></a>
-### 17.1 up
+### 16.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -2947,7 +2847,7 @@ rdc ops up [options]
 
 
 <a id="cli-local-ops-down"></a>
-### 17.2 down
+### 16.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -2962,7 +2862,7 @@ rdc ops down [options]
 
 
 <a id="cli-local-ops-status"></a>
-### 17.3 status
+### 16.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -2976,7 +2876,7 @@ rdc ops status [options]
 
 
 <a id="cli-local-ops-ssh"></a>
-### 17.4 ssh
+### 16.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -2993,7 +2893,7 @@ rdc ops ssh [options]
 
 
 <a id="cli-local-ops-setup"></a>
-### 17.5 setup
+### 16.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -3007,7 +2907,7 @@ rdc ops setup [options]
 
 
 <a id="cli-local-ops-check"></a>
-### 17.6 check
+### 16.6 check
 
 {{t:cli.commands.ops.check.description}}
 
@@ -3018,7 +2918,7 @@ rdc ops check
 ---
 
 <a id="cli-local-group-serve"></a>
-## 18. {{t:cli.docs.sectionTitles.serve}}
+## 17. {{t:cli.docs.sectionTitles.serve}}
 
 {{t:cli.commands.serve.description}}
 

@@ -39,7 +39,6 @@ export const ResourceKindSchema = z.enum([
   'machine',
   'repo',
   'datastore',
-  'storage',
   'cluster',
   'provider',
   'container',

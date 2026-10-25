@@ -45,7 +45,6 @@ function config(tags: Record<string, { repositoryGuid: string; grandGuid?: strin
     resources: {
       machines: { m1: { ip: '10.1.1.1', user: 'root', port: 22 } },
       repositories: { shop: { grand: 'prod', placement: { machine: 'm1' }, tags } },
-      storages: {},
     },
     encryption: { mode: 'plaintext' },
   };

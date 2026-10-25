@@ -13,7 +13,6 @@ const LOCAL_GROUPS = [
   'repo',
   'job',
   'backup',
-  'storage',
   'vscode',
   'term',
   'shortcuts',

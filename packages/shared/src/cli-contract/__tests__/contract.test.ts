@@ -332,11 +332,11 @@ describe('CLI contract', () => {
   });
 
   it('binds resource-shaped options to the right kinds', () => {
-    // `kinds` is the picker HINT (pick-or-type combobox), distinct from the hard `choices` Select. The cross-plane transfer flags carry more than one kind: a repo can be pushed to a machine OR a storage, migrated to a machine OR a cluster. These are load-bearing for the console's PickerField.
+    // `kinds` is the picker HINT (pick-or-type combobox), distinct from the hard `choices` Select. The cross-plane transfer flags carry more than one kind: a repo can be migrated to a machine OR a cluster, while push and pull name only a machine. These are load-bearing for the console's PickerField.
     const kindsOf = (pathKey: string, long: string) =>
       getCommand(pathKey)?.options.find((o) => o.long === long)?.kinds;
-    expect(kindsOf('repo push', 'to')).toEqual(['machine', 'storage']);
-    expect(kindsOf('repo pull', 'from')).toEqual(['machine', 'storage']);
+    expect(kindsOf('repo push', 'to')).toEqual(['machine']);
+    expect(kindsOf('repo pull', 'from')).toEqual(['machine']);
     expect(kindsOf('repo migrate', 'to')).toEqual(['machine', 'cluster']);
     expect(kindsOf('datastore attach', 'to')).toEqual(['machine']);
 

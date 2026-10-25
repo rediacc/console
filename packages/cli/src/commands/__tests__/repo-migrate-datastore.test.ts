@@ -24,13 +24,16 @@ const mockGetCurrent = vi.hoisted(() => vi.fn());
 const mockGetLocalConfig = vi.hoisted(() => vi.fn());
 const mockSetRepositoryPlacement = vi.hoisted(() => vi.fn());
 
+vi.mock('../../services/config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mockGetRepository,
     getCurrent: mockGetCurrent,
     getLocalConfig: mockGetLocalConfig,
     setRepositoryPlacement: mockSetRepositoryPlacement,
-    ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
   },
 }));
 

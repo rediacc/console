@@ -1,13 +1,20 @@
-import { getMachineHealth, type MachineHealthResult } from '@rediacc/shared/services/machine';
+import {
+  getMachineHealth,
+  type MachineHealthResult,
+  parseListResult,
+} from '@rediacc/shared/services/machine';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
+import type { StaleBackupRepo } from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
+import type { RenetProcess } from '../../services/renet/renet-daemons.js';
 import { getStateProvider } from '../../services/state.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
+import { fetchStaleBackups, fetchStaleBinaries } from './status.js';
 
 const exitCodeStatusHandlers: Record<number, () => void> = {
   0: () => outputService.success(t('commands.machine.health.statusHealthy')),
@@ -138,6 +145,41 @@ function displayHealthReport(health: MachineHealthResult, name: string): void {
   outputService.info(t('commands.machine.health.exitCode', { code: health.exitCode }));
 }
 
+/** What the CLI adds to the vault-status health verdict: stale binaries (C4) and stale backups (G7). */
+export interface HealthStaleness {
+  staleBinary: RenetProcess[] | null;
+  staleBackups: StaleBackupRepo[];
+}
+
+/**
+ * Fold the staleness findings into a health result. Either kind is a warning (exit code at least 1):
+ * a daemon on a deleted binary runs code the machine no longer has, and a repo two schedule intervals
+ * behind is a backup that silently stopped.
+ */
+export function applyStaleness(
+  health: MachineHealthResult,
+  extra: HealthStaleness
+): MachineHealthResult {
+  const issues = [...health.issues];
+  let exitCode = health.exitCode;
+  const binaries = extra.staleBinary ?? [];
+  if (binaries.length > 0) {
+    issues.push(
+      `${binaries.length} renet process(es) run a replaced binary: ${binaries.map((p) => `${p.unit} (pid ${p.pid})`).join(', ')}`
+    );
+    exitCode = Math.max(exitCode, 1);
+  }
+  if (extra.staleBackups.length > 0) {
+    issues.push(
+      `${extra.staleBackups.length} repository(ies) last backed up more than twice their schedule interval ago`
+    );
+    exitCode = Math.max(exitCode, 1);
+  }
+  // Raised from 0 only by these checks, so the shared verdict's message moves with it.
+  const message = exitCode === health.exitCode ? health.message : 'System has warnings';
+  return { ...health, issues, exitCode, healthy: exitCode === 0, message };
+}
+
 export function registerHealthCommand(machine: Command, program: Command): void {
   machine
     .command('health')
@@ -164,10 +206,18 @@ export function registerHealthCommand(machine: Command, program: Command): void 
         }
 
         const format = program.opts().output as OutputFormat;
-        const health = getMachineHealth(machine);
+        const listResult = parseListResult(machine.vaultStatus);
+        const [staleBinary, staleBackups] = await Promise.all([
+          fetchStaleBinaries(name),
+          listResult ? fetchStaleBackups(name, listResult) : Promise.resolve([]),
+        ]);
+        const health = applyStaleness(getMachineHealth(machine), { staleBinary, staleBackups });
 
         if (format === 'json') {
-          outputService.print(health, format);
+          outputService.print(
+            { ...health, stale_binary: staleBinary, backup_staleness: staleBackups },
+            format
+          );
         } else {
           displayHealthReport(health, name);
         }

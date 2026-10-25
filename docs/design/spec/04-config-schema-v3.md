@@ -167,8 +167,8 @@ datastore, so grand and forks are co-located by construction, and 06 §6.5 alrea
 registry, ceph ref, controlNode, kvm) MINUS `kvm.memberIds`, which moves to `state.clusters[*].memberIds` (it is a booted-VM allocation ledger, exactly the "status churn bumps the version counter" problem R2-F2 names).
 - `cloudProviders`: kept as-is; `apiToken` finally encrypted at rest (2.3).
 - `backupStrategies`: kept as-is.
-- `storages` (rclone backup targets, `vaultContent`): kept as-is. The noun survives the
-06 reshape (`rdc storage list/create/delete/browse/prune/import`); it is disjoint from the new `datastores` registry and the two must never be merged.
+- `storages`: removed. Backup targets are backup strategy destinations of kind `hosted-service`;
+the schema refuses `resources.storages` by name, and the v2→v3 migration drops a v2 `storages` family with a warning.
 - Per-repo `secrets`: kept on the RepoRecord (spec: the operator declared them), shape
 unchanged (`UPPER_SNAKE` key regex, `env|file` mode), size cap changes in §5. Fork isolation invariant carried forward: fork registration never copies `secrets`.
 - `deletedRepositories`: kept as an array; `ArchivedRepository.name` splits into
@@ -221,7 +221,7 @@ const StateSchema = z.object({
   // .repositories structurally; a state entry with no matching spec record is
   // pruned by reconcile).
   repos: z.record(resourceName, z.record(TagName, z.object({
-    networkId: z.number().int().optional(),   // writer: config-network-id.ts
+    networkId: z.number().int().optional(),   // writer: config-network-id.ts; synced, with the machine as fallback
     // Per-repo zot registry port (gate G3; spec 05 §5): allocated at `repo create`
     // for registry-opted repos from the 21000-28999 range, recorded next to
     // networkId. Rebuildable: the machine's rediacc-registry-<networkID>.service
@@ -257,15 +257,14 @@ const StateSchema = z.object({
 
 **The three documented properties (02 §11.1), made precise:**
 
-1. **Excluded from the version counter and from remote push.** State writes go through
-a new `configFileStorage.updateState()` that does NOT bump `version`; remote push serializes the config with `state` (and any `encryption.encryptedFields` entry whose pointer starts with `/state/`) stripped. This kills the optimistic-version conflicts and audit noise that status churn causes today (every `pushState` stamp and cert refresh currently bumps the counter via
-`config-file-storage.ts:213`).
+1. **Excluded from the version counter, synced with the config.** State writes go through
+a new `configFileStorage.updateState()` that does NOT bump `version`, which kills the optimistic-version conflicts and audit noise that status churn caused (every `pushState` stamp and cert refresh bumped the counter via `config-file-storage.ts:213`). Remote push carries `state` like the rest of the config, so a second device sharing a machine sees each repo's `networkId`, `registryPort` and head. `repos.*.*.networkId` and `networkIds.next` are synced, with the machine as fallback: renet keys a repo's Docker daemon, socket and loopback /26 on the ID, so every device must use the same one. A record that still has no ID asks its machine (`renet list all --json`, by GUID) before anything is allocated, and an allocation starts above every ID the target machine already uses.
 2. **Rebuildable via `config reconcile`** (§4), with an honest per-field ledger. Not
 all state is machine-observable, so v3 defines three classes; ALL are losable without a correctness failure:
    - **Rebuildable** (reconcile restores from `renet list all --json` + the P1
      datastore verbs): `datastores.*` attach/mounted/holders, `machines.*`,
-     `clusters.*.k3sVersion/nodes`, `repos.*.networkId` (requires the P1 renet
-     addition below), `repos.*.registryPort` (from the per-repo registry unit),
+     `clusters.*.k3sVersion/nodes`, `repos.*.networkId` (synced, with the machine
+     as fallback; rebuilt by GUID match from the renet `network_id` field below), `repos.*.registryPort` (from the per-repo registry unit),
      `certCache` (re-fetchable from the source machine).
    - **Partially rebuildable**: `clusters.*.memberIds` (from `renet ops` libvirt
      inventory on the KVM host; unrecoverable if the host is gone, in which case the
@@ -280,8 +279,8 @@ all state is machine-observable, so v3 defines three classes; ALL are losable wi
 gone) that resolves through `state.datastores[*].attachedTo` MUST verify before acting: one cheap remote check that the datastore is actually mounted on that machine (renet reports it; `ListResult.repositories[].mount_path` and the P1 datastore-status verb). Mismatch is a hard error naming both sides plus the fix: `state says ds-alpha is attached to prod-2, but prod-2 does not have
 it mounted. Run 'rdc config reconcile' to refresh, or 'rdc datastore attach ds-alpha --to <m>'.` Never fall back to trying other machines: a guess is a wrong-host deploy.
 
-**Required renet-side addition (P1)**: `RepositoryInfo` in `private/renet/pkg/list/types.go` does not expose the repo's networkId today (only `HealthDriftEntry.NetworkID` has it, and only for drifting containers). Reconcile needs it to rebuild `repos.*.networkId` without re-allocating (a re-allocation would silently break the repo's baked loopback /26 and socket path). Add
-`network_id` to `RepositoryInfo`, sourced from the `.interim` state mirror like `is_fork`/`grand_guid`/`repo_name` already are.
+**renet-side field (landed)**: `RepositoryInfo` in `private/renet/pkg/list/types.go` carries `network_id`, sourced from the `.interim` state mirror like `is_fork`/`grand_guid`/`repo_name`. Reconcile and network-ID discovery read it to recover `repos.*.networkId` without re-allocating (a re-allocation would silently break the repo's baked loopback /26 and socket
+path).
 
 ### 1.4 Sensitivity registry: v3 pointer delta
 
@@ -504,7 +503,7 @@ writes mode, loop/dm holders via `FindLoopDevicesFor` + `dmsetup ls`).
 
 ### 4.2 What it rebuilds (and what it only prunes)
 
-Per the 1.3 ledger: rebuilds `state.datastores` (attachedTo/mounted/mountPath/holders), `state.machines`, `state.clusters` (k3sVersion, nodes, memberIds where the KVM host answers), `state.repos[*][*].networkId`, and re-seeds `branches` from on-machine commit objects. Prunes state entries whose spec record is gone. Fills MISSING `placement` (3.2 transform 3) by GUID match; it never
+Per the 1.3 ledger: rebuilds `state.datastores` (attachedTo/mounted/mountPath/holders), `state.machines`, `state.clusters` (k3sVersion, nodes, memberIds where the KVM host answers), `state.repos[*][*].networkId` (synced, with the machine as fallback: matched by GUID from `renet list all --json`, and a synced ID that diverges from the machine's takes the machine's value), and re-seeds `branches` from on-machine commit objects. Prunes state entries whose spec record is gone. Fills MISSING `placement` (3.2 transform 3) by GUID match; it never
 OVERWRITES an existing placement (see 4.3). Stamps `state.reconciledAt`. Writes via `updateState()` (no version bump); prints a spec-vs-observed diff table; `-o json` supported (R2-F15).
 
 ### 4.3 Mismatch behavior

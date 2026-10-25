@@ -9,30 +9,29 @@
  */
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
-import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
+import type { BackupStrategyDestination } from '../../types/index.js';
+import type { ScheduledStrategy } from './backup-schedule-targets.js';
 
 /**
  * Why a destination cannot be scheduled, or undefined when it can.
  *
  * `kind` is OPTIONAL on the parameter on purpose: a destination that came from the config loader has been through the schema and always carries one, but a hand-edited entry (and the operator's live config) has no `kind` field at all, and this must name it correctly rather than print "undefined".
  */
-export function unschedulableDestinationReason(dest: {
-  name: string;
-  kind?: string;
-}): string | undefined {
-  const kind = dest.kind ?? BACKUP_DEFAULTS.DESTINATION_KIND;
+function unschedulableDestinationReason(dest: { name: string; kind?: string }): string | undefined {
+  // A destination with no kind predates the field, when the only kind was the removed `storage` one.
+  const kind = dest.kind ?? 'storage';
   if (kind === BACKUP_DEFAULTS.NEW_DESTINATION_KIND) return undefined;
   return (
-    `Backup destination "${dest.name}" has kind "${kind}". The ` +
-    'rclone/OneDrive path was removed on 2026-08-15; change it to a ' +
-    '`hosted-service` destination so the schedule uses the chunk store.'
+    `Backup destination "${dest.name}" has kind "${kind}". Only ` +
+    '`hosted-service` destinations can be scheduled; change it to one so the ' +
+    'schedule uses the chunk store.'
   );
 }
 
 /**
- * `bandwidthLimit` is an RCLONE-STYLE STRING ('6M'), because that is what the old rclone path took and what the schema still declares. `renet backup snapshot --bwlimit` is an Int64 in BYTES PER SECOND (cmd/renet/backup_snapshot.go:132), so passing the string through unchanged emits `--bwlimit 6M`, which dies at cobra's flag parse, at RUN time, inside a systemd timer.
+ * `bandwidthLimit` is a SUFFIXED SIZE STRING ('6M'), the form the schema declares. `renet backup snapshot --bwlimit` is an Int64 in BYTES PER SECOND (cmd/renet/backup_snapshot.go:132), so passing the string through unchanged emits `--bwlimit 6M`, which dies at cobra's flag parse, at RUN time, inside a systemd timer.
  *
- * Suffixes follow rclone's convention (binary: 6M = 6 MiB/s). A value that cannot be parsed is REFUSED rather than dropped or passed through: dropping it silently lifts a cap the operator set deliberately.
+ * Suffixes are binary (6M = 6 MiB/s). A value that cannot be parsed is REFUSED rather than dropped or passed through: dropping it silently lifts a cap the operator set deliberately.
  */
 export function bandwidthToBytesPerSecond(limit: string | undefined): number | undefined {
   if (!limit) return undefined;
@@ -58,31 +57,45 @@ export function invalidCronReason(cron: string): string | undefined {
     : `Invalid cron expression: "${cron}" (expected 5 fields)`;
 }
 
-/**
- * Why a strategy cannot be turned into a unit, or undefined when it can.
- *
- * `destinations` defaults to every destination; the scheduler passes the enabled ones, which are the only ones that get a command.
- *
- * `exclude` is REFUSED rather than dropped. `backup snapshot` filters by repeated --repo and has no exclude flag, so honouring an exclude list would mean silently backing up repositories the operator asked to leave out.
- */
-export function strategyUnschedulableReason(
-  strategy: BackupStrategyConfig,
-  destinations: BackupStrategyDestination[] = strategy.destinations
-): string | undefined {
-  const cron = invalidCronReason(strategy.schedule);
-  if (cron) return cron;
+/** The first per-repo cadence override whose cron is not 5 fields. */
+function repoScheduleReason(strategy: ScheduledStrategy): string | undefined {
+  for (const [ref, repoCron] of Object.entries(strategy.repoSchedules ?? {})) {
+    const reason = invalidCronReason(repoCron);
+    if (reason) return `Per-repo schedule for "${ref}": ${reason}`;
+  }
+  return undefined;
+}
+
+/** An unusable destination kind, or destinations on more than one endpoint. */
+function destinationsReason(destinations: BackupStrategyDestination[]): string | undefined {
   for (const dest of destinations) {
     const reason = unschedulableDestinationReason(dest);
     if (reason) return `${reason} Refusing to generate a unit that would back up nothing.`;
   }
-  if (strategy.exclude?.length) {
-    return (
-      'This backup strategy sets exclude, which a hosted-service destination ' +
-      'cannot express: `backup snapshot` selects ' +
-      'repositories with --repo and has no exclude flag. List the repositories ' +
-      'to back up with include instead, so the scheduled scope is explicit.'
-    );
-  }
+  const endpoints = new Set(destinations.map((d) => d.endpoint ?? ''));
+  if (endpoints.size <= 1) return undefined;
+  return (
+    `This backup strategy has destinations on ${endpoints.size} different endpoints. ` +
+    'One run takes one snapshot to one endpoint; split the destinations into one strategy per endpoint.'
+  );
+}
+
+/**
+ * Why a strategy cannot be turned into a unit, or undefined when it can.
+ *
+ * `destinations` defaults to every destination; the scheduler passes the enabled ones. One strategy run is ONE snapshot, whatever the number of destinations (renet uploads to the account server its licences name), so enabled destinations naming two different endpoints cannot both be honoured and are refused rather than half-served.
+ *
+ * `exclude` is accepted: the unit generator resolves it to GUIDs and emits `--exclude-repo <guid>`.
+ */
+export function strategyUnschedulableReason(
+  strategy: ScheduledStrategy,
+  destinations: BackupStrategyDestination[] = strategy.destinations
+): string | undefined {
+  const reason =
+    invalidCronReason(strategy.schedule) ??
+    repoScheduleReason(strategy) ??
+    destinationsReason(destinations);
+  if (reason) return reason;
   try {
     bandwidthToBytesPerSecond(strategy.bandwidthLimit);
   } catch (error) {
@@ -93,7 +106,7 @@ export function strategyUnschedulableReason(
 
 /** Throwing form for the schedule path. */
 export function assertStrategySchedulable(
-  strategy: BackupStrategyConfig,
+  strategy: ScheduledStrategy,
   destinations: BackupStrategyDestination[] = strategy.destinations
 ): void {
   const reason = strategyUnschedulableReason(strategy, destinations);

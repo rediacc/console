@@ -125,7 +125,7 @@
     },
     "credits": {
       "descriptionShort": "Show third-party attributions and license compliance info",
-      "description": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync, rclone), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",
+      "description": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",
       "header": "Rediacc is proprietary software distributed under the Rediacc license; the following third-party components are distributed alongside it under their own licenses.\n\nThird-party components bundled with rdc:",
       "embeddedTitle": "Embedded binaries (conveyed by renet):",
       "bundledTitle": "Runtime and bundled dependencies:",
@@ -806,7 +806,11 @@
           "basic": "Show a machine's full status.",
           "containers": "Show only the running containers on a machine."
         },
-        "licenseBackupBlocked": "\nBACKUPS BLOCKED: {{repositoryGuid}} has been refused by licensing since {{at}} ({{reason}}). {{message}}\nScheduled backups for this repository are not running. Reissue with: rdc subscription refresh"
+        "licenseBackupBlocked": "\nBACKUPS BLOCKED: {{repositoryGuid}} has been refused by licensing since {{at}} ({{reason}}). {{message}}\nScheduled backups for this repository are not running. Reissue with: rdc subscription refresh",
+        "staleBinarySection": "Stale Binaries",
+        "staleBinaryWarning": "{{count}} renet process(es) still run a replaced binary and keep the old code until their units restart.",
+        "staleBackupSection": "Stale Backups",
+        "staleBackupWarning": "{{count}} repository(ies) were last backed up more than twice their schedule interval ago."
       },
       "gpu": {
         "descriptionShort": "Inspect a machine's GPUs and device grants",
@@ -1300,8 +1304,7 @@
         "deployFailed": "Failed to deploy \"{{repo}}\" after push",
         "examples": {
           "toMachine": "Push a repository to another machine."
-        },
-        "storageRetired": "Pushing to a storage backend is retired: the rclone cloud arm has been removed. Point-in-time backup is `rdc backup snapshot` (upload) and `rdc backup restore <repo> --at <snapshot>` (download), both over the chunk store. Machine-to-machine transfer is unaffected: use --to-machine"
+        }
       },
       "pull": {
         "description": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. The source type is auto-detected from config. Use --up to deploy after pull",
@@ -1320,8 +1323,7 @@
         "examples": {
           "basic": "Pull a repository from another machine.",
           "andStart": "Pull a repository and start it right away."
-        },
-        "storageRetired": "Pulling from a storage backend is retired: the rclone cloud arm has been removed. Point-in-time restore is `rdc backup restore <repo> --at <snapshot>` over the chunk store. Machine-to-machine transfer is unaffected: use --from-machine"
+        }
       },
       "migrate": {
         "description": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Moves the whole repository (routing is repointed at the new home) and, once the move succeeds, deletes the source images (use --keep-source to retain them). Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
@@ -1671,7 +1673,6 @@
         "restoringSnapshot": "Restoring {{name}} from snapshot {{snapshot}}...",
         "sourceUnknown": "No repository named \"{{name}}\" is known in this config, so its backup artifact cannot be located.",
         "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first.",
-        "storageRetired": "Restoring from a storage backend is retired: the rclone cloud arm has been removed. Point-in-time restore is `rdc backup restore <repo> --at <snapshot>` over the chunk store",
         "streamUnknown": "Cannot tell which backup stream is this repo on its source machine (its backup verify failed, or it reports no committed snapshot that the index lists). Pass --any-stream to choose among every stream of this lineage."
       },
       "retention": {
@@ -1724,20 +1725,17 @@
         "description": "Manage named backup strategies (hot/cold modes, destinations, scheduling)",
         "set": {
           "description": "Create or update a backup strategy",
-          "optionBwlimit": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionBwlimit": "Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., \"6M\", \"500K\")",
           "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
-          "optionDestination": "Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given",
+          "optionDestination": "Destination name within the strategy. Creates a Rediacc chunk-store destination",
           "optionDisable": "Disable the strategy or destination",
           "optionEnable": "Enable the strategy or destination",
           "optionExclude": "Exclude these repos from backup (comma-separated names)",
-          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage",
           "optionInclude": "Only back up these repos (comma-separated names)",
           "optionMode": "Backup mode: \"hot\" snapshots while everything keeps running, \"cold\" stops the containers for the moment the snapshot is taken",
-          "optionStorage": "Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled",
           "saved": "Backup strategy configuration saved",
-          "storageRequired": "--storage <storage-name> is required for this destination. Without it you get a Rediacc chunk-store destination, which has no storage bucket and therefore no --folder",
           "examples": {
-            "configure": "Configure a backup strategy's storage and mode.",
+            "configure": "Configure a backup strategy's schedule and mode.",
             "disable": "Turn a backup strategy off."
           }
         },
@@ -1778,53 +1776,6 @@
         "starting": "Verifying backup for {{name}} ({{level}})...",
         "completed": "Backup verified for {{name}}",
         "failed": "Backup verification failed for {{name}}"
-      }
-    },
-    "storage": {
-      "descriptionShort": "Manage storage",
-      "description": "Manage external backup storage endpoints (S3 and other rclone-compatible targets): register and remove them, list what is registered, browse the artifacts they hold, and prune orphaned backups.",
-      "list": {
-        "description": "List storage endpoints. Give a name for full detail.",
-        "noStorages": "No storage endpoints configured. Register one with: rdc storage add <name> --vault <json>",
-        "optionReveal": "Reveal the storage configuration in plaintext (interactive TTY only; audited)"
-      },
-      "browse": {
-        "description": "Browse files in a storage system",
-        "pathOption": "Subdirectory path to list",
-        "listing": "Listing files in \"{{name}}\"...",
-        "noFiles": "No files found"
-      },
-      "prune": {
-        "description": "Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.",
-        "descriptionShort": "Delete orphaned backups from storage",
-        "machineOption": "Executor machine that runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.",
-        "forceDeleteMountedOption": "Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos).",
-        "listing": "Listing backups in \"{{storage}}\"...",
-        "noBackups": "No backups found in storage",
-        "found": "Found {{count}} backups in storage",
-        "completed": "Pruned {{count}} orphaned backups"
-      },
-      "add": {
-        "added": "Registered storage \"{{name}}\"",
-        "adding": "Registering storage \"{{name}}\"...",
-        "description": "Register a storage endpoint.",
-        "examples": {
-          "basic": "Register a storage backend from a vault definition."
-        }
-      },
-      "import": {
-        "description": "Import a storage endpoint from a definition file.",
-        "imported": "Imported storage \"{{name}}\" ({{type}})",
-        "noConfigs": "No valid storage configurations found in file",
-        "notFound": "Storage \"{{name}}\" not found in config file",
-        "optionName": "Import only this named section",
-        "summary": "Imported {{count}} storage(s)",
-        "unsupported": "Skipping \"{{name}}\": unsupported provider type \"{{type}}\""
-      },
-      "remove": {
-        "confirm": "Remove storage endpoint \"{{name}}\"?",
-        "description": "Remove a storage endpoint from the config.",
-        "removed": "Removed storage \"{{name}}\""
       }
     },
     "sync": {
@@ -2259,7 +2210,6 @@
       "declareNeedsProvider": "--declare-only records a cluster without provisioning it, so it needs --provider and --pool."
     },
     "config": {
-      "storageNotFound": "Storage \"{{name}}\" not found in config. Available: {{available}}.",
       "machineNotFound": "Machine \"{{name}}\" not found in config. Available: {{available}}.",
       "invalidEmail": "Invalid email address: \"{{value}}\".",
       "noActiveConfig": "No active config",
@@ -2322,7 +2272,7 @@
     },
     "regionRequired": "Region name required. Use --region or set default with: rdc config set region <name>",
     "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
-    "remoteNotFound": "\"{{name}}\" is not a known machine, storage, or cluster. Machines: {{machines}}. Storages: {{storages}}. Clusters: {{clusters}}",
+    "remoteNotFound": "\"{{name}}\" is not a known machine or cluster. Machines: {{machines}}. Clusters: {{clusters}}",
     "repo": {
       "secret": {
         "emptyValue": "Secret value cannot be empty (stdin produced no bytes).",
@@ -2331,7 +2281,10 @@
       },
       "replicateNeedsCluster": "Repository \"{{ref}}\" is not in a cluster. Replicas are forked datastores placed across a cluster's nodes, so replicate needs a kubernetes-placed repository.",
       "canaryNeedsCluster": "Repository \"{{ref}}\" is not in a cluster. A canary splits traffic between two deployments, so it needs a kubernetes-placed repository.",
-      "listTargetExclusive": "Pass at most one of -m or --datastore. A datastore already knows which machine holds it."
+      "listTargetExclusive": "Pass at most one of -m or --datastore. A datastore already knows which machine holds it.",
+      "networkIdInUse": "Network ID {{networkId}} for repository \"{{repository}}\" is already held by {{holder}} on machine \"{{machine}}\". Run `rdc config reconcile` to adopt the IDs the machine records.",
+      "networkIdUndiscoverable": "Repository \"{{repository}}\" has no network ID in this config, and machine \"{{machine}}\" could not be asked for it. Retry once the machine is reachable, or run `rdc config reconcile`.",
+      "networkIdDiverged": "Repository \"{{repository}}\" had network ID {{localId}} in this config, but machine \"{{machine}}\" records {{machineId}}. The machine's ID is now recorded."
     },
     "repoNotDeployed": "Repository \"{{repository}}\" is not deployed on {{machine}}.\n\nDeploy it first:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down {{name}} --unmount",
@@ -2422,7 +2375,6 @@
     "external": "Force launching in external terminal window",
     "extraMachine": "Extra machine for multi-machine ops (name:ip:user)",
     "fields": "Comma-separated list of fields to include in output",
-    "file": "Path to file",
     "folder": "Remote folder path to open",
     "force": "Skip confirmation prompts",
     "function": "Function name to execute",
@@ -2483,12 +2435,9 @@
     "sshKey": "Path to SSH private key (e.g., ~/.ssh/id_rsa)",
     "sshPort": "SSH port",
     "sshUser": "SSH username",
-    "storageRef": "Storage ref: the name of a registered storage endpoint (for example s3-main)",
     "strategyName": "Backup strategy name",
     "team": "Team name",
     "urlOnly": "Print the VS Code URI instead of launching",
-    "vaultContent": "Vault content as JSON string",
-    "vaultJson": "Vault content as JSON string",
     "verifyChecksum": "Verify files using checksums after sync",
     "vmId": "Virtual machine ID",
     "vscodeBrowser": "Serve browser VS Code from inside the repo sandbox (no local VS Code needed)",

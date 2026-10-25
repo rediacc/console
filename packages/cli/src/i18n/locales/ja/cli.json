@@ -71,7 +71,6 @@
         "restored": "{{machine}} に {{name}} を復元しました",
         "restoringSnapshot": "スナップショット {{snapshot}} から {{name}} を復元中...",
         "sourceUnknown": "この設定に \"{{name}}\" という名前のリポジトリが存在しないため、バックアップアーティファクトを特定できません",
-        "storageRetired": "ストレージバックエンドからのリストアは廃止されました。rclone のクラウド系統が削除されたためです。時点リストアはチャンクストア経由の `rdc backup restore <repo> --at <snapshot>` を使います",
         "streamUnknown": "元のマシン上のこのリポジトリに対応するバックアップストリームを特定できません（マシンでのバックアップ検証が失敗したか、インデックスに載っているコミット済みスナップショットを報告していません）。--any-stream を指定すると、この系統のすべてのストリームから選べます",
         "targetExists": "\"{{name}}\" は既に存在します。別名で復元する（--as）か、先に既存のリポジトリを削除してください"
       },
@@ -139,21 +138,18 @@
         "set": {
           "description": "バックアップ戦略を作成または更新",
           "examples": {
-            "configure": "バックアップ戦略のストレージとモードを設定する",
+            "configure": "バックアップ戦略のスケジュールとモードを設定する",
             "disable": "バックアップ戦略を無効にする"
           },
-          "optionBwlimit": "rclone帯域幅制限（例: \"6M\"、\"10M:off\"、\"08:00,3M;22:00,10M\"）",
+          "optionBwlimit": "アップロード帯域幅の上限（バイト/秒、K/M/G の接尾辞を指定可。例: \"6M\"、\"500K\"）",
           "optionCron": "cronスケジュール（例: \"0 * * * *\" で毎時実行）",
-          "optionDestination": "戦略内の宛先名。--storage を指定しない場合、Rediacc チャンクストア宛先が作成されます",
+          "optionDestination": "戦略内の宛先名。Rediacc チャンクストア宛先が作成されます",
           "optionDisable": "戦略または宛先を無効にする",
           "optionEnable": "戦略または宛先を有効にする",
           "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
-          "optionFolder": "この宛先のストレージバケット内のサブフォルダー（例: hot, cold）。--storage が必要です",
           "optionInclude": "これらのリポジトリのみバックアップ（カンマ区切りの名前）",
           "optionMode": "バックアップモード: \"hot\" はすべてを稼働させたままスナップショットを取得し、\"cold\" はスナップショット取得の瞬間だけコンテナを停止します",
-          "optionStorage": "チャンクストアの代わりにこの rclone ストレージ設定を使用します。レガシー: この種類の宛先はスケジュール設定できません",
-          "saved": "バックアップ戦略の設定を保存しました",
-          "storageRequired": "この宛先には --storage <storage-name> が必須です。指定しない場合、ストレージバケットを持たない（そのため --folder も使えない）Rediacc チャンクストア宛先になります"
+          "saved": "バックアップ戦略の設定を保存しました"
         },
         "show": {
           "description": "バックアップ戦略の詳細を表示",
@@ -642,7 +638,7 @@
     },
     "credits": {
       "bundledTitle": "ランタイムと同梱の依存関係:",
-      "description": "rdc に同梱されているサードパーティコンポーネントを表示する: renet が組み込み・配布するバイナリ（CRIU、rsync、rclone）、組み込みの Node.js ランタイム、同梱の npm 依存関係。バージョン、SPDX ライセンス識別子、GPL コンプライアンスに必要な正確なバージョンのソースアーカイブ URL を表示する。--licenses を指定するとリリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する。",
+      "description": "rdc に同梱されているサードパーティコンポーネントを表示する: renet が組み込み・配布するバイナリ（CRIU、rsync）、組み込みの Node.js ランタイム、同梱の npm 依存関係。バージョン、SPDX ライセンス識別子、GPL コンプライアンスに必要な正確なバージョンのソースアーカイブ URL を表示する。--licenses を指定するとリリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する。",
       "descriptionShort": "サードパーティのクレジットとライセンスコンプライアンス情報を表示する",
       "embeddedTitle": "組み込みバイナリ（renet が配布）:",
       "gplHeader": "GPL ソースの入手方法:",
@@ -1105,7 +1101,11 @@
         "storageHealthPoolSummary": "プール: 使用 {{used}}、空き {{free}}（{{percent}}% 使用中）",
         "storageHealthSummary": "ストレージ効率: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} 個のコンテナがドリフトしきい値を超えました。ゼロ以外で終了します",
-        "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}"
+        "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}",
+        "staleBinarySection": "古いバイナリ",
+        "staleBinaryWarning": "{{count}} 個の renet プロセスが置き換え済みのバイナリで動作しており、ユニットが再起動するまで古いコードのままです。",
+        "staleBackupSection": "遅れているバックアップ",
+        "staleBackupWarning": "{{count}} 個のリポジトリで、最後のバックアップからスケジュール間隔の 2 倍以上が経過しています。"
       },
       "gpu": {
         "descriptionShort": "マシンの GPU とデバイス付与を確認する",
@@ -1612,8 +1612,7 @@
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
         "optionUp": "pull後、このマシンでリポジトリをマウントしてデプロイ",
         "pulling": "\"{{repo}}\" のバックアップをプル中...",
-        "sourceRequired": "--from <machine> を指定してください（設定からのマシン名）",
-        "storageRetired": "ストレージバックエンドからのプルは廃止されました。rclone のクラウド系統が削除されたためです。時点リストアはチャンクストア経由の `rdc backup restore <repo> --at <snapshot>` を使います。マシン間の転送はこれまでどおりで、--from-machine を指定してください"
+        "sourceRequired": "--from <machine> を指定してください（設定からのマシン名）"
       },
       "push": {
         "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
@@ -1635,8 +1634,7 @@
         "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中...",
         "statsDelta": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（ベース {{base}} とのデルタ、イメージ {{image}}）",
         "statsFull": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（フル転送）",
-        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}",
-        "storageRetired": "ストレージバックエンドへのプッシュは廃止されました。rclone のクラウド系統が削除されたためです。時点バックアップはチャンクストア経由の `rdc backup snapshot`（アップロード）と `rdc backup restore <repo> --at <snapshot>`（ダウンロード）を使います。マシン間の転送はこれまでどおりで、--to-machine を指定してください"
+        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}"
       },
       "refMachineConflict": "リポジトリ ref はそれ自体でマシンを決定します。-m/--machine はマシン全体形式でのみ使用してください: repo {{verb}} --all -m <machine>",
       "replicate": {
@@ -1842,53 +1840,6 @@
       },
       "trace": {
         "description": "タスクをトレースする (queue trace のショートカット)"
-      }
-    },
-    "storage": {
-      "add": {
-        "added": "ストレージ \"{{name}}\" を登録しました",
-        "adding": "ストレージ \"{{name}}\" を登録中...",
-        "description": "ストレージエンドポイントを登録する",
-        "examples": {
-          "basic": "vault 定義からストレージバックエンドを登録する"
-        }
-      },
-      "browse": {
-        "description": "ストレージシステム内のファイルを参照する",
-        "listing": "\"{{name}}\" のファイルをリスト表示中...",
-        "noFiles": "ファイルが見つかりません",
-        "pathOption": "リスト表示するサブディレクトリのパス"
-      },
-      "description": "外部バックアップストレージエンドポイント（S3 やその他の rclone 互換先）を管理する: 登録・削除、登録済み一覧の表示、保持しているアーティファクトの閲覧、孤立したバックアップの整理を行う。",
-      "descriptionShort": "ストレージを管理する",
-      "import": {
-        "description": "rclone 設定ファイルからストレージをインポートする",
-        "imported": "ストレージ \"{{name}}\" をインポートしました（{{type}}）",
-        "noConfigs": "ファイル内に有効なストレージ設定が見つかりません",
-        "notFound": "ストレージ \"{{name}}\" が設定ファイルに見つかりません",
-        "optionName": "指定したセクションのみインポートする",
-        "summary": "{{count}} 件のストレージをインポートしました",
-        "unsupported": "\"{{name}}\" をスキップ: サポートされていないプロバイダータイプ \"{{type}}\""
-      },
-      "list": {
-        "description": "ストレージエンドポイントを一覧表示する。名前を指定すると詳細を表示する",
-        "noStorages": "ストレージエンドポイントが設定されていません。次のコマンドで登録してください: rdc storage add <name> --vault <json>",
-        "optionReveal": "ストレージ構成を平文で表示する(対話型 TTY のみ、監査ログに記録)"
-      },
-      "prune": {
-        "completed": "{{count}} 件の孤立したバックアップを削除しました",
-        "description": "どの設定にも存在しなくなった孤立したバックアップをストレージから削除します。マルチ設定対応で猶予期間による保護付き。",
-        "descriptionShort": "ストレージから孤立したバックアップを削除",
-        "forceDeleteMountedOption": "マウント安全チェックを上書きし、ソース GUID が現在実行マシンにマウントされているか実行中のコンテナを持っていてもクラウドバックアップを削除します。--force（アーカイブ済みリポジトリの猶予期間のみを上書き）とは異なります。",
-        "found": "ストレージに {{count}} 件のバックアップが見つかりました",
-        "listing": "\"{{storage}}\" のバックアップをリスト表示中...",
-        "machineOption": "実行マシン、rclone のリスト/削除呼び出しをストレージに対して実行します。クライアントはローカルに rclone がインストールされていることが期待されないため必須です；ストレージの認証情報は引き続きローカル設定から取得されます。",
-        "noBackups": "ストレージにバックアップが見つかりません"
-      },
-      "remove": {
-        "confirm": "ストレージエンドポイント \"{{name}}\" を削除しますか？",
-        "description": "設定からストレージエンドポイントを削除する",
-        "removed": "ストレージ \"{{name}}\" を削除しました"
       }
     },
     "subscription": {
@@ -2282,8 +2233,7 @@
       "machineNotFound": "マシン \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。",
       "noActiveConfig": "アクティブな設定がありません",
       "pointerNotFound": "ポインタ「{{pointer}}」が見つかりません",
-      "retiredKey": "デフォルト \"{{key}}\" は既に存在しません。有効なキー: {{keys}}",
-      "storageNotFound": "ストレージ \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。"
+      "retiredKey": "デフォルト \"{{key}}\" は既に存在しません。有効なキー: {{keys}}"
     },
     "container": {
       "execFailed": "container_exec に失敗しました",
@@ -2341,7 +2291,7 @@
     },
     "regionRequired": "リージョン名が必要です。--region を使用するか、次のコマンドでデフォルトを設定してください: rdc config set region <name>",
     "regionSelectionRequiresTTY": "リージョンの選択には対話型入力が必要です。--server <url> を使用してサーバーを直接指定してください。",
-    "remoteNotFound": "\"{{name}}\"は既知のマシン、ストレージ、またはクラスターではありません。マシン: {{machines}}。ストレージ: {{storages}}。クラスター: {{clusters}}",
+    "remoteNotFound": "\"{{name}}\"は既知のマシンまたはクラスターではありません。マシン: {{machines}}。クラスター: {{clusters}}",
     "repo": {
       "canaryNeedsCluster": "リポジトリ \"{{ref}}\" はクラスター内にありません。カナリアは2つのデプロイ間でトラフィックを分割するため、Kubernetes 配置のリポジトリが必要です",
       "listTargetExclusive": "-m または --datastore のどちらか一方のみを指定してください。データストアはどのマシンが保持しているかを既に把握しています",
@@ -2350,7 +2300,10 @@
         "badMode": "無効な --mode \"{{mode}}\"。許可: env、file。",
         "emptyValue": "シークレット値は空にできません（stdin がバイトを生成しませんでした）。",
         "mutuallyExclusive": "--current と --rotate-secret は相互排他的です。1 つ選んでください: --current は前の値を確認するため、--rotate-secret は確認なしでローテーションするため。"
-      }
+      },
+      "networkIdInUse": "リポジトリ「{{repository}}」のネットワーク ID {{networkId}} は、マシン「{{machine}}」上で既に {{holder}} が使用しています。`rdc config reconcile` を実行すると、マシンに記録された ID を取り込めます。",
+      "networkIdUndiscoverable": "リポジトリ「{{repository}}」にはこの設定でネットワーク ID がなく、マシン「{{machine}}」にも問い合わせできませんでした。マシンに接続できるようになってから再試行するか、`rdc config reconcile` を実行してください。",
+      "networkIdDiverged": "リポジトリ「{{repository}}」のネットワーク ID はこの設定では {{localId}} でしたが、マシン「{{machine}}」には {{machineId}} が記録されています。マシン側の ID を採用しました。"
     },
     "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "リポジトリ \"{{name}}\" は既に \"{{machine}}\" にマウントされています。稼働中のリポジトリに対する移行はデータを破損させます。先に実行してください: rdc repo down {{name}} --unmount",
@@ -2491,7 +2444,6 @@
     "external": "外部ターミナルウィンドウで起動を強制する",
     "extraMachine": "マルチマシン操作用の追加マシン (名前:IP:ユーザー)",
     "fields": "出力に含めるフィールドのカンマ区切りリスト",
-    "file": "ファイルパス",
     "folder": "リモートフォルダーパス",
     "force": "確認プロンプトをスキップする",
     "function": "実行する関数名",
@@ -2552,12 +2504,9 @@
     "sshKey": "SSH 秘密鍵へのパス (例: ~/.ssh/id_rsa)",
     "sshPort": "SSH ポート",
     "sshUser": "SSH ユーザー名",
-    "storageRef": "ストレージ ref: 登録済みストレージエンドポイントの名前（例: s3-main）",
     "strategyName": "バックアップ戦略名",
     "team": "チーム名",
     "urlOnly": "VS Code URI を印刷して起動しない",
-    "vaultContent": "JSON 文字列としてのボルトコンテンツ",
-    "vaultJson": "JSON 文字列としてのボルトコンテンツ",
     "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
     "vmId": "仮想マシン ID",
     "vscodeBrowser": "リポジトリサンドボックスからブラウザ VS Code を提供する（ローカルの VS Code 不要）",

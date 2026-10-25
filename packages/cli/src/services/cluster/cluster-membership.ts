@@ -144,7 +144,7 @@ export async function joinCluster(machineName: string, options: JoinClusterOptio
   // `renet kube join` creates its own data-dir under the mount path. Only the
   // networkID (its systemd unit + node interface) is allocated. See
   // allocateAgentNetworkId in cluster-kube.ts for the full reasoning.
-  const net = await allocateAgentNetworkId();
+  const net = await allocateAgentNetworkId(machineName);
   await dispatch(
     'kube_join',
     machineName,

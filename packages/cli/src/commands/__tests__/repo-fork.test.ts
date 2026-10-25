@@ -28,7 +28,6 @@ vi.mock('../../services/config/config-resources.js', () => ({
     removeRepository: mockRemoveRepository,
     getLocalMachine: mockGetLocalMachine,
     getCurrent: mockGetCurrent,
-    ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -92,6 +91,19 @@ vi.mock('../../utils/errors.js', async () => {
   };
 });
 
+// Network-ID floor and retry (PLAN-config-networkid-discovery T3): the floor query is stubbed so the execute-count assertions below see only the fork legs; the retry helper (unit-tested in network-id-discovery.test.ts) is replaced by one that reruns on a fixed ID only when the failure is a real refusal.
+const mockTargetFloor = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+const mockRerun = vi.hoisted(() => vi.fn());
+vi.mock('../../services/config/network-id-discovery.js', async (orig) => {
+  const actual = await orig<typeof import('../../services/config/network-id-discovery.js')>();
+  return {
+    ...actual,
+    targetFloor: mockTargetFloor,
+    rerunAfterNetworkIdConflict: mockRerun,
+    ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
 const { handleForkAction } = await import('../repo-fork.js');
 
 const PARENT = {
@@ -116,6 +128,17 @@ function stdoutText(): string {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockRerun.mockImplementation(
+    async (input: {
+      failed: { stderr?: string };
+      rerun: (networkId: number) => Promise<unknown>;
+    }) => {
+      const { parseNetworkIdConflict } = await vi.importActual<
+        typeof import('../../services/config/network-id-discovery.js')
+      >('../../services/config/network-id-discovery.js');
+      return parseNetworkIdConflict(input.failed) ? input.rerun(100_032) : undefined;
+    }
+  );
   // Parent lookup returns PARENT; fork-key lookup returns undefined (not yet registered)
   mockGetRepository.mockImplementation((ref: string) =>
     Promise.resolve(ref === 'app' ? PARENT : undefined)
@@ -495,5 +518,68 @@ describe('repo fork — Total-at-end semantics', () => {
 
     const lastWrite = String(stdoutSpy.mock.calls.at(-1)?.[0]);
     expect(lastWrite).toMatch(/^\nTotal: /);
+  });
+});
+
+describe('repo fork network ID (PLAN-config-networkid-discovery T3)', () => {
+  it('allocates above the fork machine used set', async () => {
+    mockTargetFloor.mockResolvedValueOnce([2816, 2880]);
+    await handleForkAction('app', 'staging', { machine: 'hostinger' });
+    expect(mockTargetFloor).toHaveBeenCalledWith({ machine: 'hostinger' });
+    expect(mockAllocateNetworkId).toHaveBeenCalledWith({ floor: [2816, 2880] });
+  });
+
+  it('a compound fork whose up is refused network_id_in_use records a new ID and brings the fork up once more', async () => {
+    const refusal = JSON.stringify({
+      code: 'network_id_in_use',
+      message: 'held',
+      network_id: 99999,
+    });
+    mockExecute.mockImplementation(
+      (options: { functionName: string; onEvent?: (e: unknown) => void }) => {
+        if (options.functionName === 'repository_fork') {
+          options.onEvent?.({ type: 'step_done', name: 'cow_reflink', duration_ms: 4 });
+          return Promise.resolve({
+            success: false,
+            exitCode: 17,
+            stderr: refusal,
+            allSteps: [],
+            steps: [],
+          });
+        }
+        return Promise.resolve({ success: true, allSteps: [], steps: [] });
+      }
+    );
+
+    await handleForkAction('app', 'staging', { machine: 'hostinger', up: true });
+
+    const fns = mockExecute.mock.calls.map((c) => (c[0] as { functionName: string }).functionName);
+    expect(fns).toEqual(['repository_fork', 'repository_up']);
+    expect(mockRerun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoKey: 'app:staging',
+        target: expect.objectContaining({ machine: 'hostinger' }),
+      })
+    );
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+    expect(mockPostRepoUpTasks).toHaveBeenCalledTimes(1);
+  });
+
+  it('a refusal before any fork image exists is not retried', async () => {
+    const refusal = JSON.stringify({
+      code: 'network_id_in_use',
+      message: 'held',
+      network_id: 99999,
+    });
+    mockExecute.mockResolvedValue({
+      success: false,
+      exitCode: 17,
+      stderr: refusal,
+      allSteps: [],
+      steps: [],
+    });
+    await handleForkAction('app', 'staging', { machine: 'hostinger', up: true });
+    expect(mockRerun).not.toHaveBeenCalled();
+    expect(mockExecute).toHaveBeenCalledTimes(1);
   });
 });

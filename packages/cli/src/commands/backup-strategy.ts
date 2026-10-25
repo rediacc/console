@@ -1,10 +1,7 @@
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
-import {
-  strategyUnschedulableReason,
-  unschedulableDestinationReason,
-} from '../services/backup/backup-strategy-validate.js';
+import { strategyUnschedulableReason } from '../services/backup/backup-strategy-validate.js';
 import { configService } from '../services/config/config-resources.js';
 import {
   bindBackupStrategy,
@@ -12,11 +9,7 @@ import {
 } from '../services/config/config-strategy-binding.js';
 import { outputService } from '../services/core/output.js';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../types/index.js';
-import {
-  assertStorageExists,
-  BackupDestinationSchema,
-  parseConfig,
-} from '../utils/config-schema.js';
+import { BackupDestinationSchema, parseConfig } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
 function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | undefined {
@@ -28,57 +21,8 @@ function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | unde
 interface UpsertDestOpts {
   strategyName: string;
   destinationName: string;
-  storage?: string;
   enabled?: boolean;
   bwlimit?: string;
-  folder?: string;
-}
-
-type DestinationKind = 'storage' | 'hosted-service';
-
-/**
- * Which kind of destination `--destination <name>` is talking about.
- *
- * THE SURFACE DECISION, and why it is a default rather than a flag. Until
- * 2026-08-15 this command could only make `storage` (rclone) destinations: it
- * hard-required `--storage`. Then the rclone emission was deleted from the unit
- * generator, and the two facts together left NO supported route from
- * `backup strategy set` to a deployable schedule, every path either threw at
- * set time for want of `--storage`, or threw at deploy time because a `storage`
- * destination can no longer be rendered. Only a hand-edited config JSON could
- * produce a working strategy.
- *
- * Three ways to close that were on the table: a `--hosted-service` boolean, a
- * `--kind <storage|hosted-service>` option, or making hosted-service what you
- * get when you do not say. This takes the third:
- *
- *  - The chunk store is the ONLY kind `rdc backup schedule` can deploy. A
- *    default that produces the undeployable kind is a trap, and a REQUIRED flag
- *    whose one useful value is always the same is a toll booth.
- *  - It adds no option, so the CLI contract and command tree do not move, and
- *    the working path is the shortest one to type.
- *  - `--storage <name>` keeps working unchanged and is now also the explicit
- *    opt-IN to the legacy kind, which is exactly the flag an operator who wants
- *    that kind was always going to pass.
- *
- * Precedence, and the reason for the middle rule: an EXISTING destination keeps
- * its kind when `--storage` is absent, so `set s --destination d --disable`
- * against the operator's live rclone destination edits it in place instead of
- * silently converting it to a chunk-store destination and orphaning the backups
- * behind it.
- */
-function resolveDestinationKind(
-  storageFlag: string | undefined,
-  existing: { kind?: string } | undefined
-): DestinationKind {
-  if (storageFlag) return 'storage';
-  // `kind` is declared OPTIONAL on this parameter on purpose. A destination read through the config loader has been schema-parsed and always carries one, but a hand-edited entry (and the operator's live config) has none, and that case must still resolve to what the entry actually is.
-  if (existing) {
-    return (existing.kind ?? BACKUP_DEFAULTS.DESTINATION_KIND) === 'storage'
-      ? 'storage'
-      : 'hosted-service';
-  }
-  return BACKUP_DEFAULTS.NEW_DESTINATION_KIND;
 }
 
 /**
@@ -98,81 +42,29 @@ function definedOnly(o: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
- * Build the destination record to store, from the flags plus whatever is
- * already there. Pure: no config reads, no writes, so a test can drive the
- * exact object the operator's flags produce and hand it straight to the unit
- * generator. That crossing is deliberate, the defects in this stack all came
- * from each side being tested against its own fake.
+ * Build the destination record to store, from the flags. Pure: no config reads,
+ * no writes, so a test can drive the exact object the operator's flags produce
+ * and hand it straight to the unit generator. Every destination is the chunk
+ * store (`hosted-service`); the stored `endpoint` and `vaultContent` of an
+ * existing destination are kept by the merge in `addBackupDestination`.
  */
 export function buildDestination(
-  o: Omit<UpsertDestOpts, 'strategyName'>,
-  existingDest: BackupStrategyDestination | undefined
+  o: Omit<UpsertDestOpts, 'strategyName'>
 ): BackupStrategyDestination {
-  const kind = resolveDestinationKind(o.storage, existingDest);
-  if (kind === 'hosted-service') {
-    // `--folder` is a subfolder inside an rclone bucket. The chunk store names its own keys server-side (the client never composes an object key), so there is nothing for a folder to mean here. Refused rather than dropped: dropping it would put backups somewhere other than where the operator said, which is the failure mode this whole surface keeps producing.
-    if (o.folder !== undefined) {
-      throw new ValidationError(t('commands.backup.strategy.set.storageRequired'));
-    }
-    return parseConfig(
-      BackupDestinationSchema,
-      definedOnly({
-        kind,
-        name: o.destinationName,
-        enabled: o.enabled,
-        bandwidthLimit: o.bwlimit,
-      }),
-      'backup destination'
-    );
-  }
-
-  const existingStorageDest =
-    existingDest && resolveDestinationKind(undefined, existingDest) === 'storage'
-      ? (existingDest as { storage?: string; folder?: string })
-      : undefined;
-  const storageName = o.storage ?? existingStorageDest?.storage;
-  if (!storageName) {
-    throw new ValidationError(t('commands.backup.strategy.set.storageRequired'));
-  }
   return parseConfig(
     BackupDestinationSchema,
     definedOnly({
-      kind,
+      kind: BACKUP_DEFAULTS.NEW_DESTINATION_KIND,
       name: o.destinationName,
-      storage: storageName,
       enabled: o.enabled,
       bandwidthLimit: o.bwlimit,
-      folder: o.folder ?? existingStorageDest?.folder,
     }),
     'backup destination'
   );
 }
 
 async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {
-  const existing = await configService.getBackupStrategy(o.strategyName);
-  const existingDest = existing?.destinations.find((d) => d.name === o.destinationName);
-  const dest = buildDestination(o, existingDest);
-
-  if (dest.kind === 'storage') await assertStorageExists(dest.storage);
-
-  // A kind CHANGE cannot go through the merge in addBackupDestination: it spreads the new record over the old one, so flipping hosted-service -> storage would leave `endpoint`/`vaultContent` behind in the file (the schema strips them on the next read, so the junk would be invisible until someone diffed the config). Drop the old record first and write a clean one. Compared through
-  // resolveDestinationKind, not `existingDest.kind`, so a legacy entry with no `kind` at all is not treated as a flip and rewritten
-  // for nothing.
-  if (existingDest && resolveDestinationKind(undefined, existingDest) !== dest.kind) {
-    await configService.removeBackupDestination(o.strategyName, o.destinationName);
-  }
-  await configService.addBackupDestination(o.strategyName, dest);
-
-  // Saved, then flagged. A `storage` destination is still legal to hold on disk and still legal to create, but no unit can be generated for one, and an operator who learns that at deploy time has already bound the strategy and walked away. Say it here, where the decision is.
-  const unschedulable = unschedulableDestinationReason(dest);
-  if (unschedulable) {
-    // Naming the two commands matters: omitting --storage PRESERVES an existing kind (see resolveDestinationKind), so there is no single flag that turns a storage destination into a chunk-store one. "Change it to a hosted-service destination" without the how is the same dead end in a friendlier voice.
-    outputService.warn(
-      `${unschedulable} The destination was saved, but \`rdc backup schedule\` will refuse to deploy a unit for it. ` +
-        `To convert it: rdc backup strategy remove ${o.strategyName} --destination ${o.destinationName} ` +
-        `&& rdc backup strategy set ${o.strategyName} --destination ${o.destinationName}`
-    );
-  }
+  await configService.addBackupDestination(o.strategyName, buildDestination(o));
 }
 
 // parseRepoFilter turns a comma-separated --include/--exclude value into a repo list, or returns undefined to CLEAR the filter. An empty string or the literal "none" (and a value that is only separators/whitespace) clears it, that's how you drop a strategy's include/exclude entirely (e.g. make a cold backup cover
@@ -250,13 +142,11 @@ export async function applyBackupStrategyOptions(
   name: string,
   options: {
     destination?: string;
-    storage?: string;
     cron?: string;
     mode?: string;
     bwlimit?: string;
     include?: string;
     exclude?: string;
-    folder?: string;
     enable?: boolean;
     disable?: boolean;
   }
@@ -284,10 +174,8 @@ export async function applyBackupStrategyOptions(
     await upsertBackupDestination({
       strategyName: name,
       destinationName: options.destination,
-      storage: options.storage,
       enabled,
       bwlimit: options.bwlimit,
-      folder: options.folder,
     });
   }
 }
@@ -339,15 +227,8 @@ function displayStrategyDestinations(strategy: BackupStrategyConfig): void {
 function destinationLine(strategy: BackupStrategyConfig, dest: BackupStrategyDestination): string {
   const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit ?? '-';
   const enabled = dest.enabled !== false;
-  const target =
-    dest.kind === 'storage'
-      ? `storage=${dest.storage}${dest.folder ? `  folder=${dest.folder}` : ''}`
-      : `hosted-service${dest.endpoint ? `  endpoint=${dest.endpoint}` : ''}`;
-  // Same reason the mode marker existed: the operator's live config still holds rclone destinations, and `show` is where they will look first when a backup stops happening. An unmarked line here reads as healthy.
-  const note = unschedulableDestinationReason(dest)
-    ? '  (NOT SCHEDULABLE: rclone path removed)'
-    : '';
-  return `    ${dest.name}  ${target}  bwlimit=${bwlimit}  enabled=${enabled}${note}`;
+  const target = `hosted-service${dest.endpoint ? `  endpoint=${dest.endpoint}` : ''}`;
+  return `    ${dest.name}  ${target}  bwlimit=${bwlimit}  enabled=${enabled}`;
 }
 
 /** Register the `backup strategy` subgroup (named backup strategy records). */
@@ -359,7 +240,6 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .argument('<strategy>', t('options.strategyName'))
     .description(t('commands.backup.strategy.set.description'))
     .option('--destination <name>', t('commands.backup.strategy.set.optionDestination'))
-    .option('--storage <name>', t('commands.backup.strategy.set.optionStorage'))
     .option('--cron <expression>', t('commands.backup.strategy.set.optionCron'))
     .addOption(
       new Option('--mode <mode>', t('commands.backup.strategy.set.optionMode')).choices([
@@ -370,7 +250,6 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .option('--bwlimit <limit>', t('commands.backup.strategy.set.optionBwlimit'))
     .option('--include <repos>', t('commands.backup.strategy.set.optionInclude'))
     .option('--exclude <repos>', t('commands.backup.strategy.set.optionExclude'))
-    .option('--folder <path>', t('commands.backup.strategy.set.optionFolder'))
     .option('--enable', t('commands.backup.strategy.set.optionEnable'))
     .option('--disable', t('commands.backup.strategy.set.optionDisable'))
     .action(async (strategy: string, options) => {

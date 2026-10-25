@@ -71,7 +71,6 @@
         "restored": "{{machine}}에 {{name}} 복원 완료",
         "restoringSnapshot": "스냅샷 {{snapshot}}에서 {{name}}을(를) 복원하는 중...",
         "sourceUnknown": "이 설정에 \"{{name}}\"이라는 저장소가 없어 백업 아티팩트를 찾을 수 없습니다",
-        "storageRetired": "스토리지 백엔드에서 복원하는 기능은 종료되었습니다. rclone 클라우드 계열이 제거되었기 때문입니다. 시점 복원은 청크 저장소를 쓰는 `rdc backup restore <repo> --at <snapshot>`으로 합니다",
         "streamUnknown": "원본 머신에서 이 저장소에 해당하는 백업 스트림을 알 수 없습니다 (머신의 백업 검증이 실패했거나, 인덱스에 나열된 커밋된 스냅샷을 보고하지 않았습니다). --any-stream을 지정하면 이 계보의 모든 스트림 중에서 고를 수 있습니다",
         "targetExists": "\"{{name}}\"이(가) 이미 존재합니다. 다른 이름으로 복원하거나(--as) 먼저 기존 저장소를 삭제하세요"
       },
@@ -139,21 +138,18 @@
         "set": {
           "description": "백업 전략을 생성하거나 업데이트합니다",
           "examples": {
-            "configure": "백업 전략의 스토리지와 모드를 구성합니다.",
+            "configure": "백업 전략의 일정과 모드를 구성합니다.",
             "disable": "백업 전략을 끕니다."
           },
-          "optionBwlimit": "Rclone 대역폭 제한 (예: \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionBwlimit": "업로드 대역폭 제한(초당 바이트, K/M/G 접미사 선택 가능. 예: \"6M\", \"500K\")",
           "optionCron": "크론 스케줄 (예: \"0 * * * *\" 은 매시간)",
-          "optionDestination": "전략 내 대상 이름. --storage를 지정하지 않으면 Rediacc 청크 스토리지 대상을 생성합니다",
+          "optionDestination": "전략 내 대상 이름. Rediacc 청크 스토리지 대상을 생성합니다",
           "optionDisable": "전략 또는 대상을 비활성화합니다",
           "optionEnable": "전략 또는 대상을 활성화합니다",
           "optionExclude": "백업에서 이 저장소를 제외합니다 (쉼표로 구분된 이름)",
-          "optionFolder": "이 대상에 대한 스토리지 버킷 아래의 하위 폴더 (예: hot, cold). --storage가 필요합니다",
           "optionInclude": "이 저장소만 백업합니다 (쉼표로 구분된 이름)",
           "optionMode": "백업 모드: \"hot\"은 모든 것이 계속 실행되는 동안 스냅샷을 찍고, \"cold\"는 스냅샷을 찍는 순간 컨테이너를 중지합니다",
-          "optionStorage": "청크 스토리지 대신 이 rclone 스토리지 설정을 사용합니다. 레거시: 이런 대상은 예약할 수 없습니다",
-          "saved": "백업 전략 설정 저장 완료",
-          "storageRequired": "이 대상에는 --storage <storage-name>이 필요합니다. 지정하지 않으면 스토리지 버킷이 없어 --folder도 사용할 수 없는 Rediacc 청크 스토리지 대상이 생성됩니다"
+          "saved": "백업 전략 설정 저장 완료"
         },
         "show": {
           "description": "백업 전략 세부 정보를 표시합니다",
@@ -642,7 +638,7 @@
     },
     "credits": {
       "bundledTitle": "런타임 및 번들 의존성:",
-      "description": "rdc에 번들된 서드파티 구성 요소를 출력합니다: renet이 내장하고 전달하는 바이너리(CRIU, rsync, rclone), 내장된 Node.js 런타임, 번들된 npm 의존성입니다. 버전, SPDX 라이선스 식별자, GPL 준수에 필요한 정확한 버전의 소스 아카이브 URL을 표시합니다. 릴리스 빌드에 포함된 THIRD_PARTY_LICENSES 전문을 출력하려면 --licenses를 사용하십시오.",
+      "description": "rdc에 번들된 서드파티 구성 요소를 출력합니다: renet이 내장하고 전달하는 바이너리(CRIU, rsync), 내장된 Node.js 런타임, 번들된 npm 의존성입니다. 버전, SPDX 라이선스 식별자, GPL 준수에 필요한 정확한 버전의 소스 아카이브 URL을 표시합니다. 릴리스 빌드에 포함된 THIRD_PARTY_LICENSES 전문을 출력하려면 --licenses를 사용하십시오.",
       "descriptionShort": "서드파티 크레딧과 라이선스 준수 정보를 표시합니다",
       "embeddedTitle": "내장 바이너리 (renet이 전달):",
       "gplHeader": "GPL 소스 제공:",
@@ -1105,7 +1101,11 @@
         "storageHealthPoolSummary": "풀: {{used}} 사용, {{free}} 여유({{percent}}% 사용 중)",
         "storageHealthSummary": "스토리지 효율성: {{summary}}",
         "strictDriftDetected": "--strict: 드리프트 임계값을 초과한 컨테이너 {{count}}개; 비정상 종료",
-        "syncCertsFailed": "인증서 캐시 동기화 실패: {{error}}"
+        "syncCertsFailed": "인증서 캐시 동기화 실패: {{error}}",
+        "staleBinarySection": "오래된 바이너리",
+        "staleBinaryWarning": "renet 프로세스 {{count}}개가 아직 교체된 바이너리로 실행 중이며, 유닛이 다시 시작될 때까지 이전 코드를 유지합니다.",
+        "staleBackupSection": "지연된 백업",
+        "staleBackupWarning": "리포지토리 {{count}}개의 마지막 백업이 일정 간격의 두 배 이상 지났습니다."
       },
       "gpu": {
         "descriptionShort": "머신의 GPU와 장치 부여 현황 확인",
@@ -1612,8 +1612,7 @@
         "optionStrategy": "델타 베이스 사용 시 블록 델타 전략: auto, physical, 또는 shared",
         "optionUp": "가져온 후 이 머신에서 저장소를 마운트하고 배포합니다",
         "pulling": "\"{{repo}}\"의 백업을 가져오는 중...",
-        "sourceRequired": "--from <machine>을 지정하십시오 (설정의 머신 이름)",
-        "storageRetired": "스토리지 백엔드에서 풀하는 기능은 종료되었습니다. rclone 클라우드 계열이 제거되었기 때문입니다. 시점 복원은 청크 저장소를 쓰는 `rdc backup restore <repo> --at <snapshot>`으로 합니다. 머신 간 전송은 그대로이며 --from-machine을 쓰세요"
+        "sourceRequired": "--from <machine>을 지정하십시오 (설정의 머신 이름)"
       },
       "push": {
         "deployed": "{{machine}}에서 저장소 \"{{repo}}\" 배포 완료",
@@ -1635,8 +1634,7 @@
         "pushing": "\"{{repo}}\"의 백업을 {{dest}}으로 푸시하는 중...",
         "statsDelta": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 동안 {{transferred}} 전송 (베이스 {{base}} 대비 델타, 이미지 {{image}})",
         "statsFull": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 동안 {{transferred}} 전송 (전체 전송)",
-        "statsNoBytes": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 소요",
-        "storageRetired": "스토리지 백엔드로 푸시하는 기능은 종료되었습니다. rclone 클라우드 계열이 제거되었기 때문입니다. 시점 백업은 청크 저장소를 쓰는 `rdc backup snapshot`(업로드)과 `rdc backup restore <repo> --at <snapshot>`(다운로드)으로 합니다. 머신 간 전송은 그대로이며 --to-machine을 쓰세요"
+        "statsNoBytes": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 소요"
       },
       "refMachineConflict": "저장소 참조는 그 자체로 머신을 결정합니다. -m/--machine은 머신 전체 형식에서만 사용하세요: repo {{verb}} --all -m <machine>",
       "replicate": {
@@ -1842,53 +1840,6 @@
       },
       "trace": {
         "description": "작업 추적 (단축키: queue trace)"
-      }
-    },
-    "storage": {
-      "add": {
-        "added": "스토리지 \"{{name}}\" 등록 완료",
-        "adding": "스토리지 \"{{name}}\"을(를) 등록하는 중...",
-        "description": "스토리지 엔드포인트를 등록합니다",
-        "examples": {
-          "basic": "vault 정의로부터 스토리지 백엔드를 등록합니다."
-        }
-      },
-      "browse": {
-        "description": "스토리지 시스템의 파일을 탐색합니다",
-        "listing": "\"{{name}}\"의 파일 목록 조회 중...",
-        "noFiles": "파일을 찾을 수 없습니다",
-        "pathOption": "나열할 하위 디렉터리 경로"
-      },
-      "description": "외부 백업 스토리지 엔드포인트(S3 및 기타 rclone 호환 대상)를 관리합니다: 등록하거나 제거하고, 등록된 목록을 확인하고, 보관 중인 아티팩트를 탐색하고, 고아가 된 백업을 정리합니다.",
-      "descriptionShort": "스토리지 관리",
-      "import": {
-        "description": "rclone 설정 파일에서 스토리지를 가져옵니다",
-        "imported": "스토리지 \"{{name}}\" 가져오기 완료 ({{type}})",
-        "noConfigs": "파일에서 유효한 스토리지 설정을 찾을 수 없습니다",
-        "notFound": "설정 파일에서 스토리지 \"{{name}}\"을 찾을 수 없습니다",
-        "optionName": "이 이름의 섹션만 가져옵니다",
-        "summary": "{{count}}개의 스토리지 가져오기 완료",
-        "unsupported": "\"{{name}}\" 건너뜀: 지원되지 않는 공급자 유형 \"{{type}}\""
-      },
-      "list": {
-        "description": "스토리지 엔드포인트를 나열합니다. 이름을 지정하면 상세 정보를 표시합니다",
-        "noStorages": "설정된 스토리지 엔드포인트가 없습니다. 다음으로 등록하세요: rdc storage add <name> --vault <json>",
-        "optionReveal": "스토리지 구성을 평문으로 표시합니다 (대화형 TTY 전용; 감사 기록됨)"
-      },
-      "prune": {
-        "completed": "고아 백업 {{count}}개가 정리되었습니다",
-        "description": "더 이상 어떤 설정에도 없는 스토리지의 고아 백업을 삭제합니다. 유예 기간 보호가 있는 다중 설정 안전. rclone 호출은 --machine (실행자)에서 실행되며, 노트북에서 실행되지 않으므로 클라이언트에 rclone을 로컬에 설치할 필요가 없습니다; --machine은 소스가 아닌 실행자입니다.",
-        "descriptionShort": "스토리지에서 고아 백업 삭제",
-        "forceDeleteMountedOption": "마운트 안전 확인을 재정의하고 소스 GUID가 현재 마운트되어 있거나 실행자 머신에서 실행 중인 컨테이너가 있는 경우에도 클라우드 백업을 삭제합니다. --force(아카이브 저장소의 유예 기간만 재정의)와는 별개입니다.",
-        "found": "스토리지에서 {{count}}개의 백업 발견",
-        "listing": "\"{{storage}}\"의 백업 목록 조회 중...",
-        "machineOption": "실행자 머신 - 스토리지에 대해 rclone 목록/삭제 호출을 실행합니다. 클라이언트에 rclone이 로컬에 설치되어 있지 않아도 되므로 필수입니다; 스토리지 자격 증명은 여전히 로컬 설정에서 가져옵니다.",
-        "noBackups": "스토리지에서 백업을 찾을 수 없습니다"
-      },
-      "remove": {
-        "confirm": "스토리지 엔드포인트 \"{{name}}\"을(를) 제거하시겠습니까?",
-        "description": "설정에서 스토리지 엔드포인트를 제거합니다",
-        "removed": "스토리지 \"{{name}}\" 제거 완료"
       }
     },
     "subscription": {
@@ -2282,8 +2233,7 @@
       "machineNotFound": "설정에서 머신 \"{{name}}\"을(를) 찾을 수 없습니다. 사용 가능한 항목: {{available}}.",
       "noActiveConfig": "활성 설정이 없습니다",
       "pointerNotFound": "포인터 \"{{pointer}}\"을(를) 찾을 수 없습니다",
-      "retiredKey": "기본값 \"{{key}}\"는 더 이상 존재하지 않습니다. 유효한 키: {{keys}}",
-      "storageNotFound": "설정에서 스토리지 \"{{name}}\"을(를) 찾을 수 없습니다. 사용 가능한 항목: {{available}}."
+      "retiredKey": "기본값 \"{{key}}\"는 더 이상 존재하지 않습니다. 유효한 키: {{keys}}"
     },
     "container": {
       "execFailed": "container_exec 실패",
@@ -2341,7 +2291,7 @@
     },
     "regionRequired": "리전 이름이 필요합니다. --region을 사용하거나 다음 명령으로 기본값을 설정하세요: rdc config set region <name>",
     "regionSelectionRequiresTTY": "리전 선택에는 대화형 입력이 필요합니다. --server <url>을 사용하여 서버를 직접 지정하세요.",
-    "remoteNotFound": "\"{{name}}\"은(는) 알 수 없는 머신, 스토리지 또는 클러스터입니다. 머신: {{machines}}. 스토리지: {{storages}}. 클러스터: {{clusters}}",
+    "remoteNotFound": "\"{{name}}\"은(는) 알 수 없는 머신 또는 클러스터입니다. 머신: {{machines}}. 클러스터: {{clusters}}",
     "repo": {
       "canaryNeedsCluster": "저장소 \"{{ref}}\"는 클러스터 안에 있지 않습니다. 카나리는 두 배포 간에 트래픽을 나누므로 Kubernetes에 배치된 저장소가 필요합니다",
       "listTargetExclusive": "-m 또는 --datastore 중 하나만 지정하세요. 데이터스토어는 어느 머신이 보유하고 있는지 이미 알고 있습니다",
@@ -2350,7 +2300,10 @@
         "badMode": "유효하지 않은 --mode \"{{mode}}\"입니다. 허용되는 값: env, file.",
         "emptyValue": "시크릿 값은 비어 있을 수 없습니다 (stdin에서 데이터가 없습니다).",
         "mutuallyExclusive": "--current와 --rotate-secret은 함께 사용할 수 없습니다. 하나를 선택하세요: --current는 이전 값을 확인하고, --rotate-secret은 확인 없이 교체합니다."
-      }
+      },
+      "networkIdInUse": "저장소 \"{{repository}}\"의 네트워크 ID {{networkId}}은(는) 머신 \"{{machine}}\"에서 이미 {{holder}}이(가) 사용 중입니다. `rdc config reconcile`을 실행하면 머신에 기록된 ID를 가져옵니다.",
+      "networkIdUndiscoverable": "저장소 \"{{repository}}\"에는 이 구성에 네트워크 ID가 없고, 머신 \"{{machine}}\"에 조회할 수도 없었습니다. 머신에 연결할 수 있을 때 다시 시도하거나 `rdc config reconcile`을 실행하세요.",
+      "networkIdDiverged": "저장소 \"{{repository}}\"의 네트워크 ID가 이 구성에서는 {{localId}}였지만 머신 \"{{machine}}\"에는 {{machineId}}로 기록되어 있습니다. 이제 머신의 ID를 사용합니다."
     },
     "repoNotDeployed": "\"{{repository}}\" 리포지토리가 {{machine}}에 배포되어 있지 않습니다.\n\n먼저 배포하세요:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "\"{{name}}\" 리포지토리가 이미 \"{{machine}}\"에 마운트되어 있습니다. 실행 중인 리포지토리를 마이그레이션하면 데이터가 손상될 수 있습니다. 먼저 실행하세요: rdc repo down {{name}} --unmount",
@@ -2491,7 +2444,6 @@
     "external": "외부 터미널 창에서 강제 실행",
     "extraMachine": "다중 머신 작업을 위한 추가 머신 (name:ip:user)",
     "fields": "출력에 포함할 필드 목록 (쉼표로 구분)",
-    "file": "파일 경로",
     "folder": "열 원격 폴더 경로",
     "force": "확인 프롬프트 건너뜀",
     "function": "실행할 함수 이름",
@@ -2552,12 +2504,9 @@
     "sshKey": "SSH 개인 키 경로 (예: ~/.ssh/id_rsa)",
     "sshPort": "SSH 포트",
     "sshUser": "SSH 사용자 이름",
-    "storageRef": "스토리지 ref: 등록된 스토리지 엔드포인트의 이름 (예: s3-main)",
     "strategyName": "백업 전략 이름",
     "team": "팀 이름",
     "urlOnly": "실행 대신 VS Code URI 출력",
-    "vaultContent": "JSON 문자열로 된 볼트 내용",
-    "vaultJson": "JSON 문자열로 된 볼트 내용",
     "verifyChecksum": "동기화 후 체크섬으로 파일 검증",
     "vmId": "가상 머신 ID",
     "vscodeBrowser": "저장소 샌드박스 안에서 브라우저용 VS Code 서빙 (로컬 VS Code 불필요)",

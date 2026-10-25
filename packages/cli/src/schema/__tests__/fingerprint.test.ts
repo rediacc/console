@@ -28,10 +28,17 @@ describe('fingerprint', () => {
         'web-1': { ip: '10.0.0.1', user: 'deploy', port: 22 },
         'web-2': { ip: '10.0.0.2', user: 'deploy', port: 22 },
       },
-      storages: {
-        's3-prod': {
-          provider: 's3',
-          vaultContent: { endpoint: 'https://s3.example.com', key: 'AKID' },
+      backupStrategies: {
+        nightly: {
+          schedule: '0 2 * * *',
+          destinations: [
+            {
+              kind: 'hosted-service' as const,
+              name: 's3-prod',
+              endpoint: 'https://s3.example.com',
+              vaultContent: { accessKeyId: 'AKID', secretAccessKey: 'SECRET' },
+            },
+          ],
         },
       },
       repositories: {
@@ -57,7 +64,7 @@ describe('fingerprint', () => {
     const redacted = redactClone(sampleConfig);
     expect(redacted.credentials.ssh.privateKey).toMatch(/^<redacted:credential>:[0-9a-f]{8}$/);
     expect(redacted.credentials.cfDnsApiToken).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
-    expect(redacted.resources.storages['s3-prod'].vaultContent).toMatch(
+    expect(redacted.resources.backupStrategies.nightly.destinations[0].vaultContent).toMatch(
       /^<redacted:secret>:[0-9a-f]{8}$/
     );
     expect(redacted.resources.machines['web-1'].ip).toMatch(/^<redacted:pii>:[0-9a-f]{8}$/);

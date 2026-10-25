@@ -22,13 +22,12 @@ export {
   RenetVaultSchema,
   RepositoryInfoSchema,
   SSHSectionSchema,
-  StorageSectionSchema,
   TaskSectionSchema,
   validateRenetVault,
 } from '../data/vault.schema.js';
 
 // Re-export vault types for convenience
-export type { MachineSection, RenetVault, RepositoryInfo, StorageSection } from '../types/index.js';
+export type { MachineSection, RenetVault, RepositoryInfo } from '../types/index.js';
 
 // =============================================================================
 // Bridge Function Validation

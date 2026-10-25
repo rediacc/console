@@ -71,7 +71,6 @@
         "restored": "已将 {{name}} 恢复到 {{machine}}",
         "restoringSnapshot": "正在从快照 {{snapshot}} 恢复 {{name}}...",
         "sourceUnknown": "此配置中没有名为 \"{{name}}\" 的仓库，因此无法定位其备份产物。",
-        "storageRetired": "从存储后端恢复已停用：rclone 云分支已移除。时间点恢复改用 `rdc backup restore <repo> --at <snapshot>`，走块存储",
         "streamUnknown": "无法确定此仓库在其源机器上对应哪条备份流（该机器上的备份校验失败，或它没有报告索引中列出的已提交快照）。请传入 --any-stream，从该谱系的所有备份流中选择。",
         "targetExists": "\"{{name}}\" 已存在。请使用其他名称恢复（--as），或先删除现有仓库。"
       },
@@ -139,21 +138,18 @@
         "set": {
           "description": "创建或更新备份策略",
           "examples": {
-            "configure": "配置备份策略的存储与模式。",
+            "configure": "配置备份策略的计划与模式。",
             "disable": "关闭备份策略。"
           },
-          "optionBwlimit": "Rclone 带宽限制（例如 \"6M\"、\"10M:off\"、\"08:00,3M;22:00,10M\"）",
+          "optionBwlimit": "上传带宽限制，单位为字节/秒，可加 K/M/G 后缀（例如 \"6M\"、\"500K\"）",
           "optionCron": "Cron 调度（例如 \"0 * * * *\" 表示每小时）",
-          "optionDestination": "策略内的目标名称。除非提供 --storage，否则会创建一个 Rediacc 分块存储目标",
+          "optionDestination": "策略内的目标名称。会创建一个 Rediacc 分块存储目标",
           "optionDisable": "禁用策略或目标",
           "optionEnable": "启用策略或目标",
           "optionExclude": "从备份中排除这些仓库（逗号分隔的名称）",
-          "optionFolder": "该目标在存储桶中的子文件夹（如 hot, cold）。需要 --storage",
           "optionInclude": "仅备份这些仓库（逗号分隔的名称）",
           "optionMode": "备份模式：\"hot\" 在一切正常运行时创建快照，\"cold\" 会在创建快照的瞬间停止容器",
-          "optionStorage": "使用此 rclone 存储配置代替分块存储。遗留方式：此类目标无法调度",
-          "saved": "备份策略配置已保存",
-          "storageRequired": "此目标需要 --storage <storage-name>。若不提供，则会得到一个没有存储桶、因此也没有 --folder 的 Rediacc 分块存储目标"
+          "saved": "备份策略配置已保存"
         },
         "show": {
           "description": "显示备份策略详情",
@@ -642,7 +638,7 @@
     },
     "credits": {
       "bundledTitle": "运行时及打包依赖项：",
-      "description": "打印随 rdc 一起分发的第三方组件：renet 内嵌并传递的二进制文件（CRIU、rsync、rclone）、内嵌的 Node.js 运行时，以及打包的 npm 依赖项。显示版本号、SPDX 许可证标识符，以及 GPL 合规所需的精确版本源码归档 URL。使用 --licenses 打印随发行版打包的完整 THIRD_PARTY_LICENSES 文本。",
+      "description": "打印随 rdc 一起分发的第三方组件：renet 内嵌并传递的二进制文件（CRIU、rsync）、内嵌的 Node.js 运行时，以及打包的 npm 依赖项。显示版本号、SPDX 许可证标识符，以及 GPL 合规所需的精确版本源码归档 URL。使用 --licenses 打印随发行版打包的完整 THIRD_PARTY_LICENSES 文本。",
       "descriptionShort": "显示第三方归属信息和许可证合规信息",
       "embeddedTitle": "内嵌二进制文件（由 renet 传递）：",
       "gplHeader": "GPL 源码可获取性：",
@@ -1105,7 +1101,11 @@
         "storageHealthPoolSummary": "存储池：已用 {{used}}，可用 {{free}}（已满 {{percent}}%）",
         "storageHealthSummary": "存储效率：{{summary}}",
         "strictDriftDetected": "--strict: {{count}} 个容器超过漂移阈值；以非零状态退出",
-        "syncCertsFailed": "证书缓存同步失败：{{error}}"
+        "syncCertsFailed": "证书缓存同步失败：{{error}}",
+        "staleBinarySection": "过期的二进制文件",
+        "staleBinaryWarning": "有 {{count}} 个 renet 进程仍在运行已被替换的二进制文件，在其单元重启前会一直使用旧代码。",
+        "staleBackupSection": "滞后的备份",
+        "staleBackupWarning": "有 {{count}} 个仓库距上次备份已超过其计划间隔的两倍。"
       },
       "gpu": {
         "descriptionShort": "查看机器的 GPU 和设备授权",
@@ -1612,8 +1612,7 @@
         "optionStrategy": "使用增量基准时的块增量策略：auto、physical 或 shared",
         "optionUp": "pull后，在此机器上挂载并部署仓库",
         "pulling": "正在拉取 \"{{repo}}\" 的备份...",
-        "sourceRequired": "请指定 --from <machine>（配置中的机器名称）",
-        "storageRetired": "从存储后端拉取已停用：rclone 云分支已移除。时间点恢复改用 `rdc backup restore <repo> --at <snapshot>`，走块存储。机器之间的传输不受影响：请使用 --from-machine"
+        "sourceRequired": "请指定 --from <machine>（配置中的机器名称）"
       },
       "push": {
         "deployed": "仓库 \"{{repo}}\" 已部署到 {{machine}}",
@@ -1635,8 +1634,7 @@
         "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}...",
         "statsDelta": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（相对基准 {{base}} 的增量，镜像 {{image}}）",
         "statsFull": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（完整传输）",
-        "statsNoBytes": "已将 \"{{repo}}\" 推送到 {{machine}}：在 {{duration}} 内完成",
-        "storageRetired": "向存储后端推送已停用：rclone 云分支已移除。时间点备份改用 `rdc backup snapshot`（上传）和 `rdc backup restore <repo> --at <snapshot>`（下载），二者都走块存储。机器之间的传输不受影响：请使用 --to-machine"
+        "statsNoBytes": "已将 \"{{repo}}\" 推送到 {{machine}}：在 {{duration}} 内完成"
       },
       "refMachineConflict": "仓库引用会自行推导出所在机器。-m/--machine 仅用于面向整机的形式：repo {{verb}} --all -m <machine>。",
       "replicate": {
@@ -1842,53 +1840,6 @@
       },
       "trace": {
         "description": "跟踪任务 (queue trace 的快捷方式)"
-      }
-    },
-    "storage": {
-      "add": {
-        "added": "已注册存储 \"{{name}}\"",
-        "adding": "正在注册存储 \"{{name}}\"...",
-        "description": "注册一个存储端点。",
-        "examples": {
-          "basic": "根据 vault 定义注册存储后端。"
-        }
-      },
-      "browse": {
-        "description": "浏览存储系统中的文件",
-        "listing": "正在列出 \"{{name}}\" 中的文件...",
-        "noFiles": "未找到文件",
-        "pathOption": "要列出的子目录路径"
-      },
-      "description": "管理外部备份存储端点（S3 及其他兼容 rclone 的目标）：注册和移除端点、列出已注册的端点、浏览其中保存的产物，并清理孤立的备份。",
-      "descriptionShort": "管理存储",
-      "import": {
-        "description": "从 rclone 配置文件导入存储",
-        "imported": "已导入存储 \"{{name}}\"（{{type}}）",
-        "noConfigs": "文件中未找到有效的存储配置",
-        "notFound": "在配置文件中未找到存储 \"{{name}}\"",
-        "optionName": "仅导入指定的命名部分",
-        "summary": "已导入 {{count}} 个存储",
-        "unsupported": "跳过 \"{{name}}\"：不支持的提供商类型 \"{{type}}\""
-      },
-      "list": {
-        "description": "列出存储端点。指定名称可查看完整详情。",
-        "noStorages": "未配置任何存储端点。请使用以下命令注册：rdc storage add <name> --vault <json>",
-        "optionReveal": "以明文显示存储配置(仅限交互式 TTY;记入审计日志)"
-      },
-      "prune": {
-        "completed": "已清理 {{count}} 个孤立备份",
-        "description": "删除存储中不在任何配置中的孤立备份。多配置安全，带宽限期保护。",
-        "descriptionShort": "删除存储中的孤立备份",
-        "forceDeleteMountedOption": "覆盖挂载安全检查，即使源 GUID 当前在执行机器上已挂载或有正在运行的容器，也删除云备份。与 --force 不同（后者仅覆盖已归档仓库的宽限期）。",
-        "found": "在存储中找到 {{count}} 个备份",
-        "listing": "正在列出 \"{{storage}}\" 中的备份...",
-        "machineOption": "执行机器：对存储运行 rclone list/delete 调用。必需，因为客户端不应在本地安装 rclone；存储凭据仍来自你的本地配置。",
-        "noBackups": "存储中未找到备份"
-      },
-      "remove": {
-        "confirm": "移除存储端点 \"{{name}}\"？",
-        "description": "从配置中移除存储端点。",
-        "removed": "已移除存储 \"{{name}}\""
       }
     },
     "subscription": {
@@ -2282,8 +2233,7 @@
       "machineNotFound": "机器 \"{{name}}\" 在配置中未找到。可用: {{available}}。",
       "noActiveConfig": "没有激活的配置",
       "pointerNotFound": "未找到指针“{{pointer}}”",
-      "retiredKey": "默认值 \"{{key}}\" 已不存在。有效的键：{{keys}}",
-      "storageNotFound": "存储 \"{{name}}\" 在配置中未找到。可用: {{available}}。"
+      "retiredKey": "默认值 \"{{key}}\" 已不存在。有效的键：{{keys}}"
     },
     "container": {
       "execFailed": "container_exec 失败",
@@ -2341,7 +2291,7 @@
     },
     "regionRequired": "需要区域名称。使用 --region 或使用以下命令设置默认值：rdc config set region <name>",
     "regionSelectionRequiresTTY": "区域选择需要交互式输入。使用 --server <url> 直接指定服务器。",
-    "remoteNotFound": "\"{{name}}\"不是已知的机器、存储或集群。机器: {{machines}}。存储: {{storages}}。集群: {{clusters}}",
+    "remoteNotFound": "\"{{name}}\"不是已知的机器或集群。机器: {{machines}}。集群: {{clusters}}",
     "repo": {
       "canaryNeedsCluster": "仓库 \"{{ref}}\" 不在集群中。canary 会在两个部署之间拆分流量，因此需要一个部署在 kubernetes 中的仓库。",
       "listTargetExclusive": "最多只能传入 -m 或 --datastore 中的一个。数据存储本身已知晓由哪台机器持有。",
@@ -2350,7 +2300,10 @@
         "badMode": "无效的 --mode \"{{mode}}\"。允许：env、file。",
         "emptyValue": "密钥值不能为空（stdin 未产生任何字节）。",
         "mutuallyExclusive": "--current 和 --rotate-secret 互斥。选择一个：--current 用于验证先前的值，或 --rotate-secret 用于不验证轮换。"
-      }
+      },
+      "networkIdInUse": "仓库“{{repository}}”的网络 ID {{networkId}} 在机器“{{machine}}”上已被 {{holder}} 占用。运行 `rdc config reconcile` 可采用机器上记录的 ID。",
+      "networkIdUndiscoverable": "仓库“{{repository}}”在此配置中没有网络 ID，且无法向机器“{{machine}}”查询。请在机器可访问后重试，或运行 `rdc config reconcile`。",
+      "networkIdDiverged": "仓库“{{repository}}”在此配置中的网络 ID 为 {{localId}}，但机器“{{machine}}”记录的是 {{machineId}}。现已采用机器上的 ID。"
     },
     "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "仓库 \"{{name}}\" 已挂载在 \"{{machine}}\" 上。对活跃仓库进行迁移会导致数据损坏。请先执行: rdc repo down {{name}} --unmount",
@@ -2491,7 +2444,6 @@
     "external": "强制在外部终端窗口中启动",
     "extraMachine": "用于多机操作的额外机器 (名称:IP:用户)",
     "fields": "要包含在输出中的字段列表（逗号分隔）",
-    "file": "文件路径",
     "folder": "远程文件夹路径以打开",
     "force": "跳过确认提示",
     "function": "要执行的函数名称",
@@ -2552,12 +2504,9 @@
     "sshKey": "SSH 私钥路径（例如：~/.ssh/id_rsa）",
     "sshPort": "SSH 端口",
     "sshUser": "SSH 用户名",
-    "storageRef": "存储引用：已注册存储端点的名称（例如 s3-main）",
     "strategyName": "备份策略名称",
     "team": "团队名称",
     "urlOnly": "打印 VS Code URI 而不是启动",
-    "vaultContent": "保险箱内容为 JSON 字符串",
-    "vaultJson": "保险箱内容为 JSON 字符串",
     "verifyChecksum": "同步后使用校验和验证文件",
     "vmId": "虚拟机 ID",
     "vscodeBrowser": "从仓库沙盒内提供浏览器 VS Code（无需在本地安装 VS Code）",

@@ -71,9 +71,9 @@ export type PositionalKind =
  * `kinds` to a hard constraint: an operator can always type a value the picker
  * did not list (a machine that is not yet in config, a fork tag typed by hand).
  *
- * The 12 kinds are the noun set the addressing grammar binds. Seven resolve
- * from config families (machine/repo/datastore/storage/cluster/provider/
- * strategy); five resolve by running a discovery command
+ * The 11 kinds are the noun set the addressing grammar binds. Six resolve
+ * from config families (machine/repo/datastore/cluster/provider/strategy);
+ * five resolve by running a discovery command
  * (container/template/snapshot/job/artifact). The mapping lives in
  * {@link RESOURCE_DISCOVERY} (./discovery). There are deliberately NO
  * branch/commit kinds in v1.
@@ -82,7 +82,6 @@ export type ResourceKind =
   | 'machine'
   | 'repo'
   | 'datastore'
-  | 'storage'
   | 'cluster'
   | 'provider'
   | 'container'
@@ -377,4 +376,5 @@ export interface CliContract {
 
 /** A flattened i18n bundle: key -> translated string. */
 type ContractStrings = Record<string, string>;
+
 export type { ContractStrings };

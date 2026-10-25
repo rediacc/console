@@ -20,6 +20,7 @@ import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
+import { targetFloor } from '../config/network-id-discovery.js';
 import { outputService } from '../core/output.js';
 import { type ExecuteResult, getExecutor } from '../executor/executor-factory.js';
 import { dispatchCeph, exportCephClientConfig, resolveCephMembers } from './cluster-ceph.js';
@@ -271,11 +272,15 @@ export async function dispatch(
  * `renet kube join` MkdirAll's its own data-dir under the mount path
  * (`K3sDistro.Install`), so the join contract is UNCHANGED by dropping the repo:
  * the agent simply gets a plain directory instead of a LUKS mount. The networkID
- * is still allocated (it names the systemd unit and the node interface), and the
- * allocator's forward counter is persistent, so no id is ever handed out twice.
+ * is still allocated (it names the systemd unit and the node interface). The
+ * forward counter is per config, so on its own it does not stop a second device
+ * (or a second config) handing out an ID the node already carries; passing the
+ * node's machine name floors the allocation above that machine's used set
+ * (PLAN-config-networkid-discovery D3(a)).
  */
-export function allocateAgentNetworkId(): Promise<number> {
-  return configService.allocateNetworkId();
+export async function allocateAgentNetworkId(machine?: string): Promise<number> {
+  if (machine === undefined) return configService.allocateNetworkId();
+  return configService.allocateNetworkId({ floor: await targetFloor({ machine }) });
 }
 
 /**
@@ -312,7 +317,9 @@ async function installControlPlane(
   await dispatch('datastore_attach', control.name, { name: dsName }, { debug });
 
   const mount = controlDatastoreMount(clusterName);
-  const serverNet = await configService.allocateNetworkId();
+  const serverNet = await configService.allocateNetworkId({
+    floor: await targetFloor({ machine: control.name }),
+  });
   outputService.info(
     `Cluster "${clusterName}": installing embedded k3s server on ${control.name} (${control.ip})...`
   );
@@ -370,7 +377,7 @@ export async function installK8s(
 
   for (const agent of agents) {
     outputService.info(`  joining agent ${agent.name} (${agent.ip})...`);
-    const agentNet = await allocateAgentNetworkId();
+    const agentNet = await allocateAgentNetworkId(agent.name);
     await dispatch(
       'kube_join',
       agent.name,
@@ -419,7 +426,7 @@ export async function scaleK8sPool(
     for (let i = currentCount + 1; i <= targetCount; i++) {
       const name = `${clusterName}-${pool.name}-${i}`;
       const machine = await configService.getLocalMachine(name);
-      const net = await allocateAgentNetworkId();
+      const net = await allocateAgentNetworkId(name);
       await dispatch(
         'kube_join',
         name,

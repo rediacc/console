@@ -31,6 +31,10 @@ const { calls, state, mockExec, mockExecStreaming, mockAcquireRemoteRenet } = vi
         calls.push('router');
         return Promise.resolve('RESTARTED\n');
       }
+      if (cmd.includes('daemons upgrade')) {
+        calls.push('daemons');
+        return Promise.resolve('{"processes":[]}');
+      }
       calls.push(`exec:${cmd}`);
       return Promise.resolve('');
     }),
@@ -224,6 +228,7 @@ describe('the runtime converge trigger', () => {
       'status',
       'run:machine_converge_runtime',
       'router',
+      'daemons',
       'run:repository_up',
     ]);
   });
@@ -242,7 +247,7 @@ describe('the runtime converge trigger', () => {
 
     await run('repository_up', { repository: 'app-a' });
 
-    expect(calls).toEqual(['router', 'run:repository_up']);
+    expect(calls).toEqual(['router', 'daemons', 'run:repository_up']);
   });
 
   it('refreshes the router without a pass when nothing is stale', async () => {
@@ -251,7 +256,7 @@ describe('the runtime converge trigger', () => {
 
     await run('repository_up', { repository: 'app-a' });
 
-    expect(calls).toEqual(['status', 'router', 'run:repository_up']);
+    expect(calls).toEqual(['status', 'router', 'daemons', 'run:repository_up']);
   });
 
   it('never triggers a second converge from the converge itself', async () => {
@@ -261,7 +266,7 @@ describe('the runtime converge trigger', () => {
 
     expect(calls.filter((c) => c === 'run:machine_converge_runtime')).toHaveLength(1);
     // The status read only scopes the vault; the router refresh follows the pass.
-    expect(calls).toEqual(['status', 'run:machine_converge_runtime', 'router']);
+    expect(calls).toEqual(['status', 'run:machine_converge_runtime', 'router', 'daemons']);
   });
 
   it("carries each repo's own env secrets in the converge vault, and only for repos the machine holds", async () => {
@@ -364,6 +369,7 @@ describe('the runtime converge trigger', () => {
       'status',
       'run:machine_converge_runtime',
       'router',
+      'daemons',
       'run:repository_up',
     ]);
   });

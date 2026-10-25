@@ -8,6 +8,7 @@ import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import { targetFloor } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
@@ -25,7 +26,7 @@ import { parseVerifyVerdict } from './backup-storage-parser.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
-/** `backup list [artifact-ref]`, list backup artifacts on a machine or storage. */
+/** `backup list [artifact-ref]`, list backup artifacts on a machine. */
 function registerBackupList(backup: Command): void {
   backup
     .command('list')
@@ -149,9 +150,6 @@ function registerBackupRestore(backup: Command): void {
         const targetMachine = await resolveRestoreMachine(options);
         const resolved = await resolveRemoteName(ref.place);
         const from = resolved.type === 'cluster' ? ref.place : resolved.name;
-        if (resolved.type === 'storage') {
-          throw new ValidationError(t('commands.backup.restore.storageRetired'));
-        }
         const sourceType = 'machine';
 
         // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and then dropped, the pull ran against the machine's default, so a restore the operator asked to land on a named datastore landed somewhere else. Record the placement as the birth record (the same field `repo create` writes) so every later verb derives the right mount, and declare it on the transfer
@@ -163,7 +161,9 @@ function registerBackupRestore(backup: Command): void {
 
         // Refuse a bad target name before allocateNetworkId persists anything.
         assertResourceName(targetName);
-        const networkId = await configService.allocateNetworkId();
+        const networkId = await configService.allocateNetworkId({
+          floor: await targetFloor({ machine: targetMachine }),
+        });
         const lineage = source.grandGuid ?? source.repositoryGuid;
         await configService.addRepository(compositeKey(targetName, 'latest'), {
           ...restoredIdentity(lineage),
@@ -280,7 +280,7 @@ async function runRestorePull(args: {
   targetName: string;
   targetMachine: string;
   datastore: string | undefined;
-  sourceType: 'machine' | 'storage';
+  sourceType: 'machine';
   from: string;
   sourceGuid: string;
   debug?: boolean;

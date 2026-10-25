@@ -72,7 +72,7 @@ function cephConfigExportJson(): string {
 
 function buildConfig(clusters: Record<string, ClusterConfig>): RdcConfig {
   const cfg = createEmptyRdcConfig();
-  cfg.resources = { machines: {}, storages: {}, clusters };
+  cfg.resources = { machines: {}, clusters };
   return cfg;
 }
 
@@ -147,10 +147,15 @@ describe('installK8s (anchor-model multi-node bring-up)', () => {
     expect(calls.map((c) => c.functionName)).toEqual([
       'datastore_create', // anchor control datastore (the CP lives inside it)
       'datastore_attach', // mount it at /mnt/rediacc-ds/ds-control-prod
+      'network_used', // the server's ID floor: the control node's used set (D3(a))
       'kube_install', // embedded k3s server, --data-dir inside the anchor datastore
       'kube_join_token', // read token
+      'network_used', // the agent's ID floor: the agent node's own used set
       'kube_join', // agent
     ]);
+    expect(
+      calls.filter((c) => c.functionName === 'network_used').map((c) => c.machineName)
+    ).toEqual(['prod-cp-1', 'prod-w-1']);
 
     // Local backend (no ceph pool): control datastore is local, cluster-labeled.
     const create = calls.find((c) => c.functionName === 'datastore_create');
@@ -299,8 +304,10 @@ describe('forkCluster (P3 anchor+rejoin orchestrator)', () => {
       'datastore_adopt',
       'datastore_attach', // ds-control-prod:joseph
       'datastore_attach', // shop:joseph
+      'network_used', // the fork network ID starts above every ID dest-cp-1 uses
       'kube_identity_rewrite',
       'kube_join_token',
+      'network_used', // the agent's network ID starts above every ID dest-w-1 uses
       'kube_join',
     ]);
 

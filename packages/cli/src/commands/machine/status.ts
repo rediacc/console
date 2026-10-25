@@ -17,8 +17,10 @@ import {
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import type { RuntimeRepoLicenseStatus } from '../../services/account/license.js';
+import type { StaleBackupRepo } from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
+import type { RenetProcess } from '../../services/renet/renet-daemons.js';
 import type { InfraConfig, MachineConfig, OutputFormat } from '../../types/index.js';
 import { ambiguous, notFound } from '../../utils/cli-exit-error.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
@@ -634,13 +636,15 @@ async function gatherStatus(
   guidMap: Awaited<ReturnType<typeof loadGuidMap>>;
   machineConfig: MachineConfig | undefined;
   licenseDetail: Map<string, RuntimeRepoLicenseStatus>;
+  staleBinary: RenetProcess[] | null;
+  staleBackups: StaleBackupRepo[];
 }> {
   const { fetchMachineStatus, fetchRepoLicenseDetail } = await import(
     '../../services/machine/machine-status.js'
   );
   const wantsLicenses = sections.length === 0 || sections.includes('licenses');
 
-  const [listResult, guidMap, machineConfig, licenseEntries] = await Promise.all([
+  const [listResult, guidMap, machineConfig, licenseEntries, staleBinary] = await Promise.all([
     withSpinner(
       t('commands.machine.status.fetching', { machine: machineName }),
       () =>
@@ -653,6 +657,7 @@ async function gatherStatus(
     loadGuidMap(),
     configService.getLocalMachine(machineName).catch(() => undefined),
     wantsLicenses ? fetchRepoLicenseDetail(machineName) : Promise.resolve([]),
+    fetchStaleBinaries(machineName),
   ]);
 
   return {
@@ -660,7 +665,82 @@ async function gatherStatus(
     guidMap,
     machineConfig,
     licenseDetail: new Map(licenseEntries.map((entry) => [entry.repositoryGuid, entry])),
+    staleBinary,
+    staleBackups: await fetchStaleBackups(machineName, listResult),
   };
+}
+
+/**
+ * renet processes still running a replaced binary (C4). Read from /proc over its own exec, so it
+ * answers whatever renet version the machine has. Null when the probe could not run: unknown is
+ * never reported as "none stale".
+ */
+export async function fetchStaleBinaries(machineName: string): Promise<RenetProcess[] | null> {
+  try {
+    const { machineConnections } = await import('../../services/machine/machine-connection.js');
+    const { probeStaleRenetProcesses } = await import('../../services/renet/renet-daemons.js');
+    const { REMOTE_RENET_PATH } = await import('../../services/renet/renet-provisioner.js');
+    const lease = await machineConnections.acquire(machineName);
+    try {
+      return await probeStaleRenetProcesses(lease.sftp, REMOTE_RENET_PATH);
+    } finally {
+      lease.release();
+    }
+  } catch {
+    return null;
+  }
+}
+
+/** Repos whose last backup is older than 2x the schedule covering them (G7). */
+export async function fetchStaleBackups(
+  machineName: string,
+  listResult: ListResult
+): Promise<StaleBackupRepo[]> {
+  if (!listResult.backup_coverage) return [];
+  const config = await configService.getCurrent().catch(() => null);
+  if (!config) return [];
+  const { machineStaleBackups } = await import('../../services/backup/backup-schedule-coverage.js');
+  return machineStaleBackups(config, machineName, listResult.backup_coverage);
+}
+
+/** Table rows for the stale-binary section. */
+export function staleBinaryRows(procs: RenetProcess[]): Record<string, unknown>[] {
+  return procs.map((p) => ({ pid: p.pid, unit: p.unit, exe: p.exe }));
+}
+
+/** Table rows for the stale-backup section. */
+export function staleBackupRows(
+  stale: StaleBackupRepo[],
+  resolve: (guid: string) => string
+): Record<string, unknown>[] {
+  return stale.map((b) => ({
+    repository: resolve(b.guid),
+    lastBackup: b.lastSuccessAt,
+    ageDays: b.ageDays,
+    scheduleEveryDays: b.intervalDays,
+  }));
+}
+
+/** The staleness sections and their warnings, printed after the main tables. */
+function renderStaleness(
+  staleBinary: RenetProcess[] | null,
+  staleBackups: StaleBackupRepo[],
+  resolve: (guid: string) => string
+): void {
+  if (staleBinary && staleBinary.length > 0) {
+    outputService.info(`\n${t('commands.machine.status.staleBinarySection')}`);
+    writeStdout(`${outputService.formatTable(staleBinaryRows(staleBinary))}\n`);
+    outputService.warn(
+      t('commands.machine.status.staleBinaryWarning', { count: staleBinary.length })
+    );
+  }
+  if (staleBackups.length > 0) {
+    outputService.info(`\n${t('commands.machine.status.staleBackupSection')}`);
+    writeStdout(`${outputService.formatTable(staleBackupRows(staleBackups, resolve))}\n`);
+    outputService.warn(
+      t('commands.machine.status.staleBackupWarning', { count: staleBackups.length })
+    );
+  }
 }
 
 export function registerStatusCommand(machine: Command, program: Command): void {
@@ -690,11 +770,8 @@ export function registerStatusCommand(machine: Command, program: Command): void 
 
         const sections = collectSections(options);
 
-        const { listResult, guidMap, machineConfig, licenseDetail } = await gatherStatus(
-          machineName,
-          sections,
-          options.debug
-        );
+        const { listResult, guidMap, machineConfig, licenseDetail, staleBinary, staleBackups } =
+          await gatherStatus(machineName, sections, options.debug);
 
         const infra = machineConfig?.infra;
         const format = program.opts().output as OutputFormat;
@@ -729,7 +806,14 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             licenseDetail,
             machineName
           );
-          outputService.print(enriched, format);
+          outputService.print(
+            {
+              ...enriched,
+              stale_binary: staleBinary,
+              backup_staleness: staleBackups,
+            },
+            format
+          );
         } else {
           renderTableMode(
             listResult,
@@ -741,6 +825,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             machineName
           );
           renderBlockedBackupAlerts(licenseDetail);
+          renderStaleness(staleBinary, staleBackups, resolve);
         }
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)

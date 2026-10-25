@@ -24,13 +24,24 @@ function scanUsedNetworkIds(config: RdcConfig): Set<number> {
  * server's compare-and-swap: the updater runs again on the fresh server copy
  * after a conflict, so the loser of a race allocates past the winner's ID, and
  * the returned ID is the one from the attempt that landed.
+ *
+ * `floor` is the network IDs the TARGET machine already reports in use (operator
+ * ruling D3(a): never every machine in the config). The counter then moves to
+ * `max(local next, max(floor) + 64)`, forward only, so a device whose counter
+ * lags another device's allocations on the same machine skips past them instead
+ * of handing out a held ID. An empty or absent floor leaves today's sequence.
  */
-export async function allocateNetworkIdInStore(configName: string): Promise<number> {
+export async function allocateNetworkIdInStore(
+  configName: string,
+  options: { floor?: Iterable<number> } = {}
+): Promise<number> {
+  const floorNext = networkIdFloor(options.floor);
   let allocated = 0;
   await configFileStorage.updateState(configName, (config) => {
     const usedIds = scanUsedNetworkIds(config);
     let nextId = config.state?.networkIds?.next;
     if (nextId === undefined || nextId < MIN_NETWORK_ID) nextId = pickInitialNetworkId(usedIds);
+    if (floorNext !== undefined && floorNext > nextId) nextId = floorNext;
     // If the forward counter is approaching the limit, scan for freed gaps (handles long-lived systems where many repos have been created + deleted).
     if (nextId > MAX_NETWORK_ID) nextId = findFreeNetworkIdSlot(usedIds, MAX_NETWORK_ID);
     allocated = nextId;
@@ -43,6 +54,24 @@ export async function allocateNetworkIdInStore(configName: string): Promise<numb
     };
   });
   return allocated;
+}
+
+/**
+ * The lowest ID the counter may hand out given a machine's used set: one step
+ * past its highest claimant, or `undefined` when the set has no valid ID. The
+ * result stays on the 64-step grid even if a claimant is off it.
+ */
+export function networkIdFloor(used: Iterable<number> | undefined): number | undefined {
+  if (used === undefined) return undefined;
+  let maxId = -1;
+  for (const id of used) {
+    if (Number.isInteger(id) && id >= MIN_NETWORK_ID && id > maxId) maxId = id;
+  }
+  if (maxId < 0) return undefined;
+  const aligned =
+    MIN_NETWORK_ID +
+    Math.floor((maxId - MIN_NETWORK_ID) / NETWORK_ID_INCREMENT) * NETWORK_ID_INCREMENT;
+  return aligned + NETWORK_ID_INCREMENT;
 }
 
 // Find the initial network ID when the forward counter is missing or stale. Avoids `Math.max(...usedIds)` because JS engines cap function arguments around 65536 while the network ID space allows ~261000 IDs, a long-lived shared config can hit that cap before the MAX_NETWORK_ID ceiling.

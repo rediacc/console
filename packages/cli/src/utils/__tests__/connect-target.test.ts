@@ -43,7 +43,6 @@ function buildConfig(): RdcConfig {
       mail: { ip: '5.6.7.9', user: 'root' },
       'prod-k8s-1': { ip: '1.2.3.4', user: 'root', cluster: { cluster: 'prod', pool: 'k8s' } },
     },
-    storages: {},
     clusters: { prod: prodCluster },
     datastores: {
       'ds-k8s': {

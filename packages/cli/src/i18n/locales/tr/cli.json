@@ -71,7 +71,6 @@
         "restored": "{{name}}, {{machine}} üzerine geri yüklendi",
         "restoringSnapshot": "{{name}}, {{snapshot}} anlık görüntüsünden geri yükleniyor...",
         "sourceUnknown": "Bu yapılandırmada \"{{name}}\" adlı bir depo bilinmiyor, bu yüzden yedek artefaktı bulunamıyor.",
-        "storageRetired": "Depolama arka ucundan geri yükleme kaldırıldı: rclone bulut kolu artık yok. Belirli bir ana geri dönüş `rdc backup restore <repo> --at <snapshot>` ile, parça deposu üzerinden yapılır",
         "streamUnknown": "Bu deponun kaynak makinesindeki yedek akışı hangisi, belirlenemiyor (makinedeki yedek doğrulaması başarısız oldu ya da makine, dizinin listelediği işlenmiş bir anlık görüntü bildirmiyor). Bu soyun tüm akışları arasından seçmek için --any-stream kullanın.",
         "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin."
       },
@@ -139,21 +138,18 @@
         "set": {
           "description": "Yedekleme stratejisi oluştur veya güncelle",
           "examples": {
-            "configure": "Bir yedekleme stratejisinin depolamasını ve modunu yapılandır.",
+            "configure": "Bir yedekleme stratejisinin zamanlamasını ve modunu yapılandır.",
             "disable": "Bir yedekleme stratejisini kapat."
           },
-          "optionBwlimit": "Rclone bant genişliği sınırı (ör. \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionBwlimit": "Saniye başına bayt cinsinden yükleme bant genişliği sınırı, isteğe bağlı K/M/G son ekiyle (ör. \"6M\", \"500K\")",
           "optionCron": "Cron zamanlaması (ör. \"0 * * * *\" saatlik için)",
-          "optionDestination": "Strateji içindeki hedef adı. --storage verilmedikçe bir Rediacc parça depolama hedefi oluşturur",
+          "optionDestination": "Strateji içindeki hedef adı. Bir Rediacc parça depolama hedefi oluşturur",
           "optionDisable": "Stratejiyi veya hedefi devre dışı bırak",
           "optionEnable": "Stratejiyi veya hedefi etkinleştir",
           "optionExclude": "Bu depoları yedeklemeden hariç tut (virgülle ayrılmış adlar)",
-          "optionFolder": "Bu hedef için depolama kovasındaki alt klasör (ör. hot, cold). --storage gerektirir",
           "optionInclude": "Yalnızca bu depoları yedekle (virgülle ayrılmış adlar)",
           "optionMode": "Yedekleme modu: \"hot\" her şey çalışırken anlık görüntü alır, \"cold\" görüntü alınırken konteynerleri durdurur",
-          "optionStorage": "Parça depolama yerine bu rclone depolama yapılandırmasını kullan. Eski yöntem: böyle bir hedef zamanlanamaz",
-          "saved": "Yedekleme stratejisi yapılandırması kaydedildi",
-          "storageRequired": "Bu hedef için --storage <storage-name> gereklidir. Belirtilmezse depolama kovası olmayan, dolayısıyla --folder da olmayan bir Rediacc parça depolama hedefi elde edersiniz"
+          "saved": "Yedekleme stratejisi yapılandırması kaydedildi"
         },
         "show": {
           "description": "Yedekleme stratejisi ayrıntılarını göster",
@@ -642,7 +638,7 @@
     },
     "credits": {
       "bundledTitle": "Çalışma zamanı ve paketlenmiş bağımlılıklar:",
-      "description": "rdc ile birlikte paketlenen üçüncü taraf bileşenleri yazdırır: renet'in gömdüğü ve taşıdığı ikili dosyalar (CRIU, rsync, rclone), gömülü Node.js çalışma zamanı ve paketlenmiş npm bağımlılıkları. Sürümleri, SPDX lisans tanımlayıcılarını ve GPL uyumluluğu için gereken tam sürüm kaynak arşivi URL'lerini gösterir. Sürüm derlemeleriyle paketlenen tam THIRD_PARTY_LICENSES metnini yazdırmak için --licenses kullanın.",
+      "description": "rdc ile birlikte paketlenen üçüncü taraf bileşenleri yazdırır: renet'in gömdüğü ve taşıdığı ikili dosyalar (CRIU, rsync), gömülü Node.js çalışma zamanı ve paketlenmiş npm bağımlılıkları. Sürümleri, SPDX lisans tanımlayıcılarını ve GPL uyumluluğu için gereken tam sürüm kaynak arşivi URL'lerini gösterir. Sürüm derlemeleriyle paketlenen tam THIRD_PARTY_LICENSES metnini yazdırmak için --licenses kullanın.",
       "descriptionShort": "Üçüncü taraf atıflarını ve lisans uyumluluğu bilgilerini göster",
       "embeddedTitle": "Gömülü ikili dosyalar (renet tarafından taşınır):",
       "gplHeader": "GPL kaynak kodu erişilebilirliği:",
@@ -1105,7 +1101,11 @@
         "storageHealthPoolSummary": "Havuz: {{used}} dolu, {{free}} boş (%{{percent}} dolu)",
         "storageHealthSummary": "Depolama verimliliği: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteyner sapma eşiğini aştı; sıfır olmayan koduyla çıkılıyor",
-        "syncCertsFailed": "Sertifika önbelleği senkronizasyonu başarısız: {{error}}"
+        "syncCertsFailed": "Sertifika önbelleği senkronizasyonu başarısız: {{error}}",
+        "staleBinarySection": "Eski İkili Dosyalar",
+        "staleBinaryWarning": "{{count}} renet süreci hâlâ değiştirilmiş bir ikili dosyayla çalışıyor ve birimleri yeniden başlayana kadar eski kodu kullanıyor.",
+        "staleBackupSection": "Gecikmiş Yedekler",
+        "staleBackupWarning": "{{count}} deponun son yedeği, zamanlama aralığının iki katından daha eski."
       },
       "gpu": {
         "descriptionShort": "Bir makinenin GPU'larını ve cihaz izinlerini incele",
@@ -1612,8 +1612,7 @@
         "optionStrategy": "Delta temeli kullanırken blok-delta stratejisi: auto, physical veya shared",
         "optionUp": "Pull sonrası bu makinede depoyu bağla ve dağıt",
         "pulling": "\"{{repo}}\" yedeği alınıyor...",
-        "sourceRequired": "--from <machine> belirtin (yapılandırmadaki makine adı)",
-        "storageRetired": "Depolama arka ucundan çekme kaldırıldı: rclone bulut kolu artık yok. Belirli bir ana geri dönüş için `rdc backup restore <repo> --at <snapshot>` kullanılır, parça deposu üzerinden. Makineler arası aktarım değişmedi: --from-machine kullanın"
+        "sourceRequired": "--from <machine> belirtin (yapılandırmadaki makine adı)"
       },
       "push": {
         "deployed": "\"{{repo}}\" deposu {{machine}} üzerinde dağıtıldı",
@@ -1635,8 +1634,7 @@
         "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor...",
         "statsDelta": "\"{{repo}}\" {{machine}} hedefine gönderildi: {{duration}} içinde {{transferred}} aktarıldı (taban {{base}} ile delta, imaj {{image}})",
         "statsFull": "\"{{repo}}\" {{machine}} hedefine gönderildi: {{duration}} içinde {{transferred}} aktarıldı (tam aktarım)",
-        "statsNoBytes": "\"{{repo}}\" {{machine}} hedefine gönderildi: {{duration}} içinde tamamlandı",
-        "storageRetired": "Depolama arka ucuna gönderim kaldırıldı: rclone bulut kolu artık yok. Belirli bir ana ait yedek için `rdc backup snapshot` (yükleme) ve `rdc backup restore <repo> --at <snapshot>` (indirme) kullanılır, ikisi de parça deposu üzerinden. Makineler arası aktarım değişmedi: --to-machine kullanın"
+        "statsNoBytes": "\"{{repo}}\" {{machine}} hedefine gönderildi: {{duration}} içinde tamamlandı"
       },
       "refMachineConflict": "Bir depo referansı kendi makinesini kendisi belirler. -m/--machine'i yalnızca makine geneli biçim için kullanın: repo {{verb}} --all -m <machine>.",
       "replicate": {
@@ -1842,53 +1840,6 @@
       },
       "trace": {
         "description": "Bir görevi izle (kısayol: queue trace)"
-      }
-    },
-    "storage": {
-      "add": {
-        "added": "\"{{name}}\" depolaması kaydedildi",
-        "adding": "\"{{name}}\" depolaması kaydediliyor...",
-        "description": "Bir depolama uç noktası kaydet.",
-        "examples": {
-          "basic": "Bir vault tanımından depolama arka ucu kaydet."
-        }
-      },
-      "browse": {
-        "description": "Bir depolama sistemindeki dosyaları göz at",
-        "listing": "\"{{name}}\" içindeki dosyalar listeleniyor...",
-        "noFiles": "Dosya bulunamadı",
-        "pathOption": "Listelenecek alt dizin yolu"
-      },
-      "description": "Harici yedekleme depolama uç noktalarını yönet (S3 ve diğer rclone uyumlu hedefler): uç noktaları kaydet ve kaldır, kayıtlıları listele, tuttukları artefaktlara göz at ve sahipsiz yedekleri temizle.",
-      "descriptionShort": "Depolamayı yönet",
-      "import": {
-        "description": "Bir rclone yapılandırma dosyasından depoları içe aktar",
-        "imported": "\"{{name}}\" depolama alanı içe aktarıldı ({{type}})",
-        "noConfigs": "Dosyada geçerli depolama yapılandırması bulunamadı",
-        "notFound": "\"{{name}}\" depolama alanı yapılandırma dosyasında bulunamadı",
-        "optionName": "Yalnızca belirtilen bölümü içe aktar",
-        "summary": "{{count}} depolama alanı içe aktarıldı",
-        "unsupported": "\"{{name}}\" atlanıyor: desteklenmeyen sağlayıcı türü \"{{type}}\""
-      },
-      "list": {
-        "description": "Depolama uç noktalarını listele. Tam ayrıntı için bir ad verin.",
-        "noStorages": "Yapılandırılmış depolama uç noktası yok. Şununla bir tane kaydedin: rdc storage add <name> --vault <json>",
-        "optionReveal": "Depolama yapılandırmasını açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)"
-      },
-      "prune": {
-        "completed": "{{count}} sahipsiz yedek temizlendi",
-        "description": "Hiçbir yapılandırmada bulunmayan sahipsiz yedekleri depolamadan sil. Çoklu yapılandırma güvenli, ek süre korumalı.",
-        "descriptionShort": "Sahipsiz yedekleri depolamadan sil",
-        "forceDeleteMountedOption": "Bağlama güvenlik kontrolünü geçersiz kıl ve kaynak GUID şu anda yürütücü makinede bağlı olsa veya çalışan bir konteyneri olsa bile bulut yedeklerini sil. --force seçeneğinden farklıdır (yalnızca arşivlenmiş depolar için erteleme süresini geçersiz kılar).",
-        "found": "Depolamada {{count}} yedek bulundu",
-        "listing": "\"{{storage}}\" içindeki yedekler listeleniyor...",
-        "machineOption": "Yürütücü makine: depoya karşı rclone list/delete çağrılarını çalıştırır. Müşterilerin yerel olarak rclone'un kurulu olması beklenmediği için gereklidir; depolama kimlik bilgileri yine yerel yapılandırmanızdan gelir.",
-        "noBackups": "Depolamada yedek bulunamadı"
-      },
-      "remove": {
-        "confirm": "\"{{name}}\" depolama uç noktası kaldırılsın mı?",
-        "description": "Yapılandırmadan bir depolama uç noktasını kaldır.",
-        "removed": "\"{{name}}\" depolaması kaldırıldı"
       }
     },
     "subscription": {
@@ -2282,8 +2233,7 @@
       "machineNotFound": "\"{{name}}\" makinesi yapılandırmada bulunamadı. Mevcut: {{available}}.",
       "noActiveConfig": "Aktif yapılandırma yok",
       "pointerNotFound": "Pointer \"{{pointer}}\" bulunamadı",
-      "retiredKey": "\"{{key}}\" varsayılanı artık mevcut değil. Geçerli anahtarlar: {{keys}}",
-      "storageNotFound": "\"{{name}}\" depolama alanı yapılandırmada bulunamadı. Mevcut: {{available}}."
+      "retiredKey": "\"{{key}}\" varsayılanı artık mevcut değil. Geçerli anahtarlar: {{keys}}"
     },
     "container": {
       "execFailed": "container_exec başarısız oldu",
@@ -2341,7 +2291,7 @@
     },
     "regionRequired": "Bölge adı gerekli. --region kullanın veya varsayılanı şu komutla ayarlayın: rdc config set region <name>",
     "regionSelectionRequiresTTY": "Bölge seçimi etkileşimli giriş gerektirir. Doğrudan bir sunucu belirtmek için --server <url> kullanın.",
-    "remoteNotFound": "\"{{name}}\" bilinen bir makine, depolama veya küme değil. Makineler: {{machines}}. Depolamalar: {{storages}}. Kümeler: {{clusters}}",
+    "remoteNotFound": "\"{{name}}\" bilinen bir makine veya küme değil. Makineler: {{machines}}. Kümeler: {{clusters}}",
     "repo": {
       "canaryNeedsCluster": "\"{{ref}}\" deposu bir kümede değil. Bir canary trafiği iki dağıtım arasında böler, bu yüzden kubernetes'e yerleştirilmiş bir depo gerektirir.",
       "listTargetExclusive": "-m veya --datastore seçeneklerinden en fazla birini geçirin. Bir veri deposu hangi makinenin onu tuttuğunu zaten bilir.",
@@ -2350,7 +2300,10 @@
         "badMode": "Geçersiz --mode \"{{mode}}\". İzin verilen: env, file.",
         "emptyValue": "Gizli değer boş olamaz (stdin hiç bayt üretmedi).",
         "mutuallyExclusive": "--current ve --rotate-secret karşılıklı dışlayıcıdır. Birini seçin: önceki değeri doğrulamak için --current veya doğrulama olmadan döndürmek için --rotate-secret."
-      }
+      },
+      "networkIdInUse": "\"{{repository}}\" deposunun {{networkId}} ağ kimliği, \"{{machine}}\" makinesinde zaten {{holder}} tarafından kullanılıyor. Makinenin kaydettiği kimlikleri almak için `rdc config reconcile` çalıştırın.",
+      "networkIdUndiscoverable": "\"{{repository}}\" deposunun bu yapılandırmada ağ kimliği yok ve \"{{machine}}\" makinesine sorulamadı. Makineye erişilebildiğinde yeniden deneyin ya da `rdc config reconcile` çalıştırın.",
+      "networkIdDiverged": "\"{{repository}}\" deposunun bu yapılandırmadaki ağ kimliği {{localId}} idi, ancak \"{{machine}}\" makinesi {{machineId}} kaydediyor. Artık makinenin kimliği geçerli."
     },
     "repoNotDeployed": "Depo \"{{repository}}\" {{machine}} üzerinde dağıtılmamış.\n\nÖnce dağıtın:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "\"{{name}}\" deposu zaten \"{{machine}}\" üzerinde bağlı. Aktif bir depo üzerinde taşıma işlemi veri bozulmasına yol açar. Önce şunu çalıştırın: rdc repo down {{name}} --unmount",
@@ -2491,7 +2444,6 @@
     "external": "Dış terminal penceresinde başlatmaya zorla",
     "extraMachine": "Çoklu makine işlemleri için ek makine (ad:ip:kullanıcı)",
     "fields": "Çıkışa dahil edilecek alanların virgülle ayrılmış listesi",
-    "file": "Dosya yolu",
     "folder": "Uzak klasör yolu",
     "force": "Onay istemlerini atla",
     "function": "Yürütülecek işlev adı",
@@ -2552,12 +2504,9 @@
     "sshKey": "SSH özel anahtarının yolu (örn. ~/.ssh/id_rsa)",
     "sshPort": "SSH bağlantı noktası",
     "sshUser": "SSH kullanıcı adı",
-    "storageRef": "Depolama referansı: kayıtlı bir depolama uç noktasının adı (örn. s3-main)",
     "strategyName": "Yedekleme stratejisi adı",
     "team": "Takım adı",
     "urlOnly": "VS Code URI'sini yazdırın, başlatmayın",
-    "vaultContent": "Kasa içeriği JSON dizesi olarak",
-    "vaultJson": "Kasa içeriği JSON dizesi olarak",
     "verifyChecksum": "Senkronizasyondan sonra dosyaları sağlama toplamı kullanarak doğrulayın",
     "vmId": "Sanal makine kimliği",
     "vscodeBrowser": "Depo sandbox'ı içinden tarayıcı VS Code sun (yerel VS Code gerekmez)",

@@ -212,8 +212,8 @@ export const StateSchema = z.object({
         /** ISO timestamp of the last recorded run for this repo. */
         lastRunAt: z.string(),
         /** What produced this record. */
-        // 'snapshot' is the chunk-store write path. 'backup' is the retired rclone push, kept accepted so run histories written before the
-        // cutover still parse; nothing emits it. This enum and BackupRunKind
+        // 'snapshot' is the chunk-store write path. 'backup' is the retired push-to-storage kind,
+        // kept accepted so run histories written before the cutover still parse; nothing emits it. This enum and BackupRunKind
         // in packages/cli/src/services/backup/backup-runs-state.ts are the
         // same vocabulary declared twice; they must be changed together.
         kind: z.enum(['backup', 'snapshot', 'restore', 'verify']),

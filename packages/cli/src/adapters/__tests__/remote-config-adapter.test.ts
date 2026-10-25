@@ -224,7 +224,6 @@ describe('RemoteConfigAdapter', () => {
         version: 3,
         machines: {},
         repositories: {},
-        storages: {},
         ssh: null,
       });
 
@@ -266,7 +265,6 @@ describe('RemoteConfigAdapter', () => {
         version: 5,
         machines: { prod: { ip: '10.0.0.1', user: 'root' } },
         repositories: {},
-        storages: {},
         ssh: null,
       });
 
@@ -308,7 +306,6 @@ describe('RemoteConfigAdapter', () => {
         version: 1,
         machines: {},
         repositories: {},
-        storages: {},
       });
 
       await adapter.pull();

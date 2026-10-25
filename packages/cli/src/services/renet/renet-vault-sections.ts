@@ -11,41 +11,6 @@ export interface RepoEntryConfig {
   secretFiles?: { name: string; value: string }[];
 }
 
-function buildStorageSection(vault: Record<string, unknown>): Record<string, unknown> | null {
-  const provider = String(vault.provider ?? '');
-  if (!provider) return null;
-
-  const section: Record<string, unknown> = { backend: provider };
-  if (vault.bucket) section.bucket = String(vault.bucket);
-  if (vault.region) section.region = String(vault.region);
-  if (vault.folder !== undefined && vault.folder !== null) {
-    section.folder = String(vault.folder);
-  }
-
-  const parameters: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(vault)) {
-    if (['provider', 'bucket', 'region', 'folder'].includes(key)) continue;
-    parameters[key] = value;
-  }
-  if (Object.keys(parameters).length > 0) {
-    section.parameters = parameters;
-  }
-
-  return section;
-}
-
-export function buildStorageSystems(
-  storages: Record<string, { vaultContent: Record<string, unknown> }> | undefined
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  if (!storages) return result;
-  for (const [name, storage] of Object.entries(storages)) {
-    const section = buildStorageSection(storage.vaultContent);
-    if (section) result[name] = section;
-  }
-  return result;
-}
-
 /** Build a single repository entry from config and params. */
 function buildSingleRepoEntry(
   repoName: string,

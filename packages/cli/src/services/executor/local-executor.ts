@@ -65,7 +65,7 @@ import {
 } from './renet-output.js';
 import { prepareSessionVault, sessionConvergeDeps } from './session-converge.js';
 import type { ExecuteOptions, ExecuteResult } from './types.js';
-import { loadContextRepositories, loadContextStorages, resolveKnownHosts } from './vault-inputs.js';
+import { loadContextRepositories, resolveKnownHosts } from './vault-inputs.js';
 
 // The pieces split out of this module stay importable from it, so no caller had to move.
 export { needsLicenseRecovery } from './license-recovery.js';
@@ -429,7 +429,6 @@ class LocalExecutorService {
     const sshPublicKey =
       config.sshPublicKey ?? (await readOptionalSSHKey(config.ssh.publicKeyPath));
     const sshKnownHosts = await resolveKnownHosts(machine.knownHosts);
-    const storages = await loadContextStorages();
     const { credentials: repositoryCredentials, configs: repositoryConfigs } =
       await loadContextRepositories();
 
@@ -446,7 +445,6 @@ class LocalExecutorService {
       sshPublicKey,
       sshKnownHosts,
       extraMachines,
-      storages,
       repositoryCredentials,
       repositoryConfigs,
     };

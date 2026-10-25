@@ -34,13 +34,16 @@ import { createServeApp } from '../server.js';
 import { SessionStore } from '../sessions.js';
 
 // /v1/command dispatches the REAL Commander tree, which would otherwise read the developer's own config off disk. This is the only stub.
+vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn(() => Promise.resolve(7)),
+}));
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
     getRepository: vi.fn((name: string) =>
       Promise.resolve({ repositoryGuid: `guid-${name}`, credential: 'set', networkId: 7 })
     ),
-    ensureRepositoryNetworkId: vi.fn(() => Promise.resolve(7)),
     getLanguage: vi.fn(() => Promise.resolve('en')),
     applyDefaults: vi.fn((o: Record<string, unknown>) => Promise.resolve(o)),
     setRuntimeConfig: vi.fn(),

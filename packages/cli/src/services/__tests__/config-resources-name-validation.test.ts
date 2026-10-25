@@ -9,7 +9,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 let writes = 0;
 let mockRepos: Record<string, unknown> = {};
 let mockMachines: Record<string, unknown> = {};
-let mockStorages: Record<string, unknown> = {};
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: { update: vi.fn(), read: vi.fn(() => ({})) },
@@ -38,12 +37,6 @@ vi.mock('../config/config-base.js', () => ({
           mockMachines = m;
           return Promise.resolve();
         },
-        getStorages: () => mockStorages,
-        setStorages: (s: Record<string, unknown>) => {
-          writes++;
-          mockStorages = s;
-          return Promise.resolve();
-        },
       });
     }
   },
@@ -54,7 +47,6 @@ describe('add* name validation precedes the write', { timeout: 30000 }, () => {
     writes = 0;
     mockRepos = {};
     mockMachines = {};
-    mockStorages = {};
   });
 
   it('addRepository refuses an uppercase family name and writes nothing', async () => {
@@ -69,14 +61,6 @@ describe('add* name validation precedes the write', { timeout: 30000 }, () => {
     ).rejects.toThrow('Invalid resource name "lvA"');
     expect(writes).toBe(0);
     expect(mockRepos).toEqual({});
-  });
-
-  it('addStorage refuses an invalid name and writes nothing', async () => {
-    const { configService } = await import('../config/config-resources.js');
-    await expect(configService.addStorage('Bad_Name', {} as never)).rejects.toThrow(
-      'Invalid resource name'
-    );
-    expect(writes).toBe(0);
   });
 
   it('addRepository still accepts a valid name:tag', async () => {

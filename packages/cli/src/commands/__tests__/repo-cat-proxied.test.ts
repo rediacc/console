@@ -82,7 +82,6 @@ const CONFIG = {
         },
       },
     },
-    storages: {},
   },
   encryption: { mode: 'plaintext' },
 } as unknown as RdcConfig;

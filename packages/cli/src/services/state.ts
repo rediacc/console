@@ -44,13 +44,6 @@ export interface MachineProvider {
   }): Promise<MachineWithVaultStatusData | null>;
 }
 
-export interface StorageProvider {
-  list(params: { teamName: string }): Promise<ResourceRecord[]>;
-  create(params: Record<string, unknown>): Promise<MutationResult>;
-  rename(params: Record<string, unknown>): Promise<MutationResult>;
-  delete(params: Record<string, unknown>): Promise<MutationResult>;
-}
-
 export interface VaultProvider {
   getConnectionVaults(
     teamName: string,
@@ -65,7 +58,6 @@ export interface VaultProvider {
 
 export interface IStateProvider {
   readonly machines: MachineProvider;
-  readonly storage: StorageProvider;
   readonly vaults: VaultProvider;
 }
 
@@ -117,44 +109,6 @@ class LocalMachineProvider implements MachineProvider {
       machineName: params.machineName,
       vaultStatus: JSON.stringify(listResult),
     };
-  }
-}
-
-class LocalStorageProvider implements StorageProvider {
-  async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
-    const storages = await configService.listStorages();
-    return storages.map((s) => ({
-      storageName: s.name,
-      provider: s.config.provider,
-    }));
-  }
-
-  async create(params: Record<string, unknown>): Promise<MutationResult> {
-    const storageName = params.storageName as string;
-    const vaultContent = params.vaultContent;
-    if (typeof vaultContent !== 'string' || vaultContent.length === 0) {
-      throw new Error('storage create requires --vault <json> with the storage configuration');
-    }
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(vaultContent) as Record<string, unknown>;
-    } catch {
-      throw new Error('--vault must be valid JSON (e.g. \'{"provider":"s3",...}\')');
-    }
-    await configService.addStorage(storageName, {
-      provider: typeof parsed.provider === 'string' ? parsed.provider : 'unknown',
-      vaultContent: parsed,
-    });
-    return { success: true };
-  }
-
-  rename(_params: Record<string, unknown>): Promise<MutationResult> {
-    return Promise.reject(new UnsupportedOperationError('storage rename'));
-  }
-
-  async delete(params: Record<string, unknown>): Promise<MutationResult> {
-    await configService.removeStorage(params.storageName as string);
-    return { success: true };
   }
 }
 
@@ -240,12 +194,10 @@ class LocalVaultProvider implements VaultProvider {
 
 export class LocalStateProvider implements IStateProvider {
   readonly machines: MachineProvider;
-  readonly storage: StorageProvider;
   readonly vaults: VaultProvider;
 
   constructor() {
     this.machines = new LocalMachineProvider();
-    this.storage = new LocalStorageProvider();
     this.vaults = new LocalVaultProvider();
   }
 }

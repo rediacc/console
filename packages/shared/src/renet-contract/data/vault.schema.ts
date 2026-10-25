@@ -34,15 +34,6 @@ export const MachineSectionSchema = z.object({
   known_hosts: z.string().optional().describe('SSH known_hosts entries for this machine'),
 });
 
-/** Storage system configuration (rclone backends) */
-export const StorageSectionSchema = z.object({
-  backend: z.string().min(1).describe('Storage backend type (s3, b2, azure, etc.)'),
-  bucket: z.string().optional().describe('Bucket name'),
-  region: z.string().optional().describe('Region'),
-  folder: z.string().optional().describe('Folder path'),
-  parameters: z.record(z.string(), z.unknown()).optional().describe('Additional parameters'),
-});
-
 /** Repository name and GUID mapping */
 export const RepositoryInfoSchema = z.object({
   guid: z.string().min(1).describe('Repository GUID'),
@@ -86,10 +77,6 @@ export const RenetVaultSchema = z.object({
     .record(z.string(), MachineSectionSchema)
     .optional()
     .describe('Additional machines for multi-machine operations'),
-  storage_systems: z
-    .record(z.string(), StorageSectionSchema)
-    .optional()
-    .describe('Storage system configurations'),
   repository_credentials: z
     .record(z.string(), z.string())
     .optional()

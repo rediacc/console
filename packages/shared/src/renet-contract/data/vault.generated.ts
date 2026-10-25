@@ -47,20 +47,6 @@ export interface MachineSection {
   known_hosts?: string;
 }
 
-/** Storage system configuration (rclone backends) */
-export interface StorageSection {
-  /** Storage backend type (s3, b2, azure, etc.) */
-  backend: string;
-  /** Bucket name */
-  bucket?: string;
-  /** Region */
-  region?: string;
-  /** Folder path */
-  folder?: string;
-  /** Additional parameters */
-  parameters?: Record<string, unknown>;
-}
-
 /** Repository name and GUID mapping */
 export interface RepositoryInfo {
   /** Repository GUID */
@@ -109,8 +95,6 @@ export interface RenetVault {
   params?: Record<string, string | number | boolean>;
   /** Additional machines for multi-machine operations */
   extra_machines?: Record<string, MachineSection>;
-  /** Storage system configurations */
-  storage_systems?: Record<string, StorageSection>;
   /** Repository credentials by GUID */
   repository_credentials?: Record<string, string>;
   /** Repository info by name */

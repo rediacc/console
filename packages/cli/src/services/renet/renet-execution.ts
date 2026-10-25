@@ -32,7 +32,6 @@ import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
 import {
   buildRepositories,
-  buildStorageSystems,
   type RepoEntryConfig,
 } from './renet-vault-sections.js';
 
@@ -516,7 +515,6 @@ interface BuildLocalVaultOptions {
   sshKnownHosts: string;
   params: Record<string, unknown>;
   extraMachines?: Record<string, { ip: string; port?: number; user: string; datastore?: string }>;
-  storages?: Record<string, { vaultContent: Record<string, unknown> }>;
   repositoryCredentials?: Record<string, string>;
   repositoryConfigs?: Record<string, RepoEntryConfig>;
 }
@@ -557,7 +555,6 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
     opts.sshPrivateKey,
     opts.sshPublicKey
   );
-  const storageSystems = buildStorageSystems(opts.storages);
   const { repoName, repositories } = buildRepositories(opts.params, opts.repositoryConfigs);
 
   const vault = {
@@ -584,7 +581,6 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
     },
     params: opts.params,
     extra_machines: extraMachines,
-    storage_systems: storageSystems,
     repository_credentials: opts.repositoryCredentials ?? {},
     repositories,
     context: {

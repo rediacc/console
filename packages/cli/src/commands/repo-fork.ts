@@ -16,7 +16,12 @@ import { randomUUID } from 'node:crypto';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { validateTag } from '../services/addressing/ref-parser.js';
+import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { configService } from '../services/config/config-resources.js';
+import {
+  rerunAfterNetworkIdConflict,
+  targetFloor,
+} from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { writeStderr, writeStdout } from '../services/core/request-context.js';
 import {
@@ -36,7 +41,7 @@ import {
 import { debugEnabled } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { recordedDatastoreMount } from '../utils/repo-executor.js';
+import { ensureRecordedNetworkId, recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import {
@@ -189,7 +194,10 @@ async function registerFork(
   }
 
   const repositoryGuid = randomUUID();
-  const networkId = await configService.allocateNetworkId();
+  // D3(a): the floor is the fork machine's used set, so a lagging counter skips IDs other devices placed there.
+  const networkId = await configService.allocateNetworkId({
+    floor: await targetFloor({ machine: machineName }),
+  });
   const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
 
   await configService.addRepository(forkKey, {
@@ -447,6 +455,29 @@ async function handleForkLegFailure(
   finishTimeline(plan, orchestrated, renetSteps, [result]);
 }
 
+/**
+ * T3(e): renet refused the fork's network ID at its up phase, after the image was made. Move past the holder, record the new ID (the up leg reads it from the config), and bring the fork up once more. `undefined` when it is not a network-ID refusal or no fork image exists.
+ */
+function retryForkUpOnConflict(
+  plan: ForkPlan,
+  failed: ExecuteResult,
+  renetSteps: TimelineStep[]
+): Promise<ExecuteResult | undefined> {
+  if (!renetSteps.some((s) => s.name === 'cow_reflink' || s.name === 'cow_clone')) {
+    return Promise.resolve(undefined);
+  }
+  const { machine, kubeCluster } = plan.options;
+  return rerunAfterNetworkIdConflict({
+    failed,
+    repoKey: plan.forkKey,
+    target: { machine, datastore: plan.datastoreMount, kubeCluster },
+    rerun: (networkId) => {
+      plan.networkId = networkId;
+      return executeUpLeg(plan, renetSteps);
+    },
+  });
+}
+
 /** Orchestrate fork (+ optional up) over a shared machine connection lease. */
 async function orchestrateFork(plan: ForkPlan): Promise<void> {
   const { options, forkKey } = plan;
@@ -467,9 +498,12 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   );
 
   const { result, forkParams, compound } = await runForkLeg(plan, renetSteps);
+  const retried = result.success
+    ? undefined
+    : await retryForkUpOnConflict(plan, result, renetSteps);
 
-  if (!result.success) {
-    await handleForkLegFailure(plan, result, orchestrated, renetSteps, dnsPromise);
+  if (!result.success && !retried?.success) {
+    await handleForkLegFailure(plan, retried ?? result, orchestrated, renetSteps, dnsPromise);
     return;
   }
 
@@ -477,10 +511,12 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   // with the up portion and the post-up tasks.
   const identityPromise = startIdentityRefresh(orchestrated, options, forkParams);
 
-  let upResult: ExecuteResult | undefined;
-  if (options.up && !(compound && compoundUpRan(result, renetSteps))) {
+  let upResult = retried;
+  if (options.up && !retried && !(compound && compoundUpRan(result, renetSteps))) {
     // Legacy/fallback up leg: --checkpoint flows, or a remote renet that silently ignored the compound --up params.
     upResult = await executeUpLeg(plan, renetSteps);
+    if (!upResult.success)
+      upResult = (await retryForkUpOnConflict(plan, upResult, renetSteps)) ?? upResult;
   }
 
   if (options.up) {
@@ -497,6 +533,8 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   }
 
   finishTimeline(plan, orchestrated, renetSteps, [result, upResult]);
+  // G4: a family-scoped strategy covers the new fork, so the machine's backup units move with it.
+  await reconcileBackupSchedules(options.machine);
 }
 
 /** Handle the fork action body. */
@@ -605,7 +643,7 @@ export function registerRepoForkCommand(repo: Command): void {
           // placement (spec/03 §2.3). No resolve options => step-5 mount
           // verification is skipped, matching the pre-reshape fork behavior.
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-          await configService.ensureRepositoryNetworkId(repoKey);
+          await ensureRecordedNetworkId(repoKey, machineName, kubeCluster);
           await handleForkAction(repoKey, options.tag, {
             machine: machineName,
             ...(kubeCluster !== undefined && { kubeCluster }),

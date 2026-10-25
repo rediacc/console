@@ -168,14 +168,14 @@ export function toFullConfig(
 /**
  * Inverse of `toFullConfig`: rebuild the config document from a decrypted envelope. A blob key the
  * schema declares under a hoisted root goes back under it; every other key is a top-level section.
- * The three core resource families come back as `{}` when absent, and `encryption` as a plaintext
+ * The two core resource families come back as `{}` when absent, and `encryption` as a plaintext
  * placeholder the device overlay replaces (it is device-local).
  *
  * Spread-if-present throughout: only keys the blob carries are written, so the rebuilt document
  * commits exactly the pointer set the pushed one did.
  */
 export function fromFullConfig(decrypted: FullConfig): RdcConfig {
-  const resources: Record<string, unknown> = { machines: {}, repositories: {}, storages: {} };
+  const resources: Record<string, unknown> = { machines: {}, repositories: {} };
   const credentials: Record<string, unknown> = {};
   const doc: Record<string, unknown> = {
     schemaVersion: 3,

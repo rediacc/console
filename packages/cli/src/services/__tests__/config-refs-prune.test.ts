@@ -21,16 +21,13 @@ function baseConfig(): RdcConfig {
           tags: { latest: { repositoryGuid: '22222222-2222-2222-2222-222222222222' } },
         },
       },
-      storages: {
-        s1: { provider: 'onedrive', vaultContent: {} },
-      },
       backupStrategies: {
         hourly: {
-          destinations: [{ kind: 'storage', name: 'd1', storage: 's1' }],
+          destinations: [{ kind: 'hosted-service', name: 'd1' }],
           schedule: '0 * * * *',
         },
         daily: {
-          destinations: [{ kind: 'storage', name: 'd1', storage: 's1' }],
+          destinations: [{ kind: 'hosted-service', name: 'd1' }],
           schedule: '0 0 * * *',
         },
       },
@@ -64,19 +61,6 @@ describe('pruneDanglingRefs', () => {
     expect(r.dropped).toHaveLength(0);
     expect(cfg.resources!.machines!.m1.backupStrategies).toEqual(['hourly', 'daily']);
     expect(cfg.resources!.backupStrategies!.daily.exclude).toEqual(['mail']);
-  });
-
-  it('warns on storage destinations whose target is missing', () => {
-    const cfg = baseConfig();
-    cfg.resources!.backupStrategies!.daily.destinations = [
-      { kind: 'storage', name: 'd1', storage: 's1' },
-      { kind: 'storage', name: 'd2', storage: 'GHOST-STORAGE' },
-    ];
-    const r = pruneDanglingRefs(cfg);
-    // Destinations are NOT auto-removed (could change strategy semantics).
-    expect(cfg.resources!.backupStrategies!.daily.destinations).toHaveLength(2);
-    expect(r.warnings).toHaveLength(1);
-    expect(r.warnings[0]).toContain('GHOST-STORAGE');
   });
 
   it('removes the field entirely when the kept list goes empty', () => {

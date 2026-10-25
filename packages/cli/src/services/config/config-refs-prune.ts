@@ -89,34 +89,15 @@ function pruneStrategyRepoList(
   }
 }
 
-function warnOrphanDestinations(
-  strategyName: string,
-  strategy: Strategy,
-  storageNames: Set<string>,
-  warnings: string[]
-): void {
-  for (const dest of strategy.destinations) {
-    // Only `storage`-kind destinations reference a /resources/storages entry;
-    // hosted-service destinations carry their own endpoint/credentials.
-    if (dest.kind !== 'storage') continue;
-    if (storageNames.has(dest.storage)) continue;
-    warnings.push(
-      `resources.backupStrategies.${strategyName}.destinations[name=${dest.name}].storage points at "${dest.storage}" which is not in resources.storages. Fix manually; auto-removing the destination would change the strategy's intent`
-    );
-  }
-}
-
 export function pruneDanglingRefs(config: RdcConfig): RefsPruneResult {
   const dropped: DroppedRef[] = [];
   const warnings: string[] = [];
 
   const machines = config.resources?.machines ?? {};
   const strategies = config.resources?.backupStrategies ?? {};
-  const storages = config.resources?.storages ?? {};
   const repos = config.resources?.repositories ?? {};
 
   const strategyNames = new Set(Object.keys(strategies));
-  const storageNames = new Set(Object.keys(storages));
   const repoNames = new Set(Object.keys(repos).map((k) => parseRepoRef(k).name));
 
   for (const [name, machine] of Object.entries(machines)) {
@@ -126,7 +107,6 @@ export function pruneDanglingRefs(config: RdcConfig): RefsPruneResult {
   for (const [name, strategy] of Object.entries(strategies)) {
     pruneStrategyRepoList(name, strategy, 'exclude', repoNames, dropped);
     pruneStrategyRepoList(name, strategy, 'include', repoNames, dropped);
-    warnOrphanDestinations(name, strategy, storageNames, warnings);
   }
 
   return { cleaned: config, dropped, warnings };

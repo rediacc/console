@@ -53,16 +53,14 @@ describe('backup strategy set validates include/exclude names (G2)', () => {
 describe('backup strategy bind refuses what schedule would refuse (G8)', () => {
   const hosted = { kind: 'hosted-service', name: 'd' };
 
-  it('refuses a strategy with an rclone destination', async () => {
+  it('refuses a strategy with a retired storage destination', async () => {
     strategies = {
       s: { schedule: '0 3 * * *', destinations: [{ kind: 'storage', name: 'old', storage: 'x' }] },
     };
     await expect(assertStrategyBindable('s')).rejects.toThrow(/old/);
   });
 
-  it('refuses a strategy with exclude, a bad cron or an unparseable bwlimit', async () => {
-    strategies = { s: { schedule: '0 3 * * *', exclude: ['a'], destinations: [hosted] } };
-    await expect(assertStrategyBindable('s')).rejects.toThrow(/exclude/);
+  it('refuses a bad cron or an unparseable bwlimit', async () => {
     strategies = { s: { schedule: 'daily', destinations: [hosted] } };
     await expect(assertStrategyBindable('s')).rejects.toThrow(/cron/);
     strategies = { s: { schedule: '0 3 * * *', bandwidthLimit: 'fast', destinations: [hosted] } };
@@ -76,6 +74,11 @@ describe('backup strategy bind refuses what schedule would refuse (G8)', () => {
         destinations: [hosted, { kind: 'storage', name: 'old', enabled: false }],
       },
     };
+    await expect(assertStrategyBindable('s')).resolves.toBeUndefined();
+  });
+
+  it('admits an exclude list, which the schedule renders as --exclude-repo <guid> (G1)', async () => {
+    strategies = { s: { schedule: '0 3 * * *', exclude: ['mail'], destinations: [hosted] } };
     await expect(assertStrategyBindable('s')).resolves.toBeUndefined();
   });
 

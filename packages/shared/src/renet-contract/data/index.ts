@@ -70,7 +70,6 @@ export {
   type RenetVault,
   type RepositoryInfo,
   type SSHSection,
-  type StorageSection,
   type TaskSection,
   VAULT_SCHEMA,
   VAULT_VERSION,
@@ -85,7 +84,6 @@ export {
   type RenetVaultType,
   RepositoryInfoSchema,
   SSHSectionSchema,
-  StorageSectionSchema,
   TaskSectionSchema,
   validateRenetVault,
 } from './vault.schema.js';

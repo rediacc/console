@@ -65,22 +65,31 @@ describe('scheduled backups to the chunk store', () => {
     expect(commands[0]).not.toMatch(/--rclone-param|--setenv|RCLONE_/);
   });
 
-  it('scopes to the strategy include list, one --repo per entry', () => {
-    const { commands } = buildBackupCommands(
-      strategy({ include: ['mail', 'gitlab'] }),
-      [hosted()],
-      DATASTORE,
-      RENET
-    );
-    expect(commands[0]).toContain('--repo mail');
-    expect(commands[0]).toContain('--repo gitlab');
+  it('refuses to render an include or exclude list that was not resolved to GUIDs', () => {
+    // renet takes GUIDs only. A strategy that names repositories goes through strategyUnitSpecs (backup-schedule-targets.ts); rendering it without that resolution would put names on argv, which renet refuses at run time inside the timer.
+    for (const over of [{ include: ['mail'] }, { exclude: ['scratch'] }]) {
+      expect(() => buildBackupCommands(strategy(over), [hosted()], DATASTORE, RENET)).toThrow(
+        /resolve them to GUIDs/
+      );
+    }
   });
 
-  it('REFUSES an exclude list rather than backing up what was excluded', () => {
-    // `backup snapshot` has no exclude flag. Dropping the list would back up repositories the operator asked to leave out, the same silent wrong-scope failure this whole file exists to close.
-    expect(() =>
-      buildBackupCommands(strategy({ exclude: ['scratch'] }), [hosted()], DATASTORE, RENET)
-    ).toThrow(/exclude/i);
+  it('emits --repo <guid> for an include scope and --exclude-repo <guid> otherwise', () => {
+    const g1 = '11111111-1111-4111-8111-111111111111';
+    const g2 = '22222222-2222-4222-8222-222222222222';
+    const inc = buildBackupCommands(strategy(), [hosted()], DATASTORE, RENET, {
+      include: [g1, g2],
+      exclude: [],
+    });
+    expect(inc.commands[0]).toBe(
+      `${RENET} backup snapshot --datastore ${DATASTORE} --repo ${g1} --repo ${g2}`
+    );
+    const exc = buildBackupCommands(strategy(), [hosted()], DATASTORE, RENET, {
+      exclude: [g1],
+    });
+    expect(exc.commands[0]).toBe(
+      `${RENET} backup snapshot --datastore ${DATASTORE} --exclude-repo ${g1}`
+    );
   });
 
   it('keeps the strategy bandwidth limit on argv, converted to bytes/second', () => {
@@ -117,16 +126,23 @@ describe('scheduled backups to the chunk store', () => {
     ).toThrow(/bandwidthLimit "fast" is not a size/);
   });
 
-  it('each hosted destination produces its own command', () => {
-    // Without this, the single-destination tests above would be satisfied by a build that emits exactly one command no matter how many destinations the strategy declares. The two commands are byte-identical because the chunk-store command is a function of the strategy and datastore alone, nothing in the destination (name, endpoint) reaches argv today.
+  it('takes ONE snapshot per run whatever the number of destinations (G3)', () => {
+    // A command per destination uploaded the same cells twice and committed two manifests for one point in time. The renet command carries nothing from the destination, so a second one could only ever repeat the first.
     const { commands } = buildBackupCommands(
       strategy(),
       [hosted('chunks-a'), hosted('chunks-b')],
       DATASTORE,
       RENET
     );
-    expect(commands).toHaveLength(2);
-    expect(commands[0]).toBe(commands[1]);
+    expect(commands).toHaveLength(1);
+  });
+
+  it('refuses destinations on two different endpoints, which one snapshot cannot serve', () => {
+    const a: BackupStrategyDestination = { ...hosted('a'), endpoint: 'https://eu.rediacc.com' };
+    const b: BackupStrategyDestination = { ...hosted('b'), endpoint: 'https://s3.example.com' };
+    expect(() => buildBackupCommands(strategy(), [a, b], DATASTORE, RENET)).toThrow(
+      /2 different endpoints/
+    );
   });
 });
 
@@ -136,7 +152,7 @@ describe('the refusal that replaced the rclone path', () => {
     const call = () => buildBackupCommands(strategy(), [storage('offsite')], DATASTORE, RENET);
     expect(call).toThrow(/Backup destination "offsite"/);
     expect(call).toThrow(/kind "storage"/);
-    expect(call).toThrow(/rclone\/OneDrive path was removed on 2026-08-15/);
+    expect(call).toThrow(/Only `hosted-service` destinations can be scheduled/);
     expect(call).toThrow(/Refusing to generate a unit that would back up nothing\./);
   });
 

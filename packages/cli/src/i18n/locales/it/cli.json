@@ -71,7 +71,6 @@
         "restored": "{{name}} ripristinato su {{machine}}",
         "restoringSnapshot": "Ripristino di {{name}} dallo snapshot {{snapshot}} in corso...",
         "sourceUnknown": "Nessun repository chiamato \"{{name}}\" è noto in questa configurazione, quindi il suo artefatto di backup non può essere individuato.",
-        "storageRetired": "Il ripristino da un backend di storage è dismesso: il braccio cloud rclone è stato rimosso. Il ripristino puntuale si fa con `rdc backup restore <repo> --at <snapshot>` sul chunk store",
         "streamUnknown": "Impossibile stabilire quale flusso di backup appartenga a questo repository sulla sua macchina di origine (la verifica del backup sulla macchina non è riuscita, oppure non segnala alcuno snapshot confermato che l'indice elenchi). Usa --any-stream per scegliere tra tutti i flussi di questa linea.",
         "targetExists": "\"{{name}}\" esiste già. Ripristina con un altro nome (--as) oppure elimina prima il repository esistente."
       },
@@ -139,21 +138,18 @@
         "set": {
           "description": "Crea o aggiorna una strategia di backup",
           "examples": {
-            "configure": "Configura lo storage e la modalità di una strategia di backup.",
+            "configure": "Configura la pianificazione e la modalità di una strategia di backup.",
             "disable": "Disattiva una strategia di backup."
           },
-          "optionBwlimit": "Limite di banda rclone (es. \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionBwlimit": "Limite di banda in upload in byte al secondo, con suffisso K/M/G facoltativo (es. \"6M\", \"500K\")",
           "optionCron": "Pianificazione cron (es. \"0 * * * *\" per ogni ora)",
-          "optionDestination": "Nome della destinazione all'interno della strategia. Crea una destinazione storage a chunk di Rediacc a meno che non venga specificato --storage",
+          "optionDestination": "Nome della destinazione all'interno della strategia. Crea una destinazione storage a chunk di Rediacc",
           "optionDisable": "Disabilita la strategia o la destinazione",
           "optionEnable": "Abilita la strategia o la destinazione",
           "optionExclude": "Escludi questi repo dal backup (nomi separati da virgola)",
-          "optionFolder": "Sottocartella sotto il bucket di storage per questa destinazione (es. hot, cold). Richiede --storage",
           "optionInclude": "Esegui il backup solo di questi repo (nomi separati da virgola)",
           "optionMode": "Modalità di backup: \"hot\" crea lo snapshot mentre tutto resta in esecuzione, \"cold\" ferma i container per il tempo dello snapshot",
-          "optionStorage": "Usa questa configurazione di storage rclone invece dello storage a chunk. Legacy: questo tipo di destinazione non può essere pianificata",
-          "saved": "Configurazione della strategia di backup salvata",
-          "storageRequired": "--storage <nome-storage> è obbligatorio per questa destinazione. Senza di esso ottieni una destinazione storage a chunk di Rediacc, che non ha un bucket di storage e quindi nessun --folder"
+          "saved": "Configurazione della strategia di backup salvata"
         },
         "show": {
           "description": "Mostra i dettagli della strategia di backup",
@@ -642,7 +638,7 @@
     },
     "credits": {
       "bundledTitle": "Runtime e dipendenze incluse:",
-      "description": "Stampa i componenti di terze parti inclusi in rdc: i binari che renet incorpora e distribuisce (CRIU, rsync, rclone), il runtime Node.js incorporato e le dipendenze npm incluse. Mostra versioni, identificatori di licenza SPDX e gli URL degli archivi sorgente a versione esatta richiesti per la conformità GPL. Usa --licenses per stampare il testo completo THIRD_PARTY_LICENSES incluso nelle build di release.",
+      "description": "Stampa i componenti di terze parti inclusi in rdc: i binari che renet incorpora e distribuisce (CRIU, rsync), il runtime Node.js incorporato e le dipendenze npm incluse. Mostra versioni, identificatori di licenza SPDX e gli URL degli archivi sorgente a versione esatta richiesti per la conformità GPL. Usa --licenses per stampare il testo completo THIRD_PARTY_LICENSES incluso nelle build di release.",
       "descriptionShort": "Mostra le attribuzioni di terze parti e le informazioni sulla conformità delle licenze",
       "embeddedTitle": "Binari incorporati (distribuiti da renet):",
       "gplHeader": "Disponibilità dei sorgenti GPL:",
@@ -1105,7 +1101,11 @@
         "storageHealthPoolSummary": "Pool: {{used}} usati, {{free}} liberi ({{percent}}% pieno)",
         "storageHealthSummary": "Efficienza di archiviazione: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} container oltre la soglia di deriva; uscita con codice non zero",
-        "syncCertsFailed": "Sincronizzazione cache certificati fallita: {{error}}"
+        "syncCertsFailed": "Sincronizzazione cache certificati fallita: {{error}}",
+        "staleBinarySection": "Binari obsoleti",
+        "staleBinaryWarning": "{{count}} processi renet eseguono ancora un binario sostituito e mantengono il vecchio codice finché le loro unità non vengono riavviate.",
+        "staleBackupSection": "Backup in ritardo",
+        "staleBackupWarning": "L'ultimo backup di {{count}} repository risale a più del doppio dell'intervallo della loro pianificazione."
       },
       "gpu": {
         "descriptionShort": "Ispeziona le GPU e le concessioni di dispositivi di una macchina",
@@ -1612,8 +1612,7 @@
         "optionStrategy": "Strategia di delta a blocchi quando si usa una base delta: auto, physical o shared",
         "optionUp": "Dopo il pull, monta e distribuisce il repository su questo macchinario",
         "pulling": "Download del backup di \"{{repo}}\"...",
-        "sourceRequired": "Specifica --from <machine> (nome della macchina dalla configurazione)",
-        "storageRetired": "Il pull da un backend di storage è dismesso: il braccio cloud rclone è stato rimosso. Il ripristino puntuale si fa con `rdc backup restore <repo> --at <snapshot>` sul chunk store. Il trasferimento tra macchine non cambia: usa --from-machine"
+        "sourceRequired": "Specifica --from <machine> (nome della macchina dalla configurazione)"
       },
       "push": {
         "deployed": "Repository \"{{repo}}\" distribuito su {{machine}}",
@@ -1635,8 +1634,7 @@
         "pushing": "Invio del backup di \"{{repo}}\" a {{dest}}...",
         "statsDelta": "\"{{repo}}\" inviato a {{machine}}: {{transferred}} trasferiti in {{duration}} (delta rispetto alla base {{base}}, immagine {{image}})",
         "statsFull": "\"{{repo}}\" inviato a {{machine}}: {{transferred}} trasferiti in {{duration}} (trasferimento completo)",
-        "statsNoBytes": "\"{{repo}}\" inviato a {{machine}}: completato in {{duration}}",
-        "storageRetired": "L'invio a un backend di storage è dismesso: il braccio cloud rclone è stato rimosso. Il backup puntuale si fa con `rdc backup snapshot` (upload) e `rdc backup restore <repo> --at <snapshot>` (download), entrambi sul chunk store. Il trasferimento tra macchine non cambia: usa --to-machine"
+        "statsNoBytes": "\"{{repo}}\" inviato a {{machine}}: completato in {{duration}}"
       },
       "refMachineConflict": "Un riferimento di repository determina da sé la propria macchina. Usa -m/--machine solo per la forma a livello di macchina: repo {{verb}} --all -m <machine>.",
       "replicate": {
@@ -1842,53 +1840,6 @@
       },
       "trace": {
         "description": "Traccia un task (scorciatoia per: queue trace)"
-      }
-    },
-    "storage": {
-      "add": {
-        "added": "Storage \"{{name}}\" registrato",
-        "adding": "Registrazione dello storage \"{{name}}\" in corso...",
-        "description": "Registra un endpoint di storage.",
-        "examples": {
-          "basic": "Registra un backend di storage da una definizione di vault."
-        }
-      },
-      "browse": {
-        "description": "Naviga i file in un sistema di storage",
-        "listing": "Elenco file in \"{{name}}\" in corso...",
-        "noFiles": "Nessun file trovato",
-        "pathOption": "Percorso della sottodirectory da elencare"
-      },
-      "description": "Gestisci gli endpoint di storage esterni per il backup (S3 e altri target compatibili con rclone): registrali e rimuovili, elenca quelli registrati, esplora gli artefatti che contengono e rimuovi i backup orfani.",
-      "descriptionShort": "Gestisci lo storage",
-      "import": {
-        "description": "Importa gli storage da un file di configurazione rclone",
-        "imported": "Storage \"{{name}}\" importato ({{type}})",
-        "noConfigs": "Nessuna configurazione di storage valida trovata nel file",
-        "notFound": "Storage \"{{name}}\" non trovato nel file di configurazione",
-        "optionName": "Importa solo questa sezione con nome",
-        "summary": "Importati {{count}} storage",
-        "unsupported": "\"{{name}}\" ignorato: tipo di provider non supportato \"{{type}}\""
-      },
-      "list": {
-        "description": "Elenca gli endpoint di storage. Indica un nome per il dettaglio completo.",
-        "noStorages": "Nessun endpoint di storage configurato. Registrane uno con: rdc storage add <nome> --vault <json>",
-        "optionReveal": "Mostra la configurazione dello storage in chiaro (solo TTY interattivo; registrato)"
-      },
-      "prune": {
-        "completed": "{{count}} backup orfani rimossi",
-        "description": "Elimina i backup orfani dallo storage che non sono più presenti in nessuna configurazione. Sicuro per configurazioni multiple con protezione del periodo di grazia. Le chiamate rclone vengono eseguite su --machine (l'esecutore), non sul tuo laptop, quindi i client non necessitano di rclone installato localmente; --machine è l'esecutore, non la fonte di verità.",
-        "descriptionShort": "Elimina i backup orfani dallo storage",
-        "forceDeleteMountedOption": "Ignora il controllo di sicurezza del montaggio ed elimina i backup cloud anche se il GUID sorgente è attualmente montato o ha un container in esecuzione sulla macchina esecutore. Distinto da --force (che ignora solo il periodo di grazia per i repository archiviati).",
-        "found": "Trovato/i {{count}} backup nello storage",
-        "listing": "Elenco backup in \"{{storage}}\" in corso...",
-        "machineOption": "Macchina esecutore: esegue le chiamate rclone list/delete sullo storage. Obbligatorio perché non si prevede che i client abbiano rclone installato localmente; le credenziali dello storage provengono comunque dalla configurazione locale.",
-        "noBackups": "Nessun backup trovato nello storage"
-      },
-      "remove": {
-        "confirm": "Rimuovere l'endpoint di storage \"{{name}}\"?",
-        "description": "Rimuove un endpoint di storage dalla configurazione.",
-        "removed": "Storage \"{{name}}\" rimosso"
       }
     },
     "subscription": {
@@ -2282,8 +2233,7 @@
       "machineNotFound": "Macchina \"{{name}}\" non trovata nella config. Disponibili: {{available}}.",
       "noActiveConfig": "Nessuna config attiva",
       "pointerNotFound": "Puntatore \"{{pointer}}\" non trovato",
-      "retiredKey": "Il valore predefinito \"{{key}}\" non esiste più. Chiavi valide: {{keys}}",
-      "storageNotFound": "Storage \"{{name}}\" non trovato nella config. Disponibili: {{available}}."
+      "retiredKey": "Il valore predefinito \"{{key}}\" non esiste più. Chiavi valide: {{keys}}"
     },
     "container": {
       "execFailed": "container_exec non riuscito",
@@ -2341,7 +2291,7 @@
     },
     "regionRequired": "Nome regione obbligatorio. Usa --region o imposta il valore predefinito con: rdc config set region <name>",
     "regionSelectionRequiresTTY": "La selezione della regione richiede input interattivo. Usa --server <url> per specificare direttamente un server.",
-    "remoteNotFound": "\"{{name}}\" non è una macchina, uno storage o un cluster conosciuto. Macchine: {{machines}}. Storage: {{storages}}. Cluster: {{clusters}}",
+    "remoteNotFound": "\"{{name}}\" non è una macchina o un cluster conosciuto. Macchine: {{machines}}. Cluster: {{clusters}}",
     "repo": {
       "canaryNeedsCluster": "Il repository \"{{ref}}\" non è in un cluster. Un canary suddivide il traffico tra due deployment, quindi richiede un repository posizionato su kubernetes.",
       "listTargetExclusive": "Passa al massimo uno tra -m e --datastore. Un datastore sa già quale macchina lo detiene.",
@@ -2350,7 +2300,10 @@
         "badMode": "--mode \"{{mode}}\" non valido. Consentiti: env, file.",
         "emptyValue": "Il valore del segreto non può essere vuoto (stdin non ha prodotto byte).",
         "mutuallyExclusive": "--current e --rotate-secret si escludono a vicenda. Scegline uno: --current per verificare il valore precedente, oppure --rotate-secret per ruotare senza verifica."
-      }
+      },
+      "networkIdInUse": "L'ID di rete {{networkId}} del repository \"{{repository}}\" è già occupato da {{holder}} sulla macchina \"{{machine}}\". Esegui `rdc config reconcile` per adottare gli ID registrati sulla macchina.",
+      "networkIdUndiscoverable": "Il repository \"{{repository}}\" non ha un ID di rete in questa configurazione e non è stato possibile interrogare la macchina \"{{machine}}\". Riprova quando la macchina è raggiungibile oppure esegui `rdc config reconcile`.",
+      "networkIdDiverged": "Il repository \"{{repository}}\" aveva l'ID di rete {{localId}} in questa configurazione, ma la macchina \"{{machine}}\" registra {{machineId}}. Ora vale l'ID della macchina."
     },
     "repoNotDeployed": "Il repository \"{{repository}}\" non è distribuito su {{machine}}.\n\nDistribuiscilo prima:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Il repository \"{{name}}\" è già montato su \"{{machine}}\". Migrare su un repo attivo lo corromperebbe. Esegui prima: rdc repo down {{name}} --unmount",
@@ -2491,7 +2444,6 @@
     "external": "Forza l'apertura in una finestra di terminale esterna",
     "extraMachine": "Macchina aggiuntiva per operazioni multi-macchina (name:ip:user)",
     "fields": "Elenco di campi separati da virgola da includere nell'output",
-    "file": "Percorso del file",
     "folder": "Percorso della cartella remota da aprire",
     "force": "Salta le richieste di conferma",
     "function": "Nome della funzione da eseguire",
@@ -2552,12 +2504,9 @@
     "sshKey": "Percorso della chiave SSH privata (es. ~/.ssh/id_rsa)",
     "sshPort": "Porta SSH",
     "sshUser": "Nome utente SSH",
-    "storageRef": "Riferimento storage: il nome di un endpoint di storage registrato (ad esempio s3-main)",
     "strategyName": "Nome della strategia di backup",
     "team": "Nome del team",
     "urlOnly": "Stampa l'URI di VS Code invece di avviarlo",
-    "vaultContent": "Contenuto del vault come stringa JSON",
-    "vaultJson": "Contenuto del vault come stringa JSON",
     "verifyChecksum": "Verifica i file tramite checksum dopo la sincronizzazione",
     "vmId": "ID della macchina virtuale",
     "vscodeBrowser": "Serve VS Code nel browser dalla sandbox del repository (non serve VS Code locale)",

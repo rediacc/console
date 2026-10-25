@@ -5,7 +5,6 @@ export * from './error-parser/index.js';
 export * from './formatters/index.js';
 export * from './renet-contract/index.js';
 export * from './services/index.js';
-export * from './storage-browser/index.js';
 export * from './subscription/index.js';
 export * from './telemetry/index.js';
 export * from './types/index.js';

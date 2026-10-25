@@ -15,7 +15,6 @@ import { registerOpsCommands } from './commands/ops/index.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerServeCommand } from './commands/serve.js';
 import { registerShortcuts } from './commands/shortcuts.js';
-import { registerStorageCommands } from './commands/storage.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
 import { registerTermCommands } from './commands/term.js';
 import { registerUpdateCommand } from './commands/update.js';
@@ -344,7 +343,6 @@ export function createCli(): Command {
   registerMachineCommands(cli);
   registerBackupCommands(cli);
   registerRepoCommands(cli);
-  registerStorageCommands(cli);
   registerConfigCommands(cli);
   registerDoctorCommand(cli);
   registerCreditsCommand(cli);

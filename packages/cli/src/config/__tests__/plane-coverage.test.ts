@@ -118,8 +118,10 @@ describe('command plane coverage', () => {
     // 178 -> 179, machine 96 -> 97: `machine converge` restarts stale repo daemons on a machine, so it is a machine-plane leaf.
     //
     // 179 -> 182, machine 97 -> 100: `machine gpu list`, `repo gpu grant` and `repo gpu revoke` each reach a machine (the GPU inventory and the repository's device grants live there).
-    expect(COMMANDS.length).toBe(182);
-    expect(counts).toEqual({ config: 54, machine: 100, other: 28 });
+    //
+    // 182 -> 176, config 54 -> 50, machine 100 -> 99, other 28 -> 27: `rdc storage` (list, add, remove, import, prune, browse) was deleted with the storage retirement.
+    expect(COMMANDS.length).toBe(176);
+    expect(counts).toEqual({ config: 50, machine: 99, other: 27 });
   });
 
   it('records the interactive commands', () => {
@@ -162,7 +164,9 @@ describe('command plane coverage', () => {
     // 92 -> 93: `machine converge` is machine-plane and non-interactive; the contract excludes it from proxying separately (caller-held env secrets).
     //
     // 93 -> 96: the three `gpu` leaves are machine-plane and non-interactive.
-    expect(machineNonInteractive.length).toBe(96);
+    //
+    // 96 -> 95: `storage prune` went with `rdc storage`.
+    expect(machineNonInteractive.length).toBe(95);
   });
 
   it('plane and interactive entries all point at real commands', () => {

@@ -47,7 +47,7 @@ export async function assertRepoMountedOnMachine(
  * Returns `undefined` when the probe itself fails (machine unreachable,
  * renet error, parse error), callers decide the fallback.
  */
-export async function probeRepoMounted(
+async function probeRepoMounted(
   repoGuid: string,
   machineName: string,
   options: ProbeOptions = {}
@@ -101,6 +101,30 @@ export async function probeRepoPresent(
   machineName: string,
   options: ProbeOptions = {}
 ): Promise<boolean | undefined> {
+  return (await probeRepoNetwork(repoGuid, machineName, options))?.present;
+}
+
+/** What one `repository_list` call says about a repo and its datastore's network IDs. */
+export interface RepoNetworkProbe {
+  /** The repo's image is on the machine (mounted or not). */
+  present: boolean;
+  /** The repo's network ID from renet's state mirror, when recorded. */
+  networkId?: number;
+  /** Every network ID the listed repos in this datastore record (the floor's fallback on a renet without `network_used`). */
+  listedIds: number[];
+}
+
+/**
+ * The presence probe plus the `network_id` renet already reports per repo
+ * (PLAN-config-networkid-discovery T3(a)): the same `repository_list` call, so
+ * discovery costs no extra round trip over presence. `undefined` when the probe
+ * itself fails, exactly as for `probeRepoPresent`.
+ */
+export async function probeRepoNetwork(
+  repoGuid: string,
+  machineName: string,
+  options: ProbeOptions = {}
+): Promise<RepoNetworkProbe | undefined> {
   const result = await getExecutor().execute({
     functionName: 'repository_list',
     machineName,
@@ -120,5 +144,20 @@ export async function probeRepoPresent(
     return undefined;
   }
 
-  return repos.some((r) => r.name === repoGuid);
+  const listedIds: number[] = [];
+  for (const r of repos) {
+    const id = validNetworkId(r.network_id);
+    if (id !== undefined) listedIds.push(id);
+  }
+  const entry = repos.find((r) => r.name === repoGuid);
+  const networkId = validNetworkId(entry?.network_id);
+  return {
+    present: entry !== undefined,
+    ...(networkId !== undefined && { networkId }),
+    listedIds,
+  };
+}
+
+function validNetworkId(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined;
 }

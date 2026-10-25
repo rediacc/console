@@ -119,7 +119,7 @@ const DETACH_EXCLUSIONS: Record<string, string> = {};
  *
  * The addressing grammar (docs/design/spec/03-cli-contracts.md §2.2) names each
  * noun's positional so that the NAME already signals the kind: a repo verb's
- * `<repo-ref>`, a datastore verb's `<datastore-ref>`, `storage import`'s
+ * `<repo-ref>`, a datastore verb's `<datastore-ref>`, a file argument's
  * `<file>`. So the classifier keys on the argument name, with a couple of
  * domain refinements where the same bare name means different things.
  */
@@ -138,7 +138,6 @@ const POSITIONAL_KIND_BY_NAME: Record<string, PositionalKind> = {
   strategy: 'strategy',
   artifact: 'artifact-ref',
   'artifact-ref': 'artifact-ref',
-  storage: 'storage',
   file: 'file',
   target: 'target',
   'job-id': 'job-id',

@@ -29,8 +29,15 @@ vi.mock('../../services/config/config-resources.js', () => ({
     removeRepository: vi.fn(() => Promise.resolve()),
     getCurrent: () => getCurrent(),
     addRepository: (name: string, config: RepositoryConfig) => addRepository(name, config),
+    getRepositoryKey: (name: string) => Promise.resolve(`${name}:latest`),
+    getResourceState: () =>
+      Promise.resolve({
+        getRepositories: () => ({ 'shop:latest': { repositoryGuid: 'g', networkId: 42 } }),
+        setRepositories: (repos: Record<string, RepositoryConfig>) => setRepositories(repos),
+      }),
   },
 }));
+const setRepositories = vi.fn((_repos: Record<string, RepositoryConfig>) => Promise.resolve());
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: vi.fn(),
@@ -61,6 +68,13 @@ vi.mock('../../utils/errors.js', async (orig) => ({
 
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { handleRepoCreate } from '../repo-create-delete.js';
+
+/** The repository_create dispatch; the allocation floor's network_used query runs before it. */
+function createCall(): ExecuteOptions {
+  const call = execute.mock.calls.find((c) => c[0].functionName === 'repository_create');
+  if (!call) throw new Error('repository_create was not dispatched');
+  return call[0];
+}
 
 /** A config with the given datastores + machines, enough for placement resolution. */
 // Fixtures are deliberately partial. Taking a loose record here is what lets the call sites pass a plain literal instead of casting each one through `as never`.
@@ -99,7 +113,7 @@ describe('repo create placement union (#38)', () => {
     expect(handleError).not.toHaveBeenCalled();
     expect(addRepository).toHaveBeenCalledTimes(1);
     expect(addRepository.mock.calls[0][1]).toMatchObject({ placement: { machine: 'm1' } });
-    expect(execute.mock.calls[0][0]).toMatchObject({
+    expect(createCall()).toMatchObject({
       functionName: 'repository_create',
       machineName: 'm1',
       params: { repository: 'shop', size: '5G' },
@@ -133,7 +147,7 @@ describe('repo create placement union (#38)', () => {
     await handleRepoCreate('shop', { datastore: 'tier1', size: '5G' });
     expect(handleError).not.toHaveBeenCalled();
     expect(addRepository.mock.calls[0][1]).toMatchObject({ placement: { datastore: 'tier1' } });
-    const call = execute.mock.calls[0][0] as {
+    const call = createCall() as {
       machineName: string;
       kubeCluster?: string;
       params: Record<string, unknown>;
@@ -180,7 +194,7 @@ describe('repo create placement union (#38)', () => {
     await handleRepoCreate('shop', { datastore: 'shopdata' });
     expect(handleError).not.toHaveBeenCalled();
     expect(addRepository.mock.calls[0][1]).toMatchObject({ placement: { datastore: 'shopdata' } });
-    const call = execute.mock.calls[0][0] as {
+    const call = createCall() as {
       machineName: string;
       kubeCluster?: string;
       params: Record<string, unknown>;
@@ -244,7 +258,7 @@ describe('repo create placement union (#38)', () => {
     await handleRepoCreate('shop', { datastore: 'shopdata' });
 
     expect(handleError).not.toHaveBeenCalled();
-    const call = execute.mock.calls[0][0] as {
+    const call = createCall() as {
       functionName: string;
       params: Record<string, unknown>;
     };
@@ -258,7 +272,7 @@ describe('repo create placement union (#38)', () => {
     await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
 
     expect(handleError).not.toHaveBeenCalled();
-    const call = execute.mock.calls[0][0] as { params: Record<string, unknown> };
+    const call = createCall() as { params: Record<string, unknown> };
     // The docker arm is acceptable the other way round: it carries a size, and it must NOT claim the kube runtime (renet asserts the declaration against the datastore descriptor and errors on a disagreement rather than silently picking an arm).
     expect(call.params.runtime).toBeUndefined();
     assertRenetWouldAccept(call.params);
@@ -320,7 +334,7 @@ describe('repo create placement union (#38)', () => {
     const recorded = addRepository.mock.calls[0][1] as {
       placement?: { datastore?: string };
     };
-    const dispatched = execute.mock.calls[0][0] as { datastore?: string };
+    const dispatched = createCall() as { datastore?: string };
     assertDispatchMatchesRecordedPlacement(recorded, dispatched);
   });
 
@@ -339,7 +353,7 @@ describe('repo create placement union (#38)', () => {
 
     expect(handleError).not.toHaveBeenCalled();
     const recorded = addRepository.mock.calls[0][1] as { placement?: { datastore?: string } };
-    const dispatched = execute.mock.calls[0][0] as { datastore?: string };
+    const dispatched = createCall() as { datastore?: string };
     assertDispatchMatchesRecordedPlacement(recorded, dispatched);
   });
 
@@ -348,7 +362,7 @@ describe('repo create placement union (#38)', () => {
 
     expect(handleError).not.toHaveBeenCalled();
     const recorded = addRepository.mock.calls[0][1] as { placement?: { machine?: string } };
-    const dispatched = execute.mock.calls[0][0] as { datastore?: string };
+    const dispatched = createCall() as { datastore?: string };
     assertDispatchMatchesRecordedPlacement(recorded, dispatched);
   });
 
@@ -362,5 +376,62 @@ describe('repo create placement union (#38)', () => {
     );
     await handleRepoCreate('shop', { datastore: 'd', size: '5G' });
     expect(handleError.mock.calls[0][0].exitCode).toBe(12);
+  });
+});
+
+// PLAN-config-networkid-discovery T3(d)/(e): the allocation floor is the TARGET machine's used set, and a refused ID is retried once past the holder.
+describe('repo create network ID floor and retry', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCurrent.mockResolvedValue(config());
+  });
+
+  it('passes the target machine used set as the floor', async () => {
+    const { configService } = await import('../../services/config/config-resources.js');
+    execute.mockImplementation((options: ExecuteOptions) =>
+      Promise.resolve(
+        options.functionName === 'network_used'
+          ? {
+              success: true,
+              allSteps: [],
+              stdout: '[{"kind":"repo","name":"x","network_id":2816}]',
+            }
+          : { success: true, allSteps: [] }
+      )
+    );
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    expect(handleError).not.toHaveBeenCalled();
+    expect(execute.mock.calls[0][0]).toMatchObject({
+      functionName: 'network_used',
+      machineName: 'm1',
+    });
+    expect(configService.allocateNetworkId).toHaveBeenCalledWith({ floor: [2816] });
+  });
+
+  it('retries a create refused with network_id_in_use once, on a fresh ID past the holder', async () => {
+    const { configService } = await import('../../services/config/config-resources.js');
+    const refusal = JSON.stringify({ code: 'network_id_in_use', message: 'held', network_id: 42 });
+    let creates = 0;
+    execute.mockImplementation((options: ExecuteOptions) => {
+      if (options.functionName !== 'repository_create') {
+        return Promise.resolve({ success: false, allSteps: [] });
+      }
+      creates++;
+      return Promise.resolve(
+        creates === 1
+          ? { success: false, allSteps: [], exitCode: 17, stderr: refusal }
+          : { success: true, allSteps: [] }
+      );
+    });
+    vi.mocked(configService.allocateNetworkId).mockResolvedValueOnce(42).mockResolvedValueOnce(106);
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    const ids = execute.mock.calls
+      .filter((c) => c[0].functionName === 'repository_create')
+      .map((c) => (c[0].params as { network_id: number }).network_id);
+    expect(ids).toEqual([42, 106]);
+    expect(configService.allocateNetworkId).toHaveBeenLastCalledWith({ floor: [42] });
+    expect(setRepositories).toHaveBeenCalledWith({
+      'shop:latest': { repositoryGuid: 'g', networkId: 106 },
+    });
   });
 });

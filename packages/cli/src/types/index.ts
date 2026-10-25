@@ -28,7 +28,6 @@ export type {
   RepositoryConfig,
   SecretEntry,
   SecretMode,
-  StorageConfig,
 } from '@rediacc/shared/config-schema';
 
 export { createEmptyRdcConfig, hasRemoteConfig } from '@rediacc/shared/config-schema';

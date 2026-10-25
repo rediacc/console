@@ -71,7 +71,6 @@
         "restored": "\"{{name}}\" taastatud masinale {{machine}}",
         "restoringSnapshot": "\"{{name}}\" taastamine hetktõmmisest {{snapshot}}...",
         "sourceUnknown": "Hoidlat nimega \"{{name}}\" ei tunta selles konfiguratsioonis, seega selle varukoopia artefakti ei õnnestu leida.",
-        "storageRetired": "Salvestusteenusest taastamine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke taaste käib käsuga `rdc backup restore <repo> --at <snapshot>` tükihoidla kaudu",
         "streamUnknown": "Ei õnnestu kindlaks teha, milline varundusvoog kuulub sellele hoidlale selle lähtemasinas (varunduse kontroll masinas nurjus või see ei teata ühestki kinnitatud hetktõmmisest, mille indeks loetleb). Kasuta --any-stream, et valida selle liini kõigi voogude seast.",
         "targetExists": "\"{{name}}\" on juba olemas. Taasta teise nime all (--as) või kustuta esmalt olemasolev hoidla."
       },
@@ -139,21 +138,18 @@
         "set": {
           "description": "Loo või uuenda varundusstrateegiat",
           "examples": {
-            "configure": "Seadista varunduse strateegia salvestusruum ja režiim.",
+            "configure": "Seadista varundusstrateegia ajakava ja režiim.",
             "disable": "Lülita varunduse strateegia välja."
           },
-          "optionBwlimit": "Rclone ribalaiuse piirang (nt \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
+          "optionBwlimit": "Üleslaadimise ribalaiuse piirang baitides sekundis, valikulise K/M/G järelliitega (nt \"6M\", \"500K\")",
           "optionCron": "Cron-ajakava (nt \"0 * * * *\" tunni kaupa)",
-          "optionDestination": "Sihtkoha nimi strateegia sees. Loob Rediacc chunk-hoidla sihtkoha, kui --storage pole antud",
+          "optionDestination": "Sihtkoha nimi strateegia sees. Loob Rediacc chunk-hoidla sihtkoha",
           "optionDisable": "Keela strateegia või sihtkoht",
           "optionEnable": "Luba strateegia või sihtkoht",
           "optionExclude": "Jäta need hoidlad varundusest välja (komaga eraldatud nimed)",
-          "optionFolder": "Alamkaust salvestusämbris selle sihtkoha jaoks (nt hot, cold). Vajab --storage",
           "optionInclude": "Varunda ainult need hoidlad (komaga eraldatud nimed)",
           "optionMode": "Varundusrežiim: \"hot\" teeb hetktõmmise, kui kõik töötab edasi, \"cold\" peatab konteinerid hetktõmmise tegemise ajaks",
-          "optionStorage": "Kasuta seda rclone salvestuskonfiguratsiooni chunk-hoidla asemel. Vanem viis: sellist sihtkohta ei saa ajastada",
-          "saved": "Varundussettrateegia konfiguratsioon salvestatud",
-          "storageRequired": "--storage <salvestuse-nimi> on selle sihtkoha jaoks kohustuslik. Ilma selleta saad Rediacc chunk-hoidla sihtkoha, millel pole salvestusämbrit ja seega ka mitte --folder"
+          "saved": "Varundussettrateegia konfiguratsioon salvestatud"
         },
         "show": {
           "description": "Kuva varundussettrateegia üksikasjad",
@@ -642,7 +638,7 @@
     },
     "credits": {
       "bundledTitle": "Käitusaeg ja kaasas olevad sõltuvused:",
-      "description": "Prindi rdc-ga kaasas olevad kolmandate osapoolte komponendid: renet-i põimitud ja edastatud binaarid (CRIU, rsync, rclone), põimitud Node.js käitusaeg ja kaasas olevad npm-sõltuvused. Näitab versioone, SPDX litsentsi identifikaatoreid ja GPL-vastavuseks nõutavaid täpse versiooni lähtearhiivi URL-e. Kasuta lippu --licenses, et printida väljalaske ehitistega kaasas olev täielik THIRD_PARTY_LICENSES tekst.",
+      "description": "Prindi rdc-ga kaasas olevad kolmandate osapoolte komponendid: renet-i põimitud ja edastatud binaarid (CRIU, rsync), põimitud Node.js käitusaeg ja kaasas olevad npm-sõltuvused. Näitab versioone, SPDX litsentsi identifikaatoreid ja GPL-vastavuseks nõutavaid täpse versiooni lähtearhiivi URL-e. Kasuta lippu --licenses, et printida väljalaske ehitistega kaasas olev täielik THIRD_PARTY_LICENSES tekst.",
       "descriptionShort": "Kuva kolmandate osapoolte autorlus ja litsentsi vastavuse teave",
       "embeddedTitle": "Põimitud binaarid (renet-i poolt edastatud):",
       "gplHeader": "GPL lähtekoodi saadavus:",
@@ -1105,7 +1101,11 @@
         "storageHealthPoolSummary": "Puul: {{used}} kasutusel, {{free}} vaba ({{percent}}% täis)",
         "storageHealthSummary": "Salvestusruumi tõhusus: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteiner(it) on kaldumisläve ületanud; väljub mittenullilise koodiga",
-        "syncCertsFailed": "Sertide vahemälu sünkroonimine ebaõnnestus: {{error}}"
+        "syncCertsFailed": "Sertide vahemälu sünkroonimine ebaõnnestus: {{error}}",
+        "staleBinarySection": "Aegunud binaarid",
+        "staleBinaryWarning": "{{count}} renet-protsessi töötab endiselt asendatud binaariga ja kasutab vana koodi, kuni nende üksused taaskäivituvad.",
+        "staleBackupSection": "Hilinenud varukoopiad",
+        "staleBackupWarning": "{{count}} hoidla viimasest varukoopiast on möödas üle kahe ajakava intervalli."
       },
       "gpu": {
         "descriptionShort": "Vaata masina GPU-sid ja seadmeõigusi",
@@ -1612,8 +1612,7 @@
         "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
         "optionUp": "Pärast tõmbamist haagi külge ja juuruta hoidla sellel masinal",
         "pulling": "Hoidla \"{{repo}}\" varukoopia tõmbamine...",
-        "sourceRequired": "Määra --from <machine> (masina nimi konfiguratsioonist)",
-        "storageRetired": "Salvestusteenusest tõmbamine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke taaste käib käsuga `rdc backup restore <repo> --at <snapshot>` tükihoidla kaudu. Masinatevaheline ülekanne ei muutunud: kasuta --from-machine"
+        "sourceRequired": "Määra --from <machine> (masina nimi konfiguratsioonist)"
       },
       "push": {
         "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
@@ -1635,8 +1634,7 @@
         "pushing": "Hoidla \"{{repo}}\" varukoopia lükkamine kohta {{dest}}...",
         "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}}: {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
         "statsFull": "\"{{repo}}\" lükatud masinale {{machine}}: {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
-        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}}: valmis {{duration}} jooksul",
-        "storageRetired": "Salvestusteenusesse saatmine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke varundus käib nüüd käsuga `rdc backup snapshot` (üleslaadimine) ja `rdc backup restore <repo> --at <snapshot>` (allalaadimine), mõlemad tükihoidla kaudu. Masinatevaheline ülekanne ei muutunud: kasuta --to-machine"
+        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}}: valmis {{duration}} jooksul"
       },
       "refMachineConflict": "Hoidla viide tuletab oma masina ise. Kasuta -m/--machine ainult masinaülese vormi jaoks: repo {{verb}} --all -m <machine>.",
       "replicate": {
@@ -1842,53 +1840,6 @@
       },
       "trace": {
         "description": "Jälitab ülesannet (otsetee: queue trace)"
-      }
-    },
-    "storage": {
-      "add": {
-        "added": "Salvestus \"{{name}}\" registreeritud",
-        "adding": "Salvestuse \"{{name}}\" registreerimine...",
-        "description": "Registreeri salvestuse lõpp-punkt.",
-        "examples": {
-          "basic": "Registreeri salvestusruumi taustaprogramm vault'i definitsioonist."
-        }
-      },
-      "browse": {
-        "description": "Sirvib faile salvestussüsteemis",
-        "listing": "Faile laaditakse \"{{name}}\"...",
-        "noFiles": "Faile ei leitud",
-        "pathOption": "Loetlev alamkataloogi tee"
-      },
-      "description": "Halda väliseid varukoopia salvestuse lõpp-punkte (S3 ja muud rclone-ühilduvad sihtkohad): registreeri ja eemalda neid, loetle registreeritud lõpp-punktid, sirvi neis sisalduvaid artefakte ja korista orvuks jäänud varukoopiad.",
-      "descriptionShort": "Halda salvestust",
-      "import": {
-        "description": "Impordi salvestused rclone konfiguratsioonifailist",
-        "imported": "Imporditi salvestus \"{{name}}\" ({{type}})",
-        "noConfigs": "Failist ei leitud kehtivaid salvestuse konfiguratsioone",
-        "notFound": "Salvestust \"{{name}}\" ei leitud konfiguratsioonifailist",
-        "optionName": "Impordi ainult see nimeline sektsioon",
-        "summary": "Imporditi {{count}} salvestus(t)",
-        "unsupported": "Jäetakse vahele \"{{name}}\": toetamata pakkuja tüüp \"{{type}}\""
-      },
-      "list": {
-        "description": "Loetle salvestuse lõpp-punktid. Anna nimi täieliku detaili jaoks.",
-        "noStorages": "Salvestuse lõpp-punkte ei ole seadistatud. Registreeri üks käsuga: rdc storage add <name> --vault <json>",
-        "optionReveal": "Kuva salvestuse konfiguratsioon lihttekstina (ainult interaktiivne TTY; auditeeritakse)"
-      },
-      "prune": {
-        "completed": "{{count}} orvu varukoopiat koristatud",
-        "description": "Kustutab orvu varukoopiaid salvestusest, mis pole enam üheski konfiguratsioonis. Mitme konfiguratsiooni turvaline koos ooteperioodi kaitsega. Rclone käivitused töötavad --machine peal (täitja), mitte sinu sülearvutil, seega klientidel pole vaja rclone-i kohalikult installida; --machine on täitja, mitte tõeteallikas.",
-        "descriptionShort": "Kustutab orvu varukoopiaid salvestusest",
-        "forceDeleteMountedOption": "Tühistab ühendusohutuse kontrolli ja kustutab pilvest varukoopiaid isegi siis, kui allika GUID on praegu ühendatud või sellel on töötav konteiner täitja masinal. Erineb lipust --force (mis tühistab ainult arhiveeritud repositooriumite ooteperioodi).",
-        "found": "Leitud {{count}} varukoopiat salvestuses",
-        "listing": "Varukoopiaid laaditakse \"{{storage}}\"...",
-        "machineOption": "Täitja masin, mis käivitab rclone loetlemise/kustutamise kõnesid salvestuse vastu. Nõutav, kuna klientidel ei eeldata rclone-i kohalikku installimist; salvestuse volikirjad tulevad endiselt kohalikust konfiguratsioonist.",
-        "noBackups": "Salvestuses varukoopiad puuduvad"
-      },
-      "remove": {
-        "confirm": "Eemaldada salvestuse lõpp-punkt \"{{name}}\"?",
-        "description": "Eemalda salvestuse lõpp-punkt konfiguratsioonist.",
-        "removed": "Salvestus \"{{name}}\" eemaldatud"
       }
     },
     "subscription": {
@@ -2282,8 +2233,7 @@
       "machineNotFound": "Masina \"{{name}}\" ei leitud konfiguratsioonist. Saadaval: {{available}}.",
       "noActiveConfig": "Aktiivset konfiguratsiooni ei ole",
       "pointerNotFound": "Osutit \"{{pointer}}\" ei leitud",
-      "retiredKey": "Vaikeväärtust \"{{key}}\" enam ei ole. Kehtivad võtmed: {{keys}}",
-      "storageNotFound": "Salvestusruumi \"{{name}}\" ei leitud konfiguratsioonist. Saadaval: {{available}}."
+      "retiredKey": "Vaikeväärtust \"{{key}}\" enam ei ole. Kehtivad võtmed: {{keys}}"
     },
     "container": {
       "execFailed": "container_exec ebaõnnestus",
@@ -2341,7 +2291,7 @@
     },
     "regionRequired": "Regiooni nimi on nõutud. Kasuta --region või määra vaikimisi väärtus käsuga: rdc config set region <name>",
     "regionSelectionRequiresTTY": "Regiooni valik nõuab interaktiivset sisendit. Kasuta --server <url>, et määrata server otse.",
-    "remoteNotFound": "\"{{name}}\" ei ole tuntud masin, salvestusruum ega klaster. Masinad: {{machines}}. Salvestusruumid: {{storages}}. Klastrid: {{clusters}}",
+    "remoteNotFound": "\"{{name}}\" ei ole tuntud masin ega klaster. Masinad: {{machines}}. Klastrid: {{clusters}}",
     "repo": {
       "canaryNeedsCluster": "Hoidla \"{{ref}}\" ei ole klastris. Canary jagab liikluse kahe juurutuse vahel, seega vajab see Kubernetesesse paigutatud hoidlat.",
       "listTargetExclusive": "Anna kõige rohkem üks: -m või --datastore. Andmehoidla teab juba, milline masin seda hoiab.",
@@ -2350,7 +2300,10 @@
         "badMode": "Vigane --mode \"{{mode}}\". Lubatud: env, file.",
         "emptyValue": "Saladuse väärtus ei saa olla tühi (stdin ei andnud baite).",
         "mutuallyExclusive": "--current ja --rotate-secret ei saa koos kasutada. Vali üks: --current eelmise väärtuse kontrollimiseks või --rotate-secret kontrollimiseta roteerimiseks."
-      }
+      },
+      "networkIdInUse": "Hoidla \"{{repository}}\" võrgu-ID {{networkId}} on masinas \"{{machine}}\" juba hõivatud: {{holder}}. Masinas salvestatud ID-de ülevõtmiseks käivita `rdc config reconcile`.",
+      "networkIdUndiscoverable": "Hoidlal \"{{repository}}\" pole selles konfiguratsioonis võrgu-ID-d ja masinalt \"{{machine}}\" ei õnnestunud seda küsida. Proovi uuesti, kui masin on kättesaadav, või käivita `rdc config reconcile`.",
+      "networkIdDiverged": "Hoidla \"{{repository}}\" võrgu-ID oli selles konfiguratsioonis {{localId}}, kuid masin \"{{machine}}\" hoiab {{machineId}}. Nüüd on salvestatud masina ID."
     },
     "repoNotDeployed": "Repositoorium \"{{repository}}\" ei ole masinas {{machine}} kasutusele võetud.\n\nVõta see esmalt kasutusele:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Repositoorium \"{{name}}\" on juba masinas \"{{machine}}\" ühendatud. Aktiivse repositooriumi üle migreerimine rikuks selle. Käivita esmalt: rdc repo down {{name}} --unmount",
@@ -2491,7 +2444,6 @@
     "external": "Sundkäivita välises terminaliaknast",
     "extraMachine": "Lisaarvuti mitmemasina toimingute jaoks (name:ip:user)",
     "fields": "Komaga eraldatud väljade loend väljundisse lisamiseks",
-    "file": "Faili tee",
     "folder": "Avamiseks ettenähtud kaugkausta tee",
     "force": "Jäta kinnitusviibad vahele",
     "function": "Täidetava funktsiooni nimi",
@@ -2552,12 +2504,9 @@
     "sshKey": "Tee SSH-privaatvõtmeni (nt ~/.ssh/id_rsa)",
     "sshPort": "SSH-port",
     "sshUser": "SSH-kasutajanimi",
-    "storageRef": "Salvestuse viide: registreeritud salvestuse lõpp-punkti nimi (nt s3-main)",
     "strategyName": "Varundusstrateegia nimi",
     "team": "Meeskonna nimi",
     "urlOnly": "Prindi VS Code'i URI käivitamise asemel",
-    "vaultContent": "Hoidla sisu JSON-stringina",
-    "vaultJson": "Hoidla sisu JSON-stringina",
     "verifyChecksum": "Kontrolli faile kontrollsummade abil pärast sünkroonimist",
     "vmId": "Virtuaalmasina ID",
     "vscodeBrowser": "Serveeri brauseri VS Code-i repositooriumi liivakastist (kohalikku VS Code-i pole vaja)",

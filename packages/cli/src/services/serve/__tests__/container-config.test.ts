@@ -192,8 +192,9 @@ function secretConfig(policy?: PolicyDocument): RdcConfig {
           tags: { latest: { repositoryGuid: '11111111-1111-4111-8111-111111111111' } },
         },
       },
-      storages: {},
     },
+    // A recorded network ID: a repo without one asks its machine first, and the fake executor is no machine.
+    state: { repos: { demo: { latest: { networkId: 2816 } } } },
     encryption: { mode: 'plaintext' },
     ...(policy === undefined ? {} : { policy }),
   };

@@ -25,7 +25,6 @@ import type {
   MachineConfig,
   RdcConfig,
   RepositoryConfig,
-  StorageConfig,
 } from '../../types/index.js';
 import { outputService } from '../core/output.js';
 import { currentRequestConfig } from '../core/request-context.js';
@@ -306,47 +305,6 @@ class ConfigService extends ConfigServiceBase {
         ...('certEmail' in updates ? { certEmail: updates.certEmail } : {}),
       },
     }));
-  }
-
-  // ============================================================================
-  // Storage CRUD
-  // ============================================================================
-
-  async addStorage(storageName: string, config: StorageConfig): Promise<void> {
-    await this.requireSelfHosted();
-    await assertValidResourceName(storageName);
-    const state = await this.getResourceState();
-    const storages = state.getStorages();
-    storages[storageName] = config;
-    await state.setStorages(storages);
-  }
-
-  async removeStorage(storageName: string): Promise<void> {
-    await this.requireSelfHosted();
-    const state = await this.getResourceState();
-    const storages = state.getStorages();
-    if (!(storageName in storages)) throw new Error(`Storage "${storageName}" not found`);
-    delete storages[storageName];
-    await state.setStorages(storages);
-  }
-
-  async listStorages(): Promise<{ name: string; config: StorageConfig }[]> {
-    await this.requireSelfHosted();
-    const state = await this.getResourceState();
-    return Object.entries(state.getStorages())
-      .map(([name, config]) => ({ name, config }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  async getStorage(storageName: string): Promise<StorageConfig> {
-    await this.requireSelfHosted();
-    const state = await this.getResourceState();
-    const storages = state.getStorages();
-    if (!(storageName in storages))
-      throw new Error(
-        `Storage "${storageName}" not found. Available: ${Object.keys(storages).join(', ') || 'none'}`
-      );
-    return storages[storageName];
   }
 
   // ============================================================================
@@ -657,8 +615,8 @@ class ConfigService extends ConfigServiceBase {
   // Network ID Allocation (per config file)
   // ============================================================================
 
-  allocateNetworkId(): Promise<number> {
-    return allocateNetworkIdInStore(this.getEffectiveConfigName());
+  allocateNetworkId(options: { floor?: Iterable<number> } = {}): Promise<number> {
+    return allocateNetworkIdInStore(this.getEffectiveConfigName(), options);
   }
 
   /** Mirror a repository's granted CDI device names into `state.repos` (an empty list clears the mirror). */
@@ -666,18 +624,6 @@ class ConfigService extends ConfigServiceBase {
     const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
     repos[key] = withGpuDevices(repos[key], devices);
     await state.setRepositories(repos);
-  }
-
-  async ensureRepositoryNetworkId(repoRef: string): Promise<number> {
-    const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
-    const repo = repos[key];
-
-    if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;
-
-    const networkId = await this.allocateNetworkId();
-    repos[key] = { ...repo, networkId };
-    await state.setRepositories(repos);
-    return networkId;
   }
 }
 

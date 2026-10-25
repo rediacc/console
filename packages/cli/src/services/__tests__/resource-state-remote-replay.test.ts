@@ -49,7 +49,7 @@ const baseConfig = {
   encryption: { mode: 'plaintext' },
   resources: {
     machines: { m1: { ip: '10.0.0.1', user: 'root' } },
-    storages: { sOld: { provider: 's3' } },
+    repositories: { rOld: { grand: 'latest', tags: { latest: { repositoryGuid: '11111111-1111-4111-8111-aaaaaaaaaaaa' } } } },
   },
 } as unknown as RdcConfig;
 
@@ -115,7 +115,7 @@ describe('RemoteResourceState persist', () => {
   it('replays a 409 by re-applying ONLY the mutated bucket over the fresh pull', async () => {
     const adapter = createAdapter();
     // First push conflicts; the fresh pull is at v5 with a DIFFERENT bucket
-    // changed (storages) by the other device; second push succeeds at v6.
+    // changed (repositories) by the other device; second push succeeds at v6.
     adapter.push
       .mockRejectedValueOnce(new RemoteVersionConflictError('Version conflict: current is 5'))
       .mockResolvedValueOnce({ version: 6 });
@@ -126,7 +126,7 @@ describe('RemoteResourceState persist', () => {
         defaults: { universalUser: 'from-b' },
         resources: {
           machines: { m1: { ip: '10.0.0.1', user: 'root' } },
-          storages: { sNew: { provider: 'sftp' } },
+          repositories: { rNew: { grand: 'latest', tags: { latest: { repositoryGuid: '22222222-2222-4222-8222-bbbbbbbbbbbb' } } } },
         },
       },
       version: 5,
@@ -143,9 +143,9 @@ describe('RemoteResourceState persist', () => {
     const [replayDoc, replayVersion] = adapter.push.mock.calls[1] as [RdcConfig, number];
     // Replay is based on the fresh server version...
     expect(replayVersion).toBe(5);
-    // ...carries the OTHER device's storages change...
-    expect(replayDoc.resources?.storages).toHaveProperty('sNew');
-    expect(replayDoc.resources?.storages).not.toHaveProperty('sOld');
+    // ...carries the OTHER device's repositories change...
+    expect(replayDoc.resources?.repositories).toHaveProperty('rNew');
+    expect(replayDoc.resources?.repositories).not.toHaveProperty('rOld');
     // ...and re-applies our machines mutation.
     expect(replayDoc.resources?.machines).toHaveProperty('m2');
     // Families outside the resource buckets go back as the other device left them, not from the
@@ -226,7 +226,7 @@ describe('RemoteResourceState persist', () => {
     });
     const state = loadState(adapter);
 
-    await expect(state.setStorages({ s2: { provider: 's3', vaultContent: {} } })).rejects.toThrow(
+    await expect(state.setMachines({ m9: { ip: '10.0.0.9', user: 'root' } })).rejects.toThrow(
       /still conflicting/
     );
 

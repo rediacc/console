@@ -120,3 +120,56 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
     }
   });
 });
+
+// PLAN-config-networkid-discovery T3(d): the floor is the TARGET machine's used set (D3(a)).
+describe('allocateNetworkIdInStore floor', { timeout: 30_000 }, () => {
+  beforeEach(() => {
+    mockConfig = {};
+  });
+
+  it('raises next past the target machine highest claimant', async () => {
+    mockConfig = { state: { networkIds: { next: MIN_NETWORK_ID } } };
+    const { allocateNetworkIdInStore } = await import('../config/config-network-id.js');
+    const id = await allocateNetworkIdInStore('test', { floor: [2816, 2880] });
+    expect(id).toBe(2944);
+    expect(next()).toBe(3008);
+  });
+
+  it('never lowers a counter already past the floor', async () => {
+    mockConfig = { state: { networkIds: { next: 6016 } } };
+    const { allocateNetworkIdInStore } = await import('../config/config-network-id.js');
+    expect(await allocateNetworkIdInStore('test', { floor: [2816] })).toBe(6016);
+  });
+
+  it('keeps the 64-step grid for an off-grid claimant', async () => {
+    const { allocateNetworkIdInStore } = await import('../config/config-network-id.js');
+    const id = await allocateNetworkIdInStore('test', { floor: [2900] });
+    expect(id).toBe(2944);
+    expect((id - MIN_NETWORK_ID) % NETWORK_ID_INCREMENT).toBe(0);
+  });
+
+  it('reads only the floor it is given, not the IDs other machines hold in state', async () => {
+    // state.repos holds a high ID on ANOTHER machine; the target machine is empty.
+    mockConfig = { state: { networkIds: { next: 3008 }, ...reposState({ far: 9152 }) } };
+    const { allocateNetworkIdInStore } = await import('../config/config-network-id.js');
+    expect(await allocateNetworkIdInStore('test', { floor: [] })).toBe(3008);
+  });
+
+  it('an empty floor on a fresh config reproduces the single-device sequence (N7)', async () => {
+    const { allocateNetworkIdInStore } = await import('../config/config-network-id.js');
+    const ids = [
+      await allocateNetworkIdInStore('test', { floor: [] }),
+      await allocateNetworkIdInStore('test', { floor: [] }),
+      await allocateNetworkIdInStore('test', { floor: [] }),
+    ];
+    expect(ids).toEqual([2816, 2880, 2944]);
+  });
+
+  it('networkIdFloor ignores IDs below the minimum and an empty set', async () => {
+    const { networkIdFloor } = await import('../config/config-network-id.js');
+    expect(networkIdFloor(undefined)).toBeUndefined();
+    expect(networkIdFloor([])).toBeUndefined();
+    expect(networkIdFloor([7, 0, -1])).toBeUndefined();
+    expect(networkIdFloor([2816])).toBe(2880);
+  });
+});

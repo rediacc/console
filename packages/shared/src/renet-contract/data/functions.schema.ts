@@ -25,34 +25,34 @@ export const BackupBrowseAtParamsSchema = z.object({
   limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
 });
 
-/** Delete one or more backups from storage or machine */
+/** Delete one or more backups from a machine's datastore */
 export const BackupDeleteParamsSchema = z.object({
   sourceType: z
-    .enum(['machine', 'storage'])
+    .enum(['machine'])
     .default('machine')
-    .describe('Target type: machine (SSH); storage is retired'),
-  from: z.string().min(1).describe('Target machine or storage name'),
-  path: z.string().optional().describe('Subdirectory within the storage root (e.g., \'hot\' or \'cold\')'),
+    .describe('Target type: machine (SSH)'),
+  from: z.string().min(1).describe('Target machine name'),
+  path: z.string().optional().describe('Subdirectory within the datastore backup root'),
   repositories: z.array(z.string()).optional().describe('Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement.'),
 });
 
 /** List backup artifacts in a machine's own datastore */
 export const BackupListParamsSchema = z.object({
   sourceType: z
-    .enum(['local', 'machine', 'storage'])
+    .enum(['local', 'machine'])
     .default('local')
-    .describe('Source type: local (this machine\'s datastore) or machine (SSH); storage is retired'),
+    .describe('Source type: local (this machine\'s datastore) or machine (SSH)'),
   from: z.string().min(1).describe('The machine whose datastore is listed; for sourceType=machine, the remote source'),
   path: z.string().optional().describe('Limit the listing to one subdirectory; omit to enumerate the whole datastore'),
 });
 
-/** Pull repository from remote source (machine or storage) */
+/** Pull repository from another machine over SSH */
 export const BackupPullParamsSchema = z.object({
   sourceType: z
-    .enum(['machine', 'storage'])
+    .enum(['machine'])
     .default('machine')
-    .describe('Source type: machine (SSH); storage is retired'),
-  from: z.string().min(1).describe('Source machine or storage name'),
+    .describe('Source type: machine (SSH)'),
+  from: z.string().min(1).describe('Source machine name'),
   src: z.string().optional().describe('Source repository GUID on the source machine (defaults to the destination repository)'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
   force: z.boolean().default(false).optional().describe('Overwrite existing repository'),
@@ -65,15 +65,14 @@ export const BackupPullParamsSchema = z.object({
     .describe('Delta strategy: auto|physical|shared'),
 });
 
-/** Push repository to remote destination (machine or storage) */
+/** Push repository to another machine over SSH */
 export const BackupPushParamsSchema = z.object({
   destinationType: z
-    .enum(['machine', 'storage'])
+    .enum(['machine'])
     .default('machine')
-    .describe('Destination type: machine (SSH); storage is retired'),
-  to: z.string().optional().describe('Single destination (machine or storage name)'),
+    .describe('Destination type: machine (SSH)'),
+  to: z.string().optional().describe('Single destination machine name'),
   machines: z.array(z.string()).optional().describe('Target machines for parallel deployment'),
-  storages: z.array(z.string()).optional().describe('Target storage systems for parallel backup'),
   dest: z.string().min(1).describe('Backup filename'),
   tag: z.string().optional().describe('Deployment/version tag'),
   state: z.enum(['online', 'offline']).optional().describe('Repository state validation'),

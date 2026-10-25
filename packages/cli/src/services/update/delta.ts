@@ -4,7 +4,7 @@
  * WHY: every update is a full re-download of a ~500MB single-file executable,
  * and the edge channel releases on every merge to main. Almost all of that
  * payload is the embedded third-party binaries (k3s, zot, the CSI sidecars,
- * rclone, criu, rsync), which change on the order of once a month, while the Go
+ * criu, rsync), which change on the order of once a month, while the Go
  * and JavaScript code changes every merge. So the bytes that actually differ
  * between two consecutive releases are a small fraction of the file.
  *

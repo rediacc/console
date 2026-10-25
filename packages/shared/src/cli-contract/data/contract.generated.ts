@@ -1128,21 +1128,7 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionDestination",
-          "label": "Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given"
-        },
-        {
-          "flags": "--storage <name>",
-          "long": "storage",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "kinds": [
-            "storage"
-          ],
-          "tier": "common",
-          "descriptionKey": "commands.backup.strategy.set.optionStorage",
-          "label": "Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled"
+          "label": "Destination name within the strategy. Creates a Rediacc chunk-store destination"
         },
         {
           "flags": "--cron <expression>",
@@ -1181,7 +1167,7 @@ export const CLI_CONTRACT: CliContract = {
           "format": "bandwidth",
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionBwlimit",
-          "label": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")"
+          "label": "Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., \"6M\", \"500K\")"
         },
         {
           "flags": "--include <repos>",
@@ -1204,18 +1190,6 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionExclude",
           "label": "Exclude these repos from backup (comma-separated names)"
-        },
-        {
-          "flags": "--folder <path>",
-          "long": "folder",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "format": "path",
-          "tier": "advanced",
-          "descriptionKey": "commands.backup.strategy.set.optionFolder",
-          "label": "Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage"
         },
         {
           "flags": "--enable",
@@ -1253,14 +1227,14 @@ export const CLI_CONTRACT: CliContract = {
       "hasSubcommands": false,
       "examples": [
         {
-          "command": "rdc backup strategy set nightly --storage backups-s3 --mode hot",
+          "command": "rdc backup strategy set nightly --cron \"0 3 * * *\" --mode hot",
           "values": {
             "strategy": "nightly",
-            "storage": "backups-s3",
+            "cron": "0 3 * * *",
             "mode": "hot"
           },
           "descriptionKey": "commands.backup.strategy.set.examples.configure",
-          "label": "Configure a backup strategy's storage and mode."
+          "label": "Configure a backup strategy's schedule and mode."
         },
         {
           "command": "rdc backup strategy set nightly --disable",
@@ -3770,7 +3744,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.credits.description",
-      "label": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync, rclone), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",
+      "label": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",
       "options": [
         {
           "flags": "--licenses",
@@ -10405,8 +10379,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "kinds": [
-            "machine",
-            "storage"
+            "machine"
           ],
           "tier": "common",
           "descriptionKey": "commands.repo.pull.optionFrom",
@@ -10583,8 +10556,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "kinds": [
-            "machine",
-            "storage"
+            "machine"
           ],
           "tier": "common",
           "descriptionKey": "commands.repo.push.optionTo",
@@ -12301,397 +12273,6 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "add"
-      ],
-      "pathKey": "storage add",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "config",
-      "descriptionKey": "commands.storage.add.description",
-      "label": "Register a storage endpoint.",
-      "options": [
-        {
-          "flags": "--vault <json>",
-          "long": "vault",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "tier": "common",
-          "sensitive": true,
-          "descriptionKey": "options.vaultContent",
-          "label": "Vault content as JSON string"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "name",
-          "kind": "plain",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "examples": [
-        {
-          "command": "rdc storage add backups-s3 --vault '{\"type\":\"s3\"}'",
-          "values": {
-            "name": "backups-s3",
-            "vault": "{\"type\":\"s3\"}"
-          },
-          "descriptionKey": "commands.storage.add.examples.basic",
-          "label": "Register a storage backend from a vault definition."
-        }
-      ],
-      "keywords": [
-        "register",
-        "s3",
-        "bucket",
-        "endpoint",
-        "remote"
-      ],
-      "destructive": false,
-      "idempotent": false,
-      "timeout": "write",
-      "timeoutMs": 300000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "browse"
-      ],
-      "pathKey": "storage browse",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "other",
-      "descriptionKey": "commands.storage.browse.description",
-      "label": "Browse files in a storage system",
-      "options": [
-        {
-          "flags": "--path <subpath>",
-          "long": "path",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "",
-          "format": "path",
-          "tier": "advanced",
-          "descriptionKey": "commands.storage.browse.pathOption",
-          "label": "Subdirectory path to list"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "storage",
-          "kind": "storage",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.storageRef",
-          "label": "Storage ref: the name of a registered storage endpoint (for example s3-main)"
-        }
-      ],
-      "hasSubcommands": false,
-      "mcpExcludeReason": "Interactive file browser: requires TTY",
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "import"
-      ],
-      "pathKey": "storage import",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "config",
-      "descriptionKey": "commands.storage.import.description",
-      "label": "Import a storage endpoint from a definition file.",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.storage.import.optionName",
-          "label": "Import only this named section"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "file",
-          "kind": "file",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.file",
-          "label": "Path to file"
-        }
-      ],
-      "hasSubcommands": false,
-      "mcpExcludeReason": "Reads a local rclone definition file; use CLI directly.",
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "list"
-      ],
-      "pathKey": "storage list",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "config",
-      "descriptionKey": "commands.storage.list.description",
-      "label": "List storage endpoints. Give a name for full detail.",
-      "options": [
-        {
-          "flags": "--reveal",
-          "long": "reveal",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.storage.list.optionReveal",
-          "label": "Reveal the storage configuration in plaintext (interactive TTY only; audited)"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "name",
-          "kind": "plain",
-          "required": false,
-          "variadic": false,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "output": {
-        "primaryKey": "name",
-        "columns": [
-          "name",
-          "provider"
-        ]
-      },
-      "destructive": false,
-      "idempotent": true,
-      "timeout": "read",
-      "timeoutMs": 120000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "prune"
-      ],
-      "pathKey": "storage prune",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "machine",
-      "descriptionKey": "commands.storage.prune.description",
-      "label": "Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "kinds": [
-            "machine"
-          ],
-          "tier": "common",
-          "descriptionKey": "commands.storage.prune.machineOption",
-          "label": "Executor machine that runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config."
-        },
-        {
-          "flags": "--dry-run",
-          "long": "dry-run",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.dryRun",
-          "label": "Show what would be done without making changes"
-        },
-        {
-          "flags": "--force",
-          "long": "force",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.force",
-          "label": "Skip confirmation prompts"
-        },
-        {
-          "flags": "--force-delete-mounted",
-          "long": "force-delete-mounted",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.storage.prune.forceDeleteMountedOption",
-          "label": "Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos)."
-        },
-        {
-          "flags": "--grace-days <days>",
-          "long": "grace-days",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "format": "integer",
-          "tier": "advanced",
-          "descriptionKey": "options.graceDays",
-          "label": "Grace period in days for recently archived repos (default: 7)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        },
-        {
-          "flags": "--skip-router-restart",
-          "long": "skip-router-restart",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.skipRouterRestart",
-          "label": "Skip restarting the route server after binary update"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "storage",
-          "kind": "storage",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.storageRef",
-          "label": "Storage ref: the name of a registered storage endpoint (for example s3-main)"
-        }
-      ],
-      "hasSubcommands": false,
-      "destructive": true,
-      "idempotent": true,
-      "timeout": "write",
-      "timeoutMs": 300000,
-      "interactive": false,
-      "proxyCapable": true,
-      "detachable": true,
-      "machineOption": "machine",
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "remove"
-      ],
-      "pathKey": "storage remove",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "config",
-      "descriptionKey": "commands.storage.remove.description",
-      "label": "Remove a storage endpoint from the config.",
-      "options": [
-        {
-          "flags": "-y, --yes",
-          "long": "yes",
-          "short": "y",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.yes",
-          "label": "Skip confirmation prompt"
-        },
-        {
-          "flags": "--dry-run",
-          "long": "dry-run",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.dryRun",
-          "label": "Show what would be done without making changes"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "name",
-          "kind": "plain",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "destructive": true,
-      "idempotent": false,
-      "timeout": "write",
-      "timeoutMs": 300000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,

@@ -4,8 +4,7 @@ import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
  *
  * Systemd units are world-readable, so OAuth tokens and API keys cannot
  * live in ExecStart=. Instead we write them to /etc/rediacc/backup-*.env
- * at mode 0600 and reference the file via EnvironmentFile=. Rclone then
- * picks them up natively via its RCLONE_<OPTION> env-var convention.
+ * at mode 0600 and reference the file via EnvironmentFile=.
  */
 
 /** Path of the per-strategy EnvironmentFile= sidecar. */

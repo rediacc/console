@@ -1015,12 +1015,6 @@
                   "defaultValue": null
                 },
                 {
-                  "flags": "--storage <name>",
-                  "descriptionKey": "commands.backup.strategy.set.optionStorage",
-                  "mandatory": false,
-                  "defaultValue": null
-                },
-                {
                   "flags": "--cron <expression>",
                   "descriptionKey": "commands.backup.strategy.set.optionCron",
                   "mandatory": false,
@@ -1047,12 +1041,6 @@
                 {
                   "flags": "--exclude <repos>",
                   "descriptionKey": "commands.backup.strategy.set.optionExclude",
-                  "mandatory": false,
-                  "defaultValue": null
-                },
-                {
-                  "flags": "--folder <path>",
-                  "descriptionKey": "commands.backup.strategy.set.optionFolder",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -3770,182 +3758,6 @@
               "subcommands": []
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "storage",
-      "descriptionKey": "commands.storage.description",
-      "options": [],
-      "arguments": [],
-      "subcommands": [
-        {
-          "name": "add",
-          "descriptionKey": "commands.storage.add.description",
-          "options": [
-            {
-              "flags": "--vault <json>",
-              "descriptionKey": "options.vaultContent",
-              "mandatory": true,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
-        },
-        {
-          "name": "remove",
-          "descriptionKey": "commands.storage.remove.description",
-          "options": [
-            {
-              "flags": "-y, --yes",
-              "descriptionKey": "options.yes",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--dry-run",
-              "descriptionKey": "options.dryRun",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
-        },
-        {
-          "name": "list",
-          "descriptionKey": "commands.storage.list.description",
-          "options": [
-            {
-              "flags": "--reveal",
-              "descriptionKey": "commands.storage.list.optionReveal",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [
-            {
-              "name": "name",
-              "required": false,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
-        },
-        {
-          "name": "import",
-          "descriptionKey": "commands.storage.import.description",
-          "options": [
-            {
-              "flags": "--name <name>",
-              "descriptionKey": "commands.storage.import.optionName",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [
-            {
-              "name": "file",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
-        },
-        {
-          "name": "browse",
-          "descriptionKey": "commands.storage.browse.description",
-          "options": [
-            {
-              "flags": "--path <subpath>",
-              "descriptionKey": "commands.storage.browse.pathOption",
-              "mandatory": false,
-              "defaultValue": ""
-            }
-          ],
-          "arguments": [
-            {
-              "name": "storage",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
-        },
-        {
-          "name": "prune",
-          "descriptionKey": "commands.storage.prune.description",
-          "options": [
-            {
-              "flags": "-m, --machine <name>",
-              "descriptionKey": "commands.storage.prune.machineOption",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
-              "flags": "--dry-run",
-              "descriptionKey": "options.dryRun",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--force",
-              "descriptionKey": "options.force",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--force-delete-mounted",
-              "descriptionKey": "commands.storage.prune.forceDeleteMountedOption",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--grace-days <days>",
-              "descriptionKey": "options.graceDays",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--debug",
-              "descriptionKey": "options.debug",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "--skip-router-restart",
-              "descriptionKey": "options.skipRouterRestart",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [
-            {
-              "name": "storage",
-              "required": true,
-              "variadic": false,
-              "defaultValue": null
-            }
-          ],
-          "subcommands": []
         }
       ]
     },

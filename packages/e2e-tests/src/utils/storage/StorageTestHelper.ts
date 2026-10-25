@@ -284,27 +284,4 @@ export class StorageTestHelper {
   async cleanupTestBucket(bucketName: string): Promise<void> {
     await this.deleteBucket(bucketName);
   }
-
-  /**
-   * Get the S3 config for use in VaultBuilder.
-   */
-  getVaultStorageConfig(): {
-    name: string;
-    type: 's3';
-    endpoint: string;
-    bucket: string;
-    accessKey: string;
-    secretKey: string;
-    region?: string;
-  } {
-    return {
-      name: 'rustfs',
-      type: 's3',
-      endpoint: this.s3Config.endpoint,
-      bucket: this.s3Config.bucket,
-      accessKey: this.s3Config.accessKey,
-      secretKey: this.s3Config.secretKey,
-      region: this.s3Config.region,
-    };
-  }
 }

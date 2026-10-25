@@ -93,8 +93,9 @@ function fleetConfig(policy?: PolicyDocument): RdcConfig {
           },
         },
       },
-      storages: {},
     },
+    // Recorded network IDs: a repo without one asks its machine first, and the fake executor is no machine.
+    state: { repos: { shop: { latest: { networkId: 2816 }, trial: { networkId: 2880 } } } },
     encryption: { mode: 'plaintext' },
     ...(policy ? { policy } : {}),
   };

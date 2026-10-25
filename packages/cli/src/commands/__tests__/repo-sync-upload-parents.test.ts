@@ -95,7 +95,8 @@ vi.mock('../../utils/command-policy.js', () => ({
   validateRemotePath: vi.fn(),
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
 }));
-vi.mock('../../utils/errors.js', () => ({
+vi.mock('../../utils/errors.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/errors.js')>()),
   handleError: (error: unknown) => {
     throw error;
   },

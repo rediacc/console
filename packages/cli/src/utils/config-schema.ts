@@ -159,19 +159,6 @@ export function assertResourceName(name: string): void {
 
 // ── Cross-reference checks ────────────────────────────────────────
 
-export async function assertStorageExists(storageName: string): Promise<void> {
-  const storages = await configService.listStorages();
-  const names = storages.map((s) => s.name);
-  if (!names.includes(storageName)) {
-    throw new ValidationError(
-      t('errors.config.storageNotFound', {
-        name: storageName,
-        available: names.length > 0 ? names.join(', ') : '(none)',
-      })
-    );
-  }
-}
-
 export async function assertMachineExists(machineName: string): Promise<void> {
   const machines = await configService.listMachines();
   const names = machines.map((m) => m.name);

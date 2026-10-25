@@ -26,6 +26,10 @@ const h = vi.hoisted(() => ({
   deletedRepos: [] as string[],
 }));
 
+vi.mock('../config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn().mockResolvedValue(1),
+}));
 vi.mock('../config/config-resources.js', () => ({
   configService: {
     // undefined config => the R2 family guard is skipped (the fixture family is
@@ -33,7 +37,6 @@ vi.mock('../config/config-resources.js', () => ({
     getCurrent: vi.fn().mockResolvedValue(null),
     getRepository: vi.fn().mockResolvedValue({ repositoryGuid: h.GUID }),
     getLocalConfig: vi.fn().mockResolvedValue({ machines: { m1: {}, m2: {} } }),
-    ensureRepositoryNetworkId: vi.fn().mockResolvedValue(1),
     setRepositoryPlacement: vi.fn((_family: string, placement: { machine: string }) => {
       h.written = placement;
       return Promise.resolve();

@@ -14,6 +14,7 @@ import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import { envFilePath } from './backup-env-file.js';
+import type { UnitScope } from './backup-schedule-targets.js';
 import {
   assertStrategySchedulable,
   bandwidthToBytesPerSecond,
@@ -77,28 +78,18 @@ function toTimerField(value: string): string {
 }
 
 /**
- * Redact sensitive values in rendered commands, covers legacy argv form
- * (`--rclone-param key=value`) and the `systemd-run --setenv=KEY=value`
- * form used by on-demand backups. Safe to print in dry-run, debug, and
- * agent contexts.
+ * Redact sensitive values in rendered commands: the
+ * `systemd-run --setenv=KEY=value` form used by on-demand backups. Safe to
+ * print in dry-run, debug, and agent contexts.
  */
 export function sanitizeBackupOutput(content: string): string {
-  let out = content.replaceAll(
-    /--rclone-param '([^=]+)=([^']*)'/g,
-    (_match, key: string, _value: string) => {
-      return isSensitiveKey(key) ? `--rclone-param '${key}=[REDACTED]'` : _match;
-    }
-  );
-  const rcloneKey = (envName: string): string =>
-    envName.startsWith('RCLONE_') ? envName.slice('RCLONE_'.length).toLowerCase() : envName;
-  out = out.replaceAll(
+  return content.replaceAll(
     /--setenv=([A-Z0-9_]+)=(?:'([^']*)'|(\S+))/g,
     (_m, key: string, quoted: string | undefined, _bare: string | undefined) => {
-      if (!isSensitiveKey(rcloneKey(key))) return _m;
+      if (!isSensitiveKey(key.toLowerCase())) return _m;
       return quoted === undefined ? `--setenv=${key}=[REDACTED]` : `--setenv=${key}='[REDACTED]'`;
     }
   );
-  return out;
 }
 
 interface BackupBuild {
@@ -114,43 +105,61 @@ interface BackupBuild {
  * hands back a short-lived grant, so nothing sensitive reaches the unit file
  * or its EnvironmentFile.
  *
- * `strategy.exclude` is REFUSED rather than dropped. `backup snapshot` filters
- * by repeated --repo and has no exclude flag, so honouring an exclude list
- * would mean silently backing up repositories the operator asked to leave out
- * the same silent-wrong-scope failure this branch exists to fix.
+ * Repositories reach argv as GUIDs only: `--repo <guid>` for an include scope,
+ * `--exclude-repo <guid>` otherwise. The scope is resolved from the config by
+ * backup-schedule-targets.ts; a name never reaches renet, which refuses one.
  */
 function buildChunkStoreCommand(
   strategy: BackupStrategyConfig,
   datastore: string,
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  scope: UnitScope
 ): string {
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
   // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
   //
   // ORDERING HAZARD, and it bites inside a timer at 03:00: renet must be deployed to a machine BEFORE a unit carrying --cold is written to it. An older renet dies at cobra's flag parse, and the failure surfaces as a backup that silently never ran. `backup schedule` seeds the binary first, which is what keeps this in the right order.
   if ((strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold') parts.push('--cold');
-  for (const repo of strategy.include ?? []) parts.push(`--repo ${repo}`);
+  if (scope.include) {
+    for (const guid of scope.include) parts.push(`--repo ${guid}`);
+  } else {
+    for (const guid of scope.exclude) parts.push(`--exclude-repo ${guid}`);
+  }
   const bwlimit = bandwidthToBytesPerSecond(strategy.bandwidthLimit);
   if (bwlimit !== undefined) parts.push(`--bwlimit ${bwlimit}`);
   return parts.join(' ');
 }
 
-/** One command per destination + merged RCLONE_* env-vars for the whole unit. */
+/**
+ * The scope of a strategy with no include or exclude list. A strategy that has
+ * either must be resolved through the config first (strategyUnitSpecs), so this
+ * default refuses rather than emitting names or widening to everything.
+ */
+function unresolvedScope(strategy: BackupStrategyConfig): UnitScope {
+  if (strategy.include?.length || strategy.exclude?.length) {
+    throw new Error(
+      'This backup strategy selects repositories by name; resolve them to GUIDs through the config (strategyUnitSpecs) before rendering a command.'
+    );
+  }
+  return { exclude: [] };
+}
+
+/** One command per strategy run + the env-vars for the whole unit. */
 export function buildBackupCommands(
   strategy: BackupStrategyConfig,
   destinations: BackupStrategyDestination[],
   datastore: string,
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  scope: UnitScope = unresolvedScope(strategy)
 ): BackupBuild {
-  const commands: string[] = [];
   const envVars: Record<string, string> = {};
 
-  // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`. The CHUNK STORE is the only destination kind (rclone/OneDrive emission removed 2026-08-15 on an explicit operator decision), so each destination yields one command.
+  // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`. One run is ONE snapshot whatever the number of destinations: a second identical command would upload the same cells again and commit a second manifest for the same point in time.
   assertStrategySchedulable(strategy, destinations);
-  commands.push(
-    ...destinations.map(() => buildChunkStoreCommand(strategy, datastore, remoteRenetPath))
-  );
-  return { commands, envVars };
+  return {
+    commands: [buildChunkStoreCommand(strategy, datastore, remoteRenetPath, scope)],
+    envVars,
+  };
 }
 
 /**
@@ -184,7 +193,7 @@ function licenseRenewCommand(remoteRenetPath: string): string {
 interface ServiceUnitBuild {
   /** Full systemd .service file content. */
   serviceContent: string;
-  /** RCLONE_* env vars to write to a 0600 EnvironmentFile= sidecar. */
+  /** Env vars to write to a 0600 EnvironmentFile= sidecar. */
   envVars: Record<string, string>;
 }
 
@@ -198,13 +207,15 @@ export function generateServiceUnit(
   strategy: BackupStrategyConfig,
   destinations: BackupStrategyDestination[],
   datastore: string,
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  scope?: UnitScope
 ): ServiceUnitBuild {
   const { commands, envVars } = buildBackupCommands(
     strategy,
     destinations,
     datastore,
-    remoteRenetPath
+    remoteRenetPath,
+    scope
   );
   const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
   const envFileLine =

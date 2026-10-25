@@ -7,8 +7,16 @@ import {
   removePersistedKeys,
   removeSSHConfigEntry,
 } from '../remote/vscode/index.js';
+import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import {
+  allocateNetworkIdWithFloor,
+  ensureRepositoryNetworkId,
+  type NetworkIdTarget,
+  runWithNetworkIdRetry,
+  targetFloor,
+} from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { writeStdout } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
@@ -54,6 +62,7 @@ async function rollbackCreateRepo(name: string): Promise<void> {
 /** Render the create result: timeline/success on success, rollback + failure otherwise. */
 async function renderCreateResult(
   name: string,
+  machine: string,
   result: import('../services/executor/local-executor.js').ExecuteResult
 ): Promise<void> {
   if (result.success) {
@@ -62,6 +71,7 @@ async function renderCreateResult(
     } else {
       outputService.success(t('commands.repo.create.completed'));
     }
+    await reconcileBackupSchedules(machine);
   } else {
     await rollbackCreateRepo(name);
     renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
@@ -111,7 +121,8 @@ async function resolveDatastorePlacement(datastore: string): Promise<DatastorePl
 async function registerNewRepo(
   name: string,
   placement: Placement,
-  extra: { sshPrivateKey?: string; sshPublicKey?: string }
+  extra: { sshPrivateKey?: string; sshPublicKey?: string },
+  target: NetworkIdTarget
 ): Promise<{ repositoryGuid: string; networkId: number }> {
   // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
@@ -121,7 +132,8 @@ async function registerNewRepo(
     throw new Error(t('commands.repo.create.alreadyExists', { name }));
   }
   const repositoryGuid = randomUUID();
-  const networkId = await configService.allocateNetworkId();
+  // D3(a): the floor is the target machine's used set, so a lagging counter skips IDs other devices placed there.
+  const networkId = await allocateNetworkIdWithFloor(await targetFloor(target));
   await configService.addRepository(compositeKey(name, 'latest'), {
     repositoryGuid,
     tag: 'latest',
@@ -165,10 +177,12 @@ async function handleRepoCreateOnMachine(
     }
 
     const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
+    const target: NetworkIdTarget = { machine: options.machine };
     const { repositoryGuid, networkId } = await registerNewRepo(
       name,
       { machine: options.machine },
-      { sshPrivateKey, sshPublicKey }
+      { sshPrivateKey, sshPublicKey },
+      target
     );
     registered = true;
 
@@ -187,21 +201,27 @@ async function handleRepoCreateOnMachine(
       })
     );
 
-    const result = await getExecutor().execute({
-      functionName: 'repository_create',
-      machineName: options.machine,
-      params: {
-        repository: name,
-        size: options.size,
-        guid: repositoryGuid,
-        network_id: networkId,
-        ...(options.noDocker ? { start_docker: false } : {}),
-      },
-      debug: options.debug,
-      skipRouterRestart: options.skipRouterRestart,
+    const result = await runWithNetworkIdRetry({
+      repoKey: name,
+      target,
+      networkId,
+      run: (id) =>
+        getExecutor().execute({
+          functionName: 'repository_create',
+          machineName: options.machine,
+          params: {
+            repository: name,
+            size: options.size,
+            guid: repositoryGuid,
+            network_id: id,
+            ...(options.noDocker ? { start_docker: false } : {}),
+          },
+          debug: options.debug,
+          skipRouterRestart: options.skipRouterRestart,
+        }),
     });
 
-    await renderCreateResult(name, result);
+    await renderCreateResult(name, options.machine, result);
   } catch (error) {
     if (registered) await rollbackCreateRepo(name);
     handleError(error);
@@ -236,10 +256,16 @@ async function handleRepoCreateOnDatastore(
       throw new ValidationError(t('commands.repo.create.sizeRequiredDocker'));
     }
 
+    const target: NetworkIdTarget = {
+      machine: placement.machine,
+      datastore: placement.mountPath,
+      ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
+    };
     const { repositoryGuid, networkId } = await registerNewRepo(
       name,
       { datastore: options.datastore },
-      {}
+      {},
+      target
     );
     registered = true;
 
@@ -258,32 +284,40 @@ async function handleRepoCreateOnDatastore(
       })
     );
 
-    const result = await getExecutor().execute({
-      functionName: 'repository_create',
-      machineName: placement.machine,
-      ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
-      // #74: DISPATCH AGAINST THE DATASTORE WE JUST RECORDED. We resolved this placement above and then said nothing about it, so renet fell back to the machine's default docker datastore: the placement written to the config and the placement sent to the machine were two different things, silently. This is the executor's vault channel (ExecuteOptions.datastore), NOT a param ,
-      // `repository_create` reads its datastore from the machine vault.
-      datastore: placement.mountPath,
-      params: {
-        repository: name,
-        guid: repositoryGuid,
-        network_id: networkId,
-        mount_path: placement.mountPath,
-        // #67: DECLARE the runtime for a cluster-placed repo, exactly as `repo up` does (the #39 assertion channel: renet honors `runtime` as an assertion and errors on a disagreement rather than silently falling to the docker arm).
-        //
-        // Without it, this dispatch was incoherent with the validation eight lines above: the CLI knew the repo was kubernetes-placed, refused `--size` on exactly that ground, and then sent the DOCKER create, which requires a
-        // size. With --size the CLI refused; without it renet refused. No value of
-        // the flag worked, and `repo create` was unusable on the cluster path. The declaration is what lets renet size the volumes from the PVCs instead.
-        ...(isK8s ? { runtime: 'kube', cluster: placement.kubeCluster, start_docker: false } : {}),
-        ...(options.size ? { size: options.size } : {}),
-        ...(options.noDocker && !isK8s ? { start_docker: false } : {}),
-      },
-      debug: options.debug,
-      skipRouterRestart: options.skipRouterRestart,
+    const result = await runWithNetworkIdRetry({
+      repoKey: name,
+      target,
+      networkId,
+      run: (id) =>
+        getExecutor().execute({
+          functionName: 'repository_create',
+          machineName: placement.machine,
+          ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
+          // #74: DISPATCH AGAINST THE DATASTORE WE JUST RECORDED. We resolved this placement above and then said nothing about it, so renet fell back to the machine's default docker datastore: the placement written to the config and the placement sent to the machine were two different things, silently. This is the executor's vault channel (ExecuteOptions.datastore), NOT a param ,
+          // `repository_create` reads its datastore from the machine vault.
+          datastore: placement.mountPath,
+          params: {
+            repository: name,
+            guid: repositoryGuid,
+            network_id: id,
+            mount_path: placement.mountPath,
+            // #67: DECLARE the runtime for a cluster-placed repo, exactly as `repo up` does (the #39 assertion channel: renet honors `runtime` as an assertion and errors on a disagreement rather than silently falling to the docker arm).
+            //
+            // Without it, this dispatch was incoherent with the validation eight lines above: the CLI knew the repo was kubernetes-placed, refused `--size` on exactly that ground, and then sent the DOCKER create, which requires a
+            // size. With --size the CLI refused; without it renet refused. No value of
+            // the flag worked, and `repo create` was unusable on the cluster path. The declaration is what lets renet size the volumes from the PVCs instead.
+            ...(isK8s
+              ? { runtime: 'kube', cluster: placement.kubeCluster, start_docker: false }
+              : {}),
+            ...(options.size ? { size: options.size } : {}),
+            ...(options.noDocker && !isK8s ? { start_docker: false } : {}),
+          },
+          debug: options.debug,
+          skipRouterRestart: options.skipRouterRestart,
+        }),
     });
 
-    await renderCreateResult(name, result);
+    await renderCreateResult(name, placement.machine, result);
   } catch (error) {
     if (registered) await rollbackCreateRepo(name);
     handleError(error);
@@ -406,6 +440,7 @@ async function handleDeleteSuccess(
     outputService.success(t('commands.repo.delete.completed'));
   }
   await settleConfigEntry(name, machineName, repoConfig, archiveConfig);
+  await reconcileBackupSchedules(machineName);
   outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
 }
 
@@ -433,7 +468,15 @@ async function handleRepoDelete(
       await configService.resolveDestructiveTarget(repoKey);
     await assertCommandPolicy(CMD.REPO_DELETE, target);
 
-    await configService.ensureRepositoryNetworkId(target);
+    // A definite absence skips the machine dispatch, so the ID is only needed when the image is there.
+    if (!imageAbsent) {
+      const datastore = await recordedDatastoreMount(target);
+      await ensureRepositoryNetworkId(target, {
+        machine: machineName,
+        ...(datastore !== undefined && { datastore }),
+        ...(kubeCluster !== undefined && { kubeCluster }),
+      });
+    }
 
     if (options.dryRun) {
       outputService.print(

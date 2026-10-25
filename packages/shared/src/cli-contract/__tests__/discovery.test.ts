@@ -27,8 +27,8 @@ describe('RESOURCE_DISCOVERY completeness', () => {
     }
   });
 
-  it('covers all 12 kinds and no more', () => {
-    expect(RESOURCE_KINDS).toHaveLength(12);
+  it('covers all 11 kinds and no more', () => {
+    expect(RESOURCE_KINDS).toHaveLength(11);
     expect(Object.keys(RESOURCE_DISCOVERY).sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
       [...RESOURCE_KINDS].sort((a, b) => Number(a > b) - Number(a < b))
     );

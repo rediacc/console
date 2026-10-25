@@ -21,7 +21,7 @@ import { RdcConfigSchema } from '../schemas.js';
 
 function configWith(retention?: unknown) {
   const strategy: Record<string, unknown> = {
-    destinations: [{ kind: 'storage', name: 'offsite', storage: 's1' }],
+    destinations: [{ kind: 'hosted-service', name: 'offsite' }],
     schedule: '0 3 * * *',
   };
   if (retention !== undefined) strategy.retention = retention;

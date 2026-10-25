@@ -58,7 +58,6 @@ function config(grandTag: string): RdcConfig {
           },
         },
       },
-      storages: {},
     },
     encryption: { mode: 'plaintext' },
   };

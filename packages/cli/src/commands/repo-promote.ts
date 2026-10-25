@@ -1,5 +1,6 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
@@ -97,6 +98,8 @@ async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<
     outputService.success(t('commands.repo.promote.completed'));
     outputService.info(t('commands.repo.promote.backupInfo', { backup: backupName }));
     outputService.info(t('commands.repo.promote.revertHint', { backup: backupName }));
+    // G4: the fork ref was renamed to the pre-promote backup, so the backup units re-render.
+    await reconcileBackupSchedules(machineName);
   } catch (error) {
     handleError(error);
   }

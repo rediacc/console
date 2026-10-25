@@ -30,13 +30,13 @@ export interface BackupBrowseAtParams {
   limit?: string;
 }
 
-/** Delete one or more backups from storage or machine */
+/** Delete one or more backups from a machine's datastore */
 export interface BackupDeleteParams {
-  /** Target type: machine (SSH); storage is retired */
+  /** Target type: machine (SSH) */
   sourceType: string;
-  /** Target machine or storage name */
+  /** Target machine name */
   from: string;
-  /** Subdirectory within the storage root (e.g., 'hot' or 'cold') */
+  /** Subdirectory within the datastore backup root */
   path?: string;
   /** Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement. */
   repositories?: string[];
@@ -44,7 +44,7 @@ export interface BackupDeleteParams {
 
 /** List backup artifacts in a machine's own datastore */
 export interface BackupListParams {
-  /** Source type: local (this machine's datastore) or machine (SSH); storage is retired */
+  /** Source type: local (this machine's datastore) or machine (SSH) */
   sourceType: string;
   /** The machine whose datastore is listed; for sourceType=machine, the remote source */
   from: string;
@@ -52,11 +52,11 @@ export interface BackupListParams {
   path?: string;
 }
 
-/** Pull repository from remote source (machine or storage) */
+/** Pull repository from another machine over SSH */
 export interface BackupPullParams {
-  /** Source type: machine (SSH); storage is retired */
+  /** Source type: machine (SSH) */
   sourceType: string;
-  /** Source machine or storage name */
+  /** Source machine name */
   from: string;
   /** Source repository GUID on the source machine (defaults to the destination repository) */
   src?: string;
@@ -72,16 +72,14 @@ export interface BackupPullParams {
   strategy?: string;
 }
 
-/** Push repository to remote destination (machine or storage) */
+/** Push repository to another machine over SSH */
 export interface BackupPushParams {
-  /** Destination type: machine (SSH); storage is retired */
+  /** Destination type: machine (SSH) */
   destinationType: string;
-  /** Single destination (machine or storage name) */
+  /** Single destination machine name */
   to?: string;
   /** Target machines for parallel deployment */
   machines?: string[];
-  /** Target storage systems for parallel backup */
-  storages?: string[];
   /** Backup filename */
   dest: string;
   /** Deployment/version tag */
@@ -1084,9 +1082,6 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'network_prune',
   'network_ps_status',
   'network_used',
-  'plugin_start',
-  'plugin_status',
-  'plugin_stop',
   'repository_autostart_disable',
   'repository_autostart_disable_all',
   'repository_autostart_enable',
@@ -1229,25 +1224,25 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'backup_browse_at': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_delete': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_list': {
-    requirements: { machine: true, team: true, storage: true },
+    requirements: { machine: true, team: true },
   },
   'backup_pull': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_push': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_restore': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_snapshot': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_verify': {
     requirements: { machine: true, team: true, repository: true },
@@ -1596,7 +1591,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_browse_at',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       lineage: {
         type: 'string',
@@ -1630,26 +1625,26 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_delete',
     category: 'backup',
     showInMenu: false,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       sourceType: {
         type: 'string',
         required: true,
         default: 'machine',
-        help: 'Target type: machine (SSH); storage is retired',
-        options: ['machine', 'storage'],
+        help: 'Target type: machine (SSH)',
+        options: ['machine'],
         ui: 'dropdown',
-        enum: ['machine', 'storage'],
+        enum: ['machine'],
       },
       from: {
         type: 'string',
         required: true,
-        help: 'Target machine or storage name',
+        help: 'Target machine name',
         minLength: 1,
       },
       path: {
         type: 'string',
-        help: 'Subdirectory within the storage root (e.g., \'hot\' or \'cold\')',
+        help: 'Subdirectory within the datastore backup root',
       },
       repositories: {
         type: 'array',
@@ -1661,16 +1656,16 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_list',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, storage: true },
+    requirements: { machine: true, team: true },
     params: {
       sourceType: {
         type: 'string',
         required: true,
         default: 'local',
-        help: 'Source type: local (this machine\'s datastore) or machine (SSH); storage is retired',
-        options: ['local', 'machine', 'storage'],
+        help: 'Source type: local (this machine\'s datastore) or machine (SSH)',
+        options: ['local', 'machine'],
         ui: 'dropdown',
-        enum: ['local', 'machine', 'storage'],
+        enum: ['local', 'machine'],
       },
       from: {
         type: 'string',
@@ -1688,21 +1683,21 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_pull',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       sourceType: {
         type: 'string',
         required: true,
         default: 'machine',
-        help: 'Source type: machine (SSH); storage is retired',
-        options: ['machine', 'storage'],
+        help: 'Source type: machine (SSH)',
+        options: ['machine'],
         ui: 'dropdown',
-        enum: ['machine', 'storage'],
+        enum: ['machine'],
       },
       from: {
         type: 'string',
         required: true,
-        help: 'Source machine or storage name',
+        help: 'Source machine name',
         ui: 'source-dropdown',
         dependsOn: 'sourceType',
         minLength: 1,
@@ -1743,20 +1738,20 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_push',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       destinationType: {
         type: 'string',
         required: true,
         default: 'machine',
-        help: 'Destination type: machine (SSH); storage is retired',
-        options: ['machine', 'storage'],
+        help: 'Destination type: machine (SSH)',
+        options: ['machine'],
         ui: 'dropdown',
-        enum: ['machine', 'storage'],
+        enum: ['machine'],
       },
       to: {
         type: 'string',
-        help: 'Single destination (machine or storage name)',
+        help: 'Single destination machine name',
         ui: 'destination-dropdown',
         dependsOn: 'destinationType',
       },
@@ -1765,12 +1760,6 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         help: 'Target machines for parallel deployment',
         ui: 'machine-multiselect',
         label: 'Target Machines',
-      },
-      storages: {
-        type: 'array',
-        help: 'Target storage systems for parallel backup',
-        ui: 'storage-multiselect',
-        label: 'Target Storage Systems',
       },
       dest: {
         type: 'string',
@@ -1835,7 +1824,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_restore',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       lineage: {
         type: 'string',
@@ -1860,7 +1849,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_snapshot',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       reseed: {
         type: 'bool',
