@@ -359,9 +359,17 @@ describe('span attributes (telemetry export T14)', () => {
     expect(attrs).not.toHaveProperty('rediacc.probe');
   });
 
-  it('no token, org, team or tenant value lands in any attribute, on any outcome', async () => {
+  it('no token, org, team or tenant value lands in any attribute or log line, on any outcome', async () => {
     const secrets = [CALLER, EXECUTOR_TOKEN, 'org-1', 'team-1', 'org-1:team-1'];
     const all: Record<string, unknown>[] = [];
+    const logged: string[] = [];
+    // Logs leave the platform too (wrangler.toml and wrangler.bench.toml name a logs destination),
+    // so every console line written during the walk is checked with the attributes.
+    for (const level of ['log', 'info', 'warn', 'error', 'debug'] as const) {
+      vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
+        logged.push(args.map(String).join(' '));
+      });
+    }
     for (const [path, token] of [
       ['/v1/health', undefined],
       ['/v1/server-info', CALLER],
@@ -377,7 +385,9 @@ describe('span attributes (telemetry export T14)', () => {
     expect(outcomes).toContain('health');
     expect(outcomes).toContain('forwarded');
     expect(outcomes.some((outcome) => outcome.startsWith('refused:'))).toBe(true);
-    const serialized = JSON.stringify(all);
+    // The refusals log their reason, so the log half of the check has lines to read.
+    expect(logged.some((line) => line.includes('caller refused'))).toBe(true);
+    const serialized = JSON.stringify([all, logged]);
     for (const secret of secrets) expect(serialized).not.toContain(secret);
   });
 
