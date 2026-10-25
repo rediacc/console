@@ -36,7 +36,7 @@ type RepoConfig = import('@rediacc/shared/config-schema').RepositoryConfig;
 
 /** Resolve extra machines needed for multi-machine operations (e.g., backup push --to-machine). */
 /**
- * Execute a bridge function in the appropriate mode (local/s3/cloud).
+ * Execute a renet function in the appropriate mode (local/s3/cloud).
  * Returns whether the execution succeeded so callers can gate follow-up state
  * writes (e.g. recording an auto-delta base only after a successful push),
  * plus the local execution result so callers can parse machine-readable

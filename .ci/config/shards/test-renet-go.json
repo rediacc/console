@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-10-25T03:05:45.056Z",
+  "generatedAt": "2026-10-25T12:58:59.336Z",
   "legs": [
     {
       "index": 1,
@@ -26,7 +26,6 @@
         "github.com/rediacc/renet/pkg/infra/vm/hyperv",
         "github.com/rediacc/renet/pkg/infra/vm/kvm",
         "github.com/rediacc/renet/pkg/infra/vm/terraform",
-        "github.com/rediacc/renet/pkg/ipam",
         "github.com/rediacc/renet/pkg/kernel",
         "github.com/rediacc/renet/pkg/kube/csidriver",
         "github.com/rediacc/renet/pkg/kube/registry",
@@ -94,12 +93,12 @@
         "github.com/rediacc/renet/pkg/license",
         "github.com/rediacc/renet/pkg/list",
         "github.com/rediacc/renet/pkg/loop",
-        "github.com/rediacc/renet/pkg/network",
         "github.com/rediacc/renet/pkg/orchestration",
         "github.com/rediacc/renet/pkg/procwalk",
         "github.com/rediacc/renet/pkg/prune",
         "github.com/rediacc/renet/pkg/rbd",
         "github.com/rediacc/renet/pkg/rediaccfile",
+        "github.com/rediacc/renet/pkg/repoguid",
         "github.com/rediacc/renet/pkg/repomerge",
         "github.com/rediacc/renet/pkg/repository",
         "github.com/rediacc/renet/pkg/runpaths",

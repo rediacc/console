@@ -30,7 +30,7 @@ export interface CephMember {
 }
 
 /**
- * Dispatch one internal ceph_* / kube_ bridge function to a member machine.
+ * Dispatch one internal ceph_* / kube_ renet function to a member machine.
  * Throws a clear error (including renet's own failure message) on any
  * non-success so a failed step surfaces instead of silently warning.
  */

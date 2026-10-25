@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: it
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # Backup e Ripristino
@@ -61,7 +61,7 @@ Il push e il pull da macchina a macchina non necessitano di nessuno dei due. Son
 
 ### Il percorso di storage rclone è sparito
 
-`rdc repo push --to <storage>` e i suoi affini un tempo copiavano un intero file di backup su un provider compatibile con rclone che registravi tu stesso. Ora rifiutano una destinazione di storage e indicano il loro sostituto. Il trasferimento da macchina a macchina non è mai passato per rclone e non è interessato. I comandi di storage e il rclone incluso sono stati rimossi, quindi un archivio scritto in quel modo non può più essere sfogliato dalla CLI.
+`rdc repo push --to <storage>` e i comandi affini copiavano un intero file di backup verso un provider cloud registrato a mano. I comandi storage e il rclone incluso sono stati rimossi, e ora `--to`/`--from` indicano soltanto una macchina. Il trasferimento da macchina a macchina non è mai passato da rclone e non cambia. Un archivio scritto nel vecchio modo non si può più sfogliare dalla CLI.
 
 ### Comandi per lo storage a chunk
 

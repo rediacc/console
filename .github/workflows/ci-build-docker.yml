@@ -195,7 +195,7 @@ jobs:
   #
   # It consumes pre-built artifacts: build-www (marketing site),
   # cli-npm (CLI tarball), and the renet-binaries
-  # artifact from ci-build-renet.yml (which embeds CRIU/rsync/rclone and
+  # artifact from ci-build-renet.yml (which embeds CRIU/rsync and
   # bakes ACCOUNT_ED25519_PUBLIC_KEY into the binary). The account server
   # bundle is built inside the Dockerfile via esbuild --bundle, with the
   # entry point parameterized by ACCOUNT_ENTRY (on-premise).

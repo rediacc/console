@@ -72,7 +72,10 @@
         "restoringSnapshot": "Restaurando {{name}} desde la instantánea {{snapshot}}...",
         "sourceUnknown": "No se conoce ningún repositorio llamado \"{{name}}\" en esta configuración, así que no se puede localizar su artefacto de copia de seguridad.",
         "streamUnknown": "No se puede determinar qué flujo de copia de seguridad corresponde a este repositorio en su máquina de origen (la verificación de la copia en la máquina falló, o no informa de ninguna instantánea confirmada que el índice liste). Usa --any-stream para elegir entre todos los flujos de este linaje.",
-        "targetExists": "\"{{name}}\" ya existe. Restaura con otro nombre (--as) o elimina primero el repositorio existente."
+        "targetExists": "\"{{name}}\" ya existe. Restaura con otro nombre (--as) o elimina primero el repositorio existente.",
+        "stats": "La restauración descargó {{fetched}} fragmentos ({{bytes}}), reutilizó {{reused}}, tomó {{known}} celdas del ancla y vació {{punched}} celdas obsoletas (tamaño de celda {{cellBytes}}).",
+        "statsSeed": "Semilla: se partió de la imagen {{seed}} de {{guid}} (la sonda leyó {{probe}}).",
+        "statsSeedSkipped": "Semilla descartada: {{skipped}}"
       },
       "retention": {
         "clear": {
@@ -92,6 +95,22 @@
         "set": {
           "description": "Indica cuántas instantáneas conservar. Cada opción se reemplaza por completo, no se combina.",
           "success": "Política de retención establecida para {{name}} ({{count}} regla(s)). Las instantáneas fuera de ella se eliminan en la próxima limpieza."
+        },
+        "effective": "Retención vigente de {{name}}: {{source}}",
+        "optionStream": "Aplicar solo a este flujo de copias (un id de flujo); sin él, se usa el valor predeterminado de todo el repositorio",
+        "preview": {
+          "description": "Muestra qué instantáneas borraría la próxima limpieza y cuánto espacio liberaría.",
+          "nothing": "La próxima limpieza no borra nada de {{name}}.",
+          "summary": "La próxima limpieza borra {{count}} instantánea(s) de {{name}}, conserva {{kept}} y libera {{bytes}}."
+        },
+        "seeded": "La retención de la estrategia \"{{strategy}}\" se declaró para {{count}} repositorio(s) que no tenían política.",
+        "seedFailed": "No se pudo declarar la retención de la estrategia \"{{strategy}}\" ({{reason}}). Mientras tanto rige el valor predeterminado del servidor.",
+        "source": {
+          "stream": "excepción del flujo",
+          "declared": "política declarada",
+          "plan": "valor del plan",
+          "default": "valor del servidor",
+          "orphan": "plazo de repositorio huérfano"
         }
       },
       "run": {
@@ -149,7 +168,18 @@
           "optionExclude": "Excluir estos repos del respaldo (nombres separados por comas)",
           "optionInclude": "Respaldar solo estos repos (nombres separados por comas)",
           "optionMode": "Modo de respaldo: \"hot\" toma la instantánea con todo en marcha, \"cold\" detiene los contenedores durante el instante de la instantánea",
-          "saved": "Configuración de estrategia de respaldo guardada"
+          "saved": "Configuración de estrategia de respaldo guardada",
+          "optionRetention": "Retención de instantáneas, por ejemplo last=7,daily=7,weekly=4,monthly=6 (\"none\" la quita)",
+          "retentionInvalid": "--retention \"{{value}}\" no es una lista de pares nombre=cantidad. Los nombres son last, hourly, daily, weekly, monthly y yearly, cada uno una sola vez, y cada cantidad es un número entero, por ejemplo last=7,daily=7.",
+          "retentionCronMismatch": "Estrategia \"{{strategy}}\": la regla {{knob}} no puede surtir efecto con la programación {{cadence}} \"{{cron}}\", porque genera muy pocas instantáneas para llenarla.",
+          "cadence": {
+            "daily": "diaria",
+            "weekly": "semanal",
+            "monthly": "mensual"
+          },
+          "retentionNotPushed": "La retención de la estrategia \"{{strategy}}\" está guardada, pero no hay token de cuenta para aplicarla. Inicie sesión y vuelva a ejecutar el comando.",
+          "retentionPushed": "Retención aplicada a {{count}} repositorio(s).",
+          "retentionPushFailed": "La retención de la estrategia \"{{strategy}}\" está guardada, pero no se pudo aplicar ({{reason}}). Vuelva a ejecutar el comando cuando el servidor responda."
         },
         "show": {
           "description": "Mostrar detalles de la estrategia de respaldo",
@@ -175,6 +205,15 @@
         "failed": "Falló la verificación de la copia de seguridad de {{name}}",
         "optionDeep": "Recalcular el hash de cada celda registrada (verificación completa) en lugar de una comprobación muestreada",
         "starting": "Verificando la copia de seguridad de {{name}} ({{level}})..."
+      },
+      "snapshots": {
+        "description": "Gestionar las instantáneas almacenadas",
+        "snapshotIdArgument": "Id de instantánea (consulte rdc backup manifests)",
+        "delete": {
+          "description": "Borra una instantánea almacenada de un repositorio. Los datos que solo usaba esa instantánea los libera la próxima recolección de basura.",
+          "notInRepo": "La instantánea {{snapshot}} no está en el historial almacenado de {{name}}. Sus ids se listan con: rdc backup manifests {{name}}",
+          "success": "Se borraron {{count}} instantánea(s) de {{name}}, incluida {{snapshot}}."
+        }
       }
     },
     "cluster": {
@@ -1059,6 +1098,15 @@
         "placementConflictNext": "Mueve o elimina estos repositorios primero, o fuerza la eliminación.",
         "success": "Máquina \"{{name}}\" eliminada"
       },
+      "restartServices": {
+        "completed": "Los daemons de renet en '{{machine}}' ya usan el binario instalado.",
+        "description": "Reinicia uno por uno los daemons de renet que todavía ejecutan un binario reemplazado para que usen el instalado, y confirma que cada unidad está activa con el binario nuevo antes de pasar a la siguiente. Con --include-docker también se reinician los supervisores rediacc-docker-N de cada repositorio, de uno en uno, lo que reinicia los contenedores de ese repositorio.",
+        "descriptionShort": "Reiniciar los daemons de renet con el binario instalado",
+        "includeDockerOption": "Reiniciar también el supervisor rediacc-docker-N de cada repositorio (reinicia sus contenedores)",
+        "jsonOption": "Mostrar el informe en JSON",
+        "nothingStale": "Ningún daemon de renet en '{{machine}}' ejecuta un binario reemplazado.",
+        "starting": "Reiniciando los daemons de renet en '{{machine}}'..."
+      },
       "scanKeys": {
         "completed": "{{count}}/{{total}} máquinas escaneadas",
         "description": "Escanear claves de host SSH para máquinas en la configuración actual",
@@ -1374,7 +1422,12 @@
         },
         "failed": "Error al eliminar el repositorio",
         "restoreHint": "Restaurar con: rdc repo admin archive restore {{guid}}",
-        "starting": "Eliminando \"{{repository}}\" en \"{{machine}}\"..."
+        "starting": "Eliminando \"{{repository}}\" en \"{{machine}}\"...",
+        "backupsOrphaned": "Las copias en la nube de \"{{repository}}\" se conservan hasta {{expires}} y luego caducan. Para quitarlas ya, use --purge-backups.",
+        "backupsOrphanFailed": "No se pudieron marcar como huérfanas las copias en la nube de \"{{repository}}\" ({{reason}}). Siguen sujetas a la política de retención del repositorio.",
+        "backupsPurged": "Se borraron {{count}} instantánea(s) en la nube de \"{{repository}}\" y se liberaron {{bytes}}.",
+        "purgeBackupsOption": "Borrar también ahora las copias en la nube del repositorio, en vez de dejarlas caducar",
+        "purgeForkRefused": "\"{{repository}}\" es un fork y comparte su linaje de copias con el repositorio padre, así que --purge-backups borraría también las copias del padre. Borre el fork sin esa opción."
       },
       "description": "Desplegar y gestionar repositorios cifrados en máquinas. Subcomandos clave: create, up (desplegar), down (detener), fork (clon CoW instantáneo), delete, push/pull (copia de seguridad), sync (transferencia de archivos). Ciclo de vida: repo create → repo up → repo down. Consulta Conceptos Clave en rdc --help para detalles de arquitectura, enrutamiento y variables de entorno.",
       "descriptionShort": "Desplegar y gestionar repositorios cifrados en máquinas",
@@ -1833,8 +1886,8 @@
       },
       "run": {
         "completedLocal": "Completado en {{duration}}ms",
-        "description": "Ejecutar una función (atajo para: queue create)",
-        "descriptionShort": "Ejecutar función bridge sin procesar en una máquina (solo depuración)",
+        "description": "ADVERTENCIA: comando de bajo nivel pensado solo para depurar y experimentar, no para producción. Para el uso normal están los comandos de nivel superior (repo up, repo down, etc.). Ejecuta una función de renet en bruto en una máquina.",
+        "descriptionShort": "Ejecutar una función de renet en bruto en una máquina (solo para depuración)",
         "executingLocal": "Ejecutando '{{function}}' en {{machine}}...",
         "failedLocal": "Falló: {{error}}"
       },

@@ -2,7 +2,7 @@
 /**
  * No reader-facing doc may TEACH a command that the engine refuses.
  *
- * WHY THIS EXISTS. The rclone cloud arm was retired. Twelve locales of
+ * WHY THIS EXISTS. The cloud storage arm was retired. Twelve locales of
  * `rdc-cheat-sheet.md` were carefully corrected, `validate:translation-freshness`
  * went green, and the page a visitor actually saw was still teaching
  * `rdc repo push <repo> --to <storage>` in every language -- because
@@ -13,7 +13,7 @@
  * no gate: it converts "nobody checked" into "somebody checked and it was fine".
  *
  * Separately, `quick-start.md` -- the first page a customer reads -- taught the
- * same retired flow and claimed it "works with any rclone-supported provider:
+ * same retired flow and claimed it "works with any supported provider:
  * S3, R2, B2, OneDrive, Google Drive, SFTP". None of that was true any more.
  *
  * THE RULE, and the distinction that makes it decidable: a retired invocation

@@ -1352,6 +1352,13 @@ jobs:
       - name: Run Health Check
         run: ./private/elite/scripts/healthcheck.sh
 
+      # A4d (PLAN-backup-program): the bundled store must honour the surface the backup
+      # data plane relies on, above all the create-only 412. The selftest first proves the
+      # probe goes red on a store that ignores If-None-Match; the live run then probes the
+      # RustFS container this job started.
+      - name: Probe the elite object store for S3 conformance
+        run: bash scripts/gates/run-elite-s3-probe.sh --selftest && bash scripts/gates/run-elite-s3-probe.sh
+
       - name: Final Service Status
         if: always()
         shell: bash

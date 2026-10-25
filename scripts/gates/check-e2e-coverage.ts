@@ -91,6 +91,8 @@ const PRODUCTION_REGISTRY: { file: string; isDefault: boolean }[] = [
   { file: 'playwright.k8s-multinode.config.ts', isDefault: false },
   { file: 'playwright.migrate.config.ts', isDefault: false },
   { file: 'playwright.backup-browse-at.config.ts', isDefault: false },
+  // Suite 26 (box J6 of agent/plans/PLAN-backup-program.md): the chunk-store backup suite, run by its own ct-tests.yml job.
+  { file: 'playwright.backup-storage.config.ts', isDefault: false },
 ];
 
 /**
@@ -406,6 +408,92 @@ const CI_LEG_ENABLE_FLAGS: Record<string, string> = {
 };
 
 /**
+ * ── 5. Dark suites (box J5 of agent/plans/PLAN-backup-program.md) ──────────
+ *
+ * The verb check above asks "is every shipped verb exercised by a live suite";
+ * it cannot see a SUITE that no CI job runs when every verb it drives happens
+ * to be covered elsewhere, or allowlisted. Suite 26 was exactly that: its config
+ * (playwright.backup-storage.config.ts) is in no workflow, its default-config
+ * project is gated behind BACKUP_STORAGE_SUITE=1, which no workflow sets, and the
+ * gate stayed green. So every test file under tests/ must be selected by a live
+ * config, or be named here with a `BLOCKER:` reason. An entry whose file goes
+ * live, or no longer exists, fails as stale, so this list only shrinks.
+ *
+ * Suite 26 is deliberately ABSENT: the gate fails on it until box J6 wires it
+ * into CI (its config in a workflow and LIVE_CONFIG_REGISTRY, or
+ * BACKUP_STORAGE_SUITE=1 in a workflow and CI_LEG_ENABLE_FLAGS).
+ *
+ * Overridable via E2E_COV_DARK_SUITES (a JSON object, path relative to the e2e
+ * directory -> reason) for the fixture test.
+ */
+const PRODUCTION_DARK_SUITES: Record<string, string> = {
+  'tests/20-image-build.test.ts':
+    'BLOCKER: suite 20 builds VM images at about 35 minutes per test and no CI runner carries the image toolchain; it runs locally through playwright.image.config.ts (packages/e2e-tests/README.md "Deliberately not in CI", item 3).',
+  'tests/23-cli-migrate-routing.test.ts':
+    'BLOCKER: CLI_SUITE is declared empty on every ct-tests.yml matrix leg until a local two-worker validation of its rdc argv and machine registration lands (plan phase 5; the comment above the E2E Workers `include:` matrix names the one-line switch).',
+  'tests/ops-lifecycle/18-ops-lifecycle.test.ts':
+    'BLOCKER: these tests stop, start and reset the shared fleet the other suites run on, so no config selects them; ci-ops-test.yml drives ops setup, check, up, status and down on throwaway VMs, and the reset path (OpsManager.resetVMs) has no CI run at all.',
+};
+const DARK_REASON_MIN = 40;
+
+function loadDarkSuites(): Record<string, string> {
+  const override = process.env.E2E_COV_DARK_SUITES;
+  if (override === undefined) return PRODUCTION_DARK_SUITES;
+  const parsed: unknown = JSON.parse(override);
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    fail('E2E_COV_DARK_SUITES is not a JSON object of path -> reason');
+  }
+  return parsed as Record<string, string>;
+}
+
+/**
+ * Every test file under tests/ that no live config selects, judged against the
+ * dark-suite list. Pure over its inputs so the counts it returns are the ones
+ * printed. `allTests` and `liveTests` are absolute paths.
+ */
+export function darkSuiteFindings(
+  allTests: string[],
+  liveTests: Set<string>,
+  exempt: Record<string, string>,
+  e2eDir: string
+): { dark: string[]; problems: string[]; exempted: number } {
+  const problems: string[] = [];
+  const dark: string[] = [];
+  let exempted = 0;
+  const existing = new Set(allTests.map((f) => path.relative(e2eDir, f)));
+  for (const file of allTests) {
+    if (liveTests.has(file)) continue;
+    const key = path.relative(e2eDir, file);
+    if (key in exempt) {
+      exempted++;
+      continue;
+    }
+    dark.push(key);
+  }
+  for (const [key, reason] of Object.entries(exempt)) {
+    if (!existing.has(key)) {
+      problems.push(
+        `  - dark-suite entry '${key}' names no test file under tests/ (stale: delete it)`
+      );
+    } else if (liveTests.has(path.join(e2eDir, key))) {
+      problems.push(
+        `  - dark-suite entry '${key}' is now selected by a live config (debt paid: delete it)`
+      );
+    }
+    if (
+      typeof reason !== 'string' ||
+      !reason.startsWith('BLOCKER:') ||
+      reason.length < DARK_REASON_MIN
+    ) {
+      problems.push(
+        `  - dark-suite entry '${key}' needs a reason starting 'BLOCKER:' of ${DARK_REASON_MIN}+ characters`
+      );
+    }
+  }
+  return { dark, problems, exempted };
+}
+
+/**
  * Blank out `//` and block comments, preserving line structure.
  *
  * Line count is preserved so any position-based reporting stays honest, and
@@ -444,6 +532,52 @@ async function main(): Promise<void> {
   );
   for (const line of perConfigCounts) console.log(`    ${line}`);
   console.log('');
+
+  // Dark suites: every test file under tests/ must be live or named with a BLOCKER.
+  const testsDir = path.join(E2E_DIR, 'tests');
+  const allTests = fs.existsSync(testsDir)
+    ? globSync(DEFAULT_TEST_MATCH, { cwd: testsDir, absolute: true, nodir: true }).sort((a, b) =>
+        a.localeCompare(b)
+      )
+    : [];
+  if (allTests.length === 0) {
+    fail(
+      `Discovered ZERO test files under ${rel(testsDir)}; the dark-suite check is not seeing the tree, so its green would mean nothing`
+    );
+  }
+  const darkConfigs = (globSync('playwright*.config.ts', { cwd: E2E_DIR }) as string[])
+    .filter((c) => !LIVE_CONFIG_REGISTRY.some((r) => r.file === c))
+    .sort((a, b) => a.localeCompare(b));
+  const darkSuites = darkSuiteFindings(allTests, liveTestFiles, loadDarkSuites(), E2E_DIR);
+  let darkFailed = false;
+  if (darkSuites.problems.length > 0) {
+    darkFailed = true;
+    console.log(
+      `${RED}✗${RESET} The dark-suite list in scripts/gates/check-e2e-coverage.ts is stale:\n`
+    );
+    for (const p of darkSuites.problems) console.log(p);
+    console.log('');
+  }
+  if (darkSuites.dark.length > 0) {
+    darkFailed = true;
+    console.log(
+      `${RED}✗${RESET} ${darkSuites.dark.length} e2e suite file(s) that NO CI job runs (no live config selects them):\n`
+    );
+    for (const f of darkSuites.dark) console.log(`    - ${f}`);
+    console.log('');
+    console.log(`  Configs no workflow runs: ${darkConfigs.join(', ') || '(none)'}`);
+    console.log('  Wire the suite into CI: put its config on a workflow step (--config) and in');
+    console.log('  LIVE_CONFIG_REGISTRY, or set its enable flag in the workflow and in');
+    console.log('  CI_LEG_ENABLE_FLAGS. Only a suite that genuinely cannot run in CI goes into');
+    console.log("  PRODUCTION_DARK_SUITES, with a 'BLOCKER:' reason.");
+    console.log('');
+  }
+  if (!darkFailed) {
+    console.log(
+      `${GREEN}✓${RESET} Every one of ${allTests.length} e2e test file(s) is selected by a live config ` +
+        `(${darkSuites.exempted} dark by BLOCKER; configs no workflow runs: ${darkConfigs.join(', ') || 'none'})\n`
+    );
+  }
 
   // Read live-test contents once, WITH COMMENTS STRIPPED.
   //
@@ -532,6 +666,9 @@ async function main(): Promise<void> {
   console.log('Coverage limits (what this gate actually measured):');
   console.log(`  - live configs in registry:        ${LIVE_CONFIG_REGISTRY.length}`);
   console.log(`  - live test files expanded:         ${liveFiles.length}`);
+  console.log(
+    `  - e2e test files under tests/:      ${allTests.length} (${darkSuites.dark.length} dark, ${darkSuites.exempted} dark by BLOCKER)`
+  );
   console.log(`  - harness verb-methods mapped:      ${methodMap.size}`);
   console.log(
     `  - live helper files (1 hop):        ${liveHelperText.size} of ${helperFiles.length}`
@@ -540,7 +677,7 @@ async function main(): Promise<void> {
   console.log(`  - renet functions checked:          ${fns.length}`);
   console.log(`  - allowlisted (legacy debt):        ${allowlist.size}\n`);
 
-  let failed = false;
+  let failed = darkFailed;
 
   if (staleAllowlisted.length > 0) {
     failed = true;

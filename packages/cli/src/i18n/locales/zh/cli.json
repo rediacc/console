@@ -72,7 +72,10 @@
         "restoringSnapshot": "正在从快照 {{snapshot}} 恢复 {{name}}...",
         "sourceUnknown": "此配置中没有名为 \"{{name}}\" 的仓库，因此无法定位其备份产物。",
         "streamUnknown": "无法确定此仓库在其源机器上对应哪条备份流（该机器上的备份校验失败，或它没有报告索引中列出的已提交快照）。请传入 --any-stream，从该谱系的所有备份流中选择。",
-        "targetExists": "\"{{name}}\" 已存在。请使用其他名称恢复（--as），或先删除现有仓库。"
+        "targetExists": "\"{{name}}\" 已存在。请使用其他名称恢复（--as），或先删除现有仓库。",
+        "stats": "恢复获取了 {{fetched}} 个数据块({{bytes}}),复用了 {{reused}} 个,从锚点采用了 {{known}} 个单元格,并清空了 {{punched}} 个过期单元格(单元格大小 {{cellBytes}})。",
+        "statsSeed": "种子:从 {{guid}} 的 {{seed}} 镜像开始(探测读取了 {{probe}})。",
+        "statsSeedSkipped": "已跳过种子:{{skipped}}"
       },
       "retention": {
         "clear": {
@@ -92,6 +95,22 @@
         "set": {
           "description": "指定要保留的快照数量。每个选项都会被整体替换，而不是合并。",
           "success": "已为 {{name}} 设置保留策略（{{count}} 条规则）。范围之外的快照将在下一次清理时被删除。"
+        },
+        "effective": "{{name}} 当前生效的保留策略:{{source}}",
+        "optionStream": "仅应用于此备份流(流 ID);省略时使用整个仓库的默认值",
+        "preview": {
+          "description": "显示下一次清理将删除哪些快照,以及可释放的空间。",
+          "nothing": "下一次清理不会删除 {{name}} 的任何内容。",
+          "summary": "下一次清理将删除 {{name}} 的 {{count}} 个快照,保留 {{kept}} 个,并释放 {{bytes}}。"
+        },
+        "seeded": "策略“{{strategy}}”的保留设置已应用到 {{count}} 个没有保留策略的仓库。",
+        "seedFailed": "无法应用策略“{{strategy}}”的保留设置({{reason}})。在应用之前,使用服务器默认值。",
+        "source": {
+          "stream": "备份流单独设置",
+          "declared": "已声明的策略",
+          "plan": "套餐默认值",
+          "default": "服务器默认值",
+          "orphan": "孤立仓库的保留期"
         }
       },
       "run": {
@@ -149,7 +168,18 @@
           "optionExclude": "从备份中排除这些仓库（逗号分隔的名称）",
           "optionInclude": "仅备份这些仓库（逗号分隔的名称）",
           "optionMode": "备份模式：\"hot\" 在一切正常运行时创建快照，\"cold\" 会在创建快照的瞬间停止容器",
-          "saved": "备份策略配置已保存"
+          "saved": "备份策略配置已保存",
+          "optionRetention": "快照保留设置,例如 last=7,daily=7,weekly=4,monthly=6(“none”表示移除)",
+          "retentionInvalid": "--retention“{{value}}”不是由 名称=数量 组成的列表。名称可用 last、hourly、daily、weekly、monthly、yearly,每个只能出现一次,数量必须是整数,例如 last=7,daily=7。",
+          "retentionCronMismatch": "策略“{{strategy}}”:在{{cadence}}计划“{{cron}}”下,快照数量太少,{{knob}} 规则无法生效。",
+          "cadence": {
+            "daily": "每日",
+            "weekly": "每周",
+            "monthly": "每月"
+          },
+          "retentionNotPushed": "策略“{{strategy}}”的保留设置已保存,但没有可用的账户令牌来应用它。请先登录,然后重新运行此命令。",
+          "retentionPushed": "已将保留设置应用到 {{count}} 个仓库。",
+          "retentionPushFailed": "策略“{{strategy}}”的保留设置已保存,但未能应用({{reason}})。服务器可访问后请重新运行此命令。"
         },
         "show": {
           "description": "显示备份策略详情",
@@ -175,6 +205,15 @@
         "failed": "{{name}} 的备份验证失败",
         "optionDeep": "对每个已记录的单元重新计算哈希（完整验证），而不是抽样检查",
         "starting": "正在验证 {{name}} 的备份（{{level}}）..."
+      },
+      "snapshots": {
+        "description": "管理已存储的快照",
+        "snapshotIdArgument": "快照 ID(参见 rdc backup manifests)",
+        "delete": {
+          "description": "删除仓库的一个已存储快照。只被该快照使用的数据会在下一次垃圾回收时释放。",
+          "notInRepo": "快照 {{snapshot}} 不在 {{name}} 的已存储历史中。可用以下命令列出其 ID:rdc backup manifests {{name}}",
+          "success": "已删除 {{name}} 的 {{count}} 个快照,包括 {{snapshot}}。"
+        }
       }
     },
     "cluster": {
@@ -1059,6 +1098,15 @@
         "placementConflictNext": "请先迁移或删除这些仓库，或强制执行移除。",
         "success": "已移除机器 \"{{name}}\""
       },
+      "restartServices": {
+        "completed": "'{{machine}}' 上的 renet 守护进程已在使用已安装的二进制文件。",
+        "description": "逐个重启仍在运行已被替换的二进制文件的 renet 守护进程，使其切换到已安装的版本；每个单元确认在新二进制文件上正常运行后，才会处理下一个。使用 --include-docker 时，还会逐个仓库重启各仓库的 rediacc-docker-N 监管进程，这会重启该仓库的容器。",
+        "descriptionShort": "用已安装的二进制文件重启 renet 守护进程",
+        "includeDockerOption": "同时重启每个仓库的 rediacc-docker-N 监管进程（会重启该仓库的容器）",
+        "jsonOption": "以 JSON 格式输出报告",
+        "nothingStale": "'{{machine}}' 上没有运行已替换二进制文件的 renet 守护进程。",
+        "starting": "正在重启 '{{machine}}' 上的 renet 守护进程..."
+      },
       "scanKeys": {
         "completed": "已扫描 {{count}}/{{total}} 台机器",
         "description": "扫描当前配置中机器的 SSH 主机密钥",
@@ -1374,7 +1422,12 @@
         },
         "failed": "仓库删除失败",
         "restoreHint": "恢复命令: rdc repo admin archive restore {{guid}}",
-        "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"..."
+        "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"...",
+        "backupsOrphaned": "“{{repository}}”的云备份会保留到 {{expires}},之后过期。要立即移除,请使用 --purge-backups。",
+        "backupsOrphanFailed": "无法将“{{repository}}”的云备份标记为孤立({{reason}})。它们仍受该仓库保留策略约束。",
+        "backupsPurged": "已删除“{{repository}}”的 {{count}} 个云快照,释放了 {{bytes}}。",
+        "purgeBackupsOption": "同时立即删除该仓库的云备份,而不是等它们过期",
+        "purgeForkRefused": "“{{repository}}”是一个 fork,与其父仓库共用备份谱系,因此 --purge-backups 也会删除父仓库的备份。请不带此选项删除该 fork。"
       },
       "description": "在机器上部署和管理加密仓库。关键子命令：create、up（部署）、down（停止）、fork（即时 CoW 克隆）、delete、push/pull（备份）、sync（文件传输）。生命周期：repo create → repo up → repo down。有关架构、路由和环境变量的详细信息，请参阅 rdc --help 中的关键概念。",
       "descriptionShort": "在机器上部署和管理加密仓库",
@@ -1833,8 +1886,8 @@
       },
       "run": {
         "completedLocal": "在 {{duration}}ms 内完成",
-        "description": "运行函数（快捷方式：queue create）",
-        "descriptionShort": "在机器上运行原始桥接函数（仅限调试）",
+        "description": "警告：这是仅供调试和实验的底层命令，不适用于生产环境。日常操作请使用更高层的命令（repo up、repo down 等）。在机器上直接运行 renet 函数。",
+        "descriptionShort": "在机器上直接运行 renet 函数（仅限调试）",
         "executingLocal": "在 {{machine}} 上执行 '{{function}}'...",
         "failedLocal": "失败：{{error}}"
       },

@@ -14,7 +14,7 @@ import { parseRepositoryListOutput } from './repo-list-parser.js';
  *  - repo gc:   reachability garbage-collection of unreachable immutable commits
  *  - repo fsck: validate config refs (branches/head) against machine objects
  *
- * Both reuse existing bridge functions (repository_list, repository_delete), so
+ * Both reuse existing renet functions (repository_list, repository_delete), so
  * they add no new bridge surface. The machine is the object store; the CLI
  * config is the ref store (branches/head/headCommit + commitParent lineage).
  */

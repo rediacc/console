@@ -66,7 +66,7 @@ describe('functionNameToEventType', () => {
     expect(functionNameToEventType('command')).toBeNull();
   });
 
-  it('maps a bridge function to its dotted type', () => {
+  it('maps a renet function to its dotted type', () => {
     expect(functionNameToEventType('repository_up')).toBe('cli.repo.up');
   });
 });

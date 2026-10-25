@@ -19,7 +19,7 @@ Pruning sweeps state that no longer corresponds to a live resource. Two commands
 | `rdc machine prune <machine>` | On-machine datastore artifacts (always); orphaned or unknown repo images (opt-in) | Local CLI config + the machine's `.interim/state` mirror |
 | `rdc config prune` | Local-config leftovers (cert cache, expired archives, dangling cross-references) | Local CLI config alone |
 
-The two are independent. You can run any one without the others. They share a common safety model described under [Safety](#safety-model) below.
+The two are independent: either one runs without the other. They share a common safety model described under [Safety](#safety-model) below.
 
 Pruning removes state left behind by deleted resources. To reclaim space occupied by *live* repositories (blocks their filesystems have freed but the pool still holds), use [`rdc repo trim`](/en/docs/repositories#reclaim-space-trim) instead; the two are complementary.
 
@@ -187,7 +187,7 @@ Both commands default to safe across multi-config setups.
 
 ### Grace period
 
-When a repository is removed from a config with `--archive-config`, its credential entry is moved to `resources.deletedRepositories[]` with a `deletedAt` timestamp. The prune commands respect a grace period (default 7 days) during which recently archived repos are protected from deletion. This gives you time to restore a repo (`rdc repo admin archive restore <guid>`) if it was removed accidentally. Once the grace expires, `machine prune` and `config prune` auto-purge the entry.
+When a repository is removed from a config with `--archive-config`, its credential entry is moved to `resources.deletedRepositories[]` with a `deletedAt` timestamp. The prune commands respect a grace period (default 7 days) during which recently archived repos are protected from deletion. That window leaves time to restore a repo (`rdc repo admin archive restore <guid>`) that was removed accidentally. Once the grace expires, `machine prune` and `config prune` auto-purge the entry.
 
 ### Mount-safety preflight
 

@@ -1,6 +1,14 @@
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
+import {
+  type CronCadence,
+  hasAccountToken,
+  parseRetentionSpec,
+  pushStrategyRetention,
+  RetentionSpecError,
+  retentionCronMismatches,
+} from '../services/backup/backup-retention.js';
 import { strategyUnschedulableReason } from '../services/backup/backup-strategy-validate.js';
 import { configService } from '../services/config/config-resources.js';
 import {
@@ -80,11 +88,31 @@ export function parseRepoFilter(raw: string): string[] | undefined {
   return list.length > 0 ? list : undefined;
 }
 
+/** `--retention` to the stored policy; `none` or an empty value clears it. */
+export function parseRetentionOption(raw: string): BackupStrategyConfig['retention'] {
+  try {
+    return parseRetentionSpec(raw);
+  } catch (error) {
+    if (error instanceof RetentionSpecError) {
+      throw new ValidationError(t('commands.backup.strategy.set.retentionInvalid', { value: raw }));
+    }
+    throw error;
+  }
+}
+
 export function buildStrategyUpdate(
-  opts: { cron?: string; mode?: string; bwlimit?: string; include?: string; exclude?: string },
+  opts: {
+    cron?: string;
+    mode?: string;
+    bwlimit?: string;
+    include?: string;
+    exclude?: string;
+    retention?: string;
+  },
   enabled: boolean | undefined
 ): Partial<BackupStrategyConfig> {
   const u: Partial<BackupStrategyConfig> = {};
+  if (opts.retention !== undefined) u.retention = parseRetentionOption(opts.retention);
   if (opts.cron !== undefined) u.schedule = opts.cron;
   if (opts.mode !== undefined) {
     // `--mode cold` used to be refused here, because the scheduled verb could only take a hot snapshot and accepting the flag would have promised a quiesce that never happened. `backup snapshot --cold` exists now, so both modes schedule and there is nothing left to refuse: the schema's
@@ -147,6 +175,7 @@ export async function applyBackupStrategyOptions(
     bwlimit?: string;
     include?: string;
     exclude?: string;
+    retention?: string;
     enable?: boolean;
     disable?: boolean;
   }
@@ -178,6 +207,62 @@ export async function applyBackupStrategyOptions(
       bwlimit: options.bwlimit,
     });
   }
+
+  // Warn after the write, from the stored result: `--cron` alone can invalidate a retention set earlier.
+  if (options.retention !== undefined || options.cron !== undefined) {
+    await warnRetentionCronMismatch(name);
+  }
+}
+
+function cadenceLabel(cadence: CronCadence): string {
+  switch (cadence) {
+    case 'weekly':
+      return t('commands.backup.strategy.set.cadence.weekly');
+    case 'monthly':
+      return t('commands.backup.strategy.set.cadence.monthly');
+    default:
+      return t('commands.backup.strategy.set.cadence.daily');
+  }
+}
+
+/** F7: a retention knob the strategy's cron can never fill is saved but called out. */
+async function warnRetentionCronMismatch(name: string): Promise<void> {
+  const strategy = await configService.getBackupStrategy(name);
+  if (!strategy?.schedule) return;
+  for (const { knob, cadence } of retentionCronMismatches(strategy.retention, strategy.schedule)) {
+    outputService.warn(
+      t('commands.backup.strategy.set.retentionCronMismatch', {
+        strategy: name,
+        knob,
+        cron: strategy.schedule,
+        cadence: cadenceLabel(cadence),
+      })
+    );
+  }
+}
+
+/**
+ * Apply a just-saved strategy retention to the lineages the strategy covers. The config write has
+ * already happened, so a server that cannot be reached is a warning, not a failed command.
+ */
+async function applyRetentionNow(name: string): Promise<void> {
+  const strategy = await configService.getBackupStrategy(name);
+  if (!strategy?.retention) return;
+  if (!hasAccountToken()) {
+    outputService.warn(t('commands.backup.strategy.set.retentionNotPushed', { strategy: name }));
+    return;
+  }
+  try {
+    const { pushed } = await pushStrategyRetention(strategy, { overwrite: true });
+    outputService.info(t('commands.backup.strategy.set.retentionPushed', { count: pushed }));
+  } catch (error) {
+    outputService.warn(
+      t('commands.backup.strategy.set.retentionPushFailed', {
+        strategy: name,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
 }
 
 /** strategy name -> machines binding it, for reporting deployment reach. */
@@ -203,7 +288,25 @@ function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
   if (strategy.bandwidthLimit) outputService.info(`  Bandwidth limit: ${strategy.bandwidthLimit}`);
   if (strategy.include) outputService.info(`  Include: ${strategy.include.join(', ')}`);
   if (strategy.exclude) outputService.info(`  Exclude: ${strategy.exclude.join(', ')}`);
+  if (strategy.retention) {
+    outputService.info(`  Retention: ${formatRetention(strategy.retention)}`);
+  }
   displayStrategyDestinations(strategy);
+}
+
+function formatRetention(retention: NonNullable<BackupStrategyConfig['retention']>): string {
+  const parts: [string, number | undefined][] = [
+    ['last', retention.keepLast],
+    ['hourly', retention.keepHourly],
+    ['daily', retention.keepDaily],
+    ['weekly', retention.keepWeekly],
+    ['monthly', retention.keepMonthly],
+    ['yearly', retention.keepYearly],
+  ];
+  return parts
+    .filter(([, n]) => n !== undefined)
+    .map(([name, n]) => `${name}=${n}`)
+    .join(',');
 }
 
 /**
@@ -250,12 +353,14 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .option('--bwlimit <limit>', t('commands.backup.strategy.set.optionBwlimit'))
     .option('--include <repos>', t('commands.backup.strategy.set.optionInclude'))
     .option('--exclude <repos>', t('commands.backup.strategy.set.optionExclude'))
+    .option('--retention <spec>', t('commands.backup.strategy.set.optionRetention'))
     .option('--enable', t('commands.backup.strategy.set.optionEnable'))
     .option('--disable', t('commands.backup.strategy.set.optionDisable'))
     .action(async (strategy: string, options) => {
       try {
         await applyBackupStrategyOptions(strategy, options);
         outputService.success(t('commands.backup.strategy.set.saved'));
+        if (options.retention !== undefined) await applyRetentionNow(strategy);
       } catch (error) {
         handleError(error);
       }

@@ -366,7 +366,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /^ocid1\./, // Oracle Cloud IDs
   /^\/[a-z]+\//, // Paths
   /\.(json|yaml|xml|txt|log|conf)$/i, // File extensions
-  /^(docker|npm|git|ssh|curl|wget|sudo|rclone|rdc)\s/, // Commands
+  /^(docker|npm|git|ssh|curl|wget|sudo|rdc)\s/, // Commands
   /\.id$/, // Section anchor IDs (e.g. sections.introduction.id = "introduction")
   /\.cardClass$/, // CSS class names in solution pages
   /\.icon$/, // Icon identifiers

@@ -106,12 +106,7 @@ two machines already in your config.
 
 ### The rclone storage path is gone
 
-`rdc repo push --to <storage>` and its relatives used to copy a whole backup file
-to a cloud provider you registered yourself. Those now refuse a storage
-destination and name their replacement. Machine-to-machine transfer never went
-through rclone and is unaffected. The storage commands and the bundled
-rclone are removed, so an archive written that way can no longer be browsed from
-the CLI.
+`rdc repo push --to <storage>` and its relatives used to copy a whole backup file to a self-registered cloud provider. The storage commands and the bundled rclone are removed, and `--to`/`--from` now name a machine only. Machine-to-machine transfer never went through rclone and is unaffected. An archive written the old way can no longer be browsed from the CLI.
 
 ### Chunk-storage commands
 

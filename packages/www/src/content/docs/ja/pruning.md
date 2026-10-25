@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 12
 language: ja
-sourceHash: "5b0bc33572c2d9e2"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "76d936b2258cc044"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # プルーニング

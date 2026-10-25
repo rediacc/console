@@ -213,7 +213,7 @@ describe('the converge vault', () => {
 });
 
 describe('buildConvergeParams', () => {
-  it('maps every flag onto the bridge function params', () => {
+  it('maps every flag onto the renet function params', () => {
     expect(
       buildConvergeParams({
         dryRun: true,

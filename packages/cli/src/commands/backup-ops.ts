@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import type { SFTPClient } from '../remote/sftp/index.js';
+import { hasAccountToken, pushStrategyRetention } from '../services/backup/backup-retention.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { writeStderr, writeStdout } from '../services/core/request-context.js';
@@ -119,6 +120,35 @@ async function triggerAdhocBackup(
   }
 }
 
+/**
+ * Declare each strategy's retention on the lineages it covers, filling only lineages that have no
+ * policy of their own (a per-repo `backup retention set` stays). Best-effort: the schedule or run it
+ * rides on matters more than the policy push, and the server enforces its default meanwhile.
+ */
+async function seedStrategyRetention(names: string[], machineName: string): Promise<void> {
+  if (!hasAccountToken()) return;
+  const all = await configService.listBackupStrategies();
+  for (const name of names) {
+    const strategy = all[name] as (typeof all)[string] | undefined;
+    if (!strategy?.retention) continue;
+    try {
+      const { pushed } = await pushStrategyRetention(strategy, { overwrite: false, machineName });
+      if (pushed > 0) {
+        outputService.info(
+          t('commands.backup.retention.seeded', { strategy: name, count: pushed })
+        );
+      }
+    } catch (error) {
+      outputService.warn(
+        t('commands.backup.retention.seedFailed', {
+          strategy: name,
+          reason: error instanceof Error ? error.message : String(error),
+        })
+      );
+    }
+  }
+}
+
 async function runBackupNow(
   machineName: string,
   strategyFilter?: string,
@@ -150,6 +180,8 @@ async function runBackupNow(
     }
     strategies.push({ name: stratName, config });
   }
+
+  await seedStrategyRetention(toTrigger, machineName);
 
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
@@ -334,6 +366,8 @@ export function registerBackupOpsCommands(backup: Command): void {
         });
         if (!options.dryRun) {
           outputService.success(t('commands.backup.schedule.success', { machine: machineName }));
+          const bound = (await configService.getLocalConfig()).machines[machineName];
+          await seedStrategyRetention(bound?.backupStrategies ?? [], machineName);
           // DR nudge: enabling backups without config-storage enrollment leaves the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
           const { warnIfConfigStorageUnenrolled } = await import('../services/backup/dr-nudge.js');
           await warnIfConfigStorageUnenrolled();

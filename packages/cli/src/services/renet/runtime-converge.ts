@@ -7,7 +7,7 @@
  * restarts, but only the CLI holds each repo's env-mode secrets
  * (`REDIACC_SECRET_*` live in the config, see services/state.ts), so the CLI
  * reads `renet runtime status --json`, decides, and dispatches the
- * `machine_converge_runtime` bridge function with a vault that carries every
+ * `machine_converge_runtime` renet function with a vault that carries every
  * repo's own env secrets. Renet hands each repo's child only its own.
  *
  * Every remote effect goes through an injected runner, so the decision logic
@@ -22,7 +22,7 @@ import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { parseCapturedJson } from '../executor/renet-output.js';
 
-/** The bridge function that runs `renet runtime converge`. */
+/** The renet function that runs `renet runtime converge`. */
 export const CONVERGE_FUNCTION = 'machine_converge_runtime';
 
 /** Opt-out of the automatic converge pass after a renet upload. */
@@ -154,7 +154,7 @@ export function countConvergeResults(report: ConvergeReport): ConvergeCounts {
   };
 }
 
-/** The flags of `rdc machine converge`, mapped onto the bridge function's params. */
+/** The flags of `rdc machine converge`, mapped onto the renet function's params. */
 export interface ConvergeOptions {
   dryRun?: boolean;
   policy?: RuntimePolicy;

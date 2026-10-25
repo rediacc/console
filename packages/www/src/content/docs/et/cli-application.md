@@ -7,7 +7,7 @@ order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "09b04ab863d28176"
+sourceHash: "146aa0670c3cf42b"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -911,8 +911,23 @@ rdc machine remove <name> [options]
 | `--force` | {{t:cli.commands.machine.remove.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-machine-restart-services"></a>
+### 3.11 restart-services
+
+{{t:cli.commands.machine.restartServices.description}}
+
+```bash
+rdc machine restart-services <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--include-docker` | {{t:cli.commands.machine.restartServices.includeDockerOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--json` | {{t:cli.commands.machine.restartServices.jsonOption}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-machine-scan-keys"></a>
-### 3.11 scan-keys
+### 3.12 scan-keys
 
 {{t:cli.commands.machine.scanKeys.description}}
 
@@ -921,7 +936,7 @@ rdc machine scan-keys [name]
 ```
 
 <a id="cli-local-machine-setup"></a>
-### 3.12 setup
+### 3.13 setup
 
 {{t:cli.commands.machine.setup.description}}
 
@@ -938,7 +953,7 @@ rdc machine setup <name> [options]
 
 
 <a id="cli-local-machine-status"></a>
-### 3.13 status
+### 3.14 status
 
 {{t:cli.commands.machine.status.description}}
 
@@ -966,7 +981,7 @@ rdc machine status [name] [options]
 
 
 <a id="cli-local-machine-gpu"></a>
-### 3.14 gpu
+### 3.15 gpu
 
 {{t:cli.commands.machine.gpu.description}}
 
@@ -1366,6 +1381,7 @@ rdc repo delete <ref> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--archive-config` | {{t:cli.commands.repo.delete.archiveOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--purge-backups` | {{t:cli.commands.repo.delete.purgeBackupsOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2332,8 +2348,13 @@ rdc backup restore <artifact-ref> [options]
 {{t:cli.commands.backup.retention.clear.description}}
 
 ```bash
-rdc backup retention clear <repo-ref>
+rdc backup retention clear <repo-ref> [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--stream <id>` | {{t:cli.commands.backup.retention.optionStream}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-backup-retention-set"></a>
 #### set
@@ -2352,7 +2373,17 @@ rdc backup retention set <repo-ref> [options]
 | `--keep-weekly <n>` | {{t:cli.commands.backup.retention.optionKeepWeekly}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--keep-monthly <n>` | {{t:cli.commands.backup.retention.optionKeepMonthly}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--keep-yearly <n>` | {{t:cli.commands.backup.retention.optionKeepYearly}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--stream <id>` | {{t:cli.commands.backup.retention.optionStream}} | {{t:cli.docs.optionLabels.no}} | - |
 
+
+<a id="cli-local-backup-retention-preview"></a>
+#### preview
+
+{{t:cli.commands.backup.retention.preview.description}}
+
+```bash
+rdc backup retention preview <repo-ref>
+```
 
 <a id="cli-local-backup-run"></a>
 ### 8.7 run
@@ -2441,6 +2472,7 @@ rdc backup strategy set <strategy> [options]
 | `--bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include <repos>` | {{t:cli.commands.backup.strategy.set.optionInclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--exclude <repos>` | {{t:cli.commands.backup.strategy.set.optionExclude}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--retention <spec>` | {{t:cli.commands.backup.strategy.set.optionRetention}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--enable` | {{t:cli.commands.backup.strategy.set.optionEnable}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--disable` | {{t:cli.commands.backup.strategy.set.optionDisable}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -2528,6 +2560,20 @@ rdc backup verify <repo-ref> [options]
 | `--deep` | {{t:cli.commands.backup.verify.optionDeep}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
+
+<a id="cli-local-backup-snapshots"></a>
+### 8.14 snapshots
+
+{{t:cli.commands.backup.snapshots.description}}
+
+<a id="cli-local-backup-snapshots-delete"></a>
+#### delete
+
+{{t:cli.commands.backup.snapshots.delete.description}}
+
+```bash
+rdc backup snapshots delete <repo-ref> <snapshot-id>
+```
 
 ---
 

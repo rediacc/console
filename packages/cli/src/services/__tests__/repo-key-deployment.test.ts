@@ -9,6 +9,7 @@ import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
 import {
   buildKeyDeploymentScript,
   buildKeyRemovalScript,
+  COUNT_UNGUIDED_KEY_LINES_SCRIPT,
   deployAllRepoKeys,
   deployRepoKey,
   deployRepoKeyIfNeeded,
@@ -78,11 +79,8 @@ describe('buildKeyDeploymentScript', () => {
     expect(script).toMatchSnapshot();
   });
 
-  it('omits the --guid flag when no repository GUID is given', () => {
-    const script = buildKeyDeploymentScript('myrepo', PUB_KEY, undefined, DS);
-    expect(script).toContain(`sandbox-gateway myrepo --datastore ${DS}" ${PUB_KEY}`);
-    expect(script).not.toContain('--guid');
-    expect(script).toMatchSnapshot();
+  it('refuses to build a key line without a repository GUID', () => {
+    expect(() => buildKeyDeploymentScript('myrepo', PUB_KEY, '', DS)).toThrow(/without a GUID/);
   });
 
   it('binds a custom datastore after the --guid flag', () => {
@@ -195,7 +193,10 @@ describe('deployRepoKeyIfNeeded', () => {
   });
 
   it('releases the lease and warns instead of throwing when exec fails', async () => {
-    mockConfigService.getRepository.mockResolvedValue({ sshPublicKey: PUB_KEY });
+    mockConfigService.getRepository.mockResolvedValue({
+      sshPublicKey: PUB_KEY,
+      repositoryGuid: 'guid-123',
+    });
     mockExec.mockRejectedValueOnce(new Error('boom'));
     const warnSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
@@ -219,19 +220,17 @@ describe('deployAllRepoKeys', () => {
     mockConfigService.listRepositories.mockResolvedValue([
       { name: 'a', config: { sshPublicKey: PUB_KEY, repositoryGuid: 'g-a' } },
       { name: 'no-key', config: {} },
-      { name: 'b', config: { sshPublicKey: PUB_KEY } },
+      { name: 'b', config: { sshPublicKey: PUB_KEY, repositoryGuid: 'g-x' } },
     ]);
 
     const deployed = await deployAllRepoKeys('m1');
 
     expect(deployed).toBe(2);
     expect(mockAcquire).toHaveBeenCalledExactlyOnceWith('m1');
-    expect(mockExec).toHaveBeenCalledTimes(2);
+    expect(mockExec).toHaveBeenCalledTimes(3);
+    expect(mockExec).toHaveBeenNthCalledWith(3, COUNT_UNGUIDED_KEY_LINES_SCRIPT);
     expect(mockExec).toHaveBeenNthCalledWith(1, buildKeyDeploymentScript('a', PUB_KEY, 'g-a', DS));
-    expect(mockExec).toHaveBeenNthCalledWith(
-      2,
-      buildKeyDeploymentScript('b', PUB_KEY, undefined, DS)
-    );
+    expect(mockExec).toHaveBeenNthCalledWith(2, buildKeyDeploymentScript('b', PUB_KEY, 'g-x', DS));
     expect(mockRelease).toHaveBeenCalledTimes(1);
   });
 
@@ -246,8 +245,8 @@ describe('deployAllRepoKeys', () => {
 
   it('continues past per-repo failures and still releases once', async () => {
     mockConfigService.listRepositories.mockResolvedValue([
-      { name: 'a', config: { sshPublicKey: PUB_KEY } },
-      { name: 'b', config: { sshPublicKey: PUB_KEY } },
+      { name: 'a', config: { sshPublicKey: PUB_KEY, repositoryGuid: 'g-x' } },
+      { name: 'b', config: { sshPublicKey: PUB_KEY, repositoryGuid: 'g-x' } },
     ]);
     mockExec.mockRejectedValueOnce(new Error('transient'));
 
@@ -255,6 +254,31 @@ describe('deployAllRepoKeys', () => {
 
     expect(deployed).toBe(1);
     expect(mockRelease).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('COUNT_UNGUIDED_KEY_LINES_SCRIPT', () => {
+  it('counts only sandbox-gateway lines without --guid, in a real shell', () => {
+    const home = mkdtempSync(join(tmpdir(), 'keycount-'));
+    try {
+      mkdirSync(join(home, '.ssh'));
+      writeFileSync(
+        join(home, '.ssh', 'authorized_keys'),
+        [
+          'command="renet sandbox-gateway a --guid g1 --datastore /d" ssh-ed25519 A',
+          'command="renet sandbox-gateway b --datastore /d" ssh-ed25519 B',
+          'command="renet sandbox-gateway c" ssh-ed25519 C',
+          'ssh-rsa team',
+          '',
+        ].join('\n')
+      );
+      const out = execFileSync('bash', ['-c', COUNT_UNGUIDED_KEY_LINES_SCRIPT], {
+        env: { ...process.env, HOME: home },
+      });
+      expect(out.toString().trim()).toBe('2');
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 });
 

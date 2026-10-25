@@ -10,6 +10,7 @@ import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
 import { outputService } from '../services/core/output.js';
 import { writeStderr } from '../services/core/request-context.js';
+import { renetFailureReason } from '../services/executor/renet-output.js';
 import {
   type ConnectionDetails,
   getSSHConnectionDetails,
@@ -526,13 +527,35 @@ const sshExitCodeMessages: Record<number, string> = {
   255: 'sshCode255',
 };
 
-function buildSSHExitErrorMessage(code: number): string {
+/** ssh's own sign-off when a PTY session ends; never the remote's reason. */
+const SSH_CLOSED_LINE = /^Connection to \S+ closed\.?$/;
+
+/** How much of the remote's stderr the error keeps; only its last lines can explain the exit. */
+const STDERR_TAIL_CHARS = 4096;
+
+/**
+ * The error for a non-zero ssh exit. When the remote printed why it failed (renet's cobra "Error:" line, or its last informative line), that reason IS the message, so `errors[].message` carries renet's text rather than the generic per-code hint (C11).
+ */
+export function buildSSHExitErrorMessage(code: number, stderrTail = ''): string {
   let message = t('errors.term.sshExitCode', { code });
+  const reason = renetFailureReason(stderrTail, SSH_CLOSED_LINE);
+  if (reason) return `${message}: ${reason}`;
   const codeKey = sshExitCodeMessages[code];
   if (codeKey) {
     message += `\n  ${t(`errors.term.${codeKey}`)}`;
   }
   return message;
+}
+
+/** Tee a child's stderr to the terminal as it arrives and keep its tail; the returned getter reads the tail. */
+export function teeStderrTail(stream: NodeJS.ReadableStream | null): () => string {
+  let tail = '';
+  stream?.setEncoding('utf8');
+  stream?.on('data', (chunk: string) => {
+    writeStderr(chunk);
+    tail = (tail + chunk).slice(-STDERR_TAIL_CHARS);
+  });
+  return () => tail;
 }
 
 async function runInlineSSH(
@@ -548,18 +571,21 @@ async function runInlineSSH(
     writeStderr(`${t('commands.term.connectingTo', { title })}\n`);
   }
 
+  // stderr is piped rather than inherited so its tail can explain a failure; every chunk is still teed to the terminal as it arrives.
   const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {
     env: { ...process.env, ...splitSecretEnv(connectionDetails.environment).plain },
-    stdio: 'inherit',
+    stdio: ['inherit', 'inherit', 'pipe'],
     agentSocketPath: sshConnection.agentSocketPath,
   });
 
+  const stderrTail = teeStderrTail(child.stderr);
+
   await new Promise<void>((resolve, reject) => {
-    child.on('exit', (code: number | null) => {
+    child.on('close', (code: number | null) => {
       if (code === 0 || code === null) {
         resolve();
       } else {
-        reject(new Error(buildSSHExitErrorMessage(code)));
+        reject(new Error(buildSSHExitErrorMessage(code, stderrTail())));
       }
     });
     child.on('error', reject);

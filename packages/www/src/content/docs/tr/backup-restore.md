@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: tr
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -62,7 +62,7 @@ Makineler arası push ve pull, ikisine de ihtiyaç duymaz. Zaten yapılandırman
 
 ### rclone depolama yolu ortadan kalktı
 
-`rdc repo push --to <storage>` ve ilgili komutları, eskiden kendi kaydettiğiniz bir bulut sağlayıcısına tüm yedek dosyasını kopyalardı. Artık bir depolama hedefini reddediyor ve yerine geçeni adlandırıyorlar. Makineler arası aktarım hiçbir zaman rclone'dan geçmedi ve bundan etkilenmez. Depolama komutları ve paketle gelen rclone kaldırıldı; bu yüzden o yöntemle yazılmış bir arşiv artık CLI üzerinden gezilemez.
+`rdc repo push --to <storage>` ve benzeri komutlar eskiden bir yedek dosyasının tamamını elle kaydedilmiş bir bulut sağlayıcısına kopyalıyordu. storage komutları ve paketle gelen rclone kaldırıldı; `--to`/`--from` artık yalnızca bir makine adı alıyor. Makineden makineye aktarım hiçbir zaman rclone üzerinden geçmedi ve etkilenmez. Eski yöntemle yazılmış bir arşiv artık CLI üzerinden incelenemez.
 
 ### Chunk depolama komutları
 

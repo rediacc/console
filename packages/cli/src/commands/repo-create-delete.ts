@@ -30,6 +30,12 @@ import { resolveRepoRef } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { formatStepDuration } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
+import {
+  type DeletedRepoConfig,
+  isFork,
+  settleCloudBackups,
+  settleConfigEntry,
+} from './repo-delete-settle.js';
 
 /** Clean up local VS Code SSH artifacts after a repo delete. Non-fatal. */
 async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Promise<void> {
@@ -364,61 +370,6 @@ export function handleRepoCreate(
     skipRouterRestart: options.skipRouterRestart,
   });
 }
-
-type DeletedRepoConfig = {
-  repositoryGuid: string;
-  grandGuid?: string;
-  pushState?: Record<string, unknown>;
-};
-
-/** A fork carries a grand lineage distinct from its own GUID. */
-function isFork(repoConfig: DeletedRepoConfig): boolean {
-  return !!repoConfig.grandGuid && repoConfig.grandGuid !== repoConfig.repositoryGuid;
-}
-
-/**
- * Machines other than the one just deleted from that hold a pushed copy, as
- * recorded by `repo push` in `pushState`. A repo lives on its placement machine
- * only; the push record is the sole evidence of another holder.
- */
-function otherHolders(repoConfig: DeletedRepoConfig, machineName: string): string[] {
-  return Object.keys(repoConfig.pushState ?? {}).filter((m) => m !== machineName);
-}
-
-/**
- * Settle the config entry after a successful delete and say what happened. The
- * message matches the outcome: archived (moved), dropped (a fork with no other
- * holder, its credential is the parent's so nothing is lost), or retained with
- * the true reason (pushed copies elsewhere, or a grand repo whose credential
- * backups restore with).
- */
-export async function settleConfigEntry(
-  name: string,
-  machineName: string,
-  repoConfig: DeletedRepoConfig,
-  archiveConfig: boolean
-): Promise<void> {
-  // A fork with no other holder is archived like --archive-config rather than removed: the name is free for a re-fork, and the archived record keeps the repository GUID that a restore of the fork's backups needs.
-  const holders = otherHolders(repoConfig, machineName);
-  if (archiveConfig || (holders.length === 0 && isFork(repoConfig))) {
-    await configService.archiveRepository(name);
-    outputService.info(t('commands.repo.delete.archived', { repository: name }));
-    outputService.info(t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid }));
-    return;
-  }
-  if (holders.length > 0) {
-    outputService.info(
-      t('commands.repo.delete.configRetainedElsewhere', {
-        repository: name,
-        machines: holders.join(', '),
-      })
-    );
-  } else {
-    outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
-  }
-  outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
-}
-
 /** Handle post-delete success: cleanup, timeline, config-entry settlement, hints. */
 async function handleDeleteSuccess(
   name: string,
@@ -426,7 +377,8 @@ async function handleDeleteSuccess(
   repoConfig: DeletedRepoConfig,
   archiveConfig: boolean,
   result: import('../services/executor/local-executor.js').ExecuteResult,
-  originalRef?: string
+  originalRef?: string,
+  purgeBackups = false
 ): Promise<void> {
   await cleanupDeletedRepoSSH(machineName, name).catch(() => {});
   // When the user invoked `repo delete --name app` and the resolver returned `app:latest`, VS Code SSH artifacts persisted under the original bare alias survive the cleanup above. Sweep that name too.
@@ -441,6 +393,7 @@ async function handleDeleteSuccess(
   }
   await settleConfigEntry(name, machineName, repoConfig, archiveConfig);
   await reconcileBackupSchedules(machineName);
+  await settleCloudBackups(name, repoConfig, purgeBackups);
   outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
 }
 
@@ -453,6 +406,7 @@ async function handleRepoDelete(
   ref: string,
   options: {
     archiveConfig?: boolean;
+    purgeBackups?: boolean;
     yes?: boolean;
     debug?: boolean;
     skipRouterRestart?: boolean;
@@ -467,6 +421,10 @@ async function handleRepoDelete(
     const { key: target, config: repoConfig } =
       await configService.resolveDestructiveTarget(repoKey);
     await assertCommandPolicy(CMD.REPO_DELETE, target);
+    // Refused before anything is deleted: a fork's lineage is its parent's, and a purge would take the parent's backups with it.
+    if (options.purgeBackups && isFork(repoConfig)) {
+      throw new ValidationError(t('commands.repo.delete.purgeForkRefused', { repository: target }));
+    }
 
     // A definite absence skips the machine dispatch, so the ID is only needed when the image is there.
     if (!imageAbsent) {
@@ -486,6 +444,7 @@ async function handleRepoDelete(
           machine: machineName,
           guid: repoConfig.repositoryGuid,
           archiveConfig: !!options.archiveConfig,
+          purgeBackups: !!options.purgeBackups,
         },
         getOutputFormat()
       );
@@ -528,7 +487,8 @@ async function handleRepoDelete(
         repoConfig,
         !!options.archiveConfig,
         result,
-        name
+        name,
+        !!options.purgeBackups
       );
     } else {
       renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
@@ -562,6 +522,7 @@ export function registerRepoCreateDeleteCommands(repo: Command): void {
     .description(t('commands.repo.delete.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--archive-config', t('commands.repo.delete.archiveOption'))
+    .option('--purge-backups', t('commands.repo.delete.purgeBackupsOption'))
     .option('-y, --yes', t('options.yes'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))

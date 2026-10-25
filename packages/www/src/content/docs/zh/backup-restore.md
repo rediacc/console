@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: zh
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # 备份与恢复
@@ -62,7 +62,7 @@ Rediacc 会备份加密仓库,并在同一台机器或另一台机器上恢复�
 
 ### rclone 存储路径已经不复存在
 
-`rdc repo push --to <storage>` 及其相关命令过去会把整个备份文件复制到你自己注册的云提供商。现在它们会拒绝存储目标,并指出替代方案的名字。机器到机器的传输从来不经过 rclone,不受影响。存储命令和内置的 rclone 均已移除,因此以那种方式写入的存档不能再通过 CLI 浏览。
+`rdc repo push --to <storage>` 及相关命令过去会把整个备份文件复制到手动注册的云服务商。storage 命令和内置的 rclone 已被移除，`--to`/`--from` 现在只接受机器名。机器之间的传输从未经过 rclone，不受影响。按旧方式写入的归档已无法再通过 CLI 浏览。
 
 ### 分块存储命令
 

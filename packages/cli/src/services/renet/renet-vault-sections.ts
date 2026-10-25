@@ -2,6 +2,8 @@ export interface RepoEntryConfig {
   guid: string;
   name: string;
   networkId?: number;
+  /** The family's grand GUID; absent or equal to `guid` on a grand. */
+  grandGuid?: string;
   /**
    * File-mode secrets to materialize on the host at deploy time. Renet's
    * repository_up reads these from the vault payload and writes them to
@@ -11,15 +13,55 @@ export interface RepoEntryConfig {
   secretFiles?: { name: string; value: string }[];
 }
 
-/** Build a single repository entry from config and params. */
+const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** A bare family name addresses the family's grand, whatever tag the grand is stored under. */
+function findGrandByBareName(
+  bareName: string,
+  repositoryConfigs: Record<string, RepoEntryConfig>
+): RepoEntryConfig | undefined {
+  return Object.entries(repositoryConfigs).find(
+    ([key, config]) =>
+      key.split(':')[0] === bareName && (!config.grandGuid || config.grandGuid === config.guid)
+  )?.[1];
+}
+
+/** A repo ref resolves to its config entry by key, then by GUID; a ref that is itself a GUID needs no entry. */
+function findRepoConfig(
+  repoRef: string,
+  repositoryConfigs?: Record<string, RepoEntryConfig>
+): RepoEntryConfig | undefined {
+  if (!repositoryConfigs) return undefined;
+  return (
+    repositoryConfigs[repoRef] ??
+    Object.values(repositoryConfigs).find((config) => config.guid === repoRef) ??
+    findGrandByBareName(repoRef, repositoryConfigs)
+  );
+}
+
+/** The GUID a single-repo verb addresses: config entry, else the caller's guid param, else a ref that is itself a GUID. A bare name is never promoted to a GUID. */
+function resolveRepoGuid(
+  repoRef: string,
+  params: Record<string, unknown>,
+  repoConfig: RepoEntryConfig | undefined
+): string {
+  if (repoConfig) return repoConfig.guid;
+  if (typeof params.guid === 'string' && params.guid !== '') return params.guid;
+  if (GUID_PATTERN.test(repoRef)) return repoRef;
+  throw new Error(
+    `Repository "${repoRef}" has no GUID in the active config; refusing to use the name as the GUID`
+  );
+}
+
+/** Build a single repository entry from config and params, keyed by GUID with the friendly name as `name`. */
 function buildSingleRepoEntry(
+  repoGuid: string,
   repoName: string,
   params: Record<string, unknown>,
-  repositoryConfigs?: Record<string, RepoEntryConfig>
+  repoConfig: RepoEntryConfig | undefined
 ): Record<string, unknown> {
-  const repoConfig = repositoryConfigs?.[repoName];
   const repoEntry: Record<string, unknown> = {
-    guid: repoConfig?.guid ?? (typeof params.guid === 'string' ? params.guid : repoName),
+    guid: repoGuid,
     name: repoName,
   };
   const networkId = repoConfig?.networkId ?? params.network_id;
@@ -53,22 +95,31 @@ function buildAllRepoEntries(
   return repositories;
 }
 
+/**
+ * `repoGuid` is the vault's `task.repository`; `repoName` is the friendly name the caller passed, carried as `task.repo_name` and the entry's `name`.
+ */
 export function buildRepositories(
   params: Record<string, unknown>,
   repositoryConfigs?: Record<string, RepoEntryConfig>
-): { repoName: string; repositories: Record<string, unknown> } {
-  const repoName = (params.repository ?? '') as string;
+): { repoGuid: string; repoName: string; repositories: Record<string, unknown> } {
+  const repoRef = (params.repository ?? '') as string;
 
-  if (repoName) {
+  if (repoRef) {
+    const repoConfig = findRepoConfig(repoRef, repositoryConfigs);
+    const repoGuid = resolveRepoGuid(repoRef, params, repoConfig);
+    const repoName = repoConfig?.name ?? repoRef;
     return {
+      repoGuid,
       repoName,
-      repositories: { [repoName]: buildSingleRepoEntry(repoName, params, repositoryConfigs) },
+      repositories: {
+        [repoGuid]: buildSingleRepoEntry(repoGuid, repoName, params, repoConfig),
+      },
     };
   }
 
   if (repositoryConfigs) {
-    return { repoName, repositories: buildAllRepoEntries(repositoryConfigs) };
+    return { repoGuid: '', repoName: '', repositories: buildAllRepoEntries(repositoryConfigs) };
   }
 
-  return { repoName, repositories: {} };
+  return { repoGuid: '', repoName: '', repositories: {} };
 }

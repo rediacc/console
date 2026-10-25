@@ -121,7 +121,7 @@ async function executePush(
   return extractPushResult(result.stdout);
 }
 
-/** Execute a repo bridge function quietly (spinner managed by caller). */
+/** Execute a repo renet function quietly (spinner managed by caller). */
 async function executeQuiet(
   functionName: string,
   repoName: string,

@@ -120,8 +120,10 @@ describe('command plane coverage', () => {
     // 179 -> 182, machine 97 -> 100: `machine gpu list`, `repo gpu grant` and `repo gpu revoke` each reach a machine (the GPU inventory and the repository's device grants live there).
     //
     // 182 -> 176, config 54 -> 50, machine 100 -> 99, other 28 -> 27: `rdc storage` (list, add, remove, import, prune, browse) was deleted with the storage retirement.
-    expect(COMMANDS.length).toBe(176);
-    expect(counts).toEqual({ config: 50, machine: 99, other: 27 });
+    //
+    // 176 -> 179, machine 99 -> 100, other 27 -> 29: `machine restart-services` rolls renet daemons on a machine, so it is a machine-plane leaf; `backup retention preview` and `backup snapshots delete` are accountServerFetch calls against the control plane, so `other` like their `retention` siblings.
+    expect(COMMANDS.length).toBe(179);
+    expect(counts).toEqual({ config: 50, machine: 100, other: 29 });
   });
 
   it('records the interactive commands', () => {
@@ -166,7 +168,9 @@ describe('command plane coverage', () => {
     // 93 -> 96: the three `gpu` leaves are machine-plane and non-interactive.
     //
     // 96 -> 95: `storage prune` went with `rdc storage`.
-    expect(machineNonInteractive.length).toBe(95);
+    //
+    // 95 -> 96: `machine restart-services` is machine-plane and non-interactive.
+    expect(machineNonInteractive.length).toBe(96);
   });
 
   it('plane and interactive entries all point at real commands', () => {

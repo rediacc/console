@@ -7,7 +7,7 @@ import {
 } from '../renet/renet-license-contract.js';
 
 /**
- * The CLI has exactly ONE notion of which bridge functions are licence-relevant,
+ * The CLI has exactly ONE notion of which renet functions are licence-relevant,
  * and it is the generated contract (emitted from renet's tier map). These tests
  * pin that seam so a Go-side tier flip forces a conscious acknowledgment here
  * rather than silently changing when the CLI mints a repo licence.

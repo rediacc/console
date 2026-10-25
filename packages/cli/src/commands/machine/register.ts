@@ -25,8 +25,11 @@ async function postSetupMachineTasks(name: string, debug?: boolean): Promise<voi
     if (deployed > 0) {
       outputService.info(`Deployed ${deployed} repo SSH keys to ${name}`);
     }
-  } catch {
-    // non-fatal
+  } catch (error) {
+    // non-fatal, but visible: a repo whose key was not re-deployed keeps a line without --guid
+    outputService.warn(
+      `Repo SSH key deployment to ${name} failed: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 
   // Auto push-infra if machine has infra configured

@@ -150,6 +150,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Removes the policy entirely; the blast radius of getting it wrong is ' +
       'the operator keeping or losing every snapshot of a repository.',
   },
+  // A dry run of the policy against the live manifests: it reports which snapshots a prune would delete and deletes nothing.
+  'backup retention preview': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'backup snapshots delete': {
+    mcpExcludeReason:
+      'Deletes snapshots outright; like a retention mutation, a wrong call ' +
+      'discards backups the operator meant to keep.',
+  },
   'backup verify': {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
@@ -326,6 +335,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'write',
       excludeOptions: ['json', 'debug'],
     },
+  },
+
+  // Restarts renet daemons still running a replaced binary (and with --include-docker each repo's supervisor, a short outage per repo); destroys no data, and a second run finds nothing stale.
+  'machine restart-services': {
+    mcp: { destructive: true, idempotent: true, timeout: 'write', excludeOptions: ['json'] },
   },
 
   'machine provision': {

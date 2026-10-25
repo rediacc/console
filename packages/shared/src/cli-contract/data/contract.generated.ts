@@ -555,7 +555,19 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.backup.retention.clear.description",
       "label": "Remove the policy, so every snapshot of this repository is kept.",
-      "options": [],
+      "options": [
+        {
+          "flags": "--stream <id>",
+          "long": "stream",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionStream",
+          "label": "Apply to this backup stream only (a stream id); without it, the repository-wide default"
+        }
+      ],
       "positionals": [
         {
           "name": "repo-ref",
@@ -568,6 +580,43 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "mcpExcludeReason": "Removes the policy entirely; the blast radius of getting it wrong is the operator keeping or losing every snapshot of a repository.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
+        "retention",
+        "preview"
+      ],
+      "pathKey": "backup retention preview",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.retention.preview.description",
+      "label": "Show which snapshots the next sweep would delete and the space it would free.",
+      "options": [],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -655,6 +704,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.retention.optionKeepYearly",
           "label": "Keep the newest snapshot from each of this many years"
+        },
+        {
+          "flags": "--stream <id>",
+          "long": "stream",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionStream",
+          "label": "Apply to this backup stream only (a stream id); without it, the repository-wide default"
         }
       ],
       "positionals": [
@@ -915,6 +975,48 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
+        "snapshots",
+        "delete"
+      ],
+      "pathKey": "backup snapshots delete",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.snapshots.delete.description",
+      "label": "Delete one stored snapshot of a repository. Data only that snapshot used is freed by the next garbage collection.",
+      "options": [],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        {
+          "name": "snapshot-id",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.backup.snapshots.snapshotIdArgument",
+          "label": "Snapshot id (see rdc backup manifests)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Deletes snapshots outright; like a retention mutation, a wrong call discards backups the operator meant to keep.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -1190,6 +1292,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionExclude",
           "label": "Exclude these repos from backup (comma-separated names)"
+        },
+        {
+          "flags": "--retention <spec>",
+          "long": "retention",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionRetention",
+          "label": "Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 (\"none\" removes it)"
         },
         {
           "flags": "--enable",
@@ -6485,6 +6598,64 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "machine",
+        "restart-services"
+      ],
+      "pathKey": "machine restart-services",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.restartServices.description",
+      "label": "Roll the renet daemons that still run a replaced binary onto the installed one, one unit at a time, each confirmed active on the new binary before the next. With --include-docker the per-repo rediacc-docker-N supervisors restart too, one repo at a time, which restarts that repo's containers.",
+      "options": [
+        {
+          "flags": "--include-docker",
+          "long": "include-docker",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.restartServices.includeDockerOption",
+          "label": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)"
+        },
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.restartServices.jsonOption",
+          "label": "Print the report as JSON"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "name",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
         "scan-keys"
       ],
       "pathKey": "machine scan-keys",
@@ -8577,6 +8748,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.repo.delete.archiveOption",
           "label": "Move config entry to deletedRepositories for later recovery"
+        },
+        {
+          "flags": "--purge-backups",
+          "long": "purge-backups",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.delete.purgeBackupsOption",
+          "label": "Also delete the repository's cloud backups now, instead of letting them expire"
         },
         {
           "flags": "-y, --yes",

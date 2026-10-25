@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: de
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # Backup & Wiederherstellung
@@ -61,7 +61,7 @@ Maschine-zu-Maschine-Push und -Pull brauchen keins von beidem. Sie sind eine dir
 
 ### Der rclone-Speicherpfad ist verschwunden
 
-`rdc repo push --to <storage>` und Verwandte kopierten früher eine ganze Backup-Datei zu einem Cloud-Anbieter, den Sie selbst registrierten. Diese verweigern jetzt ein Speicherziel und nennen ihren Ersatz. Die Maschine-zu-Maschine-Übertragung lief nie über rclone und ist unbetroffen. Die Storage-Befehle und das mitgelieferte rclone wurden entfernt, deshalb lässt sich ein auf diese Weise geschriebenes Archiv nicht mehr über die CLI durchsuchen.
+`rdc repo push --to <storage>` und verwandte Befehle kopierten früher eine ganze Backup-Datei zu einem selbst registrierten Cloud-Anbieter. Die Storage-Befehle und das mitgelieferte rclone wurden entfernt, und `--to`/`--from` nennen jetzt nur noch eine Maschine. Die Übertragung von Maschine zu Maschine lief nie über rclone und ist nicht betroffen. Ein auf die alte Weise geschriebenes Archiv lässt sich nicht mehr über die CLI durchsuchen.
 
 ### Chunk-Storage-Befehle
 

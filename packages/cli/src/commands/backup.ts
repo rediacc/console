@@ -15,14 +15,18 @@ import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { assertResourceName, compositeKey } from '../utils/config-schema.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { assertMachineExists } from './_validate.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
 import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
-import { parseVerifyVerdict } from './backup-storage-parser.js';
+import {
+  parseRestoreStats,
+  parseVerifyVerdict,
+  type RestoreStats,
+} from './backup-storage-parser.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
@@ -452,6 +456,8 @@ async function runChunkRestore(args: {
     datastore,
     params: { repository: targetName, lineage, at: snapshotId, dry_run: false },
     debug,
+    // The record on stdout carries the restore's measurements; without capture they are dropped.
+    captureOutput: true,
   });
   if (!restore.success) {
     await configService.removeRepository(compositeKey(targetName, 'latest'));
@@ -467,7 +473,45 @@ async function runChunkRestore(args: {
   outputService.success(
     t('commands.backup.restore.restored', { name: targetName, machine: targetMachine })
   );
+  await reportRestoreStats(parseRestoreStats(restore.stdout));
   return true;
+}
+
+/**
+ * The restore summary (plan L6): what was fetched, reused from a local seed or anchor, and punched
+ * out, so a restore that moved little reads as one. Structured formats print the whole record.
+ */
+async function reportRestoreStats(stats: RestoreStats | undefined): Promise<void> {
+  if (!stats) return;
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(stats, format);
+    return;
+  }
+  const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
+  const bytes = (n: number | undefined) => formatSizeBytes(n ?? 0);
+  outputService.info(
+    t('commands.backup.restore.stats', {
+      fetched: stats.chunksFetched ?? 0,
+      reused: stats.chunksReused ?? 0,
+      known: stats.cellsKnown ?? 0,
+      punched: stats.cellsPunched ?? 0,
+      bytes: bytes(stats.bytesFetched),
+      cellBytes: bytes(stats.cellBytes),
+    })
+  );
+  if (stats.seed) {
+    outputService.info(
+      t('commands.backup.restore.statsSeed', {
+        seed: stats.seed,
+        guid: stats.seedGuid ?? '-',
+        probe: bytes(stats.seedProbeBytes),
+      })
+    );
+  }
+  for (const skipped of stats.seedsSkipped ?? []) {
+    outputService.info(t('commands.backup.restore.statsSeedSkipped', { skipped }));
+  }
 }
 
 /** Deploy a restored repo (`--up`), rendering the health-gate outcome. */

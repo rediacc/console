@@ -23,7 +23,7 @@ import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
  * The existing backup suites verify nothing: suite 10's 17 tests assert only
  * `hasValidCommandSyntax`, which never reads an exit code (its
  * unreachable-machine test passes ON connection failure), and suite 15
- * string-matches generated rclone flags against fabricated credentials. This
+ * string-matched generated storage flags against fabricated credentials (since retired). This
  * one reads exit codes and parses the verb's own JSON records.
  *
  * ## What it can prove with a fleet ALONE, and what it deliberately does not

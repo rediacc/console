@@ -3,7 +3,7 @@ import type { ExecResult, TestFunctionOptions } from '../types';
 /**
  * Kubernetes distribution lifecycle methods for BridgeTestRunner.
  *
- * These dispatch the `kube_*` bridge functions by literal name. The kube suites
+ * These dispatch the `kube_*` renet functions by literal name. The kube suites
  * (15/16/17, env-gated on K8S_MODE) exercise them against live k3s-on-a-worker
  * VMs on the datastore-cluster model:
  *   - kube_install / kube_uninstall / kube_upgrade: node lifecycle

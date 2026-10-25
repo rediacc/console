@@ -13,14 +13,14 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
-import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
-import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
+import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
-import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
-import { lineageOf, runBrowseAt } from './backup-storage-browse.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
+import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
+import { resolveLineage, runBrowseAt } from './backup-storage-browse.js';
 import {
   isLiveMountListing,
   parseBrowseResult,
@@ -125,21 +125,6 @@ function registerBackupUsage(backup: Command): void {
         handleError(error);
       }
     });
-}
-
-/**
- * The lineage (grand) GUID a repo ref belongs to. ONE implementation, shared by
- * `manifests` and `retention`: both address the server-side index by lineage,
- * and a second copy of this resolution is how the two commands would come to
- * disagree about which repo the operator named.
- */
-async function resolveLineage(repoRef: string): Promise<string> {
-  const { repoKey } = await resolveRepoRefLocal(repoRef);
-  const repo = await configService.getRepository(repoKey);
-  if (!repo) {
-    throw new Error(`Repository "${repoKey}" not found in this config.`);
-  }
-  return lineageOf(repo);
 }
 
 /** `backup manifests [repo-ref]`, the server snapshot index, optionally scoped. */
@@ -440,149 +425,6 @@ function registerBackupSnapshot(backup: Command): void {
 }
 
 /** Register the chunk-store backup reads + verification under `rdc backup`. */
-interface BackupRetentionPolicy {
-  lineageGuid: string;
-  keepLast: number | null;
-  keepHourly: number | null;
-  keepDaily: number | null;
-  keepWeekly: number | null;
-  keepMonthly: number | null;
-  keepYearly: number | null;
-  updatedAt: string;
-}
-
-interface BackupRetentionResponse {
-  policies: BackupRetentionPolicy[];
-}
-
-/** The GFS knobs, in the order an operator thinks about them. */
-const RETENTION_KNOBS = [
-  ['keepLast', '--keep-last'],
-  ['keepHourly', '--keep-hourly'],
-  ['keepDaily', '--keep-daily'],
-  ['keepWeekly', '--keep-weekly'],
-  ['keepMonthly', '--keep-monthly'],
-  ['keepYearly', '--keep-yearly'],
-] as const;
-
-/**
- * `backup retention [repo-ref]`, show the policy the SERVER is enforcing.
- *
- * Read back from the server rather than printed from the local config on
- * purpose: what is displayed is then always what is enforced. A policy shown
- * from config would be a statement of intent that a failed push could make a
- * lie, and this is the surface that decides what gets DELETED.
- */
-function registerBackupRetention(backup: Command): void {
-  const retention = backup
-    .command('retention')
-    .argument('[repo-ref]', t('options.repoRef'))
-    .description(t('commands.backup.retention.description'))
-    .action(async (repoRef: string | undefined) => {
-      try {
-        const lineage = repoRef ? await resolveLineage(repoRef) : undefined;
-        const query = lineage ? `?lineage=${encodeURIComponent(lineage)}` : '';
-        const result = await accountServerFetch<BackupRetentionResponse>(
-          `/account/api/v1/backups/retention${query}`
-        );
-        const format = getOutputFormat();
-        if (format !== 'table') {
-          outputService.print(result, format);
-          return;
-        }
-        if (result.policies.length === 0) {
-          outputService.print(t('commands.backup.retention.empty'));
-          return;
-        }
-        const resolve = createGuidResolver(await loadGuidMap());
-        const rows = result.policies.map((p) => ({
-          repo: resolve(p.lineageGuid),
-          last: p.keepLast ?? '-',
-          hourly: p.keepHourly ?? '-',
-          daily: p.keepDaily ?? '-',
-          weekly: p.keepWeekly ?? '-',
-          monthly: p.keepMonthly ?? '-',
-          yearly: p.keepYearly ?? '-',
-        }));
-        const columns = [
-          { key: 'repo', header: 'Repo' },
-          { key: 'last', header: 'Last', align: 'right' as const },
-          { key: 'hourly', header: 'Hourly', align: 'right' as const },
-          { key: 'daily', header: 'Daily', align: 'right' as const },
-          { key: 'weekly', header: 'Weekly', align: 'right' as const },
-          { key: 'monthly', header: 'Monthly', align: 'right' as const },
-          { key: 'yearly', header: 'Yearly', align: 'right' as const },
-        ];
-        outputService.print(outputService.format(rows, format, columns));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  retention
-    .command('set')
-    .argument('<repo-ref>', t('options.repoRef'))
-    .description(t('commands.backup.retention.set.description'))
-    .option('--keep-last <n>', t('commands.backup.retention.optionKeepLast'))
-    .option('--keep-hourly <n>', t('commands.backup.retention.optionKeepHourly'))
-    .option('--keep-daily <n>', t('commands.backup.retention.optionKeepDaily'))
-    .option('--keep-weekly <n>', t('commands.backup.retention.optionKeepWeekly'))
-    .option('--keep-monthly <n>', t('commands.backup.retention.optionKeepMonthly'))
-    .option('--keep-yearly <n>', t('commands.backup.retention.optionKeepYearly'))
-    .action(async (repoRef: string, options: Record<string, string | undefined>) => {
-      try {
-        const lineageGuid = await resolveLineage(repoRef);
-        const body: Record<string, unknown> = { lineageGuid };
-        let declared = 0;
-        for (const [field, flag] of RETENTION_KNOBS) {
-          const raw = options[field];
-          if (raw === undefined) continue;
-          const n = Number(raw);
-          if (!Number.isInteger(n) || n < 0) {
-            throw new ValidationError(
-              t('commands.backup.retention.knobNotAnInteger', { flag, value: raw })
-            );
-          }
-          body[field] = n;
-          declared++;
-        }
-        // EVERY knob is replaced, never merged, the server says so at routes/backups.ts:167. So an empty set would silently clear the policy while reading like a no-op. Refuse instead.
-        if (declared === 0) {
-          throw new ValidationError(t('commands.backup.retention.noKnobs'));
-        }
-        const result = await accountServerFetch<BackupRetentionResponse>(
-          '/account/api/v1/backups/retention',
-          { method: 'PUT', body: JSON.stringify(body) }
-        );
-        outputService.success(
-          t('commands.backup.retention.set.success', { name: repoRef, count: String(declared) })
-        );
-        const format = getOutputFormat();
-        if (format !== 'table') outputService.print(result, format);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  retention
-    .command('clear')
-    .argument('<repo-ref>', t('options.repoRef'))
-    .description(t('commands.backup.retention.clear.description'))
-    .action(async (repoRef: string) => {
-      try {
-        const lineage = await resolveLineage(repoRef);
-        await accountServerFetch<BackupRetentionResponse>(
-          `/account/api/v1/backups/retention?lineage=${encodeURIComponent(lineage)}`,
-          { method: 'DELETE' }
-        );
-        // Clearing is NOT "keep nothing": with no row the sweep never looks at this lineage again, so every snapshot is kept. Say so, because the opposite reading would be a data-loss expectation.
-        outputService.success(t('commands.backup.retention.cleared', { name: repoRef }));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-}
-
 export function registerBackupStorageCommands(backup: Command): void {
   registerBackupUsage(backup);
   registerBackupManifests(backup);
@@ -590,4 +432,5 @@ export function registerBackupStorageCommands(backup: Command): void {
   registerBackupBrowse(backup);
   registerBackupSnapshot(backup);
   registerBackupRetention(backup);
+  registerBackupSnapshots(backup);
 }

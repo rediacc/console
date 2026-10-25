@@ -368,7 +368,7 @@ Everything with kind `secret` or `credential` in the v3 registry (1.4):
 | `/account/token` | secret | NO (escaped) |
 | `/credentials/ssh/privateKey` | credential | yes (via sshContent) |
 | `/credentials/cfDnsApiToken` | secret | **NO (escaped — named in R2-F3)** |
-| `/resources/storages/*/vaultContent` | secret | yes |
+| `/resources/storages` | secret (removed; the schema refuses any value) | n/a |
 | `/resources/repositories/*/tags/*/credential` | credential | yes |
 | `/resources/repositories/*/tags/*/sshPrivateKey` | credential | yes |
 | `/resources/repositories/*/tags/*/secrets/*/value` | secret | yes |
@@ -451,10 +451,13 @@ deleted and a stderr warning names each machine and the equivalent `rdc datastor
 with the key named (the operator moves the payload out of config; a silent truncation of a secret is never acceptable).
 9. **`deletedRepositories[*].name` composite split** → `{ name, tag }` with the same
 parse as transform 2 (`tag: 'latest'` when bare).
-10. **Everything else passes through untouched**: machines (minus ceph), storages,
+10. **Everything else passes through untouched**: machines (minus ceph),
     clusters (minus kvm.memberIds), cloudProviders, backupStrategies, account,
     defaults, credentials, infra (minus acmeCertCache), remote, renetPath, and — via
     `.loose()` — unknown top-level keys.
+11. **`resources.storages` retirement**: the family is dropped with a warning naming
+    each entry; backup targets are backup strategy destinations of kind `hosted-service`
+    (`migrations/v2-to-v3.ts` `dropRetiredStorages`).
 
 ### 3.3 Unknown and corrupt fields
 

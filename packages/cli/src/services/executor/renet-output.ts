@@ -7,7 +7,11 @@
 import { formatStepDuration, getActiveLabel, getDoneText } from '../../utils/timeline.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
-import type { JobOutputCollector } from './job-client.js';
+import {
+  isRenetFlagUnsupported,
+  type JobOutputCollector,
+  renetOlderThanCliMessage,
+} from './job-client.js';
 import { cleanRelayLine, isLogrusLine, stripRelayPrefix } from './output-lines.js';
 import type { ExecuteOptions, RenetEvent } from './types.js';
 
@@ -53,14 +57,24 @@ const LOGRUS_LINE_PREFIX = 'time="';
 
 /**
  * Build the non-zero-exit error message, including renet's actual failure
- * reason when one is available. Without this the operator only sees
+ * reason when one is available. With `machineName` given, a cobra
+ * `unknown flag` rejection becomes the version-skew answer instead. Without this the operator only sees
  * "renet exited with code 1" while the real cause ("repository X is not
  * mounted") sits unprinted in the captured output. The bridge relays the
  * inner command's streams into stdout (with a `[function] ` prefix) while
  * its own logrus noise lands in stderr, so the cobra "Error: ..." line is
  * searched across BOTH streams before any last-line fallback.
  */
-export function buildRenetExitError(exitCode: number, stderr: string, stdout: string): string {
+export function buildRenetExitError(
+  exitCode: number,
+  stderr: string,
+  stdout: string,
+  machineName?: string
+): string {
+  // A cobra flag rejection means the remote renet predates a flag this CLI passes. It refused before running anything, so the useful answer is the skew and its fix, not the cobra line.
+  if (machineName && isRenetFlagUnsupported(`${stderr}\n${stdout}`)) {
+    return renetOlderThanCliMessage(machineName);
+  }
   const base = `renet exited with code ${exitCode}`;
   const reason =
     extractErrorLine(stderr) ??
@@ -120,7 +134,7 @@ export function surfaceRenetWarnings(
 }
 
 /**
- * Parse a JSON payload out of a captured bridge stdout. A bridge function that
+ * Parse a JSON payload out of a captured bridge stdout. A renet function that
  * SHELLS OUT to a sub-`renet` command (e.g. datastore_list ->
  * `renet datastore list --json`, ceph_client_config_export ->
  * `renet ceph client config export --json`) has its sub-process stdout RELAYED
@@ -185,6 +199,20 @@ function lastInformativeLine(output: string): string | undefined {
   return cleanOutputLines(output)
     .filter((line) => !line.startsWith(LOGRUS_LINE_PREFIX))
     .at(-1);
+}
+
+/**
+ * The one line of a failed run's stderr that explains it: the last cobra "Error: ..." line, else the last line that is not log noise. `ignore` drops lines a caller knows are not renet's (ssh's own "Connection to ... closed.").
+ */
+export function renetFailureReason(stderr: string, ignore?: RegExp): string | undefined {
+  const kept = ignore
+    ? stderr
+        .split('\n')
+        .filter((line) => !ignore.test(line.trim()))
+        .join('\n')
+    : stderr;
+  const reason = extractErrorLine(kept) ?? lastInformativeLine(kept);
+  return reason ? capReason(reason) : undefined;
 }
 
 export function capReason(reason: string): string {

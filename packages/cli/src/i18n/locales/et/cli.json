@@ -72,7 +72,10 @@
         "restoringSnapshot": "\"{{name}}\" taastamine hetktõmmisest {{snapshot}}...",
         "sourceUnknown": "Hoidlat nimega \"{{name}}\" ei tunta selles konfiguratsioonis, seega selle varukoopia artefakti ei õnnestu leida.",
         "streamUnknown": "Ei õnnestu kindlaks teha, milline varundusvoog kuulub sellele hoidlale selle lähtemasinas (varunduse kontroll masinas nurjus või see ei teata ühestki kinnitatud hetktõmmisest, mille indeks loetleb). Kasuta --any-stream, et valida selle liini kõigi voogude seast.",
-        "targetExists": "\"{{name}}\" on juba olemas. Taasta teise nime all (--as) või kustuta esmalt olemasolev hoidla."
+        "targetExists": "\"{{name}}\" on juba olemas. Taasta teise nime all (--as) või kustuta esmalt olemasolev hoidla.",
+        "stats": "Taastamine tõmbas {{fetched}} tükki ({{bytes}}), kasutas uuesti {{reused}}, võttis ankrust {{known}} lahtrit ja tühjendas {{punched}} aegunud lahtrit (lahtri suurus {{cellBytes}}).",
+        "statsSeed": "Seeme: alustati hoidla {{guid}} {{seed}} kujutisest (sond luges {{probe}}).",
+        "statsSeedSkipped": "Seeme jäeti vahele: {{skipped}}"
       },
       "retention": {
         "clear": {
@@ -92,6 +95,22 @@
         "set": {
           "description": "Määra, mitu hetktõmmist säilitada. Iga säte asendatakse tervikuna, mitte ei liideta.",
           "success": "{{name}} säilitamispoliitika määrati ({{count}} reeglit). Sellest välja jäävad hetktõmmised kustutatakse järgmise koristuse käigus."
+        },
+        "effective": "{{name}} kehtiv säilitus: {{source}}",
+        "optionStream": "Rakenda ainult sellele varunduse voole (voo ID); ilma selleta kehtib kogu hoidla vaikeväärtus",
+        "preview": {
+          "description": "Näitab, milliseid hetktõmmiseid järgmine puhastus kustutaks ja kui palju ruumi vabastaks.",
+          "nothing": "Järgmine puhastus ei kustuta hoidlast {{name}} midagi.",
+          "summary": "Järgmine puhastus kustutab hoidla {{name}} {{count}} hetktõmmist, jätab alles {{kept}} ja vabastab {{bytes}}."
+        },
+        "seeded": "Strateegia \"{{strategy}}\" säilitus määrati {{count}} hoidlale, millel poliitikat polnud.",
+        "seedFailed": "Strateegia \"{{strategy}}\" säilitust ei õnnestunud määrata ({{reason}}). Seni kehtib serveri vaikeväärtus.",
+        "source": {
+          "stream": "voo erand",
+          "declared": "määratud poliitika",
+          "plan": "paketi vaikeväärtus",
+          "default": "serveri vaikeväärtus",
+          "orphan": "orvuks jäänud hoidla tähtaeg"
         }
       },
       "run": {
@@ -149,7 +168,18 @@
           "optionExclude": "Jäta need hoidlad varundusest välja (komaga eraldatud nimed)",
           "optionInclude": "Varunda ainult need hoidlad (komaga eraldatud nimed)",
           "optionMode": "Varundusrežiim: \"hot\" teeb hetktõmmise, kui kõik töötab edasi, \"cold\" peatab konteinerid hetktõmmise tegemise ajaks",
-          "saved": "Varundussettrateegia konfiguratsioon salvestatud"
+          "saved": "Varundussettrateegia konfiguratsioon salvestatud",
+          "optionRetention": "Hetktõmmiste säilitus, näiteks last=7,daily=7,weekly=4,monthly=6 (\"none\" eemaldab selle)",
+          "retentionInvalid": "--retention \"{{value}}\" ei ole nimi=arv paaride loend. Nimed on last, hourly, daily, weekly, monthly ja yearly, igaüks üks kord, ja iga arv on täisarv, näiteks last=7,daily=7.",
+          "retentionCronMismatch": "Strateegia \"{{strategy}}\": reegel {{knob}} ei saa toimida {{cadence}} ajakava \"{{cron}}\" korral, sest see annab selle täitmiseks liiga vähe hetktõmmiseid.",
+          "cadence": {
+            "daily": "päevase",
+            "weekly": "nädalase",
+            "monthly": "kuise"
+          },
+          "retentionNotPushed": "Strateegia \"{{strategy}}\" säilitus on salvestatud, kuid selle rakendamiseks pole konto tokenit. Logi sisse ja käivita käsk uuesti.",
+          "retentionPushed": "Säilitus rakendati {{count}} hoidlale.",
+          "retentionPushFailed": "Strateegia \"{{strategy}}\" säilitus on salvestatud, kuid seda ei õnnestunud rakendada ({{reason}}). Käivita käsk uuesti, kui server on kättesaadav."
         },
         "show": {
           "description": "Kuva varundussettrateegia üksikasjad",
@@ -175,6 +205,15 @@
         "failed": "Varukoopia kinnitamine ebaõnnestus hoidlale {{name}}",
         "optionDeep": "Räsi uuesti iga salvestatud rakk (täielik kinnitamine) valimipõhise kontrolli asemel",
         "starting": "Varukoopia kinnitamine hoidlale {{name}} ({{level}})..."
+      },
+      "snapshots": {
+        "description": "Halda salvestatud hetktõmmiseid",
+        "snapshotIdArgument": "Hetktõmmise ID (vt rdc backup manifests)",
+        "delete": {
+          "description": "Kustutab hoidla ühe salvestatud hetktõmmise. Andmed, mida kasutas ainult see hetktõmmis, vabastab järgmine prügikoristus.",
+          "notInRepo": "Hetktõmmist {{snapshot}} pole hoidla {{name}} salvestatud ajaloos. ID-sid saab vaadata käsuga: rdc backup manifests {{name}}",
+          "success": "Hoidla {{name}} {{count}} hetktõmmist kustutati, sh {{snapshot}}."
+        }
       }
     },
     "cluster": {
@@ -1059,6 +1098,15 @@
         "placementConflictNext": "Liiguta või kustuta need hoidlad kõigepealt, või sunni eemaldamist.",
         "success": "Masin \"{{name}}\" eemaldatud"
       },
+      "restartServices": {
+        "completed": "Masina '{{machine}}' renet'i deemonid kasutavad paigaldatud binaari.",
+        "description": "Taaskäivitab ükshaaval renet'i deemonid, mis veel kasutavad asendatud binaari, et need läheksid üle paigaldatud binaarile. Iga üksus peab uue binaariga aktiivseks muutuma, enne kui järgmine käsile võetakse. Võtmega --include-docker taaskäivitatakse ka iga repositooriumi rediacc-docker-N supervisor, üks repositoorium korraga, mis taaskäivitab selle repositooriumi konteinerid.",
+        "descriptionShort": "Taaskäivita renet'i deemonid paigaldatud binaariga",
+        "includeDockerOption": "Taaskäivita ka iga repositooriumi rediacc-docker-N supervisor (taaskäivitab selle konteinerid)",
+        "jsonOption": "Väljasta aruanne JSON-vormingus",
+        "nothingStale": "Masinas '{{machine}}' ei kasuta ükski renet'i deemon asendatud binaari.",
+        "starting": "Masina '{{machine}}' renet'i deemonite taaskäivitamine..."
+      },
       "scanKeys": {
         "completed": "Skannitud {{count}}/{{total}} masinat",
         "description": "Skanni SSH-hostivõtmeid praeguse konfiguratsiooni masinatele",
@@ -1374,7 +1422,12 @@
         },
         "failed": "Hoidla kustutamine ebaõnnestus",
         "restoreHint": "Taasta käsuga: rdc repo admin archive restore {{guid}}",
-        "starting": "Hoidla \"{{repository}}\" kustutamine masinal \"{{machine}}\"..."
+        "starting": "Hoidla \"{{repository}}\" kustutamine masinal \"{{machine}}\"...",
+        "backupsOrphaned": "Hoidla \"{{repository}}\" pilvevarukoopiaid hoitakse kuni {{expires}}, seejärel need aeguvad. Kohe eemaldamiseks kasuta --purge-backups.",
+        "backupsOrphanFailed": "Hoidla \"{{repository}}\" pilvevarukoopiaid ei õnnestunud orvuks märkida ({{reason}}). Need jäävad hoidla säilituspoliitika alla.",
+        "backupsPurged": "Hoidla \"{{repository}}\" {{count}} pilvehetktõmmist kustutati, vabanes {{bytes}}.",
+        "purgeBackupsOption": "Kustuta hoidla pilvevarukoopiad kohe, selle asemel et lasta neil aeguda",
+        "purgeForkRefused": "\"{{repository}}\" on fork ja jagab varunduse liini oma lähtehoidlaga, nii et --purge-backups kustutaks ka lähtehoidla varukoopiad. Kustuta fork ilma selle valikuta."
       },
       "description": "Juuruta ja halda krüpteeritud hoidlaid masinatel. Peamised alamkomandod: create, up (juuruta), down (peata), fork (hetkeline CoW-kloon), delete, push/pull (varukoopia), sync (failide ülekanne). Elutsükkel: repo create → repo up → repo down. Vaata arhitektuuri, marsruutimise ja keskkonna muutujate üksikasju käsuga rdc --help.",
       "descriptionShort": "Juuruta ja halda krüpteeritud hoidlaid masinatel",
@@ -1833,8 +1886,8 @@
       },
       "run": {
         "completedLocal": "Lõpetatud {{duration}}ms-ga",
-        "description": "HOIATUS: Madala taseme komando ainult silumiseks ja katsetamiseks. Mitte tootmises kasutamiseks. Kasuta selle asemel kõrgemataseme komandosid (repo up, repo down jne). Käivitab toore sillfunktsiooni masinal.",
-        "descriptionShort": "Käivitab toore sillfunktsiooni masinal (ainult silumiseks)",
+        "description": "HOIATUS: madala taseme käsk, mõeldud ainult silumiseks ja katsetamiseks, mitte tootmiskeskkonda. Tavatööks on kõrgema taseme käsud (repo up, repo down jne). Käivitab masinas toore renet'i funktsiooni.",
+        "descriptionShort": "Käivitab masinas toore renet'i funktsiooni (ainult silumiseks)",
         "executingLocal": "Funktsiooni '{{function}}' täitmine masinal {{machine}}...",
         "failedLocal": "Ebaõnnestus: {{error}}"
       },

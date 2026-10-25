@@ -141,7 +141,7 @@ export function registerJobCommands(program: Command): void {
     .action(async (jobId: string, options: JobCommandOptions) => {
       try {
         const status = await withJobConnection(options.machine, 'read-only', (conn) =>
-          readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId)
+          readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId, options.machine)
         );
 
         outputService.print(status, getOutputFormat());
@@ -218,7 +218,8 @@ async function runJobLogs(jobId: string, options: JobCommandOptions): Promise<vo
       conn.remoteRenetPath,
       jobId,
       followOptions,
-      cursor
+      cursor,
+      options.machine
     );
 
     if (interrupted) {
@@ -228,7 +229,7 @@ async function runJobLogs(jobId: string, options: JobCommandOptions): Promise<vo
     }
 
     // The stream ended because the job did. Report how it went, so a follow leaves the operator knowing the outcome rather than just a stopped log.
-    const status = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId);
+    const status = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId, options.machine);
     reportTerminalState(status);
   });
 }
@@ -255,7 +256,7 @@ async function runJobCancel(options: JobCommandOptions, format: OutputFormat): P
   const jobId = options.id as string;
 
   await withJobConnection(options.machine, 'provision', async (conn) => {
-    const current = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId);
+    const current = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId, options.machine);
 
     // Cancelling a finished job is a no-op machine-side, so do not make the operator confirm something that will not happen.
     if (isTerminalState(current.state)) {

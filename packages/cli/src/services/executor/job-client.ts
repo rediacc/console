@@ -151,6 +151,18 @@ export function isJobCommandUnsupported(output: string): boolean {
   return /unknown command "job"/i.test(output);
 }
 
+/**
+ * Detect the other version-skew case: the remote renet has the command but not a flag this CLI passes (cobra: `unknown flag: --since-line`, `unknown shorthand flag: 'x' in -x`). Cobra rejects the invocation while parsing flags, before any command body runs, so the answer can name the skew without having changed anything on the machine.
+ */
+export function isRenetFlagUnsupported(output: string): boolean {
+  return /unknown (shorthand )?flag\b/i.test(output);
+}
+
+/** The answer to a renet that is older than the CLI talking to it. `machine` is the machine's name. */
+export function renetOlderThanCliMessage(machine: string): string {
+  return `renet on ${machine} is older than this CLI; run machine setup`;
+}
+
 /** Raised when `job start` fails for a reason that is NOT version skew. */
 export class JobStartFailedError extends Error {
   constructor(

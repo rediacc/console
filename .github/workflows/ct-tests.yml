@@ -1951,14 +1951,16 @@ jobs:
     needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_backup_browse_at != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 45: suite 26 (J6) runs after suite 27 on the same fleet and plane, and its tiers
+    # are long (a 30 minute per-test ceiling, see playwright.backup-storage.config.ts).
+    timeout-minutes: 45
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
       VM_BRIDGE: '1'
       # One worker, no Ceph: the tier needs a machine holding a snapshot and the
       # backup plane start_backup_plane stands up on this runner.
-      VM_WORKERS: '11'
+      VM_WORKERS: '11 12'
       VM_CEPH_NODES: ''
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2074,7 +2076,7 @@ jobs:
         run: sudo "$RENET_BINARY" ops host setup
 
       - name: Create E2E Test Environment
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env --vm-workers "11"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env --vm-workers "11 12"
 
       # The suite's config has no globalSetup (it would reset a shared local
       # fleet), so nothing else brings the VMs up, and the backup plane probes
@@ -2117,7 +2119,19 @@ jobs:
       # check-e2e-coverage's registry self-check pairs this `--config` with the
       # runner by reading one logical shell command.
       - name: Run E2E Tests (Backup Browse-At)
+        id: browse-at
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-browse-at.config.ts --fail-on-skip
+
+      # J6 (PLAN-backup-program): suite 26 (control plane, upload engine, restore) on the
+      # same fleet and backup plane. BACKUP_STORAGE_SUITE=1 is what makes the project
+      # collect in CI (playwright.config.ts gates it; the dedicated config below selects
+      # it unconditionally). Two workers, because the restore tier lands on the second.
+      # Runs even when suite 27 went red, so one failure does not hide the other.
+      - name: Run E2E Tests (Backup Storage)
+        if: ${{ !cancelled() && steps.browse-at.outcome != 'skipped' }}
+        env:
+          BACKUP_STORAGE_SUITE: '1'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-storage.config.ts --fail-on-skip
 
       # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
       - name: Collect VM diagnostics
@@ -2138,6 +2152,8 @@ jobs:
             ${{ runner.temp }}/account-for-e2e.log
             packages/e2e-tests/reports/backup-browse-at/
             packages/e2e-tests/reports/backup-browse-at-logs/
+            packages/e2e-tests/reports/backup-storage/
+            packages/e2e-tests/reports/backup-storage-logs/
           retention-days: 3
           if-no-files-found: ignore
 
@@ -2641,6 +2657,19 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+
+      # J9 (PLAN-backup-program): leg 1 runs the BTRFS tier (pkg/delta and pkg/chunkstore
+      # `-tags btrfs`), and run-tests.sh treats a missing mkfs.btrfs or losetup as a
+      # declared SKIP, so a runner image without btrfs-progs turned thirteen tests into
+      # a warning on a green job. Install the tool here and refuse to continue without
+      # both binaries, so the skip arm can no longer be reached from CI.
+      - name: Install btrfs-progs for the BTRFS tier
+        if: ${{ matrix.shard == 1 }}
+        run: command -v mkfs.btrfs >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq btrfs-progs; }
+      - name: Require the BTRFS tier tools
+        if: ${{ matrix.shard == 1 }}
+        run: |
+          for t in mkfs.btrfs losetup; do command -v "$t" >/dev/null || { echo "::error::$t is missing, so the BTRFS tier would be skipped"; exit 1; }; done
 
       # Unit tests
       - name: Run renet tests

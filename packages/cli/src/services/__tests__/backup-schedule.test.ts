@@ -183,8 +183,8 @@ const DEFAULT_LOCAL_CONFIG = {
 };
 
 /**
- * The only destination kind a unit can be generated for since the rclone/
- * OneDrive path was removed on 2026-08-15.
+ * The only destination kind a unit can be generated for since the retired
+ * sync path was removed on 2026-08-15.
  */
 const HOSTED_DEST: import('../../types/index.js').BackupStrategyDestination = {
   kind: 'hosted-service',
@@ -259,7 +259,7 @@ describe('generateServiceUnit', () => {
       '/usr/bin/renet'
     );
     expect(serviceContent).toContain('ExecStart=/usr/bin/renet backup snapshot');
-    // Converted to bytes/second: `backup snapshot --bwlimit` is an Int64, and the rclone-style '6M' the schema declares would die at cobra's flag parse inside the timer, at run time, on a machine nobody is watching.
+    // Converted to bytes/second: `backup snapshot --bwlimit` is an Int64, and the unit-suffixed '6M' the schema declares would die at cobra's flag parse inside the timer, at run time, on a machine nobody is watching.
     expect(serviceContent).toContain('--bwlimit 6291456');
     expect(serviceContent).not.toContain('--bwlimit 6M');
     // The chunk store carries no credentials by construction, so the
@@ -269,7 +269,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('never writes credentials into the unit or a sidecar for a chunk-store destination', async () => {
-    // Successor to the rclone test that pinned credentials OUT of ExecStart and
+    // Successor to the retired test that pinned credentials OUT of ExecStart and
     // INTO a 0600 EnvironmentFile=. There is no credential to place any more:
     // the machine authenticates with its signed licence blob, so the correct assertion is that nothing credential-shaped appears anywhere.
     const { _testing } = await import('../backup/backup-schedule.js');
@@ -419,8 +419,8 @@ describe('generateServiceUnit', () => {
     expect(call).toThrow(/Refusing to generate a unit that would back up nothing\./);
   });
 
-  it('REFUSES an rclone `storage` destination instead of emitting a unit with no ExecStart', async () => {
-    // The exact defect the hosted-service branch was added to fix, reachable again from the other side now that rclone is gone: a config still naming a storage destination must not deploy a timer that backs up nothing.
+  it('REFUSES a legacy `storage` destination instead of emitting a unit with no ExecStart', async () => {
+    // The exact defect the hosted-service branch was added to fix, reachable again from the other side now that the old path is gone: a config still naming a storage destination must not deploy a timer that backs up nothing.
     const { _testing } = await import('../backup/backup-schedule.js');
     const call = () =>
       _testing.generateServiceUnit(

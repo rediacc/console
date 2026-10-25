@@ -360,7 +360,7 @@ async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<
     });
   }
   const compact = resolved.map((r) => {
-    const cfg = configLookup.get((r.guid ?? r.name) as string);
+    const cfg = configLookup.get(r.guid as string);
     const { name: baseName, tag: parsedTag } = parseRepoRef(r.name as string);
     const serverSourced = r.name_source === 'server';
     return {

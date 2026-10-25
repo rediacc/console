@@ -5,10 +5,26 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
+import { resolveRepoRefLocal } from '../utils/repo-target.js';
 
 /** The lineage (grand) GUID of a repo record: a fork shares its parent's lineage. */
-export function lineageOf(repo: { grandGuid?: string; repositoryGuid: string }): string {
+function lineageOf(repo: { grandGuid?: string; repositoryGuid: string }): string {
   return repo.grandGuid ?? repo.repositoryGuid;
+}
+
+/**
+ * The lineage (grand) GUID a repo ref belongs to. ONE implementation, shared by
+ * `manifests` and `retention`: both address the server-side index by lineage,
+ * and a second copy of this resolution is how the two commands would come to
+ * disagree about which repo the operator named.
+ */
+export async function resolveLineage(repoRef: string): Promise<string> {
+  const { repoKey } = await resolveRepoRefLocal(repoRef);
+  const repo = await configService.getRepository(repoKey);
+  if (!repo) {
+    throw new Error(`Repository "${repoKey}" not found in this config.`);
+  }
+  return lineageOf(repo);
 }
 
 /**

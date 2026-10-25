@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-25T02:46:38.098Z",
+  "generatedAt": "2026-10-25T12:44:24.771Z",
   "legs": [
     {
       "index": 1,
@@ -142,6 +142,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_python_types.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_scope_mirrors.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_submodule_branches.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_test_file_orphans_drill_legs.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_toolchain_pins.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_typecheck_workers.py",
         "pytest:.ci/rediacc_ci/tests/test_rdc_sh_banner.py",
@@ -273,6 +274,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_once_guard.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_run_in_image.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_backup_check_trigger.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_tenant_isolation.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_vm_check_receipt.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_vm_check_trigger.py",
@@ -622,6 +624,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_release_state_validator.py",
         "pytest:.ci/rediacc_ci/tests/test_core_run_verbs.py",
         "pytest:.ci/rediacc_ci/tests/test_core_toolchain.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_account_secrets_local.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_purge_media_cache.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_resolve_account_deploy_config.py",

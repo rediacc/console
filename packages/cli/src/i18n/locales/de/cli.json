@@ -72,7 +72,10 @@
         "restoringSnapshot": "{{name}} wird aus Snapshot {{snapshot}} wiederhergestellt...",
         "sourceUnknown": "Kein Repository mit dem Namen \"{{name}}\" ist in dieser Konfiguration bekannt, daher kann sein Backup-Artefakt nicht gefunden werden.",
         "streamUnknown": "Es lässt sich nicht bestimmen, welcher Backup-Stream zu diesem Repository auf seiner Quellmaschine gehört (die Backup-Prüfung auf der Maschine ist fehlgeschlagen, oder sie meldet keinen committeten Snapshot, den der Index auflistet). Mit --any-stream wählen Sie unter allen Streams dieser Linie.",
-        "targetExists": "\"{{name}}\" existiert bereits. Stellen Sie unter einem anderen Namen wieder her (--as) oder löschen Sie zuerst das vorhandene Repository."
+        "targetExists": "\"{{name}}\" existiert bereits. Stellen Sie unter einem anderen Namen wieder her (--as) oder löschen Sie zuerst das vorhandene Repository.",
+        "stats": "Die Wiederherstellung hat {{fetched}} Chunks geladen ({{bytes}}), {{reused}} wiederverwendet, {{known}} Zellen dem Anker entnommen und {{punched}} veraltete Zellen geleert (Zellgröße {{cellBytes}}).",
+        "statsSeed": "Seed: gestartet vom {{seed}}-Abbild von {{guid}} (Probe las {{probe}}).",
+        "statsSeedSkipped": "Seed übersprungen: {{skipped}}"
       },
       "retention": {
         "clear": {
@@ -92,6 +95,22 @@
         "set": {
           "description": "Legen Sie fest, wie viele Snapshots aufbewahrt werden sollen. Jede Einstellung wird ersetzt, nicht zusammengeführt.",
           "success": "Aufbewahrungsrichtlinie für {{name}} gesetzt ({{count}} Regel(n)). Snapshots außerhalb davon werden beim nächsten Aufräumlauf gelöscht."
+        },
+        "effective": "Wirksame Aufbewahrung für {{name}}: {{source}}",
+        "optionStream": "Nur für diesen Backup-Stream (eine Stream-ID); ohne Angabe gilt der Standard für das ganze Repository",
+        "preview": {
+          "description": "Zeigt, welche Snapshots der nächste Durchlauf löschen würde und wie viel Platz das freigibt.",
+          "nothing": "Der nächste Durchlauf löscht für {{name}} nichts.",
+          "summary": "Der nächste Durchlauf löscht {{count}} Snapshot(s) von {{name}}, behält {{kept}} und gibt {{bytes}} frei."
+        },
+        "seeded": "Die Aufbewahrung der Strategie „{{strategy}}“ wurde für {{count}} Repository(s) ohne eigene Richtlinie festgelegt.",
+        "seedFailed": "Die Aufbewahrung der Strategie „{{strategy}}“ konnte nicht festgelegt werden ({{reason}}). Bis dahin gilt der Server-Standard.",
+        "source": {
+          "stream": "Stream-Überschreibung",
+          "declared": "festgelegte Richtlinie",
+          "plan": "Standard des Tarifs",
+          "default": "Server-Standard",
+          "orphan": "Frist für verwaiste Repositorys"
         }
       },
       "run": {
@@ -149,7 +168,18 @@
           "optionExclude": "Diese Repos vom Backup ausschließen (kommagetrennte Namen)",
           "optionInclude": "Nur diese Repos sichern (kommagetrennte Namen)",
           "optionMode": "Backup-Modus: \"hot\" erstellt den Snapshot bei laufendem Betrieb, \"cold\" stoppt die Container für den Moment der Snapshot-Aufnahme",
-          "saved": "Backup-Strategie-Konfiguration gespeichert"
+          "saved": "Backup-Strategie-Konfiguration gespeichert",
+          "optionRetention": "Aufbewahrung der Snapshots, z. B. last=7,daily=7,weekly=4,monthly=6 („none“ entfernt sie)",
+          "retentionInvalid": "--retention „{{value}}“ ist keine Liste aus name=anzahl-Paaren. Gültige Namen sind last, hourly, daily, weekly, monthly und yearly, jeweils einmal, und jede Anzahl ist eine ganze Zahl, z. B. last=7,daily=7.",
+          "retentionCronMismatch": "Strategie „{{strategy}}“: Die Regel {{knob}} greift bei dem {{cadence}}en Zeitplan „{{cron}}“ nicht, weil dabei zu wenige Snapshots entstehen.",
+          "cadence": {
+            "daily": "täglich",
+            "weekly": "wöchentlich",
+            "monthly": "monatlich"
+          },
+          "retentionNotPushed": "Die Aufbewahrung der Strategie „{{strategy}}“ ist gespeichert, aber es gibt kein Konto-Token, um sie anzuwenden. Melden Sie sich an und führen Sie den Befehl erneut aus.",
+          "retentionPushed": "Aufbewahrung auf {{count}} Repository(s) angewendet.",
+          "retentionPushFailed": "Die Aufbewahrung der Strategie „{{strategy}}“ ist gespeichert, konnte aber nicht angewendet werden ({{reason}}). Führen Sie den Befehl erneut aus, sobald der Server erreichbar ist."
         },
         "show": {
           "description": "Backup-Strategie-Details anzeigen",
@@ -175,6 +205,15 @@
         "failed": "Backup-Verifizierung für {{name}} fehlgeschlagen",
         "optionDeep": "Jede erfasste Zelle neu hashen (vollständige Verifizierung) statt einer stichprobenartigen Prüfung",
         "starting": "Backup für {{name}} wird verifiziert ({{level}})..."
+      },
+      "snapshots": {
+        "description": "Gespeicherte Snapshots verwalten",
+        "snapshotIdArgument": "Snapshot-ID (siehe rdc backup manifests)",
+        "delete": {
+          "description": "Löscht einen gespeicherten Snapshot eines Repositorys. Daten, die nur dieser Snapshot nutzte, gibt die nächste Garbage Collection frei.",
+          "notInRepo": "Snapshot {{snapshot}} gehört nicht zum gespeicherten Verlauf von {{name}}. IDs anzeigen mit: rdc backup manifests {{name}}",
+          "success": "{{count}} Snapshot(s) von {{name}} gelöscht, darunter {{snapshot}}."
+        }
       }
     },
     "cluster": {
@@ -1059,6 +1098,15 @@
         "placementConflictNext": "Verschieben oder löschen Sie diese Repositories zuerst, oder erzwingen Sie die Entfernung.",
         "success": "Maschine \"{{name}}\" entfernt"
       },
+      "restartServices": {
+        "completed": "Die renet-Daemons auf '{{machine}}' laufen mit dem installierten Binary.",
+        "description": "Startet die renet-Daemons, die noch ein ersetztes Binary ausführen, nacheinander mit dem installierten neu. Jede Unit muss mit dem neuen Binary aktiv laufen, bevor die nächste an der Reihe ist. Mit --include-docker werden auch die rediacc-docker-N-Supervisoren der einzelnen Repositories neu gestartet, ein Repository nach dem anderen, was dessen Container neu startet.",
+        "descriptionShort": "renet-Daemons auf das installierte Binary umstellen",
+        "includeDockerOption": "Auch den rediacc-docker-N-Supervisor jedes Repositories neu starten (startet dessen Container neu)",
+        "jsonOption": "Bericht als JSON ausgeben",
+        "nothingStale": "Auf '{{machine}}' führt kein renet-Daemon ein ersetztes Binary aus.",
+        "starting": "renet-Daemons auf '{{machine}}' werden neu gestartet..."
+      },
       "scanKeys": {
         "completed": "{{count}}/{{total}} Maschinen gescannt",
         "description": "SSH-Hostschlüssel für Maschinen in der aktuellen Konfiguration scannen",
@@ -1374,7 +1422,12 @@
         },
         "failed": "Repository-Löschung fehlgeschlagen",
         "restoreHint": "Wiederherstellen mit: rdc repo admin archive restore {{guid}}",
-        "starting": "\"{{repository}}\" wird auf \"{{machine}}\" gelöscht..."
+        "starting": "\"{{repository}}\" wird auf \"{{machine}}\" gelöscht...",
+        "backupsOrphaned": "Die Cloud-Backups von „{{repository}}“ bleiben bis {{expires}} erhalten und laufen dann ab. Mit --purge-backups werden sie sofort entfernt.",
+        "backupsOrphanFailed": "Die Cloud-Backups von „{{repository}}“ konnten nicht als verwaist markiert werden ({{reason}}). Sie unterliegen weiter der Aufbewahrungsrichtlinie des Repositorys.",
+        "backupsPurged": "{{count}} Cloud-Snapshot(s) von „{{repository}}“ gelöscht, {{bytes}} freigegeben.",
+        "purgeBackupsOption": "Cloud-Backups des Repositorys sofort löschen, statt sie ablaufen zu lassen",
+        "purgeForkRefused": "„{{repository}}“ ist ein Fork und teilt seine Backup-Linie mit dem übergeordneten Repository, daher würde --purge-backups auch dessen Backups löschen. Löschen Sie den Fork ohne diese Option."
       },
       "description": "Verschlüsselte Repositories auf Maschinen deployen und verwalten. Wichtige Unterbefehle: create, up (deploy), down (stop), fork (sofortiger CoW-Klon), delete, push/pull (Backup), sync (Dateiübertragung). Lebenszyklus: repo create → repo up → repo down. Details zu Architektur, Routing und Umgebungsvariablen finden Sie unter „Kernkonzepte“ in rdc --help.",
       "descriptionShort": "Verschlüsselte Repositories auf Maschinen bereitstellen und verwalten",
@@ -1833,8 +1886,8 @@
       },
       "run": {
         "completedLocal": "In {{duration}}ms abgeschlossen",
-        "description": "Führen Sie eine Funktion aus (Kurzform: queue create)",
-        "descriptionShort": "Rohe Bridge-Funktion auf einer Maschine ausführen (nur Debugging)",
+        "description": "WARNUNG: Low-Level-Befehl, nur zum Debuggen und Experimentieren gedacht, nicht für den Produktivbetrieb. Für den Alltag sind die übergeordneten Befehle da (repo up, repo down usw.). Führt eine rohe renet-Funktion auf einer Maschine aus.",
+        "descriptionShort": "Rohe renet-Funktion auf einer Maschine ausführen (nur zum Debuggen)",
         "executingLocal": "Führe '{{function}}' auf {{machine}} aus...",
         "failedLocal": "Fehlgeschlagen: {{error}}"
       },

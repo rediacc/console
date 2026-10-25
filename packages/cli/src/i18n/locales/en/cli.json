@@ -764,6 +764,15 @@
         "placementConflictNext": "Move or delete these repositories first, or force the removal.",
         "success": "Machine \"{{name}}\" removed"
       },
+      "restartServices": {
+        "completed": "Renet daemons on '{{machine}}' run the installed binary.",
+        "description": "Roll the renet daemons that still run a replaced binary onto the installed one, one unit at a time, each confirmed active on the new binary before the next. With --include-docker the per-repo rediacc-docker-N supervisors restart too, one repo at a time, which restarts that repo's containers.",
+        "descriptionShort": "Restart renet daemons onto the installed binary",
+        "includeDockerOption": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)",
+        "jsonOption": "Print the report as JSON",
+        "nothingStale": "No renet daemon on '{{machine}}' runs a replaced binary.",
+        "starting": "Restarting renet daemons on '{{machine}}'..."
+      },
       "scanKeys": {
         "completed": "Scanned {{count}}/{{total}} machines",
         "description": "Scan SSH host keys for machines in the current config",
@@ -1116,7 +1125,12 @@
         "examples": {
           "basic": "Delete a repository.",
           "fork": "Delete a single fork by its tag."
-        }
+        },
+        "backupsOrphaned": "Cloud backups of \"{{repository}}\" are kept until {{expires}}, then expire. Remove them now with --purge-backups.",
+        "backupsOrphanFailed": "Could not mark the cloud backups of \"{{repository}}\" as orphaned ({{reason}}). They stay under the repository's retention policy.",
+        "backupsPurged": "Deleted {{count}} cloud snapshot(s) of \"{{repository}}\" and freed {{bytes}}.",
+        "purgeBackupsOption": "Also delete the repository's cloud backups now, instead of letting them expire",
+        "purgeForkRefused": "\"{{repository}}\" is a fork and shares its backup lineage with its parent, so --purge-backups would delete the parent's backups too. Delete the fork without it."
       },
       "commit": {
         "descriptionShort": "Freeze a working fork into a new immutable commit",
@@ -1673,7 +1687,10 @@
         "restoringSnapshot": "Restoring {{name}} from snapshot {{snapshot}}...",
         "sourceUnknown": "No repository named \"{{name}}\" is known in this config, so its backup artifact cannot be located.",
         "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first.",
-        "streamUnknown": "Cannot tell which backup stream is this repo on its source machine (its backup verify failed, or it reports no committed snapshot that the index lists). Pass --any-stream to choose among every stream of this lineage."
+        "streamUnknown": "Cannot tell which backup stream is this repo on its source machine (its backup verify failed, or it reports no committed snapshot that the index lists). Pass --any-stream to choose among every stream of this lineage.",
+        "stats": "Restore fetched {{fetched}} chunks ({{bytes}}), reused {{reused}}, trusted {{known}} cells from the anchor and punched {{punched}} stale cells (cell size {{cellBytes}}).",
+        "statsSeed": "Seed: started from the {{seed}} image of {{guid}} (probe read {{probe}}).",
+        "statsSeedSkipped": "Seed skipped: {{skipped}}"
       },
       "retention": {
         "clear": {
@@ -1693,6 +1710,22 @@
         "set": {
           "description": "Declare how many snapshots to keep. Every knob is replaced, not merged.",
           "success": "Retention policy set for {{name}} ({{count}} rule(s)). Snapshots outside it are deleted by the next sweep."
+        },
+        "effective": "Effective retention for {{name}}: {{source}}",
+        "optionStream": "Apply to this backup stream only (a stream id); without it, the repository-wide default",
+        "preview": {
+          "description": "Show which snapshots the next sweep would delete and the space it would free.",
+          "nothing": "The next sweep deletes nothing for {{name}}.",
+          "summary": "The next sweep deletes {{count}} snapshot(s) of {{name}}, keeps {{kept}} and frees {{bytes}}."
+        },
+        "seeded": "Retention from strategy \"{{strategy}}\" declared for {{count}} repository(ies) that had no policy.",
+        "seedFailed": "Could not declare the retention of strategy \"{{strategy}}\" ({{reason}}). The server default applies until it is declared.",
+        "source": {
+          "stream": "stream override",
+          "declared": "declared policy",
+          "plan": "plan default",
+          "default": "server default",
+          "orphan": "orphaned repository window"
         }
       },
       "run": {
@@ -1737,7 +1770,18 @@
           "examples": {
             "configure": "Configure a backup strategy's schedule and mode.",
             "disable": "Turn a backup strategy off."
-          }
+          },
+          "optionRetention": "Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 (\"none\" removes it)",
+          "retentionInvalid": "--retention \"{{value}}\" is not a list of name=count pairs. Names are last, hourly, daily, weekly, monthly and yearly, each used once, and every count is a whole number, for example last=7,daily=7.",
+          "retentionCronMismatch": "Strategy \"{{strategy}}\": the {{knob}} rule cannot take effect on the {{cadence}} schedule \"{{cron}}\", which makes too few snapshots to fill it.",
+          "cadence": {
+            "daily": "daily",
+            "weekly": "weekly",
+            "monthly": "monthly"
+          },
+          "retentionNotPushed": "Retention is saved for strategy \"{{strategy}}\" but no account token is available to apply it. Sign in, then run this command again.",
+          "retentionPushed": "Retention applied to {{count}} repository(ies).",
+          "retentionPushFailed": "Retention is saved for strategy \"{{strategy}}\" but could not be applied ({{reason}}). Run this command again when the server is reachable."
         },
         "bind": {
           "description": "Bind a backup strategy to a machine so its schedule is deployed there",
@@ -1776,6 +1820,15 @@
         "starting": "Verifying backup for {{name}} ({{level}})...",
         "completed": "Backup verified for {{name}}",
         "failed": "Backup verification failed for {{name}}"
+      },
+      "snapshots": {
+        "description": "Manage stored snapshots",
+        "snapshotIdArgument": "Snapshot id (see rdc backup manifests)",
+        "delete": {
+          "description": "Delete one stored snapshot of a repository. Data only that snapshot used is freed by the next garbage collection.",
+          "notInRepo": "Snapshot {{snapshot}} is not in the stored history of {{name}}. List its ids with: rdc backup manifests {{name}}",
+          "success": "Deleted {{count}} snapshot(s) of {{name}}, including {{snapshot}}."
+        }
       }
     },
     "sync": {
@@ -1908,8 +1961,8 @@
     "shortcuts": {
       "run": {
         "completedLocal": "Completed in {{duration}}ms",
-        "description": "WARNING: Low-level command for debugging and experimentation only. Not for production use. Use higher-level commands (repo up, repo down, etc.) instead. Runs a raw bridge function on a machine.",
-        "descriptionShort": "Run a raw bridge function on a machine (debugging only)",
+        "description": "WARNING: Low-level command for debugging and experimentation only. Not for production use. Use higher-level commands (repo up, repo down, etc.) instead. Runs a raw renet function on a machine.",
+        "descriptionShort": "Run a raw renet function on a machine (debugging only)",
         "executingLocal": "Executing '{{function}}' on {{machine}}...",
         "failedLocal": "Failed: {{error}}"
       },

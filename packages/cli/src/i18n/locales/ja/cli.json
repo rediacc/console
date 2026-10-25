@@ -72,7 +72,10 @@
         "restoringSnapshot": "スナップショット {{snapshot}} から {{name}} を復元中...",
         "sourceUnknown": "この設定に \"{{name}}\" という名前のリポジトリが存在しないため、バックアップアーティファクトを特定できません",
         "streamUnknown": "元のマシン上のこのリポジトリに対応するバックアップストリームを特定できません（マシンでのバックアップ検証が失敗したか、インデックスに載っているコミット済みスナップショットを報告していません）。--any-stream を指定すると、この系統のすべてのストリームから選べます",
-        "targetExists": "\"{{name}}\" は既に存在します。別名で復元する（--as）か、先に既存のリポジトリを削除してください"
+        "targetExists": "\"{{name}}\" は既に存在します。別名で復元する（--as）か、先に既存のリポジトリを削除してください",
+        "stats": "リストアで {{fetched}} 個のチャンク({{bytes}})を取得し、{{reused}} 個を再利用、アンカーから {{known}} セルを採用し、古い {{punched}} セルを空にしました(セルサイズ {{cellBytes}})。",
+        "statsSeed": "シード: {{guid}} の {{seed}} イメージから開始しました(プローブの読み取り {{probe}})。",
+        "statsSeedSkipped": "シードをスキップ: {{skipped}}"
       },
       "retention": {
         "clear": {
@@ -92,6 +95,22 @@
         "set": {
           "description": "保持するスナップショット数を指定する。各項目は常に上書きされ、マージはされない",
           "success": "{{name}} の保持ポリシーを設定しました（{{count}} 件のルール）。対象外のスナップショットは次回のクリーンアップで削除されます"
+        },
+        "effective": "{{name}} に適用される保持設定: {{source}}",
+        "optionStream": "このバックアップストリームだけに適用します(ストリーム ID)。省略するとリポジトリ全体の既定値になります",
+        "preview": {
+          "description": "次回のクリーンアップで削除されるスナップショットと、解放される容量を表示します。",
+          "nothing": "次回のクリーンアップでは {{name}} のスナップショットは削除されません。",
+          "summary": "次回のクリーンアップで {{name}} のスナップショットを {{count}} 件削除し、{{kept}} 件を残して {{bytes}} を解放します。"
+        },
+        "seeded": "戦略「{{strategy}}」の保持設定を、ポリシーのない {{count}} 件のリポジトリに適用しました。",
+        "seedFailed": "戦略「{{strategy}}」の保持設定を適用できませんでした({{reason}})。適用されるまではサーバーの既定値が使われます。",
+        "source": {
+          "stream": "ストリームの個別設定",
+          "declared": "宣言済みのポリシー",
+          "plan": "プランの既定値",
+          "default": "サーバーの既定値",
+          "orphan": "孤立リポジトリの猶予期間"
         }
       },
       "run": {
@@ -149,7 +168,18 @@
           "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
           "optionInclude": "これらのリポジトリのみバックアップ（カンマ区切りの名前）",
           "optionMode": "バックアップモード: \"hot\" はすべてを稼働させたままスナップショットを取得し、\"cold\" はスナップショット取得の瞬間だけコンテナを停止します",
-          "saved": "バックアップ戦略の設定を保存しました"
+          "saved": "バックアップ戦略の設定を保存しました",
+          "optionRetention": "スナップショットの保持設定。例: last=7,daily=7,weekly=4,monthly=6(\"none\" で解除)",
+          "retentionInvalid": "--retention \"{{value}}\" は 名前=件数 の組の一覧ではありません。名前は last、hourly、daily、weekly、monthly、yearly で、それぞれ 1 回だけ使え、件数は整数です。例: last=7,daily=7",
+          "retentionCronMismatch": "戦略「{{strategy}}」: {{cadence}}スケジュール「{{cron}}」ではスナップショットが少なすぎるため、{{knob}} のルールは機能しません。",
+          "cadence": {
+            "daily": "毎日の",
+            "weekly": "毎週の",
+            "monthly": "毎月の"
+          },
+          "retentionNotPushed": "戦略「{{strategy}}」の保持設定は保存しましたが、適用に使うアカウントトークンがありません。サインインしてからもう一度実行してください。",
+          "retentionPushed": "{{count}} 件のリポジトリに保持設定を適用しました。",
+          "retentionPushFailed": "戦略「{{strategy}}」の保持設定は保存しましたが、適用できませんでした({{reason}})。サーバーに接続できるようになったらもう一度実行してください。"
         },
         "show": {
           "description": "バックアップ戦略の詳細を表示",
@@ -175,6 +205,15 @@
         "failed": "{{name}} のバックアップ検証に失敗しました",
         "optionDeep": "サンプリングによるチェックの代わりに、記録済みの全セルを再ハッシュする（完全な検証）",
         "starting": "{{name}} のバックアップを検証中（{{level}}）..."
+      },
+      "snapshots": {
+        "description": "保存済みスナップショットを管理します",
+        "snapshotIdArgument": "スナップショット ID(rdc backup manifests を参照)",
+        "delete": {
+          "description": "リポジトリの保存済みスナップショットを 1 つ削除します。そのスナップショットだけが使っていたデータは、次回のガベージコレクションで解放されます。",
+          "notInRepo": "スナップショット {{snapshot}} は {{name}} の保存済み履歴にありません。ID は rdc backup manifests {{name}} で確認できます。",
+          "success": "{{name}} のスナップショットを {{snapshot}} を含め {{count}} 件削除しました。"
+        }
       }
     },
     "cluster": {
@@ -1059,6 +1098,15 @@
         "placementConflictNext": "これらのリポジトリを先に移動または削除するか、削除を強制してください。",
         "success": "マシン \"{{name}}\" を削除しました"
       },
+      "restartServices": {
+        "completed": "'{{machine}}' の renet デーモンはインストール済みのバイナリで動作しています。",
+        "description": "置き換え済みのバイナリで動作し続けている renet デーモンを 1 ユニットずつ再起動し、インストール済みのバイナリに切り替えます。各ユニットが新しいバイナリで稼働したことを確認してから次に進みます。--include-docker を指定すると、リポジトリごとの rediacc-docker-N スーパーバイザーも 1 リポジトリずつ再起動され、そのリポジトリのコンテナも再起動されます。",
+        "descriptionShort": "renet デーモンをインストール済みのバイナリで再起動",
+        "includeDockerOption": "各リポジトリの rediacc-docker-N スーパーバイザーも再起動する（そのリポジトリのコンテナが再起動されます）",
+        "jsonOption": "レポートを JSON で出力",
+        "nothingStale": "'{{machine}}' に置き換え済みのバイナリで動作している renet デーモンはありません。",
+        "starting": "'{{machine}}' の renet デーモンを再起動しています..."
+      },
       "scanKeys": {
         "completed": "{{count}}/{{total}} 台のマシンをスキャン済み",
         "description": "現在の設定のマシンの SSH ホストキーをスキャンする",
@@ -1374,7 +1422,12 @@
         },
         "failed": "リポジトリの削除に失敗しました",
         "restoreHint": "復元するには: rdc repo admin archive restore {{guid}}",
-        "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
+        "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中...",
+        "backupsOrphaned": "「{{repository}}」のクラウドバックアップは {{expires}} まで保持され、その後失効します。今すぐ削除するには --purge-backups を使います。",
+        "backupsOrphanFailed": "「{{repository}}」のクラウドバックアップを孤立として記録できませんでした({{reason}})。リポジトリの保持ポリシーの対象のままです。",
+        "backupsPurged": "「{{repository}}」のクラウドスナップショットを {{count}} 件削除し、{{bytes}} を解放しました。",
+        "purgeBackupsOption": "リポジトリのクラウドバックアップも、失効を待たずに今すぐ削除します",
+        "purgeForkRefused": "「{{repository}}」はフォークで、バックアップ系列を親と共有しているため、--purge-backups では親のバックアップも削除されます。このオプションなしでフォークを削除してください。"
       },
       "description": "マシン上の暗号化リポジトリをデプロイ・管理する。主なサブコマンド: create、up（デプロイ）、down（停止）、fork（即時 CoW クローン）、delete、push/pull（バックアップ）、sync（ファイル転送）。ライフサイクル: repo create → repo up → repo down。アーキテクチャ、ルーティング、環境変数の詳細は rdc --help の Key Concepts を参照。",
       "descriptionShort": "マシン上の暗号化リポジトリをデプロイ・管理する",
@@ -1833,8 +1886,8 @@
       },
       "run": {
         "completedLocal": "{{duration}}ms で完了しました",
-        "description": "関数を実行する (短縮形: queue create)",
-        "descriptionShort": "マシン上で低レベルブリッジ関数を実行する（デバッグ専用）",
+        "description": "警告: デバッグや実験のための低レベルコマンドです。本番環境では使用しないでください。通常の操作には上位のコマンド（repo up、repo down など）を使います。マシン上で renet 関数を直接実行します。",
+        "descriptionShort": "マシン上で renet 関数を直接実行する（デバッグ専用）",
         "executingLocal": "{{machine}} で '{{function}}' を実行中です...",
         "failedLocal": "失敗: {{error}}"
       },

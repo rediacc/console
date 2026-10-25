@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: ko
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # 백업 및 복원
@@ -62,7 +62,7 @@ Rediacc는 암호화된 저장소를 백업하고, 같은 머신 또는 다른 �
 
 ### rclone 스토리지 경로는 사라졌습니다
 
-`rdc repo push --to <storage>`와 그 관련 명령들은 예전에는 직접 등록한 클라우드 프로바이더로 백업 파일 전체를 복사했습니다. 이제는 스토리지 대상을 거부하고 대체 경로의 이름을 알려줍니다. 머신 간 전송은 애초에 rclone을 거친 적이 없으므로 영향을 받지 않습니다. 스토리지 명령과 내장 rclone은 제거되었으므로, 그 방식으로 작성된 아카이브는 더 이상 CLI에서 탐색할 수 없습니다.
+`rdc repo push --to <storage>`와 관련 명령어는 예전에 직접 등록한 클라우드 제공자로 백업 파일 전체를 복사했습니다. storage 명령어와 번들 rclone은 제거되었고, 이제 `--to`/`--from`은 머신만 지정합니다. 머신 간 전송은 처음부터 rclone을 거치지 않았으므로 영향이 없습니다. 예전 방식으로 기록된 아카이브는 더 이상 CLI에서 탐색할 수 없습니다.
 
 ### 청크 스토리지 명령
 

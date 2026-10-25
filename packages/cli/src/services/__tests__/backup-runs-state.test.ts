@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockUpdateState = vi.hoisted(() => vi.fn());
 vi.mock('../../adapters/config-file-storage.js', () => ({
@@ -41,7 +41,7 @@ describe('recordBackupRun', () => {
         schemaVersion: 3,
         id: 'x',
         version: 1,
-        // 'backup' is the retired rclone kind on purpose: a record written before the cutover must survive a post-cutover write untouched.
+        // 'backup' is a retired destination kind on purpose: a record written before the cutover must survive a post-cutover write untouched.
         state: { backupRuns: { other: { kind: 'backup', status: 'ok', lastRunAt: 'T-1' } } },
       });
     });

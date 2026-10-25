@@ -149,7 +149,7 @@ export class RepositoryHelpers {
 
   /**
    * Deterministic CoW-delta push of a repo from THIS worker to another machine,
-   * via the renet CLI directly (delta params are not in the bridge once test-mode
+   * via the renet CLI directly (delta params are not in the functions once test-mode
    * allowlist). retainBase retains an immutable base on both ends for the next
    * push; deltaBase ships only the changed extents against an existing base.
    * --dest-user omitted → renet infers it from SUDO_USER (we run under sudo).

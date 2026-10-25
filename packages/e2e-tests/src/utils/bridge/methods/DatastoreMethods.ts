@@ -3,7 +3,7 @@ import type { ExecResult, TestFunctionOptions } from '../types';
 /**
  * Named-datastore lifecycle methods for BridgeTestRunner.
  *
- * These dispatch the `datastore_*` bridge functions by literal name — the
+ * These dispatch the `datastore_*` renet functions by literal name — the
  * datastore-cluster model's storage unit (spec 01 §4 / 02). The legacy
  * `datastore_init/mount/unmount` verbs (single implicit `/mnt/rediacc`
  * datastore) live alongside the named-registry verbs the kube suites 15/16/17

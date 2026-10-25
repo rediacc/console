@@ -3,7 +3,7 @@ import type { ExecResult, TestFunctionOptions } from '../types';
 /**
  * Registry (zot pull-through cache) methods for BridgeTestRunner.
  *
- * These dispatch the `kube_registry_*` bridge functions by literal name, so the
+ * These dispatch the `kube_registry_*` renet functions by literal name, so the
  * e2e-coverage gate (which greps bridge-tests for each generated function name)
  * sees them once the lead regenerates the renet contract. The zot registry
  * replaces the old registry:2/registry:3 "reregistry" as the pull-through cache:

@@ -72,7 +72,10 @@
         "restoringSnapshot": "{{name}}, {{snapshot}} anlık görüntüsünden geri yükleniyor...",
         "sourceUnknown": "Bu yapılandırmada \"{{name}}\" adlı bir depo bilinmiyor, bu yüzden yedek artefaktı bulunamıyor.",
         "streamUnknown": "Bu deponun kaynak makinesindeki yedek akışı hangisi, belirlenemiyor (makinedeki yedek doğrulaması başarısız oldu ya da makine, dizinin listelediği işlenmiş bir anlık görüntü bildirmiyor). Bu soyun tüm akışları arasından seçmek için --any-stream kullanın.",
-        "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin."
+        "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin.",
+        "stats": "Geri yükleme {{fetched}} parça getirdi ({{bytes}}), {{reused}} parçayı yeniden kullandı, {{known}} hücreyi çapadan aldı ve {{punched}} eski hücreyi boşalttı (hücre boyutu {{cellBytes}}).",
+        "statsSeed": "Tohum: {{guid}} deposunun {{seed}} imajından başlandı (yoklama {{probe}} okudu).",
+        "statsSeedSkipped": "Tohum atlandı: {{skipped}}"
       },
       "retention": {
         "clear": {
@@ -92,6 +95,22 @@
         "set": {
           "description": "Kaç anlık görüntü saklanacağını belirtin. Her ayar birleştirilmez, tamamen değiştirilir.",
           "success": "{{name}} için saklama politikası ayarlandı ({{count}} kural). Bunun dışında kalan anlık görüntüler bir sonraki temizlikte silinir."
+        },
+        "effective": "{{name}} için geçerli saklama: {{source}}",
+        "optionStream": "Yalnızca bu yedek akışına uygula (bir akış kimliği); verilmezse tüm depo için varsayılan geçerli olur",
+        "preview": {
+          "description": "Bir sonraki temizliğin hangi anlık görüntüleri sileceğini ve ne kadar yer açacağını gösterir.",
+          "nothing": "Bir sonraki temizlik {{name}} için hiçbir şey silmez.",
+          "summary": "Bir sonraki temizlik {{name}} deposunun {{count}} anlık görüntüsünü siler, {{kept}} tanesini tutar ve {{bytes}} yer açar."
+        },
+        "seeded": "\"{{strategy}}\" stratejisinin saklama kuralı, politikası olmayan {{count}} depo için tanımlandı.",
+        "seedFailed": "\"{{strategy}}\" stratejisinin saklama kuralı tanımlanamadı ({{reason}}). Tanımlanana kadar sunucu varsayılanı geçerli.",
+        "source": {
+          "stream": "akış istisnası",
+          "declared": "tanımlı politika",
+          "plan": "plan varsayılanı",
+          "default": "sunucu varsayılanı",
+          "orphan": "sahipsiz depo süresi"
         }
       },
       "run": {
@@ -149,7 +168,18 @@
           "optionExclude": "Bu depoları yedeklemeden hariç tut (virgülle ayrılmış adlar)",
           "optionInclude": "Yalnızca bu depoları yedekle (virgülle ayrılmış adlar)",
           "optionMode": "Yedekleme modu: \"hot\" her şey çalışırken anlık görüntü alır, \"cold\" görüntü alınırken konteynerleri durdurur",
-          "saved": "Yedekleme stratejisi yapılandırması kaydedildi"
+          "saved": "Yedekleme stratejisi yapılandırması kaydedildi",
+          "optionRetention": "Anlık görüntü saklama, örneğin last=7,daily=7,weekly=4,monthly=6 (\"none\" kaldırır)",
+          "retentionInvalid": "--retention \"{{value}}\" ad=sayı çiftlerinden oluşan bir liste değil. Geçerli adlar last, hourly, daily, weekly, monthly ve yearly'dir, her biri bir kez kullanılır ve her sayı tam sayı olmalıdır, örneğin last=7,daily=7.",
+          "retentionCronMismatch": "\"{{strategy}}\" stratejisi: {{knob}} kuralı {{cadence}} \"{{cron}}\" zamanlamasında işe yaramaz, çünkü bu zamanlama kuralı doldurmaya yetecek kadar anlık görüntü üretmez.",
+          "cadence": {
+            "daily": "günlük",
+            "weekly": "haftalık",
+            "monthly": "aylık"
+          },
+          "retentionNotPushed": "\"{{strategy}}\" stratejisinin saklama kuralı kaydedildi, ancak uygulamak için hesap belirteci yok. Oturum açıp komutu yeniden çalıştırın.",
+          "retentionPushed": "Saklama kuralı {{count}} depoya uygulandı.",
+          "retentionPushFailed": "\"{{strategy}}\" stratejisinin saklama kuralı kaydedildi, ancak uygulanamadı ({{reason}}). Sunucuya erişilebildiğinde komutu yeniden çalıştırın."
         },
         "show": {
           "description": "Yedekleme stratejisi ayrıntılarını göster",
@@ -175,6 +205,15 @@
         "failed": "{{name}} için yedek doğrulaması başarısız oldu",
         "optionDeep": "Örneklemeli kontrol yerine kayıtlı her hücreyi yeniden özetle (tam doğrulama)",
         "starting": "{{name}} için yedek doğrulanıyor ({{level}})..."
+      },
+      "snapshots": {
+        "description": "Saklanan anlık görüntüleri yönet",
+        "snapshotIdArgument": "Anlık görüntü kimliği (bkz. rdc backup manifests)",
+        "delete": {
+          "description": "Bir deponun saklanan tek bir anlık görüntüsünü siler. Yalnızca o görüntünün kullandığı veriyi bir sonraki çöp toplama boşaltır.",
+          "notInRepo": "{{snapshot}} anlık görüntüsü {{name}} deposunun saklanan geçmişinde yok. Kimlikleri listelemek için: rdc backup manifests {{name}}",
+          "success": "{{name}} deposunun {{snapshot}} dahil {{count}} anlık görüntüsü silindi."
+        }
       }
     },
     "cluster": {
@@ -1059,6 +1098,15 @@
         "placementConflictNext": "Önce bu depoları taşıyın veya silin, ya da kaldırmayı zorlayın.",
         "success": "Makine \"{{name}}\" kaldırıldı"
       },
+      "restartServices": {
+        "completed": "'{{machine}}' üzerindeki renet daemon'ları kurulu ikili dosyayla çalışıyor.",
+        "description": "Hâlâ değiştirilmiş bir ikili dosyayı çalıştıran renet daemon'larını teker teker kurulu sürümle yeniden başlatır; bir sonrakine geçmeden önce her birimin yeni ikili dosyayla etkin olduğunu doğrular. --include-docker ile her deponun rediacc-docker-N denetleyicisi de depo depo yeniden başlatılır, bu da o deponun konteynerlerini yeniden başlatır.",
+        "descriptionShort": "renet daemon'larını kurulu ikili dosyayla yeniden başlat",
+        "includeDockerOption": "Her deponun rediacc-docker-N denetleyicisini de yeniden başlat (deponun konteynerlerini yeniden başlatır)",
+        "jsonOption": "Raporu JSON olarak yazdır",
+        "nothingStale": "'{{machine}}' üzerinde değiştirilmiş bir ikili dosyayı çalıştıran renet daemon'ı yok.",
+        "starting": "'{{machine}}' üzerindeki renet daemon'ları yeniden başlatılıyor..."
+      },
       "scanKeys": {
         "completed": "{{count}}/{{total}} makine tarandı",
         "description": "Mevcut yapılandırmadaki makineler için SSH ana bilgisayar anahtarlarını tara",
@@ -1374,7 +1422,12 @@
         },
         "failed": "Depo silme başarısız",
         "restoreHint": "Geri yüklemek için: rdc repo admin archive restore {{guid}}",
-        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" siliniyor..."
+        "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" siliniyor...",
+        "backupsOrphaned": "\"{{repository}}\" deposunun bulut yedekleri {{expires}} tarihine kadar tutulur, sonra süresi dolar. Hemen kaldırmak için --purge-backups kullanın.",
+        "backupsOrphanFailed": "\"{{repository}}\" deposunun bulut yedekleri sahipsiz olarak işaretlenemedi ({{reason}}). Deponun saklama politikasına tabi kalmaya devam ediyorlar.",
+        "backupsPurged": "\"{{repository}}\" deposunun {{count}} bulut anlık görüntüsü silindi, {{bytes}} yer açıldı.",
+        "purgeBackupsOption": "Deponun bulut yedeklerini süresinin dolmasını beklemeden hemen sil",
+        "purgeForkRefused": "\"{{repository}}\" bir fork ve yedek soyunu ana depoyla paylaşıyor; --purge-backups ana deponun yedeklerini de silerdi. Fork'u bu seçenek olmadan silin."
       },
       "description": "Makinelerde şifreli depoları dağıt ve yönet. Temel alt komutlar: create, up (dağıt), down (durdur), fork (anında CoW klonu), delete, push/pull (yedekleme), sync (dosya aktarımı). Yaşam döngüsü: repo create → repo up → repo down. Mimari, yönlendirme ve ortam değişkeni ayrıntıları için rdc --help çıktısındaki Temel Kavramlar bölümüne bakın.",
       "descriptionShort": "Makinelerde şifrelenmiş depoları dağıt ve yönet",
@@ -1833,8 +1886,8 @@
       },
       "run": {
         "completedLocal": "{{duration}}ms içinde tamamlandı",
-        "description": "Bir işlevi çalıştırın (kısayol: queue create)",
-        "descriptionShort": "Bir makinede ham köprü fonksiyonu çalıştır (yalnızca hata ayıklama)",
+        "description": "UYARI: Yalnızca hata ayıklama ve deneme amaçlı düşük seviyeli bir komuttur, üretimde kullanılmamalıdır. Günlük işler için üst seviye komutlar (repo up, repo down vb.) vardır. Bir makinede ham bir renet fonksiyonu çalıştırır.",
+        "descriptionShort": "Bir makinede ham bir renet fonksiyonu çalıştır (yalnızca hata ayıklama)",
         "executingLocal": "'{{function}}' işlevi {{machine}} üzerinde yürütülüyor...",
         "failedLocal": "Başarısız: {{error}}"
       },

@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: es
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # Respaldo y Restauración
@@ -61,7 +61,7 @@ El push y el pull de máquina a máquina no necesitan ninguna de las dos cosas. 
 
 ### La vía de almacenamiento con rclone desapareció
 
-`rdc repo push --to <storage>` y sus variantes solían copiar un archivo de respaldo completo a un proveedor compatible con rclone que registrabas tú mismo. Ahora rechazan un destino de almacenamiento y nombran su reemplazo. La transferencia de máquina a máquina nunca pasó por rclone y no se ve afectada. Los comandos de almacenamiento y el rclone incluido se han eliminado, así que un archivo escrito de esa forma ya no se puede explorar desde la CLI.
+`rdc repo push --to <storage>` y sus comandos afines copiaban antes un archivo de backup completo a un proveedor en la nube registrado a mano. Los comandos de storage y el rclone incluido se eliminaron, y `--to`/`--from` ahora solo aceptan una máquina. La transferencia entre máquinas nunca pasó por rclone y no se ve afectada. Un archivo escrito a la antigua ya no se puede explorar desde la CLI.
 
 ### Comandos de almacenamiento fragmentado
 

@@ -9,6 +9,7 @@ import { registerProviderCommands } from './provider.js';
 import { registerCloudCommands } from './provision.js';
 import { registerPruneCommand } from './prune.js';
 import { registerMachineRegistrationCommands } from './register.js';
+import { registerRestartServicesCommand } from './restart-services.js';
 import { registerStatusCommand } from './status.js';
 
 export function registerMachineCommands(program: Command): void {
@@ -25,6 +26,7 @@ export function registerMachineCommands(program: Command): void {
   registerPruneCommand(machine);
   registerGpuCommands(machine);
   registerConvergeCommand(machine);
+  registerRestartServicesCommand(machine);
   registerProviderCommands(machine, program);
   registerInfraCommands(machine, program);
 

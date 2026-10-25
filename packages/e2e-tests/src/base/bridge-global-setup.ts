@@ -250,7 +250,7 @@ async function verifyVMsWithRetry(
 
 /**
  * Step 5: start RustFS S3 storage on the bridge VM.
- * The live RustFS consumers, suites 15 and 19, drive it from worker VMs through the rclone config Step 6 writes.
+ * The live RustFS consumers, suites 15 and 19, reach it with signed `curl --aws-sigv4` requests, so no worker setup precedes them.
  */
 async function startRustFSStorage(opsManager: ReturnType<typeof getOpsManager>) {
   const rustfsResult = await opsManager.startRustFS();
@@ -261,33 +261,12 @@ async function startRustFSStorage(opsManager: ReturnType<typeof getOpsManager>) 
 }
 
 /**
- * Step 6: configure rclone on every worker for RustFS access, one `renet ops rustfs configure-worker` per worker, concurrently.
- * `renet ops rustfs configure-workers` is not used: it loops the workers one at a time and exits 0 even when a worker fails (docker.Service.ConfigureWorkers only logs the error), so the harness saw no failure at all.
- * A failure stays non-fatal, as it always was, because suite 19 configures its worker itself; it is printed with the worker's ID and renet's stderr.
- */
-async function configureRustFSWorkers(opsManager: ReturnType<typeof getOpsManager>) {
-  const workerIds = opsManager.getVMIds().workers;
-  const results = await Promise.all(
-    workerIds.map(async (vmId) => ({ vmId, ...(await opsManager.configureRustFSWorker(vmId)) }))
-  );
-  for (const result of results) {
-    if (result.success) {
-      console.warn(`  ✓ Step 6: ${result.message}`);
-    } else {
-      console.warn(
-        `  ! Step 6: worker ${result.vmId}: ${result.message} (non-fatal, tests may configure individually)`
-      );
-    }
-  }
-}
-
-/**
- * Steps 5-8, the worker topology's services, run as three concurrent branches once Step 4 has verified every VM.
+ * Steps 5, 7 and 8, the worker topology's services, run as three concurrent branches once Step 4 has verified every VM.
  *
  * Data dependencies, measured from the code:
- * - Step 5 (RustFS on the bridge) needs only the bridge's Docker from Step 3. Nothing on a worker reads RustFS during setup: Step 6 writes an rclone config naming the bridge's IP and port and never connects.
- * - Step 6 (rclone) and Step 8 (CRIU) stay ordered, rclone first. Both can reach the worker's package manager (renet's ensureRclone installs rclone with apt, dnf or zypper; the CRIU fallback, `renet ops worker install-criu`, installs CRIU's libraries), and two package managers on one VM contend for its lock.
- * - Step 7 (datastores) runs `renet datastore init`, which touches no package manager and nothing Steps 6 or 8 write, so it runs beside them.
+ * - Step 5 (RustFS on the bridge) needs only the bridge's Docker from Step 3. Nothing on a worker reads RustFS during setup.
+ * - Step 8 (CRIU) can reach the worker's package manager (the fallback, `renet ops worker install-criu`, installs CRIU's libraries); nothing else in these steps touches it.
+ * - Step 7 (datastores) runs `renet datastore init`, which touches no package manager and nothing Step 8 writes, so it runs beside it.
  * Every worker is its own SSH target, so each step also runs its workers concurrently.
  */
 async function prepareWorkerServices(
@@ -296,18 +275,15 @@ async function prepareWorkerServices(
   keepDatastores: boolean
 ) {
   console.warn('');
-  console.warn('Steps 5-8: RustFS (bridge), rclone then CRIU (workers), datastores (workers)...');
+  console.warn('Steps 5, 7, 8: RustFS (bridge), datastores (workers), CRIU (workers)...');
   await runSetupStepsConcurrently([
     {
       name: 'Step 5: RustFS on the bridge',
       run: () => timed('Step 5 RustFS', () => startRustFSStorage(opsManager)),
     },
     {
-      name: 'Steps 6+8: rclone then CRIU on the workers',
-      run: async () => {
-        await timed('Step 6 rclone', () => configureRustFSWorkers(opsManager));
-        await timed('Step 8 CRIU', () => infra.deployCRIUToAllVMs());
-      },
+      name: 'Step 8: CRIU on the workers',
+      run: () => timed('Step 8 CRIU', () => infra.deployCRIUToAllVMs()),
     },
     {
       name: 'Step 7: datastores on the workers',
@@ -317,7 +293,7 @@ async function prepareWorkerServices(
         ),
     },
   ]);
-  console.warn('  ✓ RustFS, rclone, datastores and CRIU ready');
+  console.warn('  ✓ RustFS, datastores and CRIU ready');
 }
 
 /**
@@ -376,7 +352,7 @@ function writeSetupErrorLog(error: unknown) {
  * 2. Deploy renet binary to all VMs
  * 3. Run renet setup on ALL VMs (bridge + workers) to install Docker and dependencies
  * 4. Verify all VMs are ready (bridge + workers + ceph)
- * 5-8. With workers only, concurrently (prepareWorkerServices names the ordering kept): RustFS on the bridge; rclone then CRIU on the workers; datastores on the workers
+ * 5-8. With workers only, concurrently (prepareWorkerServices names the ordering kept): RustFS on the bridge; CRIU on the workers; datastores on the workers
  *
  * RENET BINARY:
  * The renet binary must be available before running tests. In CI, it's pre-extracted

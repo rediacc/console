@@ -2819,7 +2819,7 @@ jobs:
       # Freshness of the embedded-binary version pins vs upstream
       # (api.github.com and download.samba.org). GITHUB_TOKEN raises the API
       # rate limit. Until 2026-10-13 this step was soft on the nightly, after a
-      # new rclone release reddened 3 consecutive nightlies (2026-08-02..04)
+      # new upstream release reddened 3 consecutive nightlies (2026-08-02..04)
       # with zero commits on main; the ruling above takes that red back on
       # purpose.
       - name: Check embed-asset upstream freshness
@@ -2881,6 +2881,19 @@ jobs:
       - name: Check scope registry audit
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-scope-audit
+
+      # J3 (PLAN-backup-program): the backup-* account test files by themselves, so a
+      # red backup path names itself in this step instead of hiding inside the
+      # whole-suite step below.
+      - name: Run account backup tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-backup
+
+      # J2 (PLAN-backup-program): the chunk-store data plane, non-root, counted
+      # (the gate refuses a green that ran fewer tests than its floor).
+      - name: Run chunkstore unit tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-renet-chunkstore-unit
 
       - name: Assert no NODE_ENV branching in account routes
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

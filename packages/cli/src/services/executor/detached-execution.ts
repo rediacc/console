@@ -17,10 +17,12 @@ import {
   buildJobStartCommand,
   createJobOutputCollector,
   isJobCommandUnsupported,
+  isRenetFlagUnsupported,
   JobLogCursor,
   JobStartFailedError,
   jobStatusToExecuteResult,
   parseJobHandle,
+  renetOlderThanCliMessage,
   resumeHint,
   versionSkewWarning,
 } from './job-client.js';
@@ -92,7 +94,8 @@ export async function runDetachedExecution(
         },
         debug: options.debug,
       },
-      cursor
+      cursor,
+      options.machineName
     );
 
     if (interrupted) {
@@ -108,7 +111,12 @@ export async function runDetachedExecution(
       };
     }
 
-    const status = await readJobStatus(await lease.ensure(), remoteRenetPath, handle.job_id);
+    const status = await readJobStatus(
+      await lease.ensure(),
+      remoteRenetPath,
+      handle.job_id,
+      options.machineName
+    );
     return jobStatusToExecuteResult(status, Date.now() - startedAt, collector);
   } finally {
     lease.release();
@@ -170,7 +178,12 @@ async function startJob(
       outputService.warn(versionSkewWarning(options.machineName));
       return null;
     }
-    throw new JobStartFailedError(options.machineName, capReason((stderr || stdout).trim()));
+    throw new JobStartFailedError(
+      options.machineName,
+      isRenetFlagUnsupported(combined)
+        ? renetOlderThanCliMessage(options.machineName)
+        : capReason((stderr || stdout).trim())
+    );
   }
 
   return parseJobHandle(stdout);

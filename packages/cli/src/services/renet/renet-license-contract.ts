@@ -63,7 +63,7 @@ const TIER_BY_FUNCTION: ReadonlyMap<string, LicenseTier> = new Map(
 );
 
 /**
- * The licence tier renet assigns to a bridge function, read from the generated
+ * The licence tier renet assigns to a renet function, read from the generated
  * contract (`LICENSE_TIERS`), which is emitted from renet's tier map.
  *
  * `undefined` means renet has no entry for the name. That is not "free": every
@@ -195,7 +195,7 @@ export function usesTagAsProvisioningTarget(functionName: string): boolean {
  * `isLicensedRenetFunction` and its REPOSITORY_DENY_LIST used to live here.
  * Both are deleted, and the deletion is the point.
  *
- * They were a SECOND source of truth for which bridge functions need a licence,
+ * They were a SECOND source of truth for which renet functions need a licence,
  * maintained by hand alongside renet's tier map, and they had already drifted:
  * the prefix rule claimed every `backup_*` function was licensed, while renet
  * licenses none of them. Proven live, one enforcing binary, no licence

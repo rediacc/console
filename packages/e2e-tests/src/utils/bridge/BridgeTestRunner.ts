@@ -754,7 +754,7 @@ export class BridgeTestRunner {
   }
 
   /**
-   * Test a bridge function on target VM via two-hop SSH.
+   * Test a renet function on target VM via two-hop SSH.
    * Uses: renet functions once --test-mode --function <name>
    * Executes: Host → Bridge → Target VM
    */
@@ -798,7 +798,7 @@ export class BridgeTestRunner {
   }
 
   /**
-   * Test a bridge function on a specific machine via SSH.
+   * Test a renet function on a specific machine via SSH.
    * Uses `renet` directly (assumes it's in PATH on the VM).
    */
   testFunctionOnMachine(host: string, opts: TestFunctionOptions): Promise<ExecResult> {
@@ -826,7 +826,7 @@ export class BridgeTestRunner {
 
   /**
    * Execute a direct renet CLI command on a specific machine via SSH.
-   * For commands that aren't available through bridge once (e.g., setup, datastore).
+   * For commands that aren't available through functions once (e.g., setup, datastore).
    */
   executeRenetOnMachine(host: string, renetCommand: string, timeout?: number): Promise<ExecResult> {
     return this.executeOnVM(host, `renet ${renetCommand}`, timeout);
@@ -836,7 +836,7 @@ export class BridgeTestRunner {
    * Check setup status on a specific machine.
    */
   checkSetupOnMachine(host: string): Promise<ExecResult> {
-    // machine_check_system is available through bridge once
+    // machine_check_system is available through functions once
     return this.executeOnVM(
       host,
       'renet functions once --test-mode --function machine_check_system'

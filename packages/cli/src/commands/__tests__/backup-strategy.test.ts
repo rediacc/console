@@ -4,7 +4,12 @@ import {
   buildBackupCommands,
   generateServiceUnit,
 } from '../../services/backup/backup-schedule-unit-generator.js';
-import { buildDestination, buildStrategyUpdate, parseRepoFilter } from '../backup-strategy.js';
+import {
+  buildDestination,
+  buildStrategyUpdate,
+  parseRepoFilter,
+  parseRetentionOption,
+} from '../backup-strategy.js';
 
 describe('parseRepoFilter', () => {
   it('parses a comma-separated list, trimming and dropping empties', () => {
@@ -135,4 +140,28 @@ describe('creating a destination an operator can actually schedule', () => {
     const merged = { ...{ name: 'chunks', kind: 'hosted-service', enabled: false }, ...dest };
     expect(merged.enabled).toBe(false);
   });
+});
+
+describe('strategy retention (F4)', () => {
+  it('--retention parses name=count pairs into the stored policy', () => {
+    const u = buildStrategyUpdate({ retention: 'last=7,daily=7,weekly=4,monthly=6' });
+    expect(u.retention).toEqual({ keepLast: 7, keepDaily: 7, keepWeekly: 4, keepMonthly: 6 });
+  });
+
+  it('leaves retention out of the update when the flag is absent, so a set never wipes it', () => {
+    expect('retention' in buildStrategyUpdate({ cron: '0 3 * * *' })).toBe(false);
+  });
+
+  it('"none" clears the stored policy', () => {
+    const u = buildStrategyUpdate({ retention: 'none' });
+    expect('retention' in u).toBe(true);
+    expect(u.retention).toBeUndefined();
+  });
+
+  it.each(['last=x', 'last', 'weekly=1,weekly=2', 'fortnightly=2', 'last=-1', 'last=1.5'])(
+    'refuses %s rather than guessing what to delete',
+    (raw) => {
+      expect(() => parseRetentionOption(raw)).toThrow(/--retention/);
+    }
+  );
 });

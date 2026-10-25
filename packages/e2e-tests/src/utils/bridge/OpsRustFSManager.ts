@@ -1,15 +1,20 @@
 import type { OpsVMExecutor } from '@rediacc/provisioning/ops';
+import {
+  DEFAULT_RUSTFS_ACCESS_KEY,
+  DEFAULT_RUSTFS_BUCKET,
+  DEFAULT_RUSTFS_ENDPOINT,
+  DEFAULT_RUSTFS_SECRET_KEY,
+} from '../../constants';
+import {
+  buildS3CurlCommand,
+  parseS3CurlOutput,
+  type S3CurlRequest,
+  type S3CurlResponse,
+} from '../storage/s3-curl';
 
 /**
- * Budget for one `renet ops rustfs configure-worker`, above renet's own worst case for installing rclone on a VM.
- * renet cuts each apt network step off at 30 s and retries 3 times (rcloneAptStepTimeout and rcloneAptAttempts in private/renet/pkg/infra/docker/service.go), about 4 minutes at worst.
- * The old 60 s budget was shorter than a single stalled attempt, so renet's retry never got its turn: console run 36514306445 (E2E Workers ubuntu-24.04 5/8) killed configure-worker at 60 s while `apt-get install -y rclone` hung on both workers.
- */
-const RUSTFS_CONFIGURE_WORKER_TIMEOUT_MS = 300_000;
-
-/**
- * Budget for `renet ops rustfs start`: the same rclone install as configure-worker, plus up to 5 RustFS image pulls 15 s apart, a 60 s readiness wait and the bucket creation.
- * The old 120 s budget failed global setup in the same run, with the bridge's `apt-get install -y rclone` still hanging.
+ * Budget for `renet ops rustfs start`: up to 5 RustFS image pulls 15 s apart, a 60 s readiness wait and the bucket creation.
+ * The old 120 s budget failed global setup (console run 36514306445, E2E Workers ubuntu-24.04 5/8).
  */
 const RUSTFS_START_TIMEOUT_MS = 480_000;
 
@@ -20,7 +25,7 @@ const RUSTFS_START_TIMEOUT_MS = 480_000;
  * Provides methods for:
  * - Starting/stopping RustFS
  * - Bucket management
- * - Worker configuration for RustFS access
+ * - Signed S3 requests (curl --aws-sigv4) from the bridge or from a worker
  * - Access verification
  */
 export class OpsRustFSManager {
@@ -149,48 +154,30 @@ export class OpsRustFSManager {
   }
 
   /**
-   * Configure rclone on a worker VM to access RustFS.
-   * Uses renet ops rustfs configure-worker command.
+   * Run one signed S3 request against RustFS with `curl --aws-sigv4`, on the bridge (loopback) or on
+   * a worker VM (the bridge's address). The VM needs only curl 7.75+.
    */
-  async configureWorker(vmId: number): Promise<{ success: boolean; message: string }> {
-    console.warn(`[OpsRustFSManager] Configuring RustFS access on worker VM ${vmId}...`);
-
-    const result = await this.runOpsCommand(
-      ['rustfs', 'configure-worker'],
-      [vmId.toString()],
-      RUSTFS_CONFIGURE_WORKER_TIMEOUT_MS
+  async s3Request(
+    request: S3CurlRequest,
+    where: { vmIp: string; fromWorker: boolean }
+  ): Promise<S3CurlResponse & { stderr: string; code: number }> {
+    const port = new URL(DEFAULT_RUSTFS_ENDPOINT).port || '9000';
+    const endpoint = `http://${where.fromWorker ? this.bridgeIp : 'localhost'}:${port}`;
+    const command = buildS3CurlCommand(
+      {
+        endpoint,
+        accessKey: process.env.RUSTFS_ACCESS_KEY ?? DEFAULT_RUSTFS_ACCESS_KEY,
+        secretKey: process.env.RUSTFS_SECRET_KEY ?? DEFAULT_RUSTFS_SECRET_KEY,
+        bucket: DEFAULT_RUSTFS_BUCKET,
+      },
+      request
     );
-
-    if (result.code !== 0) {
-      return { success: false, message: `Failed to configure worker ${vmId}: ${result.stderr}` };
-    }
-
-    return { success: true, message: `Worker ${vmId} configured for RustFS access` };
+    const result = await this.vmExecutor.executeOnVM(where.vmIp, command, 60000);
+    return { ...parseS3CurlOutput(result, request), stderr: result.stderr, code: result.code };
   }
 
   /**
-   * Configure rclone on all worker VMs to access RustFS.
-   * Uses renet ops rustfs configure-workers command.
-   */
-  async configureAllWorkers(): Promise<{ success: boolean; message: string }> {
-    console.warn('[OpsRustFSManager] Configuring RustFS access on all worker VMs...');
-
-    // configure-workers configures the workers one after another.
-    const result = await this.runOpsCommand(
-      ['rustfs', 'configure-workers'],
-      [],
-      2 * RUSTFS_CONFIGURE_WORKER_TIMEOUT_MS
-    );
-
-    if (result.code !== 0) {
-      return { success: false, message: `Failed to configure workers: ${result.stderr}` };
-    }
-
-    return { success: true, message: 'All workers configured for RustFS access' };
-  }
-
-  /**
-   * Verify RustFS access from a worker VM using rclone.
+   * Verify RustFS access from a worker VM: a signed bucket listing must answer 2xx.
    */
   async verifyAccessFromWorker(
     vmId: number,
@@ -202,15 +189,16 @@ export class OpsRustFSManager {
     const bucketName = bucket ?? DEFAULT_BUCKET_NAME;
     console.warn(`[OpsRustFSManager] Verifying RustFS access from VM ${vmId} (${ip})...`);
 
-    // Try to list the bucket using rclone
-    const result = await this.vmExecutor.executeOnVM(
-      ip,
-      `rclone ls rustfs:${bucketName} 2>&1 || echo "(empty or bucket not found)"`,
-      30000
+    const result = await this.s3Request(
+      { method: 'GET', path: `${bucketName}?list-type=2` },
+      { vmIp: ip, fromWorker: true }
     );
 
-    if (result.code !== 0) {
-      return { success: false, message: `RustFS access verification failed: ${result.stderr}` };
+    if (!result.ok) {
+      return {
+        success: false,
+        message: `RustFS access verification failed: HTTP ${result.status} ${result.stderr}`.trim(),
+      };
     }
 
     return { success: true, message: `RustFS accessible from VM ${vmId}` };

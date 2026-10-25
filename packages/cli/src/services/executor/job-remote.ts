@@ -31,12 +31,14 @@ import {
   buildJobLogsCommand,
   buildJobStatusCommand,
   createEventLineReader,
+  isRenetFlagUnsupported,
   type JobGcResult,
   JobLogCursor,
   type JobStatus,
   parseJobGcResult,
   parseJobList,
   parseJobStatus,
+  renetOlderThanCliMessage,
 } from './job-client.js';
 import { isMachineReadableRelayLine } from './output-lines.js';
 import type { RenetEvent } from './types.js';
@@ -87,6 +89,8 @@ type FollowOutcome =
 export interface JobConnection {
   lease: MachineConnectionLease;
   remoteRenetPath: string;
+  /** The machine's name, for messages that name it. */
+  machineName?: string;
 }
 
 /**
@@ -115,7 +119,7 @@ export async function connectForJobs(
       lease.sshPrivateKey,
       { machineName }
     );
-    return { lease, remoteRenetPath: remotePath };
+    return { lease, remoteRenetPath: remotePath, machineName };
   } catch (error) {
     lease.release();
     throw error;
@@ -138,7 +142,8 @@ export async function listJobs(conn: JobConnection): Promise<JobStatus[]> {
 export async function readJobStatus(
   sftp: SFTPClient,
   remoteRenetPath: string,
-  jobId: string
+  jobId: string,
+  machineName?: string
 ): Promise<JobStatus> {
   const { exitCode, stdout, stderr } = await execCapture(
     sftp,
@@ -146,7 +151,9 @@ export async function readJobStatus(
   );
 
   if (exitCode !== 0) {
-    throw new Error(failureDetail(`read the status of job ${jobId}`, stdout, stderr, exitCode));
+    throw new Error(
+      failureDetail(`read the status of job ${jobId}`, stdout, stderr, exitCode, machineName)
+    );
   }
 
   return parseJobStatus(stdout);
@@ -198,10 +205,18 @@ export async function followJobLogs(
   remoteRenetPath: string,
   jobId: string,
   options: JobFollowOptions,
-  cursor: JobLogCursor
+  cursor: JobLogCursor,
+  machineName?: string
 ): Promise<boolean> {
   for (let attempt = 0; ; attempt++) {
-    const outcome = await followJobLogsOnce(lease, remoteRenetPath, jobId, options, cursor);
+    const outcome = await followJobLogsOnce(
+      lease,
+      remoteRenetPath,
+      jobId,
+      options,
+      cursor,
+      machineName
+    );
 
     switch (outcome.kind) {
       case 'done':
@@ -231,7 +246,8 @@ async function followJobLogsOnce(
   remoteRenetPath: string,
   jobId: string,
   options: JobFollowOptions,
-  cursor: JobLogCursor
+  cursor: JobLogCursor,
+  machineName?: string
 ): Promise<FollowOutcome> {
   const command = buildJobLogsCommand({
     remoteRenetPath,
@@ -252,6 +268,7 @@ async function followJobLogsOnce(
   const streaming = (async (): Promise<FollowOutcome> => {
     try {
       const sftp = await lease.ensure();
+      let stderr = '';
       const exitCode = await sftp.execStreaming(command, {
         onStdout: (data) => {
           if (stopped) return;
@@ -259,6 +276,7 @@ async function followJobLogsOnce(
           cursor.consume(data);
         },
         onStderr: (data) => {
+          stderr += data.toString();
           if (options.debug && !stopped) writeStderr(data);
         },
       });
@@ -271,7 +289,9 @@ async function followJobLogsOnce(
 
       return {
         kind: 'failed',
-        error: new Error(`renet job logs exited ${exitCode} for job ${jobId}`),
+        error: new Error(
+          failureDetail(`follow the logs of job ${jobId}`, '', stderr, exitCode, machineName)
+        ),
       };
     } catch (error) {
       // execStreaming rejects on a channel error or a dead session: transport.
@@ -352,7 +372,9 @@ export async function replayJobLogs(
   });
 
   if (exitCode !== 0) {
-    throw new Error(failureDetail(`read the logs of job ${jobId}`, '', stderr, exitCode));
+    throw new Error(
+      failureDetail(`read the logs of job ${jobId}`, '', stderr, exitCode, conn.machineName)
+    );
   }
 }
 
@@ -436,7 +458,7 @@ async function runJobCommand(conn: JobConnection, command: string, what: string)
   const { exitCode, stdout, stderr } = await execCapture(sftp, command);
 
   if (exitCode !== 0) {
-    throw new Error(failureDetail(what, stdout, stderr, exitCode));
+    throw new Error(failureDetail(what, stdout, stderr, exitCode, conn.machineName));
   }
 
   return stdout;
@@ -467,7 +489,17 @@ async function execCapture(
  * renet writes the useful part to stderr ("unknown job", "invalid job id"), so
  * that is preferred over stdout, and the exit code alone is never enough.
  */
-function failureDetail(what: string, stdout: string, stderr: string, exitCode: number): string {
+function failureDetail(
+  what: string,
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  machineName?: string
+): string {
+  // A flag the remote renet does not know is version skew, not a job failure: say so before the cobra usage text.
+  if (isRenetFlagUnsupported(stderr || stdout)) {
+    return `Failed to ${what}: ${renetOlderThanCliMessage(machineName ?? 'the target machine')}`;
+  }
   const detail = (stderr || stdout).trim().split('\n')[0] ?? '';
   return detail
     ? `Failed to ${what}: ${detail}`

@@ -8,6 +8,7 @@ import {
   type VMNetworkConfig,
 } from '@rediacc/provisioning';
 import { DEFAULT_DATASTORE_PATH } from '../../constants';
+import type { S3CurlRequest } from '../storage/s3-curl';
 import { OpsCephManager } from './OpsCephManager';
 import { OpsRustFSManager } from './OpsRustFSManager';
 
@@ -84,21 +85,17 @@ export class OpsManager extends BaseOpsManager {
   }
 
   /**
-   * Configure rclone on a worker VM to access RustFS.
+   * Run one signed S3 request against RustFS from the bridge or from a worker VM.
    */
-  configureRustFSWorker(vmId: number): Promise<{ success: boolean; message: string }> {
-    return this.rustfsManager.configureWorker(vmId);
+  rustfsS3Request(
+    request: S3CurlRequest,
+    where: { vmIp: string; fromWorker: boolean }
+  ): ReturnType<OpsRustFSManager['s3Request']> {
+    return this.rustfsManager.s3Request(request, where);
   }
 
   /**
-   * Configure rclone on all worker VMs to access RustFS.
-   */
-  configureRustFSWorkers(): Promise<{ success: boolean; message: string }> {
-    return this.rustfsManager.configureAllWorkers();
-  }
-
-  /**
-   * Verify RustFS access from a worker VM using rclone.
+   * Verify RustFS access from a worker VM with a signed curl request.
    */
   verifyRustFSAccessFromWorker(
     vmId: number,
@@ -150,7 +147,7 @@ export class OpsManager extends BaseOpsManager {
       }
     }
 
-    // Initialize the base BTRFS datastore pool via the `renet datastore init` CLI. The datastore-centric redesign removed the `datastore_init` BRIDGE function (only named-datastore verbs — datastore_create/attach/... — are registered now), so the old `functions once --function datastore_init` path fails with "no command builder registered". The CLI command (needs root for the BTRFS mount, like `sudo renet setup`) is the surviving way to lay down /mnt/rediacc.
+    // Initialize the base BTRFS datastore pool via the `renet datastore init` CLI. The datastore-centric redesign removed the `datastore_init` renet function (only named-datastore verbs — datastore_create/attach/... — are registered now), so the old `functions once --function datastore_init` path fails with "no command builder registered". The CLI command (needs root for the BTRFS mount, like `sudo renet setup`) is the surviving way to lay down /mnt/rediacc.
     const result = await this.executeOnVM(
       ip,
       `sudo renet datastore init --path ${datastorePath} --size ${size} --force`,

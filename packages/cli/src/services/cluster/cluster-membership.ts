@@ -42,7 +42,7 @@ function serverUrl(ip: string): string {
   return `https://${ip}:${API_PORT}`;
 }
 
-/** Dispatch one internal bridge function to a member, throwing on failure. */
+/** Dispatch one internal renet function to a member, throwing on failure. */
 async function dispatch(
   functionName: string,
   machineName: string,
@@ -87,7 +87,7 @@ function agentPool(clusterName: string, cluster: ClusterConfig): ClusterPool {
   return pool;
 }
 
-// Carry-in 1 seam note: the datastore node label (rediacc.io/ds-<name>) is stamped/stripped through the renet `kube_node_label` bridge function (control plane admin kubectl, node resolved by InternalIP). Because node labels persist in kine across a same-node reboot, only RELOCATION/failover re-stamps them (remove-before-add). The `datastore attach`/`detach` porcelain that wires
+// Carry-in 1 seam note: the datastore node label (rediacc.io/ds-<name>) is stamped/stripped through the renet `kube_node_label` renet function (control plane admin kubectl, node resolved by InternalIP). Because node labels persist in kine across a same-node reboot, only RELOCATION/failover re-stamps them (remove-before-add). The `datastore attach`/`detach` porcelain that wires
 // this
 // dispatch is P4; until then it is exercised via the renet primitive directly.
 

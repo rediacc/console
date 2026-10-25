@@ -2,8 +2,8 @@ import { exec, execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
-import { getRenetBinaryPath } from '../renetPath';
 import { log } from '../log';
+import { getRenetBinaryPath } from '../renetPath';
 
 const execAsync = promisify(exec);
 

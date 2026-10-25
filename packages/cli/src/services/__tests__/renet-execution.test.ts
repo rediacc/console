@@ -111,19 +111,60 @@ describe('buildLocalVault', () => {
   describe('repositories', () => {
     it('should build repositories section when repository param is set', () => {
       const opts = baseOpts();
+      opts.params = { repository: 'myrepo', guid: 'guid-123' };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.repositories['guid-123']).toBeDefined();
+      expect(vault.repositories['guid-123'].guid).toBe('guid-123');
+      expect(vault.repositories['guid-123'].name).toBe('myrepo');
+      expect(vault.task.repository).toBe('guid-123');
+      expect(vault.task.repo_name).toBe('myrepo');
+    });
+
+    it('throws instead of using the name as the GUID', () => {
+      const opts = baseOpts();
+      opts.params = { repository: 'myrepo' };
+      expect(() => buildLocalVault(opts)).toThrow(/no GUID/);
+    });
+
+    it('accepts a ref that is itself a GUID', () => {
+      const guid = '11111111-2222-3333-4444-555555555555';
+      const opts = baseOpts();
+      opts.params = { repository: guid };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.task.repository).toBe(guid);
+      expect(vault.repositories[guid].guid).toBe(guid);
+    });
+
+    it('resolves a ref given as GUID to the configured friendly name', () => {
+      const opts = {
+        ...baseOpts(),
+        repositoryConfigs: { myrepo: { guid: 'guid-123', name: 'myrepo' } },
+      };
+      opts.params = { repository: 'guid-123' };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.task.repository).toBe('guid-123');
+      expect(vault.task.repo_name).toBe('myrepo');
+    });
+
+    it('resolves a bare family name to the grand, not a fork', () => {
+      const opts = {
+        ...baseOpts(),
+        repositoryConfigs: {
+          'myrepo:fix': { guid: 'guid-fork', name: 'myrepo:fix', grandGuid: 'guid-grand' },
+          'myrepo:latest': { guid: 'guid-grand', name: 'myrepo:latest', grandGuid: 'guid-grand' },
+        },
+      };
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo).toBeDefined();
-      expect(vault.repositories.myrepo.guid).toBe('myrepo');
-      expect(vault.repositories.myrepo.name).toBe('myrepo');
-      expect(vault.task.repository).toBe('myrepo');
+      expect(vault.task.repository).toBe('guid-grand');
+      expect(vault.task.repo_name).toBe('myrepo:latest');
     });
 
     it('should include network_id when provided as param', () => {
       const opts = baseOpts();
-      opts.params = { repository: 'myrepo', network_id: 2816 };
+      opts.params = { repository: 'myrepo', guid: 'guid-123', network_id: 2816 };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBe(2816);
+      expect(vault.repositories['guid-123'].network_id).toBe(2816);
     });
 
     it('should include network_id from repositoryConfigs', () => {
@@ -135,8 +176,8 @@ describe('buildLocalVault', () => {
       };
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBe(2880);
-      expect(vault.repositories.myrepo.guid).toBe('guid-123');
+      expect(vault.repositories['guid-123'].network_id).toBe(2880);
+      expect(vault.repositories['guid-123'].guid).toBe('guid-123');
     });
 
     it('should prefer repositoryConfigs.networkId over params.network_id', () => {
@@ -148,14 +189,14 @@ describe('buildLocalVault', () => {
       };
       opts.params = { repository: 'myrepo', network_id: 2816 };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBe(2944);
+      expect(vault.repositories['guid-123'].network_id).toBe(2944);
     });
 
     it('should not include network_id when 0 or missing', () => {
       const opts = baseOpts();
-      opts.params = { repository: 'myrepo' };
+      opts.params = { repository: 'myrepo', guid: 'guid-123' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBeUndefined();
+      expect(vault.repositories['guid-123'].network_id).toBeUndefined();
     });
 
     it('should not include network_id when repositoryConfigs.networkId is 0', () => {
@@ -165,9 +206,9 @@ describe('buildLocalVault', () => {
           myrepo: { guid: 'guid-123', name: 'myrepo', networkId: 0 },
         },
       };
-      opts.params = { repository: 'myrepo' };
+      opts.params = { repository: 'myrepo', guid: 'guid-123' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBeUndefined();
+      expect(vault.repositories['guid-123'].network_id).toBeUndefined();
     });
 
     // ── secret_files (file-mode), single-repo path ──────────────────
@@ -193,7 +234,7 @@ describe('buildLocalVault', () => {
       };
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.secret_files).toEqual([
+      expect(vault.repositories['guid-123'].secret_files).toEqual([
         { name: 'STRIPE_KEY', value: 'sk_live_x' },
         { name: 'DKIM', value: '----PEM----' },
       ]);
@@ -208,7 +249,7 @@ describe('buildLocalVault', () => {
       };
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.secret_files).toBeUndefined();
+      expect(vault.repositories['guid-123'].secret_files).toBeUndefined();
     });
 
     it('emits secret_files per-repo in multi-repo (up-all / migrate-all) mode', () => {

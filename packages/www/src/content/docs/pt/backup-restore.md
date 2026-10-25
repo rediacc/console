@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: pt
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # Backup e Restauro
@@ -62,7 +62,7 @@ O envio e receção máquina a máquina não precisam de nenhum dos dois. São u
 
 ### O caminho de armazenamento rclone desapareceu
 
-`rdc repo push --to <storage>` e afins costumavam copiar um ficheiro de backup inteiro para um fornecedor na nuvem que registava você mesmo. Agora recusam um destino de armazenamento e indicam o substituto. A transferência máquina a máquina nunca passou por rclone e não é afetada. Os comandos de armazenamento e o rclone incluído foram removidos, por isso um arquivo escrito dessa forma já não pode ser explorado a partir da CLI.
+`rdc repo push --to <storage>` e os comandos relacionados copiavam um ficheiro de backup inteiro para um fornecedor cloud registado manualmente. Os comandos de storage e o rclone incluído foram removidos, e `--to`/`--from` passam a indicar apenas uma máquina. A transferência entre máquinas nunca passou pelo rclone e não é afetada. Um arquivo escrito à moda antiga já não pode ser explorado a partir da CLI.
 
 ### Comandos de armazenamento em chunks
 

@@ -2,7 +2,7 @@
 // Queue Vault Validation
 // =============================================================================
 //
-// Bridge function validation uses the generated functions schema. Vault structure validation uses the generated Zod schemas.
+// Renet function validation uses the generated functions schema. Vault structure validation uses the generated Zod schemas.
 //
 
 import {
@@ -30,7 +30,7 @@ export {
 export type { MachineSection, RenetVault, RepositoryInfo } from '../types/index.js';
 
 // =============================================================================
-// Bridge Function Validation
+// Renet Function Validation
 // =============================================================================
 
 /**

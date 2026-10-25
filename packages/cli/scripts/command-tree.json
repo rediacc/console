@@ -675,6 +675,33 @@
           "subcommands": []
         },
         {
+          "name": "restart-services",
+          "descriptionKey": "commands.machine.restartServices.description",
+          "options": [
+            {
+              "flags": "--include-docker",
+              "descriptionKey": "commands.machine.restartServices.includeDockerOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--json",
+              "descriptionKey": "commands.machine.restartServices.jsonOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "provider",
           "descriptionKey": "commands.machine.provider.description",
           "options": [],
@@ -1041,6 +1068,12 @@
                 {
                   "flags": "--exclude <repos>",
                   "descriptionKey": "commands.backup.strategy.set.optionExclude",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--retention <spec>",
+                  "descriptionKey": "commands.backup.strategy.set.optionRetention",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -1418,6 +1451,20 @@
           ],
           "subcommands": [
             {
+              "name": "preview",
+              "descriptionKey": "commands.backup.retention.preview.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "repo-ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
               "name": "set",
               "descriptionKey": "commands.backup.retention.set.description",
               "options": [
@@ -1456,6 +1503,12 @@
                   "descriptionKey": "commands.backup.retention.optionKeepYearly",
                   "mandatory": false,
                   "defaultValue": null
+                },
+                {
+                  "flags": "--stream <id>",
+                  "descriptionKey": "commands.backup.retention.optionStream",
+                  "mandatory": false,
+                  "defaultValue": null
                 }
               ],
               "arguments": [
@@ -1471,10 +1524,45 @@
             {
               "name": "clear",
               "descriptionKey": "commands.backup.retention.clear.description",
+              "options": [
+                {
+                  "flags": "--stream <id>",
+                  "descriptionKey": "commands.backup.retention.optionStream",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "repo-ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "snapshots",
+          "descriptionKey": "commands.backup.snapshots.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "delete",
+              "descriptionKey": "commands.backup.snapshots.delete.description",
               "options": [],
               "arguments": [
                 {
                   "name": "repo-ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                },
+                {
+                  "name": "snapshot-id",
                   "required": true,
                   "variadic": false,
                   "defaultValue": null
@@ -1658,6 +1746,12 @@
             {
               "flags": "--archive-config",
               "descriptionKey": "commands.repo.delete.archiveOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--purge-backups",
+              "descriptionKey": "commands.repo.delete.purgeBackupsOption",
               "mandatory": false,
               "defaultValue": null
             },

@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: et
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # Varundamine ja taastamine
@@ -61,7 +61,7 @@ Masina-masina push ja pull ei vaja kumbagi. Need on otsene ülekanne kahe masina
 
 ### rclone salvestustee on kadunud
 
-`rdc repo push --to <storage>` ja tema sugulased kopeerisid varem terve varufaili pilveteenuse pakkujasse, mille sa ise registreerisid. Need keelduvad nüüd salvestussihtmärgist ja nimetavad selle asendaja. Masina-masina ülekanne ei käinud kunagi rclone kaudu ega ole mõjutatud. Salvestuskäsud ja kaasasolev rclone on eemaldatud, nii et sel viisil kirjutatud arhiivi ei saa enam CLI-st sirvida.
+`rdc repo push --to <storage>` ja sarnased käsud kopeerisid varem terve varundusfaili käsitsi registreeritud pilveteenuse pakkujale. storage-käsud ja kaasa pandud rclone on eemaldatud ning `--to`/`--from` nimetavad nüüd ainult masinat. Masinast masinasse ülekanne ei käinud kunagi läbi rclone'i ja seda muudatus ei puuduta. Vanal viisil kirjutatud arhiivi ei saa enam CLI kaudu sirvida.
 
 ### Tükksalvestuse käsud
 

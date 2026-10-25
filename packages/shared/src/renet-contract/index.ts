@@ -1,4 +1,4 @@
-// Bridge Functions (generated)
+// Renet Functions (generated)
 export {
   createFunctionPayload,
   type FunctionParamsMap,

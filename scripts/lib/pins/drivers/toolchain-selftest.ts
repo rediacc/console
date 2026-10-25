@@ -58,6 +58,8 @@ function tree(): string {
       'workers/proxy/Dockerfile',
       'package.json',
       'packages/cli/package.json',
+      // The second toolchain:wrangler site (.ci/config/pins.json).
+      'workers/account/package.json',
       'private/renet/go.mod',
       '.ci/scripts/private/license-mint/go.mod',
     ],
@@ -407,6 +409,13 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
     add(
       'wrangler: the constants.sh version moves',
       (textOf(w.plan, CONSTANTS) ?? '').includes(`WRANGLER_VERSION="${patchOf(wr)}"`),
+      w.refused
+    );
+    add(
+      'wrangler: the workers/account/package.json pin moves with it',
+      (textOf(w.plan, 'workers/account/package.json') ?? '').includes(
+        `"wrangler": "${patchOf(wr)}"`
+      ),
       w.refused
     );
     const node = createToolchainDriver(stubUpstream({}), mutant);

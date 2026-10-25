@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: ja
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # バックアップと復元
@@ -63,7 +63,7 @@ Rediaccは暗号化されたリポジトリをバックアップし、同じマ�
 
 ### rcloneストレージ経路は廃止されました
 
-`rdc repo push --to <storage>`とその関連コマンドは、かつては自分で登録したクラウドプロバイダにバックアップファイル全体をコピーしていました。これらは現在、ストレージ宛先を拒否し、代わりとなるコマンド名を示します。マシン間転送はもともとrcloneを経由していなかったため影響を受けません。storageコマンドと同梱のrcloneは削除されたため、その方法で書かれたアーカイブをCLIから参照することはできなくなりました。
+`rdc repo push --to <storage>` とその関連コマンドは、かつて手動で登録したクラウドプロバイダにバックアップファイル全体をコピーしていました。storage コマンドと同梱の rclone は削除され、`--to`/`--from` はマシンだけを指定するようになりました。マシン間転送はもともと rclone を経由していないため影響はありません。旧方式で書かれたアーカイブは、CLI から参照できなくなりました。
 
 ### チャンクストレージのコマンド
 

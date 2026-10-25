@@ -1,5 +1,5 @@
 /**
- * Which renet access each bridge function needs, see {@link RenetAccess}.
+ * Which renet access each renet function needs, see {@link RenetAccess}.
  *
  * A `Record` over the generated {@link RenetFunctionName} union, so a renet
  * function added to the contract breaks tsc here until someone classifies it.

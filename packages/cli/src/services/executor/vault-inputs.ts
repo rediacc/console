@@ -20,6 +20,7 @@ interface LoadedRepoEntry {
   guid: string;
   name: string;
   networkId?: number;
+  grandGuid?: string;
   secretFiles?: { name: string; value: string }[];
 }
 
@@ -36,21 +37,9 @@ function buildLoadedRepoEntry(name: string, config: RepositoryConfig): LoadedRep
     guid: config.repositoryGuid,
     name,
     networkId: config.networkId,
+    ...(config.grandGuid ? { grandGuid: config.grandGuid } : {}),
     ...(secretFiles.length > 0 ? { secretFiles } : {}),
   };
-}
-
-/**
- * Alias each family's bare name to its GRAND so lookups by bare name work,
- * whatever tag the grand is stored under (getRepositoryKey follows the
- * family's grand pointer rather than assuming `:latest`).
- */
-async function aliasBareNamesToGrands(configs: Record<string, LoadedRepoEntry>): Promise<void> {
-  for (const base of new Set(Object.keys(configs).map((key) => key.split(':')[0]))) {
-    if (base in configs) continue;
-    const grandKey = await configService.getRepositoryKey(base);
-    if (grandKey && grandKey in configs) configs[base] = configs[grandKey];
-  }
 }
 
 export async function loadContextRepositories(): Promise<{
@@ -68,7 +57,6 @@ export async function loadContextRepositories(): Promise<{
       }
       configs[r.name] = buildLoadedRepoEntry(r.name, r.config);
     }
-    await aliasBareNamesToGrands(configs);
     return { credentials, configs };
   } catch {
     return { credentials: undefined, configs: undefined };

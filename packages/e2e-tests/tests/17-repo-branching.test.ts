@@ -14,7 +14,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  *     (regression for "no keyfile found" and the conflict-report noise)
  *   - cross-machine flag-free delta re-push of a fork + delta pull, byte-identical
  *
- * commit/checkout/log/merge/delta params are not in the bridge once test-mode
+ * commit/checkout/log/merge/delta params are not in the functions once test-mode
  * flag allowlist, so these drive the renet CLI directly via executeViaBridge
  * (the createRepositoryFork pattern). Names are renet on-disk names (the fork's
  * --tag IS its image name; the rdc `name:tag` compositing is a config concern).

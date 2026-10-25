@@ -63,6 +63,7 @@ vi.mock('../../utils/errors.js', async () => {
   };
 });
 
+const { outputService } = await import('../../services/core/output.js');
 const { registerBackupStorageCommands } = await import('../backup-storage.js');
 
 async function run(argv: string[]): Promise<void> {
@@ -187,13 +188,100 @@ describe('backup retention', () => {
   it('shows the policy the SERVER is enforcing, scoped to the lineage', async () => {
     mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
     mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
-    mockAccountServerFetch.mockResolvedValue({ policies: [] });
+    mockAccountServerFetch.mockResolvedValue({ policies: [], streams: [] });
 
     await run(['retention', 'shop']);
 
     // Read back from the server, never printed from local config: what is shown has to be what is enforced, on the surface that decides what is deleted.
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
       '/account/api/v1/backups/retention?lineage=lin-1'
+    );
+  });
+
+  it('names the effective policy and where it came from (F5)', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    const knobs = {
+      keepLast: 3,
+      keepHourly: null,
+      keepDaily: 7,
+      keepWeekly: null,
+      keepMonthly: null,
+      keepYearly: null,
+    };
+    mockAccountServerFetch.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('/retention/preview')
+          ? {
+              lineageGuid: 'lin-1',
+              policySource: 'plan',
+              streams: [{ streamId: 's-1', policySource: 'plan', policy: knobs }],
+              deleted: [],
+              keptSnapshots: 4,
+              freedBytes: 0,
+              freedChunks: 0,
+            }
+          : { policies: [] }
+      )
+    );
+
+    await run(['retention', 'shop']);
+
+    expect(mockAccountServerFetch).toHaveBeenCalledWith(
+      '/account/api/v1/backups/retention/preview?lineage=lin-1'
+    );
+    const infos = vi.mocked(outputService.info).mock.calls.map((c) => String(c[0]));
+    expect(infos.join('\n')).toContain('commands.backup.retention.effective');
+    expect(infos.join('\n')).toContain('commands.backup.retention.source.plan');
+    // The per-stream rows carry the same source and the knob counts.
+    const printed = mockPrint.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(printed).toContain('"stream":"s-1"');
+    expect(printed).toContain('"daily":7');
+  });
+
+  it('retention preview lists the snapshots the next sweep deletes and the bytes freed (F6)', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({
+      lineageGuid: 'lin-1',
+      policySource: 'default',
+      streams: [],
+      deleted: [{ snapshotId: 'snap-old', streamId: 's-1', createdAt: '2026-01-01T00:00:00.000Z' }],
+      keptSnapshots: 7,
+      freedBytes: 4096,
+      freedChunks: 1,
+    });
+
+    await run(['retention', 'preview', 'shop']);
+
+    expect(mockAccountServerFetch).toHaveBeenCalledWith(
+      '/account/api/v1/backups/retention/preview?lineage=lin-1'
+    );
+    expect(mockPrint.mock.calls.map((c) => String(c[0])).join('\n')).toContain('snap-old');
+    const infos = vi.mocked(outputService.info).mock.calls.map((c) => String(c[0]));
+    expect(infos.join('\n')).toContain('commands.backup.retention.preview.summary');
+  });
+
+  it('set --stream declares the policy for that stream alone (F1)', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({ policies: [] });
+
+    await run(['retention', 'set', 'shop', '--keep-daily', '3', '--stream', 's-1']);
+
+    const [, init] = mockAccountServerFetch.mock.calls[0] as [string, { body: string }];
+    expect(JSON.parse(init.body)).toEqual({ lineageGuid: 'lin-1', streamId: 's-1', keepDaily: 3 });
+  });
+
+  it('clear --stream scopes the delete to that stream', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({ policies: [] });
+
+    await run(['retention', 'clear', 'shop', '--stream', 's-1']);
+
+    expect(mockAccountServerFetch.mock.calls[0][0]).toBe(
+      '/account/api/v1/backups/retention?lineage=lin-1&stream=s-1'
     );
   });
 
@@ -243,5 +331,44 @@ describe('backup retention', () => {
     // THE DEFECT: an UNSCOPED delete. Without the lineage this clears the policy for a repository the operator did not name.
     expect(url).toBe('/account/api/v1/backups/retention?lineage=lin-1');
     expect(init.method).toBe('DELETE');
+  });
+});
+
+/**
+ * `backup snapshots delete <repo> <id>` (plan F10): the manual delete the quota error's "prune old
+ * snapshots" points at. The id is checked against the named repository's history first, so an id
+ * from another repository never reaches the delete route.
+ */
+describe('backup snapshots delete', () => {
+  const history = {
+    manifests: [{ snapshotId: 'snap-1', lineageGuid: 'lin-1', streamId: 's-1', createdAt: 'x' }],
+  };
+
+  it('deletes through the account route once the id is in the repository history', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch
+      .mockResolvedValueOnce(history)
+      .mockResolvedValueOnce({ deleted: ['snap-1'] });
+
+    await run(['snapshots', 'delete', 'shop', 'snap-1']);
+
+    expect(mockAccountServerFetch.mock.calls[0][0]).toBe(
+      '/account/api/v1/backups/manifests?lineage=lin-1'
+    );
+    const [url, init] = mockAccountServerFetch.mock.calls[1] as [string, { method: string }];
+    expect(url).toBe('/account/api/v1/backups/snapshots/snap-1');
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('refuses an id that is not in the named repository, without calling the delete route', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValueOnce(history);
+
+    await expect(run(['snapshots', 'delete', 'shop', 'snap-other'])).rejects.toThrow(
+      'commands.backup.snapshots.delete.notInRepo'
+    );
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
   });
 });

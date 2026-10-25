@@ -62,7 +62,7 @@ function parse(body: unknown) {
 }
 
 describe('executor audit payload against AuditEventsRequestSchema', () => {
-  it('a command that reached no bridge function records as cli.command, keyed by its path', async () => {
+  it('a command that reached no renet function records as cli.command, keyed by its path', async () => {
     const body = await shipped(event({ commandPath: 'machine status', machineName: 'prod-1' }));
     const parsed = parse(body);
     expect(parsed.type).toBe('cli.command');

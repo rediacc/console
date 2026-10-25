@@ -72,7 +72,10 @@
         "restoringSnapshot": "Ripristino di {{name}} dallo snapshot {{snapshot}} in corso...",
         "sourceUnknown": "Nessun repository chiamato \"{{name}}\" è noto in questa configurazione, quindi il suo artefatto di backup non può essere individuato.",
         "streamUnknown": "Impossibile stabilire quale flusso di backup appartenga a questo repository sulla sua macchina di origine (la verifica del backup sulla macchina non è riuscita, oppure non segnala alcuno snapshot confermato che l'indice elenchi). Usa --any-stream per scegliere tra tutti i flussi di questa linea.",
-        "targetExists": "\"{{name}}\" esiste già. Ripristina con un altro nome (--as) oppure elimina prima il repository esistente."
+        "targetExists": "\"{{name}}\" esiste già. Ripristina con un altro nome (--as) oppure elimina prima il repository esistente.",
+        "stats": "Il ripristino ha scaricato {{fetched}} chunk ({{bytes}}), ne ha riusati {{reused}}, ha preso {{known}} celle dall'ancora e svuotato {{punched}} celle obsolete (dimensione cella {{cellBytes}}).",
+        "statsSeed": "Seed: partito dall'immagine {{seed}} di {{guid}} (la sonda ha letto {{probe}}).",
+        "statsSeedSkipped": "Seed scartato: {{skipped}}"
       },
       "retention": {
         "clear": {
@@ -92,6 +95,22 @@
         "set": {
           "description": "Indica quanti snapshot conservare. Ogni parametro viene sostituito, non unito.",
           "success": "Politica di conservazione impostata per {{name}} ({{count}} regola/e). Gli snapshot esclusi vengono eliminati alla prossima pulizia."
+        },
+        "effective": "Conservazione in vigore per {{name}}: {{source}}",
+        "optionStream": "Applica solo a questo flusso di backup (un id di flusso); senza, vale il valore predefinito dell'intero repository",
+        "preview": {
+          "description": "Mostra quali snapshot eliminerebbe la prossima pulizia e quanto spazio libererebbe.",
+          "nothing": "La prossima pulizia non elimina nulla di {{name}}.",
+          "summary": "La prossima pulizia elimina {{count}} snapshot di {{name}}, ne conserva {{kept}} e libera {{bytes}}."
+        },
+        "seeded": "La conservazione della strategia \"{{strategy}}\" è stata dichiarata per {{count}} repository senza una politica.",
+        "seedFailed": "Impossibile dichiarare la conservazione della strategia \"{{strategy}}\" ({{reason}}). Nel frattempo vale il valore predefinito del server.",
+        "source": {
+          "stream": "eccezione del flusso",
+          "declared": "politica dichiarata",
+          "plan": "valore del piano",
+          "default": "valore del server",
+          "orphan": "periodo di un repository orfano"
         }
       },
       "run": {
@@ -149,7 +168,18 @@
           "optionExclude": "Escludi questi repo dal backup (nomi separati da virgola)",
           "optionInclude": "Esegui il backup solo di questi repo (nomi separati da virgola)",
           "optionMode": "Modalità di backup: \"hot\" crea lo snapshot mentre tutto resta in esecuzione, \"cold\" ferma i container per il tempo dello snapshot",
-          "saved": "Configurazione della strategia di backup salvata"
+          "saved": "Configurazione della strategia di backup salvata",
+          "optionRetention": "Conservazione degli snapshot, ad esempio last=7,daily=7,weekly=4,monthly=6 (\"none\" la rimuove)",
+          "retentionInvalid": "--retention \"{{value}}\" non è un elenco di coppie nome=numero. I nomi validi sono last, hourly, daily, weekly, monthly e yearly, ciascuno una sola volta, e ogni numero è un intero, ad esempio last=7,daily=7.",
+          "retentionCronMismatch": "Strategia \"{{strategy}}\": la regola {{knob}} non può avere effetto con la pianificazione {{cadence}} \"{{cron}}\", che produce troppi pochi snapshot per riempirla.",
+          "cadence": {
+            "daily": "giornaliera",
+            "weekly": "settimanale",
+            "monthly": "mensile"
+          },
+          "retentionNotPushed": "La conservazione della strategia \"{{strategy}}\" è salvata, ma non c'è un token dell'account per applicarla. Accedi ed esegui di nuovo il comando.",
+          "retentionPushed": "Conservazione applicata a {{count}} repository.",
+          "retentionPushFailed": "La conservazione della strategia \"{{strategy}}\" è salvata, ma non è stato possibile applicarla ({{reason}}). Esegui di nuovo il comando quando il server risponde."
         },
         "show": {
           "description": "Mostra i dettagli della strategia di backup",
@@ -175,6 +205,15 @@
         "failed": "Verifica del backup non riuscita per {{name}}",
         "optionDeep": "Ricalcola l'hash di ogni cella registrata (verifica completa) invece di un controllo campionato",
         "starting": "Verifica del backup di {{name}} ({{level}}) in corso..."
+      },
+      "snapshots": {
+        "description": "Gestisci gli snapshot archiviati",
+        "snapshotIdArgument": "Id dello snapshot (vedi rdc backup manifests)",
+        "delete": {
+          "description": "Elimina uno snapshot archiviato di un repository. I dati usati solo da quello snapshot vengono liberati dalla prossima garbage collection.",
+          "notInRepo": "Lo snapshot {{snapshot}} non è nella cronologia archiviata di {{name}}. Per elencarne gli id: rdc backup manifests {{name}}",
+          "success": "Eliminati {{count}} snapshot di {{name}}, incluso {{snapshot}}."
+        }
       }
     },
     "cluster": {
@@ -1059,6 +1098,15 @@
         "placementConflictNext": "Sposta o elimina prima questi repository, oppure forza la rimozione.",
         "success": "Macchinario \"{{name}}\" rimosso"
       },
+      "restartServices": {
+        "completed": "I daemon renet su '{{machine}}' usano il binario installato.",
+        "description": "Riavvia uno alla volta i daemon renet che eseguono ancora un binario sostituito, così passano a quello installato, e verifica che ogni unità sia attiva sul nuovo binario prima di passare alla successiva. Con --include-docker vengono riavviati anche i supervisori rediacc-docker-N di ciascun repository, uno alla volta, il che riavvia i container di quel repository.",
+        "descriptionShort": "Riavvia i daemon renet sul binario installato",
+        "includeDockerOption": "Riavvia anche il supervisore rediacc-docker-N di ogni repository (ne riavvia i container)",
+        "jsonOption": "Stampa il report in formato JSON",
+        "nothingStale": "Nessun daemon renet su '{{machine}}' esegue un binario sostituito.",
+        "starting": "Riavvio dei daemon renet su '{{machine}}'..."
+      },
       "scanKeys": {
         "completed": "Scansionati {{count}}/{{total}} macchinari",
         "description": "Esegui la scansione delle chiavi host SSH per i macchinari nella configurazione corrente",
@@ -1374,7 +1422,12 @@
         },
         "failed": "Eliminazione del repository non riuscita",
         "restoreHint": "Ripristina con: rdc repo admin archive restore {{guid}}",
-        "starting": "Eliminazione di \"{{repository}}\" su \"{{machine}}\"..."
+        "starting": "Eliminazione di \"{{repository}}\" su \"{{machine}}\"...",
+        "backupsOrphaned": "I backup cloud di \"{{repository}}\" sono conservati fino al {{expires}}, poi scadono. Per rimuoverli subito usa --purge-backups.",
+        "backupsOrphanFailed": "Impossibile segnalare come orfani i backup cloud di \"{{repository}}\" ({{reason}}). Restano soggetti alla politica di conservazione del repository.",
+        "backupsPurged": "Eliminati {{count}} snapshot cloud di \"{{repository}}\", liberati {{bytes}}.",
+        "purgeBackupsOption": "Elimina subito anche i backup cloud del repository, invece di lasciarli scadere",
+        "purgeForkRefused": "\"{{repository}}\" è un fork e condivide la linea di backup con il genitore, quindi --purge-backups eliminerebbe anche i backup del genitore. Elimina il fork senza questa opzione."
       },
       "description": "Distribuisci e gestisci repository cifrati sui macchinari. Sottocomandi principali: create, up (distribuisci), down (ferma), fork (clone CoW istantaneo), delete, push/pull (backup), sync (trasferimento file). Ciclo di vita: repo create → repo up → repo down. Consulta Concetti Chiave in rdc --help per architettura, routing e variabili d'ambiente.",
       "descriptionShort": "Distribuisci e gestisci repository cifrati sui macchinari",
@@ -1833,8 +1886,8 @@
       },
       "run": {
         "completedLocal": "Completato in {{duration}}ms",
-        "description": "ATTENZIONE: Comando di basso livello per debug e sperimentazione soltanto. Non per uso in produzione. Usa i comandi di livello superiore (repo up, repo down, ecc.) in alternativa. Esegue una funzione bridge grezza su una macchina.",
-        "descriptionShort": "Esegui una funzione bridge grezza su una macchina (solo debug)",
+        "description": "ATTENZIONE: comando di basso livello, pensato solo per debug e sperimentazione, non per la produzione. Per l'uso normale ci sono i comandi di livello superiore (repo up, repo down e così via). Esegue una funzione renet grezza su una macchina.",
+        "descriptionShort": "Esegui una funzione renet grezza su una macchina (solo per il debug)",
         "executingLocal": "Esecuzione di '{{function}}' su {{machine}} in corso...",
         "failedLocal": "Fallito: {{error}}"
       },

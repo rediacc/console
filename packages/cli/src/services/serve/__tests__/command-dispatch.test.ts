@@ -204,7 +204,6 @@ describe('prepareCommand enforces proxyCapable (SEC-1)', () => {
     // client-side transfer: the paths are the EXECUTOR's filesystem when proxied. (sync now takes a positional <ref>; the machine is derived, so only the client-side --local path remains as a flag.)
     ['repo sync upload', { local: '/root/.ssh/id_rsa' }],
     ['repo sync download', { local: '/tmp/exfil' }],
-    ['storage import', { file: '/etc/passwd' }],
     // interactive: would hang a request forever holding a slot.
     ['term connect', { machine: 'm' }],
     // other plane: acts on the executor process, not on infrastructure.

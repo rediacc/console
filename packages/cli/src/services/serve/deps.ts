@@ -19,7 +19,7 @@ import type { SessionPrincipal, SessionStore } from './sessions.js';
 export interface ExecutorAuditEvent {
   principal: SessionPrincipal;
   commandPath: string;
-  /** The bridge function the command called, absent when it reached none. */
+  /** The renet function the command called, absent when it reached none. */
   functionName?: string;
   machineName?: string;
   params: Record<string, unknown>;

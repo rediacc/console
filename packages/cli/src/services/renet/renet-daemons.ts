@@ -9,6 +9,7 @@
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
+import { isRenetFlagUnsupported, renetOlderThanCliMessage } from '../executor/job-client.js';
 
 /** A renet process and the binary it runs. */
 export interface RenetProcess {
@@ -160,4 +161,32 @@ export async function upgradeDaemons(
     }
     return { ran: false, restarted: [], stale, failed: [] };
   }
+}
+
+/** The exec line for `renet daemons upgrade --json`; --keep-slots 0 leaves slot pruning to the install. */
+export function buildDaemonsRestartCommand(renetPath: string, includeDocker: boolean): string {
+  return `sudo ${shellQuote(renetPath)} daemons upgrade --json --keep-slots 0${includeDocker ? ' --include-docker' : ''}`;
+}
+
+/**
+ * `machine restart-services`: roll every renet daemon still on a replaced binary onto the installed one. renet restarts one unit at a time and confirms each (active, main process on the current binary, stable across two polls) before the next; per-repo `rediacc-docker-N` supervisors join only with `includeDocker`, one repo at a time, which restarts that repo's containers.
+ * Unlike {@link upgradeDaemons} this throws: an operator asked for the restart, so a renet that cannot run it is an error. A renet without the verb or flag answers with the version-skew message.
+ */
+export async function restartDaemons(
+  sftp: Pick<SFTPClient, 'exec'>,
+  machineName: string,
+  renetPath: string,
+  includeDocker: boolean
+): Promise<DaemonUpgradeReport> {
+  let output: string;
+  try {
+    output = await sftp.exec(buildDaemonsRestartCommand(renetPath, includeDocker));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isRenetFlagUnsupported(message) || /unknown command/i.test(message)) {
+      throw new Error(renetOlderThanCliMessage(machineName));
+    }
+    throw error;
+  }
+  return { ran: true, ...parseDaemonUpgradeJson(output) };
 }

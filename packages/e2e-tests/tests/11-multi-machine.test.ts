@@ -103,7 +103,7 @@ test.describe('Multi-Machine Setup @bridge @multi-machine', () => {
   });
 
   test('check_system on worker VM 1', async () => {
-    // check_system is available through bridge once, unlike check_setup
+    // check_system is available through functions once, unlike check_setup
     const result = await runner.checkSetupOnMachine(runner.getWorkerVM());
     expect(runner.isSuccess(result)).toBe(true);
   });

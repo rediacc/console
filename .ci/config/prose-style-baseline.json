@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2805,
- "files": 682,
+ "count": 2785,
+ "files": 681,
  "by_rule": {
-  "R1": 1533,
+  "R1": 1519,
   "R11": 148,
   "R14": 1,
   "R18": 13,
-  "R19": 62,
+  "R19": 59,
   "R2": 604,
-  "R7": 444
+  "R7": 441
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -1098,8 +1098,7 @@
   },
   ".claude/agents/backup-storage.md": {
    "R1": [
-    "039e9ca8f63b0ad8",
-    "48ad336d8c2713a5"
+    "039e9ca8f63b0ad8"
    ],
    "R7": [
     "6b6b1675c93e1f2f"
@@ -4084,8 +4083,6 @@
   },
   "packages/cli/src/commands/backup-strategy.ts": {
    "R1": [
-    "5c5d0c8d1f1f2bf9",
-    "7ec8bfff0d77872c",
     "a9542010ac36c542"
    ]
   },
@@ -4163,11 +4160,6 @@
   "packages/cli/src/services/account/account-client.ts": {
    "R1": [
     "66745f5f8ddcb747"
-   ]
-  },
-  "packages/cli/src/services/backup/backup-schedule-reconcile.ts": {
-   "R7": [
-    "54898adab488243f"
    ]
   },
   "packages/cli/src/services/backup/backup-schedule.ts": {
@@ -4512,7 +4504,6 @@
   },
   "packages/shared/src/config/defaults.ts": {
    "R7": [
-    "33f8e18a3777ed02",
     "966830a15d2d2f85"
    ]
   },
@@ -4918,13 +4909,10 @@
     "110f328f930f955b",
     "1a2afbc0a8828f13",
     "28f065528ec625e5",
-    "29ceb8c72bfb51ce",
     "2ca94070959c966c",
     "2e9a95194b3973bc",
-    "2f5f39cfe0f70188",
     "35313a1c338ad970",
     "35674c5bbc0f8a35",
-    "35d420a2fbe00b77",
     "3683e8caf492ff2e",
     "3907f05184f8c23b",
     "3b38e2ea3c770378",
@@ -4942,13 +4930,11 @@
     "5ee2a6559b5b694d",
     "6723fb297666644b",
     "6caeec215e3f6940",
-    "6db6c9ffbcfb3b53",
     "70fed2d087c5198c",
     "746e1023885c7094",
     "77f3a781b2d00b87",
     "84035717a818711d",
     "8c21900e8dc22509",
-    "8da4ea64a7173d17",
     "920c51d62adebebb",
     "9386bc229911756d",
     "a1e9cb4a3d870dd9",
@@ -4958,7 +4944,6 @@
     "b824bf50d944b94f",
     "ca2c7591c035e4ef",
     "cd9631811adc4263",
-    "d82d2be2d5c495b8",
     "e3a8ab2102d4d810",
     "f5996192b80b6380",
     "f67c68e248e6c99a",
@@ -4973,7 +4958,6 @@
    "R19": [
     "088223725ea98314",
     "0d6aa5c6ae8736db",
-    "1107555bb1b6816c",
     "1dc456a575a675ac",
     "1fe519ed0ba575c1",
     "26a203f1f10e765b",
@@ -4981,7 +4965,6 @@
     "38fb71f75f96da6d",
     "4746738baf4aefca",
     "4d4c0746631c1f28",
-    "57bea0a1acef06cd",
     "581db0a693431aa1",
     "59d5933c777a1a94",
     "5d34b2c33e4c121f",
@@ -4990,7 +4973,6 @@
     "7625a38c372b78c4",
     "7eb502e15babeeed",
     "87d09c743d5521da",
-    "89418921deefcca9",
     "930159fdd574a3e4",
     "a10406a8e98b2c2e",
     "a1b47b15c7fd7ba0",
@@ -5327,15 +5309,10 @@
     "3be9720115454c96",
     "3ed3403c402084a5",
     "5d46502300563f09",
-    "779fde3c1b8c8cc8",
-    "7da29bdf05971193",
     "83c48fff726820fc",
-    "a47ea58bdd92ff2f",
-    "b381331b629438c8",
-    "e751218023fd1bbf"
+    "b381331b629438c8"
    ],
    "R7": [
-    "20b69b0488be3e6b",
     "82aa0775a4a75a81"
    ]
   },
@@ -5347,7 +5324,6 @@
     "3454faf4acb94809",
     "577b5cec5eebc7b1",
     "71c0c893553f7904",
-    "8041d3b0bda2bc2c",
     "9b489eefa80b86e3",
     "9d6662de95f2392f",
     "af0c88f819448e31",

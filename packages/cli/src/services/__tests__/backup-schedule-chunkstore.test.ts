@@ -2,14 +2,14 @@
  * Scheduled backups to a hosted-service (chunk-store) destination.
  *
  * THE DEFECT THESE CATCH, which shipped and was silent: `buildBackupCommands`
- * looked every destination up in `rcloneArgsByDest` and did `continue` when it
- * found nothing. A hosted-service destination has no rclone remote by
+ * looked every destination up in a per-destination argument map and did `continue` when it
+ * found nothing. A hosted-service destination has no remote by
  * construction, so it was SKIPPED, the operator declared a chunk-store
  * destination, deployed the schedule, and got a timer that backed up nothing.
  * No error, no unit, no warning: the failure was invisible until someone went
  * looking for backups that did not exist.
  *
- * The rclone/OneDrive emission was REMOVED on 2026-08-15, so the chunk store is
+ * The remote-sync emission was REMOVED on 2026-08-15, so the chunk store is
  * now the only destination kind this generator can render. That makes the
  * silent-skip failure mode reachable from the other side, a config still
  * naming a `storage` destination, so the refusal tests below pin that such a
@@ -62,7 +62,7 @@ describe('scheduled backups to the chunk store', () => {
     // The point of the destination kind: the machine authenticates with its signed licence blob and the server hands back a short-lived grant.
     const { commands, envVars } = buildBackupCommands(strategy(), [hosted()], DATASTORE, RENET);
     expect(envVars).toEqual({});
-    expect(commands[0]).not.toMatch(/--rclone-param|--setenv|RCLONE_/);
+    expect(commands[0]).not.toMatch(/--setenv|--storage-param/);
   });
 
   it('refuses to render an include or exclude list that was not resolved to GUIDs', () => {
@@ -93,7 +93,7 @@ describe('scheduled backups to the chunk store', () => {
   });
 
   it('keeps the strategy bandwidth limit on argv, converted to bytes/second', () => {
-    // The schema declares bandwidthLimit as an rclone-style string ('6M') but `backup snapshot --bwlimit` is an Int64 in bytes/second, so passing the string through would fail at cobra's flag parse, inside the timer, at run time, long after the deploy reported success.
+    // The schema declares bandwidthLimit as a unit-suffixed string ('6M') but `backup snapshot --bwlimit` is an Int64 in bytes/second, so passing the string through would fail at cobra's flag parse, inside the timer, at run time, long after the deploy reported success.
     const { commands } = buildBackupCommands(
       strategy({ bandwidthLimit: '6M' }),
       [hosted()],
@@ -146,8 +146,8 @@ describe('scheduled backups to the chunk store', () => {
   });
 });
 
-describe('the refusal that replaced the rclone path', () => {
-  // The silent-emit case is the exact defect the hosted-service branch was added to fix. Removing rclone re-opened it from the other direction: a strategy that still names a `storage` destination would otherwise render a unit with no ExecStart at all, a timer that backs up nothing, quietly.
+describe('the refusal that replaced the retired path', () => {
+  // The silent-emit case is the exact defect the hosted-service branch was added to fix. Removing it re-opened it from the other direction: a strategy that still names a `storage` destination would otherwise render a unit with no ExecStart at all, a timer that backs up nothing, quietly.
   it('THROWS on a `storage` destination rather than emitting nothing', () => {
     const call = () => buildBackupCommands(strategy(), [storage('offsite')], DATASTORE, RENET);
     expect(call).toThrow(/Backup destination "offsite"/);
@@ -165,7 +165,7 @@ describe('the refusal that replaced the rclone path', () => {
     expect(call).toThrow(/Refusing to generate a unit that would back up nothing\./);
   });
 
-  it('refuses the whole strategy, not just the rclone half, when kinds are mixed', () => {
+  it('refuses the whole strategy, not just the retired half, when kinds are mixed', () => {
     // Partial emission would be the worst outcome: a unit that looks deployed and silently drops one of the two declared destinations.
     expect(() =>
       buildBackupCommands(strategy(), [storage('offsite'), hosted()], DATASTORE, RENET)

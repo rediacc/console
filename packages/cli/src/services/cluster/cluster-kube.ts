@@ -231,7 +231,7 @@ export async function prepareMigrateDest(
 }
 
 /**
- * Dispatch one internal kube_ or repository_ bridge function to a member,
+ * Dispatch one internal kube_ or repository_ renet function to a member,
  * throwing on any non-success. captureOutput returns renet's stdout (used to
  * read the join token).
  */

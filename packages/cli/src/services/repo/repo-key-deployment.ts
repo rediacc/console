@@ -41,15 +41,18 @@ async function repoKeyDatastore(
 export function buildKeyDeploymentScript(
   repoName: string,
   sshPublicKey: string,
-  repositoryGuid: string | undefined,
+  repositoryGuid: string,
   datastore: string
 ): string {
+  if (!repositoryGuid) {
+    throw new Error(`refusing to deploy a repo key for ${repoName} without a GUID`);
+  }
   if (!SAFE_DATASTORE_PATH.test(datastore) || datastore.split('/').includes('..')) {
     throw new Error(
       `refusing to bind repo key ${repoName} to datastore ${JSON.stringify(datastore)}: not a plain absolute path`
     );
   }
-  const guidFlag = repositoryGuid ? ` --guid ${repositoryGuid}` : '';
+  const guidFlag = ` --guid ${repositoryGuid}`;
   const keyLine = `command="${GATEWAY_BIN} sandbox-gateway ${repoName}${guidFlag} --datastore ${datastore}" ${sshPublicKey}`;
   const keyPrefix = sshPublicKey.slice(0, 50);
 
@@ -76,7 +79,7 @@ export async function deployRepoKey(
   sftp: SFTPClient,
   repoName: string,
   sshPublicKey: string,
-  repositoryGuid: string | undefined,
+  repositoryGuid: string,
   datastore: string
 ): Promise<void> {
   await sftp.exec(buildKeyDeploymentScript(repoName, sshPublicKey, repositoryGuid, datastore));
@@ -163,6 +166,26 @@ export async function removeRepoKeyIfDeployed(
   }
 }
 
+/** Counts the sandbox-gateway lines in authorized_keys that carry no --guid, the lines renet's prune scanner treats as orphaned. Prints a bare integer; exits 0 whatever grep finds. */
+export const COUNT_UNGUIDED_KEY_LINES_SCRIPT =
+  "grep 'sandbox-gateway' \"$HOME/.ssh/authorized_keys\" 2>/dev/null | grep -vc -e ' --guid ' || true";
+
+async function warnOnUnguidedKeyLines(sftp: SFTPClient, machineName: string): Promise<void> {
+  try {
+    const remaining = Number.parseInt(
+      (await sftp.exec(COUNT_UNGUIDED_KEY_LINES_SCRIPT)).trim(),
+      10
+    );
+    if (remaining > 0) {
+      writeStderr(
+        `Warning: ${remaining} authorized_keys line(s) on ${machineName} carry no --guid; the repos they belong to have no key in the active config, so setup could not re-deploy them\n`
+      );
+    }
+  } catch (error) {
+    debugLog(`unguided key line check failed on ${machineName}: ${error}`);
+  }
+}
+
 /**
  * Deploy ALL repo keys to a machine over a single shared SSH session.
  * Used after setup-machine.
@@ -181,16 +204,37 @@ export async function deployAllRepoKeys(machineName: string): Promise<number> {
     const sftp = await lease.ensure();
     for (const { name, config } of repos) {
       if (!config.sshPublicKey) continue;
-      try {
-        const datastore = await repoKeyDatastore(name, machine.datastore);
-        await deployRepoKey(sftp, name, config.sshPublicKey, config.repositoryGuid, datastore);
-        deployed++;
-      } catch (error) {
-        debugLog(`Warning: failed to deploy key for ${name}: ${error}`);
-      }
+      const datastore = () => repoKeyDatastore(name, machine.datastore);
+      deployed += (await deployOneKey(sftp, name, machineName, config, datastore)) ? 1 : 0;
     }
+    await warnOnUnguidedKeyLines(sftp, machineName);
   } finally {
     lease.release();
   }
   return deployed;
+}
+
+/** One repo's key during setup; a failure is a visible warning, never thrown. */
+async function deployOneKey(
+  sftp: SFTPClient,
+  name: string,
+  machineName: string,
+  config: { sshPublicKey?: string; repositoryGuid: string },
+  datastore: () => Promise<string>
+): Promise<boolean> {
+  try {
+    await deployRepoKey(
+      sftp,
+      name,
+      config.sshPublicKey as string,
+      config.repositoryGuid,
+      await datastore()
+    );
+    return true;
+  } catch (error) {
+    writeStderr(
+      `Warning: failed to deploy SSH key for ${name} to ${machineName}: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+    return false;
+  }
 }

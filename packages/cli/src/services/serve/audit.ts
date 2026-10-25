@@ -42,7 +42,7 @@ export interface ExecutorAuditOptions {
  *
  * A command whose function maps to an event type records under that type, so
  * a proxied `repo up` and a local one land in the same SIEM bucket. Every other
- * command (one that reached no bridge function, or whose function maps to no
+ * command (one that reached no renet function, or whose function maps to no
  * type, or that resolved no machine) records as `cli.command`, keyed by its
  * path: the one-event-per-command guarantee does not depend on the mapping.
  *

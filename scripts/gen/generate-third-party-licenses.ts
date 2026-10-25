@@ -4,7 +4,7 @@
  *
  * Assembles, deterministically and non-fatally-when-offline:
  *   1. Header + the GPL written-offer / source-availability statement.
- *   2. Embedded binaries conveyed by renet (CRIU, rsync, rclone) from the
+ *   2. Embedded binaries conveyed by renet (CRIU, rsync) from the
  *      committed inventory (packages/cli/src/data/third-party-credits.json):
  *      version, SPDX, exact-version source URL, planned R2 mirror, notes.
  *   3. The SEA-bundled Node.js runtime + a pointer to the npm section.

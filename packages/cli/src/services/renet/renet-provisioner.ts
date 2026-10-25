@@ -39,6 +39,7 @@ import {
   type RenetInspectResult,
 } from './renet-inspect.js';
 import { withLocalProvisionLock } from './renet-provision-lock.js';
+import { buildSlotPruneStep } from './renet-slot-prune.js';
 
 /** Root directory for versioned renet installs on remote machines */
 const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
@@ -60,6 +61,12 @@ const STAGING_PATH_PREFIX = '/tmp/.rdc-staging-renet';
 
 /** Remote host-scoped lock file for install/restart critical section */
 const REMOTE_LOCK_PATH = '/tmp/.rdc-renet-provision.lock';
+
+/** Versioned renet slots kept after an install, `current` included: current plus the 2 previous. Matches renet's `daemons upgrade --keep-slots` default. */
+const REMOTE_KEEP_SLOTS = 3;
+
+/** Where systemd units that name a renet slot live. */
+const REMOTE_UNIT_DIR = '/etc/systemd/system';
 
 /** flock's `-E` exit status, chosen outside anything the install body emits. */
 const REMOTE_FLOCK_TIMEOUT_EXIT = 75;
@@ -677,6 +684,15 @@ class RenetProvisionerService {
       `if [ "$(current_target)" != ${escapedInstallPath} ]; then sudo ln -sfn ${escapedInstallPath} ${escapedCurrentTmpPath}; sudo mv -Tf ${escapedCurrentTmpPath} ${escapedCurrentPath}; if [ -n "$result" ]; then result="$result CURRENT_UPDATED"; else result=CURRENT_UPDATED; fi; fi`,
       // Ensure /usr/bin/renet symlinks to current so "sudo renet" always resolves to the provisioned binary
       `if [ ! -L /usr/bin/renet ] || [ "$(readlink /usr/bin/renet)" != ${escapedCurrentPath} ]; then sudo ln -sf ${escapedCurrentPath} /usr/bin/renet; fi`,
+      // Prune old slots inside the same lock, after current points at the new slot.
+      `(${buildSlotPruneStep({
+        root: REMOTE_INSTALL_ROOT,
+        currentPath: REMOTE_CURRENT_PATH,
+        installPath: remoteInstallPath,
+        unitDir: REMOTE_UNIT_DIR,
+        keep: REMOTE_KEEP_SLOTS,
+        sudo: 'sudo',
+      })}) || true`,
       'if [ -z "$result" ]; then result=VERIFIED; fi',
       'echo "$result"',
     ].join('; ');

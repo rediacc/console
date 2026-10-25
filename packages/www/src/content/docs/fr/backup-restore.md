@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: fr
-sourceHash: "b3aeea9301684d79"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "b42d1f1b49c7e73a"
+sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 ---
 
 # Sauvegarde et restauration
@@ -61,7 +61,7 @@ Le push et le pull de machine à machine n'ont besoin ni de l'un ni de l'autre. 
 
 ### La voie de stockage rclone a disparu
 
-`rdc repo push --to <storage>` et ses variantes copiaient auparavant un fichier de sauvegarde complet vers un fournisseur compatible rclone que vous enregistriez vous-même. Elles refusent maintenant une destination de stockage et nomment leur remplaçant. Le transfert de machine à machine n'est pas concerné : il n'est jamais passé par rclone. Les commandes de stockage et le rclone fourni ont été supprimés : une archive écrite de cette façon ne peut donc plus être parcourue depuis la CLI.
+`rdc repo push --to <storage>` et les commandes apparentées copiaient autrefois un fichier de sauvegarde entier vers un fournisseur cloud enregistré à la main. Les commandes storage et le rclone embarqué ont été supprimés, et `--to`/`--from` ne désignent plus qu'une machine. Le transfert de machine à machine n'a jamais transité par rclone et n'est pas concerné. Une archive écrite à l'ancienne ne peut plus être parcourue depuis la CLI.
 
 ### Commandes de stockage fragmenté
 

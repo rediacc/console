@@ -164,6 +164,20 @@ jobs:
       - name: Assert no OTLP credentials baked into the built binaries
         run: .ci/scripts/quality/check_no_otlp_creds.py
 
+      # H15 (PLAN-backup-program): rclone is decommissioned, and its payload is a
+      # go:embed asset that a stale embed cache or a lockfile merge could bring
+      # back with every other gate green. Scans the lockfile, the staged assets
+      # and these release binaries; the env makes an empty binary glob a failure.
+      # The gate is TypeScript (tsx), and this job is otherwise python and go only.
+      # Placed after the build so the restored node_modules cannot touch it.
+      - name: Set up node workspace for the rclone payload gate
+        uses: ./.github/actions/setup-workspace
+
+      - name: Assert no rclone payload in the embed lockfile, staged assets or built binaries
+        env:
+          RCLONE_GATE_REQUIRE_BINARIES: '1'
+        run: npm run check:ci-no-rclone-embedded
+
       # Save only a tree the receipt vouches for, and only after a restore that ran
       # and missed. The key is immutable, so a skeleton saved by a job that failed
       # before staging is served as a "hit" to every later job (#591, 2026-09-30:

@@ -4246,6 +4246,63 @@
     }
   },
   {
+    "id": "check:ci-no-rclone-embedded",
+    "env": {
+      "RCLONE_GATE_REQUIRE_BINARIES": "1"
+    },
+    "run": "npm run check:ci-no-rclone-embedded",
+    "gate": true,
+    "mutex": [
+      "renet-bin",
+      "build-artifacts"
+    ],
+    "leaves": [
+      "scripts/gates/check-no-rclone-embedded.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-build-renet.yml",
+      "job": "build-renet",
+      "step": "Assert no rclone payload in the embed lockfile, staged assets or built binaries"
+    }
+  },
+  {
+    "id": "check:ci-renet-chunkstore-unit",
+    "run": "npm run check:ci-renet-chunkstore-unit",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-renet-chunkstore-unit.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Run chunkstore unit tests"
+    }
+  },
+  {
+    "id": "check:ci-account-backup",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-backup",
+    "gate": true,
+    "mutex": [
+      "account-vitest"
+    ],
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
+    "heavy": true,
+    "leaves": [
+      "vitest"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Run account backup tests"
+    }
+  },
+  {
     "id": "check:ci-subscription-schema",
     "run": "npm run check:ci-subscription-schema",
     "gate": true,

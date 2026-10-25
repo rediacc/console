@@ -81,6 +81,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'backup retention': { plane: 'other' },
   'backup retention set': { plane: 'other' },
   'backup retention clear': { plane: 'other' },
+  // `preview` reads the policy and manifests through accountServerFetch; `snapshots delete` deletes manifests through it. Neither touches a machine.
+  'backup retention preview': { plane: 'other' },
+  'backup snapshots delete': { plane: 'other' },
 
   // ── repo: config-side ref and secret ops, and the local template catalog ─ The one git-like ref op that never leaves the config: it rewrites the repository's `branches` map. (`repo log`, `commit`, `checkout`, `merge`, `gc` and `fsck` all read or write objects on the machine.)
   'repo branch': { plane: 'config' },

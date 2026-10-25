@@ -393,8 +393,8 @@ SIG_CASES = {
         "Metadata cache created.",
     ),
     "pkg-install-stall": (
-        "apt install of rclone failed or stalled past 30s in all 3 attempts",
-        "apt install of rclone attempt 1/3 failed or stalled past 30s; retrying in 10s",
+        "apt install of btrfs-progs failed or stalled past 30s in all 3 attempts",
+        "apt install of btrfs-progs attempt 1/3 failed or stalled past 30s; retrying in 10s",
     ),
     "network": (
         "read tcp 10.0.0.1:443: read: ECONNRESET",
@@ -462,8 +462,8 @@ def test_apt_mirror_stall_is_infra_not_the_generic_error():
 def test_the_same_error_wrapper_without_a_stall_stays_code():
     """Control: the wrapper line and the per-attempt retry lines alone (a retry that may have succeeded) are no infra verdict."""
     lines = [
-        "2026-10-07T18:22:20.0000000Z [renet:err] Error: failed to install rclone on worker: ssh command failed: exit status 1",
-        "2026-10-07T18:22:20.0000000Z apt install of rclone attempt 1/3 failed or stalled past 30s; retrying in 10s",
+        "2026-10-07T18:22:20.0000000Z [renet:err] Error: failed to install btrfs-progs on worker: ssh command failed: exit status 1",
+        "2026-10-07T18:22:20.0000000Z apt install of btrfs-progs attempt 1/3 failed or stalled past 30s; retrying in 10s",
     ]
     assert D.classify(lines) == ("code-likely", "error")
 
@@ -472,7 +472,7 @@ def test_a_stall_outranks_a_code_failure_in_the_same_log():
     """Precedence is the table's own: any infra hit wins over any code hit, so a real failure beside a stall reads infra and the excerpt still shows both."""
     lines = [
         "2026-10-07T18:20:00.0000000Z --- FAIL: TestX (0.1s)",
-        "2026-10-07T18:22:20.0000000Z rclone is still not installed after every install attempt",
+        "2026-10-07T18:22:20.0000000Z apt install of btrfs-progs failed or stalled past 30s in all 3 attempts",
     ]
     assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
 

@@ -30,10 +30,7 @@ import {
 } from './renet-clean-build-fs.js';
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
-import {
-  buildRepositories,
-  type RepoEntryConfig,
-} from './renet-vault-sections.js';
+import { buildRepositories, type RepoEntryConfig } from './renet-vault-sections.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
 export { readOptionalSSHKey, readSSHKey } from '../machine/ssh-key.js';
@@ -429,7 +426,7 @@ export async function acquireRemoteRenet(
   };
 }
 
-/** Check whether a bridge function requires the BTRFS datastore. */
+/** Check whether a renet function requires the BTRFS datastore. */
 function functionRequiresDatastore(functionName: string): boolean {
   if (!(functionName in FUNCTION_REQUIREMENTS)) return false;
   const reqs = FUNCTION_REQUIREMENTS[functionName as RenetFunctionName];
@@ -555,7 +552,10 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
     opts.sshPrivateKey,
     opts.sshPublicKey
   );
-  const { repoName, repositories } = buildRepositories(opts.params, opts.repositoryConfigs);
+  const { repoGuid, repoName, repositories } = buildRepositories(
+    opts.params,
+    opts.repositoryConfigs
+  );
 
   const vault = {
     $schema: 'queue-vault-v2',
@@ -564,7 +564,8 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
       function: opts.functionName,
       machine: opts.machineName,
       team: 'local',
-      repository: repoName,
+      repository: repoGuid,
+      ...(repoName ? { repo_name: repoName } : {}),
     },
     ssh: {
       private_key: opts.sshPrivateKey,
