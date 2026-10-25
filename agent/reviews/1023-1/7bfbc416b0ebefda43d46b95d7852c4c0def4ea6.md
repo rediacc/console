@@ -21,7 +21,7 @@ Body-Sig: bd6692ccfdf2ab1f
 ### 7bfbc416.1 [high] web/src/components/console/ResourceContext.tsx:62
 Anchor: in-diff
 Claim: The diff removes `storages` from ConsoleResources and EMPTY_RESOURCES, and the commit's own verification says tsc and the account suite are still red after it, so this commit ships a broken build until the matching change lands elsewhere.
-Resolution: open
+Resolution: not-a-bug | 06ab0da0 the storages removal in ResourceContext.tsx was intended (the shared schema retired the family); the red build the finding describes came from the other storages references, which account 06ab0da0 removes: private/account tsc rc=0, account web tsc rc=0, config-sync 99 passed | d778be9d 2026-10-25T09:27:06Z
 
 ### 7bfbc416.2 [medium] src/services/backup-storage.service.ts:652
 Anchor: in-diff
