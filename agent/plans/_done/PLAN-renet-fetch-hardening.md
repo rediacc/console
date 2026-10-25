@@ -16,7 +16,8 @@ Owns: none -- seed: the plan cites no repo path to edit
 - [ ] Site 3: harden the implicit `quay.io` pull inside `cephadm bootstrap` so it composes with `verifyBootstrapAfterDisconnect` rather than duplicating it -- acceptance: the same Go checks are clean and a post-retry assertion proves the image is present
 - [ ] Site 4: retry the apt install in `cmd/renet/kube_fork_dest_prep.go` -- acceptance: the same Go checks are clean and a post-loop check fails the step when the install did not happen
 - [ ] Site 5: retry the CRIU runtime-deps apt in `pkg/infra/worker/service.go` -- acceptance: the same Go checks are clean and a post-loop check fails the step when the install did not happen
-- [ ] Site 6: retry the apt in `ensureRclone` (`pkg/infra/docker/service.go`) and stop discarding its output to `/dev/null` -- acceptance: the same Go checks are clean and a post-loop check fails when rclone is still missing
+- [x] Site 6: retry the apt in `ensureRclone` (`pkg/infra/docker/service.go`) and stop discarding its output to `/dev/null` -- acceptance: the same Go checks are clean and a post-loop check fails when rclone is still missing
+    (ticked) 2026-10-25T12:30:00Z by W2-P6: obsolete, not retried: `ensureRclone` no longer exists (PLAN-backup-program H8 deleted it in renet d722e0bf; `grep -rn ensureRclone private/renet --include=*.go` finds nothing at renet HEAD 6e3d13da), so there is no apt call left to harden
 - [ ] Site 7: split `curl -fsSL https://get.docker.com | sh` in `cmd/renet/ops_host.go` (apt and dnf branches) into a retried fetch and a single execute -- acceptance: the same Go checks are clean and the fetched script is checked non-empty before it runs
 - [ ] Site 8: retry the build- and CI-only pulls (`build.sh` `docker pull ... renet:latest`, `scripts/ci-test.sh` `docker pull traefik:v3.6`) -- acceptance: `shfmt -i 4 -ci -d build.sh scripts/ci-test.sh` prints nothing and each loop carries a post-loop check
 
