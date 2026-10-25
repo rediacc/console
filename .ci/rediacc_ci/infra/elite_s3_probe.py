@@ -30,6 +30,10 @@ class ProbeError(Exception):
     pass
 
 
+class DockerUnavailableError(ProbeError):
+    """The docker binary itself could not be run, as opposed to a docker command that failed."""
+
+
 def _die(msg: str) -> int:
     print(f"{PREFIX}: {msg}", file=sys.stderr)
     return 1
@@ -39,7 +43,7 @@ def _docker(*args: str) -> str:
     try:
         r = subprocess.run(["docker", *args], capture_output=True, text=True, check=False)
     except OSError as e:
-        raise ProbeError(f"docker could not be run: {e}") from e
+        raise DockerUnavailableError(f"docker could not be run: {e}") from e
     if r.returncode != 0:
         raise ProbeError(r.stderr.strip())
     return r.stdout.strip()
@@ -126,9 +130,9 @@ def live(probe: Path) -> int:
     container = f"{os.environ.get('INSTANCE_NAME') or 'rediacc'}-rustfs"
     try:
         running = _docker("inspect", "-f", "{{.State.Running}}", container)
-    except ProbeError as e:
-        if str(e).startswith("docker could not be run"):
-            raise
+    except DockerUnavailableError:
+        raise
+    except ProbeError:
         running = ""
     if running != "true":
         return _die(

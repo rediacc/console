@@ -37,9 +37,9 @@ export interface Env {
    * Service binding to the regional account worker. `proxy.eu.rediacc.com` and `eu.rediacc.com` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
    */
   ACCOUNT?: Fetcher;
-  /** Region label for telemetry (`rediacc.region`, and `REDIACC_REGION` for the executor); `eu` when unset. */
+  /** Region label for telemetry (`rediacc.region`, and `REDIACC_REGION` for the executor); `eu` when unset or empty. */
   REGION?: string;
-  /** Deployment environment for telemetry (`deployment.environment`); `production` when unset. */
+  /** Deployment environment for telemetry (`deployment.environment`); `production` when unset or empty. */
   ENVIRONMENT?: string;
 }
 
