@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: zh
-sourceHash: "b42d1f1b49c7e73a"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "177a657544f9979f"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 备份与恢复
@@ -60,9 +60,9 @@ Rediacc 会备份加密仓库,并在同一台机器或另一台机器上恢复�
 - **这不是持续复制。** 快照是你捕获的某一个时间点,自上次快照以来写入的所有内容都可能丢失,具体丢多少取决于你运行的频率。
 - **存储的对象只写一次,不是经过认证的 WORM。** 单元格是以"仅创建"的条件写入的,机器获得的许可无法删除任何东西,删除操作是按保留策略在服务器端执行的。这对"被攻陷的机器摧毁自己的备份"是一道真实的屏障,但它不是合规认证,也不会按合规标准接受审计。
 
-### rclone 存储路径已经不复存在
+### 只有一种目标类型
 
-`rdc repo push --to <storage>` 及相关命令过去会把整个备份文件复制到手动注册的云服务商。storage 命令和内置的 rclone 已被移除，`--to`/`--from` 现在只接受机器名。机器之间的传输从未经过 rclone，不受影响。按旧方式写入的归档已无法再通过 CLI 浏览。
+分块存储备份只有一种目标类型:通过账户服务器访问的、由服务托管的分块存储。不存在外部存储端点的注册表,因此 `repo push` 和 `repo pull` 的 `--to` 与 `--from` 只接受机器名。
 
 ### 分块存储命令
 
@@ -265,22 +265,34 @@ rdc repo list --machine server-1
 | `Size` | 备份文件的可读大小 |
 | `Modified` | 该文件在机器上的 UTC 时间戳 |
 
-列出存储后端的功能已随 rclone 分支一起废止;该命令会被拒绝,并指出下面这两个替代方案。
-
 ## 保留策略
 
-服务器会对整个分块存储强制执行按仓库设置的保留策略,因此旧快照会被自动清理,无需你手动删除任何内容。如果没有声明任何策略,所有快照都会被保留。
+服务器会对分块存储强制执行保留策略,因此旧快照会被自动清理,无需手动删除任何内容。策略属于仓库的谱系:仓库及其 fork 共享同一份历史,在仓库名上设置的策略会覆盖整个家族。在谱系内部,每个备份流(某台机器上的某个仓库)也会单独受到保护,所以无论策略怎么写,保留机制都不会让某个流失去它最新的快照或当前的锚点。第二台机器或某个 fork 清理自己的历史时,也无法占用其他流的保底份额。
+
+如果没有声明策略,则使用服务器默认值(套餐设置了默认值时使用套餐默认值),并保留每个流最新的快照。
 
 ```bash
-# 当前正在强制执行的策略。
+# 当前生效的策略及其来源。
 rdc backup retention my-app
+
+# 下一次清理会删除什么,以及能释放多少空间。不会删除任何内容。
+rdc backup retention preview my-app
 
 # 保留一个滚动窗口:7 个每日、4 个每周、6 个每月。
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# 恢复为保留一切。
+# 只对一个备份流应用不同的策略。
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# 移除已声明的策略。
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# 立即删除一个快照。只有该快照使用的数据会在下一次 GC 时释放。
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+策略可以为其覆盖的仓库声明保留策略:`rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6`(`--retention none` 可移除)。
 
 | 选项 | 描述 |
 |--------|-------------|
@@ -290,8 +302,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | 在这么多周中,各保留每周最新的一个快照 |
 | `--keep-monthly <n>` | 在这么多个月中,各保留每月最新的一个快照 |
 | `--keep-yearly <n>` | 在这么多年中,各保留每年最新的一个快照 |
+| `--stream <id>` | 把策略应用到一个备份流,而不是整个仓库的默认值 |
 
-至少要给出一条规则。不带规则的 `set` 不会被当作"什么都不保留"来处理,而是会被拒绝,因为清空策略是 `clear` 的职责。
+至少要给出一条规则。`set` 会替换所有参数而不是合并,因此每次都要传入完整的策略。不带规则的 `set` 不会被当作"什么都不保留"来处理,而是会被拒绝,因为清空策略是 `clear` 的职责。`clear` 会移除策略,并从此保留所有快照;它从不表示"什么都不保留"。
 
 ## 恢复
 
@@ -307,6 +320,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at` 接受一个来自 `rdc backup manifests` 的快照 ID,或者一个 RFC 3339 格式的时间,例如 `2026-08-14T12:00:00Z`,它会被解析为该时刻或之前拍摄的最新快照。如果指定的时间之前没有任何快照,该请求会被拒绝,而不是向后舍入。
 
+时间只会在该仓库于其源机器上的快照中解析。其他机器或同一谱系的 fork 写入的快照不在考虑范围内,除非用 `--any-stream` 有意扩大搜索范围。无法确定仓库自己的备份流时,恢复会被拒绝并要求使用 `--any-stream`,而不是猜测。
+
 用 `--as` 以新名称恢复不会覆盖任何东西,因此可以在一台正在运行的机器上安全地做恢复演练。恢复到一个已经存在的名称会被拒绝。
 
 | 选项 | 描述 |
@@ -316,6 +331,7 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 | `-m, --machine <machine>` | 要恢复到的机器 |
 | `--datastore <name>` | 恢复到这个具名数据存储,由与之关联的机器承载 |
 | `--at <time>` | 恢复某个时间点:快照 ID 或 RFC 3339 格式的时间 |
+| `--any-stream` | 配合 `--at`,同时考虑其他机器和该谱系 fork 的快照 |
 | `--up` | 传输完成后部署恢复出的仓库 |
 | `--health-window <seconds>` | 观察已部署仓库健康状况的时长 |
 | `--health-timeout <seconds>` | 等待其变为健康状态的时长 |
@@ -352,7 +368,7 @@ rdc repo pull shop:nightly@server-1 --from server-2
 
 ## 定时备份
 
-Rediacc 使用具名的备份策略。每个策略定义一个时间表、备份模式、可选的带宽限制,以及文件过滤条件。你可以把策略名绑定到机器上,以控制哪些备份在哪里运行。
+Rediacc 使用具名的备份策略。每个策略定义一个时间表、备份模式、可选的带宽限制、仓库过滤条件和快照保留。把策略名绑定到机器上,以控制哪些备份在哪里运行。
 
 ### 备份模式
 
@@ -451,7 +467,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -460,28 +476,27 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>` 用来给策略内部的目标命名;这是你自己选择的一个标签,用来描述这个分块存储。`--include` 列出要备份的仓库,重复该参数可以添加更多。省略它时,该策略会覆盖数据存储上的每一个仓库。名称需要与本地配置中的仓库名匹配(不带 `:tag`)。
+`--destination <name>` 用来给策略内部的目标命名;这是每个策略各自选择的标签,目标始终是由服务托管的分块存储。`--include` 接受以逗号分隔的待备份仓库列表(`--include shop,mail`)。省略它时,该策略会覆盖数据存储上的每一个仓库。只写名称会覆盖该仓库及其所有 fork;`name:tag` 只覆盖一个 fork。保存策略时会拒绝未知名称,因此拼写错误不会排出一个什么都不备份的计划。
 
-对于分块存储目标,`--exclude` 会被直接拒绝,而不是被悄悄忽略,因为底层的 `backup snapshot` 是通过指名来选择仓库的,并没有自己的排除机制。如果尊重这个参数,就意味着会把你要求排除在外的仓库也备份进去。请改用 `--include` 来限定策略的范围,这样一次计划运行覆盖了什么就是明文写下来的,而不是靠推断得出的。
+`--exclude` 使用同样的逗号分隔形式,并跳过所列仓库。`--include` 与 `--exclude` 互斥:设置其中一个会清除另一个,值 `none` 会清除过滤条件。
 
 | 选项 | 描述 |
 |--------|-------------|
 | `<strategy>`(位置参数) | 策略名(用于绑定机器) |
-| `--destination <name>` | 策略内部的目标名称。默认为分块存储 |
-| `--storage <name>` | 主动选用已废止的 rclone 目标类型。使用它的调度无法被部署 |
+| `--destination <name>` | 策略内部的目标名称。始终是由服务托管的分块存储 |
 | `--cron <expression>` | cron 表达式(例如 `"0 2 * * *"` 表示每天凌晨 2 点) |
 | `--mode <hot\|cold>` | 备份模式 |
 | `--bwlimit <limit>` | 上传的带宽限制(例如 `10M`) |
-| `--include <repos>` | 该策略覆盖的仓库(可重复) |
-| `--exclude <repos>` | 要跳过的仓库(可重复)。在分块存储目标上会被拒绝 |
-| `--folder <path>` | rclone 存储桶内的子文件夹。在分块存储目标上会被拒绝 |
+| `--include <repos>` | 此策略覆盖的仓库(逗号分隔) |
+| `--exclude <repos>` | 要跳过的仓库(逗号分隔) |
+| `--retention <spec>` | 快照保留,例如 `last=7,daily=7,weekly=4,monthly=6`。`none` 表示移除 |
 | `--enable` / `--disable` | 启用或禁用该策略 |
 
 ### 查看策略
@@ -540,12 +555,12 @@ rdc backup strategy unbind weekly-cold --machine hostinger
 
 ### 按策略确定仓库范围
 
-一个没有 `--include` 的策略会覆盖数据存储上的每一个仓库。重复使用 `--include` 会把范围收窄到你指名的那些仓库,匹配依据是本地配置中的仓库名(不带 `:tag`)。
+不带 `--include` 的策略会覆盖数据存储上的每一个仓库。`--include` 会把它缩小到以逗号分隔列出的仓库,并与本地配置中的仓库名进行匹配。
 
 ```bash
 # 热策略:每小时备份所有内容
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -553,10 +568,10 @@ rdc backup strategy set hourly-hot \
 
 # 冷策略:每周,只针对需要静止的仓库
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 

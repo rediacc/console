@@ -16,7 +16,7 @@ tags:
   - mid-market
 featured: false
 language: es
-sourceHash: "d5f6a7108f614b9b"
+sourceHash: "b1569f9c0bab2b54"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -89,13 +89,13 @@ Las brechas son más interesantes que los solapamientos, porque las brechas son 
 
 Rediacc es un plano de control con un registro de auditoría unificado, que reemplaza la capacidad central de cuatro de las cinco categorías para infraestructura self-hosted.
 
-**Backup** funciona en dos modos. El modo en caliente es un snapshot BTRFS consistente con el crash, sin tiempo de inactividad. El modo en frío realiza un ciclo stop-snapshot-start. Ambos se programan con temporizadores systemd. Ambos envían a múltiples destinos vía rclone. Los volúmenes están cifrados con LUKS. El operador tiene la clave. Rediacc-la-empresa nunca ve texto plano. Consulta [Backup y Restauración](/es/docs/backup-restore) y [Estrategia de Backup Cruzado](/es/docs/cross-backup).
+**Backup** funciona en dos modos. El modo en caliente es un snapshot BTRFS consistente con el crash, sin tiempo de inactividad. El modo en frío realiza un ciclo stop-snapshot-start. Ambos se programan con temporizadores systemd. Ambos escriben en un almacén de fragmentos direccionable por contenido donde solo se suben las celdas modificadas, y la retención se declara por linaje de repositorio. Los volúmenes están cifrados con LUKS. El operador tiene la clave. Rediacc-la-empresa nunca ve texto plano. Consulta [Backup y Restauración](/es/docs/backup-restore) y [Estrategia de Backup Cruzado](/es/docs/cross-backup).
 
 **DR**: mismo primitivo que el backup, más `rdc repo migrate` para el movimiento de datos entre máquinas, más el primitivo de fork para la puesta en marcha rápida del estado recuperado en una máquina paralela. El sitio de DR puede ser otra máquina Hetzner, una máquina OVH, un rack on-prem, cualquier lugar al que llegue SSH. Ninguna nube de proveedor de DR en la ruta de datos.
 
 **Datos de prueba y clonación de stack completo** funciona con reflink de BTRFS. El fork es de tiempo constante, sin importar el tamaño del repositorio. Stack completo significa datos, configuraciones, contenedores y servicios. Hicimos fork de un repositorio de 128 GB en 7,2 segundos en nuestra [prueba PocketOS](/es/blog/i-tested-rediacc-against-the-pocketos-incident). El fork es la producción actual, no una copia de staging reducida. Consulta [Actualizaciones Sin Riesgo](/es/docs/risk-free-upgrades).
 
-**Restauración instantánea**: `rdc repo pull` desde cualquier destino rclone a un fork nuevo, puesto en marcha bajo un subdominio específico del fork cubierto por el certificado wildcard del repositorio padre. Sin confusión de DNS, sin baile de certificados.
+**Restauración instantánea**: `rdc backup restore --at <snapshot>` desde el almacén de fragmentos, o `rdc repo pull` desde una segunda máquina, a un fork nuevo, puesto en marcha bajo un subdominio específico del fork cubierto por el certificado wildcard del repositorio padre. Sin confusión de DNS, sin baile de certificados.
 
 **Registro de auditoría unificado.** Más de 70 tipos de eventos en todo el plano de control. Cubren inicios de sesión, tokens de API, escrituras de configuración, ciclo de vida del repositorio, backup, sincronización, sesiones de terminal y operaciones de máquina. La cadena está enlazada por hash en la estación de trabajo del operador. `rdc config audit verify` la comprueba de extremo a extremo.
 

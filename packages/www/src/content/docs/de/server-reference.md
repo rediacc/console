@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: de
-sourceHash: "661f857d2226d362"
-sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
+sourceHash: "a64de9af83bd943a"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Server-Referenz
@@ -190,16 +190,12 @@ renet daemon logs   --network-id {id}    # Daemon logs
 
 ### Backup und Wiederherstellung
 
-Backups auf einen anderen Rechner oder in den Cloud-Speicher übertragen:
+Backups auf eine andere Maschine übertragen. Chunk-Store-Snapshots entstehen mit `rdc backup snapshot` oder `renet backup snapshot`:
 
 ```bash
 # Push to remote machine (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
   --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
-
-# Push to cloud storage (rclone)
-renet backup push --name {uuid} --network-id {id} --target storage \
-  --dest {uuid}.backup --rclone-backend {backend} --rclone-bucket {bucket}
 
 # Pull from remote
 renet backup pull --name {uuid} --network-id {id} --source machine \

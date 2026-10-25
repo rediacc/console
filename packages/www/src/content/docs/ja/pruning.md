@@ -8,13 +8,13 @@ tags:
 subcategory: data-protection
 order: 12
 language: ja
-sourceHash: "76d936b2258cc044"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # プルーニング
 
-プルーニングは、ライブリソースに対応しなくなった状態を一掃します。2 つのコマンドが 2 つの異なるスコープをカバーします。チャンクストア内のスナップショットは対象外で、サーバーが[保持ポリシー](#backup-snapshots)に従って整理します。
+プルーニングは、ライブリソースに対応しなくなった状態を一掃します。2 つのコマンドが 2 つの異なるスコープをカバーします。チャンクストア内のスナップショットは対象外で、サーバーが系統とバックアップストリームごとに[保持ポリシー](#backup-snapshots)に従って整理します。
 
 | コマンド | クリーンアップ対象 | 信頼できる情報源の場所 |
 |---|---|---|
@@ -35,15 +35,26 @@ sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 
 `rdc backup snapshot` でアップロードしたスナップショットはチャンクストアに保存され、サーバーが整理します。クライアント側の prune コマンドはありません。残したい履歴の量を宣言すると、サーバーが残りを削除します。
 
+ポリシーはリポジトリの系統に属するため、リポジトリとそのフォークで共有され、1つのバックアップストリーム(1台のマシン上の1つのリポジトリ)に対して上書きもできます。また、ポリシーの内容にかかわらず各ストリームは最新のスナップショットと現在のアンカーを保持するため、整理によってストリームが孤立することはありません。
+
 ```bash
-# 現在のポリシーを表示
+# 現在のポリシーと、その出どころを表示する
 rdc backup retention my-app
+
+# 次回の整理で削除される内容と解放される容量を、削除せずに確認する
+rdc backup retention preview my-app
 
 # 日次 7 件、週次 4 件、月次 6 件のスナップショットを保持
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# 1つのストリームだけ上書きする
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # すべてのスナップショットを再び保持
 rdc backup retention clear my-app
+
+# スナップショットを1つ今すぐ削除する。次のガベージコレクションが専有データを解放する
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 ポリシーのルールは [バックアップとリストア](/ja/docs/backup-restore#retention) を、ストアに現在何があるかは `rdc backup usage` を参照してください。
@@ -116,7 +127,6 @@ rdc machine prune server-1 --prune-unknown
 3. **設定バケット間の宙吊りの相互参照**：
    - もはや存在しない戦略を名指しする `resources.machines.<m>.backupStrategies[]` エントリ。
    - もはや存在しないリポジトリを名指しする `resources.backupStrategies.<s>.exclude[]` および `include[]` エントリ。
-   - ターゲットストレージが見つからないストレージ宛先. 警告としてフラグされ、自動削除されません（自動削除は戦略のセマンティクスを変えてしまうため）。
 
 ```bash
 # プレビューのみ

@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: ko
-sourceHash: "657bd1152d18476e"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "3c59bf71050fb556"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 빠른 시작
@@ -223,7 +223,7 @@ rdc backup usage
 
 스냅샷은 청크 스토리지로 업로드되며, 이를 위해서는 계정 서버와 라이선스가 있는 저장소가 필요합니다. 변경된 데이터만 저장되므로 동일한 저장소의 두 번째 스냅샷은 전체 이미지가 아니라 차이만큼의 비용이 듭니다.
 
-`--to <storage>`로 저장소를 클라우드 스토리지에 푸시하는 기능은 폐지되어 이제 거부됩니다. 스토리지 명령과 내장 rclone은 제거되었으므로, 그 방식으로 작성된 아카이브는 더 이상 CLI에서 탐색할 수 없습니다.
+백업의 대상 종류는 서비스 호스팅 청크 스토어 하나뿐이며, `repo push`의 `--to`는 머신만 지정합니다. 보존은 저장소 계보별로 `rdc backup retention set`으로 선언하고, 예약 실행은 `rdc backup strategy set`과 `rdc backup schedule`로 설정합니다. [백업 및 복원](/ko/docs/backup-restore)을 참고하세요.
 
 ### 4. 원격에서 풀
 

@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ja
-sourceHash: "9f16ecba15b69643"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # アーキテクチャ
@@ -143,11 +143,11 @@ Dockerリポジトリに加えて、マシンは**クラスター**をホスト�
 
 ## 設定構造
 
-各設定は`~/.config/rediacc/`に保存されたJSONファイルです。デフォルト設定は`rediacc.json`です。名前付き設定は名前をファイル名として使用します(例:`production.json`)。フィールドは目的別にバケット化されます:`resources`はデプロイを保持し、`credentials`はシークレットを保持し、`account`はクラウドのデフォルトを保持し、`infra`はTLS/DNSを保持し、`encryption`はフィールド単位の保存時の状態を保持します。トップレベル`schemaVersion: 2`識別子は前方互換性を確保します。
+各設定は`~/.config/rediacc/`に保存されたJSONファイルです。デフォルト設定は`rediacc.json`です。名前付き設定は名前をファイル名として使用します(例:`production.json`)。フィールドは目的別にバケット化されます:`resources`はデプロイを保持し、`credentials`はシークレットを保持し、`account`はクラウドのデフォルトを保持し、`infra`はTLS/DNSを保持し、`encryption`はフィールド単位の保存時の状態を保持します。トップレベル`schemaVersion: 3`識別子は前方互換性を確保します。
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -174,10 +174,12 @@ Dockerリポジトリに加えて、マシンは**クラスター**をホスト�
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -202,14 +204,14 @@ Dockerリポジトリに加えて、マシンは**クラスター**をホスト�
 
 | バケット | 内容 |
 |---|---|
-| `schemaVersion` | 識別子(現在`2`)。ローダーは不明なバージョンを拒否します。 |
+| `schemaVersion` | 識別子(現在`3`)。ローダーは不明なバージョンを拒否します。 |
 | `id` / `version` | 不変UUID + 単調カウンター。リモート設定ストアでの楽観的ロック用。 |
 | `defaults.*` | 非機密ランタイムのデフォルト(`machine`、`language`、`pruneGraceDays`、`universalUser`、`nextNetworkId`)。 |
 | `credentials.ssh` | インラインSSH鍵ペア + `knownHosts`。レガシー`ssh.privateKeyPath`を置き換え(ファイルパス間接参照はなく、コンテンツはロード時に解決されインラインで保存)。 |
 | `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACMEトークン。 |
 | `credentials.masterPasswordVerifier` | `encryption.mode === "master-password"`の場合にのみ存在。 |
 | `resources.machines.*` | マシンごとのSSH接続詳細。 |
-| `resources.storages.*` | rclone互換のオフサイトバックアップ認証情報。 |
+| `resources.backupStrategies.*` | 名前付きバックアップ戦略: スケジュール、モード、リポジトリフィルター、保持、宛先(常にサービスホスト型のチャンクストア)。 |
 | `resources.repositories.*` | リポジトリごとのGUID + LUKS認証情報 + サンドボックス分離エージェントアクセス用SSH鍵。 |
 | `infra.acmeCertCache.*` | キャッシュTraefik acme.json、gzip+base64、ドメインでキー。 |
 | `encryption.mode` | `"plaintext"`(デフォルト)または`"master-password"`。 |

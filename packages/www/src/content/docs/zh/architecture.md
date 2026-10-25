@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: zh
-sourceHash: "9f16ecba15b69643"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 架构
@@ -143,11 +143,11 @@ Docker 数据和配置存储在仓库的挂载点内部，使每个守护进程�
 
 ## 配置结构
 
-每个配置是存储在 `~/.config/rediacc/` 中的扁平 JSON 文件。默认配置为 `rediacc.json`；命名配置使用名称作为文件名（例如 `production.json`）。字段按用途分为几个部分：`resources` 存储部署、`credentials` 存储密钥、`account` 存储云端默认值、`infra` 存储 TLS/DNS、`encryption` 存储每字段的静态加密状态。顶级 `schemaVersion: 2` 判别器确保向前兼容。
+每个配置是存储在 `~/.config/rediacc/` 中的扁平 JSON 文件。默认配置为 `rediacc.json`；命名配置使用名称作为文件名（例如 `production.json`）。字段按用途分为几个部分：`resources` 存储部署、`credentials` 存储密钥、`account` 存储云端默认值、`infra` 存储 TLS/DNS、`encryption` 存储每字段的静态加密状态。顶级 `schemaVersion: 3` 判别器确保向前兼容。
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -174,10 +174,12 @@ Docker 数据和配置存储在仓库的挂载点内部，使每个守护进程�
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -202,14 +204,14 @@ Docker 数据和配置存储在仓库的挂载点内部，使每个守护进程�
 
 | 部分 | 描述 |
 |---|---|
-| `schemaVersion` | 判别器（当前为 `2`）。加载程序会拒绝未知版本。 |
+| `schemaVersion` | 判别器（当前为 `3`）。加载程序会拒绝未知版本。 |
 | `id` / `version` | 不可变的 UUID 加单调递增计数器；用于远程配置存储上的乐观锁定。 |
 | `defaults.*` | 非敏感的运行时默认值（`machine`、`language`、`pruneGraceDays`、`universalUser`、`nextNetworkId`）。 |
 | `credentials.ssh` | 内联 SSH 密钥对加 `knownHosts`。取代了旧的 `ssh.privateKeyPath`（不再进行文件路径间接寻址；内容在加载时解析并内联存储）。 |
 | `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACME 令牌。 |
 | `credentials.masterPasswordVerifier` | 仅在 `encryption.mode === "master-password"` 时存在。 |
 | `resources.machines.*` | 每台机器的 SSH 连接详情。 |
-| `resources.storages.*` | rclone 兼容的离线备份凭据。 |
+| `resources.backupStrategies.*` | 具名备份策略：时间表、模式、仓库过滤条件、保留策略和目标（始终是由服务托管的分块存储）。 |
 | `resources.repositories.*` | 每仓库 GUID 加 LUKS 凭据加用于沙盒隔离智能体访问的 SSH 密钥。 |
 | `infra.acmeCertCache.*` | 缓存的 Traefik acme.json，gzip 加 base64 编码，按域名作为键。 |
 | `encryption.mode` | `"plaintext"`（默认）或 `"master-password"`。 |

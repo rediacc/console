@@ -12,8 +12,8 @@ tags:
   - conformite
 featured: false
 language: fr
-sourceHash: "f6a1604ae2a3a794"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "c1a20432472d9452"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 translatedFrom: en
 ---
 
@@ -84,7 +84,7 @@ L'opérateur ne se connecte jamais à l'infrastructure de Rediacc-en-tant-que-so
 
 1. **Poste de travail de l'opérateur.** Exécute `rdc`. Détient la clé LUKS.
 2. **Propre serveur de l'opérateur.** Exécute `renet`. Détient les dépôts chiffrés LUKS2.
-3. **Propre cible de sauvegarde de l'opérateur.** Tout stockage compatible rclone (S3, B2, OneDrive, MinIO sur site). Reçoit les volumes chiffrés.
+3. **Cible de sauvegarde.** Soit une seconde machine que l'opérateur contrôle (`rdc repo push`), soit le stockage fragmenté hébergé (`rdc backup snapshot`), qui ne contient que des cellules chiffrées adressées par leur SHA-256. Le credential LUKS n'atteint ni l'une ni l'autre.
 
 Il n'y a pas de couche 4. Rediacc-en-tant-que-société n'est pas un sous-traitant pour tout opérateur qui n'a pas opté pour l'[adaptateur Cloud](/fr/docs/architecture) expérimental. Pour les opérateurs auto-hébergés, la relation avec Rediacc-en-tant-que-société est une licence logicielle, pas un accord de traitement des données.
 
@@ -129,7 +129,7 @@ Après migration vers Rediacc sur Hetzner :
 | Sous-traitants | (1) Aucun pour l'auto-hébergé ; (2) Interne Hetzner uniquement, listé dans leur DPA |
 | Statut contractuel | (1) Licence logicielle, pas de DPA requis ; (2) DPA Hetzner + CCT déjà en place |
 | Garde des clés | Client (clé LUKS dans la configuration de l'opérateur, pas sur le serveur) |
-| Plan de sortie | "rdc repo pull depuis toute cible compatible rclone. Volumes chiffrés LUKS2 ; l'opérateur détient la clé." |
+| Plan de sortie | "rdc repo pull depuis la seconde machine, ou rdc backup restore depuis n'importe quel instantané stocké. Volumes chiffrés LUKS2 ; l'opérateur détient la clé." |
 | Dernière évaluation | (2) couverte par la revue IaaS existante |
 
 Deux entrées dans le registre au lieu d'une. L'entrée de criticité critique est pour le fournisseur IaaS, pour lequel l'acheteur avait déjà un DPA en place et un plan de sortie testé, car l'IaaS est une relation que la plupart des équipes savent gérer. L'entrée Rediacc est non critique car c'est une licence logicielle, pas un processeur de données.

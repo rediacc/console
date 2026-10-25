@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: et
-sourceHash: "bca896d59a353796"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # RDC CLI petuleht
@@ -59,7 +59,12 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc backup snapshot <repo> --dry-run` | Planeeri tõmmis ilma üles laadimata; näitab, mis liiguks |
 | `rdc backup verify <repo>` | Kinnita hoidla varunduse ankur tükksalvestuse vastu |
 | `rdc backup usage` | Näita tükksalvestuses hoitud baite sinu kvoodi suhtes |
-| `rdc backup manifests <repo>` | Loenda serverisse salvestatud tõmmiste sisukirjeldused |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | Taasta tükksalvestuse hetktõmmis uue nime all |
+| `rdc backup retention <repo>` | Näita säilituspoliitikat, mida server repositooriumi liinile jõustab |
+| `rdc backup retention preview <repo>` | Näita, mida järgmine läbimine kustutaks ja kui palju ruumi see vabastaks |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | Deklareeri säilitus liinile või ühele varundusvoole |
+| `rdc backup retention clear <repo> [--stream <id>]` | Eemalda poliitika; iga hetktõmmis säilitatakse |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | Kustuta üks hetktõmmis; selle ainuandmed vabastab järgmine GC |
 
 ## Hoidla migreerimine
 
@@ -75,7 +80,7 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 
 | Käsk | Kirjeldus |
 |---------|-------------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | Loo või uuenda nimega varundusstrateegiat |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | Loo või uuenda nimega varundusstrateegiat |
 | `rdc backup strategy list` | Loenda kõik defineeritud varundusstrateegiad |
 | `rdc backup strategy show <name>` | Näita strateegia üksikasju |
 | `rdc backup strategy remove <name>` | Eemalda strateegia |

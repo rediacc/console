@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: zh
-sourceHash: "657bd1152d18476e"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "3c59bf71050fb556"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 快速开始
@@ -223,7 +223,7 @@ rdc backup usage
 
 快照会上传到分块存储，这需要账户服务器和已获许可的仓库。只存储发生变化的数据，因此对同一仓库做第二次快照只需支付差异部分的成本，而不是整份镜像的成本。
 
-使用 `--to <storage>` 将仓库推送到云存储的功能已废止，现在会被拒绝。存储命令和内置的 rclone 均已移除，因此以那种方式写入的存档不能再通过 CLI 浏览。
+备份只有一种目标类型，即由服务托管的分块存储，`repo push` 的 `--to` 只接受机器名。保留策略按仓库谱系用 `rdc backup retention set` 声明，定时运行则来自 `rdc backup strategy set` 加 `rdc backup schedule`。参见[备份与恢复](/zh/docs/backup-restore)。
 
 ### 4. 从远程拉取
 

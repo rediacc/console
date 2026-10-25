@@ -12,7 +12,7 @@ tags:
   - mid-market
 featured: false
 language: zh
-sourceHash: "d5f6a7108f614b9b"
+sourceHash: "b1569f9c0bab2b54"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -92,13 +92,13 @@ ENISA 自身的实施成本指引（实施条例 (EU) 2024/2690 附件四）与 
 
 Rediacc 是一个带有统一审计日志的控制平面，取代了五个类别中四个的核心能力，适用于自托管基础设施。
 
-**备份**分两种模式。热备份是基于 BTRFS 快照的崩溃一致性，无停机时间。冷备份执行停机-快照-启动周期，以保证应用一致性。两种模式都通过 systemd timers 调度，通过 rclone 发送到多个目的地。卷使用 LUKS 加密，操作员持有密钥，Rediacc 公司本身永远看不到明文数据。运营细节请参阅 [Backup & Restore](/zh/docs/backup-restore) 和 [Cross Backup Strategy](/zh/docs/cross-backup)。
+**备份**分两种模式。热备份是基于 BTRFS 快照的崩溃一致性，无停机时间。冷备份执行停机-快照-启动周期，以保证应用一致性。两种模式都通过 systemd timers 调度，并写入内容寻址的分块存储，只上传发生变化的单元，保留策略按仓库谱系声明。卷使用 LUKS 加密，操作员持有密钥，Rediacc 公司本身永远看不到明文数据。运营细节请参阅 [Backup & Restore](/zh/docs/backup-restore) 和 [Cross Backup Strategy](/zh/docs/cross-backup)。
 
 **DR**：与备份相同的基础原语，加上 `rdc repo migrate` 用于跨机器数据迁移，以及 fork 原语用于在并行机器上快速启动已恢复状态。DR 站点可以是另一台 Hetzner 机器、OVH 机器、本地机架，任何 SSH 可达的地方都行。数据路径中没有 DR 供应商的云。
 
 **测试数据与全栈克隆**基于 BTRFS reflink，无论仓库大小均为常数时间，涵盖全栈内容：数据、配置、容器和服务。我们在 [PocketOS 测试](/zh/blog/i-tested-rediacc-against-the-pocketos-incident)中对一个 128 GB 的仓库进行 fork，仅需 7.2 秒。fork 出的环境是当前生产环境，而非精简版预发布环境。请参阅 [Risk-Free Upgrades](/zh/docs/risk-free-upgrades)。
 
-**即时恢复**：从任意 rclone 目标执行 `rdc repo pull`，在新的 fork 中启动，并在父存储库通配符证书覆盖的 fork 专属子域名下运行。无需 DNS 改动，无需证书操作。
+**即时恢复**：从分块存储执行 `rdc backup restore --at <snapshot>`，或从第二台机器执行 `rdc repo pull`，在新的 fork 中启动，并在父存储库通配符证书覆盖的 fork 专属子域名下运行。无需 DNS 改动，无需证书操作。
 
 **统一审计日志**涵盖控制平面的 70 多种事件类型：登录、API 令牌、配置写入、仓库生命周期、备份、同步、终端会话以及机器操作。哈希链记录在操作员工作站上，`rdc config audit verify` 端到端验证完整性。
 

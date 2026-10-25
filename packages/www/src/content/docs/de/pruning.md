@@ -8,13 +8,13 @@ tags:
 subcategory: data-protection
 order: 12
 language: de
-sourceHash: "76d936b2258cc044"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Bereinigung
 
-Die Bereinigung entfernt Zustand, der keiner aktiven Ressource mehr entspricht. Zwei Befehle decken zwei verschiedene Bereiche ab. Snapshots im Chunk-Store gehören nicht dazu: Der Server bereinigt sie nach einer [Aufbewahrungsrichtlinie](#backup-snapshots).
+Die Bereinigung entfernt Zustand, der keiner aktiven Ressource mehr entspricht. Zwei Befehle decken zwei verschiedene Bereiche ab. Snapshots im Chunk-Store gehören nicht dazu: Der Server bereinigt sie nach einer [Aufbewahrungsrichtlinie](#backup-snapshots), und zwar pro Lineage und Backup-Stream.
 
 | Befehl | Was bereinigt wird | Wo die Wahrheitsquelle liegt |
 |---|---|---|
@@ -35,15 +35,26 @@ Um dies zu übergehen (selten; nur wenn Sie wirklich wissen, dass der Live-Zusta
 
 Snapshots, die mit `rdc backup snapshot` hochgeladen wurden, liegen im Chunk-Store, und der Server bereinigt sie. Es gibt keinen clientseitigen Prune-Befehl: Legen Sie fest, wie viel Verlauf erhalten bleiben soll, und der Server entfernt den Rest.
 
+Eine Richtlinie gehört zur Lineage eines Repositorys, sodass ein Repository und seine Forks sie teilen, und sie lässt sich für einen Backup-Stream (ein Repository auf einer Maschine) überschreiben. Außerdem behält jeder Stream unabhängig von der Richtlinie seine neuesten Snapshots und seinen aktuellen Anker, sodass ein Durchlauf nie einen Stream strandet.
+
 ```bash
-# Aktuelle Richtlinie anzeigen
+# Aktuelle Richtlinie anzeigen und woher sie stammt
 rdc backup retention my-app
+
+# Ansehen, was der nächste Durchlauf löschen würde und wie viel Speicher er freigibt, ohne zu löschen
+rdc backup retention preview my-app
 
 # 7 tägliche, 4 wöchentliche und 6 monatliche Snapshots behalten
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# Nur einen Stream überschreiben
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # Wieder alle Snapshots behalten
 rdc backup retention clear my-app
+
+# Einen einzelnen Snapshot sofort löschen; die nächste Garbage Collection gibt seine exklusiven Daten frei
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 Die Richtlinienregeln stehen unter [Backup & Restore](/de/docs/backup-restore#retention); `rdc backup usage` zeigt, was der Store aktuell enthält.
@@ -116,7 +127,6 @@ Räumt veraltete Reste **innerhalb der lokalen Konfigurationsdatei** unter `~/.c
 3. **Hängende Querverweise** zwischen Konfigurationsbereichen:
    - `resources.machines.<m>.backupStrategies[]`-Einträge, die eine nicht mehr existierende Strategie nennen.
    - `resources.backupStrategies.<s>.exclude[]`- und `include[]`-Einträge, die ein nicht mehr existierendes Repo nennen.
-   - Speicherziele, deren Zielspeicher fehlt. Als Warnung markiert, nicht automatisch entfernt (eine automatische Entfernung würde die Strategie-Semantik verändern).
 
 ```bash
 # Nur Vorschau

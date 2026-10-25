@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: de
-sourceHash: "657bd1152d18476e"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "3c59bf71050fb556"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Schnellstart
@@ -223,7 +223,7 @@ rdc backup usage
 
 Snapshots werden in den Chunk-Store hochgeladen, wofür ein Account-Server und ein lizenziertes Repository nötig sind. Es werden nur geänderte Daten gespeichert, sodass ein zweiter Snapshot desselben Repositorys nur die Differenz statt des gesamten Images kostet.
 
-Das Pushen eines Repositorys in Cloud-Speicher mit `--to <storage>` ist eingestellt und wird jetzt zurückgewiesen. Die Storage-Befehle und das mitgelieferte rclone wurden entfernt, deshalb lässt sich ein auf diese Weise geschriebenes Archiv nicht mehr über die CLI durchsuchen.
+Backups haben eine einzige Zielart, den gehosteten Chunk-Store, und `--to` bei `repo push` nennt nur eine Maschine. Die Aufbewahrung wird pro Repository-Lineage mit `rdc backup retention set` festgelegt, und geplante Läufe entstehen aus `rdc backup strategy set` plus `rdc backup schedule`. Siehe [Backup & Wiederherstellung](/de/docs/backup-restore).
 
 ### 4. Von Remote abrufen
 

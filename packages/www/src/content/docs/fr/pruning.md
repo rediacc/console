@@ -8,13 +8,13 @@ tags:
 subcategory: data-protection
 order: 12
 language: fr
-sourceHash: "76d936b2258cc044"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Nettoyage
 
-Le nettoyage balaie les états qui ne correspondent plus à une ressource vivante. Deux commandes couvrent deux portées différentes. Les instantanés du stockage fragmenté n'en font pas partie : le serveur les élague selon une [politique de rétention](#backup-snapshots).
+Le nettoyage balaie les états qui ne correspondent plus à une ressource vivante. Deux commandes couvrent deux portées différentes. Les instantanés du stockage fragmenté n'en font pas partie : le serveur les élague selon une [politique de rétention](#backup-snapshots), par lignée et par flux de sauvegarde.
 
 | Commande | Ce qu'elle nettoie | Où vit la source de vérité |
 |---|---|---|
@@ -35,15 +35,26 @@ Pour outrepasser (rare ; uniquement quand vous savez avec certitude que l'état 
 
 Les instantanés envoyés avec `rdc backup snapshot` vivent dans le stockage fragmenté, et le serveur les élague. Il n'existe pas de commande de nettoyage côté client : déclarez combien d'historique conserver, et le serveur supprime le reste.
 
+Une politique appartient à la lignée d'un dépôt, si bien qu'un dépôt et ses forks la partagent, et elle peut être remplacée pour un flux de sauvegarde (un dépôt sur une machine). Chaque flux conserve en outre ses instantanés les plus récents et son ancre actuelle quelle que soit la politique, si bien qu'un passage ne laisse jamais un flux à l'abandon.
+
 ```bash
-# Afficher la politique actuelle
+# Afficher la politique actuelle et d'où elle vient
 rdc backup retention my-app
+
+# Voir ce que le prochain passage supprimerait et l'espace libéré, sans rien supprimer
+rdc backup retention preview my-app
 
 # Conserver 7 instantanés quotidiens, 4 hebdomadaires et 6 mensuels
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# Remplacer la politique d'un seul flux
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # Conserver de nouveau tous les instantanés
 rdc backup retention clear my-app
+
+# Supprimer un seul instantané maintenant ; le prochain ramasse-miettes libère ses données exclusives
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 Les règles de la politique sont décrites dans [Sauvegarde et restauration](/fr/docs/backup-restore#retention) ; `rdc backup usage` indique ce que le stockage contient actuellement.
@@ -116,7 +127,6 @@ Balaie les résidus obsolètes **à l'intérieur du fichier de configuration loc
 3. **Références croisées orphelines** entre seaux de configuration :
    - Entrées `resources.machines.<m>.backupStrategies[]` nommant une stratégie qui n'existe plus.
    - Entrées `resources.backupStrategies.<s>.exclude[]` et `include[]` nommant un dépôt qui n'existe plus.
-   - Destinations de stockage dont le stockage cible est manquant. Signalées en avertissement, pas auto-supprimées (la suppression automatique changerait la sémantique de la stratégie).
 
 ```bash
 # Aperçu uniquement

@@ -14,7 +14,7 @@ tags:
   - mid-market
 featured: false
 language: ko
-sourceHash: "d5f6a7108f614b9b"
+sourceHash: "b1569f9c0bab2b54"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -94,13 +94,13 @@ ENISA의 이행 비용 지침(이행 규정 (EU) 2024/2690 부속서 IV)은 Fron
 
 Rediacc는 자체 호스팅 인프라에 대해 5개 카테고리 중 4개의 핵심 기능을 대체하는 통합 감사 로그를 갖춘 단일 컨트롤 플레인입니다.
 
-**백업**은 두 가지 모드로 실행됩니다. 핫은 크래시 일관성 있는 BTRFS 스냅샷입니다. 무중단입니다. 콜드는 중단, 스냅샷, 재시작 주기를 수행합니다. 둘 다 systemd 타이머로 예약됩니다. 둘 다 rclone을 통해 여러 목적지로 전송됩니다. 볼륨은 LUKS 암호화됩니다. 운영자가 키를 보유합니다. Rediacc 회사는 평문을 볼 수 없습니다. [백업 및 복원](/ko/docs/backup-restore)과 [크로스 백업 전략](/ko/docs/cross-backup)을 참조하십시오.
+**백업**은 두 가지 모드로 실행됩니다. 핫은 크래시 일관성 있는 BTRFS 스냅샷입니다. 무중단입니다. 콜드는 중단, 스냅샷, 재시작 주기를 수행합니다. 둘 다 systemd 타이머로 예약됩니다. 둘 다 변경된 셀만 업로드하는 콘텐츠 주소 지정 방식의 청크 스토어에 기록되며, 보존은 저장소 계보별로 선언됩니다. 볼륨은 LUKS 암호화됩니다. 운영자가 키를 보유합니다. Rediacc 회사는 평문을 볼 수 없습니다. [백업 및 복원](/ko/docs/backup-restore)과 [크로스 백업 전략](/ko/docs/cross-backup)을 참조하십시오.
 
 **DR**: 백업과 동일한 기본 요소에 더해, 크로스 머신 데이터 이동을 위한 `rdc repo migrate`와 병렬 머신에서 복원된 상태를 신속하게 구동하는 fork 기본 요소를 제공합니다. DR 사이트는 다른 Hetzner 머신, OVH 머신, 온프레미스 랙 등 SSH로 접근 가능한 모든 곳이 될 수 있습니다. 데이터 경로에 DR 벤더 클라우드가 없습니다.
 
 **테스트 데이터 및 전체 스택 복제**는 BTRFS reflink로 실행됩니다. 포크는 저장소 크기에 관계없이 상수 시간입니다. 전체 스택은 데이터, 설정, 컨테이너, 서비스를 의미합니다. 저희 [PocketOS 테스트](/ko/blog/i-tested-rediacc-against-the-pocketos-incident)에서 128 GB 저장소를 7.2초에 포크했습니다. 포크는 간소화된 스테이징 복사본이 아닌 현재 프로덕션입니다. [위험 없는 업그레이드](/ko/docs/risk-free-upgrades)를 참조하십시오.
 
-**즉시 복원**: 임의의 rclone 대상에서 `rdc repo pull`로 새로운 fork에 복원하며, 상위 저장소의 와일드카드 인증서가 적용되는 fork 전용 서브도메인에서 구동됩니다. DNS 혼란이나 인증서 문제가 없습니다.
+**즉시 복원**: 청크 스토어에서는 `rdc backup restore --at <snapshot>`으로, 두 번째 머신에서는 `rdc repo pull`로 새로운 fork에 복원하며, 상위 저장소의 와일드카드 인증서가 적용되는 fork 전용 서브도메인에서 구동됩니다. DNS 혼란이나 인증서 문제가 없습니다.
 
 **통합 감사 로그.** 컨트롤 플레인 전반에 걸친 70개 이상의 이벤트 유형. 로그인, API 토큰, 설정 쓰기, 저장소 생명주기, 백업, 동기화, 터미널 세션, 머신 작업을 포함합니다. 체인은 운영자 워크스테이션에서 해시 연결됩니다. `rdc config audit verify`가 종단간 확인합니다.
 

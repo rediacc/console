@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: et
-sourceHash: "657bd1152d18476e"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "3c59bf71050fb556"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Kiirjuhend
@@ -223,7 +223,7 @@ rdc backup usage
 
 Tõmmised laaditakse üles tükksalvestusse, mis vajab konto-serverit ja litsentseeritud repositooriumi. Salvestatakse ainult muutunud andmed, seega maksab sama repositooriumi teine tõmmis ainult erinevuse, mitte kogu tõmmise hinda.
 
-Repositooriumi lükkamine pilvemällu käsuga `--to <storage>` on kaotatud ja lükatakse nüüd tagasi. Salvestuskäsud ja kaasasolev rclone on eemaldatud, nii et sel viisil kirjutatud arhiivi ei saa enam CLI-st sirvida.
+Varukoopiatel on üks sihtkohatüüp, teenuse majutatud tükksalvestus, ja `--to` käsul `repo push` nimetab ainult masinat. Säilitus deklareeritakse repositooriumi liini kaupa käsuga `rdc backup retention set` ning ajastatud käitused tulevad käsust `rdc backup strategy set` pluss `rdc backup schedule`. Vaata [Varundus ja taastamine](/et/docs/backup-restore).
 
 ### 4. Tõmba kaugelt
 

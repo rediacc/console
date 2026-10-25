@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ar
-sourceHash: "9f16ecba15b69643"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # البنية المعمارية
@@ -143,11 +143,11 @@ sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 
 ## هيكل الإعدادات
 
-كل إعداد هو ملف JSON مسطّح مخزّن في `~/.config/rediacc/`. الإعداد الافتراضي هو `rediacc.json`؛ تستخدم الإعدادات المسمّاة الاسم كاسم للملف (مثلاً `production.json`). تُنظّم الحقول حسب الغرض: `resources` يحتفظ بالنشرات، `credentials` يحتفظ بالأسرار، `account` يحتفظ بقيم السحابة الافتراضية، `infra` يحتفظ بـ TLS و DNS، و `encryption` يحتفظ بحالة في باقي الحقول. يثبّت المميز `schemaVersion: 2` على المستوى الأعلى توافق الإصدارات الأمامية.
+كل إعداد هو ملف JSON مسطّح مخزّن في `~/.config/rediacc/`. الإعداد الافتراضي هو `rediacc.json`؛ تستخدم الإعدادات المسمّاة الاسم كاسم للملف (مثلاً `production.json`). تُنظّم الحقول حسب الغرض: `resources` يحتفظ بالنشرات، `credentials` يحتفظ بالأسرار، `account` يحتفظ بقيم السحابة الافتراضية، `infra` يحتفظ بـ TLS و DNS، و `encryption` يحتفظ بحالة في باقي الحقول. يثبّت المميز `schemaVersion: 3` على المستوى الأعلى توافق الإصدارات الأمامية.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -174,10 +174,12 @@ sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -202,14 +204,14 @@ sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 
 | البكتة | المحتويات |
 |---|---|
-| `schemaVersion` | المميز (حالياً `2`). ترفض أدوات التحميل الإصدارات المجهولة. |
+| `schemaVersion` | المميز (حالياً `3`). ترفض أدوات التحميل الإصدارات المجهولة. |
 | `id` / `version` | معرّف UUID غير قابل للتغيير + عدّاد أحادي الاتجاه؛ يُستخدم للقفل المتفائل على متجر الإعدادات البعيد. |
 | `defaults.*` | قيم افتراضية غير حساسة في وقت التشغيل (`machine` و `language` و `pruneGraceDays` و `universalUser` و `nextNetworkId`). |
 | `credentials.ssh` | مفاتيح SSH مضمنة + `knownHosts`. يحل محل `ssh.privateKeyPath` القديم (لا مزيد من المسارات غير المباشرة؛ يتم حل المحتوى عند التحميل ويُخزّن مضمناً). |
 | `credentials.cfDnsApiToken` | رمز Cloudflare DNS-01 ACME. |
 | `credentials.masterPasswordVerifier` | موجود فقط عندما `encryption.mode === "master-password"`. |
 | `resources.machines.*` | تفاصيل اتصال SSH لكل جهاز. |
-| `resources.storages.*` | بيانات اعتماد النسخ الاحتياطي خارج الموقع متوافقة مع rclone. |
+| `resources.backupStrategies.*` | استراتيجيات نسخ احتياطي مُسماة: الجدول والوضع ومرشحات المستودعات والاحتفاظ والوجهات (دائماً تخزين مجزّأ تستضيفه الخدمة). |
 | `resources.repositories.*` | معرّف GUID لكل مستودع + بيانات اعتماد LUKS + مفتاح SSH للوصول المعزول للوكيل. |
 | `infra.acmeCertCache.*` | ذاكرة مؤقتة Traefik acme.json، gzip + base64، مفهرسة حسب المجال. |
 | `encryption.mode` | `"plaintext"` (افتراضي) أو `"master-password"`. |

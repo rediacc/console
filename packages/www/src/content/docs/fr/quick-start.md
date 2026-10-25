@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: fr
-sourceHash: "657bd1152d18476e"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "3c59bf71050fb556"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Démarrage rapide
@@ -223,7 +223,7 @@ rdc backup usage
 
 Les instantanés sont envoyés vers le stockage fragmenté, qui nécessite un serveur de compte et un dépôt sous licence. Seules les données modifiées sont stockées, donc un second instantané du même dépôt ne coûte que la différence plutôt que l'image entière.
 
-Pousser un dépôt vers un stockage cloud avec `--to <storage>` est retiré et refuse désormais. Les commandes de stockage et le rclone fourni ont été supprimés : une archive écrite de cette façon ne peut donc plus être parcourue depuis la CLI.
+Les sauvegardes n'ont qu'un seul type de destination, le stockage fragmenté hébergé par le service, et `--to` sur `repo push` ne désigne qu'une machine. La rétention se déclare par lignée de dépôt avec `rdc backup retention set`, et les exécutions planifiées viennent de `rdc backup strategy set` puis de `rdc backup schedule`. Voir [Sauvegarde et restauration](/fr/docs/backup-restore).
 
 ### 4. Récupérer depuis un emplacement distant
 

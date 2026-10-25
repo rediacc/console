@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: de
-sourceHash: "bca896d59a353796"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # RDC CLI Cheat Sheet
@@ -59,7 +59,12 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc backup snapshot <repo> --dry-run` | Snapshot planen, ohne hochzuladen; zeigt, was sich bewegen würde |
 | `rdc backup verify <repo>` | Backup-Anker eines Repositorys gegen den Chunk-Store verifizieren |
 | `rdc backup usage` | Im Chunk-Store gespeicherte Bytes gegenüber dem Kontingent anzeigen |
-| `rdc backup manifests <repo>` | Auf dem Server erfasste Snapshot-Manifeste auflisten |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | Einen Chunk-Store-Snapshot unter neuem Namen wiederherstellen |
+| `rdc backup retention <repo>` | Die Aufbewahrungsrichtlinie anzeigen, die der Server für eine Repository-Lineage durchsetzt |
+| `rdc backup retention preview <repo>` | Anzeigen, was der nächste Durchlauf löschen würde und wie viel Speicher er freigibt |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | Aufbewahrung für eine Lineage oder einen Backup-Stream festlegen |
+| `rdc backup retention clear <repo> [--stream <id>]` | Die Richtlinie entfernen; jeder Snapshot wird behalten |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | Einen Snapshot löschen; seine exklusiven Daten gibt die nächste GC frei |
 
 ## Repository-Migration
 
@@ -75,7 +80,7 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 
 | Befehl | Beschreibung |
 |--------|--------------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | Benannte Sicherungsstrategie erstellen oder aktualisieren |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | Benannte Sicherungsstrategie erstellen oder aktualisieren |
 | `rdc backup strategy list` | Alle definierten Sicherungsstrategien auflisten |
 | `rdc backup strategy show <name>` | Details einer Strategie anzeigen |
 | `rdc backup strategy remove <name>` | Strategie entfernen |

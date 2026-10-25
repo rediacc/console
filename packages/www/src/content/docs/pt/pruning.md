@@ -8,13 +8,13 @@ tags:
 subcategory: data-protection
 order: 12
 language: pt
-sourceHash: "76d936b2258cc044"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Pruning
 
-O pruning elimina estado que já não corresponde a um recurso ativo. Dois comandos cobrem dois âmbitos diferentes. Os snapshots no armazenamento em chunks não estão entre eles: o servidor elimina-os segundo uma [política de retenção](#backup-snapshots).
+O pruning elimina estado que já não corresponde a um recurso ativo. Dois comandos cobrem dois âmbitos diferentes. Os snapshots no armazenamento em chunks não estão entre eles: o servidor elimina-os segundo uma [política de retenção](#backup-snapshots), por linhagem e fluxo de backup.
 
 | Comando | O que limpa | Onde reside a fonte de verdade |
 |---|---|---|
@@ -35,15 +35,26 @@ Para substituir (raro; apenas quando sabe genuinamente que o estado ativo está 
 
 Os snapshots enviados com `rdc backup snapshot` ficam no armazenamento em chunks, e o servidor encarrega-se de os eliminar. Não existe um comando de prune no cliente: indique quanto histórico manter e o servidor remove o resto.
 
+Uma política pertence à linhagem de um repositório, pelo que um repositório e os seus forks a partilham, e pode ser substituída para um fluxo de backup (um repositório numa máquina). Cada fluxo mantém ainda os seus snapshots mais recentes e a sua âncora atual, diga o que disser a política, pelo que uma passagem nunca deixa um fluxo abandonado.
+
 ```bash
-# Mostrar a política atual
+# Mostrar a política atual e de onde vem
 rdc backup retention my-app
+
+# Ver o que a próxima passagem apagaria e o espaço que liberta, sem apagar
+rdc backup retention preview my-app
 
 # Manter 7 snapshots diários, 4 semanais e 6 mensais
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# Substituir apenas um fluxo
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # Voltar a manter todos os snapshots
 rdc backup retention clear my-app
+
+# Apagar um único snapshot agora; a próxima recolha de lixo liberta os seus dados exclusivos
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 As regras da política estão em [Backup e Restauro](/pt/docs/backup-restore#retention); `rdc backup usage` mostra o que o armazenamento contém neste momento.
@@ -116,7 +127,6 @@ Varre resíduos obsoletos **dentro do ficheiro de config local** em `~/.config/r
 3. **Referências cruzadas pendentes** entre categorias da config:
    - Entradas `resources.machines.<m>.backupStrategies[]` que nomeiam uma estratégia que já não existe.
    - Entradas `resources.backupStrategies.<s>.exclude[]` e `include[]` que nomeiam um repositório que já não existe.
-   - Destinos de armazenamento cujo armazenamento alvo está em falta. Assinalados como aviso, não removidos automaticamente (a remoção automática alteraria a semântica da estratégia).
 
 ```bash
 # Apenas pré-visualização

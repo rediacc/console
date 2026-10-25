@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: pt
-sourceHash: "b42d1f1b49c7e73a"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "177a657544f9979f"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Backup e Restauro
@@ -60,9 +60,9 @@ O envio e receção máquina a máquina não precisam de nenhum dos dois. São u
 - **Não é replicação contínua.** Um snapshot é um ponto que capturou, e pode perder tudo o que foi escrito desde o último. Quanto isso representa depende da frequência com que executa.
 - **Os objetos armazenados são write-once, não WORM certificado.** As células são escritas com uma condição apenas de criação, a autorização que uma máquina recebe não pode apagar nada, e as eliminações acontecem do lado do servidor, sob política de retenção. Isso é uma barreira real contra uma máquina comprometida destruir os seus próprios backups. Não é uma certificação de conformidade, nem é auditado como tal.
 
-### O caminho de armazenamento rclone desapareceu
+### Um único tipo de destino
 
-`rdc repo push --to <storage>` e os comandos relacionados copiavam um ficheiro de backup inteiro para um fornecedor cloud registado manualmente. Os comandos de storage e o rclone incluído foram removidos, e `--to`/`--from` passam a indicar apenas uma máquina. A transferência entre máquinas nunca passou pelo rclone e não é afetada. Um arquivo escrito à moda antiga já não pode ser explorado a partir da CLI.
+Os backups em armazenamento em chunks têm um único tipo de destino: um armazenamento em chunks alojado no serviço, alcançado através do servidor de contas. Não existe um registo de endpoints de armazenamento externos, pelo que `--to` e `--from` em `repo push` e `repo pull` indicam apenas uma máquina.
 
 ### Comandos de armazenamento em chunks
 
@@ -267,22 +267,34 @@ A cópia enviada aparece com o seu próprio nome. Uma segunda linha com um GUID 
 | `Size` | Tamanho legível por humanos do ficheiro de backup |
 | `Modified` | Timestamp UTC do ficheiro na máquina |
 
-Listar um back-end de armazenamento está retirado juntamente com o ramo rclone; o comando recusa e indica estes dois substitutos.
-
 ## Retenção
 
-O servidor impõe uma política de retenção por repositório sobre o armazenamento em chunks, pelo que snapshots antigos são podados sem que apague nada à mão. Sem nenhuma política declarada, todos os snapshots são mantidos.
+O servidor impõe uma política de retenção sobre o armazenamento em chunks, pelo que os snapshots antigos são podados sem que seja preciso apagar nada à mão. Uma política pertence à linhagem de um repositório: um repositório e os seus forks partilham um único histórico, e uma política definida sobre o nome do repositório cobre toda a família. Dentro de uma linhagem, cada fluxo de backup (um repositório numa máquina) está também protegido por si, pelo que a retenção nunca deixa um fluxo sem os seus snapshots mais recentes nem a sua âncora atual, diga o que disser a política. Uma segunda máquina ou um fork que pode o seu próprio histórico não consegue consumir o mínimo de outro fluxo.
+
+Sem política declarada, aplica-se um valor por omissão do servidor (o do plano, quando o plano define um) e os snapshots mais recentes de cada fluxo são mantidos.
 
 ```bash
-# O que está a ser imposto neste momento.
+# O que está a ser aplicado agora e de onde vem.
 rdc backup retention my-app
+
+# O que a próxima passagem apagaria e o espaço que liberta. Nada é apagado.
+rdc backup retention preview my-app
 
 # Manter uma janela deslizante: 7 diários, 4 semanais, 6 mensais.
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Voltar a manter tudo.
+# Aplicar uma política diferente a um único fluxo de backup.
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Remover a política declarada.
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# Apagar um snapshot agora. Os dados que só esse snapshot usava são libertados pelo GC seguinte.
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+Uma estratégia pode declarar a política dos repositórios que cobre: `rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6` (`--retention none` remove-a).
 
 | Opção | Descrição |
 |--------|-------------|
@@ -292,8 +304,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | Manter o snapshot mais recente de cada uma destas semanas |
 | `--keep-monthly <n>` | Manter o snapshot mais recente de cada um destes meses |
 | `--keep-yearly <n>` | Manter o snapshot mais recente de cada um destes anos |
+| `--stream <id>` | Aplicar a política a um único fluxo de backup em vez do valor por omissão de todo o repositório |
 
-Indique pelo menos uma regra. `set` sem regras é recusado em vez de ser tratado como "não manter nada", porque limpar uma política é para isso que serve o `clear`.
+Indique pelo menos uma regra. `set` substitui todos os parâmetros em vez de os combinar, pelo que a política completa é passada de cada vez. `set` sem regras é recusado em vez de ser tratado como "não manter nada", porque limpar uma política é para isso que serve o `clear`. `clear` remove a política e mantém todos os snapshots a partir daí; nunca significa "não manter nada".
 
 ## Restaurar
 
@@ -309,6 +322,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at` recebe um id de snapshot de `rdc backup manifests`, ou uma hora RFC 3339 como `2026-08-14T12:00:00Z`, que se resolve para o snapshot mais recente feito nesse momento ou antes dele. Uma hora sem nenhum snapshot nesse momento ou antes é recusada em vez de arredondada para a frente.
 
+Uma hora resolve-se apenas entre os snapshots deste repositório na sua máquina de origem. Os snapshots escritos por outras máquinas ou por forks da mesma linhagem não são considerados, a não ser que `--any-stream` alargue a pesquisa de propósito. Quando o fluxo do próprio repositório não pode ser determinado, o restauro é recusado e pede `--any-stream` em vez de adivinhar.
+
 Restaurar sob um novo nome com `--as` não substitui nada, pelo que um exercício de restauro é seguro de executar contra uma máquina em produção. Restaurar sobre um nome que já existe é recusado.
 
 | Opção | Descrição |
@@ -318,6 +333,7 @@ Restaurar sob um novo nome com `--as` não substitui nada, pelo que um exercíci
 | `-m, --machine <machine>` | Máquina para onde restaurar |
 | `--datastore <name>` | Restaura para este datastore nomeado, cuja máquina associada o aloja |
 | `--at <time>` | Restaura um ponto no tempo: um id de snapshot ou uma hora RFC 3339 |
+| `--any-stream` | Com `--at`, considera também snapshots de outras máquinas e de forks desta linhagem |
 | `--up` | Implementa o repositório restaurado após a transferência |
 | `--health-window <seconds>` | Quanto tempo observar o repositório implementado quanto à sua saúde |
 | `--health-timeout <seconds>` | Quanto tempo esperar até ficar saudável |
@@ -356,7 +372,7 @@ Máquina](#pull-a-backup-from-another-machine).
 
 ## Backups Agendados
 
-O Rediacc usa estratégias de backup nomeadas. Cada estratégia define um horário, modo de backup, limite de largura de banda opcional, e filtros de ficheiros. Vincula nomes de estratégias a máquinas para controlar quais backups correm onde.
+O Rediacc usa estratégias de backup nomeadas. Cada estratégia define um horário, modo de backup, limite de largura de banda opcional, filtros de repositórios e retenção de snapshots. Vincula nomes de estratégias a máquinas para controlar quais backups correm onde.
 
 ### Modos de Backup
 
@@ -455,7 +471,7 @@ A configuração predefinida é uma divisão em duas estratégias: um fluxo quen
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -464,28 +480,27 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>` nomeia o destino dentro da estratégia; é uma etiqueta que escolhe, e descreve o armazenamento em chunks. `--include` lista os repositórios a fazer backup, e repeti-lo acrescenta mais. Omita-o e a estratégia cobre todo repositório no datastore. Os nomes correspondem ao nome do repositório na configuração local (sem `:tag`).
+`--destination <name>` nomeia o destino dentro da estratégia; é uma etiqueta escolhida por estratégia, e o destino é sempre o armazenamento em chunks alojado no serviço. `--include` recebe uma lista de repositórios a copiar separados por vírgulas (`--include shop,mail`). Omita-o e a estratégia cobre todos os repositórios no datastore. Um nome simples cobre o repositório e todos os seus forks; `name:tag` cobre um fork. Nomes desconhecidos são recusados quando a estratégia é guardada, pelo que um erro de escrita não pode agendar um backup de nada.
 
-`--exclude` é recusado para um destino em chunks em vez de ser silenciosamente ignorado, porque o `backup snapshot` subjacente seleciona repositórios nomeando-os e não tem exclusão própria. Respeitá-lo significaria fazer backup de repositórios que pediu para deixar de fora. Defina o âmbito de uma estratégia com `--include` em vez disso, para que o que uma execução agendada cobre fique escrito em vez de inferido.
+`--exclude` tem a mesma forma separada por vírgulas e ignora os repositórios indicados. `--include` e `--exclude` são mutuamente exclusivos: definir um limpa o outro, e o valor `none` limpa um filtro.
 
 | Opção | Descrição |
 |--------|-------------|
 | `<strategy>` (posicional) | Nome da estratégia (usado para vincular a máquinas) |
-| `--destination <name>` | Nome do destino dentro da estratégia. Por defeito, o armazenamento em chunks |
-| `--storage <name>` | Adere ao tipo de destino rclone retirado. Um agendamento que o use não pode ser implementado |
+| `--destination <name>` | Nome do destino dentro da estratégia. Sempre um armazenamento em chunks alojado no serviço |
 | `--cron <expression>` | Expressão cron (ex.: `"0 2 * * *"` para diariamente às 2h) |
 | `--mode <hot\|cold>` | Modo de backup |
 | `--bwlimit <limit>` | Limite de largura de banda para envios (ex.: `10M`) |
-| `--include <repos>` | Repositórios que esta estratégia cobre (repetível) |
-| `--exclude <repos>` | Repositórios a saltar (repetível). Recusado num destino em chunks |
-| `--folder <path>` | Subpasta dentro de um bucket rclone. Recusado num destino em chunks |
+| `--include <repos>` | Repositórios cobertos por esta estratégia (separados por vírgulas) |
+| `--exclude <repos>` | Repositórios a ignorar (separados por vírgulas) |
+| `--retention <spec>` | Retenção de snapshots, por exemplo `last=7,daily=7,weekly=4,monthly=6`. `none` remove-a |
 | `--enable` / `--disable` | Ativa ou desativa a estratégia |
 
 ### Ver Estratégias
@@ -544,12 +559,12 @@ Ambos os modos escrevem no mesmo armazenamento em chunks, e o modo diz respeito 
 
 ### Definir o Âmbito de Repositórios por Estratégia
 
-Uma estratégia sem `--include` cobre todo repositório no datastore. Repetir `--include` estreita-a aos repositórios que nomear, correspondidos com o nome do repositório na configuração local (sem `:tag`).
+Uma estratégia sem `--include` cobre todos os repositórios no datastore. `--include` restringe-a aos repositórios indicados, separados por vírgulas, comparados com o nome do repositório na configuração local.
 
 ```bash
 # Estratégia quente: fazer backup de tudo a cada hora
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -557,10 +572,10 @@ rdc backup strategy set hourly-hot \
 
 # Estratégia fria: semanal, e apenas os repositórios que precisam de ser aquietados
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 

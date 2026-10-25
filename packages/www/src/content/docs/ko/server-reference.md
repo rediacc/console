@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ko
-sourceHash: "661f857d2226d362"
-sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
+sourceHash: "a64de9af83bd943a"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 서버 레퍼런스
@@ -190,16 +190,12 @@ renet daemon logs   --network-id {id}    # 데몬 로그
 
 ### 백업 및 복원
 
-다른 머신이나 클라우드 스토리지로 백업 푸시:
+백업을 다른 머신으로 전송합니다. 청크 스토어 스냅샷은 `rdc backup snapshot` 또는 `renet backup snapshot`으로 생성합니다:
 
 ```bash
 # 원격 머신으로 푸시 (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
   --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
-
-# 클라우드 스토리지로 푸시 (rclone)
-renet backup push --name {uuid} --network-id {id} --target storage \
-  --dest {uuid}.backup --rclone-backend {backend} --rclone-bucket {bucket}
 
 # 원격에서 풀
 renet backup pull --name {uuid} --network-id {id} --source machine \

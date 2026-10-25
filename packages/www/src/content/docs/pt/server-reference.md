@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: pt
-sourceHash: "661f857d2226d362"
-sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
+sourceHash: "a64de9af83bd943a"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Referência do Servidor
@@ -190,16 +190,12 @@ renet daemon logs   --network-id {id}    # Logs do daemon
 
 ### Backup e Restauro
 
-Enviar backups para outra maquina ou para armazenamento na nuvem:
+Enviar backups para outra máquina. Os snapshots do armazenamento em chunks são feitos com `rdc backup snapshot` ou `renet backup snapshot`:
 
 ```bash
 # Enviar para maquina remota (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
   --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
-
-# Enviar para armazenamento na nuvem (rclone)
-renet backup push --name {uuid} --network-id {id} --target storage \
-  --dest {uuid}.backup --rclone-backend {backend} --rclone-bucket {bucket}
 
 # Obter de remoto
 renet backup pull --name {uuid} --network-id {id} --source machine \

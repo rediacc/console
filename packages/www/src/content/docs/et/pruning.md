@@ -8,13 +8,13 @@ tags:
 subcategory: data-protection
 order: 12
 language: et
-sourceHash: "76d936b2258cc044"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Kärpimine
 
-Kärpimine eemaldab olekud, mis ei vasta enam elusale ressursile. Kaks käsku katavad kaht erinevat ulatust. Tükksalvestuses olevad tõmmised nende hulka ei kuulu: server kärbib need [säilituspoliitika](#backup-snapshots) alusel.
+Kärpimine eemaldab olekud, mis ei vasta enam elusale ressursile. Kaks käsku katavad kaht erinevat ulatust. Tükksalvestuses olevad tõmmised nende hulka ei kuulu: server kärbib need [säilituspoliitika](#backup-snapshots) alusel, liini ja varundusvoo kaupa.
 
 | Käsk | Mida puhastab | Kus asub tõeallikas |
 |---|---|---|
@@ -35,15 +35,26 @@ Alistamiseks (harv; ainult siis, kui oled kindel, et elav olek on vale), lisa `-
 
 Käsuga `rdc backup snapshot` üles laaditud tõmmised asuvad tükksalvestuses ja server kärbib neid ise. Kliendipoolset kärpimiskäsku ei ole: määra, kui palju ajalugu säilitada, ja server eemaldab ülejäänu.
 
+Poliitika kuulub repositooriumi liinile, nii et repositoorium ja selle forkid jagavad seda, ning seda saab üle kirjutada ühe varundusvoo (üks repositoorium ühel masinal) jaoks. Lisaks säilitab iga voog poliitikast olenemata oma uusimad hetktõmmised ja praeguse ankru, nii et läbimine ei jäta voogu kunagi lootusetusse seisu.
+
 ```bash
-# Näita kehtivat poliitikat
+# Näita kehtivat poliitikat ja kust see pärineb
 rdc backup retention my-app
+
+# Vaata, mida järgmine läbimine kustutaks ja kui palju ruumi see vabastaks, midagi kustutamata
+rdc backup retention preview my-app
 
 # Säilita 7 päevast, 4 nädalast ja 6 kuist tõmmist
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# Kirjuta üle ainult üks voog
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # Säilita jälle kõik tõmmised
 rdc backup retention clear my-app
+
+# Kustuta üks hetktõmmis kohe; järgmine prügikoristus vabastab selle ainuandmed
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 Poliitika reeglid leiad jaotisest [Varundus ja taastamine](/et/docs/backup-restore#retention); käsk `rdc backup usage` näitab, mis salvestuses praegu on.
@@ -116,7 +127,6 @@ Puhastab aegunud jäänukid **kohalikus konfiguratsioonifailis** `~/.config/redi
 3. **Rippuvad ristviited** konfiguratsioonikorvide vahel:
    - `resources.machines.<m>.backupStrategies[]` kirjed, mis nimetavad strateegiat, mida pole enam olemas.
    - `resources.backupStrategies.<s>.exclude[]` ja `include[]` kirjed, mis nimetavad hoidlat, mida pole enam olemas.
-   - Mäluhoidla sihtkohad, mille sihtmälu puudub. Märgitud hoiatusena, mitte automaatselt eemaldatavana (automaatne eemaldamine muudaks strateegia semantikat).
 
 ```bash
 # Ainult eelvaade

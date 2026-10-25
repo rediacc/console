@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ru
-sourceHash: "bca896d59a353796"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Шпаргалка по CLI RDC
@@ -59,7 +59,12 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup snapshot <repo> --dry-run` | Спланировать снимок без загрузки; сообщает, что переместилось бы |
 | `rdc backup verify <repo>` | Проверить якорь резервной копии репозитория по чанковому хранилищу |
 | `rdc backup usage` | Показать байты, хранящиеся в чанковом хранилище, относительно вашей квоты |
-| `rdc backup manifests <repo>` | Список манифестов снимков, зарегистрированных на сервере |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | Восстановить снимок из хранилища чанков под новым именем |
+| `rdc backup retention <repo>` | Показать политику хранения, которую сервер применяет к линии репозитория |
+| `rdc backup retention preview <repo>` | Показать, что удалит следующий проход и сколько места он освободит |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | Объявить хранение для линии или одного потока бэкапа |
+| `rdc backup retention clear <repo> [--stream <id>]` | Убрать политику; сохраняются все снимки |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | Удалить один снимок; его эксклюзивные данные освободит следующий GC |
 
 ## Миграция репозитория
 
@@ -75,7 +80,7 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 
 | Команда | Описание |
 |---------|----------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | Создать или обновить именованную стратегию резервного копирования |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | Создать или обновить именованную стратегию резервного копирования |
 | `rdc backup strategy list` | Список всех определенных стратегий резервного копирования |
 | `rdc backup strategy show <name>` | Показать детали стратегии |
 | `rdc backup strategy remove <name>` | Удалить стратегию |

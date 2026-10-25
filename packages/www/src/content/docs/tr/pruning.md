@@ -8,13 +8,13 @@ tags:
 subcategory: data-protection
 order: 12
 language: tr
-sourceHash: "76d936b2258cc044"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Temizleme
 
-Temizleme, artık canlı bir kaynağa karşılık gelmeyen durumu tarar. İki komut iki farklı kapsamı kapsar. Chunk deposundaki anlık görüntüler bunların dışındadır: sunucu onları bir [saklama ilkesine](#backup-snapshots) göre temizler.
+Temizleme, artık canlı bir kaynağa karşılık gelmeyen durumu tarar. İki komut iki farklı kapsamı kapsar. Chunk deposundaki anlık görüntüler bunların dışındadır: sunucu onları bir [saklama ilkesine](#backup-snapshots) göre, soy hattı ve yedek akışı bazında temizler.
 
 | Komut | Neyi temizler | Doğruluk kaynağı nerede yaşar |
 |---|---|---|
@@ -35,15 +35,26 @@ Geçersiz kılmak için (nadir; yalnızca canlı durumun yanlış olduğundan ge
 
 `rdc backup snapshot` ile yüklenen anlık görüntüler chunk deposunda durur ve onları sunucu temizler. İstemci tarafında bir prune komutu yoktur: ne kadar geçmişin tutulacağını belirtin, gerisini sunucu siler.
 
+Bir politika, deponun soy hattına aittir; böylece bir depo ve fork'ları onu paylaşır ve tek bir yedek akışı (bir makinedeki bir depo) için geçersiz kılınabilir. Her akış ayrıca politika ne derse desin en yeni anlık görüntülerini ve güncel çapasını korur; böylece bir tarama hiçbir akışı çaresiz bırakmaz.
+
 ```bash
-# Geçerli ilkeyi göster
+# Geçerli politikayı ve nereden geldiğini göster
 rdc backup retention my-app
+
+# Bir sonraki taramanın neyi sileceğini ve ne kadar yer açacağını silmeden gör
+rdc backup retention preview my-app
 
 # 7 günlük, 4 haftalık ve 6 aylık anlık görüntü tut
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# Yalnızca tek bir akışı geçersiz kıl
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # Tüm anlık görüntüleri yeniden tut
 rdc backup retention clear my-app
+
+# Tek bir anlık görüntüyü hemen sil; sonraki çöp toplama onun özel verisini boşaltır
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 İlke kuralları için [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore#retention) bölümüne, deponun şu anda neleri barındırdığı için `rdc backup usage` komutuna bakın.
@@ -116,7 +127,6 @@ rdc machine prune server-1 --prune-unknown
 3. **Yapılandırma kovaları arasındaki askıdaki çapraz referanslar:**
    - `resources.machines.<m>.backupStrategies[]` içinde artık var olmayan bir stratejiyi adlandıran girişler.
    - `resources.backupStrategies.<s>.exclude[]` ve `include[]` içinde artık var olmayan bir depoyu adlandıran girişler.
-   - Hedef depolaması eksik olan depolama hedefleri. Uyarı olarak işaretlenir, otomatik kaldırılmaz (otomatik kaldırma strateji semantiğini değiştirirdi).
 
 ```bash
 # Yalnızca önizleme

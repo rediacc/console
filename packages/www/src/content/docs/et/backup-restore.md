@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: et
-sourceHash: "b42d1f1b49c7e73a"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "177a657544f9979f"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Varundamine ja taastamine
@@ -59,9 +59,9 @@ Masina-masina push ja pull ei vaja kumbagi. Need on otsene ülekanne kahe masina
 - **See ei ole pidev replikatsioon.** Hetktõmmis on hetk, mille sa jäädvustasid, ja sa võid kaotada kõik, mis on kirjutatud alates viimasest. Kui palju see on, sõltub sellest, kui sageli sa käivitad.
 - **Salvestatud objektid on üks kord kirjutatavad, mitte sertifitseeritud WORM.** Rakud kirjutatakse ainult-loomise tingimusega, masina saadav õigus ei saa midagi kustutada, ja kustutamised toimuvad serveripoolselt säilituspoliitika alusel. See on tõeline tõke kompromiteeritud masinale, mis hävitab oma varukopiad. See ei ole vastavussertifikaat ja seda ei auditeerita sellisena.
 
-### rclone salvestustee on kadunud
+### Üks sihtkohatüüp
 
-`rdc repo push --to <storage>` ja sarnased käsud kopeerisid varem terve varundusfaili käsitsi registreeritud pilveteenuse pakkujale. storage-käsud ja kaasa pandud rclone on eemaldatud ning `--to`/`--from` nimetavad nüüd ainult masinat. Masinast masinasse ülekanne ei käinud kunagi läbi rclone'i ja seda muudatus ei puuduta. Vanal viisil kirjutatud arhiivi ei saa enam CLI kaudu sirvida.
+Tükksalvestuse varukoopiatel on üks sihtkohatüüp: teenuse majutatud tükksalvestus, millele pääseb ligi kontoserveri kaudu. Väliste salvestusotspunktide registrit ei ole, seega nimetavad `--to` ja `--from` käskudel `repo push` ja `repo pull` ainult masinat.
 
 ### Tükksalvestuse käsud
 
@@ -264,22 +264,34 @@ Saadetud koopia ilmub oma nime all. Teine rida, mis kannab kõrval toorest GUID-
 | `Size` | Inimloetav varukoopifaili suurus |
 | `Modified` | UTC ajatempel failist masinal |
 
-Salvestusliidese loetlemine on kaotatud koos rclone-haruga; käsk keeldub ja nimetab need kaks asendust.
-
 ## Säilitamine
 
-Server jõustab andmehoidla kohta repositooriumipõhist säilituspoliitikat tükksalvestuse üle, nii et vanad hetktõmmised kärbitakse ilma, et sa peaksid midagi käsitsi kustutama. Deklareerimata poliitika korral säilitatakse iga hetktõmmis.
+Server jõustab tükksalvestuse üle säilituspoliitikat, nii et vanad hetktõmmised kärbitakse ilma, et midagi käsitsi kustutataks. Poliitika kuulub repositooriumi liinile: repositooriumil ja selle forkidel on ühine ajalugu ning repositooriumi nimele seatud poliitika katab kogu perekonna. Liini sees on iga varundusvoog (üks repositoorium ühel masinal) kaitstud ka eraldi, nii et säilitus ei jäta voogu kunagi ilma selle uusimate hetktõmmisteta ega praeguse ankruta, olenemata poliitikast. Teine masin või fork, mis kärbib oma ajalugu, ei saa teise voo alampiiri ära kasutada.
+
+Kui poliitikat pole deklareeritud, kehtib serveri vaikeväärtus (plaani vaikeväärtus, kui plaan seda määrab) ning iga voo uusimad hetktõmmised säilitatakse.
 
 ```bash
-# Mida praegu jõustatakse.
+# Mis praegu kehtib ja kust see pärineb.
 rdc backup retention my-app
+
+# Mida järgmine läbimine kustutaks ja kui palju ruumi see vabastaks. Midagi ei kustutata.
+rdc backup retention preview my-app
 
 # Hoia rulluvat akent: 7 päevast, 4 nädalast, 6 kuist.
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Mine tagasi kõige säilitamise juurde.
+# Rakenda erinev poliitika ainult ühele varundusvoole.
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Eemalda deklareeritud poliitika.
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# Kustuta üks hetktõmmis kohe. Andmed, mida kasutas ainult see hetktõmmis, vabastab järgmine GC.
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+Strateegia saab deklareerida poliitika repositooriumidele, mida ta katab: `rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6` (`--retention none` eemaldab selle).
 
 | Valik | Kirjeldus |
 |--------|-------------|
@@ -289,8 +301,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | Säilita kõige uuem hetktõmmis igast neist nädalatest |
 | `--keep-monthly <n>` | Säilita kõige uuem hetktõmmis igast neist kuudest |
 | `--keep-yearly <n>` | Säilita kõige uuem hetktõmmis igast neist aastatest |
+| `--stream <id>` | Rakenda poliitika ühele varundusvoole kogu repositooriumi vaikeväärtuse asemel |
 
-Anna vähemalt üks reegel. Reegliteta `set` lükatakse tagasi, selle asemel et käsitleda seda kui "ära säilita midagi", sest poliitika tühjendamiseks on olemas `clear`.
+Anna vähemalt üks reegel. `set` asendab iga parameetri, mitte ei ühenda, seega antakse kogu poliitika iga kord uuesti. Reegliteta `set` lükatakse tagasi, selle asemel et käsitleda seda kui "ära säilita midagi", sest poliitika tühjendamiseks on olemas `clear`. `clear` eemaldab poliitika ja säilitab sellest hetkest iga hetktõmmise; see ei tähenda kunagi "ära säilita midagi".
 
 ## Taastamine
 
@@ -306,6 +319,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at` võtab hetktõmmise id käsust `rdc backup manifests` või RFC 3339 aja, näiteks `2026-08-14T12:00:00Z`, mis lahendatakse kõige uuemaks hetktõmmiseks, mis on tehtud sellel hetkel või varem. Aeg, millele ei eelne hetktõmmist, lükatakse tagasi, selle asemel et see edasi ümardada.
 
+Aeg lahendatakse ainult selle repositooriumi hetktõmmiste hulgas selle lähtemasinal. Teiste masinate või sama liini forkide kirjutatud hetktõmmiseid ei arvestata, kui `--any-stream` ei laienda otsingut tahtlikult. Kui repositooriumi enda voogu ei saa kindlaks teha, lükatakse taaste tagasi ja küsitakse `--any-stream`, selle asemel et arvata.
+
 Taastamine uue nime alla käsuga `--as` ei kirjuta midagi üle, seega on taastamise harjutus ohutu käivitada elava masina vastu. Taastamine juba olemasoleva nime alla lükatakse tagasi.
 
 | Valik | Kirjeldus |
@@ -315,6 +330,7 @@ Taastamine uue nime alla käsuga `--as` ei kirjuta midagi üle, seega on taastam
 | `-m, --machine <machine>` | Masin, kuhu taastada |
 | `--datastore <name>` | Taasta sellesse nimetatud andmehoidlasse, mille ühendatud masin seda majutab |
 | `--at <time>` | Taasta ajahetk: hetktõmmise id või RFC 3339 aeg |
+| `--any-stream` | Koos `--at` arvesta ka teiste masinate ja selle liini forkide hetktõmmiseid |
 | `--up` | Juuruta taastatud repositoorium pärast ülekannet |
 | `--health-window <seconds>` | Kui kaua jälgida juurutatud repositooriumi tervist |
 | `--health-timeout <seconds>` | Kui kaua oodata, kuni see saab terveks |
@@ -351,7 +367,7 @@ Täielikud valikute nimekirjad on [Varukoopia saatmine teise masinasse](#push-a-
 
 ## Ajastatud varundamine
 
-Rediacc kasutab nimetatud varundamisstrateegiaid. Iga strateegia määratleb ajakava, varundamisrežiimi, valikulise ribalaiuse piirangu ja failifiltrid. Masinad viitavad strateegiatele nimede järgi, et määrata, millised varukopiad neil käitatakse.
+Rediacc kasutab nimetatud varundamisstrateegiaid. Iga strateegia määratleb ajakava, varundamisrežiimi, valikulise ribalaiuse piirangu, repositooriumifiltrid ja hetktõmmiste säilituse. Strateegianimed seotakse masinatega, et määrata, millised varukopiad seal käitatakse.
 
 ### Varundamisrežiimid
 
@@ -450,7 +466,7 @@ Kanooniline vaikeväärtus on kahe strateegiaga jaotus: kiire tunnine hot-voog, 
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -459,28 +475,27 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>` nimetab sihtkoha strateegia sees; see on sinu valitud silt ja kirjeldab tükksalvestust. `--include` loetleb varundatavad repositooriumid ja selle kordamine lisab veel. Ära anna see ja strateegia katab iga repositooriumi andmesalves. Nimed vastavad kohaliku konfiguratsiooni repositooriumi nimele (ilma `:tag`-ita).
+`--destination <name>` nimetab sihtkoha strateegia sees; see on strateegiakohane silt ja sihtkoht on alati teenuse majutatud tükksalvestus. `--include` võtab komadega eraldatud loendi varundatavatest repositooriumidest (`--include shop,mail`). Jäta see ära ja strateegia katab iga repositooriumi andmesalves. Pelk nimi katab repositooriumi ja kõik selle forkid; `name:tag` katab ühe forki. Tundmatud nimed lükatakse strateegia salvestamisel tagasi, nii et kirjaviga ei saa ajastada tühja varukoopiat.
 
-`--exclude` lükatakse tükksalvestuse sihtkoha puhul tagasi, selle asemel et vaikselt maha visata, sest aluseks olev `backup snapshot` valib repositooriume neid nimetades ega oma iseenda välistust. Selle austamine tähendaks nende repositooriumide varundamist, mille sa palusid välja jätta. Piiritle strateegia selle asemel `--include`-ga, nii et see, mida ajastatud käivitus katab, on kirja pandud, mitte tuletatud.
+`--exclude` võtab sama komadega eraldatud kuju ja jätab nimetatud repositooriumid vahele. `--include` ja `--exclude` välistavad teineteist: ühe seadmine tühjendab teise ning väärtus `none` tühjendab filtri.
 
 | Valik | Kirjeldus |
 |--------|-------------|
 | `<strategy>` (positsiooniline) | Strateegia nimi (kasutatakse masinaga sidumiseks) |
-| `--destination <name>` | Sihtkoha nimi strateegia sees. Vaikimisi tükksalvestus |
-| `--storage <name>` | Vali kaotatud rclone-sihtkoha liik. Seda kasutavat ajakava ei saa juurutada |
+| `--destination <name>` | Sihtkoha nimi strateegia sees. Alati teenuse majutatud tükksalvestus |
 | `--cron <expression>` | Cron-avaldis (nt `"0 2 * * *"` päevaks kell 2) |
 | `--mode <hot\|cold>` | Varundamisrežiim |
 | `--bwlimit <limit>` | Ribalaiuse piirang üleslaadimiseks (nt `10M`) |
-| `--include <repos>` | Selle strateegia kaetud repositooriumid (korratav) |
-| `--exclude <repos>` | Vahelejäetavad repositooriumid (korratav). Tükksalvestuse sihtkoha puhul tagasi lükatud |
-| `--folder <path>` | Alamkaust rclone-i bucketi sees. Tükksalvestuse sihtkoha puhul tagasi lükatud |
+| `--include <repos>` | Sellele strateegiale kuuluvad repositooriumid (komadega eraldatud) |
+| `--exclude <repos>` | Vahelejäetavad repositooriumid (komadega eraldatud) |
+| `--retention <spec>` | Hetktõmmiste säilitus, näiteks `last=7,daily=7,weekly=4,monthly=6`. `none` eemaldab selle |
 | `--enable` / `--disable` | Luba või keela strateegia |
 
 ### Strateegiate vaatamine
@@ -539,12 +554,12 @@ Mõlemad režiimid kirjutavad samasse tükksalvestusse, ja režiim käib selle k
 
 ### Repositooriumide piiritlemine strateegia järgi
 
-Strateegia ilma `--include`-ta katab iga repositooriumi andmesalves. `--include` kordamine kitsendab seda repositooriumidele, mida sa nimetad, vastavuses kohaliku konfiguratsiooni repositooriuminimega (ilma `:tag`-ita).
+Strateegia ilma `--include`-ita katab iga repositooriumi andmesalves. `--include` kitsendab selle komadega eraldatud nimetatud repositooriumidele, mida võrreldakse kohaliku konfiguratsiooni repositooriumi nimega.
 
 ```bash
 # Kuum strateegia: varunda kõik tunnis
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -552,10 +567,10 @@ rdc backup strategy set hourly-hot \
 
 # Külm strateegia: nädalas, ja ainult repositooriumid, mida on vaja rahustada
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 

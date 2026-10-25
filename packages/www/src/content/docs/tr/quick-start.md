@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: tr
-sourceHash: "657bd1152d18476e"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "3c59bf71050fb556"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Hızlı Başlangıç
@@ -223,7 +223,7 @@ rdc backup usage
 
 Anlık görüntüler parça depolamaya yüklenir; bunun için bir hesap sunucusu ve lisanslı bir depo gerekir. Yalnızca değişen veriler saklanır, bu yüzden aynı deponun ikinci anlık görüntüsü tüm imaj yerine yalnızca farkı maliyet olarak taşır.
 
-`--to <storage>` ile bir depoyu bulut depolamaya gönderme kaldırılmıştır ve artık reddedilir. Depolama komutları ve paketle gelen rclone kaldırıldı; bu yüzden o yöntemle yazılmış bir arşiv artık CLI üzerinden gezilemez.
+Yedeklerin tek bir hedef türü vardır: hizmet tarafından barındırılan chunk deposu; `repo push` üzerindeki `--to` yalnızca bir makine adı alır. Saklama süresi, `rdc backup retention set` ile depo soy hattı başına bildirilir; zamanlanmış çalıştırmalar `rdc backup strategy set` ve `rdc backup schedule` ile gelir. Bkz. [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore).
 
 ### 4. Uzaktan Çekme
 

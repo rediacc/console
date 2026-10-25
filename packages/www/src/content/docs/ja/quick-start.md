@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: ja
-sourceHash: "657bd1152d18476e"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "3c59bf71050fb556"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # クイックスタート
@@ -223,7 +223,7 @@ rdc backup usage
 
 スナップショットはチャンクストレージにアップロードされます。これにはアカウントサーバーとライセンス済みのリポジトリが必要です。変更されたデータのみが保存されるため、同じリポジトリの2回目のスナップショットはイメージ全体ではなく差分のコストで済みます。
 
-`--to <storage>` を使ったリポジトリのクラウドストレージへのプッシュは廃止され、現在は拒否されます。storageコマンドと同梱のrcloneは削除されたため、その方法で書かれたアーカイブをCLIから参照することはできなくなりました。
+バックアップの宛先の種類は、サービスホスト型のチャンクストアの1つだけで、`repo push` の `--to` はマシンだけを指定します。保持はリポジトリの系統ごとに `rdc backup retention set` で宣言し、スケジュール実行は `rdc backup strategy set` と `rdc backup schedule` で行います。[バックアップとリストア](/ja/docs/backup-restore)を参照してください。
 
 ### 4. リモートからのプル
 

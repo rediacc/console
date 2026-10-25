@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: es
-sourceHash: "9f16ecba15b69643"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Arquitectura
@@ -144,11 +144,11 @@ La clonación y reubicación de un clúster completo residen en `rdc cluster for
 
 ## Estructura de Configuración
 
-Cada configuración es un archivo JSON almacenado en `~/.config/rediacc/`. La configuración predeterminada es `rediacc.json`; las configuraciones con nombre usan el nombre como nombre de archivo (por ejemplo, `production.json`). Los campos se organizan por propósito: `resources` contiene las implementaciones, `credentials` contiene los secretos, `account` contiene los valores predeterminados en la nube, `infra` contiene TLS/DNS, y `encryption` contiene el estado de cifrado en reposo por campo. El discriminador de nivel superior `schemaVersion: 2` ancla la compatibilidad futura.
+Cada configuración es un archivo JSON almacenado en `~/.config/rediacc/`. La configuración predeterminada es `rediacc.json`; las configuraciones con nombre usan el nombre como nombre de archivo (por ejemplo, `production.json`). Los campos se organizan por propósito: `resources` contiene las implementaciones, `credentials` contiene los secretos, `account` contiene los valores predeterminados en la nube, `infra` contiene TLS/DNS, y `encryption` contiene el estado de cifrado en reposo por campo. El discriminador de nivel superior `schemaVersion: 3` ancla la compatibilidad futura.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -175,10 +175,12 @@ Cada configuración es un archivo JSON almacenado en `~/.config/rediacc/`. La co
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -203,14 +205,14 @@ Cada configuración es un archivo JSON almacenado en `~/.config/rediacc/`. La co
 
 | Bucket | Contenido |
 |---|---|
-| `schemaVersion` | Discriminador (actualmente `2`). Los cargadores rechazan versiones desconocidas. |
+| `schemaVersion` | Discriminador (actualmente `3`). Los cargadores rechazan versiones desconocidas. |
 | `id` / `version` | UUID inmutable + contador monotónico; se utiliza para bloqueos optimistas en el almacén de configuración remota. |
 | `defaults.*` | Valores predeterminados de tiempo de ejecución no sensibles (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
 | `credentials.ssh` | Pareja de claves SSH en línea + `knownHosts`. Reemplaza el antiguo `ssh.privateKeyPath` (sin más indirección de ruta de archivo; el contenido se resuelve en el momento de la carga y se almacena en línea). |
 | `credentials.cfDnsApiToken` | Token ACME de DNS-01 de Cloudflare. |
 | `credentials.masterPasswordVerifier` | Presente solo cuando `encryption.mode === "master-password"`. |
 | `resources.machines.*` | Detalles de conexión SSH por máquina. |
-| `resources.storages.*` | Credenciales de copia de seguridad fuera del sitio compatibles con rclone. |
+| `resources.backupStrategies.*` | Estrategias de respaldo nombradas: cronograma, modo, filtros de repositorios, retención y destinos (siempre un almacenamiento fragmentado alojado en el servicio). |
 | `resources.repositories.*` | GUID por repositorio + credencial LUKS + clave SSH para acceso de agente aislado de sandbox. |
 | `infra.acmeCertCache.*` | Traefik acme.json en caché, gzip+base64, indexado por dominio. |
 | `encryption.mode` | `"plaintext"` (predeterminado) o `"master-password"`. |

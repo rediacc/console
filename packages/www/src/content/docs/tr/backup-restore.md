@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: tr
-sourceHash: "b42d1f1b49c7e73a"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "177a657544f9979f"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -60,9 +60,9 @@ Makineler arası push ve pull, ikisine de ihtiyaç duymaz. Zaten yapılandırman
 - **Sürekli çoğaltma değildir.** Bir anlık görüntü, aldığınız bir andır ve son anlık görüntüden bu yana yazılmış her şeyi kaybedebilirsiniz. Bunun ne kadar olduğu, ne sıklıkla çalıştırdığınıza bağlıdır.
 - **Depolanan nesneler bir kez yazılır, sertifikalı WORM değildir.** Hücreler yalnızca oluşturmaya izin veren koşullu bir şekilde yazılır, bir makinenin aldığı izin hiçbir şeyi silemez ve silmeler saklama politikasına göre sunucu tarafında gerçekleşir. Bu, ele geçirilmiş bir makinenin kendi yedeklerini yok etmesine karşı gerçek bir engeldir. Bir uyumluluk sertifikası değildir ve öyle denetlenmez.
 
-### rclone depolama yolu ortadan kalktı
+### Tek hedef türü
 
-`rdc repo push --to <storage>` ve benzeri komutlar eskiden bir yedek dosyasının tamamını elle kaydedilmiş bir bulut sağlayıcısına kopyalıyordu. storage komutları ve paketle gelen rclone kaldırıldı; `--to`/`--from` artık yalnızca bir makine adı alıyor. Makineden makineye aktarım hiçbir zaman rclone üzerinden geçmedi ve etkilenmez. Eski yöntemle yazılmış bir arşiv artık CLI üzerinden incelenemez.
+Chunk deposu yedeklerinin tek bir hedef türü vardır: hesap sunucusu üzerinden erişilen, hizmet tarafından barındırılan bir chunk deposu. Harici depolama uç noktalarının bir kaydı yoktur; bu yüzden `repo push` ve `repo pull` komutlarındaki `--to` ve `--from` yalnızca bir makine adı alır.
 
 ### Chunk depolama komutları
 
@@ -265,22 +265,34 @@ Gönderilen kopya kendi adıyla görünür. Yanında ham bir GUID taşıyan ikin
 | `Size` | Yedek dosyasının insan tarafından okunabilir boyutu |
 | `Modified` | Makinedeki dosyanın UTC zaman damgası |
 
-Bir depolama arka ucunu listelemek, rclone koluyla birlikte kaldırılmıştır; komut reddedilir ve yerine geçen şu ikisini adlandırır.
-
 ## Saklama
 
-Sunucu, chunk deposunun tamamı üzerinde depo başına bir saklama politikası uygular; bu yüzden eski anlık görüntüler, siz elle hiçbir şey silmeden budanır. Hiçbir politika bildirilmemişse, her anlık görüntü saklanır.
+Sunucu, chunk deposu üzerinde bir saklama politikası uygular; bu yüzden eski anlık görüntüler elle hiçbir şey silinmeden budanır. Bir politika, deponun soy hattına aittir: bir depo ve fork'ları tek bir geçmişi paylaşır ve depo adına konan politika tüm aileyi kapsar. Bir soy hattının içinde her yedek akışı (bir makinedeki bir depo) ayrıca kendi başına korunur; böylece saklama, politika ne derse desin, bir akışı en yeni anlık görüntülerinden ya da güncel çapasından yoksun bırakmaz. Kendi geçmişini budayan ikinci bir makine veya fork, başka bir akışın alt sınırını tüketemez.
+
+Politika bildirilmemişse sunucu varsayılanı geçerlidir (planın bir varsayılanı varsa o) ve her akışın en yeni anlık görüntüleri saklanır.
 
 ```bash
-# Şu anda uygulanan politika.
+# Şu anda neyin uygulandığı ve nereden geldiği.
 rdc backup retention my-app
+
+# Bir sonraki taramanın neyi sileceği ve ne kadar yer açacağı. Hiçbir şey silinmez.
+rdc backup retention preview my-app
 
 # Kayan bir pencere tutun: 7 günlük, 4 haftalık, 6 aylık.
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Her şeyi tutan duruma geri dönün.
+# Farklı bir politikayı yalnızca tek bir yedek akışına uygula.
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Bildirilen politikayı kaldır.
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# Bir anlık görüntüyü hemen sil. Yalnızca o anlık görüntünün kullandığı veriyi bir sonraki GC boşaltır.
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+Bir strateji, kapsadığı depoların politikasını bildirebilir: `rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6` (`--retention none` politikayı kaldırır).
 
 | Seçenek | Açıklama |
 |--------|-------------|
@@ -290,8 +302,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | Bu kadar haftanın her birinden en yeni anlık görüntüyü tut |
 | `--keep-monthly <n>` | Bu kadar ayın her birinden en yeni anlık görüntüyü tut |
 | `--keep-yearly <n>` | Bu kadar yılın her birinden en yeni anlık görüntüyü tut |
+| `--stream <id>` | Politikayı depo geneli varsayılan yerine tek bir yedek akışına uygula |
 
-En az bir kural verin. Kuralsız `set`, "hiçbir şeyi tutma" olarak değil, reddedilerek işlenir; çünkü bir politikayı temizlemek `clear`'ın işidir.
+En az bir kural verin. `set`, birleştirmek yerine her ayarı değiştirir; bu yüzden politikanın tamamı her seferinde verilir. Kuralsız `set`, "hiçbir şeyi tutma" olarak değil, reddedilerek işlenir; çünkü bir politikayı temizlemek `clear`'ın işidir. `clear` politikayı kaldırır ve o andan itibaren her anlık görüntüyü saklar; hiçbir zaman "hiçbir şeyi tutma" anlamına gelmez.
 
 ## Geri Yükleme
 
@@ -307,6 +320,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at`, `rdc backup manifests`'ten bir anlık görüntü kimliği ya da `2026-08-14T12:00:00Z` gibi bir RFC 3339 zamanı alır; bu, o anda veya öncesinde alınmış en yeni anlık görüntüye çözülür. O andan önce hiçbir anlık görüntü olmayan bir zaman, yuvarlanmak yerine reddedilir.
 
+Bir zaman, yalnızca bu deponun kaynak makinesindeki anlık görüntüleri arasında çözülür. Diğer makinelerin ya da aynı soy hattının fork'larının yazdığı anlık görüntüler, `--any-stream` aramayı bilerek genişletmedikçe dikkate alınmaz. Deponun kendi akışı belirlenemezse geri yükleme reddedilir ve tahmin yürütmek yerine `--any-stream` ister.
+
 `--as` ile yeni bir ad altında geri yükleme hiçbir şeyin üzerine yazmaz; bu yüzden bir geri yükleme provası, canlı bir makinede güvenle çalıştırılabilir. Zaten var olan bir ada geri yükleme reddedilir.
 
 | Seçenek | Açıklama |
@@ -316,6 +331,7 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 | `-m, --machine <machine>` | Geri yüklenecek makine |
 | `--datastore <name>` | Bu adlandırılmış veri deposuna geri yükle; bağlı makinesi onu barındırır |
 | `--at <time>` | Belirli bir zaman noktasını geri yükle: bir anlık görüntü kimliği veya RFC 3339 zamanı |
+| `--any-stream` | `--at` ile birlikte diğer makinelerin ve bu soy hattının fork'larının anlık görüntülerini de dikkate al |
 | `--up` | Aktarımdan sonra geri yüklenen depoyu dağıt |
 | `--health-window <seconds>` | Dağıtılan deponun sağlığının izleneceği süre |
 | `--health-timeout <seconds>` | Sağlıklı hale gelmesi için beklenecek süre |
@@ -352,7 +368,7 @@ Tam seçenek listeleri [Bir Yedeği Başka Bir Makineye Gönderme](#push-a-backu
 
 ## Zamanlanmış Yedeklemeler
 
-Rediacc, adlandırılmış yedekleme stratejileri kullanır. Her strateji bir zamanlama, yedekleme modu, isteğe bağlı bant genişliği sınırı ve dosya filtreleri tanımlar. Hangi yedeklerin nerede çalışacağını kontrol etmek için strateji adlarını makinelere bağlarsınız.
+Rediacc, adlandırılmış yedekleme stratejileri kullanır. Her strateji bir zamanlama, yedekleme modu, isteğe bağlı bant genişliği sınırı, depo filtreleri ve anlık görüntü saklama süresi tanımlar. Hangi yedeklerin nerede çalışacağını kontrol etmek için strateji adlarını makinelere bağlarsınız.
 
 ### Yedekleme Modları
 
@@ -451,7 +467,7 @@ Varsayılan kurulum, iki stratejili bir bölünmedir: her depoyu yakalayan hızl
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -460,28 +476,27 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>`, strateji içindeki hedefi adlandırır; bu sizin seçtiğiniz bir etikettir ve chunk deposunu tanımlar. `--include`, yedeklenecek depoları listeler ve tekrarlandıkça daha fazlasını ekler. Atlanırsa, strateji veri deposundaki her depoyu kapsar. Adlar, yerel yapılandırmadaki depo adıyla (`:tag` olmadan) eşleşmelidir.
+`--destination <name>`, strateji içindeki hedefi adlandırır; bu, strateji başına seçilen bir etikettir ve hedef her zaman hizmet tarafından barındırılan chunk deposudur. `--include`, yedeklenecek depoların virgülle ayrılmış listesini alır (`--include shop,mail`). Atlanırsa, strateji veri deposundaki her depoyu kapsar. Yalın bir ad depoyu ve tüm fork'larını kapsar; `name:tag` tek bir fork'u kapsar. Bilinmeyen adlar strateji kaydedilirken reddedilir; böylece bir yazım hatası hiçbir şeyin yedeğini zamanlayamaz.
 
-`--exclude`, chunk deposu hedefi için sessizce yok sayılmak yerine reddedilir; çünkü altta yatan `backup snapshot`, depoları adlandırarak seçer ve kendi hariç tutma mekanizması yoktur. Buna uymak, hariç tutmak istediğiniz depoları yedeklemek anlamına gelirdi. Bunun yerine bir stratejinin kapsamını `--include` ile belirleyin; böylece zamanlanmış bir çalıştırmanın neyi kapsadığı tahmin edilmez, yazılı olur.
+`--exclude` aynı virgülle ayrılmış biçimi alır ve adı geçen depoları atlar. `--include` ve `--exclude` birbirini dışlar: birini ayarlamak diğerini temizler, `none` değeri ise bir filtreyi temizler.
 
 | Seçenek | Açıklama |
 |--------|-------------|
 | `<strategy>` (konumsal) | Strateji adı (makine bağlaması için kullanılır) |
-| `--destination <name>` | Strateji içindeki hedef adı. Varsayılan chunk deposudur |
-| `--storage <name>` | Kaldırılmış rclone hedef türüne katılın. Bunu kullanan bir zamanlama dağıtılamaz |
+| `--destination <name>` | Strateji içindeki hedef adı. Her zaman hizmet tarafından barındırılan bir chunk deposu |
 | `--cron <expression>` | Cron ifadesi (örn. günlük saat 2'de için `"0 2 * * *"`) |
 | `--mode <hot\|cold>` | Yedekleme modu |
 | `--bwlimit <limit>` | Yüklemeler için bant genişliği sınırı (örn. `10M`) |
-| `--include <repos>` | Bu stratejinin kapsadığı depolar (tekrarlanabilir) |
-| `--exclude <repos>` | Atlanacak depolar (tekrarlanabilir). Chunk deposu hedefinde reddedilir |
-| `--folder <path>` | Bir rclone bucket'ı içindeki alt klasör. Chunk deposu hedefinde reddedilir |
+| `--include <repos>` | Bu stratejinin kapsadığı depolar (virgülle ayrılmış) |
+| `--exclude <repos>` | Atlanacak depolar (virgülle ayrılmış) |
+| `--retention <spec>` | Anlık görüntü saklama süresi, örneğin `last=7,daily=7,weekly=4,monthly=6`. `none` kaldırır |
 | `--enable` / `--disable` | Stratejiyi etkinleştir veya devre dışı bırak |
 
 ### Stratejileri Görüntüleme
@@ -540,12 +555,12 @@ Her iki mod da aynı chunk deposuna yazar. Modun belirlediği şey, imaj donduru
 
 ### Stratejiye Göre Depo Kapsamı Belirleme
 
-`--include`'ı olmayan bir strateji, veri deposundaki her depoyu kapsar. `--include`'ı tekrarlamak, kapsamı yalnızca adlandırdığınız, yerel yapılandırmadaki depo adıyla (`:tag` olmadan) eşleşen depolara daraltır.
+`--include` içermeyen bir strateji, veri deposundaki her depoyu kapsar. `--include`, onu virgülle ayrılmış adı geçen depolara daraltır; adlar yerel yapılandırmadaki depo adıyla karşılaştırılır.
 
 ```bash
 # Sıcak strateji: her şeyi saatlik yedekle
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -553,10 +568,10 @@ rdc backup strategy set hourly-hot \
 
 # Soğuk strateji: haftalık, ve yalnızca durgunlaşması gereken depolar
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 

@@ -8,13 +8,13 @@ tags:
 subcategory: data-protection
 order: 12
 language: ko
-sourceHash: "76d936b2258cc044"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 정리(Pruning)
 
-정리는 더 이상 실제 리소스에 해당하지 않는 상태를 스캔하여 제거합니다. 두 가지 명령이 두 가지 범위를 다룹니다. 청크 스토리지의 스냅샷은 여기에 포함되지 않으며, 서버가 [보존 정책](#backup-snapshots)에 따라 정리합니다.
+정리는 더 이상 실제 리소스에 해당하지 않는 상태를 스캔하여 제거합니다. 두 가지 명령이 두 가지 범위를 다룹니다. 청크 스토리지의 스냅샷은 여기에 포함되지 않으며, 서버가 계보와 백업 스트림별로 [보존 정책](#backup-snapshots)에 따라 정리합니다.
 
 | 명령 | 정리하는 항목 | 진실의 원천 위치 |
 |---|---|---|
@@ -35,15 +35,26 @@ sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 
 `rdc backup snapshot`으로 업로드한 스냅샷은 청크 스토리지에 저장되며, 서버가 정리합니다. 클라이언트 쪽 prune 명령은 없습니다. 보관할 기록의 양을 선언하면 서버가 나머지를 삭제합니다.
 
+정책은 저장소의 계보에 속하므로 저장소와 그 fork가 함께 공유하며, 백업 스트림 하나(한 머신의 저장소 하나)에 대해 재정의할 수 있습니다. 또한 정책이 무엇이든 각 스트림은 최신 스냅샷과 현재 앵커를 보존하므로, 정리 작업이 스트림을 고립시키는 일은 없습니다.
+
 ```bash
-# 현재 정책 보기
+# 현재 정책과 그 출처 표시
 rdc backup retention my-app
+
+# 다음 정리에서 삭제될 대상과 확보될 공간을 삭제 없이 확인
+rdc backup retention preview my-app
 
 # 일간 7개, 주간 4개, 월간 6개의 스냅샷 보관
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# 스트림 하나만 재정의
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # 모든 스냅샷을 다시 보관
 rdc backup retention clear my-app
+
+# 스냅샷 하나를 지금 삭제. 다음 가비지 컬렉션이 그 스냅샷만 쓰던 데이터를 해제합니다
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 정책 규칙은 [백업 및 복원](/ko/docs/backup-restore#retention)에서, 스토어에 현재 무엇이 있는지는 `rdc backup usage`로 확인합니다.
@@ -116,7 +127,6 @@ rdc machine prune server-1 --prune-unknown
 3. config 버킷 간 **끊어진 상호 참조**:
    - 더 이상 존재하지 않는 전략을 명명하는 `resources.machines.<m>.backupStrategies[]` 항목.
    - 더 이상 존재하지 않는 리포지터리를 명명하는 `resources.backupStrategies.<s>.exclude[]` 및 `include[]` 항목.
-   - 대상 스토리지가 없는 스토리지 목적지. 경고로 표시되며, 자동 제거되지 않습니다 (자동 제거는 전략 의미를 변경할 것임).
 
 ```bash
 # 미리 보기만

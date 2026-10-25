@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ru
-sourceHash: "9f16ecba15b69643"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Архитектура
@@ -144,11 +144,11 @@ Rediacc использует два бинарных файла, работаю�
 
 ## Структура конфигурации
 
-Каждая конфигурация является JSON-файлом, хранящимся в `~/.config/rediacc/`. Конфигурация по умолчанию: `rediacc.json`; именованные конфигурации используют имя в качестве имени файла (например, `production.json`). Поля сгруппированы по назначению: `resources` содержит развёртывания, `credentials` содержит секреты, `account` содержит облачные значения по умолчанию, `infra` содержит TLS/DNS, а `encryption` содержит состояние шифрования покоящихся данных на уровне каждого поля. Дискриминатор верхнего уровня `schemaVersion: 2` закрепляет совместимость в будущем.
+Каждая конфигурация является JSON-файлом, хранящимся в `~/.config/rediacc/`. Конфигурация по умолчанию: `rediacc.json`; именованные конфигурации используют имя в качестве имени файла (например, `production.json`). Поля сгруппированы по назначению: `resources` содержит развёртывания, `credentials` содержит секреты, `account` содержит облачные значения по умолчанию, `infra` содержит TLS/DNS, а `encryption` содержит состояние шифрования покоящихся данных на уровне каждого поля. Дискриминатор верхнего уровня `schemaVersion: 3` закрепляет совместимость в будущем.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -175,10 +175,12 @@ Rediacc использует два бинарных файла, работаю�
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -203,14 +205,14 @@ Rediacc использует два бинарных файла, работаю�
 
 | Корзина | Содержание |
 |---|---|
-| `schemaVersion` | Дискриминатор (в настоящее время `2`). Загрузчики отклоняют неизвестные версии. |
+| `schemaVersion` | Дискриминатор (в настоящее время `3`). Загрузчики отклоняют неизвестные версии. |
 | `id` / `version` | Неизменяемый UUID + монотонный счётчик; используется для оптимистичной блокировки в удаленном хранилище конфигурации. |
 | `defaults.*` | Нечувствительные к безопасности значения по умолчанию (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
 | `credentials.ssh` | Встроенная SSH-пара ключей + `knownHosts`. Заменяет устаревший `ssh.privateKeyPath` (не больше пути к файлу с косвенной ссылкой; содержимое разрешается при загрузке и хранится встроенным). |
 | `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACME-токен. |
 | `credentials.masterPasswordVerifier` | Присутствует только когда `encryption.mode === "master-password"`. |
 | `resources.machines.*` | SSH-детали подключения на машину. |
-| `resources.storages.*` | Совместимые с rclone учетные данные резервной копии вне сайта. |
+| `resources.backupStrategies.*` | Именованные стратегии резервного копирования: расписание, режим, фильтры репозиториев, хранение и назначения (всегда хранилище чанков, размещённое в сервисе). |
 | `resources.repositories.*` | Per-repo GUID + LUKS учетные данные + SSH-ключ для доступа изолированного в песочнице агента. |
 | `infra.acmeCertCache.*` | Кеш Traefik acme.json, gzip+base64, индексированный по домену. |
 | `encryption.mode` | `"plaintext"` (по умолчанию) или `"master-password"`. |

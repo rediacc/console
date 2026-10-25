@@ -8,13 +8,13 @@ tags:
 subcategory: data-protection
 order: 12
 language: zh
-sourceHash: "76d936b2258cc044"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 清理
 
-清理会清除不再对应于存活资源的状态。两个命令分别覆盖两个不同的范围。分块存储中的快照不在其列：服务器会按[保留策略](#backup-snapshots)清理它们。
+清理会清除不再对应于存活资源的状态。两个命令分别覆盖两个不同的范围。分块存储中的快照不在其列：服务器会按谱系和备份流，依据[保留策略](#backup-snapshots)清理它们。
 
 | 命令 | 清理内容 | 真实来源所在位置 |
 |---|---|---|
@@ -35,15 +35,26 @@ sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
 
 通过 `rdc backup snapshot` 上传的快照存放在分块存储中，由服务器负责清理。客户端没有清理命令：声明要保留多少历史，服务器会删除其余部分。
 
+策略属于仓库的谱系，因此仓库及其 fork 共享同一策略，也可以针对某个备份流（某台机器上的某个仓库）单独覆盖。此外，无论策略怎么写，每个流都会保留自己最新的快照和当前的锚点，所以一次清理不会让任何流陷入困境。
+
 ```bash
-# 查看当前策略
+# 显示当前策略及其来源
 rdc backup retention my-app
+
+# 查看下一次清理会删除什么、能释放多少空间，但不实际删除
+rdc backup retention preview my-app
 
 # 保留 7 个每日、4 个每周和 6 个每月快照
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# 只覆盖一个流
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # 重新保留所有快照
 rdc backup retention clear my-app
+
+# 立即删除单个快照；下一次垃圾回收会释放它独占的数据
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 策略规则见[备份与恢复](/zh/docs/backup-restore#retention)，`rdc backup usage` 会显示存储当前的内容。
@@ -116,7 +127,6 @@ rdc machine prune server-1 --prune-unknown
 3. **悬空的交叉引用**，存在于不同配置桶之间：
    - `resources.machines.<m>.backupStrategies[]` 中命名的策略不再存在。
    - `resources.backupStrategies.<s>.exclude[]` 和 `include[]` 中命名的仓库不再存在。
-   - 存储目标的目标存储缺失。标记为警告，不自动移除（自动移除会改变策略语义）。
 
 ```bash
 # 仅预览

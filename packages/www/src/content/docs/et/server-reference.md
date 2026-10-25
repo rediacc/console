@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: et
-sourceHash: "661f857d2226d362"
-sourceCommit: "9708168cea3197777239ee1085ea20860a535e85"
+sourceHash: "a64de9af83bd943a"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Serveri viide
@@ -190,16 +190,12 @@ renet daemon logs   --network-id {id}    # Deemoni logid
 
 ### Varundamine ja taastamine
 
-Lükake varukoopiad teisele masinale või pilvesalvestusse:
+Saada varukoopiad teisele masinale. Tükksalvestuse hetktõmmised tehakse käsuga `rdc backup snapshot` või `renet backup snapshot`:
 
 ```bash
 # Lükka kaugmasinale (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
   --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
-
-# Lükka pilvesalvestusse (rclone)
-renet backup push --name {uuid} --network-id {id} --target storage \
-  --dest {uuid}.backup --rclone-backend {backend} --rclone-bucket {bucket}
 
 # Tõmba kaugelt
 renet backup pull --name {uuid} --network-id {id} --source machine \

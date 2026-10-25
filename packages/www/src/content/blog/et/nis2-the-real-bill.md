@@ -15,7 +15,7 @@ tags:
   - keskturg
 featured: false
 language: et
-sourceHash: "d5f6a7108f614b9b"
+sourceHash: "b1569f9c0bab2b54"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -95,13 +95,13 @@ Lüngad on kattuvustest huvitavamad, sest lüngad on see, mida NIS2 pinnale toob
 
 Rediacc on üks juhtimistasand ühtse auditilogi, asendades nelja viiest kategooriast põhivõimaluse ise majutatud taristu jaoks.
 
-**Backup** töötab kahes režiimis. Kuum on crash-consistent BTRFS hetktõmmis. Seisakut pole. Külm teeb peata-hetktõmmis-käivita tsükli. Mõlemad ajastavad systemd taimeritega. Mõlemad saadavad paljudesse sihtkohtadesse rclone'i kaudu. Mahud on LUKS-krüpteeritud. Operaator hoiab võtit. Rediacc OÜ ei näe kunagi lihtteksti. Vaata [Backup & Restore](/et/docs/backup-restore) ja [Cross Backup Strategy](/et/docs/cross-backup).
+**Backup** töötab kahes režiimis. Kuum on crash-consistent BTRFS hetktõmmis. Seisakut pole. Külm teeb peata-hetktõmmis-käivita tsükli. Mõlemad ajastavad systemd taimeritega. Mõlemad kirjutavad sisuaadressitud tükksalvestusse, kuhu laaditakse üles ainult muutunud rakud, ja säilitus deklareeritakse repositooriumi liini kaupa. Mahud on LUKS-krüpteeritud. Operaator hoiab võtit. Rediacc OÜ ei näe kunagi lihtteksti. Vaata [Backup & Restore](/et/docs/backup-restore) ja [Cross Backup Strategy](/et/docs/cross-backup).
 
 **DR**: sama primitiiv mis backup'il, lisaks `rdc repo migrate` masinate vahel andmete liigutamiseks, lisaks fork-primitiiv taastatud seisundi kiireks käivitamiseks paralleelmasinas. DR-sait võib olla teine Hetzner masin, OVH masin, kohapealne riiuliserver, kuhu iganes SSH ulatub. Andmete teel ei ole DR-tarnija pilve.
 
 **Testandmed ja täisvõimsusel kloonimine** töötab BTRFS reflingil. Fork on konstantaja, olenemata repositooriumi suurusest. Täisvõimsusel tähendab andmeid, konfiguratsioone, konteinereid ja teenuseid. Forke 128 GB repositooriumit 7,2 sekundiga meie [PocketOS testis](/et/blog/i-tested-rediacc-against-the-pocketos-incident). Fork on praegune tootmine, mitte kärpitud lavastuskoopia. Vaata [Risk-Free Upgrades](/et/docs/risk-free-upgrades).
 
-**Kiirtaaste**: `rdc repo pull` mis tahes rclone-sihtmärgist värskesse forki, mis käivitatakse fork-spetsiifilise alamdomeeni all, mida katab emRepositooriumi metamärgisertifikaat. Ei mingit DNS-i segadust, ei sertifikaadi tantsu.
+**Kiirtaaste**: `rdc backup restore --at <snapshot>` tükksalvestusest või `rdc repo pull` teiselt masinalt värskesse forki, mis käivitatakse fork-spetsiifilise alamdomeeni all, mida katab emRepositooriumi metamärgisertifikaat. Ei mingit DNS-i segadust, ei sertifikaadi tantsu.
 
 **Ühtne auditilog.** 70+ sündmusetüüpi juhtimistasandil. Need katavad sisselogimised, API tokenid, konfiguratsiooni kirjutamised, repositooriumi elutsükli, varunduse, sünkroonimise, terminaliseansid ja masina toimingud. Ahel on räsiga lingitud operaatori tööjaamal. `rdc config audit verify` kontrollib seda otsast lõpuni.
 

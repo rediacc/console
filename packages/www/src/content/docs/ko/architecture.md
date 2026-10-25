@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ko
-sourceHash: "9f16ecba15b69643"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 아키텍처
@@ -143,11 +143,11 @@ Docker 저장소와 더불어 머신은 **클러스터**를 호스팅할 수 있
 
 ## 설정 구조
 
-각 설정은 `~/.config/rediacc/`에 저장된 JSON 파일입니다. 기본 설정은 `rediacc.json`이고, 명명된 설정은 이름을 파일 이름으로 사용합니다(예: `production.json`). 필드는 목적별로 구분됩니다. `resources`는 배포를, `credentials`는 시크릿을, `account`는 클라우드 기본값을, `infra`는 TLS/DNS를, `encryption`은 필드별 저장 상태를 담습니다. 최상위 `schemaVersion: 2` 판별자는 하위 호환성을 보장합니다.
+각 설정은 `~/.config/rediacc/`에 저장된 JSON 파일입니다. 기본 설정은 `rediacc.json`이고, 명명된 설정은 이름을 파일 이름으로 사용합니다(예: `production.json`). 필드는 목적별로 구분됩니다. `resources`는 배포를, `credentials`는 시크릿을, `account`는 클라우드 기본값을, `infra`는 TLS/DNS를, `encryption`은 필드별 저장 상태를 담습니다. 최상위 `schemaVersion: 3` 판별자는 하위 호환성을 보장합니다.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -174,10 +174,12 @@ Docker 저장소와 더불어 머신은 **클러스터**를 호스팅할 수 있
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -202,14 +204,14 @@ Docker 저장소와 더불어 머신은 **클러스터**를 호스팅할 수 있
 
 | 버킷 | 내용 |
 |---|---|
-| `schemaVersion` | 판별자 (현재 `2`). 로더는 알 수 없는 버전을 거부합니다. |
+| `schemaVersion` | 판별자 (현재 `3`). 로더는 알 수 없는 버전을 거부합니다. |
 | `id` / `version` | 불변 UUID + 단조 증가 카운터. 원격 설정 저장소의 낙관적 잠금에 사용됩니다. |
 | `defaults.*` | 비민감 런타임 기본값(`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
 | `credentials.ssh` | 인라인 SSH 키쌍 + `knownHosts`. 레거시 `ssh.privateKeyPath`를 대체합니다(더 이상 파일 경로 간접 참조 없음. 내용은 로드 시점에 해결되어 인라인으로 저장됩니다). |
 | `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACME 토큰. |
 | `credentials.masterPasswordVerifier` | `encryption.mode === "master-password"`인 경우에만 존재합니다. |
 | `resources.machines.*` | 머신별 SSH 연결 세부 정보. |
-| `resources.storages.*` | rclone 호환 오프사이트 백업 자격 증명. |
+| `resources.backupStrategies.*` | 이름이 지정된 백업 전략: 일정, 모드, 저장소 필터, 보존, 대상(항상 서비스 호스팅 청크 스토어). |
 | `resources.repositories.*` | 레포별 GUID + LUKS 자격 증명 + 샌드박스 격리 에이전트 접근을 위한 SSH 키. |
 | `infra.acmeCertCache.*` | 캐시된 Traefik acme.json, gzip+base64, 도메인별 키. |
 | `encryption.mode` | `"plaintext"` (기본값) 또는 `"master-password"`. |

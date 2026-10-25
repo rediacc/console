@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: zh
-sourceHash: "bca896d59a353796"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # RDC CLI 快速参考
@@ -59,7 +59,12 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup snapshot <repo> --dry-run` | 规划快照而不上传；报告将会移动哪些内容 |
 | `rdc backup verify <repo>` | 对照分块存储验证仓库的备份锚点 |
 | `rdc backup usage` | 显示分块存储中已存储的字节数与配额的对比 |
-| `rdc backup manifests <repo>` | 列出服务器上记录的快照清单 |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | 以新名称恢复分块存储快照 |
+| `rdc backup retention <repo>` | 显示服务器对某个仓库谱系执行的保留策略 |
+| `rdc backup retention preview <repo>` | 显示下一次清理会删除什么，以及能释放多少空间 |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | 为某个谱系或某个备份流声明保留策略 |
+| `rdc backup retention clear <repo> [--stream <id>]` | 移除策略；所有快照都会保留 |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | 删除一个快照；其独占的数据在下一次 GC 时释放 |
 
 ## 仓库迁移
 
@@ -75,7 +80,7 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 
 | 命令 | 说明 |
 |------|------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | 创建或更新命名备份策略 |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | 创建或更新命名备份策略 |
 | `rdc backup strategy list` | 列出所有已定义的备份策略 |
 | `rdc backup strategy show <name>` | 显示策略详情 |
 | `rdc backup strategy remove <name>` | 删除策略 |

@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: fr
-sourceHash: "b42d1f1b49c7e73a"
-sourceCommit: "921db938a2b557bb97f91320efa1ea6f1673fad4"
+sourceHash: "177a657544f9979f"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Sauvegarde et restauration
@@ -59,9 +59,9 @@ Le push et le pull de machine à machine n'ont besoin ni de l'un ni de l'autre. 
 - **Ce n'est pas une réplication continue.** Un instantané est un point que vous avez pris, et vous pouvez perdre tout ce qui a été écrit depuis le dernier. Combien dépend de la fréquence à laquelle vous l'exécutez.
 - **Les objets stockés sont en écriture unique, pas un WORM certifié.** Les cellules sont écrites avec une condition de création seule, l'autorisation qu'obtient une machine ne peut rien supprimer, et les suppressions se font côté serveur selon la politique de rétention. C'est une vraie barrière contre une machine compromise qui détruirait ses propres sauvegardes. Ce n'est pas une certification de conformité, et ce n'est pas audité comme telle.
 
-### La voie de stockage rclone a disparu
+### Un seul type de destination
 
-`rdc repo push --to <storage>` et les commandes apparentées copiaient autrefois un fichier de sauvegarde entier vers un fournisseur cloud enregistré à la main. Les commandes storage et le rclone embarqué ont été supprimés, et `--to`/`--from` ne désignent plus qu'une machine. Le transfert de machine à machine n'a jamais transité par rclone et n'est pas concerné. Une archive écrite à l'ancienne ne peut plus être parcourue depuis la CLI.
+Les sauvegardes dans le stockage fragmenté n'ont qu'un seul type de destination : un stockage fragmenté hébergé par le service, atteint via le serveur de comptes. Il n'existe aucun registre de points de terminaison de stockage externes, donc `--to` et `--from` sur `repo push` et `repo pull` ne désignent qu'une machine.
 
 ### Commandes de stockage fragmenté
 
@@ -264,22 +264,34 @@ La copie envoyée apparaît sous son propre nom. Une seconde ligne portant un GU
 | `Size` | Taille lisible de la sauvegarde |
 | `Modified` | Horodatage UTC du fichier sur la machine |
 
-Lister un backend de stockage est retiré avec la branche rclone ; la commande refuse et nomme ces deux remplacements.
-
 ## Rétention
 
-Le serveur applique une politique de rétention par dépôt sur le stockage fragmenté, si bien que les anciens instantanés sont élagués sans que vous ayez à supprimer quoi que ce soit à la main. Sans politique déclarée, chaque instantané est conservé.
+Le serveur applique une politique de rétention sur le stockage fragmenté, si bien que les anciens instantanés sont élagués sans rien supprimer à la main. Une politique appartient à la lignée d'un dépôt : un dépôt et ses forks partagent un même historique, et une politique définie sur le nom du dépôt couvre toute la famille. Au sein d'une lignée, chaque flux de sauvegarde (un dépôt sur une machine) est aussi protégé séparément, si bien que la rétention ne laisse jamais un flux sans ses instantanés les plus récents ni son ancre actuelle, quelle que soit la politique. Une seconde machine ou un fork qui élague son propre historique ne peut pas consommer le plancher d'un autre flux.
+
+Sans politique déclarée, une valeur par défaut du serveur s'applique (celle de l'offre, quand l'offre en définit une) et les instantanés les plus récents de chaque flux sont conservés.
 
 ```bash
-# Ce qui est actuellement appliqué.
+# Ce qui est actuellement appliqué, et d'où cela vient.
 rdc backup retention my-app
+
+# Ce que le prochain passage supprimerait, et l'espace libéré. Rien n'est supprimé.
+rdc backup retention preview my-app
 
 # Conserver une fenêtre glissante : 7 quotidiens, 4 hebdomadaires, 6 mensuels.
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Revenir à tout conserver.
+# Appliquer une politique différente à un seul flux de sauvegarde.
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Retirer la politique déclarée.
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# Supprimer un instantané maintenant. Les données que lui seul utilisait sont libérées par le prochain GC.
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+Une stratégie peut déclarer la politique des dépôts qu'elle couvre : `rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6` (`--retention none` la retire).
 
 | Option | Description |
 |--------|-------------|
@@ -289,8 +301,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | Conserver l'instantané le plus récent de chacune de ces semaines |
 | `--keep-monthly <n>` | Conserver l'instantané le plus récent de chacun de ces mois |
 | `--keep-yearly <n>` | Conserver l'instantané le plus récent de chacune de ces années |
+| `--stream <id>` | Appliquer la politique à un seul flux de sauvegarde plutôt qu'à la valeur par défaut du dépôt entier |
 
-Donnez au moins une règle. `set` sans règles est refusé plutôt que traité comme « ne rien conserver », car vider une politique, c'est précisément à cela que sert `clear`.
+Donnez au moins une règle. `set` remplace chaque paramètre au lieu de fusionner, donc la politique complète est transmise à chaque appel. `set` sans règles est refusé plutôt que traité comme « ne rien conserver », car supprimer une politique, c'est précisément à cela que sert `clear`. `clear` retire la politique et conserve tous les instantanés à partir de là ; cela ne signifie jamais « ne rien conserver ».
 
 ## Restaurer
 
@@ -306,6 +319,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at` prend un id d'instantané depuis `rdc backup manifests`, ou une heure RFC 3339 comme `2026-08-14T12:00:00Z`, qui se résout à l'instantané le plus récent pris à ce moment ou avant. Une heure sans instantané à ce moment ou avant est refusée plutôt qu'arrondie vers l'avant.
 
+Une heure se résout uniquement parmi les instantanés de ce dépôt sur sa machine source. Les instantanés écrits par d'autres machines ou par des forks de la même lignée ne sont pas pris en compte, sauf si `--any-stream` élargit volontairement la recherche. Quand le flux propre du dépôt ne peut pas être déterminé, la restauration est refusée et demande `--any-stream` au lieu de deviner.
+
 Restaurer sous un nouveau nom avec `--as` n'écrase rien, si bien qu'un exercice de restauration est sûr à exécuter sur une machine en direct. Restaurer sur un nom déjà existant est refusé.
 
 | Option | Description |
@@ -315,6 +330,7 @@ Restaurer sous un nouveau nom avec `--as` n'écrase rien, si bien qu'un exercice
 | `-m, --machine <machine>` | Machine sur laquelle restaurer |
 | `--datastore <name>` | Restaurer dans ce datastore nommé, dont la machine attachée l'héberge |
 | `--at <time>` | Restaurer un point dans le temps : un id d'instantané ou une heure RFC 3339 |
+| `--any-stream` | Avec `--at`, considère aussi les instantanés d'autres machines et de forks de cette lignée |
 | `--up` | Déployer le dépôt restauré après le transfert |
 | `--health-window <seconds>` | Durée d'observation de la santé du dépôt déployé |
 | `--health-timeout <seconds>` | Durée d'attente qu'il devienne sain |
@@ -351,7 +367,7 @@ Les listes d'options complètes se trouvent sous [Envoyer une sauvegarde vers un
 
 ## Sauvegardes planifiées
 
-Rediacc utilise des stratégies de sauvegarde nommées. Chaque stratégie définit un calendrier, un mode de sauvegarde, une limite de bande passante optionnelle et des filtres de fichiers. Les machines référencent les stratégies par nom pour déterminer quelles sauvegardes s'exécutent sur elles.
+Rediacc utilise des stratégies de sauvegarde nommées. Chaque stratégie définit un calendrier, un mode de sauvegarde, une limite de bande passante optionnelle, des filtres de dépôts et la rétention des instantanés. Les noms de stratégie sont liés aux machines pour déterminer quelles sauvegardes s'exécutent sur elles.
 
 ### Modes de sauvegarde
 
@@ -450,7 +466,7 @@ Le défaut canonique est un partage en deux stratégies : un flux hot horaire ra
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -459,28 +475,27 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>` nomme la destination à l'intérieur de la stratégie ; c'est une étiquette que vous choisissez, et elle décrit le stockage fragmenté. `--include` liste les dépôts à sauvegarder, et le répéter en ajoute d'autres. Omettez-le et la stratégie couvre chaque dépôt du datastore. Les noms correspondent au nom de dépôt de la configuration locale (sans `:tag`).
+`--destination <name>` nomme la destination à l'intérieur de la stratégie ; c'est une étiquette choisie par stratégie, et la destination est toujours le stockage fragmenté hébergé par le service. `--include` prend une liste de dépôts à sauvegarder séparés par des virgules (`--include shop,mail`). Omettez-le et la stratégie couvre chaque dépôt du datastore. Un nom seul couvre le dépôt et tous ses forks ; `name:tag` couvre un seul fork. Les noms inconnus sont refusés à l'enregistrement de la stratégie, si bien qu'une faute de frappe ne peut pas planifier une sauvegarde de rien.
 
-`--exclude` est refusé pour une destination de stockage fragmenté plutôt que discrètement ignoré, parce que le `backup snapshot` sous-jacent sélectionne les dépôts en les nommant et n'a pas d'exclusion propre. Le respecter reviendrait à sauvegarder des dépôts que vous avez demandé de laisser de côté. Délimitez plutôt une stratégie avec `--include`, pour que ce que couvre une exécution planifiée soit écrit plutôt qu'inféré.
+`--exclude` prend la même forme séparée par des virgules et ignore les dépôts nommés. `--include` et `--exclude` s'excluent mutuellement : en définir un efface l'autre, et la valeur `none` efface un filtre.
 
 | Option | Description |
 |--------|-------------|
 | `<strategy>` (positionnel) | Nom de la stratégie (utilisé pour la liaison à la machine) |
-| `--destination <name>` | Nom de destination à l'intérieur de la stratégie. Par défaut, le stockage fragmenté |
-| `--storage <name>` | Opter pour le type de destination rclone retiré. Un calendrier qui l'utilise ne peut pas être déployé |
+| `--destination <name>` | Nom de destination à l'intérieur de la stratégie. Toujours un stockage fragmenté hébergé par le service |
 | `--cron <expression>` | Expression cron (p. ex. `"0 2 * * *"` pour tous les jours à 2h du matin) |
 | `--mode <hot\|cold>` | Mode de sauvegarde |
 | `--bwlimit <limit>` | Limite de bande passante pour les chargements (p. ex. `10M`) |
-| `--include <repos>` | Dépôts couverts par cette stratégie (répétable) |
-| `--exclude <repos>` | Dépôts à ignorer (répétable). Refusé sur une destination de stockage fragmenté |
-| `--folder <path>` | Sous-dossier à l'intérieur d'un bucket rclone. Refusé sur une destination de stockage fragmenté |
+| `--include <repos>` | Dépôts couverts par cette stratégie (séparés par des virgules) |
+| `--exclude <repos>` | Dépôts à ignorer (séparés par des virgules) |
+| `--retention <spec>` | Rétention des instantanés, par exemple `last=7,daily=7,weekly=4,monthly=6`. `none` la retire |
 | `--enable` / `--disable` | Activer ou désactiver la stratégie |
 
 ### Afficher les stratégies
@@ -539,12 +554,12 @@ Les deux modes écrivent dans le même stockage fragmenté, et le mode concerne 
 
 ### Délimiter les dépôts par stratégie
 
-Une stratégie sans `--include` couvre chaque dépôt du datastore. Répéter `--include` la restreint aux dépôts que vous nommez, comparés au nom de dépôt de la configuration locale (sans `:tag`).
+Une stratégie sans `--include` couvre chaque dépôt du datastore. `--include` la restreint aux dépôts nommés, séparés par des virgules, comparés au nom de dépôt de la configuration locale.
 
 ```bash
 # Stratégie hot : sauvegarder tout toutes les heures
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -552,10 +567,10 @@ rdc backup strategy set hourly-hot \
 
 # Stratégie cold : hebdomadaire, et seulement les dépôts qui ont besoin d'être mis au repos
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
