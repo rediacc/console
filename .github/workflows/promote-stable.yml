@@ -306,6 +306,8 @@ jobs:
             .ci/scripts
             .ci/rediacc_ci
             .ci/config/well-known.env
+            # The bws-secrets action reads the secret map; without it every attempt failed "bws-secret-map.json not found" and production was never marked (run 39912946352).
+            .ci/config/bws-secret-map.json
             .github/actions/bws-secrets
             .github/actions/app-token
           sparse-checkout-cone-mode: false
