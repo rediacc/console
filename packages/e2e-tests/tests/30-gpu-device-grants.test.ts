@@ -26,6 +26,8 @@ const RUN_ID = Date.now();
 const NETWORK_ID = 3000 + (RUN_ID % 500);
 const KIND = `${WK_INFRA_DOMAIN}/e2e`;
 const DEVICE = `${KIND}=one`;
+// Every output this suite reads is lowercased (getCombinedOutput), so needles are too.
+const DEVICE_LC = DEVICE.toLowerCase();
 const SPEC_PATH = `/etc/cdi/rediacc-e2e-${RUN_ID}.yaml`;
 const SPEC = [
   'cdiVersion: "0.6.0"',
@@ -89,13 +91,13 @@ test.describe
       );
       expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(true);
       // `--show` prints the network's grant after the change.
-      expect(runner.getCombinedOutput(result)).toContain(DEVICE);
+      expect(runner.getCombinedOutput(result)).toContain(DEVICE_LC);
 
       // The inventory lists every CDI device, granted or not, so the grant is read from
       // the network's own line of the grants section.
       const listed = await runner.executeOnWorker(listCmd);
       expect(runner.isSuccess(listed), runner.getCombinedOutput(listed)).toBe(true);
-      expect(grantLine(runner.getCombinedOutput(listed))).toContain(DEVICE);
+      expect(grantLine(runner.getCombinedOutput(listed))).toContain(DEVICE_LC);
     });
 
     test('repository_gpu_revoke removes the device from the grant', async () => {
@@ -107,11 +109,11 @@ test.describe
       // empty or missing grant cannot pass this by printing nothing.
       const shown = result.stdout.toLowerCase();
       expect(shown, runner.getCombinedOutput(result)).toContain('devices');
-      expect(shown).not.toContain(DEVICE);
+      expect(shown).not.toContain(DEVICE_LC);
 
       // The network's grants line, when the grant record outlives its last device.
       const listed = await runner.executeOnWorker(listCmd);
       expect(runner.isSuccess(listed), runner.getCombinedOutput(listed)).toBe(true);
-      expect(grantLine(runner.getCombinedOutput(listed))).not.toContain(DEVICE);
+      expect(grantLine(runner.getCombinedOutput(listed))).not.toContain(DEVICE_LC);
     });
   });
