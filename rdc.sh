@@ -108,6 +108,19 @@ if [[ "${1:-}" == "--dev" ]]; then
     RDC_DEV=1
     shift
 fi
+# selected_config_name: the config the CLI will use, as the banner names it:
+# --config <name> or --config=<name> wins, then REDIACC_CONFIG, then the
+# default config "rediacc" (which targets production).
+selected_config_name() {
+    local prev=""
+    for arg in "$@"; do
+        if [[ "$prev" == "--config" ]]; then printf '%s' "$arg"; return; fi
+        case "$arg" in --config=*) printf '%s' "${arg#--config=}"; return ;; esac
+        prev="$arg"
+    done
+    printf '%s' "${REDIACC_CONFIG:-rediacc}"
+}
+
 if [[ "${RDC_DEV:-0}" == "1" ]]; then
     # Two PUBLIC values only, both from the RUNNING gateway: its port from this
     # worktree's .account-state and its X25519 key from /.well-known/server-info.
@@ -166,7 +179,7 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
     fi
 else
     log_info "Renet available at: $renet_bin_dir/renet"
-    log_step "Starting CLI (production config)"
+    log_step "Starting CLI (config $(selected_config_name "$@"))"
 fi
 
 # Run the compiled CLI bundle, passing through all arguments

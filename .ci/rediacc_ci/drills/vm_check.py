@@ -56,6 +56,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 from rediacc_ci import log, paths
 from rediacc_ci.drills import (
     converge_preflight,
+    gpu_grants,
     lib,
     session_teardown,
     tenant_isolation,
@@ -110,8 +111,8 @@ STALE_CONFIG_ENTRY = "already exists in config"
 
 TAG_PREFIX = "vmc"
 STALE_FORK_S = 3600
-# Forks A and B of V1.1, and I1's throwaway fork C (tenant_isolation.fork_c_tag).
-FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[abc]$")
+# Forks A and B of V1.1, I1's throwaway fork C (tenant_isolation.fork_c_tag), and G1's forks D and E (gpu_grants.fork_tags).
+FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[a-e]$")
 MOUNTS = DATASTORE_PATH + "/mounts"
 GUARDED_FILE = ".rediacc.json"
 READ_ONLY = "Read-only file system"
@@ -252,6 +253,7 @@ EXTRA_RENET_STEPS: tuple[tuple[str, tuple[str, ...], Callable[[Any], None]], ...
     tenant_isolation.STEP,
     session_teardown.STEP,
     converge_preflight.STEP,
+    gpu_grants.STEP,
 )
 # Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
 PHASE_STEPS: dict[str, tuple[str, ...]] = {
