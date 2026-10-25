@@ -25,7 +25,7 @@ This is no longer a target. It is a transcript of the shipped tree, generated fr
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek
                 field {get set unset rotate list}    audit {log tail verify}
                 remote {enable disable status refresh versions restore}    ssh {set show remove}
-rdc machine:    add remove list status setup scan-keys health prune converge
+rdc machine:    add remove list status setup scan-keys health prune converge restart-services
                 provision deprovision
                 provider {add remove list}    gpu {list}
                 infra {set show push  cert {pull push status clear}}
@@ -42,7 +42,7 @@ rdc repo:       create up down status list delete fork push pull migrate promote
                 gpu {grant revoke}
 rdc cluster:    create scale join evict destroy status kubeconfig snapshot {create list}
                 fork migrate rehearse
-rdc backup:     strategy {set remove list show bind unbind}  retention {set clear}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse
+rdc backup:     strategy {set remove list show bind unbind}  retention {set clear preview}  snapshots {delete}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
@@ -53,7 +53,7 @@ rdc doctor | credits | update | serve | mcp serve | run (hidden)
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Thirteen differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last four are later additions.
+Fifteen differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last six are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -70,6 +70,8 @@ Thirteen differences. The first six are deliberate and each is traceable to a ru
 | `subscription {login logout status refresh}` | `subscription {login logout status refresh proxy-token}` | PLAN-cloudflare-proxy: `proxy-token` mints a short-lived `proxy:exec` token from the device's login for `rdc --proxy`; stdout carries only the token. |
 | `machine` with no `converge` | `machine converge` | PLAN-renet-runtime-converge: restarts every repository daemon still on an older runtime layout, one repository at a time, so a renet upgrade moves them onto the current one. The CLI runs it after a renet upload; the verb previews the plan (`--dry-run`) or resumes a failed pass. |
 | `machine` and `repo` with no `gpu` | `machine gpu list` + `repo gpu {grant revoke}` | PLAN-gpu-device-grants C1/C2: `machine gpu list` reads a machine's GPUs, CDI devices and the repositories each device is granted to; `repo gpu grant\|revoke` hand a repository a CDI device (or take it back) and mirror the grant into the config. All three run on the machine, so they are machine-plane and proxy-capable. |
+| `backup retention {set clear}` | `backup retention {set clear preview}` + `backup snapshots delete` | The backup-storage retention work: `retention preview` reads what the next sweep would delete and the space it frees without deleting anything, and `snapshots delete` is the manual single-snapshot delete that runs the same prune as the sweep. Both postdate this transcript. |
+| `machine` with no `restart-services` | `machine restart-services` | PLAN-renet-runtime-converge: restarts the renet daemons that still run a replaced binary, one unit at a time, each confirmed live on the installed binary before the next, and with `--include-docker` also each repository's supervisor. This transcript postdates it. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

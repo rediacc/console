@@ -25,7 +25,7 @@ The operator's prompt is `/tmp/prompt-bridge-leftovers.md` (2026-10-23). The ren
 
 | Script passes | Status today | What replaces it |
 |---|---|---|
-| `datastore_init` | not registered | The `renet datastore init` CLI command (`private/renet/cmd/renet/datastore_init.go:17`, flags `--path`, `--size`, `--force`); the e2e harness switched to it for the same reason (`packages/e2e-tests/src/utils/bridge/OpsManager.ts:138`). `datastore_create` is a different verb: it creates a named datastore and refuses `default`. |
+| `datastore_init` | not registered | The `renet datastore init` CLI command (`private/renet/cmd/renet/datastore_init.go:17`, flags `--path`, `--size`, `--force`); the e2e harness switched to it for the same reason (`packages/e2e-tests/src/utils/renet-functions/OpsManager.ts:153`). `datastore_create` is a different verb: it creates a named datastore and refuses `default`. |
 | `repository_new` | not registered | `repository_create` (`private/renet/pkg/functions/commands/repository.go:32`); `size` is required for docker repos and the script passes none. |
 | `repository_rm` | not registered | `repository_delete` (`private/renet/pkg/functions/commands/repository.go:49`) |
 
@@ -100,7 +100,7 @@ Measured: "bridge function(s)" in 32 lines across 26 files (7 generated or user-
 ### Final verification
 
 - [x] T13 [lead] Final grep and proof the exclusions are untouched: `git grep --recurse-submodules -nE 'renet bridge|bridge once|renet-bridge|bridge_commands|pkg/bridge' -- . ':!agent/plans' ':!agent/worklist' ':!agent/*/STATE.md'` finds nothing outside the historical banner in `private/renet/docs/BASH_TO_GO_REWRITE_PLAN.md`; `git -C private/renet diff --stat <base> -- cmd/renet/ops_bridge.go pkg/infra/bridgesvc pkg/compose/wrapper.go` is empty; every changed file and each verification rc from T6 to T11 is recorded here -- Owns: agent/plans/PLAN-renet-bridge-leftovers.md. Accept: both checks hold, and `git grep -n 'utils/bridge' -- packages` prints nothing after T14.
-    (ticked) 2026-10-25T13:26:59Z by d778be9d: commit:f1c8270f6d37: the recursive grep for renet bridge, bridge once, renet-bridge, bridge_commands and pkg/bridge (outside agent records and the BASH_TO_GO banner) finds only an English sentence in private/account/web solution-selector.ts:134 and the ops_selftest_test.go guard asserting the removed verb is absent; git grep utils/bridge -- packages prints nothing; the bridgesvc exclusion was changed deliberately because its self-test called the removed bridge once verb (renet fix and test); T6-T12 rcs are on their boxes
+    (ticked) 2026-10-25T13:26:59Z by d778be9d: commit:f1c8270f6d37: the recursive grep for renet bridge, bridge once, renet-bridge, bridge_commands and pkg/bridge (outside agent records and the BASH_TO_GO banner) finds only an English sentence in private/account/web/src/data/enablement-content/solution-selector.ts:134 and the ops_selftest_test.go guard asserting the removed verb is absent; git grep utils/bridge -- packages prints nothing; the bridgesvc exclusion was changed deliberately because its self-test called the removed bridge once verb (renet fix and test); T6-T12 rcs are on their boxes
 
 ## Questions put to the operator (all answered 2026-10-23; the rulings section records the answers)
 

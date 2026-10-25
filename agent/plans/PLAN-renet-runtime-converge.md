@@ -13,7 +13,7 @@ Owns: private/renet/pkg/daemon/runtime_epoch*.go, private/renet/pkg/daemon/start
 
 The cross-repo isolation moved each repo's runtime to `/var/run/rediacc/net-<N>/`, put a policy proxy in front of each repo dockerd, narrowed each daemon's sandbox to its own `net-<N>/`, and changed the router's discovery glob. A renet upgrade today only refreshes `rediacc-router` (packages/cli/src/services/renet/renet-provisioner.ts:79-85, on `binaryUpdated`). No repo daemon restarts, so every pre-isolation daemon keeps its old socket, its whole-`/var/run/rediacc` sandbox and no API gate until someone restarts it by hand. hostinger runs renet 7e6a8588 with 11 repos.
 
-A renet-only restart cannot do it. Env-mode secrets (`REDIACC_SECRET_*`) exist only in the CLI process (packages/cli/src/services/state.ts:214-221), and `UpServices` without them recreates containers with empty values. So the CLI triggers, and renet plans and executes.
+A renet-only restart cannot do it. Env-mode secrets (`REDIACC_SECRET_*`) exist only in the CLI process (packages/cli/src/services/state.ts:166-176), and `UpServices` without them recreates containers with empty values. So the CLI triggers, and renet plans and executes.
 
 ## Decisions (taken by the lead under the operator's order to proceed autonomously; recorded for veto)
 

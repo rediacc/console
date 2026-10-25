@@ -129,7 +129,8 @@ rdc backup strategy show daily
 rdc backup retention preview <repo-ref>           # what the next sweep would delete, and the space freed
 rdc backup retention set <repo-ref> --keep-last 7 --keep-daily 7 --keep-weekly 4
 rdc backup retention set <repo-ref> --stream <id> --keep-last 3   # one backup stream only
-rdc backup retention clear <repo-ref> [--stream <id>]             # keep every snapshot
+rdc backup retention clear <repo-ref>                          # keep every snapshot
+rdc backup retention clear <repo-ref> --stream <id>               # keep every snapshot of one stream
 rdc backup snapshots delete <repo-ref> <snapshot-id>              # data only that snapshot used is freed by the next GC
 ```
 `retention set` replaces every knob rather than merging, so pass the whole policy. `retention set`, `retention clear` and `snapshots delete` are excluded from the MCP tools. `rdc repo delete <ref> --purge-backups` also deletes the repository's cloud backups at once instead of letting them expire.
