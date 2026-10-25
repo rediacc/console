@@ -210,7 +210,7 @@
         "description": "Gespeicherte Snapshots verwalten",
         "snapshotIdArgument": "Snapshot-ID (siehe rdc backup manifests)",
         "delete": {
-          "description": "Löscht einen gespeicherten Snapshot eines Repositorys. Daten, die nur dieser Snapshot nutzte, gibt die nächste Garbage Collection frei.",
+          "description": "Löscht einen gespeicherten Snapshot. Seine exklusiven Daten gibt die nächste Garbage Collection frei.",
           "notInRepo": "Snapshot {{snapshot}} gehört nicht zum gespeicherten Verlauf von {{name}}. IDs anzeigen mit: rdc backup manifests {{name}}",
           "success": "{{count}} Snapshot(s) von {{name}} gelöscht, darunter {{snapshot}}."
         }
@@ -312,7 +312,7 @@
         }
       },
       "status": {
-        "description": "Alle Cluster auflisten oder die vollständige Konfiguration eines Clusters mit --name anzeigen.",
+        "description": "Alle Cluster auflisten oder mit einem Clusternamen dessen vollständige Konfiguration anzeigen.",
         "descriptionShort": "Cluster und ihre Pools anzeigen",
         "none": "Keine Cluster konfiguriert. Fügen Sie einen hinzu mit: rdc cluster create <cluster>"
       }
@@ -1432,11 +1432,11 @@
       "description": "Verschlüsselte Repositories auf Maschinen deployen und verwalten. Wichtige Unterbefehle: create, up (deploy), down (stop), fork (sofortiger CoW-Klon), delete, push/pull (Backup), sync (Dateiübertragung). Lebenszyklus: repo create → repo up → repo down. Details zu Architektur, Routing und Umgebungsvariablen finden Sie unter „Kernkonzepte“ in rdc --help.",
       "descriptionShort": "Verschlüsselte Repositories auf Maschinen bereitstellen und verwalten",
       "diff": {
-        "baseOption": "Vergleichs-Repository (Basis/Altseite); standardmäßig das Eltern-Repository von --name",
+        "baseOption": "Vergleichs-Repository (Basis/Altseite); standardmäßig das Eltern-Repository von <ref>",
         "conflictingFormat": "Wählen Sie nur eine der Optionen --name-only, --stat, --content. Für JSON verwenden Sie -o json.",
         "contentNeedsPath": "--content erfordert einen Dateipfad, z. B.: --content app/config.toml",
         "contentOption": "Vereinheitlichten Text-Diff für eine einzelne Datei anzeigen (benötigt Dateipfad)",
-        "description": "Git-artiger Datei-Diff zwischen zwei Copy-on-Write-geforkten Repositories. Meldet hinzugefügte, geänderte, gelöschte und umbenannte Dateien. Vergleicht das per --name angegebene Repository (Ziel/Neuseite) mit seinem aus der lokalen Konfiguration aufgelösten Eltern-Repository oder mit einem explizit per --base angegebenen Repository (Basis/Altseite). Nur Metadaten und größenunabhängig: vergleicht die verschlüsselten LUKS-Images auf Blockebene ohne Entschlüsselung: ein 1-GB- und ein 100-GB-Repo werden in denselben Millisekunden gediff.",
+        "description": "Git-artiger Datei-Diff zwischen zwei Copy-on-Write-geforkten Repositories. Meldet hinzugefügte, geänderte, gelöschte und umbenannte Dateien. Vergleicht das über das positionale <ref> angegebene Repository (Ziel/Neuseite) mit seinem aus der lokalen Konfiguration aufgelösten Eltern-Repository oder mit einem explizit per --base angegebenen Repository (Basis/Altseite). Nur Metadaten und größenunabhängig: vergleicht die verschlüsselten LUKS-Images auf Blockebene ohne Entschlüsselung: ein 1-GB- und ein 100-GB-Repo werden in denselben Millisekunden gediff.",
         "descriptionShort": "Git-artiger Datei-Diff zwischen zwei geforkten Repositories (A/M/D/R)",
         "failed": "Diff fehlgeschlagen",
         "fastOption": "Block-Filter vertrauen; Inhalts-Hash-Bestätigung überspringen (kann „Modified“ überschätzen)",

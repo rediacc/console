@@ -210,7 +210,7 @@
         "description": "Saklanan anlık görüntüleri yönet",
         "snapshotIdArgument": "Anlık görüntü kimliği (bkz. rdc backup manifests)",
         "delete": {
-          "description": "Bir deponun saklanan tek bir anlık görüntüsünü siler. Yalnızca o görüntünün kullandığı veriyi bir sonraki çöp toplama boşaltır.",
+          "description": "Saklanan tek bir anlık görüntüyü siler. Yalnızca ona ait veriler bir sonraki çöp toplamada boşaltılır.",
           "notInRepo": "{{snapshot}} anlık görüntüsü {{name}} deposunun saklanan geçmişinde yok. Kimlikleri listelemek için: rdc backup manifests {{name}}",
           "success": "{{name}} deposunun {{snapshot}} dahil {{count}} anlık görüntüsü silindi."
         }
@@ -312,7 +312,7 @@
         }
       },
       "status": {
-        "description": "Tüm kümeleri listeler veya --name ile bir kümenin tam yapılandırmasını gösterir.",
+        "description": "Tüm kümeleri listeler veya küme adı verilirse o kümenin tam yapılandırmasını gösterir.",
         "descriptionShort": "Kümeleri ve havuzlarını göster",
         "none": "Yapılandırılmış küme yok. Şununla bir tane ekleyin: rdc cluster create <cluster>"
       }
@@ -1432,11 +1432,11 @@
       "description": "Makinelerde şifreli depoları dağıt ve yönet. Temel alt komutlar: create, up (dağıt), down (durdur), fork (anında CoW klonu), delete, push/pull (yedekleme), sync (dosya aktarımı). Yaşam döngüsü: repo create → repo up → repo down. Mimari, yönlendirme ve ortam değişkeni ayrıntıları için rdc --help çıktısındaki Temel Kavramlar bölümüne bakın.",
       "descriptionShort": "Makinelerde şifrelenmiş depoları dağıt ve yönet",
       "diff": {
-        "baseOption": "Karşılaştırılacak depo (taban / eski taraf); varsayılan olarak --name ebeveyni",
+        "baseOption": "Karşılaştırılacak depo (taban / eski taraf); varsayılan olarak <ref> ebeveyni",
         "conflictingFormat": "--name-only, --stat, --content seçeneklerinden yalnızca birini seçin. JSON için -o json kullanın.",
         "contentNeedsPath": "--content bir dosya yolu gerektirir, örn: --content app/config.toml",
         "contentOption": "Tek bir dosya için birleşik metin diffi göster (dosya yolu gerekir)",
-        "description": "Kopyala-yazma ile forklanmış iki depo arasında git tarzı dosya seviyesinde diff. Eklenen, değiştirilen, silinen ve yeniden adlandırılan dosyaları raporlar. --name ile verilen depoyu (hedef / yeni taraf) yerel yapılandırmadan çözülen ebeveyniyle veya açık bir --base deposu ile (taban / eski taraf) karşılaştırır. Yalnızca üst veri ve boyuttan bağımsız: şifreli LUKS imajlarını şifre çözmeden blok seviyesinde karşılaştırır; bu sayede 1 GB ve 100 GB depo aynı milisaniyelerde karşılaştırılır.",
+        "description": "Kopyala-yazma ile forklanmış iki depo arasında git tarzı dosya seviyesinde diff. Eklenen, değiştirilen, silinen ve yeniden adlandırılan dosyaları raporlar. konumsal <ref> ile verilen depoyu (hedef / yeni taraf) yerel yapılandırmadan çözülen ebeveyniyle veya açık bir --base deposu ile (taban / eski taraf) karşılaştırır. Yalnızca üst veri ve boyuttan bağımsız: şifreli LUKS imajlarını şifre çözmeden blok seviyesinde karşılaştırır; bu sayede 1 GB ve 100 GB depo aynı milisaniyelerde karşılaştırılır.",
         "descriptionShort": "İki forklanmış depo arasında git tarzı dosya diffi (A/M/D/R)",
         "failed": "Diff başarısız",
         "fastOption": "Blok filtresine güven; içerik hash onayını atla (\"Değiştirildi\" sayısı abartılı olabilir)",

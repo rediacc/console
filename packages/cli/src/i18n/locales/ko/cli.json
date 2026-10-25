@@ -210,7 +210,7 @@
         "description": "저장된 스냅샷을 관리합니다",
         "snapshotIdArgument": "스냅샷 ID (rdc backup manifests 참조)",
         "delete": {
-          "description": "저장소의 저장된 스냅샷 하나를 삭제합니다. 그 스냅샷만 쓰던 데이터는 다음 가비지 컬렉션에서 해제됩니다.",
+          "description": "저장된 스냅샷 하나를 삭제합니다. 그 스냅샷만 쓰던 데이터는 다음 가비지 컬렉션에서 해제됩니다.",
           "notInRepo": "스냅샷 {{snapshot}}은(는) {{name}}의 저장된 기록에 없습니다. ID 목록은 rdc backup manifests {{name}}로 확인하세요.",
           "success": "{{name}}의 스냅샷 {{count}}개를 삭제했습니다({{snapshot}} 포함)."
         }
@@ -312,7 +312,7 @@
         }
       },
       "status": {
-        "description": "모든 클러스터를 나열하거나, --name으로 특정 클러스터의 전체 설정을 표시합니다.",
+        "description": "모든 클러스터를 나열하거나, 클러스터 이름을 지정해 해당 클러스터의 전체 설정을 표시합니다.",
         "descriptionShort": "클러스터와 그 풀을 표시합니다",
         "none": "설정된 클러스터가 없습니다. 다음으로 추가하십시오: rdc cluster create <cluster>"
       }
@@ -1432,11 +1432,11 @@
       "description": "머신에서 암호화된 저장소를 배포하고 관리합니다. 주요 하위 명령어: create, up (배포), down (중지), fork (즉시 CoW 클론), delete, push/pull (백업), sync (파일 전송). 수명 주기: repo create → repo up → repo down. 아키텍처, 라우팅, 환경 변수 세부 정보는 rdc --help의 핵심 개념을 참조하십시오.",
       "descriptionShort": "머신에서 암호화된 저장소를 배포하고 관리합니다",
       "diff": {
-        "baseOption": "비교할 저장소 (기준/이전 쪽); 기본값은 --name 의 부모",
+        "baseOption": "비교할 저장소 (기준/이전 쪽); 기본값은 <ref>의 부모",
         "conflictingFormat": "--name-only, --stat, --content 중 하나만 선택하세요. JSON 출력에는 -o json을 사용하세요.",
         "contentNeedsPath": "--content 에는 파일 경로가 필요합니다 (예: --content app/config.toml)",
         "contentOption": "단일 파일에 대한 통합 텍스트 비교 표시 (파일 경로 필요)",
-        "description": "복사-온-라이트로 포크된 두 저장소 간의 git 스타일 파일 단위 비교. 추가, 수정, 삭제, 이름 변경된 파일을 보고합니다. --name(대상/새 쪽)으로 지정된 저장소를 로컬 구성에서 해석된 부모 또는 명시적 --base 저장소(기준/이전 쪽)와 비교합니다. 메타데이터만 사용하고 크기에 독립적: 암호화된 LUKS 이미지를 복호화하지 않고 블록 수준에서 비교하므로 1GB 저장소와 100GB 저장소가 같은 밀리초 안에 비교됩니다.",
+        "description": "복사-온-라이트로 포크된 두 저장소 간의 git 스타일 파일 단위 비교. 추가, 수정, 삭제, 이름 변경된 파일을 보고합니다. 위치 인자 <ref>(대상/새 쪽)로 지정된 저장소를 로컬 구성에서 해석된 부모 또는 명시적 --base 저장소(기준/이전 쪽)와 비교합니다. 메타데이터만 사용하고 크기에 독립적: 암호화된 LUKS 이미지를 복호화하지 않고 블록 수준에서 비교하므로 1GB 저장소와 100GB 저장소가 같은 밀리초 안에 비교됩니다.",
         "descriptionShort": "두 포크된 저장소 간의 git 스타일 파일 비교 (A/M/D/R)",
         "failed": "비교 실패",
         "fastOption": "블록 필터를 신뢰하고 콘텐츠 해시 확인 건너뛰기 (수정 항목이 과다 보고될 수 있음)",

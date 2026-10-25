@@ -210,7 +210,7 @@
         "description": "Gestionar las instantáneas almacenadas",
         "snapshotIdArgument": "Id de instantánea (consulte rdc backup manifests)",
         "delete": {
-          "description": "Borra una instantánea almacenada de un repositorio. Los datos que solo usaba esa instantánea los libera la próxima recolección de basura.",
+          "description": "Borra una instantánea almacenada. Sus datos exclusivos se liberan en la próxima recolección de basura.",
           "notInRepo": "La instantánea {{snapshot}} no está en el historial almacenado de {{name}}. Sus ids se listan con: rdc backup manifests {{name}}",
           "success": "Se borraron {{count}} instantánea(s) de {{name}}, incluida {{snapshot}}."
         }
@@ -312,7 +312,7 @@
         }
       },
       "status": {
-        "description": "Listar todos los clústeres, o mostrar la configuración completa de un clúster con --name.",
+        "description": "Listar todos los clústeres, o indicar el nombre de uno para mostrar su configuración completa.",
         "descriptionShort": "Mostrar clústeres y sus pools",
         "none": "No hay clústeres configurados. Agrega uno con: rdc cluster create <cluster>"
       }
@@ -1432,11 +1432,11 @@
       "description": "Desplegar y gestionar repositorios cifrados en máquinas. Subcomandos clave: create, up (desplegar), down (detener), fork (clon CoW instantáneo), delete, push/pull (copia de seguridad), sync (transferencia de archivos). Ciclo de vida: repo create → repo up → repo down. Consulta Conceptos Clave en rdc --help para detalles de arquitectura, enrutamiento y variables de entorno.",
       "descriptionShort": "Desplegar y gestionar repositorios cifrados en máquinas",
       "diff": {
-        "baseOption": "Repositorio con el que comparar (lado base/antiguo); por defecto el padre de --name",
+        "baseOption": "Repositorio con el que comparar (lado base/antiguo); por defecto el padre de <ref>",
         "conflictingFormat": "Elige solo una de --name-only, --stat, --content. Para JSON, usa -o json.",
         "contentNeedsPath": "--content requiere una ruta de archivo, por ejemplo: --content app/config.toml",
         "contentOption": "Mostrar diff de texto unificado para un único archivo (requiere ruta de archivo)",
-        "description": "Diff a nivel de archivo al estilo git entre dos repositorios bifurcados con copy-on-write. Reporta archivos añadidos, modificados, eliminados y renombrados. Compara el repositorio indicado por --name (lado objetivo/nuevo) con su padre, resuelto desde la configuración local, o con un --base explícito (lado base/antiguo). Solo metadatos e independiente del tamaño: compara las imágenes LUKS cifradas a nivel de bloque sin descifrarlas, así que un repo de 1 GB y otro de 100 GB se comparan en los mismos milisegundos.",
+        "description": "Diff a nivel de archivo al estilo git entre dos repositorios bifurcados con copy-on-write. Reporta archivos añadidos, modificados, eliminados y renombrados. Compara el repositorio indicado por el <ref> posicional (lado objetivo/nuevo) con su padre, resuelto desde la configuración local, o con un --base explícito (lado base/antiguo). Solo metadatos e independiente del tamaño: compara las imágenes LUKS cifradas a nivel de bloque sin descifrarlas, así que un repo de 1 GB y otro de 100 GB se comparan en los mismos milisegundos.",
         "descriptionShort": "Diff de archivos estilo git entre dos repositorios bifurcados (A/M/D/R)",
         "failed": "Diff falló",
         "fastOption": "Confiar en el filtro de bloques; omitir confirmación por hash de contenido (puede sobre-reportar Modificado)",

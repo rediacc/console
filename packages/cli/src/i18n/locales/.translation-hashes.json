@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 1914,
-    "sourceCommit": "921db938a2b557bb97f91320efa1ea6f1673fad4"
+    "sourceCommit": "041e3f16637232939c4125b3429b35a18f308d55"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -107,7 +107,7 @@
     "commands.backup.snapshot.optionReseed": "aa7213c5",
     "commands.backup.snapshot.quotaRefused": "35aa45d4",
     "commands.backup.snapshot.starting": "f739c227",
-    "commands.backup.snapshots.delete.description": "2b6d96ff",
+    "commands.backup.snapshots.delete.description": "74ffb2b1",
     "commands.backup.snapshots.delete.notInRepo": "a35856e1",
     "commands.backup.snapshots.delete.success": "bd281bef",
     "commands.backup.snapshots.description": "81f620fc",

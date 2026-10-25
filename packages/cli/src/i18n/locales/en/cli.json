@@ -1825,7 +1825,7 @@
         "description": "Manage stored snapshots",
         "snapshotIdArgument": "Snapshot id (see rdc backup manifests)",
         "delete": {
-          "description": "Delete one stored snapshot of a repository. Data only that snapshot used is freed by the next garbage collection.",
+          "description": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection.",
           "notInRepo": "Snapshot {{snapshot}} is not in the stored history of {{name}}. List its ids with: rdc backup manifests {{name}}",
           "success": "Deleted {{count}} snapshot(s) of {{name}}, including {{snapshot}}."
         }

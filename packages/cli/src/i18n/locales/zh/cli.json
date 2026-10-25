@@ -210,7 +210,7 @@
         "description": "管理已存储的快照",
         "snapshotIdArgument": "快照 ID(参见 rdc backup manifests)",
         "delete": {
-          "description": "删除仓库的一个已存储快照。只被该快照使用的数据会在下一次垃圾回收时释放。",
+          "description": "删除一个已存储的快照。其独占的数据会在下一次垃圾回收时释放。",
           "notInRepo": "快照 {{snapshot}} 不在 {{name}} 的已存储历史中。可用以下命令列出其 ID:rdc backup manifests {{name}}",
           "success": "已删除 {{name}} 的 {{count}} 个快照,包括 {{snapshot}}。"
         }
@@ -312,7 +312,7 @@
         }
       },
       "status": {
-        "description": "列出所有集群，或使用 --name 显示单个集群的完整配置。",
+        "description": "列出所有集群，或指定集群名称以显示该集群的完整配置。",
         "descriptionShort": "显示集群及其节点池",
         "none": "尚未配置集群。使用以下命令添加：rdc cluster create <cluster>"
       }
@@ -1432,11 +1432,11 @@
       "description": "在机器上部署和管理加密仓库。关键子命令：create、up（部署）、down（停止）、fork（即时 CoW 克隆）、delete、push/pull（备份）、sync（文件传输）。生命周期：repo create → repo up → repo down。有关架构、路由和环境变量的详细信息，请参阅 rdc --help 中的关键概念。",
       "descriptionShort": "在机器上部署和管理加密仓库",
       "diff": {
-        "baseOption": "用于比较的仓库（基准/旧侧）；默认为 --name 的父级",
+        "baseOption": "用于比较的仓库（基准/旧侧）；默认为 <ref> 的父级",
         "conflictingFormat": "只能从 --name-only、--stat、--content 中选择一个。如需 JSON，请使用 -o json。",
         "contentNeedsPath": "--content 需要文件路径，例如: --content app/config.toml",
         "contentOption": "为单个文件显示统一文本差异（需提供文件路径）",
-        "description": "在两个写时复制（CoW）分支仓库之间进行 git 风格的文件级差异比较。报告新增、修改、删除和重命名的文件。将由 --name 指定的仓库（目标/新侧）与从本地配置解析出的父级，或与显式的 --base 仓库（基准/旧侧）进行比较。仅使用元数据，与大小无关：在不解密的情况下以块级别对加密的 LUKS 镜像求差，因此 1 GB 与 100 GB 仓库在相同的毫秒内完成差分。",
+        "description": "在两个写时复制（CoW）分支仓库之间进行 git 风格的文件级差异比较。报告新增、修改、删除和重命名的文件。将由位置参数 <ref> 指定的仓库（目标/新侧）与从本地配置解析出的父级，或与显式的 --base 仓库（基准/旧侧）进行比较。仅使用元数据，与大小无关：在不解密的情况下以块级别对加密的 LUKS 镜像求差，因此 1 GB 与 100 GB 仓库在相同的毫秒内完成差分。",
         "descriptionShort": "两个分支仓库之间的 git 风格文件差异 (A/M/D/R)",
         "failed": "差分失败",
         "fastOption": "信任块过滤器；跳过内容哈希确认（可能过报 \"已修改\"）",

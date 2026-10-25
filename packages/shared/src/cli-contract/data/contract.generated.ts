@@ -991,7 +991,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "plane": "other",
       "descriptionKey": "commands.backup.snapshots.delete.description",
-      "label": "Delete one stored snapshot of a repository. Data only that snapshot used is freed by the next garbage collection.",
+      "label": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection.",
       "options": [],
       "positionals": [
         {

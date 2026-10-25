@@ -210,7 +210,7 @@
         "description": "Halda salvestatud hetktõmmiseid",
         "snapshotIdArgument": "Hetktõmmise ID (vt rdc backup manifests)",
         "delete": {
-          "description": "Kustutab hoidla ühe salvestatud hetktõmmise. Andmed, mida kasutas ainult see hetktõmmis, vabastab järgmine prügikoristus.",
+          "description": "Kustutab ühe salvestatud hetktõmmise. Selle ainuomased andmed vabastab järgmine prügikoristus.",
           "notInRepo": "Hetktõmmist {{snapshot}} pole hoidla {{name}} salvestatud ajaloos. ID-sid saab vaadata käsuga: rdc backup manifests {{name}}",
           "success": "Hoidla {{name}} {{count}} hetktõmmist kustutati, sh {{snapshot}}."
         }
@@ -312,7 +312,7 @@
         }
       },
       "status": {
-        "description": "Loetle kõik klastrid või kuva ühe klastri täielik konfiguratsioon lipuga --name.",
+        "description": "Loetle kõik klastrid või anna klastri nimi, et kuvada selle täielik konfiguratsioon.",
         "descriptionShort": "Kuva klastrid ja nende pesad",
         "none": "Ühtegi klastrit pole seadistatud. Lisa üks käsuga: rdc cluster create <cluster>"
       }
@@ -1432,11 +1432,11 @@
       "description": "Juuruta ja halda krüpteeritud hoidlaid masinatel. Peamised alamkomandod: create, up (juuruta), down (peata), fork (hetkeline CoW-kloon), delete, push/pull (varukoopia), sync (failide ülekanne). Elutsükkel: repo create → repo up → repo down. Vaata arhitektuuri, marsruutimise ja keskkonna muutujate üksikasju käsuga rdc --help.",
       "descriptionShort": "Juuruta ja halda krüpteeritud hoidlaid masinatel",
       "diff": {
-        "baseOption": "Hoidla, millega võrrelda (alus/vana pool); vaikimisi --name vanem",
+        "baseOption": "Hoidla, millega võrrelda (alus/vana pool); vaikimisi <ref> vanem",
         "conflictingFormat": "Vali ainult üks valikutest --name-only, --stat, --content. JSON-i jaoks kasuta -o json.",
         "contentNeedsPath": "--content vajab failiteed, näiteks: --content app/config.toml",
         "contentOption": "Näita ühtlustatud tekstierinevust ühe faili kohta (vajab failiteed)",
-        "description": "Git-stiilis failitaseme erinevus kahe kopeeri-kirjutamisel forkitud hoidla vahel. Teatab lisatud, muudetud, kustutatud ja ümbernimetatud failidest. Võrdleb --name (sihtmärk/uus pool) antud hoidlat selle vanemaga, mis on lahendatud kohalikust seadistusest, või selgesõnalise --base hoidlaga (alus/vana pool). Ainult metaandmed ja suurusest sõltumatu: võrdleb krüptitud LUKS-tõmmiseid plokitasandil ilma dekrüpteerimata, nii et 1 GB ja 100 GB hoidlad võrdluvad sama millisekundi jooksul.",
+        "description": "Git-stiilis failitaseme erinevus kahe kopeeri-kirjutamisel forkitud hoidla vahel. Teatab lisatud, muudetud, kustutatud ja ümbernimetatud failidest. Võrdleb positsioonilise <ref> (sihtmärk/uus pool) abil antud hoidlat selle vanemaga, mis on lahendatud kohalikust seadistusest, või selgesõnalise --base hoidlaga (alus/vana pool). Ainult metaandmed ja suurusest sõltumatu: võrdleb krüptitud LUKS-tõmmiseid plokitasandil ilma dekrüpteerimata, nii et 1 GB ja 100 GB hoidlad võrdluvad sama millisekundi jooksul.",
         "descriptionShort": "Git-stiilis failierinevus kahe forkitud hoidla vahel (A/M/D/R)",
         "failed": "Erinevuse arvutamine ebaõnnestus",
         "fastOption": "Usu plokifiltrit; jäta sisuhashi kinnitus vahele (võib „Muudetut“ üle teatada)",

@@ -99,7 +99,7 @@
   "commands.backup.snapshot.optionReseed": "Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)",
   "commands.backup.snapshot.quotaRefused": "Snapshot refused for {{name}}: storage quota exceeded. Prune old snapshots or raise the quota",
   "commands.backup.snapshot.starting": "Snapshotting {{name}} to chunk storage...",
-  "commands.backup.snapshots.delete.description": "Delete one stored snapshot of a repository. Data only that snapshot used is freed by the next garbage collection.",
+  "commands.backup.snapshots.delete.description": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection.",
   "commands.backup.snapshots.delete.notInRepo": "Snapshot {{snapshot}} is not in the stored history of {{name}}. List its ids with: rdc backup manifests {{name}}",
   "commands.backup.snapshots.delete.success": "Deleted {{count}} snapshot(s) of {{name}}, including {{snapshot}}.",
   "commands.backup.snapshots.description": "Manage stored snapshots",

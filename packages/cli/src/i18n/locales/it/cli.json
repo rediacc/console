@@ -210,7 +210,7 @@
         "description": "Gestisci gli snapshot archiviati",
         "snapshotIdArgument": "Id dello snapshot (vedi rdc backup manifests)",
         "delete": {
-          "description": "Elimina uno snapshot archiviato di un repository. I dati usati solo da quello snapshot vengono liberati dalla prossima garbage collection.",
+          "description": "Elimina uno snapshot archiviato. I suoi dati esclusivi vengono liberati dalla prossima garbage collection.",
           "notInRepo": "Lo snapshot {{snapshot}} non è nella cronologia archiviata di {{name}}. Per elencarne gli id: rdc backup manifests {{name}}",
           "success": "Eliminati {{count}} snapshot di {{name}}, incluso {{snapshot}}."
         }
@@ -312,7 +312,7 @@
         }
       },
       "status": {
-        "description": "Elenca tutti i cluster, oppure mostra la configurazione completa di un cluster con --name.",
+        "description": "Elenca tutti i cluster, oppure passa il nome di un cluster per mostrarne la configurazione completa.",
         "descriptionShort": "Mostra i cluster e i loro pool",
         "none": "Nessun cluster configurato. Aggiungine uno con: rdc cluster create <cluster>"
       }
@@ -1432,11 +1432,11 @@
       "description": "Distribuisci e gestisci repository cifrati sui macchinari. Sottocomandi principali: create, up (distribuisci), down (ferma), fork (clone CoW istantaneo), delete, push/pull (backup), sync (trasferimento file). Ciclo di vita: repo create → repo up → repo down. Consulta Concetti Chiave in rdc --help per architettura, routing e variabili d'ambiente.",
       "descriptionShort": "Distribuisci e gestisci repository cifrati sui macchinari",
       "diff": {
-        "baseOption": "Repository con cui confrontare (lato base/vecchio); predefinito il padre di --name",
+        "baseOption": "Repository con cui confrontare (lato base/vecchio); predefinito il padre di <ref>",
         "conflictingFormat": "Scegli solo una fra --name-only, --stat, --content. Per JSON, usa -o json.",
         "contentNeedsPath": "--content richiede un percorso file, ad esempio: --content app/config.toml",
         "contentOption": "Mostra un diff testuale unificato per un singolo file (richiede un percorso file)",
-        "description": "Diff a livello di file in stile git fra due repository forkati con copy-on-write. Riporta i file aggiunti, modificati, eliminati e rinominati. Confronta il repository indicato da --name (lato target/nuovo) con il suo padre, risolto dalla configurazione locale, oppure con un repository --base esplicito (lato base/vecchio). Solo metadati e indipendente dalla dimensione: confronta le immagini LUKS cifrate a livello di blocco senza decifrarle, quindi un repo da 1 GB e uno da 100 GB vengono confrontati negli stessi millisecondi.",
+        "description": "Diff a livello di file in stile git fra due repository forkati con copy-on-write. Riporta i file aggiunti, modificati, eliminati e rinominati. Confronta il repository indicato dal <ref> posizionale (lato target/nuovo) con il suo padre, risolto dalla configurazione locale, oppure con un repository --base esplicito (lato base/vecchio). Solo metadati e indipendente dalla dimensione: confronta le immagini LUKS cifrate a livello di blocco senza decifrarle, quindi un repo da 1 GB e uno da 100 GB vengono confrontati negli stessi millisecondi.",
         "descriptionShort": "Diff file in stile git fra due repository forkati (A/M/D/R)",
         "failed": "Diff fallito",
         "fastOption": "Affidati al filtro a blocchi; salta la conferma via hash del contenuto (può sovra-segnalare Modificato)",
