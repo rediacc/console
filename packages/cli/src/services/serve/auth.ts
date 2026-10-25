@@ -12,6 +12,7 @@
  * server, not from anything the caller can assert.
  */
 
+import { deadlineFetch, describeFetchError } from './account-fetch.js';
 import type { SessionPrincipal } from './sessions.js';
 
 /** How long a resolved identity is trusted before re-asking the account server. */
@@ -74,7 +75,7 @@ export class AuthVerifier {
     this.accountUrl = options.accountUrl.replace(/\/+$/, '');
     this.executorToken = options.executorToken;
     this.requiredScope = options.requiredScope ?? 'proxy:exec';
-    this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
+    this.fetchImpl = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
     this.now = options.now ?? Date.now;
   }
 
@@ -156,7 +157,7 @@ export class AuthVerifier {
     } catch (error) {
       return {
         ok: false,
-        reason: `the account server could not be asked for the executor token's scopes (${error instanceof Error ? error.message : String(error)})`,
+        reason: `the account server could not be asked for the executor token's scopes (${describeFetchError(error)})`,
       };
     }
     if (!body.active) return { ok: false, reason: 'the executor token is not active' };

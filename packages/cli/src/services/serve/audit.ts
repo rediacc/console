@@ -23,6 +23,7 @@
 import { randomUUID } from 'node:crypto';
 import { type AuditEvent, functionNameToEventType } from '@rediacc/shared';
 import { VERSION } from '../../version.js';
+import { deadlineFetch } from './account-fetch.js';
 import type { ExecutorAuditEvent } from './deps.js';
 
 export interface ExecutorAuditOptions {
@@ -113,7 +114,7 @@ function mappedEvent(
 export function createExecutorAudit(
   options: ExecutorAuditOptions
 ): (event: ExecutorAuditEvent) => Promise<void> {
-  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const fetchImpl = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
   const accountUrl = options.accountUrl.replace(/\/+$/, '');
 
   return async (event: ExecutorAuditEvent): Promise<void> => {

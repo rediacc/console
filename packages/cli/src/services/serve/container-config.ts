@@ -33,6 +33,7 @@ import { fromBase64, importAesKey } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { decryptConfigPullPayload } from '@rediacc/shared/config-schema';
+import { deadlineFetch } from './account-fetch.js';
 import { AuthError } from './auth.js';
 import { SessionError, type SessionPrincipal, SessionStore } from './sessions.js';
 
@@ -74,7 +75,7 @@ export function createContainerConfigLoader(
   options: ContainerConfigLoaderOptions
 ): (principal: SessionPrincipal) => Promise<RdcConfig> {
   const accountUrl = options.accountUrl.replace(/\/+$/, '');
-  const doFetch = options.fetchImpl ?? globalThis.fetch;
+  const doFetch = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
   const { sessions, executorToken } = options;
 
   /** sessionId -> decrypted config. RAM only; never serialized, never written. */
@@ -190,7 +191,7 @@ export function createExecutorGrantRecorder(
   options: ExecutorGrantRecorderOptions
 ): (sessionId: string, bearerToken: string) => Promise<void> {
   const accountUrl = options.accountUrl.replace(/\/+$/, '');
-  const doFetch = options.fetchImpl ?? globalThis.fetch;
+  const doFetch = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
 
   return async function recordGrant(sessionId: string, bearerToken: string): Promise<void> {
     const response = await doFetch(`${accountUrl}/account/api/v1/configs/executor-grant`, {
