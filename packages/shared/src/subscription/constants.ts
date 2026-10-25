@@ -81,10 +81,14 @@ export interface BackupRetentionKnobs {
  * is refused. Kept beside PLAN_LIMITS rather than inside it because
  * PLAN_LIMITS is a flat number map that the generated subscription schema and
  * renet's schema test read as `map[string]map[string]int`.
+ *
+ * `allowKeepAll` says whether a declared policy with every knob unset (keep
+ * every snapshot, bounded only by the storage quota) is offered. COMMUNITY
+ * does not offer it.
  */
 export const PLAN_BACKUP_RETENTION: Record<
   PlanCode,
-  { default: BackupRetentionKnobs; limit: BackupRetentionKnobs }
+  { default: BackupRetentionKnobs; limit: BackupRetentionKnobs; allowKeepAll: boolean }
 > = {
   COMMUNITY: {
     default: {
@@ -103,6 +107,7 @@ export const PLAN_BACKUP_RETENTION: Record<
       keepMonthly: 0,
       keepYearly: 0,
     },
+    allowKeepAll: false,
   },
   PROFESSIONAL: {
     default: {
@@ -121,6 +126,7 @@ export const PLAN_BACKUP_RETENTION: Record<
       keepMonthly: 6,
       keepYearly: 0,
     },
+    allowKeepAll: true,
   },
   BUSINESS: {
     default: {
@@ -139,6 +145,7 @@ export const PLAN_BACKUP_RETENTION: Record<
       keepMonthly: 12,
       keepYearly: 1,
     },
+    allowKeepAll: true,
   },
   ENTERPRISE: {
     default: {
@@ -157,6 +164,7 @@ export const PLAN_BACKUP_RETENTION: Record<
       keepMonthly: 24,
       keepYearly: 7,
     },
+    allowKeepAll: true,
   },
 } as const;
 
