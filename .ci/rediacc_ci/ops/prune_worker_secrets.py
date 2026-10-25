@@ -27,6 +27,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 from typing import TYPE_CHECKING
@@ -184,6 +185,27 @@ def survey(rows: list[Row], account: str, token: str, fetch: Fetch) -> list[Row]
     return rows
 
 
+# The secrets listing lags a PUT by a few seconds (measured 2026-10-25: 4 of 8 archives on
+# edge-rediacc-account-us were absent from the first listing and present on the next run).
+LIST_ATTEMPTS = 5
+LIST_PAUSE_S = 3.0
+
+
+def archive_listed(
+    account: str, worker: str, archive: str, token: str, fetch: Fetch, sleep=time.sleep
+) -> bool:
+    """True once `archive` appears in the Worker's secret listing, polling LIST_ATTEMPTS times."""
+    for attempt in range(LIST_ATTEMPTS):
+        listed = fetch("GET", secrets_path(account, worker), token)
+        if isinstance(listed, list) and archive in {
+            str(item.get("name")) for item in listed if isinstance(item, dict)
+        }:
+            return True
+        if attempt + 1 < LIST_ATTEMPTS:
+            sleep(LIST_PAUSE_S)
+    return False
+
+
 def delete_extras(
     rows: list[Row], account: str, token: str, fetch: Fetch
 ) -> tuple[list[str], list[str]]:
@@ -263,10 +285,7 @@ def archive_extras(
                     token,
                     {"name": archive, "text": value, "type": TEXT_BINDING},
                 )
-                listed = fetch("GET", secrets_path(account, row.worker), token)
-                if not isinstance(listed, list) or archive not in {
-                    str(item.get("name")) for item in listed if isinstance(item, dict)
-                }:
+                if not archive_listed(account, row.worker, archive, token, fetch):
                     raise ApiError("%s is not listed after the PUT on %s" % (archive, row.worker))
                 fetch("DELETE", secrets_path(account, row.worker, name), token)
             except ApiError as exc:

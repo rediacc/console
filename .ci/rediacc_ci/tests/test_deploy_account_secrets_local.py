@@ -354,7 +354,32 @@ def test_prune_archive_dry_run_writes_nothing():
     assert any(line.startswith("would archive") for line in lines)
 
 
-def test_prune_archive_keeps_the_original_when_the_archive_is_not_listed():
+def test_prune_archive_waits_for_a_listing_that_lags_the_put(monkeypatch):
+    monkeypatch.setattr(prune, "LIST_PAUSE_S", 0)
+
+    class Lagging(_Api):
+        gets = 0
+
+        def __call__(self, method, path, token, body=None):
+            if method == "GET" and self.bodies:
+                Lagging.gets += 1
+                if Lagging.gets < 3:
+                    return [
+                        r
+                        for r in self.live["rediacc-account-eu"]
+                        if not r["name"].startswith("__ARCHIVE_")
+                    ]
+            return super().__call__(method, path, token, body)
+
+    api = Lagging({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
+    assert rc == 0
+    assert "deleted rediacc-account-eu: API_KEY" in lines
+
+
+def test_prune_archive_keeps_the_original_when_the_archive_is_not_listed(monkeypatch):
+    monkeypatch.setattr(prune, "LIST_PAUSE_S", 0)
+
     class Lossy(_Api):
         def __call__(self, method, path, token, body=None):
             if body is not None:
