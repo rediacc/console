@@ -98,12 +98,6 @@ PACKAGES: dict[str, str | dict[str, str]] = {
     },
     "pkg/embed": HASH,
     "pkg/infra/image": HASH,
-    # The rclone install the image build bakes in (image.BuildOptions.PostSetupScripts <- docker.EnsureRcloneScript, renet #fcd7316f): service.go renders it, and its edits change what the baked disk holds.
-    "pkg/infra/docker": HASH,
-    # aptretry.Shell renders the bounded apt loop at the head of that baked rclone install script.
-    "pkg/infra/aptretry": HASH,
-    # service.go imports the zot registry wiring for worker setup, which shapes no baked disk.
-    "pkg/kube/registry": EXCLUDE,
     "pkg/infra/opsconfig": {
         "images.go": HASH,
         "config.go": EXCLUDE,
