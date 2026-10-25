@@ -625,3 +625,123 @@ def test_the_real_trees_excluded_dirs_carry_no_regex_metacharacters() -> None:
     assert dirs, "the exclusion found NOTHING, so this check would be vacuous"
     bad = [d for d in dirs if any(ch in d for ch in ".*[]^$\\+?(){}|")]
     assert bad == [], f"a BRE metacharacter in an excluded path: {bad}"
+
+
+# --------------------------------------------------------------------------- Build-tagged markers (PLAN-backup-program J1) ---------------------------------------------------------------------------
+
+# A package whose ONLY marker sits in a test file behind a build tag the default build does not set: `go test` here never compiles that file, so the package is safe to run and belongs in the subset. `pkg/chunkstore` and `pkg/delta` are this shape on the real tree (`//go:build btrfs`).
+TAGGED = {
+    f"{RENET}/pkg/tagged/tagged.go": "package tagged\n\nfunc G() int { return 6 }\n",
+    f"{RENET}/pkg/tagged/tagged_test.go": (
+        'package tagged\n\nimport "testing"\n\nfunc TestG(t *testing.T) '
+        '{ if G() != 6 { t.Fatal("no") } }\n'
+    ),
+    f"{RENET}/pkg/tagged/root_test.go": (
+        '//go:build btrfs\n\npackage tagged\n\nimport (\n\t"os"\n\t"testing"\n)\n\n'
+        'func TestRoot(t *testing.T) {\n\tif os.Geteuid() != 0 {\n\t\tt.Fatal("root only")\n\t}\n}\n'
+    ),
+}
+
+
+def test_a_marker_behind_an_unset_build_tag_does_not_exclude_the_package(
+    tmp_path: pathlib.Path,
+) -> None:
+    fixture = build_fixture(tmp_path, files={**PLAIN, **PRIV, **TAGGED})
+    new = subprocess.run(
+        ["python3", "-m", PORT_MODULE],
+        timeout=600,
+        check=False,
+        env=_env(fixture),
+        cwd=str(fixture),
+        capture_output=True,
+        text=True,
+    )
+    assert new.returncode == 0, new.stderr
+    assert "4 ./pkg/... package(s) have tests; 1 excluded as root-only; 3 in the subset" in (
+        new.stdout
+    )
+    assert "  - pkg/priv\n" in new.stdout
+    assert "  - pkg/tagged" not in new.stdout
+
+    # THE CONTROL: drop the build tag and the same marker excludes the package again.
+    untagged = dict(TAGGED)
+    untagged[f"{RENET}/pkg/tagged/root_test.go"] = untagged[
+        f"{RENET}/pkg/tagged/root_test.go"
+    ].replace("//go:build btrfs\n\n", "")
+    control = build_fixture(tmp_path / "control", files={**PLAIN, **PRIV, **untagged})
+    ctl = subprocess.run(
+        ["python3", "-m", PORT_MODULE],
+        timeout=600,
+        check=False,
+        env=_env(control),
+        cwd=str(control),
+        capture_output=True,
+        text=True,
+    )
+    assert "2 excluded as root-only; 2 in the subset" in ctl.stdout, ctl.stdout
+    assert "  - pkg/tagged\n" in ctl.stdout
+
+
+def test_built_test_files_reads_the_tab_separated_listing() -> None:
+    listing = "/w/pkg/a\ta_test.go\tx_test.go\n/w/pkg/b\n/w/pkg/c d\tc_test.go\n"
+    assert go_unit.built_test_files(listing) == {
+        "/w/pkg/a/a_test.go",
+        "/w/pkg/a/x_test.go",
+        "/w/pkg/c d/c_test.go",
+    }
+    assert go_unit.built_test_files("") == set()
+
+
+def test_excluded_dirs_with_built_scans_only_the_built_files(tmp_path: pathlib.Path) -> None:
+    renet = tmp_path / "renet"
+    (renet / "pkg" / "t").mkdir(parents=True)
+    (renet / "pkg" / "t" / "plain_test.go").write_text("package t\n", encoding="utf-8")
+    tagged = renet / "pkg" / "t" / "root_test.go"
+    tagged.write_text("//go:build btrfs\n\npackage t\n// os.Geteuid()\n", encoding="utf-8")
+    assert go_unit.excluded_dirs(renet) == ["pkg/t"]
+    built = {str(renet / "pkg" / "t" / "plain_test.go")}
+    assert go_unit.excluded_dirs(renet, built) == []
+    assert go_unit.excluded_dirs(renet, built | {str(tagged)}) == ["pkg/t"]
+
+
+def test_watched_report_counts_tests_and_names_the_state(tmp_path: pathlib.Path) -> None:
+    renet = tmp_path / "renet"
+    pkg = renet / "pkg" / "chunkstore"
+    pkg.mkdir(parents=True)
+    f = pkg / "a_test.go"
+    f.write_text(
+        "package chunkstore\n\nfunc TestOne(t *testing.T) {}\nfunc TestTwo(t *testing.T) {}\n"
+        "func helper(t *testing.T) {}\n",
+        encoding="utf-8",
+    )
+    lines = go_unit.watched_report(renet, {str(f)}, [])
+    assert lines == [
+        "proxy go-unit: pkg/chunkstore: in the subset, 2 Test function(s) in its default-build test files"
+    ]
+    lines = go_unit.watched_report(renet, {str(f)}, ["pkg/chunkstore"])
+    assert "EXCLUDED (root-only)" in lines[0]
+
+
+def test_the_real_tree_runs_the_chunk_store_tests() -> None:
+    """J1's acceptance on the real tree: pkg/chunkstore is in the subset with a non-zero Test count."""
+    renet = ROOT / "private" / "renet"
+    if not (renet / "pkg" / "chunkstore").is_dir():
+        pytest.skip("private/renet is not checked out")
+    listing = subprocess.run(
+        ["go", "list", "-f", go_unit.GO_LIST_TEST_FILES_FORMAT, "./pkg/..."],
+        cwd=str(renet),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=600,
+    ).stdout
+    built = go_unit.built_test_files(listing)
+    assert built, "go list reported no test files, so this check would be vacuous"
+    excluded = go_unit.excluded_dirs(renet, built)
+    assert "pkg/chunkstore" not in excluded
+    report = [
+        line for line in go_unit.watched_report(renet, built, excluded) if "pkg/chunkstore" in line
+    ]
+    assert report
+    assert "in the subset" in report[0]
+    assert int(report[0].split(", ")[1].split()[0]) > 0

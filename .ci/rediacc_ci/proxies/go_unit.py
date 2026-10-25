@@ -46,6 +46,13 @@ diverge, and that is recorded here rather than silently normalised.
 
 `:117` is `printf ' - %s\\n' $EXCLUDED_DIRS`, UNQUOTED -- deliberate word splitting so one line prints per directory. It also globs, which is why `_print_excluded` splits on whitespace rather than on newlines: the bytes are the same for these names and the shape is the twin's.
 
+-----------------------------------------------------------------------------
+BUILD-TAGGED TEST FILES DO NOT EXCLUDE A PACKAGE (2026-10-25, PLAN-backup-program J1)
+-----------------------------------------------------------------------------
+The marker scan used to read EVERY `*_test.go` on disk, including files behind a build constraint the default build never compiles. `pkg/chunkstore` and `pkg/delta` keep their root and btrfs tests behind `//go:build btrfs`, so the markers in those files excluded both packages although a plain `go test` here compiles none of them, and the chunk-store unit tests never ran before a push. The scan now reads only the test files `go list` reports for the default build (`TestGoFiles` and `XTestGoFiles`, see `built_test_files`), which is exactly the set `go test` compiles; a file behind a tag that is not set cannot run here, so its markers cannot make the package unsafe. The predicate itself is unchanged. A package whose UNTAGGED tests carry a marker is still excluded, which is why `pkg/datastore` moved its one root-only test behind `//go:build root`.
+
+The proxy also prints, for each package in `WATCHED`, whether it is in the subset and how many `Test` functions its default-build test files declare, so a package dropping out of the local run is a visible line rather than a missing one.
+
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-go-unit.observations.jsonl`.
 """
 
@@ -63,6 +70,16 @@ from rediacc_ci.core import proxyx
 EXCLUDE_RE = re.compile(r"Geteuid|RequireRoot|requireRoot|testutil\.|Getuid")
 
 GO_LIST_FORMAT = "{{.ImportPath}} {{len .TestGoFiles}} {{len .XTestGoFiles}} {{.Dir}}"
+
+# One line per package: the directory, then each test file of the DEFAULT build, tab-separated. Tabs, because a directory may hold a space and Go file names hold neither.
+GO_LIST_TEST_FILES_FORMAT = (
+    "{{.Dir}}{{range .TestGoFiles}}\t{{.}}{{end}}{{range .XTestGoFiles}}\t{{.}}{{end}}"
+)
+
+# Packages whose presence in the subset is reported by name, with their Test count.
+WATCHED = ("pkg/chunkstore", "pkg/delta", "pkg/datastore")
+
+TEST_FUNC_RE = re.compile(r"^func (Test[A-Za-z0-9_]*)\(t \*testing\.T\)", re.MULTILINE)
 
 
 def _proxy_root() -> pathlib.Path:
@@ -90,16 +107,33 @@ def candidates(listing: str) -> list[str]:
     return out
 
 
-def excluded_dirs(renet: pathlib.Path) -> list[str]:
+def built_test_files(listing: str) -> set[str]:
+    """The absolute paths of every test file the default build compiles, from a `GO_LIST_TEST_FILES_FORMAT` listing."""
+    out: set[str] = set()
+    for line in listing.split("\n"):
+        fields = line.split("\t")
+        if len(fields) < 2 or not fields[0]:
+            continue
+        for name in fields[1:]:
+            if name:
+                out.add(str(pathlib.Path(fields[0]) / name))
+    return out
+
+
+def excluded_dirs(renet: pathlib.Path, built: set[str] | None = None) -> list[str]:
     """`grep -rlE '<markers>' pkg/ --include='*_test.go' | xargs -r -n1 dirname | sort -u`.
 
-    Relative to `renet`, exactly as the twin's `cd` makes them.
+    Relative to `renet`, exactly as the twin's `cd` makes them. With `built` (absolute paths from `built_test_files`), only those files are scanned: a test file behind a build tag the default build does not set never compiles here, so its markers cannot make the package unsafe to run. Without it every `*_test.go` on disk is scanned, the twin's shape.
     """
     found: set[str] = set()
     pkg = renet / "pkg"
     if not pkg.is_dir():
         return []
+    # Compared through realpath: `go list` reports a symlinked checkout under its resolved directory, while rglob walks the link.
+    real_built = {os.path.realpath(p) for p in built} if built is not None else None
     for path in pkg.rglob("*_test.go"):
+        if real_built is not None and os.path.realpath(path) not in real_built:
+            continue
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
@@ -107,6 +141,31 @@ def excluded_dirs(renet: pathlib.Path) -> list[str]:
         if EXCLUDE_RE.search(text):
             found.add(str(path.parent.relative_to(renet)))
     return sorted(found)
+
+
+def watched_report(renet: pathlib.Path, built: set[str], excluded: list[str]) -> list[str]:
+    """One line per `WATCHED` package: in the subset or excluded, and how many `Test` functions its default-build test files declare."""
+    lines: list[str] = []
+    for rel in WATCHED:
+        count = 0
+        want = os.path.realpath(renet / rel)
+        for path in sorted(built):
+            if os.path.realpath(pathlib.Path(path).parent) == want:
+                try:
+                    count += len(
+                        TEST_FUNC_RE.findall(
+                            pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
+                        )
+                    )
+                except OSError:
+                    continue
+        if not (renet / rel).is_dir():
+            continue
+        state = "EXCLUDED (root-only)" if rel in excluded else "in the subset"
+        lines.append(
+            f"proxy go-unit: {rel}: {state}, {count} Test function(s) in its default-build test files"
+        )
+    return lines
 
 
 def _is_excluded(rel: str, excluded: list[str]) -> bool:
@@ -234,11 +293,23 @@ def run() -> int:
         )
         return proxyx.PROXY_CANNOT_RUN
 
+    test_files = subprocess.run(
+        ["go", "list", "-f", GO_LIST_TEST_FILES_FORMAT, "./pkg/..."],
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        check=False,
+    ).stdout
+    built = built_test_files(test_files)
+
     cands = candidates(listing)
     cand_n = len(cands)
-    excluded = excluded_dirs(renet)
+    excluded = excluded_dirs(renet, built)
     excl_n = len(excluded)
-    subset = subset_of(cands, cwd, excluded)
+    # `go list` reports `.Dir` resolved, so the prefix it is stripped of must be too: through a symlinked checkout the unresolved cwd matched nothing and every root-only package stayed in the subset.
+    subset = subset_of(cands, os.path.realpath(cwd), excluded)
 
     print(
         f"proxy go-unit: {cand_n} ./pkg/... package(s) have tests; "
@@ -249,6 +320,9 @@ def run() -> int:
         print(f"{yel}proxy go-unit: NOT EXERCISED HERE (root-only, CI runs them under sudo):{off}")
         for word in " ".join(excluded).split():
             print(f"  - {word}")
+
+    for line in watched_report(renet, built, excluded):
+        print(line)
 
     if not subset:
         red, off = p._c(proxyx.RED), p._c(proxyx.OFF)
