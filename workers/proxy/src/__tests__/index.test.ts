@@ -35,18 +35,38 @@ vi.mock('@cloudflare/containers', () => ({
   },
 }));
 
-import worker, { type Env, ExecutorContainer, forwardAccountEgress } from '../index';
+import { forwardAccountEgress } from '../egress';
+import worker, { type Env, ExecutorContainer } from '../index';
+import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
+import { resetReadyCache } from '../ready';
 
 const ACCOUNT_URL = 'https://account.test';
-const EXECUTOR_TOKEN = 'rdt_executor_secret';
+/** What the fake ISSUER mints; the Worker introspects with it. */
+const ISSUED = 'rdt_issued_secret';
+/** The literal the container holds (src/egress.ts EXECUTOR_TOKEN_PLACEHOLDER). */
+const PLACEHOLDER = 'rediacc-executor-placeholder';
 const CALLER = 'rdt_caller';
+
+/** An ISSUER binding that mints ISSUED for 45 minutes, or throws when `refuse` is set. */
+function fakeIssuer(refuse = false): Service<ExecutorIssuerRpc> {
+  return {
+    issue: () =>
+      refuse
+        ? Promise.reject(new Error('owner lost admin'))
+        : Promise.resolve({
+            token: ISSUED,
+            expiresAt: new Date(Date.now() + 45 * 60_000).toISOString(),
+          }),
+    fetch: () => Promise.reject(new Error('the issuer has no fetch')),
+  } as unknown as Service<ExecutorIssuerRpc>;
+}
 
 function env(overrides: Partial<Env> = {}): Env {
   return {
     // Never dereferenced: getContainer is the stub above.
     EXECUTOR: null as never,
     ACCOUNT_URL,
-    EXECUTOR_TOKEN,
+    ISSUER: fakeIssuer(),
     ...overrides,
   };
 }
@@ -57,8 +77,7 @@ const accountFetch = vi.fn((url: string | URL, init?: RequestInit) => {
   expect(String(url)).toBe(`${ACCOUNT_URL}/account/api/v1/proxy/introspect`);
   const auth = new Headers(init?.headers).get('authorization');
   const { token } = JSON.parse(String(init?.body)) as { token: string };
-  if (auth !== `Bearer ${EXECUTOR_TOKEN}`)
-    return Promise.resolve(new Response('no', { status: 401 }));
+  if (auth !== `Bearer ${ISSUED}`) return Promise.resolve(new Response('no', { status: 401 }));
   if (introspection === 'http-500') return Promise.resolve(new Response('boom', { status: 500 }));
   return Promise.resolve(Response.json(token === CALLER ? introspection : { active: false }));
 });
@@ -70,6 +89,8 @@ function request(path: string, token?: string): Request {
 }
 
 beforeEach(() => {
+  resetIssuedTokenCache();
+  resetReadyCache();
   routed.tenants = [];
   accountFetch.mockClear();
   introspection = { active: true, scopes: ['proxy:exec'], orgId: 'org-1', teamId: 'team-1' };
@@ -143,17 +164,22 @@ describe('the auth gate', () => {
     });
   }
 
-  it('answers 401, not 500, when the Worker has no EXECUTOR_TOKEN, and never introspects', async () => {
-    const response = await worker.fetch(
-      request('/v1/server-info', CALLER),
-      env({ EXECUTOR_TOKEN: undefined as unknown as string })
-    );
+  for (const [name, issuer] of [
+    ['the issuer refuses', fakeIssuer(true)],
+    ['there is no ISSUER binding', undefined],
+  ] as const) {
+    it(`answers 503, not 401 or 500, when ${name}, and never introspects`, async () => {
+      const response = await worker.fetch(
+        request('/v1/server-info', CALLER),
+        env({ ISSUER: issuer })
+      );
 
-    expect(response.status).toBe(401);
-    // Without the guard the Worker would introspect with "Bearer undefined".
-    expect(accountFetch).not.toHaveBeenCalled();
-    expect(routed.tenants).toEqual([]);
-  });
+      expect(response.status).toBe(503);
+      // Without the guard the Worker would introspect with "Bearer undefined".
+      expect(accountFetch).not.toHaveBeenCalled();
+      expect(routed.tenants).toEqual([]);
+    });
+  }
 });
 
 describe('tenant routing', () => {
@@ -175,25 +201,28 @@ describe('tenant routing', () => {
     expect(routed.tenants).toEqual(['org-2:default', 'org-3:default']);
   });
 
-  it('introspects with the Worker token, never the caller token', async () => {
+  it('introspects with the issued token, never the caller token', async () => {
     await worker.fetch(request('/v1/command', CALLER), env());
 
     const init = accountFetch.mock.calls[0]?.[1];
-    expect(new Headers(init?.headers).get('authorization')).toBe(`Bearer ${EXECUTOR_TOKEN}`);
+    expect(new Headers(init?.headers).get('authorization')).toBe(`Bearer ${ISSUED}`);
     expect(JSON.parse(String(init?.body))).toEqual({ token: CALLER });
   });
 });
 
 describe('ExecutorContainer (B1)', () => {
-  it('hands the container its account token and account server', () => {
+  it('hands the container the placeholder token and the intercepted account host, never a real token', async () => {
+    // A warm cache is the worst case: the issued token exists in the isolate when the container is built.
+    await worker.fetch(request('/v1/command', CALLER), env());
     const container = new ExecutorContainer({} as never, env());
 
     // `rdc serve` exits at boot without REDIACC_TOKEN (packages/cli/src/commands/serve.ts).
     expect(container.envVars).toEqual({
-      REDIACC_TOKEN: EXECUTOR_TOKEN,
-      REDIACC_ACCOUNT_SERVER: ACCOUNT_URL,
+      REDIACC_TOKEN: PLACEHOLDER,
+      REDIACC_ACCOUNT_SERVER: `http://${ACCOUNT_EGRESS_HOST}`,
       REDIACC_REGION: 'eu',
     });
+    expect(JSON.stringify(container.envVars)).not.toContain(ISSUED);
   });
 
   it('passes the configured region to the container', () => {
@@ -221,9 +250,12 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     return env({ ACCOUNT: binding as unknown as Fetcher });
   }
 
-  it('points the container at the intercepted host when the Worker holds the ACCOUNT binding', () => {
-    const container = new ExecutorContainer({} as never, boundEnv([]));
-    expect(container.envVars.REDIACC_ACCOUNT_SERVER).toBe(`http://${ACCOUNT_EGRESS_HOST}`);
+  it('points the container at the intercepted host with or without the ACCOUNT binding', () => {
+    for (const e of [boundEnv([]), env()]) {
+      expect(new ExecutorContainer({} as never, e).envVars.REDIACC_ACCOUNT_SERVER).toBe(
+        `http://${ACCOUNT_EGRESS_HOST}`
+      );
+    }
   });
 
   it('files its handler in the library registry, where ContainerProxy looks it up, for exactly that host', () => {
@@ -234,13 +266,17 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     ]);
   });
 
-  it('forwards an intercepted account call over the binding, keeping method, path, query, headers and body', async () => {
+  it('forwards an intercepted account call over the binding, keeping method, path, headers and body, with the issued token', async () => {
     const seen: Request[] = [];
     const intercepted = new Request(
-      `http://${ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/introspect?x=1`,
+      `http://${ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/introspect`,
       {
         method: 'POST',
-        headers: { authorization: `Bearer ${EXECUTOR_TOKEN}`, host: ACCOUNT_EGRESS_HOST },
+        headers: {
+          authorization: `Bearer ${PLACEHOLDER}`,
+          host: ACCOUNT_EGRESS_HOST,
+          'x-trace': 'kept',
+        },
         body: JSON.stringify({ token: CALLER }),
       }
     );
@@ -251,9 +287,10 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     expect(await response.json()).toEqual({ via: 'binding' });
     expect(accountFetch).not.toHaveBeenCalled();
     expect(seen).toHaveLength(1);
-    expect(seen[0]?.url).toBe(`${ACCOUNT_URL}/account/api/v1/proxy/introspect?x=1`);
+    expect(seen[0]?.url).toBe(`${ACCOUNT_URL}/account/api/v1/proxy/introspect`);
     expect(seen[0]?.method).toBe('POST');
-    expect(seen[0]?.headers.get('authorization')).toBe(`Bearer ${EXECUTOR_TOKEN}`);
+    expect(seen[0]?.headers.get('authorization')).toBe(`Bearer ${ISSUED}`);
+    expect(seen[0]?.headers.get('x-trace')).toBe('kept');
     // The container's Host names account.internal; carried onward it breaks a public fetch at DNS.
     expect(seen[0]?.headers.get('host')).toBeNull();
     expect(await seen[0]?.json()).toEqual({ token: CALLER });
@@ -264,7 +301,11 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     vi.stubGlobal('fetch', forwarded);
 
     const response = await forwardAccountEgress(
-      new Request(`http://${ACCOUNT_EGRESS_HOST}/account/api/v1/configs/executor-token`),
+      new Request(`http://${ACCOUNT_EGRESS_HOST}/account/api/v1/configs/executor-token`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${PLACEHOLDER}` },
+        body: '{}',
+      }),
       env()
     );
 
@@ -384,7 +425,7 @@ describe('span attributes (telemetry export T14)', () => {
   }
 
   it('no token, org, team or tenant value lands in any attribute or log line, on any outcome', async () => {
-    const secrets = [CALLER, EXECUTOR_TOKEN, 'org-1', 'team-1', 'org-1:team-1'];
+    const secrets = [CALLER, ISSUED, 'org-1', 'team-1', 'org-1:team-1'];
     const all: Record<string, unknown>[] = [];
     const logged: string[] = [];
     // Logs leave the platform too (wrangler.toml and wrangler.bench.toml name a logs destination),

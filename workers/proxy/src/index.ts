@@ -23,6 +23,9 @@
  */
 
 import { Container, getContainer } from '@cloudflare/containers';
+import { EXECUTOR_TOKEN_PLACEHOLDER, forwardAccountEgress } from './egress';
+import { type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
+import { readiness } from './ready';
 
 // Outbound interception (ExecutorContainer.outboundByHost) runs through this entrypoint; without the re-export a container start fails with "ctx.exports.ContainerProxy is undefined".
 export { ContainerProxy } from '@cloudflare/containers';
@@ -31,8 +34,12 @@ export interface Env {
   EXECUTOR: DurableObjectNamespace<ExecutorContainer>;
   /** Account server base URL, e.g. https://eu.rediacc.com */
   ACCOUNT_URL: string;
-  /** This executor fleet's own account token, carrying proxy:exec. */
-  EXECUTOR_TOKEN: string;
+  /**
+   * Service binding to the regional account Worker's `ExecutorIssuer` entrypoint, which mints this executor's short-lived account token (`proxy:exec` and `audit:write`) on each `issue()` call. src/issued-token.ts caches the token and renews it at 80% of its life. The container never sees it: it holds a placeholder that src/egress.ts swaps on the way out.
+   */
+  ISSUER?: Service<ExecutorIssuerRpc>;
+  /** The `[version_metadata]` binding: `/v1/ready` answers its `id` as `workerVersion`, so a deploy smoke can tell the new version from one still rolling out. */
+  CF_VERSION_METADATA?: WorkerVersionMetadata;
   /**
    * Service binding to the regional account worker. `proxy.eu.rediacc.com` and `eu.rediacc.com` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
    */
@@ -86,49 +93,22 @@ function tagRequest(span: RuntimeSpan | undefined, request: Request, env: Env): 
 /**
  * The environment `rdc serve --mode container` boots with.
  *
- * `rdc serve` refuses to start without REDIACC_TOKEN (packages/cli/src/commands/serve.ts), and it verifies callers, pulls configs and posts audit events against REDIACC_ACCOUNT_SERVER. The Worker's own EXECUTOR_TOKEN is the first; the second is ACCOUNT_URL, or `http://account.internal` when the Worker holds the ACCOUNT binding (ACCOUNT_EGRESS_HOST says why). Nothing else hands them to the container, so an instance built without them exits at boot.
+ * `rdc serve` refuses to start without REDIACC_TOKEN (packages/cli/src/commands/serve.ts), and it verifies callers, pulls configs and posts audit events against REDIACC_ACCOUNT_SERVER. REDIACC_TOKEN is a fixed placeholder that authenticates nothing: the container's account calls all go to `http://account.internal` (ACCOUNT_EGRESS_HOST says why), and src/egress.ts swaps the placeholder for the issued token on the four calls that need it. No real token ever enters the container's environment. Nothing else hands these to the container, so an instance built without them exits at boot.
  */
 export function executorEnvVars(env: Env): Record<string, string> {
   return {
-    REDIACC_TOKEN: env.EXECUTOR_TOKEN,
-    REDIACC_ACCOUNT_SERVER: env.ACCOUNT ? `http://${ACCOUNT_EGRESS_HOST}` : env.ACCOUNT_URL,
+    REDIACC_TOKEN: EXECUTOR_TOKEN_PLACEHOLDER,
+    REDIACC_ACCOUNT_SERVER: `http://${ACCOUNT_EGRESS_HOST}`,
     REDIACC_REGION: configured(env.REGION, DEFAULT_REGION),
   };
 }
 
 /**
- * The host the container addresses the account server by when the Worker holds the ACCOUNT binding.
+ * The host the container addresses the account server by.
  *
- * EXECUTOR_TOKEN is bound to Cloudflare IP ranges, and a container's own public egress is outside them: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post the container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. So the container talks to this name instead, `ExecutorContainer.outboundByHost` intercepts it, and `forwardAccountEgress` sends it over the binding, where the account worker's CloudflareInternal entrypoint admits the `cloudflare`-bound token. The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than carrying the token over plain HTTP to the internet. Not exported: workerd treats every export of the main module as an entrypoint and refuses to start on a plain string (caught by check:ci-proxy-wrangler-dev-e2e).
+ * A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post the container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. So the container talks to this name instead, `ExecutorContainer.outboundByHost` intercepts it, and `forwardAccountEgress` (src/egress.ts) checks it against the allowlist, swaps the placeholder for the issued token, and sends it over the ACCOUNT binding (or to ACCOUNT_URL under `wrangler dev`, which has no binding). The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet. Not exported: workerd treats every export of the main module as an entrypoint and refuses to start on a plain string (caught by check:ci-proxy-wrangler-dev-e2e).
  */
 const ACCOUNT_EGRESS_HOST = 'account.internal';
-
-/** Forward one intercepted container request for ACCOUNT_EGRESS_HOST to the account server, over the binding when there is one. Only account API paths pass. */
-export async function forwardAccountEgress(request: Request, env: Env): Promise<Response> {
-  const url = new URL(request.url);
-  if (!url.pathname.startsWith('/account/')) {
-    return Response.json({ error: 'only account paths are forwarded' }, { status: 403 });
-  }
-  // Fresh headers without `host`: copied from the container's request it still names account.internal, and a public fetch carrying it fails at DNS with a 530 (bench, 2026-10-24, the first deploy of this forward).
-  const headers = new Headers(request.headers);
-  headers.delete('host');
-  const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
-  const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, {
-    method: request.method,
-    headers,
-    ...(hasBody ? { body: await request.arrayBuffer() } : {}),
-    redirect: 'manual',
-  });
-  const via = env.ACCOUNT ? 'binding' : 'fetch';
-  const response = await (env.ACCOUNT ? env.ACCOUNT.fetch(forwarded) : fetch(forwarded));
-  // A failed call logs its path and transport only, never a header or a body: this is what `wrangler tail` shows when a container call fails.
-  if (!response.ok) {
-    console.warn(
-      `proxy: account egress ${request.method} ${url.pathname} via ${via} -> ${response.status}`
-    );
-  }
-  return response;
-}
 
 export class ExecutorContainer extends Container<Env> {
   // The container's account traffic, routed through the Worker's binding (ACCOUNT_EGRESS_HOST says why). An ASSIGNMENT in a static block, never a `static outboundByHost = ...` field: @cloudflare/containers keeps the handlers in a registry behind an inherited static setter keyed by class name, and under ES2022 define semantics a field becomes an own property that shadows the setter, so the registry stays empty, ContainerProxy finds no handler and the request falls through to a plain fetch of account.internal that dies at DNS with a 530 (bench, 2026-10-24, two deploys).
@@ -164,38 +144,45 @@ interface Introspection {
 }
 
 /**
- * Resolve the tenant behind a token, via the account server.
- *
- * Returns null for anything that is not an active proxy:exec token in a real
- * org. The Worker deliberately learns nothing else: it needs a routing key, not
- * an identity. The executor does the real verification again on its own.
- */
-/**
  * Log WHY a caller was refused, as a reason code only (never a token), then answer it as a Refusal.
  *
  * Every refusal used to be a silent null, so the first Phase 2 deploy (2026-09-24) could say only "401" while its cause stayed invisible even in `wrangler tail`.
  */
-function refuse(reason: string): Refusal {
+function refuse(reason: string, unavailable = false): Refusal {
   console.warn(`proxy: caller refused: ${reason}`);
-  return { reason };
+  return { reason, unavailable };
 }
 
 interface Refusal {
   reason: string;
+  /** The Worker could not obtain its own token: a 503, not the caller's 401. */
+  unavailable: boolean;
 }
 
+/**
+ * Resolve the tenant behind a token, via the account server.
+ *
+ * Returns a Refusal for anything that is not an active proxy:exec token in a real
+ * org. The Worker deliberately learns nothing else: it needs a routing key, not
+ * an identity. The executor does the real verification again on its own.
+ */
 async function resolveTenant(request: Request, env: Env): Promise<string | Refusal> {
   const auth = request.headers.get('authorization');
   const token = auth?.replace(/^Bearer\s+/i, '').trim();
   if (!token) return refuse('no-bearer');
-  // Without its own token the Worker cannot ask who a caller is. Refuse as unauthenticated rather than introspecting with "Bearer undefined" (or throwing a 500).
-  if (!env.EXECUTOR_TOKEN) return refuse('no-executor-token');
+  // Without its own issued token the Worker cannot ask who a caller is. The executor's credentials are the Worker's problem, not the caller's, so this refusal answers 503.
+  let executorToken: string;
+  try {
+    executorToken = await issuedToken(env.ISSUER);
+  } catch (error) {
+    return refuse(error instanceof IssuerError ? error.reason : 'issuer-refused', true);
+  }
 
   const url = `${env.ACCOUNT_URL}/account/api/v1/proxy/introspect`;
   const init: RequestInit = {
     method: 'POST',
     headers: {
-      authorization: `Bearer ${env.EXECUTOR_TOKEN}`,
+      authorization: `Bearer ${executorToken}`,
       'content-type': 'application/json',
     },
     body: JSON.stringify({ token }),
@@ -227,9 +214,24 @@ export default {
       return Response.json({ ok: true });
     }
 
+    if (url.pathname === '/v1/ready') {
+      const answer = await readiness(env);
+      span?.setAttribute(
+        'rediacc.proxy.outcome',
+        answer.status === 200 ? 'ready' : `not-ready:${answer.body.reason}`
+      );
+      return Response.json(answer.body, { status: answer.status });
+    }
+
     const tenant = await resolveTenant(request, env);
     if (typeof tenant !== 'string') {
       span?.setAttribute('rediacc.proxy.outcome', `refused:${tenant.reason}`);
+      if (tenant.unavailable) {
+        return Response.json(
+          { error: 'The executor could not obtain its own account token.' },
+          { status: 503 }
+        );
+      }
       return Response.json(
         { error: 'This request carried no usable token for the executor.' },
         { status: 401 }
