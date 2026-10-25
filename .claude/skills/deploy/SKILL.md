@@ -25,7 +25,7 @@ A deploy to either side reaches real users. Edge and stable are BOTH production-
 | www | stable | `rediacc-www` (www.rediacc.com) | `workers/www/wrangler.toml` | none |
 | www | edge | `edge-rediacc-www` (edge.rediacc.com) | `workers/www/wrangler.edge.toml` | none |
 
-Regions, domains and bucket names live in `regions.json`. The proxy Worker (`rediacc-proxy-eu`) is a separate, manual-only path (`PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy`) and is out of scope here. The CLI release channels (R2 `edge/` and `stable/`) are promoted by `promote-stable.yml` and `cd-v2.yml`, not by this skill.
+Regions, domains and bucket names live in `regions.json`. The seven proxy Workers (`rediacc-proxy-{eu,us,asia}`, `edge-rediacc-proxy-{eu,us,asia}`, `rediacc-proxy-bench`) deploy through `rediacc_ci.deploy.deploy_proxy` with `workers/proxy/wrangler.<target>.toml`; section 4a covers the per-region steps. The bench proxy stays manual. The CLI release channels (R2 `edge/` and `stable/`) are promoted by `promote-stable.yml` and `cd-v2.yml`, not by this skill.
 
 ## 2. Preferred path: let CI deploy
 
@@ -125,6 +125,23 @@ WWW_MODULE=deploy_edge    # or: deploy_www  (stable)
 ```
 
 `APP_VERSION` puts the release version in the footer; without it the site shows `0.0.0-dev` and `verify_edge_endpoints` fails. The Turnstile check is not optional. On 2026-09-24 a portal built without the key reached production and nobody could log in.
+
+### 4a. Proxy steps inside the per-region account deploy
+
+Per PLAN-proxy-cd-six-targets (box D2), the per-region deploy job (`cd-deploy-account.yml`, called by edge CD, `promote-stable.yml` and the cd-v2 hotfix) deploys the region's proxy Worker beside the account Worker. The proxy reaches the account Worker over the `ACCOUNT` and `ISSUER` (`ExecutorIssuer`, an RPC entrypoint) service bindings, and the account config binds `EXECUTOR` back to the proxy. Order:
+
+1. Record before: account and proxy version ids and the D1 time-travel bookmark taken before migrations.
+2. Bootstrap proxy deploy, only when the proxy Worker does not exist yet, so the account's `EXECUTOR` binding resolves.
+3. Deploy the account Worker, then set the Worker secrets.
+4. Deploy the proxy Worker: `deploy_proxy --target <target> --region <r> --version <V>`. The image comes from the durable executor artifacts at `executor/v<V>/` (`rediacc_ci.deploy.executor_artifacts fetch`, sha256 verified), never built from source.
+5. Proxy smoke: health 200, unauthenticated server-info 401, and `/v1/ready` 200 with `workerVersion` equal to the deployed id, polled for up to 5 minutes.
+6. Enable the console executor (`console_executor`, which sets the `EXECUTOR_MODE=proxy` Worker secret), only when step 5 passed. A region stays closed, answering the coded 503, until then.
+
+The deploy record `deploy-record-<target>-<region>.json` (worker names, version ids before and after, D1 bookmark, smoke rc, artifact manifest sha256s, rollback command) goes to the job summary and an artifact. Report it per section 7.
+
+Rollback runs in reverse order (`if: failure()`): disable the console executor (`wrangler secret delete EXECUTOR_MODE`), redeploy the previous proxy version from the record (nothing for a first deploy), then the account rollback and D1 restore commands are printed and stay human-run. Cloudflare documents no container rollback, so the previous proxy version is redeployed from its own config and fetched artifacts. A redeploy ends every executor session; the web client re-grants.
+
+Bench stays manual: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench` builds renet locally with the dev licence key, because the release renet cannot run under a bench executor.
 
 ## 5. Verify
 

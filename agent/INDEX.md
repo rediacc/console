@@ -485,8 +485,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 394 | 3 | 26 | 57820 |
-| `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 92 | 6 | 2 | 28274 |
+| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 394 | 3 | 26 | 58350 |
+| `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 92 | 6 | 2 | 28346 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 183 | 2 | 5 | 24973 |
@@ -526,7 +526,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-verbs.md` | draft | 34 | 3 | 0 | 3707 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
-| `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 348 | 34 | 0 | 54396 |
+| `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 348 | 34 | 0 | 54571 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
@@ -562,7 +562,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-submodule-branch-coordination-guard.md` | proposed | 109 | 8 | 0 | 18747 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 128 | 1 | 5 | 19743 |
-| `agent/plans/PLAN-telemetry-export.md` | approved | 182 | 5 | 14 | 45975 |
+| `agent/plans/PLAN-telemetry-export.md` | approved | 182 | 5 | 14 | 46047 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |

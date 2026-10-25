@@ -19,7 +19,7 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
 ## Tasks
 
 - [x] A1 [P0] Cost settings: `max_instances = 2` in `workers/proxy/wrangler.toml` and `sleepAfter = '2m'` in `workers/proxy/src/index.ts` -- acceptance: `grep -n 'max_instances = 2' workers/proxy/wrangler.toml` and `grep -n "sleepAfter = '2m'" workers/proxy/src/index.ts` both match
-    (ticked) 2026-10-23T08:27:53Z by d778be9d: commit:5f9a354ea max_instances = 2 at workers/proxy/wrangler.toml:40 (5f9a354ea) and sleepAfter = '2m' at workers/proxy/src/index.ts:63 (3b96d5133)
+    (ticked) 2026-10-23T08:27:53Z by d778be9d: commit:5f9a354ea max_instances = 2 at line 40 of workers/proxy/wrangler.toml, since renamed to wrangler.eu.toml (5f9a354ea) and sleepAfter = '2m' at workers/proxy/src/index.ts:63 (3b96d5133)
 - [x] A2 [P0] B1: the Worker builds the container's `envVars` from its env (`REDIACC_TOKEN`, `REDIACC_ACCOUNT_SERVER`), drops the dead `REDIACC_EXECUTOR_MODE`, and gains its unit tests (missing test 1) -- acceptance: `cd workers/proxy && npm run test:unit` exits 0
     (ticked) 2026-10-23T08:28:27Z by d778be9d: commit:3b96d5133 executorEnvVars builds the container envVars from the Worker env (workers/proxy/src/index.ts:44, used at workers/proxy/src/index.ts:66); workers/proxy npm run test:unit 16 passed
 - [x] A3 [P1] B2: the image ships a version-matched renet at `/usr/local/bin/renet`, the deploy builds it, and an image-smoke gate covers it (missing test 4) -- acceptance: `npm run check:ci-proxy-image-smoke` exits 0
@@ -99,10 +99,10 @@ The cost is about $0 marginal while no caller wakes a container (section 4).
 1. **Client.** `rdc --proxy <url> <cmd>` or `REDIACC_PROXY_URL` (`packages/cli/src/cli.ts:201`, `:242`). The root preAction hook refuses a command that is not `proxyCapable`, then calls `runCommandThroughProxy` before the local action can run (`packages/cli/src/cli.ts:240-251`, `packages/cli/src/services/executor/proxy-command.ts:252`). The bearer is the stored subscription token, or `REDIACC_TOKEN` from the env (`packages/cli/src/services/account/subscription-auth.ts:8`, `:157`). 85 of the contract's commands are `proxyCapable` (`packages/shared/src/cli-contract/data/contract.json`). Before a command, `ProxyClient.ensureSession()` grants the sealed CEK to a `container` executor (`packages/cli/src/services/executor/proxy-client.ts:185`).
 2. **Worker** (`workers/proxy/src/index.ts`).
    - `/v1/health` is answered by the Worker itself, without the container (`:129-131`).
-   - Every other path introspects the caller's token with the account server, authenticating with `EXECUTOR_TOKEN`. The call goes through the `ACCOUNT` service binding (`:109`, `workers/proxy/wrangler.toml:19-21`). It requires `active`, an `orgId` and scope `proxy:exec`; each refusal is logged as a reason code, never a token, by `refuse()` (`:88-119`).
+   - Every other path introspects the caller's token with the account server, authenticating with `EXECUTOR_TOKEN`. The call goes through the `ACCOUNT` service binding (`:109`, line 19-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)). It requires `active`, an `orgId` and scope `proxy:exec`; each refusal is logged as a reason code, never a token, by `refuse()` (`:88-119`).
    - It routes to a Durable-Object-backed container keyed `orgId:teamId|default` and forwards the request untouched (`:122`, `:142-143`).
    - The container's env is built from the Worker's: `REDIACC_TOKEN` is `EXECUTOR_TOKEN` and `REDIACC_ACCOUNT_SERVER` is `ACCOUNT_URL` (`executorEnvVars`, `:44-49`, `:66`).
-3. **Container.** `node cli-bundle.cjs serve --mode container --port 8080` (`workers/proxy/Dockerfile:99`), with a release renet at `/usr/local/bin/renet` whose version the bundle takes as its own (`workers/proxy/Dockerfile:54-56`, `:65`, `:90-91`). It serves the Hono app in `packages/cli/src/services/serve/server.ts`, with these routes (`packages/shared/src/cli-contract/wire.ts:207-217`):
+3. **Container.** `node cli-bundle.cjs serve --mode container --port 8080` (line 99 of `workers/proxy/Dockerfile` before PLAN-proxy-cd-six-targets A2 rewrote it), with a release renet at `/usr/local/bin/renet` whose version the bundle takes as its own (`workers/proxy/Dockerfile:54-56`, `:65`, `:90-91`). It serves the Hono app in `packages/cli/src/services/serve/server.ts`, with these routes (`packages/shared/src/cli-contract/wire.ts:207-217`):
    - `/v1/health` (`packages/cli/src/services/serve/server.ts:83`)
    - `/v1/server-info` (`:85`)
    - `POST /v1/session`, which mints an X25519 keypair (`:99`)
@@ -122,9 +122,9 @@ The cost is about $0 marginal while no caller wakes a container (section 4).
 
 | Item | Where | State (2026-10-23) |
 |---|---|---|
-| Custom domain `proxy.eu.rediacc.com` | `workers/proxy/wrangler.toml:9-11` | live since 2026-09-24 |
-| `ACCOUNT_URL` var | `workers/proxy/wrangler.toml:14` | `https://eu.rediacc.com` |
-| `ACCOUNT` service binding to `rediacc-account-eu` | `workers/proxy/wrangler.toml:19-21` | in the tree; the deploy that carries it is unrecorded (box P2a) |
+| Custom domain `proxy.eu.rediacc.com` | line 9-11 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | live since 2026-09-24 |
+| `ACCOUNT_URL` var | line 14 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | `https://eu.rediacc.com` |
+| `ACCOUNT` service binding to `rediacc-account-eu` | line 19-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | in the tree; the deploy that carries it is unrecorded (box P2a) |
 | `EXECUTOR_TOKEN` secret: a portal API token with scopes `proxy:exec` and `audit:write`, IP binding `cloudflare`, in the org that owns hostinger's config | `workers/proxy/src/index.ts:143` | unrecorded (box P2a) |
 | Container receives its token | `executorEnvVars`, `workers/proxy/src/index.ts:47-50`; read at `packages/cli/src/commands/serve.ts:61-67` | fixed (B1) |
 | Org has a remote config store holding hostinger | `packages/cli/src/services/serve/container-config.ts`, `private/account/src/routes/configs.ts:837` | operator confirms with `rdc config remote status` |
@@ -146,7 +146,7 @@ This section records the first review's findings. None of them is open; the fixe
 
 ### 1.4 Design facts found after the first review
 
-- **The service binding.** The proxy Worker and the account worker share the `rediacc.com` zone, and a Worker's `fetch()` to a same-zone hostname never reaches another Worker. On the first Phase 2 deploy (2026-09-24) every introspection failed, and every caller got 401. Introspection now goes through `[[services]] ACCOUNT -> rediacc-account-eu` (`workers/proxy/wrangler.toml:17-21`), the path `workers/www` already uses; `fetch(ACCOUNT_URL)` remains only for a deploy without the binding (`workers/proxy/src/index.ts:35-37`, `:145`).
+- **The service binding.** The proxy Worker and the account worker share the `rediacc.com` zone, and a Worker's `fetch()` to a same-zone hostname never reaches another Worker. On the first Phase 2 deploy (2026-09-24) every introspection failed, and every caller got 401. Introspection now goes through `[[services]] ACCOUNT -> rediacc-account-eu` (line 17-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)), the path `workers/www` already uses; `fetch(ACCOUNT_URL)` remains only for a deploy without the binding (`workers/proxy/src/index.ts:35-37`, `:145`).
 - **The same trap waits for the console.** `console.ts` reaches `EXECUTOR_URL` with a public `fetch` (`private/account/src/routes/console.ts:352`, `:407`, `:445`), and `eu.rediacc.com` and `proxy.eu.rediacc.com` share that zone. Setting `EXECUTOR_URL` alone would reproduce the 401 in the other direction, so box C1 (an `EXECUTOR` binding on the account worker) comes before box C2.
 - **Refusal logging.** `refuse()` logs why a caller was refused (`no-bearer`, `no-executor-token`, `introspect-http-<n>`, `inactive`, `no-org`, `no-proxy-exec-scope`) without logging the token (`workers/proxy/src/index.ts:125-164`), so a 401 in Phase 2 names its cause in the Worker logs.
 - **IP-bound executor tokens.** A `proxy:exec` token can be bound to Cloudflare's published ranges (`private/account/src/types/api-token.ts:18`, `:22`), which is the binding `EXECUTOR_TOKEN` takes.
@@ -235,7 +235,7 @@ Sources: developers.cloudflare.com/containers/pricing, /durable-objects/platform
   - Image storage limit is 50 GB per account. Storage is not listed as billed.
 - **Durable Objects:** 1M requests and 400k GB-s included. SQLite: 5 GB, 25B row reads and 50M row writes included. Negligible here.
 - **Library behaviour:** `sleepAfter` defaults to `'10m'` in `@cloudflare/containers`. An open HTTP stream counts as in flight, and the idle timer restarts only when the stream ends, so a long `repo up` stream keeps the container awake correctly.
-- **Current settings:** `instance_type = "basic"` (1/4 vCPU, 1 GiB, 4 GB disk; `workers/proxy/wrangler.toml:37`), `max_instances = 2` (`:42`, since 5f9a354ea), `sleepAfter = '2m'` (`workers/proxy/src/index.ts:108`, since 3b96d5133).
+- **Current settings:** `instance_type = "basic"` (1/4 vCPU, 1 GiB, 4 GB disk; line 37 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)), `max_instances = 2` (`:42`, since 5f9a354ea), `sleepAfter = '2m'` (`workers/proxy/src/index.ts:108`, since 3b96d5133).
 
 Per running `basic` instance-hour:
 - memory $0.0090
