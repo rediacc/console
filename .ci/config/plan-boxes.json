@@ -102,8 +102,8 @@
       "owner": "5cc33087",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 160,
-      "done": 35,
+      "open": 159,
+      "done": 36,
       "open_sigs": [
         "06b6a0d8",
         "07955f58",
@@ -226,7 +226,6 @@
         "bfa6ab14",
         "c0f4ef24",
         "c81eddff",
-        "c843dc3a",
         "ca062cee",
         "ca6cb43a",
         "cb4bf70f",
@@ -295,6 +294,7 @@
         "c5649a0b",
         "c618b33d",
         "c704e58e",
+        "c843dc3a",
         "ca61877b",
         "cbcd1906",
         "d3236c9b",
@@ -493,19 +493,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
+      "open": 6,
+      "done": 2,
       "open_sigs": [
         "0b3782d7",
-        "323dafd9",
         "37f7849e",
         "614c11d9",
         "7d4b4cf0",
         "81dda855",
-        "953e7cdf",
-        "d951622b"
+        "953e7cdf"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "323dafd9",
+        "d951622b"
+      ]
     },
     "agent/plans/PLAN-cold-path.md": {
       "status": "compacted",
@@ -1225,38 +1226,39 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 0,
+      "open": 9,
+      "done": 5,
       "open_sigs": [
-        "2535dcf1",
         "378cc6c4",
         "48f7650a",
-        "4b9f0e29",
         "502b16c3",
-        "5a3bbbfc",
         "6127034f",
         "6931b9d8",
-        "72d3a846",
         "928c5192",
         "a6ffadd2",
         "bba519b9",
-        "cdafb668",
         "f3681e45"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "2535dcf1",
+        "4b9f0e29",
+        "5a3bbbfc",
+        "72d3a846",
+        "cdafb668"
+      ]
     },
     "agent/plans/PLAN-renet-fetch-retries.md": {
       "status": "approved",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 2,
+      "open_sigs": [],
+      "done_sigs": [
         "2c1262b3",
         "a60505d7"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-renet-run-docker-sock-isolation.md": {
       "status": "draft",
@@ -1664,11 +1666,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 8,
+      "open": 10,
+      "done": 9,
       "open_sigs": [
         "32531c67",
-        "50b4e6c7",
         "539c554f",
         "84368fdf",
         "9b40e7bf",
@@ -1683,6 +1684,7 @@
         "0b907951",
         "1b706dae",
         "29778d67",
+        "50b4e6c7",
         "60ec1797",
         "7ccd27a0",
         "9f3351f1",

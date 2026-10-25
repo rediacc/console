@@ -189,7 +189,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
     (ticked) 2026-10-23T23:43:24Z by d778be9d: commit:4f4a78487 private/account/src/services/backup-storage.service.ts:1075; account HEAD export: vitest backup-retention, backup-gc, backup-storage, dto-conformance 133 passed rc=0 on 2026-10-24
 - [x] E4: `restore --at <time>` filters by stream (this repo GUID and, by default, this machine), with --any-stream to widen on purpose. Owns: packages/cli/src/commands/backup.ts:311-318. Accept: test with two streams.
     (ticked) 2026-10-24T04:10:40Z by d778be9d: commit:b8fa5ef7e packages/cli/src/commands/__tests__/backup-restore-at.test.ts:1; E4: restore --at defaults to this repo stream on its machine, --any-stream widens; two-stream tests pass, vitest 28 passed rc=0
-- [ ] E5: Add backup_snapshot and backup_restore to slowFunctionNames (private/renet/cmd/renet/functions_commands.go:902) so a first seed is not cut at 30 s. Accept: test asserts the budget.
+- [x] E5: Add backup_snapshot and backup_restore to slowFunctionNames (private/renet/cmd/renet/functions_commands.go:902) so a first seed is not cut at 30 s. Accept: test asserts the budget.
+    (ticked) 2026-10-25T05:51:05Z by d778be9d: renet ff13648: backup_snapshot and backup_restore in slowFunctionNames, TestTestModeTimeout_BackupVerbsGetTheIOBudget; go test ./cmd/renet -run TestTestModeTimeout|TestSlowFunction rc=0 (scratch clone at HEAD)
 - [x] E6: Restore uses a licence of the same lineage only; the fallback to any licence with a warning is removed. Accept: test with two lineages.
     (ticked) 2026-10-24T04:10:42Z by d778be9d: commit:32ebe33f2 private/renet/cmd/renet/backup_restore_test.go:1; E6 in renet 43aba35: lineage-only restore licence, the fallback removed; TestResolveRestoreLicense_TwoLineages passes and failed on HEAD
 
