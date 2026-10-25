@@ -10,6 +10,10 @@ import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
 import { outputService } from '../services/core/output.js';
 import { writeStderr } from '../services/core/request-context.js';
+import {
+  isRenetFlagUnsupported,
+  renetOlderThanCliMessage,
+} from '../services/executor/job-client.js';
 import { renetFailureReason } from '../services/executor/renet-output.js';
 import {
   type ConnectionDetails,
@@ -298,10 +302,19 @@ async function executeSSH(
   title: string,
   connectionDetails: ConnectionDetails,
   useExternal: boolean,
-  quiet: boolean
+  quiet: boolean,
+  machineName: string
 ): Promise<void> {
   if (!useExternal) {
-    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails, quiet);
+    await runInlineSSH(
+      sshConnection,
+      destination,
+      remoteCommand,
+      title,
+      connectionDetails,
+      quiet,
+      machineName
+    );
     return;
   }
 
@@ -317,7 +330,15 @@ async function executeSSH(
     debugLog(
       `External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`
     );
-    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails, quiet);
+    await runInlineSSH(
+      sshConnection,
+      destination,
+      remoteCommand,
+      title,
+      connectionDetails,
+      quiet,
+      machineName
+    );
   }
 }
 
@@ -422,7 +443,8 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
       title,
       connectionDetails,
       shouldUseExternalTerminal(options),
-      quietOutput
+      quietOutput,
+      machineName
     );
   } catch (err) {
     success = false;
@@ -536,7 +558,15 @@ const STDERR_TAIL_CHARS = 4096;
 /**
  * The error for a non-zero ssh exit. When the remote printed why it failed (renet's cobra "Error:" line, or its last informative line), that reason IS the message, so `errors[].message` carries renet's text rather than the generic per-code hint (C11).
  */
-export function buildSSHExitErrorMessage(code: number, stderrTail = ''): string {
+export function buildSSHExitErrorMessage(
+  code: number,
+  stderrTail = '',
+  machineName?: string
+): string {
+  // A flag the remote renet does not know is version skew, not a usage error: cobra's raw text says nothing about the fix.
+  if (machineName && isRenetFlagUnsupported(stderrTail)) {
+    return renetOlderThanCliMessage(machineName);
+  }
   let message = t('errors.term.sshExitCode', { code });
   const reason = renetFailureReason(stderrTail, SSH_CLOSED_LINE);
   if (reason) return `${message}: ${reason}`;
@@ -564,7 +594,8 @@ async function runInlineSSH(
   remoteCommand: string | undefined,
   title: string,
   connectionDetails: ConnectionDetails,
-  quiet: boolean
+  quiet: boolean,
+  machineName: string
 ): Promise<void> {
   if (!quiet) {
     // Progress message on stderr, keeps stdout reserved for command output when -c piping is in play, matching the Unix convention used by ssh's own progress / banner messages.
@@ -585,7 +616,7 @@ async function runInlineSSH(
       if (code === 0 || code === null) {
         resolve();
       } else {
-        reject(new Error(buildSSHExitErrorMessage(code, stderrTail())));
+        reject(new Error(buildSSHExitErrorMessage(code, stderrTail(), machineName)));
       }
     });
     child.on('error', reject);

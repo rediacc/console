@@ -22,6 +22,19 @@ describe("term connect carries the remote's own error (C11)", () => {
     expect(message).toContain('Generic error');
   });
 
+  it('names the version skew when the remote renet rejects a flag the CLI sent', () => {
+    const tail = 'Error: unknown flag: --datastore\nUsage: renet term ...\n';
+    const message = buildSSHExitErrorMessage(1, tail, 'server-1');
+    expect(message).toBe('renet on server-1 is older than this CLI; run machine setup');
+    expect(message).not.toContain('unknown flag');
+  });
+
+  it('keeps cobra text for an unknown flag when no machine is named', () => {
+    expect(buildSSHExitErrorMessage(1, 'Error: unknown flag: --datastore\n')).toContain(
+      'unknown flag'
+    );
+  });
+
   it('keeps the per-code hint when the remote printed nothing', () => {
     expect(buildSSHExitErrorMessage(255)).toContain('SSH connection failed');
   });
