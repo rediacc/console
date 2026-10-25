@@ -57,38 +57,38 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: build.
 - Branch: 1023-1, no PR yet.
-- Plans on the PR (8):
+- Plans on the PR (9):
   - agent/plans/PLAN-plan-per-pr-loop.md -- 16 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/_done/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 8 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 9 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/_done/PLAN-stop-hook-rulings-campaign.md -- 17 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-program.md -- 82 of 195 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 96 of 195 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (4 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 508 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - agent/plans/PLAN-telemetry-export.md -- 9 of 19 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Work outside the PR's plans (3 epic(s)):
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 513 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
-  - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a02041abf854b52dc.
-- Leased items: 1: #3c25fe80 (worker:a02041abf854b52dc, d778be9d).
-- Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 5; starts after this branch's PR merges.
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:ac09d162467bbaddc, worker:a0189a12b2d467ca3.
+- Leased items: 5: #2bc30bfc (worker:a37228d9372e6f1d4, d778be9d), #49433d3f (worker:a0189a12b2d467ca3, d778be9d), #8f024ed3 (worker:ac09d162467bbaddc, d778be9d), #be9d79ec (worker:ac09d162467bbaddc, d778be9d), #d9ad9d8b (worker:a93b03b93a247623a, d778be9d).
+- Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 5 of 20 plans done, 276 of 409 boxes done (67%).
+Promoted: 6 of 20 plans done, 279 of 409 boxes done (68%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 16/16 | done |
-| 2 | PLAN-backup-program.md | 96/195 | 99 open |
+| 2 | PLAN-backup-program.md | 97/195 | 98 open |
 | 3 | PLAN-cloudflare-proxy.md | 26/29 | 3 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 5/6 | 1 open |
 | 5 | PLAN-telemetry-export.md | 9/19 | 10 open |
-| 6 | PLAN-renet-bridge-leftovers.md | 12/14 | 2 open |
+| 6 | PLAN-renet-bridge-leftovers.md | 14/14 | done |
 | 7 | PLAN-token-ip-rebind.md | 9/10 | 1 open |
 | 8 | PLAN-config-sync-hardening.md | 18/19 | 1 open |
 | 9 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
