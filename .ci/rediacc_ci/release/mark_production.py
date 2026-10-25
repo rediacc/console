@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/release/mark-production.sh`.
 
-Records what is ACTUALLY in production. GitHub's "Latest release" badge tracks whatever was published most recently, which on this repo is the EDGE build, published on every release-worthy merge to main. Production is whatever survived the 7-day soak and was promoted, so this script writes two markers a human can trust: the MOVING annotated tag `production`, and `--latest` on that
+Records what is ACTUALLY in production. GitHub's "Latest release" badge tracks whatever was published most recently, which on this repo is the EDGE build, published on every release-worthy merge to main. Production is whatever survived the 7-day soak and was promoted, so this script writes two markers a human can trust: the MOVING lightweight tag `production` (a ref straight at the release commit; an annotated release tag is dereferenced first), and `--latest` on that
 version's GitHub Release.
 
 Usage: mark_production.py <version>, or `VERSION=<version>` in the environment.
