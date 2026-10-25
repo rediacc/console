@@ -16,6 +16,7 @@ import { z } from 'zod';
 const machineEventTypes = [
   'cli.machine.containers',
   'cli.machine.deprovision',
+  'cli.machine.gpu_list',
   'cli.machine.health',
   'cli.machine.id',
   'cli.machine.list',

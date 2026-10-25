@@ -205,9 +205,19 @@ Remove orphaned datastore resources and stale snapshots from a machine. The base
 
 > MCP tool
 
+### rdc machine gpu list <name>
+
+List the GPUs detected on a machine, the CDI device names its specs define, and the repositories each device is granted to. Grant one with 'rdc repo gpu grant'.
+
+**Options:**
+
+- `--debug`: Enable debug output
+
+> MCP tool
+
 ### rdc machine converge <name>
 
-Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or restart after any renet binary change.
+Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change.
 
 **Options:**
 
@@ -1555,6 +1565,25 @@ Delete a secret. Under agent context, requires --current digest match.
 - `--key <KEY>`: Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode.
 - `--current <value>`: Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.
 - `--rotate-secret`: Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.
+
+### rdc repo gpu grant <ref>
+
+Allow the repository's containers to request a CDI device. Device names come from 'rdc machine gpu list'.
+
+**Options:**
+
+- `--device <cdi-name>`: Fully qualified CDI device name (e.g. nvidia.com/gpu=all)
+- `--exclusive`: Reserve the device for this repository: no other repository can be granted it meanwhile
+- `--debug`: Enable debug output
+
+### rdc repo gpu revoke <ref>
+
+Withdraw a CDI device from the repository's containers. Containers that already hold it keep it until they restart.
+
+**Options:**
+
+- `--device <cdi-name>`: Fully qualified CDI device name (e.g. nvidia.com/gpu=all)
+- `--debug`: Enable debug output
 
 ## Tools
 
