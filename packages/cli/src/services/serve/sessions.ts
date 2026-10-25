@@ -128,7 +128,7 @@ export class SessionStore {
     const session = this.require(sessionId);
     if (session.principal.userId !== grantingPrincipal.userId) {
       // Deliberately the same message require() gives for an unknown session, so a caller cannot probe which session ids exist by whether the error changes from "unknown" to "not yours".
-      throw new SessionError('Unknown or expired session. Open a new one.');
+      throw new SessionError('Unknown or expired session. Open a new one.', SESSION_UNKNOWN_CODE);
     }
     if (!session.ephemeralPrivateKey) {
       throw new SessionError('This session has already received its key.');
@@ -218,7 +218,7 @@ export class SessionStore {
 
     const session = this.require(requestedId);
     if (session.principal.userId !== principal.userId) {
-      throw new SessionError('Unknown or expired session. Open a new one.');
+      throw new SessionError('Unknown or expired session. Open a new one.', SESSION_UNKNOWN_CODE);
     }
     session.lastUsedAt = this.now();
     return requestedId;
@@ -239,7 +239,7 @@ export class SessionStore {
     this.evictExpired();
     const session = this.sessions.get(sessionId);
     if (!session) {
-      throw new SessionError('Unknown or expired session. Open a new one.');
+      throw new SessionError('Unknown or expired session. Open a new one.', SESSION_UNKNOWN_CODE);
     }
     return session;
   }
@@ -269,8 +269,14 @@ export class SessionStore {
   }
 }
 
+/** Wire code on the 404 for a session id the store does not hold (never opened, expired, wiped by a redeploy, or not the caller's). */
+export const SESSION_UNKNOWN_CODE = 'EXECUTOR_SESSION_UNKNOWN';
+
 export class SessionError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly code?: typeof SESSION_UNKNOWN_CODE
+  ) {
     super(message);
     this.name = 'SessionError';
   }

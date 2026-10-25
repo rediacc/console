@@ -145,7 +145,7 @@ export class AuthVerifier {
           authorization: `Bearer ${this.executorToken}`,
           'content-type': 'application/json',
         },
-        body: JSON.stringify({ token: this.executorToken }),
+        body: JSON.stringify({ token: this.executorToken, self: true }),
       });
       if (!response.ok) {
         return {

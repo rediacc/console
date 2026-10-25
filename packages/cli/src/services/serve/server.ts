@@ -64,10 +64,16 @@ import { SessionError } from './sessions.js';
 const CONFIG_SESSION_HEADER = 'x-config-session';
 
 /** Turn any thrown value into an HTTP status plus a message worth reading. */
-function statusFor(error: unknown): { status: 400 | 401 | 403 | 404 | 500; message: string } {
+function statusFor(error: unknown): {
+  status: 400 | 401 | 403 | 404 | 500;
+  message: string;
+  code?: string;
+} {
   if (error instanceof AuthError) return { status: error.status, message: error.message };
   if (error instanceof PolicyDenied) return { status: 403, message: error.message };
-  if (error instanceof SessionError) return { status: 404, message: error.message };
+  if (error instanceof SessionError) {
+    return { status: 404, message: error.message, ...(error.code ? { code: error.code } : {}) };
+  }
   if (error instanceof CommandRejected) return { status: 400, message: error.message };
   // A job id the machine (or an untrusted re-attach client) made up: refused before it reaches a shell, and reported as a bad request, not a server fault.
   if (error instanceof InvalidJobIdError) return { status: 400, message: error.message };
@@ -106,8 +112,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       );
       return c.json({ sessionId, publicKey });
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
   });
 
@@ -131,8 +137,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       }
       return c.json({ ok: true });
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
   });
 
@@ -156,8 +162,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       principal = await authenticate(c.req.header('authorization'), deps);
       request = CommandRequestSchema.parse(await c.req.json());
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
     const clientContract = c.req.header(CONTRACT_VERSION_HEADER) ?? request.contractVersion;
@@ -179,8 +185,8 @@ export function createServeApp(deps: ServeDeps): Hono {
     try {
       prepared = prepareCommand(request.pathKey, request.params, request.positionals);
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
     const entry = prepared.entry;
 
@@ -215,8 +221,8 @@ export function createServeApp(deps: ServeDeps): Hono {
         isGrandRepo: await resolveGrandRepoMutation(entry, repoName, requestConfig),
       });
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
     const auditGate = await checkAuditCapability(deps, entry, request.pathKey);
@@ -346,8 +352,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       principal = await authenticate(c.req.header('authorization'), deps);
       jobId = assertJobId(c.req.param('id'));
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
     const machine = c.req.query('machine');
@@ -365,8 +371,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       requestConfig = requestScopedConfig(deps, config);
       deps.authorize({ principal, commandPath: 'job logs', config, machineName: machine });
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
     return streamText(c, async (stream) => {
