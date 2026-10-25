@@ -62,18 +62,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 9 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/_done/PLAN-stop-hook-rulings-campaign.md -- 17 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-program.md -- 96 of 195 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 97 of 195 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-telemetry-export.md -- 9 of 19 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 513 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 521 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:ac09d162467bbaddc, worker:a0189a12b2d467ca3.
-- Leased items: 5: #2bc30bfc (worker:a37228d9372e6f1d4, d778be9d), #49433d3f (worker:a0189a12b2d467ca3, d778be9d), #8f024ed3 (worker:ac09d162467bbaddc, d778be9d), #be9d79ec (worker:ac09d162467bbaddc, d778be9d), #d9ad9d8b (worker:a93b03b93a247623a, d778be9d).
-- Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 0.
+- Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 7; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted

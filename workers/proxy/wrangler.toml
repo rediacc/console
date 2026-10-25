@@ -50,17 +50,22 @@ class_name = "ExecutorContainer"
 tag = "v1"
 new_sqlite_classes = ["ExecutorContainer"]
 
-# Operator ruling 2026-10-23: Cloudflare keeps no copy of Workers logs or traces.
-# This Worker has no OTLP destination yet, so persist = false would export
-# nowhere; logs and traces are off until a destination exists.
+# Telemetry export (agent/plans/PLAN-telemetry-export.md T14): logs and traces go to the
+# eu destination pair (otlp-eu-logs, otlp-eu-traces), which the account Workers of the
+# eu region share; the observability stack maps the script name to service.name
+# rediacc-proxy. Operator ruling 2026-10-23: Cloudflare keeps no copy (persist = false).
 [observability]
-enabled = false
+enabled = true
 
 [observability.logs]
-enabled = false
+enabled = true
 invocation_logs = false
+head_sampling_rate = 1
+destinations = ["otlp-eu-logs"]
 persist = false
 
 [observability.traces]
-enabled = false
+enabled = true
+head_sampling_rate = 1
+destinations = ["otlp-eu-traces"]
 persist = false

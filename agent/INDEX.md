@@ -561,7 +561,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-submodule-branch-coordination-guard.md` | proposed | 109 | 8 | 0 | 18747 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 128 | 1 | 5 | 19743 |
-| `agent/plans/PLAN-telemetry-export.md` | approved | 144 | 10 | 9 | 36114 |
+| `agent/plans/PLAN-telemetry-export.md` | approved | 176 | 10 | 9 | 43561 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |
