@@ -22,6 +22,7 @@ const machineEventTypes = [
   'cli.machine.list',
   // Emitted by `machine prune` (packages/cli/src/commands/machine/prune.ts), which prunes orphaned network units on the machine.
   'cli.network_prune',
+  // Emitted by the network-id discovery read (packages/cli/src/services/config/network-id-discovery.ts), renet's read-only `network_used` function.
   'cli.network_used',
   'cli.machine.match',
   'cli.machine.mismatch',

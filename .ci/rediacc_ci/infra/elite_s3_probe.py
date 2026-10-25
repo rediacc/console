@@ -36,7 +36,10 @@ def _die(msg: str) -> int:
 
 
 def _docker(*args: str) -> str:
-    r = subprocess.run(["docker", *args], capture_output=True, text=True, check=False)
+    try:
+        r = subprocess.run(["docker", *args], capture_output=True, text=True, check=False)
+    except OSError as e:
+        raise ProbeError(f"docker could not be run: {e}") from e
     if r.returncode != 0:
         raise ProbeError(r.stderr.strip())
     return r.stdout.strip()
@@ -123,7 +126,9 @@ def live(probe: Path) -> int:
     container = f"{os.environ.get('INSTANCE_NAME') or 'rediacc'}-rustfs"
     try:
         running = _docker("inspect", "-f", "{{.State.Running}}", container)
-    except ProbeError:
+    except ProbeError as e:
+        if str(e).startswith("docker could not be run"):
+            raise
         running = ""
     if running != "true":
         return _die(

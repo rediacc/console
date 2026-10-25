@@ -45,6 +45,11 @@ export interface Env {
 
 const DEFAULT_REGION = 'eu';
 const DEFAULT_ENVIRONMENT = 'production';
+
+/** A configured var, or the fallback when the var is unset or empty (an empty [vars] entry means unset). */
+function configured(value: string | undefined, fallback: string): string {
+  return value === undefined || value === '' ? fallback : value;
+}
 const PROBE_HEADER = 'x-rediacc-probe';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -69,12 +74,12 @@ function activeSpan(ctx: ExecutionContext | undefined): RuntimeSpan | undefined 
 /** Identity attributes only: never a token, org id, team id or tenant key. */
 function tagRequest(span: RuntimeSpan | undefined, request: Request, env: Env): void {
   if (!span) return;
-  span.setAttribute('rediacc.region', env.REGION ?? DEFAULT_REGION);
-  span.setAttribute('deployment.environment', env.ENVIRONMENT ?? DEFAULT_ENVIRONMENT);
+  span.setAttribute('rediacc.region', configured(env.REGION, DEFAULT_REGION));
+  span.setAttribute('deployment.environment', configured(env.ENVIRONMENT, DEFAULT_ENVIRONMENT));
   const probe = request.headers.get(PROBE_HEADER);
   if (probe && UUID_RE.test(probe)) {
     span.setAttribute('rediacc.probe', probe.toLowerCase());
-    console.warn(`telemetry-probe ${probe}`);
+    console.warn(`telemetry-probe ${probe.toLowerCase()}`);
   }
 }
 
@@ -87,7 +92,7 @@ export function executorEnvVars(env: Env): Record<string, string> {
   return {
     REDIACC_TOKEN: env.EXECUTOR_TOKEN,
     REDIACC_ACCOUNT_SERVER: env.ACCOUNT ? `http://${ACCOUNT_EGRESS_HOST}` : env.ACCOUNT_URL,
-    REDIACC_REGION: env.REGION ?? DEFAULT_REGION,
+    REDIACC_REGION: configured(env.REGION, DEFAULT_REGION),
   };
 }
 

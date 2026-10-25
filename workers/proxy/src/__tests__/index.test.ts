@@ -415,6 +415,27 @@ describe('span attributes (telemetry export T14)', () => {
     for (const secret of secrets) expect(serialized).not.toContain(secret);
   });
 
+  it('an empty REGION or ENVIRONMENT var falls back to the defaults, on the span and for the executor', async () => {
+    const { ctx, attrs } = traced();
+    await worker.fetch(probed('/v1/health'), env({ REGION: '', ENVIRONMENT: '' }), ctx);
+    expect(attrs['rediacc.region']).toBe('eu');
+    expect(attrs['deployment.environment']).toBe('production');
+    expect(new ExecutorContainer({} as never, env({ REGION: '' })).envVars.REDIACC_REGION).toBe(
+      'eu'
+    );
+  });
+
+  it('logs the probe uuid in the same lowercase form as the rediacc.probe attribute', async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(' '));
+    });
+    const { ctx, attrs } = traced();
+    await worker.fetch(probed('/v1/health', undefined, PROBE.toUpperCase()), env(), ctx);
+    expect(attrs['rediacc.probe']).toBe(PROBE.toLowerCase());
+    expect(lines).toContain(`telemetry-probe ${PROBE.toLowerCase()}`);
+  });
+
   it('runs untraced when the host supplies no tracing API', async () => {
     const response = await worker.fetch(request('/v1/health'), env(), {} as ExecutionContext);
     expect(response.status).toBe(200);
