@@ -138,6 +138,18 @@ def test_check_fails_on_missing_rule_and_never_writes():
     assert w.mutations() == []
 
 
+def test_a_green_check_names_the_rules_it_matched(capsys):
+    w = FakeWrangler(BUCKETS)
+    r2.run_mode(w, "apply")
+    capsys.readouterr()
+    assert r2.run_mode(w, "check") == 0
+    wanted = len(r2.desired_rules())
+    assert (
+        "%s: %d of %d rule(s) match" % (r2.RELEASES_BUCKET, wanted, wanted)
+        in capsys.readouterr().out
+    )
+
+
 @pytest.mark.parametrize(
     "bucket",
     [

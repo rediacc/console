@@ -241,6 +241,10 @@ def run_mode(run: Runner, mode: str, bucket: str | None = None, dry_run: bool = 
         if mode == "check":
             if missing or drifted:
                 status = 1
+            print(
+                "%s: %d of %d rule(s) match"
+                % (b, len(wanted) - len(missing) - len(drifted), len(wanted))
+            )
             continue
         previous = {r.name: r for r in existing}
         for r in [*missing, *drifted]:
