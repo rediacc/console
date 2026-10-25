@@ -1079,8 +1079,8 @@ export class RenetFunctionsTestRunner {
    * MOUNT STATE is a PRECONDITION of the surviving verbs, not a test of the dead ones:
    * `datastore resize` REFUSES while mounted ("must be unmounted for resize"), and
    * `datastore validate` needs it mounted. The old suite spelled those preconditions out
-   * as mount/unmount tests; when the verbs moved I carried the CALLS across and dropped
-   * the PRECONDITIONS they were carrying. That is what these two restore.
+   * as mount/unmount tests; when the verbs moved, the CALLS were carried across and the
+   * PRECONDITIONS they were carrying were dropped. That is what these two restore.
    */
   datastoreMountPool = (datastorePath = DEFAULT_DATASTORE_PATH) =>
     this.executeViaBridge(`sudo renet datastore mount --path ${datastorePath}`);
