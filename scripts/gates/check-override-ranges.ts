@@ -480,8 +480,8 @@ function selftest(): number {
     'L',
     {
       'node_modules/a': { version: '1.0.0', dependencies: { p: '^2.1.0' } },
-      'node_modules/p': { link: true, resolved: 'packages/p' },
-      'packages/p': { version: '2.0.0' },
+      'node_modules/p': { link: true, resolved: 'packages/shared' },
+      'packages/shared': { version: '2.0.0' },
     },
     N
   );

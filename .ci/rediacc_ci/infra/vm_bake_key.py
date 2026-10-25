@@ -66,6 +66,12 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         "pkg_install_procgroup_unix.go": HASH,
         # GPU driver installs are part of setup (--install-amd-driver, --install-nvidia-driver); hostRunner is the runner they use.
         "gpu_drivers.go": HASH,
+        # The GPU step of every setup run: ensureGPUCDI installs the NVIDIA container toolkit, writes the CDI specs under /etc/cdi and records the inventory, all on the baked disk (PLAN-gpu-device-grants D1 to D3).
+        "gpu_cdi.go": HASH,
+        # The toolkit install gpu_cdi.go runs (package-manager calls and the repository file).
+        "gpu_toolkit.go": HASH,
+        # `renet system gpu-list` only reads the inventory and the grant store and prints a report; it writes nothing the guest disk keeps.
+        "gpu_list.go": EXCLUDE,
         # The kernel-module swap the AMD install runs on a zypper host with kernel-default-base (kernelModuleInstall).
         "kernel_modules.go": HASH,
         "ceph_host_runner.go": HASH,
@@ -103,6 +109,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         "config.go": EXCLUDE,
         "parallel.go": EXCLUDE,
     },
+    # Inventory detection and the CDI spec rendering gpu_cdi.go writes to /etc/cdi.
+    "pkg/gpu": HASH,
     "pkg/datastore": EXCLUDE,
     # setup's RepairMirrorModes chmods existing repository state records; a fresh bake has none, so it changes nothing on the disk (renet 7faf671).
     "pkg/repository": EXCLUDE,
@@ -118,6 +126,7 @@ EXTRA_FILES = (
     "cmd/renet/gpu_keys/1940C73E.pub",
     "cmd/renet/gpu_keys/3A8B5622.pub",
     "cmd/renet/gpu_keys/CDF6BA43.pub",
+    "cmd/renet/gpu_keys/F796ECB0.pub",
 )
 
 KEY_RE = re.compile(r"^vm-bake-v1-[a-z0-9][a-z0-9.-]*-\d{4}-\d{2}-[0-9a-f]{16}$")

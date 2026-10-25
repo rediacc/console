@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-10-23T20:19:35.810Z",
+  "generatedAt": "2026-10-25T03:05:45.056Z",
   "legs": [
     {
       "index": 1,
@@ -55,9 +55,12 @@
       "index": 2,
       "ids": [
         "github.com/rediacc/renet/pkg/atomicjson",
+        "github.com/rediacc/renet/pkg/certexport",
+        "github.com/rediacc/renet/pkg/certexport/trigger",
         "github.com/rediacc/renet/pkg/chunkstore",
         "github.com/rediacc/renet/pkg/chunkstore/toccrypt",
         "github.com/rediacc/renet/pkg/compose",
+        "github.com/rediacc/renet/pkg/convergeguard",
         "github.com/rediacc/renet/pkg/credentials",
         "github.com/rediacc/renet/pkg/datastore",
         "github.com/rediacc/renet/pkg/dns",
@@ -69,6 +72,8 @@
         "github.com/rediacc/renet/pkg/functions/commands",
         "github.com/rediacc/renet/pkg/functions/progress",
         "github.com/rediacc/renet/pkg/functions/vault",
+        "github.com/rediacc/renet/pkg/gpu",
+        "github.com/rediacc/renet/pkg/hostmetrics",
         "github.com/rediacc/renet/pkg/hub",
         "github.com/rediacc/renet/pkg/i18n/locales",
         "github.com/rediacc/renet/pkg/infra/aptretry",
@@ -94,6 +99,7 @@
         "github.com/rediacc/renet/pkg/procwalk",
         "github.com/rediacc/renet/pkg/prune",
         "github.com/rediacc/renet/pkg/rbd",
+        "github.com/rediacc/renet/pkg/rediaccfile",
         "github.com/rediacc/renet/pkg/repomerge",
         "github.com/rediacc/renet/pkg/repository",
         "github.com/rediacc/renet/pkg/runpaths",

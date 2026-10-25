@@ -21,10 +21,11 @@ from typing import Any
 
 from rediacc_ci.drills import converge_preflight, vm_ssh
 from rediacc_ci.drills.upgrade_converge import new_docker_socket
+from rediacc_ci.well_known import INFRA_DOMAIN
 
 STEP_ID = "G1"
 
-CDI_KIND = "rediacc.io/fake"
+CDI_KIND = INFRA_DOMAIN + "/fake"
 CDI_DEVICE = "one"
 CDI_NAME = "%s=%s" % (CDI_KIND, CDI_DEVICE)
 CDI_VERSION = "0.6.0"
@@ -256,11 +257,13 @@ def cgroup_rules_verdict(granted: str, baseline: str) -> tuple[bool, str]:
         )
     if "NOBPFTOOL" in granted or "NOBPFTOOL" in baseline:
         return False, "v2: bpftool is not installed on the worker"
-    g, b = v2_compare_immediates(granted), v2_compare_immediates(baseline)
-    extra = sorted(g - b)
+    granted_imm, baseline_imm = v2_compare_immediates(granted), v2_compare_immediates(baseline)
+    extra_imm = sorted(granted_imm - baseline_imm)
     progs = len(re.findall(r"^PROG=", granted, re.MULTILINE))
-    return bool(b) and extra == [NODE_MAJOR], "v2 extra compared values=%s (programs %d)" % (
-        extra,
+    return bool(baseline_imm) and extra_imm == [
+        NODE_MAJOR
+    ], "v2 extra compared values=%s (programs %d)" % (
+        extra_imm,
         progs,
     )
 

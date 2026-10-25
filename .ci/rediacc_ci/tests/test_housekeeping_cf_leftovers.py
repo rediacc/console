@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import email.message
 import io
 import urllib.error
 from urllib.parse import urlsplit
@@ -203,7 +204,11 @@ def test_fetch_maps_every_unreadable_answer_to_cf_error(monkeypatch):
 
     def http_403():
         raise urllib.error.HTTPError(
-            "u", 403, "no", {}, io.BytesIO(b'{"success": false, "errors": [{"code": 9109}]}')
+            "u",
+            403,
+            "no",
+            email.message.Message(),
+            io.BytesIO(b'{"success": false, "errors": [{"code": 9109}]}'),
         )
 
     cases = {

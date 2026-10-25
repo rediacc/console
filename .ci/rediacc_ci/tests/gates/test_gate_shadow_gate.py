@@ -278,6 +278,8 @@ def assert_mutation_is_caught(
             % (label, source.count(old), LIB.name)
         )
     copy.write_text(source.replace(old, new), encoding="utf-8")
+    # The module imports its sibling `./entry-point.js` (the realpath-comparing main() guard), so the copy needs that file beside it or it dies on MODULE_NOT_FOUND instead of on the mutated rule.
+    shutil.copy2(LIB.parent / "entry-point.ts", tmp_path / "entry-point.ts")
     if copy.read_bytes() == LIB.read_bytes():
         gate.log_fail("the %s mutation changed nothing; the anchor no longer matches" % label)
     result = sg(gate, "--selftest", subject=copy)

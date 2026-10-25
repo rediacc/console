@@ -10,7 +10,7 @@ import pytest
 
 from rediacc_ci.drills import converge_preflight as c
 from rediacc_ci.drills import vm_check
-from rediacc_ci.well_known import RUNTIME_DIR
+from rediacc_ci.well_known import OPT_DIR, RUNTIME_DIR
 
 GUID_R = "11111111-1111-4111-8111-111111111111"
 GUID_C = "22222222-2222-4222-8222-222222222222"
@@ -27,7 +27,7 @@ REFUSED = {
             "service": "web",
             "field": "Binds",
             "tier": "bind",
-            "message": "bind of /opt/rediacc/proxy",
+            "message": f"bind of {OPT_DIR}/proxy",
         },
         "web: cap MKNOD",
     ],
@@ -119,7 +119,7 @@ def test_result_for_matches_guid_then_name() -> None:
 
 def test_denials_read_strings_and_objects() -> None:
     lines = c.result_denials(REFUSED)
-    assert lines[0] == "web Binds bind bind of /opt/rediacc/proxy"
+    assert lines[0] == f"web Binds bind bind of {OPT_DIR}/proxy"
     assert lines[1] == "web: cap MKNOD"
     assert c.result_denials({"denials": "x"}) == []
     assert c.result_denials(None) == []
@@ -186,7 +186,7 @@ def test_config_name_is_run_scoped() -> None:
 def test_no_hardcoded_runtime_or_datastore_paths() -> None:
     # Layout paths come from rediacc_ci.well_known through upgrade_converge and the MOUNTS constant, never a literal.
     source = pathlib.Path(c.__file__).read_text()
-    assert not re.search(r'"/var/run/rediacc|"/var/lib/rediacc/(?!runtime)', source)
+    assert not re.search(r'"' + re.escape(RUNTIME_DIR) + r'|"/var/lib/rediacc/(?!runtime)', source)
 
 
 def test_both_forks_carry_a_rediaccfile_whose_up_starts_the_compose_file():

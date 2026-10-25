@@ -1685,7 +1685,7 @@ def _pipefail_precedes_pipe(script: str, line_no: int) -> bool:
     line = _shell_skeleton(script)[line_no - 1]
     setting = _PIPEFAIL_SET_RE.search(line)
     pipe = _PIPE_RE.search(line)
-    return bool(setting) and (pipe is None or setting.start() < pipe.start())
+    return setting is not None and (pipe is None or setting.start() < pipe.start())
 
 
 def _defaults_shell(node: object) -> str:

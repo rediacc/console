@@ -8,10 +8,14 @@ import re
 
 from rediacc_ci.drills import gpu_grants as g
 from rediacc_ci.drills import vm_check
+from rediacc_ci.well_known import DATASTORE_PATH, INFRA_DOMAIN, RUNTIME_DIR
+
+FAKE_KIND = INFRA_DOMAIN + "/fake"
+FAKE_DEV = FAKE_KIND + "=one"
 
 DENIAL = (
     "docker: Error response from daemon: refused by this repository's Docker API gate "
-    '(containers/create): device "rediacc.io/fake=one" is not granted to this repository; '
+    f'(containers/create): device "{FAKE_DEV}" is not granted to this repository; '
     "grant it with rdc repo gpu grant\n"
 )
 
@@ -54,13 +58,13 @@ def test_fork_tags_are_swept_as_stale_vmc_forks() -> None:
 def test_spec_text_defines_the_fake_device_with_its_numbers() -> None:
     spec = g.spec_text()
     assert 'cdiVersion: "0.6.0"' in spec
-    assert "kind: rediacc.io/fake\n" in spec
+    assert f"kind: {FAKE_KIND}\n" in spec
     assert "  - name: one\n" in spec
     assert "        - path: /dev/rediacc-fake\n" in spec
     assert "type: c\n" in spec
     assert "major: 60\n" in spec
     assert "minor: 0\n" in spec
-    assert g.CDI_NAME == "rediacc.io/fake=one"
+    assert g.CDI_NAME == FAKE_DEV
 
 
 def test_fake_node_is_not_a_default_container_device() -> None:
@@ -86,11 +90,11 @@ def test_teardown_script_removes_both_and_proves_it() -> None:
 
 
 def test_setup_verdict() -> None:
-    ok = "crw-rw-rw-    1 0        0          60,   0 Oct 25 12:00 /dev/rediacc-fake\nkind: rediacc.io/fake\n"
+    ok = f"crw-rw-rw-    1 0        0          60,   0 Oct 25 12:00 /dev/rediacc-fake\nkind: {FAKE_KIND}\n"
     assert g.setup_verdict(ok)
     assert not g.setup_verdict(ok.replace("60,   0", "1,   3"))
     assert not g.setup_verdict(ok.replace("crw", "brw"))
-    assert not g.setup_verdict(ok.replace("kind: rediacc.io/fake", ""))
+    assert not g.setup_verdict(ok.replace(f"kind: {FAKE_KIND}", ""))
     assert not g.setup_verdict("")
 
 
@@ -99,10 +103,7 @@ def test_setup_verdict() -> None:
 
 def test_docker_run_prints_its_status() -> None:
     cmd = g.docker_run(g.device_flag())
-    assert (
-        cmd
-        == "docker run --rm --device rediacc.io/fake=one busybox:1.36 true 2>&1; echo DOCKER_RC=$?"
-    )
+    assert cmd == f"docker run --rm --device {FAKE_DEV} busybox:1.36 true 2>&1; echo DOCKER_RC=$?"
     assert g.docker_rc("x\nDOCKER_RC=125\n") == 125
     assert g.docker_rc("DOCKER_RC=1\nDOCKER_RC=0\n") == 0
     assert g.docker_rc("no marker") is None
@@ -128,7 +129,7 @@ def test_not_granted_verdict() -> None:
     assert not g.not_granted_verdict(DENIAL)[0]
     other = "docker: Error response from daemon: could not select device driver\nDOCKER_RC=125\n"
     assert not g.not_granted_verdict(other)[0]
-    wrong_dev = DENIAL.replace("rediacc.io/fake=one", "nvidia.com/gpu=all") + "DOCKER_RC=125\n"
+    wrong_dev = DENIAL.replace(FAKE_DEV, "nvidia.com/gpu=all") + "DOCKER_RC=125\n"
     assert not g.not_granted_verdict(wrong_dev)[0]
 
 
@@ -159,8 +160,8 @@ def test_open_verdict() -> None:
 
 
 def test_cgroup_script_reads_both_versions_through_the_repo_socket() -> None:
-    script = g.cgroup_script("/var/run/rediacc/net-9/docker-9.sock", ("dev", "base"))
-    assert "docker -H unix:///var/run/rediacc/net-9/docker-9.sock inspect" in script
+    script = g.cgroup_script(f"{RUNTIME_DIR}/net-9/docker-9.sock", ("dev", "base"))
+    assert f"docker -H unix://{RUNTIME_DIR}/net-9/docker-9.sock inspect" in script
     assert "devices.list" in script
     assert "bpftool cgroup list" in script
     assert "bpftool prog dump xlated id" in script
@@ -236,19 +237,16 @@ def test_split_cgroup_sections() -> None:
 
 def test_grant_scripts() -> None:
     assert g.grant_show_script(9) == "renet daemon grant --network-id 9 --show"
-    assert (
-        g.revoke_script("9")
-        == "renet daemon grant --network-id 9 --revoke-device rediacc.io/fake=one"
-    )
+    assert g.revoke_script("9") == f"renet daemon grant --network-id 9 --revoke-device {FAKE_DEV}"
 
 
 def test_parse_grant_devices() -> None:
     doc = {
         "version": 1,
-        "repo_mount_path": "/mnt/rediacc/mounts/x",
+        "repo_mount_path": f"{DATASTORE_PATH}/mounts/x",
         "devices": [
             {
-                "name": "rediacc.io/fake=one",
+                "name": FAKE_DEV,
                 "exclusive": True,
                 "granted_at": "2026-10-25T00:00:00Z",
             },
@@ -256,14 +254,14 @@ def test_parse_grant_devices() -> None:
         ],
     }
     text = "level=info msg={noise}\n" + json.dumps(doc, indent=2) + "\n"
-    assert g.parse_grant_devices(text) == {"rediacc.io/fake=one": True, "nvidia.com/gpu=all": False}
+    assert g.parse_grant_devices(text) == {FAKE_DEV: True, "nvidia.com/gpu=all": False}
     assert g.parse_grant_devices(json.dumps({"version": 1, "repo_mount_path": ""})) == {}
     assert g.parse_grant_devices("no json") is None
     assert g.parse_grant_devices('{"other": 1}') is None
 
 
 def test_exclusive_refusal_verdict() -> None:
-    text = "Error: device rediacc.io/fake=one is granted exclusively to network 2816\n"
+    text = f"Error: device {FAKE_DEV} is granted exclusively to network 2816\n"
     ok, why = g.exclusive_refusal_verdict(1, text, 2816)
     assert ok
     assert "holder named=True" in why

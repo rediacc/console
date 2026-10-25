@@ -9,7 +9,6 @@ import json
 import os
 import pathlib
 import sys
-import types
 
 import pytest
 
@@ -271,7 +270,7 @@ class _ScriptedApi:
             return answers.pop(0)
 
         monkeypatch.setattr(cf_notifications.cf_auth, "curl_json", fake)
-        auth = types.SimpleNamespace(headers={})
+        auth = cf_notifications.cf_auth.Auth(token="test-token")
         self.api = cf_notifications.Api(auth, "acct", sleep=self.sleeps.append)
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import signal
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -54,7 +54,7 @@ def test_stop_reports_a_wrangler_that_survives_sigkill(monkeypatch: pytest.Monke
 
     sent: list[int] = []
     monkeypatch.setattr(dev.os, "killpg", lambda _pid, sig: sent.append(sig))
-    assert dev._stop(Proc()) is False
+    assert dev._stop(cast("Any", Proc())) is False
     assert sent == [signal.SIGINT, signal.SIGKILL]
 
 

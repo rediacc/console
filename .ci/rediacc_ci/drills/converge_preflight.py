@@ -18,13 +18,13 @@ import uuid
 from typing import Any
 
 from rediacc_ci.drills import lib, upgrade_converge, vm_ssh
-from rediacc_ci.well_known import DATASTORE_PATH
+from rediacc_ci.well_known import DATASTORE_PATH, OPT_DIR
 
 STEP_ID = "U2"
 
 MOUNTS = DATASTORE_PATH + "/mounts"
 # The directory every repo dockerd sandbox sees read-only, which a repo bind of its own is refused by the gate (plan D1, context section).
-PROXY_ROOT = "/opt/rediacc/proxy"
+PROXY_ROOT = OPT_DIR + "/proxy"
 IMAGE = "busybox:1.36"
 COMPOSE_FILE = "docker-compose.yml"
 REASON_GATE_REFUSED = "gate_refused"

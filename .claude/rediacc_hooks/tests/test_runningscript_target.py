@@ -1,6 +1,7 @@
 """`runningscript._same_script` and `live_shells`: the resolved-path match that replaced the basename-only scan (reviews 87264541.3 to .5)."""
 
 import os
+from typing import Any, cast
 
 import pytest
 
@@ -35,4 +36,4 @@ def test_a_tilde_argv_word_matches_an_absolute_target(monkeypatch, tmp_path):
 
 def test_live_shells_requires_a_target():
     with pytest.raises(TypeError):
-        runningscript.live_shells("x", 2)
+        cast("Any", runningscript.live_shells)("x", 2)

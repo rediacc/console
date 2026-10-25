@@ -906,6 +906,7 @@ function selftest(): number {
   try {
     return selftestControls(scratch);
   } finally {
+    // tree-write: safe every dir in scratch came from mkdtempSync under tmpdir() (scratchDir above)
     for (const dir of scratch) rmSync(dir, { recursive: true, force: true });
   }
 }

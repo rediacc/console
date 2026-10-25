@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import types
+from typing import Any, cast
 
 from rediacc_ci.drills import license as lic
 
@@ -94,7 +95,7 @@ def test_seed_captures_the_baseline_before_the_create_and_purges_on_failure() ->
             learn_repo_guid=lambda *_a: order.append("learn"),
             seeded=False,
         )
-        lic.License.seed_licensed_repo(fake)
+        lic.License.seed_licensed_repo(cast("Any", fake))
         assert order[:2] == ["baseline-blobs", "create"], order
         assert ("purge:%s" % [OLD] in order) is expect_purge, order
         assert fake.seeded is (not expect_purge)

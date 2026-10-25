@@ -2042,11 +2042,12 @@ def test_kill_tree_with_members_never_signals_a_dropped_leader(monkeypatch):
         # Record the signals instead of timing an exit: a bystander that was signalled but has not yet exited would otherwise pass.
         sent: list[str] = []
         real_quiet = account._kill_quiet
-        monkeypatch.setattr(
-            account,
-            "_kill_quiet",
-            lambda victim, sig: (sent.append(victim), real_quiet(victim, sig)),
-        )
+
+        def recording_kill(victim, sig):
+            sent.append(victim)
+            return real_quiet(victim, sig)
+
+        monkeypatch.setattr(account, "_kill_quiet", recording_kill)
         account._kill_tree(str(bystander.pid), account.signal.SIGKILL, [survivor.pid])
         survivor.wait(timeout=5)
         assert sent == [str(survivor.pid)], sent

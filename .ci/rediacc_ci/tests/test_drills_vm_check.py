@@ -1634,7 +1634,7 @@ def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None
 
 
 def test_shell_refused_needs_the_target_path_for_a_not_visible_answer() -> None:
-    t = "/mnt/rediacc/mounts/g/.rediacc.json"
+    t = DATASTORE_PATH + "/mounts/g/.rediacc.json"
     assert vm_check.shell_refused(
         "chmod: changing permissions of '%s': Read-only file system" % t, t
     )
