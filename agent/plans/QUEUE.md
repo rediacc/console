@@ -67,19 +67,19 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (4 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 449 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 453 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a324d91f2ce93efa6, worker:a7708fbb1a6700c92, worker:af1652ff8d46d441a.
-- Leased items: 3: #8edd7f84 (worker:a324d91f2ce93efa6, d778be9d), #98e7f50f (worker:a7708fbb1a6700c92, d778be9d), #ac638787 (worker:af1652ff8d46d441a, d778be9d).
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 4: #74f80a7c (worker:bcq83r3te, d778be9d), #8c238707 (worker:bcq83r3te, d778be9d), #98e7f50f (worker:bcq83r3te, d778be9d), #dd4ab37e (worker:a9c3bef98cd76f4df, d778be9d).
 - Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 5; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 20 plans done, 183 of 409 boxes done (44%).
+Promoted: 3 of 20 plans done, 186 of 409 boxes done (45%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -95,13 +95,13 @@ Promoted: 1 of 20 plans done, 183 of 409 boxes done (44%).
 | 10 | PLAN-w7p5a-real-run-dispatch.md | 8/9 | 1 open |
 | 11 | PLAN-pin-awscli-toolchain-python-compatible.md | 6/7 | 1 open |
 | 12 | PLAN-plan-preflight.md | 8/9 | 1 open |
-| 13 | PLAN-renet-run-docker-sock-isolation.md | 1/3 | 2 open |
+| 13 | PLAN-renet-run-docker-sock-isolation.md | 3/3 | done |
 | 14 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
 | 15 | PLAN-renet-fetch-retries.md | 0/2 | 2 open |
 | 16 | PLAN-cloudflare-spend-guard.md | 0/8 | 8 open |
 | 17 | PLAN-renet-runtime-converge.md | 3/4 | 1 open |
 | 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
-| 19 | PLAN-converge-preflight-and-repo-recovery.md | 17/18 | 1 open |
+| 19 | PLAN-converge-preflight-and-repo-recovery.md | 18/18 | done |
 | 20 | PLAN-gpu-device-grants.md | 3/12 | 9 open |
 <!-- queue:progress:end -->
 

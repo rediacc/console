@@ -492,7 +492,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 178 | 7 | 0 | 23843 |
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 475 | 1 | 18 | 57866 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
-| `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 88 | 1 | 17 | 32536 |
+| `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 89 | 0 | 18 | 32908 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
@@ -532,7 +532,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 99 | 14 | 0 | 23753 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 48 | 2 | 0 | 5317 |
-| `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 94 | 2 | 1 | 9665 |
+| `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 96 | 0 | 3 | 10755 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 39 | 1 | 3 | 7908 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |

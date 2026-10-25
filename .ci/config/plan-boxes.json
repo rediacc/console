@@ -602,11 +602,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 17,
-      "open_sigs": [
-        "5fe0b109"
-      ],
+      "open": 0,
+      "done": 18,
+      "open_sigs": [],
       "done_sigs": [
         "1b27a3ae",
         "1d51cecc",
@@ -614,6 +612,7 @@
         "4440feb5",
         "5b93fe0a",
         "5f1af841",
+        "5fe0b109",
         "61092d42",
         "6395a951",
         "6d49473a",
@@ -1264,14 +1263,13 @@
       "owner": "5008cebe",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 1,
-      "open_sigs": [
+      "open": 0,
+      "done": 3,
+      "open_sigs": [],
+      "done_sigs": [
+        "b3f4f606",
         "ecc64210",
         "f084228e"
-      ],
-      "done_sigs": [
-        "b3f4f606"
       ]
     },
     "agent/plans/PLAN-renet-runtime-converge.md": {
