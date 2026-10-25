@@ -62,6 +62,104 @@ export function getStorageQuotaBytesForPlan(planCode: string): number {
   return PLAN_LIMITS.COMMUNITY.storageQuotaBytes;
 }
 
+/** The six GFS retention knobs, as a plan states them. */
+export interface BackupRetentionKnobs {
+  keepLast: number | null;
+  keepHourly: number | null;
+  keepDaily: number | null;
+  keepWeekly: number | null;
+  keepMonthly: number | null;
+  keepYearly: number | null;
+}
+
+/**
+ * Per-plan backup retention: the policy a lineage gets when no row is declared
+ * (`default`), and the most a declared policy may ask for (`limit`).
+ *
+ * A limit of `null` leaves that knob uncapped (the storage quota still bounds
+ * the bytes); `0` means the plan does not offer the knob, so any positive value
+ * is refused. Kept beside PLAN_LIMITS rather than inside it because
+ * PLAN_LIMITS is a flat number map that the generated subscription schema and
+ * renet's schema test read as `map[string]map[string]int`.
+ */
+export const PLAN_BACKUP_RETENTION: Record<
+  PlanCode,
+  { default: BackupRetentionKnobs; limit: BackupRetentionKnobs }
+> = {
+  COMMUNITY: {
+    default: {
+      keepLast: 3,
+      keepHourly: null,
+      keepDaily: 7,
+      keepWeekly: null,
+      keepMonthly: null,
+      keepYearly: null,
+    },
+    limit: {
+      keepLast: 3,
+      keepHourly: 0,
+      keepDaily: 7,
+      keepWeekly: 0,
+      keepMonthly: 0,
+      keepYearly: 0,
+    },
+  },
+  PROFESSIONAL: {
+    default: {
+      keepLast: 7,
+      keepHourly: null,
+      keepDaily: 7,
+      keepWeekly: 4,
+      keepMonthly: 6,
+      keepYearly: null,
+    },
+    limit: {
+      keepLast: null,
+      keepHourly: null,
+      keepDaily: 7,
+      keepWeekly: 4,
+      keepMonthly: 6,
+      keepYearly: 0,
+    },
+  },
+  BUSINESS: {
+    default: {
+      keepLast: 7,
+      keepHourly: null,
+      keepDaily: 14,
+      keepWeekly: 8,
+      keepMonthly: 12,
+      keepYearly: 1,
+    },
+    limit: {
+      keepLast: null,
+      keepHourly: null,
+      keepDaily: 14,
+      keepWeekly: 8,
+      keepMonthly: 12,
+      keepYearly: 1,
+    },
+  },
+  ENTERPRISE: {
+    default: {
+      keepLast: 7,
+      keepHourly: null,
+      keepDaily: 30,
+      keepWeekly: 12,
+      keepMonthly: 24,
+      keepYearly: 7,
+    },
+    limit: {
+      keepLast: null,
+      keepHourly: null,
+      keepDaily: 30,
+      keepWeekly: 12,
+      keepMonthly: 24,
+      keepYearly: 7,
+    },
+  },
+} as const;
+
 /**
  * How long a machine holds its Floating license slot after the last repo
  * license issuance on that machine, before it auto-releases from inactivity.
