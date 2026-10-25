@@ -198,11 +198,17 @@ class _Api:
     def __init__(self, live: dict[str, list[dict[str, str]]]) -> None:
         self.live = live
         self.calls: list[tuple[str, str]] = []
+        self.bodies: list[dict[str, str]] = []
 
-    def __call__(self, method: str, path: str, token: str) -> object:
+    def __call__(
+        self, method: str, path: str, token: str, body: dict[str, str] | None = None
+    ) -> object:
         assert token == "tok"
         self.calls.append((method, path))
         worker = path.split("/scripts/")[1].split("/", maxsplit=1)[0]
+        if body is not None:
+            self.bodies.append(body)
+            self.live[worker] = [*self.live[worker], {"name": body["name"], "type": "secret_text"}]
         if method == "GET":
             return self.live[worker]
         return {}
@@ -274,3 +280,98 @@ def test_prune_api_failure_fails_closed():
 def test_prune_rejects_unknown_arguments():
     rc, _l, _r = prune.run(["--bogus"], ENV, _Api({}))
     assert rc == 2
+
+
+SECRET_VALUE = "s3cr3t-value-never-printed"
+
+
+def _bws(have: dict[str, str]):
+    return lambda keys: {k: have[k] for k in keys if k in have}
+
+
+def _archive(api, have, *extra):
+    return prune.run(
+        ["--region", "eu", "--target", "stable", "--archive", *extra],
+        ENV,
+        api,
+        values=_bws(have),
+    )
+
+
+def test_prune_archive_puts_then_confirms_then_deletes():
+    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
+    assert rc == 0
+    assert [m for m, _p in api.calls] == ["GET", "PUT", "GET", "DELETE"]
+    assert api.bodies == [
+        {"name": "__ARCHIVE_API_KEY", "text": SECRET_VALUE, "type": "secret_text"}
+    ]
+    assert api.calls[-1][1].endswith("/secrets/API_KEY")
+    assert "archived rediacc-account-eu: API_KEY as __ARCHIVE_API_KEY" in lines
+
+
+def test_prune_archive_leaves_a_name_without_a_bws_value():
+    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY", "ODD_NAME")})
+    rc, lines, _r = _archive(api, {})
+    assert rc == 1
+    assert {m for m, _p in api.calls} == {"GET"}
+    text = "\n".join(lines)
+    assert "no recoverable copy, left in place: rediacc-account-eu: API_KEY" in text
+    assert "ODD_NAME (bws key: unmapped)" in text
+
+
+def test_prune_archive_uses_the_region_suffix_for_otlp():
+    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OTLP_CLIENT_CREDENTIALS")})
+    rc, _l, _r = _archive(
+        api, {"OBS_OTLP_CREDENTIALS_EU": SECRET_VALUE, "OBS_OTLP_CREDENTIALS_US": "x"}
+    )
+    assert rc == 0
+    assert api.bodies[0]["text"] == SECRET_VALUE
+
+
+def test_prune_archive_names_are_not_extras():
+    live = _names(*prune.expected_names(), "__ARCHIVE_API_KEY")
+    api = _Api({"rediacc-account-eu": live})
+    rc, lines, rows = _archive(api, {})
+    assert rc == 0
+    assert rows[0].extras == []
+    assert "extras: none" in lines[0]
+
+
+def test_prune_archive_never_prints_the_value():
+    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    _rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
+    assert SECRET_VALUE not in "\n".join(lines)
+    _rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE}, "--dry-run")
+    assert SECRET_VALUE not in "\n".join(lines)
+
+
+def test_prune_archive_dry_run_writes_nothing():
+    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE}, "--dry-run")
+    assert rc == 1
+    assert {m for m, _p in api.calls} == {"GET"}
+    assert any(line.startswith("would archive") for line in lines)
+
+
+def test_prune_archive_keeps_the_original_when_the_archive_is_not_listed():
+    class Lossy(_Api):
+        def __call__(self, method, path, token, body=None):
+            if body is not None:
+                self.calls.append((method, path))
+                return {}
+            return super().__call__(method, path, token)
+
+    api = Lossy({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
+    assert rc == 1
+    assert "DELETE" not in {m for m, _p in api.calls}
+    assert any("not listed after the PUT" in line for line in lines)
+
+
+def test_prune_archive_needs_a_region():
+    api = _Api({})
+    rc, lines, _r = prune.run(["--archive"], ENV, api, values=_bws({}))
+    assert rc == 2
+    assert api.calls == []
+    assert any("--archive needs --region" in line for line in lines)

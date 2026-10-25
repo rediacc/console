@@ -75,7 +75,7 @@ PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers 
   python3 -m rediacc_ci.ops.prune_worker_secrets --region eu
 ```
 
-The default is a listing. `--delete` removes each extra through Cloudflare's `DELETE /accounts/{id}/workers/scripts/{name}/secrets/{secret}`, which keeps the ASSETS binding (measured 2026-10-15); `wrangler secret delete` mints a new Worker version and does not. `check:ci-worker-secret-names` prints the same extras when a token is in its environment.
+The default is a listing. `--archive --region <r>` is the way to remove extras: Worker secrets are write-only, so each extra's value is read from bws (`LEGACY_BWS` maps a legacy name to its successor key), PUT as `__ARCHIVE_<NAME>`, confirmed listed, and only then deleted; a name with no bws value is reported and left in place. Add `--dry-run` to see which names have a recoverable value without writing anything. `--delete` alone keeps no copy. Both remove through Cloudflare's `DELETE /accounts/{id}/workers/scripts/{name}/secrets/{secret}`, which keeps the ASSETS binding (measured 2026-10-15); `wrangler secret delete` mints a new Worker version and does not. The archive PUT is not measured for the ASSETS binding yet, so check the Worker's static assets after the first run. `check:ci-worker-secret-names` prints the same extras when a token is in its environment.
 
 ## 4. Local path: the steps
 
