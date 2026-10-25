@@ -1666,19 +1666,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 9,
+      "open": 6,
+      "done": 13,
       "open_sigs": [
         "32531c67",
         "539c554f",
-        "84368fdf",
         "9b40e7bf",
         "9cb0a359",
         "b5c07118",
-        "df51e619",
-        "e3f0064c",
-        "e5ddcfb1",
-        "f4d97e1f"
+        "e5ddcfb1"
       ],
       "done_sigs": [
         "0b907951",
@@ -1687,9 +1683,13 @@
         "50b4e6c7",
         "60ec1797",
         "7ccd27a0",
+        "84368fdf",
         "9f3351f1",
         "c1ebf2b2",
-        "f163dee7"
+        "df51e619",
+        "e3f0064c",
+        "f163dee7",
+        "f4d97e1f"
       ]
     },
     "agent/plans/PLAN-test-advisor.md": {
