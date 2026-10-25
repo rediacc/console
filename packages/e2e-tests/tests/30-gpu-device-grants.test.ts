@@ -103,7 +103,13 @@ test.describe
         once('repository_gpu_revoke', ` --device ${DEVICE}`)
       );
       expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(true);
+      // `--show` prints the grant after the revoke on stdout (logs go to stderr), so an
+      // empty or missing grant cannot pass this by printing nothing.
+      const shown = result.stdout.toLowerCase();
+      expect(shown, runner.getCombinedOutput(result)).toContain('devices');
+      expect(shown).not.toContain(DEVICE);
 
+      // The network's grants line, when the grant record outlives its last device.
       const listed = await runner.executeOnWorker(listCmd);
       expect(runner.isSuccess(listed), runner.getCombinedOutput(listed)).toBe(true);
       expect(grantLine(runner.getCombinedOutput(listed))).not.toContain(DEVICE);
