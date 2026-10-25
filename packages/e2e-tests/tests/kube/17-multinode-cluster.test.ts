@@ -236,7 +236,10 @@ test.describe
     //
     // Match the datastore path ANYWHERE on the /proc/mounts line (mountpoint, device, OR overlay options), take the MOUNTPOINT field, exclude the datastore mount itself (that one is `datastore detach`'s to release cleanly), and detach deepest-first. Repeat, because unwinding one layer can expose another. NOTE ON SHELL FORM: executeViaBridge relays through THREE shells (local sh →
     // bridge sh → target sh) and escapeForNestedSSH escapes only backslashes and quotes, NOT `$` — a shell variable or `$(...)` here would be expanded on the LOCAL host, not on the VM. So the selection is kept variable-free and every path is interpolated by TypeScript.
-    const unwindSubmounts = async (runner: RenetFunctionsTestRunner, mount: string): Promise<void> => {
+    const unwindSubmounts = async (
+      runner: RenetFunctionsTestRunner,
+      mount: string
+    ): Promise<void> => {
       const root = mount.replace(/\/[^/]+$/, ''); // /mnt/rediacc-ds
       // Holders = (a) every mountpoint strictly UNDER our datastore mount, plus
       // (b) every mountpoint OUTSIDE the datastore root whose line references our mount (the /run/k3s containerd overlays). Excluding `^<root>/` from (b) keeps a SIBLING datastore (e.g. the fork's `<mount>-f1`, which matches our path as a prefix) out of the list — lazily unmounting another datastore's mountpoint would strand its dm device.
@@ -255,7 +258,10 @@ test.describe
     // NOTE (#26, product-fixed): the node CSI units (rediacc-csi / -provisioner / -snapshotter) are host daemons whose socket + --kubelet-root live INSIDE the cluster's control datastore, so while they run the datastore cannot be released ("target is busy", with NO mount holder to find). `renet kube install` auto-STARTS them; nothing STOPPED them. The product now owns both halves
     // — `datastore detach` stops the units hosted on the datastore it is releasing and `kube uninstall` takes a leaving node's units with it — so this suite carries NO test-side CSI teardown on purpose: a green migrate (test 6) and a green teardown (test 7) here ARE the live proof of the #26 fold, including that the fenced re-attach restarts CSI (which is what heals migrate by
     // construction). The THIRD holder class, after mounts (#20) and the CSI daemons (#26): a loop device whose BACKING FILE sits on the datastore (the per-volume LUKS stack the repo's PV rides). It pins the filesystem with no mountpoint to find, so the mount-level unwind reports "clean" while `umount` still returns EBUSY. Listing it turns that dead end into evidence.
-    const deviceHolders = async (runner: RenetFunctionsTestRunner, mount: string): Promise<string[]> => {
+    const deviceHolders = async (
+      runner: RenetFunctionsTestRunner,
+      mount: string
+    ): Promise<string[]> => {
       const res = await runner.executeViaBridge(
         `sudo bash -c 'losetup -a | grep -F "${mount}"' 2>/dev/null; true`
       );

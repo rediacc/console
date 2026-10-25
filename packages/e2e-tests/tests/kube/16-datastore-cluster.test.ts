@@ -102,7 +102,10 @@ test.describe
     };
 
     // The k3s server-ca fingerprint identifies the cluster PKI. A fork MUST NOT share it (F1); a migrate MUST preserve it.
-    const caFingerprintOn = async (runner: RenetFunctionsTestRunner, mount: string): Promise<string> => {
+    const caFingerprintOn = async (
+      runner: RenetFunctionsTestRunner,
+      mount: string
+    ): Promise<string> => {
       const res = await runner.executeViaBridge(
         `sudo openssl x509 -in ${mount}/.rediacc/k3s/data/server/tls/server-ca.crt -noout -fingerprint -sha256`
       );

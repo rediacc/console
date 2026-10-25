@@ -16,7 +16,10 @@
  * destination throws rather than producing a unit with no ExecStart at all.
  */
 
-import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_DATASTORE_PATH,
+} from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import { buildBackupCommands } from '../backup/backup-schedule-unit-generator.js';
@@ -29,11 +32,12 @@ const hosted = (name = 'chunks'): BackupStrategyDestination => ({
   kind: 'hosted-service',
 });
 
-const storage = (name = 'offsite'): BackupStrategyDestination => ({
-  name,
-  kind: 'storage',
-  storage: 'onedrive',
-});
+const storage = (name = 'offsite'): BackupStrategyDestination =>
+  ({
+    name,
+    kind: 'storage',
+    storage: 'onedrive',
+  }) as unknown as BackupStrategyDestination;
 
 /**
  * A destination as it appears in the operator's real config: no `kind` at all.
@@ -138,7 +142,7 @@ describe('scheduled backups to the chunk store', () => {
   });
 
   it('refuses destinations on two different endpoints, which one snapshot cannot serve', () => {
-    const a: BackupStrategyDestination = { ...hosted('a'), endpoint: 'https://eu.rediacc.com' };
+    const a: BackupStrategyDestination = { ...hosted('a'), endpoint: WK_ACCOUNT_DEFAULT_ORIGIN };
     const b: BackupStrategyDestination = { ...hosted('b'), endpoint: 'https://s3.example.com' };
     expect(() => buildBackupCommands(strategy(), [a, b], DATASTORE, RENET)).toThrow(
       /2 different endpoints/

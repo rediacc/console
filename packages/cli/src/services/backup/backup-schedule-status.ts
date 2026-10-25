@@ -8,6 +8,7 @@
  * thing said.
  */
 
+import { TELEMETRY_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { cronIntervalMs } from './backup-schedule-coverage.js';
 import { parseSystemctlShow } from './backup-schedule-reconcile.js';
@@ -114,7 +115,7 @@ function missedReason(
   nowMs: number
 ): string | undefined {
   if (timer.ActiveState !== 'active') {
-    return `timer is ${timer.ActiveState ?? 'unknown'}, so no run is queued`;
+    return `timer is ${timer.ActiveState ?? TELEMETRY_DEFAULTS.UNKNOWN}, so no run is queued`;
   }
   if (result !== 'success' && result !== '-' && result !== 'running') {
     return `last run ended with ${result}`;

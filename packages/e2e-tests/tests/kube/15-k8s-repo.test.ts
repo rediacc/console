@@ -261,7 +261,10 @@ ${dataSource ?? ''}`;
     // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what it created; the missing product porcelain is gate finding #20 (4 witnesses).
     //
     // Shell form: executeViaBridge relays through THREE shells and escapeForNestedSSH does NOT escape `$`, so this stays variable-free (a `$(...)` would be expanded on the LOCAL host). Excluding `^<root>/` from the outside-holder branch keeps a SIBLING datastore (a prefix match) out of the list.
-    const unwindSubmounts = async (runner: RenetFunctionsTestRunner, mount: string): Promise<void> => {
+    const unwindSubmounts = async (
+      runner: RenetFunctionsTestRunner,
+      mount: string
+    ): Promise<void> => {
       const root = mount.replace(/\/[^/]+$/, '');
       const select =
         `{ cut -d" " -f2 /proc/mounts | grep "^${mount}/"; ` +

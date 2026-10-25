@@ -19,7 +19,7 @@ import type { ScheduledStrategy } from './backup-schedule-targets.js';
  */
 function unschedulableDestinationReason(dest: { name: string; kind?: string }): string | undefined {
   // A destination with no kind predates the field, when the only kind was the removed `storage` one.
-  const kind = dest.kind ?? 'storage';
+  const kind = dest.kind ?? BACKUP_DEFAULTS.LEGACY_DESTINATION_KIND;
   if (kind === BACKUP_DEFAULTS.NEW_DESTINATION_KIND) return undefined;
   return (
     `Backup destination "${dest.name}" has kind "${kind}". Only ` +

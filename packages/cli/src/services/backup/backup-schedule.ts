@@ -21,6 +21,7 @@
  * - backup-schedule/execute.ts       , mutations + verification + summary
  */
 
+import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import type { BackupStrategyConfig } from '../../types/index.js';
 import { refreshRepoLicensesBatch } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
@@ -320,7 +321,7 @@ export async function reportBackupScheduleStatus(
         lastRun: r.lastRun,
         result: r.result,
         nextRun: r.nextRun,
-        missed: r.missed ? (r.reason ?? 'yes') : '-',
+        missed: r.missed ? (r.reason ?? BACKUP_DEFAULTS.MISSED_REASON_FALLBACK) : '-',
       })),
       'table'
     );

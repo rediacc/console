@@ -20,6 +20,6 @@ export function normalizeV3Document<T>(doc: T): T {
   if (!isPlainObject(resources)) return doc;
   const storages = resources.storages;
   if (!isPlainObject(storages) || Object.keys(storages).length > 0) return doc;
-  const { storages: _dropped, ...rest } = resources;
+  const rest = Object.fromEntries(Object.entries(resources).filter(([key]) => key !== 'storages'));
   return { ...doc, resources: rest } as T;
 }

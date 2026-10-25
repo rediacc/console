@@ -7,7 +7,10 @@ import { log } from '../src/utils/log';
  * Check that the datastore on a VM is initialized, laying it down when it is not.
  * Returns whether the datastore is usable on that VM.
  */
-async function ensureDatastoreInitialized(runner: RenetFunctionsTestRunner, vm: string): Promise<boolean> {
+async function ensureDatastoreInitialized(
+  runner: RenetFunctionsTestRunner,
+  vm: string
+): Promise<boolean> {
   const result = await runner.testFunctionOnMachine(vm, {
     function: 'datastore_status',
     datastorePath: DEFAULT_DATASTORE_PATH,

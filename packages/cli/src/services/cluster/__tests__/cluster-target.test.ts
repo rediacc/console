@@ -1,10 +1,6 @@
 import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type {
-  ClusterConfig,
-  MachineConfig,
-  RdcConfig,
-} from '../../../types/index.js';
+import type { ClusterConfig, MachineConfig, RdcConfig } from '../../../types/index.js';
 import { resolveRemoteName } from '../../../utils/remote-resolve.js';
 import { assertUniqueResourceName, resolveControlNode } from '../../config/config-cluster-ops.js';
 import { configService } from '../../config/config-resources.js';

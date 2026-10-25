@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
-import { RenetFunctionsTestRunner, type ExecResult } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
+import {
+  RenetFunctionsTestRunner,
+  type ExecResult,
+} from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Multi-Machine Operations Tests

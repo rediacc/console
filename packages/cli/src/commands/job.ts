@@ -229,7 +229,12 @@ async function runJobLogs(jobId: string, options: JobCommandOptions): Promise<vo
     }
 
     // The stream ended because the job did. Report how it went, so a follow leaves the operator knowing the outcome rather than just a stopped log.
-    const status = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId, options.machine);
+    const status = await readJobStatus(
+      conn.lease.sftp,
+      conn.remoteRenetPath,
+      jobId,
+      options.machine
+    );
     reportTerminalState(status);
   });
 }
@@ -256,7 +261,12 @@ async function runJobCancel(options: JobCommandOptions, format: OutputFormat): P
   const jobId = options.id as string;
 
   await withJobConnection(options.machine, 'provision', async (conn) => {
-    const current = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId, options.machine);
+    const current = await readJobStatus(
+      conn.lease.sftp,
+      conn.remoteRenetPath,
+      jobId,
+      options.machine
+    );
 
     // Cancelling a finished job is a no-op machine-side, so do not make the operator confirm something that will not happen.
     if (isTerminalState(current.state)) {

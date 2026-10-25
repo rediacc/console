@@ -21,6 +21,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import { computeDesiredUnits } from '../backup/backup-schedule-reconcile.js';
 import { machineUnitSpecs, type ScheduledStrategy } from '../backup/backup-schedule-targets.js';
@@ -133,7 +134,7 @@ const G = {
 
 const config = {
   resources: {
-    machines: { m1: { ip: '10.0.0.1', user: 'u', datastore: '/mnt/rediacc' } },
+    machines: { m1: { ip: '10.0.0.1', user: 'u', datastore: WK_DATASTORE_PATH } },
     datastores: { pool: { backend: { kind: 'local', machine: 'm1', path: '/mnt/pool' } } },
     repositories: {
       mail: {
@@ -213,7 +214,7 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
   it('the pre-G1 output, a repo NAME on --repo, is refused (control)', () => {
     expect(
       snapshotArgvProblems(
-        '/usr/bin/renet backup snapshot --datastore /mnt/rediacc --repo mail',
+        `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --repo mail`,
         set
       )
     ).toEqual(['--repo takes repository GUIDs only, got "mail"']);

@@ -29,23 +29,23 @@ describe('parseRepoFilter', () => {
 
 describe('buildStrategyUpdate include/exclude', () => {
   it('sets exclude and clears include (mutually exclusive)', () => {
-    const u = buildStrategyUpdate({ exclude: 'demo-stackoverflow' });
+    const u = buildStrategyUpdate({ exclude: 'demo-stackoverflow' }, undefined);
     expect(u.exclude).toEqual(['demo-stackoverflow']);
     expect(u.include).toBeUndefined();
   });
 
   it('sets include and clears exclude', () => {
-    const u = buildStrategyUpdate({ include: 'mail,gitlab' });
+    const u = buildStrategyUpdate({ include: 'mail,gitlab' }, undefined);
     expect(u.include).toEqual(['mail', 'gitlab']);
     expect(u.exclude).toBeUndefined();
   });
 
   it('clears the filter when exclude is empty / none (both undefined)', () => {
-    const cleared = buildStrategyUpdate({ exclude: '' });
+    const cleared = buildStrategyUpdate({ exclude: '' }, undefined);
     expect(cleared.exclude).toBeUndefined();
     expect(cleared.include).toBeUndefined();
 
-    const none = buildStrategyUpdate({ exclude: 'none' });
+    const none = buildStrategyUpdate({ exclude: 'none' }, undefined);
     expect(none.exclude).toBeUndefined();
     expect(none.include).toBeUndefined();
   });
@@ -54,13 +54,13 @@ describe('buildStrategyUpdate include/exclude', () => {
     // The inverse of what this asserted until 2026-08-15. `--mode cold` was refused here because scheduling it would have promised a container
     // quiesce that `backup snapshot` could not perform; the verb grew --cold,
     // so the refusal went with it. The schema's enum is exactly hot|cold, so there is no third value left for a guard to catch, one that survived would be a check that can never fire.
-    expect(buildStrategyUpdate({ mode: 'cold' }).mode).toBe('cold');
-    expect(buildStrategyUpdate({ mode: 'hot' }).mode).toBe('hot');
+    expect(buildStrategyUpdate({ mode: 'cold' }, undefined).mode).toBe('cold');
+    expect(buildStrategyUpdate({ mode: 'hot' }, undefined).mode).toBe('hot');
   });
 
   it('leaves a stored mode alone when --mode is not passed', () => {
     // Editing the cron of an existing strategy must not rewrite its mode.
-    expect(buildStrategyUpdate({ cron: '0 4 * * *' }).mode).toBeUndefined();
+    expect(buildStrategyUpdate({ cron: '0 4 * * *' }, undefined).mode).toBeUndefined();
   });
 
   it('passes through other fields and leaves filters untouched when not provided', () => {
@@ -144,16 +144,16 @@ describe('creating a destination an operator can actually schedule', () => {
 
 describe('strategy retention (F4)', () => {
   it('--retention parses name=count pairs into the stored policy', () => {
-    const u = buildStrategyUpdate({ retention: 'last=7,daily=7,weekly=4,monthly=6' });
+    const u = buildStrategyUpdate({ retention: 'last=7,daily=7,weekly=4,monthly=6' }, undefined);
     expect(u.retention).toEqual({ keepLast: 7, keepDaily: 7, keepWeekly: 4, keepMonthly: 6 });
   });
 
   it('leaves retention out of the update when the flag is absent, so a set never wipes it', () => {
-    expect('retention' in buildStrategyUpdate({ cron: '0 3 * * *' })).toBe(false);
+    expect('retention' in buildStrategyUpdate({ cron: '0 3 * * *' }, undefined)).toBe(false);
   });
 
   it('"none" clears the stored policy', () => {
-    const u = buildStrategyUpdate({ retention: 'none' });
+    const u = buildStrategyUpdate({ retention: 'none' }, undefined);
     expect('retention' in u).toBe(true);
     expect(u.retention).toBeUndefined();
   });

@@ -297,7 +297,10 @@ class LocalExecutorService {
     return {
       success: exitCode === 0,
       exitCode,
-      error: exitCode === 0 ? undefined : buildRenetExitError(exitCode, stderr, stdout, options.machineName),
+      error:
+        exitCode === 0
+          ? undefined
+          : buildRenetExitError(exitCode, stderr, stdout, options.machineName),
       durationMs: operationMs,
       stdout,
       stderr,

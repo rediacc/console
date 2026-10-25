@@ -170,7 +170,10 @@ const readCliConfig = (cli: CliRunner): CliConfigFile =>
  * suites share, that is not setup, it is collateral. So probe first and only
  * init when there is genuinely nothing there.
  */
-export const ensureDatastore = async (runner: RenetFunctionsTestRunner, label: string): Promise<void> => {
+export const ensureDatastore = async (
+  runner: RenetFunctionsTestRunner,
+  label: string
+): Promise<void> => {
   const init = await runner.datastoreInitPool('10G', DS, false);
   if (init.code === 0) return;
   // Without --force, renet REFUSES an existing BTRFS datastore by name ("datastore already exists", datastore_init.go:106-111). That refusal is the answer this function wants, so it is the success case, not a failure — and it is a more reliable probe than a shell test, whose `&&`/`||` has to survive two levels of SSH quoting to mean anything.

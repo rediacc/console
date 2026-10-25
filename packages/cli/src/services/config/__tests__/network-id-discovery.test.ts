@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // PLAN-config-networkid-discovery T3: a synced ID beats discovery, a discovered ID beats allocation, a definite absence allocates above the target machine's used set, an unreachable machine fails closed, and a mismatch adopts the persisted ID.
@@ -136,10 +137,10 @@ describe('resolveMissingNetworkId', () => {
     await resolveMissingNetworkId({
       repository: 'y',
       repoGuid: GUID,
-      target: { machine: 'm', datastore: '/mnt/rediacc/datastores/fast' },
+      target: { machine: 'm', datastore: `${WK_DATASTORE_PATH}/datastores/fast` },
       allocate: vi.fn(),
     });
-    expect(h.calls[0].datastore).toBe('/mnt/rediacc/datastores/fast');
+    expect(h.calls[0].datastore).toBe(`${WK_DATASTORE_PATH}/datastores/fast`);
   });
 });
 
@@ -160,7 +161,7 @@ describe('ensureRepositoryNetworkId', () => {
 
 describe('network-ID conflicts', () => {
   const inUse = JSON.stringify({
-    holder: { kind: 'repo', name: 'x-guid', datastore: '/mnt/rediacc' },
+    holder: { kind: 'repo', name: 'x-guid', datastore: WK_DATASTORE_PATH },
     code: 'network_id_in_use',
     message: 'held',
     network_id: 2880,
@@ -171,7 +172,7 @@ describe('network-ID conflicts', () => {
     expect(parseNetworkIdConflict({ stderr: `noise\n${inUse}\n` })).toEqual({
       code: 'network_id_in_use',
       networkId: 2880,
-      holder: { kind: 'repo', name: 'x-guid', datastore: '/mnt/rediacc' },
+      holder: { kind: 'repo', name: 'x-guid', datastore: WK_DATASTORE_PATH },
     });
     expect(parseNetworkIdConflict({ stderr: `[relay] ${inUse}` })?.code).toBe('network_id_in_use');
     expect(parseNetworkIdConflict({ stderr: 'renet exited with code 1' })).toBeUndefined();

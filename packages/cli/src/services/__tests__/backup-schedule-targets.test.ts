@@ -5,6 +5,7 @@
  * only repositories placed on a unit's datastore reach that unit.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import {
   coverageByGuid,
@@ -30,7 +31,7 @@ const G = {
 const config = {
   resources: {
     machines: {
-      m1: { ip: '10.0.0.1', user: 'u', datastore: '/mnt/rediacc' },
+      m1: { ip: '10.0.0.1', user: 'u', datastore: WK_DATASTORE_PATH },
       m2: { ip: '10.0.0.2', user: 'u' },
     },
     datastores: {
@@ -75,7 +76,7 @@ const strategy = (over: Partial<ScheduledStrategy> = {}): ScheduledStrategy => (
   destinations: [hosted],
   ...over,
 });
-const implicit = { key: undefined, path: '/mnt/rediacc' };
+const implicit = { key: undefined, path: WK_DATASTORE_PATH };
 
 describe('scheduleDatastoresFor (G5)', () => {
   it('lists the implicit datastore, named local ones on the machine, and attached rbd ones', () => {
@@ -85,7 +86,7 @@ describe('scheduleDatastoresFor (G5)', () => {
       { key: 'shared', path: '/mnt/shared' },
     ]);
     expect(scheduleDatastoresFor(config, 'm2')).toEqual([
-      { key: undefined, path: '/mnt/rediacc' },
+      { key: undefined, path: WK_DATASTORE_PATH },
       { key: 'other', path: '/mnt/other' },
     ]);
   });
@@ -162,7 +163,7 @@ describe('strategyUnitSpecs (G1)', () => {
       spec.scope
     );
     expect(commands).toEqual([
-      `/usr/bin/renet backup snapshot --datastore /mnt/rediacc --repo ${G.mail} --repo ${G.mailFork}`,
+      `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --repo ${G.mail} --repo ${G.mailFork}`,
     ]);
   });
 });
@@ -175,7 +176,7 @@ describe('machineUnitSpecs (G5)', () => {
       'm1'
     );
     expect(specs.map((s) => [s.unitName, s.datastore.path, s.scope.include])).toEqual([
-      ['s', '/mnt/rediacc', [G.gitlab]],
+      ['s', WK_DATASTORE_PATH, [G.gitlab]],
       ['s.ds.pool', '/mnt/pool', [G.pool]],
       ['s.ds.shared', '/mnt/shared', [G.rbd]],
     ]);

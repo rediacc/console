@@ -469,6 +469,12 @@ export const BACKUP_DEFAULTS = {
   MODE: 'hot' as const,
   /** Kind of every backup destination: the content-addressed chunk store, the only kind `rdc backup schedule` can deploy. */
   NEW_DESTINATION_KIND: 'hosted-service' as const,
+  /** Kind a destination without a `kind` field was, before the field existed: the removed `storage` kind. Names it in refusals. */
+  LEGACY_DESTINATION_KIND: 'storage' as const,
+  /** Marker in the missed-run column when a run was missed without a recorded reason. */
+  MISSED_REASON_FALLBACK: 'yes' as const,
+  /** Machine wording in a version-skew message when the failing job has no machine name. */
+  UNNAMED_TARGET_MACHINE: 'the target machine' as const,
 } as const;
 
 /**

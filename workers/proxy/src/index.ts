@@ -69,10 +69,13 @@ function activeSpan(ctx: ExecutionContext | undefined): RuntimeSpan | undefined 
 /** Identity attributes only: never a token, org id, team id or tenant key. */
 function tagRequest(span: RuntimeSpan | undefined, request: Request, env: Env): void {
   if (!span) return;
-  span.setAttribute('rediacc.region', env.REGION || DEFAULT_REGION);
-  span.setAttribute('deployment.environment', env.ENVIRONMENT || DEFAULT_ENVIRONMENT);
+  span.setAttribute('rediacc.region', env.REGION ?? DEFAULT_REGION);
+  span.setAttribute('deployment.environment', env.ENVIRONMENT ?? DEFAULT_ENVIRONMENT);
   const probe = request.headers.get(PROBE_HEADER);
-  if (probe && UUID_RE.test(probe)) span.setAttribute('rediacc.probe', probe.toLowerCase());
+  if (probe && UUID_RE.test(probe)) {
+    span.setAttribute('rediacc.probe', probe.toLowerCase());
+    console.warn(`telemetry-probe ${probe}`);
+  }
 }
 
 /**
@@ -84,7 +87,7 @@ export function executorEnvVars(env: Env): Record<string, string> {
   return {
     REDIACC_TOKEN: env.EXECUTOR_TOKEN,
     REDIACC_ACCOUNT_SERVER: env.ACCOUNT ? `http://${ACCOUNT_EGRESS_HOST}` : env.ACCOUNT_URL,
-    REDIACC_REGION: env.REGION || DEFAULT_REGION,
+    REDIACC_REGION: env.REGION ?? DEFAULT_REGION,
   };
 }
 

@@ -17,6 +17,7 @@
  * local-executor, so local-executor can import from here without a cycle.
  */
 
+import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { formatStepDuration, getActiveLabel, getDoneText } from '../../utils/timeline.js';
 import { configService } from '../config/config-resources.js';
@@ -498,7 +499,7 @@ function failureDetail(
 ): string {
   // A flag the remote renet does not know is version skew, not a job failure: say so before the cobra usage text.
   if (isRenetFlagUnsupported(stderr || stdout)) {
-    return `Failed to ${what}: ${renetOlderThanCliMessage(machineName ?? 'the target machine')}`;
+    return `Failed to ${what}: ${renetOlderThanCliMessage(machineName ?? BACKUP_DEFAULTS.UNNAMED_TARGET_MACHINE)}`;
   }
   const detail = (stderr || stdout).trim().split('\n')[0] ?? '';
   return detail

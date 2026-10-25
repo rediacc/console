@@ -49,7 +49,12 @@ const baseConfig = {
   encryption: { mode: 'plaintext' },
   resources: {
     machines: { m1: { ip: '10.0.0.1', user: 'root' } },
-    repositories: { rOld: { grand: 'latest', tags: { latest: { repositoryGuid: '11111111-1111-4111-8111-aaaaaaaaaaaa' } } } },
+    repositories: {
+      rOld: {
+        grand: 'latest',
+        tags: { latest: { repositoryGuid: '11111111-1111-4111-8111-aaaaaaaaaaaa' } },
+      },
+    },
   },
 } as unknown as RdcConfig;
 
@@ -126,7 +131,12 @@ describe('RemoteResourceState persist', () => {
         defaults: { universalUser: 'from-b' },
         resources: {
           machines: { m1: { ip: '10.0.0.1', user: 'root' } },
-          repositories: { rNew: { grand: 'latest', tags: { latest: { repositoryGuid: '22222222-2222-4222-8222-bbbbbbbbbbbb' } } } },
+          repositories: {
+            rNew: {
+              grand: 'latest',
+              tags: { latest: { repositoryGuid: '22222222-2222-4222-8222-bbbbbbbbbbbb' } },
+            },
+          },
         },
       },
       version: 5,

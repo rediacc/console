@@ -352,6 +352,18 @@ describe('span attributes (telemetry export T14)', () => {
     });
   }
 
+  it('logs a telemetry-probe line for a probed request, and none for a non-UUID header', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { ctx } = traced();
+    await worker.fetch(probed('/v1/health'), env(), ctx);
+    expect(log).toHaveBeenCalledWith(`telemetry-probe ${PROBE}`);
+
+    log.mockClear();
+    await worker.fetch(probed('/v1/health', undefined, 'rdt_caller'), env(), traced().ctx);
+    expect(log).not.toHaveBeenCalledWith(expect.stringContaining('telemetry-probe'));
+    log.mockRestore();
+  });
+
   it('records no probe for a header that is not a UUID', async () => {
     const { ctx, attrs } = traced();
     await worker.fetch(probed('/v1/health', undefined, 'rdt_caller'), env(), ctx);
@@ -364,7 +376,8 @@ describe('span attributes (telemetry export T14)', () => {
     if (typeof arg === 'string') return arg;
     if (arg instanceof Error) return `${arg.name}: ${arg.message}`;
     try {
-      return JSON.stringify(arg) ?? String(arg);
+      const json: string | undefined = JSON.stringify(arg);
+      return json ?? String(arg);
     } catch {
       return String(arg);
     }

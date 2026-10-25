@@ -342,9 +342,9 @@ describe('config-schema', () => {
     });
 
     it('refuses a kind-less destination instead of defaulting it', () => {
-      expect(BackupDestinationSchema.safeParse({ name: 'legacy', storage: 'microsoft' }).success).toBe(
-        false
-      );
+      expect(
+        BackupDestinationSchema.safeParse({ name: 'legacy', storage: 'microsoft' }).success
+      ).toBe(false);
     });
 
     it('accepts a hosted-service destination with a credential bag', () => {

@@ -411,7 +411,14 @@ describe('generateServiceUnit', () => {
       _testing.generateServiceUnit(
         'mixed',
         { schedule: '0 * * * *', destinations: [] },
-        [HOSTED_DEST, { kind: 'storage' as const, name: 'dest2', storage: 'm2' }],
+        [
+          HOSTED_DEST,
+          {
+            kind: 'storage',
+            name: 'dest2',
+            storage: 'm2',
+          } as unknown as import('../../types/index.js').BackupStrategyDestination,
+        ],
         WK_DATASTORE_PATH,
         '/usr/bin/renet'
       );
@@ -426,7 +433,13 @@ describe('generateServiceUnit', () => {
       _testing.generateServiceUnit(
         'hourly-hot',
         { schedule: '0 * * * *', mode: 'hot', destinations: [] },
-        [{ kind: 'storage' as const, name: 'onedrive-hourly', storage: 'microsoft' }],
+        [
+          {
+            kind: 'storage',
+            name: 'onedrive-hourly',
+            storage: 'microsoft',
+          } as unknown as import('../../types/index.js').BackupStrategyDestination,
+        ],
         WK_DATASTORE_PATH,
         '/usr/bin/renet'
       );

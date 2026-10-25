@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
@@ -197,7 +198,7 @@ describe('executeRepoFunction on a network-ID refusal', () => {
   const refusal = JSON.stringify({
     code: 'network_id_in_use',
     network_id: 2816,
-    holder: { kind: 'repository', name: 'mail', datastore: '/mnt/rediacc' },
+    holder: { kind: 'repository', name: 'mail', datastore: WK_DATASTORE_PATH },
   });
 
   function failWith(stderr: string): void {
