@@ -150,6 +150,25 @@ def test_a_green_check_names_the_rules_it_matched(capsys):
     )
 
 
+def test_a_red_check_counts_only_the_rules_that_match(capsys):
+    w = FakeWrangler(BUCKETS)
+    r2.run_mode(w, "apply")
+    gone, moved = (r.name for r in r2.desired_rules()[:2])
+    # One rule removed and one drifted: the count leaves out both, beside their MISSING and DRIFTED lines.
+    w.rules[r2.RELEASES_BUCKET] = [
+        r2.Rule(r.name, r.prefix, (r.expire_days or 0) + 1, r.abort_days) if r.name == moved else r
+        for r in w.rules[r2.RELEASES_BUCKET]
+        if r.name != gone
+    ]
+    capsys.readouterr()
+    assert r2.run_mode(w, "check") == 1
+    out = capsys.readouterr().out
+    wanted = len(r2.desired_rules())
+    assert "MISSING %s: %s" % (r2.RELEASES_BUCKET, gone) in out
+    assert "DRIFTED %s: %s" % (r2.RELEASES_BUCKET, moved) in out
+    assert "%s: %d of %d rule(s) match" % (r2.RELEASES_BUCKET, wanted - 2, wanted) in out
+
+
 @pytest.mark.parametrize(
     "bucket",
     [
