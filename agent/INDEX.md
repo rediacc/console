@@ -530,7 +530,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
-| `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 104 | 9 | 5 | 25553 |
+| `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 107 | 6 | 8 | 26102 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 50 | 0 | 2 | 5663 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 96 | 0 | 3 | 10755 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 39 | 1 | 3 | 7908 |
