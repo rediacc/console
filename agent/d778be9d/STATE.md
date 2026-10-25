@@ -1,20 +1,24 @@
-## SESSION d778be9d 2026-10-25T02:35:41Z
+## SESSION d778be9d 2026-10-25T12:18:53Z
 
-# STATE d778be9d (branch 1023-1, no PR, never pushed; turbo on, effort ultra)
+# STATE d778be9d (branch 1023-1, no PR, effort smart, turbo on)
 
 ## Big pieces
-- Backup push #831b7e48 BLOCKED by a 22-gate ci:quick red cluster (log /tmp/ciquick-push2.out; my first read wrongly saw 3). Four writers own disjoint slices (below). After they land: commit each slice by path, rerun npm run ci:quick until rc=0, run npm run vm:check (covers renet 538fa894 engine check and new drill step G1), then git push origin 1023-1 as its own Bash call.
-- PLAN-gpu-device-grants #98e7f50f: R1-R5, P1, C1, C2, D1, T1(code) done (renet 2ce93f07/538fa894, console 662bb9a6/210191a3). W1 is [?] for the operator: this WSL host has only Docker Desktop's client, so a local engine install would displace it (DEFAULT install nothing). H1 needs a release (epoch 3 restarts every hostinger repo once).
-- Hostinger recovered 2026-10-24 (H1-H5, 9581586b). Converge plan complete.
+PLAN-backup-program (wave 2 in the tree), PLAN-renet-bridge-leftovers (T6, T7, T11-T14 open), PLAN-telemetry-export (ops boxes), PLAN-haiku-model-routing and PLAN-deletion-budget (queued, not started).
+
+## Where things stand (2026-10-25T12:20Z)
+Wave 1 and the CLI integration are committed (renet d722e0bf, 606d9c5c, 6e3d13da, 7a42db37, 1d73431e; account 7bfbc416, 06ab0da0, dcc91dbb; console 14988359, 921db938, e9686326).
 
 ## Delegated
-- ae76fe453ab641d15 -> #f969a079: types, lint, test-shared, design-tree, max-lines, source-rules, docs-thumb; owns packages/cli, packages/shared, packages/www, docs/design; accept each gate's rerun rc=0.
-- a19b2a327fb175835 -> #fa6c4052 (+#831b7e48): python-types, literal-sources, shard-manifest, gate-tree-writes, lane-budget, 51 pytest failures (39 in test_infra_vm_bake_key, maybe host sshd); owns .ci, .claude hook tests, scripts/gates/check-quality-complete.ts; accept reruns rc=0.
-- af302128733be76a8 -> #7294b228 (+#6e094dcf): go-deps, proxy-go-unit, actions, deps, pin-freshness, e2e-coverage (3 GPU functions); owns private/renet modules, pins outputs, gpu_grants wiring; accept reruns rc=0.
-- a647c44669a49b4a3 -> #34e49520: plan-boxes, plan-implementation, retired-terms; owns agent/plans, plan-boxes.json; accept reruns rc=0.
+- a02041abf854b52dc (#3c25fe80): wave-2 console integration: CLI metadata and planes for the new verbs, restartServices keys, job/term/renet-output leftovers, the e2e coverage triple, PARK the J4/J10 guard as agent/plans/attachments/PLAN-backup-program-J4-J10-guard.patch, rclone residue, spec 03/04, gate reds, regenerations. Accept: cli tsc, cli and shared vitest, e2e tsc, check:i18n, e2e-coverage, cli-contract, parity, max-lines, lint, lint:unused, dead-python, prose-style.
+
+## Uncommitted, waiting on that writer
+W2-P1, W2-P2, W2-P4, W2-P5, W2-P6 output (renet W2-P3 committed as 1d73431e). Investigation rows for the wave-2 boxes were recorded first (fee49d8d).
+
+## Operator rulings
+- 11:05Z: mail secrets stay; legacy Worker secrets archived as __ARCHIVE_* then deleted on all six Workers (done); bare strategy name = fork family; COMMUNITY keep-all forbidden (done).
+- 12:15Z: w7p5a Tier M-live (#7f5aba78) authorized for the session; B1 keeps OR (#28451bf3).
 
 ## Next action
-1. As each writer reports: spot-check its diff, run its reruns, commit by path (PR-TASK 9f92c43e, message file in its own call), tick its item.
-2. Then npm run ci:quick (never beside vm:check) -> npm run vm:check -> push.
-3. Host state to remember: sshd on 127.0.0.1 only (W1 prerequisite, reversible); wsl-gpu machine in default, p2bench and dev configs; stale LUKS image and netns from failed gpu-a/gpu-b creates; dev user w1-gpu@rediacc.io with token /tmp/w1/token.
-- S6 #53b05748 NOT-BEFORE 2026-10-31T06:00Z (cron bbf56276 06:07Z).
+1. Start M-live (#7f5aba78) now: read the 19 Tier M-live rows in PLAN-w7p5a-real-run-dispatch.md, run each one at a time with its rollback named, Template A ledger notes, guards respected (a refused push becomes Template C).
+2. On the integration report: spot-check, commit submodule test changes first, then console epics by path; tick wave-2 boxes as present.
+3. W2-P6 A9 after the integration lands; then ci:quick, vm:check, push (#831b7e48).
