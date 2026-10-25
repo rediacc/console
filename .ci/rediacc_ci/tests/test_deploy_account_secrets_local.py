@@ -241,10 +241,19 @@ def test_prune_ignores_non_secret_text_bindings():
 
 def test_prune_delete_goes_through_the_secrets_endpoint():
     api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OLD/NAME")})
-    rc, _l, _r = prune.run(["--region", "eu", "--target", "stable", "--delete"], ENV, api)
+    rc, lines, _r = prune.run(["--region", "eu", "--target", "stable", "--delete"], ENV, api)
     assert rc == 0
     deletes = [p for m, p in api.calls if m == "DELETE"]
     assert deletes == ["/accounts/acct/workers/scripts/rediacc-account-eu/secrets/OLD%2FNAME"]
+    assert "deleted rediacc-account-eu: OLD/NAME" in lines
+
+
+def test_prune_delete_without_a_region_deletes_nothing():
+    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OLD/NAME")})
+    rc, lines, _r = prune.run(["--delete"], ENV, api)
+    assert rc == 2
+    assert api.calls == []
+    assert any("--delete needs --region" in line for line in lines)
 
 
 def test_prune_without_credentials_gives_no_verdict():

@@ -8,7 +8,7 @@ DEFAULT IS A LISTING. Nothing is deleted without `--delete`. Names are the only 
 
 Run: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- python3 -m rediacc_ci.ops.prune_worker_secrets --region eu --target stable`
 
-Options: `--region eu|us|asia|all` (default all), `--target stable|edge|all` (default all), `--delete`, `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
+Options: `--region eu|us|asia|all` (default all), `--target stable|edge|all` (default all), `--delete` (needs an explicit `--region`; prints each deleted name), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
 
 Exit codes: 0 no extras, 1 extras listed (or a delete failed), 2 no verdict (missing credential, API failure, unknown option).
 """
@@ -154,8 +154,11 @@ def survey(rows: list[Row], account: str, token: str, fetch: Fetch) -> list[Row]
     return rows
 
 
-def delete_extras(rows: list[Row], account: str, token: str, fetch: Fetch) -> list[str]:
-    """Delete every extra through the API. Returns the failure lines."""
+def delete_extras(
+    rows: list[Row], account: str, token: str, fetch: Fetch
+) -> tuple[list[str], list[str]]:
+    """Delete every extra through the API. Returns (one line per deleted name, failure lines)."""
+    deleted: list[str] = []
     failures: list[str] = []
     for row in rows:
         for name in row.extras:
@@ -163,7 +166,9 @@ def delete_extras(rows: list[Row], account: str, token: str, fetch: Fetch) -> li
                 fetch("DELETE", secrets_path(account, row.worker, name), token)
             except ApiError as exc:
                 failures.append("%s: %s" % (row.worker, exc))
-    return failures
+                continue
+            deleted.append("deleted %s: %s" % (row.worker, name))
+    return deleted, failures
 
 
 def parse(argv: list[str]) -> Options | None:
@@ -197,6 +202,9 @@ def run(
     opts = parse(argv)
     if opts is None:
         return 2, ["%s: unexpected argument; see the module docstring" % SELF], []
+    if opts.delete and opts.region == "all":
+        # A delete names its region: one run never removes secrets from every account Worker at once.
+        return 2, ["%s: --delete needs --region eu|us|asia; nothing deleted" % SELF], []
     token = (env.get("CLOUDFLARE_API_TOKEN") or "").strip()
     account = (env.get("CLOUDFLARE_ACCOUNT_ID") or "").strip()
     if not token or not account:
@@ -229,8 +237,8 @@ def run(
     if total == 0:
         return 0, lines, rows
     if opts.delete:
-        failures = delete_extras(rows, account, token, fetch)
-        lines += ["deleted %d extra(s) through the API" % (total - len(failures)), *failures]
+        deleted, failures = delete_extras(rows, account, token, fetch)
+        lines += [*deleted, "deleted %d extra(s) through the API" % len(deleted), *failures]
         return (1 if failures else 0), lines, rows
     lines.append("dry run: nothing deleted; re-run with --delete to remove the extras")
     return 1, lines, rows
