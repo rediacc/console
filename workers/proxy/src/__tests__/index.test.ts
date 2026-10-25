@@ -367,7 +367,9 @@ describe('span attributes (telemetry export T14)', () => {
     // so every console line written during the walk is checked with the attributes.
     for (const level of ['log', 'info', 'warn', 'error', 'debug'] as const) {
       vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
-        logged.push(args.map(String).join(' '));
+        logged.push(
+          args.map((arg) => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' ')
+        );
       });
     }
     for (const [path, token] of [
