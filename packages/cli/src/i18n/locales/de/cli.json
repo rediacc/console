@@ -2301,6 +2301,10 @@
         "summary": "Aktuellen Wert angeben oder Rotation bestätigen."
       }
     },
+    "proxy": {
+      "timeout": "Der Proxy-Executor unter {{host}} hat nicht innerhalb von {{seconds}} s geantwortet. Prüfen Sie, ob er läuft, oder erhöhen Sie REDIACC_PROXY_TIMEOUT_MS.",
+      "unreachable": "Der Proxy-Executor unter {{host}} ist nicht erreichbar: {{reason}}"
+    },
     "regionRequired": "Regionsname erforderlich. Verwenden Sie --region oder legen Sie einen Standardwert fest mit: rdc config set region <name>",
     "regionSelectionRequiresTTY": "Die Regionsauswahl erfordert interaktive Eingabe. Verwenden Sie --server <url>, um einen Server direkt anzugeben.",
     "remoteNotFound": "\"{{name}}\" ist kein bekannter Rechner, Speicher oder Cluster. Rechner: {{machines}}. Speicher: {{storages}}. Cluster: {{clusters}}",

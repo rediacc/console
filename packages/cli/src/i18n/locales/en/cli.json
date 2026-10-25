@@ -2282,6 +2282,10 @@
         }
       }
     },
+    "proxy": {
+      "timeout": "The proxy executor at {{host}} did not answer within {{seconds}}s. Check that it is running, or raise REDIACC_PROXY_TIMEOUT_MS.",
+      "unreachable": "Cannot reach the proxy executor at {{host}}: {{reason}}"
+    },
     "regionRequired": "Region name required. Use --region or set default with: rdc config set region <name>",
     "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
     "remoteNotFound": "\"{{name}}\" is not a known machine, storage, or cluster. Machines: {{machines}}. Storages: {{storages}}. Clusters: {{clusters}}",

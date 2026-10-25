@@ -2301,6 +2301,10 @@
         "summary": "Esita praegune väärtus või kinnita rotatsioon."
       }
     },
+    "proxy": {
+      "timeout": "Puhverserveri täitja ({{host}}) ei vastanud {{seconds}} s jooksul. Kontrolli, kas see töötab, või suurenda väärtust REDIACC_PROXY_TIMEOUT_MS.",
+      "unreachable": "Puhverserveri täitjani ({{host}}) ei pääse ligi: {{reason}}"
+    },
     "regionRequired": "Regiooni nimi on nõutud. Kasuta --region või määra vaikimisi väärtus käsuga: rdc config set region <name>",
     "regionSelectionRequiresTTY": "Regiooni valik nõuab interaktiivset sisendit. Kasuta --server <url>, et määrata server otse.",
     "remoteNotFound": "\"{{name}}\" ei ole tuntud masin, salvestusruum ega klaster. Masinad: {{machines}}. Salvestusruumid: {{storages}}. Klastrid: {{clusters}}",

@@ -32,6 +32,9 @@ import {
   VersionMismatchSchema,
 } from '@rediacc/shared/cli-contract/wire';
 import { cekHandoffEncrypt, exportAesKey, fromBase64 } from '@rediacc/shared/config-crypto';
+import { t } from '../../i18n/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { VERSION } from '../../version.js';
 import type { RenetEvent } from './types.js';
 
@@ -70,6 +73,8 @@ export interface ProxyClientOptions {
   contractVersion: string;
   /** Injectable for tests. */
   fetchImpl?: typeof fetch;
+  /** Milliseconds the executor has to answer a request. Defaults to REDIACC_PROXY_TIMEOUT_MS, then 60s. */
+  timeoutMs?: number;
   /**
    * Unwraps this device's config key (CEK). Called only when the executor is a
    * CONTAINER, which holds no key of its own and can open the config only with
@@ -105,18 +110,6 @@ export interface ProxyCommandOutcome {
   /** Raw bytes the command wrote instead (`repo cat` of a binary file). Written verbatim. */
   stdoutBytes?: Uint8Array;
   stderr: string;
-  /**
-   * Renet's own output, captured at the executor.
-   *
-   * Normally already seen: in events mode renet's output arrives as `output`
-   * events and is rendered live, exactly as it streams to the terminal on a
-   * laptop. This is the same bytes, kept for the run that emitted no output
-   * events at all, so the operator is never left staring at a command that
-   * printed nothing.
-   */
-  renetStdout: string;
-  /** True when at least one `output` event was rendered live. */
-  renderedLiveOutput: boolean;
 }
 
 /** Where to re-attach a dropped stream: the machine the command ran on. */
@@ -124,10 +117,37 @@ export interface ReattachTarget {
   machine: string;
 }
 
+/**
+ * How long the executor has to ANSWER a request (the response headers) before the client gives up.
+ *
+ * It bounds the request phase only: the clock stops when the headers arrive, so a command that streams for
+ * minutes is never cut. A minute covers an executor that does real work (license recovery, a session grant)
+ * before it flushes headers, and still turns a stalled one into an error instead of a hang. Override with
+ * REDIACC_PROXY_TIMEOUT_MS (milliseconds), or `timeoutMs` in the options.
+ */
+const DEFAULT_PROXY_REQUEST_TIMEOUT_MS = 60_000;
+
+/** The request timeout from the environment, or the default when unset or not a positive number. */
+function proxyRequestTimeoutMs(): number {
+  const raw = Number(process.env.REDIACC_PROXY_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_PROXY_REQUEST_TIMEOUT_MS;
+}
+
+/** What went wrong in a failed fetch, from undici's `cause` ("ECONNREFUSED", "ENOTFOUND", ...) when it has one. */
+function describeFetchFailure(error: unknown): string {
+  const cause = error instanceof Error ? error.cause : undefined;
+  const source = cause ?? error;
+  if (!(source instanceof Error)) return String(source);
+  const code = (source as { code?: unknown }).code;
+  if (typeof code !== 'string') return source.message || source.name;
+  // An AggregateError (one refusal per resolved address) has an empty message; the code says it all.
+  return source.message && source.message !== code ? `${code} (${source.message})` : code;
+}
+
 /** How many times a dropped proxy stream is re-attached before giving up. */
 const MAX_REATTACHES = 5;
 
-/** Build the outcome from a result line. renderedLiveOutput is filled in by the reader. */
+/** Build the outcome from a result line. */
 function toOutcome(line: Extract<StreamLine, { kind: 'result' }>): ProxyCommandOutcome {
   return {
     success: line.result.success,
@@ -138,15 +158,12 @@ function toOutcome(line: Extract<StreamLine, { kind: 'result' }>): ProxyCommandO
       ? {}
       : { stdoutBytes: new Uint8Array(Buffer.from(line.stdoutBase64, 'base64')) }),
     stderr: line.stderr ?? '',
-    renetStdout: line.result.stdout ?? '',
-    renderedLiveOutput: false,
   };
 }
 
 /** What a stream read so far, carried across a re-attach so a resume dedupes correctly. */
 interface StreamState {
   eventsSeen: number;
-  renderedLiveOutput: boolean;
   /** The detached job the executor handed the work to, once it announced one. */
   jobId?: string;
   /** The highest spool-line ordinal delivered, so a resume skips what it already has. */
@@ -160,6 +177,7 @@ export class ProxyClient {
   private readonly getToken: () => Promise<string>;
   private readonly contractVersion: string;
   private readonly fetchImpl: typeof fetch;
+  private readonly timeoutMs: number;
   private readonly getCek: (() => Promise<CryptoKey>) | undefined;
 
   constructor(options: ProxyClientOptions) {
@@ -167,6 +185,7 @@ export class ProxyClient {
     this.getToken = options.getToken;
     this.contractVersion = options.contractVersion;
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
+    this.timeoutMs = options.timeoutMs ?? proxyRequestTimeoutMs();
     this.getCek = options.getCek;
   }
 
@@ -258,7 +277,7 @@ export class ProxyClient {
       throw new ProxyStreamTruncatedError(0);
     }
 
-    const state: StreamState = { eventsSeen: 0, renderedLiveOutput: false, highestLine: 0 };
+    const state: StreamState = { eventsSeen: 0, highestLine: 0 };
     try {
       await this.pumpStream(response.body, onEvent, state);
     } catch (error) {
@@ -272,7 +291,7 @@ export class ProxyClient {
 
   /** Probe the executor. Used by `--proxy` startup checks and the loopback harness. */
   async serverInfo(): Promise<ServerInfo> {
-    const response = await this.fetchImpl(`${this.baseUrl}${PROXY_ROUTES.serverInfo}`, {
+    const response = await this.request(`${this.baseUrl}${PROXY_ROUTES.serverInfo}`, {
       headers: await this.headers(),
     });
     if (!response.ok) {
@@ -297,14 +316,12 @@ export class ProxyClient {
     reattach: ReattachTarget | undefined
   ): Promise<ProxyCommandOutcome> {
     if (state.outcome) {
-      state.outcome.renderedLiveOutput = state.renderedLiveOutput;
       return state.outcome;
     }
 
     if (state.jobId && reattach) {
       const resumed = await this.reattachToJob(reattach.machine, state.jobId, onEvent, state);
       if (resumed) {
-        resumed.renderedLiveOutput = state.renderedLiveOutput;
         return resumed;
       }
     }
@@ -353,7 +370,6 @@ export class ProxyClient {
     if (line.line != null && line.line <= state.highestLine) return;
     if (line.line != null) state.highestLine = line.line;
     state.eventsSeen += 1;
-    if (line.event.type === 'output') state.renderedLiveOutput = true;
     // No cast needed: the wire event and RenetEvent are the same shape by construction, which is the point of forwarding renet's events verbatim.
     onEvent(line.event);
   }
@@ -379,7 +395,7 @@ export class ProxyClient {
 
       let response: Response;
       try {
-        response = await this.fetchImpl(url, { headers: await this.headers() });
+        response = await this.request(url, { headers: await this.headers() });
       } catch {
         continue; // network blip; resume from the same offset
       }
@@ -395,8 +411,37 @@ export class ProxyClient {
     return undefined;
   }
 
+  /**
+   * fetch with a deadline on the RESPONSE HEADERS and a readable failure.
+   *
+   * The timer is cleared once fetch resolves, so it never reaches into the body stream. A rejection is
+   * rethrown as a NETWORK_ERROR naming the executor host and undici's cause, which fetch itself drops
+   * behind a bare "fetch failed".
+   */
+  private async request(url: string, init: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, this.timeoutMs);
+    try {
+      return await this.fetchImpl(url, { ...init, signal: controller.signal });
+    } catch (error) {
+      const host = new URL(url).host;
+      const message = timedOut
+        ? t('errors.proxy.timeout', { host, seconds: Math.ceil(this.timeoutMs / 1000) })
+        : t('errors.proxy.unreachable', { host, reason: describeFetchFailure(error) });
+      const failure = new CliExitError(ERROR_CODES.NETWORK_ERROR, message, { retryable: true });
+      failure.cause = error;
+      throw failure;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   private async post(path: string, body: unknown): Promise<Response> {
-    return this.fetchImpl(`${this.baseUrl}${path}`, {
+    return this.request(`${this.baseUrl}${path}`, {
       method: 'POST',
       headers: { ...(await this.headers()), 'content-type': 'application/json' },
       body: JSON.stringify(body),

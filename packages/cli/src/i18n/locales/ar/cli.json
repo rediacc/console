@@ -2301,6 +2301,10 @@
         "summary": "قدم القيمة الحالية أو أقر بالتدوير."
       }
     },
+    "proxy": {
+      "timeout": "لم يستجب منفّذ الوكيل على {{host}} خلال {{seconds}} ثانية. تحقّق من أنه يعمل، أو ارفع قيمة REDIACC_PROXY_TIMEOUT_MS.",
+      "unreachable": "تعذّر الوصول إلى منفّذ الوكيل على {{host}}: {{reason}}"
+    },
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو عيّن القيمة الافتراضية بـ: rdc config set region <name>",
     "regionSelectionRequiresTTY": "اختيار المنطقة يتطلب إدخالاً تفاعلياً. استخدم --server <url> لتحديد الخادم مباشرة.",
     "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً أو عنقوداً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}. العناقيد: {{clusters}}",

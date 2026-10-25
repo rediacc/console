@@ -2301,6 +2301,10 @@
         "summary": "現在の値を提供するか、ローテーションを承認してください。"
       }
     },
+    "proxy": {
+      "timeout": "{{host}} のプロキシエグゼキューターが {{seconds}} 秒以内に応答しませんでした。起動しているか確認するか、REDIACC_PROXY_TIMEOUT_MS を大きくしてください。",
+      "unreachable": "{{host}} のプロキシエグゼキューターに接続できません: {{reason}}"
+    },
     "regionRequired": "リージョン名が必要です。--region を使用するか、次のコマンドでデフォルトを設定してください: rdc config set region <name>",
     "regionSelectionRequiresTTY": "リージョンの選択には対話型入力が必要です。--server <url> を使用してサーバーを直接指定してください。",
     "remoteNotFound": "\"{{name}}\"は既知のマシン、ストレージ、またはクラスターではありません。マシン: {{machines}}。ストレージ: {{storages}}。クラスター: {{clusters}}",

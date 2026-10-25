@@ -2301,6 +2301,10 @@
         "summary": "提供当前值或确认轮换。"
       }
     },
+    "proxy": {
+      "timeout": "{{host}} 上的代理执行器在 {{seconds}} 秒内没有响应。请确认它正在运行，或调大 REDIACC_PROXY_TIMEOUT_MS。",
+      "unreachable": "无法连接到 {{host}} 上的代理执行器：{{reason}}"
+    },
     "regionRequired": "需要区域名称。使用 --region 或使用以下命令设置默认值：rdc config set region <name>",
     "regionSelectionRequiresTTY": "区域选择需要交互式输入。使用 --server <url> 直接指定服务器。",
     "remoteNotFound": "\"{{name}}\"不是已知的机器、存储或集群。机器: {{machines}}。存储: {{storages}}。集群: {{clusters}}",

@@ -2301,6 +2301,10 @@
         "summary": "Mevcut değeri sağlayın veya rotasyonu onaylayın."
       }
     },
+    "proxy": {
+      "timeout": "{{host}} adresindeki proxy yürütücüsü {{seconds}} sn içinde yanıt vermedi. Çalıştığını kontrol edin veya REDIACC_PROXY_TIMEOUT_MS değerini artırın.",
+      "unreachable": "{{host}} adresindeki proxy yürütücüsüne ulaşılamıyor: {{reason}}"
+    },
     "regionRequired": "Bölge adı gerekli. --region kullanın veya varsayılanı şu komutla ayarlayın: rdc config set region <name>",
     "regionSelectionRequiresTTY": "Bölge seçimi etkileşimli giriş gerektirir. Doğrudan bir sunucu belirtmek için --server <url> kullanın.",
     "remoteNotFound": "\"{{name}}\" bilinen bir makine, depolama veya küme değil. Makineler: {{machines}}. Depolamalar: {{storages}}. Kümeler: {{clusters}}",
