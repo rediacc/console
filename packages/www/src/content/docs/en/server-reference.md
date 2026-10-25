@@ -188,16 +188,12 @@ renet daemon logs   --network-id {id}    # Daemon logs
 
 ### Backup & Restore
 
-Push backups to another machine or to cloud storage:
+Push backups to another machine. Chunk-store snapshots are taken with `rdc backup snapshot` or `renet backup snapshot`:
 
 ```bash
 # Push to remote machine (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
   --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
-
-# Push to cloud storage (rclone)
-renet backup push --name {uuid} --network-id {id} --target storage \
-  --dest {uuid}.backup --rclone-backend {backend} --rclone-bucket {bucket}
 
 # Pull from remote
 renet backup pull --name {uuid} --network-id {id} --source machine \

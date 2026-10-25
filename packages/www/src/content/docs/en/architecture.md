@@ -142,11 +142,11 @@ Whole-cluster clone and relocation live at `rdc cluster fork` and `rdc cluster m
 
 ## Configuration Structure
 
-Each config is a JSON file stored in `~/.config/rediacc/`. The default config is `rediacc.json`; named configs use the name as the filename (e.g., `production.json`). Fields are bucketed by purpose: `resources` holds deployments, `credentials` holds secrets, `account` holds cloud defaults, `infra` holds TLS/DNS, and `encryption` holds per-field at-rest state. The top-level `schemaVersion: 2` discriminator anchors forward compatibility.
+Each config is a JSON file stored in `~/.config/rediacc/`. The default config is `rediacc.json`; named configs use the name as the filename (e.g., `production.json`). Fields are bucketed by purpose: `resources` holds deployments, `credentials` holds secrets, `account` holds cloud defaults, `infra` holds TLS/DNS, and `encryption` holds per-field at-rest state. The top-level `schemaVersion: 3` discriminator anchors forward compatibility.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -173,10 +173,12 @@ Each config is a JSON file stored in `~/.config/rediacc/`. The default config is
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -201,14 +203,14 @@ Each config is a JSON file stored in `~/.config/rediacc/`. The default config is
 
 | Bucket | Contents |
 |---|---|
-| `schemaVersion` | Discriminator (currently `2`). Loaders reject unknown versions. |
+| `schemaVersion` | Discriminator (currently `3`). Loaders reject unknown versions. |
 | `id` / `version` | Immutable UUID + monotonic counter; used for optimistic locking on the remote config store. |
 | `defaults.*` | Non-sensitive runtime defaults (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
 | `credentials.ssh` | Inline SSH keypair + `knownHosts`. Replaces the legacy `ssh.privateKeyPath` (no more file-path indirection; the content is resolved at load time and stored inline). |
 | `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACME token. |
 | `credentials.masterPasswordVerifier` | Present only when `encryption.mode === "master-password"`. |
 | `resources.machines.*` | SSH connection detail per machine. |
-| `resources.storages.*` | rclone-compatible off-site backup credentials. |
+| `resources.backupStrategies.*` | Named backup strategies: schedule, mode, repository filters, retention, and destinations (always a hosted-service chunk store). |
 | `resources.repositories.*` | Per-repo GUID + LUKS credential + SSH key for sandbox-isolated agent access. |
 | `infra.acmeCertCache.*` | Cached Traefik acme.json, gzip+base64, keyed by domain. |
 | `encryption.mode` | `"plaintext"` (default) or `"master-password"`. |

@@ -81,7 +81,7 @@ The operator never logs into Rediacc-the-company's infrastructure to run a backu
 
 1. **Operator workstation.** Runs `rdc`. Holds the LUKS credential.
 2. **Operator's own server.** Runs `renet`. Holds the LUKS-encrypted repositories.
-3. **Operator's own backup target.** Any rclone-compatible storage (S3, B2, OneDrive, on-prem MinIO). Receives encrypted volumes.
+3. **Backup target.** Either a second machine the operator controls (`rdc repo push`), or the hosted chunk store (`rdc backup snapshot`), which holds only ciphertext cells addressed by their SHA-256. The LUKS credential never reaches either.
 
 There is no layer 4. Rediacc-the-company is not a sub-processor for any operator who has not opted into the experimental [Cloud adapter](/en/docs/architecture). For self-hosted operators, the relationship with Rediacc-the-company is a software licence, not a data processing agreement.
 
@@ -126,7 +126,7 @@ After moving to Rediacc on Hetzner:
 | Sub-processors | (1) None for self-hosted; (2) Hetzner-internal only, listed in their DPA |
 | Contract status | (1) Software licence, no DPA needed; (2) Hetzner DPA + SCCs already in place |
 | Key custody | Customer (LUKS credential in operator config, not on server) |
-| Exit plan | "rdc repo pull from any rclone-compatible target. Volumes are LUKS-encrypted; operator holds credential." |
+| Exit plan | "rdc repo pull from the second machine, or rdc backup restore from any stored snapshot. Volumes are LUKS-encrypted; operator holds credential." |
 | Last assessment | (2) covered by existing IaaS review |
 
 Two register entries instead of one. The critical-tier entry is for the IaaS provider, where the buyer already had a DPA in place and a tested exit plan, because IaaS is a relationship most teams know how to manage. The Rediacc entry is non-critical because it is a software licence, not a data processor.

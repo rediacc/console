@@ -12,10 +12,9 @@
  * the input is OK, the caller deep-clones before calling) plus a structured
  * report of what was dropped and what raised a soft warning.
  *
- * Storage destinations (`backupStrategies.<s>.destinations[].storage`) are
- * intentionally NOT auto-pruned: removing a destination changes the meaning
- * of the strategy (a backup that was going to two storages now goes to one).
- * Those are reported as warnings so the operator can fix manually.
+ * No reference kind raises a warning since the storages family was retired:
+ * every strategy destination is a hosted service, which names no other
+ * resource. `warnings` stays in the result for reference kinds that need one.
  */
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';

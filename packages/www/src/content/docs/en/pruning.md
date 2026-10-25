@@ -12,7 +12,7 @@ language: en
 
 # Pruning
 
-Pruning sweeps state that no longer corresponds to a live resource. Two commands cover two different scopes. Snapshots in the chunk store are not one of them: the server prunes those under a [retention policy](#backup-snapshots).
+Pruning sweeps state that no longer corresponds to a live resource. Two commands cover two different scopes. Snapshots in the chunk store are not one of them: the server prunes those under a [retention policy](#backup-snapshots), by lineage and backup stream.
 
 | Command | What it cleans | Where the source of truth lives |
 |---|---|---|
@@ -33,15 +33,26 @@ To override (rare; only when you genuinely know the live state is wrong), pass `
 
 Snapshots uploaded with `rdc backup snapshot` live in the chunk store, and the server prunes them. There is no client-side prune command: declare how much history to keep and the server removes the rest.
 
+A policy belongs to a repository's lineage, so a repository and its forks share it, and it can be overridden for one backup stream (one repository on one machine). Every stream also keeps its newest snapshots and its current anchor whatever the policy says, so a sweep never strands a stream.
+
 ```bash
-# Show the current policy
+# Show the current policy and where it comes from
 rdc backup retention my-app
+
+# See what the next sweep would delete and the space it frees, without deleting
+rdc backup retention preview my-app
 
 # Keep 7 daily, 4 weekly and 6 monthly snapshots
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
+# Override one stream only
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
 # Keep every snapshot again
 rdc backup retention clear my-app
+
+# Delete a single snapshot now; the next garbage collection frees its exclusive data
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
 See [Backup & Restore](/en/docs/backup-restore#retention) for the policy rules and `rdc backup usage` for what the store currently holds.
@@ -114,7 +125,6 @@ Sweeps stale leftovers **inside the local config file** at `~/.config/rediacc/<c
 3. **Dangling cross-references** between config buckets:
    - `resources.machines.<m>.backupStrategies[]` entries naming a strategy that no longer exists.
    - `resources.backupStrategies.<s>.exclude[]` and `include[]` entries naming a repo that no longer exists.
-   - Storage destinations whose target storage is missing. Flagged as a warning, not auto-removed (auto-removal would change strategy semantics).
 
 ```bash
 # Preview only

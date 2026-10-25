@@ -1,8 +1,6 @@
 """Run private/elite/scripts/s3-conformance-probe.sh against the object store the elite job just started.
 
-WHY. The probe checks the surface the backup data plane depends on (presigned PUT/GET, create-only PUT with
-If-None-Match: *, HeadObject, DeleteObjects, multipart) and nothing in CI called it, so the pinned RustFS
-image could regress on the load-bearing 412 with every job green (PLAN-backup-program A4d).
+WHY. The probe checks the surface the backup data plane depends on (presigned PUT/GET, create-only PUT with If-None-Match: *, HeadObject, DeleteObjects, multipart) and nothing in CI called it, so the pinned RustFS image could regress on the load-bearing 412 with every job green (PLAN-backup-program A4d).
 
   python3 -m rediacc_ci.infra.elite_s3_probe             live: find the rustfs container, probe it, exit with the probe's status
   python3 -m rediacc_ci.infra.elite_s3_probe --selftest  controls: a conformant stub must pass, a stub that ignores
