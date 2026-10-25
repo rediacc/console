@@ -4,7 +4,7 @@
 
 WHY IT EXISTS. The export runs through Cloudflare destinations, a collector and the observability stack, and a break anywhere along it reads as silence, not as an error (agent/plans/PLAN-telemetry-export.md, T16). One probe per host proves the whole path: the Worker answers, Cloudflare ships the span and the log, and both are queryable.
 
-THE PROBE. `GET https://<host>/account/api/v1/health` with `X-Rediacc-Probe: <uuid4>`. The Worker records the uuid as the `rediacc.probe` attribute on the root span and on its logs. The hosts are the six of regions.json (stable and edge, each region) plus bench, taken from `portal_health.hosts`.
+THE PROBE. `GET https://<host>/account/api/v1/health` with `X-Rediacc-Probe: <uuid4>`. The Worker records the uuid as the `rediacc.probe` attribute on the root span and on its logs. The hosts are the six of regions.json (stable and edge, each region) plus bench, taken from `portal_health.hosts`. Proxy hosts (the routes of `PROXY_CONFIGS`) are probed at `/v1/health` instead, since the account path answers a proxy 401; the proxy logs `telemetry-probe <uuid>` and sets `rediacc.probe`, so the same Tempo tag search and Loki uuid filter match (its Tempo service name is the script name, so the search never filters on service.name).
 
 THE POLL. For each probe, Tempo is searched through the Grafana datasource proxy (`/api/datasources/proxy/uid/tempo/api/search`, tag `rediacc.probe=<uuid>`) and Loki is queried (`/loki/api/v1/query_range`, line filter on the uuid), every `--interval-s` seconds until each signal is seen or `--timeout-s` (default 600) has passed. All probes are sent first and polled together, so the deadline is one 10 minute window and not one per host.
 
@@ -18,6 +18,7 @@ import json
 import os
 import sys
 import time
+import tomllib
 import urllib.error
 import urllib.parse
 import uuid
@@ -25,6 +26,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
 from rediacc_ci.core import https
+from rediacc_ci.core.common import repo_root
 from rediacc_ci.ops import portal_health
 
 # One declaration of the Grafana origin for both observability readers: a third typed copy would make it an owned literal that belongs in .ci/config/well-known.env.
@@ -34,6 +36,9 @@ TEMPO_UID = "tempo"
 LOKI_UID = "loki"
 READ_CREDENTIAL_ENV = "OBS_GRAFANA_READ_TOKEN"
 HEALTH_PATH = portal_health.HEALTH_PATH
+PROXY_HEALTH_PATH = "/v1/health"
+# The proxy Worker configs whose routes are probed: bench is live, and eu joins this tuple when its Worker deploys the probe-aware code.
+PROXY_CONFIGS = ("workers/proxy/wrangler.bench.toml",)
 PROBE_HEADER = "X-Rediacc-Probe"
 SIGNALS = ("traces", "logs")
 TIMEOUT_S = 20.0
@@ -90,9 +95,23 @@ def all_hosts(regions: list[dict] | None = None) -> list[str]:
     return out
 
 
-def send_probe(host: str, get: Get, base: str | None = None) -> Target:
+def proxy_hosts(configs: tuple[str, ...] = PROXY_CONFIGS, root=None) -> list[str]:
+    """The custom-domain route patterns of the listed proxy wrangler configs, in order."""
+    base = root or repo_root()
+    out: list[str] = []
+    for rel in configs:
+        with open(base / rel, "rb") as fh:
+            conf = tomllib.load(fh)
+        for route in conf.get("routes", []):
+            pattern = route if isinstance(route, str) else route.get("pattern", "")
+            if pattern:
+                out.append(pattern)
+    return out
+
+
+def send_probe(host: str, get: Get, base: str | None = None, path: str = HEALTH_PATH) -> Target:
     probe_id = str(uuid.uuid4())
-    url = (base or "https://%s" % host).rstrip("/") + HEALTH_PATH
+    url = (base or "https://%s" % host).rstrip("/") + path
     sent_at = time.time()
     return Target(host, probe_id, sent_at, get(url, {PROBE_HEADER: probe_id}))
 
@@ -174,6 +193,7 @@ def run(
     timeout_s: float,
     interval_s: float,
     base_for: Callable[[str], str | None] = lambda _host: None,
+    proxies: frozenset[str] = frozenset(),
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], float] = time.monotonic,
     out=None,
@@ -183,7 +203,10 @@ def run(
         # No target means nothing was probed, and a probe that probed nothing proves nothing: not a pass.
         print("no hosts to probe: nothing was verified", file=sys.stderr)
         return 2
-    targets = [send_probe(h, get, base_for(h)) for h in hosts]
+    targets = [
+        send_probe(h, get, base_for(h), PROXY_HEALTH_PATH if h in proxies else HEALTH_PATH)
+        for h in hosts
+    ]
     deadline = clock() + timeout_s
     while True:
         poll_once(targets, get, grafana, token)
@@ -232,7 +255,8 @@ def main(argv: list[str] | None = None) -> int:
         print("%s is not set" % READ_CREDENTIAL_ENV, file=sys.stderr)
         return 2
     try:
-        hosts = all_hosts()
+        proxies = proxy_hosts()
+        hosts = all_hosts() + proxies
     except (ValueError, OSError, KeyError) as exc:
         print("cannot list hosts: %s" % type(exc).__name__, file=sys.stderr)
         return 2
@@ -243,6 +267,7 @@ def main(argv: list[str] | None = None) -> int:
         token,
         timeout_s=args.timeout_s,
         interval_s=args.interval_s,
+        proxies=frozenset(proxies),
     )
 
 

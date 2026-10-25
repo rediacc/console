@@ -48,6 +48,9 @@ class Fake:
                 qs = urllib.parse.parse_qs(parts.query)
                 if parts.path.startswith("/host/"):
                     host = parts.path.split("/")[2]
+                    want = "/v1/health" if host.startswith("proxy") else "/account/api/v1/health"
+                    if parts.path != "/host/%s%s" % (host, want):
+                        return self._send(401)
                     if host in fake.down:
                         return self._send(503)
                     fake.probes[self.headers[td.PROBE_HEADER] or ""] = host
@@ -81,7 +84,7 @@ class Fake:
 HOSTS = ["eu.example", "bench.example"]
 
 
-def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3):
+def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3, proxies=frozenset()):
     out = io.StringIO()
     rc = td.run(
         hosts,
@@ -91,6 +94,7 @@ def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3):
         timeout_s=timeout_s,
         interval_s=0.05,
         base_for=lambda h: "%s/host/%s" % (fake.origin, h),
+        proxies=frozenset(proxies),
         out=out,
     )
     return rc, out.getvalue()
@@ -243,3 +247,49 @@ def test_an_empty_grafana_result_has_no_query_failure_note():
     rc, out = _stub_run(200)
     assert rc == 1
     assert "grafana query answered" not in out
+
+
+PROXY = "proxy.example"
+
+
+def test_proxy_host_is_probed_at_its_own_path_and_passes(make_fake):
+    rc, text = drive(make_fake(), hosts=[PROXY, "eu.example"], proxies={PROXY})
+    assert rc == 0, text
+    assert "PASS %s traces" % PROXY in text
+    assert "PASS %s logs" % PROXY in text
+
+
+def test_proxy_missing_trace_is_silent(make_fake):
+    rc, text = drive(
+        make_fake(silent={(PROXY, "traces")}), hosts=[PROXY, "eu.example"], proxies={PROXY}
+    )
+    assert rc == 1
+    assert "SILENT %s traces" % PROXY in text
+    assert "PASS %s logs" % PROXY in text
+
+
+def test_proxy_missing_log_is_silent(make_fake):
+    rc, text = drive(
+        make_fake(silent={(PROXY, "logs")}), hosts=[PROXY, "eu.example"], proxies={PROXY}
+    )
+    assert rc == 1
+    assert "SILENT %s logs" % PROXY in text
+    assert "PASS %s traces" % PROXY in text
+
+
+def test_proxy_probed_on_the_account_path_would_read_silent(make_fake):
+    rc, text = drive(make_fake(), hosts=[PROXY])
+    assert rc == 1
+    assert "probe answered 401" in text
+
+
+def test_proxy_run_keeps_the_token_out_of_output(make_fake):
+    fake = make_fake()
+    rc, text = drive(fake, hosts=[PROXY], proxies={PROXY})
+    assert rc == 0, text
+    assert TOKEN not in text
+    assert all(TOKEN not in a for a in sys.argv)
+
+
+def test_proxy_hosts_come_from_the_wrangler_routes():
+    assert td.proxy_hosts() == ["proxy.bench.rediacc.com"]
