@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 45 | 0 | 6 | 6774 |
-| `agent/plans/PLAN-backup-program.md` | approved | 393 | 159 | 36 | 77944 |
+| `agent/plans/PLAN-backup-program.md` | approved | 419 | 133 | 62 | 84540 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
 | `agent/plans/PLAN-backup-toc-exact-opt-in.md` | proposed | 69 | 8 | 0 | 11399 |
