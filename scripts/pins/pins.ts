@@ -743,10 +743,12 @@ function report(
   f: Flags,
   s: Selected,
   res: TxnResult | null,
-  drafts: RepoDraft[]
+  drafts: RepoDraft[],
+  regenFailure: string | null = null
 ): object {
   return {
-    ok: res?.ok ?? false,
+    // Agrees with the exit code: true exactly when the run exits 0 (a failure or a refusal makes it false).
+    ok: (res === null || res.ok) && s.refused.length === 0 && regenFailure === null,
     now: iso(w.nowMs),
     stamp: res?.stamp ?? null,
     journal: res?.dir ?? null,
@@ -760,7 +762,7 @@ function report(
     refused: s.refused,
     skipped: s.skipped,
     not_checked: s.notChecked,
-    failure: res?.failure ?? null,
+    failure: res?.failure ?? regenFailure,
     commands: res?.commands ?? [],
     gates: res?.gates ?? null,
     ungated: res?.ungated ?? [],
@@ -837,11 +839,11 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   f.task = derived.task;
   const drafts =
     res.ok && regenFailure === null ? writeDrafts(w, res, s.plans, s.views, f.task, subject) : [];
-  const rep = report(w, f, s, res, drafts);
+  const rep = report(w, f, s, res, drafts, regenFailure);
   if (f.out) writeOut(w, path.resolve(f.out), rep, drafts);
   if (f.json) {
     w.out.push(JSON.stringify(rep, null, 2));
-    return res.ok && s.refused.length === 0 ? 0 : 1;
+    return res.ok && s.refused.length === 0 && regenFailure === null ? 0 : 1;
   }
   for (const r of s.refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
   noteNotChecked(w, s);
@@ -2348,6 +2350,7 @@ const CASES: Record<string, Case> = {
     const all = build();
     const r = await runCli(['apply-soaked', '--json'], withMutant(all, m));
     const j = JSON.parse(r.out || '{}') as {
+      ok?: boolean;
       refused?: Array<{ id: string }>;
       skipped?: Array<{ id: string }>;
     };
@@ -2369,6 +2372,16 @@ const CASES: Record<string, Case> = {
         name: 'bump <id>: a source-none pin named on the command line is still refused',
         ok: named.rc === 1,
         detail: `rc=${named.rc} ${named.err}`,
+      },
+      {
+        // `ok` in the JSON report agrees with the exit code in both directions.
+        name: 'json report: ok is true exactly when the run exits 0 (green run true, refused run false)',
+        ok:
+          r.rc === 0 &&
+          (j as { ok?: boolean }).ok === true &&
+          named.rc === 1 &&
+          (JSON.parse(named.out || '{}') as { ok?: boolean; refused?: unknown[] }).ok === false,
+        detail: `green rc=${r.rc} ok=${(j as { ok?: boolean }).ok}; refused rc=${named.rc} out=${named.out.slice(0, 120)}`,
       },
     ];
   },
