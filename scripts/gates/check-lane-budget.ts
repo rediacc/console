@@ -212,6 +212,13 @@ export interface JobCap {
 }
 export const JOB_BUDGET_CAPS: readonly JobCap[] = [
   {
+    job: 'test-e2e-backup-browse-at',
+    p90Minutes: 40,
+    timeoutMinutes: 45,
+    ruling:
+      '#a74699b5 operator ruling ASKED:2026-10-25T19:08Z ("Cap it at 45 min"): suite 26 holds a 30-minute per-test ceiling, so the job cannot fit 15; timeout 45 (.github/workflows/ct-tests.yml)',
+  },
+  {
     job: 'validate-promote',
     p90Minutes: 15,
     timeoutMinutes: 20,
