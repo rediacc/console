@@ -37,6 +37,42 @@ export interface Env {
    * Service binding to the regional account worker. `proxy.eu.rediacc.com` and `eu.rediacc.com` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
    */
   ACCOUNT?: Fetcher;
+  /** Region label for telemetry (`rediacc.region`, and `REDIACC_REGION` for the executor); `eu` when unset. */
+  REGION?: string;
+  /** Deployment environment for telemetry (`deployment.environment`); `production` when unset. */
+  ENVIRONMENT?: string;
+}
+
+const DEFAULT_REGION = 'eu';
+const DEFAULT_ENVIRONMENT = 'production';
+const PROBE_HEADER = 'x-rediacc-probe';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The slice of the Workers runtime `Span` the proxy uses (the account Worker's middleware/tracing.ts declares the same). */
+interface RuntimeSpan {
+  setAttribute(key: string, value: boolean | number | string): unknown;
+}
+
+interface RuntimeTracing {
+  getActiveSpan(): RuntimeSpan | undefined;
+}
+
+/** The runtime's active span, which Workers Observability exports to the `destinations` in wrangler.toml; undefined when the host supplies no tracing (tests, wrangler dev without it). */
+function activeSpan(ctx: ExecutionContext | undefined): RuntimeSpan | undefined {
+  try {
+    return (ctx as unknown as { tracing?: RuntimeTracing } | undefined)?.tracing?.getActiveSpan?.();
+  } catch {
+    return undefined;
+  }
+}
+
+/** Identity attributes only: never a token, org id, team id or tenant key. */
+function tagRequest(span: RuntimeSpan | undefined, request: Request, env: Env): void {
+  if (!span) return;
+  span.setAttribute('rediacc.region', env.REGION || DEFAULT_REGION);
+  span.setAttribute('deployment.environment', env.ENVIRONMENT || DEFAULT_ENVIRONMENT);
+  const probe = request.headers.get(PROBE_HEADER);
+  if (probe && UUID_RE.test(probe)) span.setAttribute('rediacc.probe', probe.toLowerCase());
 }
 
 /**
@@ -48,6 +84,7 @@ export function executorEnvVars(env: Env): Record<string, string> {
   return {
     REDIACC_TOKEN: env.EXECUTOR_TOKEN,
     REDIACC_ACCOUNT_SERVER: env.ACCOUNT ? `http://${ACCOUNT_EGRESS_HOST}` : env.ACCOUNT_URL,
+    REDIACC_REGION: env.REGION || DEFAULT_REGION,
   };
 }
 
@@ -126,16 +163,20 @@ interface Introspection {
  * an identity. The executor does the real verification again on its own.
  */
 /**
- * Log WHY a caller was refused, as a reason code only (never a token), then answer null.
+ * Log WHY a caller was refused, as a reason code only (never a token), then answer it as a Refusal.
  *
  * Every refusal used to be a silent null, so the first Phase 2 deploy (2026-09-24) could say only "401" while its cause stayed invisible even in `wrangler tail`.
  */
-function refuse(reason: string): null {
+function refuse(reason: string): Refusal {
   console.warn(`proxy: caller refused: ${reason}`);
-  return null;
+  return { reason };
 }
 
-async function resolveTenant(request: Request, env: Env): Promise<string | null> {
+interface Refusal {
+  reason: string;
+}
+
+async function resolveTenant(request: Request, env: Env): Promise<string | Refusal> {
   const auth = request.headers.get('authorization');
   const token = auth?.replace(/^Bearer\s+/i, '').trim();
   if (!token) return refuse('no-bearer');
@@ -168,15 +209,19 @@ async function resolveTenant(request: Request, env: Env): Promise<string | null>
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    const span = activeSpan(ctx);
+    tagRequest(span, request, env);
 
     if (url.pathname === '/v1/health') {
+      span?.setAttribute('rediacc.proxy.outcome', 'health');
       return Response.json({ ok: true });
     }
 
     const tenant = await resolveTenant(request, env);
-    if (!tenant) {
+    if (typeof tenant !== 'string') {
+      span?.setAttribute('rediacc.proxy.outcome', `refused:${tenant.reason}`);
       return Response.json(
         { error: 'This request carried no usable token for the executor.' },
         { status: 401 }
@@ -184,6 +229,7 @@ export default {
     }
 
     // Same tenant, same instance, every time.
+    span?.setAttribute('rediacc.proxy.outcome', 'forwarded');
     const container = getContainer(env.EXECUTOR, tenant);
     return container.fetch(request);
   },

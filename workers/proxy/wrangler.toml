@@ -12,6 +12,8 @@ routes = [
 
 [vars]
 ACCOUNT_URL = "https://eu.rediacc.com"
+REGION = "eu"
+ENVIRONMENT = "production"
 
 # Introspection goes through this binding, not a public fetch: this Worker and the account
 # worker share the rediacc.com zone, and a same-zone subrequest never reaches another Worker
@@ -52,8 +54,8 @@ new_sqlite_classes = ["ExecutorContainer"]
 
 # Telemetry export (agent/plans/PLAN-telemetry-export.md T14): logs and traces go to the
 # eu destination pair (otlp-eu-logs, otlp-eu-traces), which the account Workers of the
-# eu region share; the observability stack maps the script name to service.name
-# rediacc-proxy. Operator ruling 2026-10-23: Cloudflare keeps no copy (persist = false).
+# eu region share; the T7 transform in the observability stack is expected to
+# map the script name rediacc-proxy-eu to service.name rediacc-proxy; verified by T15. Operator ruling 2026-10-23: Cloudflare keeps no copy (persist = false).
 [observability]
 enabled = true
 

@@ -192,7 +192,14 @@ describe('ExecutorContainer (B1)', () => {
     expect(container.envVars).toEqual({
       REDIACC_TOKEN: EXECUTOR_TOKEN,
       REDIACC_ACCOUNT_SERVER: ACCOUNT_URL,
+      REDIACC_REGION: 'eu',
     });
+  });
+
+  it('passes the configured region to the container', () => {
+    expect(new ExecutorContainer({} as never, env({ REGION: 'us' })).envVars.REDIACC_REGION).toBe(
+      'us'
+    );
   });
 
   it('keeps the sleep timeout at the budgeted two minutes', () => {
@@ -276,5 +283,101 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
 
     expect(response.status).toBe(403);
     expect(seen).toEqual([]);
+  });
+});
+
+describe('span attributes (telemetry export T14)', () => {
+  const PROBE = '0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d';
+
+  function traced(): { ctx: ExecutionContext; attrs: Record<string, unknown> } {
+    const attrs: Record<string, unknown> = {};
+    const ctx = {
+      tracing: {
+        getActiveSpan: () => ({
+          setAttribute: (key: string, value: unknown) => {
+            attrs[key] = value;
+          },
+        }),
+      },
+    } as unknown as ExecutionContext;
+    return { ctx, attrs };
+  }
+
+  function probed(path: string, token?: string, probe: string = PROBE): Request {
+    const headers: Record<string, string> = { 'x-rediacc-probe': probe };
+    if (token) headers.authorization = `Bearer ${token}`;
+    return new Request(`https://proxy.test${path}`, { headers });
+  }
+
+  it('health: region, environment, probe and outcome health', async () => {
+    const { ctx, attrs } = traced();
+    await worker.fetch(probed('/v1/health'), env(), ctx);
+
+    expect(attrs).toEqual({
+      'rediacc.region': 'eu',
+      'deployment.environment': 'production',
+      'rediacc.probe': PROBE,
+      'rediacc.proxy.outcome': 'health',
+    });
+  });
+
+  it('forwarded: outcome forwarded, with the configured region and environment', async () => {
+    const { ctx, attrs } = traced();
+    await worker.fetch(
+      probed('/v1/server-info', CALLER),
+      env({ REGION: 'us', ENVIRONMENT: 'edge' }),
+      ctx
+    );
+
+    expect(attrs['rediacc.proxy.outcome']).toBe('forwarded');
+    expect(attrs['rediacc.region']).toBe('us');
+    expect(attrs['deployment.environment']).toBe('edge');
+  });
+
+  const reasons: [string, string | undefined, Record<string, unknown> | 'http-500', string][] = [
+    ['no token', undefined, { active: true }, 'no-bearer'],
+    ['inactive', CALLER, { active: false }, 'inactive'],
+    ['no org', CALLER, { active: true, scopes: ['proxy:exec'] }, 'no-org'],
+    ['no scope', CALLER, { active: true, orgId: 'org-1', scopes: [] }, 'no-proxy-exec-scope'],
+    ['introspection failure', CALLER, 'http-500', 'introspect-http-500'],
+  ];
+  for (const [name, token, answer, reason] of reasons) {
+    it(`refused (${name}): outcome refused:${reason}`, async () => {
+      introspection = answer;
+      const { ctx, attrs } = traced();
+      const response = await worker.fetch(probed('/v1/server-info', token), env(), ctx);
+
+      expect(response.status).toBe(401);
+      expect(attrs['rediacc.proxy.outcome']).toBe(`refused:${reason}`);
+    });
+  }
+
+  it('records no probe for a header that is not a UUID', async () => {
+    const { ctx, attrs } = traced();
+    await worker.fetch(probed('/v1/health', undefined, 'rdt_caller'), env(), ctx);
+
+    expect(attrs).not.toHaveProperty('rediacc.probe');
+  });
+
+  it('no token, org, team or tenant value lands in any attribute, on any outcome', async () => {
+    const secrets = [CALLER, EXECUTOR_TOKEN, 'org-1', 'team-1', 'org-1:team-1'];
+    const all: Record<string, unknown>[] = [];
+    for (const [path, token] of [
+      ['/v1/health', undefined],
+      ['/v1/server-info', CALLER],
+      ['/v1/server-info', 'rdt_stranger'],
+      ['/v1/server-info', undefined],
+    ] as const) {
+      const { ctx, attrs } = traced();
+      await worker.fetch(probed(path, token), env(), ctx);
+      all.push(attrs);
+    }
+    const serialized = JSON.stringify(all);
+    for (const secret of secrets) expect(serialized).not.toContain(secret);
+  });
+
+  it('runs untraced when the host supplies no tracing API', async () => {
+    const response = await worker.fetch(request('/v1/health'), env(), {} as ExecutionContext);
+    expect(response.status).toBe(200);
   });
 });

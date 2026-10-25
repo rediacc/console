@@ -21,6 +21,8 @@ routes = [
 
 [vars]
 ACCOUNT_URL = "https://bench.rediacc.com"
+REGION = "eu"
+ENVIRONMENT = "bench"
 
 # The same-zone reason as wrangler.toml: introspection goes through the binding, never a public fetch.
 [[services]]
