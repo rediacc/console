@@ -60,8 +60,11 @@ def test_pin_gives_no_verdict_without_an_install(tmp_path):
 
 
 def test_the_real_tree_agrees():
-    code, lines = wrangler_pin.check(local.paths.repo_root())
-    assert code in (0, 2), lines  # 2 only when node_modules is absent on this machine
+    root = local.paths.repo_root()
+    code, lines = wrangler_pin.check(root)
+    installed = (root / "workers/account/node_modules/wrangler/package.json").is_file()
+    # No verdict (2) is accepted only where wrangler is not installed; an installed tree must agree.
+    assert code == (0 if installed else 2), lines
 
 
 @pytest.mark.parametrize(
