@@ -67,7 +67,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (4 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 495 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 496 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic ecc421f7, plan agent/plans/PLAN-telemetry-export.md, outside the set, 19 commit(s) on the branch, 0 open item(s): telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io per region and channel
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
@@ -79,12 +79,12 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 4 of 20 plans done, 229 of 409 boxes done (55%).
+Promoted: 4 of 20 plans done, 254 of 409 boxes done (62%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 16/16 | done |
-| 2 | PLAN-backup-program.md | 62/195 | 133 open |
+| 2 | PLAN-backup-program.md | 82/195 | 113 open |
 | 3 | PLAN-cloudflare-proxy.md | 26/29 | 3 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 5/6 | 1 open |
 | 5 | PLAN-telemetry-export.md | 9/19 | 10 open |
@@ -96,7 +96,7 @@ Promoted: 4 of 20 plans done, 229 of 409 boxes done (55%).
 | 11 | PLAN-pin-awscli-toolchain-python-compatible.md | 6/7 | 1 open |
 | 12 | PLAN-plan-preflight.md | 8/9 | 1 open |
 | 13 | PLAN-renet-run-docker-sock-isolation.md | 3/3 | done |
-| 14 | PLAN-config-networkid-discovery.md | 0/7 | 7 open |
+| 14 | PLAN-config-networkid-discovery.md | 5/7 | 2 open |
 | 15 | PLAN-renet-fetch-retries.md | 2/2 | done |
 | 16 | PLAN-cloudflare-spend-guard.md | 2/8 | 6 open |
 | 17 | PLAN-renet-runtime-converge.md | 3/4 | 1 open |
