@@ -1,24 +1,18 @@
-## SESSION d778be9d 2026-10-25T12:18:53Z
+## SESSION d778be9d 2026-10-25T13:30:09Z
 
-# STATE d778be9d (branch 1023-1, no PR, effort smart, turbo on)
+# STATE d778be9d (branch 1023-1, no PR, effort smart, turbo on, batch-end push)
 
 ## Big pieces
-PLAN-backup-program (wave 2 in the tree), PLAN-renet-bridge-leftovers (T6, T7, T11-T14 open), PLAN-telemetry-export (ops boxes), PLAN-haiku-model-routing and PLAN-deletion-budget (queued, not started).
-
-## Where things stand (2026-10-25T12:20Z)
-Wave 1 and the CLI integration are committed (renet d722e0bf, 606d9c5c, 6e3d13da, 7a42db37, 1d73431e; account 7bfbc416, 06ab0da0, dcc91dbb; console 14988359, 921db938, e9686326).
+PLAN-backup-program (wave 2 landed 041e3f16 and ticks 64da2069, cedde895; remaining boxes are VM, deploy, release or wave-3 code), PLAN-telemetry-export (writer live), PLAN-renet-bridge-leftovers (finished, all 14 boxes), PLAN-haiku-model-routing and PLAN-deletion-budget (queued, not started).
 
 ## Delegated
-- a02041abf854b52dc (#3c25fe80): wave-2 console integration: CLI metadata and planes for the new verbs, restartServices keys, job/term/renet-output leftovers, the e2e coverage triple, PARK the J4/J10 guard as agent/plans/attachments/PLAN-backup-program-J4-J10-guard.patch, rclone residue, spec 03/04, gate reds, regenerations. Accept: cli tsc, cli and shared vitest, e2e tsc, check:i18n, e2e-coverage, cli-contract, parity, max-lines, lint, lint:unused, dead-python, prose-style.
+- a0189a12b2d467ca3 (#49433d3f): PLAN-telemetry-export T6-T11, T14-T16, T19; owns plan status notes, telemetry ops modules, the remote hostinger observability repo; accept each box Accept line with redacted commands and rcs; operator rulings allow rotations, bench and eu deploys, hostinger changes; no us/asia deploys.
+- ac09d162467bbaddc (#8e3e2bae): pins apply-soaked --json ok must agree with the exit code; owns scripts/lib/pins/** and tests; accept pins tests rc=0, apply-soaked --json ok:true rc=0, check:ci-pin-registry rc=0.
 
-## Uncommitted, waiting on that writer
-W2-P1, W2-P2, W2-P4, W2-P5, W2-P6 output (renet W2-P3 committed as 1d73431e). Investigation rows for the wave-2 boxes were recorded first (fee49d8d).
-
-## Operator rulings
-- 11:05Z: mail secrets stay; legacy Worker secrets archived as __ARCHIVE_* then deleted on all six Workers (done); bare strategy name = fork family; COMMUNITY keep-all forbidden (done).
-- 12:15Z: w7p5a Tier M-live (#7f5aba78) authorized for the session; B1 keeps OR (#28451bf3).
+## Landed this context (highlights)
+Legacy Worker secrets archived as __ARCHIVE_* and deleted on six Workers; COMMUNITY keep-all refused; docs sweep (921db938); wave 2 (renet 1d73431e, console 041e3f16, account 3d1ea9b6, elite add57ee2); M-live finished (mark_production 2.4.0 live, promote-stable sparse checkout 59b9049a); review fix 8229df8b; gate costs 7ed1456a; e2e rename and skill reference 7f73f249; bridgesvc self-test fix (pointer f1c8270f). The main-branch audit and pins-soaked reds are already fixed on this branch (83dfdb272, 830b4ef1) and clear on merge.
 
 ## Next action
-1. Start M-live (#7f5aba78) now: read the 19 Tier M-live rows in PLAN-w7p5a-real-run-dispatch.md, run each one at a time with its rollback named, Template A ledger notes, guards respected (a refused push becomes Template C).
-2. On the integration report: spot-check, commit submodule test changes first, then console epics by path; tick wave-2 boxes as present.
-3. W2-P6 A9 after the integration lands; then ci:quick, vm:check, push (#831b7e48).
+1. As each delegated report lands: spot-check against the artifact, commit by path (submodules first), tick its plan boxes with the commit sha (investigation rows already recorded), tick the item.
+2. Then plan the next backup-program wave from its open CODE-NOW boxes (investigate each box first, then spawn writers with disjoint files); the hook names the next turbo plan (PLAN-token-ip-rebind).
+3. At batch end: ci:quick and vm:check receipts, then the push the guard times (#831b7e48); vm:check also proves #6e094dcf, #c347c51d and the VM-only backup boxes.
