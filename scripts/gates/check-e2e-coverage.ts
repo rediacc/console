@@ -24,10 +24,10 @@
  *      branch of conditional `projects`, evaluated with CI=1) and resolve every
  *      project's testDir + testMatch − testIgnore into a concrete file set:
  *      LIVE_TESTS. Only these files can confer coverage.
- *   3. HARNESS METHOD MAP — parse src/utils/bridge/methods/*.ts into
+ *   3. HARNESS METHOD MAP — parse src/utils/renet-functions/methods/*.ts into
  *      (methodName → dispatched verb). A verb is covered by a method ONLY when
  *      `.methodName(` is CALLED from a LIVE_TESTS file (or, one hop, from a
- *      helper under src/utils/bridge/helpers that a live test reaches). A method
+ *      helper under src/utils/renet-functions/helpers that a live test reaches). A method
  *      that is merely DECLARED — the dead-coverage failure mode — does not count.
  *   4. COVERAGE — a renet function counts as covered when its raw verb literal
  *      or its CLI space-form appears in a LIVE_TESTS file, OR rule 3 resolves it.
@@ -62,8 +62,8 @@ const E2E_DIR = process.env.E2E_COV_E2E_DIR ?? path.join(REPO_ROOT, 'packages/e2
 const FUNCTIONS_FILE =
   process.env.E2E_COV_FUNCTIONS_FILE ??
   path.join(REPO_ROOT, 'packages/shared/src/renet-contract/data/functions.generated.ts');
-const METHODS_DIR = path.join(E2E_DIR, 'src/utils/bridge/methods');
-const HELPERS_DIR = path.join(E2E_DIR, 'src/utils/bridge/helpers');
+const METHODS_DIR = path.join(E2E_DIR, 'src/utils/renet-functions/methods');
+const HELPERS_DIR = path.join(E2E_DIR, 'src/utils/renet-functions/helpers');
 const WORKFLOWS_DIR =
   process.env.E2E_COV_WORKFLOWS_DIR ?? path.join(REPO_ROOT, '.github/workflows');
 const ALLOWLIST_FILE =
@@ -339,7 +339,7 @@ function parseHelperMethodNames(text: string): string[] {
   return names;
 }
 
-/** methodName → dispatched verb, parsed from src/utils/bridge/methods/*.ts. */
+/** methodName → dispatched verb, parsed from src/utils/renet-functions/methods/*.ts. */
 function buildMethodMap(): Map<string, string> {
   const map = new Map<string, string>();
   const files = globSync('*.ts', { cwd: METHODS_DIR, absolute: true });
@@ -599,7 +599,7 @@ async function main(): Promise<void> {
     : [];
 
   // A helper file confers coverage ONLY when a live test actually reaches it — i.e. a live test calls one of the helper's own methods (`.helperMethod(`). This is the single level of indirection the tree needs: suite 17 drives `runner.repositoryCommit(...)`, a RepositoryHelpers method that shells out `renet repository commit` (a space-form dispatch, not a `function:` literal), so
-  // that helper's space-forms are genuine live coverage. A helper NO live test touches confers nothing (fail closed). BridgeTestRunner.ts is NOT a helper and is never in this set — counting its re-export delegations is exactly the dead-coverage this gate exists to reject.
+  // that helper's space-forms are genuine live coverage. A helper NO live test touches confers nothing (fail closed). RenetFunctionsTestRunner.ts is NOT a helper and is never in this set — counting its re-export delegations is exactly the dead-coverage this gate exists to reject.
   const liveHelperText = new Map<string, string>();
   for (const f of helperFiles) {
     const text = stripComments(fs.readFileSync(f, 'utf-8'));

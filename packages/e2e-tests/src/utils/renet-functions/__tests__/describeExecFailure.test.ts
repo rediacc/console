@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeExecFailure, EXEC_MAX_BUFFER } from '../BridgeTestRunner';
+import { describeExecFailure, EXEC_MAX_BUFFER } from '../RenetFunctionsTestRunner';
 
 /**
  * WHAT BROKE. Every bridge and VM command in every E2E suite runs through

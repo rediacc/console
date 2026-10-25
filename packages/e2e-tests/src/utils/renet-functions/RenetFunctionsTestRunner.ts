@@ -1,4 +1,4 @@
-// BridgeTestRunner contains extensive delegation methods for backward compatibility. The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
+// RenetFunctionsTestRunner contains extensive delegation methods for backward compatibility. The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
@@ -127,7 +127,7 @@ export type { ExecResult };
  * - VM_WORKERS (required)
  * - VM_CEPH_NODES (required)
  */
-export class BridgeTestRunner {
+export class RenetFunctionsTestRunner {
   private readonly defaultTimeout: number;
   private readonly opsManager: OpsManager;
   private readonly bridgeVM: string;
@@ -226,15 +226,15 @@ export class BridgeTestRunner {
   /**
    * Factory method to create a runner for worker VMs.
    */
-  static forWorker(num: 1 | 2 = 1): BridgeTestRunner {
-    return new BridgeTestRunner({ targetVM: `worker${num}` });
+  static forWorker(num: 1 | 2 = 1): RenetFunctionsTestRunner {
+    return new RenetFunctionsTestRunner({ targetVM: `worker${num}` });
   }
 
   /**
    * Factory method to create a runner for Ceph VMs.
    */
-  static forCeph(num: 1 | 2 | 3 = 1): BridgeTestRunner {
-    return new BridgeTestRunner({ targetVM: `ceph${num}` });
+  static forCeph(num: 1 | 2 | 3 = 1): RenetFunctionsTestRunner {
+    return new RenetFunctionsTestRunner({ targetVM: `ceph${num}` });
   }
 
   // ===========================================================================
@@ -369,7 +369,7 @@ export class BridgeTestRunner {
     log(`\n[SSH ${this.bridgeVM} → ${this.targetVM}] ${command}`);
 
     const fallbackDirect = (reason: string): Promise<ExecResult> => {
-      log(`[BridgeTestRunner] Falling back to direct SSH to ${this.targetVM}: ${reason}`);
+      log(`[RenetFunctionsTestRunner] Falling back to direct SSH to ${this.targetVM}: ${reason}`);
       return this.executeOnVM(this.targetVM, command, timeout);
     };
 

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Suite 30: the machine GPU inventory and the repository CDI device grant verbs
@@ -50,13 +50,13 @@ function grantLine(output: string): string {
 
 test.describe
   .serial('GPU device grants @bridge', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const once = (fn: string, extra = '') =>
       `sudo renet functions once --test-mode --function ${fn} --network-id ${NETWORK_ID}${extra}`;
     const listCmd = 'sudo renet functions once --test-mode --function machine_gpu_list';
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       const b64 = Buffer.from(SPEC).toString('base64');
       const written = await runner.executeOnWorker(
         `sudo mkdir -p /etc/cdi && echo ${b64} | base64 -d | sudo tee ${SPEC_PATH} >/dev/null`

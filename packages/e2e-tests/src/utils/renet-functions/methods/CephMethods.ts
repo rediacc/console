@@ -4,7 +4,7 @@ const DEFAULT_DATASTORE_SIZE = '10G';
 const DEFAULT_CEPH_POOL_PG_NUM = '32';
 
 /**
- * Ceph storage methods for BridgeTestRunner.
+ * Ceph storage methods for RenetFunctionsTestRunner.
  * Includes pool, image, snapshot, and clone operations.
  */
 export class CephMethods {

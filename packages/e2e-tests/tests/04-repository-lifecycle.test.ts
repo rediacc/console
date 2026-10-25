@@ -5,7 +5,7 @@ import {
   TEST_PASSWORD,
   TEST_REPOSITORY_NAME,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Repository Lifecycle Tests (12 functions)
@@ -35,10 +35,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  */
 test.describe
   .serial('Repository Lifecycle @bridge', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
 
       // Initialize and mount datastore (LEVEL 2 prerequisite for repository operations)
@@ -135,10 +135,10 @@ test.describe
  */
 test.describe
   .serial('Repository with Password @bridge', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite)
@@ -198,10 +198,10 @@ test.describe
  */
 test.describe
   .serial('Repository Size Operations @bridge', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite)
@@ -255,12 +255,12 @@ test.describe
  */
 test.describe
   .serial('Repository Full Lifecycle @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `lifecycle-test-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite)
@@ -335,10 +335,10 @@ test.describe
  * Tests error handling for invalid operations.
  */
 test.describe('Repository Error Handling @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
 
     // Initialize datastore (LEVEL 2 prerequisite)
@@ -399,12 +399,12 @@ test.describe('Repository Error Handling @bridge', () => {
  */
 test.describe
   .serial('Repository size policy, trim, and maintain timer @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `policy-test-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // A mounted repo gives trim something to report; a started per-network

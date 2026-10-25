@@ -66,14 +66,14 @@ def build_fixture(gate, root):
         gate.log_fail("subject under test is missing: %s" % GATE)
     for rel in (
         "e2e/tests",
-        "e2e/src/utils/bridge/methods",
-        "e2e/src/utils/bridge/helpers",
+        "e2e/src/utils/renet-functions/methods",
+        "e2e/src/utils/renet-functions/helpers",
         "workflows",
     ):
         root.joinpath(*rel.split("/")).mkdir(parents=True, exist_ok=True)
     (root / "functions.generated.ts").write_text(FUNCTIONS_TS, encoding="utf-8")
     (root / "e2e" / "playwright.fixture.config.ts").write_text(CONFIG_TS, encoding="utf-8")
-    (root / "e2e" / "src" / "utils" / "bridge" / "methods" / "FixtureMethods.ts").write_text(
+    (root / "e2e" / "src" / "utils" / "renet-functions" / "methods" / "FixtureMethods.ts").write_text(
         METHODS_TS, encoding="utf-8"
     )
     (root / "e2e" / "tests" / "01-live.test.ts").write_text(LIVE_TEST_TS, encoding="utf-8")

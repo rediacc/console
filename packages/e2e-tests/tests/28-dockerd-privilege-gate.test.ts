@@ -6,8 +6,8 @@ import {
   FORK_NETWORK_ID_A,
   TEST_PASSWORD,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
-import type { ExecResult } from '../src/utils/bridge/types';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
+import type { ExecResult } from '../src/utils/renet-functions/types';
 
 /**
  * Suite 28: the per-repo Docker API privilege gate
@@ -73,7 +73,7 @@ interface Attack {
 
 test.describe
   .serial('Docker API privilege gate @bridge', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const repoA = `gate-a-${RUN_ID}`;
     const repoB = `gate-b-${RUN_ID}`;
@@ -153,7 +153,7 @@ test.describe
     }
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('5G', datastorePath, true);
       // B is a fork of A on its own network id: repository_create always takes the harness's default network id, so a second fresh repo would collide with A's claim. B is only mounted, which starts its daemon and socket: its services stay down, because the repo's compose runs on the host network and a second nginx would collide with A's on port 80. No daemon pre-start: mount and up claim each network id and start that daemon themselves (see suite 07's beforeAll).

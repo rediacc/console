@@ -44,3 +44,13 @@ rdc machine status server-1 --containers
 # CI/CD health gate
 rdc machine health server-1 --output json
 ```
+
+## Restart services after a renet upgrade
+
+```bash
+# Roll the renet daemons still running a replaced binary onto the installed one, one unit at a time
+rdc machine restart-services server-1
+
+# Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)
+rdc machine restart-services server-1 --include-docker --json
+```

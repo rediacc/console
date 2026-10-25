@@ -22,7 +22,7 @@ Surviving / new (build the rewrites on these):
 
 ## Harness gap to close first (P2)
 
-`packages/e2e-tests/src/utils/bridge/methods/`:
+`packages/e2e-tests/src/utils/renet-functions/methods/`:
 - Add `DatastoreMethods.datastoreCreate/Attach/Detach/Fork/SnapshotCreate` (mirror
 the existing `datastore_*` method pattern; the bridge fns already exist).
 - `RepositoryMethods` already gained `repositoryHealth/Logs/Exec/Promote` +

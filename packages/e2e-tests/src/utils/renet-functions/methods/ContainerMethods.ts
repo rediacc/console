@@ -1,7 +1,7 @@
 import type { ExecResult, TestFunctionOptions } from '../types';
 
 /**
- * Container management methods for BridgeTestRunner.
+ * Container management methods for RenetFunctionsTestRunner.
  */
 export class ContainerMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}

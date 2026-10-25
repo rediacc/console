@@ -31,7 +31,7 @@ export interface RepositoryTrimOptions {
 }
 
 /**
- * Repository management methods for BridgeTestRunner.
+ * Repository management methods for RenetFunctionsTestRunner.
  */
 export class RepositoryMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Datastore Lifecycle Tests (bridge).
@@ -30,10 +30,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * subject of the call. (I removed it once on exactly that misreading. CI said no.)
  */
 test.describe('Datastore Lifecycle @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
     // Re-lay the base pool at a SMALL size. `datastore_expand` grows a pool and cannot shrink one, and the harness's global setup lays down a pool far larger than the 2G this suite expands to — so without this, "expand to 2G" asks the backend to shrink and it refuses. The pre-P1 suite did exactly this via
     // datastore_init; the verb moved to the CLI, the PRECONDITION did not go away.
@@ -78,10 +78,10 @@ test.describe('Datastore Lifecycle @bridge', () => {
  * assertions move rather than disappear.
  */
 test.describe('Datastore Size Parameters @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
@@ -105,11 +105,11 @@ test.describe('Datastore Size Parameters @bridge', () => {
  */
 test.describe
   .serial('Datastore Full Lifecycle @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const name = 'ds-lifecycle';
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       // Same precondition as above: step 5 expands the base pool to 2G, which is only a growth if the pool starts smaller.
       await runner.datastoreInitPool('1G', DEFAULT_DATASTORE_PATH, true);

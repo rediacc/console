@@ -1,7 +1,7 @@
 import type { ExecResult, TestFunctionOptions } from '../types';
 
 /**
- * Named-datastore lifecycle methods for BridgeTestRunner.
+ * Named-datastore lifecycle methods for RenetFunctionsTestRunner.
  *
  * These dispatch the `datastore_*` renet functions by literal name — the
  * datastore-cluster model's storage unit (spec 01 §4 / 02). The legacy
@@ -61,7 +61,7 @@ export interface DatastoreSnapshotOptions {
 }
 
 /**
- * Datastore management methods for BridgeTestRunner.
+ * Datastore management methods for RenetFunctionsTestRunner.
  */
 export class DatastoreMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}

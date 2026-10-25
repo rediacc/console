@@ -230,6 +230,17 @@ Restart every repository daemon still running on an older runtime layout, one re
 
 > MCP tool
 
+### rdc machine restart-services <name>
+
+Roll the renet daemons that still run a replaced binary onto the installed one, one unit at a time, each confirmed active on the new binary before the next. With --include-docker the per-repo rediacc-docker-N supervisors restart too, one repo at a time, which restarts that repo's containers.
+
+**Options:**
+
+- `--include-docker`: Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)
+- `--json`: Print the report as JSON
+
+> MCP tool
+
 ### rdc machine provider add <name>
 
 Add a cloud provider
@@ -339,14 +350,13 @@ Create or update a backup strategy
 
 **Options:**
 
-- `--destination <name>`: Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given
-- `--storage <name>`: Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled
+- `--destination <name>`: Destination name within the strategy. Creates a Rediacc chunk-store destination
 - `--cron <expression>`: Cron schedule (e.g., "0 * * * *" for hourly)
 - `--mode <mode>`: Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
-- `--bwlimit <limit>`: Rclone bandwidth limit (e.g., "6M", "10M:off", "08:00,3M;22:00,10M")
+- `--bwlimit <limit>`: Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., "6M", "500K")
 - `--include <repos>`: Only back up these repos (comma-separated names)
 - `--exclude <repos>`: Exclude these repos from backup (comma-separated names)
-- `--folder <path>`: Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage
+- `--retention <spec>`: Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 ("none" removes it)
 - `--enable`: Enable the strategy or destination
 - `--disable`: Disable the strategy or destination
 
@@ -491,6 +501,12 @@ Upload a chunk-store snapshot: full inventory first, changed cells after
 
 > MCP tool
 
+### rdc backup retention preview <repo-ref>
+
+Show which snapshots the next sweep would delete and the space it would free.
+
+> MCP tool
+
 ### rdc backup retention set <repo-ref>
 
 Declare how many snapshots to keep. Every knob is replaced, not merged.
@@ -503,6 +519,7 @@ Declare how many snapshots to keep. Every knob is replaced, not merged.
 - `--keep-weekly <n>`: Keep the newest snapshot from each of this many weeks
 - `--keep-monthly <n>`: Keep the newest snapshot from each of this many months
 - `--keep-yearly <n>`: Keep the newest snapshot from each of this many years
+- `--stream <id>`: Apply to this backup stream only (a stream id); without it, the repository-wide default
 
 > MCP excluded: Declares what the server deletes, and replaces every knob rather than merging, so a partial call silently discards retained snapshots.
 
@@ -510,7 +527,17 @@ Declare how many snapshots to keep. Every knob is replaced, not merged.
 
 Remove the policy, so every snapshot of this repository is kept.
 
+**Options:**
+
+- `--stream <id>`: Apply to this backup stream only (a stream id); without it, the repository-wide default
+
 > MCP excluded: Removes the policy entirely; the blast radius of getting it wrong is the operator keeping or losing every snapshot of a repository.
+
+### rdc backup snapshots delete <repo-ref> <snapshot-id>
+
+Delete one stored snapshot of a repository. Data only that snapshot used is freed by the next garbage collection.
+
+> MCP excluded: Deletes snapshots outright; like a retention mutation, a wrong call discards backups the operator meant to keep.
 
 ### rdc backup list [artifact-ref]
 
@@ -542,73 +569,6 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `--debug`: Enable debug output
 
 > MCP tool | agent: fork-only
-
-### rdc storage add <name>
-
-Register a storage endpoint.
-
-**Options:**
-
-- `--vault <json>`: Vault content as JSON string
-
-> MCP tool
-
-### rdc storage remove <name>
-
-Remove a storage endpoint from the config.
-
-**Options:**
-
-- `-y, --yes`: Skip confirmation prompt
-- `--dry-run`: Show what would be done without making changes
-
-> MCP tool
-
-### rdc storage list [name]
-
-List storage endpoints. Give a name for full detail.
-
-**Options:**
-
-- `--reveal`: Reveal the storage configuration in plaintext (interactive TTY only; audited)
-
-> MCP tool
-
-### rdc storage import <file>
-
-Import a storage endpoint from a definition file.
-
-**Options:**
-
-- `--name <name>`: Import only this named section
-
-> MCP excluded: Reads a local rclone definition file; use CLI directly.
-
-### rdc storage browse <storage>
-
-Browse files in a storage system
-
-**Options:**
-
-- `--path <subpath>`: Subdirectory path to list (default: )
-
-> MCP excluded: Interactive file browser: requires TTY
-
-### rdc storage prune <storage>
-
-Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.
-
-**Options:**
-
-- `-m, --machine <name>`: Executor machine that runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.
-- `--dry-run`: Show what would be done without making changes
-- `--force`: Skip confirmation prompts
-- `--force-delete-mounted`: Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos).
-- `--grace-days <days>`: Grace period in days for recently archived repos (default: 7)
-- `--debug`: Enable debug output
-- `--skip-router-restart`: Skip restarting the route server after binary update
-
-> MCP tool
 
 ### rdc cluster create <cluster>
 
@@ -947,6 +907,7 @@ Delete a repository and its data. A fork's config entry moves to deletedReposito
 **Options:**
 
 - `--archive-config`: Move config entry to deletedRepositories for later recovery
+- `--purge-backups`: Also delete the repository's cloud backups now, instead of letting them expire
 - `-y, --yes`: Skip confirmation prompt
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
@@ -1841,7 +1802,7 @@ Run diagnostic checks on the CLI environment: Node.js version, renet binary avai
 
 ### rdc credits
 
-Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync, rclone), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.
+Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.
 
 **Options:**
 

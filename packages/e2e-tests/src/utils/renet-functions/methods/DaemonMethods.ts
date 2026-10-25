@@ -1,7 +1,7 @@
 import type { ExecResult, TestFunctionOptions } from '../types';
 
 /**
- * Daemon management methods for BridgeTestRunner.
+ * Daemon management methods for RenetFunctionsTestRunner.
  */
 export class DaemonMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}

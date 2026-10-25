@@ -2,9 +2,9 @@ import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { expect, test } from '@playwright/test';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
-import { getOpsManager, getOpsManagerForGroup } from '../../src/utils/bridge/OpsManager';
-import type { ExecResult } from '../../src/utils/bridge/types';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
+import { getOpsManager, getOpsManagerForGroup } from '../../src/utils/renet-functions/OpsManager';
+import type { ExecResult } from '../../src/utils/renet-functions/types';
 
 const execAsync = promisify(exec);
 
@@ -51,7 +51,7 @@ test.describe
     test.skip(!enabled, 'Requires K8S_MODE=1 and DUAL_GROUP=1 (a second KVM group booted)');
     test.setTimeout(900_000);
 
-    let src: BridgeTestRunner; // group A worker .11 (source; two-hop via A's bridge)
+    let src: RenetFunctionsTestRunner; // group A worker .11 (source; two-hop via A's bridge)
     const opsA = getOpsManager();
     // Group B's non-singleton manager: its own groupEnv (VM_NET=renet12,
     // DOCKER_REGISTRY derived from .5), disjoint IDs — this is the wave-8 seam.
@@ -156,7 +156,7 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      src = BridgeTestRunner.forWorker(1);
+      src = RenetFunctionsTestRunner.forWorker(1);
 
       // Host routes between the two private LANs (the WAN stand-in).
       await ensureCrossLanRoute();

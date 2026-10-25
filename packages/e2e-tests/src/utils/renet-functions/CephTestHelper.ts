@@ -1,4 +1,4 @@
-import { BridgeTestRunner, ExecResult } from './BridgeTestRunner';
+import { RenetFunctionsTestRunner, ExecResult } from './RenetFunctionsTestRunner';
 
 /**
  * Ceph-specific test utilities for managing pools, images, snapshots, and clones.
@@ -9,7 +9,7 @@ import { BridgeTestRunner, ExecResult } from './BridgeTestRunner';
  * - Critical teardown ordering for COW clones
  */
 export class CephTestHelper {
-  private readonly runner: BridgeTestRunner;
+  private readonly runner: RenetFunctionsTestRunner;
   private readonly testId: string;
 
   // Track created resources for cleanup
@@ -20,7 +20,7 @@ export class CephTestHelper {
   private readonly createdClones: Map<string, string[]> = new Map(); // pool -> clones
   private mountedClones: string[] = [];
 
-  constructor(runner: BridgeTestRunner) {
+  constructor(runner: RenetFunctionsTestRunner) {
     this.runner = runner;
     this.testId = Date.now().toString(36);
   }

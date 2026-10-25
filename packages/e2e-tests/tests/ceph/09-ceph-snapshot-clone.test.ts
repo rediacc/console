@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
-import { CephTestHelper } from '../../src/utils/bridge/CephTestHelper';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
+import { CephTestHelper } from '../../src/utils/renet-functions/CephTestHelper';
 
 // Check if Ceph is configured - skip all tests if not VM_CEPH_NODES can be empty or space-separated list of VM IDs (e.g., "21 22 23")
 const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
@@ -37,13 +37,13 @@ const hasCeph = cephNodes.length > 0;
 test.describe
   .serial('Ceph Snapshot Operations @bridge @ceph', () => {
     test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const pool = 'rediacc_rbd_pool';
     const image = `snap-test-image-${Date.now()}`;
     const snapshot = `test-snap-${Date.now()}`;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forCeph();
+      runner = RenetFunctionsTestRunner.forCeph();
     });
 
     // ===========================================================================
@@ -118,14 +118,14 @@ test.describe
 test.describe
   .serial('Ceph Clone Operations @bridge @ceph', () => {
     test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const pool = 'rediacc_rbd_pool';
     const image = `clone-test-image-${Date.now()}`;
     const snapshot = `clone-test-snap-${Date.now()}`;
     const clone = `test-clone-${Date.now()}`;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forCeph();
+      runner = RenetFunctionsTestRunner.forCeph();
     });
 
     // ===========================================================================
@@ -212,7 +212,7 @@ test.describe
 test.describe
   .serial('Ceph Clone COW Mount/Unmount @bridge @ceph', () => {
     test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const pool = 'rediacc_rbd_pool';
     const image = `cow-test-image-${Date.now()}`;
     const snapshot = `cow-test-snap-${Date.now()}`;
@@ -220,7 +220,7 @@ test.describe
     const mountPoint = '/mnt/test-clone';
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forCeph();
+      runner = RenetFunctionsTestRunner.forCeph();
     });
 
     // ===========================================================================
@@ -313,7 +313,7 @@ test.describe
 test.describe
   .serial('Ceph Snapshot/Clone Full Lifecycle @bridge @ceph @lifecycle', () => {
     test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const pool = 'rediacc_rbd_pool';
     const image = `lifecycle-image-${Date.now()}`;
     const snapshot = `lifecycle-snap-${Date.now()}`;
@@ -321,7 +321,7 @@ test.describe
     const mountPoint = `/mnt/lifecycle-${Date.now()}`;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forCeph();
+      runner = RenetFunctionsTestRunner.forCeph();
     });
 
     // Setup: Create and format image
@@ -406,10 +406,10 @@ test.describe
  */
 test.describe('Ceph Snapshot/Clone Error Handling @bridge @ceph', () => {
   test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forCeph();
+    runner = RenetFunctionsTestRunner.forCeph();
   });
 
   test('snapshot on nonexistent image should execute without shell errors', async () => {
@@ -452,11 +452,11 @@ test.describe('Ceph Snapshot/Clone Error Handling @bridge @ceph', () => {
  */
 test.describe('CephTestHelper Resource Management @bridge @ceph', () => {
   test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   let helper: CephTestHelper;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forCeph();
+    runner = RenetFunctionsTestRunner.forCeph();
     helper = new CephTestHelper(runner);
   });
 
@@ -521,7 +521,7 @@ test.describe('CephTestHelper Resource Management @bridge @ceph', () => {
 test.describe
   .serial('BTRFS on Ceph RBD @bridge @ceph @btrfs', () => {
     test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const pool = 'rediacc_rbd_pool';
     const baseImage = `btrfs-test-image-${Date.now()}`;
     const snapshot = `btrfs-snap-${Date.now()}`;
@@ -529,7 +529,7 @@ test.describe
     const mountPoint = `/mnt/btrfs-test-${Date.now()}`;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forCeph();
+      runner = RenetFunctionsTestRunner.forCeph();
     });
 
     // ===========================================================================
@@ -680,7 +680,7 @@ test.describe
 test.describe
   .serial('Ceph Clone Unmount Force Flag @bridge @ceph', () => {
     test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const pool = 'rediacc_rbd_pool';
     const image = `force-test-image-${Date.now()}`;
     const snapshot = `force-test-snap-${Date.now()}`;
@@ -688,7 +688,7 @@ test.describe
     const mountPoint = '/mnt/force-test';
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forCeph();
+      runner = RenetFunctionsTestRunner.forCeph();
     });
 
     // Setup

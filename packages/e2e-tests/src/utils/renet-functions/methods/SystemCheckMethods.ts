@@ -1,7 +1,7 @@
 import type { ExecResult, TestFunctionOptions } from '../types';
 
 /**
- * System check and verification methods for BridgeTestRunner.
+ * System check and verification methods for RenetFunctionsTestRunner.
  * Contains methods for testing machine health, compatibility, and setup status.
  */
 export class SystemCheckMethods {

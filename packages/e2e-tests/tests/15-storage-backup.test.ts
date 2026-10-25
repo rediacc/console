@@ -7,7 +7,7 @@ import {
   TEST_TEAM,
   TEST_USER,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { DEFAULT_RUSTFS_CONFIG, StorageTestHelper } from '../src/utils/storage/StorageTestHelper';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
@@ -85,10 +85,10 @@ test.describe('Storage Infrastructure @bridge @storage @infra', () => {
  * these assert.
  */
 test.describe('Machine Backup Operations @bridge @storage', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push to machine should work', async () => {

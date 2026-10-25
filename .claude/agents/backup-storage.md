@@ -34,7 +34,7 @@ every later run reflink-snapshots the image under the repo flock, runs `delta.Co
 | engine | `private/renet/pkg/chunkstore/` (`grid.go`, `manifest.go`, `journal.go`, `grants.go`, `download.go`, `restore.go`, `pipeline_linux.go`) |
 | renet verbs | `private/renet/cmd/renet/backup_*.go`, registered in `pkg/functions/commands/backup.go` |
 | control plane | `private/account/src/routes/backups.ts`, `src/services/backup-chunk-store.ts`, `src/dto/backup.dto.ts` |
-| CLI | `packages/cli/src/commands/backup.ts`, `backup-ops.ts`, `backup-storage.ts`, `backup-storage-browse.ts`, `backup-strategy.ts` |
+| CLI | `packages/cli/src/commands/backup.ts`, `backup-ops.ts`, `backup-storage.ts`, `backup-storage-browse.ts`, `backup-strategy.ts`, `backup-retention-commands.ts` |
 | schedules | `packages/cli/src/services/backup/backup-schedule{,-execute,-reconcile,-unit-generator}.ts` |
 | drill | `.ci/rediacc_ci/drills/backup.py` (`./run.sh drill backup`) |
 | wire gate | `scripts/gates/check-backup-protocol-conformance.ts` (`npm run check:ci-backup-protocol-conformance`) |
@@ -43,7 +43,7 @@ Anchors live at `<datastore>/.chunk-anchors/<guid>` and the journal at `/var/lib
 
 ## Status
 
-The chunk-store path is the only backup path. `renet backup snapshot`, `rdc backup snapshot`, restore (`cmd/renet/backup_restore.go`, `rdc backup restore --at`), quota, retention, browse and the drill all exist. `rdc storage`, storage destinations and storage-typed `repo push/pull` arguments are gone; `repo push/pull` move bytes between machines only. Elite boxes bundle the store (`private/elite/BACKUP.md`).
+The chunk-store path is the only backup path. `renet backup snapshot`, `rdc backup snapshot`, restore (`cmd/renet/backup_restore.go`, `rdc backup restore --at`), quota, browse and the drill all exist. Retention is `rdc backup retention {preview,set,clear}` (`set` and `clear` take `--stream <id>`; `set` replaces every knob), `rdc backup snapshots delete <repo-ref> <snapshot-id>` removes one snapshot, `rdc backup strategy set --retention <spec>` carries a per-strategy spec, and `rdc repo delete --purge-backups` drops the repository's cloud backups at once. The authoritative verb list is `.claude/skills/rdc/reference.md`. `rdc storage`, storage destinations and storage-typed `repo push/pull` arguments are gone; `repo push/pull` move bytes between machines only. Elite boxes bundle the store (`private/elite/BACKUP.md`).
 
 Open work lives in `agent/plans/PLAN-backup-program.md` (one box per item, each with its acceptance line). **"Restore exists" and "restore is exercised" are different claims**: suite 26's restore tier automates the byte-identity proof and needs the fleet plus a real store, so check the plan's K boxes for what has actually been driven.
 

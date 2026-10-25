@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { CliRunner } from '../../src/utils/CliRunner';
 import {
   announcePrerequisites,
@@ -401,7 +401,7 @@ test.describe
       const MIGRATE_CLUSTER = `${CLUSTER}-mig`;
 
       let cli: CliRunner;
-      let w1: BridgeTestRunner;
+      let w1: RenetFunctionsTestRunner;
 
       /** `machine status <m> --licenses -o json` -> data.license_statuses[]. */
       const licenseStatuses = async (machine: string): Promise<LicenseStatus[]> => {
@@ -442,7 +442,7 @@ test.describe
       };
 
       test.beforeAll(async () => {
-        w1 = BridgeTestRunner.forWorker(1);
+        w1 = RenetFunctionsTestRunner.forWorker(1);
         await CliRunner.resetConfig(CFG);
         cli = CliRunner.create({
           configName: CFG,

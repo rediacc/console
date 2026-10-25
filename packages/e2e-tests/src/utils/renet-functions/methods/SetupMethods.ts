@@ -1,7 +1,7 @@
 import type { ExecResult, TestFunctionOptions } from '../types';
 
 /**
- * Machine setup and initialization methods for BridgeTestRunner.
+ * Machine setup and initialization methods for RenetFunctionsTestRunner.
  */
 export class SetupMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}

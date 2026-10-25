@@ -1,6 +1,6 @@
 # @rediacc/e2e-tests
 
-Playwright-driven e2e suites for the console/renet platform. Most suites go through `BridgeTestRunner` (SSH → `sudo renet …`); suite 23 additionally drives the real `rdc` CLI via `CliRunner` (the first CLI-driving harness, and the interface point the future examples program reuses).
+Playwright-driven e2e suites for the console/renet platform. Most suites go through `RenetFunctionsTestRunner` (SSH → `sudo renet …`); suite 23 additionally drives the real `rdc` CLI via `CliRunner` (the first CLI-driving harness, and the interface point the future examples program reuses).
 
 Suites are selected per CI job by the `playwright.*.config.ts` files. Which config each CI job runs is the single source of truth for "is this suite live":
 

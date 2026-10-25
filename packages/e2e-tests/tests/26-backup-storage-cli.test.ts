@@ -30,7 +30,7 @@ import {
   usageViolations,
   verbIsRegistered,
 } from '../src/utils/backupStorage';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { CliRunner } from '../src/utils/CliRunner';
 import {
   announcePrerequisites,
@@ -406,7 +406,7 @@ test.describe
       const WRITE_LENGTH = 4096;
 
       let cli: CliRunner;
-      let w1: BridgeTestRunner;
+      let w1: RenetFunctionsTestRunner;
       let repo: ProvisionedRepo;
       let lineage = '';
       let seedManifest: BackupManifest | undefined;
@@ -428,7 +428,7 @@ test.describe
        * repeatable GUID filter and `--datastore` is the datastore root
        * (`renet backup snapshot --help`).
        */
-      const runEngine = async (runner: BridgeTestRunner) =>
+      const runEngine = async (runner: RenetFunctionsTestRunner) =>
         runner.executeViaBridge(
           `sudo renet ${verbs.run} --repo "${repo.guid}" --datastore "${DS}"`
         );
@@ -459,7 +459,7 @@ test.describe
         });
 
       test.beforeAll(async () => {
-        w1 = BridgeTestRunner.forWorker(1);
+        w1 = RenetFunctionsTestRunner.forWorker(1);
         cli = await loginCli(CFG);
         // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe. ensureDatastore below is a DIFFERENT check (registers the named datastore pool with the CLI), not a substitute for this.
         await w1.ensureDatastoreReady(DS);
@@ -670,11 +670,11 @@ test.describe
       const RESTORED_NAME = `${REPO_NAME}-back`;
 
       let cli: CliRunner;
-      let w1: BridgeTestRunner;
-      let w2: BridgeTestRunner;
+      let w1: RenetFunctionsTestRunner;
+      let w2: RenetFunctionsTestRunner;
       let repo: ProvisionedRepo;
 
-      const imageSha = async (runner: BridgeTestRunner, guid: string): Promise<string> => {
+      const imageSha = async (runner: RenetFunctionsTestRunner, guid: string): Promise<string> => {
         const r = await runner.executeViaBridge(
           `sudo sha256sum "${DS}/repositories/${guid}" | cut -d' ' -f1`
         );
@@ -682,8 +682,8 @@ test.describe
       };
 
       test.beforeAll(async () => {
-        w1 = BridgeTestRunner.forWorker(1);
-        w2 = BridgeTestRunner.forWorker(2);
+        w1 = RenetFunctionsTestRunner.forWorker(1);
+        w2 = RenetFunctionsTestRunner.forWorker(2);
         cli = await loginCli(CFG);
         // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped either shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
         await w1.ensureDatastoreReady(DS);

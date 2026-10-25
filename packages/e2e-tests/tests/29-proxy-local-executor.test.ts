@@ -8,7 +8,7 @@ import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { type AuditEvent, AuditEventsRequestSchema } from '@rediacc/shared';
 import { repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { type CliResult, CliRunner } from '../src/utils/CliRunner';
 
 /**
@@ -280,7 +280,7 @@ test.describe
     let cli: CliRunner;
     let caller: CliRunner;
     let stranger: CliRunner;
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     let stub: StubAccountServer | undefined;
     let executor: Executor | undefined;
     let forkGuid = '';
@@ -350,7 +350,7 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       cli = CliRunner.create({ configName: CONFIG_NAME });
       caller = CliRunner.create({ configName: CONFIG_NAME, env: { REDIACC_TOKEN: CALLER_TOKEN } });
       stranger = CliRunner.create({ configName: CONFIG_NAME, env: { REDIACC_TOKEN: WRONG_TOKEN } });

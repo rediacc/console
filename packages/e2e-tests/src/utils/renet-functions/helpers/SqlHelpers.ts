@@ -2,7 +2,7 @@ import { repoDockerHost } from '@rediacc/shared/config/runtime-paths';
 import type { ExecResult } from '../types';
 
 /**
- * SQL helper utilities for BridgeTestRunner.
+ * SQL helper utilities for RenetFunctionsTestRunner.
  * Contains PostgreSQL-specific operations for fork testing.
  */
 export class SqlHelpers {

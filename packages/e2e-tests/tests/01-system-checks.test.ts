@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * System Check Tests
@@ -31,10 +31,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 const LANDLOCK_INACTIVE_BY_DEFAULT = new Set(['ol-10']);
 
 test.describe('System Functions @bridge @smoke', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   // ===========================================================================
@@ -225,10 +225,10 @@ test.describe('System Functions @bridge @smoke', () => {
  * Parallel Execution Tests
  */
 test.describe('Parallel Execution @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('implemented functions should run in parallel', async () => {
@@ -252,10 +252,10 @@ test.describe('Parallel Execution @bridge', () => {
  * Error Handling Tests
  */
 test.describe('Error Handling @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('unknown function should fail with clear error', async () => {

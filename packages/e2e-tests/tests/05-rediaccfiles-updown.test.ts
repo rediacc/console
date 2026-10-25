@@ -5,7 +5,7 @@ import {
   TEST_PASSWORD,
   TEST_REPOSITORY_NAME,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Rediaccfile Up/Down Tests (4+ functions)
@@ -40,10 +40,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * ```
  */
 test.describe('Rediaccfile Up/Down Functions @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
@@ -76,12 +76,12 @@ test.describe('Rediaccfile Up/Down Functions @bridge', () => {
  */
 test.describe
   .serial('Rediaccfile Lifecycle @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `rediaccfile-test-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite for repository operations)
@@ -146,10 +146,10 @@ test.describe
  * Tests edge cases for Rediaccfile handling.
  */
 test.describe('Rediaccfile Edge Cases @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
@@ -191,11 +191,11 @@ test.describe('Rediaccfile Edge Cases @bridge', () => {
  * Tests multiple up/down cycles.
  */
 test.describe('Rediaccfile Multiple Runs @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const repositoryName = `multi-run-${Date.now()}`;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
@@ -218,10 +218,10 @@ test.describe('Rediaccfile Multiple Runs @bridge', () => {
  * Tests Rediaccfile integration with daemon functions.
  */
 test.describe('Rediaccfile with Daemons @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
@@ -258,13 +258,13 @@ test.describe('Rediaccfile with Daemons @bridge', () => {
  */
 test.describe
   .serial('Rediaccfile Real Execution @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `rediaccfile-nginx-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const containerName = `nginx-test-${Date.now()}`;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
     });

@@ -6,7 +6,7 @@ Backup, restore, transfer, and sync repository images between machines and to th
 
 Two nouns are involved:
 - `rdc repo push` / `rdc repo pull` / `rdc repo migrate` / `rdc repo sync`: move a repo's bytes.
-- `rdc backup`: strategies, scheduling, and restore. `backup strategy {set,remove,list,show}`, `backup schedule`, `backup run`, `backup status`, `backup cancel`, `backup list`, `backup restore`.
+- `rdc backup`: strategies, scheduling, and restore. `backup strategy {set,remove,list,show}`, `backup schedule`, `backup run`, `backup status`, `backup cancel`, `backup list`, `backup restore`, `backup retention {preview,set,clear}`, `backup snapshots delete`.
 
 **Prerequisite**: Both source AND target machines must be registered, set up, and the CLI SSH key must be configured. See "Prerequisites for ops VMs" in [SKILL.md](SKILL.md) and [config.md](config.md).
 
@@ -116,13 +116,23 @@ The strategy name is a positional argument. Multiple destinations can be configu
 rdc backup strategy set daily --destination hosted --cron "0 2 * * *" --enable
 rdc backup strategy set weekly --destination hosted --cron "0 6 * * 0" --include shop --exclude shop:scratch --enable
 ```
-A destination is a hosted-service chunk store (`kind: hosted-service`); `--include`/`--exclude` take repository names, where a bare name covers the whole fork family and `name:tag` one fork. Retention is set per repository with `rdc backup retention set`.
+A destination is a hosted-service chunk store (`kind: hosted-service`); `--include`/`--exclude` take repository names, where a bare name covers the whole fork family and `name:tag` one fork. `--retention <spec>` (for example `last=7,daily=7,weekly=4,monthly=6`; `none` removes it) sets the strategy's snapshot retention. Per-repository retention is set with `rdc backup retention set`.
 
 ### Show / list backup strategies
 ```bash
 rdc backup strategy list
 rdc backup strategy show daily
 ```
+
+### Retention and snapshot deletion
+```bash
+rdc backup retention preview <repo-ref>           # what the next sweep would delete, and the space freed
+rdc backup retention set <repo-ref> --keep-last 7 --keep-daily 7 --keep-weekly 4
+rdc backup retention set <repo-ref> --stream <id> --keep-last 3   # one backup stream only
+rdc backup retention clear <repo-ref> [--stream <id>]             # keep every snapshot
+rdc backup snapshots delete <repo-ref> <snapshot-id>              # data only that snapshot used is freed by the next GC
+```
+`retention set` replaces every knob rather than merging, so pass the whole policy. `retention set`, `retention clear` and `snapshots delete` are excluded from the MCP tools. `rdc repo delete <ref> --purge-backups` also deletes the repository's cloud backups at once instead of letting them expire.
 
 ### Deploy backup schedule to machine (systemd timer)
 ```bash

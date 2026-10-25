@@ -70,7 +70,7 @@ now fixed (the record survives a client-side failure; the harness asks the worke
 
 ## Ceph on the local fleet
 
-Nothing here is operator-gated: `REDIACC_ALLOW_CLUSTER_OPS` gates the `rdc cluster` / `rdc datastore` CLI verbs (`command-policy.ts:197,217`), and the ceph-workers suites never touch `rdc` -- they drive `renet` on the VMs over SSH through `BridgeTestRunner`. `renet ops ceph provision` has no policy layer at all. An agent can run every step.
+Nothing here is operator-gated: `REDIACC_ALLOW_CLUSTER_OPS` gates the `rdc cluster` / `rdc datastore` CLI verbs (`command-policy.ts:197,217`), and the ceph-workers suites never touch `rdc` -- they drive `renet` on the VMs over SSH through `RenetFunctionsTestRunner`. `renet ops ceph provision` has no policy layer at all. An agent can run every step.
 
 Two ways in, and they cost very differently:
 

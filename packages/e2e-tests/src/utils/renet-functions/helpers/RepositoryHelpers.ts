@@ -3,7 +3,7 @@ import { log } from '../../log';
 import type { ExecResult } from '../types';
 
 /**
- * Repository-specific helper utilities for BridgeTestRunner.
+ * Repository-specific helper utilities for RenetFunctionsTestRunner.
  * Contains fork operations, file operations, and database helpers.
  */
 export class RepositoryHelpers {

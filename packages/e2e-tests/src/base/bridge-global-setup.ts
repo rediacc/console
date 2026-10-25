@@ -7,7 +7,7 @@ import {
   DEFAULT_DATASTORE_PATH,
   RENET_SETUP_TIMEOUT_MS,
 } from '../constants';
-import { getOpsManager } from '../utils/bridge/OpsManager';
+import { getOpsManager } from '../utils/renet-functions/OpsManager';
 import { InfrastructureManager } from '../utils/infrastructure/InfrastructureManager';
 import { log } from '../utils/log';
 

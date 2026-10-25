@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import type { ExecResult } from '../types';
 
 /**
- * Test helper utilities for BridgeTestRunner.
+ * Test helper utilities for RenetFunctionsTestRunner.
  * Contains output parsing, validation, and fixture operations.
  */
 export class TestHelpers {

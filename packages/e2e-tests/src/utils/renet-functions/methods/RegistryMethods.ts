@@ -1,7 +1,7 @@
 import type { ExecResult, TestFunctionOptions } from '../types';
 
 /**
- * Registry (zot pull-through cache) methods for BridgeTestRunner.
+ * Registry (zot pull-through cache) methods for RenetFunctionsTestRunner.
  *
  * These dispatch the `kube_registry_*` renet functions by literal name, so the
  * e2e-coverage gate (which greps bridge-tests for each generated function name)

@@ -7,7 +7,7 @@ import {
   snapshotRecordViolations,
   verbIsRegistered,
 } from '../src/utils/backupStorage';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import {
   announcePrerequisites,
   type PrerequisiteVerdict,
@@ -222,7 +222,7 @@ test.describe
       const gate = announcePrerequisites(verdict);
       test.skip(gate.skip, gate.reason);
 
-      let runner: BridgeTestRunner;
+      let runner: RenetFunctionsTestRunner;
       const named = `chunk-e2e-${stamp}`;
 
       /** sha256 of a repository's LUKS image, mount-free (suite 17's technique). */
@@ -257,7 +257,7 @@ test.describe
       };
 
       test.beforeAll(async () => {
-        runner = BridgeTestRunner.forWorker();
+        runner = RenetFunctionsTestRunner.forWorker();
         await runner.resetWorkerState();
         const init = await runner.datastoreInitPool('10G', DS, true);
         if (!runner.isSuccess(init)) {

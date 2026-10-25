@@ -42,7 +42,7 @@ and `kube_csi_template` outlived their own removal in P1 and only surfaced when 
 The oracle is RENET_BRIDGE_FUNCTIONS: every name in the dispatcher's Registry, internal verbs included. RENET_FUNCTIONS (the forward half's subject) is the PUBLIC surface and omits them, and the bridge drives mostly internal verbs (`datastore_*`, `machine_check_*`, `daemon_*`), so it cannot answer this question. A schema-derived list cannot either: a verb may be registered WITHOUT
 a schema (`ceph_clone_create` is) and still dispatch fine. This half stays scanning ALL files.
 
-Every `function: 'name'` literal in the harness IS a dispatch. That is how `src/utils/bridge/methods/*.ts` name the verb they send to `functions once`.
+Every `function: 'name'` literal in the harness IS a dispatch. That is how `src/utils/renet-functions/methods/*.ts` name the verb they send to `functions once`.
 
 THE SECOND WAY THE HARNESS DISPATCHES, and the gate could not see it.
 

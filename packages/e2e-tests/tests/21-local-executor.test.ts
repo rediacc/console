@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Bridge Local Executor Tests
@@ -10,10 +10,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * Migrated from: ops/scripts/bridge.sh::bridge_test_local()
  */
 test.describe('Bridge Local Executor @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('machine_ping function should return pong', async () => {
@@ -56,10 +56,10 @@ test.describe('Bridge Local Executor @bridge', () => {
  * Tests that verify renet binary is available and working.
  */
 test.describe('Renet Binary @bridge @smoke', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('renet binary should be available', async () => {

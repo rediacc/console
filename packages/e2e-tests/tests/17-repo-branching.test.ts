@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Git-like branching + delta regression (issue #75) @bridge
@@ -28,14 +28,14 @@ const extractSha = (s: string): string => (/[0-9a-f]{64}/.exec(s) ?? [''])[0];
 
 test.describe
   .serial('Repository Branching @bridge', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repo = `branch-e2e-${stamp}`;
     const commitGuid = 'c0117777-0000-4000-8000-000000000001';
     const checkoutFork = `${repo}-co`;
     const commitMessage = 'phase17 bridge commit';
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       const initResult = await runner.datastoreInitPool('10G', DS, true);
       if (!runner.isSuccess(initResult)) {
@@ -77,13 +77,13 @@ test.describe
 
 test.describe
   .serial('Immutable forks @bridge', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const parent = `immut-parent-${stamp}`;
     const immutable = `immut-${stamp}`;
     const writable = `immut-writable-${stamp}`;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(parent, '1G', TEST_PASSWORD, DS);
       await runner.repositoryUnmount(parent, DS).catch(() => {});
@@ -115,14 +115,14 @@ test.describe
 
 test.describe
   .serial('Per-file three-way merge @bridge', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const work = `tw-work-${stamp}`;
     const base = `tw-base-${stamp}`; // immutable commit = common ancestor
     const ours = `tw-ours-${stamp}`;
     const theirs = `tw-theirs-${stamp}`;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.datastoreInitPool('10G', DS, true);
       // Baseline → commit C0 (the common ancestor) → two checkouts.
       await runner.repositoryNew(work, '1G', TEST_PASSWORD, DS);
@@ -164,7 +164,7 @@ test.describe
 
 test.describe
   .serial('Cross-machine delta @bridge @multi-machine', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     let multiMachine = false;
     const repo = `delta-e2e-${stamp}`;
     const base1 = `d1-${stamp}`; // retained base after the first push
@@ -178,7 +178,7 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       multiMachine = runner.getWorkerVMs().length >= 2;
       if (!multiMachine) return;
       await runner.datastoreInitPool('10G', DS, true);
@@ -240,7 +240,7 @@ test.describe
     // repository_promote had no live dispatch site (allowlist-only). Prove the swap (spec 03 §5.4: "make a validated fork the production repository under
     // its parent name"; both records must live in the same datastore) with the
     // delta block's mount-free image-sha technique — remounting the swapped grand over two-hop SSH is the flaky path this suite deliberately avoids.
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const grand = `promo-grand-${stamp}`;
     const fork = `promo-fork-${stamp}`;
 
@@ -252,7 +252,7 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(grand, '1G', TEST_PASSWORD, DS);
       await runner.writeFileToRepository(grand, 'marker.txt', `grand-v1-${stamp}`, DS);

@@ -1,5 +1,5 @@
 /**
- * Shared types for BridgeTestRunner and method classes.
+ * Shared types for RenetFunctionsTestRunner and method classes.
  */
 
 export interface ExecResult {
@@ -123,7 +123,7 @@ export interface TestFunctionOptions {
 export type VMTarget = string;
 
 /**
- * Configuration for BridgeTestRunner.
+ * Configuration for RenetFunctionsTestRunner.
  * targetVM is REQUIRED - no default execution target.
  */
 export interface RunnerConfig {

@@ -13,7 +13,7 @@ const { IP, executeOnVM, waitForHost } = vi.hoisted(() => ({
   waitForHost: vi.fn<(host: string, timeoutMs?: number, intervalMs?: number) => Promise<boolean>>(),
 }));
 
-vi.mock('../../bridge/OpsManager', () => ({
+vi.mock('../../renet-functions/OpsManager', () => ({
   getOpsManager: () => ({
     getBridgeVMIp: () => IP,
     getWorkerVMIps: () => [IP],

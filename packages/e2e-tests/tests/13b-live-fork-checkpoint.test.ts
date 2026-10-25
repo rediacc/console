@@ -6,7 +6,7 @@ import {
   FORK_NETWORK_ID_A,
   TEST_PASSWORD,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Live Fork with CRIU Checkpoint (console#440)
@@ -60,7 +60,7 @@ async function ignoreFailure(action: () => Promise<unknown>): Promise<void> {
 
 test.describe
   .serial('Live Fork Checkpoint Restore @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
     const parentRepoName = `cp-livefork-${timestamp}`;
     // In raw renet, `repository fork --tag` takes the fork's FULL image name — "--tag IS its image name; the rdc `name:tag` compositing is a config concern" (suite 17's ledger; the bridge ParamDef describes `tag` as "Fork repository name", and rdc passes the fork's GUID here). The fork's storage therefore lives at repositories/<forkRepoName>, NOT at repositories/<parent>:<tag> —
@@ -82,7 +82,7 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       // Defense in depth alongside the resetWorkerState()+datastoreInitPool(force) below: if CRIU turns out to be unavailable this beforeAll returns before either of those run, and whichever suite ran before this one in project order (fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) may already have wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
       const criuCheck = await runner.checkCriu();

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Checkpoint Workflow
@@ -10,7 +10,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  */
 test.describe
   .serial('Checkpoint Workflow @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `checkpoint-workflow-${Date.now()}`;
     const checkpoint1 = 'initial-state';
     const checkpoint2 = 'after-changes';
@@ -18,7 +18,7 @@ test.describe
     let criuAvailable = false;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
       // Check if CRIU is available - checkpoint tests require it

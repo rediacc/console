@@ -71,7 +71,7 @@ DECLARED_UNITS: dict[tuple[str, str], tuple[str, str]] = {
         "MS",
         (
             "the twin's BRIDGE_TIMEOUT default, read by packages/e2e-tests "
-            "BridgeTestRunner.ts as milliseconds"
+            "RenetFunctionsTestRunner.ts as milliseconds"
         ),
     ),
 }

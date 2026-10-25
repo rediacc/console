@@ -45,7 +45,7 @@ function resolveDevRenet(): string | undefined {
 /**
  * CliRunner — the e2e harness's FIRST rdc-driving surface.
  *
- * Every existing suite goes through BridgeTestRunner (SSH → `sudo renet …`). The
+ * Every existing suite goes through RenetFunctionsTestRunner (SSH → `sudo renet …`). The
  * two-VM `repo migrate` routing family, however, is CLI logic (config placement
  * rewrite, `config reconcile`) that renet-side tests structurally cannot cover
  * (07 §1-9). CliRunner shells the real `rdc` binary so suite 23 can drive it; it

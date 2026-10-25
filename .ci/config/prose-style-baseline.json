@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2785,
- "files": 681,
+ "count": 2779,
+ "files": 679,
  "by_rule": {
-  "R1": 1519,
-  "R11": 148,
+  "R1": 1517,
+  "R11": 146,
   "R14": 1,
   "R18": 13,
   "R19": 59,
-  "R2": 604,
-  "R7": 441
+  "R2": 603,
+  "R7": 440
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -2051,7 +2051,6 @@
   ".claude/skills/rdc/reference.md": {
    "R1": [
     "132255f118bc59d1",
-    "1c4da19c974e5026",
     "2c458aba3b8f45c7",
     "4969aaaa41701de5",
     "4c50a25929008886",
@@ -2060,14 +2059,11 @@
     "9bba1b69f52c348a",
     "9bdd694614531526",
     "ab9c43b025075c80",
-    "b003a1c04cf8df41",
-    "daa3697d25fd3829"
+    "b003a1c04cf8df41"
    ],
    "R11": [
     "00b1ea3f79677893",
     "2240654d087beb10",
-    "279c74d892f0f391",
-    "2ee3efefb7311675",
     "300623f876f80c38",
     "3a41b7c6c7380263",
     "3f8bf66b833ea9d2",
@@ -4322,16 +4318,6 @@
    "R7": [
     "35c53c26b50f49b2",
     "587a822182f6bff6"
-   ]
-  },
-  "packages/e2e-tests/src/utils/bridge/BridgeTestRunner.ts": {
-   "R2": [
-    "66b2f4e18d830042"
-   ]
-  },
-  "packages/e2e-tests/src/utils/bridge/__tests__/describeExecFailure.test.ts": {
-   "R7": [
-    "d7f0fcad90f6b471"
    ]
   },
   "packages/e2e-tests/tests/03-datastore-lifecycle.test.ts": {

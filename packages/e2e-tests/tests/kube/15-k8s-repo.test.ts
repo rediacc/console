@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
-import type { ExecResult } from '../../src/utils/bridge/types';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
+import type { ExecResult } from '../../src/utils/renet-functions/types';
 
 // Suite 15 (`E2E K8s` job): a k8s repo end to end on the DATASTORE-CLUSTER model (redesign spec 06 §15). It promotes the wave3b deliverable-5 transcript (scratchpad/reports/p1-wave3b-vm.md) to a suite: a cluster-attached LOCAL datastore + a kube repo with a DECLARED VOLUME and a DECLARED SECRET, brought up through the runtime-generic `repository up` dispatch (kube arm:
 // ApplyIsolation → ProvisionVolumes → InjectSecrets → Deploy).
@@ -129,7 +129,7 @@ test.describe
     test.skip(!canRun, 'Requires K8S_MODE=1 and a worker VM');
     test.setTimeout(600_000);
 
-    let w1: BridgeTestRunner;
+    let w1: RenetFunctionsTestRunner;
 
     // --- kubectl-over-SSH helpers (no host kubectl; use the embedded k3s) ---
     const kubectl = async (args: string): Promise<ExecResult> =>
@@ -261,7 +261,7 @@ ${dataSource ?? ''}`;
     // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what it created; the missing product porcelain is gate finding #20 (4 witnesses).
     //
     // Shell form: executeViaBridge relays through THREE shells and escapeForNestedSSH does NOT escape `$`, so this stays variable-free (a `$(...)` would be expanded on the LOCAL host). Excluding `^<root>/` from the outside-holder branch keeps a SIBLING datastore (a prefix match) out of the list.
-    const unwindSubmounts = async (runner: BridgeTestRunner, mount: string): Promise<void> => {
+    const unwindSubmounts = async (runner: RenetFunctionsTestRunner, mount: string): Promise<void> => {
       const root = mount.replace(/\/[^/]+$/, '');
       const select =
         `{ cut -d" " -f2 /proc/mounts | grep "^${mount}/"; ` +
@@ -287,7 +287,7 @@ ${dataSource ?? ''}`;
     };
 
     // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore, and NO verb ever stops them (`renet kube csi-node-down` exists with zero callers) → every storage release hits EBUSY with no mount holder to find. Gate finding #26. The suite stops what the product started.
-    const csiNodeDown = async (runner: BridgeTestRunner): Promise<void> => {
+    const csiNodeDown = async (runner: RenetFunctionsTestRunner): Promise<void> => {
       await runner.executeViaBridge('sudo renet kube csi-node-down 2>/dev/null; true');
     };
 
@@ -318,7 +318,7 @@ ${dataSource ?? ''}`;
     let adopted = false;
 
     test.beforeAll(async () => {
-      w1 = BridgeTestRunner.forWorker(1);
+      w1 = RenetFunctionsTestRunner.forWorker(1);
       if (KEEP) {
         // The harness's global setup REBOOTS the VMs, so a standing cluster is mid-recovery here (autostart reconciler reattaches the datastores, systemd restarts k3s). A single readiness probe would falsely demote to a full rebuild: check for the control datastore RECORD (cheap, survives reboot) and only then wait out the boot.
         const rec = await w1.executeViaBridge(

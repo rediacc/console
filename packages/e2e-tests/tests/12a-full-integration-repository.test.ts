@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Full Repository Workflow
@@ -11,12 +11,12 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  */
 test.describe
   .serial('Full Repository Workflow @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `full-workflow-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
     });
@@ -135,14 +135,14 @@ test.describe
  */
 test.describe
   .serial('Container Repository Integration @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `container-integration-${Date.now()}`;
     const containerName = 'test-nginx';
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
     });
 
     test.afterAll(async () => {
@@ -278,10 +278,10 @@ test.describe
  * Tests graceful error handling and recovery.
  */
 test.describe('Error Recovery Integration @bridge @integration', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('should handle sequential operations on nonexistent resources', async () => {

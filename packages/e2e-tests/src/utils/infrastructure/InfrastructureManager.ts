@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import { promisify } from 'node:util';
 import { LIMITS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { VM_RENET_INSTALL_PATH } from '../../constants';
-import { getOpsManager, OpsManager } from '../bridge/OpsManager';
+import { getOpsManager, OpsManager } from '../renet-functions/OpsManager';
 import { log } from '../log';
 import { getRenetResolver, RenetResolver } from '../RenetResolver';
 import { getSSHExecutor, SSHExecutor } from '../ssh';

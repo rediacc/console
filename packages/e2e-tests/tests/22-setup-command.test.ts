@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Setup Command Tests
@@ -17,10 +17,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * Migrated from: ops/scripts/workers.sh::worker_setup()
  */
 test.describe('Setup Command @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('setup command should not have shell syntax errors', async () => {
@@ -58,10 +58,10 @@ test.describe('Setup Command @bridge', () => {
  * Tests for edge cases and error handling in the setup command.
  */
 test.describe('Setup Command Edge Cases @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('setup with missing datastore-path should handle gracefully', async () => {

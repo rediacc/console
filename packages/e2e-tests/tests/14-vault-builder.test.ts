@@ -7,7 +7,7 @@ import {
   TEST_TEAM,
   TEST_USER,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
 /**
@@ -148,10 +148,10 @@ test.describe('VaultBuilder Structure @bridge @vault', () => {
 });
 
 test.describe('VaultBuilder with Renet @bridge @vault', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push with vault should generate valid command', async () => {
@@ -219,10 +219,10 @@ test.describe('VaultBuilder with Renet @bridge @vault', () => {
 });
 
 test.describe('VaultBuilder Push Destination Types @bridge @vault', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push with destinationType=machine should work', async () => {
@@ -242,10 +242,10 @@ test.describe('VaultBuilder Push Destination Types @bridge @vault', () => {
 });
 
 test.describe('VaultBuilder Pull Source Types @bridge @vault', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('pull with sourceType=machine should work', async () => {

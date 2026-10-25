@@ -30,7 +30,7 @@ import {
   type SnapshotRecord,
   verbIsRegistered,
 } from '../src/utils/backupStorage';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { CliRunner } from '../src/utils/CliRunner';
 import {
   announcePrerequisites,
@@ -190,7 +190,7 @@ test.describe
       const REPO_NAME = `e2ebk-browse-${String(stamp).slice(-8)}`;
 
       let cli: CliRunner;
-      let w1: BridgeTestRunner;
+      let w1: RenetFunctionsTestRunner;
       let repo: ProvisionedRepo;
       let subscriptionId = '';
       /** Taken while the repository's TOC key was absent: carries no listing. */
@@ -248,7 +248,7 @@ test.describe
       const LIVE_NOTE = 'listing was read from the live mount close to when it was taken';
 
       test.beforeAll(async () => {
-        w1 = BridgeTestRunner.forWorker(1);
+        w1 = RenetFunctionsTestRunner.forWorker(1);
         cli = await loginCli(CFG);
         await w1.ensureDatastoreReady(DS);
         await ensureDatastore(w1, M1);

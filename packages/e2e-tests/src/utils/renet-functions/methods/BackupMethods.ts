@@ -2,7 +2,7 @@ import type { VaultBuilder } from '../../vault/VaultBuilder';
 import type { ExecResult, TestFunctionOptions } from '../types';
 
 /**
- * Backup, checkpoint, and push/pull methods for BridgeTestRunner.
+ * Backup, checkpoint, and push/pull methods for RenetFunctionsTestRunner.
  */
 export class BackupMethods {
   constructor(

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_REPOSITORY_NAME } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Container Operations Tests (11 functions)
@@ -29,14 +29,14 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 const TEST_PASSWORD = 'testpassword123';
 
 test.describe('Container Operations @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const testRepo = `container-ops-${Date.now()}`;
   const testContainer = `nginx-ops-${Date.now()}`;
   const datastorePath = DEFAULT_DATASTORE_PATH;
   const networkId = DEFAULT_NETWORK_ID;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
@@ -244,14 +244,14 @@ test.describe('Container Operations @bridge', () => {
  */
 test.describe
   .serial('Container Lifecycle @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `container-lifecycle-${Date.now()}`;
     const containerName = `nginx-lifecycle-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
 
       // 1. Initialize datastore
@@ -419,12 +419,12 @@ test.describe
  * These tests verify that operations fail gracefully with clear errors.
  */
 test.describe('Container Error Handling @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const networkId = DEFAULT_NETWORK_ID;
   const datastorePath = DEFAULT_DATASTORE_PATH;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
 
     // Setup and start daemon (required for Docker socket)
@@ -513,7 +513,7 @@ test.describe('Container Error Handling @bridge', () => {
  * Tests operations on multiple containers using a multi-service docker-compose.
  */
 test.describe('Multiple Container Operations @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const repositoryName = `multi-container-${Date.now()}`;
   const container1 = `nginx-multi1-${Date.now()}`;
   const container2 = `nginx-multi2-${Date.now()}`;
@@ -521,7 +521,7 @@ test.describe('Multiple Container Operations @bridge', () => {
   const networkId = DEFAULT_NETWORK_ID;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
 
     // 1. Initialize datastore

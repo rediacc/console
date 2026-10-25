@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 // Check if Ceph is configured - skip all tests if not VM_CEPH_NODES can be empty or space-separated list of VM IDs (e.g., "21 22 23")
 const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
@@ -31,10 +31,10 @@ const hasCeph = cephNodes.length > 0;
  */
 test.describe('Ceph Health Check @bridge @ceph', () => {
   test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forCeph();
+    runner = RenetFunctionsTestRunner.forCeph();
   });
 
   test('ceph_health should not have shell syntax errors', async () => {
@@ -45,11 +45,11 @@ test.describe('Ceph Health Check @bridge @ceph', () => {
 
 test.describe('Ceph Pool Operations @bridge @ceph', () => {
   test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const testPool = `test-pool-${Date.now()}`;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forCeph();
+    runner = RenetFunctionsTestRunner.forCeph();
   });
 
   // ===========================================================================
@@ -92,12 +92,12 @@ test.describe('Ceph Pool Operations @bridge @ceph', () => {
 
 test.describe('Ceph Image Operations @bridge @ceph', () => {
   test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const testPool = 'rediacc_rbd_pool';
   const testImage = `test-image-${Date.now()}`;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forCeph();
+    runner = RenetFunctionsTestRunner.forCeph();
   });
 
   // ===========================================================================
@@ -160,12 +160,12 @@ test.describe('Ceph Image Operations @bridge @ceph', () => {
 test.describe
   .serial('Ceph Pool/Image Lifecycle @bridge @ceph @lifecycle', () => {
     test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const pool = `lifecycle-pool-${Date.now()}`;
     const image = `lifecycle-image-${Date.now()}`;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forCeph();
+      runner = RenetFunctionsTestRunner.forCeph();
     });
 
     test('1. ceph_health: check cluster health', async () => {
@@ -233,10 +233,10 @@ test.describe
  */
 test.describe('Ceph Error Handling @bridge @ceph', () => {
   test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forCeph();
+    runner = RenetFunctionsTestRunner.forCeph();
   });
 
   test('operations on nonexistent pool should execute without shell errors', async () => {
@@ -288,12 +288,12 @@ test.describe('Ceph Error Handling @bridge @ceph', () => {
 test.describe
   .serial('Ceph Size Parameters @bridge @ceph', () => {
     test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const pool = 'rediacc_rbd_pool';
     const resizeImage = `resize-test-image-${Date.now()}`;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forCeph();
+      runner = RenetFunctionsTestRunner.forCeph();
     });
 
     test('ceph_image_create with MB size should work', async () => {
