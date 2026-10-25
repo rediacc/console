@@ -3,7 +3,7 @@
 
 WHY THIS EXISTS. The proxy Worker (`workers/proxy`) runs its executor in Cloudflare Containers, billed on provisioned memory while an instance is awake. The one real cost risk, measured in agent/plans/PLAN-cloudflare-proxy.md section 4, is instances pinned awake: 20 `basic` instances 24/7 is about $150/month, 2 is about $15. Two settings bound it, and both were lowered on purpose (box A1, 5f9a354ea and 3b96d5133):
 
-  * `max_instances` on every `[[containers]]` entry of `workers/proxy/wrangler.toml`;
+  * `max_instances` on every `[[containers]]` entry of every `workers/proxy/wrangler*.toml`;
   * `sleepAfter` on every container class the config names, in `workers/proxy/src/**`,
     the idle time before an instance sleeps. `@cloudflare/containers` defaults it to
     `'10m'`, so a class that drops the line silently quintuples the idle bill.
@@ -44,16 +44,21 @@ from rediacc_ci.deploy import deploy_proxy
 from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, PROXY_BENCH_HOST
 
 # THE BUDGET (PLAN-cloudflare-proxy.md section 4, recommendations 1 and 2). Raise either only together with the pricing that justifies it.
-MAX_INSTANCES_BUDGET = 2
+# MAX_INSTANCES_BUDGET is 3 by operator ruling ASKED:2026-10-25T19:08Z ("1 per target, 7 total but 21 max. So, can have 3 when needed"): up to 3 per config, at most MAX_DEPLOYABLE_CONFIGS deployable configs, at most MAX_TOTAL_INSTANCES across them.
+MAX_INSTANCES_BUDGET = 3
+MAX_DEPLOYABLE_CONFIGS = 7
+MAX_TOTAL_INSTANCES = 21
 SLEEP_AFTER_BUDGET_S = 120
 
 # `@cloudflare/containers` lib/container.js: the idle timeout a class gets when it sets none.
 LIBRARY_DEFAULT_SLEEP_AFTER = "10m"
 
-WRANGLER_REL = ("workers", "proxy", "wrangler.toml")
-BENCH_WRANGLER_REL = ("workers", "proxy", "wrangler.bench.toml")
-# Each config the gate judges, and whether it must also name bench and nothing else.
-CONFIGS = ((WRANGLER_REL, False), (BENCH_WRANGLER_REL, True))
+PROXY_REL = ("workers", "proxy")
+CONFIG_GLOB = "wrangler*.toml"
+BENCH_CONFIG = "wrangler.bench.toml"
+# The local-development config is judged against the per-config budget but is not deployed, so it does not count toward the deployable set.
+DEV_CONFIG = "wrangler.dev.toml"
+BENCH_WRANGLER_REL = (*PROXY_REL, BENCH_CONFIG)
 SOURCE_REL = ("workers", "proxy", "src")
 SOURCE_SUFFIXES = (".ts", ".mts", ".js", ".mjs")
 # Tests assert the value; they do not set it for the deployed Worker.
@@ -171,7 +176,7 @@ def sleep_after_findings(sources: dict[str, str], class_names: list[str]) -> tup
                 hits.append((rel, found_body))
         if not hits:
             findings.append(
-                "workers/proxy/wrangler.toml names container class %s, and no file under "
+                "workers/proxy/wrangler*.toml names container class %s, and no file under "
                 "workers/proxy/src defines it, so its sleepAfter cannot be checked." % name
             )
             continue
@@ -215,18 +220,40 @@ def bench_name_findings(wrangler_text: str, rel: str) -> list[str]:
     return ["%s: %s" % (rel, reason) for reason in deploy_proxy.bench_refusals(wrangler_text)]
 
 
+def total_findings(counts: dict[str, int]) -> list[str]:
+    """The deployable-set rule over `{config name: summed max_instances}`; the dev config is not in `counts`."""
+    findings: list[str] = []
+    if len(counts) > MAX_DEPLOYABLE_CONFIGS:
+        findings.append(
+            "workers/proxy: %d deployable configs (%s), over the limit of %d (operator ruling "
+            "ASKED:2026-10-25T19:08Z: one per target, seven in all)."
+            % (len(counts), ", ".join(sorted(counts)), MAX_DEPLOYABLE_CONFIGS)
+        )
+    total = sum(counts.values())
+    if total > MAX_TOTAL_INSTANCES:
+        findings.append(
+            "workers/proxy: the deployable configs total max_instances = %d, over the limit of %d "
+            "(operator ruling ASKED:2026-10-25T19:08Z: 21 at most)." % (total, MAX_TOTAL_INSTANCES)
+        )
+    return findings
+
+
 def check(root: pathlib.Path) -> int:
     containers: list[dict] = []
     findings: list[str] = []
-    for rel_parts, bench in CONFIGS:
-        wrangler = root.joinpath(*rel_parts)
-        rel = "/".join(rel_parts)
-        if not wrangler.is_file():
-            print(
-                "NO VERDICT: %s is missing; the gate is not seeing the proxy config." % wrangler,
-                file=sys.stderr,
-            )
-            return 2
+    counts: dict[str, int] = {}
+    proxy_dir = root.joinpath(*PROXY_REL)
+    configs = sorted(proxy_dir.glob(CONFIG_GLOB)) if proxy_dir.is_dir() else []
+    if not any(c.name == BENCH_CONFIG for c in configs):
+        print(
+            "NO VERDICT: %s is missing; the gate is not seeing the proxy config."
+            % proxy_dir.joinpath(BENCH_CONFIG),
+            file=sys.stderr,
+        )
+        return 2
+    for wrangler in configs:
+        bench = wrangler.name == BENCH_CONFIG
+        rel = "/".join((*PROXY_REL, wrangler.name))
         text = wrangler.read_text(encoding="utf-8")
         try:
             these, these_findings = container_findings(text, rel)
@@ -242,8 +269,16 @@ def check(root: pathlib.Path) -> int:
             return 2
         containers += these
         findings += these_findings
+        if wrangler.name != DEV_CONFIG:
+            counts[wrangler.name] = sum(
+                c["max_instances"]
+                for c in these
+                if isinstance(c.get("max_instances"), int)
+                and not isinstance(c["max_instances"], bool)
+            )
         if bench:
             findings += bench_name_findings(text, rel)
+    findings += total_findings(counts)
     sources = read_sources(root)
     if not sources:
         print(
@@ -261,17 +296,21 @@ def check(root: pathlib.Path) -> int:
         print(
             "proxy cost guard: %d finding(s) over %d container(s) in %d config(s), %d sleepAfter "
             "assignment(s), %d source file(s)."
-            % (len(findings), len(containers), len(CONFIGS), judged, len(sources)),
+            % (len(findings), len(containers), len(configs), judged, len(sources)),
             file=sys.stderr,
         )
         return 1
     print(
-        "proxy cost guard: OK, %d container(s) at max_instances <= %d in %d config(s), the bench "
+        "proxy cost guard: OK, %d container(s) at max_instances <= %d in %d config(s) "
+        "(%d deployable, %d instance(s) in total, at most %d), the bench "
         "config naming bench only, %d sleepAfter assignment(s) <= %ds across %d source file(s)."
         % (
             len(containers),
             MAX_INSTANCES_BUDGET,
-            len(CONFIGS),
+            len(configs),
+            len(counts),
+            sum(counts.values()),
+            MAX_TOTAL_INSTANCES,
             judged,
             SLEEP_AFTER_BUDGET_S,
             len(sources),
@@ -360,6 +399,14 @@ def selftest() -> bool:
         "a class the config names and no file defines fires",
         len(sleep_after_findings({"s.ts": "class D {\n  sleepAfter = '1m';\n}\n"}, ["C"])[1]) == 1,
     )
+    control(
+        "seven deployable configs of 3 are within the set",
+        not total_findings(dict.fromkeys("abcdefg", 3)),
+    )
+    control(
+        "an eighth deployable config fires", len(total_findings(dict.fromkeys("abcdefgh", 1))) == 1
+    )
+    control("a total of 22 fires", len(total_findings({"a": 11, "b": 11})) == 1)
     bench_rel = "/".join(BENCH_WRANGLER_REL)
     control(
         "a bench config naming bench only is clean",
