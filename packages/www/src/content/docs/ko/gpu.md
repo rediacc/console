@@ -3,8 +3,8 @@ title: "GPU"
 description: "CDI 장치 권한으로 리포지토리에 GPU 접근을 부여하는 방법입니다. 머신의 GPU 목록 확인, 리포지토리별 장치 부여와 회수, 카드 단독 예약, WSL 사용을 다룹니다."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: ko

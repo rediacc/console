@@ -3,8 +3,8 @@ title: "GPU"
 description: "Bir repoya CDI aygıt izniyle GPU erişimi vermek: makinenin GPU'larını listelemek, aygıtları repo başına vermek ve geri almak, bir kartı özel olarak ayırmak ve WSL üzerinde çalışmak."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: tr

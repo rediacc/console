@@ -3,8 +3,8 @@ title: "GPU"
 description: "Dare a un repo l'accesso a una GPU tramite una concessione di dispositivo CDI: elencare le GPU della macchina, concedere e revocare dispositivi per repo, riservare una scheda in esclusiva e lavorare su WSL."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: it

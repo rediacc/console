@@ -3,8 +3,8 @@ title: "GPU"
 description: "CDI デバイスグラントでリポジトリに GPU へのアクセスを与える方法です。マシンの GPU の一覧表示、リポジトリごとのデバイスの付与と取り消し、カードの専有予約、WSL での利用を扱います。"
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: ja

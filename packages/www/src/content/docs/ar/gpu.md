@@ -3,8 +3,8 @@ title: "GPU"
 description: "منح مستودع إمكانية الوصول إلى وحدة معالجة رسومات عبر إذن جهاز CDI: عرض وحدات GPU في الجهاز، ومنح الأجهزة وسحبها لكل مستودع، وحجز بطاقة حجزًا حصريًا، والعمل على WSL."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: ar

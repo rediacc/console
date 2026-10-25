@@ -3,8 +3,8 @@ title: "GPU"
 description: "通过 CDI 设备授权让仓库使用 GPU：列出机器上的 GPU，按仓库授予和撤销设备，独占预留一张显卡，以及在 WSL 上使用。"
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: zh

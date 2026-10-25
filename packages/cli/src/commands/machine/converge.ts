@@ -135,19 +135,18 @@ export async function convergeAfterSetup(
   }
 }
 
-async function runSetupPass(
+/** The count of repos still on an older runtime layout, or null (after a warning) when the status cannot be read. */
+async function readStaleCount(
   machineName: string,
-  session: { sftp: Pick<SFTPClient, 'exec'>; remoteRenetPath: string; datastore?: string },
-  debug: boolean | undefined
-): Promise<ConvergeReport | null> {
-  let stale: number;
+  session: { sftp: Pick<SFTPClient, 'exec'>; remoteRenetPath: string; datastore?: string }
+): Promise<number | null> {
   try {
     const status = await readRuntimeStatus(
       session.sftp,
       session.remoteRenetPath,
       session.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH
     );
-    stale = status.stale;
+    return status.stale;
   } catch (error) {
     outputService.warn(
       t('commands.machine.converge.statusUnreadable', {
@@ -157,7 +156,15 @@ async function runSetupPass(
     );
     return null;
   }
-  if (stale === 0) return null;
+}
+
+async function runSetupPass(
+  machineName: string,
+  session: { sftp: Pick<SFTPClient, 'exec'>; remoteRenetPath: string; datastore?: string },
+  debug: boolean | undefined
+): Promise<ConvergeReport | null> {
+  const stale = await readStaleCount(machineName, session);
+  if (stale === null || stale === 0) return null;
 
   outputService.info(t('commands.machine.converge.setupStarting', { machine: machineName, stale }));
   const warnFailed = (error: string) =>

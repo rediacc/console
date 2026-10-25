@@ -50,6 +50,8 @@ import {
   grandTagsOf,
   resolveDestructiveTargetFromRepos,
   resolveRepoKey,
+  restoreArchivedRecord,
+  withGpuDevices,
 } from './config-resources-resolve.js';
 import type { ResourceState } from './resource-state.js';
 import { updateSyncedConfig } from './synced-write.js';
@@ -362,12 +364,17 @@ class ConfigService extends ConfigServiceBase {
     await state.setRepositories(repos);
   }
 
-  async removeRepository(repoRef: string): Promise<void> {
+  /** Self-hosted guard, the ref's config key (or "not found"), and the repo map every repo mutation edits. */
+  private async loadRepositoryForWrite(repoRef: string) {
     await this.requireSelfHosted();
     const key = await this.getRepositoryKey(repoRef);
     if (!key) throw new Error(`Repository "${repoRef}" not found`);
     const state = await this.getResourceState();
-    const repos = state.getRepositories();
+    return { key, state, repos: state.getRepositories() };
+  }
+
+  async removeRepository(repoRef: string): Promise<void> {
+    const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
     delete repos[key];
     await state.setRepositories(repos);
   }
@@ -474,9 +481,7 @@ class ConfigService extends ConfigServiceBase {
       throw new Error(
         `Repository "${restoredName}" already exists. Use --name to specify a different name.`
       );
-    const { name: originalName, deletedAt, ...repoConfig } = archived;
-    void originalName;
-    void deletedAt;
+    const repoConfig = restoreArchivedRecord(archived);
     // This write bypasses addRepository, but the record it makes LIVE is subject to the same GUID-keyed credential map.
     assertNoCredentialCollision(repos, restoredName, repoConfig);
     repos[restoredName] = repoConfig;
@@ -658,24 +663,13 @@ class ConfigService extends ConfigServiceBase {
 
   /** Mirror a repository's granted CDI device names into `state.repos` (an empty list clears the mirror). */
   async setRepositoryGpuDevices(repoRef: string, devices: string[]): Promise<void> {
-    await this.requireSelfHosted();
-    const key = await this.getRepositoryKey(repoRef);
-    if (!key) throw new Error(`Repository "${repoRef}" not found`);
-
-    const state = await this.getResourceState();
-    const repos = state.getRepositories();
-    const { gpuDevices: _previous, ...rest } = repos[key];
-    repos[key] = devices.length > 0 ? { ...rest, gpuDevices: devices } : rest;
+    const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
+    repos[key] = withGpuDevices(repos[key], devices);
     await state.setRepositories(repos);
   }
 
   async ensureRepositoryNetworkId(repoRef: string): Promise<number> {
-    await this.requireSelfHosted();
-    const key = await this.getRepositoryKey(repoRef);
-    if (!key) throw new Error(`Repository "${repoRef}" not found`);
-
-    const state = await this.getResourceState();
-    const repos = state.getRepositories();
+    const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
     const repo = repos[key];
 
     if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;

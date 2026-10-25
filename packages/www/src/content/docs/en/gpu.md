@@ -3,8 +3,8 @@ title: "GPUs"
 description: "Give a repo access to a GPU through a CDI device grant: list the machine's GPUs, grant and revoke devices per repo, reserve a card exclusively, and run on WSL."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: en

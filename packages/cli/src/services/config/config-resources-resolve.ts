@@ -156,6 +156,21 @@ export function buildArchivedRecord(repoKey: string, rec: RepositoryConfig): Arc
   return { ...record, name: base, tag, deletedAt: new Date().toISOString() };
 }
 
+/** The live record an archived one restores to: the archive-only `name` and `deletedAt` fields dropped. */
+export function restoreArchivedRecord(archived: ArchivedRepository): RepositoryConfig {
+  const { name: originalName, deletedAt, ...repoConfig } = archived;
+  void originalName;
+  void deletedAt;
+  return repoConfig;
+}
+
+/** The record with its mirrored CDI device grants set, or cleared when `devices` is empty. */
+export function withGpuDevices(rec: RepositoryConfig, devices: string[]): RepositoryConfig {
+  const { gpuDevices: previous, ...rest } = rec;
+  void previous;
+  return devices.length > 0 ? { ...rest, gpuDevices: devices } : rest;
+}
+
 /**
  * Refuse a second LIVE record that reuses another record's `repositoryGuid`
  * under a DIFFERENT credential.

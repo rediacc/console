@@ -3,8 +3,8 @@ title: "GPU"
 description: "Как дать репозиторию доступ к GPU через разрешение на устройство CDI: вывести список GPU машины, выдавать и отзывать устройства для каждого репозитория, закреплять карту за одним репозиторием и работать в WSL."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: ru

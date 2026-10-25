@@ -146,7 +146,9 @@ describe('CLI contract', () => {
     // gate set (they ran in CI and nowhere else, so nothing failed until a push). 84 -> 85: `backup browse` landed. It reads rather than writes, but the read happens where the repository image is: it opens the LUKS image on the machine and walks its filesystem, exactly as `backup verify` opens the anchor there. Machine-plane and non-interactive, so proxy-capable
     // for the same reason. Note that "local" in its help means "no account
     // server, no network, no credentials" — it does NOT mean the caller's laptop, and reading it that way is how a reviewer would talk themselves into `other`-plane, which would then refuse to run through a proxy. Update this only when the surface genuinely changes.
-    expect(proxyCapableCommands().length).toBe(85);
+    //
+    // 85 -> 88: `machine gpu list`, `repo gpu grant` and `repo gpu revoke` landed (PLAN-gpu-device-grants). Each runs a renet function on the machine that holds the GPU (the grant writes the machine's CDI grant file and the list reads its inventory), is non-interactive, and its config mirror is a cache of renet's own listing, so all three are genuinely proxy-capable like `repo up`.
+    expect(proxyCapableCommands().length).toBe(88);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {

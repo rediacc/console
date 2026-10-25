@@ -3,8 +3,8 @@ title: "GPU"
 description: "Donner à un dépôt l'accès à un GPU grâce à une autorisation de périphérique CDI : lister les GPU de la machine, accorder et retirer des périphériques par dépôt, réserver une carte en exclusivité et travailler sous WSL."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: fr

@@ -3,8 +3,8 @@ title: "GPU"
 description: "Einem Repo über eine CDI-Geräte-Freigabe Zugriff auf eine GPU geben: die GPUs der Maschine auflisten, Geräte pro Repo freigeben und entziehen, eine Karte exklusiv reservieren und unter WSL arbeiten."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: de

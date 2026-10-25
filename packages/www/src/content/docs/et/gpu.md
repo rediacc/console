@@ -3,8 +3,8 @@ title: "GPU"
 description: "Hoidla juurdepääs GPU-le CDI seadmeloa kaudu: masina GPU-de loetlemine, seadmete andmine ja tagasivõtmine hoidla kaupa, kaardi ainukasutuseks reserveerimine ja töö WSL-is."
 category: "Guides"
 tags:
-  - gpu
   - containers
+  - operations
 subcategory: workloads
 order: 7
 language: et
