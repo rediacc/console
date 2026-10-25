@@ -8,6 +8,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -76,7 +77,7 @@ vi.mock('../../services/machine/ssh-connection.js', () => ({
       known_hosts: 'kh',
       universalUser: 'rediacc',
       workingDirectory: '/mnt/repo',
-      datastore: '/mnt/rediacc',
+      datastore: WK_DATASTORE_PATH,
     }),
 }));
 vi.mock('../../services/renet/renet-execution.js', () => ({

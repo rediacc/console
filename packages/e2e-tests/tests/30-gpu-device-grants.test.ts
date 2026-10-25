@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 
 /**
@@ -23,7 +24,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 
 const RUN_ID = Date.now();
 const NETWORK_ID = 3000 + (RUN_ID % 500);
-const KIND = 'rediacc.io/e2e';
+const KIND = `${WK_INFRA_DOMAIN}/e2e`;
 const DEVICE = `${KIND}=one`;
 const SPEC_PATH = `/etc/cdi/rediacc-e2e-${RUN_ID}.yaml`;
 const SPEC = [

@@ -6,7 +6,7 @@
  * refresh comes after it.
  */
 
-import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import { WK_DATASTORE_PATH, WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RepositoryConfig } from '../../../types/index.js';
 
@@ -497,12 +497,12 @@ describe('renderConvergeReport', () => {
 
   it('names the error of a pass that stopped before planning (the "Plan: 0 of 0" case)', () => {
     renderConvergeReport(
-      report({ error: '/var/run/rediacc/reconcile.lock is held by another run: busy' }),
+      report({ error: `${WK_RUNTIME_DIR}/reconcile.lock is held by another run: busy` }),
       'hostinger'
     );
     const lines = printed();
     expect(lines).toContain(
-      'The converge pass stopped early: /var/run/rediacc/reconcile.lock is held by another run: busy'
+      `The converge pass stopped early: ${WK_RUNTIME_DIR}/reconcile.lock is held by another run: busy`
     );
     expect(lines.some((l) => l.includes('rdc machine converge hostinger'))).toBe(true);
   });

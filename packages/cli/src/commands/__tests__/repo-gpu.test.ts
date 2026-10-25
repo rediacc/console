@@ -1,3 +1,4 @@
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -45,7 +46,10 @@ async function run(argv: string[]): Promise<void> {
 }
 
 const GRANT_STDOUT = JSON.stringify({
-  devices: [{ name: 'nvidia.com/gpu=all', exclusive: true }, { name: 'rediacc.io/dri=renderD128' }],
+  devices: [
+    { name: 'nvidia.com/gpu=all', exclusive: true },
+    { name: `${WK_INFRA_DOMAIN}/dri=renderD128` },
+  ],
 });
 
 beforeEach(() => {
@@ -63,10 +67,10 @@ describe('rdc repo gpu grant|revoke', () => {
   });
 
   it('grant mirrors the device names renet reports into state.repos', async () => {
-    await run(['grant', 'app', '--device', 'rediacc.io/dri=renderD128']);
+    await run(['grant', 'app', '--device', `${WK_INFRA_DOMAIN}/dri=renderD128`]);
     expect(mocks.setRepositoryGpuDevices).toHaveBeenCalledWith('app:latest', [
       'nvidia.com/gpu=all',
-      'rediacc.io/dri=renderD128',
+      `${WK_INFRA_DOMAIN}/dri=renderD128`,
     ]);
   });
 
