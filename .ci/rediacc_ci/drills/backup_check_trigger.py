@@ -360,13 +360,21 @@ def record(
         gaps = [*missing, *([] if onprem else ["onprem"])]
         status = NOT_VERIFIED
         reason = {"class": "legs-partial", "detail": "not run or not passed: " + ",".join(gaps)}
+    worktree_inputs = inputs(root)
+    # The receipt is keyed by HEAD's tree, so a drill that ran uncommitted trigger-path edits tested code that tree does not hold: it may not vouch for it.
+    if status == VERIFIED and tree and worktree_inputs != inputs(root, tree):
+        status = NOT_VERIFIED
+        reason = {
+            "class": "dirty-inputs",
+            "detail": "the drill ran uncommitted backup trigger files; commit them and run it again",
+        }
     receipt: dict[str, Any] = {
         "schema": SCHEMA,
         "status": status,
         "reason": None if status == VERIFIED else reason,
         "tree": tree,
         "head": head,
-        "inputs": inputs(root),
+        "inputs": worktree_inputs,
         "renet": _checkout_state(root, RENET_SUBMODULE, pointers[RENET_SUBMODULE]),
         "account": _checkout_state(root, ACCOUNT_SUBMODULE, pointers[ACCOUNT_SUBMODULE]),
         "legs": ran,

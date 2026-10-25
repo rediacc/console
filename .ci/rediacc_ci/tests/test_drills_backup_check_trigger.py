@@ -241,6 +241,17 @@ def test_record_downgrades_a_partial_run_to_not_verified(tmp_path):
     assert _admit(w).code == "not-verified"
 
 
+def test_record_refuses_to_vouch_for_head_after_uncommitted_trigger_edits(tmp_path):
+    w = World(tmp_path / "c")
+    _write(w.root, CONSOLE_FILE, "an uncommitted change the drill ran\n")
+    _record(w)
+    latest = bct.read_latest(w.root)
+    assert latest is not None
+    assert latest["status"] == bct.NOT_VERIFIED
+    assert latest["reason"]["class"] == "dirty-inputs"
+    assert _admit(w).code == "not-verified"
+
+
 def test_record_without_the_onprem_variant_is_not_verified(tmp_path):
     w = World(tmp_path / "c")
     _record(w, onprem=False)
