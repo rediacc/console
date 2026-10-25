@@ -1106,6 +1106,20 @@
         "storageHealthSummary": "Salvestusruumi tõhusus: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteiner(it) on kaldumisläve ületanud; väljub mittenullilise koodiga",
         "syncCertsFailed": "Sertide vahemälu sünkroonimine ebaõnnestus: {{error}}"
+      },
+      "gpu": {
+        "descriptionShort": "Vaata masina GPU-sid ja seadmeõigusi",
+        "description": "Näitab GPU-sid, mida masin saab hoidlatele anda, tema pakutavaid CDI-seadmeid ja seda, milline hoidla mida kasutab.",
+        "list": {
+          "descriptionShort": "Loetle masina GPU-d, CDI-seadmed ja õigused",
+          "description": "Loetleb masinas tuvastatud GPU-d, selle speckides määratud CDI-seadmete nimed ja hoidlad, millele iga seade on antud. Seadme andmiseks kasuta käsku 'rdc repo gpu grant'.",
+          "starting": "Loen masina \"{{machine}}\" GPU inventari...",
+          "failed": "GPU inventari lugemine ebaõnnestus",
+          "notRecorded": "GPU inventari pole veel salvestatud (käivita 'rdc machine setup'); kuvan äsja tuvastatu",
+          "noGpus": "GPU-sid ei tuvastatud",
+          "noDevices": "CDI-seadmeid pole määratud",
+          "grantUnreadable": "Hoidla \"{{repository}}\" õigust ei õnnestunud lugeda: {{error}}"
+        }
       }
     },
     "mcp": {
@@ -1775,7 +1789,27 @@
         "parallelOption": "Käivita hoidlad samaaegselt",
         "starting": "Kõigi hoidlate käivitamine masinal \"{{machine}}\"..."
       },
-      "yesOption": "Jäta pakkoperatsioonide kinnitamine vahele"
+      "yesOption": "Jäta pakkoperatsioonide kinnitamine vahele",
+      "gpu": {
+        "descriptionShort": "Anna hoidlale GPU-seadmeid või võta need tagasi",
+        "description": "Annab hoidlale CDI-seadme (näiteks nvidia.com/gpu=all), et selle konteinerid saaksid seda küsida, või võtab selle uuesti tagasi. Õigust jõustab masin; ainuõigus reserveerib seadme ühele hoidlale.",
+        "deviceOption": "Täielik CDI-seadme nimi (nt nvidia.com/gpu=all)",
+        "grant": {
+          "descriptionShort": "Anna hoidlale CDI-seade",
+          "description": "Lubab hoidla konteineritel CDI-seadet küsida. Seadmete nimed saad käsust 'rdc machine gpu list'.",
+          "exclusiveOption": "Reserveeri seade selle hoidla jaoks: vahepeal ei saa seda anda ühelegi teisele hoidlale",
+          "starting": "Annan seadme {{device}} hoidlale \"{{repository}}\" masinas \"{{machine}}\"...",
+          "completed": "Seade {{device}} anti hoidlale \"{{repository}}\"",
+          "failed": "Seadme andmine ebaõnnestus"
+        },
+        "revoke": {
+          "descriptionShort": "Võta hoidlalt CDI-seade tagasi",
+          "description": "Võtab CDI-seadme hoidla konteineritelt ära. Konteinerid, millel see juba on, hoiavad seda taaskäivituseni.",
+          "starting": "Võtan seadme {{device}} hoidlalt \"{{repository}}\" masinas \"{{machine}}\" tagasi...",
+          "completed": "Seade {{device}} võeti hoidlalt \"{{repository}}\" tagasi",
+          "failed": "Seadme tagasivõtmine ebaõnnestus"
+        }
+      }
     },
     "serve": {
       "description": "Käivita see protsess täiturina, et kliendid saaksid käske käivitada selle kaudu ise SSH kaudu ühendumise asemel",

@@ -21,6 +21,7 @@ const EXPECTED_READ_ONLY = [
   'container_stats',
   'kube_health',
   'kube_kubeconfig',
+  'machine_gpu_list',
   'machine_ping',
   'machine_ssh_test',
   'machine_version',

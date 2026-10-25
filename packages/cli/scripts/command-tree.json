@@ -595,6 +595,35 @@
           "subcommands": []
         },
         {
+          "name": "gpu",
+          "descriptionKey": "commands.machine.gpu.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "descriptionKey": "commands.machine.gpu.list.description",
+              "options": [
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
           "name": "converge",
           "descriptionKey": "commands.machine.converge.description",
           "options": [
@@ -3658,6 +3687,74 @@
                 {
                   "flags": "--rotate-secret",
                   "descriptionKey": "commands.repo.secret.rotateOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "gpu",
+          "descriptionKey": "commands.repo.gpu.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "grant",
+              "descriptionKey": "commands.repo.gpu.grant.description",
+              "options": [
+                {
+                  "flags": "--device <cdi-name>",
+                  "descriptionKey": "commands.repo.gpu.deviceOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--exclusive",
+                  "descriptionKey": "commands.repo.gpu.grant.exclusiveOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "revoke",
+              "descriptionKey": "commands.repo.gpu.revoke.description",
+              "options": [
+                {
+                  "flags": "--device <cdi-name>",
+                  "descriptionKey": "commands.repo.gpu.deviceOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
                   "mandatory": false,
                   "defaultValue": null
                 }

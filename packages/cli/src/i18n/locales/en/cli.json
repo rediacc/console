@@ -807,6 +807,20 @@
           "containers": "Show only the running containers on a machine."
         },
         "licenseBackupBlocked": "\nBACKUPS BLOCKED: {{repositoryGuid}} has been refused by licensing since {{at}} ({{reason}}). {{message}}\nScheduled backups for this repository are not running. Reissue with: rdc subscription refresh"
+      },
+      "gpu": {
+        "descriptionShort": "Inspect a machine's GPUs and device grants",
+        "description": "Inspect the GPUs a machine can hand to repositories, the CDI devices it offers, and which repository holds each.",
+        "list": {
+          "descriptionShort": "List a machine's GPUs, CDI devices and grants",
+          "description": "List the GPUs detected on a machine, the CDI device names its specs define, and the repositories each device is granted to. Grant one with 'rdc repo gpu grant'.",
+          "starting": "Reading the GPU inventory on \"{{machine}}\"...",
+          "failed": "Could not read the GPU inventory",
+          "notRecorded": "No GPU inventory recorded yet (run 'rdc machine setup'); showing what was detected just now",
+          "noGpus": "No GPUs detected",
+          "noDevices": "No CDI devices defined",
+          "grantUnreadable": "The grant of \"{{repository}}\" could not be read: {{error}}"
+        }
       }
     },
     "ops": {
@@ -1565,6 +1579,26 @@
           "basic": "Run a command inside a repository container.",
           "interactive": "Open an interactive shell in a container.",
           "separator": "Pass flags to the remote command: put them after --, and keep the CLI's own flags before it."
+        }
+      },
+      "gpu": {
+        "descriptionShort": "Grant or revoke GPU devices for a repository",
+        "description": "Grant a repository a CDI device (for example nvidia.com/gpu=all) so its containers can request it, or revoke it again. The machine enforces the grant; an exclusive grant reserves the device for one repository.",
+        "deviceOption": "Fully qualified CDI device name (e.g. nvidia.com/gpu=all)",
+        "grant": {
+          "descriptionShort": "Grant a CDI device to a repository",
+          "description": "Allow the repository's containers to request a CDI device. Device names come from 'rdc machine gpu list'.",
+          "exclusiveOption": "Reserve the device for this repository: no other repository can be granted it meanwhile",
+          "starting": "Granting {{device}} to \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Granted {{device}} to \"{{repository}}\"",
+          "failed": "Device grant failed"
+        },
+        "revoke": {
+          "descriptionShort": "Revoke a CDI device from a repository",
+          "description": "Withdraw a CDI device from the repository's containers. Containers that already hold it keep it until they restart.",
+          "starting": "Revoking {{device}} from \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Revoked {{device}} from \"{{repository}}\"",
+          "failed": "Device revoke failed"
         }
       }
     },

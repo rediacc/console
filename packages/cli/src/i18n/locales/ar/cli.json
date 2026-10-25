@@ -1106,6 +1106,20 @@
         "storageHealthSummary": "كفاءة التخزين: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} حاوية تجاوزت عتبة الانحراف؛ الخروج بقيمة غير صفرية",
         "syncCertsFailed": "فشلت مزامنة ذاكرة التخزين المؤقت للشهادات: {{error}}"
+      },
+      "gpu": {
+        "descriptionShort": "فحص وحدات GPU وتصاريح الأجهزة في جهاز",
+        "description": "يعرض وحدات GPU التي يستطيع الجهاز تسليمها إلى المستودعات، وأجهزة CDI التي يوفرها، والمستودع الذي يحمل كل جهاز.",
+        "list": {
+          "descriptionShort": "عرض وحدات GPU وأجهزة CDI والتصاريح في جهاز",
+          "description": "يعرض وحدات GPU المكتشفة على الجهاز، وأسماء أجهزة CDI التي تعرّفها مواصفاته، والمستودعات الممنوح لها كل جهاز. لمنح جهاز استخدم 'rdc repo gpu grant'.",
+          "starting": "جارٍ قراءة جرد GPU على \"{{machine}}\"...",
+          "failed": "تعذّرت قراءة جرد GPU",
+          "notRecorded": "لم يُسجَّل جرد GPU بعد (شغّل 'rdc machine setup')؛ يُعرض ما اكتُشف الآن",
+          "noGpus": "لم تُكتشف أي وحدة GPU",
+          "noDevices": "لا توجد أجهزة CDI معرّفة",
+          "grantUnreadable": "تعذّرت قراءة تصريح \"{{repository}}\": {{error}}"
+        }
       }
     },
     "mcp": {
@@ -1775,7 +1789,27 @@
         "parallelOption": "بدء المستودعات بشكل متزامن",
         "starting": "جارٍ بدء جميع المستودعات على \"{{machine}}\"..."
       },
-      "yesOption": "تخطي التأكيد للعمليات الجماعية"
+      "yesOption": "تخطي التأكيد للعمليات الجماعية",
+      "gpu": {
+        "descriptionShort": "منح مستودع أجهزة GPU أو سحبها منه",
+        "description": "يمنح مستودعًا جهاز CDI (مثل nvidia.com/gpu=all) كي تتمكن حاوياته من طلبه، أو يسحبه مجددًا. الجهاز هو من يفرض التصريح؛ والتصريح الحصري يحجز الجهاز لمستودع واحد.",
+        "deviceOption": "اسم جهاز CDI الكامل (مثل nvidia.com/gpu=all)",
+        "grant": {
+          "descriptionShort": "منح جهاز CDI لمستودع",
+          "description": "يسمح لحاويات المستودع بطلب جهاز CDI. تظهر أسماء الأجهزة في 'rdc machine gpu list'.",
+          "exclusiveOption": "حجز الجهاز لهذا المستودع: لا يمكن منحه لمستودع آخر في هذه الأثناء",
+          "starting": "جارٍ منح {{device}} للمستودع \"{{repository}}\" على \"{{machine}}\"...",
+          "completed": "تم منح {{device}} للمستودع \"{{repository}}\"",
+          "failed": "فشل منح الجهاز"
+        },
+        "revoke": {
+          "descriptionShort": "سحب جهاز CDI من مستودع",
+          "description": "يسحب جهاز CDI من حاويات المستودع. تحتفظ به الحاويات التي تملكه بالفعل حتى تُعاد تشغيلها.",
+          "starting": "جارٍ سحب {{device}} من المستودع \"{{repository}}\" على \"{{machine}}\"...",
+          "completed": "تم سحب {{device}} من المستودع \"{{repository}}\"",
+          "failed": "فشل سحب الجهاز"
+        }
+      }
     },
     "serve": {
       "description": "شغّل هذه العملية كمنفّذ حتى يتمكن العملاء من تنفيذ الأوامر من خلاله بدلاً من الاتصال بأنفسهم عبر SSH",

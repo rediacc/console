@@ -4,11 +4,11 @@ import { listCanaries } from '../services/cluster/repo-release.js';
 import { listReplicaSets } from '../services/cluster/repo-replicate.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { parseCapturedJson } from '../services/executor/renet-output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
-import { parseCapturedJson } from '../services/executor/renet-output.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { createRepoAdminCommand } from './repo-admin.js';
@@ -22,6 +22,7 @@ import { registerRepoCreateDeleteCommands } from './repo-create-delete.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoForkCommand } from './repo-fork.js';
+import { registerRepoGpuCommands } from './repo-gpu.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoReplicateCommands } from './repo-replicate.js';
@@ -378,4 +379,5 @@ export function registerRepoCommands(program: Command): void {
   registerRepoContainerCommands(repo);
   registerRepoTunnelCommand(repo);
   registerRepoSecretCommands(repo);
+  registerRepoGpuCommands(repo);
 }

@@ -1106,6 +1106,20 @@
         "storageHealthSummary": "存储效率：{{summary}}",
         "strictDriftDetected": "--strict: {{count}} 个容器超过漂移阈值；以非零状态退出",
         "syncCertsFailed": "证书缓存同步失败：{{error}}"
+      },
+      "gpu": {
+        "descriptionShort": "查看机器的 GPU 和设备授权",
+        "description": "显示机器可交给仓库的 GPU、它提供的 CDI 设备，以及每个设备由哪个仓库持有。",
+        "list": {
+          "descriptionShort": "列出机器的 GPU、CDI 设备和授权",
+          "description": "列出机器上检测到的 GPU、其 spec 定义的 CDI 设备名称，以及每个设备授予了哪些仓库。要授予设备，请使用 'rdc repo gpu grant'。",
+          "starting": "正在读取“{{machine}}”上的 GPU 清单...",
+          "failed": "无法读取 GPU 清单",
+          "notRecorded": "尚未记录 GPU 清单（请运行 'rdc machine setup'）；以下是刚刚检测到的内容",
+          "noGpus": "未检测到 GPU",
+          "noDevices": "未定义任何 CDI 设备",
+          "grantUnreadable": "无法读取“{{repository}}”的授权：{{error}}"
+        }
       }
     },
     "mcp": {
@@ -1775,7 +1789,27 @@
         "parallelOption": "并发启动仓库",
         "starting": "正在 \"{{machine}}\" 上启动所有仓库..."
       },
-      "yesOption": "跳过批量操作确认"
+      "yesOption": "跳过批量操作确认",
+      "gpu": {
+        "descriptionShort": "为仓库授予或撤销 GPU 设备",
+        "description": "为仓库授予 CDI 设备（例如 nvidia.com/gpu=all），使其容器可以申请该设备，也可以再将其撤销。授权由机器强制执行；独占授权会把设备保留给单个仓库。",
+        "deviceOption": "完整的 CDI 设备名称（例如 nvidia.com/gpu=all）",
+        "grant": {
+          "descriptionShort": "为仓库授予 CDI 设备",
+          "description": "允许仓库的容器申请某个 CDI 设备。设备名称可从 'rdc machine gpu list' 获得。",
+          "exclusiveOption": "将设备保留给此仓库：在此期间不能再授予其他仓库",
+          "starting": "正在把 {{device}} 授予“{{machine}}”上的“{{repository}}”...",
+          "completed": "已把 {{device}} 授予“{{repository}}”",
+          "failed": "设备授权失败"
+        },
+        "revoke": {
+          "descriptionShort": "撤销仓库的 CDI 设备",
+          "description": "从仓库的容器收回 CDI 设备。已持有该设备的容器会继续使用，直到重启。",
+          "starting": "正在从“{{machine}}”上的“{{repository}}”撤销 {{device}}...",
+          "completed": "已从“{{repository}}”撤销 {{device}}",
+          "failed": "设备撤销失败"
+        }
+      }
     },
     "serve": {
       "description": "将此进程作为执行器运行，让客户端可以通过它执行命令，而不必自己通过 SSH 连接",

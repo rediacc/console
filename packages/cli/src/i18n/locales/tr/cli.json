@@ -1106,6 +1106,20 @@
         "storageHealthSummary": "Depolama verimliliği: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteyner sapma eşiğini aştı; sıfır olmayan koduyla çıkılıyor",
         "syncCertsFailed": "Sertifika önbelleği senkronizasyonu başarısız: {{error}}"
+      },
+      "gpu": {
+        "descriptionShort": "Bir makinenin GPU'larını ve cihaz izinlerini incele",
+        "description": "Bir makinenin depolara verebileceği GPU'ları, sunduğu CDI cihazlarını ve her birinin hangi depoda olduğunu gösterir.",
+        "list": {
+          "descriptionShort": "Bir makinenin GPU'larını, CDI cihazlarını ve izinlerini listele",
+          "description": "Bir makinede algılanan GPU'ları, spec dosyalarının tanımladığı CDI cihaz adlarını ve her cihazın verildiği depoları listeler. Bir cihazı vermek için 'rdc repo gpu grant' kullanın.",
+          "starting": "\"{{machine}}\" üzerindeki GPU envanteri okunuyor...",
+          "failed": "GPU envanteri okunamadı",
+          "notRecorded": "Henüz kayıtlı bir GPU envanteri yok ('rdc machine setup' çalıştırın); az önce algılananlar gösteriliyor",
+          "noGpus": "GPU algılanmadı",
+          "noDevices": "Tanımlı CDI cihazı yok",
+          "grantUnreadable": "\"{{repository}}\" deposunun izni okunamadı: {{error}}"
+        }
       }
     },
     "mcp": {
@@ -1775,7 +1789,27 @@
         "parallelOption": "Depoları eş zamanlı başlat",
         "starting": "\"{{machine}}\" üzerindeki tüm depolar başlatılıyor..."
       },
-      "yesOption": "Toplu işlemler için onayı atla"
+      "yesOption": "Toplu işlemler için onayı atla",
+      "gpu": {
+        "descriptionShort": "Bir depoya GPU cihazı ver veya geri al",
+        "description": "Bir depoya CDI cihazı verir (örneğin nvidia.com/gpu=all); böylece konteynerleri onu isteyebilir. İzni geri de alabilir. İzni makine uygular; özel izin cihazı tek bir depoya ayırır.",
+        "deviceOption": "Tam nitelikli CDI cihaz adı (örn. nvidia.com/gpu=all)",
+        "grant": {
+          "descriptionShort": "Bir depoya CDI cihazı ver",
+          "description": "Deponun konteynerlerinin bir CDI cihazı istemesine izin verir. Cihaz adlarını 'rdc machine gpu list' gösterir.",
+          "exclusiveOption": "Cihazı bu depoya ayır: bu sürede başka bir depoya verilemez",
+          "starting": "{{device}}, \"{{machine}}\" üzerinde \"{{repository}}\" deposuna veriliyor...",
+          "completed": "{{device}}, \"{{repository}}\" deposuna verildi",
+          "failed": "Cihaz izni verilemedi"
+        },
+        "revoke": {
+          "descriptionShort": "Bir depodan CDI cihazını geri al",
+          "description": "Bir CDI cihazını deponun konteynerlerinden çeker. Cihaza zaten sahip konteynerler yeniden başlayana kadar onu korur.",
+          "starting": "{{device}}, \"{{machine}}\" üzerinde \"{{repository}}\" deposundan geri alınıyor...",
+          "completed": "{{device}}, \"{{repository}}\" deposundan geri alındı",
+          "failed": "Cihaz izni geri alınamadı"
+        }
+      }
     },
     "serve": {
       "description": "İstemcilerin SSH üzerinden kendileri bağlanmak yerine komutları bu süreç üzerinden çalıştırabilmesi için bu süreci yürütücü olarak çalıştır",

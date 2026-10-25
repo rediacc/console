@@ -5307,6 +5307,54 @@
     {
       "path": [
         "machine",
+        "gpu",
+        "list"
+      ],
+      "pathKey": "machine gpu list",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.gpu.list.description",
+      "label": "List the GPUs detected on a machine, the CDI device names its specs define, and the repositories each device is granted to. Grant one with 'rdc repo gpu grant'.",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "name",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
         "health"
       ],
       "pathKey": "machine health",
@@ -9353,6 +9401,127 @@
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
+    },
+    {
+      "path": [
+        "repo",
+        "gpu",
+        "grant"
+      ],
+      "pathKey": "repo gpu grant",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.gpu.grant.description",
+      "label": "Allow the repository's containers to request a CDI device. Device names come from 'rdc machine gpu list'.",
+      "options": [
+        {
+          "flags": "--device <cdi-name>",
+          "long": "device",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.repo.gpu.deviceOption",
+          "label": "Fully qualified CDI device name (e.g. nvidia.com/gpu=all)"
+        },
+        {
+          "flags": "--exclusive",
+          "long": "exclusive",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.gpu.grant.exclusiveOption",
+          "label": "Reserve the device for this repository: no other repository can be granted it meanwhile"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "gpu",
+        "revoke"
+      ],
+      "pathKey": "repo gpu revoke",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.gpu.revoke.description",
+      "label": "Withdraw a CDI device from the repository's containers. Containers that already hold it keep it until they restart.",
+      "options": [
+        {
+          "flags": "--device <cdi-name>",
+          "long": "device",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.repo.gpu.deviceOption",
+          "label": "Fully qualified CDI device name (e.g. nvidia.com/gpu=all)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [

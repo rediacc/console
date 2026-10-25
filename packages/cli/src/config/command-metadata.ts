@@ -97,6 +97,9 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'machine list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  'machine gpu list': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
+  },
   'machine add': {
     mcp: { destructive: false, idempotent: false, timeout: 'write' },
   },
@@ -722,6 +725,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // Size policy (auto-grow/auto-trim, rediacc/renet#76). Setting policy changes machine behavior (quota growth consent), CLI-only; reading is harmless but the JSON blob shape is CLI-oriented too.
   'repo policy': {
     mcpExcludeReason: 'Size-policy management changes machine auto-grow behavior. Use CLI directly',
+  },
+  // A device grant widens what a repository's containers may reach on the host, so granting and revoking are the operator's call, CLI-only; the read-only `machine gpu list` is exposed.
+  'repo gpu': {
+    mcpExcludeReason: 'Device grants widen host access for a repository. Use CLI directly',
   },
   // Gate B on the REPO arm of each connect leaf (the place arm is a machine shell,
   // class A). These were keyed 'term repo' / 'vscode repo', paths that never

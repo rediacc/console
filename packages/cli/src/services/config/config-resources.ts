@@ -656,6 +656,19 @@ class ConfigService extends ConfigServiceBase {
     return allocateNetworkIdInStore(this.getEffectiveConfigName());
   }
 
+  /** Mirror a repository's granted CDI device names into `state.repos` (an empty list clears the mirror). */
+  async setRepositoryGpuDevices(repoRef: string, devices: string[]): Promise<void> {
+    await this.requireSelfHosted();
+    const key = await this.getRepositoryKey(repoRef);
+    if (!key) throw new Error(`Repository "${repoRef}" not found`);
+
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+    const { gpuDevices: _previous, ...rest } = repos[key];
+    repos[key] = devices.length > 0 ? { ...rest, gpuDevices: devices } : rest;
+    await state.setRepositories(repos);
+  }
+
   async ensureRepositoryNetworkId(repoRef: string): Promise<number> {
     await this.requireSelfHosted();
     const key = await this.getRepositoryKey(repoRef);

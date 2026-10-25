@@ -514,6 +514,9 @@ export interface MachineConvergeRuntimeParams {
   repoTimeout?: string;
 }
 
+/** List the machine's GPUs, CDI devices and device grants */
+export interface MachineGpuListParams {}
+
 /** Test SSH connectivity */
 export interface MachinePingParams {}
 
@@ -656,6 +659,20 @@ export interface RepositoryForkParams {
   tag: string;
   /** Mark the fork read-only (refuses to mount; frozen commit/base) */
   immutable?: boolean;
+}
+
+/** Grant a CDI device (GPU) to the repository's containers */
+export interface RepositoryGpuGrantParams {
+  /** Fully qualified CDI device name (e.g. nvidia.com/gpu=all) */
+  device: string;
+  /** Reserve the device for this repository: no other repository may be granted it meanwhile */
+  exclusive?: boolean;
+}
+
+/** Revoke a CDI device (GPU) from the repository's containers */
+export interface RepositoryGpuRevokeParams {
+  /** Fully qualified CDI device name (e.g. nvidia.com/gpu=all) */
+  device: string;
 }
 
 /** Evaluate the repository health gate once (JSON HealthReport) */
@@ -885,6 +902,7 @@ export const RENET_FUNCTIONS = [
   'kube_health',
   'kube_kubeconfig',
   'machine_converge_runtime',
+  'machine_gpu_list',
   'machine_ping',
   'machine_ssh_test',
   'machine_uninstall',
@@ -906,6 +924,8 @@ export const RENET_FUNCTIONS = [
   'repository_exec',
   'repository_expand',
   'repository_fork',
+  'repository_gpu_grant',
+  'repository_gpu_revoke',
   'repository_health',
   'repository_info',
   'repository_list',
@@ -1054,6 +1074,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'machine_check_users',
   'machine_converge_runtime',
   'machine_fix_groups',
+  'machine_gpu_list',
   'machine_ping',
   'machine_ssh_test',
   'machine_uninstall',
@@ -1082,6 +1103,8 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_exec',
   'repository_expand',
   'repository_fork',
+  'repository_gpu_grant',
+  'repository_gpu_revoke',
   'repository_health',
   'repository_info',
   'repository_list',
@@ -1154,6 +1177,7 @@ export type FunctionParamsMap = {
   kube_health: KubeHealthParams;
   kube_kubeconfig: KubeKubeconfigParams;
   machine_converge_runtime: MachineConvergeRuntimeParams;
+  machine_gpu_list: MachineGpuListParams;
   machine_ping: MachinePingParams;
   machine_ssh_test: MachineSshTestParams;
   machine_uninstall: MachineUninstallParams;
@@ -1175,6 +1199,8 @@ export type FunctionParamsMap = {
   repository_exec: RepositoryExecParams;
   repository_expand: RepositoryExpandParams;
   repository_fork: RepositoryForkParams;
+  repository_gpu_grant: RepositoryGpuGrantParams;
+  repository_gpu_revoke: RepositoryGpuRevokeParams;
   repository_health: RepositoryHealthParams;
   repository_info: RepositoryInfoParams;
   repository_list: RepositoryListParams;
@@ -1337,6 +1363,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'machine_converge_runtime': {
     requirements: { machine: true },
   },
+  'machine_gpu_list': {
+    requirements: { machine: true },
+  },
   'machine_ping': {
     requirements: { machine: true, team: true },
   },
@@ -1398,6 +1427,12 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_fork': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_gpu_grant': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_gpu_revoke': {
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_health': {
@@ -2716,6 +2751,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'machine_gpu_list': {
+    name: 'machine_gpu_list',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+    },
+  },
   'machine_ping': {
     name: 'machine_ping',
     category: 'machine',
@@ -3044,6 +3087,40 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: 'false',
         help: 'Mark the fork read-only (refuses to mount; frozen commit/base)',
         options: ['true', 'false'],
+      },
+    },
+  },
+  'repository_gpu_grant': {
+    name: 'repository_gpu_grant',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      device: {
+        type: 'string',
+        required: true,
+        help: 'Fully qualified CDI device name (e.g. nvidia.com/gpu=all)',
+        placeholder: 'nvidia.com/gpu=all',
+        pattern: '^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?=[A-Za-z0-9]([A-Za-z0-9_.:-]*[A-Za-z0-9])?$',
+      },
+      exclusive: {
+        type: 'bool',
+        help: 'Reserve the device for this repository: no other repository may be granted it meanwhile',
+      },
+    },
+  },
+  'repository_gpu_revoke': {
+    name: 'repository_gpu_revoke',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      device: {
+        type: 'string',
+        required: true,
+        help: 'Fully qualified CDI device name (e.g. nvidia.com/gpu=all)',
+        placeholder: 'nvidia.com/gpu=all',
+        pattern: '^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?=[A-Za-z0-9]([A-Za-z0-9_.:-]*[A-Za-z0-9])?$',
       },
     },
   },
@@ -3536,6 +3613,7 @@ export const queueFunctions: QueueFunctionsType = {
   kube_health: (params) => ({ functionName: 'kube_health', params }),
   kube_kubeconfig: (params) => ({ functionName: 'kube_kubeconfig', params }),
   machine_converge_runtime: (params) => ({ functionName: 'machine_converge_runtime', params }),
+  machine_gpu_list: (params) => ({ functionName: 'machine_gpu_list', params }),
   machine_ping: (params) => ({ functionName: 'machine_ping', params }),
   machine_ssh_test: (params) => ({ functionName: 'machine_ssh_test', params }),
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
@@ -3557,6 +3635,8 @@ export const queueFunctions: QueueFunctionsType = {
   repository_exec: (params) => ({ functionName: 'repository_exec', params }),
   repository_expand: (params) => ({ functionName: 'repository_expand', params }),
   repository_fork: (params) => ({ functionName: 'repository_fork', params }),
+  repository_gpu_grant: (params) => ({ functionName: 'repository_gpu_grant', params }),
+  repository_gpu_revoke: (params) => ({ functionName: 'repository_gpu_revoke', params }),
   repository_health: (params) => ({ functionName: 'repository_health', params }),
   repository_info: (params) => ({ functionName: 'repository_info', params }),
   repository_list: (params) => ({ functionName: 'repository_list', params }),

@@ -54,6 +54,7 @@ const REPO_RECORD_KEYS = [
 const REPO_RUNTIME_KEYS = [
   'networkId',
   'registryPort',
+  'gpuDevices',
   'pushState',
   'headCommit',
   'commitMessage',

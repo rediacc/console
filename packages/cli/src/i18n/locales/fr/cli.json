@@ -1106,6 +1106,20 @@
         "storageHealthSummary": "Efficacité du stockage : {{summary}}",
         "strictDriftDetected": "--strict : {{count}} conteneur(s) au-delà du seuil de dérive ; sortie avec code non nul",
         "syncCertsFailed": "Échec de la synchronisation du cache de certificats : {{error}}"
+      },
+      "gpu": {
+        "descriptionShort": "Inspecter les GPU et les autorisations de périphériques d'une machine",
+        "description": "Affiche les GPU qu'une machine peut confier aux dépôts, les périphériques CDI qu'elle propose et le dépôt qui détient chacun.",
+        "list": {
+          "descriptionShort": "Lister les GPU, les périphériques CDI et les autorisations d'une machine",
+          "description": "Liste les GPU détectés sur une machine, les noms de périphériques CDI définis par ses specs et les dépôts auxquels chaque périphérique est accordé. Pour en accorder un, utilisez 'rdc repo gpu grant'.",
+          "starting": "Lecture de l'inventaire GPU sur « {{machine}} »...",
+          "failed": "Impossible de lire l'inventaire GPU",
+          "notRecorded": "Aucun inventaire GPU enregistré pour l'instant (lancez 'rdc machine setup') ; affichage de ce qui vient d'être détecté",
+          "noGpus": "Aucun GPU détecté",
+          "noDevices": "Aucun périphérique CDI défini",
+          "grantUnreadable": "L'autorisation de « {{repository}} » n'a pas pu être lue : {{error}}"
+        }
       }
     },
     "mcp": {
@@ -1775,7 +1789,27 @@
         "parallelOption": "Démarrer les dépôts simultanément",
         "starting": "Démarrage de tous les dépôts sur \"{{machine}}\"..."
       },
-      "yesOption": "Passer la confirmation pour les opérations par lots"
+      "yesOption": "Passer la confirmation pour les opérations par lots",
+      "gpu": {
+        "descriptionShort": "Accorder ou retirer des périphériques GPU à un dépôt",
+        "description": "Accorde à un dépôt un périphérique CDI (par exemple nvidia.com/gpu=all) pour que ses conteneurs puissent le demander, ou le retire à nouveau. La machine applique l'autorisation ; une autorisation exclusive réserve le périphérique à un seul dépôt.",
+        "deviceOption": "Nom CDI complet du périphérique (p. ex. nvidia.com/gpu=all)",
+        "grant": {
+          "descriptionShort": "Accorder un périphérique CDI à un dépôt",
+          "description": "Autorise les conteneurs du dépôt à demander un périphérique CDI. Les noms viennent de 'rdc machine gpu list'.",
+          "exclusiveOption": "Réserver le périphérique à ce dépôt : aucun autre dépôt ne peut l'obtenir entre-temps",
+          "starting": "Attribution de {{device}} à « {{repository}} » sur « {{machine}} »...",
+          "completed": "{{device}} accordé à « {{repository}} »",
+          "failed": "Échec de l'attribution du périphérique"
+        },
+        "revoke": {
+          "descriptionShort": "Retirer un périphérique CDI à un dépôt",
+          "description": "Retire un périphérique CDI aux conteneurs du dépôt. Les conteneurs qui le détiennent déjà le gardent jusqu'à leur redémarrage.",
+          "starting": "Retrait de {{device}} à « {{repository}} » sur « {{machine}} »...",
+          "completed": "{{device}} retiré à « {{repository}} »",
+          "failed": "Échec du retrait du périphérique"
+        }
+      }
     },
     "serve": {
       "description": "Exécute ce processus en tant qu'exécuteur afin que les clients puissent lancer des commandes via lui au lieu de se connecter eux-mêmes en SSH",

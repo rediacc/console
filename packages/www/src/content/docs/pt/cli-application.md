@@ -7,7 +7,7 @@ order: 2
 language: pt
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/pt/cli.json
-sourceHash: "933043d95220205e"
+sourceHash: "abcd3e97daaff791"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -963,6 +963,25 @@ rdc machine status [name] [options]
 | `--search <text>` | {{t:cli.options.searchRepos}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--sync-certs` | {{t:cli.options.querySyncCerts}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--strict` | {{t:cli.options.queryStrict}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-gpu"></a>
+### 3.14 gpu
+
+{{t:cli.commands.machine.gpu.description}}
+
+<a id="cli-local-machine-gpu-list"></a>
+#### list
+
+{{t:cli.commands.machine.gpu.list.description}}
+
+```bash
+rdc machine gpu list <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
@@ -2092,6 +2111,42 @@ rdc repo exec <ref> <cmd...> [options]
 | `-c, --container <name>` | {{t:cli.commands.repo.exec.containerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-i, --interactive` | {{t:cli.commands.repo.exec.interactiveOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-u, --user <user>` | {{t:cli.commands.repo.exec.userOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-gpu"></a>
+### 6.32 gpu
+
+{{t:cli.commands.repo.gpu.description}}
+
+<a id="cli-local-repo-gpu-grant"></a>
+#### grant
+
+{{t:cli.commands.repo.gpu.grant.description}}
+
+```bash
+rdc repo gpu grant <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--device <cdi-name>` | {{t:cli.commands.repo.gpu.deviceOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--exclusive` | {{t:cli.commands.repo.gpu.grant.exclusiveOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-gpu-revoke"></a>
+#### revoke
+
+{{t:cli.commands.repo.gpu.revoke.description}}
+
+```bash
+rdc repo gpu revoke <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--device <cdi-name>` | {{t:cli.commands.repo.gpu.deviceOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 

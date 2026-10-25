@@ -664,6 +664,7 @@ export type RepositoryConfig = RepoRecord & {
   placement?: Placement;
   networkId?: number;
   registryPort?: number;
+  gpuDevices?: string[];
   pushState?: RepoRuntimeState['pushState'];
   headCommit?: string;
   commitMessage?: string;

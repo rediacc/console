@@ -1106,6 +1106,20 @@
         "storageHealthSummary": "Speichereffizienz: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} Container haben den Drift-Schwellenwert überschritten; Beenden mit Nicht-Null-Code",
         "syncCertsFailed": "Zertifikats-Cache-Sync fehlgeschlagen: {{error}}"
+      },
+      "gpu": {
+        "descriptionShort": "GPUs und Geräte-Freigaben einer Maschine anzeigen",
+        "description": "Zeigt die GPUs, die eine Maschine an Repositories weitergeben kann, die angebotenen CDI-Geräte und welches Repository welches Gerät hält.",
+        "list": {
+          "descriptionShort": "GPUs, CDI-Geräte und Freigaben einer Maschine auflisten",
+          "description": "Listet die auf einer Maschine erkannten GPUs, die in ihren Specs definierten CDI-Gerätenamen und die Repositories, denen jedes Gerät freigegeben ist. Eine Freigabe erteilt 'rdc repo gpu grant'.",
+          "starting": "GPU-Inventar auf \"{{machine}}\" wird gelesen...",
+          "failed": "Das GPU-Inventar konnte nicht gelesen werden",
+          "notRecorded": "Noch kein GPU-Inventar aufgezeichnet (führe 'rdc machine setup' aus); angezeigt wird, was gerade erkannt wurde",
+          "noGpus": "Keine GPUs erkannt",
+          "noDevices": "Keine CDI-Geräte definiert",
+          "grantUnreadable": "Die Freigabe von \"{{repository}}\" konnte nicht gelesen werden: {{error}}"
+        }
       }
     },
     "mcp": {
@@ -1775,7 +1789,27 @@
         "parallelOption": "Repositories parallel starten",
         "starting": "Alle Repositories auf \"{{machine}}\" werden gestartet..."
       },
-      "yesOption": "Bestätigung für Stapeloperationen überspringen"
+      "yesOption": "Bestätigung für Stapeloperationen überspringen",
+      "gpu": {
+        "descriptionShort": "GPU-Geräte für ein Repository freigeben oder entziehen",
+        "description": "Gibt einem Repository ein CDI-Gerät frei (z. B. nvidia.com/gpu=all), damit seine Container es anfordern können, oder entzieht es wieder. Die Maschine setzt die Freigabe durch; eine exklusive Freigabe reserviert das Gerät für ein einziges Repository.",
+        "deviceOption": "Vollqualifizierter CDI-Gerätename (z. B. nvidia.com/gpu=all)",
+        "grant": {
+          "descriptionShort": "Einem Repository ein CDI-Gerät freigeben",
+          "description": "Erlaubt den Containern des Repositorys, ein CDI-Gerät anzufordern. Gerätenamen liefert 'rdc machine gpu list'.",
+          "exclusiveOption": "Gerät für dieses Repository reservieren: Bis dahin kann es keinem anderen Repository freigegeben werden",
+          "starting": "{{device}} wird für \"{{repository}}\" auf \"{{machine}}\" freigegeben...",
+          "completed": "{{device}} für \"{{repository}}\" freigegeben",
+          "failed": "Gerätefreigabe fehlgeschlagen"
+        },
+        "revoke": {
+          "descriptionShort": "Einem Repository ein CDI-Gerät entziehen",
+          "description": "Entzieht den Containern des Repositorys ein CDI-Gerät. Container, die es schon halten, behalten es bis zum nächsten Neustart.",
+          "starting": "{{device}} wird \"{{repository}}\" auf \"{{machine}}\" entzogen...",
+          "completed": "{{device}} für \"{{repository}}\" entzogen",
+          "failed": "Entzug des Geräts fehlgeschlagen"
+        }
+      }
     },
     "serve": {
       "description": "Diesen Prozess als Executor ausführen, damit Clients Befehle darüber ausführen können, statt sich selbst per SSH zu verbinden",

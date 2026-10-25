@@ -1106,6 +1106,20 @@
         "storageHealthSummary": "ストレージ効率: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} 個のコンテナがドリフトしきい値を超えました。ゼロ以外で終了します",
         "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}"
+      },
+      "gpu": {
+        "descriptionShort": "マシンの GPU とデバイス付与を確認する",
+        "description": "マシンがリポジトリに渡せる GPU、提供している CDI デバイス、各デバイスを保持しているリポジトリを表示します。",
+        "list": {
+          "descriptionShort": "マシンの GPU、CDI デバイス、付与の一覧を表示する",
+          "description": "マシンで検出された GPU、spec が定義する CDI デバイス名、各デバイスの付与先リポジトリを一覧表示します。付与するには 'rdc repo gpu grant' を使います。",
+          "starting": "「{{machine}}」の GPU インベントリを読み取っています...",
+          "failed": "GPU インベントリを読み取れませんでした",
+          "notRecorded": "GPU インベントリはまだ記録されていません ('rdc machine setup' を実行してください)。今検出した内容を表示します",
+          "noGpus": "GPU は検出されませんでした",
+          "noDevices": "CDI デバイスは定義されていません",
+          "grantUnreadable": "「{{repository}}」の付与を読み取れませんでした: {{error}}"
+        }
       }
     },
     "mcp": {
@@ -1775,7 +1789,27 @@
         "parallelOption": "リポジトリを並行して開始する",
         "starting": "\"{{machine}}\" 上のすべてのリポジトリを開始中..."
       },
-      "yesOption": "バッチ操作の確認をスキップ"
+      "yesOption": "バッチ操作の確認をスキップ",
+      "gpu": {
+        "descriptionShort": "リポジトリに GPU デバイスを付与または取り消す",
+        "description": "リポジトリに CDI デバイス (例: nvidia.com/gpu=all) を付与し、そのコンテナが要求できるようにします。取り消すこともできます。付与はマシンが強制し、排他付与はデバイスを 1 つのリポジトリ専用にします。",
+        "deviceOption": "完全修飾の CDI デバイス名 (例: nvidia.com/gpu=all)",
+        "grant": {
+          "descriptionShort": "リポジトリに CDI デバイスを付与する",
+          "description": "リポジトリのコンテナが CDI デバイスを要求できるようにします。デバイス名は 'rdc machine gpu list' で確認できます。",
+          "exclusiveOption": "このリポジトリ専用にデバイスを確保する: その間、他のリポジトリには付与できません",
+          "starting": "{{device}} を「{{machine}}」上の「{{repository}}」に付与しています...",
+          "completed": "{{device}} を「{{repository}}」に付与しました",
+          "failed": "デバイスの付与に失敗しました"
+        },
+        "revoke": {
+          "descriptionShort": "リポジトリから CDI デバイスを取り消す",
+          "description": "リポジトリのコンテナから CDI デバイスを外します。すでに保持しているコンテナは、再起動するまで使い続けます。",
+          "starting": "{{device}} を「{{machine}}」上の「{{repository}}」から取り消しています...",
+          "completed": "{{device}} を「{{repository}}」から取り消しました",
+          "failed": "デバイスの取り消しに失敗しました"
+        }
+      }
     },
     "serve": {
       "description": "クライアントが自分で SSH 接続する代わりに、このプロセスをエグゼキューターとして実行し、コマンドを実行できるようにします",

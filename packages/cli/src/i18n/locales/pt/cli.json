@@ -1106,6 +1106,20 @@
         "storageHealthSummary": "Eficiência de armazenamento: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} contentor(es) acima do limiar de desvio; a sair com código de erro",
         "syncCertsFailed": "Falha na sincronização da cache de certificados: {{error}}"
+      },
+      "gpu": {
+        "descriptionShort": "Inspecionar as GPUs e as concessões de dispositivos de uma máquina",
+        "description": "Mostra as GPUs que uma máquina pode ceder aos repositórios, os dispositivos CDI que oferece e qual repositório detém cada um.",
+        "list": {
+          "descriptionShort": "Listar as GPUs, os dispositivos CDI e as concessões de uma máquina",
+          "description": "Lista as GPUs detetadas numa máquina, os nomes de dispositivo CDI definidos pelas suas specs e os repositórios a que cada dispositivo está concedido. Para conceder um, use 'rdc repo gpu grant'.",
+          "starting": "A ler o inventário de GPU em \"{{machine}}\"...",
+          "failed": "Não foi possível ler o inventário de GPU",
+          "notRecorded": "Ainda não há inventário de GPU registado (execute 'rdc machine setup'); a mostrar o que acabou de ser detetado",
+          "noGpus": "Nenhuma GPU detetada",
+          "noDevices": "Nenhum dispositivo CDI definido",
+          "grantUnreadable": "Não foi possível ler a concessão de \"{{repository}}\": {{error}}"
+        }
       }
     },
     "mcp": {
@@ -1775,7 +1789,27 @@
         "parallelOption": "Iniciar os repositórios em simultâneo",
         "starting": "A iniciar todos os repositórios em \"{{machine}}\"..."
       },
-      "yesOption": "Ignorar confirmação em operações em lote"
+      "yesOption": "Ignorar confirmação em operações em lote",
+      "gpu": {
+        "descriptionShort": "Conceder ou revogar dispositivos GPU a um repositório",
+        "description": "Concede a um repositório um dispositivo CDI (por exemplo nvidia.com/gpu=all) para que os seus contentores o possam pedir, ou revoga-o de novo. A máquina impõe a concessão; uma concessão exclusiva reserva o dispositivo para um único repositório.",
+        "deviceOption": "Nome CDI completo do dispositivo (p. ex. nvidia.com/gpu=all)",
+        "grant": {
+          "descriptionShort": "Conceder um dispositivo CDI a um repositório",
+          "description": "Permite que os contentores do repositório peçam um dispositivo CDI. Os nomes vêm de 'rdc machine gpu list'.",
+          "exclusiveOption": "Reservar o dispositivo para este repositório: entretanto nenhum outro repositório o pode receber",
+          "starting": "A conceder {{device}} a \"{{repository}}\" em \"{{machine}}\"...",
+          "completed": "{{device}} concedido a \"{{repository}}\"",
+          "failed": "A concessão do dispositivo falhou"
+        },
+        "revoke": {
+          "descriptionShort": "Revogar um dispositivo CDI a um repositório",
+          "description": "Retira um dispositivo CDI dos contentores do repositório. Os contentores que já o têm mantêm-no até reiniciarem.",
+          "starting": "A revogar {{device}} a \"{{repository}}\" em \"{{machine}}\"...",
+          "completed": "{{device}} revogado a \"{{repository}}\"",
+          "failed": "A revogação do dispositivo falhou"
+        }
+      }
     },
     "serve": {
       "description": "Executa este processo como executor para que os clientes possam executar comandos através dele em vez de se conectarem eles próprios via SSH",

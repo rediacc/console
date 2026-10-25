@@ -348,11 +348,15 @@ async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<
     telemetryService.trackError(err, { operation: 'repo.list_repositories' });
     return [];
   });
-  const configLookup = new Map<string, { grandGuid?: string; tag?: string }>();
+  const configLookup = new Map<
+    string,
+    { grandGuid?: string; tag?: string; gpuDevices?: string[] }
+  >();
   for (const rc of repoConfigs) {
     configLookup.set(rc.config.repositoryGuid, {
       grandGuid: rc.config.grandGuid,
       tag: rc.config.tag,
+      gpuDevices: rc.config.gpuDevices,
     });
   }
   const compact = resolved.map((r) => {
@@ -369,6 +373,7 @@ async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<
       containers: r.container_count,
       services: r.service_count,
       modified: r.modified_human,
+      gpu: cfg?.gpuDevices?.join(', ') || '-',
     };
   });
   outputService.print(compact, 'table');

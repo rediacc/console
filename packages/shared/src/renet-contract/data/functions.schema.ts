@@ -383,6 +383,9 @@ export const MachineConvergeRuntimeParamsSchema = z.object({
   repoTimeout: z.string().optional().describe('Deadline of one repository\'s restart (Go duration, e.g. 15m)'),
 });
 
+/** List the machine's GPUs, CDI devices and device grants */
+export const MachineGpuListParamsSchema = z.object({});
+
 /** Test SSH connectivity */
 export const MachinePingParamsSchema = z.object({});
 
@@ -490,6 +493,17 @@ export const RepositoryExpandParamsSchema = z.object({
 export const RepositoryForkParamsSchema = z.object({
   tag: z.string().min(1).describe('Fork repository name'),
   immutable: z.boolean().default(false).optional().describe('Mark the fork read-only (refuses to mount; frozen commit/base)'),
+});
+
+/** Grant a CDI device (GPU) to the repository's containers */
+export const RepositoryGpuGrantParamsSchema = z.object({
+  device: z.string().min(1).regex(/^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?=[A-Za-z0-9]([A-Za-z0-9_.:-]*[A-Za-z0-9])?$/).describe('Fully qualified CDI device name (e.g. nvidia.com/gpu=all)'),
+  exclusive: z.boolean().optional().describe('Reserve the device for this repository: no other repository may be granted it meanwhile'),
+});
+
+/** Revoke a CDI device (GPU) from the repository's containers */
+export const RepositoryGpuRevokeParamsSchema = z.object({
+  device: z.string().min(1).regex(/^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?=[A-Za-z0-9]([A-Za-z0-9_.:-]*[A-Za-z0-9])?$/).describe('Fully qualified CDI device name (e.g. nvidia.com/gpu=all)'),
 });
 
 /** Evaluate the repository health gate once (JSON HealthReport) */
@@ -694,6 +708,7 @@ export const FUNCTION_SCHEMAS = {
   kube_health: KubeHealthParamsSchema,
   kube_kubeconfig: KubeKubeconfigParamsSchema,
   machine_converge_runtime: MachineConvergeRuntimeParamsSchema,
+  machine_gpu_list: MachineGpuListParamsSchema,
   machine_ping: MachinePingParamsSchema,
   machine_ssh_test: MachineSshTestParamsSchema,
   machine_uninstall: MachineUninstallParamsSchema,
@@ -715,6 +730,8 @@ export const FUNCTION_SCHEMAS = {
   repository_exec: RepositoryExecParamsSchema,
   repository_expand: RepositoryExpandParamsSchema,
   repository_fork: RepositoryForkParamsSchema,
+  repository_gpu_grant: RepositoryGpuGrantParamsSchema,
+  repository_gpu_revoke: RepositoryGpuRevokeParamsSchema,
   repository_health: RepositoryHealthParamsSchema,
   repository_info: RepositoryInfoParamsSchema,
   repository_list: RepositoryListParamsSchema,

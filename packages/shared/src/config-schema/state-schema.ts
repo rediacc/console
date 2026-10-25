@@ -178,6 +178,8 @@ export const StateSchema = z.object({
         z.object({
           networkId: z.number().int().optional(),
           registryPort: z.number().int().min(21000).max(28999).optional(),
+          // CDI device names granted to this repository (`rdc repo gpu grant`); a mirror of the machine's grant store, which stays the enforcement point.
+          gpuDevices: z.array(z.string()).optional(),
           pushState: PushStateSchema.optional(),
           headCommit: z.string().optional(),
           commitMessage: z.string().optional(),
@@ -289,5 +291,6 @@ type AcmeCertCache = z.infer<typeof AcmeCertCacheSchema>;
 type ReplicaSet = z.infer<typeof ReplicaSetSchema>;
 type CanarySet = z.infer<typeof CanarySetSchema>;
 type ReflogEntry = z.infer<typeof ReflogEntrySchema>;
-export type { RdcState, AcmeCertCache, ReplicaSet, CanarySet, ReflogEntry };
+
+export type { AcmeCertCache, CanarySet, RdcState, ReflogEntry, ReplicaSet };
 export type RepoRuntimeState = NonNullable<RdcState['repos']>[string][string];
