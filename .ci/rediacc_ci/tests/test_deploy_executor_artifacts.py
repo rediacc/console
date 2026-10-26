@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 from typing import TYPE_CHECKING
 
@@ -42,6 +43,8 @@ elif verb == "list-objects-v2":
     keys = sorted(str(p.relative_to(bucket)) for p in bucket.rglob("*") if p.is_file())
     print(json.dumps({"Contents": [{"Key": k, "Size": 1} for k in keys if k.startswith(prefix)]}))
 elif verb == "delete-object":
+    if opt("--key") == os.environ.get("FAKE_FAIL_KEY"):
+        sys.exit(1)
     (bucket / opt("--key")).unlink()
 else:
     sys.exit(2)
@@ -182,6 +185,27 @@ def test_retain_apply_deletes_only_what_retention_releases(r2, tmp_path):
     assert rc == 0
     left = sorted(p.name for p in (r2 / "executor").iterdir() if any(p.iterdir()))
     assert left == ["v1.0.0", "v1.0.1", "v1.0.3"]
+
+
+def test_a_failed_manifest_delete_leaves_every_file_behind_it(r2, tmp_path, monkeypatch):
+    ea.stage("1.4.2", "deadbeef", make_sources(tmp_path / "src"))
+    monkeypatch.setenv("FAKE_FAIL_KEY", ea.key_for("1.4.2", ea.MANIFEST))
+    with pytest.raises(ea.ArtifactError, match="manifest|%s" % re.escape(ea.MANIFEST)):
+        ea.delete_version("1.4.2")
+    for name in (ea.MANIFEST, *ea.FILES):
+        assert (r2 / ea.key_for("1.4.2", name)).is_file(), name
+    assert ea.list_versions() == ["1.4.2"]
+
+
+def test_a_failed_file_delete_still_attempts_the_rest_and_names_the_key(r2, tmp_path, monkeypatch):
+    ea.stage("1.4.2", "deadbeef", make_sources(tmp_path / "src"))
+    stuck = ea.key_for("1.4.2", ea.FILES[0])
+    monkeypatch.setenv("FAKE_FAIL_KEY", stuck)
+    with pytest.raises(ea.ArtifactError, match=re.escape(stuck)):
+        ea.delete_version("1.4.2")
+    for name in ea.FILES[1:]:
+        assert not (r2 / ea.key_for("1.4.2", name)).exists(), name
+    assert ea.list_versions() == []
 
 
 def test_natives_tar_refuses_a_version_the_lockfile_does_not_pin(tmp_path):

@@ -222,13 +222,20 @@ def list_versions() -> list[str]:
 
 def delete_version(version: str) -> None:
     """Delete one version's objects, manifest FIRST so a half-deleted version never reads as staged."""
+    proc = _aws(["delete-object", "--key", key_for(version, MANIFEST)], capture=False)
+    if proc.returncode != 0:
+        # The manifest still stands, so the version still reads as staged: its files stay whole behind it.
+        raise ArtifactError(
+            "%s: aws delete-object %s failed (rc %d)"
+            % (SELF, key_for(version, MANIFEST), proc.returncode)
+        )
     failed: list[str] = []
-    for name in (MANIFEST, *FILES):
+    for name in FILES:
         proc = _aws(["delete-object", "--key", key_for(version, name)], capture=False)
         if proc.returncode != 0:
             failed.append("%s (rc %d)" % (key_for(version, name), proc.returncode))
     if failed:
-        # Every object is attempted, so one failure strands only itself; the manifest is gone first, so a later `retain` no longer lists the version and these keys need a manual delete.
+        # Every file is attempted, so one failure strands only itself; the manifest is already gone, so a later `retain` no longer lists the version and these keys need a manual delete.
         raise ArtifactError("%s: aws delete-object failed for %s" % (SELF, ", ".join(failed)))
 
 
