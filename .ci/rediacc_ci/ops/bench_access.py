@@ -9,7 +9,7 @@
 
 WHO RUNS IT. An operator or an AI session whose bench request answers 403 with the body "bench is IP-restricted; run ... bench_access add-current". The caller's IP changes (it rotates nightly), so the fix is this one command; no ticket and no operator step.
 
-THE MECHANISM: a zone WAF custom rule (Cloudflare Rulesets API, phase `http_request_firewall_custom`, action `block` with a custom response), because it is the one mechanism that both works on this zone's plan and lets the refusal body name the fix. The rediacc.com zone is on the Free plan (read live 2026-10-26: `plan.name` is `Free Website`). Cloudflare's WAF custom rules page lists, for Free: "Number of rules 5 ... Supported actions All except Log" (https://developers.cloudflare.com/waf/custom-rules/), so a Free zone has a block action and room for the one rule this script owns. The block action's custom response (status code, content type and body) is the one the custom-rules API page shows: "includes the definition of a custom response for blocked requests." (https://developers.cloudflare.com/waf/custom-rules/create-api/). The rule is found by its description, so other custom rules on the zone are never touched. IP Access Rules were rejected: they can only block or allow with Cloudflare's own error page, so the refusal could not carry the hint, and they match the whole account or zone, not two hostnames.
+THE MECHANISM: a zone WAF custom rule (Cloudflare Rulesets API, phase `http_request_firewall_custom`, action `block`). The rediacc.com zone is on the Free plan (read live 2026-10-26: `plan.name` is `Free Website`), and Cloudflare's WAF custom rules page lists, for Free: "Number of rules 5 ... Supported actions All except Log" (https://developers.cloudflare.com/waf/custom-rules/), so a Free zone has a block action and room for the one rule this script owns. A custom block response is NOT available on Free: the first live write on 2026-10-26 was refused with `not entitled to use a custom response`, so a blocked request gets Cloudflare's own 403 page, and the fix is named by the tooling instead (this script's HINT, printed by deploy_bench on a 403, and the bench notes in .claude/agents/account-dev.md and docs/agent-reference/local-env.md). The rule is found by its description, so other custom rules on the zone are never touched. IP Access Rules were rejected: they match the whole account or zone, not two hostnames.
 
 WHAT THE RULE BLOCKS. Every request to a bench host (the route patterns of `workers/*/wrangler.bench.toml`: bench.rediacc.com and proxy.bench.rediacc.com) whose source IP is not in the list, EXCEPT `GET` of the two health paths (`/account/api/v1/health`, `/v1/health`). The exemption is what keeps the automated callers working: `telemetry-probe.yml` (six-hourly, GitHub runner egress, a different IP every run) probes exactly those two paths, and a health answer discloses nothing but liveness. The proxy Worker's own calls to the account Worker are service bindings (`workers/proxy/wrangler.bench.toml` ACCOUNT and ISSUER), which never pass the zone's edge rules. Every other caller (deploy_bench, deploy_proxy's smoke past /v1/health, console_executor, the CLI against `--config bench`, the portal in a browser) is an operator or an AI session on its own machine and runs `add-current` first.
 
@@ -45,10 +45,6 @@ RULE_DESCRIPTION = "rediacc bench IP allowlist (rediacc_ci.ops.bench_access)"
 EXEMPT_PATHS = ("/account/api/v1/health", "/v1/health")
 COMMAND = "PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current"
 HINT = "bench is IP-restricted; run " + COMMAND
-RESPONSE_BODY = (
-    HINT + " from the console repo root (it allows this machine's current public IP; "
-    "at most %d addresses are kept, the oldest is dropped)." % MAX_IPS
-)
 # Cloudflare's own view of the caller's address, one literal per family (the IP literal needs no DNS).
 TRACE_URLS = ("https://1.1.1.1/cdn-cgi/trace", "https://[2606:4700:4700::1111]/cdn-cgi/trace")
 TRACE_TIMEOUT_S = 8.0
@@ -114,13 +110,6 @@ def rule_body(hosts: list[str], ips: list[str]) -> dict:
         "enabled": True,
         "action": "block",
         "expression": expression(hosts, ips),
-        "action_parameters": {
-            "response": {
-                "status_code": 403,
-                "content_type": "text/plain",
-                "content": RESPONSE_BODY,
-            }
-        },
     }
 
 

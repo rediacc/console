@@ -77,16 +77,14 @@ def test_first_add_creates_the_rule_holding_the_callers_ip(capsys):
     assert "198.51.100.7" in capsys.readouterr().out
 
 
-def test_the_rule_blocks_with_a_body_that_names_the_fix():
+def test_the_rule_blocks_without_a_custom_response():
+    """The Free plan refuses a custom response (live 2026-10-26: `not entitled to use a custom response`), so the rule is a plain block and the hint lives in the tooling."""
     api = FakeCloudflare()
     _run(api, "add-current")
     (rule,) = api.mine()
-    response = rule["action_parameters"]["response"]
-    assert response["status_code"] == 403
-    assert (
-        "bench is IP-restricted; run PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current"
-        in (response["content"])
-    )
+    assert rule["action"] == "block"
+    assert "action_parameters" not in rule
+    assert ba.HINT.endswith("bench_access add-current")
     expr = rule["expression"]
     for host in HOSTS:
         assert '"%s"' % host in expr
