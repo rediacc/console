@@ -765,7 +765,7 @@ def run(
 def spike_apps(listing: str) -> list[dict[str, Any]]:
     """The container applications of the scratch Worker in `wrangler containers list` output.
 
-    wrangler 4.152 prints a box table (`| ID | NAME | ...`, a 32-hex id); JSON is accepted too. Any line naming the Worker that yields no parsed row, and any JSON shape that is not a list (or an object with a `result` list), is returned as an id-less entry, so a format change fails teardown instead of passing it.
+    wrangler 4.152 prints a box table (`| ID | NAME | ...`, a 32-hex id); JSON is accepted too. When more lines name the Worker than rows parse, or the JSON shape is not a list (or an object with a `result` list), one id-less `{"unparsed": True}` entry is appended, so a format change fails teardown instead of passing it.
     """
     mentions = sum(WORKER_NAME in line for line in listing.splitlines())
     try:
