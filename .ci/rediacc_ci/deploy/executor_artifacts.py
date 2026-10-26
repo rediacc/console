@@ -394,9 +394,8 @@ def stage_local(dest: pathlib.Path, root: pathlib.Path, git_sha: str) -> dict[st
     dest.mkdir(parents=True, exist_ok=True)
     (dest / MANIFEST).unlink(missing_ok=True)
     for name, source in sources.items():
-        shutil.copy2(
-            source, dest / name
-        )  # keeps the exec bit renet needs to run from the stage dir
+        # copy2 keeps the exec bit renet needs to run from the stage dir
+        shutil.copy2(source, dest / name)
     build_natives_tar(root / "node_modules", root / "package-lock.json", dest / NATIVES)
     manifest = build_manifest(LOCAL_VERSION, git_sha, {name: dest / name for name in FILES})
     (dest / MANIFEST).write_bytes(manifest_bytes(manifest))
@@ -415,7 +414,7 @@ def select_prune(
 ) -> list[str]:
     """The staged versions that may be deleted: everything outside the newest `keep`, except the current and previous production versions.
 
-    `complete` names the versions that carry a manifest; the `keep` slots are counted among those only, so a partial version (a stage that died before its manifest) never pushes a complete one out. Omitted, every listed version counts.
+    `complete` names the versions that carry a manifest; the `keep` slots are counted among those only, so a partial version (a stage that died before its manifest) never pushes a complete one out. A partial version newer than every complete one may be a stage still uploading, so it is protected; an older partial is a dead stage and is prunable. Omitted, every listed version counts.
 
     Refuses an empty `current` (unknown is never prunable) and a version that is not X.Y.Z.
     """
@@ -432,6 +431,9 @@ def select_prune(
     ordered.sort(reverse=True)
     slots = ordered if complete is None else [(t, v) for t, v in ordered if v in set(complete)]
     protected = {version for _, version in slots[: max(keep, 0)]}
+    if complete is not None:
+        newest = slots[0][0] if slots else None
+        protected.update(v for t, v in ordered if newest is None or t > newest)
     protected.update(v for v in (current, previous) if v)
     return sorted(
         (v for _, v in ordered if v not in protected), key=lambda v: semver(v) or (0, 0, 0)

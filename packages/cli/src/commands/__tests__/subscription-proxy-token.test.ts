@@ -98,13 +98,13 @@ describe('rdc subscription proxy-token', () => {
     expect(stderr.join('')).not.toContain(MINTED);
   });
 
-  it('presents the stored login token to the mint route, never on argv', async () => {
+  it('presents the stored login token to the mint route through opts.token, and never prints it', async () => {
     await run();
     expect(fakeAccountServer).toHaveBeenCalledTimes(1);
     const [path, opts] = fakeAccountServer.mock.calls[0] as [string, Record<string, unknown>];
     expect(path).toBe('/account/api/v1/proxy/cli-token');
     expect(opts).toMatchObject({ method: 'POST', token: LOGIN, serverUrl: SERVER });
-    // The token reaches the mint route through `opts.token` (asserted above); no output stream the command wrote carries it.
+    // The token reaches the mint route through `opts.token` (asserted above); the command is driven in-process, so no argv exists to assert on, and no output stream it wrote carries the token.
     expect(stdout.join('')).not.toContain(LOGIN);
     expect(stderr.join('')).not.toContain(LOGIN);
   });

@@ -251,12 +251,13 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
     const p = r.plan;
     const npmSteps = p?.steps ?? [];
     add(
-      'npm bump: toolchain.env and the three Dockerfiles restating NPM_VERSION move',
+      // The proxy image runs no npm since PLAN-proxy-cd-six-targets A2 (it copies a staged bundle), so it restates no NPM_VERSION and the bump must not touch it.
+      'npm bump: toolchain.env and the two Dockerfiles restating NPM_VERSION move, the proxy image is untouched',
       !!p &&
         envVal(textOf(p, ENV) ?? '', 'NPM_VERSION') === next &&
         arg(textOf(p, 'Dockerfile') ?? '', 'NPM_VERSION') === next &&
-        arg(textOf(p, 'workers/proxy/Dockerfile') ?? '', 'NPM_VERSION') === next &&
-        arg(textOf(p, 'private/account/Dockerfile') ?? '', 'NPM_VERSION') === next,
+        arg(textOf(p, 'private/account/Dockerfile') ?? '', 'NPM_VERSION') === next &&
+        textOf(p, 'workers/proxy/Dockerfile') === undefined,
       r.refused
     );
     add(

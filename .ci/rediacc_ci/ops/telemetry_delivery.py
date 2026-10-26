@@ -104,8 +104,9 @@ def proxy_hosts(configs: tuple[str, ...] = PROXY_CONFIGS, root=None) -> list[str
             conf = tomllib.load(fh)
         for route in conf.get("routes", []):
             pattern = route if isinstance(route, str) else route.get("pattern", "")
-            if pattern:
-                out.append(pattern)
+            if not pattern:
+                raise ValueError("route without a pattern in %s" % rel)
+            out.append(pattern)
     return out
 
 
@@ -256,7 +257,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         proxies = proxy_hosts()
-        hosts = all_hosts() + proxies
+        hosts = list(dict.fromkeys(all_hosts() + proxies))
     except (ValueError, OSError, KeyError) as exc:
         print("cannot list hosts: %s" % type(exc).__name__, file=sys.stderr)
         return 2

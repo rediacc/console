@@ -859,7 +859,7 @@ def run(root: pathlib.Path, plant: str | None = None) -> int:
             out = subprocess.run(
                 [str(staged), "version"], capture_output=True, text=True, timeout=30, check=False
             )
-        except OSError as exc:
+        except (OSError, subprocess.TimeoutExpired) as exc:
             print(
                 "✗ CANNOT RUN: the staged renet %s cannot be executed (%s). Nothing was checked."
                 % (staged, exc),
@@ -883,7 +883,7 @@ def run(root: pathlib.Path, plant: str | None = None) -> int:
                 timeout=60,
                 check=False,
             )
-        except OSError as exc:
+        except (OSError, subprocess.TimeoutExpired) as exc:
             print(
                 "✗ CANNOT RUN: node cannot run the staged bundle %s (%s). Nothing was checked."
                 % (bundle, exc),

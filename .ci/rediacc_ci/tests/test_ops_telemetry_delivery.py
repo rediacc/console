@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 import json
-import sys
 import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,6 +32,7 @@ class Fake:
         self.down = down
         self.probes: dict[str, str] = {}  # probe id -> host
         self.auth: list[str] = []
+        self.request_lines: list[str] = []  # every request target as it hit the wire
         fake = self
 
         class H(BaseHTTPRequestHandler):
@@ -45,6 +45,7 @@ class Fake:
                 self.wfile.write(body)
 
             def do_GET(self):
+                fake.request_lines.append(self.path)
                 parts = urllib.parse.urlsplit(self.path)
                 qs = urllib.parse.parse_qs(parts.query)
                 if parts.path.startswith("/host/"):
@@ -156,7 +157,10 @@ def test_token_is_a_header_only_and_never_printed(make_fake):
     assert TOKEN not in text
     assert fake.auth
     assert all(a == "Bearer %s" % TOKEN for a in fake.auth)
-    assert all(TOKEN not in a for a in sys.argv)
+    assert fake.request_lines
+    assert all(TOKEN not in line for line in fake.request_lines)
+    assert fake.auth
+    assert all(TOKEN in a for a in fake.auth)
 
 
 def test_main_without_token_exits_2_and_prints_no_secret(monkeypatch, capsys):
@@ -289,8 +293,17 @@ def test_proxy_run_keeps_the_token_out_of_output(make_fake):
     rc, text = drive(fake, hosts=[PROXY], proxies={PROXY})
     assert rc == 0, text
     assert TOKEN not in text
-    assert all(TOKEN not in a for a in sys.argv)
+    assert fake.request_lines
+    assert all(TOKEN not in line for line in fake.request_lines)
+    assert fake.auth
+    assert all(TOKEN in a for a in fake.auth)
 
 
 def test_proxy_hosts_come_from_the_wrangler_routes():
     assert td.proxy_hosts() == [PROXY_BENCH_HOST]
+
+
+def test_proxy_route_without_a_pattern_is_an_error(tmp_path):
+    (tmp_path / "w.toml").write_text("[[routes]]\ncustom_domain = true\n")
+    with pytest.raises(ValueError, match="without a pattern"):
+        td.proxy_hosts(("w.toml",), root=tmp_path)

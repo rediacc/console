@@ -140,6 +140,31 @@ def test_unexecutable_staged_renet_cannot_run_rather_than_traceback(
     assert "cannot be executed" in capsys.readouterr().err
 
 
+def test_hung_node_on_the_staged_bundle_cannot_run_rather_than_traceback(
+    root_copy: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stage = root_copy.joinpath(*gate.proxy_image_smoke.STAGE_DIR)
+    stage.mkdir(parents=True, exist_ok=True)
+    stage.joinpath(gate.executor_artifacts.MANIFEST).write_text("{}")
+    renet = stage.joinpath(gate.executor_artifacts.RENET)
+    renet.write_text("#!/bin/sh\necho renet 1.2.3\n")
+    renet.chmod(0o755)
+    real_run = gate.subprocess.run
+
+    def fake_run(cmd: list[str], **kwargs: typing.Any) -> subprocess.CompletedProcess[str]:
+        if cmd and cmd[0] == "node":
+            raise subprocess.TimeoutExpired(cmd, 60)
+        return real_run(cmd, **kwargs)
+
+    monkeypatch.setattr(gate, "cannot_run", lambda _root: None)
+    monkeypatch.setattr(gate.subprocess, "run", fake_run)
+    monkeypatch.setattr(gate.proxy_image_smoke, "parse_renet_version", lambda _t: "1.2.3")
+    assert gate.run(root_copy) == gate.CANNOT_RUN
+    assert "node cannot run the staged bundle" in capsys.readouterr().err
+
+
 def test_healthy_observation_passes() -> None:
     assert gate.verdict(gate.HEALTHY) == []
 

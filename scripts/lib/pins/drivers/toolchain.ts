@@ -10,7 +10,7 @@
  *                   (Release.breaking): a plain bump, `bump --all` and `apply-soaked` leave it,
  *                   `bump toolchain:go --major --reason "<why>"` takes it, and status ages the
  *                   line as a newer major.
- *   toolchain:npm   the npm registry, the four NPM_VERSION sites, then the canonical lockfile pass
+ *   toolchain:npm   the npm registry, the three NPM_VERSION sites, then the canonical lockfile pass
  *                   over EVERY lockfile of the npm family scope under the NEW npm, since a lockfile
  *                   written by any other npm is refused by check:ci-lockfile.
  *   python tools    PyPI (ruff, mypy, pytest, pytest-xdist, PyYAML) for the version, GitHub

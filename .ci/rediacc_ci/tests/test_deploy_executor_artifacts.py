@@ -181,6 +181,15 @@ def test_a_partial_version_takes_no_keep_slot():
     ]
 
 
+def test_a_partial_newer_than_every_complete_version_is_protected_as_in_flight():
+    versions = ["1.0.0", "1.0.1", "1.0.2", "1.0.3"]
+    doomed = ea.select_prune(
+        versions, current="1.0.1", previous="1.0.0", keep=1, complete=["1.0.0", "1.0.1", "1.0.2"]
+    )
+    assert "1.0.3" not in doomed
+    assert doomed == []
+
+
 def test_list_versions_complete_only_skips_a_version_without_a_manifest(r2, tmp_path):
     ea.stage("1.4.2", "deadbeef", make_sources(tmp_path / "src"))
     ea.stage("1.4.3", "deadbeef", make_sources(tmp_path / "src"))

@@ -110,6 +110,8 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   '.ci/scripts/housekeeping/retire-shadowed-secrets.py': { args: ['--selftest'] },
   // isEntryPoint (scripts/lib/entry-point.ts) through a symlink and a spaced path, with the old comparison as the control.
   'scripts/__tests__/entry-point.control.ts': { args: [] },
+  // isEntryPoint's refusal of a module URL (scripts/lib/entry-point.ts): the throw that keeps a gate's main() from being skipped silently.
+  'scripts/lib/entry-point-selftest.ts': { args: [] },
   // retryUpstream (scripts/lib/upstream.ts) keeps its retry note on stderr, so a --json stdout stays parseable.
   'scripts/__tests__/upstream-retry-note.control.ts': { args: [] },
 };
