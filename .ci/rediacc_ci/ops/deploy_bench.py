@@ -18,6 +18,8 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   6. A FAILED STEP NAMES ITSELF. Under `set -e` a failing `npm install`, `vite build`, migration or deploy ended the script silently with that command's status; each exits 1 with `<step> failed (exit N)`.
   7. THE BACKUP CREDENTIAL HAS NO FALLBACK, AND THE BUCKET COMES FROM THE BINDING (`bench_bucket`: `wrangler.bench.toml`'s BACKUP_BUCKET, not an env override or a literal; a differing exported value or a missing binding is a DeployError). The bash filled each empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account. Only the three `ACCOUNT_BACKUP_S3_*` names are read now, bound from the bench-scoped store entries, and a missing one is a DeployError naming it before the first remote write (agent/plans/PLAN-backup-credential-isolation.md B2).
 
+  8. THE ROOT PRINCIPAL IS SEEDED (`seed_root`, after the secrets push, or alone with `--seed-root`). `reset_bench` drops every table and the deploy sets ROOT_EMAIL as a Worker secret, but nothing created the user, so the console `ExecutorIssuer` refused with ISSUER_OWNER_UNKNOWN and the bench proxy readiness failed (found 2026-10-26, worked around by registering the user by hand). The seed calls the server's own `POST /account/api/v1/auth/register` (bench has no `/test/*` surface and the captcha is off): one atomic batch that creates the user, its org, the owner membership and a live `inactive` COMMUNITY subscription, which is everything `ExecutorIssuerService.issue` checks. The password is random and never stored or printed (it travels on curl's stdin), so no new secret exists; a later root login uses the forgot-password email. An answer of 409 EMAIL_EXISTS is the idempotent no-op, since registration is atomic and the user can only exist with its org and subscription; any other answer is a named SeedError.
+
 THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, and are never logged; the `OBS_OTLP_CREDENTIALS` validity probe reports only that the value is not a JSON {user, pass} object, never the value.
 """
 
@@ -26,13 +28,19 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
+import time
+from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.ops import bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.well_known import BENCH_ORIGIN
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
 
@@ -52,7 +60,8 @@ HELP = (
     + """.
 
 Usage:
-  deploy_bench          (no arguments)
+  deploy_bench              deploy, then seed the root user
+  deploy_bench --seed-root  only seed the root user (idempotent)
 
 Credentials come from the deploy-bench Bitwarden profile; see
 .ci/config/secret-supply.json. Cloudflare auth: CF_MANAGEMENT_TOKEN, or
@@ -337,6 +346,86 @@ def _rotation_check(root) -> None:
     )
 
 
+class SeedError(DeployError):
+    """The root principal could not be created or confirmed."""
+
+
+def _post_json(url: str, body: dict[str, str]) -> tuple[int, dict]:
+    """POST the JSON body on curl's stdin (the password is never on argv) and return (HTTP status, decoded object). Status 0 means no HTTP answer."""
+    proc = subprocess.run(
+        [
+            "curl",
+            "-sS",
+            "-X",
+            "POST",
+            url,
+            "-H",
+            "Content-Type: application/json",
+            "--data",
+            "@-",
+            "-w",
+            "\n%{http_code}",
+        ],
+        input=json.dumps(body),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    text, _, status = (proc.stdout or "").rpartition("\n")
+    try:
+        code = int(status)
+    except ValueError:
+        code = 0
+    try:
+        decoded = json.loads(text) if text.strip() else {}
+    except ValueError:
+        decoded = {}
+    return code, decoded if isinstance(decoded, dict) else {}
+
+
+def seed_root(
+    base_url: str = "https://" + DOMAIN,
+    email: str | None = None,
+    attempts: int = 6,
+    sleep: Callable[[float], None] = time.sleep,
+) -> str:
+    """Create the ROOT_EMAIL user with its org, membership and subscription through POST /account/api/v1/auth/register; return "created" or "exists". A 409 with code EMAIL_EXISTS is the no-op. A fresh deploy may still be warming up, so no HTTP answer or a 5xx is retried (`attempts`, 5 s apart); every other answer raises SeedError naming the status and the server's message, never the password."""
+    root_email = email if email is not None else os.environ.get("ROOT_EMAIL") or ""
+    if not root_email:
+        raise SeedError("ROOT_EMAIL is not set, so there is no root user to seed on bench")
+    # The Worker serves its API under /account/api/v1 (private/account/src/routes/index.ts mounts /auth there); a bare /auth/register is a 404.
+    url = base_url.rstrip("/") + "/account/api/v1/auth/register"
+    last = "no HTTP answer"
+    for attempt in range(attempts):
+        if attempt:
+            sleep(5)
+        # Random, kept nowhere: the issuer needs the user, not a login.
+        status, answer = _post_json(
+            url, {"email": root_email, "password": secrets.token_urlsafe(32)}
+        )
+        if status == 201:
+            return "created"
+        if status == 409 and answer.get("code") == "EMAIL_EXISTS":
+            return "exists"
+        last = "HTTP %d: %s" % (status, answer.get("error") or "no error text") if status else last
+        if 0 < status < 500:
+            break
+    raise SeedError(
+        "seeding the bench root user %s failed (%s): the console ExecutorIssuer refuses with "
+        "ISSUER_OWNER_UNKNOWN until it exists" % (root_email, last)
+    )
+
+
+def _seed_and_report() -> None:
+    log.step("Seeding the root user (%s) on https://%s" % ("ROOT_EMAIL", DOMAIN))
+    outcome = seed_root()
+    log.info(
+        "root user created with its org and subscription"
+        if outcome == "created"
+        else "root user already present, nothing to do"
+    )
+
+
 def _deploy(auth: cf_auth.Auth, root) -> None:
     worker_dir = root / "workers" / "account"
     if not (worker_dir / CONFIG).is_file():
@@ -402,6 +491,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
         stdin=body,
     )
     log.info("Worker secrets pushed")
+    _seed_and_report()
 
     print()
     log.info("bench is live: https://%s" % DOMAIN)
@@ -418,9 +508,10 @@ def main(argv: list[str]) -> int:
     if argv and argv[0] in ("-h", "--help"):
         sys.stdout.write(HELP)
         return 0
-    if argv:
+    seed_only = argv == ["--seed-root"]
+    if argv and not seed_only:
         log.error("Unknown argument: %s" % argv[0])
-        log.error("deploy_bench takes no arguments; run with --help for usage.")
+        log.error("deploy_bench takes no arguments but --seed-root; run with --help for usage.")
         return 2
     for cmd in ("curl", "npx"):
         if shutil.which(cmd) is None:
@@ -429,6 +520,13 @@ def main(argv: list[str]) -> int:
     rebound = _reexec_under_profile(argv)
     if rebound is not None:
         return rebound
+    if seed_only:
+        try:
+            _seed_and_report()
+        except DeployError as exc:
+            log.error(str(exc))
+            return 1
+        return 0
     root = paths.repo_root()
     try:
         auth = cf_auth.resolve(ACCOUNT_ID)

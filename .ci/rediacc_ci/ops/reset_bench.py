@@ -350,7 +350,8 @@ def main(argv: list[str]) -> int:
         log.info("bench has been reset")
         print(
             "  Worker code is unchanged. To redeploy fresh code: "
-            "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench"
+            "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench "
+            "(it also seeds the ROOT_EMAIL user the reset removed)"
         )
         return 0
     except cf_auth.CfAuthError as exc:
