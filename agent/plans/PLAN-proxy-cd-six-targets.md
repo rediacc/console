@@ -338,9 +338,10 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
   
   -- Owns: the observability repo's Alloy config and alerting provisioning, .ci/rediacc_ci/ops/telemetry_delivery.py (the list). Accept: `python3 -m rediacc_ci.ops.telemetry_delivery` exits 0 with 14 hosts and 0 silent; Tempo lists `rediacc-proxy` and `rediacc-proxy-executor`; `count by (deployment_environment, rediacc_region) (traces_spanmetrics_calls_total{service="rediacc-proxy"})` returns 7 series; `GET /api/v1/provisioning/alert-rules` shows the six proxy rules with `isPaused: false`.
 - [ ] L9 [account, post-merge] Retire the public 'cloudflare' path. Once all seven D1s report zero unrevoked 'cloudflare' tokens (L0, L5-L7), the public-path branch at private/account/src/middleware/api-token.ts:84-96 refuses every 'cloudflare' token, and the test asserts it. -- Owns: private/account/src/middleware/api-token.ts, private/account/tests/integration/api-token-service-binding.test.ts. Accept: `cd private/account && npx vitest run tests/integration/api-token-service-binding.test.ts` exits 0.
-- [ ] X1 [plans] Relation lines.
+- [x] X1 [plans] Relation lines.
   - PLAN-cloudflare-proxy.md: C2 is closed by L5. The "Operator: redeploy ... EXECUTOR_TOKEN" box is superseded by ASKED:2026-10-25T19:08Z. Teardown stays that plan's fallback.
   - PLAN-telemetry-export.md: T15 is closed by L8, with outputs in its "Proxy results" section. T16's proxy-host clause is met by T1 and L8, while T16's own acceptance (a scheduled run on main) stays there. T14's config half is subsumed by K1 and G2, and its source half was already landed.
+    (ticked) 2026-10-26T16:06:55Z by d778be9d: relation sections added at agent/plans/PLAN-cloudflare-proxy.md:397 (C2 closed by L5, the EXECUTOR_TOKEN box superseded by ASKED:2026-10-25T19:08Z, teardown the fallback) and agent/plans/PLAN-telemetry-export.md:184 (T15 closed by L8, T16 proxy-host clause met by T1 and L8, T14 config half subsumed by K1 and G2); grep -n PLAN-proxy-cd-six-targets on both files matches
   
   -- Owns: agent/plans/PLAN-cloudflare-proxy.md, agent/plans/PLAN-telemetry-export.md (those lines only). Accept: `grep -n 'PLAN-proxy-cd-six-targets' agent/plans/PLAN-cloudflare-proxy.md agent/plans/PLAN-telemetry-export.md` matches both files.
 

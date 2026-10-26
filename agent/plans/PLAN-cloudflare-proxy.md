@@ -393,3 +393,9 @@ History; the code is on `origin/main` in 3b96d5133 and the gate wiring in 0868e3
 - **Missing test 10 added.** The deploy smoke-tests the host named by `wrangler.toml`'s route: `/v1/health` must answer 200 and an unauthenticated `/v1/server-info` must answer 401. The false "dry run does a docker build" header claim is corrected. The bash twin was deleted on 2026-10-08 (cb2908164); `test_deploy_deploy_proxy.py` now pins the Python deploy alone.
 - **Missing test 4 added.** `check:ci-proxy-image-smoke` (slow, local-only) builds the image and runs it with a fake account server. It asserts the process stays up, `/v1/health`, `/v1/server-info` in `mode: container` with a `cliVersion` equal to the shipped renet, `/v1/session` introspected with the executor's own token, and `renet version`. As a control, the same image started without `REDIACC_TOKEN` must exit naming the variable. Green on the dev box on 2026-09-24.
 - **CI wiring, since 0868e3a53.** CI runs the Worker tests: `check:test-workers` covers `workers/www` and `workers/proxy` (`package.json:357`), and its ci-quality step installs both (`.github/workflows/ci-quality.yml:2203`). The image smoke is still `local-only`; the image-smoke box wires it.
+
+## Relations
+
+- C2 is closed by PLAN-proxy-cd-six-targets L5: the console executor reaches the stable targets through CD there, with EXECUTOR_MODE a CD-managed secret rather than a `[vars]` entry.
+- The "Operator: redeploy ... `EXECUTOR_TOKEN`" box is superseded by ASKED:2026-10-25T19:08Z ("A: binding mints"): the proxy holds no exported token; the ISSUER binding mints one per org (PLAN-proxy-cd-six-targets design item 5, PLAN-console-executor-multi-org A2).
+- Teardown stays this plan's fallback.
