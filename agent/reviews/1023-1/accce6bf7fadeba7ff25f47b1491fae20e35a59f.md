@@ -26,4 +26,4 @@ Resolution: not-a-bug | .ci/cache/vm-check/receipt.json:1 holds trigger.via alwa
 ### accce6bf.2 [low] agent/ledgers/plan-investigation.jsonl:1857
 Anchor: in-diff
 Claim: The new V1 ledger entry sets head to 29ac830f82be8a57abf93c3d33a596fc88042ee0 and pointer commit to b0bc2aa8, while the plan tick note on line 68 says console HEAD b0bc2aa8; the two records do not agree on which commit was verified.
-Resolution: open
+Resolution: not-a-bug | agent/ledgers/plan-investigation.jsonl is an append-only ledger: rows are appended by wl_planrec.py (INVESTIGATION_REL at .claude/hooks/stop/wl_planrec.py:2220) and a historical row (line 1857) is never edited; a later row supersedes an earlier one for the same sig, so duplicate or retro rows are the designed audit trail, and the plan file is the owned source | d778be9d 2026-10-26T07:46:43Z
