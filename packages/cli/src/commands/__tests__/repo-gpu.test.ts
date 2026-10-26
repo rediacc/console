@@ -104,6 +104,15 @@ describe('rdc repo gpu grant|revoke', () => {
     ]);
   });
 
+  it('reads `devices: null` as renet\'s empty grant, not as a missing listing', async () => {
+    mocks.executeRepoFunction.mockResolvedValue({
+      success: true,
+      stdout: JSON.stringify({ devices: null }),
+    });
+    await run(['revoke', 'app', '--device', 'x/dri=2']);
+    expect(mocks.setRepositoryGpuDevices).toHaveBeenCalledWith('app:latest', []);
+  });
+
   it('leaves the mirror alone when the dispatch fails', async () => {
     mocks.executeRepoFunction.mockResolvedValue({ success: false });
     await run(['grant', 'app', '--device', 'nvidia.com/gpu=all']);

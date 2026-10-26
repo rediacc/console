@@ -6,7 +6,7 @@
  *   - the four executor-bearer calls require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
  *   - the three unauthenticated calls leave with no Authorization at all;
  *   - anything else is answered 403 with a logged reason code, and nothing is forwarded;
- *   - an allowed bearer call is answered 503 with the reason code (`issuer-refused`, `no-issuer`) when no issued token can be had, and nothing is forwarded.
+ *   - an allowed bearer call is answered 503 with the reason code (`no-issuer`, `issuer-refused`, `issuer-refused:ISSUER_<CODE>` for a coded account refusal, or `issuer-malformed`) when no issued token can be had, and nothing is forwarded.
  *
  * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue()` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
  */

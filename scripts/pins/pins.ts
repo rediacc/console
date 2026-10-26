@@ -2374,8 +2374,8 @@ const CASES: Record<string, Case> = {
         detail: `rc=${named.rc} ${named.err}`,
       },
       {
-        // `ok` in the JSON report agrees with the exit code in both directions.
-        name: 'json report: ok is true exactly when the run exits 0 (green run true, refused run false)',
+        // `ok` in the JSON report agrees with the exit code at one green and one refused sample; the equivalence itself is the single `ok` expression in report().
+        name: 'json report: ok agrees with the exit code at two sample points (green run rc 0 true, refused run rc 1 false)',
         ok:
           r.rc === 0 &&
           (j as { ok?: boolean }).ok === true &&

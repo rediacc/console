@@ -29,15 +29,19 @@ describe('account fetch deadline', () => {
   });
 
   it('hands the deadline to AbortSignal.timeout and a stalled call aborts when it fires', async () => {
-    const spy = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(AbortSignal.abort());
+    // A pending signal the test fires itself: the call must be stalled first, then abort when the deadline "fires".
+    const deadline = new AbortController();
+    const spy = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal);
     const wrapped = deadlineFetch(
       (_input, init) =>
         new Promise<Response>((_resolve, reject) => {
+          expect(init?.signal?.aborted).toBe(false);
           init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
-          if (init?.signal?.aborted) reject(new Error('aborted'));
         })
     );
-    await expect(wrapped('https://eu.example/x')).rejects.toThrow('aborted');
+    const call = wrapped('https://eu.example/x');
+    deadline.abort();
+    await expect(call).rejects.toThrow('aborted');
     expect(spy).toHaveBeenCalledWith(ACCOUNT_REQUEST_TIMEOUT_MS);
     spy.mockRestore();
   });

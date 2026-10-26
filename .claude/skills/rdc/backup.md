@@ -148,8 +148,6 @@ rdc backup list <artifact-ref> -m <machine>
 rdc backup restore <artifact-ref> --as <new-name> -m <machine> --up
 ```
 
-## Bulk sync (push/pull all repos)
-
 ## File sync (rsync-based file transfer)
 
 File transfer between local machine and remote repositories. See [sync.md](sync.md) for full details on file sync options and behavior.

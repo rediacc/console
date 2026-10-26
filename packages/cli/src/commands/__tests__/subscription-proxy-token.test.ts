@@ -56,6 +56,7 @@ function serveMint(): void {
 
 let stdout: string[];
 let stderr: string[];
+let drivenArgv: string[];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -87,7 +88,8 @@ async function run(...args: string[]): Promise<void> {
   const { registerSubscriptionCommands } = await import('../subscription.js');
   const program = new Command().exitOverride();
   registerSubscriptionCommands(program);
-  await program.parseAsync(['node', 'rdc', 'subscription', 'proxy-token', ...args]);
+  drivenArgv = ['node', 'rdc', 'subscription', 'proxy-token', ...args];
+  await program.parseAsync(drivenArgv);
 }
 
 describe('rdc subscription proxy-token', () => {
@@ -104,8 +106,8 @@ describe('rdc subscription proxy-token', () => {
     const [path, opts] = fakeAccountServer.mock.calls[0] as [string, Record<string, unknown>];
     expect(path).toBe('/account/api/v1/proxy/cli-token');
     expect(opts).toMatchObject({ method: 'POST', token: LOGIN, serverUrl: SERVER });
-    // The token reaches the mint route through `opts.token` (asserted above); the process argv never carries it.
-    expect(process.argv.join(' ')).not.toContain(LOGIN);
+    // The token reaches the mint route through `opts.token` (asserted above); the argv the command was driven with never carries it.
+    expect(drivenArgv.join(' ')).not.toContain(LOGIN);
   });
 
   it('--json writes the token and its expiresAt as one JSON line', async () => {

@@ -5,7 +5,7 @@
  *
  * A failed renewal is remembered for FAILURE_BACKOFF_MS, so a failing issuer is asked at most once per window however many requests arrive.
  *
- * One isolate renews once: concurrent requests that find the token due share a single in-flight `issue()` call. A renewal that fails while the cached token has not yet expired keeps serving the cached token, and the next request tries again.
+ * One isolate renews once: concurrent requests that find the token due share a single in-flight `issue()` call. A renewal that fails while the cached token has not yet expired keeps serving the cached token, and the first request after the FAILURE_BACKOFF_MS window tries again.
  *
  * The token value is never logged and never handed to the container (src/egress.ts swaps it in on the way out).
  */

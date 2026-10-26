@@ -555,7 +555,7 @@ const SSH_CLOSED_LINE = /^Connection to \S+ closed\.?$/;
 /** How much of the remote's stderr the error keeps; only its last lines can explain the exit. */
 const STDERR_TAIL_CHARS = 4096;
 
-/** True when renet itself rejected a flag: cobra's `Error:` line with renet's usage text. A `-c` command's own "unknown flag" line never carries both. */
+/** True when renet itself rejected a flag: cobra's `Error:` line with renet's usage text. A heuristic: a `-c` command's own "unknown flag" line would have to carry both the `Error:` prefix and a renet mention to match. */
 function isRenetFlagRejection(stderrTail: string): boolean {
   return (
     isRenetFlagUnsupported(stderrTail) &&

@@ -291,7 +291,7 @@ path).
 | `/resources/repositories/*/credential` (and sshPrivateKey, sshPublicKey, secrets/*/value, secrets/*/mode, repositoryGuid, grandGuid, parentGuid) | `/resources/repositories/*/tags/*/<same>` |
 | `/resources/machines/*/ceph/...` (3 entries) | deleted with the field |
 | (none) | `/resources/datastores/*/backend/...`, `/resources/datastores/*/cluster`, `/resources/datastores/*/parent/...` all `public` |
-| `/infra/acmeCertCache/*/data` (`credential`) | `/state/certCache/*/data` (`credential`, `commit: false`; it travels inside the CEK-encrypted remote blob, never in a committed file) |
+| `/infra/acmeCertCache/*/data` (`credential`) | `/state/certCache/*/data` (`credential`, `commit: false`; it is pushed with the config, `state` included (§2.2), inside the CEK-encrypted remote blob, never in a committed file) |
 | `/resources/repositories/*/pushState/...` | `/state/repos/*/*/pushState/...` (`public`) |
 | `/account/team`, `/account/region` | deleted (R2-F9; never registered anyway) |
 
@@ -410,7 +410,7 @@ raw file while mode is master-password (the 2.3 exception), and login/verify wor
 - **T5 (state does not bump version)**: record `version`; write `pushState` and a cert
 cache entry via `updateState()`; assert `version` unchanged; write a machine via `update()`; assert `version` incremented by exactly 1.
 - **T6 (remote push completeness)**: with a mock `RemoteConfigAdapter`, push after T1;
-assert the pushed document contains clusters/providers/strategies and does NOT contain `state`.
+assert the pushed document contains clusters/providers/strategies and `state` (§2.2: push serializes the real on-disk config).
 
 ---
 

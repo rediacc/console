@@ -19,7 +19,8 @@ type GpuVerb = 'grant' | 'revoke';
 function grantedNames(stdout: string | undefined): string[] | undefined {
   try {
     const grant = parseCapturedJson<{ devices?: { name: string }[] | null }>(stdout);
-    // Output without a devices list is not a listing, so the caller falls back to editing the mirror.
+    // `null` is renet's empty grant (a Go nil slice), so the listing is empty; output without a devices key is not a listing and the caller falls back to editing the mirror.
+    if (grant.devices === null) return [];
     if (!Array.isArray(grant.devices)) return undefined;
     return grant.devices.map((d) => d.name);
   } catch {

@@ -288,7 +288,12 @@ describe('PLAN_BACKUP_RETENTION', () => {
       for (const knob of knobs) {
         const value = entry.default[knob];
         const limit = entry.limit[knob];
-        if (value === null || limit === null) continue;
+        if (value === null) {
+          // An unset default is the plan offering none (limit 0) or no per-knob cap; it never hides a positive limit.
+          expect([0, null], `${plan}.${knob} unset default vs limit ${limit}`).toContain(limit);
+          continue;
+        }
+        if (limit === null) continue;
         expect(value, `${plan}.${knob}`).toBeLessThanOrEqual(limit);
       }
     }

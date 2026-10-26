@@ -232,7 +232,7 @@ const hostPinFile = { repo: 'private/renet', file: '.ceph-image-pin' };
 /** `host-version=` of renet's .ceph-image-pin: the Ceph series every Ceph pin must stay on. */
 export function hostVersionOf(read: (p: { repo: string; file: string }) => string | null): string {
   const text = read(hostPinFile);
-  const v = text === null ? null : /^host-version=(\S+)$/m.exec(text)?.[1];
+  const v = text === null ? null : /^host-version[ \t]*=[ \t]*(\S+)[ \t]*$/m.exec(text)?.[1];
   if (!v) throw new Error('private/renet/.ceph-image-pin has no host-version= line');
   return v;
 }
@@ -248,9 +248,9 @@ export function hostVersionFor(
   const text = read(hostPinFile);
   const esc = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const override =
-    text === null ? null : new RegExp(`^host-version\\.${esc}=(\\S+)$`, 'm').exec(text)?.[1];
+    text === null ? null : new RegExp(`^host-version\\.${esc}[ \\t]*=[ \\t]*(\\S+)[ \\t]*$`, 'm').exec(text)?.[1];
   const reason =
-    text === null ? null : new RegExp(`^host-version-reason\\.${esc}=\\S`, 'm').test(text);
+    text === null ? null : new RegExp(`^host-version-reason\\.${esc}[ \\t]*=[ \\t]*\\S`, 'm').test(text);
   return override && reason ? override : hostVersionOf(read);
 }
 
