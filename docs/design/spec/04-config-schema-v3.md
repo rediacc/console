@@ -291,7 +291,7 @@ path).
 | `/resources/repositories/*/credential` (and sshPrivateKey, sshPublicKey, secrets/*/value, secrets/*/mode, repositoryGuid, grandGuid, parentGuid) | `/resources/repositories/*/tags/*/<same>` |
 | `/resources/machines/*/ceph/...` (3 entries) | deleted with the field |
 | (none) | `/resources/datastores/*/backend/...`, `/resources/datastores/*/cluster`, `/resources/datastores/*/parent/...` all `public` |
-| `/infra/acmeCertCache/*/data` (`credential`) | `/state/certCache/*/data` (`credential`, `commit: false` since state never pushes) |
+| `/infra/acmeCertCache/*/data` (`credential`) | `/state/certCache/*/data` (`credential`, `commit: false`; it travels inside the CEK-encrypted remote blob, never in a committed file) |
 | `/resources/repositories/*/pushState/...` | `/state/repos/*/*/pushState/...` (`public`) |
 | `/account/team`, `/account/region` | deleted (R2-F9; never registered anyway) |
 
@@ -353,7 +353,7 @@ DELETED; its setters become plain `configFileStorage.update()` calls on `resourc
 - The cluster/provider/strategy CRUD in `config-resources.ts` keeps its existing
 `configFileStorage.update()` calls UNCHANGED and becomes automatically encryption-correct: same path as everything else. The dual-path world is gone, which is why datastore records (P1) are born safe.
 - `RemoteResourceState` stops reconstructing configs: push serializes the real
-on-disk config (minus `/state/*`, per 1.3), so nothing can be dropped.
+on-disk config, `state` included (property 1 of 1.3), so nothing can be dropped.
 - Per-field granularity is driven ENTIRELY by `schema/sensitivity.ts` via
 `walkSensitive` + `metaForPointer` (both exist and are tested in `schema/__tests__/walker.test.ts`); `encryptAtRest` already defaults to true for `secret`/`credential` kinds (`sensitivity.ts:47`). No parallel field list.
 - The encrypted-fields container keeps the v2 shape

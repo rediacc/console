@@ -8,7 +8,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -43,6 +43,13 @@ export function parseListKeys(xml: string): string[] {
   return [...xml.matchAll(/<Key>([^<]*)<\/Key>/g)].map((m) =>
     m[1].replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>')
   );
+}
+
+/** The continuation token of a truncated ListObjectsV2 page, or undefined on the last page. */
+export function parseNextToken(xml: string): string | undefined {
+  if (!/<IsTruncated>true<\/IsTruncated>/.test(xml)) return undefined;
+  const token = /<NextContinuationToken>([^<]*)<\/NextContinuationToken>/.exec(xml)?.[1];
+  return token?.replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>');
 }
 
 /** Chunk objects of one lineage: hash-named keys with the lineage guid as a path segment. */
@@ -99,13 +106,28 @@ export function corruptStoredChunk(
   offset = 0
 ): CorruptedChunk {
   const base = `${access.endpoint}/${access.bucket}`;
-  const listing = storeCurl(access, ['-G', '--data-urlencode', 'list-type=2'], base).toString(
-    'utf8'
-  );
-  const keys = lineageChunkKeys(parseListKeys(listing), lineage);
+  const pages: string[] = [];
+  const allKeys: string[] = [];
+  let token: string | undefined;
+  do {
+    const page = storeCurl(
+      access,
+      [
+        '-G',
+        '--data-urlencode',
+        'list-type=2',
+        ...(token ? ['--data-urlencode', `continuation-token=${token}`] : []),
+      ],
+      base
+    ).toString('utf8');
+    pages.push(page);
+    allKeys.push(...parseListKeys(page));
+    token = parseNextToken(page);
+  } while (token);
+  const keys = lineageChunkKeys(allKeys, lineage);
   if (keys.length === 0) {
     throw new Error(
-      `no chunk object of lineage ${lineage} in bucket ${access.bucket} (listing: ${listing.slice(0, 400)})`
+      `no chunk object of lineage ${lineage} in bucket ${access.bucket} (${pages.length} page(s), listing: ${pages[0].slice(0, 400)})`
     );
   }
   const key = keys[0];
@@ -132,6 +154,12 @@ export function corruptStoredChunk(
       },
     };
   } catch (error) {
+    // A PUT whose response was lost may still have stored the tampered bytes: put the original back (when it was read) before giving up.
+    try {
+      if (existsSync(original)) storeCurl(access, ['-X', 'PUT', '-T', original], url);
+    } catch {
+      // The store is unreachable; the original error is the one to report.
+    }
     rmSync(dir, { recursive: true, force: true });
     throw error;
   }

@@ -8,6 +8,7 @@ import {
   flipByteScript,
   lineageChunkKeys,
   parseListKeys,
+  parseNextToken,
   storeAccessFromEnv,
 } from '../backup/chunkCorruption';
 
@@ -80,4 +81,15 @@ describe('store listing helpers', () => {
       }
     );
   });
+});
+
+describe('parseNextToken', () => {
+  it('returns the token of a truncated page', () =>
+    expect(
+      parseNextToken(
+        '<IsTruncated>true</IsTruncated><NextContinuationToken>a&amp;b</NextContinuationToken>'
+      )
+    ).toBe('a&b'));
+  it('returns undefined on the last page', () =>
+    expect(parseNextToken('<IsTruncated>false</IsTruncated>')).toBeUndefined());
 });

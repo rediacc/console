@@ -3,12 +3,12 @@ import { expect, test } from '@playwright/test';
 import {
   ACCOUNT_SERVER,
   accountPrereqs,
-  allRepoGuids,
   bothChannels,
   type CliEnvelope,
   DS,
   engineVerbPresent,
   ensureDatastore,
+  guidsBesides,
   localHelp,
   loginCli,
   M1,
@@ -761,11 +761,7 @@ test.describe
 
         const restored = repoIdentity(cli, RESTORED_NAME);
         expect(
-          newGuidViolations(
-            repo.guid,
-            restored.guid,
-            allRepoGuids(cli).filter((g) => g !== restored.guid && g !== repo.guid)
-          ),
+          newGuidViolations(repo.guid, restored.guid, guidsBesides(cli, restored.guid)),
           'the restore did not mint a new identity'
         ).toEqual([]);
 
@@ -936,11 +932,7 @@ test.describe
         expect(restore.code, `same-machine restore: ${bothChannels(restore).slice(-1200)}`).toBe(0);
         const restored = repoIdentity(cli, SAME_NAME);
         expect(
-          newGuidViolations(
-            repo.guid,
-            restored.guid,
-            allRepoGuids(cli).filter((g) => g !== restored.guid && g !== repo.guid)
-          )
+          newGuidViolations(repo.guid, restored.guid, guidsBesides(cli, restored.guid))
         ).toEqual([]);
         expect(
           await imageSha(w1, repo.guid),
@@ -1059,7 +1051,7 @@ test.describe
         expect(manifestChainViolations(after)).toEqual([]);
       });
 
-      test('K7. a scheduled timer fires its unit and a manifest commits', async () => {
+      test('K7. the service unit of a bound strategy runs and a manifest commits', async () => {
         const before = (await manifestsOf(repo.guid)).length;
         cleanup.push(async () => {
           await cli.run(['backup', 'strategy', 'unbind', STRATEGY, '-m', M1]);

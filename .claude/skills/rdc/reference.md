@@ -535,7 +535,7 @@ Remove the policy, so every snapshot of this repository is kept.
 
 ### rdc backup snapshots delete <repo-ref> <snapshot-id>
 
-Delete one stored snapshot of a repository. Data only that snapshot used is freed by the next garbage collection.
+Delete one stored snapshot; its exclusive data is freed by the next garbage collection.
 
 > MCP excluded: Deletes snapshots outright; like a retention mutation, a wrong call discards backups the operator meant to keep.
 

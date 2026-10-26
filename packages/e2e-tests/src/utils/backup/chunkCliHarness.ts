@@ -185,10 +185,20 @@ export const repoIdentity = (cli: CliRunner, name: string, tag?: string): Provis
 };
 
 /** Every repository GUID the CLI config holds, across all names and tags. */
-export const allRepoGuids = (cli: CliRunner): string[] =>
+const allRepoGuids = (cli: CliRunner): string[] =>
   Object.values(readCliConfig(cli).resources?.repositories ?? {}).flatMap((family) =>
     Object.values(family.tags ?? {}).flatMap((t) => (t.repositoryGuid ? [t.repositoryGuid] : []))
   );
+
+/**
+ * Every GUID the config holds apart from ONE occurrence of `own`: a second entry carrying `own`
+ * stays in the result, which is what lets `newGuidViolations` see a collision.
+ */
+export const guidsBesides = (cli: CliRunner, own: string): string[] => {
+  const all = allRepoGuids(cli);
+  const at = all.indexOf(own);
+  return at < 0 ? all : all.filter((_, i) => i !== at);
+};
 
 /**
  * Lay down the base datastore pool on a worker, WITHOUT destroying one.

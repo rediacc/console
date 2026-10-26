@@ -364,7 +364,7 @@ A strategy can declare the policy for the repositories it covers: `rdc backup st
 | `--keep-yearly <n>` | Keep the newest snapshot from each of this many years |
 | `--stream <id>` | Apply the policy to one backup stream instead of the repository-wide default |
 
-Give at least one rule. `set` replaces every knob rather than merging, so the whole policy is passed each time. `set` with no rules is refused rather than treated as "keep nothing", because clearing a policy is what `clear` is for. `clear` removes the policy and keeps every snapshot from then on; it never means "keep nothing".
+Give at least one rule. `set` replaces every knob rather than merging, so the whole policy is passed each time. `set` with no rules is refused rather than treated as "keep nothing", because clearing a policy is what `clear` is for. `clear` removes the declared policy, so the plan or server default applies again; it never means "keep nothing" and never means "keep everything".
 
 ## Restore
 
