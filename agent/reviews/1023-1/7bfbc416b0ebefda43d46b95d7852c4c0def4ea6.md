@@ -26,14 +26,14 @@ Resolution: not-a-bug | 06ab0da0 the storages removal in ResourceContext.tsx was
 ### 7bfbc416.2 [medium] src/services/backup-storage.service.ts:652
 Anchor: in-diff
 Claim: The comment says the quota check refuses 'before I/O is spent', but line 661 now calls estimateSubscriptionFreed before every over-quota throw, so each refused grant does store I/O first and the comment states the wrong behaviour.
-Resolution: open
+Resolution: fixed 257625a82e188c404df23dc45a64924921bbe572 | d778be9d 2026-10-26T07:06:58Z
 
 ### 7bfbc416.3 [low] src/middleware/rate-limit.ts:157
 Anchor: in-diff
 Claim: The eviction runs only when the map holds 10,000 keys and deletes only expired windows, so when all 10,000 windows are still live the map grows past the cap with no eviction.
-Resolution: open
+Resolution: fixed 257625a82e188c404df23dc45a64924921bbe572 | d778be9d 2026-10-26T07:06:58Z
 
 ### 7bfbc416.4 [low] src/routes/backups.ts:307
 Anchor: in-diff
 Claim: DELETE /backups/retention passes the raw `stream` query value straight to clearRetentionPolicy with no identifier check, while the S8 test claims separator refusal at every surface and never exercises this one.
-Resolution: open
+Resolution: fixed 257625a82e188c404df23dc45a64924921bbe572 | d778be9d 2026-10-26T07:06:59Z

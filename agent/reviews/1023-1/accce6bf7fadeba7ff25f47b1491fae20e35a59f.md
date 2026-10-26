@@ -21,7 +21,7 @@ Body-Sig: 7bfa05df6139b2b6
 ### accce6bf.1 [low] agent/plans/PLAN-converge-preflight-and-repo-recovery.md:68
 Anchor: in-diff
 Claim: The V1 tick records `npm run vm:check rc=0`, but the V1 accept criterion on line 67 is `npm run vm:check -- --changed` rc=0, so the recorded run does not match the box's stated acceptance command.
-Resolution: open
+Resolution: not-a-bug | .ci/cache/vm-check/receipt.json:1 holds trigger.via always with both sides run and status VERIFIED, so a full npm run vm:check covers everything --changed would run | d778be9d 2026-10-26T05:38:25Z
 
 ### accce6bf.2 [low] agent/ledgers/plan-investigation.jsonl:1857
 Anchor: in-diff
