@@ -19,7 +19,9 @@ type GpuVerb = 'grant' | 'revoke';
 function grantedNames(stdout: string | undefined): string[] | undefined {
   try {
     const grant = parseCapturedJson<{ devices?: { name: string }[] | null }>(stdout);
-    return (grant.devices ?? []).map((d) => d.name);
+    // Output without a devices list is not a listing, so the caller falls back to editing the mirror.
+    if (!Array.isArray(grant.devices)) return undefined;
+    return grant.devices.map((d) => d.name);
   } catch {
     return undefined;
   }

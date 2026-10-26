@@ -203,7 +203,12 @@ export function createExecutorGrantRecorder(
       body: JSON.stringify({ sessionId, token: bearerToken }),
     });
     if (!response.ok) {
-      throw new AuthError(await describe(response, 'could not record the key grant'), 403);
+      const message = await describe(response, 'could not record the key grant');
+      // Only a refusal is a 401/403; an unavailable account server (5xx, 429) surfaces as a server fault, not as a refused grant.
+      if (response.status === 401 || response.status === 403) {
+        throw new AuthError(message, response.status);
+      }
+      throw new Error(message);
     }
   };
 }

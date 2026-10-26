@@ -736,3 +736,25 @@ describe('container-tier config loading', () => {
     expect(executed).toHaveLength(1);
   });
 });
+
+describe('createExecutorGrantRecorder status mapping', () => {
+  const record = (status: number) =>
+    createExecutorGrantRecorder({
+      accountUrl: 'https://account.test',
+      executorToken: 't',
+      fetchImpl: (() => Promise.resolve(new Response('x', { status }))) as typeof fetch,
+    })('s', 'b');
+
+  it('keeps a 401 and a 403 as AuthError with their own status', async () => {
+    await expect(record(401)).rejects.toMatchObject({ name: 'AuthError', status: 401 });
+    await expect(record(403)).rejects.toMatchObject({ name: 'AuthError', status: 403 });
+  });
+
+  it('reports a 503 and a 429 as a plain error, not a refusal', async () => {
+    for (const status of [503, 429]) {
+      const error = await record(status).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).name).not.toBe('AuthError');
+    }
+  });
+});

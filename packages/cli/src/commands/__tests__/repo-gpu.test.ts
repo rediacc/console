@@ -92,6 +92,18 @@ describe('rdc repo gpu grant|revoke', () => {
     expect(mocks.setRepositoryGpuDevices).toHaveBeenCalledWith('app:latest', []);
   });
 
+  it('falls back to editing the mirror when the output is JSON without a devices list', async () => {
+    mocks.executeRepoFunction.mockResolvedValue({ success: true, stdout: '{}' });
+    await run(['revoke', 'app', '--device', 'nvidia.com/gpu=all']);
+    expect(mocks.setRepositoryGpuDevices).toHaveBeenCalledWith('app:latest', []);
+    mocks.setRepositoryGpuDevices.mockClear();
+    await run(['grant', 'app', '--device', 'x/dri=2']);
+    expect(mocks.setRepositoryGpuDevices).toHaveBeenCalledWith('app:latest', [
+      'nvidia.com/gpu=all',
+      'x/dri=2',
+    ]);
+  });
+
   it('leaves the mirror alone when the dispatch fails', async () => {
     mocks.executeRepoFunction.mockResolvedValue({ success: false });
     await run(['grant', 'app', '--device', 'nvidia.com/gpu=all']);

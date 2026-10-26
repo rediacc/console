@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ACCOUNT_REQUEST_TIMEOUT_MS,
   deadlineFetch,
@@ -26,6 +26,20 @@ describe('account fetch deadline', () => {
   it('bounds the wait at a finite deadline', () => {
     expect(ACCOUNT_REQUEST_TIMEOUT_MS).toBeGreaterThan(0);
     expect(Number.isFinite(ACCOUNT_REQUEST_TIMEOUT_MS)).toBe(true);
+  });
+
+  it('hands the deadline to AbortSignal.timeout and a stalled call aborts when it fires', async () => {
+    const spy = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(AbortSignal.abort());
+    const wrapped = deadlineFetch(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+          if (init?.signal?.aborted) reject(new Error('aborted'));
+        })
+    );
+    await expect(wrapped('https://eu.example/x')).rejects.toThrow('aborted');
+    expect(spy).toHaveBeenCalledWith(ACCOUNT_REQUEST_TIMEOUT_MS);
+    spy.mockRestore();
   });
 });
 

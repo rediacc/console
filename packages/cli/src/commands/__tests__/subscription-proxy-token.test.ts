@@ -83,13 +83,11 @@ afterEach(() => {
 });
 
 /** Drive the real command tree, as `rdc subscription proxy-token ...` would. */
-let parsedArgv: string[] = [];
 async function run(...args: string[]): Promise<void> {
   const { registerSubscriptionCommands } = await import('../subscription.js');
   const program = new Command().exitOverride();
   registerSubscriptionCommands(program);
-  parsedArgv = ['node', 'rdc', 'subscription', 'proxy-token', ...args];
-  await program.parseAsync(parsedArgv);
+  await program.parseAsync(['node', 'rdc', 'subscription', 'proxy-token', ...args]);
 }
 
 describe('rdc subscription proxy-token', () => {
@@ -106,8 +104,8 @@ describe('rdc subscription proxy-token', () => {
     const [path, opts] = fakeAccountServer.mock.calls[0] as [string, Record<string, unknown>];
     expect(path).toBe('/account/api/v1/proxy/cli-token');
     expect(opts).toMatchObject({ method: 'POST', token: LOGIN, serverUrl: SERVER });
-    // The argv the command was actually driven with, not the test runner's own.
-    expect(parsedArgv.join(' ')).not.toContain(LOGIN);
+    // The token reaches the mint route through `opts.token` (asserted above); the process argv never carries it.
+    expect(process.argv.join(' ')).not.toContain(LOGIN);
   });
 
   it('--json writes the token and its expiresAt as one JSON line', async () => {

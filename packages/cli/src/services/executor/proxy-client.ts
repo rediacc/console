@@ -128,6 +128,15 @@ export interface ReattachTarget {
 const DEFAULT_PROXY_REQUEST_TIMEOUT_MS = 60_000;
 
 /** The request timeout from the environment, or the default when unset or not a positive number. */
+/** The host of a request URL; an unparseable URL yields the URL text, so the wrapped network error is never replaced by a URL TypeError. */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
+
 function proxyRequestTimeoutMs(): number {
   const raw = Number(process.env.REDIACC_PROXY_TIMEOUT_MS);
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_PROXY_REQUEST_TIMEOUT_MS;
@@ -428,7 +437,7 @@ export class ProxyClient {
     try {
       return await this.fetchImpl(url, { ...init, signal: controller.signal });
     } catch (error) {
-      const host = new URL(url).host;
+      const host = hostOf(url);
       const message = timedOut
         ? t('errors.proxy.timeout', { host, seconds: Math.ceil(this.timeoutMs / 1000) })
         : t('errors.proxy.unreachable', { host, reason: describeFetchFailure(error) });

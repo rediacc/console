@@ -9,7 +9,7 @@
 /** How long one account-server round trip may take. */
 export const ACCOUNT_REQUEST_TIMEOUT_MS = 15_000;
 
-/** `init` with a deadline signal, unless the caller already set one. */
+/** `init` with a deadline signal. A signal the caller set is kept as is and opts that call out of the deadline: the caller owns its cancellation. */
 export function withAccountDeadline(init: RequestInit = {}): RequestInit {
   return init.signal ? init : { ...init, signal: AbortSignal.timeout(ACCOUNT_REQUEST_TIMEOUT_MS) };
 }

@@ -197,7 +197,7 @@ const realCleanBuildDeps: RenetCleanBuildDeps = {
       });
       child.on('error', reject);
       child.on('close', (code) =>
-        code === 0 ? resolve() : reject(new Error(`./build.sh dev exited ${code} in ${cwd}`))
+        code === 0 ? resolve() : reject(new Error(`bash build.sh dev exited ${code} in ${cwd}`))
       );
     }),
   goVersionM: (binary) =>

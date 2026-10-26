@@ -555,6 +555,15 @@ const SSH_CLOSED_LINE = /^Connection to \S+ closed\.?$/;
 /** How much of the remote's stderr the error keeps; only its last lines can explain the exit. */
 const STDERR_TAIL_CHARS = 4096;
 
+/** True when renet itself rejected a flag: cobra's `Error:` line with renet's usage text. A `-c` command's own "unknown flag" line never carries both. */
+function isRenetFlagRejection(stderrTail: string): boolean {
+  return (
+    isRenetFlagUnsupported(stderrTail) &&
+    /^Error: unknown (shorthand )?flag\b/im.test(stderrTail) &&
+    /\brenet\b/.test(stderrTail)
+  );
+}
+
 /**
  * The error for a non-zero ssh exit. When the remote printed why it failed (renet's cobra "Error:" line, or its last informative line), that reason IS the message, so `errors[].message` carries renet's text rather than the generic per-code hint (C11).
  */
@@ -564,7 +573,7 @@ export function buildSSHExitErrorMessage(
   machineName?: string
 ): string {
   // A flag the remote renet does not know is version skew, not a usage error: cobra's raw text says nothing about the fix.
-  if (machineName && isRenetFlagUnsupported(stderrTail)) {
+  if (machineName && isRenetFlagRejection(stderrTail)) {
     return renetOlderThanCliMessage(machineName);
   }
   let message = t('errors.term.sshExitCode', { code });

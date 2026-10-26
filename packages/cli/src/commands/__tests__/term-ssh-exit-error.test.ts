@@ -29,6 +29,12 @@ describe("term connect carries the remote's own error (C11)", () => {
     expect(message).not.toContain('unknown flag');
   });
 
+  it("leaves a -c command's own unknown-flag line alone", () => {
+    const message = buildSSHExitErrorMessage(2, 'mytool: unknown flag: --x\n', 'server-1');
+    expect(message).not.toContain('older than this CLI');
+    expect(message).toContain('unknown flag: --x');
+  });
+
   it('keeps cobra text for an unknown flag when no machine is named', () => {
     expect(buildSSHExitErrorMessage(1, 'Error: unknown flag: --datastore\n')).toContain(
       'unknown flag'

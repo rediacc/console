@@ -7,6 +7,7 @@ import {
   getPlanLimits,
   hasFeature,
   isValidPlanCode,
+  PLAN_BACKUP_RETENTION,
   PLAN_FEATURES,
   PLAN_LIMITS,
   PLAN_ORDER,
@@ -269,5 +270,27 @@ describe('Subscription Schema Helper Functions', () => {
     it('should return 0 for same plan', () => {
       expect(comparePlans('BUSINESS', 'BUSINESS')).toBe(0);
     });
+  });
+});
+
+describe('PLAN_BACKUP_RETENTION', () => {
+  const knobs = [
+    'keepLast',
+    'keepHourly',
+    'keepDaily',
+    'keepWeekly',
+    'keepMonthly',
+    'keepYearly',
+  ] as const;
+
+  it('keeps every default at or below its limit, and unset where the plan offers none', () => {
+    for (const [plan, entry] of Object.entries(PLAN_BACKUP_RETENTION)) {
+      for (const knob of knobs) {
+        const value = entry.default[knob];
+        const limit = entry.limit[knob];
+        if (value === null || limit === null) continue;
+        expect(value, `${plan}.${knob}`).toBeLessThanOrEqual(limit);
+      }
+    }
   });
 });

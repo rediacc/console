@@ -322,7 +322,7 @@ class ConfigService extends ConfigServiceBase {
     await state.setRepositories(repos);
   }
 
-  /** Self-hosted guard, the ref's config key (or "not found"), and the repo map every repo mutation edits. */
+  /** Self-hosted guard, then the ref's config key, the state and the repo map for a mutation that edits one repo in place; throws when the ref names no repo. */
   private async loadRepositoryForWrite(repoRef: string) {
     await this.requireSelfHosted();
     const key = await this.getRepositoryKey(repoRef);
