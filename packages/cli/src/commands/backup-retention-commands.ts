@@ -344,7 +344,7 @@ export function registerBackupRetention(backup: Command): void {
           `/account/api/v1/backups/retention?lineage=${encodeURIComponent(lineage)}${streamQuery}`,
           { method: 'DELETE' }
         );
-        // Clearing is NOT "keep nothing": with no row the sweep never looks at this lineage again, so every snapshot is kept. Say so, because the opposite reading would be a data-loss expectation.
+        // Clearing is NOT "keep nothing": with no row the server sweeps this lineage under the plan default, else the server default (backup-gc.service.ts planRetention). Say so, because "keep nothing" would be a data-loss expectation and "keep everything" a quota surprise.
         outputService.success(t('commands.backup.retention.cleared', { name: repoRef }));
       } catch (error) {
         handleError(error);

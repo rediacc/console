@@ -525,7 +525,7 @@ Declare how many snapshots to keep. Every knob is replaced, not merged.
 
 ### rdc backup retention clear <repo-ref>
 
-Remove the policy, so every snapshot of this repository is kept.
+Remove the declared policy, so the plan or server default applies again.
 
 **Options:**
 

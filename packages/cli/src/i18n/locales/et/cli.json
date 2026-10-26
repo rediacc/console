@@ -79,11 +79,11 @@
       },
       "retention": {
         "clear": {
-          "description": "Eemalda poliitika, nii et selle hoidla kõik hetktõmmised säilivad."
+          "description": "Eemalda määratud poliitika, nii et uuesti kehtib paketi või serveri vaikeväärtus."
         },
-        "cleared": "{{name}} säilitamispoliitika eemaldati. Nüüdsest säilivad kõik hetktõmmised.",
+        "cleared": "{{name}} säilitamispoliitika eemaldati. Nüüdsest kehtib paketi või serveri vaikeväärtus.",
         "description": "Näita serveri jõustatavat hetktõmmiste säilitamispoliitikat.",
-        "empty": "Säilitamispoliitikat ei ole määratud, seega säilivad kõik hetktõmmised.",
+        "empty": "Säilitamispoliitikat ei ole määratud, seega kehtib paketi või serveri vaikeväärtus.",
         "knobNotAnInteger": "{{flag}} vajab säilitatavate hetktõmmiste täisarvu, mitte \"{{value}}\".",
         "noKnobs": "Määra vähemalt üks reegel, näiteks --keep-last 7. Ühegi määramata jätmine kustutaks poliitika, mida \"clear\" teeb selgesõnaliselt.",
         "optionKeepDaily": "Säilita iga selle arvu päeva kohta uusim hetktõmmis",

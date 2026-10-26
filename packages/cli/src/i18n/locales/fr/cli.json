@@ -79,11 +79,11 @@
       },
       "retention": {
         "clear": {
-          "description": "Supprimer la politique, afin que chaque instantané de ce dépôt soit conservé."
+          "description": "Supprimer la politique déclarée, afin que la valeur par défaut du forfait ou du serveur s'applique de nouveau."
         },
-        "cleared": "Politique de rétention supprimée pour {{name}}. Désormais, chaque instantané est conservé.",
+        "cleared": "Politique de rétention supprimée pour {{name}}. Désormais, la valeur par défaut du forfait ou du serveur s'applique.",
         "description": "Afficher la politique de rétention des instantanés appliquée par le serveur.",
-        "empty": "Aucune politique de rétention n'est déclarée, donc chaque instantané est conservé.",
+        "empty": "Aucune politique de rétention n'est déclarée, donc la valeur par défaut du forfait ou du serveur s'applique.",
         "knobNotAnInteger": "{{flag}} attend un nombre entier d'instantanés à conserver, pas \"{{value}}\".",
         "noKnobs": "Indiquez au moins une règle, par exemple --keep-last 7. N'en indiquer aucune supprimerait la politique, ce que \"clear\" fait explicitement.",
         "optionKeepDaily": "Conserver l'instantané le plus récent de chacun de ces jours",

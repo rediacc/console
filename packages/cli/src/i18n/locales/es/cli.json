@@ -79,11 +79,11 @@
       },
       "retention": {
         "clear": {
-          "description": "Elimina la política, de modo que se conserve cada instantánea de este repositorio."
+          "description": "Elimina la política declarada, de modo que vuelve a aplicarse el valor predeterminado del plan o del servidor."
         },
-        "cleared": "Política de retención eliminada para {{name}}. A partir de ahora se conserva cada instantánea.",
+        "cleared": "Política de retención eliminada para {{name}}. A partir de ahora se aplica el valor predeterminado del plan o del servidor.",
         "description": "Muestra la política de retención de instantáneas que aplica el servidor.",
-        "empty": "No hay ninguna política de retención declarada, así que se conserva cada instantánea.",
+        "empty": "No hay ninguna política de retención declarada, así que se aplica el valor predeterminado del plan o del servidor.",
         "knobNotAnInteger": "{{flag}} necesita un número entero de instantáneas a conservar, no \"{{value}}\".",
         "noKnobs": "Indica al menos una regla, por ejemplo --keep-last 7. No indicar ninguna equivaldría a borrar la política, que es justo lo que hace \"clear\" de forma explícita.",
         "optionKeepDaily": "Conservar la instantánea más reciente de cada uno de estos días",

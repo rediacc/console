@@ -79,11 +79,11 @@
       },
       "retention": {
         "clear": {
-          "description": "Rimuovi la politica, in modo che ogni snapshot di questo repository venga conservato."
+          "description": "Rimuovi la politica dichiarata, in modo che torni ad applicarsi il valore predefinito del piano o del server."
         },
-        "cleared": "Politica di conservazione rimossa per {{name}}. Da ora in poi ogni snapshot viene conservato.",
+        "cleared": "Politica di conservazione rimossa per {{name}}. Da ora in poi si applica il valore predefinito del piano o del server.",
         "description": "Mostra la politica di conservazione degli snapshot applicata dal server.",
-        "empty": "Nessuna politica di conservazione dichiarata, quindi ogni snapshot viene conservato.",
+        "empty": "Nessuna politica di conservazione dichiarata, quindi si applica il valore predefinito del piano o del server.",
         "knobNotAnInteger": "{{flag}} richiede un numero intero di snapshot da conservare, non \"{{value}}\".",
         "noKnobs": "Indica almeno una regola, ad esempio --keep-last 7. Non indicarne nessuna equivarrebbe a cancellare la politica, cosa che \"clear\" fa esplicitamente.",
         "optionKeepDaily": "Conserva lo snapshot più recente per ciascuno di questi giorni",

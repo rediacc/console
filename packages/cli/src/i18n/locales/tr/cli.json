@@ -79,11 +79,11 @@
       },
       "retention": {
         "clear": {
-          "description": "Politikayı kaldırır, böylece bu deponun tüm anlık görüntüleri saklanır."
+          "description": "Tanımlı politikayı kaldırır, böylece planın ya da sunucunun varsayılanı yeniden geçerli olur."
         },
-        "cleared": "{{name}} için saklama politikası kaldırıldı. Artık tüm anlık görüntüler saklanacak.",
+        "cleared": "{{name}} için saklama politikası kaldırıldı. Artık planın ya da sunucunun varsayılanı geçerli.",
         "description": "Sunucunun uyguladığı anlık görüntü saklama politikasını gösterir.",
-        "empty": "Bildirilmiş bir saklama politikası yok, bu yüzden tüm anlık görüntüler saklanıyor.",
+        "empty": "Bildirilmiş bir saklama politikası yok, bu yüzden planın ya da sunucunun varsayılanı geçerli.",
         "knobNotAnInteger": "{{flag}} saklanacak anlık görüntü sayısı için tam sayı bekliyor, \"{{value}}\" değil.",
         "noKnobs": "En az bir kural verin, örneğin --keep-last 7. Hiçbirini vermemek politikayı temizlemekle aynı anlama gelir; bunu açıkça yapan komut \"clear\"dır.",
         "optionKeepDaily": "Bu kadar günün her birinden en yeni anlık görüntüyü sakla",

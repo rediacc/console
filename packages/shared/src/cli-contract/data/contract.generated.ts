@@ -554,7 +554,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "plane": "other",
       "descriptionKey": "commands.backup.retention.clear.description",
-      "label": "Remove the policy, so every snapshot of this repository is kept.",
+      "label": "Remove the declared policy, so the plan or server default applies again.",
       "options": [
         {
           "flags": "--stream <id>",

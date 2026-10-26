@@ -1694,11 +1694,11 @@
       },
       "retention": {
         "clear": {
-          "description": "Remove the policy, so every snapshot of this repository is kept."
+          "description": "Remove the declared policy, so the plan or server default applies again."
         },
-        "cleared": "Retention policy removed for {{name}}. Every snapshot is kept from now on.",
+        "cleared": "Retention policy removed for {{name}}. The plan or server default applies from now on.",
         "description": "Show the snapshot retention policy the server is enforcing.",
-        "empty": "No retention policy is declared, so every snapshot is kept.",
+        "empty": "No retention policy is declared, so the plan or server default applies.",
         "knobNotAnInteger": "{{flag}} needs a whole number of snapshots to keep, not \"{{value}}\".",
         "noKnobs": "Give at least one rule, for example --keep-last 7. Setting none would clear the policy, which \"clear\" does explicitly.",
         "optionKeepDaily": "Keep the newest snapshot from each of this many days",
