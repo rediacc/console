@@ -170,7 +170,7 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
 
 ### Account: issuer, token mode, grants
 
-- [ ] I1 [account-issuer] ExecutorIssuer, the 'service-binding' mode, audit and purge, after M1 (env.ts).
+- [x] I1 [account-issuer] ExecutorIssuer, the 'service-binding' mode, audit and purge, after M1 (env.ts).
   - Build ExecutorIssuer and the IssuerService as in Design item 3. The `issuer_key` migration is the next drizzle number.
   - `EXECUTOR_ISSUER_ORG_ID` is an optional var.
   - `IP_BINDING_MODES` gains `'service-binding'`, allowed only with `proxy:exec`.
@@ -186,6 +186,7 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
     - TTL is between 30 and 60 minutes;
     - purge deletes only rows past the grace window;
     - `ExecutorIssuer.prototype.fetch` is undefined.
+    (ticked) 2026-10-26T04:25:20Z by d778be9d: account 5c4daf48 and console 1d2cb1f3c: ExecutorIssuer, service-binding mode, migration 0065, purge; executor-issuer, api-token-service-binding, api-token-purge, cron-wiring vitest rc=0; typecheck rc=0
   
   -- Owns: workers/account/src/index.ts, private/account/src/entry/cloudflare.ts, private/account/src/services/executor-issuer.service.ts, private/account/src/services/api-token.service.ts, private/account/src/types/api-token.ts, private/account/src/types/env.ts, private/account/src/middleware/api-token.ts, private/account/src/routes/api-tokens.ts, private/account/src/db/schema.ts, private/account/drizzle/**, private/account/tests/integration/executor-issuer.test.ts, private/account/tests/integration/api-token-service-binding.test.ts, private/account/tests/integration/api-token-purge.test.ts. Accept: `cd private/account && npx vitest run tests/integration/executor-issuer.test.ts tests/integration/api-token-service-binding.test.ts tests/integration/api-token-purge.test.ts tests/integration/cron-wiring.test.ts` exits 0 and `npm run typecheck` exits 0.
 - [x] I2 [account-grants] Grants keyed on the executor principal (Design item 4), after I1. A grant recorded under issued token A is found by a config-token request under issued token B with the same issuer_key. A grant recorded by a token with a different issuer_key, or by an ordinary proxy:exec token, is not found. Legacy rows keep working. -- Owns: private/account/src/services/config.service.ts, private/account/src/routes/configs.ts, private/account/tests/integration/executor-grant-principal.test.ts. Accept: `cd private/account && npx vitest run tests/integration/executor-grant-principal.test.ts tests/integration/proxy-*.test.ts` exits 0.
@@ -197,8 +198,10 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
 
 ### CLI executor
 
-- [ ] R2 [cli] The unknown-session code. The three `Unknown or expired session` throws (packages/cli/src/services/serve/sessions.ts:131,:221,:242) carry `code: 'EXECUTOR_SESSION_UNKNOWN'`, and statusFor (packages/cli/src/services/serve/server.ts:67-78) puts it in the 404 body. Config-fetch SessionErrors stay uncoded. The test asserts the code on an exec naming a wiped session and no dispatch on that path. -- Owns: packages/cli/src/services/serve/sessions.ts, packages/cli/src/services/serve/server.ts, packages/cli/src/services/serve/__tests__/session-unknown-code.test.ts. Accept: `cd packages/cli && npx vitest run src/services/serve/__tests__/session-unknown-code.test.ts` exits 0 and `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
-- [ ] P2 [cli] The self-check sends `{ token, self: true }` (packages/cli/src/services/serve/auth.ts:139-166). The test asserts the body shape, and that a server answering only the legacy shape still yields the audit capability. -- Owns: packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/__tests__/audit-capability-self.test.ts. Accept: `cd packages/cli && npx vitest run src/services/serve/__tests__/audit-capability-self.test.ts src/services/serve/__tests__/grand-repo-guard.test.ts` exits 0.
+- [x] R2 [cli] The unknown-session code. The three `Unknown or expired session` throws (packages/cli/src/services/serve/sessions.ts:131,:221,:242) carry `code: 'EXECUTOR_SESSION_UNKNOWN'`, and statusFor (packages/cli/src/services/serve/server.ts:67-78) puts it in the 404 body. Config-fetch SessionErrors stay uncoded. The test asserts the code on an exec naming a wiped session and no dispatch on that path. -- Owns: packages/cli/src/services/serve/sessions.ts, packages/cli/src/services/serve/server.ts, packages/cli/src/services/serve/__tests__/session-unknown-code.test.ts. Accept: `cd packages/cli && npx vitest run src/services/serve/__tests__/session-unknown-code.test.ts` exits 0 and `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
+    (ticked) 2026-10-26T04:25:13Z by d778be9d: commit 3bd4b6e7f: EXECUTOR_SESSION_UNKNOWN on the three throws and in the 404 body; session-unknown-code test rc=0; tsc rc=0
+- [x] P2 [cli] The self-check sends `{ token, self: true }` (packages/cli/src/services/serve/auth.ts:139-166). The test asserts the body shape, and that a server answering only the legacy shape still yields the audit capability. -- Owns: packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/__tests__/audit-capability-self.test.ts. Accept: `cd packages/cli && npx vitest run src/services/serve/__tests__/audit-capability-self.test.ts src/services/serve/__tests__/grand-repo-guard.test.ts` exits 0.
+    (ticked) 2026-10-26T04:25:47Z by d778be9d: commit 3bd4b6e7f: the self-check sends { token, self: true }; audit-capability-self test rc=0 with grand-repo-guard
 
 ### Proxy Worker, configs, image, deploy
 
@@ -217,7 +220,7 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
     - the container env never holds the issued token.
   
   -- Owns: workers/proxy/src/**, .ci/rediacc_ci/quality/proxy_wrangler_dev_e2e.py. Accept: `cd workers/proxy && npm run test:unit` exits 0, and `npm run check:ci-proxy-wrangler-dev-e2e` exits 0 on a docker host.
-- [ ] K1 [proxy-config] Six configs plus refusals (Design item 7).
+- [x] K1 [proxy-config] Six configs plus refusals (Design item 7).
   - Add `.ci/rediacc_ci/deploy/proxy_configs.py` (`generate`, `--check`, `config_refusals`) and the template.
   - Rename wrangler.toml to wrangler.eu.toml and generate the other five. Bench gains ISSUER, `[version_metadata]` and max_instances 3, and loses the EXECUTOR_TOKEN comment. Dev drops EXECUTOR_TOKEN.
   - regions.json gains the proxy names. well-known.env and well_known.py gain WK_PROXY_US_HOST, WK_PROXY_ASIA_HOST, WK_PROXY_EDGE_EU_HOST, WK_PROXY_EDGE_US_HOST and WK_PROXY_EDGE_ASIA_HOST.
@@ -234,15 +237,17 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
     - an `[env.x]` table;
     - an `account_id` key;
     - a stale generated file.
+    (ticked) 2026-10-26T04:25:15Z by d778be9d: commit 0bd5f6b4a: six generated configs, config_refusals, well-known hosts, account EXECUTOR bindings; pytest test_deploy_proxy_configs and preview reaping rc=0; proxy_configs --check rc=0
     
     Each must be refused by name.
   
   -- Owns: workers/proxy/wrangler*.toml, workers/proxy/wrangler.template.toml, workers/account/wrangler.*.toml, regions.json, .ci/config/well-known.env, .ci/rediacc_ci/well_known.py, .ci/rediacc_ci/deploy/proxy_configs.py, .ci/rediacc_ci/tests/test_deploy_proxy_configs.py, .ci/rediacc_ci/tests/gates/test_gate_preview_worker_reaping.py. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_deploy_proxy_configs.py .ci/rediacc_ci/tests/gates/test_gate_preview_worker_reaping.py` exits 0 and `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs --check` exits 0.
-- [ ] A1 [artifacts] Durable versioned executor artifacts (Design item 8), after resolving U3. Add `executor_artifacts stage|fetch|stage-local`, where stage-local serves bench and local runs from a tree build. Tests use a fake R2 (`aws` on PATH) and assert:
+- [x] A1 [artifacts] Durable versioned executor artifacts (Design item 8), after resolving U3. Add `executor_artifacts stage|fetch|stage-local`, where stage-local serves bench and local runs from a tree build. Tests use a fake R2 (`aws` on PATH) and assert:
   - write-once (a second stage with equal sha256s skips, unequal refuses);
   - a fetch with one flipped byte refuses;
   - the manifest carries version and git sha;
   - retention never selects the current or previous production version.
+    (ticked) 2026-10-26T04:25:17Z by d778be9d: commit 5a34c566b: executor_artifacts stage/fetch/stage-local/retain; pytest test_deploy_executor_artifacts rc=0 (15)
   
   -- Owns: .ci/rediacc_ci/deploy/executor_artifacts.py, .ci/rediacc_ci/tests/test_deploy_executor_artifacts.py. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_deploy_executor_artifacts.py` exits 0.
 - [ ] A2 [proxy-image] The Dockerfile consumes workers/proxy/stage/: it copies the bundle, renet and natives, runs `sha256sum -c` against the manifest, has no `npm ci` or source build, pins the base image by digest, and keeps the `renet version` check. The image smoke stages through `executor_artifacts stage-local`. -- Owns: workers/proxy/Dockerfile, workers/proxy/stage/.gitkeep, .ci/rediacc_ci/quality/proxy_image_smoke.py, .ci/scripts/quality/check_proxy_image_smoke.py. Accept: `npm run check:ci-proxy-image-smoke` exits 0, and the built image's `node cli-bundle.cjs --version` equals the staged manifest version.
@@ -259,7 +264,7 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
   - Tests pin the six configs' argv, a us config carrying an eu binding refused before the build, the version-id parse, the ready failure exiting 1, and no closing line naming EXECUTOR_TOKEN.
   
   -- Owns: .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py, .ci/rediacc_ci/tests/goldens/twins/deploy.deploy-proxy.jsonl, .ci/config/secret-supply.json, .ci/config/bws-secret-map.json, .ci/config/env-manifest.json, docs/environment-variables.md. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py` exits 0 and `grep -rn EXECUTOR_TOKEN workers/proxy .ci/rediacc_ci/deploy .ci/config` prints nothing.
-- [ ] D2 [cd] The CD steps (Design item 9), after D1. Add `deploy_record.py` (before and after records, `wrangler d1 time-travel info <db> --json` taken before migrations) and `console_executor.py` (`--enable|--disable`, `wrangler secret put|delete EXECUTOR_MODE`, value on stdin).
+- [x] D2 [cd] The CD steps (Design item 9), after D1. Add `deploy_record.py` (before and after records, `wrangler d1 time-travel info <db> --json` taken before migrations) and `console_executor.py` (`--enable|--disable`, `wrangler secret put|delete EXECUTOR_MODE`, value on stdin).
   - cd-deploy-account.yml gains the `version` input, `actions: read` where artifacts are downloaded, the edge-only stage job, and the step order of Design item 9.
   - The enable step reads `if: steps.proxy_smoke.outcome == 'success'`. The reverse-order rollback step reads `if: failure()`.
   - cd-v2.yml (edge and hotfix) and promote-stable.yml pass `version`. verify-stable keeps needing deploy-account-stable, which now contains the proxy steps.
@@ -269,16 +274,18 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
     - the rollback order;
     - that both callers pass `version`;
     - that no step echoes a secret value.
+    (ticked) 2026-10-26T04:24:47Z by d778be9d: commit 907cd2892: per-region proxy deploy, smoke, executor enable on smoke success, reverse rollback; pytest test_deploy_deploy_record, test_deploy_console_executor, test_workflow_cd_deploy_account_proxy rc=0; actionlint rc=0; check:ci-parity rc=0
   
   -- Owns: .github/workflows/cd-deploy-account.yml, .github/workflows/cd-v2.yml, .github/workflows/promote-stable.yml, .ci/rediacc_ci/deploy/deploy_record.py, .ci/rediacc_ci/deploy/console_executor.py, .ci/rediacc_ci/tests/test_deploy_deploy_record.py, .ci/rediacc_ci/tests/test_deploy_console_executor.py, .ci/rediacc_ci/tests/test_workflow_cd_deploy_account_proxy.py. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_deploy_deploy_record.py .ci/rediacc_ci/tests/test_deploy_console_executor.py .ci/rediacc_ci/tests/test_workflow_cd_deploy_account_proxy.py` exits 0, `actionlint .github/workflows/cd-deploy-account.yml .github/workflows/cd-v2.yml .github/workflows/promote-stable.yml` exits 0, and `npm run check:ci-parity` exits 0.
 
 ### Gates
 
 - [ ] G1 [gates] The cost guard over all configs. CONFIGS (.ci/scripts/quality/check_proxy_cost_guard.py:50) becomes a glob over workers/proxy/wrangler*.toml. Every config needs `max_instances` ≤ 3 and `sleepAfter` ≤ 120 s. The deployable set (every config except wrangler.dev.toml) has at most 7 members and a total of at most 21. MAX_INSTANCES_BUDGET becomes 3, citing the ruling. -- Owns: .ci/scripts/quality/check_proxy_cost_guard.py, .ci/rediacc_ci/tests/test_quality_proxy_cost_guard.py. Accept: `npm run check:ci-proxy-cost-guard` exits 0, and exits 1 on each of a planted `max_instances = 4`, a planted eighth deployable config, and a planted total of 22.
-- [ ] G2 [gates] The T3 wiring test over all proxy configs, plus the binding wiring test. observability-export-wiring.test.ts discovers every deployable workers/proxy config and expects its region's pair with `persist = false`. The new proxy-binding-wiring test asserts:
+- [x] G2 [gates] The T3 wiring test over all proxy configs, plus the binding wiring test. observability-export-wiring.test.ts discovers every deployable workers/proxy config and expects its region's pair with `persist = false`. The new proxy-binding-wiring test asserts:
   - each account config's EXECUTOR names its own target's proxy;
   - each proxy's ACCOUNT and ISSUER name its own target's account Worker, edge to edge and stable to stable;
   - no wrangler config outside workers/proxy (workers/www, workers/account and any generated preview config) names entrypoint `ExecutorIssuer` or `CloudflareInternal`.
+    (ticked) 2026-10-26T04:24:49Z by d778be9d: account 5a34c5e7 (pointer 99551c0da): export wiring over every deployable proxy config and the binding wiring test; vitest rc=0 (99); a planted ISSUER in www fails it
   
   -- Owns: private/account/tests/integration/observability-export-wiring.test.ts, private/account/tests/integration/proxy-binding-wiring.test.ts. Accept: `cd private/account && npx vitest run tests/integration/observability-export-wiring.test.ts tests/integration/proxy-binding-wiring.test.ts` exits 0, and a planted ISSUER entry in workers/www/wrangler.toml makes it fail.
 - [x] G3 [gates] A CI dry run for each target. `check:ci-proxy-deploy-dry-run` runs `deploy_proxy --dry-run` for the six CD targets and bench with fake credentials, and needs no image build. It is registered in package.json and scripts/ci-runner/manifest.ts with a `step` entry pointing to a new ci-quality.yml step, and gates.lock.json is regenerated. -- Owns: .ci/scripts/quality/check_proxy_deploy_dry_run.py, package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .github/workflows/ci-quality.yml. Accept: `npm run check:ci-proxy-deploy-dry-run` exits 0 and `npm run check:ci-parity` exits 0.
@@ -286,7 +293,8 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
 
 ### Telemetry, nightly, docs, live tooling
 
-- [ ] T1 [telemetry] Proxy hosts in the delivery check. A `PROXY_HOSTS` list (well-known hosts of the deployed proxies, starting with bench and eu and grown by each live box) is probed at `/v1/health` with the probe header and judged as `rediacc-proxy`. Account hosts keep `/account/api/v1/health`. -- Owns: .ci/rediacc_ci/ops/telemetry_delivery.py, .ci/rediacc_ci/tests/test_ops_telemetry_delivery.py. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_ops_telemetry_delivery.py` exits 0, including a case where a proxy host probed at the account path would have 401ed.
+- [x] T1 [telemetry] Proxy hosts in the delivery check. A `PROXY_HOSTS` list (well-known hosts of the deployed proxies, starting with bench and eu and grown by each live box) is probed at `/v1/health` with the probe header and judged as `rediacc-proxy`. Account hosts keep `/account/api/v1/health`. -- Owns: .ci/rediacc_ci/ops/telemetry_delivery.py, .ci/rediacc_ci/tests/test_ops_telemetry_delivery.py. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_ops_telemetry_delivery.py` exits 0, including a case where a proxy host probed at the account path would have 401ed.
+    (ticked) 2026-10-26T04:25:22Z by d778be9d: commit 8e0566b8e: proxy hosts probed at /v1/health; test_ops_telemetry_delivery rc=0 including the account-path 401 case
 - [ ] N1 [ci] Fix the red nightly Console CI (Context item 7). For each failing step, apply the remedy the gate names: upgrade body-parser and fast-uri in package-lock.json; upgrade docker/login-action, or record a BLOCKER with its reason; handle the pin, dependency and Go freshness items (golang.org/x/crypto stays put while v0.58.0 carries GO-2026-5932); update the OBS ceph pin; settle the overdue plan files. Re-read the causes with `.ci/scripts/ci/ci-trace.py --scheduled` at box time, since nightly causes change daily. -- Owns: the files each remedy names (package-lock.json, .github/workflows pins, .ci/policy/*, private/renet go.mod if demanded), recorded on the tick line. Accept: each failing step's script exits 0 on the branch (`.ci/scripts/ci/ci-trace.py --job <id> --steps` names it), and after merge `.ci/scripts/ci/ci-trace.py --scheduled` shows Console CI GREEN.
 - [ ] E1 [e2e] The live console probe spec, after D1 (profile). `27-90-live-executor.test.ts` is skipped unless `LIVE_CONSOLE_ORIGIN` is set. It logs in as the executor-org member from the `live-console` profile, unlocks the config, and runs `machine status <machine>` from the portal console. It asserts success, the absence of the mock warning text, and an `event_log` row of type `cli.command` naming the user (read through `wrangler d1 execute`). It prints the run's output and the event id. -- Owns: private/account/e2e/tests/27-console/27-90-live-executor.test.ts. Accept: the spec is listed by `npx playwright test --list` and is skipped without `LIVE_CONSOLE_ORIGIN`.
 - [x] W1 [docs] Documentation:
