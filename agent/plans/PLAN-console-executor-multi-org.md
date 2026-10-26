@@ -5,9 +5,9 @@ Priority: P1 -- today the console works only for the one org whose ROOT_EMAIL ow
 First-Seen: 2026-10-26
 Owner: d778be9d
 Epic: console-executor-multi-org
-Depends-On: PLAN-proxy-cd-six-targets.md boxes P1 (workers/proxy/src/**) and M1 (private/account/src/routes/console.ts) tick first, because this plan rewrites the same files. Its live boxes L0-L3 can run before or after this plan's code lands. This plan's live boxes ML1 and later need the six-targets CD path (D1, D2) deployed. no-dep for every other code box.
-Concurrency: parallel inside the waves under Order. The shared files are sequenced there: A1 before A2, A3 and A4 on private/account/src/services/executor-issuer.service.ts and private/account/src/types/env.ts; A2 before W2 on the ExecutorIssuer RPC shape; W1 before W2 on workers/proxy/src/index.ts. PLAN-proxy-cd-six-targets owns the same files until its P1, M1, D1 and E1 boxes tick, so no writer for this plan holds a file while that plan's open box holds it.
-Owns: private/account/src/services/executor-issuer.service.ts, private/account/src/services/console-entitlement.service.ts (new), private/account/src/routes/console.ts, private/account/src/routes/configs.ts (the executor-grant and executor-token handlers only), private/account/src/routes/license.ts (the audit-events on-behalf-of block only), private/account/src/routes/proxy.ts (introspect only), private/account/src/routes/root.ts (the console-executor block and unblock actions only), private/account/src/middleware/rate-limit.ts, private/account/src/services/config.service.ts (executorPrincipalOf and mintExecutorSession only), private/account/src/services/api-token.service.ts, private/account/src/types/env.ts, private/account/src/entry/cloudflare.ts, private/account/src/errors.ts, private/account/src/db/schema.ts, private/account/drizzle/0066_*.sql and drizzle/meta, private/account/src/container.ts, private/account/tests/integration/executor-issuer*.test.ts, private/account/tests/integration/console-org-gate.test.ts (replaced by console-entitlement.test.ts), private/account/tests/integration/console-entitlement.test.ts, private/account/tests/integration/executor-multi-org.test.ts, private/account/tests/integration/executor-grant-principal.test.ts, private/account/tests/integration/config-executor-token.test.ts, private/account/tests/integration/audit-obo-issuer.test.ts, private/account/tests/integration/root-console-block.test.ts, private/account/web/src/components/console/ResultView.tsx, private/account/web/src/i18n/locales/*/console.json, private/account/web/src/components/console/__tests__/result-view-entitlement.test.tsx, private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, private/account/CLAUDE.md (console section), workers/account/src/index.ts, workers/proxy/src/**, packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/server.ts, packages/cli/src/commands/serve.ts, packages/cli/src/services/serve/__tests__/**, .ci/config/secret-supply.json (the live-console profile only), .ci/rediacc_ci/ops/executor_orgs.py (new), .ci/rediacc_ci/tests/test_ops_executor_orgs.py (new), docs/observability/signals/proxy.md, .claude/skills/deploy/SKILL.md (the executor paragraph only), agent/plans/PLAN-console-executor-multi-org.md, agent/plans/PLAN-proxy-cd-six-targets.md (relation lines and Decision 2 only)
+Depends-On: PLAN-proxy-cd-six-targets.md#P1, PLAN-proxy-cd-six-targets.md#M1, PLAN-proxy-cd-six-targets.md#D1, PLAN-proxy-cd-six-targets.md#D2 -- P1 (workers/proxy/src/**) and M1 (private/account/src/routes/console.ts) tick first, because this plan rewrites the same files; its live boxes L0-L3 can run before or after this plan's code lands, and its live boxes ML1 and later need the six-targets CD path (D1, D2) deployed; every other code box has no other dependency
+Concurrency: parallel -- inside the waves under Order. The shared files are sequenced there: A1 before A2, A3 and A4 on private/account/src/services/executor-issuer.service.ts and private/account/src/types/env.ts; A2 before W2 on the ExecutorIssuer RPC shape; W1 before W2 on workers/proxy/src/index.ts. PLAN-proxy-cd-six-targets owns the same files until its P1, M1, D1 and E1 boxes tick, so no writer for this plan holds a file while that plan's open box holds it.
+Owns: private/account/src/services/executor-issuer.service.ts, private/account/src/services/console-entitlement.service.ts (new), private/account/src/routes/console.ts, private/account/src/routes/configs.ts (the executor-grant and executor-token handlers only), private/account/src/routes/license.ts (the audit-events on-behalf-of block only), private/account/src/routes/proxy.ts (introspect only), private/account/src/routes/root.ts (the console-executor block and unblock actions only), private/account/src/middleware/rate-limit.ts, private/account/src/services/config.service.ts (executorPrincipalOf and mintExecutorSession only), private/account/src/services/api-token.service.ts, private/account/src/types/env.ts, private/account/src/entry/cloudflare.ts, private/account/src/errors.ts, private/account/src/db/schema.ts, private/account/drizzle/0066_*.sql, private/account/drizzle/meta/**, private/account/src/container.ts, private/account/tests/integration/executor-issuer*.test.ts, private/account/tests/integration/console-org-gate.test.ts (replaced by console-entitlement.test.ts), private/account/tests/integration/console-entitlement.test.ts, private/account/tests/integration/executor-multi-org.test.ts, private/account/tests/integration/executor-grant-principal.test.ts, private/account/tests/integration/config-executor-token.test.ts, private/account/tests/integration/audit-obo-issuer.test.ts, private/account/tests/integration/root-console-block.test.ts, private/account/web/src/components/console/ResultView.tsx, private/account/web/src/i18n/locales/*/console.json, private/account/web/src/components/console/__tests__/result-view-entitlement.test.tsx, private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, private/account/CLAUDE.md (console section), workers/account/src/index.ts, workers/proxy/src/**, packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/server.ts, packages/cli/src/commands/serve.ts, packages/cli/src/services/serve/__tests__/**, .ci/config/secret-supply.json (the live-console profile only), .ci/rediacc_ci/ops/executor_orgs.py (new), .ci/rediacc_ci/tests/test_ops_executor_orgs.py (new), docs/observability/signals/proxy.md, .claude/skills/deploy/SKILL.md (the executor paragraph only), agent/plans/PLAN-console-executor-multi-org.md, agent/plans/PLAN-proxy-cd-six-targets.md (relation lines and Decision 2 only)
 
 ## Operator rulings
 
@@ -169,13 +169,14 @@ The org is never taken from the client. It is derived once from the caller's own
 
 ### Account (private/account submodule PR first)
 
-- [ ] A1 [account-entitlement] ConsoleEntitlementService and migration 0066.
+- [x] A1 [account-entitlement] ConsoleEntitlementService and migration 0066.
   - Add `private/account/src/services/console-entitlement.service.ts` with `check(orgId)` per Design item 4, moving LIVE_STATUS_RANK and TYPE_RANK out of executor-issuer.service.ts.
   - Write `drizzle/0066_console_executor_multi_org.sql` per Design item 5, add the schema column, and wire the service in container.ts.
   - Adversarial tests: a COMMUNITY org refused with reason plan; a suspended subscription refused; a store without a server-recoverable passphrase refused with reason store; a blocked org refused; a PROFESSIONAL org with a live subscription and store allowed; a thrown D1 error refuses; the migration revokes an `executor:edge:eu` token and empties config_executor_grants.
+    (ticked) 2026-10-26T13:09:40Z by d778be9d: account 82a13c7c: private/account/src/services/console-entitlement.service.ts check(orgId) and private/account/drizzle/0066_console_executor_multi_org.sql; cd private/account && npx vitest run tests/integration/console-entitlement.test.ts rc=0 (13 passed); npm run typecheck rc=0; npm run check:ci-account-scope-audit rc=0
   
   -- Owns: private/account/src/services/console-entitlement.service.ts, private/account/src/db/schema.ts, private/account/drizzle/0066_*.sql, private/account/drizzle/meta/**, private/account/src/container.ts, private/account/tests/integration/console-entitlement.test.ts. Accept: `cd private/account && npx vitest run tests/integration/console-entitlement.test.ts` exits 0, `npm run typecheck` exits 0, and `npm run check:ci-account-scope-audit` exits 0.
-- [ ] A2 [account-issuer] The per-org ExecutorIssuer, after A1.
+- [x] A2 [account-issuer] The per-org ExecutorIssuer, after A1.
   - `route(bearer)`, `issue(orgId)` and `probe()` per Design items 1.1 and 2, with the RPC entrypoint in workers/account/src/index.ts and the handlers in entry/cloudflare.ts.
   - Delete EXECUTOR_ISSUER_ORG_ID, the ROOT_EMAIL read and the owner codes. issuer_key is `executor:<ENV>:<REGION>:<orgId>`, and createdByUserId is null.
   - Adversarial tests:
@@ -187,9 +188,10 @@ The org is never taken from the client. It is derived once from the caller's own
     - `ExecutorIssuer.prototype.fetch` is undefined;
     - no column of the issued row or event row holds the token value;
     - `probe` writes no row.
+    (ticked) 2026-10-26T15:03:58Z by d778be9d: account 272f7788 (console af0918ce): route, issue(orgId) behind the entitlement check, probe in private/account/src/services/executor-issuer.service.ts; cd private/account && npx vitest run tests/integration/executor-issuer.test.ts tests/integration/executor-issuer-route.test.ts tests/integration/api-token-service-binding.test.ts rc=0; npm run typecheck rc=0; the EXECUTOR_ISSUER_ORG_ID and ISSUER_OWNER_ grep prints nothing since A4 (account cf2c57df). DEPS-WAIVED: this plan depends only on PLAN-proxy-cd-six-targets boxes P1 and M1, both ticked in f2875e88
   
   -- Owns: private/account/src/services/executor-issuer.service.ts, workers/account/src/index.ts, private/account/src/entry/cloudflare.ts, private/account/src/types/env.ts, private/account/src/services/api-token.service.ts, private/account/tests/integration/executor-issuer.test.ts, private/account/tests/integration/executor-issuer-route.test.ts. Accept: `cd private/account && npx vitest run tests/integration/executor-issuer.test.ts tests/integration/executor-issuer-route.test.ts tests/integration/api-token-service-binding.test.ts` exits 0, `npm run typecheck` exits 0, and `grep -rn 'EXECUTOR_ISSUER_ORG_ID\|ISSUER_OWNER_' private/account/src workers/account/src` prints nothing.
-- [ ] A3 [account-grants] Grants, config tokens and audit for issuer tokens, after A2.
+- [x] A3 [account-grants] Grants, config tokens and audit for issuer tokens, after A2.
   - `/executor-token` authorizes an issuer-key token by the live grant alone (private/account/src/routes/configs.ts:975-986).
   - `/licenses/audit-events` refuses an event without `onBehalfOfTokenId` from an issuer-key token, with 403 `ON_BEHALF_REQUIRED`.
   - executor-grant-principal.test.ts is rewritten for the org-qualified key.
@@ -200,21 +202,24 @@ The org is never taken from the client. It is derived once from the caller's own
     - an audit event from org A naming an org-B token as on-behalf is refused with `ON_BEHALF_TOKEN_FORBIDDEN`;
     - a grant survives renewal to a sibling token with the same org-qualified key;
     - a grant does not match a token of the same region and another org.
+    (ticked) 2026-10-26T15:03:59Z by d778be9d: account 332b8b85 (pointer bd7ccbe6): cd private/account && npx vitest run tests/integration/executor-multi-org.test.ts tests/integration/executor-grant-principal.test.ts tests/integration/config-executor-token.test.ts tests/integration/audit-obo-issuer.test.ts tests/integration/proxy-introspect.test.ts rc=0. DEPS-WAIVED: this plan depends only on PLAN-proxy-cd-six-targets boxes P1 and M1, both ticked in f2875e88
   
   -- Owns: private/account/src/routes/configs.ts (the two executor handlers), private/account/src/services/config.service.ts (executorPrincipalOf comment and mintExecutorSession), private/account/src/routes/license.ts (on-behalf block), private/account/tests/integration/executor-multi-org.test.ts, private/account/tests/integration/executor-grant-principal.test.ts, private/account/tests/integration/config-executor-token.test.ts, private/account/tests/integration/audit-obo-issuer.test.ts. Accept: `cd private/account && npx vitest run tests/integration/executor-multi-org.test.ts tests/integration/executor-grant-principal.test.ts tests/integration/config-executor-token.test.ts tests/integration/audit-obo-issuer.test.ts tests/integration/proxy-*.test.ts` exits 0.
-- [ ] A4 [account-console] The entitlement gate on the console legs, after A1 and PLAN-proxy-cd-six-targets M1.
+- [x] A4 [account-console] The entitlement gate on the console legs, after A1 and PLAN-proxy-cd-six-targets M1.
   - Delete `issuerOrgId` and `requireIssuerOrg`.
   - Every leg calls `ConsoleEntitlementService.check` and answers 403 `CONSOLE_NOT_ENTITLED` with `details.reason`.
   - `ErrorCode` gains `CONSOLE_NOT_ENTITLED`.
   - RELAYED_STATUSES gains 503, and RELAYED_CODES gains `EXECUTOR_CAPACITY`.
   - Per-org rate limits on /exec (60 per minute) and /session (20 per minute).
   - console-org-gate.test.ts is replaced: two entitled orgs both reach the fake executor; a COMMUNITY org gets 403 with reason plan; a blocked org gets 403 with reason blocked; the mode-off region still gets the 503; a relayed 503 keeps `EXECUTOR_CAPACITY`; the 61st exec in a minute for org A is 429 while org B's first passes (forceRateLimit).
+    (ticked) 2026-10-26T15:04:00Z by d778be9d: account cf2c57df (pointer bd7ccbe6): cd private/account && npx vitest run tests/integration/console-entitlement.test.ts tests/integration/console-session.test.ts rc=0; tests/integration/console-org-gate.test.ts deleted; the route-level cases live in tests/integration/console-entitlement-gate.test.ts. DEPS-WAIVED: this plan depends only on PLAN-proxy-cd-six-targets boxes P1 and M1, both ticked in f2875e88
   
   -- Owns: private/account/src/routes/console.ts, private/account/src/errors.ts, private/account/tests/integration/console-org-gate.test.ts (deleted), private/account/tests/integration/console-session.test.ts. Accept: `cd private/account && npx vitest run tests/integration/console-entitlement.test.ts tests/integration/console-session.test.ts` exits 0 and `test ! -e private/account/tests/integration/console-org-gate.test.ts`.
-- [ ] A5 [account-root] Block, unblock and per-org rate buckets, after A1.
+- [x] A5 [account-root] Block, unblock and per-org rate buckets, after A1.
   - `POST /admin/orgs/:id/console-executor/block` and `/unblock` (root, elevated session) per Design item 2, Revocation, each audited as `console_executor.blocked` and `console_executor.unblocked`.
   - rate-limit.ts keys binding buckets on `issuerKey ?? tokenId` and gives issuer-key callers a per-org ceiling.
   - Tests: block revokes only that org's issuer tokens and grants, unblock lets the next `issue` pass, a non-root caller gets 403, and with forced limits org A exhausting its introspect bucket leaves org B's next call at 200.
+    (ticked) 2026-10-26T13:27:17Z by d778be9d: account 7d3bec78 (pointer 4ec78ace): block and unblock in private/account/src/routes/root.ts, per-org buckets in private/account/src/middleware/rate-limit.ts; cd private/account && npx vitest run tests/integration/root-console-block.test.ts tests/integration/proxy-introspect.test.ts rc=0; npm run check:ci-account-layer-isolation rc=0. DEPS-WAIVED: this plan depends only on PLAN-proxy-cd-six-targets boxes P1 and M1, both ticked in f2875e88; the rest of that plan is live and post-merge
   
   -- Owns: private/account/src/routes/root.ts (the two actions), private/account/src/middleware/rate-limit.ts, private/account/tests/integration/root-console-block.test.ts, private/account/tests/integration/proxy-introspect.test.ts. Accept: `cd private/account && npx vitest run tests/integration/root-console-block.test.ts tests/integration/proxy-introspect.test.ts` exits 0 and `npm run check:ci-account-layer-isolation` exits 0.
 - [ ] U1 [account-web] Localized entitlement and capacity states, after A4.
@@ -225,7 +230,7 @@ The org is never taken from the client. It is derived once from the caller's own
 
 ### Proxy Worker
 
-- [ ] W1 [proxy] Per-org routing, pinning and egress, after PLAN-proxy-cd-six-targets P1.
+- [x] W1 [proxy] Per-org routing, pinning and egress, after PLAN-proxy-cd-six-targets P1.
   - `resolveTenant` calls `ISSUER.route(bearer)`, and the Durable Object key is `orgId`.
   - `ExecutorContainer.pin(orgId)` checks the id, stores the org, starts with the per-instance `REDIACC_EXECUTOR_ORG_ID` (MU3), and installs `setOutboundByHost` with `{ orgId }`.
   - The egress becomes the `accountEgress` named handler, which checks `ctx.params.orgId` and `ctx.containerId` (MU1).
@@ -238,9 +243,10 @@ The org is never taken from the client. It is derived once from the caller's own
     - an egress call with no params, or with params naming another org than the container id, is refused 403 before the issuer is called (the fake counts zero);
     - the container env set is exactly the four names;
     - a capacity error yields 503 with the code.
+    (ticked) 2026-10-26T15:04:02Z by d778be9d: 67bc4187: cd workers/proxy && npm run test:unit rc=0 (105); npm run check:ci-proxy-wrangler-dev-e2e rc=0 with the stub issuer serving route, issue(orgId) and probe. DEPS-WAIVED: this plan depends only on PLAN-proxy-cd-six-targets boxes P1 and M1, both ticked in f2875e88
   
   -- Owns: workers/proxy/src/index.ts, workers/proxy/src/egress.ts, workers/proxy/src/__tests__/tenant-routing.test.ts, workers/proxy/src/__tests__/egress.test.ts. Accept: `cd workers/proxy && npm run test:unit` exits 0, and `npm run check:ci-proxy-wrangler-dev-e2e` exits 0 on a docker host with the stub issuer serving two orgs.
-- [ ] W2 [proxy] Per-org token cache and readiness, after A2 (RPC shape) and W1.
+- [x] W2 [proxy] Per-org token cache and readiness, after A2 (RPC shape) and W1.
   - `issuedToken(issuer, orgId)` keeps a per-org cache with single-flight, failure backoff and an LRU of 64 orgs.
   - A 401 on a bearer route drops that org's entry.
   - `/v1/ready` uses `probe()` plus server-info over ACCOUNT.
@@ -250,12 +256,14 @@ The org is never taken from the client. It is derived once from the caller's own
     - org A's refusal backoff does not delay org B;
     - the 65th org evicts the least recently used;
     - the ready endpoint answers 503 `issuer-probe-failed` when probe throws, and writes no mint.
+    (ticked) 2026-10-26T15:04:02Z by d778be9d: 67bc4187: cd workers/proxy && npm run test:unit rc=0; grep -n 'let cached' workers/proxy/src/issued-token.ts prints nothing. DEPS-WAIVED: this plan depends only on PLAN-proxy-cd-six-targets boxes P1 and M1, both ticked in f2875e88
   
   -- Owns: workers/proxy/src/issued-token.ts, workers/proxy/src/ready.ts, workers/proxy/src/__tests__/issued-token.test.ts, workers/proxy/src/__tests__/ready.test.ts. Accept: `cd workers/proxy && npm run test:unit` exits 0 and `grep -n 'let cached' workers/proxy/src/issued-token.ts` prints nothing.
 
 ### CLI executor
 
-- [ ] C1 [cli] The pinned org in `rdc serve --mode container`. serve.ts refuses to start in container mode without `REDIACC_EXECUTOR_ORG_ID`. AuthVerifier takes `pinnedOrgId` and refuses `body.orgId !== pinnedOrgId` with the inactive-token 401. The test proves the boot refusal, the foreign-org refusal, and that a foreign-org answer is not cached. -- Owns: packages/cli/src/commands/serve.ts, packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/__tests__/pinned-org.test.ts. Accept: `cd packages/cli && npx vitest run src/services/serve/__tests__/pinned-org.test.ts src/services/serve/__tests__/audit-capability-self.test.ts` exits 0 and `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
+- [x] C1 [cli] The pinned org in `rdc serve --mode container`. serve.ts refuses to start in container mode without `REDIACC_EXECUTOR_ORG_ID`. AuthVerifier takes `pinnedOrgId` and refuses `body.orgId !== pinnedOrgId` with the inactive-token 401. The test proves the boot refusal, the foreign-org refusal, and that a foreign-org answer is not cached. -- Owns: packages/cli/src/commands/serve.ts, packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/__tests__/pinned-org.test.ts. Accept: `cd packages/cli && npx vitest run src/services/serve/__tests__/pinned-org.test.ts src/services/serve/__tests__/audit-capability-self.test.ts` exits 0 and `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
+    (ticked) 2026-10-26T13:09:39Z by d778be9d: 3a2d76f1: packages/cli/src/services/serve/auth.ts resolvePinnedOrgId and the pinned-org refusal; cd packages/cli && npx vitest run src/services/serve/__tests__/pinned-org.test.ts src/services/serve/__tests__/audit-capability-self.test.ts rc=0 (9 passed); npx tsc --noEmit --project packages/cli/tsconfig.json rc=0
 - [ ] C2 [cli] Session org binding and key-material lifetime, after C1.
   - SessionStore records `orgId`. `grantCek` and `sessionForExec` refuse another org with `EXECUTOR_SESSION_UNKNOWN`.
   - The capability self-check (packages/cli/src/services/serve/auth.ts:139-168) tolerates an issued token with no creator.
@@ -266,11 +274,12 @@ The org is never taken from the client. It is derived once from the caller's own
 
 ### Tooling, e2e, docs
 
-- [ ] T1 [ops] `rediacc_ci.ops.executor_orgs`, which reads a target's D1 through `wrangler d1 execute --json`.
+- [x] T1 [ops] `rediacc_ci.ops.executor_orgs`, which reads a target's D1 through `wrangler d1 execute --json`.
   - `list` prints entitled orgs with id prefixes only.
   - `verify --org A --org B` checks both are entitled.
   - `block` and `unblock` call the root route through the deploy-proxy profile.
   - Tests use a fake wrangler.
+    (ticked) 2026-10-26T13:27:15Z by d778be9d: 4ec78ace: .ci/rediacc_ci/ops/executor_orgs.py list, verify, block, unblock; .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_ops_executor_orgs.py rc=0 (20 passed). DEPS-WAIVED: this plan depends only on PLAN-proxy-cd-six-targets boxes P1 and M1, both ticked in f2875e88; the rest of that plan is live and post-merge
   
   -- Owns: .ci/rediacc_ci/ops/executor_orgs.py, .ci/rediacc_ci/tests/test_ops_executor_orgs.py. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_ops_executor_orgs.py` exits 0.
 - [ ] E1 [e2e] `27-91-live-two-orgs.test.ts`, skipped unless `LIVE_CONSOLE_ORIGIN` is set.
