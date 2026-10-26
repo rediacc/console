@@ -1,24 +1,22 @@
-## SESSION d778be9d 2026-10-26T05:26:11Z
+## SESSION d778be9d 2026-10-26T10:56:26Z
 
-# STATE d778be9d (2026-10-26, branch 1023-1, no PR, turbo batch-end)
+# STATE d778be9d (branch 1023-1, no PR, never pushed)
 
 ## Big pieces
-- PLAN-proxy-cd-six-targets (entry 21): 15/34 ticked; code waves landed incl. D2 CD steps (907cd289) and its env fallout (e718b538); bench L0 live (proxy ede18ed0 smoke rc=0, issuer mints, executor on, telemetry 16/16), recorded under "Live records". Open: L1-L9, X1, G1 tick (re-investigate: its box text changed with the citation fix), N1 post-merge proof, M1/M3/A2/D1/E1 partial accepts.
-- PLAN-backup-program: code mostly present; boxes wait on live acceptance (vm:check, suite 26, both backup drills, CI run ids).
-- Review backlog #82d4de04: three sweeps running; cli/shared and proxy shares closed.
+- PLAN-proxy-cd-six-targets (entry 21): 17/34 ticked after G1, M3, A2 (4d2ecdd1). P1 and D1 are met (wrangler-dev e2e rc=0 after 92200dfc; deploy_proxy pytest 65 rc=0) and tick once writer I leaves the plan. M1/E1 wait on the Playwright run; N1 on the scheduled-red triage; L1-L9 and X1 are live or post-merge.
+- PLAN-console-executor-multi-org (entry 22, 5fca01ea): 0/20; code waits on six-targets P1 and M1 (Depends-On).
+- PLAN-backup-program: boxes wait on live acceptance (vm:check, suite 26, both backup drills).
+- Review backlog: 164 -> 16 open over four writer passes; pass 4 running, pass 5 follows for the newest commits.
 
 ## Delegated
-- a8cdefbdb3a339ece #444bec7e: review findings in private/renet and private/account; accept: touched tests rc=0; reports fixed ids for the lead to commit and mark.
-- a6a254e4f9c32a4c0 #82d4de04: review findings in .ci/scripts/.claude/.github plus check:ci-python-types (7) and the ct-tests drill-count test; accept: check:ci-python-types and python-lint rc=0.
-- a316cb3911ad593f3 #8fdb297a: review findings in e2e, www English, docs, plan prose and tick-evidence lines; accept: prose-style and plan-citations rc=0.
-
-## Lessons (this context)
-- --plan-tick with weak probe evidence hides the signature listing; probe with the real evidence. Editing a box's text (even a citation) changes its signature and needs a fresh --plan-investigate; never rewrite box text to tick it, flip only the bracket and put evidence on the indented line.
-- A git commit never shares a Bash call with a message write, git add or a computed pathspec (the pre-bash guard judges the pre-call state).
-- A writer's "no registry entry needed" is a claim: run check:ci-env-manifest and check:ci-python-env-registry before committing deploy/workflow code.
+- ab85e7fcce03559c7 #a6f30db7 review pass 4 console (bucket I): executor_artifacts, wrangler_dev_e2e, proxy-token test, entry-point selftest, plan prose. Accept: touched tests and plan gates rc=0.
+- a49ee43148544804c #9b0be42f review pass 4 submodules (bucket J): account rate-limit, rotation test, cap test into config.service.test.ts, elite credentials. Accept: tsc and touched vitest rc=0, test-credentials rc=0.
+- aeefc02539ac8cca7 #442bde0c Playwright legs for M1 (27-01, 20-09) and E1 (27-90 skip) on dev, run only.
+- a379047ae15013ede #cba857c9 triage of main scheduled reds (Console CI 40276065557, Housekeeping, Pins Soaked) against the branch, read-only.
+- aac27b72284add22b #03d54376 bench ROOT_EMAIL seeding in deploy_bench/reset_bench; the lead runs the live proof.
 
 ## Next action
-1. As each sweep report lands: spot-check, commit by path (submodules first, then pointer), mark fixed review ids with the fix sha (a finding whose file the fix did not touch needs not-a-bug with path:line), tick the item.
-2. When no writer is live: gen-docs --write if needed, ci:quick, npm run vm:check -- --changed, ./run.sh drill backup and ./run.sh drill backup-onprem (backup receipt), all on a still tree; fix reds; then push (#831b7e48) with the PR.
-3. Operator step pending: eu-remote TOTP renewal (#d4e4e5eb) unblocks T10's proxy-row regex and hostinger work.
-4. Defects to fix: reset_bench/deploy_bench seed the ROOT_EMAIL user (#03d54376); rediacc-proxy-executor sends no telemetry.
+1. Spot-check and commit each report as it lands (submodules first, then the pointer), mark fixed ids, tick the item.
+2. After writer I: tick six-targets P1 and D1 with the evidence above.
+3. Review pass 5 over the findings on c815c51b, 0ca29667, 59df9e11, e6c4fe2d and the newest commits.
+4. Still-tree battery #c0af0c3c (ci:quick, vm:check --changed, both backup drills), then push and PR #831b7e48.
