@@ -404,7 +404,7 @@ def test_g1_7_makes_the_daemon_stale_before_converge(monkeypatch) -> None:
     order = [c for c in drill.calls if c.startswith(("rm -f", "rdc"))]
     assert order[0].startswith("rm -f /var/lib/rediacc/runtime/net-5.json")
     assert order[1].startswith("rdc machine converge")
-    assert len(drill.checks) == 3
+    assert len(drill.checks) == 4
     assert all(ok for _d, ok in drill.checks), drill.checks
     assert drill.calls[-2:] == ["listed", "nodes"]
 
@@ -419,5 +419,13 @@ def test_g1_7_fails_when_the_daemon_did_not_restart(monkeypatch) -> None:
 def test_g1_7_stops_when_the_stamp_cannot_be_removed(monkeypatch) -> None:
     drill = _g1_7_drill(monkeypatch, ["100"], 1)
     drill.g1_7_converge()
-    assert [ok for _d, ok in drill.checks] == [False]
+    assert [ok for _d, ok in drill.checks] == [True, False]
     assert not any(c.startswith("rdc") for c in drill.calls)
+
+
+def test_g1_7_leaves_the_stamp_alone_when_mainpid_is_unreadable(monkeypatch) -> None:
+    # Review d7cb08f1.2: a row that cannot judge a restart must not change the daemon's state first.
+    drill = _g1_7_drill(monkeypatch, ["0"], 0)
+    drill.g1_7_converge()
+    assert [ok for _d, ok in drill.checks] == [False]
+    assert not any(c.startswith("rm -f") for c in drill.calls)

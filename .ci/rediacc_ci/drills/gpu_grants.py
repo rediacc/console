@@ -602,11 +602,19 @@ class _LiveG1:
     def g1_7_converge(self) -> None:
         # --policy always restarts only a stale daemon or one stamped by another renet binary; G1.6 just restarted this one under the installed binary, so make it stale first.
         pid_before = self._main_pid("a")
+        # The MainPID is read before anything changes, so a row that cannot judge a restart leaves the stamp untouched.
+        if not self.check(
+            "G1.7 net-%d's daemon MainPID is readable before the converge" % self.nid["a"],
+            pid_before is not None,
+            None,
+            "MainPID=%s" % pid_before,
+        ):
+            return
         stale = self.root(make_stale_script(self.nid["a"]))
         if not self.check(
             "G1.7 net-%d's runtime stamp is removed (the daemon is stale: no_stamp)"
             % self.nid["a"],
-            stale.rc == 0 and pid_before is not None,
+            stale.rc == 0,
             stale,
             "rc=%d MainPID=%s" % (stale.rc, pid_before),
         ):

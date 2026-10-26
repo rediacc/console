@@ -87,7 +87,9 @@ def runtime_view_script(pid_file: str, *, allow_host_ns: bool = False) -> str:
     host_check = (
         ""
         if allow_host_ns
-        else '[ "$(readlink /proc/$pid/ns/mnt)" != "$(readlink /proc/1/ns/mnt)" ] '
+        # An unreadable namespace on either side would make the comparison pass, so it is refused as HOSTNS too: the guard fails closed.
+        else "own=$(readlink /proc/$pid/ns/mnt); host=$(readlink /proc/1/ns/mnt); "
+        '[ -n "$own" ] && [ -n "$host" ] && [ "$own" != "$host" ] '
         "|| { echo HOSTNS; exit 4; }; "
     )
     return (

@@ -219,3 +219,10 @@ def test_sees_peer_on_a_sample_listing() -> None:
     assert "sees_own=True sees_peer=True" in evidence
     _, evidence = u.runtime_view_verdict(NEW_LISTING, 8512, 8513, expect_peer_visible=False)
     assert "sees_own=True sees_peer=False" in evidence
+
+
+def test_host_namespace_guard_fails_closed_on_an_unreadable_namespace() -> None:
+    # Review d7cb08f1.1: an empty readlink on either side must refuse, not compare unequal and pass.
+    script = u.runtime_view_script(u.new_docker_pid_file(7))
+    assert '[ -n "$own" ] && [ -n "$host" ] && [ "$own" != "$host" ]' in script
+    assert "echo HOSTNS; exit 4" in script
