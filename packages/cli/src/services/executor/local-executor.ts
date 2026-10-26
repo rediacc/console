@@ -42,7 +42,7 @@ import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
 import { runDetachedExecution } from './detached-execution.js';
 import { resolveExtraMachines } from './extra-machines.js';
-import { createJobOutputCollector } from './job-client.js';
+import { createJobOutputCollector, type JobOutputCollector } from './job-client.js';
 import {
   ensureRepoLicenseForProvisioning,
   ensureRepoLicenseForRestore,
@@ -67,7 +67,6 @@ import { prepareSessionVault, sessionConvergeDeps } from './session-converge.js'
 import type { ExecuteOptions, ExecuteResult } from './types.js';
 import { loadContextRepositories, resolveKnownHosts } from './vault-inputs.js';
 
-// The pieces split out of this module stay importable from it, so no caller had to move.
 /**
  * Events mode: renet sends the failure reason (the child's stderr detail) as an error-level log event, so the raw ssh stderr alone is empty. Fold the collector's error/warning lines in so the exit error and the failure echo carry the reason.
  */
@@ -78,6 +77,29 @@ export function mergeEventsStderr(rawStderr: string, eventStderr: string): strin
     : rawStderr + eventStderr;
 }
 
+/**
+ * The post-run step of an executed renet command: reconstruct stdout and stderr, and build the exit error and the combined output. A failed events-mode run folds the collector's log lines in. A successful one does not: warnings reach the operator live from the event stream (daemon/client.ts renders every warning event, createStdoutHandler forwards to options.onEvent), and merging them again would feed them to surfaceRenetWarnings a second time.
+ */
+export function settleRenetRun(input: {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  collector?: Pick<JobOutputCollector, 'stdout' | 'stderr'>;
+  machineName?: string;
+}): { stdout: string; stderr: string; combined: string; error: string | undefined } {
+  const { exitCode, collector, machineName } = input;
+  const stdout = collector ? collector.stdout : input.stdout;
+  const stderr =
+    collector && exitCode !== 0 ? mergeEventsStderr(input.stderr, collector.stderr) : input.stderr;
+  return {
+    stdout,
+    stderr,
+    combined: stdout + stderr,
+    error: exitCode === 0 ? undefined : buildRenetExitError(exitCode, stderr, stdout, machineName),
+  };
+}
+
+// The pieces split out of this module stay importable from it, so no caller had to move.
 export { needsLicenseRecovery } from './license-recovery.js';
 export { buildRemoteRenetCommand, buildRenetEnv } from './renet-command.js';
 export { parseCapturedJson } from './renet-output.js';
@@ -294,12 +316,16 @@ class LocalExecutorService {
     // The command failed, so what we withheld is exactly what explains it.
     if (echoStderrLive) stderrPump.flush(exitCode !== 0);
 
-    if (collector) {
-      stdout = collector.stdout;
-      stderr = mergeEventsStderr(stderr, collector.stderr);
-    }
-
-    const combined = stdout + stderr;
+    const settled = settleRenetRun({
+      exitCode,
+      stdout,
+      stderr,
+      collector,
+      machineName: options.machineName,
+    });
+    stdout = settled.stdout;
+    stderr = settled.stderr;
+    const combined = settled.combined;
     const renetDurationMatch = /operation completed.*?duration_ms=(\d+)/.exec(combined);
     const operationMs = renetDurationMatch
       ? Number.parseInt(renetDurationMatch[1], 10)
@@ -310,10 +336,7 @@ class LocalExecutorService {
     return {
       success: exitCode === 0,
       exitCode,
-      error:
-        exitCode === 0
-          ? undefined
-          : buildRenetExitError(exitCode, stderr, stdout, options.machineName),
+      error: settled.error,
       durationMs: operationMs,
       stdout,
       stderr,
