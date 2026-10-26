@@ -2968,7 +2968,7 @@ _TEST_PATH_RE = re.compile(
 
 
 def is_test_path(path):
-    """True for a path that names a test file (a tests/ directory, test_*, *_test.*, *.test.*, *.spec.*, *-selftest.*)."""
+    """True for a path that names a test file (a tests/ directory, test_*, *_test.*, *.test.*, *.spec.*, and a standalone selftest named `*-selftest.*`, `*_selftest.*` or `*.selftest.*`)."""
     return bool(_TEST_PATH_RE.search(path))
 
 
