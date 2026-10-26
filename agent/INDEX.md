@@ -485,13 +485,13 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 394 | 4 | 25 | 58690 |
-| `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 94 | 5 | 3 | 30490 |
+| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 395 | 4 | 25 | 59071 |
+| `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 94 | 5 | 3 | 30967 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 183 | 2 | 5 | 24973 |
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 475 | 1 | 18 | 57866 |
-| `agent/plans/PLAN-console-executor-multi-org.md` | approved | 328 | 20 | 0 | 45839 |
+| `agent/plans/PLAN-console-executor-multi-org.md` | approved | 328 | 20 | 0 | 45929 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 89 | 0 | 18 | 33135 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
@@ -527,7 +527,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-verbs.md` | draft | 34 | 3 | 0 | 3707 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
-| `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 375 | 16 | 18 | 60395 |
+| `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 379 | 12 | 22 | 62576 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
