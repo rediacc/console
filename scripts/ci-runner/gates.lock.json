@@ -2180,6 +2180,20 @@
     }
   },
   {
+    "id": "check:ci-worker-observability-budget",
+    "run": "npm run check:ci-worker-observability-budget",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_worker_observability_budget.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Worker observability budget"
+    }
+  },
+  {
     "id": "check:ci-proxy-configs",
     "run": "npm run check:ci-proxy-configs",
     "gate": true,

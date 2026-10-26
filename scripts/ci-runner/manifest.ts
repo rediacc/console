@@ -2100,6 +2100,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // PLAN-cloudflare-spend-guard T5. Every enabled logs or traces signal of every workers/*/wrangler*.toml carries an explicit head_sampling_rate at or under the ceiling in .ci/config/cf-spend-guard.json (named exemptions judged against their own rate) and never persists in Cloudflare; a dropped rate runs at the platform default of 1 and reads like nothing in review.
+    id: 'check:ci-worker-observability-budget',
+    run: 'npm run check:ci-worker-observability-budget',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_worker_observability_budget.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Worker observability budget',
+    },
+  },
+  {
     // PLAN-proxy-cd-six-targets K1. The seven proxy wrangler configs (six CD targets and bench) are generated from wrangler.template.toml and regions.json, and every one is refused by name when it carries another target's service, route, destination or a budget breach. A stale generated file, an unknown wrangler*.toml, a drifted WK_PROXY_*_HOST and an account config whose EXECUTOR binding is another target's proxy all fail here; `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs` regenerates.
     id: 'check:ci-proxy-configs',
     run: 'npm run check:ci-proxy-configs',

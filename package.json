@@ -198,6 +198,7 @@
     "check:ci-proxy-image-smoke": ".ci/scripts/quality/check_proxy_image_smoke.py",
     "check:ci-proxy-wrangler-dev-e2e": ".ci/scripts/quality/check_proxy_wrangler_dev_e2e.py",
     "check:ci-proxy-cost-guard": ".ci/scripts/quality/check_proxy_cost_guard.py",
+    "check:ci-worker-observability-budget": ".ci/scripts/quality/check_worker_observability_budget.py",
     "check:ci-proxy-configs": "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs --check",
     "check:ci-proxy-deploy-dry-run": ".ci/scripts/quality/check_proxy_deploy_dry_run.py",
     "check:ci-portal-sitekey-guard": ".ci/scripts/quality/check_portal_sitekey_guard.py",

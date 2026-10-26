@@ -49,8 +49,18 @@
     "available_alerts_read": {
       "date": "2026-10-23",
       "billing_usage_alert_filter_options": [
-        {"Key": "product", "ComparisonOperator": "==", "Range": "1-n", "AvailableValues": null},
-        {"Key": "limit", "ComparisonOperator": ">=", "Range": "1-n", "AvailableValues": null}
+        {
+          "Key": "product",
+          "ComparisonOperator": "==",
+          "Range": "1-n",
+          "AvailableValues": null
+        },
+        {
+          "Key": "limit",
+          "ComparisonOperator": ">=",
+          "Range": "1-n",
+          "AvailableValues": null
+        }
       ],
       "products_accepted_by_the_api": [
         "worker_requests",
@@ -72,5 +82,13 @@
         "Default budget alert (auto-created): billing_budget_alert, total_spend_dollars 10, created by Cloudflare 2026-07-21 for PayGo budget monitoring; not managed here"
       ]
     }
+  },
+  "worker_observability": {
+    "sampling_ceiling": 1,
+    "sampling_exempt": {},
+    "persist_disallowed": [
+      "workers/*/wrangler*.toml"
+    ],
+    "sampling_ceiling_reason": "operator ruling ASKED:2026-10-26T05:02Z 'Keep 1 everywhere': PLAN-cloudflare-spend-guard T4 measured total Worker telemetry at about 0.9% of the 50 GB allowance (c0b8fc69), so no Worker samples below 1; revisit if volume crosses 25%"
   }
 }

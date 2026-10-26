@@ -470,6 +470,9 @@ jobs:
       - name: Vendored blocker derivation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_vendored_blocker_derivation.py
+      - name: Worker observability budget
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_worker_observability_budget.py
       - name: Workflow env provision
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
