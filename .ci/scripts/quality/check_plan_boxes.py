@@ -862,7 +862,7 @@ def selftest() -> int:
 
     # A MOVED citation is a re-spelling, not a new task. `sig` must NOT absorb it -- the base ledger is keyed by `sig` and re-keying it would make every historical box look deleted -- so the tolerance lives in `loose_sig`, and both halves of that split are asserted here. The pair is the real 2026-09-09 case: `scripts/` -> `scripts/gates/`.
     was = "Write `scripts/check-player-css-scope.ts` with the six floors and eight selftest plants, BEFORE any source change"
-    now = was.replace("scripts/", "scripts/gates/")
+    now = controls.plant(was, "scripts/", "scripts/gates/")
     ok = loose_sig(was) == loose_sig(now)
     print(f"  {'PASS' if ok else 'FAIL'}  a box whose cited file MOVED keeps its LOOSE signature")
     if not ok:
@@ -878,15 +878,15 @@ def selftest() -> int:
         bad += 1
 
     # A gate renamed into the `ci-` namespace is the same re-spelling (the real 2026-10-26 case, PLAN-backup-program J2), and a different gate stays a different box.
-    was = "J2: Gate check:renet-chunkstore-unit (paths private/renet) running go test ./pkg/chunkstore/... non-root"
-    now = was.replace("check:renet-", "check:ci-renet-")
+    was = "J2: Gate check:renet-chunkstore-unit (paths private/renet) running the chunkstore package unit tests non-root"
+    now = controls.plant(was, "check:renet-", "check:ci-renet-")
     ok = loose_sig(was) == loose_sig(now) and sig(was) != sig(now)
     print(
         f"  {'PASS' if ok else 'FAIL'}  a box whose gate moved into the ci- namespace keeps its LOOSE signature only"
     )
     if not ok:
         bad += 1
-    ok = loose_sig(was) != loose_sig(was.replace("check:renet-", "check:ci-account-"))
+    ok = loose_sig(was) != loose_sig(controls.plant(was, "check:renet-", "check:ci-account-"))
     print(
         f"  {'PASS' if ok else 'FAIL'}  CONTROL: a box naming a DIFFERENT gate keeps a different loose signature"
     )

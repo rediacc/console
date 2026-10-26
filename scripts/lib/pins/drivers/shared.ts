@@ -248,9 +248,13 @@ export function hostVersionFor(
   const text = read(hostPinFile);
   const esc = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const override =
-    text === null ? null : new RegExp(`^host-version\\.${esc}[ \\t]*=[ \\t]*(\\S+)[ \\t]*$`, 'm').exec(text)?.[1];
+    text === null
+      ? null
+      : new RegExp(`^host-version\\.${esc}[ \\t]*=[ \\t]*(\\S+)[ \\t]*$`, 'm').exec(text)?.[1];
   const reason =
-    text === null ? null : new RegExp(`^host-version-reason\\.${esc}[ \\t]*=[ \\t]*\\S`, 'm').test(text);
+    text === null
+      ? null
+      : new RegExp(`^host-version-reason\\.${esc}[ \\t]*=[ \\t]*\\S`, 'm').test(text);
   return override && reason ? override : hostVersionOf(read);
 }
 

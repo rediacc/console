@@ -87,6 +87,8 @@ function findTimeoutKillAnnotation(annotations) {
 // Per-job budget exemption caps, in minutes (PLAN-ci-time-budget "Exemption caps 2026-09-28", #d5ba825c, and ruling #fc4f34f8): the jobs whose fixed VM preparation keeps them over the ordinary per-job budget are judged against their ruled `timeout-minutes` instead. Keyed by the job's own display name (the segment after the last " / ", without a " (matrix)" suffix), so "Tests + Infra / E2E K8s Ceph" matches
 // and "E2E K8s" does not. The same numbers live in `JOB_BUDGET_CAPS[].timeoutMinutes` of scripts/gates/check-lane-budget.ts; test_gate_watchdog_budget.py reds when the two disagree.
 const JOB_BUDGET_CAPS = [
+  // Operator ruling #a74699b5 (2026-10-25, "Cap it at 45 min"): suite 26 holds a 30-minute per-test ceiling, so the job cannot fit 15; its timeout-minutes in ct-tests.yml is 45.
+  { job: 'E2E Backup Browse-At', budgetMin: 45 },
   { job: 'E2E K8s Ceph', budgetMin: 25 },
   { job: 'E2E K8s Multinode', budgetMin: 30 },
   // Operator ruling #fc4f34f8 (2026-09-30): the non-apt Ceph Workers matrix, one leg per distro ("... / E2E Ceph Workers non-apt (fedora-43)").

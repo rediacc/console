@@ -98,6 +98,9 @@ NEEDS_SCRIPT = (
     # The module spellings of check:ci-release-state (NEEDS above routes the gate key only): release_state.py:141 and release_state_validator.py:251 run `aws s3api` directly.
     ("rediacc_ci.quality.release_state", "aws"),
     ("rediacc_ci.core.release_state_validator", "aws"),
+    # The executor artifact stage and the deploy record both run `aws s3` from inside the module (cd-deploy-account.yml runs them as `python3 -m`), and the coverage scan in test-block_host_toolchain_run.py found them without a row.
+    ("rediacc_ci.deploy.executor_artifacts", "aws"),
+    ("rediacc_ci.deploy.deploy_record", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.

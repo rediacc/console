@@ -283,19 +283,20 @@ describe('PLAN_BACKUP_RETENTION', () => {
     'keepYearly',
   ] as const;
 
+  const checkKnob = (label: string, value: number | null, limit: number | null) => {
+    if (value === null) {
+      // An unset default is the plan offering none (limit 0) or no per-knob cap; it never hides a positive limit.
+      expect([0, null], `${label} unset default vs limit ${limit}`).toContain(limit);
+      return;
+    }
+    if (limit === null) return;
+    expect(value, label).toBeLessThanOrEqual(limit);
+  };
+
   it('keeps every default at or below its limit, and unset where the plan offers none', () => {
     for (const [plan, entry] of Object.entries(PLAN_BACKUP_RETENTION)) {
-      for (const knob of knobs) {
-        const value = entry.default[knob];
-        const limit = entry.limit[knob];
-        if (value === null) {
-          // An unset default is the plan offering none (limit 0) or no per-knob cap; it never hides a positive limit.
-          expect([0, null], `${plan}.${knob} unset default vs limit ${limit}`).toContain(limit);
-          continue;
-        }
-        if (limit === null) continue;
-        expect(value, `${plan}.${knob}`).toBeLessThanOrEqual(limit);
-      }
+      for (const knob of knobs)
+        checkKnob(`${plan}.${knob}`, entry.default[knob], entry.limit[knob]);
     }
   });
 });

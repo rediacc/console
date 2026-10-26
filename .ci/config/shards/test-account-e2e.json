@@ -1,7 +1,7 @@
 {
   "lane": "test-account-e2e",
   "of": 4,
-  "generatedAt": "2026-10-13T12:56:33.944Z",
+  "generatedAt": "2026-10-26T13:42:46.369Z",
   "legs": [
     {
       "index": 1,
@@ -95,7 +95,8 @@
         "account-e2e:21-partner-portal/21-08-verify-certificate.test.ts",
         "account-e2e:25-partner-admin/25-01-applications.test.ts",
         "account-e2e:25-partner-admin/25-05-partner-roster.test.ts",
-        "account-e2e:26-partner-program-chooser/26-01-chooser.test.ts"
+        "account-e2e:26-partner-program-chooser/26-01-chooser.test.ts",
+        "account-e2e:27-console/27-90-live-executor.test.ts"
       ]
     },
     {

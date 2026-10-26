@@ -7,7 +7,7 @@ vi.mock('../../services/core/request-context.js', async () => {
   return { ...actual, writeStderr: (s: string) => writes.push(s) };
 });
 
-const { buildSSHExitErrorMessage, teeStderrTail } = await import('../term.js');
+const { buildSSHExitErrorMessage, teeStderrTail } = await import('../term-ssh-exit.js');
 
 describe("term connect carries the remote's own error (C11)", () => {
   it("makes renet's cobra Error line the message instead of the generic code hint", () => {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 
 // PLAN-config-networkid-discovery T7 control "state.ts socket guard removed": a repo record with no network id must yield a vault with no socket path, and the connection builder must refuse it instead of aiming at `net-undefined`.
 
@@ -8,7 +9,7 @@ vi.mock('../config/config-resources.js', () => ({
   configService: {
     getLocalConfig: vi.fn().mockResolvedValue({
       machines: {
-        srv: { ip: '1.2.3.4', user: 'root', knownHosts: 'kh', datastore: '/mnt/rediacc' },
+        srv: { ip: '1.2.3.4', user: 'root', knownHosts: 'kh', datastore: WK_DATASTORE_PATH },
       },
       ssh: { privateKeyPath: '/k' },
       sshPrivateKey: 'FAKE_PRIVATE_KEY',

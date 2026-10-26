@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-26T08:41:16.946Z",
+  "generatedAt": "2026-10-26T13:42:45.751Z",
   "legs": [
     {
       "index": 1,
@@ -113,6 +113,7 @@
         "pytest:.ci/rediacc_ci/tests/test_main.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_auth.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_deploy_bench.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_r2_lifecycle.py",
         "pytest:.ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
@@ -474,6 +475,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py",
         "pytest:.ci/rediacc_ci/tests/test_named_paths.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_executor_orgs.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_observability_volume.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_units.py",
         "pytest:.ci/rediacc_ci/tests/test_paths.py",

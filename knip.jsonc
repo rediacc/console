@@ -64,7 +64,9 @@
         // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the two above.
         "scripts/__tests__/entry-point.control.ts",
         // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the one above.
-        "scripts/__tests__/upstream-retry-note.control.ts"
+        "scripts/__tests__/upstream-retry-note.control.ts",
+        // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the one above.
+        "scripts/lib/entry-point-selftest.ts"
       ],
       // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
       // usually load-bearing. `check-doc-region-parity.ts:297` matches

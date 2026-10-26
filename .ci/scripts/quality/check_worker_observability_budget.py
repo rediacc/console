@@ -36,6 +36,7 @@ from typing import TypeGuard
 CONFIG_REL = (".ci", "config", "cf-spend-guard.json")
 EXCLUDED = ("wrangler.template.toml", "wrangler.dev.toml")
 SIGNALS = ("logs", "traces")
+MIN_CONFIGS = 1
 
 
 def config_paths(root: pathlib.Path) -> list[pathlib.Path]:
@@ -162,9 +163,10 @@ def check(root: pathlib.Path, config_file: pathlib.Path | None = None) -> int:
         found, count = judge(rel(root, path), config, rules)
         findings += found
         judged += count
-    if parsed == 0:
+    if parsed < MIN_CONFIGS:
         print(
-            "check_worker_observability_budget: zero workers/*/wrangler*.toml parsed",
+            "check_worker_observability_budget: VACUOUS, %d workers/*/wrangler*.toml parsed (floor %d); the gate is not seeing the tree"
+            % (parsed, MIN_CONFIGS),
             file=sys.stderr,
         )
         return 2
