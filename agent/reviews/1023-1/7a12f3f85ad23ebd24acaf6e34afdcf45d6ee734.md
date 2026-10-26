@@ -21,9 +21,9 @@ Body-Sig: 8f21452dee78460a
 ### 7a12f3f8.1 [low] e2e/playwright.live.config.ts:21
 Anchor: in-diff
 Claim: outputDir is hardcoded to '/tmp/rediacc-live-console-results', which resolves to a different location on Windows, so a live run from a Windows checkout writes results somewhere unexpected.
-Resolution: open
+Resolution: fixed 21aab30642bfe916826b08512ddcb4bc84fda163 | d778be9d 2026-10-26T23:06:50Z
 
 ### 7a12f3f8.2 [low] e2e/playwright.live.config.ts:24
 Anchor: in-diff
 Claim: trace, screenshot and video are disabled, but failure artifacts written to outputDir are not covered by those settings; the header comment says no recordings are kept, which is only true for these three options.
-Resolution: open
+Resolution: fixed 21aab30642bfe916826b08512ddcb4bc84fda163 | d778be9d 2026-10-26T23:06:51Z
