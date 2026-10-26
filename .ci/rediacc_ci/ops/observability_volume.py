@@ -216,13 +216,18 @@ def _vector_by_service(rows: list[dict]) -> dict[str, float]:
         service = (row.get("metric") or {}).get("service_name")
         value = row.get("value")
         if service and isinstance(value, list) and len(value) == 2:
-            try:
-                out[str(service)] = out.get(str(service), 0.0) + float(value[1])
-            except (TypeError, ValueError):
-                raise VolumeError(
-                    "prometheus returned a non-numeric span count for %s" % service
-                ) from None
+            out[str(service)] = out.get(str(service), 0.0) + _sample_value(
+                value[1], service, "loki"
+            )
     return out
+
+
+def _sample_value(raw: object, service: object, source: str) -> float:
+    """A sample's number, or a VolumeError naming the service: a bad row must not read as a zero."""
+    try:
+        return float(str(raw))
+    except ValueError:
+        raise VolumeError("%s returned a non-numeric value for %s" % (source, service)) from None
 
 
 def loki_log_sizes(
@@ -276,10 +281,9 @@ def tempo_span_counts(
         service = (row.get("metric") or {}).get("service")
         value = row.get("value")
         if service and isinstance(value, list) and len(value) == 2:
-            try:
-                out[str(service)] = out.get(str(service), 0.0) + float(value[1])
-            except (TypeError, ValueError):
-                continue
+            out[str(service)] = out.get(str(service), 0.0) + _sample_value(
+                value[1], service, "prometheus"
+            )
     return out
 
 

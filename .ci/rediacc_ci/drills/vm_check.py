@@ -128,7 +128,8 @@ PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
 # No `-q`: an alias that does not resolve or a key ssh refuses must reach the row's evidence.
 SFTP_BATCH = ("sftp", "-o", "BatchMode=yes")
 # A refused sftp leg counts as confinement only when the server says so; a dropped connection or a missing path is not a refusal.
-SFTP_LOCAL_LINE = re.compile(r"\blocal\b", re.IGNORECASE)
+# The client's own wording for its side: `Couldn't open local file "<p>" for reading` and `local open "<p>": <reason>`. The word `local` inside a quoted server path (`dest open "/srv/local/x": Failure`) is not that wording.
+SFTP_LOCAL_LINE = re.compile(r'^[^"\n]*\blocal (?:file\b|[a-z]+ ")', re.IGNORECASE)
 SFTP_DENIAL = re.compile(
     r"permission denied|read-only file system|operation not permitted"
     # The server's own path-bearing answer for a file the session cannot see (the private repo view detaches other repos' mounts). Never a bare "no such file", which ssh also prints for a missing identity file.

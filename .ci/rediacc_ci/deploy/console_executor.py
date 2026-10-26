@@ -64,7 +64,8 @@ def missing_env() -> list[str]:
 
 
 def profile_bound(profile: str) -> bool:
-    return profile in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",")
+    carried = (item.strip() for item in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(","))
+    return profile in carried
 
 
 def reexec_argv(profile: str, argv: list[str]) -> list[str]:

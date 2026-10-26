@@ -206,6 +206,7 @@ def read_pins(text: str) -> Pins:
     host_version = ""
     hosts: dict[str, str] = {}
     overrides: dict[str, str] = {}
+    reasoned: set[str] = set()
     for raw in text.splitlines():
         line = raw.strip()
         if not line or line.startswith("#") or "=" not in line:
@@ -213,13 +214,17 @@ def read_pins(text: str) -> Pins:
         key, _, value = line.partition("=")
         if key == "host-version":
             host_version = value.strip()
+        elif key.startswith("host-version-reason."):
+            if value.strip():
+                reasoned.add(key.removeprefix("host-version-reason."))
         elif key.startswith("host-version."):
             overrides[key.removeprefix("host-version.")] = value.strip()
         elif key.startswith("host."):
             hosts[key.removeprefix("host.")] = value.strip()
     if not host_version:
         raise ValueError("no host-version line in the pin file")
-    return Pins(host_version, hosts, overrides)
+    # An override without a host-version-reason line is ignored, as hostVersionFor in scripts/lib/pins/drivers/shared.ts does.
+    return Pins(host_version, hosts, {t: v for t, v in overrides.items() if t in reasoned})
 
 
 def split_evr(evr: str) -> tuple[str, str]:

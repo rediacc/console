@@ -79,7 +79,7 @@ GO_LIST_TEST_FILES_FORMAT = (
 # Packages whose presence in the subset is reported by name, with their Test count.
 WATCHED = ("pkg/chunkstore", "pkg/delta", "pkg/datastore")
 
-TEST_FUNC_RE = re.compile(r"^func\s+(Test\w*)\(\s*\w+\s+\*testing\.T\s*\)", re.MULTILINE)
+TEST_FUNC_RE = re.compile(r"^func\s+(Test\w*)\(\s*(?:\w+\s+)?\*testing\.T\s*\)", re.MULTILINE)
 
 
 def _proxy_root() -> pathlib.Path:

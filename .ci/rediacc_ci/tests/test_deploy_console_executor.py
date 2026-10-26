@@ -218,6 +218,31 @@ def test_missing_credentials_reexec_under_the_profile_when_unbound(fake, monkeyp
     assert calls(fake) == []
 
 
+def test_reexec_carries_the_callers_own_region_argv(fake, monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    seen = []
+
+    def fake_run(argv, **_kw):
+        seen.append(argv)
+        return type("P", (), {"returncode": 0})()
+
+    monkeypatch.setattr(ce.subprocess, "run", fake_run)
+    args = ["--enable", "--target", "stable", "--region", "asia"]
+    assert ce.main(args) == 0
+    assert seen[0][-7:] == ["-m", ce.SELF, *args]
+    assert calls(fake) == []
+
+
+def test_a_profile_list_with_spaces_still_reports_the_profile_bound(fake, monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy, deploy-proxy-bench")
+    monkeypatch.setattr(ce.subprocess, "run", lambda *_a, **_k: pytest.fail("re-exec"))
+    assert ce.profile_bound("deploy-proxy-bench")
+    assert ce.main(["--enable", "--target", "bench"]) == 1
+    assert calls(fake) == []
+
+
 # ---- disable ----------------------------------------------------------------
 
 

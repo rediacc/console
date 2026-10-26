@@ -588,3 +588,8 @@ def test_no_secret_value_reaches_any_child_argv(world, tmp_path):
     assert after(world) == 0
     for c in calls(world.log):
         assert os.environ["CLOUDFLARE_API_TOKEN"] not in " ".join(c["argv"])
+
+
+def test_a_worker_with_an_empty_deployments_list_did_not_exist(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "_capture", lambda *_a, **_k: (0, "[]", ""))
+    assert dr.worker_version(tmp_path, "wrangler.toml", "w") == (False, None)

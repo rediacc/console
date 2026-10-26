@@ -99,6 +99,10 @@ def judge(name: str, config: dict, rules: dict) -> tuple[list[str], int]:
     judged = 0
     for signal in SIGNALS:
         block = obs.get(signal)
+        if block is None and signal == "logs" and obs.get("enabled") is True:
+            # `[observability] enabled = true` alone turns logs on at the platform defaults (rate 1, persisted); the
+            # table-level rate is the only knob such a config sets, and the missing rate is a finding.
+            block = {k: obs[k] for k in ("head_sampling_rate",) if k in obs}
         if not isinstance(block, dict) or block.get("enabled") is False:
             continue
         judged += 1

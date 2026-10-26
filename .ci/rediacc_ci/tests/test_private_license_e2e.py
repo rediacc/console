@@ -205,8 +205,8 @@ if ROLE == "renet":
         if blob is None:
             sys.stderr.write(json.dumps({"code": "LICENSE_REQUIRED", "reason": "missing"}, separators=(",", ":")) + "\n")
             sys.exit(10)
-        if blob["opts"].get("-grand-guid") != opt("--lineage"):
-            print("repository %s belongs to lineage %s" % (opt("--repo"), blob["opts"].get("-grand-guid", "(none)")))
+        if (blob.get("opts") or {}).get("-grand-guid") != opt("--lineage"):
+            print("repository %s belongs to lineage %s" % (opt("--repo"), (blob.get("opts") or {}).get("-grand-guid", "(none)")))
             sys.stderr.write("restore refused\n")
             sys.exit(1)
         sys.exit(1)

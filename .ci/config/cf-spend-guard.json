@@ -49,18 +49,8 @@
     "available_alerts_read": {
       "date": "2026-10-23",
       "billing_usage_alert_filter_options": [
-        {
-          "Key": "product",
-          "ComparisonOperator": "==",
-          "Range": "1-n",
-          "AvailableValues": null
-        },
-        {
-          "Key": "limit",
-          "ComparisonOperator": ">=",
-          "Range": "1-n",
-          "AvailableValues": null
-        }
+        {"Key": "product", "ComparisonOperator": "==", "Range": "1-n", "AvailableValues": null},
+        {"Key": "limit", "ComparisonOperator": ">=", "Range": "1-n", "AvailableValues": null}
       ],
       "products_accepted_by_the_api": [
         "worker_requests",

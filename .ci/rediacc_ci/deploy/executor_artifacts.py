@@ -11,7 +11,7 @@ WRITE-ONCE. The manifest is the commit marker and is written LAST, so a run that
 
 FETCH VERIFIES. Every file is hashed after download and compared with the manifest's sha256 and size. A mismatch refuses, removes the bad file and leaves the destination without a manifest, so a half-verified directory never looks complete.
 
-U3 (the licence key in the renet artifact). `ci-build-renet.yml` builds renet with `ACCOUNT_ED25519_PUBLIC_KEY` from the bws secret of that name, and `build_renet.py` bakes it through `-ldflags`; `cd-deploy-account.yml` and `cd-deploy-worker.yml` read the same single secret name, so the CI artifact carries the production licence public key and edge and stable verify with it. The artifact lives one day (`retention-days: 1`), so `stage` runs in the same CD pipeline that built it. `stage` takes the renet path as an argument, so a renet built in CD with the key bound through bws drops in with no change here.
+U3 (the licence key in the renet artifact). `ci-build-renet.yml` builds renet with `ACCOUNT_ED25519_PUBLIC_KEY` from the bws secret of that name, and `build_renet.py` bakes it through `-ldflags`; `cd-deploy-account.yml` and `cd-deploy-worker.yml` read the same single secret name, so the CI artifact is meant to carry the production licence public key. Whether edge and stable verify with it is settled by the live deploy run, not by this module. The artifact lives one day (`retention-days: 1`), so `stage` runs in the same CD pipeline that built it. `stage` takes the renet path as an argument, so a renet built in CD with the key bound through bws drops in with no change here.
 
 RETENTION. `select_prune` keeps the newest `KEEP_RELEASES` versions plus the current and previous production versions, whatever their age, and refuses when the current version is unknown (unknown is never prunable).
 
@@ -201,7 +201,7 @@ def put_object(key: str, source: pathlib.Path, content_type: str) -> None:
 
 
 def list_versions() -> list[str]:
-    """Every staged version (a `executor/v<V>/` directory holding a manifest)."""
+    """Every version with any object under `executor/v<V>/`, so a half-deleted version is listed and a later retain retries it."""
     proc = _aws(["list-objects-v2", "--prefix", PREFIX, "--output", "json"])
     if proc.returncode != 0:
         raise ArtifactError(
@@ -212,9 +212,7 @@ def list_versions() -> list[str]:
     contents = json.loads(text).get("Contents") or [] if text.strip() else []
     found = set()
     for entry in contents:
-        match = re.match(
-            r"^executor/v([0-9]+\.[0-9]+\.[0-9]+)/%s$" % re.escape(MANIFEST), entry["Key"]
-        )
+        match = re.match(r"^executor/v([0-9]+\.[0-9]+\.[0-9]+)/[^/]+$", entry["Key"])
         if match:
             found.add(match.group(1))
     return sorted(found, key=lambda v: semver(v) or (0, 0, 0))
@@ -224,7 +222,7 @@ def delete_version(version: str) -> None:
     """Delete one version's objects, manifest FIRST so a half-deleted version never reads as staged."""
     proc = _aws(["delete-object", "--key", key_for(version, MANIFEST)], capture=False)
     if proc.returncode != 0:
-        # The manifest still stands, so the version still reads as staged: its files stay whole behind it.
+        # A non-zero rc does not prove the delete failed (a dropped response can follow a delete that landed), so the version is treated as possibly staged; a retry is idempotent.
         raise ArtifactError(
             "%s: aws delete-object %s failed (rc %d)"
             % (SELF, key_for(version, MANIFEST), proc.returncode)
@@ -235,7 +233,7 @@ def delete_version(version: str) -> None:
         if proc.returncode != 0:
             failed.append("%s (rc %d)" % (key_for(version, name), proc.returncode))
     if failed:
-        # Every file is attempted, so one failure strands only itself; the manifest is already gone, so a later `retain` no longer lists the version and these keys need a manual delete.
+        # Every file is attempted, so one failure strands only itself; `list_versions` lists any version with a remaining object, so a later `retain` retries the rest.
         raise ArtifactError("%s: aws delete-object failed for %s" % (SELF, ", ".join(failed)))
 
 
@@ -351,6 +349,26 @@ def build_natives_tar(
     return out
 
 
+def verify_natives_tar(tar_path: pathlib.Path, lockfile: pathlib.Path) -> None:
+    """Refuse a supplied natives tar unless each package's `package.json` inside it carries the lockfile's version."""
+    with tarfile.open(tar_path) as tar:
+        for package in NATIVE_MODULES:
+            member = "node_modules/%s/package.json" % package
+            try:
+                handle = tar.extractfile(member)
+            except KeyError:
+                handle = None
+            if handle is None:
+                raise ArtifactError("%s: %s has no %s" % (SELF, tar_path, member))
+            packed = json.loads(handle.read().decode()).get("version")
+            wanted = locked_version(lockfile, package)
+            if packed != wanted:
+                raise ArtifactError(
+                    "%s: %s holds %s at %s but the lockfile pins %s"
+                    % (SELF, tar_path, package, packed, wanted)
+                )
+
+
 def git_head() -> str:
     proc = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -422,6 +440,7 @@ def _sources_from_args(args: argparse.Namespace, scratch: pathlib.Path) -> dict[
         RENET: pathlib.Path(args.renet),
     }
     if args.natives_tar:
+        verify_natives_tar(pathlib.Path(args.natives_tar), paths.repo_root() / "package-lock.json")
         sources[NATIVES] = pathlib.Path(args.natives_tar)
     elif args.node_modules:
         root = paths.repo_root()

@@ -704,7 +704,7 @@ class Battery:
         # S11a: no license of the lineage on the machine is the typed refusal the CLI's recovery path acts on.
         self._sudo("rm", "-rf", self.repo_license_root + "/" + RESTORE_GUID)
         self.assert_rejected("S11a", "missing", *restore)
-        # S11b: the target's own license names another lineage (none, here). Reissuing would return the same blob, so this is a plain refusal.
+        # S11b: the target's own license carries no lineage (minted with only -renewal-url), which differs from the requested RESTORE_LINEAGE; a different-lineage license is not minted here. Reissuing would return the same blob, so this is a plain refusal.
         self.mint(RESTORE_GUID, "-renewal-url", "http://127.0.0.1:1/license/renew")
         self.install_license(RESTORE_GUID)
         self.assert_restore_refused_plainly("S11b", "belongs to lineage", *restore)

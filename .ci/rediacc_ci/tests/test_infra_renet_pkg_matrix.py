@@ -136,6 +136,18 @@ def test_read_pins_takes_host_version_and_every_host_line() -> None:
     }
 
 
+def test_version_for_honours_a_reasoned_override_only() -> None:
+    reasoned = (
+        PIN_TEXT
+        + "host-version.opensuse-16.0=19.2.2\nhost-version-reason.opensuse-16.0=repo ships 19.2.2\n"
+    )
+    pins = m.read_pins(reasoned)
+    assert pins.version_for("opensuse-16.0") == "19.2.2"
+    assert pins.version_for("el10") == "19.2.3"
+    bare = m.read_pins(PIN_TEXT + "host-version.opensuse-16.0=19.2.2\n")
+    assert bare.version_for("opensuse-16.0") == "19.2.3"
+
+
 def test_read_pins_refuses_a_file_without_host_version() -> None:
     with pytest.raises(ValueError, match="host-version"):
         m.read_pins("host.el10=2:19.2.3-1.el10s\n")

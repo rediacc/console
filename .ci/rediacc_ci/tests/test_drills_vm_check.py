@@ -1609,6 +1609,12 @@ def test_ssh_auth_failure_accepts_every_method_list_the_old_grammar_did() -> Non
         assert not vm_check.SSH_AUTH_FAILURE.search(line), line
 
 
+def test_sftp_refused_keeps_a_server_refusal_whose_path_has_a_local_segment() -> None:
+    assert vm_check.sftp_refused('dest open "/srv/local/x": Failure', "/srv/local")
+    assert vm_check.sftp_refused('remote open("/usr/local/x"): Permission denied')
+    assert not vm_check.sftp_refused('local open "/tmp/src": No such file or directory')
+
+
 def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None:
     assert vm_check.sftp_refused('remote open("/mnt/x"): Permission denied')
     assert vm_check.sftp_refused('Couldn\'t setstat on "/x": Operation not permitted')

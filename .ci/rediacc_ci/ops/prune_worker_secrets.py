@@ -280,7 +280,12 @@ def archive_extras(
                 continue
             try:
                 existing = fetch("GET", secrets_path(account, row.worker), token)
-                if isinstance(existing, list) and archive in {
+                if not isinstance(existing, list):
+                    raise ApiError(
+                        "the secret listing on %s is not a list; %s not written"
+                        % (row.worker, archive)
+                    )
+                if archive in {
                     str(item.get("name")) for item in existing if isinstance(item, dict)
                 }:
                     raise ApiError(

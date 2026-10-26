@@ -52,6 +52,8 @@ LIBRARY_DEFAULT_SLEEP_AFTER = "10m"
 PROXY_REL = ("workers", "proxy")
 CONFIG_GLOB = "wrangler*.toml"
 BENCH_CONFIG = "wrangler.bench.toml"
+EU_CONFIG = "wrangler.eu.toml"
+REQUIRED_CONFIGS = (EU_CONFIG, BENCH_CONFIG)
 # The local-development config is judged against the per-config budget but is not deployed, so it does not count toward the deployable set.
 DEV_CONFIG = "wrangler.dev.toml"
 # The generator input: placeholders, never deployed.
@@ -240,13 +242,14 @@ def check(root: pathlib.Path) -> int:
         if proxy_dir.is_dir()
         else []
     )
-    if not any(c.name == BENCH_CONFIG for c in configs):
-        print(
-            "NO VERDICT: %s is missing; the gate is not seeing the proxy config."
-            % proxy_dir.joinpath(BENCH_CONFIG),
-            file=sys.stderr,
-        )
-        return 2
+    for required in REQUIRED_CONFIGS:
+        if not any(c.name == required for c in configs):
+            print(
+                "NO VERDICT: %s is missing; the gate is not seeing the proxy config."
+                % proxy_dir.joinpath(required),
+                file=sys.stderr,
+            )
+            return 2
     for wrangler in configs:
         rel = "/".join((*PROXY_REL, wrangler.name))
         text = wrangler.read_text(encoding="utf-8")
@@ -270,6 +273,12 @@ def check(root: pathlib.Path) -> int:
                 for c in these
                 if isinstance(c.get("max_instances"), int)
                 and not isinstance(c["max_instances"], bool)
+            )
+    for name, config_total in sorted(counts.items()):
+        if config_total > MAX_INSTANCES_BUDGET:
+            findings.append(
+                "workers/proxy/%s: its [[containers]] entries total max_instances = %d, over the "
+                "per-config budget of %d." % (name, config_total, MAX_INSTANCES_BUDGET)
             )
     findings += total_findings(counts)
     sources = read_sources(root)

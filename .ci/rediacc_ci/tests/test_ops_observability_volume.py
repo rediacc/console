@@ -163,6 +163,26 @@ def test_tempo_span_counts_read_the_spanmetrics_counter():
     assert "86400s" in urllib.parse.unquote_plus(url)
 
 
+def test_a_non_numeric_span_count_raises_naming_the_worker():
+    fake = Fake([], spans={"w1": "n/a"})
+    with pytest.raises(ov.VolumeError, match="prometheus returned a non-numeric value for w1"):
+        ov.tempo_span_counts(fake, ov.GRAFANA_ORIGIN, GRAFANA_TOKEN, 86400, END)
+
+
+def test_a_non_numeric_loki_size_raises_naming_the_service():
+    fake = Fake([], loki_bytes={"w1": "n/a"})
+    with pytest.raises(ov.VolumeError, match="loki returned a non-numeric value for w1"):
+        ov.loki_log_sizes(fake, ov.GRAFANA_ORIGIN, GRAFANA_TOKEN, 86400, END)
+
+
+def test_the_span_size_fallback_is_the_workers_own_mean_log_line():
+    rows, fell_back, _ = ov.estimate(
+        {"w1": 2.0}, {"w1": (100.0, 10.0), "renet-list": (900000.0, 10.0)}, None
+    )
+    assert fell_back
+    assert rows[0]["span_mean"] == 10.0
+
+
 def test_tempo_mean_span_size():
     fake = Fake([])
     size = ov.tempo_span_size(fake, ov.GRAFANA_ORIGIN, GRAFANA_TOKEN, 0, 1)

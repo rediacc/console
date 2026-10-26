@@ -246,6 +246,28 @@ def test_a_missing_bench_config_is_no_verdict(tmp_path: pathlib.Path) -> None:
     assert "wrangler.bench.toml is missing" in proc.stderr
 
 
+def test_a_missing_eu_config_is_no_verdict(tmp_path: pathlib.Path) -> None:
+    root = _copy(tmp_path)
+    (root / "workers" / "proxy" / EU).unlink()
+    proc = _run("--root", str(root))
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+    assert "wrangler.eu.toml is missing" in proc.stderr
+
+
+def test_two_entries_in_one_config_are_held_to_the_per_config_budget(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _copy(tmp_path)
+    eu = root / "workers" / "proxy" / EU
+    eu.write_text(CONTAINERS % 3 + CONTAINERS % 3, encoding="utf-8")
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert (
+        "workers/proxy/wrangler.eu.toml: its [[containers]] entries total max_instances = 6"
+        in proc.stderr
+    )
+
+
 def test_zero_bench_containers_is_no_verdict(tmp_path: pathlib.Path) -> None:
     root = _copy(tmp_path)
     bench = _bench(root)
@@ -306,7 +328,7 @@ def test_a_planted_eighth_deployable_config_fails(tmp_path: pathlib.Path) -> Non
 
 
 def test_a_planted_total_of_twenty_two_fails(tmp_path: pathlib.Path) -> None:
-    # eu 3 + bench 3 + five more at 3 = 21 (the limit); a seventh-config 1 more makes 22 (an eighth config, too).
+    # eu 3 + bench 3 + a..e at 3 = 21 over seven configs (the limit); wrangler.f at 1 is the eighth config and makes 22.
     extra = {"wrangler.a.toml": 3, "wrangler.b.toml": 3, "wrangler.c.toml": 3}
     extra |= {"wrangler.d.toml": 3, "wrangler.e.toml": 3}
     root = _copy(tmp_path, extra)

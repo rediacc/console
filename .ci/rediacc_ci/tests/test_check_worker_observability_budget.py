@@ -110,6 +110,17 @@ def test_planted_violation_fails(
     assert needle in result.stderr
 
 
+def test_enabled_table_without_a_logs_table_is_judged_as_logs_on_at_the_defaults(
+    tmp_path: pathlib.Path,
+) -> None:
+    bare = "[observability]\nenabled = true\n"
+    result = run(tree(tmp_path, {**GOOD, EU: bare}))
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "[observability.logs] has no explicit head_sampling_rate" in result.stderr
+    off = "[observability]\nenabled = false\n"
+    assert run(tree(tmp_path / "off", {**GOOD, EU: off})).returncode == 0
+
+
 def test_exempt_rate_is_a_ceiling(tmp_path: pathlib.Path) -> None:
     rules = json.loads(json.dumps(RULES))
     rules["worker_observability"]["sampling_exempt"][EDGE]["rate"] = 0.5

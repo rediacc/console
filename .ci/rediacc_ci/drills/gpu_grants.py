@@ -94,6 +94,14 @@ def setup_script() -> str:
     }
 
 
+def remove_containers_script(*names: str) -> str:
+    """`docker rm -f` of each name; only a `No such container` answer is forgiven (a failed first `docker run -d` leaves the second name absent), so a container whose removal fails for any other reason fails the script."""
+    return (
+        'rc=0; for c in %s; do o=$(docker rm -f $c 2>&1) || case "$o" in '
+        '*"No such container"*) ;; *) echo "$o" >&2; rc=1 ;; esac; done; exit $rc' % " ".join(names)
+    )
+
+
 def teardown_script() -> str:
     """Root on the worker: remove the spec and the node; exits 0 only when both are gone."""
     return "rm -f %(spec)s %(node)s; test ! -e %(spec)s && test ! -e %(node)s" % {
@@ -587,12 +595,7 @@ class _LiveG1:
     def _remove_detached(self) -> list[str]:
         if not self.detached:
             return []
-        # Only a container that exists is removed: a failed first `docker run -d` leaves the second name absent, and `rm -f` of an absent name would report a leftover that is not there.
-        res = self.quiet_shell(
-            self.ref_a,
-            "rc=0; for c in %s %s; do if docker container inspect $c >/dev/null 2>&1; then docker rm -f $c || rc=1; fi; done; exit $rc"
-            % (self.ctr_dev, self.ctr_base),
-        )
+        res = self.quiet_shell(self.ref_a, remove_containers_script(self.ctr_dev, self.ctr_base))
         if res.rc != 0:
             return [
                 "G1 containers %s, %s in %s (rm rc=%d)"
@@ -646,6 +649,7 @@ __all__ = [
     "open_verdict",
     "parse_grant_devices",
     "probe_command",
+    "remove_containers_script",
     "revoke_script",
     "run",
     "setup_script",

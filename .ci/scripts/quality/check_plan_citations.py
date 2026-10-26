@@ -1276,8 +1276,9 @@ def blame_commits(root, rel):
 
     An UNTRACKED plan has no history, so every line is uncommitted and nothing can have drifted since it was written. A tracked plan whose blame fails is a refusal, not an empty map: an empty map would read as "every line uncommitted" and report no drift on a plan git simply could not read.
     """
-    rc, _o, _e = _git_hist(root, "ls-files", "--error-unmatch", "--", rel)
-    if rc != 0:
+    # In HEAD, not merely in the index: a plan staged with `git add` and never committed passes ls-files, and blame then fails with "no such path in HEAD". ls-tree reads the tree only, so a blob:none clone answers it too.
+    rc, listed, _e = _git_hist(root, "ls-tree", "-z", "HEAD", "--", rel)
+    if rc != 0 or not listed:
         return {}
     rc, out, err = _git_hist(root, "blame", "--porcelain", "--", rel)
     if rc != 0:
@@ -1481,6 +1482,14 @@ def drift_selftest(ck):
             and blame.get(6) == ZERO_SHA
             and blame.get(2) not in (None, ZERO_SHA),
             blame,
+        )
+        (fx / "PLAN-staged.md").write_text(
+            "# PLAN: staged\n- [ ] T1 `lib/a.txt:1`\n", encoding="utf-8"
+        )
+        staged = _fixture_git(fx, "add", "--", "PLAN-staged.md")
+        ck(
+            "CONTROL: a plan staged but never committed has no blame and is judged all-uncommitted",
+            staged and blame_commits(fx, "PLAN-staged.md") == {},
         )
         c = blame.get(2, ZERO_SHA)
         got = drift_of(fx, "lib/a.txt", "lib/a.txt", 2, c, cache)

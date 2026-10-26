@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import re
+import subprocess
 
 from rediacc_ci.drills import gpu_grants as g
 from rediacc_ci.drills import vm_check
@@ -268,3 +269,24 @@ def test_exclusive_refusal_verdict() -> None:
     assert not g.exclusive_refusal_verdict(0, text, 2816)[0]
     assert not g.exclusive_refusal_verdict(1, text, 3072)[0]
     assert not g.exclusive_refusal_verdict(1, "Error: connection reset", 2816)[0]
+
+
+def _run_remove(tmp_path, answer: str, rc: int) -> int:
+    fake = tmp_path / "docker"
+    fake.write_text("#!/bin/sh\necho '%s'\nexit %d\n" % (answer, rc))
+    fake.chmod(0o755)
+    env = {"PATH": "%s:/usr/bin:/bin" % tmp_path}
+    proc = subprocess.run(
+        ["bash", "-c", g.remove_containers_script("a", "b")],
+        env=env,
+        check=False,
+        capture_output=True,
+    )
+    return proc.returncode
+
+
+def test_remove_containers_forgives_only_an_absent_container(tmp_path) -> None:
+    assert _run_remove(tmp_path, "Error: No such container: a", 1) == 0
+    assert _run_remove(tmp_path, "removed", 0) == 0
+    # A container that exists but whose removal fails (a daemon error) is a leftover, not a clean teardown.
+    assert _run_remove(tmp_path, "Cannot connect to the Docker daemon", 1) == 1

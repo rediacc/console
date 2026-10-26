@@ -516,8 +516,46 @@ def test_excluded_dirs_reads_a_symlinked_checkout_through_its_resolved_paths(
 
 
 def test_test_func_count_tolerates_spacing_and_parameter_names() -> None:
-    text = "func TestA(t *testing.T) {}\nfunc  TestB( tt  *testing.T ) {}\nfunc helper(t *testing.T) {}\n"
-    assert len(go_unit.TEST_FUNC_RE.findall(text)) == 2
+    text = "func TestA(t *testing.T) {}\nfunc  TestB( tt  *testing.T ) {}\nfunc helper(t *testing.T) {}\nfunc TestC(*testing.T) {}\nfunc TestD(\n\t_ *testing.T,\n) {}\n"
+    assert len(go_unit.TEST_FUNC_RE.findall(text)) == 3
+
+
+def test_a_symlinked_renet_keeps_root_only_packages_out_of_the_subset(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`go list` reports resolved directories; the cwd prefix handed to `subset_of` must be resolved too."""
+    real = tmp_path / "real"
+    renet = real / "private" / "renet"
+    for name, body in (("a", "package a\n"), ("b", "package b\nvar _ = os.Geteuid()\n")):
+        (renet / "pkg" / name).mkdir(parents=True)
+        (renet / "pkg" / name / (name + "_test.go")).write_text(body, encoding="utf-8")
+    (renet / "go.mod").write_text("module m\n", encoding="utf-8")
+    link = tmp_path / "link"
+    link.symlink_to(real)
+    monkeypatch.setattr(go_unit, "_proxy_root", lambda: link)
+    tested: list[list[str]] = []
+
+    def fake_run(argv: list[str], **_kw: object) -> subprocess.CompletedProcess[str]:
+        if argv[:2] == ["go", "list"]:
+            fmt = argv[3]
+            lines = []
+            for name in ("a", "b"):
+                directory = renet / "pkg" / name
+                if fmt == go_unit.GO_LIST_FORMAT:
+                    lines.append("m/pkg/%s 1 0 %s" % (name, directory))
+                else:
+                    lines.append("%s\t%s_test.go" % (directory, name))
+            return subprocess.CompletedProcess(argv, 0, "\n".join(lines) + "\n", "")
+        tested.append(argv)
+        return subprocess.CompletedProcess(argv, 0, "ok  \tm/pkg/a\t0.1s\n", "")
+
+    monkeypatch.setattr(go_unit.subprocess, "run", fake_run)
+    assert go_unit.run() == 0
+    assert "2 ./pkg/... package(s) have tests; 1 excluded as root-only; 1 in the subset" in (
+        capsys.readouterr().out
+    )
+    assert tested[0][-1] == "m/pkg/a"
+    assert "m/pkg/b" not in tested[0]
 
 
 # `go test -count=1 ./a ./b ./c` with ./a failing, ./c test-less, as go 1.26 prints it: the bare `FAIL` after a failing package's output and the bare `FAIL` closing a failing run are NOT result lines.

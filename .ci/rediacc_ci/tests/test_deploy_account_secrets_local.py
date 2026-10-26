@@ -319,6 +319,29 @@ def test_prune_archive_never_overwrites_an_existing_archive():
     assert any("__ARCHIVE_API_KEY already exists" in line for line in lines)
 
 
+def test_prune_archive_refuses_to_write_on_a_non_list_listing():
+    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    gets = 0
+
+    def fetch(method, path, token, body=None):
+        nonlocal gets
+        if method == "GET":
+            gets += 1
+            if gets == 2:
+                return {"unexpected": True}
+        return api(method, path, token, body)
+
+    rc, lines, _r = prune.run(
+        ["--region", "eu", "--target", "stable", "--archive"],
+        ENV,
+        fetch,
+        values=_bws({"ACCOUNT_SERVER_API_KEY": SECRET_VALUE}),
+    )
+    assert rc == 1
+    assert {m for m, _p in api.calls} == {"GET"}
+    assert any("is not a list; __ARCHIVE_API_KEY not written" in line for line in lines)
+
+
 def test_prune_delete_with_dry_run_deletes_nothing():
     api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OLD_NAME")})
     rc, lines, _r = prune.run(["--region", "eu", "--delete", "--dry-run"], ENV, api)

@@ -45,7 +45,7 @@ elif verb == "list-objects-v2":
 elif verb == "delete-object":
     if opt("--key") == os.environ.get("FAKE_FAIL_KEY"):
         sys.exit(1)
-    (bucket / opt("--key")).unlink()
+    (bucket / opt("--key")).unlink(missing_ok=True)
 else:
     sys.exit(2)
 """
@@ -190,7 +190,7 @@ def test_retain_apply_deletes_only_what_retention_releases(r2, tmp_path):
 def test_a_failed_manifest_delete_leaves_every_file_behind_it(r2, tmp_path, monkeypatch):
     ea.stage("1.4.2", "deadbeef", make_sources(tmp_path / "src"))
     monkeypatch.setenv("FAKE_FAIL_KEY", ea.key_for("1.4.2", ea.MANIFEST))
-    with pytest.raises(ea.ArtifactError, match="manifest|%s" % re.escape(ea.MANIFEST)):
+    with pytest.raises(ea.ArtifactError, match=re.escape(ea.key_for("1.4.2", ea.MANIFEST))):
         ea.delete_version("1.4.2")
     for name in (ea.MANIFEST, *ea.FILES):
         assert (r2 / ea.key_for("1.4.2", name)).is_file(), name
@@ -205,6 +205,9 @@ def test_a_failed_file_delete_still_attempts_the_rest_and_names_the_key(r2, tmp_
         ea.delete_version("1.4.2")
     for name in ea.FILES[1:]:
         assert not (r2 / ea.key_for("1.4.2", name)).exists(), name
+    assert ea.list_versions() == ["1.4.2"]
+    monkeypatch.delenv("FAKE_FAIL_KEY")
+    ea.delete_version("1.4.2")
     assert ea.list_versions() == []
 
 
@@ -226,6 +229,29 @@ def test_natives_tar_refuses_a_version_the_lockfile_does_not_pin(tmp_path):
     )
     with pytest.raises(ea.ArtifactError, match=r"lockfile pins 2\.0\.0"):
         ea.build_natives_tar(modules, lock, tmp_path / "n.tar")
+
+
+def test_a_supplied_natives_tar_is_checked_against_the_lockfile(tmp_path):
+    modules = tmp_path / "node_modules"
+    for package in ea.NATIVE_MODULES:
+        (modules / package).mkdir(parents=True)
+        (modules / package / "package.json").write_text(json.dumps({"version": "1.0.0"}))
+    good = tmp_path / "lock-good.json"
+    good.write_text(
+        json.dumps(
+            {"packages": {"node_modules/%s" % p: {"version": "1.0.0"} for p in ea.NATIVE_MODULES}}
+        )
+    )
+    tar = ea.build_natives_tar(modules, good, tmp_path / "n.tar")
+    ea.verify_natives_tar(tar, good)
+    bad = tmp_path / "lock-bad.json"
+    bad.write_text(
+        json.dumps(
+            {"packages": {"node_modules/%s" % p: {"version": "9.9.9"} for p in ea.NATIVE_MODULES}}
+        )
+    )
+    with pytest.raises(ea.ArtifactError, match=r"lockfile pins 9\.9\.9"):
+        ea.verify_natives_tar(tar, bad)
 
 
 def test_natives_tar_is_deterministic(tmp_path):
