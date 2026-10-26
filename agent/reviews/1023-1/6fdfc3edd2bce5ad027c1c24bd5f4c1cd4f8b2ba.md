@@ -21,9 +21,9 @@ Body-Sig: c6531ecd508fcd54
 ### 6fdfc3ed.1 [low] .ci/rediacc_ci/tests/test_drills_upgrade_converge.py:227
 Anchor: in-diff
 Claim: The new fail-closed test only checks that the guard's text appears in the generated script; it never runs the shell with an unreadable namespace, so a wrong guard that still contains these substrings would pass.
-Resolution: open
+Resolution: fixed 002e129a042567b94e05643540401f480f6961fa | d778be9d 2026-10-26T21:43:48Z
 
 ### 6fdfc3ed.2 [low] .ci/rediacc_ci/drills/upgrade_converge.py:82
 Anchor: in-diff
 Claim: The docstring still describes only the host-namespace refusal and does not mention that an unreadable /proc namespace link is now also refused as HOSTNS; the behaviour is documented only in the inline comment at line 90.
-Resolution: open
+Resolution: fixed 002e129a042567b94e05643540401f480f6961fa | d778be9d 2026-10-26T21:43:48Z
