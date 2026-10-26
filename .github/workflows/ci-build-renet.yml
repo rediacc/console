@@ -530,9 +530,9 @@ jobs:
   # once this workflow has built (or extracted) one, so the smoke lives here and
   # not in a quality lane. Runs on BOTH the full and cached paths: exactly one of
   # build-renet / extract-renet runs, and the other is skipped.
-  # No submodule checkout: the build context is packages/* plus the staged renet,
-  # and with private/bin/renet-linux-amd64 present the gate never falls back to
-  # a `go build` of private/renet.
+  # No submodule checkout: the build context is workers/proxy/stage/, filled by
+  # stage-local from this job's CLI bundle, node_modules natives and the
+  # downloaded private/bin/renet-linux-amd64.
   proxy-image-smoke:
     name: Proxy image smoke
     runs-on: ubuntu-latest
@@ -541,18 +541,27 @@ jobs:
     permissions:
       contents: read
     if: ${{ !cancelled() && (needs.build-renet.result == 'success' || needs.extract-renet.result == 'success') }}
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/profiler
+      # The Dockerfile builds nothing: the gate stages the image's inputs through
+      # `executor_artifacts stage-local`, which reads the tree's CLI bundle
+      # (built below, the same step ci-build-docker.yml runs; its cli-bundle
+      # artifact belongs to a sibling reusable workflow, so this job cannot
+      # order itself after it) and the lockfile-pinned ssh2 and cpu-features
+      # from node_modules (natives: true runs install:natives, which
+      # ignore-scripts=true otherwise skips). The gate's controls also start a
+      # fake account server under node before any build.
+      - uses: ./.github/actions/setup-workspace
         with:
-          runner-label: ubuntu-latest
+          natives: 'true'
+          build-packages: 'true'
 
-      # The gate's controls start a fake account server under node before any build.
-      - uses: ./.github/actions/setup-node-npm
+      - name: Build the CLI bundle for the image stage
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:

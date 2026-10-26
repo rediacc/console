@@ -2100,6 +2100,33 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // PLAN-proxy-cd-six-targets K1. The seven proxy wrangler configs (six CD targets and bench) are generated from wrangler.template.toml and regions.json, and every one is refused by name when it carries another target's service, route, destination or a budget breach. A stale generated file, an unknown wrangler*.toml, a drifted WK_PROXY_*_HOST and an account config whose EXECUTOR binding is another target's proxy all fail here; `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs` regenerates.
+    id: 'check:ci-proxy-configs',
+    run: 'npm run check:ci-proxy-configs',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/deploy/proxy_configs.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Proxy configs',
+    },
+  },
+  {
+    // PLAN-proxy-cd-six-targets G3. Nothing in CI ran `deploy_proxy` for a target, so a renamed config or a refusal firing on a real one surfaced on the first real deploy. Runs `--dry-run` (config refusals plus `wrangler deploy --dry-run --containers-rollout none`, no image build) for stable and edge in every regions.json region and for bench, with fake credentials; each must exit 0, print its pass line and name its own config.
+    id: 'check:ci-proxy-deploy-dry-run',
+    run: 'npm run check:ci-proxy-deploy-dry-run',
+    gate: true,
+    slow: true, // seven wrangler compiles, about 3 s each, 2026-10-25
+    leaves: ['.ci/scripts/quality/check_proxy_deploy_dry_run.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Proxy deploy dry run',
+    },
+  },
+  {
     // Worklist #f7b8953f. A rebase-merge rewrites every commit of the branch, so a SHA a tracked file cites for one of the branch's own commits points at nothing once the PR lands; two such SHAs sat in tests and a plan inventory until a hand remap. Every commit SHA cited in tracked code, test and plan files must be a commit of origin/main (one only on the branch is printed as pending); today's dead citations are frozen shrink-only in .ci/config/commit-citations-baseline.json. In quality-branch because it needs the full commit graph and origin/<base>, which only this lane fetches.
     id: 'check:ci-commit-citations',
     env: {

@@ -3251,6 +3251,14 @@ jobs:
           set -o pipefail
           ./run.sh drill backup --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-backup.log"
 
+      # The on-premise entry (`src/entry/on-premise.ts`) booted against RustFS
+      # with the S3 conformance probe: the backup plane an Elite deployment
+      # runs, which the dev gateway behind `drill backup` cannot show.
+      - name: drill backup-onprem
+        run: |
+          set -o pipefail
+          ./run.sh drill backup-onprem --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-backup-onprem.log"
+
       - name: collect drill diagnostics
         if: failure()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_drill_diagnostics
@@ -3263,6 +3271,7 @@ jobs:
             ${{ runner.temp }}/drill-universe.log
             ${{ runner.temp }}/drill-transfer.log
             ${{ runner.temp }}/drill-backup.log
+            ${{ runner.temp }}/drill-backup-onprem.log
             ${{ runner.temp }}/drill-diagnostics
           retention-days: 3
           if-no-files-found: ignore

@@ -322,6 +322,12 @@ bare = pathlib.Path(tempfile.mkdtemp(prefix="origin-", dir=RUN_TMP))
 git(bare, "init", "-q", "--bare", "--initial-branch=main")
 pusher = make_repo("0923-1")
 git(pusher, "remote", "add", "origin", str(bare))
+# No `refs/remotes/origin/main`, so the backup receipt check (box J10) cannot compute the pushed range: UNCHECKED is a refusal, never a pass.
+got, err = refused(pusher, "push", "-q", "origin", "0923-1")
+report("pre-push: no origin/main, so the backup range is unjudged", True, got, err)
+# With the base a real clone has and one unpublished commit, the backup check runs, finds no backup path, and the branch rule decides.
+git(pusher, "update-ref", "refs/remotes/origin/main", "HEAD")
+git(pusher, "commit", "-q", "--allow-empty", "-m", "feat: x")
 got, err = refused(pusher, "push", "-q", "origin", "0923-1")
 report("pre-push: the one branch", False, got, err)
 got, err = refused(pusher, "push", "-q", "origin", "HEAD:0925-1")

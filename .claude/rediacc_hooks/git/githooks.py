@@ -7,7 +7,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
   pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
-  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one.
+  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below).
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -334,7 +334,93 @@ def pre_push(argv: list[str], stdin: str) -> int:
                 "this creates the remote branch `%s`, and the one live branch is `%s`."
                 % (name, current or "(detached)")
             )
+    reason = backup_receipt_refusal(repo, lines)
+    if reason:
+        return _refuse(
+            "this push touches the backup paths and no VERIFIED backup receipt covers it.\n"
+            "%s\n"
+            "The pre-bash guard `block_backup_unverified_push` admits the same push with an\n"
+            "operator answer: %s='<drill-unavailable|not-runtime|deadline>: <why, %d+ chars>\n"
+            "ASKED:<YYYY-MM-DDTHH:MM>Z' on the push. This hook checks its shape only; the guard\n"
+            "proves the ASKED minute." % (reason, BACKUP_REASON_ENV, BACKUP_MIN_WHY)
+        )
     return 0
+
+
+# THE BACKUP RECEIPT AT THE GIT LAYER (box J10 of agent/plans/PLAN-backup-program.md). `block_backup_unverified_push` (box J4) refuses an agent's Bash `git push` of the backup paths without a VERIFIED backup receipt; a push from the operator's terminal or from a subprocess never reaches it, so this hook asks the same question of every pushed `refs/heads/*` commit.
+#
+# ONE DEFINITION, RUN AS A PROCESS. The trigger and the admission rule are `rediacc_ci.drills.backup_check_trigger`, and this module adds no `sys.path` entry (`test_canonical_sys_path_hop.py`), so it runs `python3 -m rediacc_ci.drills.backup_check_trigger check` with `.ci` of THIS checkout on `PYTHONPATH`, against the pushing repository. Exit 0 admits; 1 is the refusal it prints; anything else, a timeout included, is UNCHECKED and refused too, never a pass.
+#
+# WHAT IS NOT JUDGED: a submodule push (the console pointer push carries its range), a delete, a non-branch ref, and a commit some remote-tracking ref already contains (it was judged when it was first pushed; the fast-forward of `main` and the mirror copy are such pushes). The base is the remote's old tip when it is a commit here, else the merge-base with `refs/remotes/origin/main`.
+#
+# THE ESCAPE is the guard's own variable, checked for shape (a kind, a why of `BACKUP_MIN_WHY`+ characters, an `ASKED:` minute). No transcript reaches a git hook, so the minute is proven only by the guard for an agent's push; from the operator's terminal it is the operator's own word, like `COMMIT_POLICY_OK=1`.
+BACKUP_MODULE = "rediacc_ci.drills.backup_check_trigger"
+BACKUP_REASON_ENV = "BACKUP_CHECK_PUSH_REASON"
+BACKUP_KINDS = ("drill-unavailable", "not-runtime", "deadline")
+BACKUP_MIN_WHY = 40
+BACKUP_TIMEOUT = 120
+_BACKUP_REASON_RE = re.compile(r"^\s*([A-Za-z-]+)\s*:\s*(.*?)\s*$", re.DOTALL)
+_BACKUP_ASKED_RE = re.compile(r"\bASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z")
+
+
+def backup_escape_shaped(reason: str) -> bool:
+    """True when `reason` has the shape the guard's escape needs: a known kind, a why of `BACKUP_MIN_WHY`+ characters once the `ASKED:` token is removed, and the token itself."""
+    m = _BACKUP_REASON_RE.match(reason or "")
+    if not m or m.group(1).lower() not in BACKUP_KINDS:
+        return False
+    why = re.sub(r"\s*\bASKED:\S*", "", m.group(2)).strip()
+    return len(why) >= BACKUP_MIN_WHY and bool(_BACKUP_ASKED_RE.search(reason))
+
+
+def _published(repo: str, oid: str) -> bool:
+    return bool(
+        cp.git(
+            ["for-each-ref", "--contains", oid, "--format=%(refname)", "refs/remotes/"], cwd=repo
+        )
+    )
+
+
+def backup_receipt_refusal(repo: str, lines: list[list[str]]) -> str:
+    """ "" when no pushed branch commit needs the backup receipt or a receipt admits each, else the refusal text."""
+    if not repo or cp.superproject(repo):
+        return ""
+    if backup_escape_shaped(os.environ.get(BACKUP_REASON_ENV, "")):
+        return ""
+    env = dict(os.environ, PYTHONPATH=str(CONSOLE_ROOT / ".ci"))
+    for _local_ref, local_oid, remote_ref, remote_oid in lines:
+        if not remote_ref.startswith("refs/heads/") or local_oid == cp.ZERO_OID:
+            continue
+        if _published(repo, local_oid):
+            continue
+        argv = [sys.executable, "-m", BACKUP_MODULE, "check", "--root", repo, "--tip", local_oid]
+        if (
+            remote_oid != cp.ZERO_OID
+            and cp.git(["cat-file", "-e", "%s^{commit}" % remote_oid], cwd=repo) is not None
+        ):
+            argv += ["--base", remote_oid]
+        try:
+            proc = subprocess.run(
+                argv,
+                cwd=repo,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=BACKUP_TIMEOUT,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return "UNCHECKED: the backup check of %s did not run (%s)" % (local_oid[:12], exc)
+        if proc.returncode == 0:
+            continue
+        said = (proc.stderr.strip() or proc.stdout.strip())[-2000:]
+        if proc.returncode != 1:
+            return "UNCHECKED: the backup check of %s exited %d: %s" % (
+                local_oid[:12],
+                proc.returncode,
+                said or "(no output)",
+            )
+        return said
+    return ""
 
 
 # --------------------------------------------------------------------------- pre-commit ---------------------------------------------------------------------------

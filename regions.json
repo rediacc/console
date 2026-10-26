@@ -14,6 +14,8 @@
       "r2Jurisdiction": "eu",
       "workerName": "rediacc-account-eu",
       "edgeWorkerName": "edge-rediacc-account-eu",
+      "proxyWorkerName": "rediacc-proxy-eu",
+      "edgeProxyWorkerName": "edge-rediacc-proxy-eu",
       "sesRegion": "eu-central-1",
       "secretSuffix": "EU",
       "default": true
@@ -32,6 +34,8 @@
       "r2Jurisdiction": null,
       "workerName": "rediacc-account-us",
       "edgeWorkerName": "edge-rediacc-account-us",
+      "proxyWorkerName": "rediacc-proxy-us",
+      "edgeProxyWorkerName": "edge-rediacc-proxy-us",
       "sesRegion": "us-east-1",
       "secretSuffix": "US",
       "default": false
@@ -50,6 +54,8 @@
       "r2Jurisdiction": null,
       "workerName": "rediacc-account-asia",
       "edgeWorkerName": "edge-rediacc-account-asia",
+      "proxyWorkerName": "rediacc-proxy-asia",
+      "edgeProxyWorkerName": "edge-rediacc-proxy-asia",
       "sesRegion": "eu-central-1",
       "secretSuffix": "ASIA",
       "default": false

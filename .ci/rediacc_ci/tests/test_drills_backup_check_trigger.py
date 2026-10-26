@@ -9,10 +9,12 @@ import fnmatch
 import pathlib
 import subprocess
 import sys
+import types
 from typing import TYPE_CHECKING
 
 import pytest
 
+from rediacc_ci.drills import backup, backup_onprem
 from rediacc_ci.drills import backup_check_trigger as bct
 
 if TYPE_CHECKING:
@@ -380,3 +382,190 @@ def test_check_command_with_no_base_is_unjudged(tmp_path):
     done = _cli(w, "HEAD")
     assert done.returncode == 2
     assert "cannot be judged" in done.stderr
+
+
+# --------------------------------------------------------------------------- the drill runners' call
+
+
+def _drill(world: World, *, count: int = 30, failures: int = 0, selftest: bool = False):
+    """The four `lib.Drill` facts `record_drill` reads, over the fixture world."""
+    return types.SimpleNamespace(
+        root=world.root,
+        name="backup",
+        selftest=selftest,
+        count=count,
+        failures=failures,
+        started_at=1767225600,
+    )
+
+
+def _latest(world: World) -> dict:
+    latest = bct.read_latest(world.root)
+    assert latest is not None
+    return latest
+
+
+def test_a_passing_legs_run_and_a_passing_onprem_run_write_one_verified_receipt(tmp_path):
+    w = World(tmp_path / "c")
+    path = bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    assert path == w.root / bct.CACHE_DIR / bct.LATEST
+    half = _latest(w)
+    assert (half["status"], half["reason"]["class"], half["onprem"]) == (
+        bct.NOT_VERIFIED,
+        "legs-partial",
+        False,
+    )
+    assert _admit(w).code == "not-verified"
+
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    whole = _latest(w)
+    assert (whole["status"], whole["onprem"], whole["legs"]) == (
+        bct.VERIFIED,
+        True,
+        sorted(bct.REQUIRED_LEGS),
+    )
+    assert whole["tree"] == w.tree()
+    assert _admit(w).ok
+
+
+def test_the_halves_combine_in_either_order(tmp_path):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert _latest(w)["reason"]["class"] == "legs-partial"
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    assert _admit(w).ok
+
+
+def test_a_legs_subset_never_completes_the_receipt(tmp_path):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, ["a", "g"])
+    latest = _latest(w)
+    assert latest["status"] == bct.NOT_VERIFIED
+    assert "l" in latest["reason"]["detail"]
+    assert _admit(w).code == "not-verified"
+
+
+def test_a_failed_rerun_withdraws_its_half_and_keeps_the_other(tmp_path):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert _admit(w).ok
+
+    bct.record_drill(_drill(w, failures=2), bct.ONPREM_HALF, 1)
+    failed = _latest(w)
+    assert (failed["status"], failed["reason"]["class"], failed["onprem"]) == (
+        bct.FAILED,
+        "assertions-failed",
+        False,
+    )
+    assert failed["legs"] == sorted(bct.REQUIRED_LEGS)
+    assert _admit(w).code == "failed"
+
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert _admit(w).ok
+
+
+def test_a_half_from_another_tree_is_never_carried(tmp_path):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    _write(w.root, CONSOLE_FILE, "export const a = 4;\n")
+    w.commit("edit after the legs run")
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    latest = _latest(w)
+    assert (latest["status"], latest["legs"]) == (bct.NOT_VERIFIED, [])
+    assert _admit(w).code == "not-verified"
+
+
+def test_a_half_from_another_renet_checkout_is_never_carried(tmp_path):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    # The same console tree, but renet moved under it between the two runs.
+    w.sub_commit(bct.RENET_SUBMODULE, {RENET_FILE: "package chunkstore\n"})
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert _latest(w)["legs"] == []
+
+
+def test_legs_run_over_uncommitted_edits_are_never_carried(tmp_path):
+    w = World(tmp_path / "c")
+    _write(w.root, CONSOLE_FILE, "an uncommitted change the legs ran\n")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    dirty = _latest(w)
+    assert dirty["legs"] == sorted(bct.REQUIRED_LEGS)
+    assert dirty["inputs"] != bct.inputs_of_tree(w.root, w.tree())
+    # The edit is reverted, so the tree is clean again, but those legs ran other code.
+    _write(w.root, CONSOLE_FILE, "export const a = 1;\n")
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert _latest(w)["legs"] == []
+    assert _admit(w).code == "not-verified"
+
+
+def test_a_stale_verified_receipt_refuses_the_next_backup_change(tmp_path):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert _admit(w).ok
+    _write(w.root, CONSOLE_FILE, "export const a = 5;\n")
+    w.commit("a backup change after the drills")
+    assert _admit(w).code == "other-inputs"
+    w.sub_commit(bct.RENET_SUBMODULE, {RENET_FILE: "package chunkstore\n"})
+    w.commit("and a renet move")
+    assert _admit(w).code == "stale-gitlink"
+
+
+@pytest.mark.parametrize(
+    ("rc", "count", "failures", "status", "klass"),
+    [
+        (0, 30, 0, bct.VERIFIED, None),
+        (1, 30, 2, bct.FAILED, "assertions-failed"),
+        (0, 0, 0, bct.NOT_VERIFIED, "skipped"),
+        (1, 0, 0, bct.NOT_VERIFIED, "drill-unavailable"),
+    ],
+)
+def test_drill_outcome_maps_every_exit(rc, count, failures, status, klass):
+    got, reason = bct.drill_outcome(rc=rc, count=count, failures=failures)
+    assert got == status
+    assert (reason or {}).get("class") == klass
+
+
+def test_a_selftest_run_records_nothing(tmp_path):
+    w = World(tmp_path / "c")
+    assert bct.record_drill(_drill(w, selftest=True), bct.LEGS_HALF, 1, bct.REQUIRED_LEGS) is None
+    assert bct.read_latest(w.root) is None
+
+
+def test_record_half_refuses_an_unknown_half(tmp_path):
+    w = World(tmp_path / "c")
+    with pytest.raises(ValueError, match="half"):
+        bct.record_half(
+            w.root, half="both", status=bct.VERIFIED, run_id="r", started_at="", finished_at=""
+        )
+
+
+def _passing_run_all(self) -> int:
+    self.d.assert_equal("1", "1", "a fixture assertion")
+    return self.d.summary()
+
+
+def test_the_backup_runner_records_the_legs_half_it_ran(monkeypatch):
+    calls = []
+    monkeypatch.setattr(backup.Backup, "run_all", _passing_run_all)
+    monkeypatch.setattr(backup.Backup, "teardown_hook", lambda _self: None)
+    monkeypatch.setattr(
+        bct, "record_drill", lambda _drill, half, rc, legs=(): calls.append((half, rc, list(legs)))
+    )
+    assert backup.main(["--legs", "a,g"]) == 0
+    assert calls == [(bct.LEGS_HALF, 0, ["a", "g"])]
+
+
+def test_the_onprem_runner_records_the_onprem_half(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        backup_onprem.OnPrem, "__init__", lambda self, drill: setattr(self, "d", drill)
+    )
+    monkeypatch.setattr(backup_onprem.OnPrem, "run_all", _passing_run_all)
+    monkeypatch.setattr(
+        bct, "record_drill", lambda _drill, half, rc, legs=(): calls.append((half, rc, list(legs)))
+    )
+    assert backup_onprem.main([]) == 0
+    assert calls == [(bct.ONPREM_HALF, 0, [])]

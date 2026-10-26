@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import subprocess
 from typing import TYPE_CHECKING
 
 import pytest
@@ -133,3 +134,32 @@ def test_run_is_the_default_u1_step() -> None:
     # vm_check wires this function as the default u1_fn; a rename here would silently drop the live step, so pin the attribute.
     sig = inspect.signature(vm_check.VmCheck.__init__)
     assert sig.parameters["u1_fn"].default is u.run
+
+
+OLD_LISTING = "docker-8512.sock\ndocker-8513.sock\ncontainerd-8512\nsecrets\n"
+NEW_LISTING = "net-8512\n"
+
+
+def test_runtime_view_verdict_reads_the_old_layout_breach_and_the_converged_isolation() -> None:
+    assert u.runtime_view_verdict(OLD_LISTING, 8512, 8513, expect_peer_visible=True)[0]
+    assert u.runtime_view_verdict(NEW_LISTING, 8512, 8513, expect_peer_visible=False)[0]
+    # The converged layout is not ok while the peer is still listed, and the old one is not a breach when it is not.
+    assert not u.runtime_view_verdict(OLD_LISTING, 8512, 8513, expect_peer_visible=False)[0]
+    assert not u.runtime_view_verdict(NEW_LISTING, 8512, 8513, expect_peer_visible=True)[0]
+    assert not u.runtime_view_verdict("net-8513\n", 8512, 8513, expect_peer_visible=False)[0]
+
+
+@pytest.mark.parametrize("text", ["", "NOPID\n", "  \n"])
+@pytest.mark.parametrize("expect", [True, False])
+def test_a_probe_that_listed_nothing_is_never_ok(text: str, expect: bool) -> None:
+    ok, evidence = u.runtime_view_verdict(text, 8512, 8513, expect_peer_visible=expect)
+    assert not ok
+    assert "no runtime listing" in evidence
+
+
+def test_runtime_view_script_targets_the_socket_and_is_valid_shell() -> None:
+    script = u.runtime_view_script(u.new_docker_socket(8512))
+    assert "nsenter -t $pid -m ls -1" in script
+    assert "net-8512/docker-8512.sock" in script
+    assert "NOPID" in script
+    assert subprocess.run(["bash", "-n", "-c", script], check=False).returncode == 0

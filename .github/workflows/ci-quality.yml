@@ -490,11 +490,18 @@ jobs:
         run: PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py
       # <<< gate-bind
 
-
-
-
-
-
+      # Hand-registered (no gate header: the first is a module, the second needs the
+      # wrangler install the step before it provides, which no header can express).
+      - name: Proxy configs
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-proxy-configs
+      - name: Install proxy worker deps
+        id: proxy-deps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm ci --prefix workers/proxy
+      - name: Proxy deploy dry run
+        if: ${{ !cancelled() && steps.proxy-deps.outcome == 'success' }}
+        run: npm run check:ci-proxy-deploy-dry-run
 
       - name: CI executes only tracked paths
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

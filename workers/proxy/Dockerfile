@@ -5,89 +5,47 @@
 # evaluation, and the config crypto, and those are the last three things in this
 # system that should ever be allowed to drift.
 #
-# Build context is the repo root, because the bundle is produced from the
-# workspace:
+# NOTHING IS BUILT HERE. The image assembles the durable executor artifacts of one
+# release (PLAN-proxy-cd-six-targets, Design item 8): `executor_artifacts fetch
+# --version V --dest workers/proxy/stage/` for a deploy, or `executor_artifacts
+# stage-local` for bench and local runs. workers/proxy/stage/ holds
+#   cli-bundle.cjs, package.json, renet-linux-amd64, node-natives-linux-x64.tar, manifest.json
+# and the image is the same bytes whatever machine builds it. Build context is the
+# repo root:
 #   docker build -f workers/proxy/Dockerfile .
 
-# The one npm (.devcontainer/toolchain.env NPM_VERSION, outside this build context;
-# check:ci-lockfile asserts the two agree). node:24-slim bundles its own npm 11
-# minor, and `npm ci` below reads a lockfile written by exactly the pinned one.
-ARG NPM_VERSION=11.21.0
-
-FROM node:24-slim AS build
-ARG NPM_VERSION
-RUN npm install -g "npm@${NPM_VERSION}" --no-audit --no-fund
-
-WORKDIR /build
-
-# Workspace manifests first, so a dependency change is the only thing that
-# invalidates the install layer. The root tsconfig comes along because every
-# package tsconfig extends it; without it the compiler reports a cascade of
-# missing-type errors that all trace back to one missing file.
-COPY package.json package-lock.json .npmrc tsconfig.json ./
-# @rediacc/locales is the single declaration of the site locale set. It is buildless
-# (no dist, no scripts), but the CLI imports it, so both its manifest and its source
-# have to be present or `npm ci` leaves the workspace unlinked and the bundle fails.
-COPY packages/locales/package.json packages/locales/
-COPY packages/shared/package.json packages/shared/
-COPY packages/cli/package.json packages/cli/
-# The CLI compiles against @rediacc/provisioning for the local-VM types. Those
-# commands never run in a container, but tsc compiles the whole tree, so the
-# package has to be present to build.
-COPY packages/provisioning/package.json packages/provisioning/
-
-# The repo pins ignore-scripts=true for supply-chain reasons, so the three
-# packages that genuinely need to compile are rebuilt explicitly afterwards.
-RUN npm ci --ignore-scripts && npm rebuild --ignore-scripts=false ssh2 cpu-features esbuild || true
-
-COPY packages/locales packages/locales
-COPY packages/shared packages/shared
-COPY packages/provisioning packages/provisioning
-COPY packages/cli packages/cli
-
-# renet. Outside a SEA the CLI runs the renet it finds on PATH, and uploads that
-# same binary to a machine whose renet differs, so the image must carry a
-# release renet (with its embedded assets and the production license key), not
-# one compiled here. `rediacc_ci.deploy.deploy_proxy` builds it and stages it in workers/proxy/renet/;
-# the directory itself is tracked so this COPY always has a source, and the
-# check below names the missing file instead of failing later at run time.
-COPY workers/proxy/renet/ /opt/rediacc-bin/
-RUN test -x /opt/rediacc-bin/renet-linux-amd64 \
- || { echo "workers/proxy/renet/renet-linux-amd64 is missing: build it with PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy (or copy a release renet-linux-amd64 there)" >&2; exit 1; }
-
-# The shipped artifact is the esbuild BUNDLE, not the raw tsc output. The dist
-# tree emits extensionless ESM imports that plain node cannot resolve; the bundle
-# is what the installed `rdc` actually runs, so the executor runs it too. Same
-# code, same resolution behavior, no third build path to keep in sync.
-#
-# The bundle takes its version FROM the staged renet, so the two can never
-# disagree: the executor's rdc reports the version of the renet it ships.
-RUN CLI_VERSION="$(/opt/rediacc-bin/renet-linux-amd64 version | awk '{print $3}')" \
- && test -n "$CLI_VERSION" \
- && export CLI_VERSION \
- && npm run build --workspace @rediacc/provisioning \
- && npm run build --workspace @rediacc/shared \
- && npm run build --workspace @rediacc/cli \
- && npm run build:bundle --workspace @rediacc/cli
-
-# ---------------------------------------------------------------------------
-
-FROM node:24-slim
+# Pinned by digest (the multi-arch index of node:24-slim), so a rebuild of one
+# release is the same base. `npm run pins -- bump image:proxy-node` moves the tag
+# and the digest together.
+FROM node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205
 
 # The executor opens SSH itself (that is its entire job), and rsync backs the
-# renet binary staging path. renet itself is copied in below, from the build stage.
+# renet binary staging path.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openssh-client rsync ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Only the bundle and the native modules it dlopen's need to ship. Everything
-# else (sources, tsc output, dev dependencies) stays in the build stage.
-COPY --from=build /build/packages/cli/dist/cli-bundle.cjs ./cli-bundle.cjs
-COPY --from=build /build/node_modules/ssh2 ./node_modules/ssh2
-COPY --from=build /build/node_modules/cpu-features ./node_modules/cpu-features
-COPY --from=build /opt/rediacc-bin/renet-linux-amd64 /usr/local/bin/renet
+# Bind-mounted, so the 200 MB renet lands in the image once, not once as a staged
+# copy and again as the installed one. The manifest is the contract: every file it
+# names must hash to its sha256, and a missing or extra-short stage fails by name
+# rather than at run time. renet is a release binary (embedded assets, the
+# production license key): outside a SEA the CLI runs the renet on PATH and uploads
+# that same binary to a machine whose renet differs.
+RUN --mount=type=bind,source=workers/proxy/stage,target=/stage \
+    test -f /stage/manifest.json \
+ || { echo "workers/proxy/stage/ has no manifest.json: run 'PYTHONPATH=.ci python3 -m rediacc_ci.deploy.executor_artifacts fetch --version V --dest workers/proxy/stage/' (or stage-local)" >&2; exit 1; }
+RUN --mount=type=bind,source=workers/proxy/stage,target=/stage \
+    node -e 'const m=require("/stage/manifest.json");for(const[n,e]of Object.entries(m.files))console.log(e.sha256+"  "+n)' > /tmp/stage.sha256 \
+ && test -s /tmp/stage.sha256 \
+ && (cd /stage && sha256sum -c /tmp/stage.sha256) \
+ && cp /stage/cli-bundle.cjs /stage/package.json /app/ \
+ && install -m 0755 /stage/renet-linux-amd64 /usr/local/bin/renet \
+ && tar -xf /stage/node-natives-linux-x64.tar -C /app \
+ && rm /tmp/stage.sha256
+
+# Fails the build when the staged renet does not run on this base.
 RUN renet version
 
 # The container tier holds no key at rest: a client grants the config key per

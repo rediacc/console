@@ -58,3 +58,12 @@ bucket_name = "rediacc-configs-us"
 [[r2_buckets]]
 binding = "BACKUP_BUCKET"
 bucket_name = "rediacc-backups-us"
+
+# The web console reaches the executor proxy through this binding, not a public fetch: both Workers
+# share the rediacc.com zone, and a same-zone subrequest never reaches another Worker. CD sets
+# EXECUTOR_MODE as a secret only after rediacc-proxy-us passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
+# Design item 2). wrangler refuses a deploy whose binding names a Worker that does not exist yet, so the
+# first deploy of a target bootstraps the proxy (workers/proxy/wrangler.us.toml) before this Worker.
+[[services]]
+binding = "EXECUTOR"
+service = "rediacc-proxy-us"

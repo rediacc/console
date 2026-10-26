@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.ops import telemetry_delivery as td
+from rediacc_ci.well_known import PROXY_BENCH_HOST
 
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
@@ -292,4 +293,4 @@ def test_proxy_run_keeps_the_token_out_of_output(make_fake):
 
 
 def test_proxy_hosts_come_from_the_wrangler_routes():
-    assert td.proxy_hosts() == ["proxy.bench.rediacc.com"]
+    assert td.proxy_hosts() == [PROXY_BENCH_HOST]

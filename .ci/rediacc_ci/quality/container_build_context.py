@@ -1,6 +1,6 @@
 """Every Cloudflare Container image in a wrangler config builds from a context that holds what its Dockerfile copies.
 
-WHY. `workers/proxy/wrangler.toml` named `image = "./Dockerfile"` and nothing else, so wrangler built from `workers/proxy/` while the Dockerfile copies `packages/*` from the repo root. The image could never build, and nothing noticed: CI never runs deploy-proxy, and wrangler's `--dry-run` does not build container images. The first real deploy (2026-09-24, W7P5-a M-live item 1) stopped at `"/packages/cli": not found`.
+WHY. The proxy config (then `workers/proxy/wrangler.toml`, now one `wrangler.<target>.toml` per target) named `image = "./Dockerfile"` and nothing else, so wrangler built from `workers/proxy/` while the Dockerfile copies `packages/*` from the repo root. The image could never build, and nothing noticed: CI never runs deploy-proxy, and wrangler's `--dry-run` does not build container images. The first real deploy (2026-09-24, W7P5-a M-live item 1) stopped at `"/packages/cli": not found`.
 
 WHAT IT CHECKS. For each `[[containers]]` entry whose `image` is a Dockerfile path, in every tracked `wrangler*.toml`: the context is `image_build_context` when set, else the Dockerfile's directory (wrangler's default). Every `COPY`/`ADD` source that is not from another stage (`--from=`) and is not a URL must exist under that context, globs included.
 

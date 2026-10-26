@@ -529,6 +529,10 @@
       "RUSTFS_PORT",
       "RUSTFS_SECRET"
     ],
+    ".ci/rediacc_ci/drills/backup_onprem.py": [
+      "CONFIG_R2_ACCESS_KEY_ID",
+      "CONFIG_R2_SECRET_ACCESS_KEY"
+    ],
     ".ci/rediacc_ci/drills/backup_roundtrip.py": [
       "BRIDGE_HOST",
       "CELL_BYTES",
@@ -2248,6 +2252,7 @@
       "WHY_ON_EDIT_SIMILAR"
     ],
     ".claude/rediacc_hooks/git/githooks.py": [
+      "BACKUP_CHECK_PUSH_REASON",
       "COMMIT_POLICY_OK",
       "GEN_DOCS_PRECOMMIT_VERBOSE"
     ],

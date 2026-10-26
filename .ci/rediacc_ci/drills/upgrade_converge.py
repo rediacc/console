@@ -2,7 +2,7 @@
 
 This is the live half of U1. `vm_check.py` registers it as the `U1` step of the renet phase and calls `run(ctx)` once the fleet, the account token and the ops grand are in hand; `ctx` is the running `VmCheck`, so every VM action still goes through its `./rdc.sh` helpers and its ssh probe, and the forks and the throwaway config this step creates are torn down here (leftovers ride `ctx.sweep_leftovers`, so the run cannot reach VERIFIED over one). The CLI-free pieces -- the layout path strings, the build and status command text, and the parsers that read their output -- are pure functions so `tests/test_drills_upgrade_converge.py` can pin them without a machine.
 
-WHY A PRE-ISOLATION renet AT ALL. A daemon started by a renet older than `0c3a88a` (the per-network layout) keeps the flat layout until something restarts it, and the converge pass (R1/C1) is what moves a machine an upgrade left behind. So U1 installs the commit BEFORE `0c3a88a` (`PRE_ISOLATION_COMMIT`), brings two forks up on it, upgrades through `rdc machine setup`, and asserts the convergence facts: the `net-<N>` socket present, the legacy socket gone, the runtime stamp naming the deployed renet, containers running, and a second dry run reporting nothing stale. Repo isolation itself is asserted by the I1 tenant drill (agent/plans/PLAN-sandbox-tenant-separation.md), not here.
+WHY A PRE-ISOLATION renet AT ALL. A daemon started by a renet older than `0c3a88a` (the per-network layout) keeps the flat layout until something restarts it, and the converge pass (R1/C1) is what moves a machine an upgrade left behind. So U1 installs the commit BEFORE `0c3a88a` (`PRE_ISOLATION_COMMIT`), brings two forks up on it, upgrades through `rdc machine setup`, and asserts the convergence facts: the `net-<N>` socket present, the legacy socket gone, the runtime stamp naming the deployed renet, containers running, and a second dry run reporting nothing stale. Two rows read the cross-reach itself, from fork A's dockerd mount namespace: before the upgrade it lists fork B's socket (the breach), after the converge it lists only its own `net-<N>` directory. Isolation of a running workload is asserted by the I1 tenant drill (agent/plans/PLAN-sandbox-tenant-separation.md).
 """
 
 from __future__ import annotations
@@ -63,6 +63,39 @@ def build_old_renet_script(src_dir: str, out_binary: str, commit: str) -> str:
         "cd %(src)s && go build -tags nolicense -o %(out)s ./cmd/renet\n"
         % {"src": src, "out": out, "sha": sha}
     )
+
+
+def runtime_view_script(socket: str) -> str:
+    """Root on the worker: list `RUNTIME_DIR` as the dockerd serving `socket` sees it, through the mount namespace of its process. Prints `NOPID` (exit 3) when no dockerd names the socket.
+
+    The old layout bound the whole directory into every repo's dockerd sandbox, so a container started through repo A's Docker API could bind repo B's socket and drive B's daemon (the breach of `0c3a88a`, verified live 2026-10-23); the view listing is that reach, read without starting a container.
+    """
+    pattern = shlex.quote("dockerd.*%s" % socket)
+    return (
+        "pid=$(pgrep -f -- %(pattern)s | head -n 1); "
+        '[ -n "$pid" ] || { echo NOPID; exit 3; }; '
+        "nsenter -t $pid -m ls -1 %(dir)s" % {"pattern": pattern, "dir": shlex.quote(RUNTIME_DIR)}
+    )
+
+
+def peer_entries(network_id: int | str) -> frozenset[str]:
+    """The names under `RUNTIME_DIR` that belong to one network in either layout."""
+    return frozenset({"docker-%s.sock" % network_id, "net-%s" % network_id})
+
+
+def runtime_view_verdict(
+    text: str, own: int | str, peer: int | str, *, expect_peer_visible: bool
+) -> tuple[bool, str]:
+    """(ok, evidence) for one listing from `runtime_view_script`. `expect_peer_visible` is the old layout's breach (the peer's socket or net directory is listed beside the daemon's own); its opposite is the converged layout, where the daemon sees its own `net-<own>` and none of the peer's names. A listing that never ran (`NOPID`, empty) is never ok either way, so a probe that saw nothing cannot read as isolation."""
+    entries = {line.strip() for line in text.splitlines() if line.strip()}
+    if not entries or "NOPID" in entries:
+        return False, "no runtime listing (%s)" % (text.strip()[:80] or "empty")
+    sees_peer = bool(entries & peer_entries(peer))
+    sees_own = bool(entries & peer_entries(own))
+    evidence = "sees_own=%s sees_peer=%s entries=%s" % (sees_own, sees_peer, sorted(entries)[:8])
+    if expect_peer_visible:
+        return sees_peer, evidence
+    return sees_own and not sees_peer, evidence
 
 
 def dry_run_reports_zero_stale(report_json: str) -> bool:
@@ -151,6 +184,7 @@ class _LiveU1:
             if not self._upgrade():
                 return
             self._assert_converged()
+            self._view_rows(before=False)
             self._assert_dry_run_clean()
         finally:
             self._teardown()
@@ -306,6 +340,7 @@ class _LiveU1:
                 res,
                 evidence="old=%s new=%s" % ("OLDSOCK" in text, "NEWSOCK" in text),
             )
+        self._view_rows(before=True)
 
     def _upgrade(self) -> bool:
         """Point the symlink at the current renet and run `rdc machine setup`, so the provision cache sees a new mtime/size and uploads the new binary; the setup converge pass then moves the stale daemons onto net-<N>/."""
@@ -369,6 +404,26 @@ class _LiveU1:
             self.ctx.check(
                 STEP, "fork %s daemon answers on the new socket" % tag, running.rc == 0, running
             )
+
+    def _view_rows(self, *, before: bool) -> None:
+        """Fork A's dockerd against fork B's names under `RUNTIME_DIR`: before the upgrade A's daemon lists B's socket (the breach the old layout allowed), after it A lists only its own `net-<N>` (the cross-reach is gone)."""
+        nid_a, nid_b = self.net_ids.get(self.tag_a), self.net_ids.get(self.tag_b)
+        if not nid_a or not nid_b:
+            return
+        socket = old_docker_socket(nid_a) if before else new_docker_socket(nid_a)
+        res = self.probe("sudo sh -c %s" % shlex.quote(runtime_view_script(socket)))
+        ok, evidence = runtime_view_verdict(res.out, nid_a, nid_b, expect_peer_visible=before)
+        if before:
+            desc = (
+                "before the upgrade net-%s's dockerd lists net-%s's socket (the old-layout breach)"
+                % (nid_a, nid_b)
+            )
+        else:
+            desc = (
+                "after the converge net-%s's dockerd lists its own net directory and none of net-%s's"
+                % (nid_a, nid_b)
+            )
+        self.ctx.check(STEP, desc, ok, res, evidence=evidence)
 
     def _assert_dry_run_clean(self) -> None:
         res = self.crdc("machine", "converge", self.ctx.machine, "--dry-run", "--json")
@@ -497,7 +552,10 @@ __all__ = [
     "new_docker_socket",
     "old_docker_socket",
     "parse_stamp",
+    "peer_entries",
     "run",
     "runtime_stamp_path",
+    "runtime_view_script",
+    "runtime_view_verdict",
     "stamp_is_current",
 ]

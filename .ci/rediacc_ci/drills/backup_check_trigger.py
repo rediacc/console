@@ -14,9 +14,9 @@ THE KEY. A receipt admits a push when its tree IS the pushed tree, or when BOTH 
 
 THE RECEIPT is `.ci/cache/backup-check/receipt.json`, archived as `<tree>.json` on every write (`.ci/cache/` is gitignored). Schema 1. A VERIFIED receipt names every leg of `REQUIRED_LEGS` in `legs` and carries `onprem: true` (the I7 variant: entry/on-premise.ts booted against RustFS with the S3 conformance probe passing); `validate` refuses a VERIFIED receipt short of either, so a partial run is recorded NOT_VERIFIED (class `legs-partial`) and never admits. `renet` and `account` each record `pointer` (the tree's gitlink), `checkout` (the submodule HEAD the drill ran against) and `modified` (uncommitted trigger-path edits in that checkout); a checkout that is not the pointer is `checkout-mismatch`, a modified one `modified-checkout`.
 
-WHO WRITES IT. `record()`, called by the drill runner at the end of a run. Nothing else here writes one, and there is deliberately no command line for writing.
+WHO WRITES IT. `record_drill()`, called once by each drill runner at the end of a run: `rediacc_ci.drills.backup.main` records the legs half (the legs that passed), `rediacc_ci.drills.backup_onprem.main` the on-premise half. `record_half()` carries the other half from the receipt on file for the same tree, digest and checkouts, so the two runs together write one VERIFIED receipt; `record()` builds and writes it. Nothing else writes one, and there is deliberately no command line for writing.
 
-THE COMMAND LINE is for the git-level half (box J10, `.claude/rediacc_hooks/git/githooks.py` pre_push), which cannot import this package without a `sys.path` hop and so runs it as a process. That hook hunk and the J4 guard are parked in `agent/plans/attachments/PLAN-backup-program-J4-J10-guard.patch` until legs l (J8) and the on-prem variant (I7) can write a VERIFIED receipt:
+WHO READS IT. The pre-bash guard `.claude/rediacc_hooks/guards/block_backup_unverified_push.py` (box J4) imports this module; the git-level half (box J10, `.claude/rediacc_hooks/git/githooks.py` pre_push) cannot import this package without a `sys.path` hop and so runs THE COMMAND LINE as a process:
 
     PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup_check_trigger check --root <repo> --tip <sha> [--base <sha>]
 
@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import datetime
 import fnmatch
 import hashlib
 import json
@@ -35,6 +36,7 @@ import pathlib
 import re
 import sys
 import tempfile
+import time
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci.drills import vm_check_trigger as vmt
@@ -386,6 +388,115 @@ def record(
     return write(root, receipt)
 
 
+LEGS_HALF = "legs"
+ONPREM_HALF = "onprem"
+HALVES = (LEGS_HALF, ONPREM_HALF)
+
+
+def _carried(root: pathlib.Path, tree: str) -> dict[str, Any] | None:
+    """The receipt already on file for exactly the checkout at `root`: the same tree, the same worktree digest, and each submodule at the same checkout with the same modified state. Only such a receipt may lend its other half to this run."""
+    prior = read_archive(root, tree) if tree else None
+    if prior is None or prior.get("inputs") != inputs(root):
+        return None
+    for sub in SUBMODULES:
+        name = sub.rsplit("/", 1)[-1]
+        now = _checkout_state(root, sub, (prior.get(name) or {}).get("pointer", ""))
+        if prior.get(name) != now:
+            return None
+    return prior
+
+
+def record_half(
+    root: pathlib.Path,
+    *,
+    half: str,
+    status: str,
+    legs: Sequence[str] = (),
+    run_id: str,
+    started_at: str,
+    finished_at: str,
+    reason: dict[str, str] | None = None,
+) -> pathlib.Path:
+    """Record one drill's half of the receipt and carry the other half from the receipt already on file for this exact checkout (`_carried`).
+
+    The RustFS drill (`half="legs"`, `legs` = the legs that passed) and the on-premise variant (`half="onprem"`) are separate runs, and the receipt is VERIFIED only once both halves passed for one tree, one digest and one pair of checkouts. A half that did not pass contributes nothing (no legs, `onprem` false), so a failed re-run withdraws what that half had vouched for, and the other half survives it."""
+    if half not in HALVES:
+        raise ValueError(f"half {half!r} is not one of {', '.join(HALVES)}")
+    tree = make_git(root)(["rev-parse", "HEAD^{tree}"]) or ""
+    prior = _carried(root, tree) or {}
+    passed = status == VERIFIED
+    if half == LEGS_HALF:
+        ran = list(legs) if passed else []
+        onprem = prior.get("onprem") is True
+    else:
+        ran = list(prior.get("legs") or [])
+        onprem = passed
+    return record(
+        root,
+        status=status,
+        legs=ran,
+        onprem=onprem,
+        run_id=run_id,
+        started_at=started_at,
+        finished_at=finished_at,
+        reason=reason,
+    )
+
+
+def _iso(epoch: float) -> str:
+    return datetime.datetime.fromtimestamp(epoch, datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def drill_outcome(*, rc: int, count: int, failures: int) -> tuple[str, dict[str, str] | None]:
+    """(status, reason) for a finished drill run. Only exit 0 with at least one assertion and no failure is VERIFIED: a run that asserted nothing is a skip (`lib.Drill.summary` exits 0 on it) and proves nothing; a run that failed an assertion is FAILED; a run that stopped before asserting anything (a preflight refusal, a store that would not start) is NOT_VERIFIED, the attempt the `drill-unavailable` escape names."""
+    if rc == 0 and count > 0 and failures == 0:
+        return VERIFIED, None
+    if failures > 0:
+        return FAILED, {
+            "class": "assertions-failed",
+            "detail": f"{failures} of {count} assertions failed (exit {rc})",
+        }
+    if rc == 0:
+        return NOT_VERIFIED, {
+            "class": "skipped",
+            "detail": "0 assertions ran, so nothing was proven",
+        }
+    return NOT_VERIFIED, {
+        "class": "drill-unavailable",
+        "detail": f"the drill exited {rc} after {count} assertions and no failure",
+    }
+
+
+def record_drill(drill: Any, half: str, rc: int, legs: Sequence[str] = ()) -> pathlib.Path | None:
+    """The drill runner's one call at the end of a run: map the `lib.Drill` outcome to a status and record `half`. A `--selftest` run records nothing (its exit is non-zero on purpose). A receipt that cannot be written is said loudly on stderr and never changes the drill's exit code."""
+    if drill.selftest:
+        return None
+    status, reason = drill_outcome(rc=rc, count=drill.count, failures=drill.failures)
+    started = drill.started_at or time.time()
+    try:
+        path = record_half(
+            pathlib.Path(drill.root),
+            half=half,
+            status=status,
+            legs=legs,
+            run_id=f"{drill.name}-{int(started)}",
+            started_at=_iso(started),
+            finished_at=_iso(time.time()),
+            reason=reason,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"backup-check: the receipt was NOT written ({exc})", file=sys.stderr)
+        return None
+    written = read_latest(pathlib.Path(drill.root)) or {}
+    print(
+        f"backup-check: receipt {written.get('status', '?')} for tree "
+        f"{str(written.get('tree', ''))[:12]} (legs {','.join(written.get('legs') or []) or 'none'}, "
+        f"onprem {written.get('onprem')}) at {path}",
+        file=sys.stderr,
+    )
+    return path
+
+
 def _load(path: pathlib.Path) -> dict[str, Any] | None:
     try:
         parsed = json.loads(path.read_text(encoding="utf-8"))
@@ -508,7 +619,8 @@ def admit(root: pathlib.Path, tree: str, digest: str | None, pointers: dict[str,
 
 
 RECEIPT_FIX = (
-    "the backup drill writes it (`./run.sh drill backup`, legs a-l plus the on-premise variant)"
+    "the two backup drills write it together: `./run.sh drill backup` (legs a-l) and "
+    "`./run.sh drill backup-onprem` (the on-premise variant), on the committed tree"
 )
 
 

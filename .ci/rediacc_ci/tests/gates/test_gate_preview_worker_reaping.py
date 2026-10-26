@@ -42,8 +42,13 @@ MUST_NOT_MATCH = (
     "edge-rediacc-account-asia",  # workers/account/wrangler.edge-asia.toml:1
     "rediacc-www",  # workers/www/wrangler.toml:1
     "edge-rediacc-www",  # workers/www/wrangler.edge.toml:1
-    "rediacc-proxy-eu",  # workers/proxy/wrangler.toml:1
-    "rediacc-proxy-bench",  # workers/proxy/wrangler.bench.toml:12
+    "rediacc-proxy-eu",  # workers/proxy/wrangler.eu.toml
+    "rediacc-proxy-us",  # workers/proxy/wrangler.us.toml
+    "rediacc-proxy-asia",  # workers/proxy/wrangler.asia.toml
+    "edge-rediacc-proxy-eu",  # workers/proxy/wrangler.edge-eu.toml
+    "edge-rediacc-proxy-us",  # workers/proxy/wrangler.edge-us.toml
+    "edge-rediacc-proxy-asia",  # workers/proxy/wrangler.edge-asia.toml
+    "rediacc-proxy-bench",  # workers/proxy/wrangler.bench.toml
     "mta-sts-policy",  # workers/mta-sts/wrangler.toml:1
     "pr-main",  # pr- prefix, not a number
     "pr-574-old",  # trailing junk

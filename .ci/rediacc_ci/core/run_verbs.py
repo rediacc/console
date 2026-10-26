@@ -40,6 +40,7 @@ DRILL_MODULES = {
     "transfer": "rediacc_ci.drills.transfer",
     "license": "rediacc_ci.drills.license",
     "backup": "rediacc_ci.drills.backup",
+    "backup-onprem": "rediacc_ci.drills.backup_onprem",
     "vmcheck": "rediacc_ci.drills.vm_check",
 }
 
@@ -230,6 +231,7 @@ DRILL COMMANDS (scripted walkthroughs; non-zero exit on any failed assertion):
   drill license       Live licensing battery on the ops VMs (declares its VM cost)
   drill backup        Live chunk-store battery: session mint, seed and incremental
                       upload, byte-identical restore, quota refusal (no VMs needed)
+  drill backup-onprem Chunk-store backup against a local RustFS (the Elite on-prem plane)
   drill vmcheck       Repo shell, sync, SFTP and VS Code on the ops VMs (npm run vm:check)
   drill <name> --selftest
                       Plant one failing assertion; the run MUST exit non-zero
@@ -360,6 +362,7 @@ DRILL_ARMS: dict[str, Arm] = {
     "transfer": _module_arm(DRILL_MODULES["transfer"]),
     "license": _module_arm(DRILL_MODULES["license"]),
     "backup": _module_arm(DRILL_MODULES["backup"]),
+    "backup-onprem": _module_arm(DRILL_MODULES["backup-onprem"]),
     "vmcheck": _module_arm(DRILL_MODULES["vmcheck"]),
 }
 

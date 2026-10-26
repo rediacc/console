@@ -16,12 +16,6 @@ import typing
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.well_known import (
-    ACCOUNT_DEFAULT_ORIGIN,
-    BENCH_ORIGIN,
-    PROXY_BENCH_HOST,
-    PROXY_EU_HOST,
-)
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -39,18 +33,6 @@ CONTAINERS = """
 class_name = "ExecutorContainer"
 image = "./Dockerfile"
 max_instances = %d
-"""
-BENCH_HEAD = f"""
-name = "rediacc-proxy-bench"
-main = "src/index.ts"
-routes = [{{ pattern = "{PROXY_BENCH_HOST}", custom_domain = true }}]
-
-[vars]
-ACCOUNT_URL = "{BENCH_ORIGIN}"
-
-[[services]]
-binding = "ACCOUNT"
-service = "rediacc-account-bench"
 """
 EU = "wrangler.eu.toml"
 
@@ -91,7 +73,7 @@ def _copy(
     proxy = root / "workers" / "proxy"
     proxy.mkdir(parents=True)
     (proxy / EU).write_text(CONTAINERS % 2, encoding="utf-8")
-    (proxy / "wrangler.bench.toml").write_text(BENCH_HEAD + CONTAINERS % 2, encoding="utf-8")
+    (proxy / "wrangler.bench.toml").write_text(CONTAINERS % 2, encoding="utf-8")
     if dev:
         (proxy / "wrangler.dev.toml").write_text(CONTAINERS % 2, encoding="utf-8")
     for name, value in (extra or {}).items():
@@ -111,14 +93,24 @@ def test_the_real_tree_is_within_budget() -> None:
     assert proc.returncode == 0, proc.stderr
     assert "at max_instances <= 3 in " in proc.stdout
     assert "deployable" in proc.stdout
-    assert "the bench config naming bench only" in proc.stdout
     assert "1 sleepAfter assignment(s)" in proc.stdout
 
 
 def test_the_glob_sees_every_config_in_the_real_tree() -> None:
-    configs = sorted(PROXY.glob("wrangler*.toml"))
+    configs = [
+        c for c in sorted(PROXY.glob("wrangler*.toml")) if c.name != "wrangler.template.toml"
+    ]
     assert PROXY / "wrangler.bench.toml" in configs
     assert f"in {len(configs)} config(s)" in _run().stdout
+
+
+def test_the_template_is_not_a_config(tmp_path: pathlib.Path) -> None:
+    root = _copy(tmp_path)
+    (root / "workers" / "proxy" / "wrangler.template.toml").write_text(
+        'name = "@@NAME@@"\n', encoding="utf-8"
+    )
+    proc = _run("--root", str(root))
+    assert proc.returncode == 0, proc.stderr
 
 
 def test_the_unplanted_copy_passes_so_the_plants_below_are_what_fires(
@@ -218,7 +210,7 @@ def test_the_selftest_passes_on_its_own() -> None:
     assert "FAIL" not in proc.stderr
 
 
-# ---- the bench config (workers/proxy/wrangler.bench.toml): the same budget, and bench names only ----
+# ---- the bench config (workers/proxy/wrangler.bench.toml): the same budget; what it names is check:ci-proxy-configs' ----
 
 
 def _bench(root: pathlib.Path) -> pathlib.Path:
@@ -244,43 +236,6 @@ def test_a_deleted_bench_max_instances_fails(tmp_path: pathlib.Path) -> None:
         "workers/proxy/wrangler.bench.toml: [[containers]] ExecutorContainer sets no max_instances"
         in (proc.stderr)
     )
-
-
-@pytest.mark.parametrize(
-    ("old", "new", "fragment"),
-    [
-        (
-            f'ACCOUNT_URL = "{BENCH_ORIGIN}"',
-            f'ACCOUNT_URL = "{ACCOUNT_DEFAULT_ORIGIN}"',
-            f"vars.ACCOUNT_URL is '{ACCOUNT_DEFAULT_ORIGIN}'",
-        ),
-        (
-            'service = "rediacc-account-bench"',
-            'service = "rediacc-account-eu"',
-            "[[services]] binds 'rediacc-account-eu'",
-        ),
-        (
-            f'pattern = "{PROXY_BENCH_HOST}"',
-            f'pattern = "{PROXY_EU_HOST}"',
-            f"route '{PROXY_EU_HOST}' names eu",
-        ),
-        (
-            'name = "rediacc-proxy-bench"',
-            'name = "rediacc-proxy-production"',
-            "names production",
-        ),
-    ],
-    ids=["account-url", "binding", "route", "name"],
-)
-def test_a_bench_config_naming_anything_but_bench_fails(
-    tmp_path: pathlib.Path, old: str, new: str, fragment: str
-) -> None:
-    root = _copy(tmp_path)
-    _replace(_bench(root), old, new)
-    proc = _run("--root", str(root))
-    assert proc.returncode == 1, proc.stdout + proc.stderr
-    assert "FAIL  workers/proxy/wrangler.bench.toml: " in proc.stderr
-    assert fragment in proc.stderr
 
 
 def test_a_missing_bench_config_is_no_verdict(tmp_path: pathlib.Path) -> None:
