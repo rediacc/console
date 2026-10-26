@@ -14,7 +14,9 @@ Each check carries a control that plants the violation in a copy of the parsed d
 from __future__ import annotations
 
 import copy
+import os
 import re
+import subprocess
 
 import pytest
 
@@ -293,3 +295,37 @@ def test_echo_control_both_plants_are_seen(account):
     assert any("prints $CLOUDFLARE_API_TOKEN" in p for p in found), found
     assert any("Proxy smoke" in p and "interpolates" in p for p in found), found
     assert len(found) == 2, found
+
+
+PRESENT = "Proxy CD steps present in"
+
+
+def run_presence(step: dict, root, target: str) -> int:
+    env = {
+        **os.environ,
+        "TARGET": target,
+        "REGION": "eu",
+        "REF": "v0.1.0",
+        "GITHUB_OUTPUT": str(root / "out"),
+        "GITHUB_STEP_SUMMARY": str(root / "summary"),
+    }
+    return subprocess.run(
+        ["bash", "-e", "-c", step["run"]], cwd=root, env=env, capture_output=True, check=False
+    ).returncode
+
+
+@pytest.mark.parametrize("target", ["edge", "stable"])
+def test_a_release_older_than_the_proxy_steps_fails_on_every_target(deploy, tmp_path, target):
+    """Ruling 2026-10-26 "Fail those promotions": a stable promote of a pre-proxy release is refused, never skipped."""
+    step = next(s for s in deploy if str(s.get("name") or "").startswith(PRESENT))
+    assert run_presence(step, tmp_path, target) == 1
+    mods = tmp_path / ".ci" / "rediacc_ci" / "deploy"
+    mods.mkdir(parents=True)
+    for name in ("deploy_record.py", "console_executor.py"):
+        (mods / name).write_text("")
+    assert run_presence(step, tmp_path, target) == 0
+
+
+def test_no_proxy_step_is_skipped_on_a_presence_output(deploy):
+    """The presence check refuses instead of gating: no later step may carry an `if:` on its outputs, which is how the old stable skip worked."""
+    assert [base_name(s) for s in deploy if "proxy_cd" in str(s.get("if") or "")] == []
