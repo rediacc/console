@@ -8,10 +8,10 @@
  *   - anything else is answered 403 with a logged reason code, and nothing is forwarded;
  *   - an allowed bearer call is answered 503 with the reason code (`no-issuer`, `issuer-refused`, `issuer-refused:ISSUER_<CODE>` for a coded account refusal, or `issuer-malformed`) when no issued token can be had, and nothing is forwarded.
  *
- * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue()` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
+ * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue(orgId)` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
  */
 
-import { type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
+import { dropIssuedToken, type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
 
 /** The value REDIACC_TOKEN carries in the container. It authenticates nothing anywhere; the egress swaps it for the issued token. */
 export const EXECUTOR_TOKEN_PLACEHOLDER = 'rediacc-executor-placeholder';
@@ -63,6 +63,8 @@ function routeOf(
 
 /** The env slice the egress reads. */
 export interface EgressEnv {
+  /** Only `idFromName` is used: the instance identity the egress cross-checks (agent/plans/PLAN-console-executor-multi-org.md, Design item 1.3). */
+  EXECUTOR: { idFromName(name: string): { toString(): string } };
   ACCOUNT_URL: string;
   ACCOUNT?: Fetcher;
   ISSUER?: Service<ExecutorIssuerRpc>;
@@ -77,21 +79,67 @@ function refuseEgress(reason: string, method: string, url: URL, status = 403): R
 /** The issued token's Authorization value for a request that presented exactly the placeholder, or the refusal. Refusals are decided before the issuer is asked. */
 async function issuedBearer(
   auth: string | null,
-  env: EgressEnv
+  env: EgressEnv,
+  orgId: string
 ): Promise<string | { refused: string; status: number }> {
   if (auth === null) return { refused: 'bearer-missing', status: 403 };
   if (auth !== `Bearer ${EXECUTOR_TOKEN_PLACEHOLDER}`) {
     return { refused: 'bearer-not-placeholder', status: 403 };
   }
   try {
-    return `Bearer ${await issuedToken(env.ISSUER)}`;
+    return `Bearer ${await issuedToken(env.ISSUER, orgId)}`;
   } catch (error) {
-    return { refused: error instanceof IssuerError ? error.reason : 'issuer-refused', status: 503 };
+    return {
+      refused: error instanceof IssuerError ? error.reason : 'issuer-refused',
+      status: 503,
+    };
   }
 }
 
+/** The params `ExecutorContainer.pin` installs with `setOutboundByHost`: set by Durable Object code, never by the container. */
+export interface AccountEgressParams {
+  orgId: string;
+}
+
+/** What @cloudflare/containers hands a named outbound handler (dist/lib/container.d.ts `OutboundHandlerContext`): `containerId` is `this.ctx.id.toString()` of the calling instance. */
+export interface AccountEgressContext {
+  containerId: string;
+  className: string;
+  params?: Partial<AccountEgressParams>;
+}
+
+/**
+ * The `accountEgress` named outbound handler.
+ *
+ * It requires `ctx.params.orgId` and requires the calling instance to be exactly the Durable Object named for that org (`ctx.containerId === env.EXECUTOR.idFromName(orgId).toString()`), so an instance can only ever obtain its own org's issued token. Both checks run before the allowlist and before the issuer is asked: a refusal here counts zero issuer calls.
+ */
+export async function accountEgress(
+  request: Request,
+  env: EgressEnv,
+  ctx: AccountEgressContext | undefined
+): Promise<Response> {
+  const url = new URL(request.url);
+  const orgId = ctx?.params?.orgId;
+  if (typeof orgId !== 'string' || orgId === '') {
+    return refuseEgress('org-param-missing', request.method, url);
+  }
+  if (ctx?.containerId !== env.EXECUTOR.idFromName(orgId).toString()) {
+    return refuseEgress('container-org-mismatch', request.method, url);
+  }
+  return await forwardAccountEgress(request, env, orgId);
+}
+
+/** The account server no longer accepts this org's issued token (revoked, rotated): forget it so the next call mints afresh. */
+function dropTokenOnRefusal(route: Route, response: Response, orgId: string): void {
+  if (route === 'bearer' && response.status === 401) dropIssuedToken(orgId);
+}
+
 /** Forward one intercepted container request for the account server, when the allowlist admits it. */
-export async function forwardAccountEgress(request: Request, env: EgressEnv): Promise<Response> {
+export async function forwardAccountEgress(
+  request: Request,
+  env: EgressEnv,
+  orgId: string
+): Promise<Response> {
   const url = new URL(request.url);
   const route = classifyEgress(request.method, url);
   if (typeof route !== 'string') return refuseEgress(route.refused, request.method, url);
@@ -102,7 +150,7 @@ export async function forwardAccountEgress(request: Request, env: EgressEnv): Pr
   headers.delete('cookie');
   headers.delete('authorization');
   if (route === 'bearer') {
-    const swapped = await issuedBearer(request.headers.get('authorization'), env);
+    const swapped = await issuedBearer(request.headers.get('authorization'), env, orgId);
     if (typeof swapped !== 'string') {
       return refuseEgress(swapped.refused, request.method, url, swapped.status);
     }
@@ -118,6 +166,7 @@ export async function forwardAccountEgress(request: Request, env: EgressEnv): Pr
   });
   const via = env.ACCOUNT ? 'binding' : 'fetch';
   const response = await (env.ACCOUNT ? env.ACCOUNT.fetch(forwarded) : fetch(forwarded));
+  dropTokenOnRefusal(route, response, orgId);
   // A failed call logs its path and transport only, never a header or a body: this is what `wrangler tail` shows when a container call fails.
   if (!response.ok) {
     console.warn(

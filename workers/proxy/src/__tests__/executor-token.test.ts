@@ -15,20 +15,21 @@ vi.mock('@cloudflare/containers', () => ({
       readonly env: unknown
     ) {}
   },
-  getContainer: () => ({ fetch: () => Promise.resolve(new Response('container')) }),
+  getContainer: () => ({
+    fetch: () => Promise.resolve(new Response('container')),
+  }),
 }));
 
-import { forwardAccountEgress } from '../egress';
-import worker, { type Env, ExecutorContainer } from '../index';
+import { forwardAccountEgress as forward } from '../egress';
+import { type Env, executorEnvVars } from '../index';
 import {
   type ExecutorIssuerRpc,
-  FAILURE_BACKOFF_MS,
   type IssuedToken,
   IssuerError,
-  issuedToken,
+  issuedToken as issued,
   resetIssuedTokenCache,
 } from '../issued-token';
-import { READY_CACHE_MS, readiness, resetReadyCache } from '../ready';
+import { resetReadyCache } from '../ready';
 
 const ACCOUNT_URL = 'https://account.test';
 const ISSUED = 'rdt_issued_executor_token';
@@ -36,7 +37,13 @@ const PLACEHOLDER = 'rediacc-executor-placeholder';
 const CALLER = 'rdt_caller_token';
 const HOST = 'http://account.internal';
 const API = `${HOST}/account/api/v1`;
-const VERSION_ID = '5b0e7d5c-0000-4000-8000-000000000001';
+const ORG = 'org-1';
+const forwardAccountEgress = (request: Request, e: Env): Promise<Response> =>
+  forward(request, e, ORG);
+const issuedToken = (
+  issuer: Service<ExecutorIssuerRpc> | undefined,
+  now?: () => number
+): Promise<string> => issued(issuer, ORG, now);
 
 interface CountingIssuer {
   binding: Service<ExecutorIssuerRpc>;
@@ -45,7 +52,11 @@ interface CountingIssuer {
 }
 
 function countingIssuer(answer: () => Promise<IssuedToken>): CountingIssuer {
-  const counts: CountingIssuer = { binding: null as never, issues: 0, fetches: 0 };
+  const counts: CountingIssuer = {
+    binding: null as never,
+    issues: 0,
+    fetches: 0,
+  };
   counts.binding = {
     issue: () => {
       counts.issues += 1;
@@ -61,7 +72,10 @@ function countingIssuer(answer: () => Promise<IssuedToken>): CountingIssuer {
 
 function minting(lifeMs = 45 * 60_000): CountingIssuer {
   return countingIssuer(() =>
-    Promise.resolve({ token: ISSUED, expiresAt: new Date(Date.now() + lifeMs).toISOString() })
+    Promise.resolve({
+      token: ISSUED,
+      expiresAt: new Date(Date.now() + lifeMs).toISOString(),
+    })
   );
 }
 
@@ -134,7 +148,10 @@ const REFUSED: [string, Request, string][] = [
   ['an unknown query on the config pull', egress('/configs/cfg-1?all=1'), 'query-not-allowed'],
   [
     'a caller token on an executor path',
-    egress('/proxy/introspect', { method: 'POST', headers: { authorization: `Bearer ${CALLER}` } }),
+    egress('/proxy/introspect', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${CALLER}` },
+    }),
     'bearer-not-placeholder',
   ],
   [
@@ -197,7 +214,10 @@ describe('container egress allowlist', () => {
       const response = await forwardAccountEgress(
         egress(path, {
           method: 'POST',
-          headers: { authorization: `Bearer ${PLACEHOLDER}`, 'content-type': 'application/json' },
+          headers: {
+            authorization: `Bearer ${PLACEHOLDER}`,
+            'content-type': 'application/json',
+          },
           body: JSON.stringify({ sessionId: 's-1' }),
         }),
         env(issuer, account)
@@ -216,16 +236,23 @@ describe('container egress allowlist', () => {
   const OPEN: [string, Request][] = [
     [
       'GET telemetry/config',
-      egress('/telemetry/config', { headers: { authorization: `Bearer ${CALLER}` } }),
+      egress('/telemetry/config', {
+        headers: { authorization: `Bearer ${CALLER}` },
+      }),
     ],
     [
       'GET .well-known/server-info',
-      egress('/.well-known/server-info', { headers: { authorization: `Bearer ${PLACEHOLDER}` } }),
+      egress('/.well-known/server-info', {
+        headers: { authorization: `Bearer ${PLACEHOLDER}` },
+      }),
     ],
     [
       'GET configs/<id>?teamId=',
       egress('/configs/cfg_1-A?teamId=team-1', {
-        headers: { authorization: `Bearer ${PLACEHOLDER}`, 'x-config-token': 'ct-1' },
+        headers: {
+          authorization: `Bearer ${PLACEHOLDER}`,
+          'x-config-token': 'ct-1',
+        },
       }),
     ],
   ];
@@ -245,7 +272,9 @@ describe('container egress allowlist', () => {
   it('keeps the X-Config-Token and the teamId query on the config pull', async () => {
     const account = countingAccount();
     await forwardAccountEgress(
-      egress('/configs/cfg-1?teamId=team-1', { headers: { 'x-config-token': 'ct-1' } }),
+      egress('/configs/cfg-1?teamId=team-1', {
+        headers: { 'x-config-token': 'ct-1' },
+      }),
       env(minting(), account)
     );
     expect(account.seen[0]?.url).toBe(`${ACCOUNT_URL}/account/api/v1/configs/cfg-1?teamId=team-1`);
@@ -305,7 +334,7 @@ describe('container egress allowlist', () => {
       }),
       e
     );
-    const vars = new ExecutorContainer({} as never, e).envVars;
+    const vars = executorEnvVars(e, ORG);
     expect(vars.REDIACC_TOKEN).toBe(PLACEHOLDER);
     expect(JSON.stringify(vars)).not.toContain(ISSUED);
   });
@@ -322,7 +351,10 @@ describe('issued token cache', () => {
       serial += 1;
       // Yield, so the concurrent callers really overlap the in-flight issue().
       await new Promise((resolve) => setTimeout(resolve, 5));
-      return { token: `tok-${serial}`, expiresAt: new Date(clock + LIFE).toISOString() };
+      return {
+        token: `tok-${serial}`,
+        expiresAt: new Date(clock + LIFE).toISOString(),
+      };
     });
     const now = () => clock;
     const burst = () =>
@@ -344,7 +376,10 @@ describe('issued token cache', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     let clock = T0;
     let answer = (): Promise<IssuedToken> =>
-      Promise.resolve({ token: ISSUED, expiresAt: new Date(clock + LIFE).toISOString() });
+      Promise.resolve({
+        token: ISSUED,
+        expiresAt: new Date(clock + LIFE).toISOString(),
+      });
     const issuer = countingIssuer(() => answer());
     const now = () => clock;
     await issuedToken(issuer.binding, now);
@@ -375,130 +410,5 @@ describe('issued token cache', () => {
 
   it('refuses no binding as no-issuer', async () => {
     await expect(issuedToken(undefined)).rejects.toBeInstanceOf(IssuerError);
-  });
-});
-
-describe('/v1/ready', () => {
-  function introspecting(answer: Record<string, unknown> | number): CountingAccount {
-    return countingAccount(() =>
-      typeof answer === 'number' ? new Response('no', { status: answer }) : Response.json(answer)
-    );
-  }
-  const ACTIVE = { active: true, scopes: ['proxy:exec', 'audit:write'], orgId: 'org-1' };
-  const metadata = { CF_VERSION_METADATA: { id: VERSION_ID, tag: '', timestamp: '' } };
-
-  async function ready(e: Env): Promise<{ status: number; body: unknown }> {
-    const response = await worker.fetch(new Request('https://proxy.test/v1/ready'), e);
-    return { status: response.status, body: await response.json() };
-  }
-
-  it('answers 200 with the worker version after introspecting the issued token itself', async () => {
-    const account = introspecting(ACTIVE);
-    const result = await ready(env(minting(), account, metadata));
-
-    expect(result).toEqual({ status: 200, body: { ready: true, workerVersion: VERSION_ID } });
-    expect(account.seen).toHaveLength(1);
-    const sent = account.seen[0] as Request;
-    expect(sent.url).toBe(`${ACCOUNT_URL}/account/api/v1/proxy/introspect`);
-    expect(sent.headers.get('authorization')).toBe(`Bearer ${ISSUED}`);
-    expect(await sent.json()).toEqual({ token: ISSUED, self: true });
-  });
-
-  it('answers 503 issuer-refused when the issuer throws, without asking the account server', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const account = introspecting(ACTIVE);
-    const issuer = countingIssuer(() => Promise.reject(new Error('owner is not admin')));
-    const result = await ready(env(issuer, account, metadata));
-
-    expect(result).toEqual({ status: 503, body: { ready: false, reason: 'issuer-refused' } });
-    expect(account.seen).toEqual([]);
-  });
-
-  it('carries an ISSUER_ reason code into the readiness reason, but never free text', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const coded = countingIssuer(() => Promise.reject(new Error('ISSUER_ROLE_REVOKED')));
-    expect(await ready(env(coded, introspecting(ACTIVE), metadata))).toEqual({
-      status: 503,
-      body: { ready: false, reason: 'issuer-refused:ISSUER_ROLE_REVOKED' },
-    });
-    resetIssuedTokenCache();
-    resetReadyCache();
-    const text = countingIssuer(() => Promise.reject(new Error('ISSUER_X for org acme')));
-    expect(await ready(env(text, introspecting(ACTIVE), metadata))).toEqual({
-      status: 503,
-      body: { ready: false, reason: 'issuer-refused' },
-    });
-  });
-
-  it('asks a failing issuer at most once per backoff window, then again after it', async () => {
-    let clock = 1_000;
-    const now = () => clock;
-    const issuer = countingIssuer(() => Promise.reject(new Error('ISSUER_ROLE_REVOKED')));
-    for (let i = 0; i < 5; i += 1) {
-      await expect(issuedToken(issuer.binding, now)).rejects.toMatchObject({
-        reason: 'issuer-refused:ISSUER_ROLE_REVOKED',
-      });
-    }
-    expect(issuer.issues).toBe(1);
-    clock += FAILURE_BACKOFF_MS;
-    await expect(issuedToken(issuer.binding, now)).rejects.toBeInstanceOf(IssuerError);
-    expect(issuer.issues).toBe(2);
-  });
-
-  const NOT_READY: [string, Record<string, unknown> | number, string][] = [
-    ['an inactive token', { active: false }, 'inactive'],
-    [
-      'a token without proxy:exec',
-      { active: true, scopes: ['audit:write'] },
-      'no-proxy-exec-scope',
-    ],
-    [
-      'a token without audit:write',
-      { active: true, scopes: ['proxy:exec'] },
-      'no-audit-write-scope',
-    ],
-    ['an introspection failure', 403, 'introspect-http-403'],
-  ];
-  for (const [name, answer, reason] of NOT_READY) {
-    it(`answers 503 ${reason} for ${name}`, async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      expect(await ready(env(minting(), introspecting(answer), metadata))).toEqual({
-        status: 503,
-        body: { ready: false, reason },
-      });
-    });
-  }
-
-  it('answers 503 no-version-metadata without the [version_metadata] binding, and mints nothing', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const issuer = minting();
-    expect(await ready(env(issuer, introspecting(ACTIVE)))).toEqual({
-      status: 503,
-      body: { ready: false, reason: 'no-version-metadata' },
-    });
-    expect(issuer.issues).toBe(0);
-  });
-
-  it('caches the answer for 30 s, ready or not, so polling cannot drive mints or introspections', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    let clock = 1_000;
-    const now = () => clock;
-    const issuer = countingIssuer(() => Promise.reject(new Error('down')));
-    const account = introspecting(ACTIVE);
-    const e = env(issuer, account, metadata);
-
-    await Promise.all(Array.from({ length: 10 }, () => readiness(e, now)));
-    clock += READY_CACHE_MS - 1;
-    expect((await readiness(e, now)).status).toBe(503);
-    expect(issuer.issues).toBe(1);
-
-    clock += 1;
-    await readiness(e, now);
-    expect(issuer.issues).toBe(2);
-  });
-
-  it('needs no caller token: an unauthenticated poll is answered', async () => {
-    const result = await ready(env(minting(), introspecting(ACTIVE), metadata));
-    expect(result.status).toBe(200);
   });
 });

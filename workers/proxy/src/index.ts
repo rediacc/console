@@ -5,8 +5,8 @@
  * The Worker does exactly two jobs and no more:
  *
  *   1. Decide WHICH container instance a request belongs to. The Durable Object
- *      id is derived from org:team, so one team's commands always land on the
- *      same warm instance. That is what makes the SSH connection pool and the
+ *      id is derived from the org alone, so one org's commands always land on the
+ *      same warm instance, and no other org's ever does. That is what makes the SSH connection pool and the
  *      decrypted-config cache worth having: a cold instance per command would
  *      throw both away every time.
  *
@@ -15,16 +15,15 @@
  *      the NDJSON stream. It is routing, not policy. Policy lives in the
  *      executor, where the encrypted config can actually be read.
  *
- * The Worker cannot derive org:team by itself without trusting the caller, so it
- * asks the account server whose token this is (the same introspection endpoint
- * the executor uses). Trusting a client-supplied team header here would let any
+ * The Worker cannot derive the org by itself without trusting the caller, so it
+ * asks the account Worker whose token this is (`ExecutorIssuer.route`). Trusting a client-supplied team header here would let any
  * caller pick which tenant's warm container, and therefore which tenant's cached
  * config, to be routed to.
  */
 
 import { Container, getContainer } from '@cloudflare/containers';
-import { EXECUTOR_TOKEN_PLACEHOLDER, forwardAccountEgress } from './egress';
-import { type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
+import { accountEgress, EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
+import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
 import { readiness } from './ready';
 
 // Outbound interception (ExecutorContainer.outboundByHost) runs through this entrypoint; without the re-export a container start fails with "ctx.exports.ContainerProxy is undefined".
@@ -35,7 +34,7 @@ export interface Env {
   /** Account server base URL, e.g. https://eu.rediacc.com */
   ACCOUNT_URL: string;
   /**
-   * Service binding to the regional account Worker's `ExecutorIssuer` entrypoint, which mints this executor's short-lived account token (`proxy:exec` and `audit:write`) on each `issue()` call. src/issued-token.ts caches the token and renews it at 80% of its life. The container never sees it: it holds a placeholder that src/egress.ts swaps on the way out.
+   * Service binding to the regional account Worker's `ExecutorIssuer` entrypoint: `route(bearer)` names the caller's org, and `issue(orgId)` mints that org's short-lived account token (`proxy:exec` and `audit:write`). src/issued-token.ts caches the tokens per org. The container never sees one: it holds a placeholder that src/egress.ts swaps on the way out.
    */
   ISSUER?: Service<ExecutorIssuerRpc>;
   /** The `[version_metadata]` binding: `/v1/ready` answers its `id` as `workerVersion`, so a deploy smoke can tell the new version from one still rolling out. */
@@ -91,31 +90,36 @@ function tagRequest(span: RuntimeSpan | undefined, request: Request, env: Env): 
 }
 
 /**
- * The environment `rdc serve --mode container` boots with.
+ * The environment `rdc serve --mode container` boots with: exactly these four names.
  *
- * `rdc serve` refuses to start without REDIACC_TOKEN (packages/cli/src/commands/serve.ts), and it verifies callers, pulls configs and posts audit events against REDIACC_ACCOUNT_SERVER. REDIACC_TOKEN is a fixed placeholder that authenticates nothing: the container's account calls all go to `http://account.internal` (ACCOUNT_EGRESS_HOST says why), and src/egress.ts swaps the placeholder for the issued token on the four calls that need it. No real token ever enters the container's environment. Nothing else hands these to the container, so an instance built without them exits at boot.
+ * REDIACC_TOKEN is a fixed placeholder that authenticates nothing: the container's account calls all go to `http://account.internal` (ACCOUNT_EGRESS_HOST says why), and src/egress.ts swaps the placeholder for the org's issued token on the four calls that need it. No real token ever enters the container's environment. REDIACC_EXECUTOR_ORG_ID is the org the executor is pinned to (the executor refuses a caller of any other org). It is set by Durable Object code in `ExecutorContainer.pin`, never by the container or the caller.
  */
-export function executorEnvVars(env: Env): Record<string, string> {
+export function executorEnvVars(env: Env, orgId: string): Record<string, string> {
   return {
     REDIACC_TOKEN: EXECUTOR_TOKEN_PLACEHOLDER,
     REDIACC_ACCOUNT_SERVER: `http://${ACCOUNT_EGRESS_HOST}`,
     REDIACC_REGION: configured(env.REGION, DEFAULT_REGION),
+    REDIACC_EXECUTOR_ORG_ID: orgId,
   };
 }
 
 /**
  * The host the container addresses the account server by.
  *
- * A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post the container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. So the container talks to this name instead, `ExecutorContainer.outboundByHost` intercepts it, and `forwardAccountEgress` (src/egress.ts) checks it against the allowlist, swaps the placeholder for the issued token, and sends it over the ACCOUNT binding (or to ACCOUNT_URL under `wrangler dev`, which has no binding). The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet. Not exported: workerd treats every export of the main module as an entrypoint and refuses to start on a plain string (caught by check:ci-proxy-wrangler-dev-e2e).
+ * A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post the container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. So the container talks to this name instead, `ExecutorContainer.pin` installs the `accountEgress` handler for it, and `accountEgress` (src/egress.ts) checks the instance and org, checks the request against the allowlist, swaps the placeholder for the org's issued token, and sends it over the ACCOUNT binding (or to ACCOUNT_URL under `wrangler dev`, which has no binding). The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet. Not exported: workerd treats every export of the main module as an entrypoint and refuses to start on a plain string (caught by check:ci-proxy-wrangler-dev-e2e).
  */
 const ACCOUNT_EGRESS_HOST = 'account.internal';
 
+/** What a failed container start says when the target is at max_instances. MU2 (agent/plans/PLAN-console-executor-multi-org.md) records the real text on bench; until then this matches the likely wordings and anything else is a start failure, never silently a capacity answer. */
+const CAPACITY_ERROR =
+  /capacity|max(?:imum)?[_ -]?instances|instance limit|too many (?:containers|instances)|quota/i;
+
 export class ExecutorContainer extends Container<Env> {
-  // The container's account traffic, routed through the Worker's binding (ACCOUNT_EGRESS_HOST says why). An ASSIGNMENT in a static block, never a `static outboundByHost = ...` field: @cloudflare/containers keeps the handlers in a registry behind an inherited static setter keyed by class name, and under ES2022 define semantics a field becomes an own property that shadows the setter, so the registry stays empty, ContainerProxy finds no handler and the request falls through to a plain fetch of account.internal that dies at DNS with a 530 (bench, 2026-10-24, two deploys).
+  // The named outbound handlers. An ASSIGNMENT in a static block, never a `static outboundHandlers = ...` field: @cloudflare/containers keeps the handlers in a registry behind an inherited static setter keyed by class name, and under ES2022 define semantics a field becomes an own property that shadows the setter, so the registry stays empty, ContainerProxy finds no handler and the request falls through to a plain fetch of account.internal that dies at DNS with a 530 (bench, 2026-10-24, two deploys). There is deliberately no static outboundByHost: an instance that was never pinned has no handler for account.internal and its call is refused.
   static {
-    ExecutorContainer.outboundByHost = {
-      [ACCOUNT_EGRESS_HOST]: (request: Request, env: unknown) =>
-        forwardAccountEgress(request, env as Env),
+    ExecutorContainer.outboundHandlers = {
+      accountEgress: (request: Request, env: unknown, ctx: unknown) =>
+        accountEgress(request, env as Env, ctx as Parameters<typeof accountEgress>[2]),
     };
   }
 
@@ -132,15 +136,31 @@ export class ExecutorContainer extends Container<Env> {
    */
   sleepAfter = '2m';
 
-  // A class field runs after super(), so this.env is already the Worker's env here.
-  envVars = executorEnvVars(this.env);
-}
+  /** The org this instance serves, set once by `pin`. */
+  private pinnedOrg: string | undefined;
 
-interface Introspection {
-  active: boolean;
-  scopes?: string[];
-  orgId?: string;
-  teamId?: string | null;
+  /**
+   * Pin this instance to one org and start its container. Called by the Worker with the org `ExecutorIssuer.route` named, before it forwards a request.
+   *
+   * The instance must be the Durable Object named for `orgId`, so an org that is not this instance's own name cannot be pinned; a second pin with another org is refused. The container starts with the per-instance env (MU3: `startOptions.envVars` replaces the class-level `envVars` wholesale in @cloudflare/containers 0.3.7, it is not merged, so all four names are passed) and `account.internal` is routed to `accountEgress` with `{ orgId }`.
+   */
+  async pin(orgId: string): Promise<void> {
+    if (typeof orgId !== 'string' || orgId === '') throw new Error('pin-org-invalid');
+    if (!this.ctx.id.equals(this.env.EXECUTOR.idFromName(orgId))) {
+      throw new Error('pin-id-mismatch');
+    }
+    if (this.pinnedOrg !== undefined && this.pinnedOrg !== orgId) {
+      throw new Error('pin-org-conflict');
+    }
+    this.pinnedOrg = orgId;
+    const envVars = executorEnvVars(this.env, orgId);
+    // A later start (after the instance slept) that does not go through `pin` still carries the org.
+    this.envVars = envVars;
+    await this.setOutboundByHost(ACCOUNT_EGRESS_HOST, 'accountEgress', {
+      orgId,
+    });
+    await this.startAndWaitForPorts({ startOptions: { envVars } });
+  }
 }
 
 /**
@@ -160,47 +180,60 @@ interface Refusal {
 }
 
 /**
- * Resolve the tenant behind a token, via the account server.
+ * Resolve the org behind a token, via the account Worker's `ExecutorIssuer.route`.
  *
- * Returns a Refusal for anything that is not an active proxy:exec token in a real
- * org. The Worker deliberately learns nothing else: it needs a routing key, not
- * an identity. The executor does the real verification again on its own.
+ * Returns a Refusal for anything that is not an active proxy:exec token of an entitled org. The Worker deliberately learns nothing else: it needs a routing key, not an identity. The executor does the real verification again on its own.
  */
 async function resolveTenant(request: Request, env: Env): Promise<string | Refusal> {
   const auth = request.headers.get('authorization');
   const token = auth?.replace(/^Bearer\s+/i, '').trim();
   if (!token) return refuse('no-bearer');
-  // Without its own issued token the Worker cannot ask who a caller is. The executor's credentials are the Worker's problem, not the caller's, so this refusal answers 503.
-  let executorToken: string;
+  if (!env.ISSUER) return refuse('no-issuer', true);
+  // An issuer that cannot be reached is the Worker's problem, not the caller's: a 503, not a 401.
+  let answer: Awaited<ReturnType<ExecutorIssuerRpc['route']>>;
   try {
-    executorToken = await issuedToken(env.ISSUER);
+    answer = await env.ISSUER.route(token);
   } catch (error) {
-    return refuse(error instanceof IssuerError ? error.reason : 'issuer-refused', true);
+    return refuse(error instanceof IssuerError ? error.reason : 'issuer-route-failed', true);
   }
+  const orgId: unknown = (answer as { orgId?: unknown } | undefined)?.orgId;
+  if (typeof orgId !== 'string' || orgId === '') return refuse('route-refused');
+  // One warm executor per org: the Durable Object name is the org alone.
+  return orgId;
+}
 
-  const url = `${env.ACCOUNT_URL}/account/api/v1/proxy/introspect`;
-  const init: RequestInit = {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${executorToken}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ token }),
-  };
-  const response = env.ACCOUNT ? await env.ACCOUNT.fetch(url, init) : await fetch(url, init);
-
-  if (!response.ok) return refuse(`introspect-http-${response.status}`);
-
-  // json<T>() rather than an `as` assertion: @cloudflare/workers-types declares `json<T>(): Promise<T>`, so the type parameter is the supported way to name the shape. The assertion form inferred T from its own target and was
-  // therefore a no-op that @typescript-eslint/no-unnecessary-type-assertion
-  // flagged the moment workers/ entered the lint scope (2026-09-06).
-  const body = await response.json<Introspection>();
-  if (!body.active) return refuse('inactive');
-  if (!body.orgId) return refuse('no-org');
-  if (!body.scopes?.includes('proxy:exec')) return refuse('no-proxy-exec-scope');
-
-  // One warm executor per team. An org with no teams collapses to one instance, which is the right default for a small tenant.
-  return `${body.orgId}:${body.teamId ?? 'default'}`;
+/** Pin the org's instance and start it. Answers undefined on success, else the response for a failed start. */
+async function startExecutor(
+  container: { pin(orgId: string): Promise<void> },
+  orgId: string,
+  span: RuntimeSpan | undefined
+): Promise<Response | undefined> {
+  try {
+    await container.pin(orgId);
+    return undefined;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (CAPACITY_ERROR.test(message)) {
+      console.warn('proxy: executor start refused: capacity');
+      span?.setAttribute('rediacc.proxy.outcome', 'capacity');
+      return Response.json(
+        {
+          error: 'No executor capacity is free right now.',
+          code: 'EXECUTOR_CAPACITY',
+        },
+        { status: 503, headers: { 'retry-after': '30' } }
+      );
+    }
+    console.warn('proxy: executor start failed');
+    span?.setAttribute('rediacc.proxy.outcome', 'start-failed');
+    return Response.json(
+      {
+        error: 'The executor could not be started.',
+        code: 'EXECUTOR_START_FAILED',
+      },
+      { status: 503 }
+    );
+  }
 }
 
 export default {
@@ -228,7 +261,7 @@ export default {
       span?.setAttribute('rediacc.proxy.outcome', `refused:${tenant.reason}`);
       if (tenant.unavailable) {
         return Response.json(
-          { error: 'The executor could not obtain its own account token.' },
+          { error: 'The executor could not resolve this caller.' },
           { status: 503 }
         );
       }
@@ -238,9 +271,11 @@ export default {
       );
     }
 
-    // Same tenant, same instance, every time.
-    span?.setAttribute('rediacc.proxy.outcome', 'forwarded');
+    // Same org, same instance, every time.
     const container = getContainer(env.EXECUTOR, tenant);
+    const failed = await startExecutor(container, tenant, span);
+    if (failed) return failed;
+    span?.setAttribute('rediacc.proxy.outcome', 'forwarded');
     return container.fetch(request);
   },
 };

@@ -1,13 +1,12 @@
 /**
  * `GET /v1/ready`: whether this deployed Worker can act as the executor right now.
  *
- * Unauthenticated, so a deploy smoke can poll it. It obtains the issued token and introspects that token itself over ACCOUNT (`{ self: true }`), which proves the ISSUER binding mints, the ACCOUNT binding answers, and the token carries the scopes the executor needs. It answers 200 `{ ready: true, workerVersion }` with the `[version_metadata]` id, which is how the smoke tells the new version from an old one still rolling out, or 503 `{ ready: false, reason }` with a reason code.
+ * Unauthenticated, so a deploy smoke can poll it. There is no org-less token to introspect, so it asks the issuer's `probe()` (writes nothing and mints nothing: the issuer env parses, D1 answers, and the scopes an issued token would carry are listed) and then `GET server-info` over ACCOUNT, which together prove the ISSUER binding answers, the ACCOUNT binding answers, and a token would carry the scopes the executor needs. It answers 200 `{ ready: true, workerVersion }` with the `[version_metadata]` id, which is how the smoke tells the new version from an old one still rolling out, or 503 `{ ready: false, reason }` with a reason code.
  *
  * The answer, ready or not, is cached for READY_CACHE_MS and computed once per isolate at a time, so polling the endpoint cannot drive the issuer into a mint storm.
  */
 
 import { type EgressEnv } from './egress';
-import { IssuerError, issuedToken } from './issued-token';
 
 export const READY_CACHE_MS = 30_000;
 
@@ -36,41 +35,42 @@ function notReady(reason: string): ReadyAnswer {
   return { status: 503, body: { ready: false, reason } };
 }
 
-async function computeReady(env: ReadyEnv, now: () => number): Promise<ReadyAnswer> {
+async function computeReady(env: ReadyEnv): Promise<ReadyAnswer> {
   const workerVersion = env.CF_VERSION_METADATA?.id;
   if (!workerVersion) return notReady('no-version-metadata');
 
-  let token: string;
-  try {
-    token = await issuedToken(env.ISSUER, now);
-  } catch (error) {
-    return notReady(error instanceof IssuerError ? error.reason : 'issuer-refused');
-  }
-  const reason = await selfIntrospectionFailure(env, token);
+  const probeFailure = await issuerProbeFailure(env);
+  if (probeFailure !== undefined) return notReady(probeFailure);
+  const reason = await serverInfoFailure(env);
   return reason === undefined
     ? { status: 200, body: { ready: true, workerVersion } }
     : notReady(reason);
 }
 
-/** Introspect the issued token itself over ACCOUNT: undefined when it is active with every required scope, otherwise the reason code. */
-async function selfIntrospectionFailure(env: ReadyEnv, token: string): Promise<string | undefined> {
-  const url = `${env.ACCOUNT_URL}/account/api/v1/proxy/introspect`;
-  const init: RequestInit = {
-    method: 'POST',
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ token, self: true }),
-  };
-  let body: { active?: boolean; scopes?: string[] };
+/** Ask the issuer's `probe()`: undefined when it answers ok with every required scope, otherwise the reason code. */
+async function issuerProbeFailure(env: ReadyEnv): Promise<string | undefined> {
+  if (!env.ISSUER) return 'no-issuer';
+  let answer: { ok?: unknown; scopes?: unknown } | undefined;
   try {
-    const response = env.ACCOUNT ? await env.ACCOUNT.fetch(url, init) : await fetch(url, init);
-    if (!response.ok) return `introspect-http-${response.status}`;
-    body = await response.json<{ active?: boolean; scopes?: string[] }>();
+    answer = await env.ISSUER.probe();
   } catch {
-    return 'introspect-unreachable';
+    return 'issuer-probe-failed';
   }
-  if (!body.active) return 'inactive';
-  const missing = REQUIRED_SCOPES.find((scope) => !body.scopes?.includes(scope));
+  if (answer?.ok !== true || !Array.isArray(answer.scopes)) return 'issuer-probe-failed';
+  const scopes: unknown[] = answer.scopes;
+  const missing = REQUIRED_SCOPES.find((scope) => !scopes.includes(scope));
   return missing === undefined ? undefined : `no-${missing.replace(':', '-')}-scope`;
+}
+
+/** `GET server-info` over ACCOUNT (the public route the executor itself uses): undefined when it answers 2xx, otherwise the reason code. */
+async function serverInfoFailure(env: ReadyEnv): Promise<string | undefined> {
+  const url = `${env.ACCOUNT_URL}/account/api/v1/.well-known/server-info`;
+  try {
+    const response = env.ACCOUNT ? await env.ACCOUNT.fetch(url) : await fetch(url);
+    return response.ok ? undefined : `server-info-http-${response.status}`;
+  } catch {
+    return 'server-info-unreachable';
+  }
 }
 
 /** The cached readiness answer, recomputed at most once per READY_CACHE_MS per isolate. */
@@ -78,7 +78,7 @@ export function readiness(env: ReadyEnv, now: () => number = Date.now): Promise<
   if (cachedAnswer && now() - cachedAnswer.at < READY_CACHE_MS) {
     return Promise.resolve(cachedAnswer.answer);
   }
-  inflightAnswer ??= computeReady(env, now)
+  inflightAnswer ??= computeReady(env)
     .then((answer) => {
       cachedAnswer = { at: now(), answer };
       return answer;

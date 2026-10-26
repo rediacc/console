@@ -214,13 +214,40 @@ def test_fake_account_answers_both_ways() -> None:
         status, body = _introspect(fake, t["executor"], t["caller"])
         assert status == 200
         assert body["active"] is True
-        assert body["orgId"]
+        assert body["orgId"] == gate.CALLER_ORG
         assert "proxy:exec" in body["scopes"]
         assert _introspect(fake, t["executor"], t["stranger"]) == (200, {"active": False})
         assert _introspect(fake, "not-the-executor", t["caller"])[0] == 401
         assert fake.asked_with_executor_token(t["caller"])
         assert fake.asked_with_executor_token(t["stranger"])
         assert fake.count() == 3
+
+
+def test_fake_account_serves_the_stub_issuer() -> None:
+    t = gate.mint_tokens()
+    with gate.FakeAccount(t["executor"], t["caller"]) as fake:
+        assert gate._post(fake.url + "/stub/route", {"bearer": t["caller"]}) == {
+            "orgId": gate.CALLER_ORG
+        }
+        assert "refused" in gate._post(fake.url + "/stub/route", {"bearer": t["stranger"]})
+        gate._post(fake.url + "/stub/issue", {"orgId": gate.CALLER_ORG})
+        gate._post(fake.url + "/stub/probe", {})
+        assert fake.asked_route(t["caller"])
+        assert fake.asked_route(t["stranger"])
+        assert not fake.asked_route("someone-else")
+        assert fake.issued_orgs() == [gate.CALLER_ORG]
+        assert fake.stub_count("probe") == 1
+        assert gate.http_get(fake.url + gate.SERVER_INFO_PATH)[0] == 200
+        assert fake.server_info_gets == 1
+        assert gate.http_get(fake.url + "/elsewhere")[0] == 404
+        assert fake.count() == 5
+
+
+def test_stub_issuer_declares_the_three_rpcs() -> None:
+    files = gate.stub_issuer_files("rdt_x", "http://127.0.0.1:9")
+    for rpc in ("route", "issue", "probe"):
+        assert f"async {rpc}(" in files["stub-issuer.js"]
+    assert "http://127.0.0.1:9" in files["stub-issuer.js"]
 
 
 @pytest.mark.parametrize(
@@ -231,6 +258,7 @@ def test_fake_account_plants_flip_the_answer(plant: str, who: str, active: bool)
     t = gate.mint_tokens()
     with gate.FakeAccount(t["executor"], t["caller"], plant=plant) as fake:
         assert _introspect(fake, t["executor"], t[who])[1].get("active") is active
+        assert ("orgId" in fake.route(t[who])) is active
 
 
 def test_unknown_plant_is_refused() -> None:

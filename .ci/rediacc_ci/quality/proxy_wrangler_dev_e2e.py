@@ -8,9 +8,12 @@ WHAT IT DOES. `wrangler dev --config workers/proxy/wrangler.dev.toml --config <s
     carries no `[[services]] ACCOUNT` binding (`rediacc-account-eu` is not resolvable under
     `wrangler dev`), so src/index.ts falls back to `fetch(ACCOUNT_URL)`;
   - the ISSUER binding resolved to the stub issuer, a Worker this process writes into its scratch
-    directory per run. Its `ExecutorIssuer` entrypoint's `issue()` answers a random throwaway
-    token, the run's "issued" token, with a 45-minute expiry, exactly the contract of the account
-    Worker's real entrypoint (agent/plans/PLAN-proxy-cd-six-targets.md, Design item 3). The token
+    directory per run. Its `ExecutorIssuer` entrypoint carries the account Worker's three RPCs
+    (agent/plans/PLAN-console-executor-multi-org.md, Design items 1 and 2): `route(bearer)` asks the
+    fake account who the bearer is and answers `{ orgId }` for the caller or a refusal for a
+    stranger; `issue(orgId)` answers a random throwaway token, the run's "issued" token, with a
+    45-minute expiry; `probe()` answers `{ ok, scopes, ttlMs }` and writes nothing. Route, issue
+    and probe are recorded at the fake, so what the Worker asked the issuer is observable. The token
     lives only in the scratch directory, so nothing can be left in the tree. That `wrangler dev`
     with two configs resolves a named-entrypoint binding was measured on 2026-10-25 with wrangler
     4.152.0 (the plan's U5).
@@ -18,18 +21,22 @@ WHAT IT DOES. `wrangler dev --config workers/proxy/wrangler.dev.toml --config <s
 and then four requests through the Worker, in this order:
 
   0. GET /v1/ready, unauthenticated: 200 `{ready: true}` with a non-empty `workerVersion`, after the
-     Worker introspected the ISSUED token itself (`self: true`) at the fake account, and no
-     container is started;
+     Worker called the stub's `probe()` and asked the fake account for server-info, with no `issue()`
+     call (readiness mints nothing) and no container started;
   1. NO BEARER on `GET /v1/server-info`: 401, the account server is never asked, and no container
      is started;
-  2. A STRANGER's bearer, which the fake account answers `active: false`: 401, the Worker DID ask
-     with the issued token, and no container is started;
-  3. THE CALLER's bearer, answered `active: true`, an orgId and scope `proxy:exec`: 200 with
+  2. A STRANGER's bearer, which the stub's `route()` is refused by the fake account: 401, the Worker
+     DID ask `route()` (so the refusal is the account side's verdict), no token is issued, and no
+     container is started;
+  3. THE CALLER's bearer, which `route()` answers with the caller's org: 200 with
      `mode: "container"` and a `cliVersion` equal to `node cli-bundle.cjs --version` of the bundle
-     staged into the image, the Worker asked with the issued token, and a `workerd-rediacc-proxy-dev-*` container
-     now exists.
+     staged into the image; then GET /v1/jobs/<id>/events with the same bearer answers 400 (the
+     executor authenticated it, then refused the missing `machine` query), which makes the executor
+     introspect the caller through the Worker's egress; the stub issuer was asked to `issue()` for that org (the token is keyed by
+     org) and the executor's own introspection reached the fake account carrying it, and a
+     `workerd-rediacc-proxy-dev-*` container now exists.
 
-The refusals come before the 200, because after it a container exists and "no container was started" could no longer be read. The `cliVersion` equality is what proves the 200 came from the executor inside the image rather than from anything else answering on the port. A Worker that introspects with anything but the stub's issued token gets 401 from the fake account, so the stranger and caller probes also prove the ISSUER binding reached the stub.
+The refusals come before the 200, because after it a container exists and "no container was started" could no longer be read. The `cliVersion` equality is what proves the 200 came from the executor inside the image rather than from anything else answering on the port. An introspection that carries anything but the stub's issued token gets 401 from the fake account, and only the stub records route, issue and probe calls, so the observations also prove the ISSUER binding reached the stub.
 
 WHY wrangler.dev.toml IS ALSO CHECKED STATICALLY. A dev config that drifts from the deployed eu config would make this gate prove the wrong Worker. Before any docker work the gate requires the dev config to equal the deployed `wrangler.eu.toml` of the working tree, the compatibility date and flags, `[[containers]]`, the Durable Object bindings and the migrations; to carry exactly one `[[services]]`, ISSUER on the stub issuer's `ExecutorIssuer` entrypoint; to carry the `[version_metadata]` binding `/v1/ready` reads; and to carry no routes.
 
@@ -81,7 +88,13 @@ WRANGLER_BIN = ("node_modules", ".bin", "wrangler")
 CONTAINER_PREFIX = "workerd-rediacc-proxy-dev-"
 INTROSPECT_PATH = "/account/api/v1/proxy/introspect"
 PROBE_PATH = "/v1/server-info"
+SERVER_INFO_PATH = "/account/api/v1/.well-known/server-info"
+# The org the fake account routes the caller to; the stub issuer is asked to issue for exactly this org.
+CALLER_ORG = "org-wrangler-dev-e2e"
 READY_PATH = "/v1/ready"
+# An authenticated executor route that needs no job and no machine: the executor verifies the bearer first, then answers 400 for the missing `machine` query, so a 400 (never a 401) proves the caller was authenticated through the Worker's egress.
+AUTH_PATH = "/v1/jobs/wrangler-dev-e2e/events"
+AUTH_OK_STATUS = 400
 # The stub issuer Worker this gate writes per run, and the one binding wrangler.dev.toml may declare: ISSUER on its ExecutorIssuer entrypoint, as the deployed configs bind the account Worker's.
 STUB_ISSUER_NAME = "rediacc-executor-issuer-dev"
 ISSUER_BINDING = {"binding": "ISSUER", "service": STUB_ISSUER_NAME, "entrypoint": "ExecutorIssuer"}
@@ -186,10 +199,17 @@ def verdict(obs: dict) -> list[str]:
         out.append(
             "GET %s answered 200 without ready: true and a workerVersion: %r" % (READY_PATH, ready)
         )
-    if not obs.get("ready_self_introspected"):
+    if not obs.get("ready_probed"):
         out.append(
-            "GET %s never introspected the issued token itself (self: true) at the account server, "
-            "so the ISSUER binding to the stub issuer is unproven" % READY_PATH
+            "GET %s never called the stub issuer's probe(), so the ISSUER binding is unproven for "
+            "readiness" % READY_PATH
+        )
+    if not obs.get("ready_server_info"):
+        out.append("GET %s never asked the account server for server-info" % READY_PATH)
+    if obs.get("ready_issues"):
+        out.append(
+            "GET %s made the stub issuer issue %d token(s); readiness must mint nothing"
+            % (READY_PATH, obs["ready_issues"])
         )
     if obs.get("ready_containers"):
         out.append(
@@ -203,7 +223,7 @@ def verdict(obs: dict) -> list[str]:
             % (PROBE_PATH, obs.get("no_bearer_status"))
         )
     if obs.get("no_bearer_introspections", 0) != 0:
-        out.append("CONTROL: a request with no bearer made the Worker call the account server")
+        out.append("CONTROL: a request with no bearer made the Worker call the account side")
     if obs.get("no_bearer_containers"):
         out.append(
             "CONTROL: a request with no bearer started container(s) %s"
@@ -216,11 +236,13 @@ def verdict(obs: dict) -> list[str]:
             "CONTROL: GET %s with an inactive token answered %r, expected 401"
             % (PROBE_PATH, obs.get("stranger_status"))
         )
-    if not obs.get("stranger_introspected"):
+    if not obs.get("stranger_routed"):
         out.append(
-            "CONTROL: the Worker refused the inactive token without asking the account server "
-            "with the issued token, so the refusal was not the account server's verdict"
+            "CONTROL: the Worker refused the stranger without asking the issuer's route(), "
+            "so the refusal was not the account side's verdict"
         )
+    if obs.get("stranger_issues"):
+        out.append("CONTROL: a stranger's bearer made the issuer issue a token")
     if obs.get("stranger_containers"):
         out.append(
             "CONTROL: an inactive token started container(s) %s"
@@ -246,8 +268,29 @@ def verdict(obs: dict) -> list[str]:
             "the executor image this run built"
             % (PROBE_PATH, info.get("cliVersion"), obs.get("bundle_version"))
         )
+    if not obs.get("caller_routed"):
+        out.append("the Worker never asked the issuer's route() about the valid bearer")
+    if obs.get("caller_auth_status") != AUTH_OK_STATUS:
+        out.append(
+            "GET %s with the valid bearer answered %r, expected %d (authenticated, then the missing "
+            "machine query refused); body %r"
+            % (
+                AUTH_PATH,
+                obs.get("caller_auth_status"),
+                AUTH_OK_STATUS,
+                str(obs.get("caller_auth_body", ""))[:300],
+            )
+        )
     if not obs.get("caller_introspected"):
-        out.append("the Worker never introspected the valid bearer with the issued token")
+        out.append(
+            "the executor never introspected the valid bearer with the issued token through the "
+            "Worker's egress"
+        )
+    if not obs.get("caller_issued_for_org"):
+        out.append(
+            "the issuer was never asked to issue for the org %s the caller routed to, so the "
+            "token is not keyed by org" % CALLER_ORG
+        )
     if not obs.get("caller_containers"):
         out.append(
             "the valid bearer started no %s* container, so nothing shows the Worker reached its container"
@@ -272,20 +315,26 @@ HEALTHY: dict = {
     "ready_status": 200,
     "ready_body": '{"ready":true,"workerVersion":"v-1"}',
     "ready_info": {"ready": True, "workerVersion": "v-1"},
-    "ready_self_introspected": True,
+    "ready_probed": True,
+    "ready_server_info": True,
+    "ready_issues": 0,
     "ready_containers": [],
     "no_bearer_status": 401,
     "no_bearer_introspections": 0,
     "no_bearer_containers": [],
     "stranger_status": 401,
-    "stranger_introspected": True,
+    "stranger_routed": True,
+    "stranger_issues": 0,
     "stranger_containers": [],
     "caller_status": 200,
     "caller_body": '{"mode":"container","cliVersion":"1.2.3"}',
     "caller_info": {"mode": "container", "cliVersion": "1.2.3"},
     "renet_version": "1.2.3",
     "bundle_version": "1.2.3",
+    "caller_routed": True,
+    "caller_auth_status": 400,
     "caller_introspected": True,
+    "caller_issued_for_org": True,
     "caller_containers": [CONTAINER_PREFIX + "ExecutorContainer-abc"],
     "left_behind": [],
 }
@@ -294,13 +343,16 @@ HEALTHY: dict = {
 PLANTS: tuple[tuple[str, dict], ...] = (
     ("a 503 readiness is a finding", {"ready_status": 503}),
     ("a readiness without a workerVersion is a finding", {"ready_info": {"ready": True}}),
-    ("a readiness that never self-introspected is a finding", {"ready_self_introspected": False}),
+    ("a readiness that never probed the issuer is a finding", {"ready_probed": False}),
+    ("a readiness that never asked server-info is a finding", {"ready_server_info": False}),
+    ("a readiness that mints is a finding", {"ready_issues": 1}),
     ("a readiness that starts a container is a finding", {"ready_containers": ["c1"]}),
     ("a tokenless request admitted is a finding", {"no_bearer_status": 200}),
     ("a tokenless request introspected is a finding", {"no_bearer_introspections": 1}),
     ("a tokenless request that starts a container is a finding", {"no_bearer_containers": ["c1"]}),
     ("an inactive token admitted is a finding", {"stranger_status": 200}),
-    ("an inactive token refused without asking is a finding", {"stranger_introspected": False}),
+    ("a stranger refused without asking route() is a finding", {"stranger_routed": False}),
+    ("a stranger that makes the issuer issue is a finding", {"stranger_issues": 1}),
     ("an inactive token that starts a container is a finding", {"stranger_containers": ["c1"]}),
     ("a refused caller is a finding", {"caller_status": 401}),
     (
@@ -311,7 +363,10 @@ PLANTS: tuple[tuple[str, dict], ...] = (
         "a cliVersion that is not the staged bundle's is a finding",
         {"caller_info": {"mode": "container", "cliVersion": "0.0.0-dev"}},
     ),
+    ("a caller never routed is a finding", {"caller_routed": False}),
+    ("an authenticated route refusing the caller is a finding", {"caller_auth_status": 401}),
     ("a caller never introspected is a finding", {"caller_introspected": False}),
+    ("a token not issued for the caller's org is a finding", {"caller_issued_for_org": False}),
     ("a 200 with no container behind it is a finding", {"caller_containers": []}),
     ("a container surviving teardown is a finding", {"left_behind": ["c1"]}),
 )
@@ -322,9 +377,9 @@ PLANTS: tuple[tuple[str, dict], ...] = (
 
 
 class FakeAccount:
-    """`POST /account/api/v1/proxy/introspect` on loopback, answering as the real one would.
+    """The account side on loopback: introspection for the executor, plus the endpoints the STUB ISSUER calls.
 
-    It refuses any caller not presenting the executor's issued token (401), answers the CALLER token active with an orgId and `proxy:exec`, a self-introspection (`self: true`) of the issued token active with `proxy:exec` and `audit:write`, and every other token inactive. `plant` exists for controls only: `active-all` answers every token active (so the stranger control must go red), `inactive-all` answers every token inactive (so the caller probe must go red). Every request is recorded as (authorization header, token, self).
+    `POST /account/api/v1/proxy/introspect` refuses any caller not presenting the issued token (401), answers the CALLER token active with an orgId and `proxy:exec`, and every other token inactive. `GET /account/api/v1/.well-known/server-info` answers 200 (what `/v1/ready` asks over ACCOUNT). `POST /stub/route`, `/stub/issue` and `/stub/probe` are what the stub issuer's `route(bearer)`, `issue(orgId)` and `probe()` call, so the fake is the authority on who is a caller (`route` answers `{ orgId }` for the CALLER token and `{ refused }` for a stranger) and records every call. `plant` exists for controls only: `active-all` routes and introspects every token as the caller (so the stranger control must go red), `inactive-all` refuses and deactivates every token (so the caller probe must go red). Every introspection is recorded as (authorization header, token).
     """
 
     def __init__(self, executor_token: str, caller_token: str, plant: str | None = None) -> None:
@@ -333,7 +388,9 @@ class FakeAccount:
         self.executor_token = executor_token
         self.caller_token = caller_token
         self.plant = plant
-        self.seen: list[tuple[str, str, bool]] = []
+        self.seen: list[tuple[str, str]] = []
+        self.stub_calls: list[tuple[str, dict]] = []
+        self.server_info_gets = 0
         self._lock = threading.Lock()
         fake = self
 
@@ -355,22 +412,32 @@ class FakeAccount:
                 auth = self.headers.get("authorization") or ""
                 try:
                     body = json.loads(raw or b"{}")
-                    token = str(body.get("token", ""))
-                    is_self = body.get("self") is True
-                except (ValueError, AttributeError):
-                    token, is_self = "", False
+                    if not isinstance(body, dict):
+                        body = {}
+                except ValueError:
+                    body = {}
+                if self.path.startswith("/stub/"):
+                    kind = self.path.removeprefix("/stub/")
+                    with fake._lock:
+                        fake.stub_calls.append((kind, body))
+                    if kind == "route":
+                        return self._send(200, fake.route(str(body.get("bearer", ""))))
+                    return self._send(200, {})
+                token = str(body.get("token", ""))
                 with fake._lock:
-                    fake.seen.append((auth, token, is_self))
+                    fake.seen.append((auth, token))
                 if self.path != INTROSPECT_PATH:
                     return self._send(404, {})
                 if auth != "Bearer " + fake.executor_token:
                     return self._send(401, {"error": "bad executor token"})
-                if is_self:
-                    return self._send(200, fake.self_identity())
                 return self._send(200, fake.identity(token))
 
             def do_GET(self) -> None:
-                self._send(404, {})
+                if self.path != SERVER_INFO_PATH:
+                    return self._send(404, {})
+                with fake._lock:
+                    fake.server_info_gets += 1
+                return self._send(200, {"version": "wrangler-dev-e2e"})
 
         self._server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
@@ -384,20 +451,20 @@ class FakeAccount:
         return {
             "active": True,
             "scopes": ["proxy:exec"],
-            "orgId": "org-wrangler-dev-e2e",
+            "orgId": CALLER_ORG,
             "teamId": None,
+            "tokenId": "tok-wrangler-dev-e2e",
+            "createdByUserId": "user-wrangler-dev-e2e",
+            "userEmail": "wrangler-dev-e2e@example.invalid",
         }
 
-    def self_identity(self) -> dict:
-        """The issued token introspected by itself: the executor's own scopes, unless a plant says inactive."""
+    def route(self, bearer: str) -> dict:
+        """The stub issuer's `route(bearer)`: the caller's org, or a refusal."""
         if self.plant == "inactive-all":
-            return {"active": False}
-        return {
-            "active": True,
-            "scopes": ["proxy:exec", "audit:write"],
-            "orgId": "org-wrangler-dev-e2e",
-            "teamId": None,
-        }
+            return {"refused": "route-refused"}
+        if bearer == self.caller_token or self.plant == "active-all":
+            return {"orgId": CALLER_ORG}
+        return {"refused": "route-refused"}
 
     @property
     def url(self) -> str:
@@ -405,19 +472,26 @@ class FakeAccount:
 
     def asked_with_executor_token(self, token: str) -> bool:
         with self._lock:
-            return ("Bearer " + self.executor_token, token, False) in self.seen
+            return ("Bearer " + self.executor_token, token) in self.seen
 
-    def self_introspected(self) -> bool:
-        """Whether the issued token was introspected by itself, with itself as the bearer."""
+    def asked_route(self, bearer: str) -> bool:
+        """Whether the stub issuer's route() was asked about this bearer."""
         with self._lock:
-            return any(
-                auth == "Bearer " + self.executor_token and is_self
-                for auth, _token, is_self in self.seen
-            )
+            return ("route", {"bearer": bearer}) in self.stub_calls
+
+    def stub_count(self, kind: str) -> int:
+        with self._lock:
+            return sum(1 for k, _ in self.stub_calls if k == kind)
+
+    def issued_orgs(self) -> list[str]:
+        """The orgs the stub issuer was asked to issue for, in order."""
+        with self._lock:
+            return [str(p.get("orgId")) for k, p in self.stub_calls if k == "issue"]
 
     def count(self) -> int:
+        """Every request of any kind that reached the account side."""
         with self._lock:
-            return len(self.seen)
+            return len(self.seen) + len(self.stub_calls) + self.server_info_gets
 
     def __enter__(self) -> typing.Self:
         self._thread.start()
@@ -453,22 +527,51 @@ def http_get(
         return None, str(e)
 
 
-def stub_issuer_files(issued: str) -> dict[str, str]:
-    """The stub issuer Worker's files, {name: text}: an `ExecutorIssuer` entrypoint whose `issue()` answers `issued` with an expiry STUB_ISSUER_TTL_S from the call, the contract of the account Worker's real entrypoint."""
+def stub_issuer_files(issued: str, fake_url: str) -> dict[str, str]:
+    """The stub issuer Worker's files, {name: text}: an `ExecutorIssuer` entrypoint with the account Worker's three RPCs.
+
+    `route(bearer)` and the records of `issue(orgId)` and `probe()` go to the fake account at `fake_url`, which is the authority on who the caller is; `issue()` answers `issued` with an expiry STUB_ISSUER_TTL_S from the call, and `probe()` answers `{ ok: true, scopes, ttlMs }`, the contract of the real entrypoint.
+    """
     script = (
         "import { WorkerEntrypoint } from 'cloudflare:workers';\n"
+        "const FAKE = %s;\n"
+        "async function tell(kind, payload) {\n"
+        "  const r = await fetch(FAKE + '/stub/' + kind, { method: 'POST', body: JSON.stringify(payload) });\n"
+        "  return r.json();\n"
+        "}\n"
         "export class ExecutorIssuer extends WorkerEntrypoint {\n"
-        "  async issue() {\n"
+        "  async route(bearer) {\n"
+        "    return tell('route', { bearer });\n"
+        "  }\n"
+        "  async issue(orgId) {\n"
+        "    await tell('issue', { orgId });\n"
         "    return { token: %s, expiresAt: new Date(Date.now() + %d * 1000).toISOString() };\n"
+        "  }\n"
+        "  async probe() {\n"
+        "    await tell('probe', {});\n"
+        "    return { ok: true, scopes: ['proxy:exec', 'audit:write'], ttlMs: %d * 1000 };\n"
         "  }\n"
         "}\n"
         "export default { fetch() { return new Response('stub issuer: RPC only', { status: 404 }); } };\n"
-    ) % (json.dumps(issued), STUB_ISSUER_TTL_S)
+    ) % (json.dumps(fake_url), json.dumps(issued), STUB_ISSUER_TTL_S, STUB_ISSUER_TTL_S)
     config = (
         "# Written per run by the proxy wrangler-dev e2e gate; never deployed.\n"
         'name = "%s"\nmain = "stub-issuer.js"\ncompatibility_date = "2026-01-20"\n'
     ) % STUB_ISSUER_NAME
     return {"stub-issuer.js": script, "stub-issuer.toml": config}
+
+
+def _post(url: str, body: dict) -> dict:
+    """POST JSON to the fake on loopback and answer its JSON."""
+    req = https.build_request(
+        url,
+        data=json.dumps(body).encode(),
+        headers={"content-type": "application/json"},
+        method="POST",
+        http="loopback",
+    )
+    with https.urlopen(req, timeout=5, http="loopback") as r:
+        return json.loads(r.read())
 
 
 def _fake_account_controls(check: Checker) -> None:
@@ -510,27 +613,42 @@ def _fake_account_controls(check: Checker) -> None:
             "fake account: it records who asked with which executor token",
             fake.asked_with_executor_token(tokens["caller"]) and fake.count() == 3,
         )
-        check("fake account: no self-introspection yet", not fake.self_introspected())
-        req = https.build_request(
-            fake.url + INTROSPECT_PATH,
-            data=json.dumps({"token": tokens["executor"], "self": True}).encode(),
-            headers={"authorization": "Bearer " + tokens["executor"]},
-            method="POST",
-            http="loopback",
-        )
-        with https.urlopen(req, timeout=5, http="loopback") as r:
-            mine = json.loads(r.read())
         check(
-            "fake account: the issued token introspected by itself carries proxy:exec and audit:write",
-            mine.get("active") is True and {"proxy:exec", "audit:write"} <= set(mine["scopes"]),
+            "fake account: route() answers the caller's org and refuses a stranger",
+            fake.route(tokens["caller"]) == {"orgId": CALLER_ORG}
+            and "refused" in fake.route(tokens["stranger"]),
         )
-        check("fake account: it records the self-introspection", fake.self_introspected())
+        _post(fake.url + "/stub/route", {"bearer": tokens["stranger"]})
+        _post(fake.url + "/stub/issue", {"orgId": CALLER_ORG})
+        _post(fake.url + "/stub/probe", {})
+        check(
+            "fake account: it records the stub's route, issue and probe calls",
+            fake.asked_route(tokens["stranger"])
+            and not fake.asked_route(tokens["caller"])
+            and fake.issued_orgs() == [CALLER_ORG]
+            and fake.stub_count("probe") == 1,
+        )
+        check("fake account: no server-info asked yet", fake.server_info_gets == 0)
+        status, _ = http_get(fake.url + SERVER_INFO_PATH)
+        check(
+            "fake account: server-info answers 200 and is counted",
+            status == 200 and fake.server_info_gets == 1,
+        )
+        check("fake account: an unknown GET is 404", http_get(fake.url + "/nope")[0] == 404)
     with FakeAccount(tokens["executor"], tokens["caller"], plant="active-all") as fake:
         check(
             "fake account plant active-all: the stranger turns active",
             ask(fake, tokens["executor"], tokens["stranger"])[1].get("active") is True,
         )
+        check(
+            "fake account plant active-all: route() admits the stranger",
+            "orgId" in fake.route(tokens["stranger"]),
+        )
     with FakeAccount(tokens["executor"], tokens["caller"], plant="inactive-all") as fake:
+        check(
+            "fake account plant inactive-all: route() refuses the caller",
+            "refused" in fake.route(tokens["caller"]),
+        )
         check(
             "fake account plant inactive-all: the caller turns inactive",
             ask(fake, tokens["executor"], tokens["caller"])[1] == {"active": False},
@@ -613,12 +731,13 @@ def selftest() -> bool:
     )
     check("the Ready line is read", ready_url(log) == "http://127.0.0.1:18932")
     check("no Ready line reads as not ready", ready_url("Building image...") is None)
-    stub = stub_issuer_files("rdt_issued_x")
+    stub = stub_issuer_files("rdt_issued_x", "http://127.0.0.1:1")
     check(
-        "the stub issuer exports ExecutorIssuer with an issue() answering the issued token",
+        "the stub issuer exports ExecutorIssuer with route(), issue() and probe()",
         "export class ExecutorIssuer extends WorkerEntrypoint" in stub["stub-issuer.js"]
-        and "async issue()" in stub["stub-issuer.js"]
-        and '"rdt_issued_x"' in stub["stub-issuer.js"],
+        and all("async %s(" % rpc in stub["stub-issuer.js"] for rpc in ("route", "issue", "probe"))
+        and '"rdt_issued_x"' in stub["stub-issuer.js"]
+        and '"http://127.0.0.1:1"' in stub["stub-issuer.js"],
     )
     check(
         "the stub issuer is named as the dev ISSUER binding names it",
@@ -712,10 +831,10 @@ def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) ->
         )
     scratch = pathlib.Path(tempfile.mkdtemp(prefix="rediacc-wrangler-dev-e2e-"))
     log_path = scratch / "wrangler-dev.log"
-    for name, text in stub_issuer_files(tokens["executor"]).items():
-        (scratch / name).write_text(text)
     proc: subprocess.Popen | None = None
     with FakeAccount(tokens["executor"], tokens["caller"], plant=plant) as fake:
+        for name, text in stub_issuer_files(tokens["executor"], fake.url).items():
+            (scratch / name).write_text(text)
         try:
             port = _free_port()
             cmd = [
@@ -769,7 +888,9 @@ def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) ->
                 obs["ready_info"] = json.loads(obs["ready_body"] or "{}")
             except json.JSONDecodeError:
                 obs["ready_info"] = {}
-            obs["ready_self_introspected"] = fake.self_introspected()
+            obs["ready_probed"] = fake.stub_count("probe") > 0
+            obs["ready_server_info"] = fake.server_info_gets > 0
+            obs["ready_issues"] = len(fake.issued_orgs())
             time.sleep(SETTLE_S)
             obs["ready_containers"] = sorted(prefixed_containers() - before)
 
@@ -781,7 +902,8 @@ def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) ->
 
             obs["stranger_status"], _ = http_get(url, tokens["stranger"])
             time.sleep(SETTLE_S)
-            obs["stranger_introspected"] = fake.asked_with_executor_token(tokens["stranger"])
+            obs["stranger_routed"] = fake.asked_route(tokens["stranger"])
+            obs["stranger_issues"] = len(fake.issued_orgs())
             obs["stranger_containers"] = sorted(prefixed_containers() - before)
 
             obs["caller_status"], obs["caller_body"] = http_get(url, tokens["caller"])
@@ -789,7 +911,12 @@ def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) ->
                 obs["caller_info"] = json.loads(obs["caller_body"] or "{}")
             except json.JSONDecodeError:
                 obs["caller_info"] = {}
+            obs["caller_auth_status"], obs["caller_auth_body"] = http_get(
+                "http://127.0.0.1:%d%s" % (port, AUTH_PATH), tokens["caller"]
+            )
+            obs["caller_routed"] = fake.asked_route(tokens["caller"])
             obs["caller_introspected"] = fake.asked_with_executor_token(tokens["caller"])
+            obs["caller_issued_for_org"] = CALLER_ORG in fake.issued_orgs()
             obs["caller_containers"] = sorted(prefixed_containers() - before)
         finally:
             survivor = proc is not None and not _stop(proc)
@@ -923,8 +1050,8 @@ def run(root: pathlib.Path, plant: str | None = None) -> int:
         return 1
     print(
         "✓ the proxy Worker under `wrangler dev` (ready in %ds) answered /v1/ready 200 after "
-        "self-introspecting the stub issuer's token, refused 2 of 3 requests with 401 "
-        "(no bearer: 0 introspections; inactive token: introspected) and started 0 containers for them, "
+        "probing the stub issuer and server-info, refused 2 of 3 requests with 401 "
+        "(no bearer: 0 account-side calls; stranger: route() asked and refused, no token issued) and started 0 containers for them, "
         "then answered a proxy:exec bearer with 200, mode \"container\" and cliVersion %s from %d new "
         "container(s); %s" % (
             shape.get("ready_s", -1), obs["bundle_version"], len(obs["caller_containers"]), teardown,
