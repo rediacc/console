@@ -63,7 +63,8 @@ PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile rotation -- \
     env PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle --check   # exit 1 on a missing, drifted or planted rule
 PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile rotation -- \
     env PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle list
-PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle apply     # idempotent
+PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile rotation -- \
+    env PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle apply     # idempotent
 ```
 
 Auth is `cf_auth.resolve`: a ready `CF_MANAGEMENT_TOKEN`, or the Global API Key pair (bws profile `rotation`), which mints a token with Workers R2 Storage Write and destroys it afterwards. To change a window, edit `PR_EXPIRE_DAYS`, `DRYRUN_EXPIRE_DAYS` or `MULTIPART_ABORT_DAYS` in the module and run `apply`.
