@@ -1280,9 +1280,15 @@ class Backup:
             "the journal key is present in the contract (empty here: the journal dir is machine-local)",
         )
         self.av(
-            "stale_pull_staging" in keys and "stale_churn_probe_bases" in keys,
+            "stale_churn_probe_bases" in keys,
             True,
-            "together with wave 0's two keys",
+            "together with wave 0's churn-probe key",
+        )
+        # H16 retired the .pull-* subset: renet's own test (private/renet/pkg/prune/datastore_json_test.go) refuses the key, so the drill does too.
+        self.av(
+            "stale_pull_staging" in keys or "stale_backup_snapshots" in keys,
+            False,
+            "and the keys H16 retired (stale_pull_staging, stale_backup_snapshots) are gone",
         )
 
         # The other half of the contract: the CLI's parser turns THIS output into preview rows. Reading the struct tags cannot catch a parser that never sees real output.
