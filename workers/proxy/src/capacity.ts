@@ -158,7 +158,7 @@ export class ExecutorCapacity extends DurableObject<CapacityEnv> {
   /**
    * Arm the alarm at the earliest expiry, or clear it when nothing is held, so an empty coordinator costs no wake-ups.
    *
-   * A failure to set the alarm is logged, not thrown: the lease is already written, so throwing would report a refusal for a slot that is held, and every acquire sweeps lapsed leases anyway, so a missed alarm only delays a free slot until the next acquire.
+   * A failure to set the alarm is logged, not thrown: the lease is already written, so throwing would report a refusal for a slot that is held, and a lapsed lease stops counting at its expiry whatever the alarm does (tally reads only live rows), so a missed alarm leaves only stale rows for the next sweep.
    */
   private async scheduleSweep(): Promise<void> {
     const next = this.sql
