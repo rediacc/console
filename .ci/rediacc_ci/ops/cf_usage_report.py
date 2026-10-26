@@ -9,9 +9,9 @@ WHAT IT READS, all from the account GraphQL endpoint (token permission "Account 
   - `r2OperationsAdaptiveGroups`: requests per action over the billing month so far, folded into Class A and Class B (an action it does not know counts as Class A, the dearer one).
   - `d1StorageAdaptiveGroups`: the latest daily size per database.
   - `workersInvocationsAdaptive`: requests and CPU (`cpuTimeUs` summed, shown in ms) per script over the billing month so far.
-  - `containersMetricsAdaptiveGroups`: per Containers application (one per proxy target's container class) over the billing month so far, `sum{cpuTimeSec}` (active vCPU-seconds, what Cloudflare bills CPU on) and `sum{allocatedMemory}` (provisioned byte-seconds, shown as GiB-seconds, what it bills memory on). The estimated cost is those seconds at the published rates (developers.cloudflare.com/containers/pricing, read 2026-10-26: 0.0000025 USD per GiB-second, 0.000020 USD per vCPU-second), without the monthly included amounts, so it is an upper bound. Cloudflare offers no usage alert for Containers (cf-spend-guard.json `notifications.unavailable.containers`), so this is the alarm: an application over `containers_memory_gib_seconds_month` or `containers_vcpu_seconds_month` is an `OVER` line that names the estimated cost, and the run exits 1. Zero container rows is not an error (a month can have no usage); a failed read is exit 2. The application id is the only name the dataset carries.
+  - `containersMetricsAdaptiveGroups`: per Containers application (one per proxy target's container class) over the billing month so far, `sum{cpuTimeSec}` (active vCPU-seconds, what Cloudflare bills CPU on) and `sum{allocatedMemory}` (provisioned byte-seconds, shown as GiB-seconds, what it bills memory on). The estimated cost is those seconds at the published rates (developers.cloudflare.com/containers/pricing, read 2026-10-26: 0.0000025 USD per GiB-second, 0.000020 USD per vCPU-second), without the monthly included amounts, so it is an upper bound. Cloudflare offers no usage alert for Containers (cf-spend-guard.json `notifications.unavailable.containers`), so this is the alarm: an application over `containers_memory_gib_seconds_month`, `containers_vcpu_seconds_month` or the estimated-USD `containers_target_usd_month` (memory plus vCPU together) is an `OVER` line that names the estimated cost, and the run exits 1. Zero container rows is not an error (a month can have no usage); a failed read is exit 2. The application id is the only name the dataset carries.
 
-CEILINGS come from the `report` object of `.ci/config/cf-spend-guard.json` when the file carries one, key by key, and from `DEFAULT_CEILINGS` below otherwise: workers_requests_month, workers_cpu_ms_month, r2_storage_bytes, r2_class_a_month, r2_class_b_month, d1_storage_bytes. Each is compared with the account total, and the per-item lines are for reading. The two container ceilings, containers_memory_gib_seconds_month and containers_vcpu_seconds_month, are compared with EACH application instead, since the budget is per target; `containers_total_usd_month` bounds the estimated cost summed over all applications.
+CEILINGS come from the `report` object of `.ci/config/cf-spend-guard.json` when the file carries one, key by key, and from `DEFAULT_CEILINGS` below otherwise: workers_requests_month, workers_cpu_ms_month, r2_storage_bytes, r2_class_a_month, r2_class_b_month, d1_storage_bytes. Each is compared with the account total, and the per-item lines are for reading. The two container ceilings, containers_memory_gib_seconds_month and containers_vcpu_seconds_month, are compared with EACH application instead, since the budget is per target; `containers_target_usd_month` bounds each application's estimated memory plus vCPU cost; `containers_total_usd_month` bounds the estimated cost summed over all applications.
 
 THE LOG LINE is counted over seven days in Loki (through the Grafana datasource proxy, `OBS_GRAFANA_READ_TOKEN`); when Loki cannot answer, the Workers Observability telemetry query counts it instead. When neither answers the run is exit 2, because a guard that cannot look has not passed.
 
@@ -49,6 +49,8 @@ DEFAULT_CEILINGS: dict[str, float] = {
     "containers_vcpu_seconds_month": 2_000_000,
     # Account-wide estimated Containers spend across every application: the per-application ceilings alone let many targets each stay under them while the sum is far larger.
     "containers_total_usd_month": 100,
+    # Per-application estimated USD (memory plus vCPU): the two per-metric ceilings are each about this much alone, so they do not bound the pair.
+    "containers_target_usd_month": 50,
 }
 
 # https://developers.cloudflare.com/containers/pricing/ (read 2026-10-26), Workers Paid, USD.
@@ -364,6 +366,9 @@ def run(
     total_cap = ceilings.get(
         "containers_total_usd_month", DEFAULT_CEILINGS["containers_total_usd_month"]
     )
+    target_cap = ceilings.get(
+        "containers_target_usd_month", DEFAULT_CEILINGS["containers_target_usd_month"]
+    )
     total_cost = 0.0
     for name in sorted(apps):
         a = apps[name]
@@ -372,11 +377,20 @@ def run(
             + a["vcpu_s"] * CONTAINERS_USD_PER_VCPU_SECOND
         )
         total_cost += cost
-        bad = a["gib_s"] > mem_cap or a["vcpu_s"] > cpu_cap
+        bad = a["gib_s"] > mem_cap or a["vcpu_s"] > cpu_cap or cost > target_cap
         over += 1 if bad else 0
         print(
-            "%s containers.app.%s gib_seconds=%d (ceiling %d) vcpu_seconds=%d (ceiling %d) est_cost_usd=%.2f"
-            % ("OVER" if bad else "OK  ", name, a["gib_s"], mem_cap, a["vcpu_s"], cpu_cap, cost),
+            "%s containers.app.%s gib_seconds=%d (ceiling %d) vcpu_seconds=%d (ceiling %d) est_cost_usd=%.2f (ceiling %.2f)"
+            % (
+                "OVER" if bad else "OK  ",
+                name,
+                a["gib_s"],
+                mem_cap,
+                a["vcpu_s"],
+                cpu_cap,
+                cost,
+                target_cap,
+            ),
             file=out,
         )
     if not apps:

@@ -259,3 +259,38 @@ def test_container_total_over_the_account_ceiling_is_exit_1_though_each_app_is_u
     assert rc == 1
     assert "OVER containers.total est_cost_usd=" in text
     assert "OVER containers.app." not in text
+
+
+def _one_app(usd_memory: float, usd_vcpu: float) -> dict:
+    return DATA | {
+        "containersMetricsAdaptiveGroups": [
+            {
+                "dimensions": {"applicationId": "app1"},
+                "sum": {
+                    "cpuTimeSec": usd_vcpu / ur.CONTAINERS_USD_PER_VCPU_SECOND,
+                    "allocatedMemory": usd_memory / ur.CONTAINERS_USD_PER_GIB_SECOND * 2**30,
+                },
+            }
+        ]
+    }
+
+
+# The real per-metric ceilings (each about 50 USD alone) and the per-target dollar ceiling.
+TARGET_CEILINGS = dict.fromkeys(CEILINGS, 10**12) | {
+    "containers_memory_gib_seconds_month": 20_000_000,
+    "containers_vcpu_seconds_month": 2_500_000,
+    "containers_target_usd_month": 50,
+}
+
+
+def test_a_target_at_49_usd_memory_plus_49_usd_vcpu_is_over_the_target_ceiling():
+    rc, text = go(Fake(data=_one_app(49, 49)), TARGET_CEILINGS)
+    assert rc == 1, text
+    assert "OVER containers.app.app1" in text
+    assert "est_cost_usd=98.00 (ceiling 50.00)" in text
+
+
+def test_a_target_at_20_usd_memory_plus_20_usd_vcpu_is_not_over():
+    rc, text = go(Fake(data=_one_app(20, 20)), TARGET_CEILINGS)
+    assert rc == 0, text
+    assert "OK   containers.app.app1" in text
