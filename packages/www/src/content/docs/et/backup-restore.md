@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: et
-sourceHash: "177a657544f9979f"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "df140be7490305b0"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # Varundamine ja taastamine
@@ -303,7 +303,7 @@ Strateegia saab deklareerida poliitika repositooriumidele, mida ta katab: `rdc b
 | `--keep-yearly <n>` | Säilita kõige uuem hetktõmmis igast neist aastatest |
 | `--stream <id>` | Rakenda poliitika ühele varundusvoole kogu repositooriumi vaikeväärtuse asemel |
 
-Anna vähemalt üks reegel. `set` asendab iga parameetri, mitte ei ühenda, seega antakse kogu poliitika iga kord uuesti. Reegliteta `set` lükatakse tagasi, selle asemel et käsitleda seda kui "ära säilita midagi", sest poliitika tühjendamiseks on olemas `clear`. `clear` eemaldab poliitika ja säilitab sellest hetkest iga hetktõmmise; see ei tähenda kunagi "ära säilita midagi".
+Anna vähemalt üks reegel. `set` asendab iga parameetri, mitte ei ühenda, seega antakse kogu poliitika iga kord uuesti. Reegliteta `set` lükatakse tagasi, selle asemel et käsitleda seda kui "ära säilita midagi", sest poliitika tühjendamiseks on olemas `clear`. `clear` eemaldab määratud poliitika, mistõttu hakkab uuesti kehtima paketi või serveri vaikeväärtus; see ei tähenda kunagi "ära säilita midagi" ega "säilita kõike".
 
 ## Taastamine
 

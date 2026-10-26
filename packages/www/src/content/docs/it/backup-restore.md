@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: it
-sourceHash: "177a657544f9979f"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "df140be7490305b0"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # Backup e Ripristino
@@ -303,7 +303,7 @@ Una strategia può dichiarare la politica per i repository che copre: `rdc backu
 | `--keep-yearly <n>` | Conserva lo snapshot più recente per ciascuno di questi anni |
 | `--stream <id>` | Applica la politica a un solo flusso di backup invece che al valore predefinito dell'intero repository |
 
-Fornisci almeno una regola. `set` sostituisce ogni parametro invece di unirli, quindi l'intera politica va passata ogni volta. `set` senza regole viene rifiutato invece di essere trattato come "non conservare nulla", perché svuotare una politica è esattamente lo scopo di `clear`. `clear` rimuove la politica e da quel momento conserva ogni snapshot; non significa mai "non conservare nulla".
+Fornisci almeno una regola. `set` sostituisce ogni parametro invece di unirli, quindi l'intera politica va passata ogni volta. `set` senza regole viene rifiutato invece di essere trattato come "non conservare nulla", perché svuotare una politica è esattamente lo scopo di `clear`. `clear` rimuove la politica dichiarata, così torna ad applicarsi il valore predefinito del piano o del server; non significa mai "non conservare nulla" né "conservare tutto".
 
 ## Ripristino
 

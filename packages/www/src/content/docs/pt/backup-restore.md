@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: pt
-sourceHash: "177a657544f9979f"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "df140be7490305b0"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # Backup e Restauro
@@ -306,7 +306,7 @@ Uma estratégia pode declarar a política dos repositórios que cobre: `rdc back
 | `--keep-yearly <n>` | Manter o snapshot mais recente de cada um destes anos |
 | `--stream <id>` | Aplicar a política a um único fluxo de backup em vez do valor por omissão de todo o repositório |
 
-Indique pelo menos uma regra. `set` substitui todos os parâmetros em vez de os combinar, pelo que a política completa é passada de cada vez. `set` sem regras é recusado em vez de ser tratado como "não manter nada", porque limpar uma política é para isso que serve o `clear`. `clear` remove a política e mantém todos os snapshots a partir daí; nunca significa "não manter nada".
+Indique pelo menos uma regra. `set` substitui todos os parâmetros em vez de os combinar, pelo que a política completa é passada de cada vez. `set` sem regras é recusado em vez de ser tratado como "não manter nada", porque limpar uma política é para isso que serve o `clear`. `clear` remove a política declarada, pelo que volta a aplicar-se o valor predefinido do plano ou do servidor; nunca significa "não manter nada" nem "manter tudo".
 
 ## Restaurar
 

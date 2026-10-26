@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: fr
-sourceHash: "177a657544f9979f"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "df140be7490305b0"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # Sauvegarde et restauration
@@ -303,7 +303,7 @@ Une stratégie peut déclarer la politique des dépôts qu'elle couvre : `rdc ba
 | `--keep-yearly <n>` | Conserver l'instantané le plus récent de chacune de ces années |
 | `--stream <id>` | Appliquer la politique à un seul flux de sauvegarde plutôt qu'à la valeur par défaut du dépôt entier |
 
-Donnez au moins une règle. `set` remplace chaque paramètre au lieu de fusionner, donc la politique complète est transmise à chaque appel. `set` sans règles est refusé plutôt que traité comme « ne rien conserver », car supprimer une politique, c'est précisément à cela que sert `clear`. `clear` retire la politique et conserve tous les instantanés à partir de là ; cela ne signifie jamais « ne rien conserver ».
+Donnez au moins une règle. `set` remplace chaque paramètre au lieu de fusionner, donc la politique complète est transmise à chaque appel. `set` sans règles est refusé plutôt que traité comme « ne rien conserver », car supprimer une politique, c'est précisément à cela que sert `clear`. `clear` retire la politique déclarée, si bien que la valeur par défaut du forfait ou du serveur s'applique de nouveau ; cela ne signifie jamais « ne rien conserver » ni « tout conserver ».
 
 ## Restaurer
 

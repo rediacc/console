@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: de
-sourceHash: "177a657544f9979f"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "df140be7490305b0"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # Backup & Wiederherstellung
@@ -303,7 +303,7 @@ Eine Strategie kann die Richtlinie für die Repositories festlegen, die sie abde
 | `--keep-yearly <n>` | Den neuesten Snapshot aus jedem dieser Jahre behalten |
 | `--stream <id>` | Die Richtlinie auf einen Backup-Stream statt auf den repositoryweiten Standard anwenden |
 
-Geben Sie mindestens eine Regel an. `set` ersetzt jeden Parameter, statt zu mischen, daher wird die gesamte Richtlinie jedes Mal übergeben. `set` ohne Regeln wird zurückgewiesen statt als "nichts behalten" behandelt zu werden, denn eine Richtlinie zu löschen ist es, wofür `clear` da ist. `clear` entfernt die Richtlinie und behält ab dann jeden Snapshot; es bedeutet nie "nichts behalten".
+Geben Sie mindestens eine Regel an. `set` ersetzt jeden Parameter, statt zu mischen, daher wird die gesamte Richtlinie jedes Mal übergeben. `set` ohne Regeln wird zurückgewiesen statt als "nichts behalten" behandelt zu werden, denn eine Richtlinie zu löschen ist es, wofür `clear` da ist. `clear` entfernt die festgelegte Richtlinie, sodass wieder der Standard des Tarifs bzw. Servers gilt; es bedeutet weder "nichts behalten" noch "alles behalten".
 
 ## Wiederherstellung
 

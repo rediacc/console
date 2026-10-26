@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: zh
-sourceHash: "177a657544f9979f"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "df140be7490305b0"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # 备份与恢复
@@ -304,7 +304,7 @@ rdc backup snapshots delete my-app <snapshot-id>
 | `--keep-yearly <n>` | 在这么多年中,各保留每年最新的一个快照 |
 | `--stream <id>` | 把策略应用到一个备份流,而不是整个仓库的默认值 |
 
-至少要给出一条规则。`set` 会替换所有参数而不是合并,因此每次都要传入完整的策略。不带规则的 `set` 不会被当作"什么都不保留"来处理,而是会被拒绝,因为清空策略是 `clear` 的职责。`clear` 会移除策略,并从此保留所有快照;它从不表示"什么都不保留"。
+至少要给出一条规则。`set` 会替换所有参数而不是合并,因此每次都要传入完整的策略。不带规则的 `set` 不会被当作"什么都不保留"来处理,而是会被拒绝,因为清空策略是 `clear` 的职责。`clear` 会移除已声明的策略,改回套餐或服务器的默认设置;它既不表示"什么都不保留",也不表示"全部保留"。
 
 ## 恢复
 

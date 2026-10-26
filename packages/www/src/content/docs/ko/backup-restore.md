@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: ko
-sourceHash: "177a657544f9979f"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "df140be7490305b0"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # 백업 및 복원
@@ -304,7 +304,7 @@ rdc backup snapshots delete my-app <snapshot-id>
 | `--keep-yearly <n>` | 이 연 수만큼, 각 연의 최신 스냅샷을 유지 |
 | `--stream <id>` | 저장소 전체 기본값 대신 백업 스트림 하나에 정책을 적용 |
 
-규칙을 최소 하나는 지정하세요. `set`은 병합하지 않고 모든 항목을 교체하므로, 매번 전체 정책을 전달합니다. 규칙 없이 `set`을 실행하면 "아무것도 보존하지 않음"으로 취급되지 않고 거부됩니다. 정책을 비우는 것은 `clear`의 역할이기 때문입니다. `clear`는 정책을 제거하고 그 시점부터 모든 스냅샷을 보존하며, "아무것도 보존하지 않음"을 뜻하지 않습니다.
+규칙을 최소 하나는 지정하세요. `set`은 병합하지 않고 모든 항목을 교체하므로, 매번 전체 정책을 전달합니다. 규칙 없이 `set`을 실행하면 "아무것도 보존하지 않음"으로 취급되지 않고 거부됩니다. 정책을 비우는 것은 `clear`의 역할이기 때문입니다. `clear`는 선언한 정책을 제거하므로 플랜 또는 서버 기본값이 다시 적용됩니다. "아무것도 보존하지 않음"을 뜻하지도, "모두 보존"을 뜻하지도 않습니다.
 
 ## 복원
 

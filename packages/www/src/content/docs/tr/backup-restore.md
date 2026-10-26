@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: tr
-sourceHash: "177a657544f9979f"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "df140be7490305b0"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -304,7 +304,7 @@ Bir strateji, kapsadığı depoların politikasını bildirebilir: `rdc backup s
 | `--keep-yearly <n>` | Bu kadar yılın her birinden en yeni anlık görüntüyü tut |
 | `--stream <id>` | Politikayı depo geneli varsayılan yerine tek bir yedek akışına uygula |
 
-En az bir kural verin. `set`, birleştirmek yerine her ayarı değiştirir; bu yüzden politikanın tamamı her seferinde verilir. Kuralsız `set`, "hiçbir şeyi tutma" olarak değil, reddedilerek işlenir; çünkü bir politikayı temizlemek `clear`'ın işidir. `clear` politikayı kaldırır ve o andan itibaren her anlık görüntüyü saklar; hiçbir zaman "hiçbir şeyi tutma" anlamına gelmez.
+En az bir kural verin. `set`, birleştirmek yerine her ayarı değiştirir; bu yüzden politikanın tamamı her seferinde verilir. Kuralsız `set`, "hiçbir şeyi tutma" olarak değil, reddedilerek işlenir; çünkü bir politikayı temizlemek `clear`'ın işidir. `clear` tanımlı politikayı kaldırır, böylece planın ya da sunucunun varsayılanı yeniden geçerli olur; hiçbir zaman ne "hiçbir şeyi tutma" ne de "her şeyi tut" anlamına gelir.
 
 ## Geri Yükleme
 
