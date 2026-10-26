@@ -68,18 +68,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-telemetry-export.md -- 14 of 19 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 641 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 649 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a168faf5afe16dbfe, worker:abf5f9953adc0a106, worker:a72b94394df7c7490.
-- Leased items: 4: #321810d5 (worker:abf5f9953adc0a106, d778be9d), #a5cdd9b7 (worker:a72b94394df7c7490, d778be9d), #b742bad2 (worker:a168faf5afe16dbfe, d778be9d), #c0af0c3c (worker:bs5odzfhh, d778be9d).
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:ab39658f71f6bf0fe, worker:a9cd092269b4fa278.
+- Leased items: 3: #08f0928b (worker:ab39658f71f6bf0fe, d778be9d), #8d001802 (worker:a9cd092269b4fa278, d778be9d), #c0af0c3c (worker:b49iwgdlm, d778be9d).
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 7; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 23 plans done, 320 of 484 boxes done (66%).
+Promoted: 6 of 23 plans done, 321 of 484 boxes done (66%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -98,7 +98,7 @@ Promoted: 6 of 23 plans done, 320 of 484 boxes done (66%).
 | 13 | PLAN-renet-run-docker-sock-isolation.md | 3/3 | done |
 | 14 | PLAN-config-networkid-discovery.md | 5/7 | 2 open |
 | 15 | PLAN-renet-fetch-retries.md | 2/2 | done |
-| 16 | PLAN-cloudflare-spend-guard.md | 3/8 | 5 open |
+| 16 | PLAN-cloudflare-spend-guard.md | 4/8 | 4 open |
 | 17 | PLAN-renet-runtime-converge.md | 3/4 | 1 open |
 | 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
 | 19 | PLAN-converge-preflight-and-repo-recovery.md | 18/18 | done |
