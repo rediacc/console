@@ -19,24 +19,24 @@ Owns: private/account/src/services/executor-issuer.service.ts, private/account/s
 
 ### Verified state (2026-10-26, console 1023-1, private/account 257625a)
 
-1. **The issuer is single-org by construction.** `ExecutorIssuerService.issue(config)` resolves the owner from ROOT_EMAIL (executor-issuer.service.ts:118-122). It then picks the one org that owner owns, or the one EXECUTOR_ISSUER_ORG_ID names (:124-128), re-checks the owner's role (:134-141) and the subscription (:143-156), and mints with `createdByUserId = owner.id` and issuer_key `executor:<ENV>:<REGION>` (:158-168, :69-72). The RPC takes no arguments (workers/account/src/index.ts:86-89; private/account/src/entry/cloudflare.ts:121-140). EXECUTOR_ISSUER_ORG_ID is parsed at private/account/src/types/env.ts:267-270 and :367-381.
-2. **The console org gate.** `issuerOrgId` (console.ts:111-128) recomputes the issuer's org. `requireIssuerOrg` (:135-142) answers 503 `CONSOLE_EXECUTION_UNAVAILABLE` to any caller of another org, and all three legs call it (:443, :505, :543). The server checks no plan entitlement anywhere: `webConsole` appears only in packages/shared/src/subscription/constants.ts:529-553 (COMMUNITY false; PROFESSIONAL, BUSINESS and ENTERPRISE true) and in the web ConsoleGate. Bench's ROOT org holds a COMMUNITY subscription (PLAN-proxy-cd-six-targets, Live records, bench notes), and the issuer mints for it anyway.
-3. **Introspection is same-org only.** proxy.ts:81 resolves the caller's org from the executor token's subscription, and proxy.ts:96 answers `active:false` for a target of any other org. This is the server-side rule that already makes an org-scoped executor token unable to act for a foreign org's user.
+1. **The issuer is single-org by construction.** `ExecutorIssuerService.issue(config)` resolves the owner from ROOT_EMAIL (private/account/src/services/executor-issuer.service.ts:118-122). It then picks the one org that owner owns, or the one EXECUTOR_ISSUER_ORG_ID names (:124-128), re-checks the owner's role (:134-141) and the subscription (:143-156), and mints with `createdByUserId = owner.id` and issuer_key `executor:<ENV>:<REGION>` (:158-168, :69-72). The RPC takes no arguments (workers/account/src/index.ts:86-89; private/account/src/entry/cloudflare.ts:121-140). EXECUTOR_ISSUER_ORG_ID is parsed at private/account/src/types/env.ts:267-270 and :367-381.
+2. **The console org gate.** `issuerOrgId` (private/account/src/routes/console.ts:111-128) recomputes the issuer's org. `requireIssuerOrg` (:135-142) answers 503 `CONSOLE_EXECUTION_UNAVAILABLE` to any caller of another org, and all three legs call it (:444, :506, :544). The server checks no plan entitlement anywhere: `webConsole` appears only in packages/shared/src/subscription/constants.ts:529-553 (COMMUNITY false; PROFESSIONAL, BUSINESS and ENTERPRISE true) and in the web ConsoleGate. Bench's ROOT org holds a COMMUNITY subscription (PLAN-proxy-cd-six-targets, Live records, bench notes), and the issuer mints for it anyway.
+3. **Introspection is same-org only.** private/account/src/routes/proxy.ts:81 resolves the caller's org from the executor token's subscription, and private/account/src/routes/proxy.ts:96 answers `active:false` for a target of any other org. This is the server-side rule that already makes an org-scoped executor token unable to act for a foreign org's user.
 4. **Grant recording and config-token minting are org-bound server-side.**
-   - `executorOrg` (configs.ts:98-102) derives the org from the executor token's subscription and never reads a client value.
-   - `/executor-grant` (configs.ts:880-947) requires the presented user bearer to be of the same org (:912), not the executor's own principal (:914-915), live, carrying proxy:exec, and from a current member (:918).
-   - `/executor-token` (configs.ts:949-1022) requires the target user to be a member (:963-968). It requires the executor token's creator to equal the target or be an owner or admin (:975-986). It mints only through `mintExecutorSession`, which loads the store by the executor's org (config.service.ts, `configStores.orgId = executorOrgId`) and requires a live grant row matching session, principal and user (`configExecutorGrants.executorTokenId = executorPrincipal`). The grant also ends when the grantor's bearer is revoked or expired.
-   - `executorPrincipalOf = issuerKey ?? id` (config.service.ts:358-360). The grant table's unique index is (store, executor_token_id, session) (private/account/src/db/config-schema.ts, `idx_config_executor_grants_session`).
-5. **Audit attribution is org-checked.** `/licenses/audit-events` refuses a batch whose `onBehalfOfTokenId` resolves to another org, with 403 `ON_BEHALF_TOKEN_FORBIDDEN` (private/account/src/routes/license.ts:290-310). The actor is the on-behalf token's creator, else the authenticating token's creator (:326-328). The executor sends `onBehalfOfTokenId = principal.tokenId` (packages/cli/src/services/serve/audit.ts:56-59), and introspection supplies it (proxy.ts:121-123).
+   - `executorOrg` (private/account/src/routes/configs.ts:98-102) derives the org from the executor token's subscription and never reads a client value.
+   - `/executor-grant` (private/account/src/routes/configs.ts:880-947) requires the presented user bearer to be of the same org (:912), not the executor's own principal (:914-915), live, carrying proxy:exec, and from a current member (:918).
+   - `/executor-token` (private/account/src/routes/configs.ts:949-1022) requires the target user to be a member (:963-968). It requires the executor token's creator to equal the target or be an owner or admin (:975-986). It mints only through `mintExecutorSession`, which loads the store by the executor's org (config.service.ts, `configStores.orgId = executorOrgId`) and requires a live grant row matching session, principal and user (`configExecutorGrants.executorTokenId = executorPrincipal`). The grant also ends when the grantor's bearer is revoked or expired.
+   - `executorPrincipalOf = issuerKey ?? id` (private/account/src/services/config.service.ts:358-360). The grant table's unique index is (store, executor_token_id, session) (private/account/src/db/config-schema.ts, `idx_config_executor_grants_session`).
+5. **Audit attribution is org-checked.** `/licenses/audit-events` refuses a batch whose `onBehalfOfTokenId` resolves to another org, with 403 `ON_BEHALF_TOKEN_FORBIDDEN` (private/account/src/routes/license.ts:290-310). The actor is the on-behalf token's creator, else the authenticating token's creator (:326-328). The executor sends `onBehalfOfTokenId = principal.tokenId` (packages/cli/src/services/serve/audit.ts:56-59), and introspection supplies it (private/account/src/routes/proxy.ts:121-123).
 6. **The proxy already places one container per tenant.** `resolveTenant` introspects the caller with the Worker's issued token and keys the Durable Object as `${orgId}:${teamId ?? 'default'}` (workers/proxy/src/index.ts:166-204). `getContainer(env.EXECUTOR, tenant)` follows at :243. But the issued token belongs to one org, so introspection of any other org's caller answers inactive (fact 3). The egress uses one module-scope token cache (workers/proxy/src/issued-token.ts:53-55, :97-119). That token reaches every container the same way (workers/proxy/src/egress.ts:78-91, :94-128), and the outbound handler ignores which container is calling (workers/proxy/src/index.ts:114-119).
-7. **The containers library can tell instances apart.** @cloudflare/containers 0.3.7 hands each outbound handler `ctx: { containerId, className, params }` (workers/proxy/node_modules/@cloudflare/containers/dist/lib/container.d.ts:3-16). `setOutboundByHost(hostname, methodName, params)` installs a per-instance handler with params (:87-101). The container process cannot set these params: they are set by Durable Object code.
+7. **The containers library can tell instances apart.** @cloudflare/containers 0.3.7 hands each outbound handler `ctx: { containerId, className, params }` (the package's dist/lib/container.d.ts, lines 3 to 16). `setOutboundByHost(hostname, methodName, params)` installs a per-instance handler with params (:87-101). The container process cannot set these params: they are set by Durable Object code.
 8. **What the executor holds per process.**
    - `SessionStore` is one per process. It holds sessions keyed by id and a user to session index (packages/cli/src/services/serve/sessions.ts:69-79, :143). Ownership is checked by userId only (:129, :220), and orgId is never compared.
    - The decrypted config cache is per session, in RAM (packages/cli/src/services/serve/container-config.ts:82, :113-136).
    - AuthVerifier caches principals per bearer for 60 s (packages/cli/src/services/serve/auth.ts:19, :90-116) and does not compare `body.orgId` with anything (:175-202).
    - Request config is scoped through runInRequestContext (packages/cli/src/services/serve/server.ts:471-486).
    - SSH keys come from the decrypted config (packages/cli/src/services/executor/local-executor.ts:431). Secrets reach renet on stdin, never argv (packages/cli/src/services/executor/renet-launch.ts:55-72).
-   - Decryption binds storeId, configId and teamId through the envelope AAD (container-config.ts:128-133).
+   - Decryption binds storeId, configId and teamId through the envelope AAD (packages/cli/src/services/serve/container-config.ts:128-133).
 9. **Rate limits.**
    - Introspect is limited per authenticated token id for binding calls (private/account/src/middleware/rate-limit.ts:102-139, the key `apiToken:${tokenId}` at :134).
    - All binding callers share one ceiling of limit × BINDING_CEILING_FACTOR (10, :82, :112).
@@ -46,7 +46,7 @@ Owns: private/account/src/services/executor-issuer.service.ts, private/account/s
 ### Unverified claims (each is proved or refuted by the box named)
 
 - MU1 (W1): `OutboundHandlerContext.containerId` equals `env.EXECUTOR.idFromName(tenant).toString()` for the instance `getContainer(env.EXECUTOR, tenant)` returns. If it does not, W1 binds through the params alone and records the observed shape.
-- MU2 (W1, ML0): when max_instances running instances already exist, a start for a new Durable Object name fails with a catchable error, rather than queuing or evicting. ML0 records the observed error text on bench by starting a fourth org.
+- MU2 (W1, ML0): when max_instances running instances already exist, a start for a new Durable Object name fails with a catchable error, rather than queuing or evicting. ML0 records the observed error text on bench by starting a fourth org. Every one of the four must be entitled (a COMMUNITY org, bench's ROOT org as it stands, is refused with 403 `CONSOLE_NOT_ENTITLED` before any container start), so the ROOT org takes a PROFESSIONAL subscription for that drill or a fourth provisioned org stands in for it.
 - MU3 (W1): `startAndWaitForPorts({ startOptions: { envVars } })` (or the 0.3.7 equivalent) sets env per instance, overriding the class-level `envVars` field (workers/proxy/src/index.ts:134).
 - MU4 (C2): `rdc serve --mode container` writes no key material to disk on the dispatch path, including known_hosts and ssh2 agent files. C2 proves it with an fs-write spy, or names the writes and moves them under a per-request 0700 directory that is removed in `finally`.
 - MU5 (ML0): each of the seven D1s can hold two entitled orgs (PROFESSIONAL or higher, live subscription, config store with a server-recoverable org passphrase) created through existing root or test paths. ML0 records the path used and the ids only.
@@ -63,16 +63,16 @@ The org is never taken from the client. It is derived once from the caller's own
    - requires `proxy:exec`, refuses an archived team, and resolves the org through the token's subscription;
    - runs the entitlement check (item 4).
 
-   It answers `{ orgId }` or a bare refusal code. The Durable Object key becomes `orgId` alone (it is `org:team` today, index.ts:203). Teams share one CEK per org, so a per-team container isolates nothing cryptographically while multiplying instances against a cap of 3.
+   It answers `{ orgId }` or a bare refusal code. The Durable Object key becomes `orgId` alone (it is `org:team` today, workers/proxy/src/index.ts:203). Teams share one CEK per org, so a per-team container isolates nothing cryptographically while multiplying instances against a cap of 3.
 2. **Pinning the instance.** Before forwarding, the Worker calls the Durable Object's RPC `pin(orgId)`. The Durable Object:
    - checks `this.ctx.id.equals(env.EXECUTOR.idFromName(orgId))` and refuses otherwise, so a claimed org that is not the Durable Object's own name cannot be pinned;
    - stores the org, and refuses a later `pin` with a different value;
    - starts the container with per-instance env `REDIACC_EXECUTOR_ORG_ID=<orgId>` (MU3);
    - installs `setOutboundByHost('account.internal', 'accountEgress', { orgId })`.
-3. **Egress.** `accountEgress(request, env, ctx)` requires `ctx.params.orgId`, and requires `ctx.containerId === env.EXECUTOR.idFromName(ctx.params.orgId).toString()` (MU1). It then swaps the placeholder for `issuedToken(env.ISSUER, orgId)`. The container never names an org: the org comes from Durable Object code and is cross-checked against the instance identity. The allowlist and the placeholder rule (egress.ts:21-36, :78-91) are unchanged.
-4. **Executor.** `rdc serve --mode container` refuses to start without `REDIACC_EXECUTOR_ORG_ID`. `AuthVerifier.toPrincipal` refuses `body.orgId !== pinnedOrg` with 401, in the same words as an inactive token. This is defence in depth: the org-A token already makes proxy.ts:96 answer inactive for an org-B caller.
-5. **Grant and config.** The org-A issued token can record grants only for org-A members (configs.ts:912). It can mint config tokens only against org A's store (mintExecutorSession), and only for a grant row that names the principal `executor:<ENV>:<REGION>:<orgA>`. The pulled blob opens only under the CEK that the org-A user's browser sealed to that session's ephemeral key. The envelope AAD (container-config.ts:128-133) refuses a blob served for another store, config or team. Org B's grant, config token, CEK and blob are therefore unreachable from org A's container at four independent server-side or cryptographic checks.
-6. **Audit.** Every event carries `onBehalfOfTokenId`, and license.ts:294-310 refuses a foreign one. Item 2 adds a rule: an issued executor token must name `onBehalfOfTokenId` on every event, because it has no creator to fall back to.
+3. **Egress.** `accountEgress(request, env, ctx)` requires `ctx.params.orgId`, and requires `ctx.containerId === env.EXECUTOR.idFromName(ctx.params.orgId).toString()` (MU1). It then swaps the placeholder for `issuedToken(env.ISSUER, orgId)`. The container never names an org: the org comes from Durable Object code and is cross-checked against the instance identity. The allowlist and the placeholder rule (workers/proxy/src/egress.ts:21-36, :78-91) are unchanged.
+4. **Executor.** `rdc serve --mode container` refuses to start without `REDIACC_EXECUTOR_ORG_ID`. `AuthVerifier.toPrincipal` refuses `body.orgId !== pinnedOrg` with 401, in the same words as an inactive token. This is defence in depth: the org-A token already makes private/account/src/routes/proxy.ts:96 answer inactive for an org-B caller.
+5. **Grant and config.** The org-A issued token can record grants only for org-A members (private/account/src/routes/configs.ts:912). It can mint config tokens only against org A's store (mintExecutorSession), and only for a grant row that names the principal `executor:<ENV>:<REGION>:<orgA>`. The pulled blob opens only under the CEK that the org-A user's browser sealed to that session's ephemeral key. The envelope AAD (packages/cli/src/services/serve/container-config.ts:128-133) refuses a blob served for another store, config or team. Org B's grant, config token, CEK and blob are therefore unreachable from org A's container at four independent server-side or cryptographic checks.
+6. **Audit.** Every event carries `onBehalfOfTokenId`, and private/account/src/routes/license.ts:294-310 refuses a foreign one. Item 2 adds a rule: an issued executor token must name `onBehalfOfTokenId` on every event, because it has no creator to fall back to.
 
 ### 2. Token model: per-org issued tokens, minted on demand
 
@@ -80,8 +80,8 @@ The org is never taken from the client. It is derived once from the caller's own
   - re-runs the entitlement check (item 4) for that org and refuses with a reason code otherwise (`ISSUER_ORG_NOT_FOUND`, `ISSUER_ORG_NOT_ENTITLED`, `ISSUER_ORG_BLOCKED`, `ISSUER_SUBSCRIPTION_INACTIVE`, `ISSUER_STORE_UNSUPPORTED`, `ISSUER_REGION_UNSET`);
   - mints a 45-minute token: scopes exactly `proxy:exec` and `audit:write`, ip binding `service-binding`, subscription = the org's primary live subscription, `createdByUserId = null`, and `issuer_key = executor:<ENVIRONMENT>:<REGION>:<orgId>`;
   - audits `executor_token.issued` or `executor_token.refused` with orgId, never the value.
-- **What replaces ROOT_EMAIL ownership.** No user owns an executor token. The authority to act for a user is the live grant row that the user's own bearer recorded (configs.ts:880-947), not an owner's role.
-  - `/executor-token` (configs.ts:975-986) treats a token with an `issuerKey` as authorized by the grant alone: it skips the creator check, while mintExecutorSession still demands a live grant for exactly this session, principal and user.
+- **What replaces ROOT_EMAIL ownership.** No user owns an executor token. The authority to act for a user is the live grant row that the user's own bearer recorded (private/account/src/routes/configs.ts:880-947), not an owner's role.
+  - `/executor-token` (private/account/src/routes/configs.ts:975-986) treats a token with an `issuerKey` as authorized by the grant alone: it skips the creator check, while mintExecutorSession still demands a live grant for exactly this session, principal and user.
   - A token with no issuer key and no creator still acts for nobody else.
   - The issuer no longer reads ROOT_EMAIL. EXECUTOR_ISSUER_ORG_ID is deleted from env.ts and from the issuer env schema. The refusal codes `ISSUER_OWNER_UNSET`, `ISSUER_OWNER_UNKNOWN`, `ISSUER_ORG_AMBIGUOUS` and `ISSUER_ROLE_REVOKED` are deleted.
 - **Principal.** `executorPrincipalOf` stays `issuerKey ?? id`. Because the key now includes the org, the principal is org-unique as well as store-scoped.
@@ -96,11 +96,11 @@ The org is never taken from the client. It is derived once from the caller's own
 
 - **Process boundary = org boundary.** One container (a Durable Object instance, a separate Linux process tree) per org per target. Two orgs never share a SessionStore, a decrypted config, an SSH connection pool, a renet subprocess or a temp directory. A shared multi-tenant process was rejected (Decisions 1).
 - **Inside one org's container**, the existing per-user rules hold:
-  - session ownership by userId (sessions.ts:129, :220);
-  - a config cache per session, dropped with the session (container-config.ts:84-93);
-  - a 30-minute idle TTL for the CEK (sessions.ts:32);
-  - a request-scoped config context (server.ts:471-486);
-  - secrets on stdin (renet-launch.ts:55-72).
+  - session ownership by userId (packages/cli/src/services/serve/sessions.ts:129, :220);
+  - a config cache per session, dropped with the session (packages/cli/src/services/serve/container-config.ts:84-93);
+  - a 30-minute idle TTL for the CEK (packages/cli/src/services/serve/sessions.ts:32);
+  - a request-scoped config context (packages/cli/src/services/serve/server.ts:471-486);
+  - secrets on stdin (packages/cli/src/services/executor/renet-launch.ts:55-72).
   
   C2 adds the pinned-org assertion to `SessionStore.open`, so a session records `orgId` and `grantCek` and `sessionForExec` refuse a principal of another org with the indistinguishable unknown-session code. C2 also proves MU4.
 - **Env.** The container env holds exactly REDIACC_TOKEN (placeholder), REDIACC_ACCOUNT_SERVER, REDIACC_REGION and REDIACC_EXECUTOR_ORG_ID. A test asserts that set, and asserts no issued token appears in it.
@@ -108,9 +108,9 @@ The org is never taken from the client. It is derived once from the caller's own
   - With max_instances 3, at most 3 orgs per target run warm at once, and `sleepAfter = '2m'` frees a slot after idle.
   - A start that fails on capacity (MU2) answers 503 `{ code: 'EXECUTOR_CAPACITY' }` with `Retry-After: 30`. console.ts relays that one 503 code (RELAYED_STATUSES and RELAYED_CODES gain 503 and `EXECUTOR_CAPACITY`), and ResultView shows a localized "busy, retry shortly" state.
   - The proxy emits a `rediacc.proxy.outcome = capacity` span attribute, so the capacity question (Decisions 3) can be answered from Tempo rather than guessed.
-- **Audit attribution.** This is unchanged (onBehalfOfTokenId, audit.ts:56-59), plus the item 1.6 rule. The event_log row carries the org from the on-behalf token's org, so each org's console commands land in that org's audit trail.
+- **Audit attribution.** This is unchanged (onBehalfOfTokenId, packages/cli/src/services/serve/audit.ts:56-59), plus the item 1.6 rule. The event_log row carries the org from the on-behalf token's org, so each org's console commands land in that org's audit trail.
 - **Per-org rate limits.**
-  - Binding-call buckets key on `issuerKey ?? tokenId` (rate-limit.ts:134), so renewal does not reset an org's bucket.
+  - Binding-call buckets key on `issuerKey ?? tokenId` (private/account/src/middleware/rate-limit.ts:134), so renewal does not reset an org's bucket.
   - The shared binding ceiling (:112) becomes per-org for issuer-key tokens, and stays shared for the rest.
   - `/console/exec` gains `rateLimit` keyed on `console:<orgId>` (60 per minute), and `/console/session` gets 20 per minute per org.
   - The proxy front door makes no rate decision. The account Worker holds every limit.
@@ -119,11 +119,11 @@ The org is never taken from the client. It is derived once from the caller's own
 
 - **`ConsoleEntitlementService.check(orgId)`** is one function used by the console legs, `ExecutorIssuer.route` and `ExecutorIssuer.issue`. It answers ok only when all of these hold:
   - the org exists and `console_executor_blocked_at` is null;
-  - the primary subscription is live (the issuer's LIVE_STATUS_RANK rule, executor-issuer.service.ts:83-156, moved here);
+  - the primary subscription is live (the issuer's LIVE_STATUS_RANK rule, private/account/src/services/executor-issuer.service.ts:83-156, moved here);
   - `PLAN_METADATA[plan].webConsole` is true;
   - the org's config store exists with `serverRecoverableOrgPassphrase`, without which mintExecutorSession refuses anyway.
 - **What each leg answers.**
-  - `requireIssuerOrg` and `issuerOrgId` (console.ts:102-142) are deleted.
+  - `requireIssuerOrg` and `issuerOrgId` (private/account/src/routes/console.ts:102-142) are deleted.
   - Each leg answers the region-level 503 `CONSOLE_EXECUTION_UNAVAILABLE` exactly as today when the mode is not proxy or no executor is bound.
   - It answers 403 `CONSOLE_NOT_ENTITLED` with `details.reason` from `plan`, `subscription`, `store` or `blocked` when the org fails the check.
   - ResultView renders a localized state per reason in all 13 locales.
@@ -143,7 +143,7 @@ The org is never taken from the client. It is derived once from the caller's own
   - `DELETE FROM config_executor_grants`. Live sessions re-grant through the R1 path of PLAN-proxy-cd-six-targets, which the redeploy already forces because the container sessions are wiped.
   
   No column or table is kept for the old model.
-- **Code removals.** EXECUTOR_ISSUER_ORG_ID (env.ts:267-270, :373), the ROOT_EMAIL read in the issuer, `issuerOrgId` and `requireIssuerOrg`, the four owner refusal codes, the `org:team` Durable Object key, and the single module-scope token in issued-token.ts.
+- **Code removals.** EXECUTOR_ISSUER_ORG_ID (private/account/src/types/env.ts:267-270, :373), the ROOT_EMAIL read in the issuer, `issuerOrgId` and `requireIssuerOrg`, the four owner refusal codes, the `org:team` Durable Object key, and the single module-scope token in issued-token.ts.
 - **CD and secrets.**
   - No new Worker secret or var in any target, and the six-targets CD order already deploys the account Worker before the proxy (Design item 9). Between the account deploy and the proxy deploy, an old proxy calling `issue()` with no org is refused with `ISSUER_ORG_REQUIRED`, and the region answers 503 for those minutes. This is accepted because there are no external users.
   - The `live-console` bws profile gains names only: `LIVE_CONSOLE_ORG_A_EMAIL`, `LIVE_CONSOLE_ORG_A_PASSWORD`, `LIVE_CONSOLE_ORG_B_EMAIL`, `LIVE_CONSOLE_ORG_B_PASSWORD`, plus the TOTP seeds if the login demands them.
@@ -190,7 +190,7 @@ The org is never taken from the client. It is derived once from the caller's own
   
   -- Owns: private/account/src/services/executor-issuer.service.ts, workers/account/src/index.ts, private/account/src/entry/cloudflare.ts, private/account/src/types/env.ts, private/account/src/services/api-token.service.ts, private/account/tests/integration/executor-issuer.test.ts, private/account/tests/integration/executor-issuer-route.test.ts. Accept: `cd private/account && npx vitest run tests/integration/executor-issuer.test.ts tests/integration/executor-issuer-route.test.ts tests/integration/api-token-service-binding.test.ts` exits 0, `npm run typecheck` exits 0, and `grep -rn 'EXECUTOR_ISSUER_ORG_ID\|ISSUER_OWNER_' private/account/src workers/account/src` prints nothing.
 - [ ] A3 [account-grants] Grants, config tokens and audit for issuer tokens, after A2.
-  - `/executor-token` authorizes an issuer-key token by the live grant alone (configs.ts:975-986).
+  - `/executor-token` authorizes an issuer-key token by the live grant alone (private/account/src/routes/configs.ts:975-986).
   - `/licenses/audit-events` refuses an event without `onBehalfOfTokenId` from an issuer-key token, with 403 `ON_BEHALF_REQUIRED`.
   - executor-grant-principal.test.ts is rewritten for the org-qualified key.
   - The cross-org matrix in executor-multi-org.test.ts, using org A and org B in one region:
@@ -258,7 +258,7 @@ The org is never taken from the client. It is derived once from the caller's own
 - [ ] C1 [cli] The pinned org in `rdc serve --mode container`. serve.ts refuses to start in container mode without `REDIACC_EXECUTOR_ORG_ID`. AuthVerifier takes `pinnedOrgId` and refuses `body.orgId !== pinnedOrgId` with the inactive-token 401. The test proves the boot refusal, the foreign-org refusal, and that a foreign-org answer is not cached. -- Owns: packages/cli/src/commands/serve.ts, packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/__tests__/pinned-org.test.ts. Accept: `cd packages/cli && npx vitest run src/services/serve/__tests__/pinned-org.test.ts src/services/serve/__tests__/audit-capability-self.test.ts` exits 0 and `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
 - [ ] C2 [cli] Session org binding and key-material lifetime, after C1.
   - SessionStore records `orgId`. `grantCek` and `sessionForExec` refuse another org with `EXECUTOR_SESSION_UNKNOWN`.
-  - The capability self-check (auth.ts:139-168) tolerates an issued token with no creator.
+  - The capability self-check (packages/cli/src/services/serve/auth.ts:139-168) tolerates an issued token with no creator.
   - MU4: a loopback test runs `machine status` against a fake machine under an fs-write spy and asserts no write of a private key, known_hosts or config bytes outside a per-request 0700 directory removed in `finally`.
   - Two sessions of two users in one process never share a config cache entry.
   
@@ -325,4 +325,4 @@ The org is never taken from the client. It is derived once from the caller's own
 5. **Issued tokens have no creator.** The authority to act for a user is the live grant that user's bearer recorded, so no owner's role, and no ROOT_EMAIL, can stall or widen the executor.
 6. **Entitlement is the plan's `webConsole` flag** plus a live subscription and a store that can issue executor tokens. There is no per-org opt-in flag, only the root block switch.
 7. **Per-org limits:** 60 execs and 20 session opens per minute per org at the account Worker, and binding buckets keyed on the issuer key with a per-org ceiling.
-8. **The capacity and entitlement refusals are 503 `EXECUTOR_CAPACITY` and 403 `CONSOLE_NOT_ENTITLED`**, kept distinct from the region-level 503 `CONSOLE_EXECUTION_UNAVAILABLE`, so a user can tell "this region is off" from "your plan" from "busy".
+8. **The capacity and entitlement refusals are 503 `EXECUTOR_CAPACITY` and 403 `CONSOLE_NOT_ENTITLED`**, kept distinct from the region-level 503 `CONSOLE_EXECUTION_UNAVAILABLE`, so a user can tell "this region is off" from "not entitled" from "busy".
