@@ -237,6 +237,23 @@ export function hostVersionOf(read: (p: { repo: string; file: string }) => strin
   return v;
 }
 
+/**
+ * The Ceph series one host target must stay on: its `host-version.<target>` override when the pin file carries one WITH a
+ * `host-version-reason.<target>` line, else the shared `host-version=`. An override without a reason is ignored, so the gate's refusal stands.
+ */
+export function hostVersionFor(
+  read: (p: { repo: string; file: string }) => string | null,
+  target: string
+): string {
+  const text = read(hostPinFile);
+  const esc = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const override =
+    text === null ? null : new RegExp(`^host-version\\.${esc}=(\\S+)$`, 'm').exec(text)?.[1];
+  const reason =
+    text === null ? null : new RegExp(`^host-version-reason\\.${esc}=\\S`, 'm').test(text);
+  return override && reason ? override : hostVersionOf(read);
+}
+
 /** Throw the BLOCKER reason of a `source: none` entry, so the pin reads "not compared: <reason>". */
 export function requireSource(entry: {
   id: string;

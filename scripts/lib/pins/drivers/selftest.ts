@@ -566,6 +566,31 @@ async function osCases(
     });
   }
   {
+    const withOverride = (reason: boolean) =>
+      ctxOf(
+        tree({
+          'private/renet/.ceph-image-pin': `${PIN_FILE('19.2.3-lp160.4.1')}host-version.opensuse-16.0=20.1.0\n${reason ? 'host-version-reason.opensuse-16.0=ruling\n' : ''}`,
+          'private/renet/pkg/infra/cephpkg/cephpkg.go': `var hostPins = map[string]string{\n\t"opensuse-16.0": "19.2.3-lp160.4.1",\n}\n`,
+          'private/renet/cmd/renet/ceph_install_profile_test.go': `want := "zypper -n install --no-recommends ceph-common=19.2.3-lp160.4.1"\n`,
+        })
+      );
+    const ok = await osCephHostDriver(
+      () => deps({ run: obs('20.1.0-lp160.1.1', 'present') }).deps,
+      mutant
+    ).inspect(e, withOverride(true));
+    const noReason = await osCephHostDriver(
+      () => deps({ run: obs('20.1.0-lp160.1.1', 'present') }).deps,
+      mutant
+    ).inspect(e, withOverride(false));
+    out.push({
+      name: 'os:leap: a host-version.opensuse-16.0 override with a reason admits that series; without a reason it is ignored',
+      ok:
+        ok.releases[0]?.verdict?.eligible === true &&
+        noReason.releases[0]?.verdict?.eligible === false,
+      detail: JSON.stringify([ok, noReason]),
+    });
+  }
+  {
     const ctx = ctxOf(leapTree());
     const same = await osCephHostDriver(
       () => deps({ run: obs('19.2.3-lp160.4.1', 'present') }).deps,
