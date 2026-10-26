@@ -147,7 +147,7 @@ def run(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> typing.Calla
         drill = lib.Drill("backup-onprem", selftest=False, keep_work=False)
         drill.init()
 
-        def spawn(argv: list[str], **kwargs: typing.Any) -> FakeServer:
+        def spawn(argv: list[str], **kwargs: typing.Any) -> typing.Any:
             assert argv == ["npx", "tsx", "src/entry/on-premise.ts"]
             assert kwargs["cwd"].endswith("private/account")
             assert kwargs["env"]["ON_PREMISE_MODE"] == "true"

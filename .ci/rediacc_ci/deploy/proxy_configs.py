@@ -341,14 +341,14 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
         out.append("[[containers]] has %d entries, not exactly one" % len(containers))
     else:
         entry = containers[0]
-        for key, value in (
+        for ckey, cvalue in (
             ("class_name", CONTAINER_CLASS),
             ("image", "./Dockerfile"),
             ("image_build_context", "../.."),
             ("max_instances", target.max_instances),
         ):
-            if entry.get(key) != value:
-                out.append("[[containers]] %s is %r, not %r" % (key, entry.get(key), value))
+            if entry.get(ckey) != cvalue:
+                out.append("[[containers]] %s is %r, not %r" % (ckey, entry.get(ckey), cvalue))
     bindings = (config.get("durable_objects") or {}).get("bindings")
     if bindings != [{"name": "EXECUTOR", "class_name": CONTAINER_CLASS}]:
         out.append("[[durable_objects.bindings]] is %r, not the one EXECUTOR binding" % (bindings,))
@@ -365,11 +365,12 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
         if obs.get("enabled") is not True:
             out.append("observability.enabled is %r, not true" % obs.get("enabled"))
         for section, dest in zip(("logs", "traces"), target.destinations, strict=True):
-            block = obs.get(section) if isinstance(obs.get(section), dict) else {}
-            got = block.get("destinations")
-            if got != [dest]:
-                out.append("observability.%s.destinations is %r, not [%r]" % (section, got, dest))
-            for d in got if isinstance(got, list) else []:
+            raw_block = obs.get(section)
+            block: dict = raw_block if isinstance(raw_block, dict) else {}
+            dests = block.get("destinations")
+            if dests != [dest]:
+                out.append("observability.%s.destinations is %r, not [%r]" % (section, dests, dest))
+            for d in dests if isinstance(dests, list) else []:
                 foreign_hits("observability.%s destination" % section, str(d))
             if block.get("persist") is not False:
                 out.append(

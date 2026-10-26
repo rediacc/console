@@ -499,6 +499,27 @@ def test_subset_of_strips_the_cwd_prefix_and_honours_the_exclusion() -> None:
     assert go_unit.subset_of(["m/x 1 0 /other/x"], "/w", ["x"]) == ["m/x"]
 
 
+def test_excluded_dirs_reads_a_symlinked_checkout_through_its_resolved_paths(
+    tmp_path: pathlib.Path,
+) -> None:
+    real = tmp_path / "real"
+    (real / "pkg" / "a").mkdir(parents=True)
+    test_file = real / "pkg" / "a" / "a_test.go"
+    test_file.write_text("package a\nvar _ = os.Geteuid()\n", encoding="utf-8")
+    link = tmp_path / "link"
+    link.symlink_to(real)
+    built = go_unit.built_test_files("%s\ta_test.go" % test_file.parent)
+    assert go_unit.excluded_dirs(link, built) == ["pkg/a"]
+    # No listing means every test file is scanned, the twin's shape; an EMPTY listing would skip them all.
+    assert go_unit.excluded_dirs(link, None) == ["pkg/a"]
+    assert go_unit.excluded_dirs(link, set()) == []
+
+
+def test_test_func_count_tolerates_spacing_and_parameter_names() -> None:
+    text = "func TestA(t *testing.T) {}\nfunc  TestB( tt  *testing.T ) {}\nfunc helper(t *testing.T) {}\n"
+    assert len(go_unit.TEST_FUNC_RE.findall(text)) == 2
+
+
 # `go test -count=1 ./a ./b ./c` with ./a failing, ./c test-less, as go 1.26 prints it: the bare `FAIL` after a failing package's output and the bare `FAIL` closing a failing run are NOT result lines.
 GO_TEST_STDOUT = (
     "--- FAIL: TestA (0.00s)\n"

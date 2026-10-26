@@ -16,7 +16,7 @@ Run: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-wo
 
 Options: `--region eu|us|asia|all` (default all), `--target stable|edge|all` (default all), `--archive` (archive then delete; needs an explicit `--region`; prefer it to a bare `--delete`), `--dry-run` (with `--archive`: report which names have a bws value, write nothing), `--delete` (needs an explicit `--region`; prints each deleted name, keeps no copy), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
 
-Exit codes: 0 no extras, 1 extras listed (or a delete failed), 2 no verdict (missing credential, API failure, unknown option).
+Exit codes: 0 no extras, 1 extras listed (or a delete failed), 2 no verdict (missing credential, API failure, unknown option, `--archive` or `--delete` without an explicit `--region`, `--delete` combined with `--dry-run`).
 """
 
 from __future__ import annotations
@@ -279,6 +279,14 @@ def archive_extras(
                 left += 1
                 continue
             try:
+                existing = fetch("GET", secrets_path(account, row.worker), token)
+                if isinstance(existing, list) and archive in {
+                    str(item.get("name")) for item in existing if isinstance(item, dict)
+                }:
+                    raise ApiError(
+                        "%s already exists on %s; it may be the only older copy"
+                        % (archive, row.worker)
+                    )
                 fetch(
                     "PUT",
                     secrets_path(account, row.worker),
@@ -292,7 +300,7 @@ def archive_extras(
                 lines.append("failed %s: %s: %s" % (row.worker, name, exc))
                 left += 1
                 continue
-            lines.append("archived %s: %s as %s" % (row.worker, name, archive))
+            lines.append("archived %s: %s as %s (from the bws value)" % (row.worker, name, archive))
             lines.append("deleted %s: %s" % (row.worker, name))
     return lines, left
 
@@ -333,6 +341,8 @@ def run(
     opts = parse(argv)
     if opts is None:
         return 2, ["%s: unexpected argument; see the module docstring" % SELF], []
+    if opts.delete and opts.dry_run and not opts.archive:
+        return 2, ["%s: --dry-run applies to --archive only; nothing deleted" % SELF], []
     if (opts.delete or opts.archive) and opts.region == "all":
         # A delete names its region: one run never removes secrets from every account Worker at once.
         flag = "--archive" if opts.archive else "--delete"
@@ -383,7 +393,8 @@ def run(
             msg = "%s: the bws store could not be read; nothing archived" % SELF
             return 2, [*lines, msg, *exc.lines], rows
         tail = "dry run: nothing written" if opts.dry_run else "archive run finished"
-        return (1 if left else 0), [*lines, *done, "%s; %d extra(s) remain" % (tail, left)], rows
+        summary = "%s; %d extra(s) remain" % (tail, left) if left else "%s; none remain" % tail
+        return (1 if left else 0), [*lines, *done, summary], rows
     if opts.delete:
         deleted, failures = delete_extras(rows, account, token, fetch)
         lines += [*deleted, "deleted %d extra(s) through the API" % len(deleted), *failures]

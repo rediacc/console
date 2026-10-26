@@ -203,7 +203,9 @@ def summary_skips_unmanaged(text: str, *names: str) -> bool:
 
 def names_gate_denial(text: str, service: str) -> bool:
     """True when `repo up`'s output names the P5 refusal of `service`: the service and one of the two things the gate refuses it for (the MKNOD capability, the proxy-root bind). A network or daemon failure names neither."""
-    return bool(service) and service in text and ("MKNOD" in text or PROXY_ROOT in text)
+    return bool(service) and any(
+        service in line and ("MKNOD" in line or PROXY_ROOT in line) for line in text.splitlines()
+    )
 
 
 def ids_unchanged(before: list[str] | None, after: list[str] | None) -> bool:

@@ -300,6 +300,15 @@ def test_overlap_lists_main_commits_with_the_plans_they_changed(repo):
     assert capped.commits == ()
 
 
+def test_overlap_is_unknown_when_git_log_fails(repo, monkeypatch):
+    repo.commit({"src/a.py": A_PY + "m\n"}, "main: cited file")
+    monkeypatch.setattr(PP, "_log", lambda *_a, **_k: None)
+    ov = PP.overlap(repo.root, PLAN)
+    assert ov.since is None
+    assert ov.total == 0
+    assert ov.commits == ()
+
+
 def test_partial_row_writes_a_continuation_line_and_keeps_signatures(repo):
     before = repo.read(PLAN)
     rows = current_rows(

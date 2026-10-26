@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import pathlib
 import re
+import types
 
 import pytest
 
@@ -177,6 +178,8 @@ def test_names_gate_denial_needs_the_service_and_a_refused_reason() -> None:
     assert not c.names_gate_denial("ssh: connect to host failed", "svc")
     assert not c.names_gate_denial("svc: MKNOD", "")
     assert not c.names_gate_denial("MKNOD refused", "svc")
+    # The service and the reason on different lines: an unrelated MKNOD error is not this service's refusal.
+    assert not c.names_gate_denial("svc started\nother: MKNOD refused", "svc")
 
 
 def test_config_name_is_run_scoped() -> None:
@@ -189,12 +192,37 @@ def test_no_hardcoded_runtime_or_datastore_paths() -> None:
     assert not re.search(r'"' + re.escape(RUNTIME_DIR) + r'|"/var/lib/rediacc/(?!runtime)', source)
 
 
-def test_both_forks_carry_a_rediaccfile_whose_up_starts_the_compose_file():
+def test_both_forks_carry_a_rediaccfile_whose_up_starts_the_compose_file() -> None:
     """V1 2026-10-24: without a Rediaccfile, `repository up` after a converge restart starts nothing and the control fork fails health (containers_missing)."""
     body = c.rediaccfile()
     assert body.startswith("#!/bin/bash\n")
     assert "up() {\n  renet compose -- up -d\n}" in body
     assert c.REDIACCFILE == "Rediaccfile"
+
+
+def test_deploy_services_writes_the_rediaccfile_into_the_refused_and_control_forks_only(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The write itself, not only the text: dropping it leaves `repository up` starting nothing after a converge restart."""
+    ctx = types.SimpleNamespace(
+        run_id="20261026-abcdef", work=tmp_path, check=lambda *_a, **_k: True
+    )
+    live = c._LiveU2(ctx)
+    live.tmp.mkdir(parents=True)
+    uploaded: dict[str, list[str]] = {}
+
+    def crdc(*args: str, **_kw: object) -> types.SimpleNamespace:
+        if args[:3] == ("repo", "sync", "upload"):
+            local = pathlib.Path(args[args.index("--local") + 1])
+            uploaded[args[3]] = sorted(p.name for p in local.iterdir())
+        return types.SimpleNamespace(rc=0, out="", err="")
+
+    monkeypatch.setattr(live, "crdc", crdc)
+    monkeypatch.setattr(live, "container_ids", lambda _tag: ["id"])
+    assert live._deploy_services()
+    assert uploaded[live.ref(live.tag_r)] == sorted([c.COMPOSE_FILE, c.REDIACCFILE])
+    assert uploaded[live.ref(live.tag_c)] == sorted([c.COMPOSE_FILE, c.REDIACCFILE])
+    assert uploaded[live.ref(live.tag_u)] == [c.COMPOSE_FILE]
 
 
 UNMANAGED = {

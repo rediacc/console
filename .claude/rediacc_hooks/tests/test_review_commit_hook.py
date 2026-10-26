@@ -1628,6 +1628,13 @@ def test_mark_fixed_test_flag_admits_a_test_for_any_claim(world):
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % test_fix)
 
 
+def test_related_test_matches_the_stem_as_a_whole_token():
+    assert R.related_test("tests/test_wl_roster.py", "hooks/wl_roster.py")
+    assert R.related_test("tests/test_wl_roster_plans.py", "hooks/wl_roster.py")
+    assert R.related_test("tests/test_io.py", "pkg/io.py")
+    assert not R.related_test("tests/test_radio.py", "pkg/io.py")
+
+
 def test_mark_fixed_refuses_an_unrelated_test_file(world):
     """79cf9eed.1/.2: a test of some OTHER module closes nothing, neither through `--test` nor through a claim that mentions a test; a claim that a test is missing is admitted only by a test whose name carries the anchored file's stem."""
     world.answer(

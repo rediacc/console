@@ -2980,7 +2980,10 @@ def related_test(test_path, anchored):
     """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`). A test of some other module never closes this finding."""
     stem = _norm_stem(anchored)
     name = pathlib.PurePosixPath(test_path).name.lower().replace("-", "_")
-    return bool(stem) and stem in name
+    # The stem stands as a whole token of the test's name: `io` is not in `test_radio.py`.
+    return (
+        bool(stem) and re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(stem), name) is not None
+    )
 
 
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):

@@ -219,7 +219,9 @@ def _vector_by_service(rows: list[dict]) -> dict[str, float]:
             try:
                 out[str(service)] = out.get(str(service), 0.0) + float(value[1])
             except (TypeError, ValueError):
-                continue
+                raise VolumeError(
+                    "prometheus returned a non-numeric span count for %s" % service
+                ) from None
     return out
 
 
@@ -321,12 +323,13 @@ def estimate(
     span_bytes: float | None,
 ) -> tuple[list[dict], bool, int]:
     """Per-Worker rows, whether the span size fell back to the log mean, and how many non-Worker services were dropped."""
-    all_bytes = sum(b for b, _ in log_sizes.values())
-    all_lines = sum(n for _, n in log_sizes.values())
-    overall_log = all_bytes / all_lines if all_lines else 0.0
-    span_mean = overall_log if span_bytes is None else span_bytes
     services = sorted(set(spans) | set(log_sizes))
     workers = [s for s in services if not NON_WORKER.match(s)]
+    # The fallback span size is the Workers' own mean log line: the dropped services (renet, the CLI, syslog) price a span wrongly.
+    all_bytes = sum(log_sizes[s][0] for s in workers if s in log_sizes)
+    all_lines = sum(log_sizes[s][1] for s in workers if s in log_sizes)
+    overall_log = all_bytes / all_lines if all_lines else 0.0
+    span_mean = overall_log if span_bytes is None else span_bytes
     rows = []
     for service in workers:
         log_bytes, log_lines = log_sizes.get(service, (0.0, 0.0))

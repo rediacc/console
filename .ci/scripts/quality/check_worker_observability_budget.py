@@ -31,6 +31,7 @@ import json
 import pathlib
 import sys
 import tomllib
+from typing import TypeGuard
 
 CONFIG_REL = (".ci", "config", "cf-spend-guard.json")
 EXCLUDED = ("wrangler.template.toml", "wrangler.dev.toml")
@@ -46,7 +47,7 @@ def rel(root: pathlib.Path, path: pathlib.Path) -> str:
     return path.relative_to(root).as_posix()
 
 
-def is_rate(value: object) -> bool:
+def is_rate(value: object) -> TypeGuard[float]:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and 0 < value <= 1
 
 

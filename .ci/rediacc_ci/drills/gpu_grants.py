@@ -587,7 +587,12 @@ class _LiveG1:
     def _remove_detached(self) -> list[str]:
         if not self.detached:
             return []
-        res = self.quiet_shell(self.ref_a, "docker rm -f %s %s" % (self.ctr_dev, self.ctr_base))
+        # Only a container that exists is removed: a failed first `docker run -d` leaves the second name absent, and `rm -f` of an absent name would report a leftover that is not there.
+        res = self.quiet_shell(
+            self.ref_a,
+            "rc=0; for c in %s %s; do if docker container inspect $c >/dev/null 2>&1; then docker rm -f $c || rc=1; fi; done; exit $rc"
+            % (self.ctr_dev, self.ctr_base),
+        )
         if res.rc != 0:
             return [
                 "G1 containers %s, %s in %s (rm rc=%d)"

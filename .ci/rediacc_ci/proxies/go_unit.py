@@ -79,7 +79,7 @@ GO_LIST_TEST_FILES_FORMAT = (
 # Packages whose presence in the subset is reported by name, with their Test count.
 WATCHED = ("pkg/chunkstore", "pkg/delta", "pkg/datastore")
 
-TEST_FUNC_RE = re.compile(r"^func (Test[A-Za-z0-9_]*)\(t \*testing\.T\)", re.MULTILINE)
+TEST_FUNC_RE = re.compile(r"^func\s+(Test\w*)\(\s*\w+\s+\*testing\.T\s*\)", re.MULTILINE)
 
 
 def _proxy_root() -> pathlib.Path:
@@ -293,7 +293,7 @@ def run() -> int:
         )
         return proxyx.PROXY_CANNOT_RUN
 
-    test_files = subprocess.run(
+    listed_tests = subprocess.run(
         ["go", "list", "-f", GO_LIST_TEST_FILES_FORMAT, "./pkg/..."],
         cwd=cwd,
         env=env,
@@ -301,8 +301,10 @@ def run() -> int:
         stderr=subprocess.DEVNULL,
         text=True,
         check=False,
-    ).stdout
-    built = built_test_files(test_files)
+    )
+    # A failed or empty second listing says nothing about which files compile: scan every test file (the twin's shape) rather than skip them all.
+    listed = built_test_files(listed_tests.stdout)
+    built: set[str] | None = listed if listed_tests.returncode == 0 and listed else None
 
     cands = candidates(listing)
     cand_n = len(cands)
@@ -321,7 +323,7 @@ def run() -> int:
         for word in " ".join(excluded).split():
             print(f"  - {word}")
 
-    for line in watched_report(renet, built, excluded):
+    for line in watched_report(renet, built or set(), excluded):
         print(line)
 
     if not subset:

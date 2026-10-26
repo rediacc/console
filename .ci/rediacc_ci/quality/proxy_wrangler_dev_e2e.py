@@ -35,7 +35,7 @@ WHY wrangler.dev.toml IS ALSO CHECKED STATICALLY. A dev config that drifts from 
 
 TEARDOWN, ALWAYS. `wrangler dev` does NOT remove its containers when it exits (measured 2026-10-24, wrangler 4.151.3: both the executor and its `-proxy` sidecar were still up after SIGINT and workerd had exited). So the gate stops wrangler's whole process group, removes every `workerd-rediacc-proxy-dev-*` container that did not exist before the run, removes the dev image tag the build log names, stops the fake server and deletes its temp state, and then LISTS the prefix again: a container that survived teardown is a finding. SIGTERM is turned into an exception for the same reason, so a runner that terminates the gate still reaches the teardown; only SIGKILL can leave a container behind, and the next run names any such leftover loudly before it starts.
 
-THE RENET IT SHIPS. Staged exactly as check:ci-proxy-image-smoke stages it (`proxy_image_smoke._stage_renet`): an already staged `workers/proxy/renet/renet-linux-amd64` is used as is, otherwise one is copied or built for the run and removed afterwards.
+THE RENET IT SHIPS. Staged exactly as check:ci-proxy-image-smoke stages it (`proxy_image_smoke._stage_local`, which runs `executor_artifacts stage-local`): an already staged `workers/proxy/stage/manifest.json` is used as is, otherwise the stage is written for the run and removed afterwards.
 
 LOCAL-ONLY AND SLOW. It needs a docker daemon and the Containers runtime of `wrangler dev`, and it builds the executor image (minutes cold, seconds on a warm layer cache). It is registered `local-only` with that BLOCKER in scripts/ci-runner/manifest.ts.
 
@@ -65,6 +65,7 @@ import urllib.error
 from rediacc_ci import paths
 from rediacc_ci.controls import Checker, controls_first
 from rediacc_ci.core import https
+from rediacc_ci.deploy import executor_artifacts
 from rediacc_ci.quality import proxy_image_smoke
 from rediacc_ci.well_known import (
     ACCOUNT_DEFAULT_ORIGIN,
@@ -837,13 +838,20 @@ def run(root: pathlib.Path, plant: str | None = None) -> int:
         print("✗ CANNOT RUN: %s. Nothing was checked." % why, file=sys.stderr)
         return CANNOT_RUN
 
-    staged, staged_here, how = proxy_image_smoke._stage_renet(root)
-    if staged is None:
-        print(
-            "✗ CANNOT RUN: no renet to ship in the image (%s). Nothing was checked." % how,
-            file=sys.stderr,
-        )
-        return CANNOT_RUN
+    staged_here = False
+    if root.joinpath(*proxy_image_smoke.STAGE_DIR, executor_artifacts.MANIFEST).is_file():
+        how = "already staged (left in place)"
+    else:
+        staged_here = True
+        ok, how = proxy_image_smoke._stage_local(root)
+        if not ok:
+            proxy_image_smoke._unstage(root)
+            print(
+                "✗ CANNOT RUN: no renet to ship in the image (%s). Nothing was checked." % how,
+                file=sys.stderr,
+            )
+            return CANNOT_RUN
+    staged = root.joinpath(*proxy_image_smoke.STAGE_DIR, executor_artifacts.RENET)
     try:
         out = subprocess.run(
             [str(staged), "version"], capture_output=True, text=True, timeout=30, check=False
@@ -860,7 +868,7 @@ def run(root: pathlib.Path, plant: str | None = None) -> int:
         obs, shape = observe(root, renet_version, plant=plant)
     finally:
         if staged_here:
-            staged.unlink(missing_ok=True)
+            proxy_image_smoke._unstage(root)
 
     if "startup_failure" in obs:
         print("✗ %s" % obs["startup_failure"], file=sys.stderr)

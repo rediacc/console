@@ -302,12 +302,29 @@ def test_prune_archive_puts_then_confirms_then_deletes():
     api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
     rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
     assert rc == 0
-    assert [m for m, _p in api.calls] == ["GET", "PUT", "GET", "DELETE"]
+    assert [m for m, _p in api.calls] == ["GET", "GET", "PUT", "GET", "DELETE"]
     assert api.bodies == [
         {"name": "__ARCHIVE_API_KEY", "text": SECRET_VALUE, "type": "secret_text"}
     ]
     assert api.calls[-1][1].endswith("/secrets/API_KEY")
-    assert "archived rediacc-account-eu: API_KEY as __ARCHIVE_API_KEY" in lines
+    assert "archived rediacc-account-eu: API_KEY as __ARCHIVE_API_KEY (from the bws value)" in lines
+
+
+def test_prune_archive_never_overwrites_an_existing_archive():
+    live = _names(*prune.expected_names(), "API_KEY", "__ARCHIVE_API_KEY")
+    api = _Api({"rediacc-account-eu": live})
+    rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
+    assert rc == 1
+    assert {m for m, _p in api.calls} == {"GET"}
+    assert any("__ARCHIVE_API_KEY already exists" in line for line in lines)
+
+
+def test_prune_delete_with_dry_run_deletes_nothing():
+    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OLD_NAME")})
+    rc, lines, _r = prune.run(["--region", "eu", "--delete", "--dry-run"], ENV, api)
+    assert rc == 2
+    assert api.calls == []
+    assert any("--dry-run applies to --archive only" in line for line in lines)
 
 
 def test_prune_archive_leaves_a_name_without_a_bws_value():

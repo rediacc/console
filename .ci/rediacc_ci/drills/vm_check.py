@@ -128,6 +128,7 @@ PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
 # No `-q`: an alias that does not resolve or a key ssh refuses must reach the row's evidence.
 SFTP_BATCH = ("sftp", "-o", "BatchMode=yes")
 # A refused sftp leg counts as confinement only when the server says so; a dropped connection or a missing path is not a refusal.
+SFTP_LOCAL_LINE = re.compile(r"\blocal\b", re.IGNORECASE)
 SFTP_DENIAL = re.compile(
     r"permission denied|read-only file system|operation not permitted"
     # The server's own path-bearing answer for a file the session cannot see (the private repo view detaches other repos' mounts). Never a bare "no such file", which ssh also prints for a missing identity file.
@@ -148,7 +149,12 @@ SSH_AUTH_FAILURE = re.compile(
 
 def sftp_refused(output: str, path: str = "") -> bool:
     """True when the sftp output holds a refusal from the server's side of an authenticated session: a denial, or a `Failure` status line naming `path` or a file under it. Lines that report an ssh authentication failure are set aside first, so a connection-level failure is never a refusal."""
-    text = "\n".join(ln for ln in output.splitlines() if not SSH_AUTH_FAILURE.search(ln))
+    # A line about a LOCAL file is the client's own error (a missing source), never the server confining the session.
+    text = "\n".join(
+        ln
+        for ln in output.splitlines()
+        if not SSH_AUTH_FAILURE.search(ln) and not SFTP_LOCAL_LINE.search(ln)
+    )
     if SFTP_DENIAL.search(text):
         return True
     if not path:

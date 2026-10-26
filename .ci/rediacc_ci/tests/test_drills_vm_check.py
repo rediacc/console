@@ -1620,6 +1620,10 @@ def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None
     assert vm_check.sftp_refused(
         f'remote open("{DATASTORE_PATH}/mounts/g/vmc-sftp"): No such file or directory'
     )
+    # A missing LOCAL source is the client's own error, never the server confining A.
+    assert not vm_check.sftp_refused(
+        'Couldn\'t open local file "/tmp/vmc-src" for reading: No such file or directory'
+    )
     # ssh's own client-side warning is never a server refusal.
     assert not vm_check.sftp_refused(
         "Warning: Identity file /home/u/.ssh/id_x not accessible: No such file or directory."

@@ -27,6 +27,7 @@ from __future__ import annotations
 import base64
 import contextlib
 import datetime
+import functools
 import hashlib
 import http.cookiejar
 import json
@@ -1730,7 +1731,7 @@ class Backup:
             out = self.work / ("restored-l%d.bin" % index)
             self.run_fn(
                 "restore_snapshot %s %s" % (snaps[index], out),
-                lambda i=index, o=out: self.restore_snapshot(snaps[i], o, lineage, restore_token),
+                functools.partial(self.restore_snapshot, snaps[index], out, lineage, restore_token),
             )
             d.assert_exit(0, "snapshot %d is read back after the prune and the GC" % index)
             d.last_cmd = "sha256 of the restored snapshot %d" % index

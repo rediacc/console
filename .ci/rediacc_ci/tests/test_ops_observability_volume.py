@@ -125,6 +125,14 @@ def test_span_size_falls_back_to_the_log_mean():
     assert fallback is True
 
 
+def test_the_fallback_span_size_ignores_non_worker_log_bytes():
+    rows, fallback, _ = ov.estimate(
+        {"a": 4.0}, {"a": (1000.0, 10.0), "renet-list": (900000.0, 10.0)}, None
+    )
+    assert rows[0]["bytes"] == 4 * 100 + 1000
+    assert fallback is True
+
+
 def test_projection_scales_the_window_to_thirty_days():
     out = io.StringIO()
     rows = [

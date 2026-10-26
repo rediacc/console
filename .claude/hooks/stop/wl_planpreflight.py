@@ -453,7 +453,10 @@ def overlap(root, rel, text=None, base=None, since=None, cap=OVERLAP_CAP) -> Ove
             since = out.strip() if rc == 0 and out.strip() else None
     if not since:
         return Overlap(None, base, 0)
-    hits = _log(root, "%s..%s" % (since, base), watched_paths(root, rel, text)) or []
+    hits = _log(root, "%s..%s" % (since, base), watched_paths(root, rel, text))
+    if hits is None:
+        # A failed `git log` is unknown, not "no commits": the same shape as an unresolved `since`.
+        return Overlap(None, base, 0)
     commits = tuple(OverlapCommit(sha, subj, _plans_changed(root, sha)) for sha, subj in hits[:cap])
     return Overlap(since, base, len(hits), commits)
 

@@ -890,7 +890,9 @@ def test_no_closing_line_names_executor_token(tmp_path: pathlib.Path) -> None:
         )
         assert proc.returncode == 0, proc.stderr
         assert "EXECUTOR_TOKEN" not in proc.stderr + proc.stdout
-    proc, _calls = _run(tmp_path, root, ("--target", "bench"), **BENCH_PROFILE_ENV)
+    proc, _calls = _run(
+        tmp_path, root, ("--target", "bench"), REDIACC_BWS_PROFILES="deploy-proxy-bench"
+    )
     assert proc.returncode == 0, proc.stderr
     assert "EXECUTOR_TOKEN" not in proc.stderr + proc.stdout
     for line in port.closing_lines("w", "v", "r"):

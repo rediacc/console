@@ -164,7 +164,8 @@ def worker_version(cwd: pathlib.Path, config: str, worker: str) -> tuple[bool, s
     if status == 0:
         parsed, version = parse_deployed_version(out)
         if parsed:
-            return True, version
+            # A Worker with an empty deployments list holds no deployed version: it did not exist before this deploy.
+            return version is not None, version
         raise RecordError(
             "wrangler deployments list for %s answered no single 100%% version: %s"
             % (worker, (out.strip() or "(empty)")[:300])

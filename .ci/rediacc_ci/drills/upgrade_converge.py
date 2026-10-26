@@ -258,9 +258,10 @@ class _LiveU1:
         doc["id"] = str(uuid.uuid4())
         # Created 0600 from the first byte: the copy carries the gateway E2E key, and write-then-chmod leaves a window where another local user can read it.
         fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        # O_CREAT keeps the mode of a file left by an earlier run, so the mode is set on the open descriptor before the secret is written.
+        os.fchmod(fd, 0o600)
         with os.fdopen(fd, "w") as handle:
             handle.write(json.dumps(doc, indent=2) + "\n")
-        target.chmod(0o600)
         self.created_cfg = True
         listed = self.crdc("machine", "list", "-o", "json")
         names = [str(m.get("name")) for m in _data_list(listed.out)] if listed.rc == 0 else []

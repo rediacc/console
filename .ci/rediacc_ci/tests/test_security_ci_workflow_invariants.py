@@ -2456,7 +2456,7 @@ def test_the_pre_fix_cf_usage_report_is_refused_and_the_fix_passes() -> None:
 
 
 def test_the_ct_tests_drill_steps_pass_on_set_pipefail() -> None:
-    """The drill universe, transfer and backup steps pipe into tee under `set -o pipefail` and no `shell: bash`; they must pass, and they must really pipe (or this proves nothing)."""
+    """The drill universe, transfer, backup and backup-onprem steps pipe into tee under `set -o pipefail` and no `shell: bash`; they must pass, and they must really pipe (or this proves nothing)."""
     doc = yaml_doc((ROOT / ".github/workflows/ct-tests.yml").read_text(encoding="utf-8"))
     assert isinstance(doc, dict)
     drills = [
@@ -2466,7 +2466,12 @@ def test_the_ct_tests_drill_steps_pass_on_set_pipefail() -> None:
         if re.search(r"run\.sh drill (universe|transfer|backup)", str(st.get("run") or ""))
         and "| tee" in str(st.get("run"))
     ]
-    assert len(drills) == 3, [st.get("name") for _j, st in drills]
+    assert sorted(str(st.get("name")) for _j, st in drills) == [
+        "drill backup",
+        "drill backup-onprem",
+        "drill transfer",
+        "drill universe",
+    ]
     for jname, st in drills:
         assert not st.get("shell"), st.get("name")
         assert ci_workflow_invariants.pipe_lines(st["run"]), st.get("name")

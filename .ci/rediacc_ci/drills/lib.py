@@ -585,6 +585,8 @@ class Drill:
             if not self.gateway_alive():
                 return
             time.sleep(GATEWAY_POLL_SECONDS)
+        if not self.gateway_alive():
+            return
         raise GatewayError(
             "`./run.sh account stop` did not stop the worktree's dev stack (%s); it is still answering health, so a restart would reuse its stale server code"
             % outcome
