@@ -124,7 +124,7 @@ async function resolveDatastorePlacement(datastore: string): Promise<DatastorePl
  * (spec 03 §2.3: the R2-F1 tagged union derived-machine ops resolve through).
  * Throws if a repo of this name already exists.
  */
-async function registerNewRepo(
+export async function registerNewRepo(
   name: string,
   placement: Placement,
   extra: { sshPrivateKey?: string; sshPublicKey?: string },
