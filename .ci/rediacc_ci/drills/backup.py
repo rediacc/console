@@ -1284,7 +1284,7 @@ class Backup:
             True,
             "together with wave 0's churn-probe key",
         )
-        # H16 retired the .pull-* subset: renet's own test (private/renet/pkg/prune/datastore_json_test.go) refuses the key, so the drill does too.
+        # H16 retired the .pull-* and .backup-* subsets: renet's own test (private/renet/pkg/prune/datastore_json_test.go) refuses the key, so the drill does too.
         self.av(
             "stale_pull_staging" in keys or "stale_backup_snapshots" in keys,
             False,
