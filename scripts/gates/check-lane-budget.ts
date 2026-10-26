@@ -3876,6 +3876,11 @@ async function selftest(): Promise<number> {
     },
     // --- --rebalance: a planted imbalance, a refused rule, and a second run that changes nothing ---
     {
+      // Review 8dbd11d7.1: the search's resolution is pinned, so a change to it is a visible edit here. It must sit at least 100x under the write threshold (a coarser step could stop short of a write-worthy plan) and no finer than 1e-4 (at 1e-6 the live quality-pytest descent passed 60M evaluations without converging, 2026-10-26).
+      name: 'PINS: SEARCH_EPS_MIN is 1e-4, at least 100x under REBALANCE_WRITE_EPS_MIN',
+      ok: SEARCH_EPS_MIN === 1e-4 && SEARCH_EPS_MIN * 100 <= REBALANCE_WRITE_EPS_MIN,
+    },
+    {
       name: 'FIRES: a planted imbalance (both 10m units on one leg) is rebalanced, and the gain is past the advisory line',
       ok: (() => {
         const r = rebalanceAssign(rbModel(2), ['a', 'b', 'c', 'd'], {}, [
