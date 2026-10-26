@@ -1628,6 +1628,14 @@ def test_mark_fixed_test_flag_admits_a_test_for_any_claim(world):
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % test_fix)
 
 
+def test_a_standalone_selftest_is_a_test_path():
+    assert R.is_test_path("scripts/lib/entry-point-selftest.ts")
+    assert R.is_test_path("scripts/lib/pins/drivers/toolchain-selftest.ts")
+    assert R.related_test("scripts/lib/entry-point-selftest.ts", "scripts/lib/entry-point.ts")
+    assert not R.is_test_path("scripts/lib/selftest-runner.ts")
+    assert not R.is_test_path("scripts/lib/entry-point.ts")
+
+
 def test_related_test_matches_the_stem_as_a_whole_token():
     assert R.related_test("tests/test_wl_roster.py", "hooks/wl_roster.py")
     assert R.related_test("tests/test_wl_roster_plans.py", "hooks/wl_roster.py")

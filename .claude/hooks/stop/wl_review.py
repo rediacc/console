@@ -2961,13 +2961,14 @@ TEST_CLAIM_RE = re.compile(
     r"|\b(?:tests?|coverage)\b[^.;]{0,40}?\b(?:missing|absent|lacks?)\b",
     re.IGNORECASE,
 )
+# `*-selftest.ts` / `*_selftest.py` are this repo's standalone selftests (scripts/gates/check-standalone-selftests.ts runs them), tests by definition.
 _TEST_PATH_RE = re.compile(
-    r"(^|/)(tests?|__tests__)/|(^|/)test[_-][^/]*$|[_.-]tests?\.[A-Za-z]+$|\.(test|spec)\.[A-Za-z]+$"
+    r"(^|/)(tests?|__tests__)/|(^|/)test[_-][^/]*$|[_.-]tests?\.[A-Za-z]+$|\.(test|spec)\.[A-Za-z]+$|[_.-]selftest\.[A-Za-z]+$"
 )
 
 
 def is_test_path(path):
-    """True for a path that names a test file (a tests/ directory, test_*, *_test.*, *.test.*, *.spec.*)."""
+    """True for a path that names a test file (a tests/ directory, test_*, *_test.*, *.test.*, *.spec.*, *-selftest.*)."""
     return bool(_TEST_PATH_RE.search(path))
 
 
