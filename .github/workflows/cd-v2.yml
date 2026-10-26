@@ -535,11 +535,13 @@ jobs:
 
   deploy-account-edge:
     name: Deploy edge Account (all regions)
-    # The callee needs only checkout. Without this block it inherited this
-    # workflow contents:write + packages:write + actions:write + attestations:write,
-    # which no step in the called workflow uses.
+    # The callee needs checkout, and actions: read for its stage-executor job,
+    # which downloads the CI run's CLI bundle and renet artifacts by run id.
+    # Without this block it inherited this workflow contents:write +
+    # packages:write + actions:write + attestations:write.
     permissions:
       contents: read
+      actions: read
     needs: [init, publish]
     # See deploy-marketing-edge above for why we don't use bare success().
     if: >-
@@ -551,6 +553,10 @@ jobs:
     with:
       target: edge
       ref: ${{ needs.init.outputs.ci_sha }}
+      version: ${{ needs.init.outputs.next_version }}
+      # A workers-only deploy cuts no version and builds from the artifacts the
+      # version already has staged, so it passes no run to stage from.
+      ci_run_id: ${{ needs.init.outputs.workers_only != 'true' && needs.init.outputs.ci_run_id || '' }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
 
@@ -588,11 +594,12 @@ jobs:
 
   deploy-account-stable:
     name: Deploy stable Account (hotfix, all regions)
-    # The callee needs only checkout. Without this block it inherited this
-    # workflow contents:write + packages:write + actions:write + attestations:write,
-    # which no step in the called workflow uses.
+    # The callee needs checkout. actions: read is the called workflow's
+    # stage-executor job, skipped on stable, but GitHub checks a callee's
+    # permissions against its caller at startup whatever its jobs' `if:`.
     permissions:
       contents: read
+      actions: read
     needs: [init, publish, smoke-test, tag-and-release]
     # See deploy-marketing-stable above for why we don't use bare success().
     if: >-
@@ -607,6 +614,7 @@ jobs:
     with:
       target: stable
       ref: ${{ needs.init.outputs.workers_only == 'true' && needs.init.outputs.ci_sha || format('v{0}', needs.init.outputs.next_version) }}
+      version: ${{ needs.init.outputs.next_version }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
 

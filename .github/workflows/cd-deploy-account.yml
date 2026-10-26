@@ -15,6 +15,23 @@ on:
         description: 'Git ref to checkout (SHA, tag, or branch)'
         required: true
         type: string
+      # The release whose executor artifacts (executor/v<version>/ in the releases
+      # bucket) the proxy image is built from. Edge passes next_version, stable
+      # the promoted version, so a stable proxy is byte-identical to the edge one
+      # (agent/plans/PLAN-proxy-cd-six-targets.md, ruling "Ride promote-stable").
+      version:
+        description: 'Release version X.Y.Z the proxy executor image is built from'
+        required: true
+        type: string
+      # The Console CI run whose cli-bundle-<ref> and renet-binaries-<ref>
+      # artifacts the stage-executor job writes to executor/v<version>/. Edge
+      # only, and only when the run cuts or retries a version: a workers-only
+      # deploy passes '' and builds from the version's already-staged artifacts.
+      ci_run_id:
+        description: 'Console CI run id holding the CLI bundle and renet artifacts (edge only)'
+        required: false
+        type: string
+        default: ''
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
@@ -143,6 +160,72 @@ jobs:
           path: workers/account/
           retention-days: 1
 
+  # Write the executor artifacts of this edge version to the releases bucket
+  # once (executor/v<version>/, write-once: equal bytes skip, unequal refuse), so
+  # every region's proxy image, and later the stable one, is built from the same
+  # bytes (Design item 8). The sources are the Console CI run's own artifacts,
+  # read across runs by run id, which is why this job alone holds actions: read.
+  # `ref` is the CI commit on edge, and both artifact names carry it.
+  stage-executor:
+    name: Stage executor artifacts v${{ inputs.version }}
+    if: inputs.target == 'edge' && inputs.ci_run_id != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
+
+      - uses: ./.github/actions/setup-node-npm
+
+      # ssh2 and cpu-features at the lockfile versions, built for linux-x64: the
+      # natives tar executor_artifacts refuses unless each matches the lockfile.
+      - name: Install dependencies
+        run: npm ci && npm run install:natives
+
+      - name: Download the CLI bundle of the CI run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: cli-bundle-${{ inputs.ref }}
+          path: ${{ runner.temp }}/cli-bundle
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Download the renet binaries of the CI run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: renet-binaries-${{ inputs.ref }}
+          path: ${{ runner.temp }}/renet
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Stage executor artifacts v${{ inputs.version }}
+        env:
+          VERSION: ${{ inputs.version }}
+          CI_SHA: ${{ inputs.ref }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.executor_artifacts stage
+          --version "$VERSION" --git-sha "$CI_SHA"
+          --bundle-dir "$RUNNER_TEMP/cli-bundle" --renet "$RUNNER_TEMP/renet/renet-linux-amd64"
+          --node-modules node_modules
+
   # Deploy to each region in parallel
   deploy:
     name: Deploy ${{ inputs.target }} ${{ matrix.id }}
@@ -150,7 +233,14 @@ jobs:
     # not by the token, so deployments: write is not needed.
     permissions:
       contents: read
-    needs: [read-regions, build]
+    needs: [read-regions, build, stage-executor]
+    # stage-executor is skipped on stable and on a workers-only edge deploy, and
+    # bare success() treats a skipped need as a failure, so each need is named.
+    if: >-
+      !cancelled() &&
+      needs.read-regions.result == 'success' &&
+      needs.build.result == 'success' &&
+      (needs.stage-executor.result == 'success' || needs.stage-executor.result == 'skipped')
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJson(needs.read-regions.outputs.matrix) }}
@@ -206,6 +296,9 @@ jobs:
             OBS_OTLP_CREDENTIALS_US > BWS_OBS_OTLP_CREDENTIALS_US
             GITHUB_APP_ID > BWS_APP_ID
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             AWS_SES_CONFIGURATION_SET > BWS_AWS_SES_CONFIGURATION_SET
             AWS_SES_FROM > BWS_AWS_SES_FROM
             ROOT_EMAIL > BWS_ROOT_EMAIL
@@ -328,6 +421,82 @@ jobs:
             || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
         run: npx tsx scripts/check-live-prices.ts
 
+      # ---- Proxy Worker and console executor (agent/plans/PLAN-proxy-cd-six-targets.md
+      # Design item 9). Forward: record-before, a bootstrap proxy deploy only when
+      # the proxy Worker does not exist yet, the account Worker and its secrets,
+      # the proxy deploy, its smoke, and the executor switched on only when that
+      # smoke passed. Failure: the reverse-order rollback. Always: the record.
+      #
+      # A stable promote checks out v<version>, and a version older than these
+      # steps carries neither the modules nor an account Worker that exports
+      # ExecutorIssuer, so the proxy steps are left out for it, with a warning
+      # and a summary line. Edge always deploys the current tree, so a missing
+      # module there is an error.
+      - name: Proxy CD steps present in ${{ inputs.ref }}
+        id: proxy_cd
+        env:
+          TARGET: ${{ inputs.target }}
+          REGION: ${{ matrix.id }}
+          REF: ${{ inputs.ref }}
+        run: |
+          if [[ -f .ci/rediacc_ci/deploy/deploy_record.py && -f .ci/rediacc_ci/deploy/console_executor.py ]]; then echo "ready=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          [[ "$TARGET" != edge ]] || { echo "::error::${REF} carries no deploy_record.py/console_executor.py, but an edge deploy always ships the proxy steps"; exit 1; }
+          echo "::warning::${REF} predates the proxy CD steps: the proxy Worker, the console executor and the deploy record are left as they are"
+          echo "- ${TARGET} ${REGION}: proxy steps NOT RUN, ${REF} predates them" >> "$GITHUB_STEP_SUMMARY"
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+
+      - name: Install the pinned aws CLI
+        if: steps.proxy_cd.outputs.ready == 'true'
+        uses: ./.github/actions/setup-aws
+
+      - name: Install proxy worker dependencies
+        if: steps.proxy_cd.outputs.ready == 'true'
+        run: npm ci
+        working-directory: workers/proxy
+
+      # Taken BEFORE deploy_account applies the D1 migrations: the bookmark is the
+      # only rollback handle for a migration. Any lookup it cannot answer (wrangler,
+      # the bookmark, R2, the staged manifest of v<version>) exits 1 here, before
+      # anything is deployed.
+      - name: Record before (${{ matrix.id }})
+        id: record_before
+        if: steps.proxy_cd.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          TARGET: ${{ inputs.target }}
+          REGION: ${{ matrix.id }}
+          VERSION: ${{ inputs.version }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record before
+          --target "$TARGET" --region "$REGION" --version "$VERSION"
+          --out "$RUNNER_TEMP/deploy-record/before.json"
+
+      # U1: the account config binds EXECUTOR to this target's proxy Worker, and a
+      # deploy naming a service that does not exist is refused, so a target's
+      # first release deploys the proxy before the account Worker.
+      - name: Bootstrap proxy Worker (${{ matrix.id }})
+        id: proxy_bootstrap
+        if: steps.record_before.outputs.proxy_exists == 'false'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          TARGET: ${{ inputs.target }}
+          REGION: ${{ matrix.id }}
+          VERSION: ${{ inputs.version }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record bootstrap
+          --before "$RUNNER_TEMP/deploy-record/before.json"
+          --record "$RUNNER_TEMP/deploy-record/proxy-bootstrap.json"
+
       - name: Deploy account Worker (${{ matrix.id }})
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region ${{ steps.config.outputs.region }} --target ${{ inputs.target }}
         env:
@@ -398,3 +567,110 @@ jobs:
           STRIPE_WEBHOOK_SECRET_EU: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_EU }}
           STRIPE_WEBHOOK_SECRET_US: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_US }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_account_worker_secrets
+
+      - name: Deploy proxy Worker (${{ matrix.id }})
+        id: proxy_deploy
+        if: steps.record_before.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          TARGET: ${{ inputs.target }}
+          REGION: ${{ matrix.id }}
+          VERSION: ${{ inputs.version }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy
+          --target "$TARGET" --region "$REGION" --version "$VERSION"
+          --record "$RUNNER_TEMP/deploy-record/proxy.json"
+
+      # Health 200, unauthenticated server-info 401, and /v1/ready 200 on the
+      # version the deploy recorded, polled for up to 5 minutes: a deploy that
+      # exits 0 only means the rollout started.
+      - name: Proxy smoke (${{ matrix.id }})
+        id: proxy_smoke
+        if: steps.record_before.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          TARGET: ${{ inputs.target }}
+          REGION: ${{ matrix.id }}
+          VERSION: ${{ inputs.version }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy
+          --target "$TARGET" --region "$REGION" --smoke-only
+          --record "$RUNNER_TEMP/deploy-record/proxy.json"
+
+      # Ruling ASKED:2026-10-25T18:18Z "Closed until smoke passes": the region's
+      # console executor opens only on this release's passing proxy smoke.
+      - name: Enable console executor (${{ matrix.id }})
+        id: enable
+        if: steps.proxy_smoke.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          TARGET: ${{ inputs.target }}
+          REGION: ${{ matrix.id }}
+          VERSION: ${{ inputs.version }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --enable --target "$TARGET" --region "$REGION"
+
+      # Reverse order: close the console executor, return the proxy to the release
+      # record-before names (nothing for a first deploy), then PRINT the account
+      # Worker rollback and the D1 restore, which stay human decisions.
+      - name: Roll back proxy and console executor (${{ matrix.id }})
+        id: rollback
+        if: failure() && steps.record_before.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          TARGET: ${{ inputs.target }}
+          REGION: ${{ matrix.id }}
+          VERSION: ${{ inputs.version }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record rollback
+          --before "$RUNNER_TEMP/deploy-record/before.json"
+
+      - name: Write the deploy record (${{ matrix.id }})
+        if: always() && steps.record_before.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          TARGET: ${{ inputs.target }}
+          REGION: ${{ matrix.id }}
+          VERSION: ${{ inputs.version }}
+          ENABLE_OUTCOME: ${{ steps.enable.outcome }}
+          ROLLBACK_OUTCOME: ${{ steps.rollback.outcome }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record after
+          --before "$RUNNER_TEMP/deploy-record/before.json"
+          --proxy-record "$RUNNER_TEMP/deploy-record/proxy.json"
+          --manifest workers/proxy/stage/manifest.json
+          --enable-outcome "$ENABLE_OUTCOME" --rollback-outcome "$ROLLBACK_OUTCOME"
+          --out "$RUNNER_TEMP/deploy-record/deploy-record-$TARGET-$REGION.json"
+
+      - name: Upload the deploy record (${{ matrix.id }})
+        if: always() && steps.record_before.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: deploy-record-${{ inputs.target }}-${{ matrix.id }}
+          path: ${{ runner.temp }}/deploy-record/
+          retention-days: 3
+          if-no-files-found: error

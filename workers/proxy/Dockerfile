@@ -36,14 +36,18 @@ WORKDIR /app
 RUN --mount=type=bind,source=workers/proxy/stage,target=/stage \
     test -f /stage/manifest.json \
  || { echo "workers/proxy/stage/ has no manifest.json: run 'PYTHONPATH=.ci python3 -m rediacc_ci.deploy.executor_artifacts fetch --version V --dest workers/proxy/stage/' (or stage-local)" >&2; exit 1; }
+# One layer per artifact: the registry push commits each layer with a single PUT
+# whose response headers must arrive within the client timeout, and one 226 MB
+# layer holding all three failed that commit twice on the bench registry
+# (`net/http: timeout awaiting response headers`). The renet layer alone is the
+# 207 MB one, which commits as it did when renet was its own COPY layer.
 RUN --mount=type=bind,source=workers/proxy/stage,target=/stage \
-    node -e 'const m=require("/stage/manifest.json");for(const[n,e]of Object.entries(m.files))console.log(e.sha256+"  "+n)' > /tmp/stage.sha256 \
- && test -s /tmp/stage.sha256 \
- && (cd /stage && sha256sum -c /tmp/stage.sha256) \
- && cp /stage/cli-bundle.cjs /stage/package.json /app/ \
- && install -m 0755 /stage/renet-linux-amd64 /usr/local/bin/renet \
- && tar -xf /stage/node-natives-linux-x64.tar -C /app \
- && rm /tmp/stage.sha256
+    node -e 'const m=require("/stage/manifest.json");for(const[n,e]of Object.entries(m.files))console.log(e.sha256+"  "+n)' | (cd /stage && sha256sum -c -) \
+ && cp /stage/cli-bundle.cjs /stage/package.json /app/
+RUN --mount=type=bind,source=workers/proxy/stage,target=/stage \
+    tar -xf /stage/node-natives-linux-x64.tar -C /app
+RUN --mount=type=bind,source=workers/proxy/stage,target=/stage \
+    install -m 0755 /stage/renet-linux-amd64 /usr/local/bin/renet
 
 # Fails the build when the staged renet does not run on this base.
 RUN renet version
