@@ -46,6 +46,13 @@ vi.mock('node:fs', async (original) => {
     }
     writes.push({ target: String(target), data: String(data), dirMode });
   };
+  const readSource = (src: unknown): string => {
+    try {
+      return real.readFileSync(src as string, 'utf8');
+    } catch {
+      return '';
+    }
+  };
   const wrapped = {
     ...real,
     writeFileSync: ((target: never, data: never, ...rest: never[]) => {
@@ -56,6 +63,37 @@ vi.mock('node:fs', async (original) => {
       record(target, data);
       return (real.appendFileSync as (...a: unknown[]) => unknown)(target, data, ...rest);
     }) as typeof real.appendFileSync,
+    // fd-based writes: the path is unknown here, so the fd stands in for the target.
+    writeSync: ((fd: never, data: never, ...rest: never[]) => {
+      record(`fd:${String(fd)}`, data);
+      return (real.writeSync as (...a: unknown[]) => unknown)(fd, data, ...rest);
+    }) as typeof real.writeSync,
+    // A copy or rename carries the source bytes to the destination path.
+    copyFileSync: ((src: never, dest: never, ...rest: never[]) => {
+      record(dest, readSource(src));
+      return (real.copyFileSync as (...a: unknown[]) => unknown)(src, dest, ...rest);
+    }) as typeof real.copyFileSync,
+    renameSync: ((src: never, dest: never) => {
+      record(dest, readSource(src));
+      return (real.renameSync as (...a: unknown[]) => unknown)(src, dest);
+    }) as typeof real.renameSync,
+    createWriteStream: ((target: never, ...rest: never[]) => {
+      const stream = (real.createWriteStream as (...a: unknown[]) => import('node:fs').WriteStream)(
+        target,
+        ...rest
+      );
+      const realWrite = stream.write.bind(stream) as (...a: unknown[]) => boolean;
+      const realEnd = stream.end.bind(stream) as (...a: unknown[]) => typeof stream;
+      stream.write = ((chunk: never, ...more: never[]) => {
+        record(target, chunk);
+        return realWrite(chunk, ...more);
+      }) as typeof stream.write;
+      stream.end = ((chunk?: never, ...more: never[]) => {
+        if (typeof chunk === 'string' || Buffer.isBuffer(chunk)) record(target, chunk);
+        return realEnd(chunk, ...more);
+      }) as typeof stream.end;
+      return stream;
+    }) as typeof real.createWriteStream,
   };
   return { ...wrapped, default: wrapped };
 });
@@ -72,6 +110,13 @@ vi.mock('node:fs/promises', async (original) => {
     }
     writes.push({ target: String(target), data: String(data), dirMode });
   };
+  const readSource = async (src: unknown): Promise<string> => {
+    try {
+      return await real.readFile(src as string, 'utf8');
+    } catch {
+      return '';
+    }
+  };
   const wrapped = {
     ...real,
     writeFile: (async (target: never, data: never, ...rest: never[]) => {
@@ -82,6 +127,31 @@ vi.mock('node:fs/promises', async (original) => {
       await record(target, data);
       return (real.appendFile as (...a: unknown[]) => unknown)(target, data, ...rest);
     }) as typeof real.appendFile,
+    copyFile: (async (src: never, dest: never, ...rest: never[]) => {
+      await record(dest, await readSource(src));
+      return (real.copyFile as (...a: unknown[]) => unknown)(src, dest, ...rest);
+    }) as typeof real.copyFile,
+    rename: (async (src: never, dest: never) => {
+      await record(dest, await readSource(src));
+      return (real.rename as (...a: unknown[]) => unknown)(src, dest);
+    }) as typeof real.rename,
+    // fs.promises.open hands back a FileHandle; its write and writeFile are recorded against the path.
+    open: (async (target: never, ...rest: never[]) => {
+      const handle = await (
+        real.open as (...a: unknown[]) => Promise<import('node:fs/promises').FileHandle>
+      )(target, ...rest);
+      const realWrite = handle.write.bind(handle) as (...a: unknown[]) => Promise<unknown>;
+      const realWriteFile = handle.writeFile.bind(handle) as (...a: unknown[]) => Promise<void>;
+      handle.write = (async (data: never, ...more: never[]) => {
+        await record(target, data);
+        return realWrite(data, ...more);
+      }) as typeof handle.write;
+      handle.writeFile = (async (data: never, ...more: never[]) => {
+        await record(target, data);
+        return realWriteFile(data, ...more);
+      }) as typeof handle.writeFile;
+      return handle;
+    }) as typeof real.open,
   };
   return { ...wrapped, default: wrapped };
 });
@@ -223,6 +293,30 @@ describe('MU4: key material lifetime on the dispatch path', () => {
 
     const leaked = writes.filter((write) => carriesSecret(write) && !allowed(write));
     expect(leaked).toEqual([]);
+  });
+
+  it('the spy sees fd, stream, copy, rename and handle writes of key bytes (controls)', async () => {
+    const fs = await import('node:fs');
+    const fsp = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os');
+    const dir = fs.mkdtempSync(`${tmpdir()}/mu4-control2-`);
+    try {
+      const fd = fs.openSync(`${dir}/a`, 'w');
+      fs.writeSync(fd, PRIVATE_KEY);
+      fs.closeSync(fd);
+      const stream = fs.createWriteStream(`${dir}/b`);
+      await new Promise<void>((resolve) => stream.end(PRIVATE_KEY, () => resolve()));
+      fs.copyFileSync(`${dir}/a`, `${dir}/c`);
+      fs.renameSync(`${dir}/c`, `${dir}/d`);
+      await fsp.copyFile(`${dir}/a`, `${dir}/e`);
+      const handle = await fsp.open(`${dir}/f`, 'w');
+      await handle.writeFile(PRIVATE_KEY);
+      await handle.close();
+      // writeSync, stream, copyFileSync, renameSync, promises.copyFile, handle.writeFile
+      expect(writes.filter(carriesSecret).length).toBeGreaterThanOrEqual(6);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('the spy sees a write of key bytes (control)', async () => {

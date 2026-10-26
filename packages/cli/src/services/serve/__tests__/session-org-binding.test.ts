@@ -101,6 +101,22 @@ describe('session org binding', () => {
     expect(store.sessionForExec(ALICE_A)).toBe(sessionId);
   });
 
+  it('keeps a user with live sessions in two orgs independently reachable', async () => {
+    const store = new SessionStore();
+    const a = await openSession(store, ALICE_A);
+    await store.grantCek(a.sessionId, a.blob, ALICE_A);
+    const b = await openSession(store, ALICE_B);
+    await store.grantCek(b.sessionId, b.blob, ALICE_B);
+
+    expect(store.sessionFor(ALICE_A)).toBe(a.sessionId);
+    expect(store.sessionFor(ALICE_B)).toBe(b.sessionId);
+
+    // Closing one org's session leaves the other's index slot intact.
+    store.close(a.sessionId);
+    expect(store.sessionFor(ALICE_A)).toBeUndefined();
+    expect(store.sessionFor(ALICE_B)).toBe(b.sessionId);
+  });
+
   it('answers the same for a foreign-org session and for one that never existed', async () => {
     const store = new SessionStore();
     const { sessionId } = await openSession(store, ALICE_A);

@@ -70,7 +70,7 @@ export interface SessionStoreOptions {
  */
 export class SessionStore {
   private readonly sessions = new Map<string, SessionEntry>();
-  /** userId -> the session they granted a key through. See sessionFor(). */
+  /** (orgId, userId) -> the session they granted a key through. See sessionFor(). */
   private readonly grantsByUser = new Map<string, string>();
   private readonly ttlMs: number;
   private readonly now: () => number;
@@ -143,7 +143,7 @@ export class SessionStore {
     session.lastUsedAt = this.now();
 
     // Index the grant so sessionFor() can find it. See that method for why this is keyed by user and never by org.
-    this.grantsByUser.set(session.principal.userId, sessionId);
+    this.grantsByUser.set(grantKey(session.orgId, session.principal.userId), sessionId);
   }
 
   /** The CEK for a session, or an error naming the fix if it has none yet. */
@@ -172,22 +172,24 @@ export class SessionStore {
    * answer "which session holds this user's key" is an incomplete store, so the
    * lookup lives here rather than being bolted on from outside.
    *
-   * KEYED BY USER, NEVER BY ORG, and that is a security property, not a detail.
-   * Config-store membership is per user: someone who cannot decrypt the config
-   * on their own must not have it decrypted for them just because a colleague in
-   * the same org happens to have a live session. Matching on org would hand one
-   * member's key to another.
+   * KEYED BY (ORG, USER), NEVER BY ORG ALONE, and that is a security property,
+   * not a detail. Config-store membership is per user: someone who cannot
+   * decrypt the config on their own must not have it decrypted for them just
+   * because a colleague in the same org happens to have a live session. Matching
+   * on org alone would hand one member's key to another. The user id stays part
+   * of the key, and the org id keeps one user's sessions in two orgs apart.
    *
    * Sessions expire, so a hit is re-validated against the live map and a stale
    * index entry is dropped rather than returned.
    */
   sessionFor(principal: SessionPrincipal): string | undefined {
-    const sessionId = this.grantsByUser.get(principal.userId);
+    const key = grantKey(principal.orgId, principal.userId);
+    const sessionId = this.grantsByUser.get(key);
     if (!sessionId) return undefined;
 
     const session = this.sessions.get(sessionId);
     if (!session?.cek) {
-      this.grantsByUser.delete(principal.userId);
+      this.grantsByUser.delete(key);
       return undefined;
     }
     if (!ownedBy(session, principal)) return undefined;
@@ -196,7 +198,7 @@ export class SessionStore {
     try {
       this.require(sessionId);
     } catch {
-      this.grantsByUser.delete(principal.userId);
+      this.grantsByUser.delete(key);
       return undefined;
     }
     return sessionId;
@@ -265,11 +267,17 @@ export class SessionStore {
    */
   private forget(sessionId: string): void {
     const session = this.sessions.get(sessionId);
-    if (session && this.grantsByUser.get(session.principal.userId) === sessionId) {
-      this.grantsByUser.delete(session.principal.userId);
+    const key = session ? grantKey(session.orgId, session.principal.userId) : undefined;
+    if (key && this.grantsByUser.get(key) === sessionId) {
+      this.grantsByUser.delete(key);
     }
     this.sessions.delete(sessionId);
   }
+}
+
+/** Grant-index key: one slot per (org, user), so a user's live sessions in two orgs stay independently reachable. Still never shared between users. */
+function grantKey(orgId: string, userId: string): string {
+  return `${orgId}\0${userId}`;
 }
 
 /** A session belongs to the user AND the org that opened it; both must match, so another org's principal is refused as an unknown session. */
