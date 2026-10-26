@@ -191,13 +191,51 @@ describe('a 401 on a bearer route', () => {
       );
     };
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    await send('org-a');
+    // org-a's 401 drops its token and resends once with a fresh one, which is refused too.
+    expect((await send('org-a')).status).toBe(401);
     await send('org-b');
-    expect(issuer.calls).toEqual(['org-a', 'org-b']);
+    expect(issuer.calls).toEqual(['org-a', 'org-a', 'org-b']);
 
     refused.clear();
     await send('org-a');
     await send('org-b');
-    expect(issuer.calls).toEqual(['org-a', 'org-b', 'org-a']);
+    expect(issuer.calls).toEqual(['org-a', 'org-a', 'org-b', 'org-a']);
+  });
+
+  it('resends once with a freshly issued token when the cached one was revoked', async () => {
+    const issuer = minting(Date.now);
+    const seen: string[] = [];
+    let revoked = '';
+    const account = {
+      fetch: (req: Request) => {
+        const auth = req.headers.get('authorization') ?? '';
+        seen.push(auth);
+        return Promise.resolve(new Response('{}', { status: auth === revoked ? 401 : 200 }));
+      },
+    } as unknown as Fetcher;
+    const env = {
+      EXECUTOR: null as never,
+      ACCOUNT_URL: 'https://account.test',
+      ACCOUNT: account,
+      ISSUER: issuer.binding,
+    };
+    const send = () =>
+      forwardAccountEgress(
+        new Request('http://account.internal/account/api/v1/licenses/audit-events', {
+          method: 'POST',
+          headers: { authorization: 'Bearer rediacc-executor-placeholder' },
+          body: '{"n":1}',
+        }),
+        env,
+        'org-c'
+      );
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    expect((await send()).status).toBe(200);
+    // A root block revokes the cached token; the next call must still succeed.
+    revoked = seen[0] ?? '';
+    expect((await send()).status).toBe(200);
+    expect(issuer.calls).toEqual(['org-c', 'org-c']);
+    expect(seen).toHaveLength(3);
+    expect(seen[2]).not.toBe(seen[0]);
   });
 });

@@ -129,9 +129,26 @@ export async function accountEgress(
   return await forwardAccountEgress(request, env, orgId);
 }
 
-/** The account server no longer accepts this org's issued token (revoked, rotated): forget it so the next call mints afresh. */
-function dropTokenOnRefusal(route: Route, response: Response, orgId: string): void {
-  if (route === 'bearer' && response.status === 401) dropIssuedToken(orgId);
+/**
+ * A 401 on a bearer route means the account server no longer accepts this org's cached token (a root block revoked it, or it was rotated): forget it and resend once with a freshly issued one, so the first call after an unblock does not fail (ML0 on bench, 2026-10-26: 2 of 8 probes within a minute of an unblock answered 401). A second 401 is returned as it is, and its token is forgotten too.
+ */
+async function resendWithFreshToken(
+  request: Request,
+  url: URL,
+  env: EgressEnv,
+  orgId: string,
+  headers: Headers,
+  send: () => Promise<Response>
+): Promise<Response> {
+  dropIssuedToken(orgId);
+  const reissued = await issuedBearer(request.headers.get('authorization'), env, orgId);
+  if (typeof reissued !== 'string') {
+    return refuseEgress(reissued.refused, request.method, url, reissued.status);
+  }
+  headers.set('authorization', reissued);
+  const response = await send();
+  if (response.status === 401) dropIssuedToken(orgId);
+  return response;
 }
 
 /** Forward one intercepted container request for the account server, when the allowlist admits it. */
@@ -158,15 +175,21 @@ export async function forwardAccountEgress(
   }
 
   const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
-  const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, {
-    method: request.method,
-    headers,
-    ...(hasBody ? { body: await request.arrayBuffer() } : {}),
-    redirect: 'manual',
-  });
+  const body = hasBody ? await request.arrayBuffer() : undefined;
+  const send = (): Promise<Response> => {
+    const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, {
+      method: request.method,
+      headers,
+      ...(body ? { body } : {}),
+      redirect: 'manual',
+    });
+    return env.ACCOUNT ? env.ACCOUNT.fetch(forwarded) : fetch(forwarded);
+  };
   const via = env.ACCOUNT ? 'binding' : 'fetch';
-  const response = await (env.ACCOUNT ? env.ACCOUNT.fetch(forwarded) : fetch(forwarded));
-  dropTokenOnRefusal(route, response, orgId);
+  let response = await send();
+  if (route === 'bearer' && response.status === 401) {
+    response = await resendWithFreshToken(request, url, env, orgId, headers, send);
+  }
   // A failed call logs its path and transport only, never a header or a body: this is what `wrangler tail` shows when a container call fails.
   if (!response.ok) {
     console.warn(
