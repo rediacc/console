@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import os
+import shutil
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -157,9 +159,63 @@ def test_a_probe_that_listed_nothing_is_never_ok(text: str, expect: bool) -> Non
     assert "no runtime listing" in evidence
 
 
-def test_runtime_view_script_targets_the_socket_and_is_valid_shell() -> None:
-    script = u.runtime_view_script(u.new_docker_socket(8512))
+def test_pid_file_paths_follow_each_layout() -> None:
+    assert u.old_docker_pid_file(8512) == f"{RUNTIME_DIR}/docker-8512.pid"
+    assert u.new_docker_pid_file("8512") == f"{RUNTIME_DIR}/net-8512/docker-8512.pid"
+
+
+def test_runtime_view_script_reads_the_pid_file_and_is_valid_shell() -> None:
+    script = u.runtime_view_script(u.new_docker_pid_file(8512))
     assert "nsenter -t $pid -m ls -1" in script
-    assert "net-8512/docker-8512.sock" in script
-    assert "NOPID" in script
+    assert "net-8512/docker-8512.pid" in script
+    assert "pgrep" not in script
+    assert "HOSTNS" in script
     assert subprocess.run(["bash", "-n", "-c", script], check=False).returncode == 0
+    # The before-upgrade row opts out of the host-namespace refusal.
+    assert "HOSTNS" not in u.runtime_view_script("/x.pid", allow_host_ns=True)
+
+
+def _run_script(script: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=False)
+
+
+def test_no_dockerd_prints_nopid(tmp_path: pathlib.Path) -> None:
+    missing = _run_script(u.runtime_view_script(str(tmp_path / "absent.pid")))
+    assert (missing.returncode, missing.stdout.strip()) == (3, "NOPID")
+    # A live pid that is not a dockerd (this very test process) is NOPID too.
+    pid_file = tmp_path / "docker.pid"
+    pid_file.write_text("%d\n" % os.getpid())
+    other = _run_script(u.runtime_view_script(str(pid_file)))
+    assert (other.returncode, other.stdout.strip()) == (3, "NOPID")
+    pid_file.write_text("not-a-pid")
+    assert _run_script(u.runtime_view_script(str(pid_file))).stdout.strip() == "NOPID"
+
+
+@pytest.mark.skipif(
+    not os.access("/proc/1/ns/mnt", os.R_OK), reason="needs readable /proc/1/ns/mnt"
+)
+def test_a_dockerd_in_the_host_namespace_is_refused(tmp_path: pathlib.Path) -> None:
+    fake = tmp_path / "dockerd"
+    shutil.copy(shutil.which("sleep") or "/bin/sleep", fake)
+    proc = subprocess.Popen([str(fake), "30"])
+    try:
+        pid_file = tmp_path / "docker.pid"
+        pid_file.write_text("%d\n" % proc.pid)
+        res = _run_script(u.runtime_view_script(str(pid_file)))
+        assert (res.returncode, res.stdout.strip()) == (4, "HOSTNS")
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_a_host_namespace_listing_is_not_checkable() -> None:
+    ok, evidence = u.runtime_view_verdict("HOSTNS\n", 8512, 8513, expect_peer_visible=True)
+    assert not ok
+    assert "NOT ISOLATED-CHECKABLE" in evidence
+
+
+def test_sees_peer_on_a_sample_listing() -> None:
+    _, evidence = u.runtime_view_verdict(OLD_LISTING, 8512, 8513, expect_peer_visible=True)
+    assert "sees_own=True sees_peer=True" in evidence
+    _, evidence = u.runtime_view_verdict(NEW_LISTING, 8512, 8513, expect_peer_visible=False)
+    assert "sees_own=True sees_peer=False" in evidence

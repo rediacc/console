@@ -290,3 +290,134 @@ def test_remove_containers_forgives_only_an_absent_container(tmp_path) -> None:
     assert _run_remove(tmp_path, "removed", 0) == 0
     # A container that exists but whose removal fails (a daemon error) is a leftover, not a clean teardown.
     assert _run_remove(tmp_path, "Cannot connect to the Docker daemon", 1) == 1
+
+
+# --------------------------------------------------------------------------- G1.7 stale-then-converge
+
+
+def test_stamp_and_main_pid_scripts() -> None:
+    assert g.stamp_path("9") == "/var/lib/rediacc/runtime/net-9.json"
+    assert g.main_pid_script(9) == (
+        "echo MAINPID=$(systemctl show -p MainPID --value rediacc-docker-9)"
+    )
+    assert g.make_stale_script(9) == (
+        "rm -f /var/lib/rediacc/runtime/net-9.json; test ! -e /var/lib/rediacc/runtime/net-9.json"
+    )
+
+
+def test_make_stale_script_removes_the_stamp(tmp_path, monkeypatch) -> None:
+    stamp = tmp_path / "net-7.json"
+    stamp.write_text("{}")
+    monkeypatch.setattr(g, "STAMP_DIR", str(tmp_path))
+
+    def run_script() -> int:
+        return subprocess.run(
+            ["bash", "-c", g.make_stale_script(7)], check=False, capture_output=True
+        ).returncode
+
+    assert run_script() == 0
+    assert not stamp.exists()
+    # An absent stamp is already stale: still rc 0.
+    assert run_script() == 0
+
+
+def test_parse_main_pid() -> None:
+    assert g.parse_main_pid("noise\nMAINPID=4242\n") == 4242
+    assert g.parse_main_pid("MAINPID=11\nMAINPID=12\n") == 12
+    assert g.parse_main_pid("MAINPID=0\n") is None
+    assert g.parse_main_pid("Failed to connect to bus\n") is None
+
+
+def test_restarted_verdict() -> None:
+    assert g.restarted_verdict(100, 200)[0]
+    assert not g.restarted_verdict(100, 100)[0]
+    assert not g.restarted_verdict(None, 200)[0]
+    assert not g.restarted_verdict(100, None)[0]
+    assert g.restarted_verdict(100, 200)[1] == "MainPID 100 -> 200"
+
+
+class _Res:
+    def __init__(self, rc: int = 0, out: str = "") -> None:
+        self.rc, self.out, self.err = rc, out, ""
+
+
+class _FakeCtx:
+    """Just the `ctx` surface `g1_7_converge` touches; every call lands in `calls`."""
+
+    machine = "m1"
+
+    def __init__(self, calls: list[str], checks: list[tuple[str, bool]]) -> None:
+        self.calls, self.checks = calls, checks
+
+    def rdc(self, *args: str, **_kwargs: object) -> _Res:
+        self.calls.append("rdc " + " ".join(args))
+        return _Res(0, json.dumps({"results": [{"status": "converged"}]}))
+
+    def keep_log(self, *_args: object, **_kwargs: object) -> str:
+        return "log"
+
+    def check(self, _step: str, desc: str, ok: bool, *_rest: object, **_kwargs: object) -> bool:
+        self.checks.append((desc, ok))
+        return ok
+
+
+class _Drill(g._LiveG1):
+    def __init__(self, pids: list[str], stale_rc: int) -> None:
+        self.calls: list[str] = []
+        self.checks: list[tuple[str, bool]] = []
+        self.queue = list(pids)
+        self.stale_rc = stale_rc
+        self.ctx = _FakeCtx(self.calls, self.checks)
+        self.nid = {"a": 5}
+        self.guid = {"a": "guid-a"}
+        self.ref_a = "a:t"
+
+    def root(self, command: str, _timeout: float = 60.0) -> _Res:
+        self.calls.append(command)
+        if command.startswith("echo MAINPID"):
+            return _Res(0, "MAINPID=%s\n" % self.queue.pop(0))
+        return _Res(self.stale_rc)
+
+    def check(self, desc: str, ok: bool, _res: object = None, _evidence: str = "") -> bool:
+        self.checks.append((desc, ok))
+        return ok
+
+    def _grant_still_listed(self, _row: str, _when: str) -> None:
+        self.calls.append("listed")
+
+    def g1_3_nodes(self, _row: str, _when: str = "") -> None:
+        self.calls.append("nodes")
+
+
+def _g1_7_drill(monkeypatch, pids: list[str], stale_rc: int) -> _Drill:
+    pre = g.converge_preflight
+    monkeypatch.setattr(pre, "parse_converge_report", json.loads)
+    monkeypatch.setattr(pre, "result_for", lambda report, *_ids: report["results"][0])
+    monkeypatch.setattr(pre, "is_converged", lambda e: e["status"] == "converged")
+    monkeypatch.setattr(pre, "summary_counts", lambda *_a: {})
+    return _Drill(pids, stale_rc)
+
+
+def test_g1_7_makes_the_daemon_stale_before_converge(monkeypatch) -> None:
+    drill = _g1_7_drill(monkeypatch, ["100", "200"], 0)
+    drill.g1_7_converge()
+    order = [c for c in drill.calls if c.startswith(("rm -f", "rdc"))]
+    assert order[0].startswith("rm -f /var/lib/rediacc/runtime/net-5.json")
+    assert order[1].startswith("rdc machine converge")
+    assert len(drill.checks) == 3
+    assert all(ok for _d, ok in drill.checks), drill.checks
+    assert drill.calls[-2:] == ["listed", "nodes"]
+
+
+def test_g1_7_fails_when_the_daemon_did_not_restart(monkeypatch) -> None:
+    drill = _g1_7_drill(monkeypatch, ["100", "100"], 0)
+    drill.g1_7_converge()
+    assert drill.checks[-1][1] is False
+    assert "listed" not in drill.calls
+
+
+def test_g1_7_stops_when_the_stamp_cannot_be_removed(monkeypatch) -> None:
+    drill = _g1_7_drill(monkeypatch, ["100"], 1)
+    drill.g1_7_converge()
+    assert [ok for _d, ok in drill.checks] == [False]
+    assert not any(c.startswith("rdc") for c in drill.calls)

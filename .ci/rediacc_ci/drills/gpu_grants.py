@@ -52,6 +52,9 @@ RULE_PREFIX = "RULE:"
 XLATED_PREFIX = "XL:"
 SECTION = "== "
 DOCKER_RC = "DOCKER_RC="
+MAIN_PID = "MAINPID="
+# renet's runtime stamp directory (private/renet/pkg/daemon/runtime_epoch.go runtimeStateDir); a running daemon with no stamp is stale (`no_stamp`).
+STAMP_DIR = "/var/lib/rediacc/runtime"
 
 
 def spec_text() -> str:
@@ -108,6 +111,37 @@ def teardown_script() -> str:
         "spec": SPEC_PATH,
         "node": NODE_PATH,
     }
+
+
+def stamp_path(network_id: int | str) -> str:
+    return "%s/net-%d.json" % (STAMP_DIR, int(network_id))
+
+
+def main_pid_script(network_id: int | str) -> str:
+    """Root on the worker: the repo daemon unit's MainPID as `MAINPID=<n>` (0 when the unit has no process)."""
+    return "echo %s$(systemctl show -p MainPID --value rediacc-docker-%d)" % (
+        MAIN_PID,
+        int(network_id),
+    )
+
+
+def make_stale_script(network_id: int | str) -> str:
+    """Root on the worker: delete the network's runtime stamp, so `converge --policy always` finds the running daemon stale (`no_stamp`) and restarts it; exits 0 only when the stamp is gone."""
+    path = stamp_path(network_id)
+    return "rm -f %s; test ! -e %s" % (path, path)
+
+
+def parse_main_pid(text: str) -> int | None:
+    """The last `MAINPID=<n>` of `text`, or None when there is none or the unit has no process (0)."""
+    found = re.findall(r"^%s(\d+)\s*$" % MAIN_PID, text, re.MULTILINE)
+    pid = int(found[-1]) if found else 0
+    return pid or None
+
+
+def restarted_verdict(before: int | None, after: int | None) -> tuple[bool, str]:
+    """(restarted, evidence): both MainPIDs were read and differ."""
+    ok = before is not None and after is not None and before != after
+    return ok, "MainPID %s -> %s" % (before, after)
 
 
 def setup_verdict(text: str) -> bool:
@@ -562,7 +596,21 @@ class _LiveG1:
         self._grant_still_listed("G1.6", "after down/up")
         self.g1_3_nodes("G1.6", " after down/up")
 
+    def _main_pid(self, key: str) -> int | None:
+        return parse_main_pid(self.root(main_pid_script(self.nid[key])).out)
+
     def g1_7_converge(self) -> None:
+        # --policy always restarts only a stale daemon or one stamped by another renet binary; G1.6 just restarted this one under the installed binary, so make it stale first.
+        pid_before = self._main_pid("a")
+        stale = self.root(make_stale_script(self.nid["a"]))
+        if not self.check(
+            "G1.7 net-%d's runtime stamp is removed (the daemon is stale: no_stamp)"
+            % self.nid["a"],
+            stale.rc == 0 and pid_before is not None,
+            stale,
+            "rc=%d MainPID=%s" % (stale.rc, pid_before),
+        ):
+            return
         res = self.ctx.rdc(
             "machine",
             "converge",
@@ -579,12 +627,18 @@ class _LiveG1:
         log_path = self.ctx.keep_log(STEP_ID, "converge", ["rdc", "machine", "converge"], res)
         if not self.ctx.check(
             STEP_ID,
-            "G1.7 rdc machine converge --policy always restarts %s (converged)" % self.ref_a,
+            "G1.7 rdc machine converge --policy always restarts the stale %s (converged)"
+            % self.ref_a,
             converge_preflight.is_converged(entry),
             res,
             "rc=%d entry=%s counts=%s"
             % (res.rc, _clip(json.dumps(entry)), converge_preflight.summary_counts(report)),
             log_path=log_path,
+        ):
+            return
+        restarted, why = restarted_verdict(pid_before, self._main_pid("a"))
+        if not self.check(
+            "G1.7 net-%d's daemon actually restarted" % self.nid["a"], restarted, res, why
         ):
             return
         self._grant_still_listed("G1.7", "after converge")
@@ -644,18 +698,23 @@ __all__ = [
     "exclusive_refusal_verdict",
     "fork_tags",
     "grant_show_script",
+    "main_pid_script",
+    "make_stale_script",
     "not_granted_verdict",
     "open_command",
     "open_verdict",
     "parse_grant_devices",
+    "parse_main_pid",
     "probe_command",
     "remove_containers_script",
+    "restarted_verdict",
     "revoke_script",
     "run",
     "setup_script",
     "setup_verdict",
     "spec_text",
     "split_cgroup_sections",
+    "stamp_path",
     "teardown_script",
     "v1_rules",
     "v2_compare_immediates",

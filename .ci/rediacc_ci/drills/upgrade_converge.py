@@ -65,16 +65,42 @@ def build_old_renet_script(src_dir: str, out_binary: str, commit: str) -> str:
     )
 
 
-def runtime_view_script(socket: str) -> str:
-    """Root on the worker: list `RUNTIME_DIR` as the dockerd serving `socket` sees it, through the mount namespace of its process. Prints `NOPID` (exit 3) when no dockerd names the socket.
+def old_docker_pid_file(network_id: int | str) -> str:
+    """The flat dockerd pid file of the pre-isolation layout, `/var/run/rediacc/docker-<N>.pid` (renet `pkg/daemon/systemd.go`, the daemon.json `pidfile`)."""
+    return "%s/docker-%s.pid" % (RUNTIME_DIR, network_id)
+
+
+def new_docker_pid_file(network_id: int | str) -> str:
+    """The per-network dockerd pid file, `/var/run/rediacc/net-<N>/docker-<N>.pid` (renet `pkg/runpaths` `DockerPid`)."""
+    return "%s/net-%s/docker-%s.pid" % (RUNTIME_DIR, network_id, network_id)
+
+
+def runtime_view_script(pid_file: str, *, allow_host_ns: bool = False) -> str:
+    """Root on the worker: list `RUNTIME_DIR` as the dockerd named by `pid_file` sees it, through the mount namespace of that process.
+
+    The pid comes from the pid file, never from `pgrep -f`: renet starts dockerd as `dockerd --config-file=...`, so its command line never names the socket, and an unanchored pattern matched the probe's own `sudo sh -c` process and listed the HOST view (measured 2026-10-26). Prints `NOPID` (exit 3) unless the pid file names a live process whose `/proc/<pid>/comm` is `dockerd`.
+
+    When that dockerd shares the host's mount namespace the listing is the host view. By default that is refused, printing `HOSTNS` (exit 4), so an isolation row can never pass or fail on the host's listing. The before-upgrade row passes `allow_host_ns=True`: under the old layout a dockerd sharing the host namespace IS the breach (the whole directory, peer sockets included, is reachable from it), and because the pid is a verified dockerd the listing is its genuine view, so the row stays meaningful.
 
     The old layout bound the whole directory into every repo's dockerd sandbox, so a container started through repo A's Docker API could bind repo B's socket and drive B's daemon (the breach of `0c3a88a`, verified live 2026-10-23); the view listing is that reach, read without starting a container.
     """
-    pattern = shlex.quote("dockerd.*%s" % socket)
+    host_check = (
+        ""
+        if allow_host_ns
+        else '[ "$(readlink /proc/$pid/ns/mnt)" != "$(readlink /proc/1/ns/mnt)" ] '
+        "|| { echo HOSTNS; exit 4; }; "
+    )
     return (
-        "pid=$(pgrep -f -- %(pattern)s | head -n 1); "
-        '[ -n "$pid" ] || { echo NOPID; exit 3; }; '
-        "nsenter -t $pid -m ls -1 %(dir)s" % {"pattern": pattern, "dir": shlex.quote(RUNTIME_DIR)}
+        "pid=$(cat -- %(pidfile)s 2>/dev/null); "
+        "case $pid in ''|*[!0-9]*) echo NOPID; exit 3;; esac; "
+        '[ "$(cat /proc/$pid/comm 2>/dev/null)" = dockerd ] || { echo NOPID; exit 3; }; '
+        "%(host_check)s"
+        "nsenter -t $pid -m ls -1 %(dir)s"
+        % {
+            "pidfile": shlex.quote(pid_file),
+            "host_check": host_check,
+            "dir": shlex.quote(RUNTIME_DIR),
+        }
     )
 
 
@@ -88,6 +114,8 @@ def runtime_view_verdict(
 ) -> tuple[bool, str]:
     """(ok, evidence) for one listing from `runtime_view_script`. `expect_peer_visible` is the old layout's breach (the peer's socket or net directory is listed beside the daemon's own); its opposite is the converged layout, where the daemon sees its own `net-<own>` and none of the peer's names. A listing that never ran (`NOPID`, empty) is never ok either way, so a probe that saw nothing cannot read as isolation."""
     entries = {line.strip() for line in text.splitlines() if line.strip()}
+    if "HOSTNS" in entries:
+        return False, "NOT ISOLATED-CHECKABLE: dockerd shares the host mount namespace (host view)"
     if not entries or "NOPID" in entries:
         return False, "no runtime listing (%s)" % (text.strip()[:80] or "empty")
     sees_peer = bool(entries & peer_entries(peer))
@@ -411,8 +439,9 @@ class _LiveU1:
         nid_a, nid_b = self.net_ids.get(self.tag_a), self.net_ids.get(self.tag_b)
         if not nid_a or not nid_b:
             return
-        socket = old_docker_socket(nid_a) if before else new_docker_socket(nid_a)
-        res = self.probe("sudo sh -c %s" % shlex.quote(runtime_view_script(socket)))
+        pid_file = old_docker_pid_file(nid_a) if before else new_docker_pid_file(nid_a)
+        script = runtime_view_script(pid_file, allow_host_ns=before)
+        res = self.probe("sudo sh -c %s" % shlex.quote(script))
         ok, evidence = runtime_view_verdict(res.out, nid_a, nid_b, expect_peer_visible=before)
         if before:
             desc = (
@@ -550,7 +579,9 @@ __all__ = [
     "config_name",
     "dry_run_reports_zero_stale",
     "file_sha256",
+    "new_docker_pid_file",
     "new_docker_socket",
+    "old_docker_pid_file",
     "old_docker_socket",
     "parse_stamp",
     "peer_entries",
