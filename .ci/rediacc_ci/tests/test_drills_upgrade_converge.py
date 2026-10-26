@@ -224,5 +224,23 @@ def test_sees_peer_on_a_sample_listing() -> None:
 def test_host_namespace_guard_fails_closed_on_an_unreadable_namespace() -> None:
     # Review d7cb08f1.1: an empty readlink on either side must refuse, not compare unequal and pass.
     script = u.runtime_view_script(u.new_docker_pid_file(7))
-    assert '[ -n "$own" ] && [ -n "$host" ] && [ "$own" != "$host" ]' in script
     assert "echo HOSTNS; exit 4" in script
+    # Run the guard itself, with readlink stubbed: an empty link on either side must print HOSTNS, two distinct links must pass.
+    guard = script[script.index("own=") : script.index("nsenter")]
+    for own, host, expect in (
+        ("", "mnt:[1]", "HOSTNS"),
+        ("mnt:[2]", "", "HOSTNS"),
+        ("mnt:[1]", "mnt:[1]", "HOSTNS"),
+        ("mnt:[2]", "mnt:[1]", "PASSED"),
+    ):
+        stub = (
+            'readlink() { case "$1" in /proc/1/*) echo "%s";; *) echo "%s";; esac; }; pid=42; '
+            % (host, own)
+        )
+        out = subprocess.run(
+            ["bash", "-c", stub + guard + "echo PASSED"],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout
+        assert out.strip() == expect, (own, host, out)
