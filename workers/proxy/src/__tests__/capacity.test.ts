@@ -122,6 +122,26 @@ describe('the cap', () => {
     expect(cap.count()).toMatchObject({ total: 6, heavy: 5 });
   });
 
+  it('keeps a held heavy slot when a lowered heavy cap sits below the heavy holders', async () => {
+    const { cap, state } = coordinator();
+    for (const org of orgs(3, 'heavy')) {
+      expect(await cap.acquire(org, 'heavy')).toEqual({ ok: true });
+    }
+    // The same storage under a redeploy with EXECUTOR_HEAVY_CAP lowered to 1.
+    const lowered = new ExecutorCapacity(state.ctx, { EXECUTOR_HEAVY_CAP: '1' });
+    expect(await lowered.acquire('heavy-0', 'heavy')).toEqual({ ok: true });
+    expect(await lowered.acquire('heavy-9', 'heavy')).toEqual({ ok: false, reason: 'heavy-full' });
+    expect(lowered.count()).toMatchObject({ heavy: 3, heavyCap: 1 });
+  });
+
+  it('an alarm that cannot be set does not turn a written admission into a failure', async () => {
+    const { cap, state } = coordinator();
+    state.ctx.storage.setAlarm = () => Promise.reject(new Error('storage unavailable'));
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    expect(await cap.acquire('org-0', 'light')).toEqual({ ok: true });
+    expect(cap.count()).toMatchObject({ total: 1 });
+  });
+
   it('refuses a held light org moving to heavy when the heavy slots are taken, and keeps its light lease', async () => {
     const { cap } = coordinator({ EXECUTOR_HEAVY_CAP: '1' });
     expect(await cap.acquire('org-h', 'heavy')).toEqual({ ok: true });

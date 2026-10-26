@@ -91,8 +91,8 @@ export class ExecutorCapacity extends DurableObject<CapacityEnv> {
     const { total, heavy } = this.tally(now);
 
     if (held === undefined && total >= this.cap) return { ok: false, reason: 'full' };
-    const heavyOthers = heavy - (held?.size === 'heavy' ? 1 : 0);
-    if (size === 'heavy' && heavyOthers >= this.heavyCap) {
+    // A held heavy org keeps its heavy slot under a lowered heavy cap, as a held org keeps its slot under a lowered cap: its container already runs.
+    if (size === 'heavy' && held?.size !== 'heavy' && heavy >= this.heavyCap) {
       return { ok: false, reason: 'heavy-full' };
     }
 
@@ -155,12 +155,22 @@ export class ExecutorCapacity extends DurableObject<CapacityEnv> {
     return { total: row.total, heavy: row.heavy ?? 0 };
   }
 
-  /** Arm the alarm at the earliest expiry, or clear it when nothing is held, so an empty coordinator costs no wake-ups. */
+  /**
+   * Arm the alarm at the earliest expiry, or clear it when nothing is held, so an empty coordinator costs no wake-ups.
+   *
+   * A failure to set the alarm is logged, not thrown: the lease is already written, so throwing would report a refusal for a slot that is held, and every acquire sweeps lapsed leases anyway, so a missed alarm only delays a free slot until the next acquire.
+   */
   private async scheduleSweep(): Promise<void> {
     const next = this.sql
       .exec<{ next: number | null }>('SELECT MIN(expires_at) AS next FROM leases')
       .one().next;
-    if (next === null) await this.ctx.storage.deleteAlarm();
-    else await this.ctx.storage.setAlarm(next);
+    try {
+      if (next === null) await this.ctx.storage.deleteAlarm();
+      else await this.ctx.storage.setAlarm(next);
+    } catch (error) {
+      console.warn(
+        `proxy: capacity alarm not set: ${error instanceof Error ? error.name : 'unknown'}`
+      );
+    }
   }
 }
