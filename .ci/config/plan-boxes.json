@@ -739,6 +739,38 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-executor-durable-object-policy.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 21,
+      "done": 0,
+      "open_sigs": [
+        "080c012f",
+        "0a214445",
+        "1443f14c",
+        "223d8818",
+        "35126203",
+        "49e7e415",
+        "7bdbed10",
+        "7eda06b1",
+        "81675959",
+        "8c369d3a",
+        "9014df79",
+        "9677eb9c",
+        "ae8fbab4",
+        "aef4d01b",
+        "b3d570db",
+        "cd58c43c",
+        "deb963d1",
+        "e6d7cea1",
+        "f08b996a",
+        "f739b678",
+        "ffcaf607"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-extension-shaped-matchers.md": {
       "status": "compacted",
       "owner": "unowned",
