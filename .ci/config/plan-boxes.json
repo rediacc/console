@@ -452,11 +452,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 26,
+      "open": 4,
+      "done": 25,
       "open_sigs": [
         "24f82950",
         "4ebc4d0b",
+        "e3150839",
         "e5ff4d4a"
       ],
       "done_sigs": [
@@ -482,7 +483,6 @@
         "b43c18d0",
         "cc60cdbe",
         "d9ee2442",
-        "e3150839",
         "ee3a2b7d",
         "f11a5c8b",
         "f60157da"
@@ -493,17 +493,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 3,
+      "open": 6,
+      "done": 2,
       "open_sigs": [
         "0b3782d7",
+        "323dafd9",
         "614c11d9",
         "7d4b4cf0",
         "81dda855",
         "953e7cdf"
       ],
       "done_sigs": [
-        "323dafd9",
         "37f7849e",
         "d951622b"
       ]
@@ -1142,7 +1142,7 @@
     },
     "agent/plans/PLAN-proxy-cd-six-targets.md": {
       "status": "approved",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 19,

@@ -79,13 +79,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 21 plans done, 300 of 443 boxes done (67%).
+Promoted: 6 of 21 plans done, 298 of 443 boxes done (67%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 16/16 | done |
 | 2 | PLAN-backup-program.md | 97/195 | 98 open |
-| 3 | PLAN-cloudflare-proxy.md | 26/29 | 3 open |
+| 3 | PLAN-cloudflare-proxy.md | 25/29 | 4 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 5/6 | 1 open |
 | 5 | PLAN-telemetry-export.md | 14/19 | 5 open |
 | 6 | PLAN-renet-bridge-leftovers.md | 14/14 | done |
@@ -98,7 +98,7 @@ Promoted: 6 of 21 plans done, 300 of 443 boxes done (67%).
 | 13 | PLAN-renet-run-docker-sock-isolation.md | 3/3 | done |
 | 14 | PLAN-config-networkid-discovery.md | 5/7 | 2 open |
 | 15 | PLAN-renet-fetch-retries.md | 2/2 | done |
-| 16 | PLAN-cloudflare-spend-guard.md | 3/8 | 5 open |
+| 16 | PLAN-cloudflare-spend-guard.md | 2/8 | 6 open |
 | 17 | PLAN-renet-runtime-converge.md | 3/4 | 1 open |
 | 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
 | 19 | PLAN-converge-preflight-and-repo-recovery.md | 18/18 | done |

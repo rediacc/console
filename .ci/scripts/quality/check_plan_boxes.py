@@ -140,6 +140,8 @@ ARCHIVE_DIR = _lifecycle().get("archive_dir", "agent/archive/plans")
 
 # A path-shaped token: one or more directory components before a dotted basename. Only the basename survives into `loose_sig`.
 PATHISH_RE = re.compile(r"(?:[\w.@~-]+/)+([\w.@~-]+\.[A-Za-z0-9]{1,6})")
+# A gate citation's `ci-` namespace prefix. A gate planned as `check:x` that ships as `check:ci-x` is the same task under the CI lane's spelling; without this the box naming it has no legal tick, since this gate refuses the rename and check:ci-plan-citations refuses the planned name once the box is ticked (PLAN-backup-program J2/J3, 2026-10-26).
+GATE_CI_RE = re.compile(r"\bcheck:ci-")
 
 
 def sig(task: str) -> str:
@@ -161,7 +163,7 @@ def loose_sig(task: str) -> str:
     `_norm` cannot do this itself -- it is shared with the Stop hook's task matching, where a cited directory is real evidence about which file a claim means. The discrimination lost here is two boxes whose first 120 normalised characters differ ONLY by a directory prefix; the basename stays, so everything else is kept.
     """
     return hashlib.sha256(
-        PFID._norm(PATHISH_RE.sub(r"\1", task))[:120].encode("utf-8")
+        PFID._norm(GATE_CI_RE.sub("check:", PATHISH_RE.sub(r"\1", task)))[:120].encode("utf-8")
     ).hexdigest()[:8]
 
 
@@ -871,6 +873,22 @@ def selftest() -> int:
     print(
         f"  {'PASS' if ok else 'FAIL'}  CONTROL: `sig` itself does NOT absorb the move, "
         f"so the ledger key is unchanged and the second chance is load-bearing"
+    )
+    if not ok:
+        bad += 1
+
+    # A gate renamed into the `ci-` namespace is the same re-spelling (the real 2026-10-26 case, PLAN-backup-program J2), and a different gate stays a different box.
+    was = "J2: Gate check:renet-chunkstore-unit (paths private/renet) running go test ./pkg/chunkstore/... non-root"
+    now = was.replace("check:renet-", "check:ci-renet-")
+    ok = loose_sig(was) == loose_sig(now) and sig(was) != sig(now)
+    print(
+        f"  {'PASS' if ok else 'FAIL'}  a box whose gate moved into the ci- namespace keeps its LOOSE signature only"
+    )
+    if not ok:
+        bad += 1
+    ok = loose_sig(was) != loose_sig(was.replace("check:renet-", "check:ci-account-"))
+    print(
+        f"  {'PASS' if ok else 'FAIL'}  CONTROL: a box naming a DIFFERENT gate keeps a different loose signature"
     )
     if not ok:
         bad += 1
