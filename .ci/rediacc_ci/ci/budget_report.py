@@ -1598,6 +1598,7 @@ def compute_lane_durations(
     fetch_log: Callable[[str, int], str] = fetch_job_log,
     log_cache_dir: Path | None = None,
     as_of: float | None = None,
+    measure_variants: bool = True,
 ) -> dict[str, Any]:
     """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs", "variant_legs", "unit_parallelism", "missing_artifact_lanes"}`. `fetch_log`/`log_cache_dir` feed `collect_variant_costs` (the cache defaults to `VARIANT_LOG_CACHE_REL_PATH` under the repo root). Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
@@ -1687,17 +1688,21 @@ def compute_lane_durations(
             "reported missing. The next PR run that finishes them measures them."
             % (retention_days, ", ".join(unmeasurable))
         )
-    variant_costs, variant_legs = collect_variant_costs(
-        repo,
-        pr_jobs_by_run,
-        patterns,
-        tree_root,
-        bucket_titles=bucket_titles,
-        fetch_log=fetch_log,
-        cache_dir=log_cache_dir
-        if log_cache_dir is not None
-        else tree_root / VARIANT_LOG_CACHE_REL_PATH,
-    )
+    # `--check` never reads variantCosts (only `--refresh` writes them), and their job logs are the slowest read of the sample. MEASURED 2026-10-26 on a cold cache: 274 logs took 6128 s of call time (8 workers, about 22 s each, 766 s of an 840 s run), which stopped the nightly housekeeping check at its 480 s budget (run 40293968889). A dev box's warm `.ci/cache` made the same check 81 s.
+    variant_costs: dict[str, dict[str, dict[str, Any]]] = {}
+    variant_legs: dict[str, int] = {}
+    if measure_variants:
+        variant_costs, variant_legs = collect_variant_costs(
+            repo,
+            pr_jobs_by_run,
+            patterns,
+            tree_root,
+            bucket_titles=bucket_titles,
+            fetch_log=fetch_log,
+            cache_dir=log_cache_dir
+            if log_cache_dir is not None
+            else tree_root / VARIANT_LOG_CACHE_REL_PATH,
+        )
     units_ms: dict[str, float] = {}
     unit_stats: dict[str, dict[str, float]] = {}
     for per_unit in unit_samples.values():
@@ -2338,6 +2343,11 @@ def refresh_lane_durations(
     return 0
 
 
+def compute_for_check(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """`compute_lane_durations` without the variant-cost job logs, which `check_lane_durations` never reads (see `measure_variants`)."""
+    return compute_lane_durations(*args, measure_variants=False, **kwargs)
+
+
 def _compute_sample(
     compute: Callable[..., dict[str, Any]],
     repo: str,
@@ -2379,7 +2389,7 @@ def check_lane_durations(
     branch: str = DEFAULT_BRANCH,
     limit: int = DEFAULT_REFRESH_LIMIT,
     *,
-    compute: Callable[..., dict[str, Any]] = compute_lane_durations,
+    compute: Callable[..., dict[str, Any]] = compute_for_check,
     as_of: float | None = None,
 ) -> int:
     """T3.3: freshly measure, then compare against the COMMITTED file -- never writes. Fails (1) when any leg's measured p90 exceeds 12m, a job's committed estimate drifts more than 25% from what was just measured, a unit or a leg's unit sum drifts under the three-part rule at `MIN_DRIFT_RUNS`, or a measured unit has no row and costs a material amount over what it is priced at."""

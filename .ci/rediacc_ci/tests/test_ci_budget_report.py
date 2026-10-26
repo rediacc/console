@@ -2149,6 +2149,28 @@ def test_compute_lane_durations_cancels_unstarted_job_fetches_on_a_gh_error(tmp_
     assert len(started) < len(runs), started
 
 
+def test_check_compute_reads_no_variant_logs_and_refresh_still_does(tmp_path, monkeypatch):
+    """FIRES-if-unfixed: `--check` read ~270 job logs it never uses and ran past the 480 s freshness budget on a cold cache (run 40293968889)."""
+    root = _write_fixture_workflows(tmp_path)
+    seen: list[bool] = []
+
+    def fake_collect(*_a, **_k):
+        seen.append(True)
+        return {}, {}
+
+    def fake_fetch_runs(_repo, _workflow, event, _branch, _status, _limit):
+        return [{"id": 1, "created_at": "2026-09-27T00:00:00Z"}] if event == "pull_request" else []
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "fetch_jobs", lambda _repo, _run_id: [])
+    monkeypatch.setattr(br, "collect_variant_costs", fake_collect)
+    kwargs = {"root": root, "list_artifacts": lambda *_a: [], "download": lambda *_a: b""}
+    br.compute_for_check(**kwargs)
+    assert seen == []
+    br.compute_lane_durations(**kwargs)
+    assert seen == [True]
+
+
 def test_compute_lane_durations_job_p90_minutes_is_success_only(tmp_path, monkeypatch):
     root = _write_fixture_workflows(tmp_path)
 
