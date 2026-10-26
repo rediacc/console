@@ -12,7 +12,7 @@ Owns: private/account/src/services/executor-issuer.service.ts, private/account/s
 ## Operator rulings
 
 - **2026-10-26 ~05:30Z "Plan multi-org now, same branch".** Multi-org support is designed now and lands on branch 1023-1 next to PLAN-proxy-cd-six-targets.
-- **Inherited from PLAN-proxy-cd-six-targets, unchanged:** max_instances = 3 per proxy config, 7 deployable configs, at most 21 in total (ASKED:2026-10-25T19:08Z). The binding mints, with no exported EXECUTOR_TOKEN (ASKED:2026-10-25T19:08Z). Each region stays closed until its smoke passes (ASKED:2026-10-25T18:18Z). The web client re-grants transparently (ASKED:2026-10-25T18:18Z). Secrets travel only through bws_env, and only their names appear anywhere (order 2026-10-25T18:10Z).
+- **Inherited from PLAN-proxy-cd-six-targets, unchanged:** 7 deployable configs (ASKED:2026-10-25T19:08Z); its max_instances = 3 and 21-in-total ceiling are superseded by ASKED:2026-10-26T15:26Z "Per-org, raise the cap": max_instances = 25 per proxy config, at most 175 in total, `sleepAfter` unchanged at 2 minutes. The binding mints, with no exported EXECUTOR_TOKEN (ASKED:2026-10-25T19:08Z). Each region stays closed until its smoke passes (ASKED:2026-10-25T18:18Z). The web client re-grants transparently (ASKED:2026-10-25T18:18Z). Secrets travel only through bws_env, and only their names appear anywhere (order 2026-10-25T18:10Z).
 - **Standing posture:** there are no external users, so this is a clean break. No compatibility shims, no dual-format principals, and no fallback to ROOT_EMAIL ownership.
 
 ## Context
@@ -105,7 +105,7 @@ The org is never taken from the client. It is derived once from the caller's own
   C2 adds the pinned-org assertion to `SessionStore.open`, so a session records `orgId` and `grantCek` and `sessionForExec` refuse a principal of another org with the indistinguishable unknown-session code. C2 also proves MU4.
 - **Env.** The container env holds exactly REDIACC_TOKEN (placeholder), REDIACC_ACCOUNT_SERVER, REDIACC_REGION and REDIACC_EXECUTOR_ORG_ID. A test asserts that set, and asserts no issued token appears in it.
 - **Capacity and concurrency.**
-  - With max_instances 3, at most 3 orgs per target run warm at once, and `sleepAfter = '2m'` frees a slot after idle.
+  - With max_instances 25 (Decision 3), at most 25 orgs per target run warm at once, and `sleepAfter = '2m'` frees a slot after idle.
   - A start that fails on capacity (MU2) answers 503 `{ code: 'EXECUTOR_CAPACITY' }` with `Retry-After: 30`. console.ts relays that one 503 code (RELAYED_STATUSES and RELAYED_CODES gain 503 and `EXECUTOR_CAPACITY`), and ResultView shows a localized "busy, retry shortly" state.
   - The proxy emits a `rediacc.proxy.outcome = capacity` span attribute, so the capacity question (Decisions 3) can be answered from Tempo rather than guessed.
 - **Audit attribution.** This is unchanged (onBehalfOfTokenId, packages/cli/src/services/serve/audit.ts:56-59), plus the item 1.6 rule. The event_log row carries the org from the on-behalf token's org, so each org's console commands land in that org's audit trail.
@@ -318,6 +318,7 @@ The org is never taken from the client. It is derived once from the caller's own
 - Wave 1: A1; C1; T1; W1 once P1 of the six-targets plan has ticked.
 - Wave 2: A2 after A1; A5 after A1; C2 after C1; A4 after A1 and six-targets M1.
 - Wave 3: A3 after A2; W2 after A2 and W1; U1 after A4; E1.
+- Note on box ML6 (box text is a signature and is unchanged): its "decision on raising max_instances" is answered by Decision 3, the cap is already 25 per target, so ML6 records the 14-day capacity count and the container spend read from `cf_usage_report` against the budget.
 - Wave 4: X1. The live boxes run ML0 to ML3 before merge and ML4 to ML6 after merge.
 
 ## Live records
@@ -329,7 +330,7 @@ The org is never taken from the client. It is derived once from the caller's own
 
 1. **One container per org, not one shared multi-tenant process.** Several orgs' CEKs, decrypted configs, SSH pools and renet children would share one address space in a shared process, and any bug in dispatch, the request-context scoping or ssh2 would expose every tenant. The per-org container makes the org boundary a process boundary, and the Durable Object already gives per-tenant placement (workers/proxy/src/index.ts:203, :243). The cost is capacity (item 3).
 2. **The Durable Object key is the org alone**, dropping the team. The org holds one CEK, so a per-team container isolates nothing cryptographically, and it would divide a 3-instance cap further.
-3. **max_instances stays 3 per target** under the cost ruling. A fourth concurrent org gets a coded, retryable 503. ML6 measures refusals before anyone proposes raising the cap.
+3. **max_instances is 25 per target, a demand-sized cap with a cost alarm** (operator ruling ASKED:2026-10-26T15:26Z "Per-org, raise the cap (Recommended)", superseding the 3-per-target cost ruling ASKED:2026-10-25T19:08Z for max_instances). One container per org stays, idle orgs sleep after 2 minutes, and a 26th concurrent org on one target gets the coded, retryable 503. The cost bound moves from the instance cap to the alarm: `check_proxy_cost_guard.py` holds 25 per config and 175 in total, and the weekly `cf_usage_report` exits 1 naming the estimated cost when a target's container memory GiB-seconds or active vCPU-seconds pass the budget in `.ci/config/cf-spend-guard.json` (Cloudflare has no usage alert for Containers). ML6 now measures capacity refusals and container spend against that budget.
 4. **The issuer takes `orgId` from the proxy Worker.** It trusts the Worker to name it only because the G2 gate of the six-targets plan lets only workers/proxy configs bind `ExecutorIssuer`, and because the org came from `route(bearer)` on the same binding. An org-bound routing ticket signed by the account Worker was considered and not taken: the egress renews tokens when no caller request is present, so a ticket would need its own renewal for no added boundary. The proxy Worker is already trusted with every caller's bearer.
 5. **Issued tokens have no creator.** The authority to act for a user is the live grant that user's bearer recorded, so no owner's role, and no ROOT_EMAIL, can stall or widen the executor.
 6. **Entitlement is the plan's `webConsole` flag** plus a live subscription and a store that can issue executor tokens. There is no per-org opt-in flag, only the root block switch.

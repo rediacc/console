@@ -188,10 +188,10 @@ def test_persist_true_is_refused() -> None:
     assert any("observability.logs.persist is True" in r for r in out), out
 
 
-def test_max_instances_four_is_refused() -> None:
-    text = plant(real("edge-eu"), "max_instances = 3", "max_instances = 4")
+def test_max_instances_twenty_six_is_refused() -> None:
+    text = plant(real("edge-eu"), "max_instances = 25", "max_instances = 26")
     out = refusals(text, "edge-eu")
-    assert "[[containers]] max_instances is 4, not 3" in out, out
+    assert "[[containers]] max_instances is 26, not 25" in out, out
 
 
 def test_an_env_table_is_refused() -> None:

@@ -56,6 +56,12 @@ DATA = {
     "workersInvocationsAdaptive": [
         {"dimensions": {"scriptName": "w1"}, "sum": {"requests": 400, "cpuTimeUs": 300_000}},
     ],
+    "containersMetricsAdaptiveGroups": [
+        {
+            "dimensions": {"applicationId": "app1"},
+            "sum": {"cpuTimeSec": 10.0, "allocatedMemory": 50 * 2**30},
+        },
+    ],
 }
 
 
@@ -110,7 +116,7 @@ def test_under_budget_is_exit_0_and_folds_the_reads():
     assert "d1.d1.bytes value=70" in text  # the latest day
     assert "workers.w1.requests value=400 cpu_ms=300" in text
     assert "workers.cpu_ms.month value=300 ceiling" in text  # microseconds to milliseconds
-    assert "1 buckets, 1 databases, 1 Workers read; 0 over" in text
+    assert "1 buckets, 1 databases, 1 Workers, 1 container apps read; 0 over" in text
 
 
 def test_one_bucket_over_the_ceiling_is_exit_1_and_named():
@@ -189,3 +195,51 @@ def test_malformed_ceiling_json_is_an_error_not_the_defaults(tmp_path):
     (tmp_path / ur.CONFIG_REL).write_text("{not json")
     with pytest.raises(ur.ReportError, match="not valid JSON"):
         ur.load_ceilings(tmp_path)
+
+
+def test_container_usage_over_the_ceiling_is_exit_1_and_names_the_cost():
+    ceilings = dict.fromkeys(CEILINGS, 10**12) | {"containers_memory_gib_seconds_month": 40}
+    rc, text = go(Fake(), ceilings)
+    assert rc == 1
+    assert "OVER containers.app.app1 gib_seconds=50 (ceiling 40)" in text
+    # 50 GiB-s * 0.0000025 + 10 vCPU-s * 0.00002
+    assert "est_cost_usd=0.00" in text
+    big = {"app1": 4_000_000 * 2**30}
+    data = DATA | {
+        "containersMetricsAdaptiveGroups": [
+            {
+                "dimensions": {"applicationId": "app1"},
+                "sum": {"cpuTimeSec": 1.0, "allocatedMemory": big["app1"]},
+            }
+        ]
+    }
+    rc, text = go(
+        Fake(data=data),
+        dict.fromkeys(CEILINGS, 10**12) | {"containers_memory_gib_seconds_month": 3_000_000},
+    )
+    assert rc == 1
+    assert "est_cost_usd=10.00" in text
+
+
+def test_container_usage_under_the_ceilings_is_ok():
+    rc, text = go(Fake())
+    assert rc == 0, text
+    assert "OK   containers.app.app1 gib_seconds=50" in text
+
+
+def test_no_container_rows_is_ok_and_says_so():
+    rc, text = go(Fake(data=DATA | {"containersMetricsAdaptiveGroups": []}))
+    assert rc == 0, text
+    assert "containers no usage rows" in text
+
+
+def test_a_failed_container_read_is_exit_2(capsys):
+    class Down(Fake):
+        def __call__(self, method, url, headers, body):
+            if url.endswith("/graphql") and "containersMetricsAdaptiveGroups" in body["query"]:
+                return 500, None
+            return super().__call__(method, url, headers, body)
+
+    rc, _ = go(Down())
+    assert rc == 2
+    assert "containers: graphql answered 500" in capsys.readouterr().err

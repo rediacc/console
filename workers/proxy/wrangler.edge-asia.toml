@@ -50,9 +50,10 @@ image_build_context = "../.."
 # decrypted config, so `lite` (256 MiB) is too small, while anything larger pays for memory
 # this workload does not use.
 instance_type = "basic"
-# The only real cost risk is instances pinned awake. Budget by operator ruling 2026-10-25:
-# up to 3 per target, 7 deployable targets (check:ci-proxy-cost-guard).
-max_instances = 3
+# One executor container per org, so the cap is sized by demand. Operator ruling
+# ASKED:2026-10-26T15:26Z: up to 25 per target, 7 deployable targets, idle orgs sleep after
+# 2 minutes (check:ci-proxy-cost-guard; the container spend alarm is cf_usage_report).
+max_instances = 25
 
 [[durable_objects.bindings]]
 name = "EXECUTOR"

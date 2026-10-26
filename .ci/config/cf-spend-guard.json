@@ -43,7 +43,7 @@
       "containers": {
         "wanted": "Containers at the cost guard's 2-instance budget, about 15 USD a month",
         "evidence": "2026-10-23: containers, containers_vcpu, containers_memory, container_vcpu_seconds, container_memory_gib_seconds, cloudchamber_cpu_usage, cloudchamber_memory_usage, cloudchamber_disk_usage and eleven more answered `Error 17106: Invalid product selection.`",
-        "fallback": "The same 10 USD billing_budget_alert; check_proxy_cost_guard.py caps max_instances and sleep_after in code."
+        "fallback": "The same 10 USD billing_budget_alert; check_proxy_cost_guard.py caps max_instances (25 per target, operator ruling ASKED:2026-10-26T15:26Z) and sleep_after in code, and the weekly cf_usage_report alarms on the containersMetricsAdaptiveGroups GraphQL dataset (see `report`)."
       }
     },
     "available_alerts_read": {
@@ -73,6 +73,11 @@
       ]
     }
   },
+  "report": {
+    "containers_memory_gib_seconds_month": 8000000,
+    "containers_vcpu_seconds_month": 2000000
+  },
+  "report_reason": "containers_*: per Containers application (one proxy target), alarmed by cf_usage_report because Cloudflare has no usage alert for Containers. Operator ruling ASKED:2026-10-26T15:26Z raised max_instances to 25 per target for one executor container per org; 8e6 GiB-seconds is about 3 basic instances awake all month (about 20 USD at 0.0000025 USD per GiB-second), 2e6 active vCPU-seconds is the matching CPU ceiling. Demand beyond that is an OVER line naming the estimated cost, not a silent bill. Idle orgs sleep after 2 minutes (sleepAfter). Revisit once ML6 records real demand.",
   "worker_observability": {
     "sampling_ceiling": 1,
     "sampling_exempt": {},

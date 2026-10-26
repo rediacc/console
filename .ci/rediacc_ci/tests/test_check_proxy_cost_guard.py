@@ -2,7 +2,7 @@
 
 CONTROL FIRST, AND NEVER ON THE REAL CONFIG. Every plant goes into a COPY of `workers/proxy/wrangler.toml` and `workers/proxy/src/` under `tmp_path`, and the gate is pointed at the copy with `--root`. The unplanted copy must pass first, so a red on a plant is the plant's doing and not a broken fixture. The real files are hashed before and after the module, and any change is a failure.
 
-THE PLANTED DEFECTS, red before the gate existed and green only with it: `max_instances = 20` (the plan's acceptance value), `sleepAfter = '10m'` (the library default, written out), and the `sleepAfter` line deleted (the same default, silently).
+THE PLANTED DEFECTS, red before the gate existed and green only with it: `max_instances = 26` (one over the budget of 25), `sleepAfter = '10m'` (the library default, written out), and the `sleepAfter` line deleted (the same default, silently).
 """
 
 from __future__ import annotations
@@ -91,7 +91,7 @@ def _replace(path: pathlib.Path, old: str, new: str) -> None:
 def test_the_real_tree_is_within_budget() -> None:
     proc = _run()
     assert proc.returncode == 0, proc.stderr
-    assert "at max_instances <= 3 in " in proc.stdout
+    assert "at max_instances <= 25 in " in proc.stdout
     assert "deployable" in proc.stdout
     assert "1 sleepAfter assignment(s)" in proc.stdout
 
@@ -120,13 +120,13 @@ def test_the_unplanted_copy_passes_so_the_plants_below_are_what_fires(
     assert proc.returncode == 0, proc.stderr
 
 
-def test_a_planted_max_instances_of_twenty_fails(tmp_path: pathlib.Path) -> None:
+def test_a_planted_max_instances_of_twenty_six_fails(tmp_path: pathlib.Path) -> None:
     root = _copy(tmp_path)
     toml = root / "workers" / "proxy" / EU
-    _replace(toml, "max_instances = 2\n", "max_instances = 20\n")
+    _replace(toml, "max_instances = 2\n", "max_instances = 26\n")
     proc = _run("--root", str(root))
     assert proc.returncode == 1, proc.stdout + proc.stderr
-    assert "max_instances = 20 is over the budget of 3" in proc.stderr
+    assert "max_instances = 26 is over the budget of 25" in proc.stderr
     line = next(
         n
         for n, text in enumerate(toml.read_text(encoding="utf-8").splitlines(), 1)
@@ -217,13 +217,13 @@ def _bench(root: pathlib.Path) -> pathlib.Path:
     return root / "workers" / "proxy" / "wrangler.bench.toml"
 
 
-def test_a_planted_bench_max_instances_of_twenty_fails(tmp_path: pathlib.Path) -> None:
+def test_a_planted_bench_max_instances_of_twenty_six_fails(tmp_path: pathlib.Path) -> None:
     root = _copy(tmp_path)
-    _replace(_bench(root), "max_instances = 2\n", "max_instances = 20\n")
+    _replace(_bench(root), "max_instances = 2\n", "max_instances = 26\n")
     proc = _run("--root", str(root))
     assert proc.returncode == 1, proc.stdout + proc.stderr
     assert "workers/proxy/wrangler.bench.toml:" in proc.stderr
-    assert "max_instances = 20 is over the budget of 3" in proc.stderr
+    assert "max_instances = 26 is over the budget of 25" in proc.stderr
     assert "workers/proxy/wrangler.eu.toml:" not in proc.stderr, "the eu config is unplanted"
 
 
@@ -259,11 +259,11 @@ def test_two_entries_in_one_config_are_held_to_the_per_config_budget(
 ) -> None:
     root = _copy(tmp_path)
     eu = root / "workers" / "proxy" / EU
-    eu.write_text(CONTAINERS % 3 + CONTAINERS % 3, encoding="utf-8")
+    eu.write_text(CONTAINERS % 25 + CONTAINERS % 25, encoding="utf-8")
     proc = _run("--root", str(root))
     assert proc.returncode == 1, proc.stdout + proc.stderr
     assert (
-        "workers/proxy/wrangler.eu.toml: its [[containers]] entries total max_instances = 6"
+        "workers/proxy/wrangler.eu.toml: its [[containers]] entries total max_instances = 50"
         in proc.stderr
     )
 
@@ -280,20 +280,20 @@ def test_zero_bench_containers_is_no_verdict(tmp_path: pathlib.Path) -> None:
     assert "wrangler.bench.toml declares zero [[containers]] entries" in proc.stderr
 
 
-# ---- the glob and the deployable set: at most 7 configs, at most 21 instances, 3 per config ----
+# ---- the glob and the deployable set: at most 7 configs, at most 175 instances, 25 per config ----
 
 
-def test_a_planted_max_instances_of_four_fails(tmp_path: pathlib.Path) -> None:
+def test_a_planted_max_instances_of_twenty_six_over_budget_fails(tmp_path: pathlib.Path) -> None:
     root = _copy(tmp_path)
-    _replace(root / "workers" / "proxy" / EU, "max_instances = 2\n", "max_instances = 4\n")
+    _replace(root / "workers" / "proxy" / EU, "max_instances = 2\n", "max_instances = 26\n")
     proc = _run("--root", str(root))
     assert proc.returncode == 1, proc.stdout + proc.stderr
-    assert "max_instances = 4 is over the budget of 3" in proc.stderr
+    assert "max_instances = 26 is over the budget of 25" in proc.stderr
 
 
-def test_a_planted_max_instances_of_three_passes(tmp_path: pathlib.Path) -> None:
+def test_a_planted_max_instances_of_twenty_five_passes(tmp_path: pathlib.Path) -> None:
     root = _copy(tmp_path)
-    _replace(root / "workers" / "proxy" / EU, "max_instances = 2\n", "max_instances = 3\n")
+    _replace(root / "workers" / "proxy" / EU, "max_instances = 2\n", "max_instances = 25\n")
     proc = _run("--root", str(root))
     assert proc.returncode == 0, proc.stderr
 
@@ -303,7 +303,7 @@ def test_a_dev_config_over_budget_fails(tmp_path: pathlib.Path) -> None:
     _replace(
         root / "workers" / "proxy" / "wrangler.dev.toml",
         "max_instances = 2\n",
-        "max_instances = 4\n",
+        "max_instances = 26\n",
     )
     proc = _run("--root", str(root))
     assert proc.returncode == 1, proc.stdout + proc.stderr
@@ -327,27 +327,31 @@ def test_a_planted_eighth_deployable_config_fails(tmp_path: pathlib.Path) -> Non
     assert "total max_instances" not in proc.stderr
 
 
-def test_a_planted_total_of_twenty_two_fails(tmp_path: pathlib.Path) -> None:
-    # eu 3 + bench 3 + a..e at 3 = 21 over seven configs (the limit); wrangler.f at 1 is the eighth config and makes 22.
-    extra = {"wrangler.a.toml": 3, "wrangler.b.toml": 3, "wrangler.c.toml": 3}
-    extra |= {"wrangler.d.toml": 3, "wrangler.e.toml": 3}
+def test_a_planted_total_of_one_seventy_six_fails(tmp_path: pathlib.Path) -> None:
+    # eu 25 + bench 25 + a..e at 25 = 175 over seven configs (the limit); wrangler.f at 1 is the eighth config and makes 176.
+    extra = {"wrangler.a.toml": 25, "wrangler.b.toml": 25, "wrangler.c.toml": 25}
+    extra |= {"wrangler.d.toml": 25, "wrangler.e.toml": 25}
     root = _copy(tmp_path, extra)
-    _replace(root / "workers" / "proxy" / EU, "max_instances = 2\n", "max_instances = 3\n")
+    _replace(root / "workers" / "proxy" / EU, "max_instances = 2\n", "max_instances = 25\n")
     _replace(
         root / "workers" / "proxy" / "wrangler.bench.toml",
         "max_instances = 2\n",
-        "max_instances = 3\n",
+        "max_instances = 25\n",
     )
     proc = _run("--root", str(root))
-    assert proc.returncode == 0, "21 is the limit: " + proc.stderr
+    assert proc.returncode == 0, "175 is the limit: " + proc.stderr
     _replace(
-        root / "workers" / "proxy" / "wrangler.e.toml", "max_instances = 3\n", "max_instances = 4\n"
+        root / "workers" / "proxy" / "wrangler.e.toml",
+        "max_instances = 25\n",
+        "max_instances = 26\n",
     )
-    assert _run("--root", str(root)).returncode == 1  # 4 over the per-config budget as well
+    assert _run("--root", str(root)).returncode == 1  # 26 is over the per-config budget as well
     _replace(
-        root / "workers" / "proxy" / "wrangler.e.toml", "max_instances = 4\n", "max_instances = 3\n"
+        root / "workers" / "proxy" / "wrangler.e.toml",
+        "max_instances = 26\n",
+        "max_instances = 25\n",
     )
     (root / "workers" / "proxy" / "wrangler.f.toml").write_text(CONTAINERS % 1, encoding="utf-8")
     proc = _run("--root", str(root))
     assert proc.returncode == 1, proc.stdout + proc.stderr
-    assert "total max_instances = 22" in proc.stderr
+    assert "total max_instances = 176" in proc.stderr

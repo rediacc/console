@@ -48,7 +48,7 @@ CHANNELS = (PRODUCTION, EDGE)
 
 MAIN = "src/index.ts"
 VERSION_BINDING = "CF_VERSION_METADATA"
-MAX_INSTANCES = 3
+MAX_INSTANCES = 25
 # The stub issuer Worker check:ci-proxy-wrangler-dev-e2e runs beside the dev Worker.
 DEV_ISSUER_SERVICE = "rediacc-executor-issuer-dev"
 DEV_ACCOUNT_URL = "http://127.0.0.1:9"

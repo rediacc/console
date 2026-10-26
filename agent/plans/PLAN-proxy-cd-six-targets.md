@@ -31,7 +31,7 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
   - Stable proxies deploy inside promote-stable beside deploy-account-stable, inheriting the 7-day soak and the nightly waiver.
   - The CLI bundle and renet for a version are stored durably at edge time and fetched by version, so the stable executor is byte-identical to the edge one.
   - The currently red nightly CI on main is fixed on this branch.
-- **ASKED:2026-10-25T19:08Z cost "1 per target, 7 total but 21 max. So, can have 3 when needed".** max_instances = 3 for each proxy config (6 CD configs + bench = 7, a ceiling of 21). check_proxy_cost_guard.py discovers every workers/proxy/wrangler*.toml.
+- **ASKED:2026-10-25T19:08Z cost "1 per target, 7 total but 21 max. So, can have 3 when needed".** max_instances = 3 for each proxy config (6 CD configs + bench = 7, a ceiling of 21). check_proxy_cost_guard.py discovers every workers/proxy/wrangler*.toml. Superseded for max_instances by the operator ruling ASKED:2026-10-26T15:26Z "Per-org, raise the cap" (PLAN-console-executor-multi-org Decision 3): 25 per config, 175 in total, with a container spend alarm in cf_usage_report; the seven-config set and sleepAfter 2m stand.
 
 ## Context
 

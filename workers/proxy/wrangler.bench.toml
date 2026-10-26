@@ -49,8 +49,8 @@ class_name = "ExecutorContainer"
 image = "./Dockerfile"
 image_build_context = "../.."
 instance_type = "basic"
-# The same budget as every target: up to 3 (operator ruling 2026-10-25, check:ci-proxy-cost-guard).
-max_instances = 3
+# The same budget as every target: up to 25 (operator ruling ASKED:2026-10-26T15:26Z, check:ci-proxy-cost-guard).
+max_instances = 25
 
 [[durable_objects.bindings]]
 name = "EXECUTOR"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """check:ci-proxy-cost-guard -- the executor proxy's container may not grow past its budgeted cost.
 
-WHY THIS EXISTS. The proxy Worker (`workers/proxy`) runs its executor in Cloudflare Containers, billed on provisioned memory while an instance is awake. The one real cost risk, measured in agent/plans/PLAN-cloudflare-proxy.md section 4, is instances pinned awake: 20 `basic` instances 24/7 is about $150/month, 2 is about $15. Two settings bound it, and both were lowered on purpose (box A1, 5f9a354ea and 3b96d5133):
+WHY THIS EXISTS. The proxy Worker (`workers/proxy`) runs its executor in Cloudflare Containers, billed on provisioned memory while an instance is awake. The one real cost risk, measured in agent/plans/PLAN-cloudflare-proxy.md section 4, is instances pinned awake: 20 `basic` instances 24/7 is about $150/month, 2 is about $15. Two settings bound it. They were lowered on purpose (box A1, 5f9a354ea and 3b96d5133); the instance cap was then raised to 25 per target by operator ruling ASKED:2026-10-26T15:26Z, because one container per org makes demand the sizing rule and `sleepAfter` keeps idle orgs from billing:
 
   * `max_instances` on every `[[containers]]` entry of every `workers/proxy/wrangler*.toml`;
   * `sleepAfter` on every container class the config names, in `workers/proxy/src/**`,
@@ -40,10 +40,10 @@ import sys
 import tomllib
 
 # THE BUDGET (PLAN-cloudflare-proxy.md section 4, recommendations 1 and 2). Raise either only together with the pricing that justifies it.
-# MAX_INSTANCES_BUDGET is 3 by operator ruling ASKED:2026-10-25T19:08Z ("1 per target, 7 total but 21 max. So, can have 3 when needed"): up to 3 per config, at most MAX_DEPLOYABLE_CONFIGS deployable configs, at most MAX_TOTAL_INSTANCES across them.
-MAX_INSTANCES_BUDGET = 3
+# MAX_INSTANCES_BUDGET is 25 by operator ruling ASKED:2026-10-26T15:26Z ("Per-org, raise the cap"): one executor container per org (PLAN-console-executor-multi-org), so the cap is sized by demand, up to 25 per config, at most MAX_DEPLOYABLE_CONFIGS deployable configs, at most MAX_TOTAL_INSTANCES (7 x 25) across them. It supersedes the earlier ruling ASKED:2026-10-25T19:08Z ("1 per target, 7 total but 21 max") for max_instances only; sleepAfter stays 2m, so an idle org sleeps. The cost alarm that replaces the low cap is the container spend threshold of `cf_usage_report` (.ci/config/cf-spend-guard.json, `report.containers_*`).
+MAX_INSTANCES_BUDGET = 25
 MAX_DEPLOYABLE_CONFIGS = 7
-MAX_TOTAL_INSTANCES = 21
+MAX_TOTAL_INSTANCES = 175
 SLEEP_AFTER_BUDGET_S = 120
 
 # `@cloudflare/containers` lib/container.js: the idle timeout a class gets when it sets none.
@@ -220,14 +220,15 @@ def total_findings(counts: dict[str, int]) -> list[str]:
     if len(counts) > MAX_DEPLOYABLE_CONFIGS:
         findings.append(
             "workers/proxy: %d deployable configs (%s), over the limit of %d (operator ruling "
-            "ASKED:2026-10-25T19:08Z: one per target, seven in all)."
+            "ASKED:2026-10-25T19:08Z: seven deployable targets in all)."
             % (len(counts), ", ".join(sorted(counts)), MAX_DEPLOYABLE_CONFIGS)
         )
     total = sum(counts.values())
     if total > MAX_TOTAL_INSTANCES:
         findings.append(
             "workers/proxy: the deployable configs total max_instances = %d, over the limit of %d "
-            "(operator ruling ASKED:2026-10-25T19:08Z: 21 at most)." % (total, MAX_TOTAL_INSTANCES)
+            "(operator ruling ASKED:2026-10-26T15:26Z: 7 x 25 at most)."
+            % (total, MAX_TOTAL_INSTANCES)
         )
     return findings
 
@@ -344,7 +345,7 @@ def selftest() -> bool:
     control("a variable is unreadable", parse_duration("IDLE") is None)
     control("'2 m' is not the library grammar", parse_duration("'2 m'") is None)
     control("max_instances = 2 is within budget", not container_findings(SELFTEST_TOML % "2")[1])
-    control("max_instances = 20 fires", len(container_findings(SELFTEST_TOML % "20")[1]) == 1)
+    control("max_instances = 26 fires", len(container_findings(SELFTEST_TOML % "26")[1]) == 1)
     control('max_instances = "2" fires', len(container_findings(SELFTEST_TOML % '"2"')[1]) == 1)
     control(
         "an absent max_instances fires",
@@ -388,13 +389,13 @@ def selftest() -> bool:
         len(sleep_after_findings({"s.ts": "class D {\n  sleepAfter = '1m';\n}\n"}, ["C"])[1]) == 1,
     )
     control(
-        "seven deployable configs of 3 are within the set",
-        not total_findings(dict.fromkeys("abcdefg", 3)),
+        "seven deployable configs of 25 are within the set",
+        not total_findings(dict.fromkeys("abcdefg", 25)),
     )
     control(
         "an eighth deployable config fires", len(total_findings(dict.fromkeys("abcdefgh", 1))) == 1
     )
-    control("a total of 22 fires", len(total_findings({"a": 11, "b": 11})) == 1)
+    control("a total of 176 fires", len(total_findings({"a": 88, "b": 88})) == 1)
     return ok
 
 
