@@ -226,3 +226,84 @@ def test_spike_apps_parses_the_table_and_flags_unparsed_mentions():
     assert [a["id"] for a in sp.spike_apps(table)] == ["9e7ef1cfc0b94feeadd6707d63c8264a"]
     assert sp.spike_apps("no apps here") == []
     assert sp.spike_apps("a new format naming rediacc-do-policy-spike") == [{"unparsed": True}]
+
+
+def test_spike_apps_fails_when_one_row_parses_and_another_does_not():
+    good = "\u2502 9e7ef1cfc0b94feeadd6707d63c8264a \u2502 rediacc-do-policy-spike-spikedo \u2502 ready \u2502"
+    odd = "\u2502 not-an-id \u2502 rediacc-do-policy-spike-other \u2502 ready \u2502"
+    got = sp.spike_apps(good + "\n" + odd)
+    assert {"unparsed": True} in got
+    assert len(got) == 2
+
+
+def test_spike_apps_json_without_result_list_is_a_failure():
+    assert sp.spike_apps('{"apps": []}') == [{"unparsed": True}]
+    assert sp.spike_apps('{"result": "x"}') == [{"unparsed": True}]
+    assert sp.spike_apps('{"result": []}') == []
+    assert sp.spike_apps("[]") == []
+
+
+def du_for_decide(du2):
+    du = {
+        "DU1": {
+            "answered": 6,
+            "calls": 6,
+            "cross_answers": 0,
+            "missing_props": 0,
+            "distinct_container_ids": 2,
+            "rotated_props_seen": True,
+        },
+        "public_route": {"reachable": True},
+        "DU3": {
+            "sizes": {"lite": {}, "custom": {"accepted": True}, "standard-1": {}},
+            "executor_under_lite": {},
+        },
+    }
+    if du2 is not None:
+        du["DU2"] = du2
+    return du
+
+
+def test_decide_go_needs_a_live_intercept_after_the_redeploy():
+    alive = {"intercept_survived_without_reregister": True, "reregister_needed_and_works": None}
+    fixed = {"intercept_survived_without_reregister": False, "reregister_needed_and_works": True}
+    dead = {"intercept_survived_without_reregister": False, "reregister_needed_and_works": False}
+    assert sp.decide(du_for_decide(alive))["verdict"] == "GO"
+    assert sp.decide(du_for_decide(fixed))["verdict"] == "GO"
+    assert sp.decide(du_for_decide(dead))["verdict"] == "FALLBACK-1"
+    assert sp.decide(du_for_decide(None))["verdict"] == "FALLBACK-1"
+
+
+def test_main_reexecs_under_the_profile_even_with_wrangler_bin_set(monkeypatch):
+    seen: list[list[str]] = []
+
+    def fake_reexec(argv: list[str]) -> int:
+        seen.append(argv)
+        return 7
+
+    monkeypatch.setattr(sp, "reexec", fake_reexec)
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    monkeypatch.delenv(sp.PROFILES_ENV, raising=False)
+    monkeypatch.setenv("WRANGLER_BIN", "/usr/bin/true")
+    assert sp.main(["teardown"]) == 7
+    assert seen == [["teardown"]]
+
+
+def test_main_runs_in_process_when_a_token_is_present(monkeypatch):
+    monkeypatch.setattr(sp, "reexec", lambda _argv: pytest.fail("re-executed with a token set"))
+    monkeypatch.setattr(sp, "teardown", lambda: 5)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "present")
+    assert sp.main(["teardown"]) == 5
+
+
+def always_failing_call(_self, _name, op, **_params):
+    return {"containerId": "id", "ready": True} if op == "start" else {"result": []}
+
+
+def test_du1_counts_only_the_retries_actually_made(monkeypatch):
+    monkeypatch.setattr(sp, "CALLS_PER_ORG", 2)
+    monkeypatch.setattr(sp.Worker, "call", always_failing_call)
+    got = sp.prove_du1(sp.Worker("http://127.0.0.1:1", "k"))
+    # 2 orgs x 2 calls, each tried TRANSIENT_RETRIES times: the first try plus (n - 1) retries.
+    assert got["transient_retries"] == 4 * (sp.TRANSIENT_RETRIES - 1)
+    assert got["missing_props"] == 4

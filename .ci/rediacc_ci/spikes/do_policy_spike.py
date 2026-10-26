@@ -318,6 +318,7 @@ def deploy(
         raise SpikeError("wrangler deploy exited %d:\n%s" % (result.returncode, tail(out, 25)))
     url = WORKERS_DEV_URL.search(out)
     version_id = re.findall(r"Current Version ID:\s*(\S+)", out)
+    deploy_s = round(time.time() - started, 1)
     state = {
         "worker": WORKER_NAME,
         "url": url.group(0) if url else prev.get("url"),
@@ -325,14 +326,14 @@ def deploy(
         "version": version,
         "version_id": version_id[-1] if version_id else None,
         "executor_image": executor,
-        "deploy_s": round(time.time() - started, 1),
+        "deploy_s": deploy_s,
     }
     if not state["url"]:
         raise SpikeError("wrangler deploy printed no workers.dev URL:\n%s" % tail(out, 25))
     deploy_state_path(scratch).write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     print(
         "deployed %s version=%s version_id=%s url=%s (%.1fs)"
-        % (WORKER_NAME, version, state["version_id"], state["url"], state["deploy_s"])
+        % (WORKER_NAME, version, state["version_id"], state["url"], deploy_s)
     )
     return state
 
@@ -404,7 +405,8 @@ def prove_du1(worker: Worker, orgs: tuple[str, str] = ("org-a", "org-b")) -> dic
                 got = answers_of(worker.call(o, "call", org=o, n=1))
                 if got and props_of(got[0]):
                     break
-                retries += 1
+                if _attempt < TRANSIENT_RETRIES - 1:
+                    retries += 1
                 failures.append(json.dumps(got[:1])[:200] if got else "no answer")
             if not got:
                 missing += 1
@@ -676,8 +678,14 @@ def decide(du: dict[str, Any]) -> dict[str, Any]:
     """The verdict of Design item 1 and the LIGHT size of Design item 4, from the recorded DU results."""
     d1 = du["DU1"]
     works = d1.get("answered", 0) > 0
+    d2 = du.get("DU2") or {}
+    intercept_alive = (
+        d2.get("intercept_survived_without_reregister") is True
+        or d2.get("reregister_needed_and_works") is True
+    )
     per_instance = (
         works
+        and intercept_alive
         and d1.get("cross_answers", 1) == 0
         and d1.get("missing_props", 1) == 0
         and d1.get("distinct_container_ids") == 2
@@ -757,8 +765,9 @@ def run(
 def spike_apps(listing: str) -> list[dict[str, Any]]:
     """The container applications of the scratch Worker in `wrangler containers list` output.
 
-    wrangler 4.152 prints a box table (`| ID | NAME | ...`, a 32-hex id); JSON is accepted too. A listing that names the Worker but yields no parsed row is returned as one id-less entry, so a format change fails teardown instead of passing it.
+    wrangler 4.152 prints a box table (`| ID | NAME | ...`, a 32-hex id); JSON is accepted too. Any line naming the Worker that yields no parsed row, and any JSON shape that is not a list (or an object with a `result` list), is returned as an id-less entry, so a format change fails teardown instead of passing it.
     """
+    mentions = sum(WORKER_NAME in line for line in listing.splitlines())
     try:
         data = json.loads(listing)
     except ValueError:
@@ -766,11 +775,14 @@ def spike_apps(listing: str) -> list[dict[str, Any]]:
             r"^\W*([0-9a-f]{32}|[0-9a-f-]{36})\W+(\S*%s\S*)" % WORKER_NAME, listing, re.MULTILINE
         )
         found = [{"id": ident, "name": name} for ident, name in rows]
-        if not found and WORKER_NAME in listing:
-            return [{"unparsed": True}]
+        if mentions > len(found):
+            found.append({"unparsed": True})
         return found
-    items = data if isinstance(data, list) else data.get("result", [])
-    return [a for a in items if WORKER_NAME in json.dumps(a)]
+    if isinstance(data, dict):
+        data = data.get("result")
+    if not isinstance(data, list):
+        return [{"unparsed": True}]
+    return [a for a in data if WORKER_NAME in json.dumps(a)]
 
 
 def teardown(scratch: pathlib.Path = SCRATCH) -> int:
@@ -837,11 +849,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub.add_parser("teardown", help="wrangler delete and wrangler containers delete")
     args = parser.parse_args(argv)
-    if (
-        not os.environ.get("CLOUDFLARE_API_TOKEN")
-        and not bound()
-        and wrangler_bin() == str(DEFAULT_WRANGLER)
-    ):
+    # A WRANGLER_BIN override never skips the profile: a real wrangler would run on the ambient login.
+    if not os.environ.get("CLOUDFLARE_API_TOKEN") and not bound():
         return reexec(argv)
     try:
         if args.verb == "deploy":
