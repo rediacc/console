@@ -281,7 +281,7 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
     - an id mismatch is refused.
 
   -- Owns: workers/proxy/src/org-executor.ts, workers/proxy/src/__tests__/org-executor.test.ts. Accept: `cd workers/proxy && npm run test:unit` exits 0 and `npx tsc --noEmit -p workers/proxy/tsconfig.json` exits 0.
-- [ ] W2 [proxy] `ExecutorCapacity`, the coordinator (Design item 3), after S1.
+- [x] W2 [proxy] `ExecutorCapacity`, the coordinator (Design item 3), after S1.
   - Tests:
     - 25 distinct orgs acquire, and the 26th gets `full`;
     - a re-acquire by a held org does not count twice;
@@ -291,6 +291,7 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
     - `EXECUTOR_CAP = "40"` caps at 25;
     - a missing or garbage var caps at 25;
     - 50 concurrent acquires never admit more than the cap (input gate).
+    (ticked) 2026-10-26T20:35:14Z by d778be9d: f2ac4d05: workers/proxy/src/capacity.ts ExecutorCapacity with 22 tests covering the box list (25 then full, re-acquire counted once, 6th heavy heavy-full while light passes, a 180 s lapse frees at acquire and alarm, caps 2/40/garbage, 50 concurrent never past the cap); cd workers/proxy && npm run test:unit rc=0 (129 tests). DEPS-WAIVED: W2 builds on multi-org W1 and W2, both ticked; ML5 gates only the live boxes L1 and later
 
   -- Owns: workers/proxy/src/capacity.ts, workers/proxy/src/__tests__/capacity.test.ts. Accept: `cd workers/proxy && npm run test:unit` exits 0.
 - [ ] W3 [proxy] The egress for the S1 verdict, after S1 and W1.

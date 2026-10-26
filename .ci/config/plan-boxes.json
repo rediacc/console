@@ -744,8 +744,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 1,
+      "open": 19,
+      "done": 2,
       "open_sigs": [
         "080c012f",
         "1443f14c",
@@ -765,11 +765,11 @@
         "deb963d1",
         "e6d7cea1",
         "f08b996a",
-        "f739b678",
         "ffcaf607"
       ],
       "done_sigs": [
-        "0a214445"
+        "0a214445",
+        "f739b678"
       ]
     },
     "agent/plans/PLAN-extension-shaped-matchers.md": {
