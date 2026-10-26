@@ -238,7 +238,7 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
 
 ### Spike (before anything else)
 
-- [ ] S1 [spike] Prove per-instance outbound interception with per-instance params under the `durable_object` policy, on bench, and record the verdict (Design item 1).
+- [x] S1 [spike] Prove per-instance outbound interception with per-instance params under the `durable_object` policy, on bench, and record the verdict (Design item 1).
   - Add `.ci/rediacc_ci/spikes/do_policy_spike.py` with three verbs, `deploy`, `run` and `teardown`. It writes the scratch Worker into `.ci/cache/do-policy-spike/` (never under workers/), deploys it as `rediacc-do-policy-spike` on workers.dev under the `deploy-proxy-bench` profile, and records JSON.
   - It proves DU1 to DU7:
     - interleaved echo calls from `org-a` and `org-b`, each returning exactly its own `{ orgId, containerId }`, with zero cross answers in 40 calls;
@@ -252,6 +252,7 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
     - TCP 22 reachability (DU7).
   - Teardown runs `wrangler delete` and `wrangler containers delete` for the scratch app.
   - The tick line names the verdict, GO (Design A), FALLBACK-1 (B), FALLBACK-2 (C) or STOP, and the LIGHT size per Design item 4. STOP writes the ASKED line instead of ticking.
+    (ticked) 2026-10-26T19:29:05Z by d778be9d: pytest -q .ci/rediacc_ci/tests/test_spikes_do_policy_spike.py rc=0 (9 passed, fake wrangler); live run on bench rc=0 with "cross_answers": 0, verdict GO (Design A), LIGHT custom {vcpu 0.25, memoryMib 1024, diskMb 4000}; teardown rc=0 and wrangler containers list names no rediacc-do-policy-spike application. DEPS-WAIVED: S1 runs on a scratch Worker and needs none of its Depends-On boxes
 
   -- Owns: .ci/rediacc_ci/spikes/do_policy_spike.py, .ci/rediacc_ci/tests/test_spikes_do_policy_spike.py, agent/plans/PLAN-executor-durable-object-policy.md (Spike record). Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_spikes_do_policy_spike.py` exits 0 (fake wrangler); `PYTHONPATH=.ci python3 -m rediacc_ci.spikes.do_policy_spike run --record .ci/cache/do-policy-spike/result.json` exits 0 with `"cross_answers": 0` and a `verdict` field; and after teardown `npx wrangler containers list` under the bench profile names no `rediacc-do-policy-spike` application.
 
@@ -423,6 +424,15 @@ Each box records:
 
 | Item | Observed | Verdict |
 |---|---|---|
+| DU1 per-instance props | Bench, 2026-10-26, scratch Worker `rediacc-do-policy-spike`: 40 interleaved echo calls from `org-a` and `org-b`, 40 answered, 0 missing props, 0 retries, `cross_answers` 0, two distinct containerIds, each answer carrying its own `{ orgId, containerId }`. Rotated props seen after re-registration (a: rot 1, b: rot 0). | holds |
+| DU2 deploy mid-run | A v2 deploy while both containers ran: the intercept kept answering with no re-registration, and the Worker reported v2. The Durable Object did not restart (same boot id), so the constructor path was not exercised. | survives a deploy; constructor re-registration unproven (L0 drill) |
+| DU3 sizes | `start()` accepted `lite`, `standard-1` and the custom `{ vcpu: 0.25, memoryMib: 1024, diskMb: 4000 }`; cold-start medians of 10: lite 858 ms, standard-1 889 ms, custom 924 ms (tiny image). `basic` was also accepted (1 start, 2650 ms), contrary to Context item 2. Executor image under `lite`: starts, idle used memory 134.5 MiB (`/proc/meminfo`, no cgroup files in the container). `machine status` peak not measured (needs a machine and an issued token). | LIGHT = custom `{ vcpu: 0.25, memoryMib: 1024, diskMb: 4000 }` (the `lite` rule needs a measured peak below 200 MiB; none exists) |
+| DU4 images build | `images.executor = { dockerfile = "../../../workers/proxy/Dockerfile", build_context = "../../.." }` (the scratch path of the plan's `../..`) built, deployed and started. | holds |
+| DU5 wrangler dev | `wrangler dev` ran the policy container and its intercept locally: start ready, 3 echo answers, props correct. | holds |
+| DU6 max_instances | wrangler refuses: `Unsupported fields for Durable Object-managed Containers in containers: "max_instances"` (rc 1). | refused |
+| DU7 TCP 22 | `enableInternet: true`: connected to github.com:22, banner `SSH-2.0-...`. | holds |
+| Public route (Design C premise) | The container fetched the Worker's own workers.dev `/ping`: 200 pong. | reachable |
+| S1 verdict | cross_answers 0; record `.ci/cache/do-policy-spike/result.json`; teardown removed the Worker and the application. | GO (Design A) |
 
 ## Live records
 

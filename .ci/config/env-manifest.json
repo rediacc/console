@@ -746,6 +746,7 @@
       "WORKLIST_REGISTRY_OVERRIDE_FILE",
       "WORKLIST_SOURCE_OVERRIDE_FILE",
       "WORKTREE_TODAY",
+      "WRANGLER_BIN",
       "X"
     ],
     "toolchain": [

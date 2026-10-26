@@ -1279,6 +1279,11 @@
       "CI",
       "EXTERNAL_CALLERS_FILE"
     ],
+    ".ci/rediacc_ci/spikes/do_policy_spike.py": [
+      "CLOUDFLARE_API_TOKEN",
+      "REDIACC_BWS_PROFILES",
+      "WRANGLER_BIN"
+    ],
     ".ci/rediacc_ci/testrun/account_e2e.py": [
       "*name",
       "ACCOUNT_API_PORT",
