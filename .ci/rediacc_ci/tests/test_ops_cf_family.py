@@ -709,8 +709,10 @@ R2_TO_BACKUP = {
 
 
 def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
-    """The twin's environment as the port's profile binds it: the R2 trio renamed to the three backup names."""
-    return {R2_TO_BACKUP.get(name, name): value for name, value in env.items()}
+    """The twin's environment as the port's profile binds it: the R2 trio renamed to the three backup names, and the stored root password the port's seed reads (DECLARED DELTA: the retired bash seeded nothing)."""
+    bound = {R2_TO_BACKUP.get(name, name): value for name, value in env.items()}
+    bound["BENCH_ROOT_PASSWORD"] = "bench-root-password-1"
+    return bound
 
 
 # DECLARED DELTA (27861278): the port seeds the ROOT_EMAIL user after the secrets push (deploy_bench docstring item 8), a POST the retired bash never sent. The route answers it as a fresh bench would, added AFTER the twin run so the golden's route key is unchanged; the call is removed from the compared shape and its two stderr lines from the compared step list, each asserted present first so the removal cannot go vacuous.

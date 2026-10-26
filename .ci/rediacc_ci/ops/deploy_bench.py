@@ -18,7 +18,9 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   6. A FAILED STEP NAMES ITSELF. Under `set -e` a failing `npm install`, `vite build`, migration or deploy ended the script silently with that command's status; each exits 1 with `<step> failed (exit N)`.
   7. THE BACKUP CREDENTIAL HAS NO FALLBACK, AND THE BUCKET COMES FROM THE BINDING (`bench_bucket`: `wrangler.bench.toml`'s BACKUP_BUCKET, not an env override or a literal; a differing exported value or a missing binding is a DeployError). The bash filled each empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account. Only the three `ACCOUNT_BACKUP_S3_*` names are read now, bound from the bench-scoped store entries, and a missing one is a DeployError naming it before the first remote write (agent/plans/PLAN-backup-credential-isolation.md B2).
 
-  8. THE ROOT PRINCIPAL IS SEEDED (`seed_root`, after the secrets push, or alone with `--seed-root`). `reset_bench` drops every table and the deploy sets ROOT_EMAIL as a Worker secret, but nothing created the user, so the console `ExecutorIssuer` refused with ISSUER_OWNER_UNKNOWN and the bench proxy readiness failed (found 2026-10-26, worked around by registering the user by hand). The seed calls the server's own `POST /account/api/v1/auth/register` (bench has no `/test/*` surface and the captcha is off): one atomic batch that creates the user, its org, the owner membership and a live `inactive` COMMUNITY subscription, which is everything `ExecutorIssuerService.issue` checks. The password is random and never stored or printed (it travels on curl's stdin), so no new secret exists; a later root login uses the forgot-password email. An answer of 409 EMAIL_EXISTS is the idempotent no-op, since registration is atomic and the user can only exist with its org and subscription; any other answer is a named SeedError.
+  8. THE ROOT PRINCIPAL IS SEEDED (`seed_root`, after the secrets push, or alone with `--seed-root`). `reset_bench` drops every table and the deploy sets ROOT_EMAIL as a Worker secret, but nothing created the user, so the console `ExecutorIssuer` refused with ISSUER_OWNER_UNKNOWN and the bench proxy readiness failed (found 2026-10-26, worked around by registering the user by hand). The seed calls the server's own `POST /account/api/v1/auth/register` (bench has no `/test/*` surface and the captcha is off): one atomic batch that creates the user, its org, the owner membership and a live `inactive` COMMUNITY subscription, which is everything `ExecutorIssuerService.issue` checks. The password is the stored secret `BENCH_ROOT_PASSWORD` (operator ruling 2026-10-26: "Store a bench root password"), bound by the deploy-bench profile and sent on curl's stdin, never on argv and never printed; an unset or too-short value is a named SeedError before anything is registered. An answer of 409 EMAIL_EXISTS is the idempotent no-op, since registration is atomic and the user can only exist with its org and subscription; any other answer is a named SeedError. A user registered earlier with another password keeps it: `--set-root-password` moves it to the stored one through the server's own password-reset flow (item 9).
+
+  9. THE STORED PASSWORD IS SET ON AN EXISTING ROOT USER THROUGH THE RESET FLOW (`set_root_password`, `--set-root-password`). The account server has no root route that sets a password, but it has `POST /account/api/v1/auth/forgot` (mails a reset link, kind `password-reset`) and `POST /account/api/v1/auth/reset {token, password}` (sets it, clears the lockout, revokes every session). Bench copies each outgoing email into the D1 table `captured_emails` (EMAIL_CAPTURE_D1, bench only), so the run asks for the link, reads the newest `password-reset` row for ROOT_EMAIL through `wrangler d1 execute` and posts the token with the stored password. The token is extracted in process and never printed, logged or put on argv. Wrangler authenticates with the Global API Key pair, as the documented captured-email read does.
 
 THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, and are never logged; the `OBS_OTLP_CREDENTIALS` validity probe reports only that the value is not a JSON {user, pass} object, never the value.
 """
@@ -28,15 +30,16 @@ from __future__ import annotations
 import json
 import os
 import re
-import secrets
 import shutil
+import string
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
-from rediacc_ci.ops import bench_preflight, cf_auth, push_backup_credentials
+from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
@@ -62,6 +65,11 @@ HELP = (
 Usage:
   deploy_bench              deploy, then seed the root user
   deploy_bench --seed-root  only seed the root user (idempotent)
+  deploy_bench --set-root-password
+                            set BENCH_ROOT_PASSWORD on the existing root user (reset flow)
+
+bench is IP-restricted (rediacc_ci.ops.bench_access): a 403 from bench means
+run PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current first.
 
 Credentials come from the deploy-bench Bitwarden profile; see
 .ci/config/secret-supply.json. Cloudflare auth: CF_MANAGEMENT_TOKEN, or
@@ -392,37 +400,165 @@ def _post_json(url: str, body: dict[str, str]) -> tuple[int, dict]:
     return code, decoded if isinstance(decoded, dict) else {}
 
 
+ROOT_LOGIN_ENV = "BENCH_ROOT_PASSWORD"
+# The server's own bounds on a password (private/account/src/types/user.ts: min 8, max 128).
+PASSWORD_MIN, PASSWORD_MAX = 8, 128
+
+
+def root_password() -> str:
+    """The stored bench root password, read by name from the environment (the deploy-bench profile binds it). SeedError naming the variable when it is unset or outside the server's length bounds; the value is never part of a message."""
+    value = os.environ.get(ROOT_LOGIN_ENV) or ""
+    if not value:
+        raise SeedError(
+            "%s is not set: the deploy-bench profile binds it from the store entry of the same "
+            "name (.ci/config/secret-supply.json). The lead mints it once with `bws_env "
+            "store-from-env` (agent note in the account-dev bench section)" % ROOT_LOGIN_ENV
+        )
+    if not PASSWORD_MIN <= len(value) <= PASSWORD_MAX:
+        raise SeedError(
+            "%s must be %d to %d characters (the server's bounds), not %d"
+            % (ROOT_LOGIN_ENV, PASSWORD_MIN, PASSWORD_MAX, len(value))
+        )
+    return value
+
+
+def _blocked_hint(status: int) -> str:
+    """The fix a 403 from bench most likely needs: the zone rule of `bench_access` answered it."""
+    return "; " + bench_access.HINT if status == 403 else ""
+
+
 def seed_root(
     base_url: str = "https://" + DOMAIN,
     email: str | None = None,
     attempts: int = 6,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str:
-    """Create the ROOT_EMAIL user with its org, membership and subscription through POST /account/api/v1/auth/register; return "created" or "exists". A 409 with code EMAIL_EXISTS is the no-op. A fresh deploy may still be warming up, so no HTTP answer or a 5xx is retried (`attempts`, 5 s apart); every other answer raises SeedError naming the status and the server's message, never the password."""
+    """Create the ROOT_EMAIL user with its org, membership and subscription through POST /account/api/v1/auth/register; return "created" or "exists". The password is `BENCH_ROOT_PASSWORD` (`root_password`). A 409 with code EMAIL_EXISTS is the no-op, and leaves an existing user's password alone (`set_root_password` changes that). A fresh deploy may still be warming up, so no HTTP answer or a 5xx is retried (`attempts`, 5 s apart); every other answer raises SeedError naming the status and the server's message, never the password."""
     root_email = email if email is not None else os.environ.get("ROOT_EMAIL") or ""
     if not root_email:
         raise SeedError("ROOT_EMAIL is not set, so there is no root user to seed on bench")
+    password = root_password()
     # The Worker serves its API under /account/api/v1 (private/account/src/routes/index.ts mounts /auth there); a bare /auth/register is a 404.
     url = base_url.rstrip("/") + "/account/api/v1/auth/register"
     last = "no HTTP answer"
     for attempt in range(attempts):
         if attempt:
             sleep(5)
-        # Random, kept nowhere: the issuer needs the user, not a login.
-        status, answer = _post_json(
-            url, {"email": root_email, "password": secrets.token_urlsafe(32)}
-        )
+        status, answer = _post_json(url, {"email": root_email, "password": password})
         if status == 201:
             return "created"
         if status == 409 and answer.get("code") == "EMAIL_EXISTS":
             return "exists"
         last = "HTTP %d: %s" % (status, answer.get("error") or "no error text") if status else last
         if 0 < status < 500:
+            last += _blocked_hint(status)
             break
     raise SeedError(
         "seeding the bench root user %s failed (%s): the console ExecutorIssuer refuses with "
         "ISSUER_OWNER_UNKNOWN until it exists" % (root_email, last)
     )
+
+
+# The reset link in the captured email: `<base>/account/reset-password?token=<raw>` (AuthService.createPasswordReset).
+RESET_TOKEN = re.compile(r"reset-password\?token=([A-Za-z0-9_\-]+)")
+EMAIL_SHAPE = re.compile(r"^[^\s'\"\\;]+@[^\s'\"\\;]+$")
+# How long the mail is waited for: the Worker writes the capture before it answers /auth/forgot, so a short window covers D1 read lag.
+MAIL_ATTEMPTS = 6
+MAIL_WAIT_S = 3.0
+CLOCK_SKEW = timedelta(seconds=60)
+# wrangler d1 execute has no bind parameters, so the two values are quoted by `_sql_literal` into a fixed template.
+MAIL_QUERY = string.Template(
+    "SELECT text_body FROM captured_emails WHERE recipient = $recipient AND kind = 'password-reset' "
+    "AND created_at >= $since ORDER BY created_at DESC LIMIT 1"
+)
+
+
+def _sql_literal(value: str) -> str:
+    """A SQL string literal for `value`: single quotes doubled."""
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _d1_rows(sql: str) -> list[dict]:
+    """`wrangler d1 execute account-db-bench --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
+    key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
+    if not (key and mail):
+        raise SeedError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
+    env = dict(os.environ)
+    for name in ("CLOUDFLARE_API_TOKEN", "CF_API_KEY"):
+        env.pop(name, None)
+    env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    env["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
+    argv = ["npx", "wrangler", "d1", "execute", DB_NAME, "--remote", "--config", CONFIG]
+    argv.extend(["--json", "--command", sql])
+    proc = subprocess.run(
+        argv,
+        cwd=str(paths.repo_root() / "workers" / "account"),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise SeedError("wrangler d1 execute failed (exit %d)" % proc.returncode)
+    try:
+        decoded = json.loads(proc.stdout)
+        rows = decoded[0]["results"]
+    except (ValueError, LookupError, TypeError):
+        raise SeedError("wrangler d1 execute printed no result rows") from None
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def set_root_password(
+    base_url: str = "https://" + DOMAIN,
+    email: str | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+    rows: Callable[[str], list[dict]] = _d1_rows,
+) -> None:
+    """Set `BENCH_ROOT_PASSWORD` on the existing root user through the server's reset flow: POST /auth/forgot, read the `password-reset` mail bench copies into `captured_emails`, POST /auth/reset with the token and the stored password. SeedError names the failing step; neither the token nor the password is printed."""
+    root_email = email if email is not None else os.environ.get("ROOT_EMAIL") or ""
+    if not root_email:
+        raise SeedError("ROOT_EMAIL is not set, so there is no root user to update on bench")
+    if not EMAIL_SHAPE.match(root_email):
+        raise SeedError("ROOT_EMAIL is not a plain address, so it is not put into a query")
+    password = root_password()
+    api = base_url.rstrip("/") + "/account/api/v1/auth/"
+    since = (datetime.now(UTC) - CLOCK_SKEW).strftime("%Y-%m-%dT%H:%M:%S")
+    status, answer = _post_json(api + "forgot", {"email": root_email})
+    if status != 200:
+        raise SeedError(
+            "POST /auth/forgot answered HTTP %d: %s%s"
+            % (status, answer.get("error") or "no error text", _blocked_hint(status))
+        )
+    sql = MAIL_QUERY.substitute(recipient=_sql_literal(root_email), since=_sql_literal(since))
+    token = ""
+    for attempt in range(MAIL_ATTEMPTS):
+        if attempt:
+            sleep(MAIL_WAIT_S)
+        for row in rows(sql):
+            found = RESET_TOKEN.search(str(row.get("text_body") or ""))
+            token = found.group(1) if found else token
+        if token:
+            break
+    if not token:
+        raise SeedError(
+            "no password-reset mail for %s reached captured_emails (is ROOT_EMAIL a registered "
+            "user, and the address inside the bench email allowlist?)" % root_email
+        )
+    status, answer = _post_json(api + "reset", {"token": token, "password": password})
+    if status != 200 or answer.get("reset") is not True:
+        raise SeedError(
+            "POST /auth/reset answered HTTP %d: %s"
+            % (status, answer.get("error") or "no error text")
+        )
+
+
+def _set_password_and_report() -> None:
+    log.step(
+        "Setting the stored root password on %s at https://%s"
+        % (os.environ.get("ROOT_EMAIL") or "", DOMAIN)
+    )
+    set_root_password()
+    log.info("root password set to %s (every root session was revoked)" % ROOT_LOGIN_ENV)
 
 
 def _seed_and_report() -> None:
@@ -444,6 +580,8 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
 
     # Validate the secrets before the first remote write: a missing key found after the migrations and the deploy leaves bench on new code with old secrets.
     body = json.dumps(secrets_payload())
+    # The seed after the push needs it, and a refusal there would leave the deploy done and the root user unseeded.
+    root_password()
 
     # The wrangler children (and bench_preflight's) inherit this process's environment.
     os.environ["CLOUDFLARE_API_TOKEN"] = auth.token
@@ -520,11 +658,15 @@ def main(argv: list[str]) -> int:
         sys.stdout.write(HELP)
         return 0
     seed_only = argv == ["--seed-root"]
-    if argv and not seed_only:
+    password_only = argv == ["--set-root-password"]
+    if argv and not (seed_only or password_only):
         log.error("Unknown argument: %s" % argv[0])
-        log.error("deploy_bench takes no arguments but --seed-root; run with --help for usage.")
+        log.error(
+            "deploy_bench takes no arguments but --seed-root and --set-root-password; "
+            "run with --help for usage."
+        )
         return 2
-    # The seed path only runs curl; npx is for the deploy.
+    # The seed path only runs curl; npx is for the deploy and the captured-email read.
     for cmd in ("curl",) if seed_only else ("curl", "npx"):
         if shutil.which(cmd) is None:
             log.error("Required command '%s' is not available" % cmd)
@@ -532,9 +674,9 @@ def main(argv: list[str]) -> int:
     rebound = _reexec_under_profile(argv)
     if rebound is not None:
         return rebound
-    if seed_only:
+    if seed_only or password_only:
         try:
-            _seed_and_report()
+            _set_password_and_report() if password_only else _seed_and_report()
         except DeployError as exc:
             log.error(str(exc))
             return 1

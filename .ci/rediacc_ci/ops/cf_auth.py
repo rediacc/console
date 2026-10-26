@@ -88,6 +88,12 @@ SCOPED_GROUPS = {
     "cf-usage-report": ("Account Analytics Read", "Workers Observability Write"),
 }
 ACCOUNT_SCOPE = "com.cloudflare.api.account"
+# Zone-scoped group names per caller, for the callers whose work is on one zone (`create_scoped_token(..., zone_id=...)`). Name read live 2026-10-26 from /user/tokens/permission_groups, scope `com.cloudflare.api.account.zone`; the Rulesets API lists it among the permissions that update a zone ruleset rule.
+ZONE_SCOPE = "com.cloudflare.api.account.zone"
+ZONE_SCOPED_GROUPS = {
+    # `bench_access`: the zone's http_request_firewall_custom ruleset (the bench IP allowlist rule).
+    "bench-access": ("Zone WAF Write",),
+}
 # Group name -> (service, read-only path template) a scoped token is awaited on, beside verify. Only GETs measured to answer on this account are listed; a group absent here is awaited on verify alone.
 SCOPED_PROBES = {
     "Notifications Write": ("Notifications", "/accounts/%s/alerting/v3/policies"),
@@ -230,15 +236,17 @@ def create_management_token(
     return str(value), policies
 
 
-def permission_group_ids(headers: list[str], names: typing.Iterable[str]) -> list[str]:
-    """The account-scoped permission group id for each of `names`, in order; CfAuthError naming every name Cloudflare does not list exactly once."""
+def permission_group_ids(
+    headers: list[str], names: typing.Iterable[str], scope: str = ACCOUNT_SCOPE
+) -> list[str]:
+    """The permission group id of `scope` (account by default) for each of `names`, in order; CfAuthError naming every name Cloudflare does not list exactly once."""
     body = curl_json("GET", "%s/user/tokens/permission_groups" % CF_API_BASE, headers)
     result = body.get("result")
     if not isinstance(result, list):
         raise CfAuthError("listing permission groups failed: %s" % _errors(body))
     found: dict[str, list[str]] = {}
     for group in result:
-        if not isinstance(group, dict) or ACCOUNT_SCOPE not in (group.get("scopes") or []):
+        if not isinstance(group, dict) or scope not in (group.get("scopes") or []):
             continue
         found.setdefault(str(group.get("name")), []).append(str(group.get("id")))
     ids, bad = [], []
@@ -247,22 +255,30 @@ def permission_group_ids(headers: list[str], names: typing.Iterable[str]) -> lis
         if len(hits) == 1:
             ids.append(hits[0])
         else:
-            bad.append("%s (%d account-scoped matches)" % (name, len(hits)))
+            kind = "account" if scope == ACCOUNT_SCOPE else "zone"
+            bad.append("%s (%d %s-scoped matches)" % (name, len(hits), kind))
     if bad:
         raise CfAuthError("permission groups not resolvable by name: %s" % ", ".join(bad))
     return ids
 
 
 def create_scoped_token(
-    global_key: str, email: str, purpose: str, account_id: str = DEFAULT_ACCOUNT_ID
+    global_key: str,
+    email: str,
+    purpose: str,
+    account_id: str = DEFAULT_ACCOUNT_ID,
+    zone_id: str | None = None,
 ) -> Auth:
-    """Mint a token carrying only `SCOPED_GROUPS[purpose]` on `account_id` plus the user-scoped API Tokens pair its self-destruct needs; CfAuthError naming the failing step."""
-    names = SCOPED_GROUPS.get(purpose)
-    if names is None:
+    """Mint a token carrying only the `SCOPED_GROUPS[purpose]` groups on `account_id` and the `ZONE_SCOPED_GROUPS[purpose]` groups on `zone_id`, plus the user-scoped API Tokens pair its self-destruct needs; CfAuthError naming the failing step."""
+    names = SCOPED_GROUPS.get(purpose, ())
+    zone_names = ZONE_SCOPED_GROUPS.get(purpose, ())
+    if not names and not zone_names:
         raise CfAuthError(
             "no scoped permission set named %r (known: %s)"
-            % (purpose, ", ".join(sorted(SCOPED_GROUPS)))
+            % (purpose, ", ".join(sorted({*SCOPED_GROUPS, *ZONE_SCOPED_GROUPS})))
         )
+    if zone_names and not zone_id:
+        raise CfAuthError("the %s token is zone-scoped and needs a zone id" % purpose)
     headers = _global_headers(global_key, email)
     user = curl_json("GET", "%s/user" % CF_API_BASE, headers)
     result = user.get("result")
@@ -271,19 +287,34 @@ def create_scoped_token(
         raise CfAuthError(
             "Cloudflare did not accept the Global API Key for %s: %s" % (email, _errors(user))
         )
-    group_ids = permission_group_ids(headers, names)
-    policies = [
-        {
-            "effect": "allow",
-            "resources": {"%s.%s" % (ACCOUNT_SCOPE, account_id): "*"},
-            "permission_groups": [{"id": g} for g in group_ids],
-        },
+    policies: list[dict] = []
+    if names:
+        policies.append(
+            {
+                "effect": "allow",
+                "resources": {"%s.%s" % (ACCOUNT_SCOPE, account_id): "*"},
+                "permission_groups": [
+                    {"id": g} for g in permission_group_ids(headers, names, ACCOUNT_SCOPE)
+                ],
+            }
+        )
+    if zone_names:
+        policies.append(
+            {
+                "effect": "allow",
+                "resources": {"%s.%s" % (ZONE_SCOPE, zone_id): "*"},
+                "permission_groups": [
+                    {"id": g} for g in permission_group_ids(headers, zone_names, ZONE_SCOPE)
+                ],
+            }
+        )
+    policies.append(
         {
             "effect": "allow",
             "resources": {"com.cloudflare.api.user.%s" % user_id: "*"},
             "permission_groups": [{"id": g} for g in USER_PERMISSION_GROUPS],
-        },
-    ]
+        }
+    )
     payload = {"name": "auto-scoped-%s" % purpose, "policies": policies}
     created = curl_json("POST", "%s/user/tokens" % CF_API_BASE, headers, json.dumps(payload))
     result = created.get("result")
@@ -296,7 +327,9 @@ def create_scoped_token(
     return Auth(token=str(value), created=True, policies=policies, probes=probes)
 
 
-def resolve_scoped(purpose: str, account_id: str = DEFAULT_ACCOUNT_ID) -> Auth:
+def resolve_scoped(
+    purpose: str, account_id: str = DEFAULT_ACCOUNT_ID, zone_id: str | None = None
+) -> Auth:
     """A token for one spend-guard caller: `CF_MANAGEMENT_TOKEN` as supplied, else one minted from `CF_GLOBAL_API_KEY` + `CF_EMAIL` with `SCOPED_GROUPS[purpose]` only. Never prompts: these run unattended."""
     token = os.environ.get("CF_MANAGEMENT_TOKEN")
     if token:
@@ -308,7 +341,7 @@ def resolve_scoped(purpose: str, account_id: str = DEFAULT_ACCOUNT_ID) -> Auth:
             "Cloudflare authentication credentials are required: set CF_MANAGEMENT_TOKEN or CF_GLOBAL_API_KEY + CF_EMAIL"
         )
     log.step("Creating a %s token from the Global API Key..." % purpose)
-    auth = create_scoped_token(global_key, email, purpose, account_id)
+    auth = create_scoped_token(global_key, email, purpose, account_id, zone_id)
     log.info("%s token created (will self-destruct after run)" % purpose)
     return auth
 
