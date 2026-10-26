@@ -188,7 +188,33 @@ def test_enable_whose_put_fails_stops_before_the_read_back(fake, monkeypatch):
 
 def test_missing_credentials_refuse_before_any_wrangler_call(fake, monkeypatch):
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy")
     assert ce.main(["--enable", "--target", "edge", "--region", "eu"]) == 1
+    assert calls(fake) == []
+
+
+def test_missing_credentials_reexec_under_the_profile_when_unbound(fake, monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    seen = []
+
+    def fake_run(argv, **_kw):
+        seen.append(argv)
+        return type("P", (), {"returncode": 7})()
+
+    monkeypatch.setattr(ce.subprocess, "run", fake_run)
+    args = ["--enable", "--target", "bench"]
+    assert ce.main(args) == 7
+    assert seen[0][1:8] == [
+        "-m",
+        "rediacc_ci.core.bws_env",
+        "exec",
+        "--profile",
+        "deploy-proxy-bench",
+        "--",
+        seen[0][7],
+    ]
+    assert seen[0][-5:] == ["-m", ce.SELF, *args]
     assert calls(fake) == []
 
 

@@ -329,6 +329,11 @@
       "CI_CORE_LEASE_HELD",
       "PYTEST_ADDOPTS"
     ],
+    ".ci/rediacc_ci/deploy/console_executor.py": [
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN",
+      "REDIACC_BWS_PROFILES"
+    ],
     ".ci/rediacc_ci/deploy/deploy_account.py": [
       "CLOUDFLARE_API_TOKEN"
     ],
@@ -341,6 +346,10 @@
       "REDIACC_BWS_PROFILES",
       "REDIACC_SMOKE_DOH_URL",
       "REDIACC_SMOKE_RESOLVE_WINDOW_S"
+    ],
+    ".ci/rediacc_ci/deploy/deploy_record.py": [
+      "GITHUB_OUTPUT",
+      "GITHUB_STEP_SUMMARY"
     ],
     ".ci/rediacc_ci/deploy/deploy_www.py": [
       "CLOUDFLARE_ACCOUNT_ID",
@@ -1580,6 +1589,9 @@
     ".ci/rediacc_ci/tests/test_deploy_clone_d1.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_deploy_console_executor.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_deploy_delete_r2_channel.py": [
       "HOME"
     ],
@@ -1591,6 +1603,9 @@
     ],
     ".ci/rediacc_ci/tests/test_deploy_deploy_proxy.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_deploy_deploy_record.py": [
+      "CLOUDFLARE_API_TOKEN"
     ],
     ".ci/rediacc_ci/tests/test_deploy_deploy_www.py": [
       "HOME"

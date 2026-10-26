@@ -12,7 +12,7 @@ EVERY SWITCH IS READ BACK. A put or delete that exits 0 is not taken as the answ
 
 THE TARGET. `--target` and `--region` name one account config, `workers/account/wrangler.<region>.toml` for stable, `wrangler.edge-<region>.toml` for edge and `wrangler.bench.toml` for bench (eu only); the Worker name is read from that file's `name` and passed to wrangler as `--name` next to `--config`, so the call names its Worker twice and cannot land on another.
 
-ENVIRONMENT. `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, from CD's Bitwarden step, or for a local run from `bws_env exec --profile deploy-proxy` (bench: `deploy-proxy-bench`).
+ENVIRONMENT. `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, from CD's Bitwarden step. A bare local call needs the `deploy-proxy` bws profile (bench: `deploy-proxy-bench`): when either variable is unset and that profile is not bound, the run re-executes itself under `bws_env exec --profile <profile>`, so no wrapper is typed.
 """
 
 from __future__ import annotations
@@ -44,7 +44,52 @@ BENCH_REGION = "eu"
 ACCOUNT_SUBDIR = ("workers", "account")
 ACCOUNT_REL = "/".join(ACCOUNT_SUBDIR)
 
-REQUIRED_ENV = ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID")
+PROFILE = "deploy-proxy"
+BENCH_PROFILE = "deploy-proxy-bench"
+PACKAGE_PARENT = str(paths.repo_root() / ".ci")
+
+
+def profile_for(target: str) -> str:
+    return BENCH_PROFILE if target == BENCH_TARGET else PROFILE
+
+
+def missing_env() -> list[str]:
+    """The required variables that are unset or empty, read by name."""
+    missing = []
+    if not os.environ.get("CLOUDFLARE_API_TOKEN"):
+        missing.append("CLOUDFLARE_API_TOKEN")
+    if not os.environ.get("CLOUDFLARE_ACCOUNT_ID"):
+        missing.append("CLOUDFLARE_ACCOUNT_ID")
+    return missing
+
+
+def profile_bound(profile: str) -> bool:
+    return profile in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",")
+
+
+def reexec_argv(profile: str, argv: list[str]) -> list[str]:
+    """This same run under one bws profile."""
+    return [
+        sys.executable,
+        "-m",
+        "rediacc_ci.core.bws_env",
+        "exec",
+        "--profile",
+        profile,
+        "--",
+        sys.executable,
+        "-m",
+        SELF,
+        *argv,
+    ]
+
+
+def package_env() -> dict[str, str]:
+    """The child environment with this checkout's `.ci` first on PYTHONPATH."""
+    env = dict(os.environ)
+    existing = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = PACKAGE_PARENT + (os.pathsep + existing if existing else "")
+    return env
 
 
 class RefusedError(Exception):
@@ -165,7 +210,13 @@ def _list(worker: str, config: str, cwd: pathlib.Path) -> set[str] | None:
     return secret_names(proc.stdout) if proc.returncode == 0 else None
 
 
-def run(action: str, target: str, region: str | None, repo_root: pathlib.Path | None = None) -> int:
+def run(
+    action: str,
+    target: str,
+    region: str | None,
+    repo_root: pathlib.Path | None = None,
+    argv: list[str] | None = None,
+) -> int:
     """Enable or disable one target's console executor and read the result back. Returns the exit status."""
     root = repo_root or paths.repo_root()
     try:
@@ -175,14 +226,16 @@ def run(action: str, target: str, region: str | None, repo_root: pathlib.Path | 
     except RefusedError as exc:
         log.error(str(exc))
         return 1
-    missing = [name for name in REQUIRED_ENV if not os.environ.get(name)]
+    missing = missing_env()
     if missing:
+        profile = profile_for(target)
+        if argv is not None and not profile_bound(profile):
+            return subprocess.run(
+                reexec_argv(profile, argv), check=False, env=package_env()
+            ).returncode
         log.error(
             "%s must be set (CD's Bitwarden step, or bws_env exec --profile %s)"
-            % (
-                " and ".join(missing),
-                "deploy-proxy-bench" if target == BENCH_TARGET else "deploy-proxy",
-            )
+            % (" and ".join(missing), profile)
         )
         return 1
 
@@ -250,7 +303,7 @@ def main(argv: list[str]) -> int:
         args = _parser().parse_args(argv)
     except SystemExit as exc:
         return int(exc.code or 0)
-    return run("enable" if args.enable else "disable", args.target, args.region)
+    return run("enable" if args.enable else "disable", args.target, args.region, argv=argv)
 
 
 if __name__ == "__main__":
