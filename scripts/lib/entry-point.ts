@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 
 export function isEntryPoint(filename: string): boolean {
-  // A module URL (`import.meta.url`) is never a path: it resolved to "not the entry point", so a gate's main() was silently skipped and the gate exited 0 having checked nothing.
+  // A module URL (`import.meta.url`) is never a path, so it throws: returning false would silently skip a gate's main() and the gate would exit 0 having checked nothing.
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(filename)) {
     throw new Error(`isEntryPoint takes a file path (import.meta.filename), got a URL: ${filename}`);
   }

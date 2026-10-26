@@ -7,16 +7,10 @@
  * prefix: it lists the bucket and recognizes chunks by the hash-named last segment.
  */
 
-import { execFileSync } from "node:child_process";
-import {
-  copyFileSync,
-  existsSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
+import { execFileSync } from 'node:child_process';
+import { copyFileSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
 /** A chunk object key: the last path segment is exactly one SHA-256 in lowercase hex. */
 const CHUNK_KEY = /(?:^|\/)[0-9a-f]{64}$/;
@@ -32,28 +26,23 @@ export function chunkKeys(keys: readonly string[]): string[] {
  */
 export function flipByteScript(file: string, offset: number): string {
   if (!Number.isInteger(offset) || offset < 0) {
-    throw new Error(
-      `flipByteScript: offset must be a non-negative integer, got ${offset}`,
-    );
+    throw new Error(`flipByteScript: offset must be a non-negative integer, got ${offset}`);
   }
   const quoted = `'${file.replaceAll("'", "'\\''")}'`;
   return [
     `before=$(od -An -tu1 -j ${offset} -N1 ${quoted} | tr -d ' ')`,
     '[ -n "$before" ] || exit 3',
-    "after=$((before ^ 255))",
+    'after=$((before ^ 255))',
     `printf "$(printf '\\\\%03o' "$after")" | dd of=${quoted} bs=1 seek=${offset} conv=notrunc status=none`,
     'printf "%02x %02x\\n" "$before" "$after"',
-  ].join("\n");
+  ].join('\n');
 }
 
-const XML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">" };
+const XML_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>' };
 
 /** Decode the three XML entities in one pass, so `&amp;lt;` yields the text `&lt;` and never `<`. */
 function decodeXml(text: string): string {
-  return text.replace(
-    /&(amp|lt|gt);/g,
-    (_m, name: string) => XML_ENTITIES[name],
-  );
+  return text.replace(/&(amp|lt|gt);/g, (_m, name: string) => XML_ENTITIES[name]);
 }
 
 /** The `<Key>` values of an S3 ListObjectsV2 response, XML entities decoded. */
@@ -64,18 +53,13 @@ export function parseListKeys(xml: string): string[] {
 /** The continuation token of a truncated ListObjectsV2 page, or undefined on the last page. */
 export function parseNextToken(xml: string): string | undefined {
   if (!/<IsTruncated>true<\/IsTruncated>/.test(xml)) return undefined;
-  const token = /<NextContinuationToken>([^<]*)<\/NextContinuationToken>/.exec(
-    xml,
-  )?.[1];
+  const token = /<NextContinuationToken>([^<]*)<\/NextContinuationToken>/.exec(xml)?.[1];
   return token === undefined ? undefined : decodeXml(token);
 }
 
 /** Chunk objects of one lineage: hash-named keys with the lineage guid as a path segment. */
-export function lineageChunkKeys(
-  keys: readonly string[],
-  lineage: string,
-): string[] {
-  return chunkKeys(keys).filter((key) => key.split("/").includes(lineage));
+export function lineageChunkKeys(keys: readonly string[], lineage: string): string[] {
+  return chunkKeys(keys).filter((key) => key.split('/').includes(lineage));
 }
 
 /** The dev store's coordinates, from the same `E2E_BACKUP_S3_*` variables suite 27 reads. */
@@ -87,18 +71,13 @@ export interface StoreAccess {
 }
 
 /** Store access from the environment, or undefined when the credentials are not both set. */
-export function storeAccessFromEnv(
-  env: NodeJS.ProcessEnv = process.env,
-): StoreAccess | undefined {
+export function storeAccessFromEnv(env: NodeJS.ProcessEnv = process.env): StoreAccess | undefined {
   const accessKey = env.E2E_BACKUP_S3_KEY;
   const secretKey = env.E2E_BACKUP_S3_SECRET;
   if (!accessKey || !secretKey) return undefined;
   return {
-    endpoint: (env.E2E_BACKUP_S3_ENDPOINT || "http://127.0.0.1:9100").replace(
-      /\/+$/,
-      "",
-    ),
-    bucket: env.E2E_BACKUP_S3_BUCKET || "rediacc-backups-probe",
+    endpoint: (env.E2E_BACKUP_S3_ENDPOINT || 'http://127.0.0.1:9100').replace(/\/+$/, ''),
+    bucket: env.E2E_BACKUP_S3_BUCKET || 'rediacc-backups-probe',
     accessKey,
     secretKey,
   };
@@ -113,30 +92,17 @@ export interface CorruptedChunk {
 }
 
 /** One signed request to the store; `--fail` makes an error response throw, so a body is only ever returned for a 2xx. */
-export type StoreCurl = (
-  access: StoreAccess,
-  args: string[],
-  url: string,
-) => Buffer;
+export type StoreCurl = (access: StoreAccess, args: string[], url: string) => Buffer;
 
 const defaultStoreCurl: StoreCurl = (access, args, url) => {
   // Credentials ride a curl config on stdin, never argv.
   return execFileSync(
-    "curl",
-    [
-      "-sS",
-      "--fail",
-      "--aws-sigv4",
-      "aws:amz:us-east-1:s3",
-      "-K",
-      "-",
-      ...args,
-      url,
-    ],
+    'curl',
+    ['-sS', '--fail', '--aws-sigv4', 'aws:amz:us-east-1:s3', '-K', '-', ...args, url],
     {
       input: `user = "${access.accessKey}:${access.secretKey}"\n`,
       maxBuffer: 256 * 1024 * 1024,
-    },
+    }
   );
 };
 
@@ -149,7 +115,7 @@ export function corruptStoredChunk(
   access: StoreAccess,
   lineage: string,
   offset = 0,
-  storeCurl: StoreCurl = defaultStoreCurl,
+  storeCurl: StoreCurl = defaultStoreCurl
 ): CorruptedChunk {
   const base = `${access.endpoint}/${access.bucket}`;
   const pages: string[] = [];
@@ -159,13 +125,13 @@ export function corruptStoredChunk(
     const page = storeCurl(
       access,
       [
-        "-G",
-        "--data-urlencode",
-        "list-type=2",
-        ...(token ? ["--data-urlencode", `continuation-token=${token}`] : []),
+        '-G',
+        '--data-urlencode',
+        'list-type=2',
+        ...(token ? ['--data-urlencode', `continuation-token=${token}`] : []),
       ],
-      base,
-    ).toString("utf8");
+      base
+    ).toString('utf8');
     pages.push(page);
     allKeys.push(...parseListKeys(page));
     token = parseNextToken(page);
@@ -173,30 +139,27 @@ export function corruptStoredChunk(
   const keys = lineageChunkKeys(allKeys, lineage);
   if (keys.length === 0) {
     throw new Error(
-      `no chunk object of lineage ${lineage} in bucket ${access.bucket} (${pages.length} page(s), listing: ${pages[0].slice(0, 400)})`,
+      `no chunk object of lineage ${lineage} in bucket ${access.bucket} (${pages.length} page(s), listing: ${pages[0].slice(0, 400)})`
     );
   }
   const key = keys[0];
-  const dir = mkdtempSync(path.join(tmpdir(), "chunk-corrupt-"));
-  const original = path.join(dir, "original");
-  const tampered = path.join(dir, "tampered");
+  const dir = mkdtempSync(path.join(tmpdir(), 'chunk-corrupt-'));
+  const original = path.join(dir, 'original');
+  const tampered = path.join(dir, 'tampered');
   const url = `${base}/${key}`;
   try {
     writeFileSync(original, storeCurl(access, [], url));
     copyFileSync(original, tampered);
-    const flipped = execFileSync("bash", [
-      "-c",
-      flipByteScript(tampered, offset),
-    ])
+    const flipped = execFileSync('bash', ['-c', flipByteScript(tampered, offset)])
       .toString()
       .trim();
-    storeCurl(access, ["-X", "PUT", "-T", tampered], url);
+    storeCurl(access, ['-X', 'PUT', '-T', tampered], url);
     return {
       key,
       flipped,
       restore: () => {
         try {
-          storeCurl(access, ["-X", "PUT", "-T", original], url);
+          storeCurl(access, ['-X', 'PUT', '-T', original], url);
         } finally {
           rmSync(dir, { recursive: true, force: true });
         }
@@ -205,8 +168,7 @@ export function corruptStoredChunk(
   } catch (error) {
     // A PUT whose response was lost may still have stored the tampered bytes: put the original back (when it was read) before giving up.
     try {
-      if (existsSync(original))
-        storeCurl(access, ["-X", "PUT", "-T", original], url);
+      if (existsSync(original)) storeCurl(access, ['-X', 'PUT', '-T', original], url);
     } catch {
       // The store is unreachable; the original error is the one to report.
     }
