@@ -68,6 +68,16 @@ import type { ExecuteOptions, ExecuteResult } from './types.js';
 import { loadContextRepositories, resolveKnownHosts } from './vault-inputs.js';
 
 // The pieces split out of this module stay importable from it, so no caller had to move.
+/**
+ * Events mode: renet sends the failure reason (the child's stderr detail) as an error-level log event, so the raw ssh stderr alone is empty. Fold the collector's error/warning lines in so the exit error and the failure echo carry the reason.
+ */
+export function mergeEventsStderr(rawStderr: string, eventStderr: string): string {
+  if (!eventStderr) return rawStderr;
+  return rawStderr && !rawStderr.endsWith('\n')
+    ? `${rawStderr}\n${eventStderr}`
+    : rawStderr + eventStderr;
+}
+
 export { needsLicenseRecovery } from './license-recovery.js';
 export { buildRemoteRenetCommand, buildRenetEnv } from './renet-command.js';
 export { parseCapturedJson } from './renet-output.js';
@@ -284,7 +294,10 @@ class LocalExecutorService {
     // The command failed, so what we withheld is exactly what explains it.
     if (echoStderrLive) stderrPump.flush(exitCode !== 0);
 
-    if (collector) stdout = collector.stdout;
+    if (collector) {
+      stdout = collector.stdout;
+      stderr = mergeEventsStderr(stderr, collector.stderr);
+    }
 
     const combined = stdout + stderr;
     const renetDurationMatch = /operation completed.*?duration_ms=(\d+)/.exec(combined);
