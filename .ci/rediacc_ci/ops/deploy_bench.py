@@ -411,8 +411,8 @@ def root_password() -> str:
     if not value:
         raise SeedError(
             "%s is not set: the deploy-bench profile binds it from the store entry of the same "
-            "name (.ci/config/secret-supply.json). The lead mints it once with `bws_env "
-            "store-from-env` (agent note in the account-dev bench section)" % ROOT_LOGIN_ENV
+            "name (.ci/config/secret-supply.json), written once with `bws_env store-from-env` "
+            "(usage in rediacc_ci/core/bws_env.py)" % ROOT_LOGIN_ENV
         )
     if not PASSWORD_MIN <= len(value) <= PASSWORD_MAX:
         raise SeedError(
@@ -555,7 +555,7 @@ def set_root_password(
 def _set_password_and_report() -> None:
     log.step(
         "Setting the stored root password on %s at https://%s"
-        % (os.environ.get("ROOT_EMAIL") or "", DOMAIN)
+        % (os.environ.get("ROOT_EMAIL") or "ROOT_EMAIL (unset)", DOMAIN)
     )
     set_root_password()
     log.info("root password set to %s (every root session was revoked)" % ROOT_LOGIN_ENV)
@@ -563,7 +563,8 @@ def _set_password_and_report() -> None:
 
 def _seed_and_report() -> None:
     log.step(
-        "Seeding the root user (%s) on https://%s" % (os.environ.get("ROOT_EMAIL") or "", DOMAIN)
+        "Seeding the root user (%s) on https://%s"
+        % (os.environ.get("ROOT_EMAIL") or "ROOT_EMAIL (unset)", DOMAIN)
     )
     outcome = seed_root()
     log.info(

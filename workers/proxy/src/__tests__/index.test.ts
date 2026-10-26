@@ -365,6 +365,15 @@ describe('span attributes (telemetry export T14)', () => {
     });
   }
 
+  it('issuer route failure: 503 with outcome refused:issuer-route-failed', async () => {
+    introspection = 'http-500';
+    const { ctx, attrs } = traced();
+    const response = await worker.fetch(probed('/v1/server-info', CALLER), env(), ctx);
+
+    expect(response.status).toBe(503);
+    expect(attrs['rediacc.proxy.outcome']).toBe('refused:issuer-route-failed');
+  });
+
   it('logs a telemetry-probe line for a probed request, and none for a non-UUID header', async () => {
     const log = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { ctx } = traced();

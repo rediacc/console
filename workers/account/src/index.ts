@@ -81,7 +81,7 @@ export class CloudflareInternal extends WorkerEntrypoint<Env> {
 }
 
 /**
- * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). Three RPC methods and no `fetch`: `route(bearer)` names the org behind a caller's own proxy:exec token, `issue(orgId)` mints that org's short-lived executor token after re-running the console entitlement check, and `probe()` reports readiness and writes nothing. The TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refused mint rejects with the reason code as the message and is audited as `executor_token.refused`.
+ * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). Three RPC methods and no `fetch`: `route(bearer)` names the org behind a caller's own proxy:exec token, `issue(orgId)` mints that org's short-lived executor token after re-running the console entitlement check (the org id is the one `route(bearer)` returned to the bound proxy Worker, the only holder of this binding; the issuer service refuses an unknown, blocked or unentitled org and an empty or non-string id), and `probe()` reports readiness and writes nothing. The TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refused mint rejects with the reason code as the message and is audited as `executor_token.refused`.
  */
 export class ExecutorIssuer extends WorkerEntrypoint<Env> {
   route(bearer: string): Promise<{ orgId: string } | { refused: string }> {

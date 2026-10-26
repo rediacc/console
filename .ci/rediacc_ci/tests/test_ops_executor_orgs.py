@@ -63,6 +63,7 @@ if seq:
 else:
     out = os.environ.get("FAKE_NPX_OUT", "")
 sys.stdout.write(out)
+sys.stderr.write(os.environ.get("FAKE_NPX_ERR", ""))
 sys.exit(int(os.environ.get("FAKE_NPX_RC", "0")))
 """
 
@@ -272,3 +273,65 @@ def test_missing_cloudflare_env_with_a_bound_profile_is_an_error(fake, monkeypat
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy")
     assert _run("list", "--target", "edge", "--region", "eu") == 1
     assert _calls(fake) == []
+
+
+def test_a_statement_without_a_success_flag_is_not_a_success() -> None:
+    assert mod.parse_rows(json.dumps([{"results": []}])) is None
+    assert mod.parse_rows(json.dumps([{"success": True, "results": []}])) == []
+
+
+def test_an_empty_created_at_ranks_oldest_not_newest() -> None:
+    subs = [
+        {
+            "sub_id": "a",
+            "status": "active",
+            "type": "subscription",
+            "plan_code": "COMMUNITY",
+            "sub_created_at": "",
+        },
+        {
+            "sub_id": "b",
+            "status": "active",
+            "type": "subscription",
+            "plan_code": "BUSINESS",
+            "sub_created_at": "2026-01-01T00:00:00Z",
+        },
+    ]
+    assert mod.evaluate(ORG_A, subs, False, True, NOW).plan == "BUSINESS"
+
+
+def test_an_org_id_with_a_trailing_newline_is_refused() -> None:
+    with pytest.raises(mod.RefusedError):
+        mod.statements("block", ORG_A + "\n", NOW)
+    with pytest.raises(mod.RefusedError):
+        mod.resolve_org(mod.verdicts(ROWS, NOW), ORG_A + "\n")
+
+
+def test_a_non_zero_wrangler_exit_on_the_write_is_refused_and_stderr_is_cut(
+    monkeypatch, fake, capsys
+) -> None:
+    _sequence(monkeypatch, _ok(ROWS), _ok())
+    real = mod.subprocess.run
+
+    def run(argv, **kw):
+        write = "UPDATE" in " ".join(argv)
+        if write:
+            monkeypatch.setenv(
+                "FAKE_NPX_ERR", "failed: UPDATE organizations WHERE id = '%s'" % ORG_A
+            )
+        proc = real(argv, **kw)
+        if write:
+            proc.returncode = 1
+        return proc
+
+    monkeypatch.setattr(mod.subprocess, "run", run)
+    assert _run("block", "--target", "edge", "--region", "eu", "--org", ORG_A) == 1
+    shown = capsys.readouterr()
+    assert ORG_A not in shown.out + shown.err
+    assert mod.prefix(ORG_A) in shown.err
+    assert len(_calls(fake)) == 2
+
+
+def test_unblock_of_an_unknown_org_writes_nothing(fake) -> None:
+    assert _run("unblock", "--target", "edge", "--region", "eu", "--org", "nomatch-xyz") == 1
+    assert len(_calls(fake)) == 1

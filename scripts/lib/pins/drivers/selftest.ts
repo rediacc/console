@@ -28,6 +28,7 @@ import { actionsDriver } from './actions.js';
 import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
 import { gomodDriver } from './gomod.js';
+import { stepsOf } from './npm.js';
 import { osCephHostDriver } from './os.js';
 import { planBiomeSchema } from './pin-manifests.js';
 import { realProviderDriver } from './realprovider.js';
@@ -900,7 +901,38 @@ function biomeSchemaCases(): Array<{ name: string; ok: boolean; detail?: string 
   const bumped = planBiomeSchema(doc('2.6.2'), step('@biomejs/biome', '2.6.3'));
   const other = planBiomeSchema(doc('2.6.2'), step('typescript', '6.0.1'));
   const same = planBiomeSchema(doc('2.6.3'), step('@biomejs/biome', '2.6.3'));
+  // The wiring of stepsOf: the biome.json read, the write pushed into `writes`, and the note.
+  const root = tree({ 'biome.json': doc('2.6.2'), 'package.json': '{}' });
+  const wired = (name: string, latest: string) =>
+    stepsOf(
+      ctxOf(root),
+      entry('npm'),
+      [
+        {
+          cwd: root,
+          args: ['install', `${name}@${latest}`],
+          label: 'root',
+          packages: [{ name, current: '2.6.2', latest }],
+        } as never,
+      ],
+      '11.0.0'
+    );
+  const wiredBump = wired('@biomejs/biome', '2.6.3');
+  const wiredOther = wired('typescript', '6.0.1');
+  const biomeWrite = wiredBump.writes.find((w) => w.file === 'biome.json');
   return [
+    {
+      name: 'biome schema: stepsOf pushes the biome.json write and its note for an @biomejs/biome bump, and neither for another package',
+      ok:
+        biomeWrite?.after === doc('2.6.3') &&
+        wiredBump.notes.some((n) => n.includes('biome.json')) &&
+        !wiredOther.writes.some((w) => w.file === 'biome.json') &&
+        !wiredOther.notes.some((n) => n.includes('biome.json')),
+      detail: JSON.stringify({
+        writes: wiredBump.writes.map((w) => w.file),
+        notes: wiredBump.notes,
+      }),
+    },
     {
       name: 'biome schema: a planned @biomejs/biome bump writes the new version into biome.json $schema and nothing else',
       ok: bumped === doc('2.6.3'),

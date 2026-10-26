@@ -11,7 +11,7 @@ WHAT IT READS, all from the account GraphQL endpoint (token permission "Account 
   - `workersInvocationsAdaptive`: requests and CPU (`cpuTimeUs` summed, shown in ms) per script over the billing month so far.
   - `containersMetricsAdaptiveGroups`: per Containers application (one per proxy target's container class) over the billing month so far, `sum{cpuTimeSec}` (active vCPU-seconds, what Cloudflare bills CPU on) and `sum{allocatedMemory}` (provisioned byte-seconds, shown as GiB-seconds, what it bills memory on). The estimated cost is those seconds at the published rates (developers.cloudflare.com/containers/pricing, read 2026-10-26: 0.0000025 USD per GiB-second, 0.000020 USD per vCPU-second), without the monthly included amounts, so it is an upper bound. Cloudflare offers no usage alert for Containers (cf-spend-guard.json `notifications.unavailable.containers`), so this is the alarm: an application over `containers_memory_gib_seconds_month` or `containers_vcpu_seconds_month` is an `OVER` line that names the estimated cost, and the run exits 1. Zero container rows is not an error (a month can have no usage); a failed read is exit 2. The application id is the only name the dataset carries.
 
-CEILINGS come from the `report` object of `.ci/config/cf-spend-guard.json` when the file carries one, key by key, and from `DEFAULT_CEILINGS` below otherwise: workers_requests_month, workers_cpu_ms_month, r2_storage_bytes, r2_class_a_month, r2_class_b_month, d1_storage_bytes. Each is compared with the account total, and the per-item lines are for reading. The two container ceilings, containers_memory_gib_seconds_month and containers_vcpu_seconds_month, are compared with EACH application instead, since the budget is per target.
+CEILINGS come from the `report` object of `.ci/config/cf-spend-guard.json` when the file carries one, key by key, and from `DEFAULT_CEILINGS` below otherwise: workers_requests_month, workers_cpu_ms_month, r2_storage_bytes, r2_class_a_month, r2_class_b_month, d1_storage_bytes. Each is compared with the account total, and the per-item lines are for reading. The two container ceilings, containers_memory_gib_seconds_month and containers_vcpu_seconds_month, are compared with EACH application instead, since the budget is per target; `containers_total_usd_month` bounds the estimated cost summed over all applications.
 
 THE LOG LINE is counted over seven days in Loki (through the Grafana datasource proxy, `OBS_GRAFANA_READ_TOKEN`); when Loki cannot answer, the Workers Observability telemetry query counts it instead. When neither answers the run is exit 2, because a guard that cannot look has not passed.
 
@@ -47,6 +47,8 @@ DEFAULT_CEILINGS: dict[str, float] = {
     # Per Containers application (one proxy target). 8e6 GiB-seconds is about 3 basic (1 GiB) instances awake all month, about 20 USD; 2e6 vCPU-seconds is the matching active-CPU ceiling.
     "containers_memory_gib_seconds_month": 8_000_000,
     "containers_vcpu_seconds_month": 2_000_000,
+    # Account-wide estimated Containers spend across every application: the per-application ceilings alone let many targets each stay under them while the sum is far larger.
+    "containers_total_usd_month": 100,
 }
 
 # https://developers.cloudflare.com/containers/pricing/ (read 2026-10-26), Workers Paid, USD.
@@ -359,12 +361,17 @@ def run(
     cpu_cap = ceilings.get(
         "containers_vcpu_seconds_month", DEFAULT_CEILINGS["containers_vcpu_seconds_month"]
     )
+    total_cap = ceilings.get(
+        "containers_total_usd_month", DEFAULT_CEILINGS["containers_total_usd_month"]
+    )
+    total_cost = 0.0
     for name in sorted(apps):
         a = apps[name]
         cost = (
             a["gib_s"] * CONTAINERS_USD_PER_GIB_SECOND
             + a["vcpu_s"] * CONTAINERS_USD_PER_VCPU_SECOND
         )
+        total_cost += cost
         bad = a["gib_s"] > mem_cap or a["vcpu_s"] > cpu_cap
         over += 1 if bad else 0
         print(
@@ -374,6 +381,14 @@ def run(
         )
     if not apps:
         print("OK   containers no usage rows this billing month", file=out)
+    else:
+        total_bad = total_cost > total_cap
+        over += 1 if total_bad else 0
+        print(
+            "%s containers.total est_cost_usd=%.2f (ceiling %.2f)"
+            % ("OVER" if total_bad else "OK  ", total_cost, total_cap),
+            file=out,
+        )
     try:
         count, source = maintenance_count(env, transport, ov.telemetry_headers(env), account, now)
     except ReportError as exc:

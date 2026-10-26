@@ -243,3 +243,19 @@ def test_a_failed_container_read_is_exit_2(capsys):
     rc, _ = go(Down())
     assert rc == 2
     assert "containers: graphql answered 500" in capsys.readouterr().err
+
+
+def test_container_total_over_the_account_ceiling_is_exit_1_though_each_app_is_under():
+    big = 3_000_000 * 2**30
+    rows = [
+        {
+            "dimensions": {"applicationId": "app%d" % n},
+            "sum": {"cpuTimeSec": 1_000_000.0, "allocatedMemory": big},
+        }
+        for n in range(3)
+    ]
+    ceilings = dict.fromkeys(CEILINGS, 10**12) | {"containers_total_usd_month": 50}
+    rc, text = go(Fake(data=DATA | {"containersMetricsAdaptiveGroups": rows}), ceilings)
+    assert rc == 1
+    assert "OVER containers.total est_cost_usd=" in text
+    assert "OVER containers.app." not in text

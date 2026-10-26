@@ -37,7 +37,7 @@ SELF = "rediacc_ci.ops.executor_orgs"
 
 ACTIONS = ("list", "verify", "block", "unblock")
 PREFIX_LEN = 8
-ORG_ID = re.compile(r"^[A-Za-z0-9_-]{%d,64}$" % PREFIX_LEN)
+ORG_ID = re.compile(r"^[A-Za-z0-9_-]{%d,64}\Z" % PREFIX_LEN)
 
 # Mirrors the executor issuer's ranking (LIVE_STATUS_RANK and TYPE_RANK in the account service) and PLAN_METADATA[plan].webConsole in packages/shared.
 LIVE_STATUS_RANK = {"active": 0, "grace": 1, "inactive": 2}
@@ -86,7 +86,7 @@ UNBLOCK_SQL = (
         "FROM organizations o WHERE o.id = '@ORG@';"
     ),
 )
-SQL_ORG_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+SQL_ORG_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}\Z")
 
 
 class RefusedError(target_mod.RefusedError):
@@ -134,7 +134,7 @@ def parse_rows(text: str) -> list[dict] | None:
         return None
     rows: list[dict] = []
     for statement in data:
-        if not isinstance(statement, dict) or statement.get("success") is False:
+        if not isinstance(statement, dict) or statement.get("success") is not True:
             return None
         found = statement.get("results")
         if not isinstance(found, list) or not all(isinstance(r, dict) for r in found):
@@ -151,13 +151,13 @@ def evaluate(org_id: str, subs: list[dict], blocked: bool, has_store: bool, now:
         if s.get("status") in LIVE_STATUS_RANK
         and (not s.get("expires_at") or str(s["expires_at"]) > now)
     ]
+    # Stable passes, least significant first: id ascending, then newest created_at first (an empty value is the oldest), then status and type rank.
+    live.sort(key=lambda s: str(s.get("sub_id") or ""))
+    live.sort(key=lambda s: str(s.get("sub_created_at") or ""), reverse=True)
     live.sort(
         key=lambda s: (
             LIVE_STATUS_RANK.get(s["status"], 99),
             TYPE_RANK.get(str(s.get("type")), 99),
-            # newest first, then id ascending
-            [-ord(ch) for ch in str(s.get("sub_created_at") or "")],
-            str(s.get("sub_id") or ""),
         )
     )
     plan = str(live[0].get("plan_code") or "") if live else ""
@@ -221,17 +221,28 @@ def database_name(config_path: pathlib.Path) -> str:
     return name
 
 
-def read_orgs(worker_dir: pathlib.Path, config: str, now: str) -> list[Verdict]:
-    """Every org of the target with its verdict, read from D1."""
-    database = database_name(worker_dir / config)
+def _wrangler(
+    worker_dir: pathlib.Path, argv: list[str], org_id: str = ""
+) -> subprocess.CompletedProcess[str]:
+    """Runs wrangler with stderr captured and re-printed with the org id cut to its prefix, so an echoed --command cannot put a full id on the terminal."""
     proc = subprocess.run(
-        d1_argv(database, config),
+        argv,
         cwd=worker_dir,
         stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
+        capture_output=True,
         text=True,
         check=False,
     )
+    if proc.stderr:
+        shown = proc.stderr.replace(org_id, prefix(org_id)) if org_id else proc.stderr
+        print(shown, end="", file=sys.stderr)
+    return proc
+
+
+def read_orgs(worker_dir: pathlib.Path, config: str, now: str) -> list[Verdict]:
+    """Every org of the target with its verdict, read from D1."""
+    database = database_name(worker_dir / config)
+    proc = _wrangler(worker_dir, d1_argv(database, config))
     if proc.returncode != 0:
         raise RefusedError("wrangler d1 execute on %s exited %d" % (database, proc.returncode))
     rows = parse_rows(proc.stdout)
@@ -250,17 +261,10 @@ def statements(action: str, org_id: str, now: str) -> str:
     return " ".join(sql.replace("@ORG@", org_id).replace("@NOW@", now) for sql in template)
 
 
-def write_org(worker_dir: pathlib.Path, config: str, command: str) -> None:
+def write_org(worker_dir: pathlib.Path, config: str, command: str, org_id: str = "") -> None:
     """Runs one write batch through wrangler; anything but a success on every statement refuses."""
     database = database_name(worker_dir / config)
-    proc = subprocess.run(
-        d1_argv(database, config, command),
-        cwd=worker_dir,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
+    proc = _wrangler(worker_dir, d1_argv(database, config, command), org_id)
     if proc.returncode != 0:
         raise RefusedError("wrangler d1 execute on %s exited %d" % (database, proc.returncode))
     if parse_rows(proc.stdout) is None:
@@ -355,7 +359,7 @@ def _act(
     if len(wanted) != 1:
         raise RefusedError("%s needs exactly one --org" % args.action)
     org = resolve_org(known, wanted[0])
-    write_org(worker_dir, config, statements(args.action, org.org_id, now))
+    write_org(worker_dir, config, statements(args.action, org.org_id, now), org.org_id)
     after = next((v for v in read_orgs(worker_dir, config, now) if v.org_id == org.org_id), None)
     if after is None or (after.reason == "blocked") != (args.action == "block"):
         raise RefusedError(

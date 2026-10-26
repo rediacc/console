@@ -32,7 +32,7 @@ Attributes set on the active span by `fetch`:
 | `rediacc.region` | The Worker's `REGION` var |
 | `deployment.environment` | The Worker's `ENVIRONMENT` var |
 | `rediacc.probe` | UUID from `X-Rediacc-Probe`, when present |
-| `rediacc.proxy.outcome` | `health`, `refused:<reason>` or `forwarded` |
+| `rediacc.proxy.outcome` | `health`, `refused:<reason>`, `forwarded`, `capacity` or `start-failed` |
 
 A request carrying a valid probe UUID also writes one log line, `telemetry-probe <uuid>` (lower case), so the delivery check finds the trace and the log of the same request.
 
@@ -69,4 +69,10 @@ Until the live acceptance (T15, folded into L8) passes, both services are listed
 
 ## Issued executor token and the container
 
-The proxy never holds a long-lived executor token. Per PLAN-proxy-cd-six-targets (box I1), the account Worker's `ExecutorIssuer` RPC entrypoint mints a 45-minute token over the `ISSUER` service binding, the Worker renews it at 80% of its life, and egress swaps it in for a container placeholder on the four executor-bearer paths. The mint and every refusal are audit events of the account server (`executor_token.issued`, `executor_token.refused`), not proxy spans.
+The proxy never holds a long-lived executor token. Per PLAN-console-executor-multi-org, the account Worker's `ExecutorIssuer` RPC entrypoint mints a 45-minute token for one org (`issue(orgId)`, the org named by `route(bearer)`) over the `ISSUER` service binding, the Worker renews it at 80% of its life, and egress swaps it in for a container placeholder on the four executor-bearer paths. The mint and every refusal are audit events of the account server (`executor_token.issued`, `executor_token.refused`), not proxy spans.
+
+## One container per org, and the capacity outcome
+
+Per PLAN-console-executor-multi-org, the Durable Object name is the org id alone, so each org with an active console session holds its own executor container, and an idle one sleeps after 2 minutes. `max_instances` is 25 per proxy config (at most 175 in total), the operator ruling ASKED:2026-10-26T15:26Z "Per-org, raise the cap". An org that would start the 26th concurrent container on one target gets 503 `{ code: 'EXECUTOR_CAPACITY' }` with `Retry-After: 30`, recorded as `rediacc.proxy.outcome=capacity`. Any other failed start is 503 `EXECUTOR_START_FAILED` with the outcome `start-failed`. Neither outcome carries an org id or token on a span or log.
+
+The capacity count per target over 14 days is the input of box ML6, and the container spend is read from the weekly `cf_usage_report` against `.ci/config/cf-spend-guard.json`.

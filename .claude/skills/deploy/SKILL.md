@@ -128,7 +128,7 @@ WWW_MODULE=deploy_edge    # or: deploy_www  (stable)
 
 ### 4a. Proxy steps inside the per-region account deploy
 
-Per PLAN-proxy-cd-six-targets (box D2), the per-region deploy job (`cd-deploy-account.yml`, called by edge CD, `promote-stable.yml` and the cd-v2 hotfix) deploys the region's proxy Worker beside the account Worker. The proxy reaches the account Worker over the `ACCOUNT` and `ISSUER` (`ExecutorIssuer`, an RPC entrypoint) service bindings, and the account config binds `EXECUTOR` back to the proxy. Order:
+Per PLAN-proxy-cd-six-targets (box D2), the per-region deploy job (`cd-deploy-account.yml`, called by edge CD, `promote-stable.yml` and the cd-v2 hotfix) deploys the region's proxy Worker beside the account Worker. The proxy reaches the account Worker over the `ACCOUNT` and `ISSUER` (`ExecutorIssuer`, an RPC entrypoint with `route(bearer)`, `issue(orgId)` and `probe()`) service bindings, and the account config binds `EXECUTOR` back to the proxy. Order:
 
 1. Record before: account and proxy version ids and the D1 time-travel bookmark taken before migrations.
 2. Bootstrap proxy deploy, only when the proxy Worker does not exist yet, so the account's `EXECUTOR` binding resolves.
@@ -136,6 +136,8 @@ Per PLAN-proxy-cd-six-targets (box D2), the per-region deploy job (`cd-deploy-ac
 4. Deploy the proxy Worker: `deploy_proxy --target <target> --region <r> --version <V>`. The image comes from the durable executor artifacts at `executor/v<V>/` (`rediacc_ci.deploy.executor_artifacts fetch`, sha256 verified), never built from source.
 5. Proxy smoke: health 200, unauthenticated server-info 401, and `/v1/ready` 200 with `workerVersion` equal to the deployed id, polled for up to 5 minutes.
 6. Enable the console executor (`console_executor`, which sets the `EXECUTOR_MODE=proxy` Worker secret), only when step 5 passed. A region stays closed, answering the coded 503, until then.
+
+Per PLAN-console-executor-multi-org, one region serves every entitled org. The proxy keys one executor container per org (25 per target at most, a further org gets the coded 503 `EXECUTOR_CAPACITY`), and each org's token is issued with the issuer key `executor:<ENVIRONMENT>:<REGION>:<orgId>`. Migration 0066 (the per-org block column) lands with the account deploy, so the D1 bookmark of step 1 covers it. `executor_orgs list` and `verify` read each org's entitlement from the target's D1, and `block` and `unblock` close and reopen one org without touching the others.
 
 The deploy record `deploy-record-<target>-<region>.json` (worker names, version ids before and after, D1 bookmark, smoke rc, artifact manifest sha256s, rollback command) goes to the job summary and an artifact. Report it per section 7.
 

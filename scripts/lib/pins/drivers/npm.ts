@@ -242,7 +242,7 @@ function needText(ctx: DriverContext, p: RepoPath): string {
 // ---- plan assembly --------------------------------------------------------------------------
 
 /** The npm steps of a plan as transaction steps, each `update` followed by its freshness guard, then the pin-group sync. */
-function stepsOf(
+export function stepsOf(
   ctx: DriverContext,
   entry: PinEntry,
   steps: InstallStep[],
