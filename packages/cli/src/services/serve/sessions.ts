@@ -45,6 +45,8 @@ export interface SessionPrincipal {
 interface SessionEntry {
   id: string;
   principal: SessionPrincipal;
+  /** The org that opened the session. A grant or an exec from another org never reaches it. */
+  orgId: string;
   /** Ephemeral X25519 private key, discarded once the CEK arrives. */
   ephemeralPrivateKey?: CryptoKey;
   /** The granted config-encryption key. RAM only, never persisted. */
@@ -96,6 +98,7 @@ export class SessionStore {
     this.sessions.set(id, {
       id,
       principal,
+      orgId: principal.orgId,
       ephemeralPrivateKey: keyPair.privateKey,
       createdAt: at,
       lastUsedAt: at,
@@ -126,7 +129,7 @@ export class SessionStore {
     grantingPrincipal: SessionPrincipal
   ): Promise<void> {
     const session = this.require(sessionId);
-    if (session.principal.userId !== grantingPrincipal.userId) {
+    if (!ownedBy(session, grantingPrincipal)) {
       // Deliberately the same message require() gives for an unknown session, so a caller cannot probe which session ids exist by whether the error changes from "unknown" to "not yours".
       throw new SessionError('Unknown or expired session. Open a new one.', SESSION_UNKNOWN_CODE);
     }
@@ -187,7 +190,7 @@ export class SessionStore {
       this.grantsByUser.delete(principal.userId);
       return undefined;
     }
-    if (session.principal.userId !== principal.userId) return undefined;
+    if (!ownedBy(session, principal)) return undefined;
 
     // Expiry is enforced by require(), which also evicts.
     try {
@@ -217,7 +220,7 @@ export class SessionStore {
     if (!requestedId) return this.sessionFor(principal);
 
     const session = this.require(requestedId);
-    if (session.principal.userId !== principal.userId) {
+    if (!ownedBy(session, principal)) {
       throw new SessionError('Unknown or expired session. Open a new one.', SESSION_UNKNOWN_CODE);
     }
     session.lastUsedAt = this.now();
@@ -267,6 +270,11 @@ export class SessionStore {
     }
     this.sessions.delete(sessionId);
   }
+}
+
+/** A session belongs to the user AND the org that opened it; both must match, so another org's principal is refused as an unknown session. */
+function ownedBy(session: SessionEntry, principal: SessionPrincipal): boolean {
+  return session.principal.userId === principal.userId && session.orgId === principal.orgId;
 }
 
 /** Wire code on the 404 for a session id the store does not hold (never opened, expired, wiped by a redeploy, or not the caller's). */
