@@ -412,15 +412,22 @@ describe('span attributes (telemetry export T14)', () => {
     expect(attrs).not.toHaveProperty('rediacc.probe');
   });
 
-  /** What a log line would carry for one console argument: an Error keeps its message, an object its fields, and nothing throws. */
+  /** What a log line would carry for one console argument: an Error (also one nested in an object) keeps its message, an object its fields, and nothing throws. */
   function asLogText(arg: unknown): string {
     if (typeof arg === 'string') return arg;
     if (arg instanceof Error) return `${arg.name}: ${arg.message}`;
     try {
-      const json: string | undefined = JSON.stringify(arg);
+      const json: string | undefined = JSON.stringify(arg, (_key, value: unknown) =>
+        value instanceof Error ? `${value.name}: ${value.message}` : value
+      );
       return json ?? String(arg);
     } catch {
-      return String(arg);
+      // A circular object, or one with no Object.prototype, has no usable text; the walk still sees that a line was written.
+      try {
+        return String(arg);
+      } catch {
+        return '[unprintable]';
+      }
     }
   }
 

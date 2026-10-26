@@ -36,13 +36,13 @@ function notReady(reason: string): ReadyAnswer {
   return { status: 503, body: { ready: false, reason } };
 }
 
-async function computeReady(env: ReadyEnv): Promise<ReadyAnswer> {
+async function computeReady(env: ReadyEnv, now: () => number): Promise<ReadyAnswer> {
   const workerVersion = env.CF_VERSION_METADATA?.id;
   if (!workerVersion) return notReady('no-version-metadata');
 
   let token: string;
   try {
-    token = await issuedToken(env.ISSUER);
+    token = await issuedToken(env.ISSUER, now);
   } catch (error) {
     return notReady(error instanceof IssuerError ? error.reason : 'issuer-refused');
   }
@@ -78,7 +78,7 @@ export function readiness(env: ReadyEnv, now: () => number = Date.now): Promise<
   if (cachedAnswer && now() - cachedAnswer.at < READY_CACHE_MS) {
     return Promise.resolve(cachedAnswer.answer);
   }
-  inflightAnswer ??= computeReady(env)
+  inflightAnswer ??= computeReady(env, now)
     .then((answer) => {
       cachedAnswer = { at: now(), answer };
       return answer;

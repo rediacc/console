@@ -22,6 +22,7 @@ import { forwardAccountEgress } from '../egress';
 import worker, { type Env, ExecutorContainer } from '../index';
 import {
   type ExecutorIssuerRpc,
+  FAILURE_BACKOFF_MS,
   type IssuedToken,
   IssuerError,
   issuedToken,
@@ -411,6 +412,37 @@ describe('/v1/ready', () => {
 
     expect(result).toEqual({ status: 503, body: { ready: false, reason: 'issuer-refused' } });
     expect(account.seen).toEqual([]);
+  });
+
+  it('carries an ISSUER_ reason code into the readiness reason, but never free text', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const coded = countingIssuer(() => Promise.reject(new Error('ISSUER_ROLE_REVOKED')));
+    expect(await ready(env(coded, introspecting(ACTIVE), metadata))).toEqual({
+      status: 503,
+      body: { ready: false, reason: 'issuer-refused:ISSUER_ROLE_REVOKED' },
+    });
+    resetIssuedTokenCache();
+    resetReadyCache();
+    const text = countingIssuer(() => Promise.reject(new Error('ISSUER_X for org acme')));
+    expect(await ready(env(text, introspecting(ACTIVE), metadata))).toEqual({
+      status: 503,
+      body: { ready: false, reason: 'issuer-refused' },
+    });
+  });
+
+  it('asks a failing issuer at most once per backoff window, then again after it', async () => {
+    let clock = 1_000;
+    const now = () => clock;
+    const issuer = countingIssuer(() => Promise.reject(new Error('ISSUER_ROLE_REVOKED')));
+    for (let i = 0; i < 5; i += 1) {
+      await expect(issuedToken(issuer.binding, now)).rejects.toMatchObject({
+        reason: 'issuer-refused:ISSUER_ROLE_REVOKED',
+      });
+    }
+    expect(issuer.issues).toBe(1);
+    clock += FAILURE_BACKOFF_MS;
+    await expect(issuedToken(issuer.binding, now)).rejects.toBeInstanceOf(IssuerError);
+    expect(issuer.issues).toBe(2);
   });
 
   const NOT_READY: [string, Record<string, unknown> | number, string][] = [
