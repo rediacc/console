@@ -26,7 +26,7 @@ Resolution: not-a-bug | private/account/src/services/config.service.ts:2295 dele
 ### 1670a43f.2 [medium] src/services/config.service.ts:2330
 Anchor: in-diff
 Claim: The new EXECUTOR_GRANTS_PER_PRINCIPAL_MAX refusal path (ExecutorSessionDeniedError 'too many live session grants') has no test in this commit, so a regression in the count or the threshold would pass the suite unnoticed.
-Resolution: open
+Resolution: fixed 5bb18ad820d1eb991ba56b04bc7eef5b387f4c44 | d778be9d 2026-10-26T11:35:39Z
 
 ### 1670a43f.3 [medium] tests/integration/license-renew-rate-limit.test.ts:33
 Anchor: in-diff
