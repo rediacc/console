@@ -191,6 +191,46 @@
     "BENCH_ROOT_PASSWORD": {
       "kind": "no-github-twin",
       "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound only by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_D1_DATABASE": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_MACHINE": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_ORG_A_EMAIL": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_ORG_A_PASSWORD": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_ORG_A_TOTP_SECRET": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_ORG_B_EMAIL": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_ORG_B_PASSWORD": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_ORG_B_TOTP_SECRET": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_STORE_PASSWORD": {
+      "kind": "no-github-twin",
+      "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
+    },
+    "LIVE_CONSOLE_PROBE_SSH_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The SSH probe key for the live console machine, kept in the vault for rotation and revocation only. No profile binds it and no workflow or probe reads it, so no GitHub secret of that name exists to shadow."
     }
   },
   "no_fetch_jobs": {}
