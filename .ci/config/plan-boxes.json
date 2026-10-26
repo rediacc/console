@@ -493,11 +493,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 2,
+      "open": 5,
+      "done": 3,
       "open_sigs": [
         "0b3782d7",
-        "37f7849e",
         "614c11d9",
         "7d4b4cf0",
         "81dda855",
@@ -505,6 +504,7 @@
       ],
       "done_sigs": [
         "323dafd9",
+        "37f7849e",
         "d951622b"
       ]
     },
@@ -1145,11 +1145,10 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 34,
-      "done": 0,
+      "open": 27,
+      "done": 7,
       "open_sigs": [
         "01c7cc61",
-        "09af8480",
         "0c58a49b",
         "149b9f3e",
         "284c51c2",
@@ -1157,7 +1156,6 @@
         "38b1819f",
         "393b3ecc",
         "56426a9e",
-        "59d303f1",
         "5c6a8dc7",
         "69a7d64f",
         "77b26aea",
@@ -1165,25 +1163,28 @@
         "88006538",
         "8bb212c7",
         "8ec6bd76",
-        "9a3891f2",
-        "aa94f54f",
         "abe9b4eb",
         "b4614857",
         "bbd0eed6",
         "bef17e86",
         "cbf436a3",
-        "ce16b55a",
-        "d652a0b2",
         "de5a649d",
         "e07e25cb",
         "e098f28f",
         "e6aa32d5",
         "e85cf1ee",
         "efeb058f",
-        "f2636dd3",
         "f573c2a0"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "09af8480",
+        "59d303f1",
+        "9a3891f2",
+        "aa94f54f",
+        "ce16b55a",
+        "d652a0b2",
+        "f2636dd3"
+      ]
     },
     "agent/plans/PLAN-pytest-parallelism.md": {
       "status": "compacted",

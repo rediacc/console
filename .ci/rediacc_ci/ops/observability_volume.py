@@ -1,14 +1,16 @@
-"""Workers Observability volume per Worker: events from Cloudflare, bytes from Loki and Tempo, projected against the included allowance.
+"""Observability volume per Worker, measured where the data lands: Tempo span counts and Loki bytes, projected against the included allowance.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.observability_volume [--hours 24] [--end 2026-10-24T14:20:00Z] [--retention-days 7]
 
-WHY IT EXISTS (agent/plans/PLAN-cloudflare-spend-guard.md, T4). Workers Observability bills ingestion and storage from 2026-12-01, and no GraphQL dataset reports either. The telemetry query API counts events, not bytes, so the byte figure is an ESTIMATE: events x the mean event size measured on hostinger for the same window.
+WHY IT EXISTS (agent/plans/PLAN-cloudflare-spend-guard.md, T4). Workers Observability bills ingestion and storage from 2026-12-01, but with `persist = false` Cloudflare stores no Worker events, so a Cloudflare-side count reads zero and says nothing about volume. The volume that matters is what the OTLP destinations deliver, and that is measured in the observability stack through the Grafana datasource proxy (the read token and approach of `telemetry_delivery`).
 
-THE COUNT. `POST /accounts/{id}/workers/observability/telemetry/query` with `view: "calculations"`, a `count`, grouped by `$metadata.service` and `$metadata.type` (permission "Workers Observability Write"). The types `span` and `span_event` are the trace signal; every other type (`cf-worker`, `cf-worker-event`) is the log signal.
+THE SPANS. The Tempo span-metrics counter `traces_spanmetrics_calls_total`, read through the Prometheus datasource, `sum by (service) (increase(...[window]))`: spans per service name (the Worker's script name). The size of a span is the JSON body length over the span count of a sample of recent Tempo traces; a sample that yields none falls back to the log mean, and the NOTE line says so.
 
-THE SIZE. Logs: Loki `bytes_over_time` over `count_over_time` per `service_name`, through the Grafana datasource proxy. Spans: a sample of recent Tempo traces, the JSON body length over the span count. A service Loki holds no line for takes the all-service mean, and the line says so (`mean=all`). A span size that cannot be sampled falls back to the log mean and the footer says so.
+THE LOGS. Loki `bytes_over_time` and `count_over_time` per `service_name` over the window: real bytes, not an estimate.
 
-OUTPUT. One line per Worker: events by signal, estimated bytes, projected GB a month and its share of the 50 GB included ingestion, then one total line with the storage steady state (daily bytes x `--retention-days`) against the 10 GB-month included. Exit 0 when the count answered, including an answer of zero stored events (what persist = false asks for, printed as `TOTAL 0 Workers`), 2 on a setup error, 1 when Cloudflare refused the count. The telemetry query takes the Global API Key pair ahead of the scoped token (`telemetry_headers`), because the scoped token cannot run it. Secrets (`CLOUDFLARE_API_TOKEN` or the Global API Key pair, `OBS_GRAFANA_READ_TOKEN`) come from the environment, travel as headers only and never reach argv or output.
+THE CHECK. The Cloudflare telemetry query (`POST /accounts/{id}/workers/observability/telemetry/query`, `view: "calculations"`, a `count` grouped by `$metadata.service`) stays only as a check that stored events stay near zero. A nonzero count prints `WARN <Worker> stored N events` (persist = true somewhere, or events stored before the switch) and never changes the exit code; a missing credential or a refused query prints one NOTE and skips the check. The query takes the Global API Key pair ahead of the scoped token (`telemetry_headers`), because the scoped token cannot run it.
+
+OUTPUT. One line per Worker: spans, log lines, bytes, projected GB a month and its share of the 50 GB included ingestion, then one TOTAL line with the storage steady state (daily bytes x `--retention-days`) against the 10 GB-month included. Services that are not Workers (`NON_WORKER`: the CLI, renet and syslog) are dropped and counted in a footer. Exit 0 when Tempo and Loki answered (an empty window is `TOTAL 0 Workers`), 2 on a setup error, 1 when a Grafana read failed. Secrets (`OBS_GRAFANA_READ_TOKEN`, the optional Cloudflare credential) come from the environment, travel as headers only and never reach argv or output. The bws profile that supplies the Grafana token alone is `telemetry-probe`.
 """
 
 from __future__ import annotations
@@ -16,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -35,6 +38,10 @@ TRACE_TYPES = frozenset({"span", "span_event"})
 TIMEOUT_S = 60.0
 USER_AGENT = "rediacc-observability-volume/1"
 TRACE_SAMPLE = 20
+PROMETHEUS_UID = "prometheus"
+SPAN_COUNTER = "traces_spanmetrics_calls_total"
+#: Services in Tempo and Loki that are not Cloudflare Workers.
+NON_WORKER = re.compile(r"^(renet-|rediacc-cli$|syslog$)")
 
 #: `(method, url, headers, body)` -> `(status, decoded JSON or None)`. 0 means no HTTP answer.
 Transport = Callable[[str, str, Mapping[str, str], object | None], tuple[int, object]]
@@ -243,6 +250,37 @@ def loki_log_sizes(
     return {s: (b, lines_by[s]) for s, b in bytes_by.items() if lines_by.get(s, 0) > 0}
 
 
+def tempo_span_counts(
+    transport: Transport, grafana: str, token: str, window_s: int, end_s: float
+) -> dict[str, float]:
+    """`{service: spans}` Tempo's span-metrics counter saw over the window, through the Prometheus datasource."""
+    data = _grafana_get(
+        transport,
+        grafana,
+        token,
+        PROMETHEUS_UID,
+        "/api/v1/query",
+        {
+            "query": "sum by (service) (increase(%s[%ds]))" % (SPAN_COUNTER, window_s),
+            "time": int(end_s),
+        },
+    )
+    body = data.get("data") if isinstance(data, dict) else None
+    result = body.get("result") if isinstance(body, dict) else None
+    if not isinstance(result, list):
+        raise VolumeError("prometheus returned no result vector")
+    out: dict[str, float] = {}
+    for row in result:
+        service = (row.get("metric") or {}).get("service")
+        value = row.get("value")
+        if service and isinstance(value, list) and len(value) == 2:
+            try:
+                out[str(service)] = out.get(str(service), 0.0) + float(value[1])
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
 def tempo_span_size(
     transport: Transport, grafana: str, token: str, from_s: float, end_s: float
 ) -> float | None:
@@ -278,38 +316,32 @@ def tempo_span_size(
 
 
 def estimate(
-    counts: Mapping[str, Mapping[str, int]],
+    spans: Mapping[str, float],
     log_sizes: Mapping[str, tuple[float, float]],
     span_bytes: float | None,
-) -> tuple[list[dict], bool]:
-    """Per-Worker rows and whether the span size fell back to the log mean."""
+) -> tuple[list[dict], bool, int]:
+    """Per-Worker rows, whether the span size fell back to the log mean, and how many non-Worker services were dropped."""
     all_bytes = sum(b for b, _ in log_sizes.values())
     all_lines = sum(n for _, n in log_sizes.values())
     overall_log = all_bytes / all_lines if all_lines else 0.0
-    span_fallback = span_bytes is None
+    span_mean = overall_log if span_bytes is None else span_bytes
+    services = sorted(set(spans) | set(log_sizes))
+    workers = [s for s in services if not NON_WORKER.match(s)]
     rows = []
-    for service in sorted(counts):
-        by_type = counts[service]
-        spans = sum(n for t, n in by_type.items() if t in TRACE_TYPES)
-        logs = sum(n for t, n in by_type.items() if t not in TRACE_TYPES)
-        if service in log_sizes:
-            b, n = log_sizes[service]
-            log_mean, basis = b / n, "own"
-        else:
-            log_mean, basis = overall_log, "all"
-        span_mean = overall_log if span_bytes is None else span_bytes
+    for service in workers:
+        log_bytes, log_lines = log_sizes.get(service, (0.0, 0.0))
+        n_spans = spans.get(service, 0.0)
         rows.append(
             {
                 "service": service,
-                "spans": spans,
-                "logs": logs,
-                "log_mean": log_mean,
+                "spans": n_spans,
+                "log_lines": log_lines,
+                "log_bytes": log_bytes,
                 "span_mean": span_mean,
-                "basis": basis,
-                "bytes": spans * span_mean + logs * log_mean,
+                "bytes": n_spans * span_mean + log_bytes,
             }
         )
-    return rows, span_fallback
+    return rows, span_bytes is None, len(services) - len(workers)
 
 
 def render(
@@ -318,6 +350,7 @@ def render(
     window_s: int,
     retention_days: float,
     out=None,
+    dropped: int = 0,
 ) -> None:
     out = out or sys.stdout
     days = window_s / 86400.0
@@ -326,17 +359,16 @@ def render(
         monthly_gb = r["bytes"] / days * 30 / GB
         total += r["bytes"]
         print(
-            "%-28s spans=%-7d logs=%-7d bytes=%-11d month=%.4f GB (%.3f%% of %.0f GB) mean_log=%.0f(%s) mean_span=%.0f"
+            "%-28s spans=%-7d log_lines=%-7d log_bytes=%-10d bytes=%-11d month=%.4f GB (%.3f%% of %.0f GB) mean_span=%.0f"
             % (
                 r["service"],
                 r["spans"],
-                r["logs"],
+                r["log_lines"],
+                r["log_bytes"],
                 r["bytes"],
                 monthly_gb,
                 monthly_gb / INGESTION_ALLOWANCE_GB * 100,
                 INGESTION_ALLOWANCE_GB,
-                r["log_mean"],
-                r["basis"],
                 r["span_mean"],
             ),
             file=out,
@@ -358,8 +390,40 @@ def render(
         ),
         file=out,
     )
+    if dropped:
+        print("NOTE %d non-Worker service(s) left out" % dropped, file=out)
     if span_fallback:
         print("NOTE span size not sampled from Tempo; the log mean stands in", file=out)
+
+
+def stored_check(
+    env: Mapping[str, str],
+    transport: Transport,
+    window_s: int,
+    end_s: float,
+    out,
+) -> None:
+    """Print a WARN per Worker Cloudflare still stores events for, or one NOTE when the check cannot run. Never fatal."""
+    try:
+        counts = event_counts(
+            transport,
+            telemetry_headers(env),
+            env.get("CLOUDFLARE_ACCOUNT_ID") or DEFAULT_ACCOUNT_ID,
+            int((end_s - window_s) * 1000),
+            int(end_s * 1000),
+        )
+    except VolumeError as exc:
+        print("NOTE Cloudflare stored-event check skipped: %s" % exc, file=out)
+        return
+    stored = {s: sum(t.values()) for s, t in counts.items() if sum(t.values()) > 0}
+    for service in sorted(stored):
+        print(
+            "WARN %s stored %d events at Cloudflare (persist = false expects 0)"
+            % (service, stored[service]),
+            file=out,
+        )
+    if not stored:
+        print("OK Cloudflare stored 0 events in the window", file=out)
 
 
 def run(
@@ -373,20 +437,14 @@ def run(
     out=None,
 ) -> int:
     err_out = sys.stderr
+    out = out or sys.stdout
+    grafana_token = env.get("OBS_GRAFANA_READ_TOKEN", "")
+    if not grafana_token:
+        print("OBS_GRAFANA_READ_TOKEN is not set", file=err_out)
+        return 2
+    window_s = int(hours * 3600)
     try:
-        headers = telemetry_headers(env)
-        grafana_token = env.get("OBS_GRAFANA_READ_TOKEN", "")
-        if not grafana_token:
-            print("OBS_GRAFANA_READ_TOKEN is not set", file=err_out)
-            return 2
-        window_s = int(hours * 3600)
-        counts = event_counts(
-            transport,
-            headers,
-            env.get("CLOUDFLARE_ACCOUNT_ID") or DEFAULT_ACCOUNT_ID,
-            int((end_s - window_s) * 1000),
-            int(end_s * 1000),
-        )
+        spans = tempo_span_counts(transport, grafana, grafana_token, window_s, end_s)
         log_sizes = loki_log_sizes(transport, grafana, grafana_token, window_s, end_s)
         try:
             span_bytes = tempo_span_size(transport, grafana, grafana_token, end_s - window_s, end_s)
@@ -394,16 +452,10 @@ def run(
             span_bytes = None
     except VolumeError as exc:
         print("observability_volume: %s" % exc, file=err_out)
-        return 1 if "telemetry query" in str(exc) else 2
-    if not counts:
-        # The query answered, and Cloudflare stores nothing: the state persist = false asks for (PLAN-telemetry-export T15), not a failed read. A refused or malformed answer already left above as exit 1 or 2.
-        print(
-            "TOTAL 0 Workers: Cloudflare stored no events in the window (expected with persist = false)",
-            file=out or sys.stdout,
-        )
-        return 0
-    rows, span_fallback = estimate(counts, log_sizes, span_bytes)
-    render(rows, span_fallback, window_s, retention_days, out)
+        return 1
+    rows, span_fallback, dropped = estimate(spans, log_sizes, span_bytes)
+    render(rows, span_fallback, window_s, retention_days, out, dropped)
+    stored_check(env, transport, window_s, end_s, out)
     return 0
 
 

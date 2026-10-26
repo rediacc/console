@@ -29,9 +29,18 @@ def aggregate(service: str, kind: str, value: int) -> dict:
 
 class Fake:
     def __init__(
-        self, aggregates, loki_bytes=None, loki_lines=None, telemetry_status=200, tempo=True
+        self,
+        aggregates,
+        loki_bytes=None,
+        loki_lines=None,
+        telemetry_status=200,
+        tempo=True,
+        spans=None,
+        prom_status=200,
     ):
         self.aggregates = aggregates
+        self.spans = spans if spans is not None else {"a": 10.0}
+        self.prom_status = prom_status
         self.loki_bytes = loki_bytes if loki_bytes is not None else {"a": 1000.0}
         self.loki_lines = loki_lines if loki_lines is not None else {"a": 10.0}
         self.telemetry_status = telemetry_status
@@ -49,6 +58,17 @@ class Fake:
             return 200, {
                 "success": True,
                 "result": {"calculations": [{"aggregates": self.aggregates}]},
+            }
+        if "/uid/prometheus/" in url:
+            if self.prom_status != 200:
+                return self.prom_status, None
+            return 200, {
+                "data": {
+                    "result": [
+                        {"metric": {"service": s}, "value": [END, str(v)]}
+                        for s, v in self.spans.items()
+                    ]
+                }
             }
         parts = urllib.parse.urlsplit(url)
         qs = urllib.parse.parse_qs(parts.query)
@@ -85,28 +105,24 @@ def test_counts_are_grouped_by_service_and_type():
     ]
 
 
-def test_bytes_use_the_own_mean_and_fall_back_to_the_all_service_mean():
-    rows, fallback = ov.estimate(
-        {"a": {"cf-worker": 4}, "b": {"cf-worker": 2}},
-        {"a": (1000.0, 10.0)},
-        None,
+def test_spans_and_log_bytes_are_summed_per_worker_and_non_workers_dropped():
+    rows, fallback, dropped = ov.estimate(
+        {"a": 12.0, "renet-list": 5.0, "rediacc-cli": 1.0},
+        {"a": (1000.0, 10.0), "b": (500.0, 5.0)},
+        2000.0,
     )
     by = {r["service"]: r for r in rows}
-    assert by["a"]["bytes"] == 4 * 100
-    assert by["a"]["basis"] == "own"
-    assert by["b"]["bytes"] == 2 * 100
-    assert by["b"]["basis"] == "all"
-    assert fallback is True
-
-
-def test_spans_and_logs_are_sized_separately():
-    rows, fallback = ov.estimate(
-        {"a": {"span": 10, "span_event": 2, "cf-worker": 5}}, {"a": (1000.0, 10.0)}, 2000.0
-    )
-    assert rows[0]["spans"] == 12
-    assert rows[0]["logs"] == 5
-    assert rows[0]["bytes"] == 12 * 2000 + 5 * 100
+    assert set(by) == {"a", "b"}
+    assert by["a"]["bytes"] == 12 * 2000 + 1000
+    assert by["b"]["bytes"] == 500
+    assert dropped == 2
     assert fallback is False
+
+
+def test_span_size_falls_back_to_the_log_mean():
+    rows, fallback, _ = ov.estimate({"a": 4.0}, {"a": (1000.0, 10.0)}, None)
+    assert rows[0]["bytes"] == 4 * 100 + 1000
+    assert fallback is True
 
 
 def test_projection_scales_the_window_to_thirty_days():
@@ -115,10 +131,9 @@ def test_projection_scales_the_window_to_thirty_days():
         {
             "service": "a",
             "spans": 0,
-            "logs": 1,
-            "log_mean": 1.0,
+            "log_lines": 1,
+            "log_bytes": 1e9,
             "span_mean": 1.0,
-            "basis": "own",
             "bytes": 1e9,
         }
     ]
@@ -126,6 +141,18 @@ def test_projection_scales_the_window_to_thirty_days():
     text = out.getvalue()
     assert text.count("month=30.0000 GB (60.000% of 50 GB") == 2  # the row and the total
     assert "storage=7.0000 GB (70.000% of 10 GB-month, retention 7 d)" in text
+
+
+def test_tempo_span_counts_read_the_spanmetrics_counter():
+    fake = Fake([], spans={"w1": 7.0, "w2": 3.0})
+    assert ov.tempo_span_counts(fake, ov.GRAFANA_ORIGIN, GRAFANA_TOKEN, 86400, END) == {
+        "w1": 7.0,
+        "w2": 3.0,
+    }
+    url = fake.calls[0][1]
+    assert "/uid/prometheus/" in url
+    assert "traces_spanmetrics_calls_total" in urllib.parse.unquote_plus(url)
+    assert "86400s" in urllib.parse.unquote_plus(url)
 
 
 def test_tempo_mean_span_size():
@@ -137,35 +164,83 @@ def test_tempo_mean_span_size():
 
 
 def test_full_run_prints_a_row_per_worker_and_no_secret(capsys):
-    fake = Fake([aggregate("a", "span", 10), aggregate("a", "cf-worker", 10)])
+    fake = Fake([], spans={"a": 10.0, "renet-list": 99.0})
     rc = ov.run(ENV, fake, hours=24, end_s=END, retention_days=7)
     captured = capsys.readouterr()
     assert rc == 0
-    assert captured.out.count("\n") == 2
     assert captured.out.startswith("a ")
+    assert "spans=10 " in captured.out
     assert "TOTAL 1 Workers" in captured.out
+    assert "1 non-Worker" in captured.out
+    assert "OK Cloudflare stored 0 events" in captured.out
     for secret in (TOKEN, GRAFANA_TOKEN):
         assert secret not in captured.out + captured.err
         assert all(secret not in json.dumps([c[0], c[1], c[3]]) for c in fake.calls)
 
 
-def test_zero_stored_events_is_exit_0_and_says_so(capsys):
-    """persist = false means Cloudflare stores nothing; an answered count of zero is that state, not a failed read."""
-    assert ov.run(ENV, Fake([]), hours=24, end_s=END, retention_days=7) == 0
+def test_an_empty_window_is_exit_0(capsys):
+    assert (
+        ov.run(
+            ENV,
+            Fake([], spans={}, loki_bytes={}, loki_lines={}),
+            hours=24,
+            end_s=END,
+            retention_days=7,
+        )
+        == 0
+    )
     assert "TOTAL 0 Workers" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("result", [{}, {"calculations": None}, {"calculations": "x"}])
-def test_a_malformed_count_answer_is_exit_1_not_a_zero(capsys, result):
-    """A result with no calculations list must not read as an empty window and exit 0 (review 930f0082.2)."""
+def test_stored_events_at_cloudflare_warn_by_worker_and_stay_exit_0(capsys):
+    fake = Fake(
+        [aggregate("a", "cf-worker", 4), aggregate("a", "span", 2), aggregate("b", "span", 0)]
+    )
+    assert ov.run(ENV, fake, hours=24, end_s=END, retention_days=7) == 0
+    out = capsys.readouterr().out
+    assert "WARN a stored 6 events" in out
+    assert "WARN b" not in out
 
-    def transport(_method, url, _headers, _body):
+
+def test_a_refused_cloudflare_check_is_a_note_not_a_failure(capsys):
+    rc = ov.run(ENV, Fake([], telemetry_status=403), hours=24, end_s=END, retention_days=7)
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "NOTE Cloudflare stored-event check skipped" in out
+    assert "Authentication error" in out
+
+
+def test_no_cloudflare_credential_skips_the_check(capsys):
+    rc = ov.run(
+        {"OBS_GRAFANA_READ_TOKEN": GRAFANA_TOKEN}, Fake([]), hours=24, end_s=END, retention_days=7
+    )
+    assert rc == 0
+    assert (
+        "NOTE Cloudflare stored-event check skipped: no Cloudflare credential"
+        in capsys.readouterr().out
+    )
+
+
+def test_a_failed_prometheus_read_is_exit_1(capsys):
+    rc = ov.run(ENV, Fake([], prom_status=500), hours=24, end_s=END, retention_days=7)
+    assert rc == 1
+    assert "prometheus" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("result", [{}, {"calculations": None}, {"calculations": "x"}])
+def test_a_malformed_count_answer_is_a_note_not_a_zero(capsys, result):
+    """A result with no calculations list must not read as zero stored events (review 930f0082.2)."""
+    inner = Fake([])
+
+    def transport(method, url, headers, body):
         if "/telemetry/query" in url:
             return 200, {"success": True, "result": result}
-        return 404, None
+        return inner(method, url, headers, body)
 
-    assert ov.run(ENV, transport, hours=24, end_s=END, retention_days=7) == 1
-    assert "no calculations list" in capsys.readouterr().err
+    assert ov.run(ENV, transport, hours=24, end_s=END, retention_days=7) == 0
+    out = capsys.readouterr().out
+    assert "no calculations list" in out
+    assert "OK Cloudflare stored 0" not in out
 
 
 def test_the_telemetry_query_prefers_the_global_key_over_the_scoped_token():
@@ -173,12 +248,6 @@ def test_the_telemetry_query_prefers_the_global_key_over_the_scoped_token():
     assert set(ov.telemetry_headers(both)) == {"X-Auth-Key", "X-Auth-Email"}
     assert ov.cf_headers(both) == {"Authorization": "Bearer t"}, "GraphQL keeps the scoped token"
     assert ov.telemetry_headers({"CLOUDFLARE_API_TOKEN": "t"}) == {"Authorization": "Bearer t"}
-
-
-def test_a_refused_count_is_exit_1_with_cloudflares_text(capsys):
-    rc = ov.run(ENV, Fake([], telemetry_status=403), hours=24, end_s=END, retention_days=7)
-    assert rc == 1
-    assert "Authentication error" in capsys.readouterr().err
 
 
 def test_missing_grafana_token_is_exit_2(capsys):
