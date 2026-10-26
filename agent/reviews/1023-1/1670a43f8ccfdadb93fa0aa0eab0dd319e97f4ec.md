@@ -21,7 +21,7 @@ Body-Sig: 5b3e36a4cc54a209
 ### 1670a43f.1 [medium] src/services/config.service.ts:2322
 Anchor: in-diff
 Claim: The per-executor cap counts every configExecutorGrants row for the principal, because the where clause filters only on store and executorTokenId and not on expiresAt, so expired grants count against the 1000 'live grants' limit and can lock an executor out (new grants refused) even when it holds no live grant, unless some other code purges expired rows (not visible in this diff).
-Resolution: open
+Resolution: not-a-bug | private/account/src/services/config.service.ts:2295 deletes every expired configExecutorGrants row of the store (lt expiresAt nowIso) before the cap count at :2322, so expired rows never count; test "does not count expired rows against the cap" in tests/integration/executor-grant-principal.test.ts | d778be9d 2026-10-26T10:13:15Z
 
 ### 1670a43f.2 [medium] src/services/config.service.ts:2330
 Anchor: in-diff
@@ -31,14 +31,14 @@ Resolution: open
 ### 1670a43f.3 [medium] tests/integration/license-renew-rate-limit.test.ts:33
 Anchor: in-diff
 Claim: The 'lets a normal renewal cadence through' assertion changed from exactly 500 to not.toBe(429), so it now passes for any non-429 status, including a 404 from a broken route, and no longer shows the request reached the handler.
-Resolution: open
+Resolution: fixed 91b9a55c4f869cf398f76d7a0787b5b18c6e2094 | d778be9d 2026-10-26T10:16:11Z
 
 ### 1670a43f.4 [low] src/middleware/rate-limit.ts:160
 Anchor: in-diff
 Claim: When the map is at the cap and many live keys have suppressed > 0, the victim scan walks all ~10,000 entries on every insert of a new key, adding an O(n) cost to each logged event during a flood of distinct keys.
-Resolution: open
+Resolution: fixed 91b9a55c4f869cf398f76d7a0787b5b18c6e2094 | d778be9d 2026-10-26T10:16:12Z
 
 ### 1670a43f.5 [low] tests/integration/rotation-rdc-config.test.ts:29
 Anchor: in-diff
 Claim: sources() now reads every non-.json file as text, including Markdown and binary files, so any non-comment prose or binary content mentioning ./rdc.sh will be flagged as a violation by the gate, a scope the test was not written for.
-Resolution: open
+Resolution: fixed 91b9a55c4f869cf398f76d7a0787b5b18c6e2094 | d778be9d 2026-10-26T10:16:12Z
