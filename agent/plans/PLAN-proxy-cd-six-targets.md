@@ -370,6 +370,27 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
 
 Bench notes: the ROOT_EMAIL user, its org and a COMMUNITY subscription were registered through `POST /account/api/v1/auth/register` (ids 65b5d9d0, a49f455c, eba8a7c0) because deploy_bench and reset_bench seeded none (fixed in 27861278: deploy_bench now seeds the user and reset_bench still removes it, so every reset needs a following deploy_bench or `--seed-root`; `--seed-root` live rc=0), and the issuer refused ISSUER_OWNER_UNKNOWN until then; the first issued token was c032d177 (issuer key executor:bench:eu). `console_executor --enable --target bench --region eu` ran under the deploy-proxy-bench profile (rc=0). The old EXECUTOR_TOKEN secret was deleted from rediacc-proxy-bench and token 5375a8fe revoked. telemetry_delivery: 8 hosts, 16 signals, 0 silent. The image push first failed on a single 226 MB layer (registry commit timeout) and passed once the Dockerfile split bundle, natives and renet into separate layers (907cd2892). The bench proxy was deployed again between the first row and the redeploy row: wrangler reported 94c4be16 as the version live before the redeploy, not the ede18ed0 of the first row, and that intermediate deploy has no row of its own.
 
+### L0 live record, 2026-10-26 (box L0 not ticked: E1 is pending)
+
+- Enable: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --enable --target bench` rc=0 (bare run, re-executed under the deploy-proxy-bench profile). EXECUTOR_MODE was already set; this was a re-put, read back as listed among 37 secrets on rediacc-account-bench. Account Worker version 7967fbfa-7cdc-4f91-a035-cd3c4ad50866 (source Secret Change, 21:12:53Z), previous d8a1ae5a-28b5-48ad-ae4d-7af6351af2a5. Rollback: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --disable --target bench`, or `npx wrangler rollback d8a1ae5a-28b5-48ad-ae4d-7af6351af2a5 --config workers/account/wrangler.bench.toml`. Proxy stays at 41ed108c (cap 25, smoke rc 0); account migration 0066 unchanged.
+- EXECUTOR_TOKEN on rediacc-proxy-bench: `wrangler secret list --format json` returned `[]`, so it is already deleted (no action).
+- Token 5375a8fe: already revoked (revoked_at 2026-10-26T04:31:51Z), no action.
+- Accept query on the bench D1 `SELECT count(*) FROM api_tokens WHERE ip_binding='cloudflare' AND revoked_at IS NULL` first returned 1: token ebaab8d8 (`proxy-bench-executor-p2`, scopes proxy:exec and audit:write, no issuer_key, created 2026-10-24, last used 2026-10-24). No ops tool or non-elevated route revokes a token (the root admin route needs an elevated session), so it was revoked by a direct D1 write (`UPDATE api_tokens SET revoked_at=now WHERE id LIKE 'ebaab8d8%' AND revoked_at IS NULL`, changes=1, operator-approved). The query then returned 0. Rollback of that write: `UPDATE api_tokens SET revoked_at=NULL WHERE id LIKE 'ebaab8d8%'`. D1 bookmark after the write: 000000dd-00000002-00005110-3ccb4bd814eb61bd1499b36849c08dbf.
+- U4 (ids are 8-char prefixes; one root user, one owned org, one subscription found in each database):
+
+| D1 | root user | org | subscription | plan, status |
+|---|---|---|---|---|
+| account-db-bench | 65b5d9d0 | a49f455c | eba8a7c0 | COMMUNITY, inactive |
+| edge-account-db-eu | a0e9466f | 35eb74dc | 63284afd | BUSINESS, active |
+| edge-account-db-us | 265e5642 | 35eb74dc | 63284afd | COMMUNITY, inactive |
+| edge-account-db-asia | c865c3a1 | 35eb74dc | 63284afd | COMMUNITY, inactive |
+| account-db-eu | 8e574169 | 35eb74dc | 63284afd | BUSINESS, active |
+| account-db-us | 52bee774 | 35eb74dc | 63284afd | COMMUNITY, inactive |
+| account-db-asia | 118a064d | 35eb74dc | 63284afd | COMMUNITY, inactive |
+
+  U4 holds in the sense that every database has the root user, an owned org and a subscription. The subscription is `active` only in edge-eu and eu; the other five carry a COMMUNITY `inactive` one (live to the issuer's ranking, but not a `webConsole` plan). The org and subscription ids repeat across the six non-bench databases.
+- End-to-end machine: pending operator item #900fdadc (hostinger probe key). E1 against bench was not run in this task.
+
 ## Decisions taken as defaults (open to operator veto)
 
 1. The executor owner is the ROOT_EMAIL user and its owned org, with `EXECUTOR_ISSUER_ORG_ID` as an override. Superseded by PLAN-console-executor-multi-org, which removes ROOT_EMAIL ownership. Token TTL is 45 minutes, renewed at 80%.
