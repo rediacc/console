@@ -200,8 +200,8 @@ def put_object(key: str, source: pathlib.Path, content_type: str) -> None:
         )
 
 
-def list_versions() -> list[str]:
-    """Every version with any object under `executor/v<V>/`, so a half-deleted version is listed and a later retain retries it."""
+def list_versions(*, complete_only: bool = False) -> list[str]:
+    """Every version with any object under `executor/v<V>/`, so a half-deleted version is listed and a later retain retries it; `complete_only` keeps just the versions whose manifest exists (the staged ones)."""
     proc = _aws(["list-objects-v2", "--prefix", PREFIX, "--output", "json"])
     if proc.returncode != 0:
         raise ArtifactError(
@@ -212,8 +212,8 @@ def list_versions() -> list[str]:
     contents = json.loads(text).get("Contents") or [] if text.strip() else []
     found = set()
     for entry in contents:
-        match = re.match(r"^executor/v([0-9]+\.[0-9]+\.[0-9]+)/[^/]+$", entry["Key"])
-        if match:
+        match = re.match(r"^executor/v([0-9]+\.[0-9]+\.[0-9]+)/([^/]+)$", entry["Key"])
+        if match and (not complete_only or match.group(2) == MANIFEST):
             found.add(match.group(1))
     return sorted(found, key=lambda v: semver(v) or (0, 0, 0))
 
@@ -394,7 +394,9 @@ def stage_local(dest: pathlib.Path, root: pathlib.Path, git_sha: str) -> dict[st
     dest.mkdir(parents=True, exist_ok=True)
     (dest / MANIFEST).unlink(missing_ok=True)
     for name, source in sources.items():
-        shutil.copyfile(source, dest / name)
+        shutil.copy2(
+            source, dest / name
+        )  # keeps the exec bit renet needs to run from the stage dir
     build_natives_tar(root / "node_modules", root / "package-lock.json", dest / NATIVES)
     manifest = build_manifest(LOCAL_VERSION, git_sha, {name: dest / name for name in FILES})
     (dest / MANIFEST).write_bytes(manifest_bytes(manifest))
@@ -405,9 +407,15 @@ def stage_local(dest: pathlib.Path, root: pathlib.Path, git_sha: str) -> dict[st
 
 
 def select_prune(
-    versions: Sequence[str], current: str, previous: str, keep: int = KEEP_RELEASES
+    versions: Sequence[str],
+    current: str,
+    previous: str,
+    keep: int = KEEP_RELEASES,
+    complete: Sequence[str] | None = None,
 ) -> list[str]:
     """The staged versions that may be deleted: everything outside the newest `keep`, except the current and previous production versions.
+
+    `complete` names the versions that carry a manifest; the `keep` slots are counted among those only, so a partial version (a stage that died before its manifest) never pushes a complete one out. Omitted, every listed version counts.
 
     Refuses an empty `current` (unknown is never prunable) and a version that is not X.Y.Z.
     """
@@ -422,7 +430,8 @@ def select_prune(
             raise ArtifactError("%s: %r is not a plain release version" % (SELF, version))
         ordered.append((triple, version))
     ordered.sort(reverse=True)
-    protected = {version for _, version in ordered[: max(keep, 0)]}
+    slots = ordered if complete is None else [(t, v) for t, v in ordered if v in set(complete)]
+    protected = {version for _, version in slots[: max(keep, 0)]}
     protected.update(v for v in (current, previous) if v)
     return sorted(
         (v for _, v in ordered if v not in protected), key=lambda v: semver(v) or (0, 0, 0)
@@ -505,7 +514,13 @@ def main(argv: list[str] | None = None) -> int:
             )
             print("%s: local build staged into %s (%s)" % (SELF, args.dest, manifest["version"]))
         else:
-            doomed = select_prune(list_versions(), args.current, args.previous, args.keep)
+            doomed = select_prune(
+                list_versions(),
+                args.current,
+                args.previous,
+                args.keep,
+                complete=list_versions(complete_only=True),
+            )
             for version in doomed:
                 print("%s: %s v%s" % (SELF, "deleting" if args.apply else "would delete", version))
                 if args.apply:

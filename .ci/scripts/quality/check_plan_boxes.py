@@ -155,12 +155,12 @@ def sig(task: str) -> str:
 
 
 def loose_sig(task: str) -> str:
-    """`sig` with directory prefixes stripped from the paths the box cites.
+    """`sig` with directory prefixes stripped from the paths the box cites and a `check:ci-` gate name read as `check:`.
 
     A box's identity is the TASK, not the spelling of the paths in it. Without this, moving a cited file re-signs every box that cites it and G-A1 reports the move as a DELETION, offering three remedies (tick it, mark it `[?]`, archive the plan) of which none is true and all three falsify the record. Measured 2026-09-09: moving 125 gates from `scripts/` to `scripts/gates/` reddened
     four boxes across three plans that way.
 
-    `_norm` cannot do this itself -- it is shared with the Stop hook's task matching, where a cited directory is real evidence about which file a claim means. The discrimination lost here is two boxes whose first 120 normalised characters differ ONLY by a directory prefix; the basename stays, so everything else is kept.
+    `_norm` cannot do this itself -- it is shared with the Stop hook's task matching, where a cited directory is real evidence about which file a claim means. The discrimination lost here is two boxes whose first 120 normalised characters differ ONLY by a directory prefix or by `check:ci-` against `check:` on a gate name (the same gate under two spellings, so a deleted box can match a moved one); the basename and the rest of the gate name stay, so everything else is kept.
     """
     return hashlib.sha256(
         PFID._norm(GATE_CI_RE.sub("check:", PATHISH_RE.sub(r"\1", task)))[:120].encode("utf-8")

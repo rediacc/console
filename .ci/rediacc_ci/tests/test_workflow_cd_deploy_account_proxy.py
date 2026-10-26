@@ -4,6 +4,7 @@ What this pins, read structurally through `rediacc_ci.workflows` (the repo's one
   - the forward order inside the per-region deploy job: record-before, bootstrap (only when the proxy Worker does not exist), the account deploy, the Worker secrets, the proxy deploy, the proxy smoke, the executor enable;
   - the enable condition, exactly `steps.proxy_smoke.outcome == 'success'` (ruling "Closed until smoke passes");
   - the rollback step: `failure()`, after the forward steps, running `deploy_record rollback`, whose own reverse order (executor, proxy, then the printed account and D1 commands) `test_deploy_deploy_record.py` drives;
+  - the presence refusal: a release older than the proxy CD steps fails on every target instead of skipping the proxy steps;
   - the record written `always()` and uploaded;
   - the edge-only stage job with `actions: read`, which the deploy job waits on;
   - cd-v2.yml (edge and hotfix) and promote-stable.yml passing `version`, edge also `ci_run_id`;
@@ -327,5 +328,5 @@ def test_a_release_older_than_the_proxy_steps_fails_on_every_target(deploy, tmp_
 
 
 def test_no_proxy_step_is_skipped_on_a_presence_output(deploy):
-    """The presence check refuses instead of gating: no later step may carry an `if:` on its outputs, which is how the old stable skip worked."""
-    assert [base_name(s) for s in deploy if "proxy_cd" in str(s.get("if") or "")] == []
+    """The presence check refuses instead of gating: no later step may reference `proxy_cd` in any field (`if:`, `run:`, `env:` or `with:`), which is how the old stable skip worked."""
+    assert [base_name(s) for s in deploy if "proxy_cd" in repr(s)] == []

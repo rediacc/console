@@ -25,8 +25,8 @@ and then four requests through the Worker, in this order:
   2. A STRANGER's bearer, which the fake account answers `active: false`: 401, the Worker DID ask
      with the issued token, and no container is started;
   3. THE CALLER's bearer, answered `active: true`, an orgId and scope `proxy:exec`: 200 with
-     `mode: "container"` and a `cliVersion` equal to the version of the renet staged into the
-     image, the Worker asked with the issued token, and a `workerd-rediacc-proxy-dev-*` container
+     `mode: "container"` and a `cliVersion` equal to `node cli-bundle.cjs --version` of the bundle
+     staged into the image, the Worker asked with the issued token, and a `workerd-rediacc-proxy-dev-*` container
      now exists.
 
 The refusals come before the 200, because after it a container exists and "no container was started" could no longer be read. The `cliVersion` equality is what proves the 200 came from the executor inside the image rather than from anything else answering on the port. A Worker that introspects with anything but the stub's issued token gets 401 from the fake account, so the stranger and caller probes also prove the ISSUER binding reached the stub.
@@ -239,11 +239,12 @@ def verdict(obs: dict) -> list[str]:
             "%s through the Worker reports mode %r, expected 'container'"
             % (PROBE_PATH, info.get("mode"))
         )
-    elif info.get("cliVersion") != obs.get("renet_version"):
+    # The CLI's own version, not renet's: the two agree only when a release injects one version into both, so a local build (bundle 0.0.0-dev, renet from its tag) would fail a renet comparison while proving nothing more. proxy_image_smoke holds server-info to the bundle the same way.
+    elif info.get("cliVersion") != obs.get("bundle_version"):
         out.append(
-            "%s reports cliVersion %r but the staged renet is %r, so the 200 did not come from "
+            "%s reports cliVersion %r but the staged bundle says %r, so the 200 did not come from "
             "the executor image this run built"
-            % (PROBE_PATH, info.get("cliVersion"), obs.get("renet_version"))
+            % (PROBE_PATH, info.get("cliVersion"), obs.get("bundle_version"))
         )
     if not obs.get("caller_introspected"):
         out.append("the Worker never introspected the valid bearer with the issued token")
@@ -283,6 +284,7 @@ HEALTHY: dict = {
     "caller_body": '{"mode":"container","cliVersion":"1.2.3"}',
     "caller_info": {"mode": "container", "cliVersion": "1.2.3"},
     "renet_version": "1.2.3",
+    "bundle_version": "1.2.3",
     "caller_introspected": True,
     "caller_containers": [CONTAINER_PREFIX + "ExecutorContainer-abc"],
     "left_behind": [],
@@ -306,7 +308,7 @@ PLANTS: tuple[tuple[str, dict], ...] = (
         {"caller_info": {"mode": "daemon", "cliVersion": "1.2.3"}},
     ),
     (
-        "a cliVersion that is not the staged renet's is a finding",
+        "a cliVersion that is not the staged bundle's is a finding",
         {"caller_info": {"mode": "container", "cliVersion": "0.0.0-dev"}},
     ),
     ("a caller never introspected is a finding", {"caller_introspected": False}),
@@ -853,9 +855,17 @@ def run(root: pathlib.Path, plant: str | None = None) -> int:
             return CANNOT_RUN
     staged = root.joinpath(*proxy_image_smoke.STAGE_DIR, executor_artifacts.RENET)
     try:
-        out = subprocess.run(
-            [str(staged), "version"], capture_output=True, text=True, timeout=30, check=False
-        )
+        try:
+            out = subprocess.run(
+                [str(staged), "version"], capture_output=True, text=True, timeout=30, check=False
+            )
+        except OSError as exc:
+            print(
+                "✗ CANNOT RUN: the staged renet %s cannot be executed (%s). Nothing was checked."
+                % (staged, exc),
+                file=sys.stderr,
+            )
+            return CANNOT_RUN
         renet_version = proxy_image_smoke.parse_renet_version(out.stdout + out.stderr)
         if renet_version is None:
             print(
@@ -864,8 +874,33 @@ def run(root: pathlib.Path, plant: str | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
-        print("  renet %s for the image: %s" % (renet_version, how))
+        bundle = root.joinpath(*proxy_image_smoke.STAGE_DIR, executor_artifacts.BUNDLE)
+        try:
+            bout = subprocess.run(
+                ["node", str(bundle), "--version"],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+        except OSError as exc:
+            print(
+                "✗ CANNOT RUN: node cannot run the staged bundle %s (%s). Nothing was checked."
+                % (bundle, exc),
+                file=sys.stderr,
+            )
+            return CANNOT_RUN
+        bundle_version = bout.stdout.strip()
+        if bout.returncode != 0 or not bundle_version:
+            print(
+                "✗ the staged bundle does not report a version (rc %d): %r"
+                % (bout.returncode, (bout.stdout + bout.stderr)[-300:]),
+                file=sys.stderr,
+            )
+            return 1
+        print("  renet %s and bundle %s for the image: %s" % (renet_version, bundle_version, how))
         obs, shape = observe(root, renet_version, plant=plant)
+        obs["bundle_version"] = bundle_version
     finally:
         if staged_here:
             proxy_image_smoke._unstage(root)
@@ -892,7 +927,7 @@ def run(root: pathlib.Path, plant: str | None = None) -> int:
         "(no bearer: 0 introspections; inactive token: introspected) and started 0 containers for them, "
         "then answered a proxy:exec bearer with 200, mode \"container\" and cliVersion %s from %d new "
         "container(s); %s" % (
-            shape.get("ready_s", -1), obs["renet_version"], len(obs["caller_containers"]), teardown,
+            shape.get("ready_s", -1), obs["bundle_version"], len(obs["caller_containers"]), teardown,
         )
     )  # fmt: skip
     return 0

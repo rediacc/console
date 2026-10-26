@@ -124,6 +124,22 @@ def test_faithful_copy_without_wrangler_cannot_run_rather_than_pass(
     assert "Nothing was checked" in capsys.readouterr().err
 
 
+def test_unexecutable_staged_renet_cannot_run_rather_than_traceback(
+    root_copy: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stage = root_copy.joinpath(*gate.proxy_image_smoke.STAGE_DIR)
+    stage.mkdir(parents=True, exist_ok=True)
+    stage.joinpath(gate.executor_artifacts.MANIFEST).write_text("{}")
+    renet = stage.joinpath(gate.executor_artifacts.RENET)
+    renet.write_bytes(b"not run")
+    renet.chmod(0o644)
+    monkeypatch.setattr(gate, "cannot_run", lambda _root: None)
+    assert gate.run(root_copy) == gate.CANNOT_RUN
+    assert "cannot be executed" in capsys.readouterr().err
+
+
 def test_healthy_observation_passes() -> None:
     assert gate.verdict(gate.HEALTHY) == []
 

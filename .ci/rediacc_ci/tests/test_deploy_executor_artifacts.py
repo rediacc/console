@@ -169,6 +169,26 @@ def test_retention_orders_by_semver_not_text():
     assert doomed == ["1.2.0"]
 
 
+def test_a_partial_version_takes_no_keep_slot():
+    versions = ["1.0.0", "1.0.1", "1.0.2", "1.0.3"]
+    doomed = ea.select_prune(
+        versions, current="1.0.3", previous="1.0.2", keep=2, complete=["1.0.0", "1.0.1", "1.0.2"]
+    )
+    assert doomed == ["1.0.0"]
+    assert ea.select_prune(versions, current="1.0.3", previous="1.0.2", keep=2) == [
+        "1.0.0",
+        "1.0.1",
+    ]
+
+
+def test_list_versions_complete_only_skips_a_version_without_a_manifest(r2, tmp_path):
+    ea.stage("1.4.2", "deadbeef", make_sources(tmp_path / "src"))
+    ea.stage("1.4.3", "deadbeef", make_sources(tmp_path / "src"))
+    (r2 / ea.key_for("1.4.3", ea.MANIFEST)).unlink()
+    assert ea.list_versions() == ["1.4.2", "1.4.3"]
+    assert ea.list_versions(complete_only=True) == ["1.4.2"]
+
+
 def test_retention_refuses_an_unknown_current():
     with pytest.raises(ea.ArtifactError, match="unknown"):
         ea.select_prune(["1.0.0"], current="", previous="")
@@ -278,6 +298,7 @@ def test_stage_local_matches_the_fetch_layout(tmp_path):
     (root / "packages/cli/package.json").write_text("{}")
     (root / "private/bin").mkdir(parents=True)
     (root / "private/bin/renet-linux-amd64").write_bytes(b"renet")
+    (root / "private/bin/renet-linux-amd64").chmod(0o755)
     for package in ea.NATIVE_MODULES:
         (root / "node_modules" / package).mkdir(parents=True)
         (root / "node_modules" / package / "package.json").write_text(
@@ -292,6 +313,8 @@ def test_stage_local_matches_the_fetch_layout(tmp_path):
     manifest = ea.stage_local(dest, root, "abc")
     assert manifest["version"] == ea.LOCAL_VERSION
     assert manifest["git_sha"] == "abc"
+    # The staged renet is executed from the stage dir by the proxy e2e, so the exec bit must survive the copy.
+    assert (dest / ea.RENET).stat().st_mode & 0o111 == 0o111
     files = ea.parse_manifest((dest / ea.MANIFEST).read_text(), ea.LOCAL_VERSION)
     for name in ea.FILES:
         assert files[name]["sha256"] == ea.sha256_file(dest / name)
