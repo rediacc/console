@@ -129,8 +129,8 @@ W3 implements only the design the verdict names. The rest of the plan is the sam
   ```
 
   It carries no `max_instances` and no `instance_type`. The old `ExecutorContainer` entry, binding `EXECUTOR` and migration v1 stay until Phase 3 (item 6).
-- **Two vars, `EXECUTOR_BACKEND` (`container` | `durable`) and `EXECUTOR_CAP` (a decimal string).**
-  - Both are generated per target from tables in proxy_configs.py, `BACKEND_BY_TARGET` and `CAP_BY_TARGET`.
+- **Three vars, `EXECUTOR_BACKEND` (`container` | `durable`), `EXECUTOR_CAP` and `EXECUTOR_HEAVY_CAP` (decimal strings, item 3).**
+  - All three are generated per target from tables in proxy_configs.py, `BACKEND_BY_TARGET`, `CAP_BY_TARGET` and `HEAVY_CAP_BY_TARGET`.
   - The Worker routes each request to `EXECUTOR` or `ORG_EXECUTOR` by the version's `EXECUTOR_BACKEND`, never by anything per request ("Choose the binding per logical Container, not per request", Context item 3).
   - During a gradual rollout, two versions can briefly route one org to both backends. The org's sessions then miss once, and the web client re-grants transparently (PLAN-proxy-cd-six-targets R1). This is accepted.
 
@@ -204,7 +204,7 @@ W3 implements only the design the verdict names. The rest of the plan is the sam
 - **Phase 2, the flip.** `BACKEND_BY_TARGET` sends a target to `durable`: bench first, then the three edge targets, then the three stable targets in a later release through promote-stable.
   - Rollback is `npx wrangler rollback <Phase 1 or later version>`, which crosses no lifecycle change. Alternatively, flip the var back and redeploy.
   - Sessions live only in container RAM, so rolling back loses nothing a re-grant cannot rebuild (no reconciliation, unlike the guide's stateful case).
-- **Phase 3, cleanup.** This runs after 14 days on all three stable targets, and by the deadline box.
+- **Phase 3, cleanup.** This runs after 14 days on all three stable targets, and by the deadline box. With L5 due 2026-11-30 the 14 days end 2026-12-14, so the margin to DL1 is one day. A slip of L5 is answered by DL1's own fallback, an ASKED line dated before 2026-12-31 that records the operator's choice (a shorter soak, or Phase 3 after the freeze).
   - Migration v3 `deleted_classes = ["ExecutorContainer"]`. The old class held only the in-memory org and the library's state tables, so no data is needed.
   - Delete the old `[[containers]]` entry, the `EXECUTOR` binding, `EXECUTOR_BACKEND`, `ContainerProxy`, the `@cloudflare/containers` dependency and the static `outboundHandlers`.
   - Run `npx wrangler containers delete <old application id>` per target, because "Removing the Wrangler entry does not delete the application" (Context item 3).
@@ -222,6 +222,7 @@ W3 implements only the design the verdict names. The rest of the plan is the sam
   - workers/proxy/src/capacity.ts must define `HARD_CAP` and `HARD_HEAVY_CAP` as integer literals at or under the same budgets.
   - A non-literal is a finding, as `sleepAfter` already is.
 - **Sizes.** Every `instance:` value under workers/proxy/src (tests excluded) must be a literal in the allowed set: `'lite'`, `'standard-1'`, or the one custom object `{ vcpu: 0.25, memoryMib: 1024, diskMb: 4000 }`. `standard-2` and above, a variable, or a second custom object is a finding.
+- **Overlap during a gradual rollout.** Two versions can route one org to both backends, so a target can briefly hold the legacy backend's `max_instances` (25) and the new coordinator's cap (25) at once, at most 50 instances. The dollar ceiling below counts the routed backend only, so it does not cover that overlap. The overlap is accepted because the unrouted backend drains within `sleepAfter` and the Phase 2 flips go one target at a time.
 - **The per-config count during dual run** is the cap of the routed backend: `max_instances` of the default entry when `EXECUTOR_BACKEND = container`, `EXECUTOR_CAP` when it is `durable`. The unrouted backend drains within `sleepAfter`.
 - **Totals.** The deployable-set total keeps #9638ab6b's limit of 175. A worst-case dollar line is added: each config costs `(cap − heavyCap) × LIGHT_MONTHLY_USD + heavyCap × HEAVY_MONTHLY_USD`, with the prices from Context item 8 as constants citing the pricing page.
   - Each config must stay at or under `MAX_CONFIG_MONTHLY_USD = 300`, and the deployable set at or under `MAX_TOTAL_MONTHLY_USD = 2100` (Decisions 4).

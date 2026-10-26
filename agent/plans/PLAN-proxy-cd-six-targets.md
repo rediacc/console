@@ -56,7 +56,7 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
    - Retrying the exec is safe because the executor validates the named session before the loader and dispatch run (packages/cli/src/services/serve/server.ts:188-194).
    - SessionError maps to 404 for every cause (packages/cli/src/services/serve/server.ts:70), including config-fetch failures (packages/cli/src/services/serve/container-config.ts:150,:166). That is why R2 adds a distinct code.
 2. **Executor grants are keyed on the executor's token id.** The grant lookup matches `configExecutorGrants.executorTokenId` (private/account/src/services/config.service.ts:2164-2177; schema private/account/src/db/config-schema.ts:320-347). With an issued token renewed every ~36 minutes, every live session would stop finding its grant at each renewal. I2 keys grants on a stable executor principal instead.
-3. **One executor serves one org.** Introspection answers `active:false` for a token from any org other than the executor token's (private/account/src/routes/proxy.ts, the `targetOrg.id !== callerOrg.id` check). A regional proxy therefore serves only members of the configured executor org. Any other org reaching the console would get a confusing relayed 401, so I4 refuses those callers with the same coded 503 (a DEFAULT, see Decisions). Serving every org is outside this plan.
+3. **One executor serves one org.** Introspection answers `active:false` for a token from any org other than the executor token's (private/account/src/routes/proxy.ts, the `targetOrg.id !== callerOrg.id` check). A regional proxy therefore serves only members of the configured executor org. Any other org reaching the console would get a confusing relayed 401, so I4 refuses those callers with the same coded 503 (a DEFAULT, see Decisions). Serving every org is outside this plan. Superseded by PLAN-console-executor-multi-org: a per-org issuer, route and Durable Object now serve every entitled org, and the org gate becomes an entitlement gate.
 4. **CD line numbers moved.**
    - .github/workflows/cd-deploy-account.yml: deploy job :147-, Resolve deploy config :287-297, Deploy account Worker :331-332, Set Worker secrets :337-400. The workflow has only `target` and `ref` inputs (:9-17), so D2 adds `version`.
    - .github/workflows/promote-stable.yml: deploy-account-stable :267-279, verify-stable needs at :295.
@@ -372,8 +372,8 @@ Bench notes: the ROOT_EMAIL user, its org and a COMMUNITY subscription were regi
 
 ## Decisions taken as defaults (open to operator veto)
 
-1. The executor owner is the ROOT_EMAIL user and its owned org, with `EXECUTOR_ISSUER_ORG_ID` as an override. Token TTL is 45 minutes, renewed at 80%.
-2. I4 refuses non-executor-org callers with the same "not available in this region" 503, rather than letting a 401 relay. Serving every org would need a per-org issuer, which is outside this plan.
+1. The executor owner is the ROOT_EMAIL user and its owned org, with `EXECUTOR_ISSUER_ORG_ID` as an override. Superseded by PLAN-console-executor-multi-org, which removes ROOT_EMAIL ownership. Token TTL is 45 minutes, renewed at 80%.
+2. I4 refuses non-executor-org callers with the same "not available in this region" 503, rather than letting a 401 relay. Serving every org would need a per-org issuer, which is outside this plan. Superseded by PLAN-console-executor-multi-org, which adds the per-org issuer and replaces this refusal with the 403 `CONSOLE_NOT_ENTITLED` entitlement gate.
 3. The purge grace is 7 days past `expires_at`.
 4. The cost guard's total counts deployable configs only (seven). wrangler.dev.toml is checked at ≤3 but not counted.
 5. EXECUTOR_MODE is a CD-managed Worker secret rather than a var, so it can be switched without a redeploy and survives account deploys.
