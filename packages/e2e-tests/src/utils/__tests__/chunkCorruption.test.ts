@@ -125,18 +125,19 @@ describe('corruptStoredChunk', () => {
   function fakeStore(failTamperedPut = false) {
     const puts: Buffer[] = [];
     const listTokens: (string | undefined)[] = [];
+    const list = (args: string[]): Buffer => {
+      const second = args.includes('continuation-token=p2');
+      listTokens.push(second ? 'p2' : undefined);
+      return second ? page([key]) : page(['lin/manifest.json'], 'p2');
+    };
+    const put = (args: string[]): Buffer => {
+      puts.push(readFileSync(args[args.indexOf('-T') + 1]));
+      if (failTamperedPut && puts.length === 1) throw new Error('put response lost');
+      return Buffer.alloc(0);
+    };
     const curl: StoreCurl = (_access, args, url) => {
-      if (args.includes('-G')) {
-        const i = args.indexOf(`continuation-token=p2`);
-        listTokens.push(i === -1 ? undefined : 'p2');
-        return i === -1 ? page(['lin/manifest.json'], 'p2') : page([key]);
-      }
-      if (args.includes('PUT')) {
-        const body = readFileSync(args[args.indexOf('-T') + 1]);
-        puts.push(body);
-        if (failTamperedPut && puts.length === 1) throw new Error('put response lost');
-        return Buffer.alloc(0);
-      }
+      if (args.includes('-G')) return list(args);
+      if (args.includes('PUT')) return put(args);
       expect(url).toBe(`http://s/b/${key}`);
       return Buffer.from([1, 2, 3]);
     };

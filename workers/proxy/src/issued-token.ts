@@ -25,7 +25,7 @@ export interface ExecutorIssuerRpc extends Rpc.WorkerEntrypointBranded {
 }
 
 /** The share of a token's life after which it is renewed. */
-export const RENEW_AT_FRACTION = 0.8;
+const RENEW_AT_FRACTION = 0.8;
 
 /** How long a failed issue() is remembered: every refusal is audited by the issuer, so a failing issuer must not be asked once per request. */
 export const FAILURE_BACKOFF_MS = 5000;
@@ -94,11 +94,6 @@ export function dropIssuedToken(orgId: string): void {
   delete state.cached;
   delete state.failure;
   if (!state.inflight) states.delete(orgId);
-}
-
-/** How many orgs are remembered. Tests only. */
-export function issuedTokenOrgCount(): number {
-  return states.size;
 }
 
 /** Epoch milliseconds of an ISO 8601 expiry, or NaN for anything else. */

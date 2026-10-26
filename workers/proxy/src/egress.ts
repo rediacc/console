@@ -38,7 +38,7 @@ const CONFIG_PULL_RE = /^\/account\/api\/v1\/configs\/[A-Za-z0-9_-]{1,128}$/;
 type Route = 'bearer' | 'open';
 
 /** The kind of route a request is, or the reason code it is refused with. */
-export function classifyEgress(method: string, url: URL): Route | { refused: string } {
+function classifyEgress(method: string, url: URL): Route | { refused: string } {
   const route = routeOf(method, url.pathname);
   if (route === undefined) return { refused: 'route-not-allowed' };
   const names = [...url.searchParams.keys()];
@@ -97,7 +97,7 @@ async function issuedBearer(
 }
 
 /** The params `ExecutorContainer.pin` installs with `setOutboundByHost`: set by Durable Object code, never by the container. */
-export interface AccountEgressParams {
+interface AccountEgressParams {
   orgId: string;
 }
 

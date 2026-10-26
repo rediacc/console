@@ -56,7 +56,7 @@ interface CacheEntry {
 }
 
 /** The env name that pins a container executor to one org. */
-export const PINNED_ORG_ENV = 'REDIACC_EXECUTOR_ORG_ID';
+const PINNED_ORG_ENV = 'REDIACC_EXECUTOR_ORG_ID';
 
 /**
  * The org a container executor is pinned to. Container mode refuses to boot
