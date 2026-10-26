@@ -28,7 +28,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
 import { createExecutorAudit } from '../services/serve/audit.js';
-import { AuthVerifier } from '../services/serve/auth.js';
+import { AuthVerifier, resolvePinnedOrgId } from '../services/serve/auth.js';
 import {
   createContainerConfigLoader,
   createExecutorGrantRecorder,
@@ -69,6 +69,8 @@ export function registerServeCommand(program: Command): void {
           );
         }
 
+        const pinnedOrgId = resolvePinnedOrgId(options.mode, process.env);
+
         const accountUrl = getSubscriptionServerUrl();
 
         const sessions = new SessionStore();
@@ -81,7 +83,7 @@ export function registerServeCommand(program: Command): void {
 
         const deps: ServeDeps = {
           mode: options.mode,
-          auth: new AuthVerifier({ accountUrl, executorToken }),
+          auth: new AuthVerifier({ accountUrl, executorToken, pinnedOrgId }),
           sessions,
           executor: localExecutorService,
           crypto: serveCrypto,

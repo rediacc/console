@@ -12,6 +12,7 @@
  * server, not from anything the caller can assert.
  */
 
+import { ValidationError } from '../../utils/errors.js';
 import { deadlineFetch, describeFetchError } from './account-fetch.js';
 import type { SessionPrincipal } from './sessions.js';
 
@@ -43,6 +44,8 @@ export interface AuthVerifierOptions {
   executorToken: string;
   /** Scope a client token must hold to submit commands. */
   requiredScope?: string;
+  /** The org this executor serves. A principal of any other org is refused as an inactive token. */
+  pinnedOrgId?: string;
   fetchImpl?: typeof fetch;
   now?: () => number;
 }
@@ -50,6 +53,27 @@ export interface AuthVerifierOptions {
 interface CacheEntry {
   principal: SessionPrincipal;
   expiresAt: number;
+}
+
+/** The env name that pins a container executor to one org. */
+export const PINNED_ORG_ENV = 'REDIACC_EXECUTOR_ORG_ID';
+
+/**
+ * The org a container executor is pinned to. Container mode refuses to boot
+ * without it, so an executor can never run unpinned; daemon mode has none.
+ */
+export function resolvePinnedOrgId(
+  mode: 'daemon' | 'container',
+  env: NodeJS.ProcessEnv
+): string | undefined {
+  if (mode !== 'container') return undefined;
+  const orgId = env[PINNED_ORG_ENV]?.trim();
+  if (!orgId) {
+    throw new ValidationError(
+      `The container executor must be pinned to one organization. Set ${PINNED_ORG_ENV} to its organization id.`
+    );
+  }
+  return orgId;
 }
 
 export class AuthError extends Error {
@@ -68,6 +92,7 @@ export class AuthVerifier {
   private readonly accountUrl: string;
   private readonly executorToken: string;
   private readonly requiredScope: string;
+  private readonly pinnedOrgId: string | undefined;
   private readonly fetchImpl: typeof fetch;
   private readonly now: () => number;
 
@@ -75,6 +100,7 @@ export class AuthVerifier {
     this.accountUrl = options.accountUrl.replace(/\/+$/, '');
     this.executorToken = options.executorToken;
     this.requiredScope = options.requiredScope ?? 'proxy:exec';
+    this.pinnedOrgId = options.pinnedOrgId;
     this.fetchImpl = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
     this.now = options.now ?? Date.now;
   }
@@ -175,6 +201,10 @@ export class AuthVerifier {
   private toPrincipal(body: IntrospectionResponse): SessionPrincipal {
     // A revoked, expired, unknown, or foreign-org token all look the same here, deliberately: the executor must not become an oracle for token discovery.
     if (!body.active) {
+      throw new AuthError('This token is not valid for the executor.', 401);
+    }
+    // Defence in depth: the account server already answers inactive for a foreign org, and a pinned executor says the same thing if it ever does not.
+    if (this.pinnedOrgId !== undefined && body.orgId !== this.pinnedOrgId) {
       throw new AuthError('This token is not valid for the executor.', 401);
     }
     if (!body.scopes?.includes(this.requiredScope)) {
