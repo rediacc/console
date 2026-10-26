@@ -683,6 +683,12 @@
       "ACCOUNT_BACKUP_S3_ENDPOINT",
       "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"
     ],
+    ".ci/rediacc_ci/ops/bench_access.py": [
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
+      "CF_MANAGEMENT_TOKEN",
+      "REDIACC_BWS_PROFILES"
+    ],
     ".ci/rediacc_ci/ops/build_server.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY"
     ],
@@ -710,6 +716,9 @@
       "AWS_SES_FROM",
       "AWS_SES_REGION",
       "AWS_SES_SECRET_ACCESS_KEY",
+      "BENCH_ROOT_PASSWORD",
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
       "CLOUDFLARE_TURNSTILE_SECRET_KEY",
       "OBS_OTLP_CREDENTIALS",
       "REDIACC_BWS_PROFILES",
@@ -1732,6 +1741,9 @@
     ],
     ".ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_ops_executor_orgs.py": [
+      "PATH"
     ],
     ".ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py": [
       "GOCACHE"

@@ -8,8 +8,10 @@ import pytest
 
 from rediacc_ci.ops import bench_access as ba
 from rediacc_ci.ops import cf_auth
+from rediacc_ci.well_known import BENCH_ORIGIN, PROXY_BENCH_HOST
 
-HOSTS = ["bench.rediacc.com", "proxy.bench.rediacc.com"]
+BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
+HOSTS = [BENCH_HOST, PROXY_BENCH_HOST]
 SECRET = "tok-must-not-be-on-argv"
 
 
@@ -204,8 +206,8 @@ def test_a_cloudflare_refusal_is_a_named_error():
 
 def test_hosts_come_from_the_bench_wrangler_configs():
     found = ba.bench_hosts()
-    assert "bench.rediacc.com" in found
-    assert "proxy.bench.rediacc.com" in found
+    assert BENCH_HOST in found
+    assert PROXY_BENCH_HOST in found
 
 
 def test_the_token_reaches_curl_on_stdin_never_argv(monkeypatch):

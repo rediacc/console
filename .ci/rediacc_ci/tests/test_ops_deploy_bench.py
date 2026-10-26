@@ -11,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 
 from rediacc_ci.ops import deploy_bench
+from rediacc_ci.well_known import BENCH_ORIGIN
 
 REGISTER_PATH = "/account/api/v1/auth/register"
 
@@ -222,7 +223,7 @@ def test_set_root_password_runs_the_reset_flow_from_the_captured_mail(server):
 
     def rows(sql):
         queries.append(sql)
-        link = "Reset: https://bench.rediacc.com/account/reset-password?token=tok_ABC-123 ok"
+        link = f"Reset: {BENCH_ORIGIN}/account/reset-password?token=tok_ABC-123 ok"
         return [{"text_body": link}]
 
     deploy_bench.set_root_password(srv.url, "root@example.test", rows=rows)

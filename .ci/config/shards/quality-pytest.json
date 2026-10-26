@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-26T13:42:45.751Z",
+  "generatedAt": "2026-10-26T17:16:29.966Z",
   "legs": [
     {
       "index": 1,
@@ -338,6 +338,7 @@
         "pytest:.ci/rediacc_ci/tests/test_setup_build_packages.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_port.py",
         "pytest:.ci/rediacc_ci/tests/test_shapedup_corpus_sig.py",
+        "pytest:.ci/rediacc_ci/tests/test_spikes_do_policy_spike.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_account_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_linux_packages.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_seed_smoke.py",
@@ -662,6 +663,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py",
         "pytest:.ci/rediacc_ci/tests/test_log.py",
         "pytest:.ci/rediacc_ci/tests/test_native.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_bench_access.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_family.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py",

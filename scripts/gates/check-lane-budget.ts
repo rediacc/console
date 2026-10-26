@@ -1246,7 +1246,8 @@ export const REBALANCE_LANES: Readonly<
 export const REBALANCE_ADVISORY_MIN = 0.5;
 /** A rebalanced plan replaces the committed one only when some leg, compared worst first, improves by more than this many minutes; a smaller gain is diff noise, and holding the committed plan below it is what keeps a second run a no-op. */
 export const REBALANCE_WRITE_EPS_MIN = 0.01;
-const SEARCH_EPS_MIN = 1e-6;
+/** The search's resolution: a step must improve the sorted costs by at least this, 6 ms, far under REBALANCE_WRITE_EPS_MIN. At 1e-6 the descent over 729 quality-pytest blocks walked micro-improvements past 60M evaluations without converging (measured 2026-10-26, one more block was enough to tip it from 4M to uncapped), and the plan it chased could not differ from the committed one by a write-worthy amount anyway. */
+const SEARCH_EPS_MIN = 1e-4;
 /** Exact branch and bound runs only up to this many blocks (E2E Workers has 20); quality-pytest's ~500 get LPT plus local search. */
 const BNB_MAX_BLOCKS = 40;
 const BNB_NODE_LIMIT = 1_000_000;
