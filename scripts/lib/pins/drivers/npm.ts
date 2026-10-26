@@ -60,7 +60,14 @@ import {
   splitFamilySet,
 } from '../driver.js';
 import type { PinEntry, RepoPath } from '../registry.js';
-import { lockfileOf, predictManifests, sourceManifests } from './pin-manifests.js';
+import {
+  BIOME_CONFIG,
+  BIOME_PACKAGE,
+  lockfileOf,
+  planBiomeSchema,
+  predictManifests,
+  sourceManifests,
+} from './pin-manifests.js';
 
 // ---- the plan check-deps answers ------------------------------------------------------------
 
@@ -280,6 +287,13 @@ function stepsOf(
         cwd: '.',
         writes: [],
       });
+  }
+  const biomeP = repoPathOf(ctx, path.join(ctx.root, BIOME_CONFIG));
+  const biomeText = ctx.read(biomeP);
+  const biomeAfter = biomeText === null ? null : planBiomeSchema(biomeText, steps);
+  if (biomeAfter !== null) {
+    writes.push({ ...biomeP, after: biomeAfter });
+    notes.push(`${keyOf(biomeP)}: $schema follows ${BIOME_PACKAGE}`);
   }
   const moved = steps.filter((s) => s.packages.length > 0);
   const rc = path.join(ctx.root, '.syncpackrc.json');

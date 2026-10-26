@@ -29,6 +29,7 @@ import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
 import { gomodDriver } from './gomod.js';
 import { osCephHostDriver } from './os.js';
+import { planBiomeSchema } from './pin-manifests.js';
 import { realProviderDriver } from './realprovider.js';
 import { type Deps, T8_MUTANTS, type T8Mutant } from './shared.js';
 
@@ -892,6 +893,31 @@ async function dockerCases(
 
 // ---- the run --------------------------------------------------------------------------------
 
+function biomeSchemaCases(): Array<{ name: string; ok: boolean; detail?: string }> {
+  const doc = (v: string): string =>
+    `{\n  "$schema": "https://biomejs.dev/schemas/${v}/schema.json",\n  "vcs": { "enabled": true }\n}\n`;
+  const step = (name: string, latest: string) => [{ packages: [{ name, latest }] }];
+  const bumped = planBiomeSchema(doc('2.6.2'), step('@biomejs/biome', '2.6.3'));
+  const other = planBiomeSchema(doc('2.6.2'), step('typescript', '6.0.1'));
+  const same = planBiomeSchema(doc('2.6.3'), step('@biomejs/biome', '2.6.3'));
+  return [
+    {
+      name: 'biome schema: a planned @biomejs/biome bump writes the new version into biome.json $schema and nothing else',
+      ok: bumped === doc('2.6.3'),
+      detail: String(bumped),
+    },
+    {
+      name: 'biome schema: a bump of any other package leaves biome.json untouched',
+      ok: other === null,
+      detail: String(other),
+    },
+    {
+      name: 'biome schema: a schema already at the planned version is not rewritten',
+      ok: same === null,
+    },
+  ];
+}
+
 async function allCases(mutant?: T8Mutant) {
   return [
     ...(await actionsCases(mutant)),
@@ -900,6 +926,7 @@ async function allCases(mutant?: T8Mutant) {
     ...(await cephImageCases(mutant)),
     ...(await realProviderCases()),
     ...(await dockerCases(mutant)),
+    ...biomeSchemaCases(),
   ];
 }
 

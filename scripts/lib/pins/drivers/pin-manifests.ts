@@ -242,3 +242,25 @@ export function lockfileOf(root: string, manifest: string): string | null {
     dir = path.posix.dirname(dir);
   }
 }
+
+/** The package whose version biome.json's `$schema` URL names. */
+export const BIOME_PACKAGE = '@biomejs/biome';
+export const BIOME_CONFIG = 'biome.json';
+const BIOME_SCHEMA_RE = /("\$schema":\s*"https:\/\/biomejs\.dev\/schemas\/)[^/"]+(\/schema\.json")/;
+
+/**
+ * biome.json with its `$schema` moved to the version a plan installs, or null when the plan does not move @biomejs/biome (or the file carries no schema URL of that shape, or it already names the version). Biome prints a schema-version mismatch note on every run when the two differ, so the bump and the URL move in one plan.
+ */
+export function planBiomeSchema(
+  text: string,
+  steps: ReadonlyArray<{ packages: ReadonlyArray<{ name: string; latest: string }> }>
+): string | null {
+  const to = steps
+    .flatMap((s) => s.packages)
+    .filter((p) => p.name === BIOME_PACKAGE)
+    .map((p) => p.latest)
+    .at(-1);
+  if (to === undefined || !BIOME_SCHEMA_RE.test(text)) return null;
+  const after = text.replace(BIOME_SCHEMA_RE, `$1${to}$2`);
+  return after === text ? null : after;
+}
