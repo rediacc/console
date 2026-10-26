@@ -81,11 +81,19 @@ export class CloudflareInternal extends WorkerEntrypoint<Env> {
 }
 
 /**
- * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). One RPC method, `issue()`, with no arguments and no `fetch`, so nothing a caller sends can steer what is minted: each call mints a fresh short-lived token for the ROOT_EMAIL user's org, after re-checking that user's role and the org's subscription; the TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refusal rejects with the reason code as the message and is audited as `executor_token.refused`.
+ * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). Three RPC methods and no `fetch`: `route(bearer)` names the org behind a caller's own proxy:exec token, `issue(orgId)` mints that org's short-lived executor token after re-running the console entitlement check, and `probe()` reports readiness and writes nothing. The TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refused mint rejects with the reason code as the message and is audited as `executor_token.refused`.
  */
 export class ExecutorIssuer extends WorkerEntrypoint<Env> {
-  issue(): Promise<{ token: string; expiresAt: string }> {
-    return accountApp.issueExecutorToken(this.env);
+  route(bearer: string): Promise<{ orgId: string } | { refused: string }> {
+    return accountApp.routeExecutorCaller(this.env, bearer);
+  }
+
+  issue(orgId: string): Promise<{ token: string; expiresAt: string }> {
+    return accountApp.issueExecutorToken(this.env, orgId);
+  }
+
+  probe(): Promise<{ ok: true; scopes: string[]; ttlMs: number }> {
+    return accountApp.probeExecutorIssuer(this.env);
   }
 }
 
