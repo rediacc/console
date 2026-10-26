@@ -8,7 +8,7 @@ Lookup material for the guards from `agent/plans/PLAN-cloudflare-spend-guard.md`
 | R2 lifecycle backstops | `.ci/rediacc_ci/ops/r2_lifecycle.py` | rules in code | a missing, drifted or planted rule (`--check`, exit 1) |
 | Weekly usage report | `.ci/rediacc_ci/ops/cf_usage_report.py`, `.github/workflows/cf-usage-report.yml` | `report` | an item over a ceiling or the maintenance log line (exit 1), an unreadable source (exit 2) |
 | Sampling gate | `.ci/scripts/quality/check_worker_observability_budget.py` | `worker_observability` | a Worker over the ceiling or with no explicit rate (exit 1) |
-| Leftovers report | `.ci/rediacc_ci/housekeeping/cf_leftovers.py` | none | an unreadable listing only |
+| Leftovers report | `.ci/rediacc_ci/housekeeping/cf_leftovers.py` | none | an unreadable listing or a missing `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` |
 
 ## Usage notifications
 
@@ -29,12 +29,12 @@ Limits (per billing cycle, in the product's base unit):
 | `r2_class_a_operations` | 2,000,000 |
 | `r2_class_b_operations` | 20,000,000 |
 
-To raise one, change its `limit` and run the command above. The API accepts only the product names it lists (`products_accepted_by_the_api` in the JSON). A name it refuses answers `17106 Invalid product selection.`, prints `UNAVAILABLE <product>` and fails the run.
+To raise one, change its `limit` and run the command above without `--dry-run`. The API accepts only the product names it lists (`products_accepted_by_the_api` in the JSON). A name it refuses answers `17106 Invalid product selection.`, prints `UNAVAILABLE <product>` and fails the run.
 
 Two products have no alert: Workers Observability (ingestion and storage) and Containers. Every candidate name was refused on 2026-10-23, and the evidence sits under `notifications.unavailable`. They print `UNAVAILABLE <name> (recorded ...)` on each run without failing it. Their fallbacks:
 
 - The account-level `Default budget alert (auto-created)` (`billing_budget_alert`, 10 USD total spend, not managed here) covers both in dollars.
-- Containers: the weekly report below, and the instance cap in `check_proxy_cost_guard.py` (25 per target).
+- Containers: the weekly report below, and the instance cap in `check_proxy_cost_guard.py` (`MAX_INSTANCES_BUDGET`, 25 per deployable config, one config per target).
 - Observability: the weekly report's log and sampling checks, and the sampling gate.
 - Dashboard path, for a product the API cannot create or to inspect a policy: Dashboard > Notifications > Add > Usage Based Billing. A product Cloudflare starts offering there is added to `notifications.products` and applied with the command above.
 
@@ -46,7 +46,7 @@ Decision T2 of the plan (set `head_sampling_rate` and `persist` per config) is s
 - Every enabled `logs` and `traces` signal under `workers/*/wrangler*.toml` currently carries `head_sampling_rate = 1` and `persist = false` where checked, with data exported by OTLP destination. No config sets `persist = true`, and `persist_disallowed` lists `workers/*/wrangler*.toml`.
 - The plan's earlier target (0.1 for stable account and www traces) was written before the measurement and is superseded by the ruling unless T2 closes otherwise. This table is rewritten when T2 records its per-config decision.
 
-To lower a rate, edit the config and, if the config sits under the ceiling, nothing else changes. To raise a rate above `sampling_ceiling`, raise the ceiling in the JSON with a `sampling_ceiling_reason`, or list the config in `sampling_exempt` as `"<config>": {"rate": <n>, "reason": "..."}`. An exemption is never inferred.
+No rate goes below 1 while that ruling stands; lowering one needs a new operator ruling first, after which only the config changes. To raise a rate above `sampling_ceiling`, raise the ceiling in the JSON with a `sampling_ceiling_reason`, or list the config in `sampling_exempt` as `"<config>": {"rate": <n>, "reason": "..."}`. An exemption is never inferred.
 
 ## R2 lifecycle backstops
 
@@ -59,8 +59,10 @@ To lower a rate, edit the config and, if the config sits under the ceiling, noth
 `<fmt>` is each of `cli npm apt rpm apk archlinux`, which makes 13 rules.
 
 ```bash
-PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle --check   # exit 1 on a missing, drifted or planted rule
-PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle list
+PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile rotation -- \
+    env PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle --check   # exit 1 on a missing, drifted or planted rule
+PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile rotation -- \
+    env PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle list
 PYTHONPATH=.ci python3 -m rediacc_ci.ops.r2_lifecycle apply     # idempotent
 ```
 
@@ -80,7 +82,7 @@ gh workflow run cf-usage-report.yml
 
 Each line is `OK` or `OVER` with the value and its ceiling. Ceilings come from the `report` object of the JSON, key by key, and from `DEFAULT_CEILINGS` in the module otherwise: `workers_requests_month`, `workers_cpu_ms_month`, `r2_storage_bytes`, `r2_class_a_month`, `r2_class_b_month`, `d1_storage_bytes`. Each is compared with the account total.
 
-**Container alarm.** Cloudflare offers no usage alert for Containers, so this is the alarm. Each Containers application (one proxy target) is compared with `containers_memory_gib_seconds_month` (20,000,000) and `containers_vcpu_seconds_month` (2,500,000), about 50 USD a month per target at 0.0000025 USD per GiB-second and 0.00002 USD per vCPU-second. `containers_total_usd_month` (350) bounds the estimated sum over 7 targets. The estimate leaves out the monthly included amounts, so it is an upper bound. Operator ruling `ASKED:2026-10-26T16:35Z`, "Raise to ~$50/target". An application over a ceiling is an `OVER` line naming the estimated cost.
+**Container alarm.** Cloudflare offers no usage alert for Containers, so this is the alarm. Each Containers application (one proxy target) is compared with `containers_memory_gib_seconds_month` (20,000,000) and `containers_vcpu_seconds_month` (2,500,000), each about 50 USD a month at 0.0000025 USD per GiB-second and 0.00002 USD per vCPU-second, so one target at both ceilings estimates about 100 USD. `containers_total_usd_month` (350) bounds the estimated sum over 7 targets. The estimate leaves out the monthly included amounts, so it is an upper bound. Operator ruling `ASKED:2026-10-26T16:35Z`, "Raise to ~$50/target". An application over a ceiling is an `OVER` line naming the estimated cost.
 
 The report also counts the account Worker's `Nightly maintenance is NOT running` line over seven days in Loki (`OBS_GRAFANA_READ_TOKEN`), falling back to the Workers Observability telemetry query, and prints `ALERT maintenance ...` when it was logged.
 
