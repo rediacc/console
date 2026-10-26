@@ -79,7 +79,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 23 plans done, 324 of 484 boxes done (66%).
+Promoted: 6 of 23 plans done, 325 of 484 boxes done (67%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -104,7 +104,7 @@ Promoted: 6 of 23 plans done, 324 of 484 boxes done (66%).
 | 19 | PLAN-converge-preflight-and-repo-recovery.md | 18/18 | done |
 | 20 | PLAN-gpu-device-grants.md | 9/12 | 3 open |
 | 21 | PLAN-proxy-cd-six-targets.md | 24/34 | 10 open |
-| 22 | PLAN-console-executor-multi-org.md | 13/20 | 7 open |
+| 22 | PLAN-console-executor-multi-org.md | 14/20 | 6 open |
 | 23 | PLAN-executor-durable-object-policy.md | 2/21 | 19 open |
 <!-- queue:progress:end -->
 
