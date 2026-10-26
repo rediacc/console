@@ -414,7 +414,7 @@ def select_prune(
 ) -> list[str]:
     """The staged versions that may be deleted: everything outside the newest `keep`, except the current and previous production versions.
 
-    `complete` names the versions that carry a manifest; the `keep` slots are counted among those only, so a partial version (a stage that died before its manifest) never pushes a complete one out. A partial version newer than every complete one may be a stage still uploading, so it is protected; an older partial is a dead stage and is prunable. Omitted, every listed version counts.
+    `complete` names the versions that carry a manifest; the `keep` slots are counted among those only, so a partial version (a stage that died before its manifest) never pushes a complete one out. Only the single newest listed version is protected as a possible stage still uploading, and only when it is a partial newer than every complete one (with no complete version at all, that is the newest version overall); every other partial is a dead stage and is prunable. No timestamps exist here, so that one partial stays protected until a newer version is staged or it is completed. Omitted, every listed version counts.
 
     Refuses an empty `current` (unknown is never prunable) and a version that is not X.Y.Z.
     """
@@ -433,7 +433,8 @@ def select_prune(
     protected = {version for _, version in slots[: max(keep, 0)]}
     if complete is not None:
         newest = slots[0][0] if slots else None
-        protected.update(v for t, v in ordered if newest is None or t > newest)
+        if ordered and (newest is None or ordered[0][0] > newest):
+            protected.add(ordered[0][1])
     protected.update(v for v in (current, previous) if v)
     return sorted(
         (v for _, v in ordered if v not in protected), key=lambda v: semver(v) or (0, 0, 0)

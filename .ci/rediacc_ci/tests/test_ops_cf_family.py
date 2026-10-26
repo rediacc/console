@@ -430,7 +430,8 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     # ONE DECLARED DELTA: the closing hint names the bench deploy the way it is run now. The bash script it named was retired (PLAN-retire-bash-oracles B3), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
     redeploy_bash = "To redeploy fresh code: scripts/ops/deploy-bench.sh\n"
     redeploy_port = (
-        "To redeploy fresh code: PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench\n"
+        "To redeploy fresh code: PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench "
+        "(it also seeds the ROOT_EMAIL user the reset removed)\n"
     )
     assert redeploy_bash in out_b, out_b
     assert out_b.replace(redeploy_bash, redeploy_port) == out_p
@@ -712,6 +713,15 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     return {R2_TO_BACKUP.get(name, name): value for name, value in env.items()}
 
 
+# DECLARED DELTA (27861278): the port seeds the ROOT_EMAIL user after the secrets push (deploy_bench docstring item 8), a POST the retired bash never sent. The route answers it as a fresh bench would, added AFTER the twin run so the golden's route key is unchanged; the call is removed from the compared shape and its two stderr lines from the compared step list, each asserted present first so the removal cannot go vacuous.
+SEED_PATH = "/account/api/v1/auth/register"
+SEED_ROUTE = {"method": "POST", "match": SEED_PATH, "body": {"user": {}}, "status": 201}
+
+
+def _is_seed_call(call: dict) -> bool:
+    return call.get("tool") == "curl" and SEED_PATH in (call.get("url") or "")
+
+
 def _deploy_shape(calls: list[dict]) -> list[dict]:
     """The comparable call list. The R2 trio is dropped from each call's `cf_env` (the CLOUDFLARE_* names its environment carried) because only the twin's environment holds it; `test_deploy_bench_matches_bash` asserts separately that no port call inherits it."""
     out = []
@@ -720,6 +730,8 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
             continue
         # DECLARED DELTA (b7d7bdfe0): the port prints the D1 bookmark before migrating, a `wrangler d1 time-travel info` call the retired bash never made.
         if raw["tool"] == "npx" and raw["argv"][1:4] == ["d1", "time-travel", "info"]:
+            continue
+        if _is_seed_call(raw):
             continue
         kept = [n for n in raw.get("cf_env") or () if n not in R2_TO_BACKUP]
         out.append({**raw, "cf_env": kept} if raw.get("cf_env") else raw)
@@ -731,9 +743,11 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     rc_b, out_b, err_b = world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     bash_calls = world.calls()
     world.reset_log()
+    world.add_routes(SEED_ROUTE)
     rc_p, out_p, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
+    assert any(_is_seed_call(c) for c in port_calls)
     assert out_b == out_p
     assert _deploy_shape(bash_calls) == _deploy_shape(port_calls)
     secrets = next(c["stdin"] for c in port_calls if c["tool"] == "npx" and c["stdin"])
@@ -761,7 +775,13 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     # The delta is asserted before it is filtered, so a port that stops printing the bookmark warning, or drops the live-host line, still fails here.
     assert sum(ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") for ln in all_port_lines) == 1
     assert sum(ln.startswith("✓ bench is live") for ln in all_port_lines) == 1
-    port_lines = [ln for ln in all_port_lines if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED")]
+    seed_lines = ("→ Seeding the root user", "✓ root user created")
+    assert sum(ln.startswith(seed_lines) for ln in all_port_lines) == 2
+    port_lines = [
+        ln
+        for ln in all_port_lines
+        if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") and not ln.startswith(seed_lines)
+    ]
     assert [port_build if ln == bash_build else ln for ln in bash_lines] == port_lines
     assert "r2-secret" not in err_p
     assert "ses-secret" not in err_p
@@ -775,7 +795,7 @@ def test_deploy_bench_tokens_minted_from_the_global_key_wait_then_are_destroyed(
     bash_calls = world.calls()
     assert any(c["tool"] == "sleep" for c in bash_calls)  # the control: the bash slept a fixed 5 s
     world.reset_log()
-    world.add_routes(*h.PROBE_ROUTES)  # after the twin: the route table keys its golden
+    world.add_routes(*h.PROBE_ROUTES, SEED_ROUTE)  # after the twin: the route table keys its golden
     rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     assert rc == 0, err
     # The port probes instead: the probe block sits between the mint and the first wrangler call.

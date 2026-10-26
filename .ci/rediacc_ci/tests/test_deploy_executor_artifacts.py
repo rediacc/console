@@ -190,6 +190,24 @@ def test_a_partial_newer_than_every_complete_version_is_protected_as_in_flight()
     assert doomed == []
 
 
+def test_with_no_complete_version_only_the_newest_partial_is_protected():
+    doomed = ea.select_prune(
+        ["1.0.0", "1.0.1", "1.0.2"], current="1.0.9", previous="", keep=2, complete=[]
+    )
+    assert doomed == ["1.0.0", "1.0.1"]
+
+
+def test_only_the_newest_of_several_newer_partials_is_protected():
+    doomed = ea.select_prune(
+        ["1.0.0", "1.0.1", "1.0.2", "1.0.3"],
+        current="1.0.0",
+        previous="",
+        keep=1,
+        complete=["1.0.0"],
+    )
+    assert doomed == ["1.0.1", "1.0.2"]
+
+
 def test_list_versions_complete_only_skips_a_version_without_a_manifest(r2, tmp_path):
     ea.stage("1.4.2", "deadbeef", make_sources(tmp_path / "src"))
     ea.stage("1.4.3", "deadbeef", make_sources(tmp_path / "src"))

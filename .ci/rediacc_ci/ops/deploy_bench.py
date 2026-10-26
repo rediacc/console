@@ -346,6 +346,11 @@ def _rotation_check(root) -> None:
     )
 
 
+# A Worker that accepts the connection and never answers must read as "no HTTP answer" (retried, then a named SeedError), not hang the deploy.
+CURL_CONNECT_TIMEOUT_S = 10
+CURL_MAX_TIME_S = 30
+
+
 class SeedError(DeployError):
     """The root principal could not be created or confirmed."""
 
@@ -356,6 +361,10 @@ def _post_json(url: str, body: dict[str, str]) -> tuple[int, dict]:
         [
             "curl",
             "-sS",
+            "--connect-timeout",
+            str(CURL_CONNECT_TIMEOUT_S),
+            "--max-time",
+            str(CURL_MAX_TIME_S),
             "-X",
             "POST",
             url,
@@ -417,7 +426,9 @@ def seed_root(
 
 
 def _seed_and_report() -> None:
-    log.step("Seeding the root user (%s) on https://%s" % ("ROOT_EMAIL", DOMAIN))
+    log.step(
+        "Seeding the root user (%s) on https://%s" % (os.environ.get("ROOT_EMAIL") or "", DOMAIN)
+    )
     outcome = seed_root()
     log.info(
         "root user created with its org and subscription"
@@ -513,7 +524,8 @@ def main(argv: list[str]) -> int:
         log.error("Unknown argument: %s" % argv[0])
         log.error("deploy_bench takes no arguments but --seed-root; run with --help for usage.")
         return 2
-    for cmd in ("curl", "npx"):
+    # The seed path only runs curl; npx is for the deploy.
+    for cmd in ("curl",) if seed_only else ("curl", "npx"):
         if shutil.which(cmd) is None:
             log.error("Required command '%s' is not available" % cmd)
             return 1

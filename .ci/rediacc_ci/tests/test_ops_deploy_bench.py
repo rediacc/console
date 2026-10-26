@@ -4,6 +4,7 @@ A real local HTTP server stands in for the account Worker's POST /account/api/v1
 """
 
 import json
+import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -124,3 +125,73 @@ def test_main_rejects_other_arguments_but_takes_seed_root(monkeypatch):
     monkeypatch.setattr(deploy_bench, "seed_root", fake)
     assert deploy_bench.main(["--seed-root"]) == 0
     assert seen == [1]
+
+
+def test_curl_is_bounded_so_a_silent_worker_cannot_hang_the_seed(monkeypatch):
+    seen: list[list[str]] = []
+
+    def fake_run(argv, **_kwargs):
+        seen.append(argv)
+        return subprocess.CompletedProcess(argv, 28, stdout="", stderr="timed out")
+
+    monkeypatch.setattr(deploy_bench.subprocess, "run", fake_run)
+    with pytest.raises(deploy_bench.SeedError, match="no HTTP answer"):
+        deploy_bench.seed_root(
+            "http://x.test", "root@example.test", attempts=2, sleep=lambda _: None
+        )
+    assert len(seen) == 2
+    argv = seen[0]
+    assert argv[argv.index("--max-time") + 1] == str(deploy_bench.CURL_MAX_TIME_S)
+    assert "--connect-timeout" in argv
+
+
+def test_seed_only_needs_curl_but_not_npx(monkeypatch):
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", deploy_bench.PROFILE)
+    monkeypatch.setattr(
+        deploy_bench.shutil, "which", lambda cmd: None if cmd == "npx" else "/bin/x"
+    )
+    monkeypatch.setattr(deploy_bench, "seed_root", lambda: "exists")
+    assert deploy_bench.main(["--seed-root"]) == 0
+
+
+def test_seed_step_names_the_address(monkeypatch):
+    monkeypatch.setenv("ROOT_EMAIL", "root@example.test")
+    steps: list[str] = []
+    monkeypatch.setattr(deploy_bench.log, "step", steps.append)
+    monkeypatch.setattr(deploy_bench.log, "info", lambda _m: None)
+    monkeypatch.setattr(deploy_bench, "seed_root", lambda: "created")
+    deploy_bench._seed_and_report()
+    assert "root@example.test" in steps[0]
+    assert "(ROOT_EMAIL)" not in steps[0]
+
+
+def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
+    worker = tmp_path / "workers" / "account"
+    worker.mkdir(parents=True)
+    (worker / deploy_bench.CONFIG).write_text("")
+    (worker / "node_modules").mkdir()
+    web = tmp_path / "private" / "account" / "web"
+    (web / "node_modules").mkdir(parents=True)
+    for name in (
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CF_GLOBAL_API_KEY",
+        "CF_API_KEY",
+        "CF_EMAIL",
+    ):
+        monkeypatch.setenv(name, "x")
+    events: list[str] = []
+    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
+    monkeypatch.setattr(deploy_bench.cf_auth, "await_propagation", lambda _a: None)
+    monkeypatch.setattr(deploy_bench.bench_preflight, "lockfile", lambda _p: 0)
+    monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
+    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
+    monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: events.append("rotation"))
+    monkeypatch.setattr(
+        deploy_bench, "_run", lambda argv, *_a, **_k: events.append(" ".join(argv[:4]))
+    )
+    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: events.append("seed"))
+    deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert events[-1] == "seed"
+    assert events[-2] == "npx wrangler secret bulk"
+    assert events.count("seed") == 1
