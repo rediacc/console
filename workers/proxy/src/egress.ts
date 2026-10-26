@@ -130,7 +130,7 @@ export async function accountEgress(
 }
 
 /**
- * A 401 on a bearer route means the account server no longer accepts this org's cached token (a root block revoked it, or it was rotated): forget it and resend once with a freshly issued one, so the first call after an unblock does not fail (ML0 on bench, 2026-10-26: 2 of 8 probes within a minute of an unblock answered 401). A second 401 is returned as it is, and its token is forgotten too.
+ * A 401 on a bearer route means the account server no longer accepts this org's cached token (a root block revoked it, or it was rotated): forget it and resend once with a freshly issued one, so the first call after an unblock does not fail (ML0 on bench, 2026-10-26: 2 of 8 probes within a minute of an unblock answered 401). A second 401 is returned as it is, and its token is forgotten too. The resend cannot duplicate a write: every bearer route answers 401 only from `apiTokenAuth`, before its handler runs (private/account/src/middleware/api-token.ts).
  */
 async function resendWithFreshToken(
   request: Request,
