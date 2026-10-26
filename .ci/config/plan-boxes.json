@@ -583,8 +583,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 12,
+      "open": 7,
+      "done": 13,
       "open_sigs": [
         "2ee0d095",
         "41fdf40a",
@@ -592,8 +592,7 @@
         "646a774e",
         "b7cad508",
         "cc078a76",
-        "f412766e",
-        "fed5f079"
+        "f412766e"
       ],
       "done_sigs": [
         "2ab149a7",
@@ -607,7 +606,8 @@
         "bd408eee",
         "d62ec7d3",
         "f6572a7e",
-        "fb1bb1a4"
+        "fb1bb1a4",
+        "fed5f079"
       ]
     },
     "agent/plans/PLAN-consolidation-pressure.md": {
@@ -1210,15 +1210,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 23,
+      "open": 10,
+      "done": 24,
       "open_sigs": [
         "01c7cc61",
         "0c58a49b",
         "38b1819f",
         "56426a9e",
         "5c6a8dc7",
-        "7834ea96",
         "8bb212c7",
         "8ec6bd76",
         "abe9b4eb",
@@ -1234,6 +1233,7 @@
         "59d303f1",
         "69a7d64f",
         "77b26aea",
+        "7834ea96",
         "88006538",
         "9a3891f2",
         "aa94f54f",

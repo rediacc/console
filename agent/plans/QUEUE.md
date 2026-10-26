@@ -68,18 +68,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-telemetry-export.md -- 14 of 19 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 662 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 675 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a4e738e8efd071797.
-- Leased items: 1: #c0af0c3c (worker:a4e738e8efd071797, d778be9d).
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a4ab6beb40b72d18d, worker:ad8a51bda29bdd115, worker:a75ea3e276c508a86.
+- Leased items: 5: #5f43e8c8 (worker:ad8a51bda29bdd115, d778be9d), #6516dd5b (worker:a75ea3e276c508a86, d778be9d), #900fdadc (worker:a4ab6beb40b72d18d, d778be9d), #c0af0c3c (worker:bxyubk544, d778be9d), #cba857c9 (worker:a75ea3e276c508a86, d778be9d).
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 7; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 23 plans done, 322 of 484 boxes done (66%).
+Promoted: 6 of 23 plans done, 324 of 484 boxes done (66%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -103,8 +103,8 @@ Promoted: 6 of 23 plans done, 322 of 484 boxes done (66%).
 | 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
 | 19 | PLAN-converge-preflight-and-repo-recovery.md | 18/18 | done |
 | 20 | PLAN-gpu-device-grants.md | 9/12 | 3 open |
-| 21 | PLAN-proxy-cd-six-targets.md | 23/34 | 11 open |
-| 22 | PLAN-console-executor-multi-org.md | 12/20 | 8 open |
+| 21 | PLAN-proxy-cd-six-targets.md | 24/34 | 10 open |
+| 22 | PLAN-console-executor-multi-org.md | 13/20 | 7 open |
 | 23 | PLAN-executor-durable-object-policy.md | 2/21 | 19 open |
 <!-- queue:progress:end -->
 

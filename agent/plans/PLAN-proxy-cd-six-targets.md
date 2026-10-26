@@ -316,12 +316,13 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
 
 ### Live rollout (each box records worker and version ids before and after, smoke rc, rollback command, D1 bookmark, and one end-to-end console command)
 
-- [ ] L0 [live] Bench and preconditions.
+- [x] L0 [live] Bench and preconditions.
   - Run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench`, then `deploy_proxy --target bench --record`, then `console_executor --target bench --enable`.
   - Delete the `EXECUTOR_TOKEN` secret from rediacc-proxy-bench and revoke token 5375a8fe.
   - Record U4 for all seven D1 databases (root user, org id, subscription; ids only).
   - Name the end-to-end machine (hostinger inside H1, otherwise the VM used).
   - Run E1 against bench.
+    (ticked) 2026-10-26T22:51:29Z by d778be9d: L0 live record: bench smoke rc 0 (proxy 41ed108c), console_executor --enable rc0 (account 7967fbfa), EXECUTOR_TOKEN absent, 5375a8fe and ebaab8d8 revoked so the ip_binding=cloudflare count is 0, U4 recorded for all seven D1 databases, end-to-end machine hostinger via the probe key, and E1 against https://bench.rediacc.com exited 0 (1 passed, orgs 08103c52 and 61fa8f2c)
   
   -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md (a "Live records" section). Accept: the bench record row has smoke rc 0, E1 against `https://bench.rediacc.com` exits 0, and `SELECT count(*) FROM api_tokens WHERE ip_binding='cloudflare' AND revoked_at IS NULL` on the bench D1 returns 0.
 - [ ] L1 [live] edge-eu, before merge, through the local path of the deploy skill running the same modules CD runs. This box records U1 and U2 as observed. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: the edge-eu row records the account version before and after, the D1 bookmark, the proxy version, smoke rc 0, the enable step, the rollback command, and E1 against `https://edge-eu.rediacc.com` exiting 0.
@@ -370,7 +371,7 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
 
 Bench notes: the ROOT_EMAIL user, its org and a COMMUNITY subscription were registered through `POST /account/api/v1/auth/register` (ids 65b5d9d0, a49f455c, eba8a7c0) because deploy_bench and reset_bench seeded none (fixed in 27861278: deploy_bench now seeds the user and reset_bench still removes it, so every reset needs a following deploy_bench or `--seed-root`; `--seed-root` live rc=0), and the issuer refused ISSUER_OWNER_UNKNOWN until then; the first issued token was c032d177 (issuer key executor:bench:eu). `console_executor --enable --target bench --region eu` ran under the deploy-proxy-bench profile (rc=0). The old EXECUTOR_TOKEN secret was deleted from rediacc-proxy-bench and token 5375a8fe revoked. telemetry_delivery: 8 hosts, 16 signals, 0 silent. The image push first failed on a single 226 MB layer (registry commit timeout) and passed once the Dockerfile split bundle, natives and renet into separate layers (907cd2892). The bench proxy was deployed again between the first row and the redeploy row: wrangler reported 94c4be16 as the version live before the redeploy, not the ede18ed0 of the first row, and that intermediate deploy has no row of its own.
 
-### L0 live record, 2026-10-26 (box L0 not ticked: E1 is pending)
+### L0 live record, 2026-10-26 (E1 passed in round 4, see below)
 
 - Enable: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --enable --target bench` rc=0 (bare run, re-executed under the deploy-proxy-bench profile). EXECUTOR_MODE was already set; this was a re-put, read back as listed among 37 secrets on rediacc-account-bench. Account Worker version 7967fbfa-7cdc-4f91-a035-cd3c4ad50866 (source Secret Change, 21:12:53Z), previous d8a1ae5a-28b5-48ad-ae4d-7af6351af2a5. Rollback: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --disable --target bench`, or `npx wrangler rollback d8a1ae5a-28b5-48ad-ae4d-7af6351af2a5 --config workers/account/wrangler.bench.toml`. Proxy stays at 41ed108c (cap 25, smoke rc 0); account migration 0066 unchanged.
 - EXECUTOR_TOKEN on rediacc-proxy-bench: `wrangler secret list --format json` returned `[]`, so it is already deleted (no action).
@@ -390,6 +391,8 @@ Bench notes: the ROOT_EMAIL user, its org and a COMMUNITY subscription were regi
 
   U4 holds in the sense that every database has the root user, an owned org and a subscription. The subscription is `active` only in edge-eu and eu; the other five carry a COMMUNITY `inactive` one (live to the issuer's ranking, but not a `webConsole` plan). The org and subscription ids repeat across the six non-bench databases.
 - End-to-end machine: pending operator item #900fdadc (hostinger probe key). E1 against bench was not run in this task.
+
+- E1 against `https://bench.rediacc.com` (2026-10-26, round 4): the end-to-end machine is hostinger, reached with the dedicated probe key recorded in PLAN-console-executor-multi-org ML0 notes round 4. `27-91-live-two-orgs.test.ts` exited 0 (1 passed in 1.7m) with two org ids (08103c52, 61fa8f2c); the bench smoke after the last proxy deploy (41ed108c) was rc 0, and the ip_binding=cloudflare count is 0.
 
 ## Decisions taken as defaults (open to operator veto)
 
