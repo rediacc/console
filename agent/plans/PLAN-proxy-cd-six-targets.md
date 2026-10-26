@@ -1,7 +1,7 @@
 # PLAN: the console executor goes live per region: the mock retires to a test fixture, and CD deploys a proxy Worker plus executor container for each of the six targets
 
 Status: approved -- operator order 2026-10-25T18:10Z (retire the console mock; CD deploys a proxy and executor per target; deploys to the six targets plus bench allowed without asking; deploy_proxy.py's MANUAL ONLY clause lifted) and the rulings ASKED:2026-10-25T18:18Z (us/asia "Closed until smoke passes", CEK sessions "Re-grant transparently") and ASKED:2026-10-25T19:08Z (token "A: binding mints", stable "Ride promote-stable", cost "1 per target, 7 total but 21 max. So, can have 3 when needed"), quoted under Operator rulings
-Priority: P1 -- every deployed account Worker serves the canned mock run today, because EXECUTOR_MODE defaults to 'mock' (private/account/src/types/env.ts:263) and no wrangler config sets it, so the paid console shows synthetic machines to real users; the proxy runs only in eu with a long-lived `cloudflare`-bound token that any Worker in any Cloudflare account could present
+Priority: P1 -- until the mock retirement landed (see Verified state), every deployed account Worker could serve the canned mock run, because EXECUTOR_MODE defaults to 'mock' (private/account/src/types/env.ts:263) and no wrangler config sets it; a deployed Worker now refuses it with 503 `CONSOLE_EXECUTION_UNAVAILABLE` (TEST_MODE is pinned false), so the paid console shows no machines at all until the executor is live; the proxy runs only in eu with a long-lived `cloudflare`-bound token that any Worker in any Cloudflare account could present
 First-Seen: 2026-10-25
 Depends-On: no-dep for the code boxes; L1 and later need the end-to-end machine named in L0 (hostinger only inside PLAN-renet-runtime-converge's H1 window, otherwise a publicly reachable VM); the relations to PLAN-cloudflare-proxy.md (C2, the operator redeploy box) and PLAN-telemetry-export.md (T14, T15, T16) are stated under Relation to other plans
 Concurrency: parallel -- writers take the disjoint per-box Owns below, and the sequencing lines name the few shared files (M1 before I1 on private/account/src/types/env.ts; M1 before I4 on private/account/src/routes/console.ts; M3 before R1 on web/src/hooks/useCommand.ts; D1 before E1 on .ci/config/secret-supply.json). PLAN-cloudflare-proxy.md also owns workers/proxy/**, deploy_proxy.py and its test; its only open boxes are live or teardown, so no code writer collides. PLAN-telemetry-export.md owns telemetry_delivery.py, workers/proxy/wrangler.toml and observability-export-wiring.test.ts with T14 and T16 open, so T1, K1 and G2 run only while no writer for that plan holds those files.
@@ -351,6 +351,14 @@ Owns: private/account/src/routes/console.ts, private/account/src/routes/proxy.ts
 - Wave 2: I1 after M1; A2 after A1; G2 after K1; D1 after K1, A1 and A2.
 - Wave 3: I2 after I1; I4 after M1 and I1; D2, G3 and E1 after D1.
 - Wave 4: W1. The live boxes run in the order L0 to L3 before merge, and L4 to L9 after merge. If the merge flow needs every box ticked, the lead decides whether the post-merge boxes move to a follow-up plan file; this plan does not assume either answer.
+
+## Live records
+
+| Target | Account version | D1 bookmark (before migrations) | Proxy version (previous) | Smoke rc | Rollback | End-to-end |
+|---|---|---|---|---|---|---|
+| bench (2026-10-26) | deploy_bench rc=0 (5 migrations incl. 0065) | 000000ca-00000000-00005110-c0e98905... (full value on worklist #03d54376) | ede18ed0-7f00-4f74-9ddc-862528f7ad31 (5ae345d3-fb6e-48fe-bcc3-446649fb5712) | 0 (health 200, server-info 401, ready 200) | `npx wrangler rollback 5ae345d3-fb6e-48fe-bcc3-446649fb5712 --config workers/proxy/wrangler.bench.toml` | E1 not run: the live-console member login secret is not in the store |
+
+Bench notes: the ROOT_EMAIL user, its org and a COMMUNITY subscription were registered through `POST /account/api/v1/auth/register` (ids 65b5d9d0, a49f455c, eba8a7c0) because deploy_bench and reset_bench seed none, and the issuer refused ISSUER_OWNER_UNKNOWN until then; the first issued token was c032d177 (issuer key executor:bench:eu). `console_executor --enable --target bench --region eu` ran under the deploy-proxy-bench profile (rc=0). The old EXECUTOR_TOKEN secret was deleted from rediacc-proxy-bench and token 5375a8fe revoked. telemetry_delivery: 8 hosts, 16 signals, 0 silent. The image push first failed on a single 226 MB layer (registry commit timeout) and passed once the Dockerfile split bundle, natives and renet into separate layers (907cd2892).
 
 ## Decisions taken as defaults (open to operator veto)
 

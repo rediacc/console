@@ -23,7 +23,7 @@ Owns: none -- seed: the plan cites no repo path to edit
 
 ## Status
 
-One of the eight sites is fixed; seven remain, plus two recorded as out of scope. renet PR #96 (rediacc/renet, a PRIVATE repo, so deliberately NOT hyperlinked here: check:ci-external-links reaches it unauthenticated and a private URL always reads as a 404 broken link) was closed without merging, and its closing comment is the only surviving record of the inventory, so this file exists to keep that inventory somewhere a future session will actually find it.
+One of the eight sites is fixed and one (site 6, `ensureRclone`) is obsolete because the function was deleted; six remain, plus two recorded as out of scope. renet PR #96 (rediacc/renet, a PRIVATE repo, so deliberately NOT hyperlinked here: check:ci-external-links reaches it unauthenticated and a private URL always reads as a 404 broken link) was closed without merging, and its closing comment is the only surviving record of the inventory, so this file exists to keep that inventory somewhere a future session will actually find it.
 
 **2026-08-18: THE LINE NUMBERS HAVE DRIFTED AGAIN. RE-VERIFY EVERY ONE BEFORE ACTING.** Spot-checked against `private/renet` at `d53e1d3` (2026-08-17): the two reference sites quoted just below no longer resolve. `private/renet/cmd/renet/setup_command.go:1128` is now the tail of one function plus the head of `installPackagesDnf`, and `:1375-1376` is `installDockerRHEL`'s doc comment, not the retry loop. The inventory's own file:line entries are therefore suspect too; treat them as search hints and re-locate each site by CONTENT.
 
