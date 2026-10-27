@@ -1213,6 +1213,8 @@ def test_assist_cancel_leaves_a_finished_run_and_rereads_an_empty_list(
         ((None,), 0, "gh run list gave no answer"),
         (([_run_row(42, "in_progress")],), 1, "gh run cancel 42 exited 1: refused"),
         (([_run_row(42, "in_progress")],), 0, "still in flight 0s after the cancel"),
+        # Review b555255a.1: a failed list while waiting is not "cancelled".
+        (([_run_row(42, "in_progress")], None), 0, "gh run list failed while waiting"),
     ],
 )
 def test_assist_cancel_refuses_loudly_when_the_run_cannot_be_stopped(

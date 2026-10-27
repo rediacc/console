@@ -930,50 +930,50 @@ def check_server_key(
 ) -> str:
     """Whether the store's `server_recoverable_org_passphrase` will open on the target (edge or bench); refuses when it would not. Messages name the target by its channel.
 
-    Two names are compared. `CONFIG_SERVER_KEY` is what the code before PLAN-config-server-key K1 reads (falling back to the public constant). `ACCOUNT_CONFIG_SERVER_KEY` is what K1 reads, sealing `csk1.<kid>.` rows; once it is pushed, presence alone says nothing about the row, so the row itself is checked: an untagged row is refused (it still needs the rewrap on stable), and so is a `csk1` row whose kid is not the kid of the key the target holds (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE` or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, since Worker secrets are write-only). Each channel has its own key (PLAN-config-server-key K2), so a row sealed under the stable key refuses: it would not open on the target. Only while BOTH Workers still lack the new key does an untagged row pass.
+    An untagged row was sealed under the legacy key: `CONFIG_SERVER_KEY`, which the code before PLAN-config-server-key K1 reads, or the public constant it falls back to, which is also the only key K1's legacy path (legacy-server-key.ts) opens. So `CONFIG_SERVER_KEY` presence must match on both Workers, and an untagged row then opens on the target whatever `ACCOUNT_CONFIG_SERVER_KEY` it holds; K1 code rewrites it under the target's own key on first read. A `csk1.<kid>.` row opens only under the key that sealed it, so the target must hold `ACCOUNT_CONFIG_SERVER_KEY` and its kid must match (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE` or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, since Worker secrets are write-only). Each channel has its own key (K2), so a row sealed under the stable key refuses: there is no reseal step yet (worklist #fc0490ad).
     """
     a, b = names.get(src.worker), names.get(dst.worker)
     if a is None or b is None:
         raise RefusedError("the secret names are unknown for a Worker")
-    for name in (SERVER_KEY_NAME, WORKER_KEY_NAME):
-        if (name in a) != (name in b):
-            raise RefusedError(
-                "%s is %s on %s and %s on %s: server_recoverable_org_passphrase would not decrypt on %s"
-                % (
-                    name,
-                    "set" if name in a else "absent",
-                    src.worker,
-                    "set" if name in b else "absent",
-                    dst.worker,
-                    dst.channel,
-                )
-            )
-    tagged = isinstance(value, str) and value.startswith(CSK_TAG)
-    if WORKER_KEY_NAME not in a:
-        if tagged:
-            raise RefusedError(
-                "the store's server_recoverable_org_passphrase is a csk1 row, but neither Worker holds %s"
-                % WORKER_KEY_NAME
-            )
-        # Worker secrets are write-only and no bws entry holds CONFIG_SERVER_KEY, so presence is all that can be compared from here.
-        if SERVER_KEY_NAME not in a:
-            return "%s and %s: absent on both Workers (both use the built-in fallback key)" % (
+    if (SERVER_KEY_NAME in a) != (SERVER_KEY_NAME in b):
+        raise RefusedError(
+            "%s is %s on %s and %s on %s: server_recoverable_org_passphrase would not decrypt on %s"
+            % (
                 SERVER_KEY_NAME,
-                WORKER_KEY_NAME,
+                "set" if SERVER_KEY_NAME in a else "absent",
+                src.worker,
+                "set" if SERVER_KEY_NAME in b else "absent",
+                dst.worker,
+                dst.channel,
             )
-        return (
-            "%s: set on both Workers; the values cannot be read back (write-only), so the first %s pull is the proof"
-            % (SERVER_KEY_NAME, dst.channel)
         )
     if value is None:
-        return "%s: set on both Workers; the store has no server-recoverable passphrase" % (
-            WORKER_KEY_NAME
-        )
+        return "the store has no server-recoverable passphrase"
     match = CSK_VALUE.match(value) if isinstance(value, str) else None
     if not match:
+        if SERVER_KEY_NAME in a:
+            # Worker secrets are write-only and no bws entry holds CONFIG_SERVER_KEY, so presence is all that can be compared from here.
+            return (
+                "%s: set on both Workers and the row is untagged; the values cannot be read back (write-only), so the first %s pull is the proof"
+                % (SERVER_KEY_NAME, dst.channel)
+            )
+        if WORKER_KEY_NAME in b:
+            return (
+                "the row is untagged (legacy key); %s opens it through its legacy path and rewrites it under its own %s on first read"
+                % (
+                    dst.worker,
+                    WORKER_KEY_NAME,
+                )
+            )
+        return "%s and %s: absent on %s; the untagged row opens under the built-in fallback key" % (
+            SERVER_KEY_NAME,
+            WORKER_KEY_NAME,
+            dst.worker,
+        )
+    if WORKER_KEY_NAME not in b:
         raise RefusedError(
-            "%s is set on both Workers but the store's server_recoverable_org_passphrase is untagged: run PYTHONPATH=.ci python3 -m rediacc_ci.ops.rewrap_config_server_key --target %s --region %s --apply --verify first"
-            % (WORKER_KEY_NAME, src.channel, src.region)
+            "the store's server_recoverable_org_passphrase is csk1.%s, but %s does not hold %s"
+            % (match.group(1), dst.worker, WORKER_KEY_NAME)
         )
     name, want = target_kid()
     if want is None:
@@ -983,14 +983,10 @@ def check_server_key(
         )
     if match.group(1) != want:
         raise RefusedError(
-            "the store's row is sealed under kid %s, not the %s key's kid %s: it would not open on %s"
+            "the store's row is sealed under kid %s, not the %s key's kid %s: it would not open on %s, and no step reseals it under the target's key yet (worklist #fc0490ad)"
             % (match.group(1), dst.channel, want, dst.worker)
         )
-    return "%s: set on both Workers; the store's row is sealed under the %s key (kid %s)" % (
-        WORKER_KEY_NAME,
-        dst.channel,
-        want,
-    )
+    return "the store's row is sealed under the %s key (kid %s)" % (dst.channel, want)
 
 
 # ---- the plan ----------------------------------------------------------------
@@ -1032,11 +1028,15 @@ SECRET_COLUMNS = {
 }
 
 
+# Shorter values (a flag such as "0" or "1") are not secrets, and masking them would redact every matching character of every output line.
+MASK_MIN = 4
+
+
 def secret_values(source: dict) -> list[str]:
-    """Every non-empty secret value of the copied rows, for `Wrangler.mask`: the store's key material, the operator's credentials and every slot's wrapped CEK. A short value is masked too: over-redacting a failure message is safe, printing a secret is not."""
+    """Every non-empty secret value of the copied rows, for `Wrangler.mask`: the store's key material, the operator's credentials and every slot's wrapped CEK. Values under MASK_MIN characters are skipped: none is a secret, and masking one garbles every line."""
     out = [str(source[k].get(c) or "") for k, cols in SECRET_COLUMNS.items() for c in cols]
     out += [str(s.get("wrapped_cek") or "") for s in source["slots"]]
-    return [v for v in out if v]
+    return [v for v in out if len(v) >= MASK_MIN]
 
 
 def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_id: str) -> Plan:

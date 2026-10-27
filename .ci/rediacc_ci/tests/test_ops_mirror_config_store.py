@@ -543,7 +543,7 @@ def _check(src_names: set[str], dst_names: set[str], value: object, kid=_no_kid)
 
 
 def test_server_key_presence_mismatch_refuses() -> None:
-    assert "absent on both" in _check(set(), set(), LEGACY_ROW)
+    assert "built-in fallback key" in _check(set(), set(), LEGACY_ROW)
     assert "set on both" in _check({"CONFIG_SERVER_KEY"}, {"CONFIG_SERVER_KEY"}, LEGACY_ROW)
     with pytest.raises(
         mod.RefusedError, match="CONFIG_SERVER_KEY is set on rediacc-account-eu and absent"
@@ -553,20 +553,14 @@ def test_server_key_presence_mismatch_refuses() -> None:
         mod.check_server_key({SRC.worker: set()}, SRC, DST, LEGACY_ROW, _no_kid)
 
 
-def test_new_key_on_one_worker_only_refuses() -> None:
-    with pytest.raises(
-        mod.RefusedError, match="ACCOUNT_CONFIG_SERVER_KEY is absent on rediacc-account-eu and set"
-    ):
-        _check(set(), NEW, LEGACY_ROW)
+def test_new_key_on_one_worker_only_passes_an_untagged_row() -> None:
+    """The legacy path opens an untagged row whatever ACCOUNT_CONFIG_SERVER_KEY a Worker holds."""
+    assert "rewrites it under its own" in _check(set(), NEW, LEGACY_ROW)
+    assert "built-in fallback key" in _check(NEW, set(), LEGACY_ROW)
 
 
-def test_untagged_row_refuses_once_both_workers_hold_the_key() -> None:
-    with pytest.raises(
-        mod.RefusedError,
-        match=r"untagged: run PYTHONPATH=\.ci python3 -m rediacc_ci\.ops\.rewrap_config_server_key "
-        r"--target stable --region eu --apply --verify first",
-    ):
-        _check(NEW, NEW, LEGACY_ROW)
+def test_untagged_row_passes_once_both_workers_hold_the_key() -> None:
+    assert "opens it through its legacy path" in _check(NEW, NEW, LEGACY_ROW)
 
 
 def test_untagged_row_passes_while_both_workers_lack_the_key() -> None:
@@ -574,15 +568,15 @@ def test_untagged_row_passes_while_both_workers_lack_the_key() -> None:
 
 
 def test_tagged_row_without_the_key_on_either_worker_refuses() -> None:
-    with pytest.raises(mod.RefusedError, match="neither Worker holds"):
-        _check(set(), set(), "csk1.%s.Zm9v" % EDGE_KID)
+    with pytest.raises(mod.RefusedError, match="does not hold ACCOUNT_CONFIG_SERVER_KEY"):
+        _check(NEW, set(), "csk1.%s.Zm9v" % EDGE_KID)
 
 
 def test_a_row_not_sealed_under_the_edge_key_refuses() -> None:
     """Each channel holds its own key, so a row sealed under the stable key (any kid but edge's) cannot open on edge."""
     with pytest.raises(
         mod.RefusedError,
-        match="kid 99999999, not the edge key's kid abcdef12: it would not open on edge-rediacc-account-eu",
+        match="kid 99999999, not the edge key's kid abcdef12: it would not open on edge-rediacc-account-eu, and no step reseals it",
     ):
         _check(NEW, NEW, "csk1.99999999.Zm9v", _edge(EDGE_KID))
 
@@ -1282,7 +1276,13 @@ def test_cf_auth_group_and_secret_supply_consumer_are_wired() -> None:
     spec = json.loads((ROOT / ".ci" / "config" / "secret-supply.json").read_text(encoding="utf-8"))
     consumer = spec["consumers"]["mirror-config-store"]
     assert consumer["required"] == ["CF_GLOBAL_API_KEY", "CF_EMAIL"]
-    assert consumer["optional"] == []
+    # Review 6247005b.2: a csk1 row makes check_server_key read the target's own key.
+    assert consumer["optional"] == [
+        "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE",
+        "ACCOUNT_CONFIG_SERVER_KEY_US_EDGE",
+        "ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE",
+        "ACCOUNT_CONFIG_SERVER_KEY_BENCH",
+    ]
     assert mod.PURPOSE == mod.PROFILE == "mirror-config-store"
     assert "python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge" in (
         mod.__doc__ or ""
@@ -1424,11 +1424,14 @@ def test_a_missing_edge_bucket_refuses_instead_of_reading_as_absent(
     assert "bucket edge-rediacc-configs-eu does not exist" in text.out + text.err
 
 
-def test_a_short_secret_value_is_still_masked(dbs) -> None:
+def test_a_four_character_secret_is_masked_and_a_flag_is_not(dbs) -> None:
+    """A one-character value such as "1" would redact every matching character of every output line."""
     source = mod.read_source(Sqlite(dbs[0]), STORE, NOW)
-    source["operator"]["totp_secret"] = "abc"
+    source["operator"]["totp_secret"] = "abcd"
+    source["operator"]["password_salt"] = "1"
     values = mod.secret_values(source)
-    assert "abc" in values
+    assert "abcd" in values
+    assert "1" not in values
     assert "" not in values
 
 
@@ -1568,13 +1571,10 @@ def _bench_kid() -> tuple[str, str | None]:
 
 
 def test_bench_server_key_checks_read_the_bench_worker_and_key() -> None:
-    assert "absent on both" in _bench_check(set(), set(), LEGACY_ROW)
-    with pytest.raises(
-        mod.RefusedError,
-        match=r"ACCOUNT_CONFIG_SERVER_KEY is absent on rediacc-account-eu and set on "
-        r"rediacc-account-bench.*decrypt on bench",
-    ):
-        _bench_check(set(), NEW, LEGACY_ROW)
+    assert "absent on rediacc-account-bench" in _bench_check(set(), set(), LEGACY_ROW)
+    assert "rediacc-account-bench opens it through its legacy path" in _bench_check(
+        set(), NEW, LEGACY_ROW
+    )
     line = _bench_check(NEW, NEW, "csk1.%s.Zm9v" % BENCH_KID, _bench_kid)
     assert "sealed under the bench key (kid bbbbbbbb)" in line
     with pytest.raises(

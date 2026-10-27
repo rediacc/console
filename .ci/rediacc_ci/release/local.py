@@ -2168,7 +2168,12 @@ def assist_cancel(
             )
     deadline = time.monotonic() + wait
     while True:
-        runs = _assist_runs(sha, since) or []
+        runs = _assist_runs(sha, since)
+        if runs is None:
+            raise AssistError(
+                "gh run list failed while waiting for the cancelled assist run(s) %s"
+                % ", ".join(live)
+            )
         going = [str(r.get("databaseId", "")) for r in runs if r.get("status") != "completed"]
         if not going:
             return "cancelled assist run(s) %s" % ", ".join(live)
