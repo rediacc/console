@@ -54,6 +54,9 @@ if verb == "get-object":
     pathlib.Path(args[-1]).write_bytes(src.read_bytes())
 elif verb == "put-object":
     dst = bucket / opt("--key")
+    if "--if-none-match" in args and dst.exists():
+        sys.stderr.write("An error occurred (PreconditionFailed) when calling the PutObject operation: 412\n")
+        sys.exit(254)
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_bytes(pathlib.Path(opt("--body")).read_bytes())
     (bucket / (opt("--key") + ".cache-control")).write_text(opt("--cache-control"))
@@ -747,3 +750,101 @@ def test_the_www_record_is_inactive_without_the_env_and_refuses_before_a_deploy(
     ran.clear()
     assert dr.record_www_deploy(tmp_path, "c.toml", "www-edge", lambda: ran.append(1) or 0) == 1
     assert ran == []
+
+
+def test_the_conditional_put_carries_if_none_match(world, monkeypatch):
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY")
+    assert run_before(world) == 0
+    world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
+    assert after(world) == 0
+    assert sink_after(world) == 0
+    put = next(
+        c["argv"]
+        for c in calls(world.log)
+        if "put-object" in c["argv"] and "release-records" in " ".join(c["argv"])
+    )
+    assert put[put.index("--if-none-match") + 1] == "*"
+
+
+@pytest.mark.parametrize(
+    "secret", ['has"quote-12345', "back\\slash-12345", "ctl\nline-12345", "caf\u00e9-secret-12345"]
+)
+def test_an_escaped_secret_value_is_still_found(monkeypatch, secret):
+    monkeypatch.setenv("SOME_API_TOKEN", secret)
+    with pytest.raises(dr.RecordError, match="SOME_API_TOKEN"):
+        dr.refuse_secret_values({"note": "x " + secret + " y"})
+    with pytest.raises(dr.RecordError, match="SOME_API_TOKEN"):
+        dr.refuse_secret_values({"nested": [{"k": secret}]})
+
+
+def test_after_with_a_secret_in_the_record_emits_nothing(world, monkeypatch, capsys):
+    assert run_before(world) == 0
+    world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
+    monkeypatch.setenv("SOME_API_TOKEN", ACCOUNT_NEW)
+    out = world.dir / "deploy-record-edge-eu.json"
+    out.unlink(missing_ok=True)
+    (world.tmp / "summary.md").unlink(missing_ok=True)
+    capsys.readouterr()
+    assert after(world) == 1
+    assert not out.exists()
+    assert not (world.tmp / "summary.md").exists()
+    assert capsys.readouterr().out == ""
+    assert record_keys(world) == []
+
+
+def test_www_after_with_a_secret_emits_nothing(world, monkeypatch, tmp_path, capsys):
+    rec = tmp_path / "w.json"
+    rec.write_text(
+        json.dumps(
+            {
+                "target": "www-edge",
+                "region": "global",
+                "version": VERSION,
+                "version_after": "v2",
+                "note": "CANARY-secret-value-123",
+            }
+        )
+    )
+    monkeypatch.setenv("SOME_API_TOKEN", "CANARY-secret-value-123")
+    assert www_after(rec) == 1
+    assert capsys.readouterr().out == ""
+    assert "smoke_rc" not in json.loads(rec.read_text())
+    assert record_keys(world) == []
+
+
+def test_a_failed_after_lookup_is_marked_and_not_sunk_unless_accepted(world, monkeypatch, tmp_path):
+    cwd = tmp_path / "www"
+    cwd.mkdir()
+    (cwd / "wrangler.edge.toml").write_text('name = "edge-rediacc-www"\n')
+    seq = [(True, "wv-1"), dr.RecordError("rate limited")]
+
+    def fake(*_a):
+        item = seq.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    monkeypatch.setattr(dr, "worker_version", fake)
+    out = tmp_path / "r.json"
+    monkeypatch.setenv("DEPLOY_RECORD_OUT", str(out))
+    monkeypatch.setenv("DEPLOY_RECORD_VERSION", VERSION)
+    assert dr.record_www_deploy(cwd, "wrangler.edge.toml", "www-edge", lambda: 0) == 0
+    rec = json.loads(out.read_text())
+    assert rec["version_after"] is None
+    assert "rate limited" in rec["version_after_error"]
+    assert www_after(out) == 1
+    assert record_keys(world) == []
+    args = [
+        "www-after",
+        "--record",
+        str(out),
+        "--smoke-rc",
+        "0",
+        "--sink",
+        "r2",
+        "--channel",
+        "edge",
+        "--accept-missing-after",
+    ]
+    assert dr.main(args) == 0
+    assert len(record_keys(world)) == 1

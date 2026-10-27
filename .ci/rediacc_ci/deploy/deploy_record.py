@@ -305,31 +305,64 @@ def record_key(version: str, channel: str, target: str, region: str) -> str:
     return "%sv%s/%s/deploy-record-%s-%s.json" % (RECORD_PREFIX, version, channel, target, region)
 
 
+def _string_leaves(node: object) -> typing.Iterator[str]:
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for key, value in node.items():
+            yield str(key)
+            yield from _string_leaves(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _string_leaves(item)
+
+
 def refuse_secret_values(record: dict) -> None:
-    """A record that carries the value of a secret-named variable is never written."""
+    """A record that carries the value of a secret-named variable is never emitted. Every string leaf is compared on its decoded text, and the serialized body is compared on the json-escaped form too, so quotes, backslashes, control characters and non-ASCII text cannot hide a value."""
+    leaves = list(_string_leaves(record))
     body = json.dumps(record)
     for name, value in os.environ.items():
-        if len(value) >= 8 and SECRET_NAME_RE.search(name) and value in body:
-            raise RecordError("the record carries the value of %s; nothing is written" % name)
+        if len(value) < 8 or not SECRET_NAME_RE.search(name):
+            continue
+        escaped = json.dumps(value)[1:-1]
+        if any(value in leaf for leaf in leaves) or escaped in body:
+            raise RecordError("the record carries the value of %s; nothing is emitted" % name)
 
 
 def write_record_once(record: dict, key: str) -> None:
-    """Put the record at `key` unless the key exists. An existing key, or a probe that cannot answer, refuses."""
+    """Put the record at `key` with a conditional put (`If-None-Match: *`), so a concurrent writer cannot overwrite it. An existing key (412 PreconditionFailed) refuses, and so does any other failure."""
     refuse_secret_values(record)
     with tempfile.TemporaryDirectory(prefix="deploy-record-") as tmp:
-        probe = pathlib.Path(tmp) / "existing.json"
-        try:
-            exists = executor_artifacts.get_object(key, probe)
-        except executor_artifacts.ArtifactError as exc:
-            raise RecordError(str(exc)) from None
-        if exists:
-            raise RecordError("%s already exists: a deploy record is written once" % key)
         body = pathlib.Path(tmp) / "record.json"
         body.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         try:
-            executor_artifacts.put_object(key, body, "application/json")
+            argv = [
+                awscli.AWS,
+                "s3api",
+                "put-object",
+                "--key",
+                key,
+                "--body",
+                str(body),
+                "--content-type",
+                "application/json",
+                "--cache-control",
+                "public, max-age=31536000, immutable",
+                "--if-none-match",
+                "*",
+                "--bucket",
+                executor_artifacts.BUCKET,
+                "--endpoint-url",
+                executor_artifacts.endpoint(),
+            ]
         except executor_artifacts.ArtifactError as exc:
             raise RecordError(str(exc)) from None
+        proc = awscli.run(argv, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    if proc.returncode != 0:
+        err = proc.stderr.decode("utf-8", "replace").strip()
+        if "PreconditionFailed" in err or "412" in err:
+            raise RecordError("%s already exists: a deploy record is written once" % key)
+        raise RecordError("aws put-object %s failed (rc %d): %s" % (key, proc.returncode, err))
     log.info("Deploy record written once to %s." % key)
 
 
@@ -353,7 +386,12 @@ def take_www_before(cwd: pathlib.Path, config: str) -> dict:
 
 
 def build_www_record(
-    before: dict, version_after: str | None, release_version: str, target: str, deploy_rc: int
+    before: dict,
+    version_after: str | None,
+    release_version: str,
+    target: str,
+    deploy_rc: int,
+    after_error: str | None = None,
 ) -> dict:
     """The www record: version ids before and after, the rollback command and the smoke rc (`None` until `www-after`)."""
     return {
@@ -367,6 +405,7 @@ def build_www_record(
         "worker": before["worker"],
         "version_before": before["version_before"],
         "version_after": version_after,
+        "version_after_error": after_error,
         "deploy_rc": deploy_rc,
         "smoke_rc": None,
         "rollback_command": worker_rollback_command(
@@ -395,14 +434,16 @@ def record_www_deploy(
         _, after = worker_version(cwd, config, before["worker"])
     except RecordError as exc:
         log.error("%s www record: the version after is unknown: %s" % (SELF, exc))
-        after = None
-    record = build_www_record(before, after, release, target, rc)
+        after, after_error = None, str(exc)
+    else:
+        after_error = None
+    record = build_www_record(before, after, release, target, rc, after_error)
     try:
         refuse_secret_values(record)
-        write_json(pathlib.Path(out), record)
     except RecordError as exc:
         log.error("%s www record: %s" % (SELF, exc))
         return rc or 1
+    write_json(pathlib.Path(out), record)
     return rc
 
 
@@ -821,6 +862,11 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
             "the fetched executor manifest differs from the staged one the before record read"
         )
         record["good"] = False
+    try:
+        refuse_secret_values(record)
+    except RecordError as exc:
+        log.error("%s after: %s" % (SELF, exc))
+        return 1
     write_json(pathlib.Path(args.out), record)
     if args.sink:
         try:
@@ -862,6 +908,17 @@ def cmd_www_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     path = pathlib.Path(args.record)
     record = read_json(path, "the www record")
     record["smoke_rc"] = args.smoke_rc
+    try:
+        refuse_secret_values(record)
+    except RecordError as exc:
+        log.error("%s www-after: %s" % (SELF, exc))
+        return 1
+    if args.sink and record.get("version_after") is None and not args.accept_missing_after:
+        log.error(
+            "the www record has no version after (%s); not sinking it without --accept-missing-after"
+            % (record.get("version_after_error") or "no reason recorded")
+        )
+        return 1
     write_json(path, record)
     print(json.dumps(record, indent=2, sort_keys=True))
     if args.sink:
@@ -904,6 +961,7 @@ def _parser() -> argparse.ArgumentParser:
     wa.add_argument("--smoke-rc", required=True, type=int)
     wa.add_argument("--sink", default="", choices=("", *SINKS))
     wa.add_argument("--channel", default="", choices=("", *CHANNELS))
+    wa.add_argument("--accept-missing-after", action="store_true")
     return parser
 
 
