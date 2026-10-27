@@ -94,3 +94,67 @@ def test_main_exit_codes(repo, monkeypatch, capsys):
     assert tag.main(["--version", "3.0.0", "--sha", first]) == 0
     assert tag.main(["--version", "3.0.0", "--sha", second]) == 1
     assert "two commits" in capsys.readouterr().err
+
+
+def test_create_tag_returns_the_tag_object_oid_and_pushes_nothing(repo):
+    work, bare, first, _ = repo
+    oid = tag.create_tag("4.0.0", first, cwd=str(work), bot_name="b", bot_email="b@x.invalid")
+    assert oid == _run(work, "rev-parse", "refs/tags/v4.0.0")
+    assert oid != first, "an annotated tag's object id is not the commit"
+    assert _run(work, "cat-file", "-t", oid) == "tag"
+    assert _run(bare, "tag", "--list") == ""
+    # Idempotent before the push: the same local tag answers the same oid.
+    assert tag.create_tag("4.0.0", first, cwd=str(work)) == oid
+
+
+def test_create_tag_lightweight_oid_is_the_commit(repo):
+    work, _, first, _ = repo
+    assert tag.create_tag("4.0.1", first, cwd=str(work), lightweight=True) == first
+
+
+def test_push_tag_pushes_exactly_the_created_object(repo):
+    work, bare, first, _ = repo
+    oid = tag.create_tag("4.1.0", first, cwd=str(work))
+    out = tag.push_tag("4.1.0", oid, cwd=str(work))
+    assert out.startswith("Created tag v4.1.0")
+    assert _run(bare, "rev-parse", "refs/tags/v4.1.0") == oid
+    assert "nothing to push" in tag.push_tag("4.1.0", oid, cwd=str(work))
+    # After the push, create_tag reports the remote's object, which a retry pushes as a no-op.
+    assert tag.create_tag("4.1.0", first, cwd=str(work)) == oid
+
+
+def test_push_tag_refuses_an_oid_the_local_tag_is_not(repo):
+    work, bare, first, second = repo
+    tag.create_tag("4.2.0", first, cwd=str(work))
+    with pytest.raises(tag.TagError, match="another object"):
+        tag.push_tag("4.2.0", second, cwd=str(work))
+    with pytest.raises(tag.TagError, match="another object"):
+        tag.push_tag("4.9.9", first, cwd=str(work))
+    assert _run(bare, "tag", "--list") == ""
+
+
+def test_push_tag_refuses_to_move_a_remote_tag(repo):
+    work, _, first, second = repo
+    tag.ensure_tag("4.3.0", first, cwd=str(work))
+    with pytest.raises(tag.TagError, match="move a released tag"):
+        tag.push_tag("4.3.0", second, cwd=str(work))
+
+
+def test_create_tag_refuses_a_remote_tag_on_another_commit(repo):
+    work, _, first, second = repo
+    tag.ensure_tag("4.4.0", first, cwd=str(work))
+    with pytest.raises(tag.TagError, match="two commits"):
+        tag.create_tag("4.4.0", second, cwd=str(work))
+
+
+def test_create_only_prints_the_oid_and_push_oid_pushes_it(repo, monkeypatch, capsys):
+    work, bare, first, _ = repo
+    monkeypatch.chdir(work)
+    assert tag.main(["--version", "5.0.0", "--sha", first, "--create-only"]) == 0
+    oid = capsys.readouterr().out.strip()
+    assert oid == _run(work, "rev-parse", "refs/tags/v5.0.0")
+    assert _run(bare, "tag", "--list") == ""
+    assert tag.main(["--version", "5.0.0", "--push-oid", first]) == 1
+    assert "another object" in capsys.readouterr().err
+    assert tag.main(["--version", "5.0.0", "--push-oid", oid]) == 0
+    assert _run(bare, "rev-parse", "refs/tags/v5.0.0") == oid

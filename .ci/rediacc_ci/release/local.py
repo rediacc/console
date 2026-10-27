@@ -12,11 +12,15 @@ ONE DECLARATIVE TABLE. `STEPS` lists every step once: an id, a section, the bws 
 
 THE LOCK HOLDS THROUGH THE RUN. The gates judge it once; a concurrent CD edge release can still seal or tag the same version while this run builds. So `lock-check` (the gates' own `local_gates.lock_refusals`, live) runs again before the first stage write and immediately before the seal, and a version taken mid-run stops the run before anything is published.
 
-`can_fail` IS READ AFTER THE SEAL. Every step before the seal may fail and nothing sealed is left behind. After the seal, a failure that leaves `cli/v<V>/.released` with no tag `v<V>` is the CD run 37749637824 case, so the seal and the tag carry `can_fail=False`: the tag immediately follows the seal, and every step that can fail after the seal comes after the tag. A `can_fail=False` step is retried before the run stops. `test_release_local.py` pins those invariants.
+`can_fail` IS READ AFTER THE SEAL. Every step before the seal may fail and nothing sealed is left behind. After the seal, a failure that leaves `cli/v<V>/.released` with no tag `v<V>` is the CD run 37749637824 case, so the seal and the tag rows carry `can_fail=False`: the tag immediately follows the seal, and every step that can fail after the seal comes after the tag. A `can_fail=False` row is retried with backoff (`RETRY_BACKOFF`) before the run stops, which narrows the window and does not close it: a tag that still fails leaves the version sealed and untagged, and `sealed_untagged` then prints SEALED WITHOUT A TAG with the one recovery command. `test_release_local.py` and the local-release phase of `rediacc_ci.security.ci_workflow_invariants` (`npm run check:ci-workflow-invariants`) pin those invariants.
+
+THE TAG IS THREE ROWS, ONE UNIT. The git-level pre-push hook admits the tag push only by the exact object id the release-run record lists, and an annotated tag's object id does not exist until the tag is made. So `tag-create` makes the local tag in the clone (`rediacc_ci.release.tag --create-only`, whose only stdout line is the oid), `tag-record` re-writes the release-run record (same run id and path, so REDIACC_RELEASE_RUN is unchanged) with `(clone, origin, refs/tags/v<V>, oid)`, and `tag-push` pushes `refs/tags/v<V>` only while it is still that oid (`--push-oid`). The record is first written with no push at all.
+
+THE ASSIST (local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage.
 
 PROVENANCE (plan decision 6). Sigstore needs the GitHub OIDC identity, so `provenance` writes `dist/cli/SHA256SUMS` over every Release asset (`create_github_release.release_assets`: `dist/cli/**` and `dist/packages/**`) and its armoured detached signature `dist/cli/SHA256SUMS.asc`, made with the release GPG key of the `release-local` profile in a throwaway GNUPGHOME. Both ride the GitHub Release, whose asset set is `dist/cli/**`.
 
-NO SECRET IN THIS PROCESS. A credentialed step runs as a child `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile <p> -- ...`, so values live only in that child's environment. A step that needs a store name under another spelling (`binds`, the `STORE > LOCAL` grammar of secret-supply.json) or the operator's GitHub token (`gh_env`, read from `gh auth token`) runs its command through the `_bind` verb of this module INSIDE that child. That is how the www Worker gets the unsuffixed `AWS_SES_ACCESS_KEY_ID` / `AWS_SES_SECRET_ACCESS_KEY` it reads while the store holds only the regional pairs: the EU pair is bound under the unsuffixed names for that one child, as cd-deploy-worker.yml does. Every push (the tag, the tap, the Release) uses the session's GitHub token through gh: the clone's credential helper is `gh auth git-credential`, and `GITHUB_PAT` / `GH_TOKEN` come from `gh auth token`. No App token.
+NO SECRET IN THIS PROCESS. A credentialed step runs as a child `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile <p> -- ...`, so values live only in that child's environment. A step that needs a store name under another spelling (`binds`, the `STORE > LOCAL` grammar of secret-supply.json) or the operator's GitHub token (`gh_env`, read from `gh auth token`) runs its command through the `_bind` verb of this module INSIDE that child. `_bind` reads no store: STORE must be declared by one of the step's profiles, which bound it, and `_bind` only copies it to LOCAL, so `check:ci-secret-supply` knows every vault entry a release reads. That is how the www Worker gets the unsuffixed `AWS_SES_ACCESS_KEY_ID` / `AWS_SES_SECRET_ACCESS_KEY` it reads while the store holds only the regional pairs: the EU pair is bound under the unsuffixed names for that one child, as cd-deploy-worker.yml does. Every push (the tag, the tap, the Release) uses the session's GitHub token through gh: the clone's credential helper is `gh auth git-credential`, and `GITHUB_PAT` / `GH_TOKEN` come from `gh auth token`. No App token.
 
 `--dry-run` resolves the version and runs the gates read-only, then prints every step with its profiles and the key NAMES they bind. It reads no secret value and writes nothing: the gates' fetch becomes `git ls-remote`, the release lock reads the public sentinel URL and `git ls-remote --tags`, the release clone is not made (named as not judged), and no record is written. It exits 1 naming each refusal, else 0.
 
@@ -71,8 +75,34 @@ SECTIONS = (
     "record",
 )
 RETRIES_NO_FAIL = 3
+# Seconds slept before the 2nd and 3rd attempt of a `can_fail=False` row: a transient remote or R2 error gets time to clear.
+RETRY_BACKOFF = (5.0, 20.0)
 RECORD_PREFIX = "release-records/v%s/edge"
 ASSIST_WORKFLOW = "local-release-assist.yml"
+ASSIST_NAME = "Local Release Assist"
+# local-release-assist.yml THE R2 CONTRACT: one prefix in WK_RELEASES_BUCKET, private-bin/ in, cli/ out, cli/.complete last.
+ASSIST_PREFIX = "staging/local-release/v%s"
+ASSIST_SEAS = ("rdc-mac-arm64", "rdc-mac-x64", "rdc-win-x64.exe", "rdc-win-arm64.exe")
+# The file list of ci-build-renet.yml's `renet-binaries-<sha>` artifact, which the assist's SEA builds read.
+ASSIST_BIN_GLOBS = (
+    "renet-linux-*",
+    "renet-darwin-*",
+    "renet-windows-*",
+    "criu-linux-*",
+    "rsync-linux-*",
+    "zot-linux-*",
+    "k3s-linux-*",
+    "csiprovisioner-linux-*",
+    "csisnapshotter-linux-*",
+    "snapshotcontroller-linux-*",
+    "checksums.sha256",
+)
+# The renet binaries the four SEAs embed; each must be in checksums.sha256 and match it before anything is staged.
+ASSIST_RENET = tuple(
+    "renet-%s-%s%s" % (goos, arch, ".exe" if goos == "windows" else "")
+    for goos in ("linux", "darwin", "windows")
+    for arch in ("amd64", "arm64")
+)
 CLONE_REL = ".ci/cache/release"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 REGIONS_REL = "regions.json"
@@ -232,6 +262,32 @@ def _table() -> tuple[Step, ...]:
             "builds",
             ("sh", "-c", "exec python3 -m rediacc_ci.release.renet_key_gate private/bin/renet-*"),
             profiles=("release-local",),
+        ),
+        # The assist starts as soon as the keyed renet set exists (local-release-assist.yml THE R2 CONTRACT): stage it, then dispatch.
+        Step(
+            "assist-stage-in",
+            "builds",
+            (*PY, SELF, "_assist", "stage-in", "--version", "{version}"),
+            profiles=("r2-artifacts",),
+        ),
+        Step(
+            "assist-dispatched-at", "builds", (), cwd="root", kind="stamp", capture="dispatched_at"
+        ),
+        Step(
+            "assist-dispatch",
+            "builds",
+            (
+                "gh",
+                "workflow",
+                "run",
+                ASSIST_WORKFLOW,
+                "--ref",
+                "main",
+                "-f",
+                "version={version}",
+                "-f",
+                "sha={sha}",
+            ),
         ),
         Step("cli-bundle", "builds", (*PY, "rediacc_ci.build.build_cli")),
         Step(
@@ -424,24 +480,25 @@ def _table() -> tuple[Step, ...]:
                 "{build_tag}",
             ),
         ),
-        # ---- 4. the mac and win SEAs and install legs, on CI (plan: Gaps that stay on CI)
+        # ---- 4. the mac and win SEAs and install legs, on CI (plan: Gaps that stay on CI): wait for the marker, fetch the four SEAs into dist/cli
         Step(
-            "assist-dispatch",
+            "assist-fetch",
             "assist",
             (
-                "gh",
-                "workflow",
-                "run",
-                ASSIST_WORKFLOW,
-                "--ref",
-                "main",
-                "-f",
-                "version={version}",
-                "-f",
-                "sha={sha}",
+                *PY,
+                SELF,
+                "_assist",
+                "fetch",
+                "--version",
+                "{version}",
+                "--sha",
+                "{sha}",
+                "--since",
+                "{dispatched_at}",
             ),
+            profiles=("r2-artifacts",),
+            capture="assist_run",
         ),
-        Step("assist-await", "assist", (), kind="assist-await"),
         # ---- 5. stage (memo A, C1-C9), opened by the live lock check: a CD edge release of v<V> since the gates stops here
         Step("lock-check-stage", "stage", LOCK_CHECK, profiles=("r2-artifacts",)),
         Step("ensure-nfpm", "stage", (*PY, "rediacc_ci.build.ensure_nfpm"), capture="nfpm_dir"),
@@ -532,6 +589,12 @@ def _table() -> tuple[Step, ...]:
             (*PY, "rediacc_ci.release.assert_r2_sentinel", "edge", "{version}"),
             profiles=("r2-artifacts",),
         ),
+        Step(
+            "assist-clean",
+            "stage",
+            (*PY, SELF, "_assist", "clean", "--version", "{version}"),
+            profiles=("r2-artifacts",),
+        ),
         Step("lock-check-seal", "stage", LOCK_CHECK, profiles=("r2-artifacts",)),
         # ---- 6. seal, then the tag at once (risk R2)
         Step(
@@ -550,16 +613,34 @@ def _table() -> tuple[Step, ...]:
             profiles=("r2-artifacts",),
             can_fail=False,
         ),
+        # The tag in three rows that run as one unit: create it locally (its object id is the only stdout line), add that oid to the release-run record, push exactly that oid. The pre-push hook admits the push by that oid only.
         Step(
-            "tag",
+            "tag-create",
             "seal",
             (
                 "sh",
                 "-c",
-                'exec python3 -m rediacc_ci.release.tag --version "$VERSION" --sha "$SHA" --remote origin --bot-name "$GIT_BOT_NAME" --bot-email "$GIT_BOT_EMAIL"',
+                'exec python3 -m rediacc_ci.release.tag --version "$VERSION" --sha "$SHA" --remote origin --create-only --bot-name "$GIT_BOT_NAME" --bot-email "$GIT_BOT_EMAIL"',
             ),
             profiles=("release-local",),
             env=(("VERSION", "{version}"), ("SHA", "{sha}")),
+            capture="tag_oid",
+            can_fail=False,
+        ),
+        Step("tag-record", "seal", (), cwd="root", kind="tag-record", can_fail=False),
+        Step(
+            "tag-push",
+            "seal",
+            (
+                *PY,
+                "rediacc_ci.release.tag",
+                "--version",
+                "{version}",
+                "--push-oid",
+                "{tag_oid}",
+                "--remote",
+                "origin",
+            ),
             can_fail=False,
         ),
         # ---- 7. publish
@@ -1315,12 +1396,15 @@ class Run:
     internal: dict[str, Callable[[Step, Run], int]] = dataclasses.field(default_factory=dict)
     results: list[StepResult] = dataclasses.field(default_factory=list)
     failed: str = ""
+    backoff: tuple[float, ...] = RETRY_BACKOFF
 
     def run_step(self, step: Step) -> int:
         started, t0 = _now(), time.monotonic()
         attempts = 1 if step.can_fail else RETRIES_NO_FAIL
         rc, tries = 1, 0
         while tries < attempts:
+            if tries:
+                time.sleep(self.backoff[min(tries, len(self.backoff)) - 1] if self.backoff else 0)
             tries += 1
             if step.kind != "run":
                 handler = self.internal.get(step.kind)
@@ -1386,22 +1470,17 @@ def _release_run_module(root: pathlib.Path) -> Any:
     return module
 
 
-def pushes_for(run: Run) -> list[dict[str, str]]:
-    """The pushes this run makes that the git-level pre-push hook judges: the version tag from the release clone."""
-    if run.ctx.get("workers_only"):
-        return []
-    return [
-        {
-            "toplevel": run.ctx["clone"],
-            "remote": "origin",
-            "remote_ref": "refs/tags/v%s" % run.ctx["version"],
-            "oid": run.ctx["sha"],
-        }
-    ]
+def tag_push(run: Run) -> dict[str, str]:
+    """The version tag's push from the release clone, the one push the git-level pre-push hook judges by its exact oid: the tag OBJECT `tag-create` made, never the commit."""
+    return {
+        "toplevel": run.ctx["clone"],
+        "remote": "origin",
+        "remote_ref": "refs/tags/v%s" % run.ctx["version"],
+        "oid": run.ctx["tag_oid"],
+    }
 
 
-def internal_release_run(step: Step, run: Run) -> int:
-    del step
+def _write_record(run: Run, pushes: list[dict[str, str]]) -> int:
     module = _release_run_module(run.root)
     try:
         path = module.write_release_run(
@@ -1410,12 +1489,43 @@ def internal_release_run(step: Step, run: Run) -> int:
             tree=run.ctx["tree"],
             version=run.ctx["version"],
             channel=CHANNEL,
-            pushes=pushes_for(run),
+            pushes=pushes,
         )
     except module.RecordError as exc:
         print("%s: release-run: %s" % (SELF, exc), file=sys.stderr)
         return 1
     run.ctx["release_run"] = str(path)
+    run.ctx["pushes"] = list(pushes)
+    return 0
+
+
+def internal_release_run(step: Step, run: Run) -> int:
+    """Write the release-run record with no push yet: the tag's object id does not exist until `tag-create`, and `tag-record` re-writes the record with it."""
+    del step
+    return _write_record(run, [])
+
+
+_OID = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
+
+
+def internal_tag_record(step: Step, run: Run) -> int:
+    """Re-write the release-run record (same run id, same path, so REDIACC_RELEASE_RUN is unchanged) with the version tag's push at the oid `tag-create` printed."""
+    oid = str(run.ctx.get("tag_oid", ""))
+    if not _OID.match(oid):
+        print(
+            "%s: %s: tag-create printed %r, not an object id; the push cannot be recorded"
+            % (SELF, step.id, oid),
+            file=sys.stderr,
+        )
+        return 1
+    push = tag_push(run)
+    pushes = [p for p in run.ctx.get("pushes", []) if p.get("remote_ref") != push["remote_ref"]]
+    return _write_record(run, [*pushes, push])
+
+
+def internal_stamp(step: Step, run: Run) -> int:
+    """The current UTC instant into `step.capture` (the assist's dispatch time, so `_assist fetch` judges only runs created after it)."""
+    run.ctx[step.capture] = _now()
     return 0
 
 
@@ -1451,55 +1561,24 @@ def internal_gates(step: Step, run: Run) -> int:
     lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
     for line in lines:
         print(line)
-    refusals = filter_workers(
-        [ln for ln in lines if ln.startswith("local-gates:") and "admitted" not in ln],
-        bool(run.ctx.get("workers_only")),
-    )
-    if proc.returncode not in (0, 1) or refusals:
-        return 1
-    return 0
+    return gates_verdict(proc.returncode, lines, bool(run.ctx.get("workers_only")))
 
 
-def internal_assist_await(step: Step, run: Run) -> int:
-    """Wait for the local-release-assist run dispatched for this version, and take its verdict."""
-    del step
-    deadline = time.monotonic() + 600
-    run_id = ""
-    while time.monotonic() < deadline and not run_id:
-        proc = subprocess.run(
-            [
-                "gh",
-                "run",
-                "list",
-                "--workflow",
-                ASSIST_WORKFLOW,
-                "--limit",
-                "20",
-                "--json",
-                "databaseId,displayTitle,event",
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode == 0:
-            for row in json.loads(proc.stdout or "[]"):
-                if row.get("event") == "workflow_dispatch" and run.ctx["version"] in str(
-                    row.get("displayTitle", "")
-                ):
-                    run_id = str(row["databaseId"])
-                    break
-        if not run_id:
-            time.sleep(15)
-    if not run_id:
+def gates_verdict(rc: int, lines: list[str], workers_only: bool) -> int:
+    """0 only when the gates child admitted: rc 0 with no refusal line, or (workers-only) rc 1 whose every refusal is the release lock, which a workers-only run takes as its premise. Any other nonzero exit refuses, a crash or a bws refusal with no `local-gates:` line included: unjudged is never admitted (review finding 7c25d047.1)."""
+    raw = [ln for ln in lines if ln.startswith("local-gates:") and "admitted" not in ln]
+    kept = filter_workers(raw, workers_only)
+    if rc == 0 and not raw:
+        return 0
+    if rc == 1 and workers_only and raw and not kept:
+        return 0
+    if not raw:
         print(
-            "%s: assist-await: no %s run for v%s appeared"
-            % (SELF, ASSIST_WORKFLOW, run.ctx["version"]),
+            "%s: gates: the gates child exited %d and printed no refusal line; a gate that did not judge refuses"
+            % (SELF, rc),
             file=sys.stderr,
         )
-        return 1
-    run.ctx["assist_run"] = run_id
-    return subprocess.run(["gh", "run", "watch", run_id, "--exit-status"], check=False).returncode
+    return 1
 
 
 def release_record(run: Run) -> dict[str, Any]:
@@ -1552,7 +1631,8 @@ INTERNAL = {
     "release-run": internal_release_run,
     "channel-version": internal_channel_version,
     "gates": internal_gates,
-    "assist-await": internal_assist_await,
+    "tag-record": internal_tag_record,
+    "stamp": internal_stamp,
     "release-record": internal_release_record,
 }
 
@@ -1561,7 +1641,10 @@ INTERNAL = {
 
 
 def bind_main(argv: list[str]) -> int:
-    """`_bind --spec 'STORE > LOCAL' ... --gh-token NAME ... -- CMD`: run inside a `bws_env exec` child, resolve the specs through `bws_env.load` (and NAME from `gh auth token`), exec CMD with them. Prints names only."""
+    """`_bind --spec 'STORE > LOCAL' ... --gh-token NAME ... -- CMD`: run inside a `bws_env exec` child, copy each STORE value the enclosing profile bound to LOCAL (and NAME from `gh auth token`), exec CMD. Prints names only.
+
+    THROUGH THE PROFILE, NEVER AROUND IT. No store is read here: STORE must be a name one of the carried profiles (`REDIACC_BWS_PROFILES`) declares in .ci/config/secret-supply.json, so `check:ci-secret-supply` knows every vault entry this entry fetches, and the value is the one `bws_env exec` already bound.
+    """
     if "--" not in argv:
         print("%s _bind: want --spec/--gh-token ... -- CMD" % SELF, file=sys.stderr)
         return 2
@@ -1573,16 +1656,13 @@ def bind_main(argv: list[str]) -> int:
         print("%s _bind: no command after --" % SELF, file=sys.stderr)
         return 2
     env = dict(os.environ)
-    if specs:
-        try:
-            resolved, missing, _rc = bws_env.load(specs)
-        except bws_env.RefusalError as refusal:
-            for line in refusal.lines:
-                print(line, file=sys.stderr)
-            return 1
-        if missing:
-            return 1
-        env.update(resolved)
+    why = bind_refusals(specs, env)
+    if why:
+        for line in why:
+            print("%s _bind: %s" % (SELF, line), file=sys.stderr)
+        return 1
+    for store, local_name in bws_env.parse_specs(specs):
+        env[local_name] = env[store]
     for name in tokens:
         if env.get(name):
             continue
@@ -1600,6 +1680,32 @@ def bind_main(argv: list[str]) -> int:
         print("%s _bind: cannot run %s: %s" % (SELF, cmd[0], exc.strerror), file=sys.stderr)
         return 127
     return 0  # pragma: no cover
+
+
+def bind_refusals(specs: Sequence[str], env: dict[str, str]) -> list[str]:
+    """Why the specs cannot be bound from `env`: a STORE no carried profile declares, or one the profile left empty. Names only."""
+    carried = [p for p in env.get(bws_env.PROFILES_ENV, "").split(",") if p]
+    if not carried:
+        return [
+            "no profile is carried (%s is empty); run under bws_env exec" % bws_env.PROFILES_ENV
+        ]
+    try:
+        required, optional = bws_env.profile_specs(bws_env.profiles(env), carried)
+    except bws_env.RefusalError as refusal:
+        return list(refusal.lines)
+    declared = {local_name for _store, local_name in required + optional}
+    out = []
+    for store, local_name in bws_env.parse_specs(list(specs)):
+        if store not in declared:
+            out.append(
+                "%s (for %s) is not declared by profile(s) %s in .ci/config/secret-supply.json"
+                % (store, local_name, ",".join(carried))
+            )
+        elif not env.get(store):
+            out.append(
+                "%s (for %s) is empty after profile(s) %s" % (store, local_name, ",".join(carried))
+            )
+    return out
 
 
 def write_record_main(argv: list[str]) -> int:
@@ -1725,6 +1831,255 @@ def provenance_main(argv: list[str]) -> int:
     return 0
 
 
+class AssistError(Exception):
+    """The assist exchange cannot go on; the message says why."""
+
+
+def _assist_r2(root: pathlib.Path) -> tuple[str, str, dict[str, str]]:
+    """(bucket, endpoint, aws env) from well-known.env and the r2-artifacts trio this child carries."""
+    bucket = well_known(root).get("WK_RELEASES_BUCKET", "")
+    access = os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID", "")
+    secret = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "")
+    endpoint = os.environ.get("CLOUDFLARE_R2_ENDPOINT", "")
+    if not bucket:
+        raise AssistError("%s names no WK_RELEASES_BUCKET" % WELL_KNOWN_REL)
+    if not (access and secret and endpoint):
+        raise AssistError("the R2 trio is not bound; run under bws_env exec --profile r2-artifacts")
+    try:
+        awscli.require()
+    except awscli.AwsCliMissingError as exc:
+        raise AssistError(str(exc)) from exc
+    env = dict(
+        os.environ,
+        AWS_ACCESS_KEY_ID=access,
+        AWS_SECRET_ACCESS_KEY=secret,
+        AWS_DEFAULT_REGION="auto",
+    )
+    return bucket, endpoint, env
+
+
+def _aws(args: list[str], endpoint: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    return awscli.run(
+        ["aws", *args, "--endpoint-url", endpoint], env=env, capture_output=True, text=True
+    )
+
+
+def _digest(path: pathlib.Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def checksum_refusals(folder: pathlib.Path, sums: pathlib.Path, need: Sequence[str]) -> list[str]:
+    """Why `sums` (`<sha256>  <name>` lines) does not prove the files of `need` in `folder`: a name unlisted, a file missing, a digest that differs."""
+    if not sums.is_file() or not sums.stat().st_size:
+        return ["%s is missing or empty" % sums]
+    listed: dict[str, str] = {}
+    for line in sums.read_text(encoding="utf-8").splitlines():
+        parts = line.split()
+        if len(parts) == 2:
+            listed[parts[1].lstrip("*")] = parts[0].lower()
+    out = []
+    for name in need:
+        path = folder / name
+        if name not in listed:
+            out.append("%s is not listed in %s" % (name, sums.name))
+        elif not path.is_file() or not path.stat().st_size:
+            out.append("%s is missing or empty" % path)
+        elif _digest(path) != listed[name]:
+            out.append("%s does not match its digest in %s" % (path, sums.name))
+    return out
+
+
+def assist_stage_in(version: str, clone: pathlib.Path) -> str:
+    """Empty the version's staging prefix (a stale `.complete` of an earlier attempt must never be read as this run's), then upload the keyed renet set with its checksums to private-bin/."""
+    bucket, endpoint, env = _assist_r2(clone)
+    folder = clone / "private" / "bin"
+    why = checksum_refusals(folder, folder / "checksums.sha256", ASSIST_RENET)
+    if why:
+        raise AssistError("the renet set is not provably whole: " + "; ".join(why))
+    files = sorted({p for g in ASSIST_BIN_GLOBS for p in folder.glob(g) if p.is_file()})
+    prefix = "s3://%s/%s" % (bucket, ASSIST_PREFIX % version)
+    gone = _aws(["s3", "rm", "--recursive", "--only-show-errors", prefix + "/"], endpoint, env)
+    if gone.returncode != 0:
+        raise AssistError("aws s3 rm %s/ exited %d" % (prefix, gone.returncode))
+    for path in files:
+        put = _aws(
+            [
+                "s3",
+                "cp",
+                "--only-show-errors",
+                str(path),
+                "%s/private-bin/%s" % (prefix, path.name),
+            ],
+            endpoint,
+            env,
+        )
+        if put.returncode != 0:
+            raise AssistError("aws s3 cp %s exited %d" % (path.name, put.returncode))
+    return "%d file(s) staged at %s/private-bin/" % (len(files), prefix)
+
+
+def _gh_json(args: list[str]) -> Any:
+    try:
+        proc = subprocess.run(
+            ["gh", *args], capture_output=True, text=True, check=False, timeout=60
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    try:
+        return json.loads(proc.stdout or "null")
+    except ValueError:
+        return None
+
+
+def assist_failed_run(sha: str, since: str) -> str:
+    """The id of a local-release-assist dispatch on `sha`, created at or after `since`, that completed without success; "" when there is none or gh cannot say (the marker and the timeout still decide)."""
+    rows = _gh_json(
+        [
+            "run",
+            "list",
+            "--workflow",
+            ASSIST_WORKFLOW,
+            "--event",
+            "workflow_dispatch",
+            "--limit",
+            "20",
+            "--json",
+            "databaseId,headSha,status,conclusion,createdAt",
+        ]
+    )
+    for row in rows if isinstance(rows, list) else []:
+        if (
+            row.get("headSha") == sha
+            and str(row.get("createdAt", "")) >= since
+            and row.get("status") == "completed"
+            and row.get("conclusion") != "success"
+        ):
+            return str(row.get("databaseId", ""))
+    return ""
+
+
+def parse_marker(text: str, sha: str) -> str:
+    """The run id of a `cli/.complete` marker (`<sha> <run id>`) written for `sha`; AssistError otherwise. Exact fields, never a substring (review finding 7c25d047.2)."""
+    parts = text.split()
+    if len(parts) != 2 or not parts[1].isdigit():
+        raise AssistError("cli/.complete reads %r, not `<sha> <run id>`" % text.strip())
+    if parts[0] != sha:
+        raise AssistError("cli/.complete names sha %s, this release is %s" % (parts[0], sha))
+    return parts[1]
+
+
+def assist_fetch(
+    version: str,
+    sha: str,
+    since: str,
+    clone: pathlib.Path,
+    *,
+    timeout: float = 3600.0,
+    poll: float = 20.0,
+) -> str:
+    """Wait for `cli/.complete`, prove it names this sha and a run of this workflow on this sha, fetch the four SEAs into dist/cli and check each against its `.sha256`. Returns the run id."""
+    bucket, endpoint, env = _assist_r2(clone)
+    prefix = "s3://%s/%s/cli" % (bucket, ASSIST_PREFIX % version)
+    deadline = time.monotonic() + timeout
+    unknown = 0
+    while True:
+        got = _aws(["s3", "cp", "--only-show-errors", prefix + "/.complete", "-"], endpoint, env)
+        if got.returncode == 0:
+            run_id = parse_marker(got.stdout, sha)
+            break
+        if re.search(r"Not Found|NoSuchKey|\b404\b|does not exist", got.stderr or ""):
+            unknown = 0
+        else:
+            unknown += 1
+            if unknown >= 3:
+                raise AssistError(
+                    "reading %s/.complete failed 3 times running (aws exited %d); whether the assist finished is unknown"
+                    % (prefix, got.returncode)
+                )
+        failed = assist_failed_run(sha, since)
+        if failed:
+            raise AssistError(
+                "%s run %s on %s failed; no SEA to stage" % (ASSIST_WORKFLOW, failed, sha)
+            )
+        if time.monotonic() >= deadline:
+            raise AssistError("no %s/.complete after %ds" % (prefix, int(timeout)))
+        time.sleep(poll)
+    view = _gh_json(["run", "view", run_id, "--json", "workflowName,headSha"])
+    if not isinstance(view, dict):
+        raise AssistError("gh run view %s gave no answer, so the marker's run is unproven" % run_id)
+    if view.get("workflowName") != ASSIST_NAME or view.get("headSha") != sha:
+        raise AssistError(
+            "the marker names run %s, which is %r on %s, not %s on %s"
+            % (run_id, view.get("workflowName"), view.get("headSha"), ASSIST_NAME, sha)
+        )
+    dist = clone / "dist" / "cli"
+    dist.mkdir(parents=True, exist_ok=True)
+    got = _aws(
+        [
+            "s3",
+            "cp",
+            "--recursive",
+            "--only-show-errors",
+            "--exclude",
+            ".complete",
+            prefix + "/",
+            str(dist) + "/",
+        ],
+        endpoint,
+        env,
+    )
+    if got.returncode != 0:
+        raise AssistError("aws s3 cp --recursive %s/ exited %d" % (prefix, got.returncode))
+    why = [
+        line
+        for name in ASSIST_SEAS
+        for line in checksum_refusals(dist, dist / ("%s.sha256" % name), (name,))
+    ]
+    if why:
+        raise AssistError("the fetched SEAs are not provably whole: " + "; ".join(why))
+    return run_id
+
+
+def assist_clean(version: str, clone: pathlib.Path) -> str:
+    bucket, endpoint, env = _assist_r2(clone)
+    prefix = "s3://%s/%s/" % (bucket, ASSIST_PREFIX % version)
+    gone = _aws(["s3", "rm", "--recursive", "--only-show-errors", prefix], endpoint, env)
+    if gone.returncode != 0:
+        raise AssistError("aws s3 rm %s exited %d" % (prefix, gone.returncode))
+    return "removed %s" % prefix
+
+
+def assist_main(argv: list[str]) -> int:
+    """`_assist stage-in|fetch|clean --version V [--sha S --since ISO]`: the local half of local-release-assist.yml's R2 contract, run in the release clone inside an r2-artifacts child. `fetch` prints the assist run id as its last stdout line."""
+    parser = argparse.ArgumentParser(prog="%s _assist" % SELF)
+    parser.add_argument("verb", choices=("stage-in", "fetch", "clean"))
+    parser.add_argument("--version", required=True)
+    parser.add_argument("--sha", default="")
+    parser.add_argument("--since", default="")
+    parser.add_argument("--timeout", type=float, default=3600.0)
+    args = parser.parse_args(argv)
+    clone = pathlib.Path.cwd()
+    try:
+        if args.verb == "stage-in":
+            print(assist_stage_in(args.version, clone), file=sys.stderr)
+        elif args.verb == "clean":
+            print(assist_clean(args.version, clone), file=sys.stderr)
+        else:
+            if not re.fullmatch(r"[0-9a-f]{40}", args.sha) or not args.since:
+                parser.error("fetch needs --sha <40 hex> and --since <ISO instant>")
+            print(assist_fetch(args.version, args.sha, args.since, clone, timeout=args.timeout))
+    except AssistError as exc:
+        print("%s _assist %s: %s" % (SELF, args.verb, exc), file=sys.stderr)
+        return 1
+    return 0
+
+
 def launch_probe_main(argv: list[str]) -> int:
     """`_launch-probe`: does THIS process carry the launch form `release_run.entry_refusal` admits? Interpreter and invocation only; the package check needs a committed tree."""
     del argv
@@ -1828,7 +2183,27 @@ def main(
             % (SELF, run.failed),
             file=sys.stderr,
         )
+    for line in sealed_untagged(run):
+        print("%s: %s" % (SELF, line), file=sys.stderr)
     return rc
+
+
+def sealed_untagged(run: Run) -> list[str]:
+    """The recovery lines when the seal succeeded and the tag push did not (review finding 7c25d047.3).
+
+    `can_fail=False` buys retries with backoff, not certainty: a tag that still fails leaves `cli/v<V>/.released` with no `v<V>`, the bijection break Check Release State reddens main on. No row in the table can recover it, since the push needs the same remote that just failed, so the run says so loudly and names the one command that does, run from the operator's terminal (agent Bash is refused a v* tag push by block_unasked_release).
+    """
+    outcomes = run.ctx.get("outcomes", {})
+    if outcomes.get("seal") != "success" or outcomes.get("tag-push") == "success":
+        return []
+    version, sha = run.ctx.get("version", "<V>"), run.ctx.get("sha", "<sha>")
+    return [
+        "SEALED WITHOUT A TAG: cli/v%s/.released exists and v%s was not pushed; Check Release State reddens main until it is."
+        % (version, version),
+        "  recover from the operator's terminal, in %s:" % run.ctx.get("clone", "<clone>"),
+        "  PYTHONPATH=.ci python3 -m rediacc_ci.release.tag --version %s --sha %s --remote origin"
+        % (version, sha),
+    ]
 
 
 def _with_domain(step: Step, domains: dict[str, str]) -> Step:
@@ -1898,6 +2273,7 @@ VERBS = {
     "_write-record": write_record_main,
     "_lock-check": lock_check_main,
     "_provenance": provenance_main,
+    "_assist": assist_main,
     "_launch-probe": launch_probe_main,
 }
 

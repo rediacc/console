@@ -2737,3 +2737,111 @@ def test_the_estate_reads_every_workflow_and_action_check_ci_workflows_reads() -
     assert unread == set(), unread
     assert ".github/actions/profiler/nest-probe/action.yml" in estate
     assert len(estate) >= 30, sorted(estate)
+
+
+# --------------------------------------------------------------------------- the local release order (PLAN-local-release W3-B)
+
+
+class _Row(typing.NamedTuple):
+    id: str
+    argv: tuple[str, ...]
+    can_fail: bool = True
+    kind: str = "run"
+    env: tuple[tuple[str, str], ...] = ()
+
+
+def _local_table() -> list[_Row]:
+    py = ("python3", "-m")
+    return [
+        _Row("upload-cli-r2", (*py, "rediacc_ci.deploy.upload_to_r2", "--channel", "edge")),
+        _Row("seal", (*py, "rediacc_ci.deploy.write_release_sentinel"), can_fail=False),
+        _Row(
+            "tag-create",
+            ("sh", "-c", "exec python3 -m rediacc_ci.release.tag --create-only"),
+            can_fail=False,
+        ),
+        _Row("tag-record", (), can_fail=False, kind="tag-record"),
+        _Row(
+            "tag-push",
+            (*py, "rediacc_ci.release.tag", "--push-oid", "{tag_oid}"),
+            can_fail=False,
+        ),
+        _Row("tag-submodules", (*py, "rediacc_ci.release.tag_submodules")),
+        _Row("account-deploy", (*py, "rediacc_ci.deploy.deploy_account", "--target", "edge")),
+    ]
+
+
+def _kinds(rows: list[_Row]) -> list[str]:
+    return [k for k, _n in ci_workflow_invariants.analyse_local_steps(rows)[0]]
+
+
+def test_local_order_holds_on_a_well_formed_table() -> None:
+    findings, shape = ci_workflow_invariants.analyse_local_steps(_local_table())
+    assert findings == []
+    assert shape["tag"] == ["tag-create", "tag-record", "tag-push"]
+    # tag_submodules is not the version tag: the module match is whole-word.
+    assert "tag-submodules" not in shape["tag"]
+
+
+def test_local_order_catches_a_reordered_table() -> None:
+    rows = _local_table()
+    # A failable step moved between the seal and the tag.
+    moved = [rows[0], rows[1], rows[5], *rows[2:5], rows[6]]
+    kinds = _kinds(moved)
+    assert "local-order-tag-not-next" in kinds
+    assert "local-order-fail-before-tag" in kinds
+    # The account deploy moved ahead of the publish.
+    assert _kinds([rows[6], *rows[:6]]) == ["local-order-account-before-publish"]
+    # The record split from its push, and a unit that ends without pushing.
+    assert "local-order-tag-split" in _kinds([*rows[:3], rows[5], rows[3], rows[4], rows[6]])
+    assert "local-order-tag-no-push" in _kinds([*rows[:3], rows[4], rows[3], *rows[5:]])
+    # A tag row that can fail.
+    soft = [*rows[:4], rows[4]._replace(can_fail=True), *rows[5:]]
+    assert _kinds(soft) == ["local-order-fail-before-tag"]
+
+
+def test_local_order_refuses_a_stable_row_and_a_vacuous_table() -> None:
+    rows = _local_table()
+    stable = [*rows, _Row("promote", ("python3", "-m", "rediacc_ci.deploy.promote_r2_to_stable"))]
+    assert _kinds(stable) == ["local-order-stable-step"]
+    env_stable = [rows[0]._replace(env=(("CHANNEL", "stable"),)), *rows[1:]]
+    assert _kinds(env_stable) == ["local-order-stable-step"]
+    assert set(_kinds([])) == {
+        "local-order-no-seal",
+        "local-order-no-tag",
+        "local-order-no-cli-publish",
+        "local-order-no-account-deploy",
+    }
+    assert "not imported" not in str(
+        ci_workflow_invariants.local_message_for("local-order-no-seal", "<none>")
+    )
+    assert all(
+        ci_workflow_invariants.local_message_for(k, "x") for k in ci_workflow_invariants.LOCAL_KINDS
+    )
+
+
+def test_local_stable_admitted_needs_a_named_refusal() -> None:
+    class Refuses:
+        CHANNEL = "edge"
+
+        @staticmethod
+        def main(argv, root=None):
+            del argv, root
+            sys.stderr.write("refused: promote-stable.yml\n")
+            return 2
+
+    class Admits(Refuses):
+        @staticmethod
+        def main(argv, root=None):
+            del argv, root
+            return 0
+
+    assert ci_workflow_invariants.local_stable_admitted(Refuses) == ""
+    assert "returned 0" in ci_workflow_invariants.local_stable_admitted(Admits)
+
+
+def test_local_order_holds_on_the_real_entry() -> None:
+    errors, info = ci_workflow_invariants._local_release_phase()
+    assert errors == []
+    (line,) = info
+    assert "tag unit tag-create, tag-record, tag-push" in line

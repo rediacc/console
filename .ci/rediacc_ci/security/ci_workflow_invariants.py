@@ -52,6 +52,8 @@ CD run 37749637824 is the case: the tag lived in `tag-and-release`, behind post-
     tag over a range that touches .github/workflows is then refused (v1.3.11,
     v1.3.8).
 
+THE LOCAL RELEASE ORDER (PLAN-local-release W3-B, as amended by the operator rulings of 2026-10-27T09:45Z: cd-v2.yml keeps releasing edge on merge, `npm run release:local -- --channel edge` is a second edge path, stable stays CI/CD only). The release-order rules above, applied to the local entry's declarative table `rediacc_ci.release.local.STEPS`, imported rather than parsed, so the phase reads exactly the rows the entry runs. `analyse_local_steps` finds rows by the module their argv runs, never by id, and refuses (`LOCAL_KINDS`): a table with no sentinel seal, no tag, no CLI upload or no account deploy (vacuity); a seal not immediately followed by the tag rows; tag rows that are not contiguous or do not end in the push; any row from the seal through the tag push with `can_fail=True`; an account deploy before the CLI upload, the seal or the tag push; and any stable row. `local_stable_admitted` also calls the entry's `main(["--channel", "stable"])`, which must refuse with rc 2 naming promote-stable.yml before reading anything. An import failure is a finding, never a pass.
+
 THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a fourth file, `housekeeping.yml` (`HOUSEKEEPING_WORKFLOW_FILE` overrides it). `rediacc_ci.release.cd_preflight` must run at three sites, each with at least the checks `PREFLIGHT_REQUIRED_CHECKS` names (`cd-preflight-narrowed` otherwise):
 
   * `cd-preflight-no-pr-job` / `cd-preflight-not-on-pr` -- a ci.yml job runs
@@ -112,7 +114,11 @@ two files sit at the same depth (`.ci/scripts/security/x.sh` and `.ci/rediacc_ci
 
 from __future__ import annotations
 
+import contextlib
+import importlib
+import io
 import os
+import pathlib
 import re
 import shutil
 import sys
@@ -591,6 +597,211 @@ def release_message_for(kind: str, name: str, files: dict[str, str]) -> str | No
             % (action, name)
         )
     return None
+
+
+# --------------------------------------------------------------------------- the local release order (PLAN-local-release W3-B)
+
+LOCAL_KINDS = (
+    "local-order-unreadable",
+    "local-order-no-seal",
+    "local-order-no-tag",
+    "local-order-tag-not-next",
+    "local-order-tag-split",
+    "local-order-tag-no-push",
+    "local-order-fail-before-tag",
+    "local-order-no-cli-publish",
+    "local-order-no-account-deploy",
+    "local-order-account-before-publish",
+    "local-order-stable-step",
+    "local-order-stable-admitted",
+)
+
+LOCAL_MODULE = "rediacc_ci.release.local"
+LOCAL_SEAL = "rediacc_ci.deploy.write_release_sentinel"
+LOCAL_TAG = "rediacc_ci.release.tag"
+LOCAL_TAG_RECORD_KIND = "tag-record"
+LOCAL_CLI_UPLOAD = "rediacc_ci.deploy.upload_to_r2"
+LOCAL_ACCOUNT_DEPLOY = "rediacc_ci.deploy.deploy_account"
+# A stable step: the channel or Docker tag named stable, or a stable-only publisher. Stable is CI/CD only (ruling ASKED:2026-10-27T09:45Z).
+_STABLE_RE = re.compile(
+    r"\bstable\b|promote_r2_to_stable|promote_docker_to_stable|verify_stable_endpoints|mark_production",
+    re.IGNORECASE,
+)
+
+
+def _row_text(step: object) -> str:
+    argv = getattr(step, "argv", ()) or ()
+    env = getattr(step, "env", ()) or ()
+    return " ".join([*(str(a) for a in argv), *("%s=%s" % (k, v) for k, v in env)])
+
+
+def _is_tag_row(step: object) -> bool:
+    return getattr(step, "kind", "") == LOCAL_TAG_RECORD_KIND or bool(
+        re.search(r"\b%s\b(?!_)" % re.escape(LOCAL_TAG), _row_text(step))
+    )
+
+
+def analyse_local_steps(steps: object) -> tuple[list[tuple[str, str]], dict[str, object]]:
+    """The release order of the local entry's `STEPS` table: (findings, shape). Pure; the selftest drives it with literal rows.
+
+    Every rule CD's phase holds for cd-v2.yml, read from the table rows themselves (module names in the argv, never step ids, so a renamed row cannot slip past): the sentinel seal is immediately followed by the tag unit (create, record, push, contiguous, ending in a push); no row from the seal through the tag push can fail; the CLI upload, the seal and the tag push all precede every account deploy; and no row is a stable step. A table with no seal, no tag, no CLI upload or no account deploy checked nothing and is a finding.
+    """
+    rows = list(steps) if isinstance(steps, (list, tuple)) else []
+    out: list[tuple[str, str]] = []
+    ident = [str(getattr(r, "id", "?")) for r in rows]
+    seals = [i for i, r in enumerate(rows) if LOCAL_SEAL in _row_text(r)]
+    tags = [i for i, r in enumerate(rows) if _is_tag_row(r)]
+    cli = [i for i, r in enumerate(rows) if LOCAL_CLI_UPLOAD in _row_text(r)]
+    accounts = [i for i, r in enumerate(rows) if LOCAL_ACCOUNT_DEPLOY in _row_text(r)]
+    stable = [ident[i] for i, r in enumerate(rows) if _STABLE_RE.search(_row_text(r))]
+    shape: dict[str, object] = {
+        "rows": len(rows),
+        "seal": ident[seals[-1]] if seals else "",
+        "tag": [ident[i] for i in tags],
+        "cli": [ident[i] for i in cli],
+        "accounts": len(accounts),
+        "stable": stable,
+    }
+    if not seals:
+        out.append(("local-order-no-seal", "<none>"))
+    if not tags:
+        out.append(("local-order-no-tag", "<none>"))
+    if seals and tags:
+        seal = seals[-1]
+        if tags[0] != seal + 1:
+            nxt = ident[seal + 1] if seal + 1 < len(rows) else "nothing"
+            out.append(("local-order-tag-not-next", "%s is followed by %s" % (ident[seal], nxt)))
+        if tags != list(range(tags[0], tags[0] + len(tags))):
+            out.append(("local-order-tag-split", ", ".join(ident[i] for i in tags)))
+        last = rows[tags[-1]]
+        if getattr(last, "kind", "run") != "run" or "--create-only" in _row_text(last):
+            out.append(("local-order-tag-no-push", ident[tags[-1]]))
+        out.extend(
+            ("local-order-fail-before-tag", ident[i])
+            for i in range(seal, max(tags[-1], seal) + 1)
+            if getattr(rows[i], "can_fail", True)
+        )
+    if not cli:
+        out.append(("local-order-no-cli-publish", "<none>"))
+    if not accounts:
+        out.append(("local-order-no-account-deploy", "<none>"))
+    publish = cli + seals[-1:] + tags[-1:]
+    for i in accounts:
+        early = [ident[j] for j in publish if j > i]
+        if early:
+            out.append(
+                (
+                    "local-order-account-before-publish",
+                    "%s precedes %s" % (ident[i], ", ".join(early)),
+                )
+            )
+    out.extend(("local-order-stable-step", name) for name in stable)
+    return out, shape
+
+
+def local_stable_admitted(module: object) -> str:
+    """Empty when the entry refuses `--channel stable` before reading anything, else why not."""
+    main_fn = getattr(module, "main", None)
+    if getattr(module, "CHANNEL", None) != "edge" or not callable(main_fn):
+        return "CHANNEL is %r, not 'edge'" % getattr(module, "CHANNEL", None)
+    sink = io.StringIO()
+    try:
+        with contextlib.redirect_stderr(sink), contextlib.redirect_stdout(sink):
+            # A root that cannot exist: should a regression ever admit stable, the entry fails on its first read here instead of reaching a real run.
+            rc = main_fn(
+                ["--channel", "stable"], root=pathlib.Path("/nonexistent/local-release-gate-probe")
+            )
+    except SystemExit as exc:
+        return "main(['--channel', 'stable']) exited through SystemExit(%r)" % exc.code
+    except Exception as exc:
+        return "main(['--channel', 'stable']) raised %s: %s" % (type(exc).__name__, exc)
+    if rc != 2 or "promote-stable.yml" not in sink.getvalue():
+        return "main(['--channel', 'stable']) returned %r without naming promote-stable.yml" % rc
+    return ""
+
+
+LOCAL_TABLE = "%s.STEPS" % LOCAL_MODULE
+LOCAL_MESSAGES = {
+    "local-order-unreadable": "INVARIANT-FAIL: local-release-order: "
+    + LOCAL_TABLE
+    + " cannot be imported (%s), so nothing was checked.",
+    "local-order-no-seal": "INVARIANT-FAIL: local-release-order: no row of "
+    + LOCAL_TABLE
+    + " runs "
+    + LOCAL_SEAL
+    + " (%s), so the order check has no seal to order the tag against and verified nothing. Retarget it deliberately.",
+    "local-order-no-tag": "INVARIANT-FAIL: local-release-order: no row of "
+    + LOCAL_TABLE
+    + " runs "
+    + LOCAL_TAG
+    + " or is the tag-record row (%s), so nothing tags v<V>. Retarget this check if the tag moved.",
+    "local-order-tag-not-next": "INVARIANT-FAIL: local-release-order: the seal is not immediately followed by the tag in "
+    + LOCAL_TABLE
+    + " (%s). Anything between them can seal cli/v<V>/.released and never tag v<V> (CD run 37749637824). Put the tag rows directly after the seal.",
+    "local-order-tag-split": "INVARIANT-FAIL: local-release-order: the tag rows of "
+    + LOCAL_TABLE
+    + " are not contiguous (%s). Create, record and push are one unit; nothing may run between them.",
+    "local-order-tag-no-push": "INVARIANT-FAIL: local-release-order: the tag unit of "
+    + LOCAL_TABLE
+    + " ends in %s, which does not push the tag. The last tag row must be the `--push-oid` push.",
+    "local-order-fail-before-tag": "INVARIANT-FAIL: local-release-order: %s sits between the seal and the tag push of "
+    + LOCAL_TABLE
+    + " with can_fail=True. A failure there leaves a sealed version with no tag; mark it can_fail=False or move it after the tag.",
+    "local-order-no-cli-publish": "INVARIANT-FAIL: local-release-order: no row of "
+    + LOCAL_TABLE
+    + " runs "
+    + LOCAL_CLI_UPLOAD
+    + " (%s), so the CLI-before-account rule checked nothing.",
+    "local-order-no-account-deploy": "INVARIANT-FAIL: local-release-order: no row of "
+    + LOCAL_TABLE
+    + " runs "
+    + LOCAL_ACCOUNT_DEPLOY
+    + " (%s), so the CLI-before-account rule checked nothing. Retarget it deliberately.",
+    "local-order-account-before-publish": "INVARIANT-FAIL: local-release-order: in "
+    + LOCAL_TABLE
+    + ", %s. The account Worker must reach a channel only after the CLI that speaks to it is published, sealed and tagged (R1, .ci/config/release-requires.json). Move the account rows after the tag.",
+    "local-order-stable-step": "INVARIANT-FAIL: local-release-order: row %s of "
+    + LOCAL_TABLE
+    + " is a stable step. Stable releases and stable deploys are CI/CD only (promote-stable.yml, ruling ASKED:2026-10-27T09:45Z); remove the row.",
+    "local-order-stable-admitted": "INVARIANT-FAIL: local-release-order: "
+    + LOCAL_MODULE
+    + " does not refuse --channel stable (%s). Stable is CI/CD only; refuse it before anything is read.",
+}
+
+
+def local_message_for(kind: str, name: str) -> str | None:
+    template = LOCAL_MESSAGES.get(kind)
+    return None if template is None else template % name
+
+
+def _local_release_phase() -> tuple[list[str], list[str]]:
+    """(errors, info lines) for the local entry's table. An import failure is an error: unread is never fine."""
+    try:
+        module = importlib.import_module(LOCAL_MODULE)
+        steps = module.STEPS
+    except Exception as exc:
+        why = "%s: %s" % (type(exc).__name__, exc)
+        return [LOCAL_MESSAGES["local-order-unreadable"] % why], []
+    findings, shape = analyse_local_steps(steps)
+    why = local_stable_admitted(module)
+    if why:
+        findings.append(("local-order-stable-admitted", why))
+    errors = [m for k, n in findings if (m := local_message_for(k, n)) is not None]
+    if errors:
+        return errors, []
+    return [], [
+        "local release order holds: %d rows in %s; seal '%s' immediately followed by the tag "
+        "unit %s, none of them can_fail; the CLI publish (%s) before all %d account deploy "
+        "row(s) (each expanded per region); 0 stable rows, and --channel stable is refused"
+        % (
+            typing.cast("int", shape["rows"]),
+            LOCAL_TABLE,
+            shape["seal"],
+            ", ".join(typing.cast("list[str]", shape["tag"])),
+            ", ".join(typing.cast("list[str]", shape["cli"])),
+            typing.cast("int", shape["accounts"]),
+        )
+    ]
 
 
 # --------------------------------------------------------------------------- the cd-preflight pins (PLAN-cd-errors-in-ci W4)
@@ -2050,9 +2261,15 @@ def main(argv: list[str]) -> int:
         upstream_errors, upstream_info = _upstream_gate_phase(workflow_file, quality_file)
         pins_errors, pins_info = _pins_soaked_phase(pins_file)
         estate_errors, estate_info = _estate_phase(root_dir)
-        release_info += preflight_info + upstream_info + pins_info + estate_info
+        local_errors, local_info = _local_release_phase()
+        release_info += preflight_info + upstream_info + pins_info + estate_info + local_info
         for message in (
-            release_errors + preflight_errors + upstream_errors + pins_errors + estate_errors
+            release_errors
+            + preflight_errors
+            + upstream_errors
+            + pins_errors
+            + estate_errors
+            + local_errors
         ):
             log.error(message)
             failed = 1

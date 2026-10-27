@@ -5,9 +5,11 @@ Nothing here publishes. The table tests read `STEPS` and `plan()` only. The dry-
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -19,9 +21,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.release import local
-
-if typing.TYPE_CHECKING:
-    import pathlib
+from rediacc_ci.security import ci_workflow_invariants as inv
 
 ROOT = paths.repo_root()
 REGIONS = list(local.read_regions(ROOT))
@@ -55,27 +55,45 @@ def ids(steps: list[local.Step]) -> list[str]:
 # --------------------------------------------------------------------------- STEPS invariants
 
 
+TAG_UNIT = ["tag-create", "tag-record", "tag-push"]
+
+
 def test_the_sentinel_is_immediately_followed_by_the_tag() -> None:
     order = ids(EDGE)
-    assert order[order.index("seal") + 1] == "tag"
+    seal = order.index("seal")
+    assert order[seal + 1 : seal + 4] == TAG_UNIT
 
 
 def test_the_seal_and_the_tag_cannot_fail_and_every_later_failable_step_follows_the_tag() -> None:
     order = ids(EDGE)
-    seal, tag = order.index("seal"), order.index("tag")
-    assert not EDGE[seal].can_fail
-    assert not EDGE[tag].can_fail
+    seal, tag = order.index("seal"), order.index("tag-push")
     for i, step in enumerate(EDGE):
         if i > seal and step.can_fail:
             assert i > tag, "%s can fail between the seal and the tag" % step.id
-    assert [s.id for s in EDGE if not s.can_fail] == ["seal", "tag"]
+    assert [s.id for s in EDGE if not s.can_fail] == ["seal", *TAG_UNIT]
+
+
+def test_the_tag_is_created_recorded_then_pushed_by_its_object_id() -> None:
+    order = ids(EDGE)
+    create, record, push = (EDGE[order.index(i)] for i in TAG_UNIT)
+    assert "--create-only" in create.argv[-1]
+    assert create.capture == "tag_oid"
+    assert record.kind == "tag-record"
+    assert push.argv[push.argv.index("--push-oid") + 1] == "{tag_oid}"
+    assert "rediacc_ci.release.tag" in push.argv
+
+
+def test_the_release_order_gate_holds_on_the_real_table() -> None:
+    findings, shape = inv.analyse_local_steps(local.STEPS)
+    assert findings == []
+    assert shape["tag"] == TAG_UNIT
 
 
 def test_the_cli_publish_comes_before_every_account_deploy() -> None:
     order = ids(EDGE)
     deploys = [i for i, s in enumerate(order) if s.startswith("account-deploy-")]
     assert len(deploys) == len(REGIONS)
-    for publish in ("upload-cli-r2", "assert-r2-sentinel", "seal", "tag"):
+    for publish in ("upload-cli-r2", "assert-r2-sentinel", "seal", "tag-push"):
         assert all(order.index(publish) < i for i in deploys), publish
 
 
@@ -188,7 +206,7 @@ def test_every_push_uses_the_session_github_token() -> None:
     order = ids(EDGE)
     cred = EDGE[order.index("clone-credential")]
     assert "gh auth git-credential" in cred.argv[-1]
-    assert order.index("clone-credential") < order.index("tag")
+    assert order.index("clone-credential") < order.index("tag-push")
     for step_id, name in (
         ("tag-submodules", "GITHUB_PAT"),
         ("homebrew", "GITHUB_PAT"),
@@ -347,12 +365,14 @@ def test_a_version_taken_mid_run_stops_before_publishing(
         del cwd, env, capture
         return (1, "") if "_lock-check" in argv and seen[-1] == taken_at else (0, "")
 
-    internal = dict.fromkeys(("gates", "release-run", "assist-await", "release-record"), ok_row)
+    internal = dict.fromkeys(("gates", "release-run", "stamp", "release-record"), ok_row)
     run = TakenRun(root, ctx, runner=runner, internal=internal)
     assert run.execute(local.plan(["eu"])) == 1
     assert run.failed == taken_at
     done = [r.id for r in run.results]
-    assert not {"seal", "tag", "promote-renet", "github-release", "account-deploy-eu"} & set(done)
+    assert not {"seal", *TAG_UNIT, "promote-renet", "github-release", "account-deploy-eu"} & set(
+        done
+    )
     if taken_at == "lock-check-stage":
         assert not {"retag-renet", "upload-cli-r2", "provenance"} & set(done)
     assert done[-1] == "release-record"
@@ -522,8 +542,8 @@ FAKE_BWS = textwrap.dedent(
     #!/usr/bin/env python3
     import json, os, pathlib, sys
     pathlib.Path(os.environ["FAKE_BWS_MARK"]).write_text("called")
-    names = ["CLOUDFLARE_R2_ACCESS_KEY_ID", "CLOUDFLARE_R2_SECRET_ACCESS_KEY", "CLOUDFLARE_R2_ENDPOINT",
-             "AWS_SES_ACCESS_KEY_ID_EU"]
+    supply = json.loads(pathlib.Path(os.environ["FAKE_BWS_SUPPLY"]).read_text())["consumers"]
+    names = sorted({s.split(">")[0].strip() for p in supply.values() for s in p.get("required", []) + p.get("optional", [])})
     print(json.dumps([{"key": n, "value": "CANARY-%s-7f3a" % n} for n in names]))
     """
 )
@@ -536,12 +556,17 @@ CANARY_DRIVER = textwrap.dedent(
     check = "import os,sys; sys.exit(0 if os.environ.get(%r,'').startswith('CANARY-') else 3)"
     steps = [
         local.Step("canary-profile", "stage", ("python3", "-c", check % "CLOUDFLARE_R2_ACCESS_KEY_ID"), profiles=("r2-artifacts",), cwd="root"),
-        local.Step("canary-bind", "stage", ("python3", "-c", check % "AWS_SES_ACCESS_KEY_ID"), profiles=("r2-artifacts",), binds=("AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID",), cwd="root"),
+        local.Step("canary-bind", "stage", ("python3", "-c", check % "AWS_SES_ACCESS_KEY_ID"), profiles=("release-local",), binds=("AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID",), cwd="root"),
+        local.Step("canary-undeclared", "stage", ("python3", "-c", check % "AWS_SES_ACCESS_KEY_ID"), profiles=("r2-artifacts",), binds=("AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID",), cwd="root"),
     ]
     ctx = local.Context(channel="edge", version="9.9.9", sha="a" * 40, outcomes={}, regions=[])
     run = local.Run(root, ctx)
-    rc = run.execute(steps)
+    rc = 0
+    for step in steps:
+        rc |= run.run_step(step) if step.id != "canary-undeclared" else 0
+    undeclared = run.run_step(steps[-1])
     print("results", [(r.id, r.rc) for r in run.results])
+    rc = rc if undeclared == 1 else 9
     print("record", local.release_record.__name__)
     sys.exit(rc)
     """
@@ -564,6 +589,7 @@ def test_a_secret_from_bws_reaches_the_child_and_never_this_modules_streams(
         BWS_BIN=str(fake),
         BWS_ACCESS_TOKEN="fake-token",
         FAKE_BWS_MARK=str(mark),
+        FAKE_BWS_SUPPLY=str(ROOT / ".ci/config/secret-supply.json"),
         PYTHONPATH=str(ROOT / ".ci"),
     )
     proc = subprocess.run(
@@ -578,6 +604,9 @@ def test_a_secret_from_bws_reaches_the_child_and_never_this_modules_streams(
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "('canary-profile', 0)" in proc.stdout
     assert "('canary-bind', 0)" in proc.stdout
+    # A store name the step's profile does not declare is refused by _bind, never fetched around the profile.
+    assert "('canary-undeclared', 1)" in proc.stdout
+    assert "is not declared by profile(s) r2-artifacts" in proc.stderr
     assert "CANARY" not in proc.stdout
     assert "CANARY" not in proc.stderr
 
@@ -605,6 +634,7 @@ def test_the_dry_run_never_asks_bws(tmp_path: pathlib.Path) -> None:
         BWS_BIN=str(fake),
         BWS_ACCESS_TOKEN="fake-token",
         FAKE_BWS_MARK=str(mark),
+        FAKE_BWS_SUPPLY=str(ROOT / ".ci/config/secret-supply.json"),
         PYTHONPATH=str(ROOT / ".ci"),
     )
     proc = subprocess.run(
@@ -661,3 +691,375 @@ def test_the_npm_script_launches_what_entry_refusal_admits() -> None:
         bad = _launch(broken)
         assert bad.returncode != 0, broken
         assert bad.stdout.strip() != "ok", broken
+
+
+# --------------------------------------------------------------------------- the gates verdict (review 7c25d047.1)
+
+
+@pytest.mark.parametrize(
+    ("rc", "lines", "workers_only", "want"),
+    [
+        (0, ["local-gates: admitted"], False, 0),
+        (0, [], False, 0),
+        # A child that crashed, or a bws refusal before any gate ran: no refusal line, still a refusal.
+        (1, [], False, 1),
+        (1, ["Traceback (most recent call last):"], True, 1),
+        (2, [], False, 1),
+        (0, ["local-gates: ci-quick: no receipt"], False, 1),
+        (1, ["local-gates: lock: v9.9.9 is taken"], False, 1),
+        # A workers-only run takes the lock as its premise, and only the lock.
+        (1, ["local-gates: lock: v9.9.9 is taken"], True, 0),
+        (1, ["local-gates: lock: v9.9.9 is taken", "local-gates: ci-quick: none"], True, 1),
+    ],
+)
+def test_any_nonzero_gates_exit_refuses(
+    rc: int, lines: list[str], workers_only: bool, want: int
+) -> None:
+    assert local.gates_verdict(rc, lines, workers_only) == want
+
+
+# --------------------------------------------------------------------------- binds through the profile
+
+
+def test_every_bind_is_declared_by_the_profiles_of_its_step() -> None:
+    supply = json.loads((ROOT / ".ci/config/secret-supply.json").read_text(encoding="utf-8"))[
+        "consumers"
+    ]
+    checked = 0
+    for step in local.STEPS:
+        declared = {
+            spec.split(">")[-1].strip()
+            for p in step.profiles
+            for spec in supply[p].get("required", []) + supply[p].get("optional", [])
+        }
+        for spec in step.binds:
+            store = spec.split(">", 1)[0].strip()
+            assert store in declared, "%s binds %s, which %s does not declare" % (
+                step.id,
+                store,
+                step.profiles,
+            )
+            checked += 1
+    assert checked >= 7, "the binds this test exists for are gone; it checked %d" % checked
+
+
+def test_bind_refusals_names_an_undeclared_or_empty_store() -> None:
+    env = {"REDIACC_BWS_PROFILES": "release-local", "STRIPE_SANDBOX_SECRET_KEY": "x"}
+    assert local.bind_refusals(["STRIPE_SANDBOX_SECRET_KEY > STRIPE_SECRET_KEY"], env) == []
+    (empty,) = local.bind_refusals(["AWS_SES_REGION_EU > AWS_SES_REGION"], env)
+    assert "AWS_SES_REGION_EU" in empty
+    assert "empty" in empty
+    (undeclared,) = local.bind_refusals(["TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY"], env)
+    assert "not declared" in undeclared
+    assert local.bind_refusals(["A > B"], {})[0].startswith("no profile is carried")
+
+
+# --------------------------------------------------------------------------- the tag record
+
+
+class RecordingReleaseRun:
+    writes: typing.ClassVar[list[list[dict[str, str]]]] = []
+
+    class RecordError(Exception):
+        pass
+
+    @classmethod
+    def write_release_run(cls, root, run_id, *, tree, version, channel, pushes):
+        del tree, version, channel
+        cls.writes.append([dict(p) for p in pushes])
+        return root / ("run-%s.json" % run_id)
+
+
+def test_the_record_lists_no_push_until_the_tag_object_exists_then_exactly_its_oid(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    RecordingReleaseRun.writes = []
+    monkeypatch.setattr(local, "_release_run_module", lambda _root: RecordingReleaseRun)
+    ctx = local.Context(
+        version="9.9.9", sha="a" * 40, tree="t" * 40, run_id="r1", clone=str(tmp_path / "clone")
+    )
+    run = local.Run(tmp_path, ctx)
+    step = next(s for s in local.STEPS if s.id == "tag-record")
+    assert local.internal_release_run(step, run) == 0
+    assert RecordingReleaseRun.writes == [[]]
+    first_path = ctx["release_run"]
+    # tag-create printed something that is not an object id: refused, nothing written.
+    ctx["tag_oid"] = "Created tag v9.9.9"
+    assert local.internal_tag_record(step, run) == 1
+    assert len(RecordingReleaseRun.writes) == 1
+    oid = "b" * 40
+    ctx["tag_oid"] = oid
+    assert local.internal_tag_record(step, run) == 0
+    assert RecordingReleaseRun.writes[-1] == [
+        {
+            "toplevel": str(tmp_path / "clone"),
+            "remote": "origin",
+            "remote_ref": "refs/tags/v9.9.9",
+            "oid": oid,
+        }
+    ]
+    assert ctx["release_run"] == first_path, "REDIACC_RELEASE_RUN must not move"
+
+
+def test_a_sealed_untagged_run_names_the_recovery() -> None:
+    run = local.Run(
+        ROOT, local.Context(version="9.9.9", sha="a" * 40, clone="/c", outcomes={}), backoff=()
+    )
+    assert local.sealed_untagged(run) == []
+    run.ctx["outcomes"].update({"seal": "success", "tag-push": "failure"})
+    lines = local.sealed_untagged(run)
+    assert lines[0].startswith("SEALED WITHOUT A TAG: cli/v9.9.9/.released")
+    assert "rediacc_ci.release.tag --version 9.9.9 --sha " + "a" * 40 in lines[-1]
+    run.ctx["outcomes"]["tag-push"] = "success"
+    assert local.sealed_untagged(run) == []
+
+
+def test_a_no_fail_row_is_retried_with_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
+    slept: list[float] = []
+    monkeypatch.setattr(local.time, "sleep", slept.append)
+    calls: list[int] = []
+
+    def runner(argv, cwd, env, capture):
+        del argv, cwd, env, capture
+        calls.append(1)
+        return (0, "") if len(calls) == 3 else (1, "")
+
+    ctx = local.Context(version="9.9.9", sha="a" * 40, clone="/c", outcomes={})
+    run = local.Run(ROOT, ctx, runner=runner)
+    seal = next(s for s in local.STEPS if s.id == "seal")
+    assert run.run_step(dataclasses_replace(seal, profiles=())) == 0
+    assert slept == list(local.RETRY_BACKOFF)
+    assert run.results[-1].attempts == 3
+
+
+def dataclasses_replace(step: local.Step, **kw: typing.Any) -> local.Step:
+    return dataclasses.replace(step, **kw)
+
+
+# --------------------------------------------------------------------------- the assist exchange
+
+
+def test_the_assist_is_staged_before_dispatch_and_fetched_before_anything_is_signed() -> None:
+    order = ids(EDGE)
+    assert (
+        order.index("renet-key-gate")
+        < order.index("assist-stage-in")
+        < order.index("assist-dispatched-at")
+        < order.index("assist-dispatch")
+        < order.index("assist-fetch")
+        < order.index("cli-manifest")
+        < order.index("provenance")
+    )
+    assert order.index("upload-cli-r2") < order.index("assist-clean") < order.index("seal")
+    for step_id in ("assist-stage-in", "assist-fetch", "assist-clean"):
+        assert EDGE[order.index(step_id)].profiles == ("r2-artifacts",)
+    assert EDGE[order.index("assist-fetch")].capture == "assist_run"
+
+
+@pytest.mark.parametrize(
+    ("text", "error"),
+    [
+        ("a" * 40 + " 123\n", None),
+        ("a" * 40 + " 1234", None),
+        ("b" * 40 + " 123", "names sha"),
+        # A version-substring or prefix never matches: the sha is compared whole.
+        ("a" * 39 + " 123", "names sha"),
+        ("a" * 40, "not `<sha> <run id>`"),
+        ("a" * 40 + " x12", "not `<sha> <run id>`"),
+    ],
+)
+def test_the_marker_is_matched_by_exact_fields(text: str, error: str | None) -> None:
+    if error is None:
+        assert local.parse_marker(text, "a" * 40) == text.split()[1]
+    else:
+        with pytest.raises(local.AssistError, match=re.escape(error)):
+            local.parse_marker(text, "a" * 40)
+
+
+def _sums(folder: pathlib.Path, files: dict[str, bytes], sums_name: str, lie: str = "") -> None:
+    folder.mkdir(parents=True, exist_ok=True)
+    lines = []
+    for name, body in files.items():
+        (folder / name).write_bytes(body)
+        digest = hashlib.sha256(body + (b"x" if name == lie else b"")).hexdigest()
+        lines.append("%s  %s\n" % (digest, name))
+    (folder / sums_name).write_text("".join(lines), encoding="utf-8")
+
+
+def test_checksum_refusals_both_directions(tmp_path: pathlib.Path) -> None:
+    _sums(tmp_path, {"renet-linux-amd64": b"1", "renet-linux-arm64": b"2"}, "checksums.sha256")
+    sums = tmp_path / "checksums.sha256"
+    assert local.checksum_refusals(tmp_path, sums, ["renet-linux-amd64"]) == []
+    assert "not listed" in local.checksum_refusals(tmp_path, sums, ["renet-darwin-amd64"])[0]
+    (tmp_path / "renet-linux-arm64").write_bytes(b"tampered")
+    assert "does not match" in local.checksum_refusals(tmp_path, sums, ["renet-linux-arm64"])[0]
+    assert "missing" in local.checksum_refusals(tmp_path, tmp_path / "nope", ["x"])[0]
+
+
+class FakeAws:
+    """Answers `_aws` from a dict of key -> body standing in for the bucket; records every call."""
+
+    def __init__(self, marker_after: int, marker: str, seas: dict[str, bytes]) -> None:
+        self.calls: list[list[str]] = []
+        self.marker_after = marker_after
+        self.marker = marker
+        self.seas = seas
+        self.polls = 0
+
+    def __call__(self, args, endpoint, env):
+        del endpoint, env
+        self.calls.append(list(args))
+        if args[:2] == ["s3", "cp"] and args[-1] == "-":
+            self.polls += 1
+            if self.polls > self.marker_after:
+                return subprocess.CompletedProcess(args, 0, self.marker, "")
+            return subprocess.CompletedProcess(args, 1, "", "An error occurred (404) Not Found")
+        if args[:3] == ["s3", "cp", "--recursive"]:
+            dist = pathlib.Path(args[-1])
+            dist.mkdir(parents=True, exist_ok=True)
+            for name, body in self.seas.items():
+                (dist / name).write_bytes(body)
+                (dist / (name + ".sha256")).write_text(
+                    "%s  %s\n" % (hashlib.sha256(body).hexdigest(), name), encoding="utf-8"
+                )
+            return subprocess.CompletedProcess(args, 0, "", "")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+
+SHA = "c" * 40
+
+
+def _assist_env(monkeypatch: pytest.MonkeyPatch, aws: FakeAws, view: object, failed: str = ""):
+    monkeypatch.setattr(local, "_assist_r2", lambda _root: ("bucket", "https://r2", {}))
+    monkeypatch.setattr(local, "_aws", aws)
+    monkeypatch.setattr(local, "assist_failed_run", lambda _sha, _since: failed)
+    monkeypatch.setattr(local, "_gh_json", lambda _args: view)
+    monkeypatch.setattr(local.time, "sleep", lambda _s: None)
+
+
+def test_assist_fetch_waits_for_the_marker_and_fetches_the_four_seas(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    seas = {name: name.encode() for name in local.ASSIST_SEAS}
+    aws = FakeAws(2, SHA + " 4242\n", seas)
+    _assist_env(monkeypatch, aws, {"workflowName": local.ASSIST_NAME, "headSha": SHA})
+    assert local.assist_fetch("9.9.9", SHA, "2026-10-27T10:00:00Z", tmp_path, poll=0) == "4242"
+    assert aws.polls == 3
+    for name in local.ASSIST_SEAS:
+        assert (tmp_path / "dist" / "cli" / name).read_bytes() == name.encode()
+    fetch = next(c for c in aws.calls if "--recursive" in c)
+    assert "s3://bucket/staging/local-release/v9.9.9/cli/" in fetch
+    assert ".complete" in fetch[fetch.index("--exclude") + 1]
+
+
+@pytest.mark.parametrize(
+    ("view", "seas", "failed", "error"),
+    [
+        ({"workflowName": "CI", "headSha": SHA}, None, "", "not Local Release Assist"),
+        ({"workflowName": "Local Release Assist", "headSha": "d" * 40}, None, "", "not Local"),
+        (None, None, "", "unproven"),
+        (
+            {"workflowName": "Local Release Assist", "headSha": SHA},
+            {"rdc-mac-arm64": b"1"},
+            "",
+            "not provably whole",
+        ),
+    ],
+)
+def test_assist_fetch_refuses_an_unproven_marker_or_a_partial_set(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+    view: object,
+    seas: dict[str, bytes] | None,
+    failed: str,
+    error: str,
+) -> None:
+    aws = FakeAws(0, SHA + " 4242", seas or {n: n.encode() for n in local.ASSIST_SEAS})
+    _assist_env(monkeypatch, aws, view, failed)
+    with pytest.raises(local.AssistError, match=re.escape(error)):
+        local.assist_fetch("9.9.9", SHA, "2026-10-27T10:00:00Z", tmp_path, poll=0)
+
+
+def test_assist_fetch_stops_early_on_a_red_dispatch_and_times_out_on_silence(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    aws = FakeAws(10**6, "", {})
+    _assist_env(monkeypatch, aws, None, failed="777")
+    with pytest.raises(local.AssistError, match="run 777"):
+        local.assist_fetch("9.9.9", SHA, "2026-10-27T10:00:00Z", tmp_path, poll=0)
+    aws = FakeAws(10**6, "", {})
+    _assist_env(monkeypatch, aws, None)
+    with pytest.raises(local.AssistError, match=r"no s3://bucket/.*after 0s"):
+        local.assist_fetch("9.9.9", SHA, "x", tmp_path, timeout=0, poll=0)
+
+
+def test_assist_stage_in_empties_the_prefix_then_uploads_a_checked_renet_set(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    folder = tmp_path / "private" / "bin"
+    files = {name: name.encode() for name in local.ASSIST_RENET}
+    _sums(folder, {**files, "criu-linux-amd64": b"c"}, "checksums.sha256")
+    (folder / "unrelated.txt").write_text("no")
+    aws = FakeAws(0, "", {})
+    _assist_env(monkeypatch, aws, None)
+    local.assist_stage_in("9.9.9", tmp_path)
+    assert aws.calls[0][:3] == ["s3", "rm", "--recursive"]
+    uploaded = sorted(c[-1].rsplit("/", 1)[-1] for c in aws.calls[1:])
+    assert uploaded == sorted([*files, "criu-linux-amd64", "checksums.sha256"])
+    # A renet that does not match its checksum stops the staging before anything is touched.
+    _sums(folder, files, "checksums.sha256", lie="renet-darwin-arm64")
+    aws = FakeAws(0, "", {})
+    _assist_env(monkeypatch, aws, None)
+    with pytest.raises(local.AssistError, match="renet-darwin-arm64 does not match"):
+        local.assist_stage_in("9.9.9", tmp_path)
+    assert aws.calls == []
+
+
+def test_assist_failed_run_names_only_a_red_dispatch_of_this_sha_since_the_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    since = "2026-10-27T10:00:00Z"
+    rows = [
+        {
+            "databaseId": 1,
+            "headSha": SHA,
+            "status": "completed",
+            "conclusion": "failure",
+            "createdAt": "2026-10-27T09:59:59Z",
+        },
+        {
+            "databaseId": 2,
+            "headSha": "d" * 40,
+            "status": "completed",
+            "conclusion": "failure",
+            "createdAt": since,
+        },
+        {
+            "databaseId": 3,
+            "headSha": SHA,
+            "status": "in_progress",
+            "conclusion": "",
+            "createdAt": since,
+        },
+        {
+            "databaseId": 4,
+            "headSha": SHA,
+            "status": "completed",
+            "conclusion": "success",
+            "createdAt": since,
+        },
+    ]
+    monkeypatch.setattr(local, "_gh_json", lambda _args: rows)
+    assert local.assist_failed_run(SHA, since) == ""
+    rows.append(
+        {
+            "databaseId": 5,
+            "headSha": SHA,
+            "status": "completed",
+            "conclusion": "cancelled",
+            "createdAt": since,
+        }
+    )
+    assert local.assist_failed_run(SHA, since) == "5"
+    monkeypatch.setattr(local, "_gh_json", lambda _args: None)
+    assert local.assist_failed_run(SHA, since) == ""
