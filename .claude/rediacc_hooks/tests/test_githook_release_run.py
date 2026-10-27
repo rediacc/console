@@ -275,7 +275,7 @@ class World:
 
 
 def _need_proc() -> None:
-    if not os.path.exists("/proc/self/stat"):
+    if not os.path.exists(RR.PROCFS_ROOT + "/self/stat"):
         pytest.skip("the release-run admission reads /proc; without it nothing is admitted")
     if PY is None:
         pytest.fail(
@@ -513,12 +513,12 @@ def test_a_symlinked_directory_into_a_writable_dir_is_refused(
     writable.chmod(0o777)
     (writable / "d").symlink_to(os.path.dirname(real))
     monkeypatch.chdir(writable)
-    argv0 = "/proc/self/cwd/d/%s" % os.path.basename(real)
+    argv0 = "%s/self/cwd/d/%s" % (RR.PROCFS_ROOT, os.path.basename(real))
     assert os.path.realpath(argv0) == real, "the planted path must resolve to the interpreter"
     got = RR.interpreter_refusal(argv0, real)
     assert "is not root-owned" in got, got
     assert str(writable) in got, got
-    assert "the target of /proc/self/cwd" in got, got
+    assert "the target of %s/self/cwd" % RR.PROCFS_ROOT in got, got
 
 
 def test_an_interpreter_found_on_path_is_refused(world: World) -> None:
@@ -687,3 +687,15 @@ def test_invocation_refusal_resolves_a_symlinked_ci(tmp_path: pathlib.Path) -> N
     (tmp_path / ".ci").symlink_to(tmp_path / "other")
     got = RR.invocation_refusal(tmp_path, GOOD_ARGV, _good_environ(tmp_path))
     assert "first PYTHONPATH entry" in got
+
+
+def test_a_procfs_override_that_is_not_root_locked_is_ignored(tmp_path: pathlib.Path) -> None:
+    """The seam moves the procfs root only to a root-owned, write-closed directory: a caller-chosen one would let it forge the process table the admission trusts, so it is ignored and the default answers. A non-absolute and an empty value are ignored the same way."""
+    default = RR._procfs_root({})
+    fake = tmp_path / "fakeproc"
+    fake.mkdir()
+    assert RR._procfs_root({RR.PROCFS_ENV: str(fake)}) == default
+    assert RR._procfs_root({RR.PROCFS_ENV: "relative/procfs"}) == default
+    assert RR._procfs_root({RR.PROCFS_ENV: ""}) == default
+    # the other direction: a root-locked directory is honoured
+    assert RR._procfs_root({RR.PROCFS_ENV: "/usr/"}) == "/usr"

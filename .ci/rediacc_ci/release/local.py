@@ -50,7 +50,7 @@ from typing import Any
 
 from rediacc_ci import paths
 from rediacc_ci import proc as child_proc
-from rediacc_ci.core import awscli, bws_env
+from rediacc_ci.core import awscli, bws_env, gh_retry
 from rediacc_ci.deploy import deploy_record
 from rediacc_ci.release import create_github_release, local_gates, order
 
@@ -264,7 +264,7 @@ def _table() -> tuple[Step, ...]:
             (
                 "sh",
                 "-c",
-                'exec python3 -m rediacc_ci.release.renet_key_gate --dev-cache "$DEV_CACHE" private/bin/renet-*',
+                'exec env PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate --dev-cache "$DEV_CACHE" private/bin/renet-*',
             ),
             profiles=("release-local",),
             env=(("DEV_CACHE", "{dev_cache}"),),
@@ -654,7 +654,7 @@ def _table() -> tuple[Step, ...]:
             (
                 "sh",
                 "-c",
-                'exec python3 -m rediacc_ci.release.tag --version "$VERSION" --sha "$SHA" --remote origin --create-only --bot-name "$GIT_BOT_NAME" --bot-email "$GIT_BOT_EMAIL"',
+                'exec env PYTHONPATH=.ci python3 -m rediacc_ci.release.tag --version "$VERSION" --sha "$SHA" --remote origin --create-only --bot-name "$GIT_BOT_NAME" --bot-email "$GIT_BOT_EMAIL"',
             ),
             profiles=("release-local",),
             env=(("VERSION", "{version}"), ("SHA", "{sha}")),
@@ -1966,15 +1966,13 @@ def assist_stage_in(version: str, clone: pathlib.Path) -> str:
 
 def _gh_json(args: list[str]) -> Any:
     try:
-        proc = subprocess.run(
-            ["gh", *args], capture_output=True, text=True, check=False, timeout=60
-        )
+        result = gh_retry.gh(args, timeout=60)
     except (OSError, subprocess.TimeoutExpired):
         return None
-    if proc.returncode != 0:
+    if result.returncode != 0:
         return None
     try:
-        return json.loads(proc.stdout or "null")
+        return json.loads(result.stdout_raw or "null")
     except ValueError:
         return None
 

@@ -8,7 +8,7 @@ A PROBE THAT COULD NOT ANSWER REFUSES. An unreachable bucket, an unknown commit 
 
 The readers are injected, so the tests run offline; `main` wires the live ones. Usage:
 
-    python3 -m rediacc_ci.release.order --channel edge --account-pointer <sha>
+    PYTHONPATH=.ci python3 -m rediacc_ci.release.order --channel edge --account-pointer <sha>
 
 The sentinel probe needs the R2 trio, so a live run goes through
 `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile r2-artifacts -- ...`.
@@ -220,7 +220,7 @@ def live_sentinel_exists(version: str) -> bool | None:
     secret = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")
     if not (access and secret and os.environ.get("CLOUDFLARE_R2_ENDPOINT")):
         print(
-            "%s: the R2 trio is not set; run under `python3 -m rediacc_ci.core.bws_env exec --profile r2-artifacts --`"
+            "%s: the R2 trio is not set; run under `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile r2-artifacts --`"
             % SELF,
             file=sys.stderr,
         )
@@ -271,7 +271,7 @@ def live_tag_commit(tag: str, root: pathlib.Path | None = None) -> str | None:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
-        prog="python3 -m " + SELF, description=__doc__.split("\n", 1)[0]
+        prog="PYTHONPATH=.ci python3 -m " + SELF, description=__doc__.split("\n", 1)[0]
     )
     parser.add_argument("--channel", required=True, choices=CHANNELS)
     parser.add_argument(

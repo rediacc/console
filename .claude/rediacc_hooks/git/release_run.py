@@ -92,7 +92,9 @@ class RecordError(Exception):
 def _stat_fields(pid: int) -> list[str] | None:
     """The fields of `/proc/<pid>/stat` after the `(comm)`, so index 0 is field 3 (state). None when unreadable."""
     try:
-        raw = pathlib.Path("/proc/%d/stat" % pid).read_text(encoding="utf-8", errors="replace")
+        raw = pathlib.Path("%s/%d/stat" % (PROCFS_ROOT, pid)).read_text(
+            encoding="utf-8", errors="replace"
+        )
     except OSError:
         return None
     close = raw.rfind(")")
@@ -124,7 +126,7 @@ def proc_ppid(pid: int) -> int | None:
 
 def proc_cmdline(pid: int) -> list[str] | None:
     try:
-        raw = pathlib.Path("/proc/%d/cmdline" % pid).read_bytes()
+        raw = pathlib.Path("%s/%d/cmdline" % (PROCFS_ROOT, pid)).read_bytes()
     except OSError:
         return None
     return [w.decode("utf-8", "surrogateescape") for w in raw.split(b"\0")[:-1]] if raw else []
@@ -161,7 +163,7 @@ def is_entry_argv(argv: list[str]) -> bool:
 def proc_environ(pid: int) -> dict[str, str] | None:
     """The environment `pid` was started with, from `/proc/<pid>/environ`; None when unreadable."""
     try:
-        raw = pathlib.Path("/proc/%d/environ" % pid).read_bytes()
+        raw = pathlib.Path("%s/%d/environ" % (PROCFS_ROOT, pid)).read_bytes()
     except OSError:
         return None
     out: dict[str, str] = {}
@@ -318,7 +320,7 @@ def package_refusal(console_root: str | os.PathLike, started: float) -> str:
 def proc_exe(pid: int) -> str | None:
     """The executable `pid` runs, from `/proc/<pid>/exe` (the kernel's resolved path); None when unreadable."""
     try:
-        return os.readlink("/proc/%d/exe" % pid)
+        return os.readlink("%s/%d/exe" % (PROCFS_ROOT, pid))
     except OSError:
         return None
 
@@ -354,6 +356,21 @@ def _locked_refusal(path: str) -> str:
     return ""
 
 
+# THE PROCFS SEAM (the proc-table precedent in .ci/rediacc_ci/quality/hook_cross_os.py, scope release-run-procfs): the root is named once, here, and every read above builds its path from it. macOS has no procfs, so a hard-coded `/proc` there reads as "nothing is running" rather than failing; the root is a name a test or a platform with procfs elsewhere can move. THE OVERRIDE IS ADMISSION-SAFE: this module admits a push by what procfs says about a process, so a caller-chosen directory would let it forge that answer. The override therefore counts only when it is root-owned and closed to writes with every ancestor (`_locked_refusal`); anything else is ignored and the real `/proc` answers, which can only be the kernel's own word.
+PROCFS_ENV = "REDIACC_RELEASE_RUN_PROCFS"
+
+
+def _procfs_root(environ: dict[str, str] | os._Environ[str] | None = None) -> str:
+    default = "/proc"
+    named = (os.environ if environ is None else environ).get(PROCFS_ENV, "").rstrip("/")
+    if named and os.path.isabs(named) and not _locked_refusal(named):
+        return named
+    return default
+
+
+PROCFS_ROOT = _procfs_root()
+
+
 def interpreter_refusal(argv0: str, exe: str) -> str:
     """ "" when the process provably runs a root-installed Python interpreter, else why not.
 
@@ -387,7 +404,7 @@ def entry_refusal(console_root: str | os.PathLike, pid: int) -> str:
     ticks = proc_start(pid)
     exe = proc_exe(pid)
     if argv is None or environ is None or ticks is None or exe is None:
-        return "/proc/%d cannot be read" % pid
+        return "%s/%d cannot be read" % (PROCFS_ROOT, pid)
     return (
         interpreter_refusal(argv[0] if argv else "", exe)
         or invocation_refusal(console_root, argv, environ)
@@ -438,7 +455,9 @@ def write_release_run(
     start = proc_start(pid)
     argv = proc_cmdline(pid)
     if start is None or argv is None:
-        raise RecordError("/proc/%d cannot be read, so no release run can be recorded" % pid)
+        raise RecordError(
+            "%s/%d cannot be read, so no release run can be recorded" % (PROCFS_ROOT, pid)
+        )
     why = entry_refusal(console_root, pid)
     if why:
         raise RecordError("pid %d is not the console's release entry: %s" % (pid, why))
@@ -508,7 +527,7 @@ def admitted_pushes(
     environ = os.environ if environ is None else environ
     record = load_record(console_root, environ.get(ENV, ""))
     pid = record["pid"]
-    if not os.path.exists("/proc/self/stat"):
+    if not os.path.exists(PROCFS_ROOT + "/self/stat"):
         raise RecordError("there is no /proc here, so no parent chain can be read")
     chain = parent_chain() if chain is None else chain
     if pid not in chain:

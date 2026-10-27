@@ -1234,7 +1234,8 @@ def test_the_renet_key_gate_hands_the_dev_cache_to_sh_as_one_word(tmp_path: path
     env = local.child_env(dataclasses_replace(row, profiles=()), ctx, ROOT)
     assert argv[:2] == ["sh", "-c"]
     script = argv[2].replace(
-        "exec python3 -m rediacc_ci.release.renet_key_gate", "exec printf '%s\\n'"
+        "exec env PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate",
+        "exec printf '%s\\n'",
     )
     assert script != argv[2]
     (tmp_path / "private" / "bin").mkdir(parents=True)
