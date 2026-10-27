@@ -27,6 +27,7 @@ def test_hint_argv_parses_with_an_explicit_region() -> None:
     assert opts is not None
     assert opts.region == "eu"
     assert opts.archive
+    # --archive alone archives, confirms, then deletes the original: no --delete is needed.
     assert not opts.delete
 
 
@@ -38,3 +39,9 @@ def test_hint_is_not_refused() -> None:
 def test_the_old_bare_delete_hint_is_refused() -> None:
     code, _lines, _rows = verb.run(["--delete"], ENV, lambda *_a, **_k: [])
     assert code == 2
+
+
+def test_archive_without_a_region_is_refused() -> None:
+    code, lines, _rows = verb.run(["--archive"], ENV, lambda *_a, **_k: [])
+    assert code == 2
+    assert "--archive needs --region" in lines[0]

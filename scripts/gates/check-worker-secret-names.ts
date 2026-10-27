@@ -453,7 +453,8 @@ export function liveExtraLines(json: string): string[] | null {
 }
 
 // The one spelling of the removal command; `<region>` is filled per region with extras.
-// The prune verb refuses --archive without an explicit --region (exit 2), and the unit test
+// The verb refuses --archive without an explicit --region (exit 2); `--archive` archives each
+// value from bws, confirms it, then deletes the original, so it needs no `--delete`. The unit test
 // `test_ops_prune_worker_secrets.py` reads this constant and runs it through the verb.
 const PRUNE_HINT =
   'PYTHONPATH=.ci python3 -m rediacc_ci.ops.prune_worker_secrets --region <region> --archive';
@@ -468,6 +469,38 @@ export function liveExtraRegions(json: string): string[] {
     return [...new Set(regions)];
   } catch {
     return [];
+  }
+}
+
+/** The removal command lines: one per region with extras, or a refusal line when no row names a region. */
+export function removeLines(json: string): string {
+  const regions = liveExtraRegions(json);
+  if (regions.length === 0) {
+    return '    (no region in the listing: pass --region eu|us|asia to prune_worker_secrets by hand)';
+  }
+  return regions.map((r) => `    ${PRUNE_HINT.replace('<region>', r)}`).join('\n');
+}
+
+// Control: liveExtraRegions and removeLines must tell regions, none and several apart.
+{
+  const one =
+    '{"workers":[{"region":"eu","worker":"a","extras":["X"]},{"region":"us","worker":"b","extras":[]}]}';
+  const many =
+    '{"workers":[{"region":"eu","worker":"a","extras":["X"]},{"region":"us","worker":"b","extras":["Y"]},{"region":"eu","worker":"c","extras":["Z"]}]}';
+  const bare = '{"workers":[{"worker":"a","extras":["X"]}]}';
+  if (
+    liveExtraRegions(one).join() !== 'eu' ||
+    liveExtraRegions(many).join() !== 'eu,us' ||
+    liveExtraRegions(bare).length !== 0 ||
+    liveExtraRegions('not json').length !== 0 ||
+    removeLines(one).includes('<region>') ||
+    removeLines(many).split('\n').length !== 2 ||
+    !removeLines(many).includes('--region us --archive') ||
+    removeLines(bare).includes('python3 -m') ||
+    removeLines(bare).includes('<region>')
+  ) {
+    console.error('✗ instrument control: the region reader or the removal lines are wrong.');
+    process.exit(1);
   }
 }
 
@@ -489,12 +522,6 @@ export function liveExtraRegions(json: string): string[] {
     );
     process.exit(1);
   }
-}
-
-function removeLines(json: string): string {
-  const regions = liveExtraRegions(json);
-  const names = regions.length > 0 ? regions : ['<region>'];
-  return names.map((r) => `    ${PRUNE_HINT.replace('<region>', r)}`).join('\n');
 }
 
 function reportLiveExtras(): void {
@@ -525,7 +552,7 @@ function reportLiveExtras(): void {
     console.log(
       `  Live extras (advisory, ${lines.length} Worker(s)): secrets the push no longer carries:\n` +
         lines.map((l) => `    ${l}`).join('\n') +
-        `\n  Remove with (archives each value from bws first, then deletes):\n${removeLines(out)}`
+        `\n  Remove with (--archive saves each value from bws as __ARCHIVE_<NAME>, then deletes it):\n${removeLines(out)}`
     );
   }
 }
