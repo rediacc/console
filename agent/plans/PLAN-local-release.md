@@ -249,6 +249,8 @@ Design inputs, summarized below with file:line:
 4. Both edge paths stay. `cd-v2.yml` keeps releasing edge on every merge, and `release:local --channel edge` is the agent's extra, faster path. The two share the R2 sentinel lock (W2-A), so one version cannot be released twice.
 
 Consequences for the boxes:
+- W1-C did not edit `private/account/src/routes/configs.ts`; the `ENVELOPE_MIN_RDC` correction moved to worklist #61315099, landing with the L1 release commit, so it never entered W1-C's Owns.
+- The `test_release_*.py` glob in the Owns header overlaps across boxes; each writer was in fact handed only its own named test files, so no two live writers shared a file.
 - W3-A shrinks to adding `local-release-assist.yml`. `cd-v2.yml`, `promote-stable.yml`, the CD deploy workflows, ci.yml's `finalize-release-sentinel` and the main-branch R2 and GHCR publishes (not git pushes) in cd-stage and ci-build-docker all stay.
 - W3-B keeps the CD release-order phase of `ci_workflow_invariants.py` and adds the `STEPS` invariant beside it. It deletes no module that CD still calls.
 - W2-B refuses `--channel stable` and stable `--workers-only` targets.
