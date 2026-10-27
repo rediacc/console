@@ -421,7 +421,8 @@ class Runner:
                         "Local Windows binary copied but no powershell.exe to run it; SKIPPING the version assertion rather than reporting a pass."
                     )
                     return SKIPPED
-                output = self.powershell(f".\\{download_dir}\\{binary_name} --version")
+                # `&` with the absolute path: `download_dir` sits under the mkdtemp test dir, which is absolute, so the twin's `.\<dir>\rdc.exe` named a path PowerShell cannot resolve.
+                output = self.powershell(f"& '{target}' --version")
             else:
                 output = self.run_binary(target, "--version")
             if not verify_version(output, cfg.version):
