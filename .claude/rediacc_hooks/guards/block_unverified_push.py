@@ -1595,6 +1595,96 @@ def v2_verdict(root, tree, receipt):
     return ""
 
 
+RECEIPT_REL = ".ci/cache/prepush-receipt.json"
+#: The runner's per-tree archive (`scripts/ci-runner/run.ts` archiveReceipt), one whole-lane receipt per `headTree`.
+RECEIPT_ARCHIVE_REL = ".ci/cache/receipts"
+NO_RECEIPT = "no local gate run has judged this tree."
+
+
+def read_receipt(root, tree):
+    """The receipt that speaks for `tree`: the per-tree archive copy `.ci/cache/receipts/<tree>.json` first, then the latest `.ci/cache/prepush-receipt.json`. None when neither file exists.
+
+    The archive copy wins because the latest file is overwritten by every whole run, so a run at another tree after the one that judged `tree` would otherwise void a receipt that is still true. A copy that EXISTS but does not parse returns `{UNPARSEABLE: <path: error>}` rather than falling through to the latest file: a corrupt receipt for this very tree is a finding, not an absence. Only `receipt_refusal`'s callers use this; `run()` keeps its own read of the latest file.
+    """
+    candidates = []
+    if isinstance(tree, str) and TREE_RE.match(tree):
+        candidates.append(pathlib.Path(root) / RECEIPT_ARCHIVE_REL / ("%s.json" % tree))
+    candidates.append(pathlib.Path(root) / RECEIPT_REL)
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            return {UNPARSEABLE: "%s: %s" % (path, exc)}
+    return None
+
+
+def _receipt_front(root, tree, receipt):
+    """(refusal or None, advance chain or None): the schema, tree, `whole`, per-gate (v2) and dropped-gate verdicts, in the order `run()` has always judged them. No event, no environment probe, no fetch."""
+    r_tree = _alt(receipt, "headTree", "")
+    r_whole = _alt(receipt, "whole", False)
+    # `R_TREE=$(jq -r ...)` is a STRING in the bash, whatever the JSON type, so
+    # a numeric or boolean field is compared as jq would have printed it.
+    r_tree = r_tree if isinstance(r_tree, str) else json.dumps(r_tree, separators=(",", ":"))
+    r_whole = (
+        "true"
+        if r_whole is True
+        else (r_whole if isinstance(r_whole, str) else json.dumps(r_whole, separators=(",", ":")))
+    )
+
+    # A RECEIPT WITHOUT `schema: 2` IS REFUSED, with the command that writes one (clean break: there is no v1 reading path). Before the tree comparison, so an old receipt is told it is old rather than that it judged another tree.
+    if not isinstance(receipt, dict) or receipt.get("schema") != RECEIPT_SCHEMA:
+        return v2_verdict(root, tree, receipt), None
+
+    chain = None
+    if r_tree != tree:
+        # A RECORD-ONLY COMMIT ADVANCES, it does not void (module docstring). Only this branch pays for the extra git calls, and a receipt with no `advances` keeps today's refusal byte for byte, so the frozen golden's rows do not move.
+        chain, why = advance_chain(root, receipt, r_tree, tree)
+        if chain is None:
+            return (
+                why
+                or "the gate run judged a different tree (%s), not this one (%s)." % (r_tree, tree)
+            ), None
+
+    # A NARROWED RUN PROVES ALMOST NOTHING. `--quick --only <one-gate>` produces a receipt that is otherwise indistinguishable from all 254, so the runner records whether the lane ran WHOLE and this reads the flag rather than parsing the selection prose -- a guard that parses English fails open on a rewording.
+    if r_whole != "true":
+        return "that receipt came from a NARROWED run (--only/--skip), not the whole lane.", None
+
+    # THE PER-GATE VERDICTS, and every carried one recomputed at the pushed tree (v2_verdict). After `whole` so a narrowed receipt keeps its own message.
+    v2 = v2_verdict(root, tree, receipt)
+    if v2:
+        return v2, None
+
+    # A TOUCHED SLOW GATE THE LANE DROPPED is refused until a `--only` run of it passed at this tree. After `whole`, so a narrowed receipt keeps its own message; before the base fetch, so a push refused here never pays for one.
+    return dropped_verdict(receipt, tree, chain), chain
+
+
+def _receipt_red(receipt):
+    """True when the receipt's exit code is anything but 0, read the way `R_EXIT=$(jq -r '.exitCode // 1')` printed it."""
+    r_exit = _alt(receipt, "exitCode", 1)
+    r_exit = r_exit if isinstance(r_exit, str) else json.dumps(r_exit, separators=(",", ":"))
+    return r_exit != "0"
+
+
+def receipt_refusal(root, tree, receipt):
+    """Why `receipt` does not authorise publishing `tree` from `root`, or None when it does. PURE in the sense the release entry needs: no event object and none of `run()`'s environment fail-opens (a missing `jq`, a failed fetch). A missing environment here is a refusal, never an allow.
+
+    `receipt` is the parsed document, or None when no receipt exists (`read_receipt` returns exactly that). The verdict is `run()`'s, in its order, minus the behind-origin/main fetch, which belongs to a push and which a release judges on its own fresh fetch.
+    """
+    if receipt is None:
+        return NO_RECEIPT
+    if isinstance(receipt, dict) and UNPARSEABLE in receipt:
+        return "the receipt does not parse (%s). Re-run `%s`." % (receipt[UNPARSEABLE], V2_REGEN)
+    why, _chain = _receipt_front(root, tree, receipt)
+    if why is not None:
+        # v2_verdict answers a non-v2 receipt with text, so an empty string never reaches here; refuse anyway rather than read "" as consent.
+        return why or "the receipt was refused with no reason; re-run `%s`." % V2_REGEN
+    # A RED receipt is admitted only when carried-reds.json at HEAD names every failure; a GREEN one still meets rule 2 (a carried entry whose gate went green is stale). One call, one refusal, both directions.
+    refusal, _notes = carried_verdict(receipt, _carried_at_head(root))
+    return refusal
+
+
 def every_push_deletes_only(scan):
     """True when every `git ... push` segment in the command only deletes remote refs.
 
@@ -1679,51 +1769,13 @@ def run(ev):
         return _refuse(ev, "no local gate run has judged this tree.")
 
     receipt = _read_json(receipt_path)
-    r_tree = _alt(receipt, "headTree", "")
-    r_whole = _alt(receipt, "whole", False)
-    r_exit = _alt(receipt, "exitCode", 1)
     r_dirty = _alt(receipt, "dirtyDigest", "")
     r_blocked = _jq_join(receipt.get("blocked") if isinstance(receipt, dict) else None)
-    # `R_TREE=$(jq -r ...)` is a STRING in the bash, whatever the JSON type, so
-    # a numeric or boolean field is compared as jq would have printed it.
-    r_tree = r_tree if isinstance(r_tree, str) else json.dumps(r_tree, separators=(",", ":"))
-    r_whole = (
-        "true"
-        if r_whole is True
-        else (r_whole if isinstance(r_whole, str) else json.dumps(r_whole, separators=(",", ":")))
-    )
-    r_exit = r_exit if isinstance(r_exit, str) else json.dumps(r_exit, separators=(",", ":"))
 
-    # A RECEIPT WITHOUT `schema: 2` IS REFUSED, with the command that writes one (clean break: there is no v1 reading path). Before the tree comparison, so an old receipt is told it is old rather than that it judged another tree.
-    if not isinstance(receipt, dict) or receipt.get("schema") != RECEIPT_SCHEMA:
-        return _refuse(ev, v2_verdict(root, tree, receipt))
-
-    chain = None
-    if r_tree != tree:
-        # A RECORD-ONLY COMMIT ADVANCES, it does not void (module docstring). Only this branch pays for the extra git calls, and a receipt with no `advances` keeps today's refusal byte for byte, so the frozen golden's rows do not move.
-        chain, why = advance_chain(root, receipt, r_tree, tree)
-        if chain is None:
-            return _refuse(
-                ev,
-                why
-                or "the gate run judged a different tree (%s), not this one (%s)." % (r_tree, tree),
-            )
-
-    # A NARROWED RUN PROVES ALMOST NOTHING. `--quick --only <one-gate>` produces a receipt that is otherwise indistinguishable from all 254, so the runner records whether the lane ran WHOLE and this reads the flag rather than parsing the selection prose -- a guard that parses English fails open on a rewording.
-    if r_whole != "true":
-        return _refuse(
-            ev, "that receipt came from a NARROWED run (--only/--skip), not the whole lane."
-        )
-
-    # THE PER-GATE VERDICTS, and every carried one recomputed at the pushed tree (v2_verdict). After `whole` so a narrowed receipt keeps its own message.
-    v2 = v2_verdict(root, tree, receipt)
-    if v2:
-        return _refuse(ev, v2)
-
-    # A TOUCHED SLOW GATE THE LANE DROPPED is refused until a `--only` run of it passed at this tree. After `whole`, so a narrowed receipt keeps its own message; before the base fetch, so a push refused here never pays for one.
-    dropped = dropped_verdict(receipt, tree, chain)
-    if dropped is not None:
-        return _refuse(ev, dropped)
+    # THE RECEIPT'S OWN VERDICT (schema, tree or advance chain, `whole`, per-gate, dropped), shared with `receipt_refusal` so the release entry and this guard cannot disagree about a receipt. The behind-base fetch below sits between it and the carried check, which is why the two halves are called separately here.
+    front, _chain = _receipt_front(root, tree, receipt)
+    if front is not None:
+        return _refuse(ev, front)
 
     # A LIVE BRANCH BEHIND origin/main IS REFUSED HERE, not by CI (operator finding 2026-10-03, PR #592). Judged once the receipt is whole and names the pushed tree, so a push the receipt already refuses never pays for a fetch, and the frozen goldens for refused pushes stay byte-identical. Run ci:quick after the rebase, not before it.
     behind = behind_base_refusal(ev, root, cmd)
@@ -1731,7 +1783,7 @@ def run(ev):
         ev.warn_raw("BLOCKED: %s" % behind)
         return hookio.DENY
 
-    if r_exit != "0":
+    if _receipt_red(receipt):
         # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is named and justified in .ci/config/carried-reds.json. All-or-nothing is the shape that gets a guard routed around; naming the exception keeps the refusal informative and leaves the excuse in git where it can be reviewed.
         #
         # READ FROM THE TREE BEING PUSHED, not the worktree. The receipt is keyed on HEAD^{tree}, so the excuses that clear it must come from the same tree. Reading the worktree let another writer's uncommitted edit to this file change the verdict on a push that does not contain that edit (2026-09-24: a working copy that dropped one entry refused a push whose HEAD still carried it). An absent file at HEAD means nothing is carried.

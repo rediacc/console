@@ -1501,6 +1501,136 @@ def test_v2_helpers():
     )
 
 
+# --- receipt_refusal: the guard's receipt verdict as a pure function (PLAN-local-release W1-A) ----
+# The release entry asks one question of a receipt, with no event and no fail-open: does it authorise publishing this tree? These cases drive the function directly, and the parity sweep proves it agrees with what `run()` decides on every frozen fixture world.
+def _world(name):
+    root = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / name
+    GM.FIXTURES[name](root)
+    return root
+
+
+def _head_tree(root):
+    return g(root, "rev-parse", "HEAD^{tree}")
+
+
+def _refusal_at(root):
+    tree = _head_tree(root)
+    return GM.receipt_refusal(str(root), tree, GM.read_receipt(str(root), tree))
+
+
+def test_receipt_refusal():
+    # CONTROL FIRST: the push-green world is admitted, so every refusal below is about its own planted fault.
+    green = _world("push-green")
+    cases.append((None, _refusal_at(green), "RECEIPT API: push-green returns None"))
+
+    missing = _world("push-no-receipt")
+    cases.append(
+        (None, GM.read_receipt(str(missing), _head_tree(missing)), "READER: no file reads as None")
+    )
+    cases.append((GM.NO_RECEIPT, _refusal_at(missing), "RECEIPT API: a missing receipt refuses"))
+
+    stale = _world("push-wrong-tree")
+    why = _refusal_at(stale) or ""
+    cases.append(
+        (True, "different tree" in why, "RECEIPT API: a receipt for another tree refuses as stale")
+    )
+
+    narrowed = _world("push-narrowed")
+    why = _refusal_at(narrowed) or ""
+    cases.append((True, "NARROWED" in why, "RECEIPT API: whole false refuses"))
+
+    red = _world("push-red-unnamed")
+    why = _refusal_at(red) or ""
+    cases.append(
+        (
+            True,
+            "check:format" in why and "check:ci-parity" in why,
+            "RECEIPT API: a red receipt nothing carries refuses, naming the failures",
+        )
+    )
+
+    dropped = _world("push-dropped-unverified")
+    why = _refusal_at(dropped) or ""
+    cases.append(
+        (
+            True,
+            "check:ci-plan-record" in why,
+            "RECEIPT API: a dropped touched gate with no passing --only run refuses",
+        )
+    )
+    verified = _world("push-dropped-verified")
+    cases.append(
+        (None, _refusal_at(verified), "RECEIPT API CONTROL: the same gate verified is admitted")
+    )
+
+    # THE PER-TREE COPY WINS. A later whole run at another tree overwrote the latest file; the archive copy for this tree still speaks for it.
+    pt = _world("push-green")
+    tree = _head_tree(pt)
+    latest = pt / ".ci" / "cache" / "prepush-receipt.json"
+    good = latest.read_text(encoding="utf-8")
+    archive = pt / ".ci" / "cache" / "receipts" / ("%s.json" % tree)
+    archive.parent.mkdir(parents=True)
+    archive.write_text(good, encoding="utf-8")
+    body = json.loads(good)
+    body["headTree"] = "0" * 40
+    latest.write_text(json.dumps(body), encoding="utf-8")
+    cases.append(
+        (
+            None,
+            _refusal_at(pt),
+            "READER: the per-tree copy is preferred over a latest for another tree",
+        )
+    )
+    # Its control: the same world without the archive copy is refused, so the None above is the reader's work.
+    archive.unlink()
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (
+            True,
+            "different tree" in why,
+            "READER CONTROL: without the per-tree copy the latest refuses",
+        )
+    )
+    # A corrupt per-tree copy refuses; it never falls through to a latest file that might happen to pass.
+    latest.write_text(good, encoding="utf-8")
+    archive.write_text("{not json", encoding="utf-8")
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (True, "does not parse" in why, "READER: a corrupt per-tree copy refuses, no fallthrough")
+    )
+
+    # NO FAIL-OPEN: the function never consults the environment. An unparseable receipt object and an empty dict both refuse.
+    cases.append(
+        (
+            True,
+            GM.receipt_refusal(str(green), _head_tree(green), {}) is not None,
+            "RECEIPT API: {} refuses",
+        )
+    )
+
+    # PARITY: on every frozen fixture world, receipt_refusal is None exactly when run() admits the push. run() adds only the behind-base fetch, which these worlds (no remote) never trip.
+    admitted = []
+    for name in sorted(GM.FIXTURES):
+        w = _world(name)
+        rc = drive(w, V2_PUSH)[0]
+        why = _refusal_at(w)
+        cases.append(
+            (
+                rc == 0,
+                why is None,
+                "PARITY %s: receipt_refusal agrees with run() (rc=%d)" % (name, rc),
+            )
+        )
+        if why is None:
+            admitted.append(name)
+    print(
+        "  receipt_refusal admitted %d of %d fixture worlds: %s"
+        % (len(admitted), len(GM.FIXTURES), ", ".join(admitted))
+    )
+    cases.append((True, len(GM.FIXTURES) > 10, "PARITY: the sweep saw the fixture set"))
+
+
+test_receipt_refusal()
 test_failfast_skips_refused()
 test_v2_carried_hash_match_allows()
 test_v2_planted_input_change_refuses()
