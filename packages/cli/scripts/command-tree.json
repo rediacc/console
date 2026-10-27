@@ -1151,6 +1151,12 @@
                   "descriptionKey": "commands.backup.strategy.remove.optionDestination",
                   "mandatory": false,
                   "defaultValue": null
+                },
+                {
+                  "flags": "--unbind",
+                  "descriptionKey": "commands.backup.strategy.remove.optionUnbind",
+                  "mandatory": false,
+                  "defaultValue": null
                 }
               ],
               "arguments": [
@@ -4191,7 +4197,14 @@
             {
               "name": "versions",
               "descriptionKey": "commands.config.remote.versions.description",
-              "options": [],
+              "options": [
+                {
+                  "flags": "--explain",
+                  "descriptionKey": "commands.config.remote.versions.optionExplain",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
               "arguments": [],
               "subcommands": []
             },

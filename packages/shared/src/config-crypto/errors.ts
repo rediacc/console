@@ -26,7 +26,7 @@ export class ConfigIntegrityError extends Error {
 export class ConfigEnvelopeTooNewError extends Error {
   constructor(public readonly envelopeVersion: number) {
     super(
-      `Written by a newer rdc (envelope v${envelopeVersion}); this rdc reads v${LEGACY_ENVELOPE_VERSION} and v${ENVELOPE_VERSION}. Upgrade rdc.`
+      `Written by a newer rdc (envelope v${envelopeVersion}); this build reads v${LEGACY_ENVELOPE_VERSION} and v${ENVELOPE_VERSION}. Upgrade rdc.`
     );
     this.name = 'ConfigEnvelopeTooNewError';
   }

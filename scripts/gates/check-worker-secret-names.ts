@@ -452,10 +452,7 @@ export function liveExtraLines(json: string): string[] | null {
   }
 }
 
-// The one spelling of the removal command; `<region>` is filled per region with extras.
-// The verb refuses --archive without an explicit --region (exit 2); `--archive` archives each
-// value from bws, confirms it, then deletes the original, so it needs no `--delete`. The unit test
-// `test_ops_prune_worker_secrets.py` reads this constant and runs it through the verb.
+// The one spelling of the removal command; `<region>` is filled per region with extras. The verb refuses --archive without an explicit --region (exit 2); `--archive` archives each value from bws, confirms it, then deletes the original, so it needs no `--delete`. The unit test `test_ops_prune_worker_secrets.py` reads this constant and runs it through the verb.
 const PRUNE_HINT =
   'PYTHONPATH=.ci python3 -m rediacc_ci.ops.prune_worker_secrets --region <region> --archive';
 

@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// R2: reading never writes. `config remote status|versions` are driven through the real command
-// tree; every other read verb (machine status/list, repo list, config show, backup status,
-// subscription status) reads through RemoteResourceState's getters and configService, so those are
-// proven at that entry point: the read surface is exercised against a RemoteConfigAdapter whose
-// push is a spy, and none may call it.
+// R2: reading never writes. `config remote status|versions` are driven through the real command tree; every other read verb (machine status/list, repo list, config show, backup status, subscription status) reads through RemoteResourceState's getters and configService, so those are proven at that entry point: the read surface is exercised against a RemoteConfigAdapter whose push is a spy, and none may call it.
 
 const { push, storage, mockService } = vi.hoisted(() => ({
   push: vi.fn(),

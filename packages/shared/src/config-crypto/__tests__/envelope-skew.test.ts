@@ -69,7 +69,7 @@ describe('envelope skew', () => {
     expect(err).toBeInstanceOf(ConfigEnvelopeTooNewError);
     expect(err).not.toBeInstanceOf(ConfigIntegrityError);
     expect((err as Error).message).toBe(
-      'Written by a newer rdc (envelope v4); this rdc reads v2 and v3. Upgrade rdc.'
+      'Written by a newer rdc (envelope v4); this build reads v2 and v3. Upgrade rdc.'
     );
   });
 
