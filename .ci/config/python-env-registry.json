@@ -1130,7 +1130,8 @@
     ".ci/rediacc_ci/release/advance_contract_floor.py": [
       "*name",
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
-      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
+      "GITHUB_ACTIONS"
     ],
     ".ci/rediacc_ci/release/assert_artifact_version.py": [
       "*name"

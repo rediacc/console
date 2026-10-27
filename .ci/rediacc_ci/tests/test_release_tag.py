@@ -87,6 +87,17 @@ def test_dry_run_writes_nothing(repo):
     assert _run(bare, "tag", "--list") == ""
 
 
+def test_dry_run_refuses_a_local_tag_on_another_commit_like_the_real_run(repo):
+    """A local v<V> elsewhere, absent on the remote: the real run refuses, so --dry-run must not say 'would create'."""
+    work, bare, first, second = repo
+    _run(work, "tag", "v2.1.0", second)
+    for dry in (True, False):
+        with pytest.raises(tag.TagError, match=r"Local tag v2\.1\.0 points at"):
+            tag.ensure_tag("2.1.0", first, cwd=str(work), dry_run=dry)
+    assert _run(bare, "tag", "--list") == ""
+    assert tag.ensure_tag("2.1.0", second, cwd=str(work), dry_run=True).startswith("DRY RUN")
+
+
 def test_main_exit_codes(repo, monkeypatch, capsys):
     work, _, first, second = repo
     monkeypatch.chdir(work)

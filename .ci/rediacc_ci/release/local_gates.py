@@ -6,7 +6,7 @@ Exit 0 when every gate admits, 1 with one `local-gates: <code>: <why>` line per 
 
 THE GATES, each a refusal unless it holds:
   ci-quick     a whole, green ci:quick receipt judged `HEAD^{tree}`: the push guard's own `read_receipt` (the per-tree copy `.ci/cache/receipts/<tree>.json` first, then the latest file) and `receipt_refusal`, imported the way `rediacc_ci.ci.gate_model` imports that guard, never copied.
-  vm-check     the vm:check trigger paths changed since the previous release tag (the newest `v*` tag reachable from HEAD, `git describe`) are admitted by a VERIFIED receipt, through `vm_check_trigger.changed_paths(root, <tag>, "push")` and `vm_check_receipt.admit`. No hit is "not required", and admits.
+  vm-check     the vm:check trigger paths changed since the previous release tag (the highest-versioned `v*` tag reachable from HEAD, `git tag --merged HEAD --sort=-v:refname`) are admitted by a VERIFIED receipt, through `vm_check_trigger.changed_paths(root, <tag>, "push")` and `vm_check_receipt.admit`. No hit is "not required", and admits.
   backup       when the backup paths moved since that tag, a VERIFIED backup receipt covers the tree: `backup_check_trigger.check(root, "HEAD", base=<tag>)`, the reader the backup push guard and the git-level pre-push hook run. Exit 1 and 2 (cannot judge) both refuse (decision 4).
   clone        a fresh clone of HEAD with its submodules at `.ci/cache/release/<tree>/` is clean, names the tree, and every submodule sits at its gitlink, unmodified (decision 1). The shared checkout always carries other sessions' ledgers, so cleanliness is judged on the clone, which is also where the release builds. Each submodule is cloned from this checkout's own copy of it (`<root>/<path>`, else `<root>/.git/modules/<name>`), never from the network; a pointer commit the local copy lacks is a refusal. HEAD equal to origin/main (below) is what makes those pointers the merged ones.
   origin-main  a fresh `git fetch origin main` succeeded, and HEAD equals origin/main. A failed fetch refuses: a stale origin/main would pass vacuously.
@@ -91,9 +91,13 @@ def _rev(root: pathlib.Path, spec: str) -> str | None:
 
 
 def previous_tag(root: pathlib.Path) -> str | None:
-    """The newest `v*` tag reachable from HEAD, or None when there is none."""
-    rc, out, _err = _git(root, "describe", "--tags", "--abbrev=0", "--match", "v*", "HEAD")
-    return out if rc == 0 and out else None
+    """The highest-versioned `v*` tag reachable from HEAD, or None when there is none.
+
+    `git tag --merged HEAD --sort=-v:refname`, the version order `resolve_version` reads, and not `git describe`: describe answers the tag nearest by commit distance, so a lower tag on a merged side branch would start the range after the real previous release.
+    """
+    rc, out, _err = _git(root, "tag", "--merged", "HEAD", "--list", "v*", "--sort=-v:refname")
+    first = out.splitlines()[0].strip() if rc == 0 and out else ""
+    return first or None
 
 
 # --------------------------------------------------------------------------- (a) ci:quick
@@ -212,7 +216,7 @@ def clone_refusal(root: pathlib.Path, tree: str, head: str) -> Refusal | None:
     for _name, path in _submodules(dest):
         pointer = _rev(dest, "HEAD:%s" % path)
         if pointer is None:
-            continue
+            return fail("declares the submodule %s in .gitmodules with no gitlink at HEAD" % path)
         if _rev(dest / path, "HEAD") != pointer:
             return fail("has %s away from its pointer %s" % (path, pointer[:12]))
     rc, out, err = _git(dest, "status", "--porcelain", "--ignore-submodules=none")
@@ -296,15 +300,18 @@ def live_existing(root: pathlib.Path, version: str) -> tuple[bool, str]:
     if not repo:
         return False, "the GitHub repository of origin could not be named"
     env = dict(os.environ, VERSION=version, GITHUB_REPOSITORY=repo, PYTHONPATH=str(paths.ci_dir()))
-    proc = subprocess.run(
-        [sys.executable, "-m", "rediacc_ci.release.check_existing_release"],
-        cwd=str(root),
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-        timeout=FETCH_TIMEOUT_S,
-    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "rediacc_ci.release.check_existing_release"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+            timeout=FETCH_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        return False, "check_existing_release did not answer within %ds" % FETCH_TIMEOUT_S
     # Its `git fetch --tags --quiet` exits non-zero with nothing printed when a fetched tag would clobber a local one, so an empty answer is named as such rather than shown as a bare code.
     said = (proc.stdout + proc.stderr).strip() or "exit %d with no output" % proc.returncode
     return proc.returncode == 0, said

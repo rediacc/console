@@ -710,6 +710,8 @@ def test_the_npm_script_launches_what_entry_refusal_admits() -> None:
         # A workers-only run takes the lock as its premise, and only the lock.
         (1, ["local-gates: lock: v9.9.9 is taken"], True, 0),
         (1, ["local-gates: lock: v9.9.9 is taken", "local-gates: ci-quick: none"], True, 1),
+        # rc 0 beside a refusal line is a contradiction (local_gates.main exits 1 whenever it prints one), so it refuses even when the line is the lock a workers-only run would take.
+        (0, ["local-gates: lock: v9.9.9 is taken"], True, 1),
     ],
 )
 def test_any_nonzero_gates_exit_refuses(
@@ -752,6 +754,31 @@ def test_bind_refusals_names_an_undeclared_or_empty_store() -> None:
     (undeclared,) = local.bind_refusals(["TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY"], env)
     assert "not declared" in undeclared
     assert local.bind_refusals(["A > B"], {})[0].startswith("no profile is carried")
+
+
+def test_a_token_only_bind_needs_no_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The profile-less `gh_env` rows (github-release, tag-submodules, ...) reach `_bind` with no carried profile and no spec; only a spec needs one."""
+    token_only = [s.id for s in local.STEPS if s.gh_env and not s.profiles and not s.binds]
+    assert "github-release" in token_only
+    assert local.bind_refusals([], {}) == []
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    exec_seen: list[tuple[list[str], str]] = []
+    monkeypatch.setattr(
+        local.subprocess,
+        "run",
+        lambda argv, **_kw: subprocess.CompletedProcess(argv, 0, "gho_fixture\n", ""),
+    )
+    monkeypatch.setattr(
+        local.child_proc,
+        "exec_replace",
+        lambda cmd, env: exec_seen.append((list(cmd), env.get("GH_TOKEN", ""))),
+    )
+    step = next(s for s in local.STEPS if s.id == "github-release")
+    argv = local.child_argv(step, local.Context(version="9.9.9"))
+    assert argv[:4] == ["python3", "-m", local.SELF, "_bind"]
+    assert local.bind_main(argv[4:]) == 0
+    assert exec_seen == [(argv[argv.index("--") + 1 :], "gho_fixture")]
 
 
 # --------------------------------------------------------------------------- the tag record
@@ -854,6 +881,48 @@ def test_the_assist_is_staged_before_dispatch_and_fetched_before_anything_is_sig
     for step_id in ("assist-stage-in", "assist-fetch", "assist-clean"):
         assert EDGE[order.index(step_id)].profiles == ("r2-artifacts",)
     assert EDGE[order.index("assist-fetch")].capture == "assist_run"
+
+
+class _FailAt(local.Run):
+    """A run whose rows only record their id, the row named `fail_at` failing."""
+
+    fail_at: str = ""
+    seen: typing.ClassVar[list[str]] = []
+
+    def run_step(self, step: local.Step) -> int:
+        self.seen.append(step.id)
+        rc = 1 if step.id == self.fail_at else 0
+        self.ctx["outcomes"][step.id] = "success" if rc == 0 else "failure"
+        return rc
+
+
+def _clean_runs(fail_at: str) -> list[str]:
+    """The assist-clean rows a run of the real table up to the seal executes when `fail_at` fails."""
+    order = ids(EDGE)
+    steps = [
+        s
+        for s in EDGE
+        if order.index(s.id) <= order.index("seal") or s.id == "assist-clean-on-stop"
+    ]
+    _FailAt.seen = []
+    run = _FailAt(ROOT, local.Context(version="9.9.9", sha="a" * 40, clone="/c", outcomes={}))
+    run.fail_at = fail_at
+    run.execute(steps)
+    return [i for i in _FailAt.seen if i.startswith("assist-clean")]
+
+
+@pytest.mark.parametrize("fail_at", ["assist-fetch", "validate-stage", "seal"])
+def test_a_stop_after_the_stage_in_still_empties_the_assist_prefix(fail_at: str) -> None:
+    assert "assist-clean-on-stop" in _clean_runs(fail_at)
+
+
+def test_a_stop_before_the_stage_in_or_a_clean_run_leaves_the_on_stop_row_idle() -> None:
+    assert _clean_runs("renet-key-gate") == []
+    assert _clean_runs("no-such-row") == ["assist-clean"]
+    row = next(s for s in EDGE if s.id == "assist-clean-on-stop")
+    assert row.on_failure
+    assert row.arm == "assist-stage-in"
+    assert row.argv == next(s for s in EDGE if s.id == "assist-clean").argv
 
 
 @pytest.mark.parametrize(

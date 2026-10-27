@@ -1,11 +1,11 @@
 """Refuse a renet build that does not bake the production licence key.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate <binary>... [--image <ref>]...
+    PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate <binary>... [--image <ref>]... [--dev-cache <public-keys.env>]...
 
 The expected key is `ACCOUNT_ED25519_PUBLIC_KEY`, supplied by `bws_env exec` (PLAN-local-release W1-E). Every binary named, and every renet inside each `--image` (`/app/renet` and `/opt/renet/renet-linux-{amd64,arm64}`, copied out through `docker create`/`docker cp`), is read with `go version -m`, and the verdict is taken from its build info:
 
   * the `-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=` ldflag. Absent or empty means every licence reads as not installed;
-  * the DEV key's fingerprint, read from `private/account/.cache/public-keys.env` when that cache exists. `private/renet/build.sh` (`_account_key_ldflags`) bakes it with only a warning when the environment carries no key;
+  * the DEV key's fingerprint, read from `private/account/.cache/public-keys.env` under this checkout, else from each `--dev-cache` path (the release clone has no cache, so `release:local` names the operator checkout's). `private/renet/build.sh` (`_account_key_ldflags`) bakes it with only a warning when the environment carries no key. With no DEV key readable the run refuses: an `ACCOUNT_ED25519_PUBLIC_KEY` holding the DEV key would then pass every DEV-baked binary as production;
   * `-tags=nolicense`, a build with the licence checks compiled out;
   * any key other than the expected one.
 
@@ -51,7 +51,7 @@ BUILD_TAGS = re.compile(r"^\s*build\s+-tags=(\S*)\s*$", re.MULTILINE)
 SPKI_ED25519_HEADER = bytes.fromhex("302a300506032b6570032100")
 # Where the renet image carries renet (private/renet/Dockerfile `COPY ... /app/renet`, `/opt/renet/...`).
 IMAGE_RENETS = ("/app/renet", "/opt/renet/renet-linux-amd64", "/opt/renet/renet-linux-arm64")
-USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate <binary>... [--image <ref>]..."
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate <binary>... [--image <ref>]... [--dev-cache <public-keys.env>]..."
 
 
 class KeyGateError(Exception):
@@ -129,7 +129,11 @@ def baked_public_key(
 
 def dev_fingerprint(root: pathlib.Path) -> str | None:
     """The DEV key's fingerprint from the public-key cache, or None when there is no cache or no readable key in it."""
-    cache = root / DEV_KEY_CACHE
+    return dev_fingerprint_at(root / DEV_KEY_CACHE)
+
+
+def dev_fingerprint_at(cache: pathlib.Path) -> str | None:
+    """The DEV key's fingerprint from the public-key cache file `cache`, or None when it is absent or carries no readable key."""
     try:
         text = cache.read_text(encoding="utf-8")
     except OSError:
@@ -208,7 +212,11 @@ def check_image(
     run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
 ) -> bool:
     """Copy every renet out of `image` and check each one. A renet the image does not carry is refused, never skipped."""
-    created = _docker(["create", image], run)
+    try:
+        created = _docker(["create", image], run)
+    except KeyGateError as exc:
+        print(f"REFUSED {image}: {exc}", flush=True)
+        return False
     if created.returncode != 0 or not created.stdout.strip():
         print(
             f"REFUSED {image}: docker create failed: {(created.stderr or '').strip()}", flush=True
@@ -220,8 +228,13 @@ def check_image(
         with tempfile.TemporaryDirectory(prefix="renet-key-gate-") as scratch:
             for inside in IMAGE_RENETS:
                 local = os.path.join(scratch, inside.strip("/").replace("/", "_"))
-                copied = _docker(["cp", f"{container}:{inside}", local], run)
                 label = f"{image}:{inside}"
+                try:
+                    copied = _docker(["cp", f"{container}:{inside}", local], run)
+                except KeyGateError as exc:
+                    print(f"REFUSED {label}: {exc}", flush=True)
+                    ok = False
+                    continue
                 if copied.returncode != 0:
                     print(
                         f"REFUSED {label}: not in the image ({(copied.stderr or '').strip()})",
@@ -231,20 +244,24 @@ def check_image(
                     continue
                 ok = check_binary(local, want, dev, run, label=label) and ok
     finally:
-        _docker(["rm", container], run)
+        try:
+            _docker(["rm", container], run)
+        except KeyGateError as exc:
+            print(f"renet_key_gate: container {container} not removed: {exc}", file=sys.stderr)
     return ok
 
 
-def parse(argv: Sequence[str]) -> tuple[list[str], list[str]]:
+def parse(argv: Sequence[str]) -> tuple[list[str], list[str], list[str]]:
     binaries: list[str] = []
     images: list[str] = []
+    caches: list[str] = []
     i = 0
     while i < len(argv):
         arg = argv[i]
-        if arg == "--image":
+        if arg in ("--image", "--dev-cache"):
             if i + 1 >= len(argv) or not argv[i + 1]:
-                raise ValueError("--image needs a value")
-            images.append(argv[i + 1])
+                raise ValueError(f"{arg} needs a value")
+            (images if arg == "--image" else caches).append(argv[i + 1])
             i += 2
             continue
         if arg.startswith("-"):
@@ -253,7 +270,7 @@ def parse(argv: Sequence[str]) -> tuple[list[str], list[str]]:
         i += 1
     if not binaries and not images:
         raise ValueError("name at least one renet binary or --image")
-    return binaries, images
+    return binaries, images, caches
 
 
 def expected_fingerprint(key: str, dev: str | None) -> str:
@@ -274,18 +291,27 @@ def main(
     argv: Sequence[str], run: Callable[..., subprocess.CompletedProcess] = subprocess.run
 ) -> int:
     try:
-        binaries, images = parse(argv)
+        binaries, images, caches = parse(argv)
     except ValueError as exc:
         print(f"renet_key_gate: {exc}\n{USAGE}", file=sys.stderr)
         return 2
     dev = dev_fingerprint(paths.repo_root())
+    for cache in caches:
+        dev = dev or dev_fingerprint_at(pathlib.Path(cache))
+    if dev is None:
+        print(
+            f"renet_key_gate: the DEV key is unknown (no readable {DEV_KEY_CACHE} here or at any --dev-cache), "
+            f"so a {PUBLIC_KEY_ENV} holding it could not be told from the production key; refusing",
+            file=sys.stderr,
+        )
+        return 1
     try:
         want = expected_fingerprint(os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", ""), dev)
     except KeyGateError as exc:
         print(f"renet_key_gate: {exc}", file=sys.stderr)
         return 1
     print(
-        f"renet_key_gate: expected production key {want}; DEV key {dev or 'unknown (no cache)'}",
+        f"renet_key_gate: expected production key {want}; DEV key {dev}",
         flush=True,
     )
     ok = True

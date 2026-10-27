@@ -239,6 +239,39 @@ def test_the_previous_tag_is_the_newest_reachable_one(tmp_path: pathlib.Path) ->
     assert lg.previous_tag(root) == "v1.0.0"
 
 
+def test_the_previous_tag_is_the_highest_version_not_the_nearest(tmp_path: pathlib.Path) -> None:
+    """A lower tag on a merged side branch is nearer by commit distance, so `git describe` would answer it; the range starts at the real previous release."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git(repo, "init", "-q", "--initial-branch=main")
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    commit_all(repo, "seed")
+    git(repo, "branch", "side")
+    (repo / "main.txt").write_text("release\n", encoding="utf-8")
+    commit_all(repo, "release")
+    git(repo, "tag", "v1.0.0")
+    for n in range(5):
+        (repo / "main.txt").write_text("main %d\n" % n, encoding="utf-8")
+        commit_all(repo, "main %d" % n)
+    git(repo, "checkout", "-q", "side")
+    (repo / "side.txt").write_text("side\n", encoding="utf-8")
+    commit_all(repo, "side")
+    git(repo, "tag", "v0.9.9")
+    git(repo, "checkout", "-q", "main")
+    git(repo, "merge", "-q", "--no-ff", "-m", "merge side", "side")
+    assert git(repo, "describe", "--tags", "--abbrev=0", "--match", "v*", "HEAD") == "v0.9.9"
+    assert lg.previous_tag(repo) == "v1.0.0"
+
+
+def test_no_reachable_tag_is_none(tmp_path: pathlib.Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git(repo, "init", "-q", "--initial-branch=main")
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    commit_all(repo, "seed")
+    assert lg.previous_tag(repo) is None
+
+
 # --------------------------------------------------------------------------- (d) the release clone
 
 
@@ -258,6 +291,22 @@ def test_the_clone_is_taken_afresh(tmp_path: pathlib.Path) -> None:
     (stale / "left-over").write_text("x", encoding="utf-8")
     assert lg.clone_refusal(root, tree, head_of(root)) is None
     assert not (stale / "left-over").exists()
+
+
+def test_a_declared_submodule_with_no_gitlink_refuses(tmp_path: pathlib.Path) -> None:
+    root = with_submodule(tmp_path)
+    with (root / ".gitmodules").open("a", encoding="utf-8") as fh:
+        fh.write(
+            '[submodule "ghost"]\n\tpath = private/ghost\n\turl = %s\n' % (tmp_path / "subsrc")
+        )
+    commit_all(root, "declare a submodule with no gitlink")
+    # A local copy to clone from, so the refusal is the missing gitlink, not the missing source.
+    git(root, "clone", "-q", str(tmp_path / "subsrc"), str(root / "private" / "ghost"))
+    got = lg.clone_refusal(root, tree_of(root), head_of(root))
+    assert got is not None
+    assert got.code == "clone"
+    assert "private/ghost" in got.message
+    assert "no gitlink" in got.message
 
 
 def test_a_dirty_clone_refuses(tmp_path: pathlib.Path, isolated_git: pathlib.Path) -> None:
@@ -351,6 +400,21 @@ def test_check_existing_release_must_agree(tmp_path: pathlib.Path) -> None:
 
 def test_a_free_lock_admits(tmp_path: pathlib.Path) -> None:
     assert lg.lock_refusals(tmp_path, "1.0.1", lambda _v: False, free) == []
+
+
+def test_a_hung_check_existing_release_is_a_refusal_not_an_exception(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A timeout in the existing-release probe is a lock refusal, so every other gate's refusal still prints."""
+
+    def hang(*args: Any, **kwargs: Any) -> Any:
+        raise subprocess.TimeoutExpired(args[0], kwargs.get("timeout", 0))
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setattr(lg.subprocess, "run", hang)
+    free_, said = lg.live_existing(tmp_path, "1.0.1")
+    assert free_ is False
+    assert "did not answer within %ds" % lg.FETCH_TIMEOUT_S in said
 
 
 # --------------------------------------------------------------------------- stable

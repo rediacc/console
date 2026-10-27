@@ -2,7 +2,7 @@
 
 `.ci/config/release-requires.json` declares, per entry, an account commit (`since`) from which the account Worker relies on CLI behaviour, and the console commits (`cli_commits`) that carry that behaviour. An entry is ACTIVE once `since` is an ancestor of the account pointer about to be deployed. An active entry admits the deploy only when the channel's published CLI contains every `cli_commits` sha.
 
-THE PUBLISHED CLI IS READ, NEVER ASSUMED. Its version V is the `version` of the R2 `cli/<channel>/manifest.json`, read at the URL `check_edge_manifest` and `check_stable_manifest` read (`RELEASES_ORIGIN + /cli/<channel>/manifest.json`, through `curl -sf`) and parsed by `check_stable_manifest.manifest_version`. V counts only when it is committed in the `release_state_validator` sense: the sentinel `cli/v<V>/.released` exists AND the tag `v<V>` exists. A manifest naming an unsealed or untagged version is a release that never finished, and it admits nothing.
+THE PUBLISHED CLI IS READ, NEVER ASSUMED. Its version V is the `version` of the R2 `cli/<channel>/manifest.json`, read at the URL `check_edge_manifest` and `check_stable_manifest` read (`RELEASES_ORIGIN + /cli/<channel>/manifest.json`, through `curl`, where only a 404 means no manifest) and parsed by `check_stable_manifest.manifest_version`. V counts only when it is committed in the `release_state_validator` sense: the sentinel `cli/v<V>/.released` exists AND the tag `v<V>` exists. A manifest naming an unsealed or untagged version is a release that never finished, and it admits nothing.
 
 A PROBE THAT COULD NOT ANSWER REFUSES. An unreachable bucket, an unknown commit object or an unparseable manifest answers `unknown: ...`, never a pass: the caller is about to deploy, and an unanswered question is not a yes.
 
@@ -54,6 +54,8 @@ def load_entries(root: pathlib.Path | None = None) -> list[dict]:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ConfigError("%s: cannot read %s: %s" % (SELF, CONFIG_REL, exc)) from exc
+    if not isinstance(data, dict):
+        raise ConfigError("%s: %s is not a JSON object" % (SELF, CONFIG_REL))
     if data.get("version") != CONFIG_VERSION:
         raise ConfigError(
             "%s: %s has version %r, expected %d"
@@ -63,10 +65,13 @@ def load_entries(root: pathlib.Path | None = None) -> list[dict]:
     if not isinstance(entries, list):
         raise ConfigError("%s: %s has no entries list" % (SELF, CONFIG_REL))
     for entry in entries:
-        since = entry.get("since") or {}
+        if not isinstance(entry, dict):
+            raise ConfigError("%s: malformed entry in %s: %r" % (SELF, CONFIG_REL, entry))
+        since = entry.get("since")
         commits = entry.get("cli_commits")
         if not (
-            isinstance(entry.get("id"), str)
+            isinstance(since, dict)
+            and isinstance(entry.get("id"), str)
             and isinstance(entry.get("component"), str)
             and isinstance(since.get("repo"), str)
             and isinstance(since.get("commit"), str)
@@ -192,14 +197,19 @@ def account_refusal(
 def live_manifest_version(channel: str) -> str | None:
     """The `version` of the live `cli/<channel>/manifest.json`, read the way `check_edge_manifest` reads it."""
     url = RELEASES_ORIGIN + "/cli/%s/manifest.json" % channel
-    proc = subprocess.run(["curl", "-sf", url], capture_output=True, text=True, check=False)
-    # curl -sf exits 22 on an HTTP error: a 404 is "no manifest", as in check_edge_manifest. Any other failure could not answer.
-    if proc.returncode == 22:
-        return ""
+    # The status is read, not `-f`'s exit 22: curl exits 22 on every status of 400 or more, and only a 404 is "no manifest". A 403 or a 5xx is an outage, which could not answer.
+    proc = subprocess.run(
+        ["curl", "-s", "-w", "\n%{http_code}", url], capture_output=True, text=True, check=False
+    )
     if proc.returncode != 0:
         return None
+    body, _, status = proc.stdout.rpartition("\n")
+    if status == "404":
+        return ""
+    if status != "200":
+        return None
     try:
-        return check_stable_manifest.manifest_version(proc.stdout)
+        return check_stable_manifest.manifest_version(body)
     except json.JSONDecodeError:
         return None
 

@@ -312,7 +312,7 @@ def _string_leaves(node: object) -> typing.Iterator[str]:
         for key, value in node.items():
             yield str(key)
             yield from _string_leaves(value)
-    elif isinstance(node, list):
+    elif isinstance(node, (list, tuple)):
         for item in node:
             yield from _string_leaves(item)
     elif node is not None:
@@ -321,14 +321,17 @@ def _string_leaves(node: object) -> typing.Iterator[str]:
 
 
 def refuse_secret_values(record: dict) -> None:
-    """A record that carries the value of a secret-named variable is never emitted. Every leaf is compared on its decoded text (numbers and booleans through `str`), and the serialized body is compared on the json-escaped form too, so quotes, backslashes, control characters and non-ASCII text cannot hide a value."""
+    """A record that carries the value of a secret-named variable is never emitted. Every key and leaf, through dicts, lists and tuples, is compared on its decoded text (numbers and booleans through `str`), and the serialized body is compared on the json-escaped form too, so quotes, backslashes, control characters and non-ASCII text cannot hide a value.
+
+    The raw value is not searched in the body: a value that sits inside a key or leaf is already caught on the decoded text, and one that only matches the JSON punctuation between them is no leak.
+    """
     leaves = list(_string_leaves(record))
     body = json.dumps(record)
     for name, value in os.environ.items():
         if len(value) < 8 or not SECRET_NAME_RE.search(name):
             continue
         escaped = json.dumps(value)[1:-1]
-        if any(value in leaf for leaf in leaves) or value in body or escaped in body:
+        if any(value in leaf for leaf in leaves) or escaped in body:
             raise RecordError("the record carries the value of %s; nothing is emitted" % name)
 
 

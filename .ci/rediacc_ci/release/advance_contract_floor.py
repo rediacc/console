@@ -7,7 +7,7 @@ Usage: advance_contract_floor.py (no arguments; everything comes from the enviro
 
 WHY A RATCHET AT ALL. The release-state bijection gate
 (`Committed(v) <=> sentinel AND tag`) excludes tags older than the oldest
-`.released` sentinel on R2, because pre-contract releases never had one. That floor is DATA-DERIVED, so an accidental scrub of every cli sentinel would drop the floor to nothing and silently turn the gate into a no-op. Recording the observed floor in a committed file gives the gate a high-water mark that a scrub cannot walk backwards.
+`.released` sentinel on R2, because pre-contract releases never had one. That floor is DATA-DERIVED, so an accidental scrub of every cli sentinel would drop the floor to nothing and silently turn the gate into a no-op. Recording the observed floor in a committed file gives the gate a high-water mark that a scrub cannot walk backwards. The mark is the value COMMITTED on main: this module only writes the working tree, so an advance protects nothing until a PR commits the file. `release:local` runs it in this checkout (its `contract-floor` row is a `root` row, not a release-clone row), where the file rides the session's next PR; in a CI job the runner's tree is discarded, so the run says so with a `::warning::`, and until a commit lands `release.cd_preflight` reports the lag as WARN.
 
 MONOTONIC, AND THAT IS THE WHOLE SAFETY PROPERTY. It writes only when the observed oldest sentinel is STRICTLY NEWER than what the file already holds, so a retry or a no-op run leaves the tree clean and skips the commit entirely. `decide()` below is that rule as a pure function, so a test can drive every ordering without R2, a git remote, or a filesystem.
 
@@ -186,10 +186,18 @@ def main(argv: list[str]) -> int:
         return 0
 
     floor_path.write_text(oldest + "\n", encoding="utf-8")
-    print(
-        "::notice::wrote %s in the working tree; commit it with the next PR" % FLOOR_FILE,
-        flush=True,
-    )
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        print(
+            "::warning::wrote %s in the runner's working tree, which this job discards; main's floor "
+            "stays %s until a PR commits %s (a `npm run release:local` run writes it in the checkout)"
+            % (FLOOR_FILE, current or "unset", oldest),
+            flush=True,
+        )
+    else:
+        print(
+            "::notice::wrote %s in the working tree; commit it with the next PR" % FLOOR_FILE,
+            flush=True,
+        )
     return 0
 
 

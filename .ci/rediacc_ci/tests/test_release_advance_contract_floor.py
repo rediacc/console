@@ -25,6 +25,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import advance_contract_floor as port
+from rediacc_ci.release import local
 from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
@@ -481,6 +482,28 @@ def test_the_floor_lags_the_oldest_sentinel_and_one_run_closes_it(
     assert "advancing ratchet v1.0.0 -> v1.2.0" in first.stdout
     assert "no change" in again.stdout
     assert _floor(fix) == "v1.2.0\n"
+
+
+def test_in_a_ci_job_the_discarded_write_is_a_warning_not_a_commit_order(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A CI runner's working tree dies with the job, so the run names main's floor as still lagging instead of telling the reader to commit a file that no longer exists."""
+    proc, calls, floor = run_new(
+        tmp_path, "v1.2.21\n", FAKE_AWS_OUT=sentinels("v1.3.0"), GITHUB_ACTIONS="true"
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert WROTE not in proc.stdout
+    assert "::warning::" in proc.stdout
+    assert "discards" in proc.stdout
+    assert "stays v1.2.21 until a PR commits v1.3.0" in proc.stdout
+    assert floor == "v1.3.0\n"
+    _assert_no_git(calls)
+
+
+def test_the_local_release_runs_the_floor_in_this_checkout() -> None:
+    """The release clone is rebuilt every run, so a floor written there would be lost like a CI runner's."""
+    (row,) = [s for s in local.STEPS if s.id == "contract-floor"]
+    assert row.cwd == "root"
 
 
 def test_an_empty_variable_is_refused_like_an_unset_one(tmp_path: pathlib.Path) -> None:

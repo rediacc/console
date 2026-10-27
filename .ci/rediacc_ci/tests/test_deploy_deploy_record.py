@@ -856,11 +856,19 @@ def test_a_secret_of_digits_matching_a_number_field_is_refused(monkeypatch):
         dr.refuse_secret_values({"deploy_rc": 1234567890})
 
 
-def test_only_the_json_escaped_branch_catches_a_secret_held_in_a_tuple(monkeypatch):
-    """The leaf walk follows dicts and lists only; the escaped-body test is what sees a tuple (json.dumps writes it as an array)."""
-    monkeypatch.setenv("SOME_API_TOKEN", 'q"uote\\caf\u00e9-12345')
+def test_the_leaf_walk_follows_a_tuple(monkeypatch):
+    """A tuple is walked like a list, so its member is compared on its decoded text, not on a repr."""
+    secret = 'q"uote\\caf\u00e9-12345'
+    monkeypatch.setenv("SOME_API_TOKEN", secret)
+    assert secret in list(dr._string_leaves({"t": ("pre", secret)}))
     with pytest.raises(dr.RecordError, match="SOME_API_TOKEN"):
-        dr.refuse_secret_values({"t": ("pre", 'q"uote\\caf\u00e9-12345')})
+        dr.refuse_secret_values({"t": ("pre", secret)})
+
+
+def test_a_value_matching_only_the_json_punctuation_is_not_a_leak(monkeypatch):
+    """`, "region` occurs in the serialized body only across a separator and a key, inside no key or leaf, so the record is emitted."""
+    monkeypatch.setenv("SOME_API_TOKEN", ', "region')
+    dr.refuse_secret_values({"a": "x", "region": "eu"})
 
 
 def test_an_awscli_that_cannot_run_is_a_record_error(monkeypatch):

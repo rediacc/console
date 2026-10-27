@@ -192,6 +192,10 @@ def ensure_tag(
         raise TagError(
             f"Retry of {tag}, but {remote} has no such tag. Re-dispatch as a new release."
         )
+    # The local-tag check `create_tag` makes, run here first so `--dry-run` refuses exactly what a real run refuses.
+    local = _local_tag(tag, cwd)
+    if local is not None and local[1] != full:
+        raise TagError(f"Local tag {tag} points at {local[1]}, not at {full}. Resolve it by hand.")
     if dry_run:
         return f"DRY RUN: would create {'lightweight ' if lightweight else ''}tag {tag} at {full} and push it to {remote}."
     oid = create_tag(

@@ -11,6 +11,7 @@ import pytest
 
 from rediacc_ci.build import build_renet
 from rediacc_ci.build import extract_renet_from_image as extract
+from rediacc_ci.release import local
 from rediacc_ci.release import renet_key_gate as gate
 from rediacc_ci.testrun import start_backup_plane as plane
 from rediacc_ci.well_known import RENET_REPO
@@ -225,10 +226,64 @@ def test_main_refuses_a_missing_or_dev_expected_key(
     assert DEV not in err
 
 
+def test_an_unknown_dev_key_refuses_rather_than_passing_a_dev_baked_binary(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """With no DEV cache, an expected key that IS the DEV key would pass a DEV build as production; the run refuses instead."""
+    monkeypatch.setattr(gate.paths, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", DEV)
+    assert gate.main(["/b/a"], fake_go({"/b/a": buildinfo(DEV)})) == 1
+    out = capsys.readouterr()
+    assert "the DEV key is unknown" in out.err
+    assert "production key" not in out.out
+    assert DEV not in out.out + out.err
+
+
+def test_a_dev_cache_named_on_the_command_line_is_read(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """The release clone has no cache; `--dev-cache` names the operator checkout's, and the DEV expected key is then refused by name."""
+    monkeypatch.setattr(gate.paths, "repo_root", lambda: tmp_path / "clone")
+    cache = tmp_path / "checkout" / "public-keys.env"
+    cache.parent.mkdir()
+    cache.write_text("ACCOUNT_ED25519_PUBLIC_KEY=%s\n" % DEV)
+    run = fake_go({"/b/a": buildinfo(PROD)})
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", DEV)
+    assert gate.main(["--dev-cache", str(cache), "/b/a"], run) == 1
+    assert "is the DEV key" in capsys.readouterr().err
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", PROD)
+    assert gate.main(["--dev-cache", str(cache), "/b/a"], run) == 0
+
+
+def test_the_local_release_names_the_checkouts_dev_cache() -> None:
+    (row,) = [s for s in local.STEPS if s.id == "renet-key-gate"]
+    assert '--dev-cache "{dev_cache}"' in row.argv[-1]
+    ctx = local.base_context(gate.paths.repo_root(), ["eu"], False)
+    assert ctx["dev_cache"] == str(gate.paths.repo_root() / gate.DEV_KEY_CACHE)
+
+
+def test_a_missing_docker_is_a_refused_verdict_not_a_traceback(
+    dev_cache, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    del dev_cache
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", PROD)
+
+    def run(argv, **_kw):
+        if argv[0] == "docker":
+            raise FileNotFoundError("docker")
+        return fake_go({})(argv)
+
+    assert gate.main(["--image", "ghcr.io/x/renet:t"], run) == 1
+    out = capsys.readouterr()
+    assert "REFUSED ghcr.io/x/renet:t: cannot run docker" in out.out
+    assert "renet_key_gate: REFUSED" in out.err
+
+
 def test_usage_errors_exit_2(capsys) -> None:
     assert gate.main([]) == 2
     assert gate.main(["--image"]) == 2
     assert gate.main(["--bogus"]) == 2
+    assert gate.main(["/b/a", "--dev-cache"]) == 2
     capsys.readouterr()
 
 

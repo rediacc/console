@@ -16,7 +16,7 @@ THE LOCK HOLDS THROUGH THE RUN. The gates judge it once; a concurrent CD edge re
 
 THE TAG IS THREE ROWS, ONE UNIT. The git-level pre-push hook admits the tag push only by the exact object id the release-run record lists, and an annotated tag's object id does not exist until the tag is made. So `tag-create` makes the local tag in the clone (`rediacc_ci.release.tag --create-only`, whose only stdout line is the oid), `tag-record` re-writes the release-run record (same run id and path, so REDIACC_RELEASE_RUN is unchanged) with `(clone, origin, refs/tags/v<V>, oid)`, and `tag-push` pushes `refs/tags/v<V>` only while it is still that oid (`--push-oid`). The record is first written with no push at all.
 
-THE ASSIST (local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage.
+THE ASSIST (local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage, and `assist-clean-on-stop` (an `on_failure` row armed by `assist-stage-in`) removes it when the run stops anywhere after the stage-in.
 
 PROVENANCE (plan decision 6). Sigstore needs the GitHub OIDC identity, so `provenance` writes `dist/cli/SHA256SUMS` over every Release asset (`create_github_release.release_assets`: `dist/cli/**` and `dist/packages/**`) and its armoured detached signature `dist/cli/SHA256SUMS.asc`, made with the release GPG key of the `release-local` profile in a throwaway GNUPGHOME. Both ride the GitHub Release, whose asset set is `dist/cli/**`.
 
@@ -260,7 +260,12 @@ def _table() -> tuple[Step, ...]:
         Step(
             "renet-key-gate",
             "builds",
-            ("sh", "-c", "exec python3 -m rediacc_ci.release.renet_key_gate private/bin/renet-*"),
+            # The clone has no DEV public-key cache (it is untracked), so the operator checkout's is named: without a DEV key the gate refuses.
+            (
+                "sh",
+                "-c",
+                'exec python3 -m rediacc_ci.release.renet_key_gate --dev-cache "{dev_cache}" private/bin/renet-*',
+            ),
             profiles=("release-local",),
         ),
         # The assist starts as soon as the keyed renet set exists (local-release-assist.yml THE R2 CONTRACT): stage it, then dispatch.
@@ -594,6 +599,15 @@ def _table() -> tuple[Step, ...]:
             "stage",
             (*PY, SELF, "_assist", "clean", "--version", "{version}"),
             profiles=("r2-artifacts",),
+        ),
+        # A stop anywhere after the keyed renet set was staged (a failed fetch, stage or seal) still empties the prefix; the rm is idempotent, so a stop after assist-clean repeats it harmlessly.
+        Step(
+            "assist-clean-on-stop",
+            "stage",
+            (*PY, SELF, "_assist", "clean", "--version", "{version}"),
+            profiles=("r2-artifacts",),
+            on_failure=True,
+            arm="assist-stage-in",
         ),
         Step("lock-check-seal", "stage", LOCK_CHECK, profiles=("r2-artifacts",)),
         # ---- 6. seal, then the tag at once (risk R2)
@@ -1027,6 +1041,8 @@ def _table() -> tuple[Step, ...]:
             "release",
             (*PY, "rediacc_ci.release.advance_contract_floor"),
             profiles=("release-local",),
+            # This checkout, not the release clone: the floor file it writes rides the session's next PR, and the clone is rebuilt on every run.
+            cwd="root",
         ),
         Step(
             "github-release",
@@ -1141,6 +1157,7 @@ def base_context(root: pathlib.Path, regions: Sequence[str], workers_only: bool)
         account_pointer=account,
         repo=m.group(1) if m else "",
         clone=str(root / CLONE_REL / tree),
+        dev_cache=str(root / "private" / "account" / ".cache" / "public-keys.env"),
         workers_only="true" if workers_only else "",
         smoke_rc="-1",
         path=os.environ.get("PATH", ""),
@@ -1683,7 +1700,12 @@ def bind_main(argv: list[str]) -> int:
 
 
 def bind_refusals(specs: Sequence[str], env: dict[str, str]) -> list[str]:
-    """Why the specs cannot be bound from `env`: a STORE no carried profile declares, or one the profile left empty. Names only."""
+    """Why the specs cannot be bound from `env`: a STORE no carried profile declares, or one the profile left empty. Names only.
+
+    No spec, nothing to refuse: a row that only takes the GitHub token (`gh_env` with no profile: cleanup-channel-tags, www-pages, tag-submodules, github-release) reads no store, so it needs no carried profile.
+    """
+    if not specs:
+        return []
     carried = [p for p in env.get(bws_env.PROFILES_ENV, "").split(",") if p]
     if not carried:
         return [

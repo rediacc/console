@@ -174,6 +174,57 @@ def test_bad_config_version_is_refused(tmp_path):
         order.load_entries(tmp_path)
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "[]",
+        '{"version": 1, "entries": ["not an object"]}',
+        '{"version": 1, "entries": [{"id": "x", "component": "account", "since": "abc", "cli_commits": ["a"]}]}',
+    ],
+)
+def test_a_non_object_config_or_entry_is_a_config_error(tmp_path, text):
+    """A config error, so `main` exits 2 with the reason, never a traceback with the refusal code 1."""
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    (tmp_path / order.CONFIG_REL).write_text(text, encoding="utf-8")
+    with pytest.raises(order.ConfigError):
+        order.load_entries(tmp_path)
+
+
+def _curl(monkeypatch, stdout: str, rc: int = 0) -> list[list[str]]:
+    seen: list[list[str]] = []
+
+    def run(argv, **_kw):
+        seen.append(list(argv))
+        return subprocess.CompletedProcess(argv, rc, stdout, "")
+
+    monkeypatch.setattr(order.subprocess, "run", run)
+    return seen
+
+
+def test_a_404_manifest_is_no_manifest(monkeypatch):
+    _curl(monkeypatch, "<Error>NoSuchKey</Error>\n404")
+    assert order.live_manifest_version("edge") == ""
+
+
+@pytest.mark.parametrize("status", ["403", "500", "503"])
+def test_an_http_error_other_than_404_could_not_answer(monkeypatch, status):
+    """`curl -f` exits 22 on all of these; only the 404 is a published-state answer."""
+    _curl(monkeypatch, "oops\n" + status)
+    assert order.live_manifest_version("edge") is None
+
+
+def test_a_200_manifest_is_its_version(monkeypatch):
+    seen = _curl(monkeypatch, '{"version": "1.2.3"}\n200')
+    assert order.live_manifest_version("edge") == "1.2.3"
+    assert "-f" not in seen[0]
+    assert "-sf" not in seen[0]
+
+
+def test_a_transport_failure_could_not_answer(monkeypatch):
+    _curl(monkeypatch, "", rc=6)
+    assert order.live_manifest_version("edge") is None
+
+
 def _git(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False
