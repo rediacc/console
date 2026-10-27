@@ -9,6 +9,7 @@ WHY (F3 of the commit-policy plan in agent/plans, section 5.3; operator ruling 2
   git --config-env core.hooksPath=<v>   the same through an environment variable
   git config [--local|...] core.hooksPath <x>, --unset, --unset-all, set, unset
   COMMIT_POLICY_OK=1 <anything>         the operator's override, set by an agent
+  REDIACC_RELEASE_RUN=<record> ...      the release-run admission of the pre-push hook (box W1-D of agent/plans/PLAN-local-release.md), which only `python3 -m rediacc_ci.release.local` sets for its own git children
   GIT_CONFIG_PARAMETERS= / GIT_CONFIG_KEY_<n>= / GIT_CONFIG_COUNT=  config by environment
 
 Reads stay allowed: `git config --get core.hooksPath`, `git config core.hooksPath` with no value, `git log -n 5`, and every ordinary commit.
@@ -50,9 +51,12 @@ CONFIG_READS = (
 CONFIG_WRITES = ("unset", "unset-all", "replace-all", "add")
 CORE_SECTION = re.compile(r"^core$", re.IGNORECASE)
 
+# The release entry exports this to its own git children; an agent setting it by hand is forging the admission `release_run.py` reads, so it is refused like the override (the git layer proves the process chain too, this refuses it before anything runs).
+RELEASE_RUN_ENV = "REDIACC_RELEASE_RUN"
+
 ENV_BYPASS = re.compile(
-    r"^(%s|GIT_CONFIG_PARAMETERS|GIT_CONFIG_COUNT|GIT_CONFIG_KEY_[0-9]+)\+?="
-    % commit_policy.OVERRIDE_ENV
+    r"^(%s|%s|GIT_CONFIG_PARAMETERS|GIT_CONFIG_COUNT|GIT_CONFIG_KEY_[0-9]+)\+?="
+    % (commit_policy.OVERRIDE_ENV, RELEASE_RUN_ENV)
 )
 
 EDGE_CASES = [
@@ -64,6 +68,10 @@ EDGE_CASES = [
     ("config --unset", "git config --unset core.hooksPath"),
     ("push --no-verify", "git push --no-verify origin 0923-1"),
     ("the override set by an agent", "COMMIT_POLICY_OK=1 git commit -m x -- a"),
+    (
+        "the release-run record set by an agent",
+        "REDIACC_RELEASE_RUN=.ci/cache/release/run-1.json git push origin main",
+    ),
     ("config --get is a read", "git config --get core.hooksPath"),
     ("config with no value is a read", "git config core.hooksPath"),
     ("log -n is not a commit", "git log -n 5"),
@@ -138,7 +146,8 @@ def _refuse(ev, what):
         "The git-level commit-policy hooks (core.hooksPath -> .claude/rediacc_hooks/git/)\n"
         "run for everyone, and this skips or disarms them. The override,\n"
         "COMMIT_POLICY_OK=1, is the operator's: it goes on the operator's own `!` command,\n"
-        "never on an agent's. When a hook refuses something, fix what it names.\n" % what
+        "never on an agent's. REDIACC_RELEASE_RUN is set only by `python3 -m rediacc_ci.release.local`\n"
+        "for its own git pushes. When a hook refuses something, fix what it names.\n" % what
     )
     return hookio.DENY
 

@@ -7,7 +7,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
   pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
-  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below).
+  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below).
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -51,6 +51,7 @@ def _load(name: str, path: pathlib.Path):
 
 cp = _load("commit_policy", HERE.parent / "commit_policy.py")
 ga = _load("githook_artifacts", HERE / "artifacts.py")
+rr = _load("githook_release_run", HERE / "release_run.py")
 
 SHAPE = re.compile(r"^[0-9]{4}-[0-9]+$")
 
@@ -294,6 +295,19 @@ def _mirror_push_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
     return mirror_main_refusal(repo, local_oid)
 
 
+# THE RELEASE RUN (box W1-D of agent/plans/PLAN-local-release.md). A local release, `python3 -m rediacc_ci.release.local`, pushes what CD pushed: the tap repository's formula commit and the like, some of them to `main`. A line is admitted only when `REDIACC_RELEASE_RUN` names a record under `.ci/cache/release/` of the console root whose pid is a live ancestor of this hook with a matching start time and argv, whose tree is the console's `HEAD^{tree}`, and which lists that exact `(toplevel, remote_ref, oid)`; `release_run.py` beside this file is the record format, its writer and its reader. An admitted line skips the branch rules and the backup check (the release gates judged both before any push); every other line meets the rules below unchanged. When the variable is set and admits nothing, the reason goes to stderr so a release's refusal is not a mystery.
+def _release_admitted(repo: str, lines: list[list[str]]) -> set[int]:
+    """The `id()`s of the pushed lines a live release run admits; empty when the variable is unset or the record fails."""
+    if not os.environ.get(rr.ENV) or not repo:
+        return set()
+    try:
+        triples = rr.admitted_pushes(CONSOLE_ROOT)
+    except rr.RecordError as exc:
+        sys.stderr.write("commit-policy: the release run admits nothing (%s)\n" % exc)
+        return set()
+    return {id(line) for line in lines if rr.admits(triples, repo, line[2], line[1])}
+
+
 def pre_push(argv: list[str], stdin: str) -> int:
     repo = _repo()
     current = cp.current_branch(repo) if repo else ""
@@ -310,9 +324,12 @@ def pre_push(argv: list[str], stdin: str) -> int:
                 % (MIRROR_REMOTE, reason)
             )
         return 0
+    released = _release_admitted(repo, lines)
     for line in lines:
         _local_ref, local_oid, remote_ref, remote_oid = line
         if not remote_ref.startswith("refs/heads/"):
+            continue
+        if id(line) in released:
             continue
         name = remote_ref[len("refs/heads/") :]
         if name == "main":
@@ -334,7 +351,7 @@ def pre_push(argv: list[str], stdin: str) -> int:
                 "this creates the remote branch `%s`, and the one live branch is `%s`."
                 % (name, current or "(detached)")
             )
-    reason = backup_receipt_refusal(repo, lines)
+    reason = backup_receipt_refusal(repo, [line for line in lines if id(line) not in released])
     if reason:
         return _refuse(
             "this push touches the backup paths and no VERIFIED backup receipt covers it.\n"

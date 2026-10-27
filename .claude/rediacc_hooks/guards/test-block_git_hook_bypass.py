@@ -124,6 +124,15 @@ GUARD_CASES = [
     ("push -n is a dry run", "git push -n origin 0923-1", False),
     ("an ordinary commit", "git commit -F m -- a", False),
     ("prose naming the flag", "echo 'never git commit --no-verify'", False),
+    (
+        "the release-run record set by an agent",
+        "REDIACC_RELEASE_RUN=.ci/cache/release/run-1.json git push origin main",
+        True,
+    ),
+    ("the release-run record exported", "export REDIACC_RELEASE_RUN=/tmp/r.json; git push", True),
+    ("the release-run record through env(1)", "env REDIACC_RELEASE_RUN=/tmp/r.json git push", True),
+    ("prose naming the release-run variable", "echo 'set REDIACC_RELEASE_RUN=x'", False),
+    ("a release-run variable read, not set", 'echo "$REDIACC_RELEASE_RUN"', False),
     ("prose naming the override", "echo 'the override is COMMIT_POLICY_OK=1'", False),
     ("an empty command", "", False),
 ]
