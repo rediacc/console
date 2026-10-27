@@ -381,11 +381,14 @@ def test_plan_names_counts_and_prefixes_only(dbs) -> None:
     assert [r["id"] for r in plan.rows("users")] == [OWNER]
 
 
-def test_list_stores_prints_prefix_name_members_methods(dbs) -> None:
+def test_list_stores_prints_prefixes_members_methods_and_no_org_name(dbs) -> None:
     (line,) = mod.list_stores(Sqlite(dbs[0]))
     assert line.startswith(mod.prefix(STORE))
     assert STORE not in line
-    assert "Rediacc Ops" in line
+    # A personal org is named after its owner's email, so the name never prints.
+    assert "Rediacc Ops" not in line
+    assert "@" not in line
+    assert "org " in line
     assert "members 2" in line
     assert "slots passkey,password,recovery" in line
 
@@ -986,3 +989,21 @@ def test_cf_auth_group_and_secret_supply_consumer_are_wired() -> None:
     assert "python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge" in (
         mod.__doc__ or ""
     )
+
+
+def test_read_source_resolves_the_listed_prefix(dbs) -> None:
+    source = mod.read_source(Sqlite(dbs[0]), mod.prefix(STORE), NOW)
+    assert source["store"]["id"] == STORE
+
+
+def test_wrangler_json_error_shows_its_message_not_the_closing_brace() -> None:
+    out = '{\n  "error": {\n    "text": "D1_ERROR: no such column: foo",\n    "notes": [{"text": "at offset 7"}]\n  }\n}\n'
+    assert mod._wrangler_error(out) == "D1_ERROR: no such column: foo | at offset 7"
+    assert mod._wrangler_error("plain failure\n") == "plain failure"
+
+
+def test_read_source_tolerates_a_source_without_the_newest_tables(dbs) -> None:
+    dbs[0].execute("DROP TABLE config_executor_grants")
+    dbs[0].commit()
+    source = mod.read_source(Sqlite(dbs[0]), STORE, NOW)
+    assert source["store"]["id"] == STORE

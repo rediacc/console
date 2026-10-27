@@ -271,8 +271,7 @@ class Wrangler:
         self.redact: list[str] = []
 
     def _shown(self, text: str) -> str:
-        lines = [ln for ln in text.strip().splitlines() if ln.strip()]
-        last = lines[-1] if lines else ""
+        last = _wrangler_error(text)
         for value in self.redact:
             if value:
                 last = last.replace(value, prefix(value))
@@ -294,6 +293,30 @@ class Wrangler:
                 "%s: wrangler exited %d%s" % (what, proc.returncode, ": " + tail if tail else "")
             )
         return proc.stdout
+
+
+def _wrangler_error(text: str) -> str:
+    """The message of a wrangler failure. With --json, wrangler prints a JSON object whose last line is a bare `}`, which hides the cause, so the `error.text` (or `error`) field is used when the output parses; otherwise the last non-empty line."""
+    body = text.strip()
+    start = body.find("{")
+    if start != -1:
+        try:
+            doc = json.loads(body[start:])
+        except ValueError:
+            doc = None
+        if isinstance(doc, dict):
+            err = doc.get("error")
+            if isinstance(err, dict):
+                parts = [str(err.get("text") or "")] + [
+                    str(n.get("text") or "") for n in err.get("notes") or [] if isinstance(n, dict)
+                ]
+                msg = " | ".join(p for p in parts if p)
+                if msg:
+                    return msg
+            elif err:
+                return str(err)
+    lines = [ln for ln in body.splitlines() if ln.strip()]
+    return lines[-1] if lines else ""
 
 
 class D1:
@@ -398,9 +421,9 @@ def _one(rows: list[dict], what: str) -> dict:
 
 
 def list_stores(src: Reader) -> list[str]:
-    """One line per store: id prefix, org name, member count, slot methods."""
+    """One line per store: store id prefix, org id prefix, member count, slot methods. Org names are not printed: a personal org is named after its owner's email."""
     rows = src.query(
-        "SELECT s.id AS id, o.name AS org_name, "
+        "SELECT s.id AS id, s.org_id AS org_id, "
         "(SELECT COUNT(*) FROM org_memberships m WHERE m.org_id = s.org_id) AS members, "
         "(SELECT group_concat(DISTINCT k.method) FROM config_key_slots k "
         "WHERE k.config_store_id = s.id) AS methods "
@@ -410,10 +433,10 @@ def list_stores(src: Reader) -> list[str]:
     for r in rows:
         methods = ",".join(sorted(str(r.get("methods") or "").split(","))) or "-"
         lines.append(
-            "%s  %-30s  members %d  slots %s"
+            "%s  org %s  members %d  slots %s"
             % (
                 prefix(r.get("id")),
-                str(r.get("org_name") or "")[:30],
+                prefix(r.get("org_id")),
                 int(r.get("members") or 0),
                 methods,
             )
@@ -425,10 +448,20 @@ def read_source(src: Reader, store_id: str, now: str) -> dict:
     """Every stable row the plan needs for one store, read in full (crypto columns included, never printed)."""
     if not STORE_ID.match(store_id):
         raise RefusedError("--store needs a full store id (8-64 characters of [A-Za-z0-9_-])")
-    sid = lit(store_id)
-    stores = src.query(q("SELECT * FROM config_stores WHERE id = @SID@", sid=sid))
+    stores = src.query(q("SELECT * FROM config_stores WHERE id = @SID@", sid=lit(store_id)))
+    if not stores:
+        # The listing prints 8-character prefixes, so a unique prefix names its store.
+        like = src.query(q("SELECT * FROM config_stores WHERE id LIKE @P@", p=lit(store_id + "%")))
+        if len(like) > 1:
+            raise RefusedError(
+                "store prefix %s matches %d stores on the source; give more characters"
+                % (prefix(store_id), len(like))
+            )
+        stores = like
     if not stores:
         raise RefusedError("store %s does not exist on the source" % prefix(store_id))
+    store_id = str(stores[0]["id"])
+    sid = lit(store_id)
     store = stores[0]
     org = _one(
         src.query(q("SELECT * FROM organizations WHERE id = @ID@", id=lit(store["org_id"]))),
@@ -470,26 +503,44 @@ def read_source(src: Reader, store_id: str, now: str) -> dict:
         if team_ids
         else []
     )
-    counts = _one(
-        src.query(
+    # The source may lag the newest migrations (eu stable had no config_executor_grants on
+    # 2026-10-27), so the never-copied tables are counted only where they exist; an absent
+    # table holds nothing to leave behind.
+    present = {
+        str(r.get("name"))
+        for r in src.query(
             q(
-                "SELECT @NEVER@, (SELECT COUNT(*) FROM config_cek_rotations "
-                "WHERE config_store_id = @SID@ AND status = 'pending') AS pending_rotations, "
-                "(SELECT COUNT(*) FROM org_memberships WHERE org_id = @ORG@) AS members",
-                never=", ".join(
-                    q(
-                        "(SELECT COUNT(*) FROM @T@ WHERE config_store_id = @SID@) AS @T@",
-                        t=ident(t),
-                        sid=sid,
-                    )
-                    for t in NEVER_COPIED
-                ),
-                sid=sid,
-                org=lit(org["id"]),
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN @T@",
+                t=id_list([*NEVER_COPIED, "config_cek_rotations"]),
             )
-        ),
-        "the store counts",
+        )
+    }
+    parts = [
+        q(
+            "(SELECT COUNT(*) FROM @T@ WHERE config_store_id = @SID@) AS @T@",
+            t=ident(t),
+            sid=sid,
+        )
+        if t in present
+        else q("0 AS @T@", t=ident(t))
+        for t in NEVER_COPIED
+    ]
+    parts.append(
+        q(
+            "(SELECT COUNT(*) FROM config_cek_rotations "
+            "WHERE config_store_id = @SID@ AND status = 'pending') AS pending_rotations",
+            sid=sid,
+        )
+        if "config_cek_rotations" in present
+        else "0 AS pending_rotations"
     )
+    parts.append(
+        q(
+            "(SELECT COUNT(*) FROM org_memberships WHERE org_id = @ORG@) AS members",
+            org=lit(org["id"]),
+        )
+    )
+    counts = _one(src.query("SELECT " + ", ".join(parts)), "the store counts")
     return {
         "store": store,
         "org": org,
