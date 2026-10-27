@@ -18,6 +18,7 @@ import { t } from '../i18n/index.js';
 import {
   assertCreatableName,
   at,
+  childDatastores,
   forgetDatastore,
   getDatastore,
   listDatastoreState,
@@ -32,6 +33,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { parseCapturedJson } from '../services/executor/local-executor.js';
+import { stateMismatch } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { askConfirm } from '../utils/prompt.js';
@@ -636,6 +638,14 @@ function registerMutators(datastore: Command): void {
         if (repos.length > 0 && !options.force) {
           throw new ValidationError(
             t('errors.datastore.deleteHasRepos', { ref, repos: repos.join(', ') })
+          );
+        }
+        // Children are never covered by --force: deleting the parent would orphan their reflink lineage.
+        const children = await childDatastores(ref);
+        if (children.length > 0) {
+          throw stateMismatch(
+            t('errors.datastore.deleteHasChildren', { ref, children: children.join(', ') }),
+            { details: children }
           );
         }
         if (!options.yes) {

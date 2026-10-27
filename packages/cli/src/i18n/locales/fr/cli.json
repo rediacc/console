@@ -150,9 +150,15 @@
           "description": "Lister toutes les stratégies de sauvegarde"
         },
         "remove": {
+          "bound": "Impossible de supprimer la stratégie de sauvegarde \"{{strategy}}\" : {{count}} machine(s) la lient encore : {{machines}}.",
+          "boundNext": "Déliez-la d'abord de ces machines, ou supprimez-la avec ses liaisons.",
           "description": "Supprimer une stratégie de sauvegarde ou une destination",
+          "nextForce": "Supprimer la stratégie et toutes ses liaisons en une seule modification.",
+          "nextUnbind": "Délier la stratégie d'une machine.",
           "optionDestination": "Supprimer uniquement cette destination (conserve les autres destinations)",
-          "removed": "Stratégie de sauvegarde supprimée"
+          "optionUnbind": "Retirer aussi la stratégie de chaque machine qui la lie",
+          "removed": "Stratégie de sauvegarde supprimée",
+          "unboundWarn": "Stratégie \"{{strategy}}\" supprimée et déliée de : {{machines}}. Les minuteurs déjà déployés sur ces machines restent en place jusqu'à l'exécution de \"rdc backup schedule\" sur chacune."
         },
         "set": {
           "description": "Créer ou mettre à jour une stratégie de sauvegarde",
@@ -1087,15 +1093,23 @@
         "unmanagedLine": "    non recréé : {{service}} : {{message}}"
       },
       "remove": {
+        "clusterMember": "Impossible de supprimer la machine \"{{name}}\" : elle est membre du cluster \"{{cluster}}\".",
+        "clusterMemberNext": "Évacuez d'abord le nœud de son cluster.",
         "confirm": "Supprimer la machine \"{{name}}\" de la configuration ?",
         "description": "Supprimer une machine de la configuration actuelle",
         "forceDangling": "Machine \"{{name}}\" supprimée alors que {{count}} placement(s) de dépôt y étaient encore : {{repos}}. Ces placements sont désormais orphelins. Repointez-les avec \"rdc repo migrate\" ou supprimez-les avec \"rdc repo delete\".",
-        "forceOption": "Supprimer la machine même si des dépôts y sont encore placés, laissant ces placements orphelins.",
+        "forceOption": "Supprimer la machine même si des dépôts y sont placés ou si des stratégies de sauvegarde y sont liées, laissant ces références orphelines.",
+        "forceStrategies": "Machine \"{{name}}\" supprimée alors que {{count}} liaison(s) de stratégie de sauvegarde y étaient encore : {{strategies}}. Ces liaisons sont désormais orphelines.",
         "nextDelete": "Supprimez chaque dépôt placé sur cette machine.",
+        "nextEvict": "Drainer le nœud et effacer son appartenance au cluster.",
         "nextForce": "Supprimez la machine quand même, en laissant ces placements de dépôt orphelins.",
+        "nextForceStrategies": "Supprimez la machine quand même, en laissant les liaisons de stratégie orphelines.",
         "nextMigrate": "Déplacez chaque dépôt vers une autre machine d'abord.",
+        "nextUnbind": "Délier une stratégie de cette machine.",
         "placementConflict": "Impossible de supprimer la machine \"{{name}}\" : {{count}} placement(s) de dépôt la référencent encore : {{repos}}.",
         "placementConflictNext": "Déplacez ou supprimez ces dépôts d'abord, ou forcez la suppression.",
+        "strategiesBound": "Impossible de supprimer la machine \"{{name}}\" : {{count}} liaison(s) de stratégie de sauvegarde la référencent encore : {{strategies}}.",
+        "strategiesBoundNext": "Déliez d'abord les stratégies, ou forcez la suppression.",
         "success": "Machine \"{{name}}\" supprimée"
       },
       "restartServices": {
@@ -2294,6 +2308,7 @@
     },
     "datastore": {
       "defaultIsImplicit": "le datastore par défaut est implicite ; ces verbes gèrent des datastores nommés supplémentaires.",
+      "deleteHasChildren": "Le datastore \"{{ref}}\" a encore des datastores enfants issus d'un fork : {{children}}. Supprimez-les ou détachez-les d'abord ; --force ne couvre pas ce cas.",
       "deleteHasRepos": "Le datastore \"{{ref}}\" contient encore des dépôts : {{repos}}. Supprimez-les d'abord, ou passez --force pour les détruire avec lui.",
       "forkNeedsWrites": "\"{{ref}}\" est un fork. Indiquez où vont ses écritures : --writes local (instantané, éphémère, perdu au détachement) ou --writes ceph (clone durable dans le pool).",
       "localForkNeedsDiscard": "\"{{ref}}\" est attaché avec --writes local, son overlay est donc éphémère et le détacher le détruit. Passez --discard pour confirmer que c'est ce que vous voulez.",

@@ -13,6 +13,7 @@ import { strategyUnschedulableReason } from '../services/backup/backup-strategy-
 import { configService } from '../services/config/config-resources.js';
 import {
   bindBackupStrategy,
+  removeStrategyChecked,
   unbindBackupStrategy,
 } from '../services/config/config-strategy-binding.js';
 import { outputService } from '../services/core/output.js';
@@ -420,12 +421,21 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .argument('<strategy>', t('options.strategyName'))
     .description(t('commands.backup.strategy.remove.description'))
     .option('--destination <name>', t('commands.backup.strategy.remove.optionDestination'))
+    .option('--unbind', t('commands.backup.strategy.remove.optionUnbind'))
     .action(async (strategy: string, options) => {
       try {
         if (options.destination) {
           await configService.removeBackupDestination(strategy, options.destination);
         } else {
-          await configService.removeBackupStrategy(strategy);
+          const unbound = await removeStrategyChecked(strategy, options.unbind === true);
+          if (unbound.length > 0) {
+            outputService.warn(
+              t('commands.backup.strategy.remove.unboundWarn', {
+                strategy,
+                machines: unbound.join(', '),
+              })
+            );
+          }
         }
         outputService.success(t('commands.backup.strategy.remove.removed'));
       } catch (error) {

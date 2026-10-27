@@ -73,23 +73,107 @@ export function machineRemovePlacementError(
   );
 }
 
+/** Repos whose datastore placement names a datastore currently attached to `machineName`. */
+export function reposOnAttachedDatastores(
+  machineName: string,
+  attachedTo: Record<string, { attachedTo?: string }>,
+  repos: { name: string; config: RepositoryConfig }[]
+): string[] {
+  const stores = new Set(
+    Object.entries(attachedTo)
+      .filter(([, s]) => s.attachedTo === machineName)
+      .map(([ds]) => ds)
+  );
+  return repos
+    .filter((r) => {
+      const p = r.config.placement;
+      return p !== undefined && 'datastore' in p && stores.has(p.datastore);
+    })
+    .map((r) => r.name);
+}
+
+function clusterMemberError(machineName: string, cluster: string): CliExitError {
+  return stateMismatch(t('commands.machine.remove.clusterMember', { name: machineName, cluster }), {
+    next: {
+      summary: t('commands.machine.remove.clusterMemberNext'),
+      options: [
+        {
+          description: t('commands.machine.remove.nextEvict'),
+          run: `rdc cluster evict ${machineName}`,
+        },
+      ],
+    },
+  });
+}
+
+function strategyBoundError(machineName: string, strategies: string[]): CliExitError {
+  return stateMismatch(
+    t('commands.machine.remove.strategiesBound', {
+      name: machineName,
+      count: strategies.length,
+      strategies: strategies.join(', '),
+    }),
+    {
+      details: strategies,
+      next: {
+        summary: t('commands.machine.remove.strategiesBoundNext'),
+        options: [
+          {
+            description: t('commands.machine.remove.nextUnbind'),
+            run: `rdc backup strategy unbind <strategy> --machine ${machineName}`,
+          },
+          {
+            description: t('commands.machine.remove.nextForceStrategies'),
+            run: `rdc machine remove ${machineName} --force`,
+          },
+        ],
+      },
+    }
+  );
+}
+
 /**
- * Refuse `machine remove` (exit 12) when repos are still placed on the machine,
- * unless `--force`. With `--force`, proceed but WARN that the surviving
- * placements are now dangling (they are left untouched by the removal, that is
- * the accepted damage class).
+ * Refuse `machine remove` (exit 12) while anything still references the machine: a cluster
+ * membership (never forceable, `cluster evict` owns that), repos placed on it directly or on a
+ * datastore attached to it, and bound backup strategies. `--force` covers the last two and
+ * WARNS once per reference kind, naming each reference (the accepted damage class: they dangle).
  */
 export async function guardMachineRemoval(machineName: string, force?: boolean): Promise<void> {
-  const placed = reposPlacedOnMachine(machineName, await configService.listRepositories());
-  if (placed.length === 0) return;
-  if (!force) {
-    throw machineRemovePlacementError(machineName, placed);
+  const cfg = await configService.getCurrent();
+  const cluster = cfg?.resources?.machines?.[machineName]?.cluster;
+  if (cluster) {
+    throw clusterMemberError(machineName, cluster.cluster);
   }
-  outputService.warn(
-    t('commands.machine.remove.forceDangling', {
-      name: machineName,
-      count: placed.length,
-      repos: placed.join(', '),
-    })
-  );
+  const repos = await configService.listRepositories();
+  const direct = reposPlacedOnMachine(machineName, repos);
+  const viaDatastore = reposOnAttachedDatastores(
+    machineName,
+    cfg?.state?.datastores ?? {},
+    repos
+  ).filter((r) => !direct.includes(r));
+  const placed = [...direct, ...viaDatastore];
+  const strategies = cfg?.resources?.machines?.[machineName]?.backupStrategies ?? [];
+  if (!force) {
+    if (placed.length > 0) throw machineRemovePlacementError(machineName, placed);
+    if (strategies.length > 0) throw strategyBoundError(machineName, strategies);
+    return;
+  }
+  if (placed.length > 0) {
+    outputService.warn(
+      t('commands.machine.remove.forceDangling', {
+        name: machineName,
+        count: placed.length,
+        repos: placed.join(', '),
+      })
+    );
+  }
+  if (strategies.length > 0) {
+    outputService.warn(
+      t('commands.machine.remove.forceStrategies', {
+        name: machineName,
+        count: strategies.length,
+        strategies: strategies.join(', '),
+      })
+    );
+  }
 }

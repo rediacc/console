@@ -150,9 +150,15 @@
           "description": "Elenca tutte le strategie di backup"
         },
         "remove": {
+          "bound": "Impossibile rimuovere la strategia di backup \"{{strategy}}\": {{count}} macchinario/i la associano ancora: {{machines}}.",
+          "boundNext": "Dissociala prima da quei macchinari, oppure rimuovila insieme alle sue associazioni.",
           "description": "Rimuovi una strategia o destinazione di backup",
+          "nextForce": "Rimuovi la strategia e tutte le associazioni in un'unica modifica.",
+          "nextUnbind": "Dissocia la strategia da un macchinario.",
           "optionDestination": "Rimuovi solo questa destinazione (conserva le altre destinazioni)",
-          "removed": "Strategia di backup rimossa"
+          "optionUnbind": "Rimuovi la strategia anche da ogni macchinario che la associa",
+          "removed": "Strategia di backup rimossa",
+          "unboundWarn": "Strategia \"{{strategy}}\" rimossa e dissociata da: {{machines}}. I timer già distribuiti su quei macchinari restano finché non viene eseguito \"rdc backup schedule\" su ciascuno."
         },
         "set": {
           "description": "Crea o aggiorna una strategia di backup",
@@ -1087,15 +1093,23 @@
         "unmanagedLine": "    non ricreato: {{service}}: {{message}}"
       },
       "remove": {
+        "clusterMember": "Impossibile rimuovere il macchinario \"{{name}}\": è membro del cluster \"{{cluster}}\".",
+        "clusterMemberNext": "Rimuovi prima il nodo dal suo cluster.",
         "confirm": "Rimuovere la macchina \"{{name}}\" dalla configurazione?",
         "description": "Rimuovi un macchinario dalla configurazione corrente",
         "forceDangling": "Macchinario \"{{name}}\" rimosso con {{count}} posizionamento/i di repository ancora su di esso: {{repos}}. Quei posizionamenti ora sono pendenti. Reindirizzali con \"rdc repo migrate\" o eliminali con \"rdc repo delete\".",
-        "forceOption": "Rimuovi il macchinario anche se vi sono ancora repository posizionati su di esso, lasciando quei posizionamenti pendenti.",
+        "forceOption": "Rimuovi il macchinario anche se vi sono repository posizionati su di esso o strategie di backup associate, lasciando pendenti quei riferimenti.",
+        "forceStrategies": "Macchinario \"{{name}}\" rimosso con {{count}} associazione/i di strategie di backup ancora su di esso: {{strategies}}. Quelle associazioni ora sono pendenti.",
         "nextDelete": "Elimina ogni repository posizionato su questo macchinario.",
+        "nextEvict": "Esegue il drain del nodo e cancella la sua appartenenza al cluster.",
         "nextForce": "Rimuovi comunque il macchinario, lasciando pendenti quei posizionamenti di repository.",
+        "nextForceStrategies": "Rimuovi comunque il macchinario, lasciando pendenti le associazioni delle strategie.",
         "nextMigrate": "Sposta prima ogni repository su un altro macchinario.",
+        "nextUnbind": "Dissocia una strategia da questo macchinario.",
         "placementConflict": "Impossibile rimuovere il macchinario \"{{name}}\": {{count}} posizionamento/i di repository lo referenziano ancora: {{repos}}.",
         "placementConflictNext": "Sposta o elimina prima questi repository, oppure forza la rimozione.",
+        "strategiesBound": "Impossibile rimuovere il macchinario \"{{name}}\": {{count}} associazione/i di strategie di backup vi fanno ancora riferimento: {{strategies}}.",
+        "strategiesBoundNext": "Dissocia prima le strategie, oppure forza la rimozione.",
         "success": "Macchinario \"{{name}}\" rimosso"
       },
       "restartServices": {
@@ -2294,6 +2308,7 @@
     },
     "datastore": {
       "defaultIsImplicit": "il datastore predefinito è implicito; questi verbi gestiscono datastore aggiuntivi con nome.",
+      "deleteHasChildren": "Il datastore \"{{ref}}\" ha ancora datastore figli derivati da esso con fork: {{children}}. Eliminali o scollegali prima; --force non copre questo caso.",
       "deleteHasRepos": "Il datastore \"{{ref}}\" contiene ancora repository: {{repos}}. Eliminali prima, oppure passa --force per distruggerli insieme ad esso.",
       "forkNeedsWrites": "\"{{ref}}\" è un fork. Indica dove vanno le sue scritture: --writes local (istantaneo, effimero, perso allo scollegamento) oppure --writes ceph (clone durevole nel pool).",
       "localForkNeedsDiscard": "\"{{ref}}\" è collegato con --writes local, quindi il suo overlay è effimero e scollegarlo lo distrugge. Passa --discard per confermare che è ciò che vuoi.",

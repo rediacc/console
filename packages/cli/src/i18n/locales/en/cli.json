@@ -756,7 +756,15 @@
         "confirm": "Remove machine \"{{name}}\" from the config?",
         "description": "Remove a machine from the config. Does not touch the machine itself.",
         "forceDangling": "Removed machine \"{{name}}\" with {{count}} repository placement(s) still on it: {{repos}}. Those placements now dangle. Re-point them with \"rdc repo migrate\" or delete them with \"rdc repo delete\".",
-        "forceOption": "Remove the machine even if repositories are still placed on it, leaving those placements dangling.",
+        "forceOption": "Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling.",
+        "clusterMember": "Cannot remove machine \"{{name}}\": it is a member of cluster \"{{cluster}}\".",
+        "clusterMemberNext": "Evict the node from its cluster first.",
+        "nextEvict": "Drain the node and clear its cluster membership.",
+        "strategiesBound": "Cannot remove machine \"{{name}}\": {{count}} backup strategy binding(s) still reference it: {{strategies}}.",
+        "strategiesBoundNext": "Unbind the strategies first, or force the removal.",
+        "nextUnbind": "Unbind a strategy from this machine.",
+        "nextForceStrategies": "Remove the machine anyway, leaving the strategy bindings dangling.",
+        "forceStrategies": "Removed machine \"{{name}}\" with {{count}} backup strategy binding(s) still on it: {{strategies}}. Those bindings now dangle.",
         "nextDelete": "Delete each repository placed on this machine.",
         "nextForce": "Remove the machine anyway, leaving those repository placements dangling.",
         "nextMigrate": "Move each repository to another machine first.",
@@ -1796,6 +1804,12 @@
         "remove": {
           "description": "Remove a backup strategy or destination",
           "optionDestination": "Remove only this destination (keeps other destinations)",
+          "optionUnbind": "Also drop the strategy from every machine that binds it",
+          "bound": "Cannot remove backup strategy \"{{strategy}}\": {{count}} machine(s) still bind it: {{machines}}.",
+          "boundNext": "Unbind it from those machines first, or remove it together with its bindings.",
+          "nextUnbind": "Unbind the strategy from one machine.",
+          "nextForce": "Remove the strategy and every binding in one edit.",
+          "unboundWarn": "Removed strategy \"{{strategy}}\" and unbound it from: {{machines}}. The timers already deployed on those machines stay until \"rdc backup schedule\" runs there.",
           "removed": "Backup strategy removed"
         },
         "list": {
@@ -2275,6 +2289,7 @@
     },
     "datastore": {
       "defaultIsImplicit": "the default datastore is implicit; these verbs manage additional named datastores.",
+      "deleteHasChildren": "Datastore \"{{ref}}\" still has child datastores forked from it: {{children}}. Delete or detach them first; --force does not cover this.",
       "deleteHasRepos": "Datastore \"{{ref}}\" still holds repositories: {{repos}}. Delete them first, or pass --force to destroy them with it.",
       "forkNeedsWrites": "\"{{ref}}\" is a fork. Say where its writes go: --writes local (instant, ephemeral, lost on detach) or --writes ceph (durable clone in the pool).",
       "localForkNeedsDiscard": "\"{{ref}}\" is attached with --writes local, so its overlay is ephemeral and detaching destroys it. Pass --discard to say that is what you want.",

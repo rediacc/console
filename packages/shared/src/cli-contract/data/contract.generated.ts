@@ -1185,6 +1185,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.remove.optionDestination",
           "label": "Remove only this destination (keeps other destinations)"
+        },
+        {
+          "flags": "--unbind",
+          "long": "unbind",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.remove.optionUnbind",
+          "label": "Also drop the strategy from every machine that binds it"
         }
       ],
       "positionals": [
@@ -6562,7 +6573,7 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.machine.remove.forceOption",
-          "label": "Remove the machine even if repositories are still placed on it, leaving those placements dangling."
+          "label": "Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling."
         }
       ],
       "positionals": [

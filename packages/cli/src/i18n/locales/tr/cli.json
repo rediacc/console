@@ -150,9 +150,15 @@
           "description": "Tüm yedekleme stratejilerini listele"
         },
         "remove": {
+          "bound": "\"{{strategy}}\" yedekleme stratejisi kaldırılamıyor: {{count}} makine hâlâ onu bağlıyor: {{machines}}.",
+          "boundNext": "Önce bu makinelerden bağlantısını kaldırın veya bağlantılarıyla birlikte kaldırın.",
           "description": "Yedekleme stratejisini veya hedefi kaldır",
+          "nextForce": "Stratejiyi ve tüm bağlantıları tek düzenlemede kaldır.",
+          "nextUnbind": "Stratejinin bir makineyle bağlantısını kaldır.",
           "optionDestination": "Yalnızca bu hedefi kaldır (diğer hedefler korunur)",
-          "removed": "Yedekleme stratejisi kaldırıldı"
+          "optionUnbind": "Stratejiyi onu bağlayan her makineden de çıkar",
+          "removed": "Yedekleme stratejisi kaldırıldı",
+          "unboundWarn": "\"{{strategy}}\" stratejisi kaldırıldı ve şu makinelerle bağlantısı koparıldı: {{machines}}. Bu makinelere zaten dağıtılmış zamanlayıcılar, orada \"rdc backup schedule\" çalıştırılana kadar kalır."
         },
         "set": {
           "description": "Yedekleme stratejisi oluştur veya güncelle",
@@ -1087,15 +1093,23 @@
         "unmanagedLine": "    yeniden oluşturulmayacak: {{service}}: {{message}}"
       },
       "remove": {
+        "clusterMember": "\"{{name}}\" makinesi kaldırılamıyor: \"{{cluster}}\" kümesinin üyesi.",
+        "clusterMemberNext": "Önce düğümü kümesinden çıkarın.",
         "confirm": "\"{{name}}\" makinesi yapılandırmadan kaldırılsın mı?",
         "description": "Mevcut yapılandırmadan makine kaldır",
         "forceDangling": "\"{{name}}\" makinesi, üzerinde hâlâ {{count}} depo yerleşimi varken kaldırıldı: {{repos}}. Bu yerleşimler artık askıda. \"rdc repo migrate\" ile yeniden yönlendirin veya \"rdc repo delete\" ile silin.",
-        "forceOption": "Depolar hâlâ üzerinde yerleşikken bile makineyi kaldır, bu yerleşimleri askıda bırak.",
+        "forceOption": "Depolar üzerinde yerleşikken veya yedekleme stratejileri makineye bağlıyken bile makineyi kaldır, bu referansları askıda bırak.",
+        "forceStrategies": "\"{{name}}\" makinesi, üzerinde hâlâ {{count}} yedekleme stratejisi bağlantısı varken kaldırıldı: {{strategies}}. Bu bağlantılar artık askıda.",
         "nextDelete": "Bu makinede yerleşik her depoyu silin.",
+        "nextEvict": "Düğümü boşalt ve küme üyeliğini temizle.",
         "nextForce": "Yine de makineyi kaldır, bu depo yerleşimlerini askıda bırak.",
+        "nextForceStrategies": "Yine de makineyi kaldır, strateji bağlantılarını askıda bırak.",
         "nextMigrate": "Önce her depoyu başka bir makineye taşıyın.",
+        "nextUnbind": "Bir stratejinin bu makineyle bağlantısını kaldır.",
         "placementConflict": "\"{{name}}\" makinesi kaldırılamıyor: {{count}} depo yerleşimi hâlâ ona referans veriyor: {{repos}}.",
         "placementConflictNext": "Önce bu depoları taşıyın veya silin, ya da kaldırmayı zorlayın.",
+        "strategiesBound": "\"{{name}}\" makinesi kaldırılamıyor: {{count}} yedekleme stratejisi bağlantısı hâlâ ona başvuruyor: {{strategies}}.",
+        "strategiesBoundNext": "Önce stratejilerin bağlantısını kaldırın veya kaldırmayı zorlayın.",
         "success": "Makine \"{{name}}\" kaldırıldı"
       },
       "restartServices": {
@@ -2294,6 +2308,7 @@
     },
     "datastore": {
       "defaultIsImplicit": "varsayılan veri deposu örtüktür; bu fiiller ek adlandırılmış veri depolarını yönetir.",
+      "deleteHasChildren": "\"{{ref}}\" veri deposundan fork ile türetilmiş alt veri depoları hâlâ var: {{children}}. Önce onları silin veya ayırın; --force bunu kapsamaz.",
       "deleteHasRepos": "\"{{ref}}\" veri deposu hâlâ depolar içeriyor: {{repos}}. Önce onları silin veya onunla birlikte yok etmek için --force geçirin.",
       "forkNeedsWrites": "\"{{ref}}\" bir fork. Yazmalarının nereye gideceğini belirtin: --writes local (anında, geçici, ayrılınca kaybolur) veya --writes ceph (havuzda kalıcı klon).",
       "localForkNeedsDiscard": "\"{{ref}}\", --writes local ile bağlı, bu yüzden overlay'i geçicidir ve ayırmak onu yok eder. Bunu istediğinizi belirtmek için --discard geçirin.",

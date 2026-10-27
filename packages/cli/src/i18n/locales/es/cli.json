@@ -150,9 +150,15 @@
           "description": "Listar todas las estrategias de respaldo"
         },
         "remove": {
+          "bound": "No se puede eliminar la estrategia de respaldo \"{{strategy}}\": {{count}} máquina(s) todavía la tienen vinculada: {{machines}}.",
+          "boundNext": "Desvincúlala primero de esas máquinas, o elimínala junto con sus vínculos.",
           "description": "Eliminar una estrategia de respaldo o destino",
+          "nextForce": "Eliminar la estrategia y todos sus vínculos en una sola edición.",
+          "nextUnbind": "Desvincular la estrategia de una máquina.",
           "optionDestination": "Eliminar solo este destino (conserva los demás destinos)",
-          "removed": "Estrategia de respaldo eliminada"
+          "optionUnbind": "Quitar también la estrategia de cada máquina que la tenga vinculada",
+          "removed": "Estrategia de respaldo eliminada",
+          "unboundWarn": "Estrategia \"{{strategy}}\" eliminada y desvinculada de: {{machines}}. Los temporizadores ya desplegados en esas máquinas permanecen hasta que se ejecute \"rdc backup schedule\" allí."
         },
         "set": {
           "description": "Crear o actualizar una estrategia de respaldo",
@@ -1087,15 +1093,23 @@
         "unmanagedLine": "    no se recrea: {{service}}: {{message}}"
       },
       "remove": {
+        "clusterMember": "No se puede eliminar la máquina \"{{name}}\": es miembro del clúster \"{{cluster}}\".",
+        "clusterMemberNext": "Expulsa primero el nodo de su clúster.",
         "confirm": "¿Eliminar la máquina \"{{name}}\" de la configuración?",
         "description": "Eliminar una máquina de la configuración actual",
         "forceDangling": "Máquina \"{{name}}\" eliminada con {{count}} ubicación(es) de repositorio todavía en ella: {{repos}}. Esas ubicaciones ahora quedan colgantes. Redirígelas con \"rdc repo migrate\" o elimínalas con \"rdc repo delete\".",
-        "forceOption": "Eliminar la máquina aunque todavía tenga repositorios ubicados en ella, dejando esas ubicaciones colgantes.",
+        "forceOption": "Eliminar la máquina aunque tenga repositorios ubicados en ella o estrategias de respaldo vinculadas a ella, dejando esas referencias colgantes.",
+        "forceStrategies": "Máquina \"{{name}}\" eliminada con {{count}} vínculo(s) de estrategia de respaldo todavía en ella: {{strategies}}. Esos vínculos ahora quedan colgantes.",
         "nextDelete": "Elimina cada repositorio ubicado en esta máquina.",
+        "nextEvict": "Drenar el nodo y borrar su pertenencia al clúster.",
         "nextForce": "Elimina la máquina de todos modos, dejando esas ubicaciones de repositorio colgantes.",
+        "nextForceStrategies": "Elimina la máquina de todos modos, dejando los vínculos de estrategia colgantes.",
         "nextMigrate": "Mueve cada repositorio a otra máquina primero.",
+        "nextUnbind": "Desvincular una estrategia de esta máquina.",
         "placementConflict": "No se puede eliminar la máquina \"{{name}}\": {{count}} ubicación(es) de repositorio todavía la referencian: {{repos}}.",
         "placementConflictNext": "Mueve o elimina estos repositorios primero, o fuerza la eliminación.",
+        "strategiesBound": "No se puede eliminar la máquina \"{{name}}\": {{count}} vínculo(s) de estrategia de respaldo todavía la referencian: {{strategies}}.",
+        "strategiesBoundNext": "Desvincula primero las estrategias, o fuerza la eliminación.",
         "success": "Máquina \"{{name}}\" eliminada"
       },
       "restartServices": {
@@ -2294,6 +2308,7 @@
     },
     "datastore": {
       "defaultIsImplicit": "el almacén de datos por defecto es implícito; estos verbos gestionan almacenes de datos adicionales con nombre.",
+      "deleteHasChildren": "El almacén de datos \"{{ref}}\" todavía tiene almacenes de datos hijos bifurcados de él: {{children}}. Elimínalos o sepáralos primero; --force no cubre este caso.",
       "deleteHasRepos": "El almacén de datos \"{{ref}}\" todavía contiene repositorios: {{repos}}. Elimínalos primero, o pasa --force para destruirlos junto con él.",
       "forkNeedsWrites": "\"{{ref}}\" es un fork. Indica a dónde van sus escrituras: --writes local (instantáneo, efímero, se pierde al desacoplar) o --writes ceph (clon duradero en el pool).",
       "localForkNeedsDiscard": "\"{{ref}}\" está acoplado con --writes local, así que su overlay es efímero y desacoplarlo lo destruye. Pasa --discard para confirmar que es lo que quieres.",

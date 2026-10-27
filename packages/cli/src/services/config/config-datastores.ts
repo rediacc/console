@@ -190,3 +190,11 @@ export async function reposInDatastore(ref: string): Promise<string[]> {
   }
   return found.sort((a, b) => Number(a > b) - Number(a < b));
 }
+
+/** Datastores forked from `ref` (their `parent.datastore` names it). Delete refuses on these. */
+export async function childDatastores(ref: string): Promise<string[]> {
+  return Object.entries(await listDatastores())
+    .filter(([, d]) => d.parent?.datastore === ref)
+    .map(([name]) => name)
+    .sort();
+}

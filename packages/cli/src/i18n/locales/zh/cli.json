@@ -150,9 +150,15 @@
           "description": "列出所有备份策略"
         },
         "remove": {
+          "bound": "无法删除备份策略 \"{{strategy}}\"：仍有 {{count}} 台机器绑定了它：{{machines}}。",
+          "boundNext": "请先从这些机器上解除绑定，或连同绑定一起删除。",
           "description": "删除备份策略或目标",
+          "nextForce": "一次编辑即可删除该策略及其所有绑定。",
+          "nextUnbind": "解除策略与一台机器的绑定。",
           "optionDestination": "仅删除此目标（保留其他目标）",
-          "removed": "备份策略已删除"
+          "optionUnbind": "同时从所有绑定该策略的机器上移除该策略",
+          "removed": "备份策略已删除",
+          "unboundWarn": "已删除策略 \"{{strategy}}\"，并解除了它与以下机器的绑定：{{machines}}。这些机器上已部署的定时器会保留，直到在该机器上运行 \"rdc backup schedule\"。"
         },
         "set": {
           "description": "创建或更新备份策略",
@@ -1087,15 +1093,23 @@
         "unmanagedLine": "    不会重新创建：{{service}}：{{message}}"
       },
       "remove": {
+        "clusterMember": "无法移除机器 \"{{name}}\"：它是集群 \"{{cluster}}\" 的成员。",
+        "clusterMemberNext": "请先将该节点从其集群中逐出。",
         "confirm": "从配置中移除机器 \"{{name}}\"？",
         "description": "从当前配置中移除机器",
         "forceDangling": "已移除机器 \"{{name}}\"，但其上仍有 {{count}} 个仓库放置：{{repos}}。这些放置现已悬空。请使用 \"rdc repo migrate\" 重新指向它们，或使用 \"rdc repo delete\" 删除它们。",
-        "forceOption": "即使仓库仍放置在该机器上，也移除该机器，使这些放置处于悬空状态。",
+        "forceOption": "即使仓库仍放置在该机器上，或备份策略仍绑定到该机器，也移除该机器，使这些引用处于悬空状态。",
+        "forceStrategies": "已移除机器 \"{{name}}\"，但其上仍有 {{count}} 个备份策略绑定：{{strategies}}。这些绑定现已悬空。",
         "nextDelete": "删除放置在该机器上的每个仓库。",
+        "nextEvict": "清空节点并清除其集群成员关系。",
         "nextForce": "仍然移除该机器，使这些仓库放置处于悬空状态。",
+        "nextForceStrategies": "仍然移除该机器，使这些策略绑定处于悬空状态。",
         "nextMigrate": "先将每个仓库迁移到另一台机器。",
+        "nextUnbind": "解除某个策略与这台机器的绑定。",
         "placementConflict": "无法移除机器 \"{{name}}\"：仍有 {{count}} 个仓库放置引用它：{{repos}}。",
         "placementConflictNext": "请先迁移或删除这些仓库，或强制执行移除。",
+        "strategiesBound": "无法移除机器 \"{{name}}\"：仍有 {{count}} 个备份策略绑定引用它：{{strategies}}。",
+        "strategiesBoundNext": "请先解除这些策略的绑定，或强制移除。",
         "success": "已移除机器 \"{{name}}\""
       },
       "restartServices": {
@@ -2294,6 +2308,7 @@
     },
     "datastore": {
       "defaultIsImplicit": "default 数据存储是隐式的；这些命令用于管理其他具名数据存储。",
+      "deleteHasChildren": "数据存储 \"{{ref}}\" 下仍有从它派生（fork）出的子数据存储：{{children}}。请先删除或分离它们；--force 不涵盖这种情况。",
       "deleteHasRepos": "数据存储 \"{{ref}}\" 仍持有仓库：{{repos}}。请先删除这些仓库，或传入 --force 将它们与数据存储一并销毁。",
       "forkNeedsWrites": "\"{{ref}}\" 是一个 fork。请指明其写入去向：--writes local（即时、临时，分离后丢失）或 --writes ceph（存储池中的持久克隆）。",
       "localForkNeedsDiscard": "\"{{ref}}\" 是以 --writes local 方式挂接的，其覆盖层为临时性，分离会将其销毁。请传入 --discard 以确认这正是你想要的操作。",
