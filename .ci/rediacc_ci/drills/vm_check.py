@@ -25,7 +25,7 @@ VERDICTS. VERIFIED exit 0 (assertions ran, none failed, every required phase ran
 
 EVIDENCE. Each A1 suite's and A2 drill's full stdout and stderr is kept in `.ci/cache/vm-check/runs/<run id>/<step>-<name>.log` (the newest RUNS_KEEP run directories are kept), its row carries that path as `log`, and the receipt carries the directory as `runDir`. A row's `evidence` stays clipped to 200 bytes, so the log is where a failure is read in full.
 
-`--changed` evaluates `vm_check_trigger` against the push base in worktree mode; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 2 (`vm_check_receipt`): `phases`, `account` (`pointer`, `checkout`, `modified`, `gateway`) and `trigger.sides` beside the renet fields. Receipts of an earlier schema no longer count, and a run that finds some says so once.
+`--changed` evaluates `vm_check_trigger` against the push base in worktree mode; `--base <ref>` replaces that base with the named ref (recorded as `trigger.base`, `via` `--base`; an unknown ref exits with a message and runs nothing), which is how a run on `main` diffs against a tag; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 2 (`vm_check_receipt`): `phases`, `account` (`pointer`, `checkout`, `modified`, `gateway`) and `trigger.sides` beside the renet fields. Receipts of an earlier schema no longer count, and a run that finds some says so once.
 
 The whole flow runs through `Host` and `Account`, so the tests drive it with a fake host and a fake account and never reach a VM, a gateway or a suite.
 """
@@ -834,6 +834,8 @@ def _as_int(value: object) -> int | None:
 @dataclasses.dataclass
 class Options:
     changed: bool = False
+    # `--base <ref>` replaces the resolved push base of `--changed`, so a run on `main` (where origin/main is HEAD and nothing differs) can name a tag or commit to diff against.
+    base: str = ""
     os_image: str = ""
     parent: str = DEFAULT_PARENT
     machine: str = ""
@@ -857,12 +859,15 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         prog="npm run vm:check --", description=__doc__.split("\n", 1)[0]
     )
     parser.add_argument("--changed", action="store_true")
+    parser.add_argument("--base", default="")
     parser.add_argument("--os", dest="os_image", default="")
     parser.add_argument("--parent", default=env.get("VM_CHECK_PARENT") or DEFAULT_PARENT)
     parser.add_argument("--machine", default="")
     parser.add_argument("--wait", dest="wait_s", type=float, default=DEFAULT_WAIT_S)
     parser.add_argument("--only", default="")
     ns = parser.parse_args(rest)
+    if ns.base and not ns.changed:
+        parser.error("--base only applies with --changed")
     only = frozenset(s.strip() for s in ns.only.split(",") if s.strip())
     unknown = sorted(only - only_step_ids())
     if unknown:
@@ -872,6 +877,7 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         )
     return Options(
         changed=ns.changed,
+        base=ns.base,
         os_image=ns.os_image,
         parent=ns.parent,
         machine=ns.machine,
@@ -1213,7 +1219,15 @@ class VmCheck:
         """True when the trigger fires (or cannot be evaluated); False after printing the no-op line."""
         git = trigger.make_git(self.root)
         branch = git(["rev-parse", "--abbrev-ref", "HEAD"])
-        base = trigger.push_base(git, branch if branch and branch != "HEAD" else None)
+        if self.opts.base:
+            commit = git(["rev-parse", "--verify", "--quiet", f"{self.opts.base}^{{commit}}"])
+            if not commit:
+                raise SystemExit(
+                    "vm:check: --base %s names no commit in this repository" % self.opts.base
+                )
+            base = trigger.BaseResolution(self.opts.base, "--base", commit, (self.opts.base,), ())
+        else:
+            base = trigger.push_base(git, branch if branch and branch != "HEAD" else None)
         for warning in base.warnings:
             self.say("vm:check: %s" % warning)
         if base.merge_base is None:

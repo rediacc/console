@@ -2127,6 +2127,43 @@ def test_changed_with_a_hit_runs_and_records_the_hits(tmp_path: pathlib.Path) ->
     assert receipt["trigger"]["sides"] == ["renet"]
 
 
+def test_base_overrides_the_push_base_and_is_recorded(tmp_path: pathlib.Path) -> None:
+    """On main origin/main is HEAD, so --changed alone sees nothing; --base <tag> diffs against the tag."""
+    root = fixture_repo(tmp_path)
+    git(root, "tag", "v2.4.0")
+    remote = root / "packages/cli/src/remote"
+    remote.mkdir(parents=True)
+    (remote / "sync.ts").write_text("export {};\n")
+    git(root, "add", "packages")
+    git(root, "commit", "-q", "-m", "hit")
+    git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    world = World(root)
+    rc, out, receipt = run_check(tmp_path, world, "--changed")
+    assert rc == 0, out
+    assert receipt == {}
+    world = World(root)
+    rc, out, receipt = run_check(tmp_path, world, "--changed", "--base", "v2.4.0")
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["trigger"]["base"] == "v2.4.0"
+    assert receipt["trigger"]["via"] == "--base"
+    assert receipt["trigger"]["hits"] == ["packages/cli/src/remote/sync.ts"]
+    assert receipt_mod.validate(receipt) == []
+
+
+def test_base_naming_an_unknown_ref_is_refused_loudly(tmp_path: pathlib.Path) -> None:
+    root = fixture_repo(tmp_path)
+    world = World(root)
+    with pytest.raises(SystemExit) as exc:
+        run_check(tmp_path, world, "--changed", "--base", "v9.9.9")
+    assert "--base v9.9.9 names no commit" in str(exc.value)
+    assert world.rdc_calls() == []
+
+
+def test_base_without_changed_is_a_usage_error() -> None:
+    with pytest.raises(SystemExit):
+        vm_check.parse_args(["--base", "v2.4.0"], {})
+
+
 # --------------------------------------------------------------------------- the account phase (PLAN-account-vm-check.md AV4)
 
 
