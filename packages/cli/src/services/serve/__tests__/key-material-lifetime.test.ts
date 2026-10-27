@@ -44,7 +44,13 @@ vi.mock('node:fs', async (original) => {
     } catch {
       dirMode = undefined;
     }
-    writes.push({ target: String(target), data: String(data), dirMode });
+    writes.push({
+      target: String(target),
+      data: ArrayBuffer.isView(data)
+        ? Buffer.from(data.buffer, data.byteOffset, data.byteLength).toString()
+        : String(data),
+      dirMode,
+    });
   };
   const readSource = (src: unknown): string => {
     try {
@@ -89,7 +95,7 @@ vi.mock('node:fs', async (original) => {
         return realWrite(chunk, ...more);
       }) as typeof stream.write;
       stream.end = ((chunk?: never, ...more: never[]) => {
-        if (typeof chunk === 'string' || Buffer.isBuffer(chunk)) record(target, chunk);
+        if (typeof chunk === 'string' || ArrayBuffer.isView(chunk)) record(target, chunk);
         return realEnd(chunk, ...more);
       }) as typeof stream.end;
       return stream;
@@ -108,7 +114,13 @@ vi.mock('node:fs/promises', async (original) => {
     } catch {
       dirMode = undefined;
     }
-    writes.push({ target: String(target), data: String(data), dirMode });
+    writes.push({
+      target: String(target),
+      data: ArrayBuffer.isView(data)
+        ? Buffer.from(data.buffer, data.byteOffset, data.byteLength).toString()
+        : String(data),
+      dirMode,
+    });
   };
   const readSource = async (src: unknown): Promise<string> => {
     try {
@@ -306,14 +318,26 @@ describe('MU4: key material lifetime on the dispatch path', () => {
       fs.closeSync(fd);
       const stream = fs.createWriteStream(`${dir}/b`);
       await new Promise<void>((resolve) => stream.end(PRIVATE_KEY, () => resolve()));
+      const bytesStream = fs.createWriteStream(`${dir}/g`);
+      await new Promise<void>((resolve) =>
+        bytesStream.end(new TextEncoder().encode(PRIVATE_KEY), () => resolve())
+      );
       fs.copyFileSync(`${dir}/a`, `${dir}/c`);
       fs.renameSync(`${dir}/c`, `${dir}/d`);
       await fsp.copyFile(`${dir}/a`, `${dir}/e`);
       const handle = await fsp.open(`${dir}/f`, 'w');
       await handle.writeFile(PRIVATE_KEY);
       await handle.close();
-      // writeSync, stream, copyFileSync, renameSync, promises.copyFile, handle.writeFile
-      expect(writes.filter(carriesSecret).length).toBeGreaterThanOrEqual(6);
+      // Each path must record on its own: writeSync (target is the fd), string stream, Uint8Array stream,
+      // copyFileSync, renameSync, promises.copyFile, handle.writeFile.
+      const hit = (suffix: string) =>
+        writes.filter((w) => carriesSecret(w) && w.target.endsWith(suffix)).length;
+      expect(writes.filter((w) => carriesSecret(w) && w.target.startsWith('fd:'))).not.toHaveLength(
+        0
+      );
+      for (const name of ['b', 'g', 'c', 'd', 'e', 'f']) {
+        expect(hit(`/${name}`), `write path ${name}`).toBeGreaterThan(0);
+      }
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

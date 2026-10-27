@@ -142,7 +142,7 @@ export class SessionStore {
     session.ephemeralPrivateKey = undefined;
     session.lastUsedAt = this.now();
 
-    // Index the grant so sessionFor() can find it. See that method for why this is keyed by user and never by org.
+    // Index the grant so sessionFor() can find it. See that method for why the key is (orgId, userId): never org alone, never user alone.
     this.grantsByUser.set(grantKey(session.orgId, session.principal.userId), sessionId);
   }
 
