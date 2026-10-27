@@ -167,7 +167,7 @@ Design inputs, summarized below with file:line:
   - Owns: the listed workflows.
   - Accept: actionlint is clean, and `npm run check:ci-workflows` and `npm run check:ci-workflow-invariants` exit rc=0.
     (ticked) 2026-10-27T10:19:52Z by d778be9d: 46e754823: .github/workflows/local-release-assist.yml (scope narrowed by the ASKED:2026-10-27T09:45Z ruling, which keeps cd-v2 and promote-stable); check:ci-workflows, check:ci-actionlint, check:ci-parity, check:ci-workflow-invariants rc=0
-- [ ] W3-B [writer] Invariants and dead modules.
+- [x] W3-B [writer] Invariants and dead modules.
   - Port the release-order phase of `ci_workflow_invariants.py` (:33-60, :357-560) to check the W2-B `STEPS` table.
   - Delete these modules and their tests:
     - `dispatch_release`;
@@ -179,6 +179,7 @@ Design inputs, summarized below with file:line:
     - `promote_r2_to_stable_hotfix` and `promote_docker_to_stable_hotfix`.
   - Owns: ci_workflow_invariants.py and its test, plus the deleted modules.
   - Accept: `npm run check:ci-pytest` rc=0, and the dead-python gate is green.
+    (ticked) 2026-10-27T11:18:59Z by d778be9d: 983fd1cfc: ci_workflow_invariants.py STEPS phase beside the kept CD phase (ruling ASKED:2026-10-27T09:45Z), no module deleted since cd-v2 still calls all eight; check:ci-workflow-invariants rc=0; pytest rc=0 (501)
 - [x] W3-C [writer] Release state moves off `main`.
   - The contract floor becomes an ordinary commit in the next PR. `cd_preflight --checks c` warns when it lags.
   - The console's homebrew gitlink bump is dropped. The tap repository still receives its formula commit, admitted by W1-D.

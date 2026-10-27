@@ -1027,12 +1027,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 13,
+      "open": 2,
+      "done": 14,
       "open_sigs": [
         "05a9a216",
-        "54ed65e4",
-        "d12c9338"
+        "54ed65e4"
       ],
       "done_sigs": [
         "0b081d62",
@@ -1046,6 +1045,7 @@
         "65539bb7",
         "7522f126",
         "cb4b552c",
+        "d12c9338",
         "d20d0201",
         "fd2a3231"
       ]
