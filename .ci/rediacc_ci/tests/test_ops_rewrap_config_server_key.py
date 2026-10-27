@@ -59,6 +59,9 @@ if args[:3] == ["wrangler", "d1", "execute"]:
     if "--file" in args:
         sql = open(args[args.index("--file") + 1]).read()
         state["files"].append(sql)
+        for row in state["rows"]:
+            if row["id"] == os.environ.get("FAKE_RACE"):
+                row["v"] = "UmFjZWQ" + row["v"]  # the Worker rewrote this row between the read and the CAS
         for new, sid, old in re.findall(r"SET server_recoverable_org_passphrase = '([^']*)' WHERE id = '([^']*)' AND server_recoverable_org_passphrase = '([^']*)';", sql):
             for row in state["rows"]:
                 if row["id"] == sid and row["v"] == old:
@@ -235,6 +238,25 @@ def test_apply_bookmarks_first_then_writes_cas_and_verifies(world, capsys) -> No
     assert sql.count("UPDATE config_stores") == 2
     assert "AND server_recoverable_org_passphrase = '%s';" % VALUE_A in sql
     assert "no untagged row; 3 row(s) under csk1.%s" % KID in text
+    _assert_no_value(text)
+
+
+def test_apply_without_verify_exits_0_when_every_row_is_written(world, capsys) -> None:
+    code, text = _run(world, capsys, apply=True)
+    assert code == 0, text
+    assert "remain after the write" not in text
+
+
+def test_apply_without_verify_exits_1_when_a_row_moved_under_its_cas(
+    world, capsys, monkeypatch
+) -> None:
+    monkeypatch.setenv("FAKE_RACE", STORE_B)
+    code, text = _run(world, capsys, apply=True)
+    assert code == 1
+    assert "1 untagged row(s) remain after the write" in text
+    rows = _state(world)["rows"]
+    assert rows[0]["v"] == "csk1.%s.%s" % (KID, sealed(VALUE_A))
+    assert not rows[1]["v"].startswith("csk1.")
     _assert_no_value(text)
 
 

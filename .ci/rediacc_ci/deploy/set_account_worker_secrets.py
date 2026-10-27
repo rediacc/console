@@ -286,7 +286,7 @@ class ScriptRefusalError(Exception):
 
 
 class GuardError(ScriptRefusalError):
-    """One `_require_nonempty` firing (:185-193): three stderr lines, exit 1."""
+    """One `_require_nonempty` firing (:185-193): three stderr lines, exit 1; four for ACCOUNT_CONFIG_SERVER_KEY, whose fourth line names its per-region, per-channel store entry."""
 
     def __init__(self, name: str, worker: str, target: str, suffix: str) -> None:
         self.name = name
