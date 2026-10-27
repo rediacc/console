@@ -23,6 +23,10 @@ ROLLBACK, IN REVERSE ORDER. (1) `console_executor --disable`, so the region refu
 
 AFTER. The full record, `deploy-record-<target>-<region>.json`: worker names, version ids before and after, the D1 bookmark, the smoke rc, the enable and rollback outcomes, the executor manifest sha256s and every rollback command. It is printed, appended to `$GITHUB_STEP_SUMMARY` and uploaded by the workflow. When the smoke passed, the executor was enabled and no rollback ran, `after` writes the pointer, so the next release's `rollback` knows which release to return to.
 
+DURABLE SINK (`after --sink r2 --channel edge|stable`, plan local-release W2-D). The record is also written to the releases bucket at `release-records/v<V>/<channel>/deploy-record-<target>-<region>.json`, ONCE: an existing key refuses, so a record is never overwritten (`write_record_once`). `write_once_guard` itself is the SENTINEL guard of a `cli/v<V>/` prefix and cannot answer for a single key, so the once check is the same absent-only probe it uses, `executor_artifacts.get_object`. The account smoke rc (`--account-smoke-rc`) is stored at `account.smoke_rc`.
+
+WWW RECORD (`www-after`). `deploy_www` and `deploy_edge` take the version id before and after through `take_www_before` / `build_www_record` when `DEPLOY_RECORD_OUT` names a file (the record carries `smoke_rc: null`); `www-after --record F --smoke-rc N [--sink r2 --channel C]` fills the smoke rc, and writes the same key family with target `www-<channel>` and region `global`. No record holds a secret value: `refuse_secret_values` checks the serialized record against the secret-named variables of the environment before it is written.
+
 ENVIRONMENT. `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and for R2 `CLOUDFLARE_R2_ENDPOINT` plus `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: the names of the `deploy-proxy` profile in .ci/config/secret-supply.json.
 """
 
@@ -38,6 +42,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+import typing
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import awscli
@@ -283,6 +288,122 @@ def write_pointer(target: str, region: str, pointer: dict) -> None:
                 proc.stderr.decode("utf-8", "replace").strip(),
             )
         )
+
+
+# ---- the durable sink --------------------------------------------------------
+
+RECORD_PREFIX = "release-records/"
+CHANNELS = ("edge", "stable")
+SINKS = ("r2",)
+WWW_REGION = "global"
+SECRET_NAME_RE = re.compile(
+    r"TOKEN|SECRET|PASSWORD|PASSPHRASE|PRIVATE|ACCESS_KEY|_KEY$", re.IGNORECASE
+)
+
+
+def record_key(version: str, channel: str, target: str, region: str) -> str:
+    return "%sv%s/%s/deploy-record-%s-%s.json" % (RECORD_PREFIX, version, channel, target, region)
+
+
+def refuse_secret_values(record: dict) -> None:
+    """A record that carries the value of a secret-named variable is never written."""
+    body = json.dumps(record)
+    for name, value in os.environ.items():
+        if len(value) >= 8 and SECRET_NAME_RE.search(name) and value in body:
+            raise RecordError("the record carries the value of %s; nothing is written" % name)
+
+
+def write_record_once(record: dict, key: str) -> None:
+    """Put the record at `key` unless the key exists. An existing key, or a probe that cannot answer, refuses."""
+    refuse_secret_values(record)
+    with tempfile.TemporaryDirectory(prefix="deploy-record-") as tmp:
+        probe = pathlib.Path(tmp) / "existing.json"
+        try:
+            exists = executor_artifacts.get_object(key, probe)
+        except executor_artifacts.ArtifactError as exc:
+            raise RecordError(str(exc)) from None
+        if exists:
+            raise RecordError("%s already exists: a deploy record is written once" % key)
+        body = pathlib.Path(tmp) / "record.json"
+        body.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        try:
+            executor_artifacts.put_object(key, body, "application/json")
+        except executor_artifacts.ArtifactError as exc:
+            raise RecordError(str(exc)) from None
+    log.info("Deploy record written once to %s." % key)
+
+
+def sink_record(record: dict, sink: str, channel: str, target: str, region: str) -> None:
+    if sink != "r2":
+        raise RecordError("--sink %s is not one of %s" % (sink, ", ".join(SINKS)))
+    if channel not in CHANNELS:
+        raise RecordError("--sink r2 needs --channel %s" % " or ".join(CHANNELS))
+    write_record_once(record, record_key(record["version"], channel, target, region))
+
+
+# ---- the www record -----------------------------------------------------------
+
+
+def take_www_before(cwd: pathlib.Path, config: str) -> dict:
+    """The www Worker's name and its 100% version before a deploy (a stated absence or a refusal)."""
+    path = cwd / config
+    worker = worker_name(read_toml(path), path)
+    exists, version = worker_version(cwd, config, worker)
+    return {"worker": worker, "config": config, "exists": exists, "version_before": version}
+
+
+def build_www_record(
+    before: dict, version_after: str | None, release_version: str, target: str, deploy_rc: int
+) -> dict:
+    """The www record: version ids before and after, the rollback command and the smoke rc (`None` until `www-after`)."""
+    return {
+        "schema": SCHEMA,
+        "kind": "www",
+        "target": target,
+        "region": WWW_REGION,
+        "version": release_version,
+        "phase": "after",
+        "recorded_at": now(),
+        "worker": before["worker"],
+        "version_before": before["version_before"],
+        "version_after": version_after,
+        "deploy_rc": deploy_rc,
+        "smoke_rc": None,
+        "rollback_command": worker_rollback_command(
+            before["version_before"], "workers/www", before["config"]
+        ),
+    }
+
+
+def record_www_deploy(
+    cwd: pathlib.Path, config: str, target: str, deploy_rc_fn: typing.Callable[[], int]
+) -> int:
+    """Bracket one www deploy with its record. Inactive (just the deploy) unless `DEPLOY_RECORD_OUT` and `DEPLOY_RECORD_VERSION` are set; a lookup that fails refuses before anything is deployed."""
+    out = os.environ.get("DEPLOY_RECORD_OUT", "")
+    release = os.environ.get("DEPLOY_RECORD_VERSION", "")
+    if not out:
+        return deploy_rc_fn()
+    try:
+        if not VERSION_RE.match(release):
+            raise RecordError("DEPLOY_RECORD_VERSION %r is not X.Y.Z" % release)
+        before = take_www_before(cwd, config)
+    except RecordError as exc:
+        log.error("%s www record: %s" % (SELF, exc))
+        return 1
+    rc = deploy_rc_fn()
+    try:
+        _, after = worker_version(cwd, config, before["worker"])
+    except RecordError as exc:
+        log.error("%s www record: the version after is unknown: %s" % (SELF, exc))
+        after = None
+    record = build_www_record(before, after, release, target, rc)
+    try:
+        refuse_secret_values(record)
+        write_json(pathlib.Path(out), record)
+    except RecordError as exc:
+        log.error("%s www record: %s" % (SELF, exc))
+        return rc or 1
+    return rc
 
 
 def manifest_sha256s(manifest: dict, version: str) -> dict[str, str]:
@@ -572,6 +693,7 @@ def build_record(
     account_known: bool,
     enable_outcome: str,
     rollback_outcome: str,
+    account_smoke_rc: int | None = None,
 ) -> dict:
     proxy_record = proxy_record or {}
     smoke_rc = proxy_record.get("smoke_rc")
@@ -579,6 +701,7 @@ def build_record(
     record["phase"] = "after"
     record["recorded_at"] = now()
     record["account"]["version_after"] = account_after if account_known else "UNKNOWN"
+    record["account"]["smoke_rc"] = account_smoke_rc
     record["proxy"]["version_after"] = proxy_record.get("version_id")
     record["proxy"]["previous_version_id"] = proxy_record.get("previous_version_id")
     record["proxy"]["rollback_command"] = proxy_record.get("rollback")
@@ -622,6 +745,7 @@ def summary_markdown(record: dict) -> str:
         ),
         ("proxy release before", prx["release_before"] or "(none on record)"),
         ("D1 bookmark (before migrations)", "%s %s" % (d1["database"], d1["bookmark"])),
+        ("account smoke rc", str(record["account"].get("smoke_rc"))),
         ("proxy smoke rc", str(record.get("smoke_rc"))),
         (
             "console executor",
@@ -689,6 +813,7 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         account_known,
         args.enable_outcome,
         args.rollback_outcome,
+        args.account_smoke_rc,
     )
     fetched = record["executor_manifest"].get("fetched_sha256")
     if fetched is not None and fetched != record["executor_manifest"]["sha256"]:
@@ -697,6 +822,11 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         )
         record["good"] = False
     write_json(pathlib.Path(args.out), record)
+    if args.sink:
+        try:
+            sink_record(record, args.sink, args.channel, before["target"], before["region"])
+        except RecordError as exc:
+            problems.append("the record was not written to %s: %s" % (args.sink, exc))
     text = summary_markdown(record)
     print(text)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -727,6 +857,22 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     return 1 if problems else 0
 
 
+def cmd_www_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
+    del repo_root
+    path = pathlib.Path(args.record)
+    record = read_json(path, "the www record")
+    record["smoke_rc"] = args.smoke_rc
+    write_json(path, record)
+    print(json.dumps(record, indent=2, sort_keys=True))
+    if args.sink:
+        try:
+            sink_record(record, args.sink, args.channel, record["target"], record["region"])
+        except RecordError as exc:
+            log.error("the www record was not written to %s: %s" % (args.sink, exc))
+            return 1
+    return 0
+
+
 # ---- main -------------------------------------------------------------------
 
 
@@ -750,6 +896,14 @@ def _parser() -> argparse.ArgumentParser:
     af.add_argument("--enable-outcome", default="", choices=OUTCOMES)
     af.add_argument("--rollback-outcome", default="", choices=OUTCOMES)
     af.add_argument("--out", required=True)
+    af.add_argument("--account-smoke-rc", type=int, default=None)
+    af.add_argument("--sink", default="", choices=("", *SINKS))
+    af.add_argument("--channel", default="", choices=("", *CHANNELS))
+    wa = sub.add_parser("www-after", help="add the smoke rc to a www record and sink it")
+    wa.add_argument("--record", required=True)
+    wa.add_argument("--smoke-rc", required=True, type=int)
+    wa.add_argument("--sink", default="", choices=("", *SINKS))
+    wa.add_argument("--channel", default="", choices=("", *CHANNELS))
     return parser
 
 
@@ -758,6 +912,7 @@ VERBS = {
     "bootstrap": cmd_bootstrap,
     "rollback": cmd_rollback,
     "after": cmd_after,
+    "www-after": cmd_www_after,
 }
 
 

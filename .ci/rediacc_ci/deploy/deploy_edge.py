@@ -36,6 +36,7 @@ import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.deploy import deploy_record
 from rediacc_ci.well_known import EDGE_ORIGIN
 
 EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
@@ -116,7 +117,9 @@ def main(argv: list[str]) -> int:
             return status  # `set -e`
 
     log.step("Deploying edge worker (" + EDGE_HOST + ")...")
-    status = _run(deploy_argv())
+    status = deploy_record.record_www_deploy(
+        worker_dir, CONFIG, "www-edge", lambda: _run(deploy_argv())
+    )
     if status != 0:
         return status  # `set -e`
     log.info("Edge worker deployed")

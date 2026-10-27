@@ -593,3 +593,157 @@ def test_no_secret_value_reaches_any_child_argv(world, tmp_path):
 def test_a_worker_with_an_empty_deployments_list_did_not_exist(monkeypatch, tmp_path):
     monkeypatch.setattr(dr, "_capture", lambda *_a, **_k: (0, "[]", ""))
     assert dr.worker_version(tmp_path, "wrangler.toml", "w") == (False, None)
+
+
+# ---- the durable sink and the www record (plan local-release W2-D) ---------------
+
+
+def record_keys(world: World) -> list[str]:
+    return sorted(
+        str(p.relative_to(world.bucket)) for p in (world.bucket / "release-records").rglob("*.json")
+    )
+
+
+def sink_after(world: World) -> int:
+    return dr.main(
+        [
+            "after",
+            "--before",
+            str(world.before()),
+            "--proxy-record",
+            str(world.dir / "proxy.json"),
+            "--manifest",
+            str(world.tmp / "stage-manifest.json"),
+            "--enable-outcome",
+            "success",
+            "--rollback-outcome",
+            "skipped",
+            "--account-smoke-rc",
+            "0",
+            "--sink",
+            "r2",
+            "--channel",
+            "edge",
+            "--out",
+            str(world.dir / "deploy-record-edge-eu.json"),
+        ]
+    )
+
+
+def test_after_sink_r2_writes_the_record_once_at_the_documented_key(world, monkeypatch):
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY")
+    assert run_before(world) == 0
+    world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
+    assert after(world) == 0  # writes proxy.json and stage-manifest.json
+    assert sink_after(world) == 0
+    key = "release-records/v%s/edge/deploy-record-edge-eu.json" % VERSION
+    assert record_keys(world) == [key]
+    stored = json.loads((world.bucket / key).read_text())
+    assert stored["account"]["smoke_rc"] == 0
+    assert stored["smoke_rc"] == 0
+    assert (world.bucket / (key + ".cache-control")).read_text().endswith("immutable")
+    puts = [c["argv"] for c in calls(world.log) if c["argv"][:2] == ["aws", "s3api"]]
+    assert any("put-object" in a and key in a for a in puts)
+
+
+def test_after_sink_r2_refuses_to_overwrite_an_existing_record(world, capsys):
+    assert run_before(world) == 0
+    world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
+    assert after(world) == 0
+    assert sink_after(world) == 0
+    key = world.bucket / ("release-records/v%s/edge/deploy-record-edge-eu.json" % VERSION)
+    first = key.read_bytes()
+    assert sink_after(world) == 1
+    assert key.read_bytes() == first
+    assert "written once" in capsys.readouterr().err
+
+
+def test_after_sink_r2_needs_a_channel(world):
+    assert run_before(world) == 0
+    world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
+    assert after(world) == 0
+    args = [
+        "after", "--before", str(world.before()),
+        "--proxy-record", str(world.dir / "proxy.json"),
+        "--manifest", str(world.tmp / "stage-manifest.json"),
+        "--sink", "r2", "--out", str(world.dir / "x.json"),
+    ]  # fmt: skip
+    assert dr.main(args) == 1
+    assert record_keys(world) == []
+
+
+def test_a_record_carrying_a_secret_value_is_refused(world, monkeypatch):
+    monkeypatch.setenv("SOME_API_TOKEN", "CANARY-secret-value-123")
+    record = {"version": VERSION, "note": "oops CANARY-secret-value-123"}
+    with pytest.raises(dr.RecordError, match="SOME_API_TOKEN"):
+        dr.write_record_once(record, "release-records/v1.0.0/edge/x.json")
+    assert not (world.bucket / "release-records").exists()
+
+
+def test_the_account_record_carries_the_account_smoke_rc_and_no_secret(world, monkeypatch):
+    monkeypatch.setenv("SOME_API_TOKEN", "CANARY-secret-value-123")
+    assert run_before(world) == 0
+    world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
+    assert after(world) == 0
+    rec = json.loads((world.dir / "deploy-record-edge-eu.json").read_text())
+    assert "smoke_rc" in rec["account"]
+    assert "CANARY-secret-value-123" not in json.dumps(rec)
+    assert "account smoke rc" in (world.tmp / "summary.md").read_text()
+
+
+def www_after(record) -> int:
+    return dr.main(
+        [
+            "www-after",
+            "--record",
+            str(record),
+            "--smoke-rc",
+            "0",
+            "--sink",
+            "r2",
+            "--channel",
+            "edge",
+        ]
+    )
+
+
+def test_the_www_record_carries_the_version_ids_the_rollback_command_and_the_smoke_rc(
+    world, monkeypatch, tmp_path
+):
+    cwd = tmp_path / "www"
+    cwd.mkdir()
+    (cwd / "wrangler.edge.toml").write_text('name = "edge-rediacc-www"\n')
+    ids = iter([(True, "wv-1"), (True, "wv-2")])
+    monkeypatch.setattr(dr, "worker_version", lambda *_a: next(ids))
+    out = tmp_path / "www-record.json"
+    monkeypatch.setenv("DEPLOY_RECORD_OUT", str(out))
+    monkeypatch.setenv("DEPLOY_RECORD_VERSION", VERSION)
+    assert dr.record_www_deploy(cwd, "wrangler.edge.toml", "www-edge", lambda: 0) == 0
+    rec = json.loads(out.read_text())
+    assert rec["version_before"] == "wv-1"
+    assert rec["version_after"] == "wv-2"
+    assert rec["worker"] == "edge-rediacc-www"
+    assert rec["rollback_command"] == (
+        "npx wrangler rollback wv-1 --config workers/www/wrangler.edge.toml"
+    )
+    assert rec["smoke_rc"] is None
+    assert www_after(out) == 0
+    key = "release-records/v%s/edge/deploy-record-www-edge-global.json" % VERSION
+    assert record_keys(world) == [key]
+    stored = json.loads((world.bucket / key).read_text())
+    assert stored["smoke_rc"] == 0
+    assert stored["version_before"] == "wv-1"
+    assert www_after(out) == 1
+
+
+def test_the_www_record_is_inactive_without_the_env_and_refuses_before_a_deploy(
+    monkeypatch, tmp_path
+):
+    ran = []
+    monkeypatch.delenv("DEPLOY_RECORD_OUT", raising=False)
+    assert dr.record_www_deploy(tmp_path, "c.toml", "www-edge", lambda: ran.append(1) or 7) == 7
+    monkeypatch.setenv("DEPLOY_RECORD_OUT", str(tmp_path / "r.json"))
+    monkeypatch.setenv("DEPLOY_RECORD_VERSION", "not-a-version")
+    ran.clear()
+    assert dr.record_www_deploy(tmp_path, "c.toml", "www-edge", lambda: ran.append(1) or 0) == 1
+    assert ran == []

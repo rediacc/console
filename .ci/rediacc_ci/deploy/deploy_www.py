@@ -90,6 +90,7 @@ import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.deploy import deploy_record
 from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN
 
 if typing.TYPE_CHECKING:
@@ -418,7 +419,9 @@ def main(argv: list[str]) -> int:
         return _preview(worker_name, worker_dir)
 
     log.step("Deploying www production worker...")
-    return _run(production_deploy_argv())
+    return deploy_record.record_www_deploy(
+        worker_dir, PRODUCTION_CONFIG, "www-stable", lambda: _run(production_deploy_argv())
+    )
 
 
 if __name__ == "__main__":
