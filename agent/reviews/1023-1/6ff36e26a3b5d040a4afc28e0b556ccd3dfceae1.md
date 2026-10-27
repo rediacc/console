@@ -21,4 +21,4 @@ Body-Sig: 8357e9455c8d6186
 ### 6ff36e26.1 [medium] src/routes/configs.ts:1113
 Anchor: in-diff
 Claim: The new `!Array.isArray(parsed)` guard and the trailing else reject bodies that the old code accepted: `null`, `[]`, and bare JSON strings, numbers or booleans now get 400, although the commit says the no-configId behaviour is unchanged. No test covers these bodies.
-Resolution: open
+Resolution: not-a-bug | src/routes/configs.ts:1113 refuses a non-object body by design: the only client, the CLI's passwordCredentials, sends {} or {configId}; null, [] and bare JSON scalars were never a valid enroll request, and the clean-break rule refuses them with 400 rather than keeping an accidental acceptance | d778be9d 2026-10-27T15:45:20Z
