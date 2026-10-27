@@ -86,6 +86,8 @@ SCOPED_GROUPS = {
     "observability-volume": ("Workers Observability Write",),
     # T6: the GraphQL Analytics datasets (R2, D1, Workers invocations) take Account Analytics Read; the telemetry query fallback takes Workers Observability Write.
     "cf-usage-report": ("Account Analytics Read", "Workers Observability Write"),
+    # `mirror_config_store`: `wrangler d1 execute|time-travel info` on both account databases, `wrangler r2 object get|put` on the config buckets, and the Workers secrets list (names only) for the CONFIG_SERVER_KEY presence check.
+    "mirror-config-store": ("D1 Write", "Workers R2 Storage Write", "Workers Scripts Read"),
 }
 ACCOUNT_SCOPE = "com.cloudflare.api.account"
 # Zone-scoped group names per caller, for the callers whose work is on one zone (`create_scoped_token(..., zone_id=...)`). Name read live 2026-10-26 from /user/tokens/permission_groups, scope `com.cloudflare.api.account.zone`; the Rulesets API lists it among the permissions that update a zone ruleset rule.
