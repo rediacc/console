@@ -13,11 +13,13 @@ WHAT IS COPIED. Verbatim: `config_stores` (but `require_passkey` is written 0 on
 
 IDENTITY. Case A: no edge user has the operator's `email_hash`, so the user row is copied with the same id. Case B: edge user X has it, so the operator's id is rewritten to X in `config_key_slots.user_id`, `config_user_identities.user_id`, `config_versions.created_by_user_id`, `org_memberships.user_id`, `team_memberships.user_id` and `organizations.owner_user_id`.
 
-PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (it encrypts `server_recoverable_org_passphrase`, falling back to a constant, config.service.ts getServerEncryptionKey; the check reads secret NAMES through `prune_worker_secrets.survey`, where the name shows as an extra because no deploy pushes it); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the org id, the customer id, a team id or (org, slug), the store id, an entry, version, slot, identity, membership or subscription id, or the operator's id under another email hash; a write target that is a stable database or bucket.
+REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). An edge D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. An edge row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on edge is printed as a note. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
+
+PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (it encrypts `server_recoverable_org_passphrase`, falling back to a constant, config.service.ts getServerEncryptionKey; the check reads secret NAMES through `prune_worker_secrets.survey`, where the name shows as an extra because no deploy pushes it); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
 
 THE APPLY, in order: the pre-checks; the edge D1 bookmark (`wrangler d1 time-travel info`, parsed by `deploy_record.parse_bookmark`; no bookmark, no write); the rollback files written to `--out-dir` and their paths printed with the time-travel restore command; the R2 copy, each object fetched to a temp dir, put, read back and compared by sha256; one `wrangler d1 execute --file` of plain INSERTs (never OR REPLACE) ending with an `event_log` row `config.store.mirrored`; then a re-read of every inserted row compared column by column with the plan, and `PRAGMA foreign_key_check` on every touched table compared with the check taken before the write.
 
-ROLLBACK. `rollback.sql` deletes the store (cascading identities, slots, entries and versions), the subscriptions, the org (cascading teams, team and org memberships), the case-A user and the audit row; `rollback.sh` runs it and deletes each copied R2 object. The D1 time-travel restore to the printed bookmark is the full undo.
+ROLLBACK. `rollback.sql` deletes the store (cascading identities, slots, entries and versions) and then, by id, exactly the identity rows and the audit row this run inserted; a reused edge row is never deleted. `rollback.sh` runs it and deletes each copied R2 object. The D1 time-travel restore to the printed bookmark is the full undo.
 
 OUTPUT. Names, counts and 8-character id prefixes only. No `wrapped_cek`, `server_secret`, `sdk_master`, passphrase, email or email hash is ever printed; the rollback files carry full ids and are written mode 0600.
 
@@ -36,6 +38,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -87,6 +90,21 @@ TABLE_ORDER = (
     "config_versions",
     "event_log",
 )
+# Identity tables: an edge row with the same id is REUSED when these columns match (user ids compared after the case-B remap) and refused when one differs; never updated. The store's own rows refuse on any collision.
+IDENTITY_MATCH = {
+    "organizations": ("customer_id", "owner_user_id"),
+    "subscriptions": ("customer_id",),
+    "org_memberships": ("org_id", "user_id"),
+    "teams": ("org_id", "slug"),
+    "team_memberships": ("team_id", "user_id"),
+}
+# Unique keys of the identity tables beside the id: an edge row holding the key under another id refuses.
+IDENTITY_UNIQUE = {
+    "organizations": ("customer_id",),
+    "org_memberships": ("org_id", "user_id"),
+    "teams": ("org_id", "slug"),
+    "team_memberships": ("team_id", "user_id"),
+}
 NEVER_COPIED = (
     "config_tokens",
     "config_executor_grants",
@@ -263,19 +281,27 @@ def parse_results(text: str) -> list[list[dict]] | None:
 
 
 class Wrangler:
-    """Runs `npx wrangler ...` in the account Worker directory with a fixed environment; a failure is reported by its exit code and a redacted last stderr line, never the output, which may carry row data."""
+    """Runs `npx wrangler ...` in the account Worker directory with a fixed environment; stdout is returned and never printed, since it carries row data.
+
+    A failure is reported by its exit code and the message `_wrangler_error` extracts (the JSON `error.text` and its notes, else the last non-empty line). Before it is shown, every value in `mask` (the secret columns of the copied rows) is replaced whole by `<redacted>`, every id in `redact` is cut to its prefix, a message that echoes SQL is withheld outright (a truncated echo could carry part of a secret no replacement would match), and the result is capped at 300 characters.
+    """
 
     def __init__(self, worker_dir: pathlib.Path, env: dict[str, str]) -> None:
         self.worker_dir = worker_dir
         self.env = env
         self.redact: list[str] = []
+        self.mask: list[str] = []
 
     def _shown(self, text: str) -> str:
-        last = _wrangler_error(text)
+        msg = _wrangler_error(text)
+        if SQL_ECHO.search(msg):
+            return "(wrangler echoed SQL; the message is withheld because it may carry row data)"
+        for value in sorted((v for v in self.mask if v), key=len, reverse=True):
+            msg = msg.replace(value, "<redacted>")
         for value in self.redact:
             if value:
-                last = last.replace(value, prefix(value))
-        return last[:300]
+                msg = msg.replace(value, prefix(value))
+        return msg[:300]
 
     def run(self, argv: list[str], what: str) -> str:
         proc = subprocess.run(
@@ -294,27 +320,47 @@ class Wrangler:
             )
         return proc.stdout
 
+    def probe(self, argv: list[str]) -> tuple[int, str]:
+        """(exit code, raw stdout+stderr) of one wrangler call that may fail by design; the text is classified by the caller and never printed."""
+        proc = subprocess.run(
+            ["npx", "wrangler", *argv],
+            cwd=self.worker_dir,
+            env=self.env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode, proc.stdout + "\n" + proc.stderr
+
+
+SQL_ECHO = re.compile(r"\b(INSERT\s+INTO|VALUES\s*\(|UPDATE\s+\S+\s+SET)\b", re.IGNORECASE)
+
 
 def _wrangler_error(text: str) -> str:
     """The message of a wrangler failure. With --json, wrangler prints a JSON object whose last line is a bare `}`, which hides the cause, so the `error.text` (or `error`) field is used when the output parses; otherwise the last non-empty line."""
     body = text.strip()
-    start = body.find("{")
-    if start != -1:
+    decoder = json.JSONDecoder()
+    # Every `{` is tried in turn, so a banner line holding a brace ahead of the JSON object cannot hide it.
+    for start in (i for i, ch in enumerate(body) if ch == "{"):
         try:
-            doc = json.loads(body[start:])
+            doc, _end = decoder.raw_decode(body, start)
         except ValueError:
-            doc = None
-        if isinstance(doc, dict):
-            err = doc.get("error")
-            if isinstance(err, dict):
-                parts = [str(err.get("text") or "")] + [
-                    str(n.get("text") or "") for n in err.get("notes") or [] if isinstance(n, dict)
-                ]
-                msg = " | ".join(p for p in parts if p)
-                if msg:
-                    return msg
-            elif err:
-                return str(err)
+            continue
+        if not isinstance(doc, dict) or "error" not in doc:
+            continue
+        err = doc.get("error")
+        if isinstance(err, dict):
+            notes = err.get("notes")
+            notes = notes if isinstance(notes, list) else []
+            parts = [str(err.get("text") or "")] + [
+                str(n.get("text") or "") for n in notes if isinstance(n, dict)
+            ]
+            msg = " | ".join(p for p in parts if p)
+            if msg:
+                return msg
+        elif err:
+            return str(err)
     lines = [ln for ln in body.splitlines() if ln.strip()]
     return lines[-1] if lines else ""
 
@@ -369,6 +415,10 @@ class D1:
         return found
 
 
+# wrangler's answer for a missing object (R2 NoSuchKey, API code 10007).
+OBJECT_ABSENT = re.compile(r"does not exist|NoSuchKey|\b10007\b|not found", re.IGNORECASE)
+
+
 class R2:
     """One end's config bucket through wrangler."""
 
@@ -394,6 +444,28 @@ class R2:
                 *self._tail(),
             ],
             "r2 get from %s" % self.end.bucket,
+        )
+
+    def exists(self, key: str, dest: pathlib.Path) -> bool:
+        """Whether the bucket holds `key`: a get that succeeds is True, a get refused with wrangler's not-found answer is False, and any other failure refuses, because an unknown answer must not be read as absent."""
+        code, text = self.wrangler.probe(
+            [
+                "r2",
+                "object",
+                "get",
+                "%s/%s" % (self.end.bucket, key),
+                "--file",
+                str(dest),
+                *self._tail(),
+            ]
+        )
+        if code == 0:
+            return True
+        if OBJECT_ABSENT.search(text):
+            return False
+        raise RefusedError(
+            "r2: could not tell whether %s holds an object this copy would write (wrangler exited %d)"
+            % (self.end.bucket, code)
         )
 
     def put(self, key: str, src: pathlib.Path) -> None:
@@ -451,7 +523,14 @@ def read_source(src: Reader, store_id: str, now: str) -> dict:
     stores = src.query(q("SELECT * FROM config_stores WHERE id = @SID@", sid=lit(store_id)))
     if not stores:
         # The listing prints 8-character prefixes, so a unique prefix names its store.
-        like = src.query(q("SELECT * FROM config_stores WHERE id LIKE @P@", p=lit(store_id + "%")))
+        # substr, not LIKE: LIKE reads `_` as a wildcard and ignores ASCII case, so a mistyped prefix could name another store.
+        like = src.query(
+            q(
+                "SELECT * FROM config_stores WHERE substr(id, 1, @N@) = @P@",
+                n=str(len(store_id)),
+                p=lit(store_id),
+            )
+        )
         if len(like) > 1:
             raise RefusedError(
                 "store prefix %s matches %d stores on the source; give more characters"
@@ -503,9 +582,7 @@ def read_source(src: Reader, store_id: str, now: str) -> dict:
         if team_ids
         else []
     )
-    # The source may lag the newest migrations (eu stable had no config_executor_grants on
-    # 2026-10-27), so the never-copied tables are counted only where they exist; an absent
-    # table holds nothing to leave behind.
+    # The source may lag the newest migrations (eu stable had no config_executor_grants on 2026-10-27), so the never-copied tables are counted only where they exist; an absent table holds nothing to leave behind.
     present = {
         str(r.get("name"))
         for r in src.query(
@@ -578,41 +655,62 @@ def read_source(src: Reader, store_id: str, now: str) -> dict:
     }
 
 
-# The id columns a target row may already hold, per table, checked before anything is written.
+# The store's own rows: any edge row holding one of these ids refuses the run.
 def _collision_probes(source: dict) -> list[tuple[str, str, str, list[str]]]:
     """(label, table, column, values)."""
     org, store = source["org"], source["store"]
     probes = [
-        ("org id", "organizations", "id", [org["id"]]),
-        ("customer id", "organizations", "customer_id", [org["customer_id"]]),
-        ("customer id", "subscriptions", "customer_id", [org["customer_id"]]),
-        ("subscription id", "subscriptions", "id", [s["id"] for s in source["subscriptions"]]),
-        ("team id", "teams", "id", [t["id"] for t in source["teams"]]),
         ("store id", "config_stores", "id", [store["id"]]),
         ("store of the org", "config_stores", "org_id", [org["id"]]),
         ("entry id", "config_entries", "id", [e["id"] for e in source["entries"]]),
         ("version id", "config_versions", "id", [v["id"] for v in source["versions"]]),
         ("slot id", "config_key_slots", "id", [s["id"] for s in source["slots"]]),
         ("identity id", "config_user_identities", "id", [i["id"] for i in source["identities"]]),
-        (
-            "org membership id",
-            "org_memberships",
-            "id",
-            [m["id"] for m in source["org_memberships"]],
-        ),
-        (
-            "team membership id",
-            "team_memberships",
-            "id",
-            [m["id"] for m in source["team_memberships"]],
-        ),
     ]
     return [p for p in probes if p[3]]
 
 
+def _edge_identity_rows(dst: Reader, source: dict) -> dict[str, list[dict]]:
+    """The edge rows of each identity table that share an id or a unique key with the plan's rows: the identity columns, the id and (subscriptions) the status only, never a secret column."""
+    org = source["org"]
+    team_ids = [str(t["id"]) for t in source["teams"]]
+    wanted = {
+        "organizations": (
+            "id, customer_id, owner_user_id",
+            "id = @ORG@ OR customer_id = @CUST@",
+        ),
+        "subscriptions": (
+            "id, customer_id, status, expires_at",
+            "id IN @SUBS@ OR customer_id = @CUST@",
+        ),
+        "org_memberships": ("id, org_id, user_id", "id IN @OMS@ OR org_id = @ORG@"),
+        "teams": ("id, org_id, slug", "id IN @TEAMS@ OR org_id = @ORG@"),
+        "team_memberships": ("id, team_id, user_id", "id IN @TMS@ OR team_id IN @TEAMS@"),
+    }
+    values = {
+        "org": lit(org["id"]),
+        "cust": lit(org["customer_id"]),
+        "subs": id_list([str(r["id"]) for r in source["subscriptions"]]),
+        "oms": id_list([str(r["id"]) for r in source["org_memberships"]]),
+        "teams": id_list(team_ids),
+        "tms": id_list([str(r["id"]) for r in source["team_memberships"]]),
+    }
+    return {
+        table: dst.query(
+            q(
+                "SELECT @COLS@ FROM @T@ WHERE @WHERE@",
+                cols=cols,
+                t=ident(table),
+                where=q(where, **values),
+            )
+        )
+        for table, (cols, where) in wanted.items()
+    }
+
+
 def read_target(dst: Reader, source: dict) -> dict:
     """What the edge database already holds of the ids the plan would write."""
-    operator, org = source["operator"], source["org"]
+    operator = source["operator"]
     collisions: list[str] = []
     for label, table, column, values in _collision_probes(source):
         hit = dst.query(
@@ -625,26 +723,58 @@ def read_target(dst: Reader, source: dict) -> dict:
         )
         if int((hit[0] if hit else {}).get("n") or 0):
             collisions.append("%s (%s.%s)" % (label, table, column))
-    slugs = [str(t["slug"]) for t in source["teams"]]
-    if slugs:
-        hit = dst.query(
-            q(
-                "SELECT COUNT(*) AS n FROM teams WHERE org_id = @ORG@ AND slug IN (@SLUGS@)",
-                org=lit(org["id"]),
-                slugs=", ".join(lit(s) for s in slugs),
-            )
-        )
-        if int((hit[0] if hit else {}).get("n") or 0):
-            collisions.append("team (org_id, slug) (teams)")
     by_hash = dst.query(
         q("SELECT id FROM users WHERE email_hash = @H@", h=lit(operator["email_hash"]))
     )
     by_id = dst.query(q("SELECT id, email_hash FROM users WHERE id = @ID@", id=lit(operator["id"])))
     return {
         "collisions": collisions,
+        "identity": _edge_identity_rows(dst, source),
         "user_by_hash": str(by_hash[0]["id"]) if by_hash else None,
         "user_id_taken": bool(by_id) and by_id[0].get("email_hash") != operator["email_hash"],
     }
+
+
+def resolve_identity(
+    planned: list[tuple[str, dict]], edge: dict[str, list[dict]], org_id: str, customer_id: str
+) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]], list[str]]:
+    """(rows to insert, rows reused as (table, edge row), conflicts) for the identity tables. A conflict names the table and column(s) and an id prefix, never a value."""
+    insert: list[tuple[str, dict]] = []
+    reused: list[tuple[str, dict]] = []
+    conflicts: list[str] = []
+    for table, row in planned:
+        rows = edge.get(table, [])
+        same = next((r for r in rows if str(r.get("id")) == str(row["id"])), None)
+        if same is not None:
+            differ = [c for c in IDENTITY_MATCH[table] if same.get(c) != row.get(c)]
+            if differ:
+                conflicts.append(
+                    "%s row %s differs in %s" % (table, prefix(row["id"]), ", ".join(differ))
+                )
+            else:
+                reused.append((table, same))
+            continue
+        key = IDENTITY_UNIQUE.get(table)
+        if key and any(
+            str(r.get("id")) != str(row["id"]) and all(r.get(c) == row.get(c) for c in key)
+            for r in rows
+        ):
+            conflicts.append("%s (%s) is held by another edge row" % (table, ", ".join(key)))
+            continue
+        insert.append((table, row))
+    org_reused = any(t == "organizations" and str(r["id"]) == org_id for t, r in reused)
+    planned_subs = {str(r["id"]) for t, r in planned if t == "subscriptions"}
+    stranger = [
+        r
+        for r in edge.get("subscriptions", [])
+        if r.get("customer_id") == customer_id and str(r.get("id")) not in planned_subs
+    ]
+    if stranger and not org_reused:
+        conflicts.append(
+            "subscriptions (customer_id) has %d edge row(s) for a customer whose org is not on edge"
+            % len(stranger)
+        )
+    return insert, reused, conflicts
 
 
 # ---- schema parity -----------------------------------------------------------
@@ -730,7 +860,13 @@ def check_server_key(presence: dict[str, bool], src: End, dst: End) -> str:
                 dst.worker,
             )
         )
-    return "%s: %s on both Workers" % (SERVER_KEY_NAME, "set" if a else "absent")
+    # Worker secrets are write-only and no bws entry holds CONFIG_SERVER_KEY, so presence is all that can be compared from here.
+    if not a:
+        return "%s: absent on both Workers (both use the built-in fallback key)" % SERVER_KEY_NAME
+    return (
+        "%s: set on both Workers; the values cannot be read back (write-only), so the first edge pull is the proof"
+        % SERVER_KEY_NAME
+    )
 
 
 # ---- the plan ----------------------------------------------------------------
@@ -745,12 +881,38 @@ class Plan:
     edge_user_id: str
     case: str
     inserts: list[tuple[str, dict]]
+    reused: list[tuple[str, str]]
     r2_keys: list[str]
     require_passkey_reset: bool
     lines: list[str]
 
     def rows(self, table: str) -> list[dict]:
         return [r for t, r in self.inserts if t == table]
+
+
+SECRET_COLUMNS = {
+    "store": (
+        "sdk_master",
+        "server_secret",
+        "encrypted_org_passphrase",
+        "server_recoverable_org_passphrase",
+    ),
+    "operator": (
+        "email",
+        "email_hash",
+        "password_hash",
+        "password_salt",
+        "totp_secret",
+        "totp_backup_hashes",
+    ),
+}
+
+
+def secret_values(source: dict) -> list[str]:
+    """Every secret value of the copied rows, for `Wrangler.mask`: the store's key material, the operator's credentials and every slot's wrapped CEK."""
+    out = [str(source[k].get(c) or "") for k, cols in SECRET_COLUMNS.items() for c in cols]
+    out += [str(s.get("wrapped_cek") or "") for s in source["slots"]]
+    return [v for v in out if len(v) >= 4]
 
 
 def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_id: str) -> Plan:
@@ -796,20 +958,35 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
     op_identities = [i for i in source["identities"] if i.get("user_id") == op]
     other_identities = len(source["identities"]) - len(op_identities)
 
-    inserts: list[tuple[str, dict]] = []
-    if case == "A":
-        inserts.append(("users", dict(operator)))
-    inserts.append(("organizations", {**org, "owner_user_id": remap(org.get("owner_user_id"))}))
-    inserts += [("subscriptions", dict(s)) for s in source["subscriptions"]]
-    inserts += [
+    planned: list[tuple[str, dict]] = [
+        ("organizations", {**org, "owner_user_id": remap(org.get("owner_user_id"))})
+    ]
+    planned += [("subscriptions", dict(s)) for s in source["subscriptions"]]
+    planned += [
         ("org_memberships", {**m, "user_id": remap(m["user_id"])})
         for m in source["org_memberships"]
     ]
-    inserts += [("teams", dict(t)) for t in source["teams"]]
-    inserts += [
+    planned += [("teams", dict(t)) for t in source["teams"]]
+    planned += [
         ("team_memberships", {**m, "user_id": remap(m["user_id"])})
         for m in source["team_memberships"]
     ]
+    identity_rows, reused_rows, conflicts = resolve_identity(
+        planned, target["identity"], str(org["id"]), str(org["customer_id"])
+    )
+    if conflicts:
+        raise RefusedError(
+            "edge holds identity rows that conflict with this copy: %s; nothing written"
+            % "; ".join(conflicts)
+        )
+    inserts: list[tuple[str, dict]] = []
+    reused: list[tuple[str, str]] = []
+    if case == "A":
+        inserts.append(("users", dict(operator)))
+    else:
+        reused.append(("users", edge_user))
+    inserts += identity_rows
+    reused += [(t, str(r["id"])) for t, r in reused_rows]
     reset = bool(int(store.get("require_passkey") or 0))
     inserts.append(("config_stores", {**store, "require_passkey": 0} if reset else dict(store)))
     inserts += [
@@ -879,6 +1056,15 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
             for t in TABLE_ORDER
             if t != "event_log"
         ),
+        "reused on edge (never updated): "
+        + (
+            ", ".join(
+                "%s %d" % (t, n)
+                for t in TABLE_ORDER
+                if (n := sum(1 for tt, _ in reused if tt == t))
+            )
+            or "none"
+        ),
         "slots copied: password %d, recovery %d (operator only)"
         % (method_counts["password"], method_counts["recovery"]),
         "left out: passkey slots %d, other members' slots %d, other members' identities %d, other members %d (count only)"
@@ -903,6 +1089,18 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
         lines.append(
             "r2: %d key(s) are outside s/<store>/ (legacy layout), copied by key" % len(unscoped)
         )
+    for table, row in reused_rows:
+        if table == "subscriptions" and (
+            row.get("status") not in LIVE_STATUSES
+            or (row.get("expires_at") and str(row["expires_at"]) <= now)
+        ):
+            lines.append(
+                "subscriptions: reused %s is %s on edge (not live), left as it is"
+                % (
+                    prefix(row["id"]),
+                    "expired" if row.get("status") in LIVE_STATUSES else str(row.get("status")),
+                )
+            )
     if not source["subscriptions"]:
         lines.append("subscriptions: the org has no live subscription; none copied")
     if not source["org_memberships"]:
@@ -915,6 +1113,7 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
         edge_user_id=edge_user,
         case=case,
         inserts=inserts,
+        reused=reused,
         r2_keys=keys,
         require_passkey_reset=reset,
         lines=lines,
@@ -938,23 +1137,42 @@ def plan_sql(plan: Plan) -> str:
     return "\n".join(out) + "\n"
 
 
+# Rollback order: the store first (it cascades its identities, slots, entries and versions, and entries hold team ids without a cascade), then each identity table child first.
+ROLLBACK_ORDER = (
+    "team_memberships",
+    "teams",
+    "org_memberships",
+    "subscriptions",
+    "organizations",
+    "users",
+    "event_log",
+)
+
+
 def rollback_sql(plan: Plan) -> str:
-    sub_ids = [str(r["id"]) for r in plan.rows("subscriptions")]
-    org = lit(plan.org_id)
-    stmts = [
-        q("DELETE FROM config_stores WHERE id = @ID@;", id=lit(plan.store_id)),
-        q("DELETE FROM event_log WHERE type = @T@ AND org_id = @ORG@;", t=lit(EVENT_TYPE), org=org),
-    ]
-    if sub_ids:
-        stmts.append(q("DELETE FROM subscriptions WHERE id IN @IDS@;", ids=id_list(sub_ids)))
-    stmts.append(q("DELETE FROM organizations WHERE id = @ORG@;", org=org))
-    if plan.case == "A":
-        stmts.append(q("DELETE FROM users WHERE id = @ID@;", id=lit(plan.operator_id)))
+    """Deletes exactly the rows this run inserted, by id; a reused edge row is never named."""
+    stmts = [q("DELETE FROM config_stores WHERE id = @ID@;", id=lit(plan.store_id))]
+    for table in ROLLBACK_ORDER:
+        ids = [str(r["id"]) for r in plan.rows(table)]
+        if ids:
+            stmts.append(q("DELETE FROM @T@ WHERE id IN @IDS@;", t=ident(table), ids=id_list(ids)))
     return "\n".join(stmts) + "\n"
 
 
+def write_private(path: pathlib.Path, body: str, mode: int) -> None:
+    """Creates (or truncates) `path` with `mode` from the first byte, so a file holding secret columns is never readable under a wider umask, even briefly."""
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+    try:
+        os.fchmod(fd, mode)
+        os.write(fd, body.encode("utf-8"))
+    finally:
+        os.close(fd)
+
+
 def rollback_sh(plan: Plan, dst: End, sql_path: pathlib.Path) -> str:
-    jur = " --jurisdiction %s" % dst.jurisdiction if dst.jurisdiction else ""
+    """The rollback script; every path and name is shell-quoted and the SQL path is absolute, since the script changes directory first."""
+    sql_path = sql_path.resolve()
+    jur = " --jurisdiction %s" % shlex.quote(dst.jurisdiction) if dst.jurisdiction else ""
     lines = [
         "#!/usr/bin/env bash",
         "# Targeted rollback of mirror_config_store for store %s on %s."
@@ -962,11 +1180,11 @@ def rollback_sh(plan: Plan, dst: End, sql_path: pathlib.Path) -> str:
         "set -euo pipefail",
         'cd "$(git rev-parse --show-toplevel)/%s"' % "/".join(target_mod.ACCOUNT_SUBDIR),
         "npx wrangler d1 execute %s --remote --yes --file %s --config %s"
-        % (dst.database, sql_path, dst.config),
+        % (shlex.quote(dst.database), shlex.quote(str(sql_path)), shlex.quote(dst.config)),
     ]
     lines += [
-        "npx wrangler r2 object delete %s/%s --remote%s --config %s"
-        % (dst.bucket, k, jur, dst.config)
+        "npx wrangler r2 object delete %s --remote%s --config %s"
+        % (shlex.quote("%s/%s" % (dst.bucket, k)), jur, shlex.quote(dst.config))
         for k in plan.r2_keys
     ]
     return "\n".join(lines) + "\n"
@@ -977,6 +1195,20 @@ def rollback_sh(plan: Plan, dst: End, sql_path: pathlib.Path) -> str:
 
 def _sha256(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def edge_objects_absent(keys: list[str], dst: R2) -> str:
+    """Refuses when the edge bucket already holds any object this copy would put, so no pre-existing object is overwritten or later deleted by the rollback; a read-only probe, run on a dry run too."""
+    with tempfile.TemporaryDirectory(prefix="mirror-config-store-probe-") as tmp:
+        held = sum(
+            dst.exists(key, pathlib.Path(tmp) / ("%d.probe" % n)) for n, key in enumerate(keys)
+        )
+    if held:
+        raise RefusedError(
+            "edge bucket %s already holds %d of the %d object(s) this copy would write; nothing written"
+            % (dst.end.bucket, held, len(keys))
+        )
+    return "r2: none of the %d object(s) exists on %s yet" % (len(keys), dst.end.bucket)
 
 
 def copy_r2(keys: list[str], src: R2, dst: R2) -> None:
@@ -1039,6 +1271,7 @@ def apply(
     dst = dst_d1.end
     bookmark = dst_d1.bookmark()
     log.info("edge D1 bookmark taken before any write: %s" % bookmark)
+    out_dir = out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     sql_path, sh_path, ins_path = (
         out_dir / "rollback.sql",
@@ -1050,8 +1283,7 @@ def apply(
         (sh_path, rollback_sh(plan, dst, sql_path), 0o700),
         (ins_path, plan_sql(plan), 0o600),
     ):
-        path.write_text(body, encoding="utf-8")
-        path.chmod(mode)
+        write_private(path, body, mode)
     log.info("targeted rollback: bash %s" % sh_path)
     log.info("full restore: %s" % deploy_record.restore_command(dst.database, bookmark, dst.config))
     copy_r2(plan.r2_keys, src_r2, dst_r2)
@@ -1160,6 +1392,7 @@ def _work(
         str(source["operator"]["id"]),
         str(source["operator"].get("email_hash") or ""),
     ]
+    wrangler.mask += secret_values(source)
     lines = schema_parity(src, dst)
     lines.append(
         check_server_key(
@@ -1171,6 +1404,7 @@ def _work(
     target = read_target(dst, source)
     plan = build_plan(source, target, src_end, dst_end, now, uuid.uuid4().hex)
     fk_before = fk_violations(dst)
+    lines.append(edge_objects_absent(plan.r2_keys, R2(wrangler, dst_end)))
     for line in plan.lines + lines:
         log.info(line)
     if not args.apply:

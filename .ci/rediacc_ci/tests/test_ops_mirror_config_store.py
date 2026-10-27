@@ -9,6 +9,7 @@ import dataclasses
 import hashlib
 import json
 import os
+import shlex
 import sqlite3
 import stat
 import typing
@@ -388,7 +389,8 @@ def test_list_stores_prints_prefixes_members_methods_and_no_org_name(dbs) -> Non
     # A personal org is named after its owner's email, so the name never prints.
     assert "Rediacc Ops" not in line
     assert "@" not in line
-    assert "org " in line
+    assert "  org %s  " % mod.prefix(ORG) in line
+    assert ORG not in line
     assert "members 2" in line
     assert "slots passkey,password,recovery" in line
 
@@ -475,23 +477,40 @@ def _seed_store(conn: sqlite3.Connection) -> None:
     )
 
 
+CONFLICT = "edge holds identity rows that conflict with this copy: "
 COLLISIONS = [
-    ("org id", lambda c: edge_org(c, ORG, "other-cust-1")),
-    ("customer id", lambda c: edge_org(c, "edge-org-0001", CUST)),
-    ("subscription id", _seed_sub),
-    ("team id", _seed_team),
-    ("store id", _seed_store),
+    (
+        "org id, other customer",
+        lambda c: edge_org(c, ORG, "other-cust-1"),
+        CONFLICT + r"organizations row org00000 differs in customer_id, owner_user_id",
+    ),
+    (
+        "customer id under another org id",
+        lambda c: edge_org(c, "edge-org-0001", CUST),
+        CONFLICT + r"organizations \(customer_id\) is held by another edge row",
+    ),
+    (
+        "subscription id, other customer",
+        _seed_sub,
+        CONFLICT + r"subscriptions row sub00000 differs in customer_id",
+    ),
+    ("team id, other org", _seed_team, CONFLICT + r"teams row team0000 differs in org_id, slug"),
+    ("store id", _seed_store, r"edge already holds rows this copy would write: store id"),
 ]
+VALUES_NEVER_SHOWN = ("other-cust-1", "x-cust", "edge-org-0001", "edge-owner", EMAIL_HASH)
 
 
-@pytest.mark.parametrize(("label", "seed"), COLLISIONS, ids=[c[0] for c in COLLISIONS])
-def test_collision_refuses_with_nothing_written(dbs, label, seed) -> None:
+@pytest.mark.parametrize(("label", "seed", "message"), COLLISIONS, ids=[c[0] for c in COLLISIONS])
+def test_collision_refuses_with_nothing_written(dbs, label, seed, message) -> None:
     src, dst = dbs
     seed(dst)
     dst.commit()
     before = {t: count(dst, t) for t in mod.TABLE_ORDER}
-    with pytest.raises(mod.RefusedError, match="edge already holds rows.*%s" % label):
+    with pytest.raises(mod.RefusedError, match=message) as caught:
         plan_for(src, dst)
+    assert label
+    for value in VALUES_NEVER_SHOWN:
+        assert value not in str(caught.value)
     assert {t: count(dst, t) for t in mod.TABLE_ORDER} == before
 
 
@@ -737,6 +756,190 @@ def test_rollback_sql_undoes_the_mirror(dbs) -> None:
         assert count(dst, table) == 0, table
 
 
+# ---- reuse on match, refuse on conflict (the identity tables) ---------------
+
+CLONE_ORDER = (
+    ("users", "id = ?", OWNER),
+    ("organizations", "id = ?", ORG),
+    ("subscriptions", "id = ?", SUB),
+    ("org_memberships", "id = ?", "om-owner-0001"),
+    ("teams", "id = ?", TEAM),
+    ("team_memberships", "id = ?", "tm-owner-0001"),
+)
+
+
+def clone_identity(src: sqlite3.Connection, dst: sqlite3.Connection, tables: set[str]) -> None:
+    """Copy the operator's identity rows of `tables` from stable to edge under the same ids, as an edge D1 once cloned from stable holds them."""
+    for table, where, value in CLONE_ORDER:
+        if table in tables:
+            (row,) = rows(src, mod.q("SELECT * FROM @T@ WHERE ", t=mod.ident(table)) + where, value)
+            ins(dst, table, **row)
+    dst.commit()
+
+
+ALL_IDENTITY = {t for t, _, _ in CLONE_ORDER}
+
+
+def test_identity_rows_matching_on_edge_are_reused_not_written(dbs) -> None:
+    src, dst = dbs
+    clone_identity(src, dst, ALL_IDENTITY)
+    before = {
+        t: rows(dst, mod.q("SELECT * FROM @T@ ORDER BY id", t=mod.ident(t))) for t in ALL_IDENTITY
+    }
+    plan = plan_for(src, dst)
+    assert plan.case == "B"
+    assert plan.edge_user_id == OWNER
+    for table in ALL_IDENTITY:
+        assert plan.rows(table) == [], table
+    assert sorted(plan.reused) == sorted(
+        [("users", OWNER), ("organizations", ORG), ("subscriptions", SUB),
+         ("org_memberships", "om-owner-0001"), ("teams", TEAM), ("team_memberships", "tm-owner-0001")]
+    )  # fmt: skip
+    text = "\n".join(plan.lines)
+    assert (
+        "reused on edge (never updated): users 1, organizations 1, subscriptions 1, "
+        "org_memberships 1, teams 1, team_memberships 1" in text
+    )
+    sql = mod.plan_sql(plan)
+    for table in ALL_IDENTITY:
+        assert "INSERT INTO %s " % mod.ident(table) not in sql
+    apply_sql(dst, sql)
+    after = {
+        t: rows(dst, mod.q("SELECT * FROM @T@ ORDER BY id", t=mod.ident(t))) for t in ALL_IDENTITY
+    }
+    assert after == before
+    assert count(dst, "config_stores") == 1
+    assert rows(dst, "PRAGMA foreign_key_check") == []
+    mod.verify(plan, Sqlite(dst), set())
+
+
+MISMATCHES = [
+    (
+        "organizations",
+        "owner_user_id",
+        "UPDATE organizations SET owner_user_id = 'someone-else-0001'",
+    ),
+    ("organizations", "customer_id", "UPDATE organizations SET customer_id = 'cust-other-0001'"),
+    ("subscriptions", "customer_id", "UPDATE subscriptions SET customer_id = 'cust-other-0001'"),
+    ("org_memberships", "user_id", "UPDATE org_memberships SET user_id = 'someone-else-0001'"),
+    ("teams", "slug", "UPDATE teams SET slug = 'renamed-slug'"),
+    ("team_memberships", "user_id", "UPDATE team_memberships SET user_id = 'someone-else-0001'"),
+]
+
+
+@pytest.mark.parametrize(
+    ("table", "column", "doctor"), MISMATCHES, ids=[m[0] + "." + m[1] for m in MISMATCHES]
+)
+def test_a_mismatched_identity_column_refuses_naming_table_and_column(
+    dbs, table, column, doctor
+) -> None:
+    src, dst = dbs
+    clone_identity(src, dst, ALL_IDENTITY)
+    dst.execute("PRAGMA foreign_keys = OFF")
+    dst.execute(doctor)
+    dst.commit()
+    with pytest.raises(mod.RefusedError) as caught:
+        plan_for(src, dst)
+    message = str(caught.value)
+    assert message.startswith(CONFLICT)
+    assert "%s row " % table in message
+    assert column in message.split("%s row " % table, 1)[1]
+    for value in ("someone-else-0001", "cust-other-0001", "renamed-slug", CUST, OWNER):
+        assert value not in message
+    assert count(dst, "config_stores") == 0
+
+
+def test_a_unique_key_held_under_another_id_refuses(dbs) -> None:
+    src, dst = dbs
+    clone_identity(src, dst, {"users", "organizations"})
+    ins(
+        dst,
+        "org_memberships",
+        id="om-edge-other-id",
+        org_id=ORG,
+        user_id=OWNER,
+        role="root",
+        joined_at=NOW,
+    )
+    dst.commit()
+    with pytest.raises(
+        mod.RefusedError, match=r"org_memberships \(org_id, user_id\) is held by another edge row"
+    ):
+        plan_for(src, dst)
+
+
+def test_a_mix_of_reused_and_inserted_identity_rows(dbs) -> None:
+    src, dst = dbs
+    clone_identity(src, dst, {"users", "organizations", "subscriptions", "org_memberships"})
+    plan = plan_for(src, dst)
+    assert {t for t, _ in plan.reused} == {
+        "users",
+        "organizations",
+        "subscriptions",
+        "org_memberships",
+    }
+    assert [r["id"] for r in plan.rows("teams")] == [TEAM]
+    assert [r["id"] for r in plan.rows("team_memberships")] == ["tm-owner-0001"]
+    assert plan.rows("organizations") == []
+    text = "\n".join(plan.lines)
+    assert "teams 1, team_memberships 1" in text
+    assert (
+        "reused on edge (never updated): users 1, organizations 1, subscriptions 1, org_memberships 1"
+        in text
+    )
+    apply_sql(dst, mod.plan_sql(plan))
+    assert count(dst, "teams") == 1
+    assert count(dst, "organizations") == 1
+    assert rows(dst, "PRAGMA foreign_key_check") == []
+    mod.verify(plan, Sqlite(dst), set())
+
+
+def test_rollback_deletes_only_inserted_rows_and_keeps_reused_ones(dbs) -> None:
+    src, dst = dbs
+    clone_identity(src, dst, {"users", "organizations", "subscriptions", "org_memberships"})
+    kept = {
+        t: rows(dst, mod.q("SELECT * FROM @T@", t=mod.ident(t)))
+        for t in ("users", "organizations", "subscriptions", "org_memberships")
+    }
+    plan = plan_for(src, dst)
+    rollback = mod.rollback_sql(plan)
+    for table, rid in plan.reused:
+        assert "'%s'" % rid not in rollback.replace(
+            mod.q("DELETE FROM config_stores WHERE id = @ID@;", id=mod.lit(STORE)), ""
+        ), table
+    apply_sql(dst, mod.plan_sql(plan))
+    apply_sql(dst, rollback)
+    for table, before in kept.items():
+        assert rows(dst, mod.q("SELECT * FROM @T@", t=mod.ident(table))) == before, table
+    for table in ("config_stores", "config_entries", "config_versions", "config_key_slots",
+                  "config_user_identities", "teams", "team_memberships", "event_log"):  # fmt: skip
+        assert count(dst, table) == 0, table
+
+
+def test_a_reused_subscription_not_live_on_edge_is_noted(dbs) -> None:
+    src, dst = dbs
+    clone_identity(src, dst, {"users", "organizations", "subscriptions"})
+    dst.execute("UPDATE subscriptions SET status = 'cancelled' WHERE id = ?", (SUB,))
+    dst.commit()
+    plan = plan_for(src, dst)
+    assert ("subscriptions", SUB) in plan.reused
+    assert any(
+        "subscriptions: reused %s is cancelled on edge (not live)" % mod.prefix(SUB) in line
+        for line in plan.lines
+    )
+    apply_sql(dst, mod.plan_sql(plan))
+    assert rows(dst, "SELECT status FROM subscriptions")[0]["status"] == "cancelled"
+
+
+def test_edge_subscriptions_of_the_customer_without_the_org_refuse(dbs) -> None:
+    src, dst = dbs
+    ins(dst, "subscriptions", id="sub-edge-stray-0001", customer_id=CUST, type="trial", status="active",
+        max_activations=1, created_at=NOW, updated_at=NOW)  # fmt: skip
+    dst.commit()
+    with pytest.raises(mod.RefusedError, match=r"subscriptions \(customer_id\) has 1 edge row"):
+        plan_for(src, dst)
+
+
 # ---- M4: the apply path against a fake npx -----------------------------------
 
 FAKE_NPX = r"""#!/usr/bin/env python3
@@ -760,7 +963,7 @@ if args[:2] == ["d1", "execute"]:
     conn.execute("PRAGMA foreign_keys = ON")
     if "--file" in args:
         if os.environ.get("FAKE_FILE_FAIL"):
-            sys.stderr.write("D1_ERROR: simulated\n")
+            sys.stderr.write(os.environ.get("FAKE_FILE_ERR", "D1_ERROR: simulated") + "\n")
             sys.exit(1)
         try:
             conn.executescript("BEGIN;\n" + open(opt("--file")).read() + "COMMIT;\n")
@@ -782,7 +985,11 @@ if args[:2] == ["r2", "object"]:
         bucket = opt("--jurisdiction") + "__" + bucket
     obj = pathlib.Path(os.environ["FAKE_R2_DIR"]) / bucket / key
     if verb == "get":
+        if os.environ.get("FAKE_R2_GET_FAIL"):
+            sys.stderr.write("Authentication error [code: 10000]\n")
+            sys.exit(1)
         if not obj.is_file():
+            sys.stderr.write("The specified key does not exist.\n")
             sys.exit(1)
         shutil.copyfile(obj, opt("--file"))
     elif verb == "put":
@@ -861,7 +1068,8 @@ def _kind(call: list) -> str:
 def test_dry_run_reads_only(fake, capsys) -> None:
     assert mod.main([*BASE, "--store", STORE]) == 0
     kinds = {_kind(c) for c in _calls(fake["log"])}
-    assert kinds == {"read"}
+    # The edge-object probe is a read-only get; nothing is put, bookmarked or written.
+    assert kinds == {"read", "r2-get"}
     out = capsys.readouterr()
     text = out.out + out.err
     assert "dry run: nothing written" in text
@@ -874,7 +1082,7 @@ def test_apply_takes_the_bookmark_first_then_r2_then_one_file(fake, capsys) -> N
     assert mod.main(_apply_argv(fake)) == 0
     calls = _calls(fake["log"])
     kinds = [_kind(c) for c in calls]
-    writes = [k for k in kinds if k != "read"]
+    writes = [k for k in kinds if k not in ("read", "r2-get")]
     assert writes[0] == "bookmark"
     assert kinds.index("bookmark") < kinds.index("r2-put") < kinds.index("file")
     assert kinds.count("file") == 1
@@ -996,10 +1204,128 @@ def test_read_source_resolves_the_listed_prefix(dbs) -> None:
     assert source["store"]["id"] == STORE
 
 
+def test_an_ambiguous_prefix_refuses(dbs) -> None:
+    src = dbs[0]
+    ins(src, "config_stores", id=mod.prefix(STORE) + "-second-store", org_id=ORG, sdk_master="m",
+        server_secret="s", encrypted_org_passphrase="e", created_at=NOW, updated_at=NOW)  # fmt: skip
+    with pytest.raises(mod.RefusedError, match="matches 2 stores on the source"):
+        mod.read_source(Sqlite(src), mod.prefix(STORE), NOW)
+    # The full id still names exactly one store.
+    assert mod.read_source(Sqlite(src), STORE, NOW)["store"]["id"] == STORE
+
+
+@pytest.mark.parametrize("typed", ["store_00", "STORE000"])
+def test_a_prefix_is_exact_and_case_sensitive(dbs, typed) -> None:
+    # LIKE would read `_` as a wildcard and ignore case, so each of these resolved to STORE before; `%` never passes the id pattern.
+    with pytest.raises(mod.RefusedError, match="does not exist on the source"):
+        mod.read_source(Sqlite(dbs[0]), typed, NOW)
+
+
 def test_wrangler_json_error_shows_its_message_not_the_closing_brace() -> None:
     out = '{\n  "error": {\n    "text": "D1_ERROR: no such column: foo",\n    "notes": [{"text": "at offset 7"}]\n  }\n}\n'
     assert mod._wrangler_error(out) == "D1_ERROR: no such column: foo | at offset 7"
     assert mod._wrangler_error("plain failure\n") == "plain failure"
+
+
+def test_wrangler_json_error_survives_a_banner_holding_a_brace() -> None:
+    out = 'Using config {wrangler.edge-eu.toml}\n{\n  "error": {"text": "D1_ERROR: boom"}\n}\n'
+    assert mod._wrangler_error(out) == "D1_ERROR: boom"
+
+
+@pytest.mark.parametrize("notes", ["7", '"a string"', "null", '{"text": "x"}'])
+def test_wrangler_json_error_tolerates_notes_that_are_not_a_list(notes) -> None:
+    out = '{"error": {"text": "D1_ERROR: boom", "notes": %s}}' % notes
+    assert mod._wrangler_error(out) == "D1_ERROR: boom"
+
+
+def test_a_failed_write_never_shows_a_secret(tmp_path) -> None:
+    wrangler = mod.Wrangler(tmp_path, {})
+    wrangler.mask = ["SERVER-SECRET-VALUE-zz", "WRAPPED-PW-zz"]
+    wrangler.redact = [STORE]
+    echoed = 'D1_ERROR: UNIQUE constraint failed: INSERT INTO "config_stores" VALUES (\'SERVER-SECRET-VALUE'
+    assert "SERVER-SECRET" not in wrangler._shown(echoed)
+    assert "withheld" in wrangler._shown(echoed)
+    shown = wrangler._shown('{"error": {"text": "bad slot WRAPPED-PW-zz in store %s"}}' % STORE)
+    assert "WRAPPED-PW-zz" not in shown
+    assert "<redacted>" in shown
+    assert STORE not in shown
+    assert mod.prefix(STORE) in shown
+
+
+def test_secret_values_cover_the_store_the_operator_and_every_slot(dbs) -> None:
+    values = set(mod.secret_values(mod.read_source(Sqlite(dbs[0]), STORE, NOW)))
+    assert set(SECRETS.values()) <= values
+    assert set(WRAPPED.values()) | {"WRAPPED-OTHER-zz"} <= values
+    assert {EMAIL, EMAIL_HASH, "PWHASH-zz"} <= values
+
+
+def test_a_failed_write_echoing_sql_prints_no_secret(fake, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("FAKE_FILE_FAIL", "1")
+    monkeypatch.setenv(
+        "FAKE_FILE_ERR", "D1_ERROR: INSERT INTO config_stores VALUES ('SERVER-SECRET-VALUE-zz')"
+    )
+    assert mod.main(_apply_argv(fake)) == 1
+    text = capsys.readouterr()
+    for secret in NEVER_SHOWN:
+        assert secret not in text.out + text.err
+    assert "withheld" in text.out + text.err
+
+
+def test_write_private_creates_the_file_with_its_mode_from_the_first_byte(
+    tmp_path, monkeypatch
+) -> None:
+    seen = []
+    real_open = os.open
+
+    def spy(path, flags, mode=0o777):
+        seen.append(mode)
+        return real_open(path, flags, mode)
+
+    monkeypatch.setattr(mod.os, "open", spy)
+    old = os.umask(0)
+    try:
+        mod.write_private(tmp_path / "insert.sql", "secret", 0o600)
+    finally:
+        os.umask(old)
+    assert seen == [0o600]
+    assert (tmp_path / "insert.sql").stat().st_mode & 0o777 == 0o600
+    (tmp_path / "wide").write_text("x", encoding="utf-8")
+    (tmp_path / "wide").chmod(0o644)
+    mod.write_private(tmp_path / "wide", "secret", 0o600)
+    assert (tmp_path / "wide").stat().st_mode & 0o777 == 0o600
+
+
+def test_rollback_sh_quotes_and_uses_an_absolute_sql_path(dbs, tmp_path, monkeypatch) -> None:
+    plan = plan_for(*dbs)
+    monkeypatch.chdir(tmp_path)
+    sh = mod.rollback_sh(plan, DST, mod.pathlib.Path("out dir/rollback.sql"))
+    (d1_line,) = [ln for ln in sh.splitlines() if " d1 execute " in ln]
+    words = shlex.split(d1_line)
+    assert words[words.index("--file") + 1] == str(tmp_path / "out dir" / "rollback.sql")
+
+
+def test_an_object_already_on_edge_refuses_before_any_write(fake, capsys) -> None:
+    key = KEYS[0]
+    obj = fake["r2"] / "eu__edge-rediacc-configs-eu" / key
+    obj.parent.mkdir(parents=True, exist_ok=True)
+    obj.write_bytes(b"pre-existing")
+    assert mod.main(_apply_argv(fake)) == 1
+    kinds = {_kind(c) for c in _calls(fake["log"])}
+    assert not kinds & {"bookmark", "r2-put", "file"}
+    assert obj.read_bytes() == b"pre-existing"
+    text = capsys.readouterr()
+    assert "already holds 1 of the 4 object(s)" in text.out + text.err
+
+
+def test_an_unclassifiable_r2_probe_refuses(fake, monkeypatch) -> None:
+    monkeypatch.setenv("FAKE_R2_GET_FAIL", "1")
+    assert mod.main([*BASE, "--store", STORE]) == 1
+    assert not {_kind(c) for c in _calls(fake["log"])} & {"r2-put", "file"}
+
+
+def test_server_key_line_says_values_cannot_be_compared() -> None:
+    line = mod.check_server_key({SRC.worker: True, DST.worker: True}, SRC, DST)
+    assert "cannot be read back" in line
 
 
 def test_read_source_tolerates_a_source_without_the_newest_tables(dbs) -> None:
