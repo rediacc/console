@@ -371,6 +371,19 @@ describe('RemoteResourceState persist', () => {
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
   });
 
+  it('a no-op write fails closed when the server cannot confirm the version: no push, no cache write', async () => {
+    const adapter = createAdapter();
+    adapter.pull.mockRejectedValue(new RemoteUnreachableError(API_URL, { code: 'ECONNREFUSED' }));
+    const state = loadState(adapter);
+
+    await expect(state.setMachines({ m1: { ip: '10.0.0.1', user: 'root' } })).rejects.toThrow(
+      /NOT saved/
+    );
+    expect(adapter.pull).toHaveBeenCalledTimes(1);
+    expect(adapter.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.updateCache).not.toHaveBeenCalled();
+  });
+
   it('fails closed when the replay re-pull hits an unreachable server', async () => {
     const adapter = createAdapter();
     adapter.push.mockRejectedValue(new RemoteVersionConflictError('Version conflict'));

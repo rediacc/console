@@ -24,8 +24,9 @@ const mockReport = vi.hoisted(() => vi.fn());
 vi.mock('../../services/account/license.js', () => ({
   fetchSubscriptionLicenseReportOrThrow: mockReport,
 }));
+const tokenKind = vi.hoisted(() => ({ value: 'ready' }));
 vi.mock('../../services/account/subscription-auth.js', () => ({
-  getSubscriptionTokenState: () => ({ kind: 'ready', token: {} }),
+  getSubscriptionTokenState: () => ({ kind: tokenKind.value, token: {} }),
   getSubscriptionScopeMismatch: () => null,
   getSubscriptionServerUrl: () => 'http://localhost',
 }));
@@ -63,6 +64,11 @@ describe('subscription status reconcile view', () => {
       hardExpiredCount: 0,
       notInConfigCount: 2,
     });
+  });
+
+  it('keeps the account-wide total: the in-config and not-in-config counts add up to the server total', () => {
+    const split = splitRepoLicensesByConfig(recent, new Set(['a', 'd']));
+    expect(split.totalTrackedRepos + split.notInConfigCount).toBe(recent.length);
   });
 
   it('prints the in-config and not-in-config lines from the report', async () => {
@@ -122,6 +128,17 @@ describe('repo delete retires the license', () => {
     const [url, init] = mockFetch.mock.calls[0] as [string, { method: string }];
     expect(url).toBe('/account/api/v1/licenses/repos/f1/retire');
     expect(init.method).toBe('POST');
+  });
+
+  it('sends nothing without an account token: no license was issued from this config', async () => {
+    tokenKind.value = 'missing';
+    try {
+      await settleRepoLicense('lva', { repositoryGuid: 'g1', grandGuid: 'g1' });
+    } finally {
+      tokenKind.value = 'ready';
+    }
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(warns).toEqual([]);
   });
 
   it('a failed retire warns and never fails the delete', async () => {

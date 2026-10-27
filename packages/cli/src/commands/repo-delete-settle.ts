@@ -124,6 +124,7 @@ export async function settleRepoLicense(
   name: string,
   repoConfig: DeletedRepoConfig
 ): Promise<void> {
+  // No account token means no license was ever issued from this config: nothing to retire, nothing to say.
   if (getSubscriptionTokenState().kind !== 'ready') return;
   try {
     await accountServerFetch(

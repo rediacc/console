@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { RemoteUnreachableError } from '../../adapters/remote-config-errors.js';
 import type { RdcConfig } from '../../types/index.js';
 import { changedPointers, explainVersions } from '../config/push-visibility.js';
 
@@ -44,6 +45,17 @@ describe('config remote versions --explain', () => {
     expect(rows[0].changes).toBe('/resources/machines/c');
     expect(rows[1]).toMatchObject({ changes: null, unreadable: 'key slot rotated' });
     expect(rows[2].changes).toBeNull();
+  });
+
+  it('an unreachable server ends the run instead of marking every row unreadable', async () => {
+    const pullVersion = vi.fn(() =>
+      Promise.reject(
+        new RemoteUnreachableError('https://account.example.com', { code: 'ECONNREFUSED' })
+      )
+    );
+    await expect(
+      explainVersions({ pullVersion } as never, [{ version: 1, archivedAt: 't1', sdkEpoch: 1 }])
+    ).rejects.toBeInstanceOf(RemoteUnreachableError);
   });
 
   it('escapes pointer segments', () => {

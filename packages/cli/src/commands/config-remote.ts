@@ -194,6 +194,12 @@ async function showVersions(
   if (explain && versions.length > 0) {
     const { explainVersions } = await import('../services/config/push-visibility.js');
     const rows = await explainVersions(adapter, versions);
+    // A machine-readable run keeps the raw fields (`changes` null, `unreadable` the reason); the
+    // localized placeholders are for the table.
+    if (format === 'json') {
+      outputService.print(rows, format);
+      return;
+    }
     outputService.print(
       rows.map(({ unreadable, ...row }) => ({
         ...row,

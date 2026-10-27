@@ -12,6 +12,7 @@ import type {
   RemoteConfigAdapter,
   RemoteVersionInfo,
 } from '../../adapters/remote-config-adapter.js';
+import { RemoteAuthError, RemoteUnreachableError } from '../../adapters/remote-config-errors.js';
 import { t } from '../../i18n/index.js';
 import type { RdcConfig } from '../../types/index.js';
 import { getOutputFormat } from '../../utils/errors.js';
@@ -129,26 +130,40 @@ export async function explainVersions(
   const rows: ExplainedVersion[] = [];
   let previous: RdcConfig | null = null;
   for (const info of ascending) {
-    let config: RdcConfig;
-    try {
-      ({ config } = await adapter.pullVersion(info.version));
-    } catch (error) {
-      // One unreadable version (a rotated key, a pruned archive) must not hide the rest; the next
-      // readable version is diffed against the last one that could be read.
+    const read = await readVersion(adapter, info.version);
+    if ('unreadable' in read) {
+      // The next readable version is diffed against the last one that could be read.
       rows.push({
         version: info.version,
         archivedAt: info.archivedAt,
         changes: null,
-        unreadable: error instanceof Error ? error.message : String(error),
+        unreadable: read.unreadable,
       });
       continue;
     }
     rows.push({
       version: info.version,
       archivedAt: info.archivedAt,
-      changes: previous === null ? null : describeChange(config, previous) || '-',
+      changes: previous === null ? null : describeChange(read.config, previous) || '-',
     });
-    previous = config;
+    previous = read.config;
   }
   return rows.reverse();
+}
+
+/**
+ * One version's document, or why it could not be read. One unreadable version (a rotated key, a
+ * pruned archive) must not hide the rest, but an unreachable server or a refused token is not a
+ * property of the version: it ends the run.
+ */
+async function readVersion(
+  adapter: Pick<RemoteConfigAdapter, 'pullVersion'>,
+  version: number
+): Promise<{ config: RdcConfig } | { unreadable: string }> {
+  try {
+    return { config: (await adapter.pullVersion(version)).config };
+  } catch (error) {
+    if (error instanceof RemoteUnreachableError || error instanceof RemoteAuthError) throw error;
+    return { unreadable: error instanceof Error ? error.message : String(error) };
+  }
 }
