@@ -285,6 +285,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
@@ -314,7 +315,10 @@ jobs:
           password: ${{ github.token }}
 
       - name: Stage assets + cross-compile Darwin/Windows
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.extract_renet_from_image --tag "${{ inputs.renet_tag }}" --output ./private/bin --only cross
+        env:
+          # The cross builds bake the production key and version exactly as build_renet does; extract_renet_from_image refuses without both (PLAN-local-release W1-E).
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.extract_renet_from_image --tag "${{ inputs.renet_tag }}" --version "${{ inputs.next_version }}" --output ./private/bin --only cross
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:

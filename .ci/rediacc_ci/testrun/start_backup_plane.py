@@ -18,13 +18,9 @@ The suite's S3 credentials are exported as E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_S
 
 from __future__ import annotations
 
-import base64
-import binascii
 import dataclasses
-import hashlib
 import os
 import pathlib
-import re
 import shlex
 import signal
 import subprocess
@@ -34,6 +30,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci import log, paths
 from rediacc_ci.core import account, account_lifecycle
 from rediacc_ci.drills import backup_local_plane, vm_ssh, wire
+from rediacc_ci.release import renet_key_gate
 from rediacc_ci.testrun import start_account
 
 if TYPE_CHECKING:
@@ -52,9 +49,8 @@ PUBLIC_KEY_ENV = "ACCOUNT_ED25519_PUBLIC_KEY"
 PRIVATE_KEY_ENV = "ACCOUNT_ED25519_PRIVATE_KEY"
 # The binaries a local rebuild stages: the host one and the two the CLI pushes to a machine of either architecture.
 STAGED_RENETS = ("renet", "renet-linux-amd64", "renet-linux-arm64")
-BAKED_KEY = re.compile(r"keys\.ProductionPublicKey=([A-Za-z0-9+/=]+)")
-# DER header of an SPKI-wrapped ED25519 public key; the raw 32-byte key follows it.
-SPKI_ED25519_HEADER = bytes.fromhex("302a300506032b6570032100")
+# The build-info reader is shared with the release gate (`rediacc_ci.release.renet_key_gate`).
+SPKI_ED25519_HEADER = renet_key_gate.SPKI_ED25519_HEADER
 
 
 class PlaneError(Exception):
@@ -98,42 +94,21 @@ def parse(argv: Sequence[str]) -> Options:
 
 
 def key_fingerprint(public_key: str) -> str:
-    """renet's publicKeyId (pkg/subscription/fingerprint.go): the first 8 bytes of SHA-256 over the raw 32-byte key, in hex. Takes the raw key or its SPKI wrapping, base64."""
+    """renet's publicKeyId, through the shared reader in `renet_key_gate`."""
     try:
-        der = base64.b64decode(public_key, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise PlaneError(f"not a base64 ED25519 public key: {exc}") from exc
-    if len(der) == len(SPKI_ED25519_HEADER) + 32 and der.startswith(SPKI_ED25519_HEADER):
-        der = der[len(SPKI_ED25519_HEADER) :]
-    if len(der) != 32:
-        raise PlaneError(f"not an ED25519 public key ({len(der)} bytes after decoding)")
-    return hashlib.sha256(der).hexdigest()[:16]
+        return renet_key_gate.key_fingerprint(public_key)
+    except renet_key_gate.KeyGateError as exc:
+        raise PlaneError(str(exc)) from exc
 
 
 def baked_public_key(
     binary: str, run: Callable[..., subprocess.CompletedProcess] = subprocess.run
 ) -> str:
-    """The key `-X .../keys.ProductionPublicKey=` baked into `binary`, read from its build info."""
+    """The key `-X .../keys.ProductionPublicKey=` baked into `binary`, read from its build info by the shared reader."""
     try:
-        done = run(
-            ["go", "version", "-m", binary],
-            capture_output=True,
-            text=True,
-            check=False,
-            stdin=subprocess.DEVNULL,
-        )
-    except OSError as exc:
-        raise PlaneError(f"cannot run `go version -m {binary}`: {exc}") from exc
-    if done.returncode != 0 or not done.stdout:
-        raise PlaneError(
-            f"cannot read the build info of {binary} (missing, or not a Go binary): {(done.stderr or '').strip()}"
-        )
-    found = BAKED_KEY.search(done.stdout)
-    if found is None:
-        raise PlaneError(
-            f"{binary} bakes no licence key (its build info carries no keys.ProductionPublicKey ldflag): every repository licence reads as not installed. Rebuild with {PUBLIC_KEY_ENV} exported."
-        )
-    return found.group(1)
+        return renet_key_gate.baked_public_key(binary, run)
+    except renet_key_gate.KeyGateError as exc:
+        raise PlaneError(str(exc)) from exc
 
 
 def verify_renet(

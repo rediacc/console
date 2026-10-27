@@ -19,6 +19,8 @@ also what the K=5 ledger scopes `--finding-re` to, because `shadow-gate.ts`
 classifies every `-> `/`ok ` line as CHATTER before any message regex runs.
 
 K=5 LEDGER: `.ci/shadow/w7p6-extract-renet-from-image.observations.jsonl`.
+
+ONE NAMED DIVERGENCE FROM THE GOLDEN (PLAN-local-release W1-E): the port cross-builds darwin and windows with `build_renet.ldflags(version, key)` and refuses to without `--version` and `ACCOUNT_ED25519_PUBLIC_KEY`, where the twin built them keyless. The port side therefore always runs with `--version TEST_VERSION` and a fixture key (`_run(..., keyed=True)`, the default), and `run_both` folds that one `go build` argument back to the twin's `-ldflags=-s -w` on both call logs before comparing. The key-and-version cases at the end drive the port alone.
 """
 
 from __future__ import annotations
@@ -32,6 +34,7 @@ import sys
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.build import build_renet
 from rediacc_ci.build import extract_renet_from_image as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import IMAGE_REGISTRY
@@ -56,7 +59,14 @@ VENDORED = (
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/build/__init__.py",
+    ".ci/rediacc_ci/build/build_renet.py",
 )
+
+# The port's cross-build inputs. The key is a well-formed but arbitrary SPKI ED25519 key, never a real one.
+TEST_VERSION = "9.8.7"
+TEST_KEY = "MCowBQYDK2VwAyEA" + "A" * 43 + "="
+KEYED_LDFLAGS = build_renet.ldflags(TEST_VERSION, TEST_KEY)
+TWIN_LDFLAGS = "-ldflags=-s -w"
 
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -278,7 +288,9 @@ def _run(
     args: tuple[str, ...] = ("--tag", "abc1234"),
     drop: tuple[str, ...] = (),
     env_overrides: dict[str, str | None] | None = None,
+    keyed: bool = True,
 ):
+    """`keyed` (port side only) supplies the cross-build's `--version` and key; see the module docstring."""
     call_log = root / ("%s-calls.log" % side)
     call_log.write_text("", encoding="utf-8")
     env = {
@@ -292,6 +304,10 @@ def _run(
         "PYTHONDONTWRITEBYTECODE": "1",
         "FAKE_CALL_LOG": str(call_log),
     }
+    if side == "new" and keyed:
+        # Prepended, so a trailing flag left without its value stays the last word.
+        args = ("--version", TEST_VERSION, *args)
+        env["ACCOUNT_ED25519_PUBLIC_KEY"] = TEST_KEY
     for key, value in (env_overrides or {}).items():
         if value is None:
             env.pop(key, None)
@@ -373,13 +389,18 @@ def _old(root: pathlib.Path, **kw):
     )
 
 
+def _unkey(calls: str) -> str:
+    """The one named divergence: the port's keyed `go build` ldflags folded back to the twin's."""
+    return calls.replace("\t%s\t" % KEYED_LDFLAGS, "\t%s\t" % TWIN_LDFLAGS)
+
+
 def run_both(root: pathlib.Path, *, stale_zst: bool = False, **kw):
     _reset(root, stale_zst=stale_zst)
     old, old_calls, old_files = _old(root, **kw)
     _reset(root, stale_zst=stale_zst)
     new, new_calls = _run(root, "new", **kw)
     new_files = _artifacts(root)
-    return (old, old_calls, old_files), (new, new_calls, new_files)
+    return (old, _unkey(old_calls), old_files), (new, _unkey(new_calls), new_files)
 
 
 def _mask(text: str) -> str:
@@ -551,7 +572,7 @@ def test_the_go_builds_carry_the_right_goos_goarch_and_output(tmp_path) -> None:
     ]
     assert {c[3] for c in go_calls} == {"CGO_ENABLED=0"}
     for call in go_calls:
-        assert call[4:7] == ["build", "-ldflags=-s -w", "-o"]
+        assert call[4:7] == ["build", TWIN_LDFLAGS, "-o"]
         assert call[-1] == "./cmd/renet"
     assert go_calls[-1][7].endswith("private/bin/renet-windows-arm64.exe")
     _agree(old_t, new_t, "go-argv")
@@ -854,3 +875,82 @@ def test_only_all_is_byte_identical_to_the_twins_one_path(tmp_path) -> None:
     explicit_files = _artifacts(root)
     assert default.returncode == explicit.returncode == 0
     assert default_files == explicit_files
+
+
+# --------------------------------------------------------------------------- The cross-build bakes the key and version (PLAN-local-release W1-E, port only) ---------------------------------------------------------------------------
+
+
+def test_the_cross_build_bakes_the_key_and_version_through_build_renets_builder(tmp_path) -> None:
+    root = fixture(tmp_path)
+    _reset(root)
+    proc, calls = _run(root, "new")
+    assert proc.returncode == 0, proc.stderr
+    go_calls = _calls(calls, "go")
+    assert len(go_calls) == 4
+    for call in go_calls:
+        flags = call[5]
+        assert flags == build_renet.ldflags(TEST_VERSION, TEST_KEY)
+        assert "-X main.Version=%s " % TEST_VERSION in flags
+        assert flags.endswith(build_renet.KEY_SYMBOL + TEST_KEY)
+    # Never printed: the key reaches only the go argv.
+    assert TEST_KEY not in proc.stdout + proc.stderr
+
+
+def test_the_cross_build_refuses_without_a_version(tmp_path) -> None:
+    root = fixture(tmp_path)
+    for only in ("all", "cross"):
+        _reset(root)
+        proc, calls = _run(
+            root,
+            "new",
+            args=("--tag", "abc1234", "--only", only),
+            keyed=False,
+            env_overrides={"ACCOUNT_ED25519_PUBLIC_KEY": TEST_KEY},
+        )
+        assert proc.returncode == 1
+        assert "--version VERSION is required" in proc.stderr
+        assert calls == "", "refused before any container exists"
+        assert not (root / "private" / "bin").exists()
+
+
+def test_the_cross_build_refuses_without_the_key(tmp_path) -> None:
+    root = fixture(tmp_path)
+    for env in ({}, {"ACCOUNT_ED25519_PUBLIC_KEY": ""}):
+        _reset(root)
+        proc, calls = _run(
+            root,
+            "new",
+            args=("--tag", "abc1234", "--version", TEST_VERSION),
+            keyed=False,
+            env_overrides=env,
+        )
+        assert proc.returncode == 1
+        assert "ACCOUNT_ED25519_PUBLIC_KEY is not set" in proc.stderr
+        assert calls == "", "refused before any container exists"
+        assert "FAKEBIN go" not in calls
+
+
+def test_only_linux_needs_neither_the_key_nor_the_version(tmp_path) -> None:
+    root = fixture(tmp_path)
+    _reset(root)
+    proc, calls = _run(root, "new", args=("--tag", "abc1234", "--only", "linux"), keyed=False)
+    assert proc.returncode == 0, proc.stderr
+    assert "FAKEBIN go" not in calls
+
+
+def test_split_port_flags_strips_only_and_version_in_both_directions() -> None:
+    assert port._split_port_flags(["--tag", "t", "--version", "1.2.3", "--only", "cross"]) == (
+        ["--tag", "t"],
+        "cross",
+        "1.2.3",
+        None,
+        "",
+    )
+    assert port._split_port_flags(["--tag", "t"]) == (["--tag", "t"], "all", "", None, "")
+    # Must fire.
+    assert port._split_port_flags(["--version"])[3] == 1
+    assert port._split_port_flags(["--version", ""])[3] == 1
+    assert port.cross_refusal("linux", "", "") is None
+    assert port.cross_refusal("all", TEST_VERSION, TEST_KEY) is None
+    assert port.cross_refusal("cross", "", TEST_KEY) is not None
+    assert port.cross_refusal("cross", TEST_VERSION, "") is not None

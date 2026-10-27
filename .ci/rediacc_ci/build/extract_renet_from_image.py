@@ -10,7 +10,8 @@ throwaway container from `<registry>/renet:<tag>` and copies the artifacts out:
      PER-CLASS layout `pkg/embed/assets/<arch>/<class>/`, zstd-compressed.
   3. The proxy compose, staged through `private/renet/build.sh embed_proxy`.
   4. Cross-compiled `darwin` and `windows` renet binaries, built from the tree
-     with the assets from step 2 embedded.
+     with the assets from step 2 embedded, and the licence key and version
+     baked exactly as `build_renet` bakes them (its `ldflags()`).
   5. `checksums.sha256` over everything in the output directory.
 
 THE LOCKFILE IS THE SOURCE OF TRUTH for step 2, and the twin's own comments say why: this script used to carry its own REQUIRED/OPTIONAL split that disagreed
@@ -64,9 +65,14 @@ DEFECT 3, `docker` IS NEVER `require_cmd`ed. `jq` and `zstd` are; `docker`, whic
 DEFECT 4, A FAILED `docker cp` MEANS "the image does not carry this asset" AND NOTHING ELSE. `:164` suppresses stderr and reads only the status, so a daemon that died mid-run reports every remaining asset as MISSING FROM THE IMAGE and tells the operator to rebuild it. The verdict is at least a failure rather than a pass, which is why it is listed last.
 
 -----------------------------------------------------------------------------
+THE KEYLESS CROSS-BUILD IS GONE (PLAN-local-release W1-E)
+-----------------------------------------------------------------------------
+The twin cross-built darwin and windows renet with `-ldflags=-s -w` alone (`:218-234`): no `keys.ProductionPublicKey`, no `main.Version`, so every licence read as not installed on those binaries and `renet --version` named nothing. The port now builds them with `build_renet.ldflags(version, key)`, the one ldflags builder the full build uses, and refuses to produce them (`--only cross` or `all`) without both a port-only `--version VERSION` and `ACCOUNT_ED25519_PUBLIC_KEY`. `--only linux` needs neither: it copies the image's already-built binaries. `rediacc_ci.release.renet_key_gate` is what then checks the result against the production key.
+
+-----------------------------------------------------------------------------
 ENVIRONMENT
 -----------------------------------------------------------------------------
-This script reads NO environment variables of its own. `CGO_ENABLED`, `GOOS` and `GOARCH` are SET for the `go build` children (`:218`, `:230`) and never read, so they are passed in the child's env dict and are deliberately not `os.environ.get` call sites.
+ONE variable is read: `ACCOUNT_ED25519_PUBLIC_KEY`, the account server public key baked into the cross-built binaries, read at its single call site in `main` with a literal `os.environ.get` (the env-registry gate resolves the NAME). It is never printed. `CGO_ENABLED`, `GOOS` and `GOARCH` are SET for the `go build` children (`:218`, `:230`) and never read, so they are passed in the child's env dict and are deliberately not `os.environ.get` call sites.
 """
 
 from __future__ import annotations
@@ -79,6 +85,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.build import build_renet
 from rediacc_ci.core import common
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
@@ -280,36 +287,59 @@ def verify_extracted_version(
     )
 
 
-def _split_only_flag(argv: list[str]) -> tuple[list[str], str, int | None, str]:
-    """Strips a port-only `--only {linux,cross,all}` out of `argv` before it
-    reaches `parse_args`.
+def _split_port_flags(argv: list[str]) -> tuple[list[str], str, str, int | None, str]:
+    """Strips the port-only `--only {linux,cross,all}` and `--version VERSION` out of `argv` before it reaches `parse_args`.
 
-    The twin has no such flag, so this lives entirely outside the twin-mirroring parser above: `parse_args`'s return shape is a fixed 5-tuple the differential drives directly (`test_parse_args_is_exercised_directly_in_both_directions`), and folding a 6th field into it would break that regardless of value. `--only` exists so the two-leg CI split (T2.6, PLAN-ci-time-budget) can ask this script for just the Linux binaries or just the Darwin/Windows cross-compile without a second script. Returns `(remaining_argv, only, exit_code, message)`; `only` defaults to `"all"`, the twin's one and only behaviour.
+    The twin has neither flag, so this lives entirely outside the twin-mirroring parser above: `parse_args`'s return shape is a fixed 5-tuple the differential drives directly (`test_parse_args_is_exercised_directly_in_both_directions`). `--only` exists so the two-leg CI split (T2.6, PLAN-ci-time-budget) can ask this script for just the Linux binaries or just the Darwin/Windows cross-compile without a second script; `only` defaults to `"all"`. `--version` is the `main.Version` the cross-built binaries carry (PLAN-local-release W1-E). Returns `(remaining_argv, only, version, exit_code, message)`.
     """
     remaining: list[str] = []
     only = "all"
+    version = ""
     i = 0
     while i < len(argv):
         if argv[i] == "--only":
             if i + 1 >= len(argv):
-                return remaining, only, 1, "--only requires a value (linux, cross, or all)"
+                return remaining, only, version, 1, "--only requires a value (linux, cross, or all)"
             only = argv[i + 1]
             if only not in ("linux", "cross", "all"):
                 return (
                     remaining,
                     only,
+                    version,
                     1,
                     "--only must be one of: linux, cross, all (got %r)" % only,
                 )
             i += 2
+        elif argv[i] == "--version":
+            if i + 1 >= len(argv) or not argv[i + 1]:
+                return remaining, only, version, 1, "--version requires a value"
+            version = argv[i + 1]
+            i += 2
         else:
             remaining.append(argv[i])
             i += 1
-    return remaining, only, None, ""
+    return remaining, only, version, None, ""
+
+
+def cross_refusal(only: str, version: str, key: str) -> str | None:
+    """Why the darwin/windows cross-build cannot run, or None. Only `--only linux` builds nothing and needs neither input."""
+    if only == "linux":
+        return None
+    if not version:
+        return (
+            "--version VERSION is required to cross-compile darwin/windows renet: "
+            "the binaries carry main.Version exactly as build_renet bakes it"
+        )
+    if not key:
+        return (
+            "ACCOUNT_ED25519_PUBLIC_KEY is not set: refusing to cross-compile darwin/windows renet "
+            "without the licence key (supply it through bws_env exec, or use --only linux)"
+        )
+    return None
 
 
 def main(argv: list[str]) -> int:
-    argv, only, code, message = _split_only_flag(argv)
+    argv, only, version, code, message = _split_port_flags(argv)
     if code is not None:
         print(message, file=sys.stderr, flush=True)
         return code
@@ -326,6 +356,14 @@ def main(argv: list[str]) -> int:
     if not tag:
         log.error("--tag is required")
         return 1
+
+    # PLAN-local-release W1-E: no keyless, versionless cross-build. Refused before any container exists.
+    key = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "")
+    refusal = cross_refusal(only, version, key)
+    if refusal is not None:
+        log.error(refusal)
+        return 1
+    ldflags = build_renet.ldflags(version, key)
 
     # `:47-49`.
     root = console_root()
@@ -347,16 +385,18 @@ def main(argv: list[str]) -> int:
 
     # `:59-64`. `trap cleanup EXIT`, which fires on every exit below.
     try:
-        return _extract(root, output, container_id, only)
+        return _extract(root, output, container_id, only, ldflags)
     finally:
         with open(os.devnull, "wb") as sink:
             _run(["docker", "rm", container_id], stdout=sink, stderr=sink)
 
 
-def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str, only: str = "all") -> int:
+def _extract(
+    root: pathlib.Path, output: pathlib.Path, container_id: str, only: str, ldflags: str
+) -> int:
     """Everything the twin does between `trap cleanup EXIT` (`:64`) and the end, split out only so the trap's `try/finally` reads as one statement.
 
-    `only` is the port-only extension from `_split_only_flag`: `"linux"` runs just the block below (the two pre-built Linux binaries, no container source needed) and `"cross"` runs just the asset-staging / cross-compile block after it (the twin's `:91-235`), each producing only its own slice under `output` so `bash_glob("renet-*", output)` at the checksums step below naturally scopes to whichever slice ran. `"all"`, the default, is byte-for-byte the twin's one and only path.
+    `only` is the port-only extension from `_split_port_flags`: `"linux"` runs just the block below (the two pre-built Linux binaries, no container source needed) and `"cross"` runs just the asset-staging / cross-compile block after it (the twin's `:91-235`), each producing only its own slice under `output` so `bash_glob("renet-*", output)` at the checksums step below naturally scopes to whichever slice ran. `"all"`, the default, is the twin's one and only path except for `ldflags`, which carries the key and version (see THE KEYLESS CROSS-BUILD IS GONE).
     """
     # `:66-71`.
     if only in ("all", "linux"):
@@ -465,7 +505,7 @@ def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str, only: 
     if code != 0:
         return code
 
-    # `:213-235`.
+    # `:213-235`, with `build_renet.ldflags` in place of the twin's keyless `-ldflags=-s -w`.
     for label, goos, suffix in CROSS_TARGETS:
         log.step("Cross-compiling renet %s binaries..." % label)
         for arch in CROSS_ARCHES:
@@ -479,7 +519,7 @@ def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str, only: 
                 [
                     "go",
                     "build",
-                    "-ldflags=-s -w",
+                    ldflags,
                     "-o",
                     str(output / name),
                     "./cmd/renet",
