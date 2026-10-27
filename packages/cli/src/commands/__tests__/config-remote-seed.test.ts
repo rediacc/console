@@ -359,8 +359,50 @@ describe('finalizeEnable --config-id (attach to an existing store entry)', () =>
 
     await expect(
       finalizeEnable(pendingRemote(undefined), CONFIG_NAME, { configId: ATTACH_ID })
-    ).rejects.toThrow(new RegExp(`${ATTACH_ID}[\\s\\S]*${CONFIG_ID}|configIdNotFound`));
+    ).rejects.toThrow(new RegExp(`${ATTACH_ID}[\\s\\S]*Available: ${CONFIG_ID}`));
 
+    expect(mockAdapterInstance.pull).not.toHaveBeenCalled();
+    expect(mockAdapterInstance.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+  });
+
+  it('drops the handoff pointer team when the attached entry has none', async () => {
+    mockAdapterInstance.listConfigs.mockResolvedValue([
+      { configId: ATTACH_ID, version: 3, lastModified: 'y' },
+    ]);
+    mockAdapterInstance.pull.mockResolvedValue({
+      config: { ...structuredClone(serverConfig), id: ATTACH_ID },
+      version: 3,
+      sdkEpoch: 1,
+    });
+
+    await finalizeEnable({ ...pendingRemote(undefined), teamId: TEAM_ID }, CONFIG_NAME, {
+      force: true,
+      configId: ATTACH_ID,
+    });
+
+    const lastCtor = adapterCtorArgs.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCtor.configId).toBe(ATTACH_ID);
+    expect(lastCtor).not.toHaveProperty('teamId');
+    const saved = mockConfigFileStorage.save.mock.calls[0][0] as RdcConfig;
+    expect(saved.remote).not.toHaveProperty('teamId');
+  });
+
+  it('refuses an interactive enable whose list failed, instead of minting a new entry', async () => {
+    const tty = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+    const yes = process.env.REDIACC_YES;
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+    delete process.env.REDIACC_YES;
+    mockAdapterInstance.listConfigs.mockRejectedValue(new Error('list boom'));
+    try {
+      await expect(finalizeEnable(pendingRemote(undefined), CONFIG_NAME)).rejects.toThrow(
+        /list boom/
+      );
+    } finally {
+      if (tty) Object.defineProperty(process.stdin, 'isTTY', tty);
+      else delete (process.stdin as { isTTY?: boolean }).isTTY;
+      if (yes !== undefined) process.env.REDIACC_YES = yes;
+    }
     expect(mockAdapterInstance.pull).not.toHaveBeenCalled();
     expect(mockAdapterInstance.push).not.toHaveBeenCalled();
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();

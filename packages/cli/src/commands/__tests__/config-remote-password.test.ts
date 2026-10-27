@@ -232,14 +232,27 @@ describe('config remote enable --password', () => {
   it('sends --config-id to password-enroll so the server scopes the match', async () => {
     const f = await provision(PASSWORD);
     mockAccountServerFetch.mockResolvedValue(f.enroll);
-    wireConfigApi(f.session, f.config);
+    mockConfigServerFetch.mockImplementation((path: string) => {
+      if (path.includes('/configs/session')) return Promise.resolve({ data: f.session });
+      // The attach lists the store before pulling: the chosen entry is visible.
+      if (path.endsWith('/account/api/v1/configs')) {
+        return Promise.resolve({
+          data: {
+            configs: [{ configId: CONFIG_ID, version: 1, lastModified: 'x', teamId: TEAM_ID }],
+          },
+        });
+      }
+      return Promise.resolve({ data: f.config });
+    });
     process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
 
-    await enablePassword(API_URL, CONFIG_NAME, { configId: 'cfg-chosen' }).catch(() => undefined);
+    await expect(
+      enablePassword(API_URL, CONFIG_NAME, { configId: CONFIG_ID })
+    ).resolves.toBeUndefined();
 
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
       '/account/api/v1/configs/password-enroll',
-      expect.objectContaining({ method: 'POST', body: { configId: 'cfg-chosen' } })
+      expect.objectContaining({ method: 'POST', body: { configId: CONFIG_ID } })
     );
   });
 

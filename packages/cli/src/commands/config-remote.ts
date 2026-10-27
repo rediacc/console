@@ -416,6 +416,7 @@ export function registerRemoteCommands(configCommand: Command): void {
           await reenroll(configName, config.remote, {
             password: Boolean(options.password),
             apiUrl: options.apiUrl,
+            configId: options.configId,
           });
           return;
         }

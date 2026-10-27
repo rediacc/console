@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1943,
-    "sourceCommit": "2c3324a444d393350f52f65ea92ea67cd5383574"
+    "keyCount": 1944,
+    "sourceCommit": "bce0f60ebd1390183b95250402a9d109adc623f2"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -381,7 +381,7 @@
     "commands.config.remote.enable.expired": "04d8205a",
     "commands.config.remote.enable.handoffNotForThisRun": "3a6cc913",
     "commands.config.remote.enable.handoffUnreadable": "04e3d612",
-    "commands.config.remote.enable.listFailed": "7871bec0",
+    "commands.config.remote.enable.listFailedRefused": "3dc6009a",
     "commands.config.remote.enable.loginRequired": "86b80da8",
     "commands.config.remote.enable.openRelay": "188e378a",
     "commands.config.remote.enable.optionApiUrl": "a3435115",
@@ -410,6 +410,7 @@
     "commands.config.remote.enable.prereqTotpMissing": "b934d132",
     "commands.config.remote.enable.prereqUnavailable": "44b08449",
     "commands.config.remote.enable.received": "d3fe69b2",
+    "commands.config.remote.enable.reenrollConfigIdMismatch": "f5f763d2",
     "commands.config.remote.enable.reenrollConfigMismatch": "454fdb33",
     "commands.config.remote.enable.reenrolling": "ef9a8a8a",
     "commands.config.remote.enable.reenrollServerMismatch": "76c5a726",

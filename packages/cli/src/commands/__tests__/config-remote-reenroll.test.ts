@@ -516,6 +516,33 @@ describe('config remote enable --password on a linked config whose slot secret i
     await rdc('refresh');
   });
 
+  it('refuses --config-id naming another config than the linked one, before any enrollment', async () => {
+    await enrolledDevice();
+    reboot();
+    await passwordSlot();
+    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
+
+    const error = await refusal('enable', '--password', '--config-id', 'someone-elses-config');
+
+    expect(error.message).toContain('someone-elses-config');
+    expect(error.message).toContain(CONFIG_ID);
+    expect(account.enrollCalls).toBe(0);
+    expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
+  });
+
+  it('accepts --config-id naming the linked config and re-enrolls', async () => {
+    await enrolledDevice();
+    reboot();
+    await passwordSlot();
+    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+
+    await rdc('enable', '--password', '--config-id', CONFIG_ID);
+
+    expect(account.enrollCalls).toBe(1);
+    expect((await readConfigFile()).remote?.storageKeyId).toMatch(/^rdc:pw:/);
+  });
+
   it('reports a wrong password and leaves the device as it was', async () => {
     await enrolledDevice();
     reboot();

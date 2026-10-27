@@ -325,8 +325,8 @@ const CREATE_NEW = '__new__';
  * The store's existing config this enable attaches to, or undefined to keep the handoff's pointer
  * (or mint a new entry on an empty store). An explicit `--config-id` must name an entry the caller
  * can see; with none given, an interactive enable against a store that already holds configs asks
- * (a headless enable keeps today's behaviour). A list that cannot be read never blocks an enable
- * that named no id.
+ * (a headless enable keeps today's behaviour). A list that cannot be read is refused
+ * (never downgraded to minting a new entry) whenever the list is needed.
  */
 async function chooseAttachTarget(
   adapter: RemoteConfigAdapter,
@@ -337,27 +337,23 @@ async function chooseAttachTarget(
     !remote.configId && process.stdin.isTTY === true && process.env.REDIACC_YES !== '1';
   if (!explicitId && !interactive) return undefined;
 
-  const entries = await listEntries(adapter, explicitId !== undefined);
+  // An id named, or a prompt about to be shown, needs the list: guessing without it would mint a duplicate entry.
+  const entries = await listEntries(adapter);
   if (explicitId) return requireEntry(entries, explicitId);
   if (!entries || entries.length === 0) return undefined;
   return pickEntry(entries);
 }
 
-/** The store's entries; a failure throws when an id was named, and otherwise warns and yields undefined. */
-async function listEntries(
-  adapter: RemoteConfigAdapter,
-  required: boolean
-): Promise<RemoteConfigEntry[] | undefined> {
+/** The store's entries; a failed list is refused with a named error, never downgraded to creating a new entry. */
+async function listEntries(adapter: RemoteConfigAdapter): Promise<RemoteConfigEntry[] | undefined> {
   try {
     return await adapter.listConfigs();
   } catch (error) {
-    if (required) throw error;
-    outputService.warn(
-      t('commands.config.remote.enable.listFailed', {
+    throw new ValidationError(
+      t('commands.config.remote.enable.listFailedRefused', {
         error: error instanceof Error ? error.message : String(error),
       })
     );
-    return undefined;
   }
 }
 
@@ -411,8 +407,10 @@ export async function finalizeEnable(
   // Attach to an existing entry of the store (an explicit --config-id, or the operator's pick) instead of creating a new one beside it.
   const target = await chooseAttachTarget(adapter, remote, opts.configId);
   if (target) {
+    // The team is exactly the target's: a stale team from the handoff would scope the pull to a team the entry is not in.
+    const { teamId: _stale, ...withoutTeam } = pointer;
     pointer = {
-      ...pointer,
+      ...withoutTeam,
       configId: target.configId,
       ...(target.teamId ? { teamId: target.teamId } : {}),
     };
