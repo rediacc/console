@@ -382,6 +382,33 @@ function enableOptions(options: { force?: boolean; configId?: string }): {
   };
 }
 
+/** A first enable: the password slot (headless) or the portal relay handoff. */
+async function enableFirst(
+  configName: string,
+  options: { apiUrl?: string; force?: boolean; configId?: string },
+  usePassword: boolean,
+  password: string | undefined
+): Promise<void> {
+  const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
+  const opts = enableOptions(options);
+  if (usePassword) {
+    const { enablePassword } = await import('./config-remote-password.js');
+    await enablePassword(apiUrl, configName, { ...opts, password });
+  } else {
+    await enableRelay(apiUrl, configName, opts);
+  }
+}
+
+/** The master password under --password-stdin (never argv): read before anything else so a refusal leaves nothing behind. */
+async function readPasswordStdin(): Promise<string> {
+  const { readStdinValue } = await import('../utils/stdin.js');
+  const password = await readStdinValue();
+  if (!password) {
+    throw new ValidationError(t('commands.config.remote.enable.passwordStdinEmpty'));
+  }
+  return password;
+}
+
 export function registerRemoteCommands(configCommand: Command): void {
   const remote = configCommand
     .command('remote')
@@ -392,11 +419,14 @@ export function registerRemoteCommands(configCommand: Command): void {
     .command('enable')
     .description(t('commands.config.remote.enable.description'))
     .option('--password', t('commands.config.remote.enable.optionPassword'))
+    .option('--password-stdin', t('commands.config.remote.enable.optionPasswordStdin'))
     .option('--api-url <url>', t('commands.config.remote.enable.optionApiUrl'))
     .option('--force', t('commands.config.remote.enable.optionForce'))
     .option('--config-id <id>', t('commands.config.remote.enable.optionConfigId'))
     .action(async (options) => {
       try {
+        const usePassword = Boolean(options.password || options.passwordStdin);
+        const stdinPassword = options.passwordStdin ? await readPasswordStdin() : undefined;
         const configName = configService.getEffectiveConfigName();
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
         const config = await configFileStorage.load(configName);
@@ -414,22 +444,15 @@ export function registerRemoteCommands(configCommand: Command): void {
             );
           }
           await reenroll(configName, config.remote, {
-            password: Boolean(options.password),
+            password: usePassword,
+            passwordValue: stdinPassword,
             apiUrl: options.apiUrl,
             configId: options.configId,
           });
           return;
         }
 
-        const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
-        const opts = enableOptions(options);
-
-        if (options.password) {
-          const { enablePassword } = await import('./config-remote-password.js');
-          await enablePassword(apiUrl, configName, opts);
-        } else {
-          await enableRelay(apiUrl, configName, opts);
-        }
+        await enableFirst(configName, options, usePassword, stdinPassword);
       } catch (error) {
         handleError(error);
       }

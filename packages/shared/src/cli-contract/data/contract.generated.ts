@@ -3494,6 +3494,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enroll headlessly with a pre-provisioned password slot (no browser)"
         },
         {
+          "flags": "--password-stdin",
+          "long": "password-stdin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.enable.optionPasswordStdin",
+          "label": "Like --password, reading the config master password from stdin"
+        },
+        {
           "flags": "--api-url <url>",
           "long": "api-url",
           "valueTaking": true,
@@ -12519,6 +12530,17 @@ export const CLI_CONTRACT: CliContract = {
           "sensitive": true,
           "descriptionKey": "options.apiToken",
           "label": "API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list)."
+        },
+        {
+          "flags": "--password-stdin",
+          "long": "password-stdin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.login.optionPasswordStdin",
+          "label": "Sign in headlessly with the account password read from stdin (REDIACC_LOGIN_EMAIL required)"
         },
         {
           "flags": "--server <url>",

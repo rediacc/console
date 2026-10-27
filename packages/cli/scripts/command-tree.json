@@ -4152,6 +4152,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--password-stdin",
+                  "descriptionKey": "commands.config.remote.enable.optionPasswordStdin",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--api-url <url>",
                   "descriptionKey": "options.serverUrl",
                   "mandatory": false,
@@ -4160,6 +4166,12 @@
                 {
                   "flags": "--force",
                   "descriptionKey": "commands.config.remote.enable.optionForce",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--config-id <id>",
+                  "descriptionKey": "commands.config.remote.enable.optionConfigId",
                   "mandatory": false,
                   "defaultValue": null
                 }
@@ -5651,6 +5663,12 @@
             {
               "flags": "-t, --token <token>",
               "descriptionKey": "options.apiToken",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--password-stdin",
+              "descriptionKey": "commands.subscription.login.optionPasswordStdin",
               "mandatory": false,
               "defaultValue": null
             },

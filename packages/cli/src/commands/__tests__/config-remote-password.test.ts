@@ -290,6 +290,17 @@ describe('config remote enable --password', () => {
     });
   });
 
+  it('uses an explicit password (the --password-stdin value) with no env password set', async () => {
+    const f = await provision(PASSWORD);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+
+    await expect(
+      enablePassword(API_URL, CONFIG_NAME, { password: PASSWORD })
+    ).resolves.toBeUndefined();
+    expect(secureMem.size).toBe(1);
+  });
+
   it('collapses a null teamId (default config) to an undefined pointer field', async () => {
     const f = await provision(PASSWORD, null);
     mockAccountServerFetch.mockResolvedValue(f.enroll);

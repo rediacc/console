@@ -65,7 +65,8 @@ function describeEnrollForbidden(error: unknown): string {
  * prompt. There is nothing to verify it against locally, a wrong password fails
  * the probe pull below with a clear message.
  */
-function resolveConfigPassword(): Promise<string> {
+function resolveConfigPassword(given?: string): Promise<string> {
+  if (given) return Promise.resolve(given);
   const envPassword = process.env.REDIACC_CONFIG_PASSWORD;
   if (envPassword) return Promise.resolve(envPassword);
 
@@ -88,7 +89,8 @@ function resolveConfigPassword(): Promise<string> {
  */
 export async function passwordCredentials(
   apiUrl: string,
-  configId?: string
+  configId?: string,
+  password?: string
 ): Promise<DeviceCredentials> {
   // 1. Ask the server to hand back the pre-provisioned password slot. userId is resolved server-side from the token creator; the body carries only the chosen configId (`--config-id`), which scopes the match when the token reads several configs. An api token with the config:enroll scope authenticates the call.
   let enroll: PasswordEnrollResponse;
@@ -114,9 +116,9 @@ export async function passwordCredentials(
   }
 
   // 2. Derive the 32-byte slot secret from the shared password + public kdfParams.
-  const password = await resolveConfigPassword();
+  const resolvedPassword = await resolveConfigPassword(password);
   const { derivePasswordSlotSecret } = await import('@rediacc/shared/config-crypto');
-  const slotSecret = await derivePasswordSlotSecret(password, enroll.kdfParams);
+  const slotSecret = await derivePasswordSlotSecret(resolvedPassword, enroll.kdfParams);
 
   // 3. The same shape the browser handoff carries: the slot secret under a fresh local key id, the token, the wrapped CEK and the pointer coordinates.
   return {
@@ -149,9 +151,9 @@ export async function passwordFailure(error: unknown): Promise<unknown> {
 export async function enablePassword(
   apiUrl: string,
   configName: string,
-  opts: { force?: boolean; configId?: string } = {}
+  opts: { force?: boolean; configId?: string; password?: string } = {}
 ): Promise<void> {
-  const credentials = await passwordCredentials(apiUrl, opts.configId);
+  const credentials = await passwordCredentials(apiUrl, opts.configId, opts.password);
   try {
     await applyHandoff(credentials, configName, opts);
   } catch (error) {

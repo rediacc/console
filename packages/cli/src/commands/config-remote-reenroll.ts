@@ -238,7 +238,7 @@ function linkedApiUrl(linked: RemoteConfig, configName: string, requested?: stri
 export async function reenroll(
   configName: string,
   linked: RemoteConfig,
-  options: { password?: boolean; apiUrl?: string; configId?: string }
+  options: { password?: boolean; passwordValue?: string; apiUrl?: string; configId?: string }
 ): Promise<void> {
   const apiUrl = linkedApiUrl(linked, configName, options.apiUrl);
   // A re-enrollment is for the config this one is linked to; naming another is refused up front.
@@ -256,7 +256,7 @@ export async function reenroll(
   let version: number;
   if (options.password) {
     const { passwordCredentials, passwordFailure } = await import('./config-remote-password.js');
-    const credentials = await passwordCredentials(apiUrl, options.configId);
+    const credentials = await passwordCredentials(apiUrl, options.configId, options.passwordValue);
     version = await reenrollDevice(credentials, configName, linked).catch(
       async (error: unknown) => {
         throw await passwordFailure(error);
