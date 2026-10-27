@@ -80,7 +80,7 @@ Design inputs, summarized below with file:line:
   - Owns: local_gates.py, check_soak_period.py and test_release_*.py for both.
   - Accept: pytest rc=0 over every case in the Tests section.
     (ticked) 2026-10-27T09:13:08Z by d778be9d: 3332bed60: .ci/rediacc_ci/release/local_gates.py and check_soak_period select(); pytest rc=0 (79); live run names ci-quick, vm-check, backup, origin-main and lock refusals
-- [ ] W2-B [writer] The entry, `rediacc_ci.release.local`, plus `"release:local"` in package.json. It is one declarative `STEPS` table, in this order:
+- [x] W2-B [writer] The entry, `rediacc_ci.release.local`, plus `"release:local"` in package.json. It is one declarative `STEPS` table, in this order:
   1. Version: `resolve_version --bump-type`, from the labels since the last tag.
   2. Gates: W2-A.
   3. Builds, in the release clone, each step timed:
@@ -101,6 +101,7 @@ Design inputs, summarized below with file:line:
   9. Smoke: `verify_edge_endpoints`, plus the Linux install quick check in local docker.
   10. Tag and release: `tag_submodules`, `update_homebrew_tap`, `advance_contract_floor` and `create_github_release`.
   11. The release record, written to R2.
+    (ticked) 2026-10-27T10:15:13Z by d778be9d: 7c25d047b: .ci/rediacc_ci/release/local.py and the release:local script; pytest test_release_local.py rc=0 (31); npm run release:local -- --channel edge --dry-run prints 105 steps then refuses ci-quick, vm-check, backup, origin-main
 
   - `--channel stable` runs the promote-stable steps instead:
     - `promote_r2_to_stable`;
@@ -183,7 +184,7 @@ Design inputs, summarized below with file:line:
   - Owns: advance_contract_floor.py, update_homebrew_tap.py and their tests.
   - Accept: pytest rc=0, and no code path pushes console `main`.
     (ticked) 2026-10-27T10:01:44Z by d778be9d: 2fd593392: advance_contract_floor writes the floor in the working tree, update_homebrew_tap pushes only the tap, cd_preflight warns on lag; pytest rc=0 (111)
-- [ ] W3-D [writer] Docs.
+- [x] W3-D [writer] Docs.
   - CLAUDE.md, under Release Channels and the CI/CD Pipeline, says:
     - CI validates and `release:local` publishes;
     - stable is promoted by `release:local --channel stable` after the soak;
@@ -196,6 +197,7 @@ Design inputs, summarized below with file:line:
   - The job-graph region, regenerated.
   - Owns: the listed docs.
   - Accept: `npx tsx scripts/gen/gen-docs.ts --write` leaves no diff, and `check:ci-doc-region-parity` and `check:ci-prose-style` exit rc=0.
+    (ticked) 2026-10-27T10:15:15Z by d778be9d: 98d80629b: CLAUDE.md, release-process.md, ci-gates.md, versioning.md, deploy SKILL.md, pr-merge.md to the 2026-10-27T09:45Z rulings; check:ci-prose-style, check:ci-doc-region-parity, check:cli-examples rc=0
 
 ### Live
 
