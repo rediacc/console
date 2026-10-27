@@ -21,4 +21,4 @@ Body-Sig: 79d702a40eb00c9f
 ### d3f41db0.1 [low] agent/plans/PLAN-local-release.md:156
 Anchor: in-diff
 Claim: The W3-A box is ticked [x] while its listed deletions (cd-v2.yml, promote-stable.yml, cd-deploy-account.yml, cd-deploy-worker.yml, backfill-release-sentinel.yml), the ci.yml finalize-release-sentinel removal, and the cd-stage/ci-build-docker write changes are not in this commit; the tick note only cites the new local-release-assist.yml and says scope was narrowed by an ASKED ruling that this diff does not show, so a reader of the plan will think the full wave landed.
-Resolution: open
+Resolution: not-a-bug | agent/plans/PLAN-local-release.md:237 the Rulings section (operator ASKED:2026-10-27T09:45Z) supersedes the W3-A deletions: cd-v2 and promote-stable stay, and W3-A shrinks to local-release-assist.yml, which the tick cites | d778be9d 2026-10-27T11:44:05Z
