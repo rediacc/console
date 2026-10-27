@@ -600,6 +600,7 @@
         "tokenInvalid": "O servidor de configuração não reconhece o token de configuração deste dispositivo. Autentique-se novamente com: rdc config remote enable",
         "tokenRejected": "O servidor de configuração recusou o token de configuração deste dispositivo ({{reason}}). Autentique-se novamente com: rdc config remote enable",
         "integrityFailed": "A configuração {{configId}} no armazenamento {{storeId}} falhou na verificação de integridade: a cópia devolvida pelo servidor não foi selada para esta configuração, equipe e versão, ou foi cifrada com uma chave diferente da do seu slot. Nada foi alterado neste dispositivo. Se a chave for diferente, peça a um administrador que volte a compartilhar a chave do armazenamento com este dispositivo pelo portal (Armazenamento de configuração > slots de chave).",
+        "envelopeTooNew": "A configuração {{configId}} foi escrita por uma versão mais recente da CLI (envelope v{{envelope}}); esta versão lê v{{legacy}} e v{{current}}. Atualize o rdc e execute o comando novamente. Nada foi alterado neste dispositivo.",
         "undecryptableSession": "A config {{configId}} foi desbloqueada com a sua chave, mas a camada de sessão do servidor recusou-se a abri-la ({{detail}}). Repita o comando; se continuar a falhar, volte a inscrever-se com: rdc config remote enable",
         "rollback": "A configuração {{configId}} voltou na versão {{version}}, mais antiga que a versão {{highWater}} que este dispositivo já tinha visto. O servidor devolveu uma cópia antiga; ela foi recusada e nada foi alterado neste dispositivo.",
         "envelopeDowngrade": "A configuração {{configId}} voltou no formato de envelope antigo depois de este dispositivo já ter visto o novo. O servidor devolveu uma cópia antiga; ela foi recusada e nada foi alterado neste dispositivo.",
@@ -626,6 +627,7 @@
         "versions": {
           "description": "Listar as versões anteriores desta configuração guardadas no servidor",
           "optionExplain": "Mostrar os ponteiros JSON que cada versão alterou, a partir das versões guardadas no servidor",
+          "explainUnreadable": "(ilegível: {{reason}})",
           "explainFirst": "(versão guardada mais antiga)",
           "empty": "O servidor não guarda versões anteriores da configuração \"{{config}}\"."
         },
@@ -1442,6 +1444,7 @@
         "starting": "A eliminar \"{{repository}}\" em \"{{machine}}\"...",
         "backupsOrphaned": "Os backups na nuvem de \"{{repository}}\" ficam até {{expires}} e depois expiram. Para removê-los agora, use --purge-backups.",
         "backupsOrphanFailed": "Não foi possível marcar os backups na nuvem de \"{{repository}}\" como órfãos ({{reason}}). Continuam sob a política de retenção do repositório.",
+        "licenseRetireFailed": "Não foi possível avisar o servidor de contas de que a licença de \"{{repository}}\" foi retirada ({{reason}}). Ela continua contando nos totais de licenças do servidor até ser retirada.",
         "backupsPurged": "{{count}} snapshot(s) na nuvem de \"{{repository}}\" apagado(s), {{bytes}} liberado(s).",
         "purgeBackupsOption": "Apagar também agora os backups na nuvem do repositório, em vez de deixá-los expirar",
         "purgeForkRefused": "\"{{repository}}\" é um fork e divide a linhagem de backups com o pai, então --purge-backups apagaria também os backups do pai. Apague o fork sem essa opção."
@@ -2002,6 +2005,8 @@
         "remotePlan": "  Plano:     {{plan}}",
         "remoteRepoLicenseIssuances": "  Emissões mensais de licenças de repositório: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Licenças de repositório: {{totalTrackedRepos}} rastreadas, {{validCount}} válidas, {{refreshRecommendedCount}} recomendada atualização, {{hardExpiredCount}} expiradas definitivamente",
+        "remoteRepoLicensesInConfig": "  Licenças de repositório nesta configuração: {{totalTrackedRepos}} rastreadas, {{validCount}} válidas, {{refreshRecommendedCount}} com atualização recomendada, {{hardExpiredCount}} expiradas definitivamente",
+        "remoteRepoLicensesNotInConfig": "  Licenças de repositório que não estão nesta configuração (excluídas, forks ou outra configuração): {{count}}",
         "remoteStatus": "  Estado:   {{status}}",
         "serverWouldUse": "Usaria o servidor de conta: {{server}}"
       }

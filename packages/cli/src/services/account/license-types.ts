@@ -94,6 +94,11 @@ export interface SubscriptionLicenseReport {
     validCount: number;
     refreshRecommendedCount: number;
     hardExpiredCount: number;
+    /** Newest license per tracked repository; absent from servers that predate the reconcile view. */
+    recent?: {
+      repositoryGuid: string;
+      freshness: 'valid' | 'refresh_recommended' | 'hard_expired';
+    }[];
   };
 }
 

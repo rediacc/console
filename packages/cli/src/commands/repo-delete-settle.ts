@@ -115,3 +115,27 @@ export async function settleCloudBackups(
     );
   }
 }
+
+/**
+ * Tell the account server the deleted repository's license is retired, so its license summary stops
+ * counting it. Best effort: a failure warns and never fails the delete.
+ */
+export async function settleRepoLicense(
+  name: string,
+  repoConfig: DeletedRepoConfig
+): Promise<void> {
+  if (getSubscriptionTokenState().kind !== 'ready') return;
+  try {
+    await accountServerFetch(
+      `/account/api/v1/licenses/repos/${encodeURIComponent(repoConfig.repositoryGuid)}/retire`,
+      { method: 'POST' }
+    );
+  } catch (error) {
+    outputService.warn(
+      t('commands.repo.delete.licenseRetireFailed', {
+        repository: name,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+}

@@ -600,6 +600,7 @@
         "tokenInvalid": "Konfiguratsiooniserver ei tunne selle seadme konfiguratsioonitõendit ära. Autentimine uuesti: rdc config remote enable",
         "tokenRejected": "Konfiguratsiooniserver lükkas selle seadme konfiguratsioonitõendi tagasi ({{reason}}). Autentimine uuesti: rdc config remote enable",
         "integrityFailed": "Hoidla {{storeId}} konfiguratsioon {{configId}} ei läbinud terviklikkuse kontrolli: serveri tagastatud koopia ei ole pitseeritud selle konfiguratsiooni, meeskonna ja versiooni jaoks või on see krüptitud teise võtmega kui see, mis on teie pesas. Selles seadmes ei muudetud midagi. Kui võti erineb, paluge administraatoril jagada hoidla võti selle seadmega portaalis uuesti (Konfiguratsioonide hoidla > võtmepesad).",
+        "envelopeTooNew": "Konfiguratsiooni {{configId}} kirjutas CLI uuem versioon (ümbrik v{{envelope}}); see versioon loeb versioone v{{legacy}} ja v{{current}}. Uuendage rdc ja käivitage käsk uuesti. Selles seadmes ei muudetud midagi.",
         "undecryptableSession": "Konfiguratsioon {{configId}} avanes sinu võtmega, kuid serveri seansikiht ei tahtnud seda avada ({{detail}}). Proovi käsku uuesti; kui see ikka ebaõnnestub, registreeru uuesti käsuga: rdc config remote enable",
         "rollback": "Konfiguratsioon {{configId}} tuli tagasi versioonina {{version}}, mis on vanem kui versioon {{highWater}}, mida see seade on juba näinud. Server tagastas vana koopia, seega lükati see tagasi ja selles seadmes ei muudetud midagi.",
         "envelopeDowngrade": "Konfiguratsioon {{configId}} tuli tagasi vanas ümbrikuvormingus, kuigi see seade on uut vormingut juba näinud. Server tagastas vana koopia, seega lükati see tagasi ja selles seadmes ei muudetud midagi.",
@@ -626,6 +627,7 @@
         "versions": {
           "description": "Loetle serveris hoitavad selle konfiguratsiooni varasemad versioonid",
           "optionExplain": "Näita JSON-viiteid, mida iga versioon muutis, serveris hoitavate versioonide põhjal",
+          "explainUnreadable": "(ei õnnestu lugeda: {{reason}})",
           "explainFirst": "(vanim hoitav versioon)",
           "empty": "Server ei hoia konfiguratsiooni \"{{config}}\" varasemaid versioone."
         },
@@ -1442,6 +1444,7 @@
         "starting": "Hoidla \"{{repository}}\" kustutamine masinal \"{{machine}}\"...",
         "backupsOrphaned": "Hoidla \"{{repository}}\" pilvevarukoopiaid hoitakse kuni {{expires}}, seejärel need aeguvad. Kohe eemaldamiseks kasuta --purge-backups.",
         "backupsOrphanFailed": "Hoidla \"{{repository}}\" pilvevarukoopiaid ei õnnestunud orvuks märkida ({{reason}}). Need jäävad hoidla säilituspoliitika alla.",
+        "licenseRetireFailed": "Kontoserverile ei õnnestunud teada anda, et hoidla \"{{repository}}\" litsents on tagastatud ({{reason}}). See jääb serveri litsentside kogusummas arvesse, kuni see on tagastatud.",
         "backupsPurged": "Hoidla \"{{repository}}\" {{count}} pilvehetktõmmist kustutati, vabanes {{bytes}}.",
         "purgeBackupsOption": "Kustuta hoidla pilvevarukoopiad kohe, selle asemel et lasta neil aeguda",
         "purgeForkRefused": "\"{{repository}}\" on fork ja jagab varunduse liini oma lähtehoidlaga, nii et --purge-backups kustutaks ka lähtehoidla varukoopiad. Kustuta fork ilma selle valikuta."
@@ -2002,6 +2005,8 @@
         "remotePlan": "  Plaan:    {{plan}}",
         "remoteRepoLicenseIssuances": "  Igakuised repositooriumi litsentside väljastamised: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repositooriumi litsentsid: {{totalTrackedRepos}} jälgitavad, {{validCount}} kehtivad, {{refreshRecommendedCount}} soovitav uuendada, {{hardExpiredCount}} lõplikult aegunud",
+        "remoteRepoLicensesInConfig": "  Repositooriumi litsentsid selles konfiguratsioonis: {{totalTrackedRepos}} jälgitavad, {{validCount}} kehtivad, {{refreshRecommendedCount}} soovitav uuendada, {{hardExpiredCount}} lõplikult aegunud",
+        "remoteRepoLicensesNotInConfig": "  Repositooriumi litsentsid, mis ei kuulu sellesse konfiguratsiooni (kustutatud, haruteed või muu konfiguratsioon): {{count}}",
         "remoteStatus": "  Olek:     {{status}}",
         "serverWouldUse": "Kasutaks kontoserverit: {{server}}"
       }

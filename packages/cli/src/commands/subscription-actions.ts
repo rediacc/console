@@ -139,11 +139,63 @@ export async function executeSubscriptionStatus(): Promise<void> {
   if (!status) {
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
-  outputRemoteStatus(status);
+  outputRemoteStatus(status, await readConfigRepoGuids());
+}
+
+/** The repository GUIDs this config holds, or undefined when the config cannot be read. */
+async function readConfigRepoGuids(): Promise<Set<string> | undefined> {
+  try {
+    const repos = await configService.listRepositories();
+    return new Set(repos.map((r) => r.config.repositoryGuid).filter((g): g is string => !!g));
+  } catch {
+    return undefined;
+  }
+}
+
+type TrackedRepo = { repositoryGuid: string; freshness: string };
+
+/** Split the server's tracked repositories by membership in this config's GUIDs. */
+export function splitRepoLicensesByConfig(recent: TrackedRepo[], configGuids: Set<string>) {
+  const inConfig = recent.filter((r) => configGuids.has(r.repositoryGuid));
+  return {
+    totalTrackedRepos: inConfig.length,
+    validCount: inConfig.filter((r) => r.freshness === 'valid').length,
+    refreshRecommendedCount: inConfig.filter((r) => r.freshness === 'refresh_recommended').length,
+    hardExpiredCount: inConfig.filter((r) => r.freshness === 'hard_expired').length,
+    notInConfigCount: recent.length - inConfig.length,
+  };
+}
+
+function outputRepoLicenseCounts(
+  repoLicenses: NonNullable<
+    Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>
+  >['repoLicenses'],
+  configGuids?: Set<string>
+) {
+  const recent = repoLicenses.recent;
+  if (recent && configGuids) {
+    const split = splitRepoLicensesByConfig(recent, configGuids);
+    outputService.info(t('commands.subscription.status.remoteRepoLicensesInConfig', split));
+    outputService.info(
+      t('commands.subscription.status.remoteRepoLicensesNotInConfig', {
+        count: split.notInConfigCount,
+      })
+    );
+  } else {
+    outputService.info(
+      t('commands.subscription.status.remoteRepoLicenses', {
+        totalTrackedRepos: repoLicenses.totalTrackedRepos,
+        validCount: repoLicenses.validCount,
+        refreshRecommendedCount: repoLicenses.refreshRecommendedCount,
+        hardExpiredCount: repoLicenses.hardExpiredCount,
+      })
+    );
+  }
 }
 
 function outputRemoteStatus(
-  status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>
+  status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>,
+  configGuids?: Set<string>
 ) {
   if (!status) return;
   outputService.info(t('commands.subscription.status.remote'));
@@ -176,14 +228,7 @@ function outputRemoteStatus(
   } else if (issuanceUsage >= 0.8) {
     outputService.warn(t('commands.subscription.status.issuanceUsageHigh80'));
   }
-  outputService.info(
-    t('commands.subscription.status.remoteRepoLicenses', {
-      totalTrackedRepos: status.repoLicenses.totalTrackedRepos,
-      validCount: status.repoLicenses.validCount,
-      refreshRecommendedCount: status.repoLicenses.refreshRecommendedCount,
-      hardExpiredCount: status.repoLicenses.hardExpiredCount,
-    })
-  );
+  outputRepoLicenseCounts(status.repoLicenses, configGuids);
   for (const machine of status.machineSlots.machines) {
     const key = machine.overLimit
       ? 'commands.subscription.status.remoteMachineOverLimit'

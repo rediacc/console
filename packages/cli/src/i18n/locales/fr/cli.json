@@ -600,6 +600,7 @@
         "tokenInvalid": "Le serveur de configuration ne reconnaît pas le jeton de configuration de cet appareil. Réauthentifiez-vous avec : rdc config remote enable",
         "tokenRejected": "Le serveur de configuration a refusé le jeton de configuration de cet appareil ({{reason}}). Réauthentifiez-vous avec : rdc config remote enable",
         "integrityFailed": "La configuration {{configId}} du magasin {{storeId}} a échoué au contrôle d'intégrité : la copie renvoyée par le serveur n'a pas été scellée pour cette configuration, cette équipe et cette version, ou elle a été chiffrée avec une autre clé que celle de votre emplacement. Rien n'a été modifié sur cet appareil. Si la clé diffère, demandez à un administrateur de repartager la clé du magasin avec cet appareil depuis le portail (Stockage de configuration > emplacements de clé).",
+        "envelopeTooNew": "La configuration {{configId}} a été écrite par une version plus récente de la CLI (enveloppe v{{envelope}}) ; cette version lit v{{legacy}} et v{{current}}. Mettez rdc à jour, puis relancez la commande. Rien n'a été modifié sur cet appareil.",
         "undecryptableSession": "La configuration {{configId}} a été déverrouillée avec votre clé, mais la couche de session du serveur a refusé de l'ouvrir ({{detail}}). Relancez la commande ; si l'échec persiste, réinscrivez-vous avec : rdc config remote enable",
         "rollback": "La configuration {{configId}} est revenue en version {{version}}, plus ancienne que la version {{highWater}} déjà vue par cet appareil. Le serveur a renvoyé une ancienne copie : elle a été refusée et rien n'a été modifié sur cet appareil.",
         "envelopeDowngrade": "La configuration {{configId}} est revenue dans l'ancien format d'enveloppe alors que cet appareil avait déjà vu le nouveau. Le serveur a renvoyé une ancienne copie : elle a été refusée et rien n'a été modifié sur cet appareil.",
@@ -626,6 +627,7 @@
         "versions": {
           "description": "Lister les versions antérieures de cette configuration conservées sur le serveur",
           "optionExplain": "Afficher les pointeurs JSON modifiés par chaque version, d'après les versions conservées par le serveur",
+          "explainUnreadable": "(illisible : {{reason}})",
           "explainFirst": "(version conservée la plus ancienne)",
           "empty": "Le serveur ne conserve aucune version antérieure de la configuration \"{{config}}\"."
         },
@@ -1442,6 +1444,7 @@
         "starting": "Suppression de \"{{repository}}\" sur \"{{machine}}\"...",
         "backupsOrphaned": "Les sauvegardes cloud de « {{repository}} » sont conservées jusqu'au {{expires}}, puis expirent. Pour les supprimer maintenant, utilisez --purge-backups.",
         "backupsOrphanFailed": "Impossible de marquer les sauvegardes cloud de « {{repository}} » comme orphelines ({{reason}}). Elles restent soumises à la politique de rétention du dépôt.",
+        "licenseRetireFailed": "Impossible d'indiquer au serveur de comptes que la licence de « {{repository}} » est retirée ({{reason}}). Elle reste comptée dans les totaux de licences du serveur tant qu'elle n'est pas retirée.",
         "backupsPurged": "{{count}} instantané(s) cloud de « {{repository}} » supprimé(s), {{bytes}} libéré(s).",
         "purgeBackupsOption": "Supprimer aussi maintenant les sauvegardes cloud du dépôt, au lieu de les laisser expirer",
         "purgeForkRefused": "« {{repository}} » est un fork et partage sa lignée de sauvegardes avec son parent : --purge-backups supprimerait aussi les sauvegardes du parent. Supprimez le fork sans cette option."
@@ -2002,6 +2005,8 @@
         "remotePlan": "  Forfait :     {{plan}}",
         "remoteRepoLicenseIssuances": "  Demandes de licence flottante : {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Licences de dépôt : {{totalTrackedRepos}} suivis, {{validCount}} valides, {{refreshRecommendedCount}} actualisation recommandée, {{hardExpiredCount}} expirées définitivement",
+        "remoteRepoLicensesInConfig": "  Licences de dépôt dans cette configuration : {{totalTrackedRepos}} suivies, {{validCount}} valides, {{refreshRecommendedCount}} actualisation recommandée, {{hardExpiredCount}} expirées définitivement",
+        "remoteRepoLicensesNotInConfig": "  Licences de dépôt absentes de cette configuration (supprimées, forks ou autre configuration) : {{count}}",
         "remoteStatus": "  État :       {{status}}",
         "serverWouldUse": "Utiliserait le serveur de compte : {{server}}"
       }

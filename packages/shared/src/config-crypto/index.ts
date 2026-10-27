@@ -52,7 +52,7 @@ export {
   SDK_WINDOW_SECONDS,
 } from './constants.js';
 // Typed failures of opening a pulled config
-export { ConfigIntegrityError } from './errors.js';
+export { ConfigEnvelopeTooNewError, ConfigIntegrityError } from './errors.js';
 // X25519 CEK handoff
 export {
   cekHandoffDecrypt,

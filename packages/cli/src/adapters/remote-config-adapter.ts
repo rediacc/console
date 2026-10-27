@@ -11,6 +11,7 @@
 import {
   blindPointer,
   type ConfigBinding,
+  ConfigEnvelopeTooNewError,
   cekUnwrap,
   derivePointerBlindingKey,
   deriveWrappingKey,
@@ -19,6 +20,7 @@ import {
   type FieldCommitments,
   fromBase64,
   importAesKey,
+  LEGACY_ENVELOPE_VERSION,
   selectiveDecrypt,
 } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
@@ -567,6 +569,18 @@ export class RemoteConfigAdapter {
 
     // The envelope-version guard already names its own problem.
     if (detail.includes('envelope version')) return error as Error;
+
+    // An envelope newer than this rdc reads is a version gap, not a wrong slot key.
+    if (error instanceof ConfigEnvelopeTooNewError) {
+      return new RemoteConfigUndecryptableError(
+        t('commands.config.remote.envelopeTooNew', {
+          configId,
+          envelope: error.envelopeVersion,
+          legacy: LEGACY_ENVELOPE_VERSION,
+          current: ENVELOPE_VERSION,
+        })
+      );
+    }
 
     if (error instanceof Error && error.name === 'ConfigIntegrityError') {
       return new RemoteConfigUndecryptableError(

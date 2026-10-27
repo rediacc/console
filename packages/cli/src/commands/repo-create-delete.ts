@@ -35,6 +35,7 @@ import {
   isFork,
   settleCloudBackups,
   settleConfigEntry,
+  settleRepoLicense,
 } from './repo-delete-settle.js';
 
 /** Clean up local VS Code SSH artifacts after a repo delete. Non-fatal. */
@@ -394,6 +395,7 @@ async function handleDeleteSuccess(
   await settleConfigEntry(name, machineName, repoConfig, archiveConfig);
   await reconcileBackupSchedules(machineName);
   await settleCloudBackups(name, repoConfig, purgeBackups);
+  await settleRepoLicense(name, repoConfig);
   outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
 }
 

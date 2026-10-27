@@ -6,12 +6,14 @@
  * Token rotation is handled transparently -- every response includes a new token.
  */
 
+import { ENVELOPE_VERSION } from '@rediacc/shared/config-crypto';
 import {
   E2E_CONTENT_TYPE,
   type E2eResponseEnvelope,
   openResponse,
   sealRequest,
 } from '@rediacc/shared/e2e';
+import { VERSION } from '../../version.js';
 import { getServerKeyMaterial } from '../account/account-client.js';
 
 export interface ConfigServerFetchOptions {
@@ -89,6 +91,10 @@ export async function configServerFetch<T = unknown>(
   // Build inner request headers with config token
   const headers: Record<string, string> = {
     'X-Config-Token': options.configToken,
+    // What this client is and the newest envelope it reads: a server holding a newer one refuses
+    // the pull with a 426 that names the gap, instead of serving a blob this client misreads.
+    'x-cli-version': VERSION,
+    'x-config-envelope': String(ENVELOPE_VERSION),
   };
   if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json';
