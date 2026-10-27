@@ -55,6 +55,10 @@ class Config:
     region: str
 
 
+# wrangler.dev.toml runs only under a local `wrangler dev`, where its service bindings resolve to Workers started beside it (proxy_wrangler_dev_e2e's stub issuer); nothing deploys it, so no account Worker is expected for it.
+LOCAL_SIDES = frozenset({"dev"})
+
+
 def side_region(rel: pathlib.PurePosixPath) -> tuple[str, str]:
     """(side, region) from the wrangler file name: `wrangler.edge-eu.toml` -> edge/eu."""
     stem = rel.name.removeprefix("wrangler.").removesuffix(".toml")
@@ -84,6 +88,8 @@ def load_configs(root: pathlib.Path) -> tuple[list[Config], list[Binding]]:
         if not name or "@@" in name:
             continue
         side, region = side_region(rel)
+        if side in LOCAL_SIDES:
+            continue
         configs.append(Config(str(rel), name, side, region))
         for svc in data.get("services") or []:
             service = str(svc.get("service") or "")

@@ -100,3 +100,17 @@ def test_main_json_and_real_configs(
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
     assert mod.main(["--json"]) == 77
     assert json.loads(capsys.readouterr().out)["rc"] == 77
+
+
+def test_the_local_dev_config_is_not_audited(tmp_path: pathlib.Path) -> None:
+    """wrangler.dev.toml binds a stub issuer that only `wrangler dev` starts; nothing deploys it."""
+    pr = tmp_path / "workers" / "proxy"
+    pr.mkdir(parents=True)
+    (pr / "wrangler.dev.toml").write_text(
+        'name = "rediacc-proxy-dev"\n[[services]]\nbinding = "ISSUER"\nservice = "rediacc-executor-issuer-dev"\n'
+    )
+    (pr / "wrangler.eu.toml").write_text('name = "rediacc-proxy-eu"\n')
+    rep = mod.audit(tmp_path, ENV, _fetch(["rediacc-proxy-eu"]))
+    assert rep["rc"] == 0
+    assert rep["bindings"] == []
+    assert rep["not_deployed"] == []
