@@ -1604,7 +1604,7 @@ NO_RECEIPT = "no local gate run has judged this tree."
 def read_receipt(root, tree):
     """The receipt that speaks for `tree`: the per-tree archive copy `.ci/cache/receipts/<tree>.json` first, then the latest `.ci/cache/prepush-receipt.json`. None when neither file exists.
 
-    The archive copy wins because the latest file is overwritten by every whole run, so a run at another tree after the one that judged `tree` would otherwise void a receipt that is still true. A copy that EXISTS but does not parse returns `{UNPARSEABLE: <path: error>}` rather than falling through to the latest file: a corrupt receipt for this very tree is a finding, not an absence. Only `receipt_refusal`'s callers use this; `run()` keeps its own read of the latest file.
+    The archive copy wins because the latest file is overwritten by every whole run, so a run at another tree after the one that judged `tree` would otherwise void a receipt that is still true. A copy that EXISTS but does not parse returns `{UNPARSEABLE: <path: error>}` rather than falling through to the latest file: a corrupt receipt for this very tree is a finding, not an absence. Only `receipt_refusal`'s callers use this; `run()` keeps its own read of the latest file. THE TWO READERS DIFFER ON PURPOSE: after a whole run at another tree, this reader still finds the receipt for `tree` and `receipt_refusal` can admit it, while `run()` reads the latest file and refuses the same push as "a different tree". The release judges one exact tree, which the archive names; a push judges whatever the runner wrote last.
     """
     candidates = []
     if isinstance(tree, str) and TREE_RE.match(tree):
@@ -1670,7 +1670,7 @@ def _receipt_red(receipt):
 def receipt_refusal(root, tree, receipt):
     """Why `receipt` does not authorise publishing `tree` from `root`, or None when it does. PURE in the sense the release entry needs: no event object and none of `run()`'s environment fail-opens (a missing `jq`, a failed fetch). A missing environment here is a refusal, never an allow.
 
-    `receipt` is the parsed document, or None when no receipt exists (`read_receipt` returns exactly that). The verdict is `run()`'s, in its order, minus the behind-origin/main fetch, which belongs to a push and which a release judges on its own fresh fetch.
+    `receipt` is the parsed document, or None when no receipt exists (`read_receipt` returns exactly that). FOR THE SAME RECEIPT OBJECT the verdict is `run()`'s, in its order, minus the behind-origin/main fetch, which belongs to a push and which a release judges on its own fresh fetch. Which receipt object each side judges is NOT shared: `read_receipt` prefers the per-tree copy and `run()` reads only the latest file, so the two can disagree about the same tree (see `read_receipt`).
     """
     if receipt is None:
         return NO_RECEIPT
@@ -1680,7 +1680,7 @@ def receipt_refusal(root, tree, receipt):
     if why is not None:
         # v2_verdict answers a non-v2 receipt with text, so an empty string never reaches here; refuse anyway rather than read "" as consent.
         return why or "the receipt was refused with no reason; re-run `%s`." % V2_REGEN
-    # A RED receipt is admitted only when carried-reds.json at HEAD names every failure; a GREEN one still meets rule 2 (a carried entry whose gate went green is stale). One call, one refusal, both directions.
+    # A RED receipt is admitted only when carried-reds.json at HEAD names every failure; a GREEN one still meets rule 2 (a carried entry whose gate went green is stale). `run()` makes this same call on both of its branches (red and green), so one call here is its verdict, minus the warnings.
     refusal, _notes = carried_verdict(receipt, _carried_at_head(root))
     return refusal
 
@@ -1772,7 +1772,7 @@ def run(ev):
     r_dirty = _alt(receipt, "dirtyDigest", "")
     r_blocked = _jq_join(receipt.get("blocked") if isinstance(receipt, dict) else None)
 
-    # THE RECEIPT'S OWN VERDICT (schema, tree or advance chain, `whole`, per-gate, dropped), shared with `receipt_refusal` so the release entry and this guard cannot disagree about a receipt. The behind-base fetch below sits between it and the carried check, which is why the two halves are called separately here.
+    # THE RECEIPT'S OWN VERDICT (schema, tree or advance chain, `whole`, per-gate, dropped), shared with `receipt_refusal`, so for the same receipt object the release entry and this guard reach the same verdict. They can still disagree about a TREE, because they read different files: `read_receipt` prefers the per-tree copy, and this guard reads only the latest file above. The behind-base fetch below sits between it and the carried check, which is why the two halves are called separately here.
     front, _chain = _receipt_front(root, tree, receipt)
     if front is not None:
         return _refuse(ev, front)

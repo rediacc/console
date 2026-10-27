@@ -1518,6 +1518,14 @@ def _refusal_at(root):
     return GM.receipt_refusal(str(root), tree, GM.read_receipt(str(root), tree))
 
 
+def _refusal_latest(root):
+    """receipt_refusal over the receipt object `run()` reads: the latest file only, through the guard's own `_read_json`. The parity sweep uses this, because the per-tree reader differs from run() on purpose."""
+    tree = _head_tree(root)
+    latest = pathlib.Path(root) / GM.RECEIPT_REL
+    receipt = GM._read_json(str(latest)) if latest.is_file() else None
+    return GM.receipt_refusal(str(root), tree, receipt)
+
+
 def test_receipt_refusal():
     # CONTROL FIRST: the push-green world is admitted, so every refusal below is about its own planted fault.
     green = _world("push-green")
@@ -1581,6 +1589,18 @@ def test_receipt_refusal():
             "READER: the per-tree copy is preferred over a latest for another tree",
         )
     )
+    # THE INTENDED DIVERGENCE, pinned: in this same world run() reads only the latest file and refuses the push as a different tree, and receipt_refusal over that latest object agrees with run(). Only the reader differs; the verdict on one receipt object is shared.
+    rc, err = drive(pt, V2_PUSH)
+    cases.append((2, rc, "DIVERGENCE: run() refuses the tree whose per-tree copy admits"))
+    cases.append((True, "different tree" in err, "DIVERGENCE: and run() names the different tree"))
+    why = _refusal_latest(pt) or ""
+    cases.append(
+        (
+            True,
+            "different tree" in why,
+            "DIVERGENCE: receipt_refusal over the latest object refuses exactly as run() does",
+        )
+    )
     # Its control: the same world without the archive copy is refused, so the None above is the reader's work.
     archive.unlink()
     why = _refusal_at(pt) or ""
@@ -1599,7 +1619,16 @@ def test_receipt_refusal():
         (True, "does not parse" in why, "READER: a corrupt per-tree copy refuses, no fallthrough")
     )
 
-    # NO FAIL-OPEN: the function never consults the environment. An unparseable receipt object and an empty dict both refuse.
+    # NO FAIL-OPEN: the function never consults the environment. An unparseable receipt object (the reader's marker, and a document that is not an object at all) and an empty dict all refuse.
+    why = GM.receipt_refusal(str(green), _head_tree(green), {GM.UNPARSEABLE: "x.json: bad"}) or ""
+    cases.append(
+        (True, "does not parse" in why and "x.json" in why, "RECEIPT API: the marker refuses")
+    )
+    for doc in ([], "receipt", 2):
+        why = GM.receipt_refusal(str(green), _head_tree(green), doc) or ""
+        cases.append(
+            (True, "schema" in why, "RECEIPT API: a non-object receipt %r refuses" % (doc,))
+        )
     cases.append(
         (
             True,
@@ -1608,12 +1637,30 @@ def test_receipt_refusal():
         )
     )
 
-    # PARITY: on every frozen fixture world, receipt_refusal is None exactly when run() admits the push. run() adds only the behind-base fetch, which these worlds (no remote) never trip.
+    # RULE 2 ON A GREEN RECEIPT (carried-reds.json `_comment`: an excuse cannot outlive its failure). run() refuses a green receipt with a carried entry on its green branch, and receipt_refusal refuses it with the same text.
+    stale_green = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / "green-stale-carry"
+    GM._repo_with_receipt(
+        stale_green,
+        {"whole": True, "exitCode": 0, "droppedTouched": []},
+        carried={"version": 2, "carried": [keyed("fmt:packages/a.ts", gate="check:format")]},
+    )
+    rc, err = drive(stale_green, V2_PUSH)
+    why = _refusal_at(stale_green)
+    cases.append((2, rc, "RULE 2: run() refuses a green receipt with a stale carried entry"))
+    cases.append(
+        (
+            True,
+            why is not None and why in err,
+            "RULE 2: receipt_refusal refuses it too, with run()'s own text",
+        )
+    )
+
+    # PARITY: on every frozen fixture world, receipt_refusal over the LATEST file (the receipt object run() reads) is None exactly when run() admits the push. run() adds only the behind-base fetch, which these worlds (no remote) never trip. The per-tree reader is excluded by design (DIVERGENCE above).
     admitted = []
     for name in sorted(GM.FIXTURES):
         w = _world(name)
         rc = drive(w, V2_PUSH)[0]
-        why = _refusal_at(w)
+        why = _refusal_latest(w)
         cases.append(
             (
                 rc == 0,
