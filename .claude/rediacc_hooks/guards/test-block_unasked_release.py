@@ -66,9 +66,9 @@ def transcript(answer_ts):
     return str(path)
 
 
-def workspace_fixture():
+def workspace_fixture(prefix="npm-ws-"):
     """A project root whose `workspaces` glob holds two packages: `@fx/site`, whose `deploy` is a `wrangler deploy`, and `@fx/lib`, whose `deploy` only echoes. `-w` names them by package name or by path."""
-    top = pathlib.Path(tempfile.mkdtemp(prefix="npm-ws-", dir=RUN_TMP))
+    top = pathlib.Path(tempfile.mkdtemp(prefix=prefix, dir=RUN_TMP))
     (top / "package.json").write_text(json.dumps({"name": "fx", "workspaces": ["sites/*"]}))
     for leaf, name, deploy in (("a", "@fx/site", "wrangler deploy"), ("b", "@fx/lib", "echo hi")):
         (top / "sites" / leaf).mkdir(parents=True)
@@ -79,6 +79,8 @@ def workspace_fixture():
 
 
 WS = workspace_fixture()
+# The same tree under a directory whose name is glob syntax (review 7f22f490.4).
+WS_GLOBBY = workspace_fixture("npm-ws-[1]*?-")
 TR = transcript("2026-01-01T00:00:30Z")
 ASK = "RELEASE_ASKED=ASKED:2026-01-01T00:00Z"
 ASK_ELSEWHERE = "RELEASE_ASKED=ASKED:2026-01-01T00:10Z"
@@ -324,6 +326,27 @@ CASES = [
     ),
     ("npm run deploy -w by path", "npm --prefix %s run deploy -w sites/a" % WS, None, B, "deploy"),
     (
+        "npm run deploy -w by name under a glob-special project path",
+        "cd '%s' && npm run deploy -w @fx/site" % WS_GLOBBY,
+        None,
+        B,
+        "wrangler deploy",
+    ),
+    (
+        "npm run deploy --workspaces under a glob-special project path",
+        "cd '%s' && npm run deploy --workspaces" % WS_GLOBBY,
+        None,
+        B,
+        "wrangler deploy",
+    ),
+    (
+        "npm run deploy -w the echo workspace under a glob-special path",
+        "cd '%s' && npm run deploy -w @fx/lib" % WS_GLOBBY,
+        None,
+        A,
+        "",
+    ),
+    (
         "npm run deploy across every workspace",
         "cd %s && npm run deploy --workspaces" % WS,
         None,
@@ -361,6 +384,21 @@ CASES = [
         "gh release create",
     ),
     ("gh release view", "gh release view v1.2.3", None, A, ""),
+    ("gh release create --help", "gh release create --help", None, A, ""),
+    (
+        "gh release create, --help taken as the notes",
+        "gh release create v1.2.3 --notes --help",
+        None,
+        B,
+        "gh release create",
+    ),
+    (
+        "gh release create, --help after a whole --notes=x",
+        "gh release create v1.2.3 --notes=x --help",
+        None,
+        A,
+        "",
+    ),
     ("gh release list", "gh release list", None, A, ""),
     ("gh workflow run", "gh workflow run ci.yml", None, A, ""),
     # ------------------------------------------------------------- tag pushes
@@ -487,6 +525,15 @@ CASES = [
     ("docker compose pull", "docker compose -p proj pull", None, A, ""),
     ("docker compose push --help", "docker compose push --help", None, A, ""),
     ("docker push --help", "docker push --help", None, A, ""),
+    (
+        "buildx --push, --help taken as the tag",
+        "docker buildx build --push -t --help .",
+        None,
+        B,
+        "--push",
+    ),
+    ("buildx --push --help", "docker buildx build --push --help", None, B, "--push"),
+    ("buildx --help", "docker buildx build --help", None, A, ""),
     ("docker build", "docker build -t x .", None, A, ""),
     ("buildx build --load", "docker buildx build --load -t x .", None, A, ""),
     ("docker pull", "docker pull ghcr.io/rediacc/renet:1.2.3", None, A, ""),
@@ -533,6 +580,34 @@ CASES = [
     (
         "deploy_account asia --target edge",
         "%s rediacc_ci.deploy.deploy_account --region asia --target edge" % PY,
+        None,
+        A,
+        "",
+    ),
+    (
+        "deploy_account edge, then --TARGET production",
+        "%s rediacc_ci.deploy.deploy_account --region eu --target edge --TARGET production" % PY,
+        None,
+        B,
+        "a stable target",
+    ),
+    (
+        "deploy_account edge, then a bare --target",
+        "%s rediacc_ci.deploy.deploy_account --region eu --target edge --target" % PY,
+        None,
+        B,
+        "a stable target",
+    ),
+    (
+        "deploy_account edge, then --target --region",
+        "%s rediacc_ci.deploy.deploy_account --target edge --target --region eu" % PY,
+        None,
+        B,
+        "a stable target",
+    ),
+    (
+        "deploy_account edge; --tar is another key to its parser",
+        "%s rediacc_ci.deploy.deploy_account --region eu --tar production --target edge" % PY,
         None,
         A,
         "",
@@ -736,6 +811,34 @@ CASES = [
         "a step of the release entry",
     ),
     ("--help on a publish module", "%s rediacc_ci.deploy.upload_to_r2 --help" % PY, None, A, ""),
+    (
+        "--help taken as a hand parser's value",
+        "%s rediacc_ci.deploy.upload_to_r2 --channel --help" % PY,
+        None,
+        B,
+        "upload_to_r2",
+    ),
+    (
+        "--help on a module that takes no argv",
+        "%s rediacc_ci.deploy.promote_r2_to_stable --help" % PY,
+        None,
+        B,
+        "(stable)",
+    ),
+    (
+        "--help on deploy_account, whose parser stores it as a key",
+        "%s rediacc_ci.deploy.deploy_account --region eu --help" % PY,
+        None,
+        B,
+        "a stable target",
+    ),
+    (
+        "--help on an argparse module",
+        "%s rediacc_ci.deploy.deploy_proxy --target stable --help" % PY,
+        None,
+        A,
+        "",
+    ),
     ("an npm gate naming a deploy package", "npm run check:ci-proxy-configs", None, A, ""),
     ("pytest naming a module", "python3 -m pytest -k rediacc_ci.deploy.deploy_www", None, A, ""),
     ("reading a module", "sed -n 1,20p .ci/rediacc_ci/deploy/deploy_www.py", None, A, ""),
@@ -955,6 +1058,34 @@ for name, command, tr, want, needle in CASES:
     if not ok:
         print("    needle %r; stderr: %s" % (needle, err.strip().splitlines()[:6]))
 
+# THE PREFIX READING HAS NO AMBIGUITY CHECK (review 7f22f490.1): `_prefix_option` reads every prefix from `--t` up as `--target`, which is exact only while no other long option of an argparse TARGET_MODULE starts with `--t`. Read each parser's `add_argument` lines and fail when one does; a module that lost its `--target` line means the scan is not seeing the parser.
+_LONG = __import__("re").compile(r"add_argument\(\s*\"(--[^\"]+)\"")
+argparse_seen = 0
+for module in G.TARGET_MODULES:
+    text = (
+        (REPO / ".ci" / pathlib.Path(*module.split(".")))
+        .with_suffix(".py")
+        .read_text(encoding="utf-8")
+    )
+    if "argparse.ArgumentParser(" not in text:
+        continue
+    argparse_seen += 1
+    longs = _LONG.findall(text)
+    clash = sorted(o for o in longs if o.startswith("--t") and o != "--target")
+    ok = "--target" in longs and not clash
+    fails += not ok
+    print(
+        "%-62s %s"
+        % (
+            "prefix pin %s: %d long option(s), --t clash %s"
+            % (module.rsplit(".", 1)[-1], len(longs), clash or "none"),
+            "ok" if ok else "*** FAIL *** a --t prefix is no longer unique to --target",
+        )
+    )
+if argparse_seen < 2:
+    fails += 1
+    print("*** FAIL *** the prefix pin saw %d argparse module(s), expected 2" % argparse_seen)
+
 print()
 CONTROLS = [("DEFECT", G.DEFECT), *sorted(G.MUTANTS.items())]
 # The case each control must flip, so a control cannot pass on an unrelated refusal.
@@ -978,6 +1109,11 @@ MUST_FLIP = {
     "short-output-ignored": "buildx registry output, attached -o",
     "compose-push-ignored": "docker compose push",
     "pages-ignored": "wrangler pages deploy",
+    "account-target-case-folded": "deploy_account edge, then --TARGET production",
+    "account-bare-target-kept": "deploy_account edge, then a bare --target",
+    "help-taken-as-value": "buildx --push, --help taken as the tag",
+    "help-undeclared": "--help on a module that takes no argv",
+    "workspace-glob-through-path": "npm run deploy -w by name under a glob-special project path",
 }
 # A control passes when the planted copy breaks its case's verdict: the refusal flips to allowed, the admission to refused, or the named reason goes missing.
 for label, mutant in CONTROLS:

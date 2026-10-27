@@ -413,6 +413,19 @@ def _probe_host() -> int:
     return int(out[-1]) if out else 0
 
 
+# Every failure preflight turns into a printed skip. ONE tuple for both catches (review ffd17636.1): a probe that raised a type only the outer handler named escaped the loop before another egress's 403 was judged.
+_SKIPPED = (
+    OSError,
+    ValueError,
+    RuntimeError,
+    subprocess.SubprocessError,
+    http.client.HTTPException,
+    AccessError,
+    cf_auth.CfAuthError,
+    SystemExit,
+)
+
+
 def preflight(
     probes: tuple[typing.Callable[[], int], ...] | None = None,
     add: typing.Callable[[], int] | None = None,
@@ -431,12 +444,7 @@ def preflight(
         for probe in probes:
             try:
                 statuses.append(probe())
-            except (
-                OSError,
-                ValueError,
-                subprocess.SubprocessError,
-                http.client.HTTPException,
-            ) as exc:
+            except _SKIPPED as exc:
                 # one egress that cannot be probed (no powershell, a timeout, a non-numeric reply) must not hide a 403 on another
                 failed.append(exc)
         if not statuses and failed:
@@ -448,16 +456,7 @@ def preflight(
         rc = (add or (lambda: main(["add-current"])))()
         if rc != 0:
             print("bench-access: add-current exited %d; continuing" % rc)
-    except (
-        OSError,
-        ValueError,
-        RuntimeError,
-        subprocess.SubprocessError,
-        http.client.HTTPException,
-        AccessError,
-        cf_auth.CfAuthError,
-        SystemExit,
-    ) as exc:
+    except _SKIPPED as exc:
         print("bench-access: skipped (%s: %s)" % (type(exc).__name__, exc))
     return 0
 

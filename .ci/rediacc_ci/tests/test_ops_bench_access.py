@@ -566,6 +566,33 @@ def test_preflight_a_failing_host_probe_does_not_hide_a_local_403():
     assert added == [1, 1]
 
 
+@pytest.mark.parametrize(
+    "error",
+    [
+        RuntimeError("no event loop"),
+        ba.AccessError("no zone"),
+        cf_auth.CfAuthError("token refused"),
+        SystemExit(2),
+        OSError("powershell exit 1"),
+    ],
+    ids=lambda e: type(e).__name__,
+)
+def test_preflight_no_probe_failure_type_hides_another_egress_403(error, capsys):
+    """Review ffd17636.1: every type the outer handler skips is also caught per probe, so the other egress's 403 is still judged."""
+    added: list[int] = []
+
+    def host():
+        raise error
+
+    for probes in ((lambda: 403, host), (host, lambda: 403)):
+        assert ba.preflight(probes=probes, add=lambda: added.append(1) or 0, environ={}) == 0
+    assert added == [1, 1]
+    assert "answered 403" in capsys.readouterr().out
+    # Alone, the same failure is the printed skip, never a traceback.
+    assert ba.preflight(probes=(host,), add=lambda: 1 / 0, environ={}) == 0
+    assert "skipped (%s" % type(error).__name__ in capsys.readouterr().out
+
+
 def test_preflight_survives_a_malformed_http_reply(capsys):
     def bad_status():
         raise http.client.BadStatusLine("")

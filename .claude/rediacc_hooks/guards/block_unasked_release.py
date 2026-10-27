@@ -83,6 +83,26 @@ MUTANTS = {
     ),
     "compose-push-ignored": ("    if verb in COMPOSE_PUSH_VERBS:\n", "    if False:\n"),
     "pages-ignored": ('if sub == "pages" and', 'if False and sub == "pages" and'),
+    "account-target-case-folded": (
+        'flag[2:].replace("-", "_").upper() == "TARGET"',
+        'flag == "--target"',
+    ),
+    "account-bare-target-kept": (
+        '                value = "true"\n',
+        "                value = target\n",
+    ),
+    "help-taken-as-value": (
+        'if not (before.startswith("-") and len(before) > 1 and "=" not in before):',
+        "if True:",
+    ),
+    "help-undeclared": (
+        '_asks_help(rest, ("--help", "-h")) and _declares_help(root, module)',
+        '_asks_help(rest, ("--help", "-h"))',
+    ),
+    "workspace-glob-through-path": (
+        "glob.glob(pattern, root_dir=here)",
+        "glob.glob(os.path.join(here, pattern))",
+    ),
 }
 
 ASK_ENV = "RELEASE_ASKED"
@@ -467,7 +487,9 @@ def _workspaces(home):
             for pattern in spaces:
                 if not isinstance(pattern, str) or pattern.startswith("!"):
                     continue
-                for directory in sorted(glob.glob(os.path.join(here, pattern))):
+                # The pattern is globbed UNDER `here` (`root_dir`), never joined onto it: a project path holding `[`, `*` or `?` would read as glob syntax and match nothing, so no workspace would be judged (review 7f22f490.4).
+                for leaf in sorted(glob.glob(pattern, root_dir=here)):
+                    directory = os.path.join(here, leaf)
                     name = _package(directory).get("name")
                     if isinstance(name, str):
                         found[name] = os.path.normpath(directory)
@@ -600,13 +622,35 @@ def _secrets_channel(env):
     return "edge"
 
 
+def _account_target(rest):
+    """The `ARG_TARGET` `deploy_account` ends up with, read by its own parser's rules (`rediacc_ci.core.common.parse_args`, common.sh's twin), or "". That parser takes no prefix, so `--tar` is a different key; but it folds the key (`--TARGET`, `--Target` set `ARG_TARGET` too), a bare `--key` with no next word, or with a next word starting with `--`, stores "true", and the last store wins (review 7f22f490.2). Each of those reads production when the exact last `--target v` names edge."""
+    target = ""
+    k = 0
+    while k < len(rest):
+        word = rest[k]
+        if not word.startswith("--"):
+            k += 1
+            continue
+        flag, eq, value = word.partition("=")
+        step = 1
+        if not eq:
+            if k + 1 < len(rest) and not rest[k + 1].startswith("--"):
+                value, step = rest[k + 1], 2
+            else:
+                value = "true"
+        if flag[2:].replace("-", "_").upper() == "TARGET":
+            target = value
+        k += step
+    return target
+
+
 def _account_channel(rest):
-    target = _option(rest, "--target")
+    target = _account_target(rest)
     return "edge" if target == "edge" else "stable"
 
 
 def _prefix_option(args, name):
-    """The last value an argparse option `name` takes in `args`, spelled in full or as any prefix of at least `--x` (`--tar eu`, `--targ=eu`), or "". argparse accepts a unique prefix by default (`allow_abbrev`), and `deploy_proxy`/`console_executor` keep that default (review 2e939f2a.2); an ambiguous prefix makes argparse exit before any deploy, so reading every prefix as `name` errs only toward the stable reading."""
+    """The last value an argparse option `name` takes in `args`, spelled in full or as any prefix of at least `--x` (`--tar eu`, `--targ=eu`), or "". argparse accepts a unique prefix by default (`allow_abbrev`), and `deploy_proxy`/`console_executor` keep that default (review 2e939f2a.2). NO AMBIGUITY CHECK IS MADE (review 7f22f490.1), and none is needed while no other long option of either parser starts with `--t`, which makes every prefix from `--t` up unique to `--target`; the harness reads both parsers' `add_argument` lines and fails when one does. Were a second `--t...` option added, an ambiguous prefix would make argparse exit before any deploy: reading it as `--target` could then admit a run that publishes nothing, never one that publishes stable. `account_secrets_local` parses exact words and exits 2 on any other, so a prefix there deploys nothing either."""
     found = ""
     for k, word in enumerate(args):
         if word == "--":
@@ -628,7 +672,7 @@ def _target_channel(rest):
 
 def _module_publish(module, rest, root, env):
     """`(kind, what, note)` for a run of one publish module with arguments `rest` and command-line environment `env`."""
-    if "--help" in rest or "-h" in rest:
+    if _asks_help(rest, ("--help", "-h")) and _declares_help(root, module):
         return "", "", ""
     if "--dry-run" in rest and _declares_dry_run(root, module):
         return "", "", ""
@@ -670,10 +714,27 @@ def _wrangler_publish(args):
     return "ask", "wrangler %s on the stable config %s" % (verb, config), ""
 
 
-def _asks_help(args):
-    """Does `--help` stand among the options (before any `--`)? A help run publishes nothing."""
+def _asks_help(args, words=("--help",)):
+    """Does a help flag (`words`) stand among the options (before any `--`) where it cannot be an option's value? A help run publishes nothing, but `docker buildx build --push -t --help .` and `gh release create v1 --notes --help` hand `--help` to `-t` and `--notes` and publish (review 7f22f490.3); `upload_to_r2 --channel --help` does the same. Without each tool's table of value options, a help word right after a bare option word (`-t`, `--notes`, `-qt`; not `--x=v`) is read as that option's value: a help run spelled that way is judged as a publish, the fail-closed side."""
     head = args[: args.index("--")] if "--" in args else args
-    return "--help" in head
+    for k, word in enumerate(head):
+        if word not in words:
+            continue
+        before = head[k - 1] if k else ""
+        if not (before.startswith("-") and len(before) > 1 and "=" not in before):
+            return True
+    return False
+
+
+def _declares_help(root, module):
+    """Does the module honour a help flag at all? argparse does by default; a hand parser does when its source names `"--help"`. `promote_r2_to_stable` takes no argv and `deploy_account`/`deploy_www` store `--help` as one more key, so `--help` on them publishes as if it were absent."""
+    path = os.path.join(str(root), ".ci", *module.split(".")) + ".py"
+    try:
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            text = handle.read()
+    except OSError:
+        return False
+    return "argparse.ArgumentParser(" in text or '"--help"' in text
 
 
 def _short_values(args, letter):

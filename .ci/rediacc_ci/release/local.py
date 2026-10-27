@@ -16,7 +16,7 @@ THE LOCK HOLDS THROUGH THE RUN. The gates judge it once; a concurrent CD edge re
 
 THE TAG IS THREE ROWS, ONE UNIT. The git-level pre-push hook admits the tag push only by the exact object id the release-run record lists, and an annotated tag's object id does not exist until the tag is made. So `tag-create` makes the local tag in the clone (`rediacc_ci.release.tag --create-only`, whose only stdout line is the oid), `tag-record` re-writes the release-run record (same run id and path, so REDIACC_RELEASE_RUN is unchanged) with `(clone, origin, refs/tags/v<V>, oid)`, and `tag-push` pushes `refs/tags/v<V>` only while it is still that oid (`--push-oid`). The record is first written with no push at all.
 
-THE ASSIST (local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage, and `assist-clean-on-stop` (an `on_failure` row armed by `assist-stage-in`) removes it when the run stops anywhere after the stage-in.
+THE ASSIST (local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage, and `assist-clean-on-stop` (an `on_failure` row armed by `assist-stage-in`) removes it when the run stops anywhere after the stage-in, after `assist-cancel-on-stop` (armed by `assist-dispatch`) has cancelled this attempt's assist if it is still in flight. A marker whose run was created before this attempt's dispatch is an earlier attempt's, and `assist-fetch` waits past it.
 
 PROVENANCE (plan decision 6). Sigstore needs the GitHub OIDC identity, so `provenance` writes `dist/cli/SHA256SUMS` over every Release asset (`create_github_release.release_assets`: `dist/cli/**` and `dist/packages/**`) and its armoured detached signature `dist/cli/SHA256SUMS.asc`, made with the release GPG key of the `release-local` profile in a throwaway GNUPGHOME. Both ride the GitHub Release, whose asset set is `dist/cli/**`.
 
@@ -260,13 +260,14 @@ def _table() -> tuple[Step, ...]:
         Step(
             "renet-key-gate",
             "builds",
-            # The clone has no DEV public-key cache (it is untracked), so the operator checkout's is named: without a DEV key the gate refuses.
+            # The clone has no DEV public-key cache (it is untracked), so the operator checkout's is named: without a DEV key the gate refuses. The path reaches the shell through the environment, never spliced into its text, so a checkout path holding `"`, `$` or a backtick stays one word (review 0e993d36.1); `sh -c` is only there to expand the renet glob.
             (
                 "sh",
                 "-c",
-                'exec python3 -m rediacc_ci.release.renet_key_gate --dev-cache "{dev_cache}" private/bin/renet-*',
+                'exec python3 -m rediacc_ci.release.renet_key_gate --dev-cache "$DEV_CACHE" private/bin/renet-*',
             ),
             profiles=("release-local",),
+            env=(("DEV_CACHE", "{dev_cache}"),),
         ),
         # The assist starts as soon as the keyed renet set exists (local-release-assist.yml THE R2 CONTRACT): stage it, then dispatch.
         Step(
@@ -599,6 +600,25 @@ def _table() -> tuple[Step, ...]:
             "stage",
             (*PY, SELF, "_assist", "clean", "--version", "{version}"),
             profiles=("r2-artifacts",),
+        ),
+        # A stop after the dispatch first cancels this attempt's assist run while it is still in flight and waits for it to finish, so the clean below is not raced by its upload (review 0e993d36.2). It runs before the clean because on-stop rows run in table order.
+        Step(
+            "assist-cancel-on-stop",
+            "stage",
+            (
+                *PY,
+                SELF,
+                "_assist",
+                "cancel",
+                "--version",
+                "{version}",
+                "--sha",
+                "{sha}",
+                "--since",
+                "{dispatched_at}",
+            ),
+            on_failure=True,
+            arm="assist-dispatch",
         ),
         # A stop anywhere after the keyed renet set was staged (a failed fetch, stage or seal) still empties the prefix; the rm is idempotent, so a stop after assist-clean repeats it harmlessly.
         Step(
@@ -1996,6 +2016,24 @@ def parse_marker(text: str, sha: str) -> str:
     return parts[1]
 
 
+def _marker_run(run_id: str, sha: str) -> dict[str, Any]:
+    """`gh run view` of the marker's run, proven to be this workflow on `sha` and to carry its creation instant; AssistError otherwise."""
+    view = _gh_json(["run", "view", run_id, "--json", "workflowName,headSha,createdAt"])
+    if not isinstance(view, dict):
+        raise AssistError("gh run view %s gave no answer, so the marker's run is unproven" % run_id)
+    if view.get("workflowName") != ASSIST_NAME or view.get("headSha") != sha:
+        raise AssistError(
+            "the marker names run %s, which is %r on %s, not %s on %s"
+            % (run_id, view.get("workflowName"), view.get("headSha"), ASSIST_NAME, sha)
+        )
+    if not view.get("createdAt"):
+        raise AssistError(
+            "gh run view %s names no createdAt, so whether the marker is this dispatch's is unproven"
+            % run_id
+        )
+    return view
+
+
 def assist_fetch(
     version: str,
     sha: str,
@@ -2010,12 +2048,24 @@ def assist_fetch(
     prefix = "s3://%s/%s/cli" % (bucket, ASSIST_PREFIX % version)
     deadline = time.monotonic() + timeout
     unknown = 0
+    stale = ""
     while True:
         got = _aws(["s3", "cp", "--only-show-errors", prefix + "/.complete", "-"], endpoint, env)
         if got.returncode == 0:
             run_id = parse_marker(got.stdout, sha)
-            break
-        if re.search(r"Not Found|NoSuchKey|\b404\b|does not exist", got.stderr or ""):
+            view = _marker_run(run_id, sha)
+            if str(view["createdAt"]) >= since:
+                break
+            unknown = 0
+            # An earlier attempt's assist of the same sha, still in flight when that attempt stopped and queued ahead of this dispatch by the workflow's concurrency group, wrote this marker after the stage-in emptied the prefix. It is not this run's; this run overwrites it (review 0e993d36.2).
+            if stale != run_id:
+                stale = run_id
+                print(
+                    "%s: cli/.complete names run %s, created %s before this dispatch at %s: an earlier attempt's, waiting for this run's"
+                    % (SELF, run_id, view["createdAt"], since),
+                    file=sys.stderr,
+                )
+        elif re.search(r"Not Found|NoSuchKey|\b404\b|does not exist", got.stderr or ""):
             unknown = 0
         else:
             unknown += 1
@@ -2032,14 +2082,6 @@ def assist_fetch(
         if time.monotonic() >= deadline:
             raise AssistError("no %s/.complete after %ds" % (prefix, int(timeout)))
         time.sleep(poll)
-    view = _gh_json(["run", "view", run_id, "--json", "workflowName,headSha"])
-    if not isinstance(view, dict):
-        raise AssistError("gh run view %s gave no answer, so the marker's run is unproven" % run_id)
-    if view.get("workflowName") != ASSIST_NAME or view.get("headSha") != sha:
-        raise AssistError(
-            "the marker names run %s, which is %r on %s, not %s on %s"
-            % (run_id, view.get("workflowName"), view.get("headSha"), ASSIST_NAME, sha)
-        )
     dist = clone / "dist" / "cli"
     dist.mkdir(parents=True, exist_ok=True)
     got = _aws(
@@ -2068,6 +2110,76 @@ def assist_fetch(
     return run_id
 
 
+def _assist_runs(sha: str, since: str) -> list[dict[str, Any]] | None:
+    """This attempt's local-release-assist dispatches on `sha` (created at or after `since`), or None when gh cannot say."""
+    rows = _gh_json(
+        [
+            "run",
+            "list",
+            "--workflow",
+            ASSIST_WORKFLOW,
+            "--event",
+            "workflow_dispatch",
+            "--limit",
+            "20",
+            "--json",
+            "databaseId,headSha,status,createdAt",
+        ]
+    )
+    if not isinstance(rows, list):
+        return None
+    return [
+        r
+        for r in rows
+        if isinstance(r, dict) and r.get("headSha") == sha and str(r.get("createdAt", "")) >= since
+    ]
+
+
+def assist_cancel(
+    sha: str, since: str, *, grace: float = 30.0, wait: float = 180.0, poll: float = 5.0
+) -> str:
+    """Cancel this attempt's assist run while it is in flight and wait until it has finished, so the on-stop clean is not raced by its upload (review 0e993d36.2). A dispatch can take a few seconds to be listed, so an empty list is re-read for `grace` seconds. AssistError when gh cannot say, a cancel is refused, or the run is still going after `wait`: the clean still runs, and the next stage-in empties the prefix again; `assist_fetch` never reads an earlier attempt's marker as its own."""
+    deadline = time.monotonic() + grace
+    while True:
+        runs = _assist_runs(sha, since)
+        if runs is None:
+            raise AssistError("gh run list gave no answer; an in-flight assist may still write")
+        if runs or time.monotonic() >= deadline:
+            break
+        time.sleep(poll)
+    live = [str(r.get("databaseId", "")) for r in runs if r.get("status") != "completed"]
+    if not live:
+        return "no assist run of %s since %s is in flight (%d finished)" % (sha, since, len(runs))
+    for run_id in live:
+        try:
+            proc = subprocess.run(
+                ["gh", "run", "cancel", run_id],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise AssistError("gh run cancel %s failed: %s" % (run_id, exc)) from exc
+        if proc.returncode != 0:
+            raise AssistError(
+                "gh run cancel %s exited %d: %s"
+                % (run_id, proc.returncode, (proc.stderr or "").strip()[-300:])
+            )
+    deadline = time.monotonic() + wait
+    while True:
+        runs = _assist_runs(sha, since) or []
+        going = [str(r.get("databaseId", "")) for r in runs if r.get("status") != "completed"]
+        if not going:
+            return "cancelled assist run(s) %s" % ", ".join(live)
+        if time.monotonic() >= deadline:
+            raise AssistError(
+                "assist run(s) %s still in flight %ds after the cancel"
+                % (", ".join(going), int(wait))
+            )
+        time.sleep(poll)
+
+
 def assist_clean(version: str, clone: pathlib.Path) -> str:
     bucket, endpoint, env = _assist_r2(clone)
     prefix = "s3://%s/%s/" % (bucket, ASSIST_PREFIX % version)
@@ -2078,9 +2190,9 @@ def assist_clean(version: str, clone: pathlib.Path) -> str:
 
 
 def assist_main(argv: list[str]) -> int:
-    """`_assist stage-in|fetch|clean --version V [--sha S --since ISO]`: the local half of local-release-assist.yml's R2 contract, run in the release clone inside an r2-artifacts child. `fetch` prints the assist run id as its last stdout line."""
+    """`_assist stage-in|fetch|cancel|clean --version V [--sha S --since ISO]`: the local half of local-release-assist.yml's R2 contract, run in the release clone (`stage-in`, `fetch` and `clean` inside an r2-artifacts child). `fetch` prints the assist run id as its last stdout line; `cancel` stops this attempt's in-flight assist on a stop."""
     parser = argparse.ArgumentParser(prog="%s _assist" % SELF)
-    parser.add_argument("verb", choices=("stage-in", "fetch", "clean"))
+    parser.add_argument("verb", choices=("stage-in", "fetch", "cancel", "clean"))
     parser.add_argument("--version", required=True)
     parser.add_argument("--sha", default="")
     parser.add_argument("--since", default="")
@@ -2094,7 +2206,10 @@ def assist_main(argv: list[str]) -> int:
             print(assist_clean(args.version, clone), file=sys.stderr)
         else:
             if not re.fullmatch(r"[0-9a-f]{40}", args.sha) or not args.since:
-                parser.error("fetch needs --sha <40 hex> and --since <ISO instant>")
+                parser.error("%s needs --sha <40 hex> and --since <ISO instant>" % args.verb)
+            if args.verb == "cancel":
+                print(assist_cancel(args.sha, args.since), file=sys.stderr)
+                return 0
             print(assist_fetch(args.version, args.sha, args.since, clone, timeout=args.timeout))
     except AssistError as exc:
         print("%s _assist %s: %s" % (SELF, args.verb, exc), file=sys.stderr)

@@ -1743,14 +1743,37 @@ def test_receipt_refusal():
     cases.append((True, len(GM.FIXTURES) > 10, "PARITY: the sweep saw the fixture set"))
 
     # READER SWEEP (5429d717.2): each world's latest receipt filed as the per-tree copy for its HEAD tree. Where that copy is admissible read_receipt's verdict must be the latest-file verdict, word for word; where it is not, read_receipt must refuse it as not admissible rather than read past it.
-    # WHICH WORLD IS WHICH IS FROZEN HERE BY NAME (review 96b512e4.3), read off the FIXTURES table rather than recomputed with the reader's own predicate, so an error in that predicate shows as a world in the wrong group: push-narrowed is not whole, push-wrong-tree and push-advance-forged name another tree, push-no-receipt writes none. A world added to FIXTURES defaults to admissible; if it is not, its case fails until it is named here.
+    # WHICH WORLD IS WHICH IS FROZEN HERE BY NAME (review 96b512e4.3), read off the FIXTURES table rather than recomputed with the reader's own predicate, so an error in that predicate shows as a world in the wrong group: push-narrowed is not whole, push-wrong-tree and push-advance-forged name another tree, push-no-receipt writes none. ALL THREE GROUPS ARE NAMED, the admissible one included (review 7f22f490.5): a world added to or dropped from FIXTURES fails the partition case below until this table names it, so the 14/3/1 split is pinned rather than derived from the fixture count.
+    sweep_admissible = {
+        "push-dropped-unverified",
+        "push-dropped-verified",
+        "push-green",
+        "push-red-carried",
+        "push-red-finding-carried",
+        "push-red-finding-new",
+        "push-red-stale",
+        "push-red-unnamed",
+        "push-v1-receipt",
+        "push-v2-carried-ok",
+        "push-v2-carried-red",
+        "push-v2-carried-red-flipped",
+        "push-v2-carried-red-honest",
+        "push-v2-carried-stale-input",
+    }
     sweep_inadmissible = {"push-narrowed", "push-wrong-tree", "push-advance-forged"}
     sweep_absent = {"push-no-receipt"}
     cases.append(
         (
-            set(),
-            (sweep_inadmissible | sweep_absent) - set(GM.FIXTURES),
-            "READER SWEEP: every world the table names is a fixture",
+            sorted(GM.FIXTURES),
+            sorted(sweep_admissible | sweep_inadmissible | sweep_absent),
+            "READER SWEEP: the three named groups are exactly the fixture set",
+        )
+    )
+    cases.append(
+        (
+            (14, 3, 1),
+            (len(sweep_admissible), len(sweep_inadmissible), len(sweep_absent)),
+            "READER SWEEP: the named groups hold 14/3/1 and do not overlap",
         )
     )
     same = misfiled_n = absent = 0
@@ -1769,7 +1792,7 @@ def test_receipt_refusal():
         copy.parent.mkdir(parents=True, exist_ok=True)
         copy.write_text(json.dumps(doc), encoding="utf-8")
         via = _refusal_at(w)
-        if name not in sweep_inadmissible:
+        if name in sweep_admissible:
             same += 1
             cases.append(
                 (
@@ -1792,7 +1815,7 @@ def test_receipt_refusal():
         % (same, misfiled_n, absent)
     )
     # The exact split (review 96b512e4.4), so a regression that moves a world between the groups fails here even if each world's own case were somehow skipped.
-    want_same = len(GM.FIXTURES) - len(sweep_inadmissible) - len(sweep_absent)
+    want_same = len(sweep_admissible)
     cases.append(
         (
             (want_same, len(sweep_inadmissible), len(sweep_absent)),

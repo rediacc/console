@@ -925,6 +925,34 @@ def test_a_stop_before_the_stage_in_or_a_clean_run_leaves_the_on_stop_row_idle()
     assert row.argv == next(s for s in EDGE if s.id == "assist-clean").argv
 
 
+def _stop_rows(fail_at: str) -> list[str]:
+    """The on-stop assist rows, in the order they run, when `fail_at` fails in a run of the real table up to the seal."""
+    order = ids(EDGE)
+    on_stop = ("assist-cancel-on-stop", "assist-clean-on-stop")
+    steps = [s for s in EDGE if order.index(s.id) <= order.index("seal") or s.id in on_stop]
+    _FailAt.seen = []
+    run = _FailAt(ROOT, local.Context(version="9.9.9", sha="a" * 40, clone="/c", outcomes={}))
+    run.fail_at = fail_at
+    run.execute(steps)
+    return [i for i in _FailAt.seen if i in on_stop]
+
+
+@pytest.mark.parametrize("fail_at", ["assist-fetch", "validate-stage", "seal"])
+def test_a_stop_after_the_dispatch_cancels_the_assist_before_the_clean(fail_at: str) -> None:
+    """Review 0e993d36.2: the clean is not raced by an assist still uploading into the prefix."""
+    assert _stop_rows(fail_at) == ["assist-cancel-on-stop", "assist-clean-on-stop"]
+    row = next(s for s in EDGE if s.id == "assist-cancel-on-stop")
+    assert row.on_failure
+    assert row.arm == "assist-dispatch"
+    assert "{dispatched_at}" in row.argv
+    assert "cancel" in row.argv
+
+
+def test_a_stop_between_the_stage_in_and_the_dispatch_cleans_without_a_cancel() -> None:
+    assert _stop_rows("assist-dispatch") == ["assist-clean-on-stop"]
+    assert _stop_rows("renet-key-gate") == []
+
+
 @pytest.mark.parametrize(
     ("text", "error"),
     [
@@ -1011,7 +1039,11 @@ def test_assist_fetch_waits_for_the_marker_and_fetches_the_four_seas(
 ) -> None:
     seas = {name: name.encode() for name in local.ASSIST_SEAS}
     aws = FakeAws(2, SHA + " 4242\n", seas)
-    _assist_env(monkeypatch, aws, {"workflowName": local.ASSIST_NAME, "headSha": SHA})
+    _assist_env(
+        monkeypatch,
+        aws,
+        {"workflowName": local.ASSIST_NAME, "headSha": SHA, "createdAt": "2026-10-27T10:00:05Z"},
+    )
     assert local.assist_fetch("9.9.9", SHA, "2026-10-27T10:00:00Z", tmp_path, poll=0) == "4242"
     assert aws.polls == 3
     for name in local.ASSIST_SEAS:
@@ -1027,8 +1059,13 @@ def test_assist_fetch_waits_for_the_marker_and_fetches_the_four_seas(
         ({"workflowName": "CI", "headSha": SHA}, None, "", "not Local Release Assist"),
         ({"workflowName": "Local Release Assist", "headSha": "d" * 40}, None, "", "not Local"),
         (None, None, "", "unproven"),
+        ({"workflowName": "Local Release Assist", "headSha": SHA}, None, "", "no createdAt"),
         (
-            {"workflowName": "Local Release Assist", "headSha": SHA},
+            {
+                "workflowName": "Local Release Assist",
+                "headSha": SHA,
+                "createdAt": "2026-10-27T10:00:05Z",
+            },
             {"rdc-mac-arm64": b"1"},
             "",
             "not provably whole",
@@ -1060,6 +1097,152 @@ def test_assist_fetch_stops_early_on_a_red_dispatch_and_times_out_on_silence(
     _assist_env(monkeypatch, aws, None)
     with pytest.raises(local.AssistError, match=r"no s3://bucket/.*after 0s"):
         local.assist_fetch("9.9.9", SHA, "x", tmp_path, timeout=0, poll=0)
+
+
+def test_assist_fetch_waits_past_an_earlier_attempts_marker(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review 0e993d36.2: an earlier attempt's assist of the same sha, queued ahead by the concurrency group, writes its marker after this attempt's stage-in. That marker is not this run's: fetch waits until this run overwrites it."""
+    seas = {name: name.encode() for name in local.ASSIST_SEAS}
+    aws = FakeAws(0, SHA + " 111\n", seas)
+    created = {"111": "2026-10-27T09:40:00Z", "4242": "2026-10-27T10:00:05Z"}
+
+    def marker(args, endpoint, env):
+        got = FakeAws.__call__(aws, args, endpoint, env)
+        if args[-1] == "-" and aws.polls > 3:
+            return subprocess.CompletedProcess(args, 0, SHA + " 4242\n", "")
+        return got
+
+    _assist_env(monkeypatch, aws, None)
+    monkeypatch.setattr(local, "_aws", marker)
+    monkeypatch.setattr(
+        local,
+        "_gh_json",
+        lambda args: {
+            "workflowName": local.ASSIST_NAME,
+            "headSha": SHA,
+            "createdAt": created[args[2]],
+        },
+    )
+    assert local.assist_fetch("9.9.9", SHA, "2026-10-27T10:00:00Z", tmp_path, poll=0) == "4242"
+    assert aws.polls == 4
+    err = capsys.readouterr().err
+    assert err.count("names run 111") == 1
+    assert "an earlier attempt's" in err
+
+
+def test_assist_fetch_times_out_on_an_earlier_attempts_marker_alone(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    aws = FakeAws(0, SHA + " 111\n", {})
+    view = {"workflowName": local.ASSIST_NAME, "headSha": SHA, "createdAt": "2026-10-27T09:40:00Z"}
+    _assist_env(monkeypatch, aws, view)
+    with pytest.raises(local.AssistError, match="after 0s"):
+        local.assist_fetch("9.9.9", SHA, "2026-10-27T10:00:00Z", tmp_path, timeout=0, poll=0)
+    assert not (tmp_path / "dist").exists()
+
+
+class _GhRuns:
+    """`_gh_json` answering `gh run list` from a list of snapshots, one per call (the last repeats); records the calls."""
+
+    def __init__(self, *snapshots: object) -> None:
+        self.snapshots = list(snapshots)
+        self.calls = 0
+
+    def __call__(self, args: list[str]) -> object:
+        assert args[:2] == ["run", "list"]
+        got = self.snapshots[min(self.calls, len(self.snapshots) - 1)]
+        self.calls += 1
+        return got
+
+
+def _run_row(run_id: int, status: str, created: str = "2026-10-27T10:00:05Z") -> dict[str, object]:
+    return {"databaseId": run_id, "headSha": SHA, "status": status, "createdAt": created}
+
+
+def _cancel_env(monkeypatch: pytest.MonkeyPatch, gh: _GhRuns, rc: int = 0) -> list[list[str]]:
+    cancels: list[list[str]] = []
+
+    def fake_run(argv, **kw):
+        del kw
+        cancels.append(list(argv))
+        return subprocess.CompletedProcess(argv, rc, "", "refused" if rc else "")
+
+    monkeypatch.setattr(local, "_gh_json", gh)
+    monkeypatch.setattr(local.subprocess, "run", fake_run)
+    monkeypatch.setattr(local.time, "sleep", lambda _s: None)
+    return cancels
+
+
+SINCE = "2026-10-27T10:00:00Z"
+
+
+def test_assist_cancel_stops_this_attempts_in_flight_run_and_waits_for_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    earlier = _run_row(7, "in_progress", "2026-10-27T09:00:00Z")
+    gh = _GhRuns(
+        [earlier, _run_row(42, "in_progress")],
+        [earlier, _run_row(42, "in_progress")],
+        [earlier, _run_row(42, "completed")],
+    )
+    cancels = _cancel_env(monkeypatch, gh)
+    assert local.assist_cancel(SHA, SINCE, poll=0) == "cancelled assist run(s) 42"
+    # Only this attempt's run is cancelled: run 7 was created before the dispatch.
+    assert cancels == [["gh", "run", "cancel", "42"]]
+    assert gh.calls == 3
+
+
+def test_assist_cancel_leaves_a_finished_run_and_rereads_an_empty_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gh = _GhRuns([], [_run_row(42, "completed")])
+    cancels = _cancel_env(monkeypatch, gh)
+    assert "is in flight (1 finished)" in local.assist_cancel(SHA, SINCE, poll=0)
+    assert cancels == []
+    assert gh.calls == 2
+    gh = _GhRuns([])
+    cancels = _cancel_env(monkeypatch, gh)
+    assert "(0 finished)" in local.assist_cancel(SHA, SINCE, grace=0, poll=0)
+    assert cancels == []
+
+
+@pytest.mark.parametrize(
+    ("snapshots", "rc", "error"),
+    [
+        ((None,), 0, "gh run list gave no answer"),
+        (([_run_row(42, "in_progress")],), 1, "gh run cancel 42 exited 1: refused"),
+        (([_run_row(42, "in_progress")],), 0, "still in flight 0s after the cancel"),
+    ],
+)
+def test_assist_cancel_refuses_loudly_when_the_run_cannot_be_stopped(
+    monkeypatch: pytest.MonkeyPatch, snapshots: tuple[object, ...], rc: int, error: str
+) -> None:
+    _cancel_env(monkeypatch, _GhRuns(*snapshots), rc)
+    with pytest.raises(local.AssistError, match=re.escape(error)):
+        local.assist_cancel(SHA, SINCE, wait=0, poll=0)
+
+
+def test_the_renet_key_gate_hands_the_dev_cache_to_sh_as_one_word(tmp_path: pathlib.Path) -> None:
+    """Review 0e993d36.1: a checkout path holding `"`, `$` or a backtick reaches the gate as one argument and expands nothing."""
+    row = next(s for s in EDGE if s.id == "renet-key-gate")
+    hostile = str(tmp_path / 'a"b $(touch PWNED) `touch PWNED2` $HOME' / "public-keys.env")
+    ctx = local.Context(dev_cache=hostile, outcomes={})
+    argv = local.child_argv(dataclasses_replace(row, profiles=()), ctx)
+    env = local.child_env(dataclasses_replace(row, profiles=()), ctx, ROOT)
+    assert argv[:2] == ["sh", "-c"]
+    script = argv[2].replace(
+        "exec python3 -m rediacc_ci.release.renet_key_gate", "exec printf '%s\\n'"
+    )
+    assert script != argv[2]
+    (tmp_path / "private" / "bin").mkdir(parents=True)
+    (tmp_path / "private" / "bin" / "renet-linux-amd64").write_bytes(b"x")
+    out = subprocess.run(
+        ["sh", "-c", script], cwd=tmp_path, env=env, capture_output=True, text=True, check=True
+    ).stdout.splitlines()
+    assert out == ["--dev-cache", hostile, "private/bin/renet-linux-amd64"]
+    assert not (tmp_path / "PWNED").exists()
+    assert not (tmp_path / "PWNED2").exists()
 
 
 def test_assist_stage_in_empties_the_prefix_then_uploads_a_checked_renet_set(

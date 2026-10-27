@@ -257,7 +257,8 @@ def test_a_dev_cache_named_on_the_command_line_is_read(
 
 def test_the_local_release_names_the_checkouts_dev_cache() -> None:
     (row,) = [s for s in local.STEPS if s.id == "renet-key-gate"]
-    assert '--dev-cache "{dev_cache}"' in row.argv[-1]
+    assert '--dev-cache "$DEV_CACHE"' in row.argv[-1]
+    assert ("DEV_CACHE", "{dev_cache}") in row.env
     ctx = local.base_context(gate.paths.repo_root(), ["eu"], False)
     assert ctx["dev_cache"] == str(gate.paths.repo_root() / gate.DEV_KEY_CACHE)
 
