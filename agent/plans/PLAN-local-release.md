@@ -25,11 +25,12 @@ Design inputs, summarized below with file:line:
   - The reader tries the per-tree copy `.ci/cache/receipts/<headTree>.json` (`scripts/ci-runner/run.ts:3246-3250`) before the latest file.
   - Owns: block_unverified_push.py and test-block_unverified_push.py.
   - Accept: `python3 .claude/rediacc_hooks/run_tests.py -k unverified_push` rc=0 with the goldens unchanged, and `receipt_refusal` is None only on the push-green fixture.
-- [ ] W1-B [writer] `vm:check --base <ref>`.
+- [x] W1-B [writer] `vm:check --base <ref>`.
   - On `main`, `--changed` diffs against origin/main, which is HEAD, so it checks nothing and writes no receipt (`.ci/rediacc_ci/drills/vm_check.py:28`, `vm_check_trigger.py:275-310`).
   - Add `--base`, recorded in the receipt as `trigger.base`.
   - Owns: vm_check.py and test_drills_vm_check.py.
   - Accept: the pytest rc=0, and a receipt written with `--base v2.4.0` names the ref.
+    (ticked) 2026-10-27T07:39:43Z by d778be9d: 0f5cfa3c9: vm_check.py --changed --base <ref>, trigger.base in the receipt; pytest test_drills_vm_check.py rc=0 (252) with the main plus --base v2.4.0 case
 - [ ] W1-C [writer] Order declaration.
   - Add `.ci/config/release-requires.json`. Its first entry is R1-config-envelope: since account aaf3c251, with cli_commits 2c3324a44 and 95bcc8dad.
   - Add `rediacc_ci.release.order.account_refusal(channel, account_pointer)`:

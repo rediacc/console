@@ -1022,6 +1022,34 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-local-release.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 15,
+      "done": 1,
+      "open_sigs": [
+        "05a9a216",
+        "0b081d62",
+        "0b718b77",
+        "2869d358",
+        "2a1a6a3e",
+        "33d25482",
+        "54ed65e4",
+        "578be002",
+        "5f05df46",
+        "65539bb7",
+        "7522f126",
+        "cb4b552c",
+        "d12c9338",
+        "d20d0201",
+        "fd2a3231"
+      ],
+      "done_sigs": [
+        "57ba8ee2"
+      ]
+    },
     "agent/plans/PLAN-localize-cheat-sheet-rendering.md": {
       "status": "compacted",
       "owner": "97604f47",
