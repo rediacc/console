@@ -35,4 +35,6 @@ Bench signs licences with the PRODUCTION ED25519 pair (operator ruling 2026-10-2
 
 The X25519 pair stays DEV. It is the E2E envelope key, not the licence signer, and every bench config already carries the DEV X25519 public key as its account `e2ePublicKey`; moving the pair would fail every bench response with "Decryption failed". The JWT secret and the server API key stay DEV as well.
 
-The `deploy-proxy-bench` profile still binds the DEV ED25519 public key for the renet the bench proxy image builds from the tree, so that renet does not verify a production-signed bench licence until that profile moves to the production public key and the bench proxy is redeployed.
+The `deploy-proxy-bench` profile binds the production ED25519 public key too, so the renet the bench proxy image builds verifies a production-signed bench licence; the bench proxy was redeployed with it on 2026-10-27 (version 5622d50c).
+
+A TOTP step is accepted once per user (account 8c656b6). Two runs that log in within the same 30 s step collide: the second is refused "Invalid verification code". A run that follows `npm run login:bench`, such as `rdc config remote master-password change`, waits for the next step first.
