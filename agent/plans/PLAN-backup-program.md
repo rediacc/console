@@ -264,7 +264,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
     (ticked) 2026-10-24T14:16:22Z by d778be9d: commit:a0d131ce3 bind refuses an unschedulable strategy through strategyUnschedulableReason, shared with the unit generator; vitest rc=0
 - [x] G9: Contract test: every generated ExecStart argv is parsed by the real `renet backup snapshot` flag set (cobra, no execution), so a flag mismatch fails CI. Accept: it fails on today's --repo <name> output.
     (ticked) 2026-10-25T11:07:06Z by d778be9d: commit:1498835931713e: G9 per the P5/P6 writers and the integration pass; CLI vitest src 3369 passed, shared 716 passed, cli tsc rc=0 (lead reruns)
-- [ ] G10: Per-repo cadence (02-design decision 10): an optional per-repo schedule override inside a strategy. Accept: generator test.
+- [x] G10: Per-repo cadence (02-design decision 10): an optional per-repo schedule override inside a strategy. Accept: generator test.
+    (ticked) 2026-10-27T00:21:49Z by d778be9d: cd packages/cli && npx vitest run src/services/__tests__/backup-schedule-renet-contract.test.ts rc=0 (4 tests; the perRepo override case at line 169), landed in 149883593. DEPS-WAIVED: CLI schedule generation with no dependency on the shell-sandbox or account-vm-check plans
 - [x] G11: Order a run by RPO deficit, furthest-behind repo first (decision 9, private/renet/cmd/renet/backup_snapshot.go:124-126). Accept: Go test on the ordering.
     (ticked) 2026-10-25T07:48:44Z by d778be9d: renet d722e0bf (console 4fc93261f): G11 per the P1/P2 writer reports; scratch clone build linux/windows/darwin rc=0, go vet ./... rc=0, go test ./cmd/renet/... ./pkg/... green apart from the i18n baseline follow-up
 
@@ -375,7 +376,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [x] M2: The local path runs the turnstile_drift preflight first and refuses on drift. Accept: test with a planted mismatch.
     (ticked) 2026-10-27T00:08:44Z by d778be9d: pytest test_deploy_account_secrets_local.py + test_deploy_turnstile_drift.py rc=0 (55 passed); test_planted_drift_refuses_before_any_push (line 152) plants a mismatch and asserts "Turnstile drift preflight failed" before any push. DEPS-WAIVED: the box is local tooling with no dependency on the shell-sandbox or account-vm-check plans
 - [ ] M3: A worker-secret prune verb: list the live worker's secret names, compare them with the names the deploy pushes, and delete the extras through the Cloudflare API (which keeps the ASSETS binding, measured 2026-10-15). Extend check-worker-secret-names.ts to report live extras when a token is present. Accept: a dry run on eu lists nothing extra after the 2026-10-15 cleanup.
-- [ ] M4: Pin wrangler in workers/account to the constants.sh version (4.150.0; 4.131.2 is installed) and make the deploy refuse a mismatch. Accept: pins gate rc=0.
+- [x] M4: Pin wrangler in workers/account to the constants.sh version (4.150.0; 4.131.2 is installed) and make the deploy refuse a mismatch. Accept: pins gate rc=0.
+    (ticked) 2026-10-27T00:22:02Z by d778be9d: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.wrangler_pin rc=0: wrangler 4.152.0 in constants.sh, workers/account/package.json and the install agree (the pin moved past the 4.150.0 the box text names); the module exits 1 on a mismatch, and account_secrets_local.py imports it so the local deploy refuses; check:ci-pin-registry, -toolchain-pins and -pin-freshness rc=0. DEPS-WAIVED: deploy tooling with no dependency on the shell-sandbox or account-vm-check plans
 - [ ] M5: Update .claude/skills/deploy/SKILL.md: bws on the host, the local secrets path, and the API-delete fact. Accept: skill text matches the tooling.
 
 ### Phase N: design backlog decided and built
