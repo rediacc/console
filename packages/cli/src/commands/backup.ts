@@ -6,6 +6,7 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { parseRef } from '../services/addressing/ref-parser.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
+import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { targetFloor } from '../services/config/network-id-discovery.js';
@@ -205,6 +206,9 @@ function registerBackupRestore(backup: Command): void {
               place: ref.place,
             });
         if (!ok) return;
+
+        // G4: the restore registered a new repository on the target machine, so its backup units re-render.
+        await reconcileBackupSchedules(targetMachine);
 
         if (options.up) {
           await restoreDeploy(targetName, targetMachine, datastore, options);

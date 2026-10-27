@@ -15,6 +15,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import type { RepoFamily } from '@rediacc/shared/config-schema';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
+import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
@@ -533,6 +534,9 @@ export async function migrateRepo(ref: string, options: MigrateOptions): Promise
     debug
   );
   await finalizeCutover(name, repoKey, from, to, skipDns, keepSource, sourceDatastore, debug);
+  // G4: the repo left `from` and joined `to`, so both machines' backup units re-render (the hook warns, never throws).
+  await reconcileBackupSchedules(to);
+  if (from !== to) await reconcileBackupSchedules(from);
 
   const totalMs = Date.now() - migrationStart;
   outputService.info('');
