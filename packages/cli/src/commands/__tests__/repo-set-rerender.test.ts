@@ -175,7 +175,9 @@ describe('G4 wiring: the repo set changes, the schedule re-renders', () => {
   it('migrate does not reconcile when the cutover throws before returning', async () => {
     mockExecute.mockResolvedValue({ success: false, stdout: '', allSteps: [], steps: [] });
     // The failure must be the cutover's own, or the no-reconcile claim proves nothing.
-    await expect(migrateRepo('app', { to: 'dst-machine', skipDns: true })).rejects.toThrow();
+    await expect(migrateRepo('app', { to: 'dst-machine', skipDns: true })).rejects.toThrow(
+      / failed: /
+    );
     expect(mockExecute).toHaveBeenCalled();
     expect(mockReconcile).not.toHaveBeenCalled();
   });

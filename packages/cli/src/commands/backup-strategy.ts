@@ -421,7 +421,12 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .argument('<strategy>', t('options.strategyName'))
     .description(t('commands.backup.strategy.remove.description'))
     .option('--destination <name>', t('commands.backup.strategy.remove.optionDestination'))
-    .option('--unbind', t('commands.backup.strategy.remove.optionUnbind'))
+    // --unbind applies to removing the whole strategy; with --destination it would be silently ignored.
+    .addOption(
+      new Option('--unbind', t('commands.backup.strategy.remove.optionUnbind')).conflicts(
+        'destination'
+      )
+    )
     .action(async (strategy: string, options) => {
       try {
         if (options.destination) {
