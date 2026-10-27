@@ -231,19 +231,25 @@ def open_verdict(text: str) -> tuple[bool, str]:
 
 BPFTOOL_PREREQUISITE = (
     "PREREQUISITE MISSING, not a device-cgroup verdict: v2 rule read needs bpftool on the worker and provisioning does not install it; "
-    "add it to the ops VM provisioning (pkgset in private/renet: Ubuntu linux-tools-common + linux-tools-$(uname -r), "
-    "Debian/Fedora/openSUSE/Oracle bpftool) or install it now with `sudo apt-get install -y linux-tools-common linux-tools-$(uname -r)`"
+    "the drill's own install (apt linux-tools-common + linux-tools-$(uname -r), else bpftool) failed on this worker; "
+    "install it by hand with `sudo apt-get install -y linux-tools-common linux-tools-$(uname -r)`"
 )
 
 
 def cgroup_script(socket: str, names: tuple[str, ...]) -> str:
     """Root on the worker: for each container (by name, on the repo daemon at `socket`), a `== <name>` section with its cgroup version and its device rules: v1 `devices.list` as `RULE:` lines, v2 every device program `bpftool cgroup list` names, dumped as `XL:` lines (`NOBPFTOOL` without bpftool)."""
     body = (
+        # The drill installs its own prerequisite on the dev worker: bpftool is a test tool, not a renet runtime need, so it stays out of renet's customer package sets.
+        "ensure_bpftool() { "
+        'if command -v apt-get >/dev/null 2>&1; then DEBIAN_FRONTEND=noninteractive apt-get install -y linux-tools-common "linux-tools-$(uname -r)" || apt-get install -y bpftool; '
+        "elif command -v dnf >/dev/null 2>&1; then dnf install -y bpftool; "
+        "elif command -v zypper >/dev/null 2>&1; then zypper --non-interactive install bpftool; fi; }; "
         'rd() { echo "%(sec)s$1"; '
         'pid=$(docker -H unix://%(sock)s inspect -f \'{{.State.Pid}}\' "$1" 2>&1) || { echo "NOPID: $pid"; return; }; '
         "v1=$(awk -F: '$2 ~ /(^|,)devices(,|$)/ {print $3}' /proc/$pid/cgroup); "
         'if [ -n "$v1" ]; then echo CGV=1; sed \'s/^/%(rule)s/\' "/sys/fs/cgroup/devices$v1/devices.list"; return; fi; '
         'v2=$(awk -F: \'$1=="0" {print $3}\' /proc/$pid/cgroup); echo "CGV=2 CG=$v2"; '
+        "command -v bpftool >/dev/null 2>&1 || ensure_bpftool >/dev/null 2>&1; "
         "command -v bpftool >/dev/null 2>&1 || { echo NOBPFTOOL; return; }; "
         "for id in $(bpftool cgroup list \"/sys/fs/cgroup$v2\" | awk '$2 ~ /device/ {print $1}'); do "
         "echo PROG=$id; bpftool prog dump xlated id $id | sed 's/^/%(xl)s/'; done; }; "

@@ -432,3 +432,11 @@ def test_g1_7_leaves_the_stamp_alone_when_mainpid_is_unreadable(monkeypatch) -> 
     drill.g1_7_converge()
     assert [ok for _d, ok in drill.checks] == [False]
     assert not any(c.startswith("rm -f") for c in drill.calls)
+
+
+def test_cgroup_script_installs_bpftool_before_declaring_it_missing() -> None:
+    script = g.cgroup_script("/var/run/rediacc/docker-1.sock", ("a",))
+    assert "ensure_bpftool()" in script
+    assert script.index("ensure_bpftool >/dev/null") < script.index("echo NOBPFTOOL")
+    assert "linux-tools-common" in script
+    assert "dnf install -y bpftool" in script
