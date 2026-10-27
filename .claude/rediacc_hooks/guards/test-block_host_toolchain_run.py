@@ -659,6 +659,39 @@ cases.append(
 
 # THE LOCAL RELEASE ENTRY (agent/plans/PLAN-local-release.md W2-C) is a gate-key row: `npm run release:local` names an npm script, so it lives in NEEDS, and a NEEDS_SCRIPT row would fail the liveness loop above. Both directions of `_is_invoked`, decided in-process so they hold whether or not this host carries aws.
 cases.append((True, ("release:local", "aws") in GUARD.NEEDS, "release:local: the row is in NEEDS"))
+# The module spelling of the same entry (W2-B, 7c25d047b) is a NEEDS_SCRIPT row; the liveness loop above already proves its module file exists. Its key is a PREFIX of `rediacc_ci.release.local_gates`, which runs no aws, so the module is matched whole, never as a substring.
+cases.append(
+    (
+        True,
+        ("rediacc_ci.release.local", "aws") in GUARD.NEEDS_SCRIPT,
+        "release.local: the module row is in NEEDS_SCRIPT",
+    )
+)
+cases.extend(
+    (want, GUARD._is_invoked("rediacc_ci.release.local", cmd), label)
+    for want, cmd, label in (
+        (
+            True,
+            "PYTHONPATH=.ci python3 -m rediacc_ci.release.local --channel edge",
+            "release.local: python -m runs the module",
+        ),
+        (
+            True,
+            "python3 .ci/rediacc_ci/release/local.py --channel edge",
+            "release.local: the script path runs the module",
+        ),
+        (
+            False,
+            "PYTHONPATH=.ci python3 -m rediacc_ci.release.local_gates --channel edge",
+            "CONTROL: the gates module shares the prefix and is not the entry",
+        ),
+        (
+            False,
+            "python3 -m pytest -k rediacc_ci.release.local",
+            "CONTROL: a pytest selection naming the module is a mention",
+        ),
+    )
+)
 cases.append(
     (
         False,

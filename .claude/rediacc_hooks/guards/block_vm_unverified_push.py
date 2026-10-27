@@ -22,7 +22,7 @@ THE ESCAPE is an environment assignment on the push itself, read from the shared
 
   Every kind needs the `ASKED:` minute, matched against an AskUserQuestion answer in the payload's `transcript_path` within 300 s by `wl_checks._asked_in_transcript`, the evidence rule of the review waiver. That proves an operator answer exists at that minute, not that it answered this question: it narrows the escape to the operator's own turn. A transcript that cannot be read proves nothing, so the escape is refused then.
 
-THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the console checkout (ts, branch, head (the pushed commit, not the checkout's HEAD), tree, renet, account (the two gitlinks of that tree), sides, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 62 is the last pre-bash slot, so every other guard has already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
+THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the console checkout (ts, branch, head (the pushed commit, not the checkout's HEAD), tree, renet, account (the two gitlinks of that tree), sides, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 63 puts it behind every refusing guard but `block_backup_unverified_push` at 64, `block_unasked_release` at 62 included, so those have already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
 
 SCOPE, as `block_unverified_push` draws it: a command-position `git push` in this checkout. NOT judged: a `--dry-run` push (a `--mirror` or `--all` one too, since it publishes nothing); a delete push (`--delete`, `:<ref>`); a push whose source is exactly `origin/main` (the GitLab mirror push of /pr-merge step 6b, `block_unverified_push.pushes_only_origin_main`), which a `--mirror` push never is; a submodule push (the console pointer push carries the range); another repository, by `-C`, `cd` or the payload's `cwd`.
 
@@ -41,8 +41,8 @@ from rediacc_hooks.guards import block_unverified_push as PUSH
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-# The last pre-bash slot: the ledger line is the admission record, so it is written only after every other guard has let the command through.
-ORDER = 62
+# The second-last pre-bash slot: the ledger line is the admission record, so it is written only after every other guard but block_backup_unverified_push (64) has let the command through.
+ORDER = 63
 
 # The touched test, inverted: planted, every push reads as untouched and passes without a receipt.
 DEFECT = ("if not hits:", "if True:")

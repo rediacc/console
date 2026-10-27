@@ -1,26 +1,21 @@
-"""Refuse a release from agent Bash unless the operator asked for it, and refuse the raw publish verbs a release is made of.
+"""Refuse a stable release or deploy from agent Bash unless the operator asked for it, refuse the raw publish verbs a release is made of, and leave edge and bench free.
 
-WHY. agent/plans/PLAN-local-release.md (operator ruling ASKED:2026-10-27T06:37Z) moves the release from CD to one local entry, `npm run release:local -- --channel edge|stable [--dry-run]` (`rediacc_ci.release.local`, box W2-B). A release reaches every user, so this guard, box W2-C, holds two lines:
+WHY. agent/plans/PLAN-local-release.md moves the edge release to one local entry, `npm run release:local -- --channel edge [--dry-run]` (`rediacc_ci.release.local`, box W2-B). The operator ruling of 2026-10-27T09:45Z sets the line this guard (box W2-C) holds: "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD." So:
 
-  1. THE ENTRY RUNS ONLY WHEN ASKED. `npm run release:local` (or `python3 -m rediacc_ci.release.local`) without `--dry-run` is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use. `--dry-run` always passes: it reads no secret value and writes nothing.
-  2. THE RAW PUBLISH VERBS DO NOT RUN FROM AGENT BASH, so the entry cannot be routed around one step at a time: `wrangler deploy|rollback|publish|versions deploy`, `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`), `docker push` (and `image push`, `manifest push`), a `docker build`/`buildx build` with `--push` or a registry output, `docker buildx imagetools create`, and `-m` on the publish modules in DEPLOY_MODULES and RELEASE_MODULES. The refusal points at `npm run release:local`.
+  1. EDGE AND BENCH ARE FREE, with no question: `npm run release:local -- --channel edge` (with or without `--dry-run`), `deploy_edge`, `deploy_account --target edge` in any region, `account_secrets_local --target edge`, `deploy_proxy`/`console_executor --target edge|bench`, `deploy_bench`, and `set_*_worker_secrets` whose `TARGET`/`WORKER_NAME` on the command line name edge.
+  2. EVERY STABLE TARGET NEEDS A PROVEN ASK, in every region, eu included (the 2026-09-26 eu exemption is retired by this ruling): `deploy_account` with any `--target` but `edge` (its default is production), `deploy_www`, `account_secrets_local`/`deploy_proxy`/`console_executor` with a stable target, `set_*_worker_secrets` for a stable Worker or with no target on the command line, `wrangler deploy|rollback` on a stable config, and the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
+  3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is promoted by `.github/workflows/promote-stable.yml` only. A run of the entry naming no channel is refused too, because npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all).
+  4. THE RAW PUBLISH VERBS STAY REFUSED, with no escape: `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`), `docker push` (and `image push`, `manifest push`), a `docker build`/`buildx build` with `--push` or a registry output, `docker buildx imagetools create`, a `wrangler deploy|rollback|publish|versions deploy` on an edge, bench or preview config (the edge modules above are its path), and `-m` on the release entry's own steps (`upload_to_r2`, `upload_repos_to_r2`, `write_release_sentinel`, `create_github_release`, `tag_submodules`, `update_homebrew_tap`), which the entry runs in order with its gates and record.
 
 A SHELL-WRITE TWIN rides the same module: an agent write under `.ci/cache/release/` (a redirect, `tee`, `sed -i`, a copy or move onto it, `rm`, `mkdir`, `touch`, `chmod`, a mutating `git` inside the release clone, an interpreter program writing there) is refused. Decision 1 of the plan judges cleanliness on a fresh clone of HEAD at `.ci/cache/release/<tree>/`; a clone a session can edit by hand proves nothing. Only the entry and its gates module write there. The Edit and Write tools are NOT judged here: that half is a pre-edit guard this module cannot be (one module, one chain).
 
-EXEMPTIONS, each by name, each printed when it admits so the debt stays visible. They exist because flows the operator has authorized still need a path until W3 replaces them with `release:local --workers-only`:
-
-  * `deploy_proxy --target bench`: the bench proxy stays manual (deploy skill section 4a) and builds renet with the dev licence key; it is not a release target. Every other `--target` is refused.
-  * `deploy_account --region eu`: the operator ruled on 2026-09-26 that an eu account deploy needs no question while there are no active users (memory feedback_eu_deploy_no_ask).
-  * `deploy_account` for another region, `deploy_www`, `deploy_edge`: the deploy skill's local path (section 4), which its section 0 already requires the operator to ask for in the task. Admitted only with the same proven `RELEASE_ASKED` minute, until W3-D moves the skill to `release:local --workers-only`.
-  * NOT IN THE LISTS, so never refused here: `rediacc_ci.ops.deploy_bench` (bench deploys keep working) and `rediacc_ci.deploy.account_secrets_local` (the skill's per-region secrets push).
-
-A `--help`/`-h` on a publish module passes, and so does `--dry-run` on one whose own source declares `--dry-run` (a module that does not would reject the flag or, read with `parse_known_args`, ignore it and publish; the source is what says which).
+A `--help`/`-h` on a publish module passes, and so does `--dry-run` on one whose own source declares `--dry-run` (a module that does not would reject the flag or, read with `parse_known_args`, ignore it and publish; the source is what says which). `set_preview_worker_secrets` is not judged: a preview Worker is never stable.
 
 WRAPPERS ARE UNWRAPPED. `./run.sh devbox exec -- ...`, `bws_env exec ... -- ...` and `docker exec <container> ...` hand their tail to another process, so the tail is judged as a command of its own with the outer environment carried in. `npm run <script>` is judged by the script's own text from the package.json of the directory it runs in (`--prefix`, a path `-w`, or `cd`), because `workers/mta-sts`'s `npm run deploy` is a `wrangler deploy` that names no publish verb on the command line.
 
-WHAT IT DOES NOT SEE: a publish verb assembled at run time, `gh api` POSTs to the releases endpoint, a path into `.ci/cache/release/` spelled through a glob or a symlink the word does not resolve through, and a program that builds the path from parts. The release record and the R2 sentinel are what a release leaves behind, so a release this guard missed is still visible after the fact.
+WHAT IT DOES NOT SEE: a publish verb assembled at run time, `gh api` POSTs to the releases endpoint, a `TARGET` or `WORKER_NAME` the session's own environment holds (absent from the command line, it reads as stable, the fail-closed direction), a path into `.ci/cache/release/` spelled through a glob or a symlink the word does not resolve through, and a program that builds the path from parts. The release record and the R2 sentinel are what a release leaves behind, so a release this guard missed is still visible after the fact.
 
-ORDER 64, appended. `block_vm_unverified_push` (62) and `block_backup_unverified_push` (63) each write a ledger line once they admit an escaped push, on the claim that every other guard ran first; with this guard behind them a command that escapes a push AND runs a refused publish verb leaves a ledger line for a push that never ran. Moving this guard ahead of them shifts both of their ORDER lines, which this box does not own.
+ORDER 62, ahead of `block_vm_unverified_push` (63) and `block_backup_unverified_push` (64). Both write a ledger line once they admit an escaped push, on the claim that every refusing guard ran first; with this guard behind them a command that escapes a push AND runs a refused publish verb left a ledger line for a push that never ran.
 
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`); it is judged by `test-block_unasked_release.py` beside it, which also plants DEFECT and every MUTANT.
 """
@@ -35,7 +30,7 @@ from rediacc_hooks.guards.block_host_toolchain_run import _python_target
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 64
+ORDER = 62
 
 # Planted, no finding is ever refused: every publish verb, every unproven ASKED and every write into the release clone passes.
 DEFECT = ("    if refusals:\n", "    if False:\n")
@@ -45,17 +40,22 @@ MUTANTS = {
         "return bool(wl_checks._asked_in_transcript(value, transcript))",
         "return True",
     ),
-    "dry-run-before-separator": (
-        'tail = args[args.index("--") + 1 :] if "--" in args else []\n    return',
-        "tail = args\n    return",
+    "channel-before-separator": (
+        '    tail = args[args.index("--") + 1 :] if "--" in args else []\n    return _option(tail',
+        "    tail = args\n    return _option(tail",
     ),
-    "bench-any-target": (
-        'if module == "rediacc_ci.deploy.deploy_proxy" and target == "bench":',
-        'if module == "rediacc_ci.deploy.deploy_proxy":',
+    "any-channel-admitted": ('    if channel == "edge":\n', "    if True:\n"),
+    "account-target-ignored": (
+        'return "edge" if target == "edge" else "stable"',
+        'return "edge"',
     ),
-    "eu-any-region": (
-        'if module == "rediacc_ci.deploy.deploy_account" and region == "eu":',
-        'if module == "rediacc_ci.deploy.deploy_account":',
+    "proxy-target-ignored": (
+        'return "edge" if target in EDGE_TARGETS else "stable"',
+        'return "edge"',
+    ),
+    "stable-config-unasked": (
+        'return "ask", "wrangler %s on the stable',
+        'return "", "wrangler %s on the stable',
     ),
     "tag-push-ignored": ("    return _TAG_REF.match(ref) is not None", "    return False"),
     "release-dir-ignored": (
@@ -71,28 +71,56 @@ RELEASE_MODULE = "rediacc_ci.release.local"
 # The writers of the release clone: the entry and the gates module it calls (box W2-A).
 CLONE_WRITERS = (RELEASE_MODULE, "rediacc_ci.release.local_gates")
 
-DEPLOY_MODULES = tuple(
-    "rediacc_ci.deploy.%s" % m
-    for m in (
-        "deploy_account",
-        "deploy_www",
-        "deploy_edge",
-        "deploy_proxy",
-        "upload_to_r2",
-        "upload_repos_to_r2",
-        "write_release_sentinel",
-        "promote_r2_to_stable",
-    )
+# The targets the 2026-10-27T09:45Z ruling leaves free; every other target is stable and needs a proven ask.
+EDGE_TARGETS = ("edge", "bench")
+# `--target edge` is free; any other value, its default `production` included, deploys stable.
+ACCOUNT_MODULE = "rediacc_ci.deploy.deploy_account"
+# `--target edge|bench` is free; `stable`, or no target, needs a proven ask.
+TARGET_MODULES = (
+    "rediacc_ci.deploy.deploy_proxy",
+    "rediacc_ci.deploy.console_executor",
+    "rediacc_ci.deploy.account_secrets_local",
 )
-RELEASE_MODULES = tuple(
-    "rediacc_ci.release.%s" % m
-    for m in ("create_github_release", "tag_submodules", "update_homebrew_tap", "mark_production")
-)
-# The deploy skill's local path (section 4), admitted under a proven RELEASE_ASKED until W3-D.
-SKILL_MODULES = (
-    "rediacc_ci.deploy.deploy_account",
+# Edge or bench by construction: free.
+EDGE_MODULES = ("rediacc_ci.deploy.deploy_edge", "rediacc_ci.ops.deploy_bench")
+# Stable by construction: the stable www Worker and the promote verbs. Each needs a proven ask.
+STABLE_MODULES = (
     "rediacc_ci.deploy.deploy_www",
-    "rediacc_ci.deploy.deploy_edge",
+    "rediacc_ci.deploy.promote_r2_to_stable",
+    "rediacc_ci.deploy.promote_r2_to_stable_hotfix",
+    "rediacc_ci.deploy.promote_docker_to_stable_hotfix",
+    "rediacc_ci.release.mark_production",
+)
+# The Worker secret pushes, whose channel is the `TARGET` and `WORKER_NAME` on the command line.
+SECRETS_MODULES = (
+    "rediacc_ci.deploy.set_account_worker_secrets",
+    "rediacc_ci.deploy.set_www_worker_secrets",
+)
+# The release entry's own steps: refused raw, because the entry runs them in order behind its gates.
+STEP_MODULES = (
+    "rediacc_ci.deploy.upload_to_r2",
+    "rediacc_ci.deploy.upload_repos_to_r2",
+    "rediacc_ci.deploy.write_release_sentinel",
+    "rediacc_ci.release.create_github_release",
+    "rediacc_ci.release.tag_submodules",
+    "rediacc_ci.release.update_homebrew_tap",
+)
+PUBLISH_MODULES = (
+    ACCOUNT_MODULE,
+    *TARGET_MODULES,
+    *EDGE_MODULES,
+    *STABLE_MODULES,
+    *SECRETS_MODULES,
+    *STEP_MODULES,
+)
+STABLE_CHANNEL_REFUSAL = (
+    "release:local --channel stable: stable is promoted through CI/CD only "
+    "(.github/workflows/promote-stable.yml, operator ruling 2026-10-27T09:45Z); "
+    "RELEASE_ASKED does not admit it"
+)
+NO_CHANNEL_REFUSAL = (
+    "release:local names no --channel edge after `--` (npm hands the script only the words "
+    "after `--`)"
 )
 
 WRANGLER_PUBLISH = ("deploy", "rollback", "publish")
@@ -123,14 +151,6 @@ DOCKER_EXEC_VALUE_OPTIONS = (
     "--env",
     "--env-file",
     "--detach-keys",
-)
-# The two argument exemptions, printed on every admission so the debt stays visible.
-BENCH_NOTE = (
-    "deploy_proxy --target bench admitted: the bench proxy stays manual and is not a release target"
-)
-EU_NOTE = (
-    "deploy_account --region eu admitted: operator ruling 2026-09-26, an eu deploy needs no "
-    "question (record the rollback version and the D1 bookmark first)"
 )
 # A tag ref a release owns: `v1.2.3`, `refs/tags/v1.2.3`, or a pattern over them.
 _TAG_REF = re.compile(r"\A(?:refs/tags/)?v[0-9*]")
@@ -190,35 +210,42 @@ _PREFILTER = re.compile(
     r"|tag_submodules|homebrew|mark_production|run\.sh|\bnpm\b|bws_env|\.ci/cache"
 )
 
-MESSAGE = """BLOCKED: this command publishes, or reaches the release clone, outside the one release entry.
+MESSAGE = """BLOCKED: this command publishes, or reaches the release clone, outside the sanctioned paths.
 
 %s
 
-A release is published by ONE command, which runs the gates, builds in a fresh clone, seals the
-sentinel, tags at once and records every step (agent/plans/PLAN-local-release.md):
+EDGE AND BENCH ARE FREE, through the entry or the edge modules (operator ruling 2026-10-27T09:45Z):
 
-    npm run release:local -- --channel edge --dry-run        # always allowed: names every step
-    RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z npm run release:local -- --channel edge
+    npm run release:local -- --channel edge [--dry-run]
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_edge
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region <r> --target edge
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target edge|bench --region <r>
 
-The ASKED minute must match an AskUserQuestion answer in this session's transcript (within 300 s),
-so the operator is asked first. A raw wrangler deploy, gh release, v* tag push, docker push or
-publish module skips the gates and the record; routing around this guard one step at a time is
-the failure it exists for.
+STABLE IS CI/CD ONLY. A stable deploy from here needs the operator's answer first, and the
+ASKED minute must match an AskUserQuestion answer in this session's transcript (within 300 s):
+
+    RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z <the stable deploy command>
+
+`release:local --channel stable` is refused even then: promote-stable.yml promotes stable. A raw
+gh release, v* tag push, docker push or release step is never admitted here; the entry runs them
+behind its gates and records each one.
 """
 
 _ASK = "ASKED:2026-01-01T00:00Z"
+_PY = "PYTHONPATH=.ci python3 -m"
 
 EDGE_CASES = [
-    ("the entry, no ASKED", "npm run release:local -- --channel edge"),
-    ("the entry, dry run", "npm run release:local -- --channel edge --dry-run"),
-    ("the entry, dry run before the separator", "npm run release:local --dry-run"),
+    ("the edge entry", "npm run release:local -- --channel edge"),
+    ("the edge entry, dry run", "npm run release:local -- --channel edge --dry-run"),
+    ("the entry, channel before the separator", "npm run release:local --channel edge"),
+    ("the stable entry", "npm run release:local -- --channel stable --dry-run"),
     (
-        "the entry by module, dry run",
-        "PYTHONPATH=.ci python3 -m rediacc_ci.release.local --dry-run",
+        "the stable entry with an ASKED",
+        "RELEASE_ASKED=%s %s" % (_ASK, "npm run release:local -- --channel stable"),
     ),
-    ("the entry, ASKED with no transcript", "RELEASE_ASKED=%s npm run release:local" % _ASK),
-    ("wrangler deploy", "npx wrangler deploy"),
-    ("wrangler rollback under a prefix", "cd workers/www && ./node_modules/.bin/wrangler rollback"),
+    ("the entry by module", "%s rediacc_ci.release.local --channel edge" % _PY),
+    ("wrangler deploy on a stable config", "npx wrangler deploy --config wrangler.eu.toml"),
+    ("wrangler deploy on an edge config", "npx wrangler deploy --config wrangler.edge-eu.toml"),
     ("wrangler deploy dry run", "npx wrangler deploy --dry-run --outdir /tmp/x"),
     ("wrangler tail reads", "npx wrangler tail edge-rediacc-www"),
     ("gh release create", "gh release create v1.2.3 --notes x"),
@@ -226,17 +253,18 @@ EDGE_CASES = [
     ("a v tag push", "git push origin v1.2.3"),
     ("a branch push", "git push origin 1231-9"),
     ("docker push", "docker push ghcr.io/rediacc/renet:1.2.3"),
-    ("buildx --push", "docker buildx build --push -t x ."),
     ("docker build", "docker build -t x ."),
-    ("a deploy module", "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www"),
-    ("a release module", "python3 -m rediacc_ci.release.create_github_release --version 1.2.3"),
-    ("the bench proxy", "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench"),
-    ("the eu proxy", "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target eu"),
+    ("the stable www deploy", "%s rediacc_ci.deploy.deploy_www" % _PY),
+    ("the edge www deploy", "%s rediacc_ci.deploy.deploy_edge" % _PY),
+    ("an eu stable account deploy", "%s rediacc_ci.deploy.deploy_account --region eu" % _PY),
     (
-        "the eu account deploy",
-        "python3 -m rediacc_ci.deploy.deploy_account --region eu --target edge",
+        "an asia edge account deploy",
+        "%s rediacc_ci.deploy.deploy_account --region asia --target edge" % _PY,
     ),
-    ("deploy_bench", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench"),
+    ("the bench proxy", "%s rediacc_ci.deploy.deploy_proxy --target bench" % _PY),
+    ("a stable proxy", "%s rediacc_ci.deploy.deploy_proxy --target stable --region eu" % _PY),
+    ("a raw release step", "%s rediacc_ci.release.create_github_release --version 1.2.3" % _PY),
+    ("deploy_bench", "%s rediacc_ci.ops.deploy_bench" % _PY),
     ("pytest naming a module", "python3 -m pytest -k rediacc_ci.deploy.deploy_www"),
     ("prose naming a verb", "echo 'wrangler deploy'"),
     ("a redirect into the release clone", "echo x > .ci/cache/release/abc/a.txt"),
@@ -374,10 +402,21 @@ def _npm_script_text(directory, script):
     return text if isinstance(text, str) else ""
 
 
-def _dry_run_entry(args):
-    """Is this npm run of the entry a dry run? Only a `--dry-run` AFTER `--` reaches the script: measured on npm 11.21.0, `npm run s --dry-run` hands the script no argument at all and sets `npm_config_dry_run=true` instead."""
+def _channel(args, npm):
+    """The `--channel` a run of the entry hands the script. For npm only the words AFTER `--` reach it: measured on npm 11.21.0, `npm run s --dry-run` hands the script no argument at all and sets `npm_config_dry_run=true` instead, and `--channel` is read the same way."""
+    if not npm:
+        return _option(args, "--channel")
     tail = args[args.index("--") + 1 :] if "--" in args else []
-    return "--dry-run" in tail
+    return _option(tail, "--channel")
+
+
+def _entry_verdict(channel):
+    """`(kind, what, note)` for a run of the release entry on `channel`."""
+    if channel == "edge":
+        return "", "", ""
+    if channel == "stable":
+        return "refuse", STABLE_CHANNEL_REFUSAL, ""
+    return "refuse", NO_CHANNEL_REFUSAL, ""
 
 
 def _tag_ref(ref):
@@ -426,21 +465,69 @@ def _wrapped(run, where):
     return None
 
 
-def _module_publish(module, rest, root):
-    """`(kind, what, note)` for a run of one publish module with arguments `rest`."""
+def _secrets_channel(env):
+    """ "edge" when every channel signal on the command line names edge (`TARGET=edge`, `WORKER_NAME=edge-...`) and at least one is there; otherwise "stable", the fail-closed reading."""
+    target = env.get("TARGET")
+    worker = env.get("WORKER_NAME")
+    if target is None and worker is None:
+        return "stable"
+    if target is not None and target != "edge":
+        return "stable"
+    if worker is not None and not worker.startswith("edge-"):
+        return "stable"
+    return "edge"
+
+
+def _account_channel(rest):
+    target = _option(rest, "--target")
+    return "edge" if target == "edge" else "stable"
+
+
+def _target_channel(rest):
+    target = _option(rest, "--target")
+    return "edge" if target in EDGE_TARGETS else "stable"
+
+
+def _module_publish(module, rest, root, env):
+    """`(kind, what, note)` for a run of one publish module with arguments `rest` and command-line environment `env`."""
     if "--help" in rest or "-h" in rest:
         return "", "", ""
     if "--dry-run" in rest and _declares_dry_run(root, module):
         return "", "", ""
-    target = _option(rest, "--target")
-    region = _option(rest, "--region")
-    if module == "rediacc_ci.deploy.deploy_proxy" and target == "bench":
-        return "note", module, BENCH_NOTE
-    if module == "rediacc_ci.deploy.deploy_account" and region == "eu":
-        return "note", module, EU_NOTE
-    if module in SKILL_MODULES:
-        return "ask", "python3 -m %s (the deploy skill's local path)" % module, ""
-    return "refuse", "python3 -m %s" % module, ""
+    if module in STEP_MODULES:
+        return "refuse", "python3 -m %s (a step of the release entry)" % module, ""
+    if module in EDGE_MODULES:
+        return "", "", ""
+    if module in STABLE_MODULES:
+        return "ask", "python3 -m %s (stable)" % module, ""
+    if module == ACCOUNT_MODULE:
+        side = _account_channel(rest)
+    elif module in TARGET_MODULES:
+        side = _target_channel(rest)
+    else:
+        side = _secrets_channel(env)
+    if side == "edge":
+        return "", "", ""
+    return "ask", "python3 -m %s (a stable target)" % module, ""
+
+
+def _wrangler_publish(args):
+    """`(kind, what, note)` for a `wrangler` run: a publish on a stable config needs a proven ask, one on an edge, bench or preview config is refused for its module."""
+    words = _positionals(args, WRANGLER_VALUE_OPTIONS)
+    sub = words[0] if words else ""
+    publishes = sub in WRANGLER_PUBLISH or (sub == "versions" and words[1:2] == ["deploy"])
+    if not publishes or "--dry-run" in args:
+        return "", "", ""
+    verb = " ".join(words[:2] if sub == "versions" else [sub])
+    config = _option(args, "--config") or _option(args, "-c") or "wrangler.toml"
+    if re.search(r"edge|bench|preview", config.lower()):
+        return (
+            "refuse",
+            "wrangler %s on %s (an edge or bench Worker deploys through its module)"
+            % (verb, config),
+            "",
+        )
+    return "ask", "wrangler %s on the stable config %s" % (verb, config), ""
 
 
 def _docker_publish(name, args):
@@ -458,27 +545,18 @@ def _docker_publish(name, args):
     return "", "", ""
 
 
-def _publish(run, where, root):
-    """`(kind, what, note)` for one run: kind "refuse", "ask" (needs a proven RELEASE_ASKED), "note" (admitted by a named exemption) or "" (not a publish)."""
+def _publish(run, where, root, env):
+    """`(kind, what, note)` for one run: kind "refuse", "ask" (needs a proven RELEASE_ASKED), or "" (free, or not a publish)."""
     name = _base(run.name)
     args = list(run.argv)
     npm = _npm_run(run)
     if npm is not None and npm[0] == RELEASE_SCRIPT:
-        if _dry_run_entry(npm[1]):
-            return "", "", ""
-        return "ask", "npm run release:local without -- --dry-run", ""
+        return _entry_verdict(_channel(npm[1], npm=True))
     module = _module(run, where)
     if module == RELEASE_MODULE:
-        if "--dry-run" in _module_args(run):
-            return "", "", ""
-        return "ask", "python3 -m rediacc_ci.release.local without --dry-run", ""
+        return _entry_verdict(_channel(_module_args(run), npm=False))
     if name.startswith("wrangler"):
-        words = _positionals(args, WRANGLER_VALUE_OPTIONS)
-        sub = words[0] if words else ""
-        publishes = sub in WRANGLER_PUBLISH or (sub == "versions" and words[1:2] == ["deploy"])
-        if publishes and "--dry-run" not in args:
-            return "refuse", "wrangler %s" % " ".join(words[:2] if sub == "versions" else [sub]), ""
-        return "", "", ""
+        return _wrangler_publish(args)
     if name == "gh":
         words = _positionals(args, ("-R", "--repo"))
         if words[:1] == ["release"] and words[1:2] and words[1] in GH_RELEASE_PUBLISH:
@@ -490,8 +568,8 @@ def _publish(run, where, root):
         return ("refuse", what, "") if what else ("", "", "")
     if name in ("docker", "docker-buildx", "podman"):
         return _docker_publish(name, args)
-    if module in DEPLOY_MODULES or module in RELEASE_MODULES:
-        return _module_publish(module, _module_args(run), root)
+    if module in PUBLISH_MODULES:
+        return _module_publish(module, _module_args(run), root, env)
     return "", "", ""
 
 
@@ -500,20 +578,25 @@ def _judge(cmd, where_root, env, root, depth, found):
     if depth > MAX_DEPTH:
         found.append(("refuse", "a command nested more than %d levels deep" % MAX_DEPTH, "", env))
         return
+    launcher_env = dict(env)
     for run in shellscan.every_run(cmd):
         where = _join(where_root, run.cwd or "")
-        merged = dict(env)
+        # A command `npx` or `find -exec` launches inherits the launcher's environment, which the walk lists on the launcher alone: `RELEASE_ASKED=... npx wrangler deploy` carries the ask to wrangler.
+        merged = dict(launcher_env if run.launch is not None else env)
         merged.update(run.env)
+        if run.launch is None:
+            launcher_env = merged
         inner = _wrapped(run, where)
         if inner is not None:
             _judge(inner, where, merged, root, depth + 1, found)
             continue
-        kind, what, note = _publish(run, where, root)
+        kind, what, note = _publish(run, where, root, merged)
         if kind:
             found.append((kind, what, note, merged))
             continue
         npm = _npm_run(run)
-        if npm is None:
+        # The entry is judged by name above, on the words npm hands it; following its script text too would judge it twice.
+        if npm is None or npm[0] == RELEASE_SCRIPT:
             continue
         script, args, directory = npm
         home = _join(where, directory)

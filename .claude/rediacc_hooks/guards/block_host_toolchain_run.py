@@ -84,6 +84,8 @@ NEEDS_SCRIPT = (
     ("upload-r2.sh", "aws"),
     # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` (or the module a `.py` script path names) as the command's target.
     ("rediacc_ci.release.assert_edge_tag_exists", "aws"),
+    # The local release entry run as a module (PLAN-local-release W2-B, 7c25d047b): its prerequisite table names `aws` for both the full and the workers-only run (local.py:82-83), resolved through `awscli`. The npm spelling is the `release:local` row in NEEDS.
+    ("rediacc_ci.release.local", "aws"),
     ("rediacc_ci.deploy.write_release_sentinel", "aws"),
     ("rediacc_ci.deploy.delete_r2_channel", "aws"),
     ("rediacc_ci.deploy.promote_r2_to_stable", "aws"),
@@ -428,7 +430,8 @@ def _is_invoked(key, cmd, runs=None):
             target = _python_target(args) or ""
             # A script path names the module too: `.ci/rediacc_ci/ops/scrub_sentinel.py` holds `rediacc_ci.ops.scrub_sentinel`.
             dotted = target[: -len(".py")].replace("/", ".") if target.endswith(".py") else ""
-            if target and (key in target or key in dotted):
+            # THE WHOLE MODULE NAME, never a substring of it: `rediacc_ci.release.local` is a prefix of `rediacc_ci.release.local_gates`, which runs no aws, and a substring test routed the gates module into the devbox for a binary it never calls. A script path matches by its dotted tail.
+            if target and (key in (target, dotted) or dotted.endswith("." + key)):
                 return True
             continue
         if opener.rsplit("/", 1)[-1] in _SHELLS and shellscan._shell_payload(args)[0] == "c":
