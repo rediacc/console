@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-26T17:16:29.966Z",
+  "generatedAt": "2026-10-27T04:40:28.223Z",
   "legs": [
     {
       "index": 1,
@@ -114,6 +114,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_auth.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_deploy_bench.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_prune_worker_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_r2_lifecycle.py",
         "pytest:.ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
@@ -464,6 +465,7 @@
         "pytest:.ci/rediacc_ci/tests/test_differential_tmp_roots.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_cleanup_staging.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_check_trigger.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_m.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_local_plane.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_converge_preflight.py",
