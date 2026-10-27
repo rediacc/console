@@ -475,6 +475,17 @@ if aws_in_box:
             "gate key: check:ci-release-state needs aws, host lacks it -> REFUSED",
         )
     )
+    # The release entry's row, through the process: refused on a host without aws and routed as the npm script it is.
+    r = run_full("npm run release:local -- --channel edge --dry-run", AWS_ABSENT, AWS_GONE)
+    cases.append((2, r.returncode, "gate key: release:local needs aws, host lacks it -> REFUSED"))
+    cases.append(
+        (
+            True,
+            "gate 'release:local' needs 'aws'" in r.stderr
+            and "devbox exec -- npm run release:local" in r.stderr,
+            "gate key: release:local is named and routed as its npm script",
+        )
+    )
 
     # The NEEDS_SCRIPT arm, on the incident command as it is spelled now: the script was ported to `rediacc_ci.release.assert_edge_tag_exists` and deleted, so the module is what a session runs. THREE ASSERTIONS, not one. The exit code says it was refused; the other two say it was refused with advice a reader can act on.
     # `bare` is set True by the NEEDS_SCRIPT loop precisely so this message does not read "gate '<key>'" and then suggest `npm run <key>`, which is not a command that exists.
@@ -643,6 +654,33 @@ cases.append(
         True,
         (SCRUB, "aws") in GUARD.NEEDS_SCRIPT,
         "python -m: the scrub_sentinel port is in NEEDS_SCRIPT",
+    )
+)
+
+# THE LOCAL RELEASE ENTRY (agent/plans/PLAN-local-release.md W2-C) is a gate-key row: `npm run release:local` names an npm script, so it lives in NEEDS, and a NEEDS_SCRIPT row would fail the liveness loop above. Both directions of `_is_invoked`, decided in-process so they hold whether or not this host carries aws.
+cases.append((True, ("release:local", "aws") in GUARD.NEEDS, "release:local: the row is in NEEDS"))
+cases.append(
+    (
+        False,
+        any(key == "release:local" for key, _tool in GUARD.NEEDS_SCRIPT),
+        "release:local: no NEEDS_SCRIPT row, which the liveness loop would refuse",
+    )
+)
+cases.extend(
+    (want, GUARD._is_invoked("release:local", cmd), label)
+    for want, cmd, label in (
+        (True, "npm run release:local -- --channel edge", "release:local: npm run is a run"),
+        (
+            True,
+            "RELEASE_ASKED=ASKED:2026-01-01T00:00Z npm run release:local -- --channel edge",
+            "release:local: an env prefix still runs it",
+        ),
+        (
+            False,
+            "grep -n release:local package.json",
+            "CONTROL: grepping the key is not running it",
+        ),
+        (False, "echo npm run release:local", "CONTROL: echoing the command is not running it"),
     )
 )
 

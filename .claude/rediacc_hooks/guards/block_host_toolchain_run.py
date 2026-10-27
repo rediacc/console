@@ -63,6 +63,8 @@ NEEDS = (
     ("check:ci-renet-tiers", "go"),
     # `.ci/rediacc_ci/quality/release_state.py:115-123` shells out to the `aws` CLI and `require_cmd`s it up front, so the gate FAILS without the binary rather than provisioning its own pin. That is the entry test the paragraph above states, and it is the one this table's original six got wrong three times.
     ("check:ci-release-state", "aws"),
+    # agent/plans/PLAN-local-release.md W2-C: the local release entry stages to and reads R2 through the aws resolver, and its risk R4 records `aws` missing on the host. The entry checks its prerequisites first and refuses without the binary, which is this table's entry test. A gate-key row, not a NEEDS_SCRIPT one: `npm run release:local` names an npm script, and the NEEDS_SCRIPT liveness loop admits only a tracked `.sh` basename or a `rediacc_ci.` module file.
+    ("release:local", "aws"),
 )
 
 # SCRIPTS THAT NAME NO GATE KEY AND NO BARE TOOL. Added 2026-09-23.

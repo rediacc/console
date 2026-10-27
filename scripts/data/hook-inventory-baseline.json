@@ -72,6 +72,7 @@
   ".claude/rediacc_hooks/guards/block_suppressions.py",
   ".claude/rediacc_hooks/guards/block_suppressions_shell_write.py",
   ".claude/rediacc_hooks/guards/block_turbo_early_push.py",
+  ".claude/rediacc_hooks/guards/block_unasked_release.py",
   ".claude/rediacc_hooks/guards/block_unlinked_commit_author.py",
   ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py",
   ".claude/rediacc_hooks/guards/block_unpushed_submodule_pin.py",
