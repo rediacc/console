@@ -1,18 +1,27 @@
-## SESSION d778be9d 2026-10-26T16:57:37Z
+## SESSION d778be9d 2026-10-27T01:17:55Z
 
-# STATE d778be9d (branch 1023-1, no PR, never pushed)
+# STATE d778be9d (2026-10-27)
+
+Branch 1023-1, unpushed, no PR; turbo batch-end push. Memory is short (about 9-13 of 56 GB free): Claude Code reaped ci:quick run 10, so heavy runs wait on #c0af0c3c.
 
 ## Big pieces
-- PLAN-console-executor-multi-org (entry 22): every code and docs box ticked (A1-A5, C1, C2, T1, U1, W1, W2, X1); open: E1 and the live boxes ML0-ML6. Capacity ruling ASKED:2026-10-26T15:26Z: per-org containers, cap 25 per target (333fe6b3), alarm about 50 USD per target (ASKED:2026-10-26T16:35Z, 24da2fcc).
-- PLAN-executor-durable-object-policy (entry 23, ab0b3244): 0/21; S1 bench spike first; heavy tier accepted as planned (ASKED:2026-10-26T16:35Z).
-- PLAN-proxy-cd-six-targets: code boxes and X1 ticked; L0-L9 live or post-merge.
-- Bench (c2e5e802, 3a0dd962): BENCH_ROOT_PASSWORD stored and set (root login 200); bench_access allowlist live with 62.216.201.229 (plain block, Free plan has no custom response).
+- PLAN-backup-program: 84 open (14 ticked this context); code boxes D7, N1 in writers, G4 after E1, J7 K12 L5 R1-R3 R5 in a Plan agent; the rest are VM, live or push-gated.
+- PLAN-executor-durable-object-policy: W2 done; W1, W3, W4, K1 next (exclusive plan, one writer at a time).
+- PLAN-console-executor-multi-org and PLAN-proxy-cd-six-targets: edge and stable live boxes (ML1+, L1+) after the push.
+
+## Done this context
+- E1, ML0, L0 ticked; E1 against bench rc=0 via the hostinger probe key (revoke command in both plans).
+- vm:check re-run 5 VERIFIED (175/175); drills 134/134 and 7/7.
+- Fixes: proxy 401 resend, Retry-After relay, CLI events-mode renet errors, renet usage output, drills U1/G1.7, empty boolean env, budget_report --check 840s to 78s, live Playwright config.
 
 ## Delegated
-- aef3030d130e3c924 #db744145: fix the 10 ci:quick run-8 reds (literal-sources, pytest, lane-budget, shard-manifest-coverage, i18n-hashes, env-manifest, python-env-registry, bws-map, plan-implementation, prose-style); owns .ci, scripts, configs, not packages/cli, packages/shared, private/renet; accept: each gate rc=0 alone.
-- abf27820c80a2b0e6 #c1ecb0b5: 3 review findings in packages/cli and private/renet (bucket .claude/hooks/context/state/fanout/R-pass7-frozen.tsv); accept: cli tsc + vitest, renet build/vet/test.
+- a9a548c0 (#8a588d71) M3: done, report in; owns scripts/gates/check-worker-secret-names.ts and new test_ops_prune_worker_secrets.py.
+- ad092538 (#1a161f33) N1 drill leg m: owns .ci/rediacc_ci/drills/backup.py and test_drills_backup_leg_m.py; accept pytest + live drill.
+- a466aac8 (#8162d2d6) D7 sandbox.Dir: owns private/renet pkg/sandbox/dir.go, up_down_workflows.go, prune/datastore.go, gateway 147-151; accept go test of those packages.
+- a50b3a8c (#8c675a79) Plan agent for J7 K12 L5 R1 R2 R3 R5.
 
 ## Next action
-1. As each report lands: spot-check, commit by path (submodules first, then pointer), mark fixed review ids, tick the item.
-2. Then ci:quick run 9 on a quiet tree (#c0af0c3c), then npm run vm:check -- --changed, ./run.sh drill backup and backup-onprem.
-3. Then the push and PR (#831b7e48), then the live boxes (six-targets L1-L3 edge, multi-org ML0 bench, durable S1 spike).
+1. Spot-check and commit M3 (gate hint + parse test, live eu dry run clean), then plan-investigate present and plan-tick M3.
+2. As N1, D7 and Plan agent 2 report: spot-check, commit by path (submodule then pointer), tick; start writers for Plan agent 2's designs.
+3. #c0af0c3c: restart ci:quick run 10 on the operator word or at 20 GB free; one vm:check for the renet/account changes since re-run 5 (D11, D7); commit the carried-reds draft /tmp/carried-entry.json once its keys match.
+4. Edge L1-L3 (#d7b28fc6), then the batch-end push (#831b7e48). S6 sweep (#53b05748) not before 2026-10-31T06:00Z.
