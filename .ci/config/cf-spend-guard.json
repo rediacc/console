@@ -79,7 +79,7 @@
     "containers_total_usd_month": 350,
     "containers_target_usd_month": 50
   },
-  "report_reason": "containers_*: per Containers application (one proxy target), about 50 USD a month each (20M GiB-seconds at 0.0000025, 2.5M vCPU-seconds at 0.00002), so it stays quiet until roughly 140 active orgs per region at 1 h a day; containers_target_usd_month is the ~$50/target ruling in dollars, memory plus vCPU together, since each per-metric ceiling alone is about 50 USD; containers_total_usd_month is 7 targets x 50 USD. Operator ruling ASKED:2026-10-26T16:35Z, \"Raise to ~$50/target\".",
+  "report_reason": "containers_*: per Containers application (one proxy target). Each per-metric ceiling alone is about 50 USD a month (20M GiB-seconds x 0.0000025 = 50 USD; 2.5M vCPU-seconds x 0.00002 = 50 USD), so the two together could reach 100 USD; containers_target_usd_month is the ~$50/target ruling in dollars, memory plus vCPU together, and bounds the pair; containers_total_usd_month is 7 targets x 50 USD = 350 USD. Operator ruling ASKED:2026-10-26T16:35Z, \"Raise to ~$50/target\".",
   "worker_observability": {
     "sampling_ceiling": 1,
     "sampling_exempt": {},

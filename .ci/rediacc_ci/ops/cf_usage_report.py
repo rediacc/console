@@ -44,11 +44,11 @@ DEFAULT_CEILINGS: dict[str, float] = {
     "r2_class_a_month": 2_000_000,
     "r2_class_b_month": 20_000_000,
     "d1_storage_bytes": 4e9,
-    # Per Containers application (one proxy target). 8e6 GiB-seconds is about 3 basic (1 GiB) instances awake all month, about 20 USD; 2e6 vCPU-seconds is the matching active-CPU ceiling.
-    "containers_memory_gib_seconds_month": 8_000_000,
-    "containers_vcpu_seconds_month": 2_000_000,
+    # Per Containers application (one proxy target). Each of these two is about 50 USD alone (20e6 x 0.0000025, 2.5e6 x 0.00002); `containers_target_usd_month` bounds the pair. Kept equal to the `report` object of cf-spend-guard.json, which a test enforces.
+    "containers_memory_gib_seconds_month": 20_000_000,
+    "containers_vcpu_seconds_month": 2_500_000,
     # Account-wide estimated Containers spend across every application: the per-application ceilings alone let many targets each stay under them while the sum is far larger.
-    "containers_total_usd_month": 100,
+    "containers_total_usd_month": 350,
     # Per-application estimated USD (memory plus vCPU): the two per-metric ceilings are each about this much alone, so they do not bound the pair.
     "containers_target_usd_month": 50,
 }

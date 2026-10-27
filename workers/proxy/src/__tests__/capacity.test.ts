@@ -4,6 +4,8 @@
  * `cloudflare:workers` exists only inside workerd, so `DurableObject` is replaced by a base class that keeps `ctx` and `env` as the real one does. The SQL storage is a real SQLite engine (node:sqlite) behind the `exec` cursor shape, so the coordinator's queries run as written rather than against a hand-rolled table. The fake's alarm calls yield to the event loop, the way real storage I/O does, so a coordinator that awaited between counting and admitting would let concurrent acquires interleave and the input-gate test would catch it.
  */
 
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -293,5 +295,20 @@ describe('capacityStub', () => {
     capacityStub(namespace);
     expect(names).toEqual([CAPACITY_NAME, CAPACITY_NAME]);
     expect(CAPACITY_NAME).toBe('capacity:v1');
+  });
+});
+
+describe('the coordinator is reached only through capacityStub', () => {
+  it('no source file but capacity.ts names the instance or the idFromName call for it', () => {
+    const root = join(__dirname, '..');
+    const files = (readdirSync(root, { recursive: true }) as string[]).filter(
+      (f) => f.endsWith('.ts') && !f.includes('__tests__') && f !== 'capacity.ts'
+    );
+    expect(files.length).toBeGreaterThan(0);
+    const offenders = files.filter((f) => {
+      const text = readFileSync(join(root, f), 'utf8');
+      return /CAPACITY_NAME|capacity:v1|idFromName\(\s*['"`]capacity/.test(text);
+    });
+    expect(offenders).toEqual([]);
   });
 });

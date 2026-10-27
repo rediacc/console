@@ -189,6 +189,15 @@ def test_ceilings_come_from_the_json_report_object(tmp_path):
     assert ur.load_ceilings(tmp_path / "missing") == ur.DEFAULT_CEILINGS
 
 
+def test_default_ceilings_agree_with_the_ruled_report_object():
+    """Review 24da2fcc.1: a duplicated default drifted (100 against the ruled 350); every ruled key must equal its default."""
+    report = json.loads((ur.Path(__file__).resolve().parents[2] / "config/cf-spend-guard.json").read_text())["report"]
+    ruled = {k: v for k, v in report.items() if k in ur.DEFAULT_CEILINGS}
+    assert ruled, "the report object must carry ceilings"
+    for key, value in ruled.items():
+        assert ur.DEFAULT_CEILINGS[key] == value, key
+
+
 def test_malformed_ceiling_json_is_an_error_not_the_defaults(tmp_path):
     """Review d945e387.3: a present-but-broken config must not silently yield the default ceilings."""
     (tmp_path / ".ci/config").mkdir(parents=True)
