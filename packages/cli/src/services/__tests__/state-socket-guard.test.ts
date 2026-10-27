@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // PLAN-config-networkid-discovery T7 control "state.ts socket guard removed": a repo record with no network id must yield a vault with no socket path, and the connection builder must refuse it instead of aiming at `net-undefined`.
 

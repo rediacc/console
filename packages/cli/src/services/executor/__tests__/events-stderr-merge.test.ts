@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
+import { describe, expect, it } from 'vitest';
 import { createJobOutputCollector } from '../job-client.js';
 import { mergeEventsStderr, settleRenetRun } from '../local-executor.js';
 
@@ -14,7 +14,9 @@ describe('events-mode failure reason', () => {
     const collector = createJobOutputCollector();
     collector.consume(errorEvent);
     const settled = settleRenetRun({ exitCode: 1, stdout: '', stderr: '', collector });
-    expect(settled.error).toContain(`device ${WK_INFRA_DOMAIN}/fake=x is not defined by any CDI spec`);
+    expect(settled.error).toContain(
+      `device ${WK_INFRA_DOMAIN}/fake=x is not defined by any CDI spec`
+    );
     expect(settled.combined).toContain('not defined by any CDI spec');
   });
 
