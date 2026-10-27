@@ -848,3 +848,40 @@ def test_a_failed_after_lookup_is_marked_and_not_sunk_unless_accepted(world, mon
     ]
     assert dr.main(args) == 0
     assert len(record_keys(world)) == 1
+
+
+def test_a_secret_of_digits_matching_a_number_field_is_refused(monkeypatch):
+    monkeypatch.setenv("SOME_API_TOKEN", "1234567890")
+    with pytest.raises(dr.RecordError, match="SOME_API_TOKEN"):
+        dr.refuse_secret_values({"deploy_rc": 1234567890})
+
+
+def test_only_the_json_escaped_branch_catches_a_secret_held_in_a_tuple(monkeypatch):
+    """The leaf walk follows dicts and lists only; the escaped-body test is what sees a tuple (json.dumps writes it as an array)."""
+    monkeypatch.setenv("SOME_API_TOKEN", 'q"uote\\caf\u00e9-12345')
+    with pytest.raises(dr.RecordError, match="SOME_API_TOKEN"):
+        dr.refuse_secret_values({"t": ("pre", 'q"uote\\caf\u00e9-12345')})
+
+
+def test_an_awscli_that_cannot_run_is_a_record_error(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://r2.example.invalid")
+
+    def boom(*_a, **_k):
+        raise FileNotFoundError("aws")
+
+    monkeypatch.setattr(dr.awscli, "run", boom)
+    with pytest.raises(dr.RecordError, match="could not run"):
+        dr.write_record_once({"version": VERSION}, "release-records/v1.0.0/edge/x.json")
+
+
+def test_digits_412_in_stderr_are_not_an_existing_record(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://r2.example.invalid")
+
+    class Proc:
+        returncode = 254
+        stderr = b"An error occurred (InternalError): request id 4120 failed"
+
+    monkeypatch.setattr(dr.awscli, "run", lambda *_a, **_k: Proc())
+    with pytest.raises(dr.RecordError) as exc:
+        dr.write_record_once({"version": VERSION}, "release-records/v1.0.0/edge/x.json")
+    assert "already exists" not in str(exc.value)

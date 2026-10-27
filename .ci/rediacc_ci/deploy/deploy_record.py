@@ -315,17 +315,20 @@ def _string_leaves(node: object) -> typing.Iterator[str]:
     elif isinstance(node, list):
         for item in node:
             yield from _string_leaves(item)
+    elif node is not None:
+        # A number or boolean: its text is what a secret of digits would equal.
+        yield str(node)
 
 
 def refuse_secret_values(record: dict) -> None:
-    """A record that carries the value of a secret-named variable is never emitted. Every string leaf is compared on its decoded text, and the serialized body is compared on the json-escaped form too, so quotes, backslashes, control characters and non-ASCII text cannot hide a value."""
+    """A record that carries the value of a secret-named variable is never emitted. Every leaf is compared on its decoded text (numbers and booleans through `str`), and the serialized body is compared on the json-escaped form too, so quotes, backslashes, control characters and non-ASCII text cannot hide a value."""
     leaves = list(_string_leaves(record))
     body = json.dumps(record)
     for name, value in os.environ.items():
         if len(value) < 8 or not SECRET_NAME_RE.search(name):
             continue
         escaped = json.dumps(value)[1:-1]
-        if any(value in leaf for leaf in leaves) or escaped in body:
+        if any(value in leaf for leaf in leaves) or value in body or escaped in body:
             raise RecordError("the record carries the value of %s; nothing is emitted" % name)
 
 
@@ -357,10 +360,13 @@ def write_record_once(record: dict, key: str) -> None:
             ]
         except executor_artifacts.ArtifactError as exc:
             raise RecordError(str(exc)) from None
-        proc = awscli.run(argv, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        try:
+            proc = awscli.run(argv, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        except OSError as exc:
+            raise RecordError("aws put-object %s could not run: %s" % (key, exc)) from None
     if proc.returncode != 0:
         err = proc.stderr.decode("utf-8", "replace").strip()
-        if "PreconditionFailed" in err or "412" in err:
+        if "PreconditionFailed" in err or "(412)" in err:
             raise RecordError("%s already exists: a deploy record is written once" % key)
         raise RecordError("aws put-object %s failed (rc %d): %s" % (key, proc.returncode, err))
     log.info("Deploy record written once to %s." % key)
