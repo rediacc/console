@@ -1,0 +1,22 @@
+{
+  "$comment": [
+    "Release-order declarations, read by rediacc_ci.release.order.account_refusal before an account Worker deploy.",
+    "An entry is active once its `since` commit is an ancestor of the account pointer being deployed; an active entry admits the deploy only when the channel's published CLI (the R2 cli/<channel>/manifest.json version V, sealed by cli/v<V>/.released and tagged v<V>) contains every `cli_commits` sha."
+  ],
+  "version": 1,
+  "entries": [
+    {
+      "id": "R1-config-envelope",
+      "component": "account",
+      "since": {
+        "repo": "private/account",
+        "commit": "aaf3c25140c72b7baae8094edb1cf27b0c6beeb3"
+      },
+      "cli_commits": [
+        "2c3324a444d393350f52f65ea92ea67cd5383574",
+        "95bcc8dad4458eaaddec9d71864acdf7ea3ec5d7"
+      ],
+      "why": "private/account/src/routes/configs.ts refuses a config pull that sends no usable x-config-envelope header against a v3 store (426), so a CLI that predates the header, rdc config pull and the serve executor's pull alike, stops reading its configs once this account code is live."
+    }
+  ]
+}
