@@ -177,11 +177,12 @@ Design inputs, summarized below with file:line:
     - `promote_r2_to_stable_hotfix` and `promote_docker_to_stable_hotfix`.
   - Owns: ci_workflow_invariants.py and its test, plus the deleted modules.
   - Accept: `npm run check:ci-pytest` rc=0, and the dead-python gate is green.
-- [ ] W3-C [writer] Release state moves off `main`.
+- [x] W3-C [writer] Release state moves off `main`.
   - The contract floor becomes an ordinary commit in the next PR. `cd_preflight --checks c` warns when it lags.
   - The console's homebrew gitlink bump is dropped. The tap repository still receives its formula commit, admitted by W1-D.
   - Owns: advance_contract_floor.py, update_homebrew_tap.py and their tests.
   - Accept: pytest rc=0, and no code path pushes console `main`.
+    (ticked) 2026-10-27T10:01:44Z by d778be9d: 2fd593392: advance_contract_floor writes the floor in the working tree, update_homebrew_tap pushes only the tap, cd_preflight warns on lag; pytest rc=0 (111)
 - [ ] W3-D [writer] Docs.
   - CLAUDE.md, under Release Channels and the CI/CD Pipeline, says:
     - CI validates and `release:local` publishes;
