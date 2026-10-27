@@ -467,3 +467,23 @@ cutover happened.
 is its control, proving a door-less ticked item still demands its tick — so 198c passes because of the door rather than because the check went silent. Suite: 695 passed, 0 failed, up from 693.
 
 This is the same principle the checklist's own comment block already stated: a handoff that overstates is worse than one that is merely incomplete, because the next session reads it as ground truth.
+
+---
+
+## 10. Decisions recorded after the build (2026-10-27)
+
+Two design decisions that the build left open, closed against the tree and the measured storage figures. Neither changes code.
+
+### 10.1 DECIDED (N2): pooled regional buckets stay, and a bucket per subscription is not built
+
+Design decision 5 (`archive/02-design.md`) chose a bucket per subscription. The build did not: each account Worker binds ONE bucket as `BACKUP_BUCKET` (`workers/account/wrangler.eu.toml` binds `rediacc-backups-eu` with `jurisdiction = "eu"`), and the key layout `t/<subscriptionId>/l/<lineageGuid>/...` isolates subscriptions by prefix (`private/account/src/services/backup-chunk-store.ts:11`). That file's header states the reason the choice was cheap to defer: the keyspace is prefix-based, so pooled and per-subscription buckets are both expressible without relayout.
+
+The decision is to keep the pool. The design's case for per-subscription buckets was native bucket-scoped credentials, a per-bucket usage cross-check, per-bucket lifecycle and jurisdiction, and offboarding by deleting a bucket. The grant already names the key prefix server-side (section 2, decision 1), quota is metered per subscription from the manifests, jurisdiction is already per region, and offboarding is a prefix `deletePrefix` of the kind the config store uses. A bucket per subscription would add a create-and-bind step to every subscription, one more Worker binding or S3 credential set per bucket, and 16 buckets already sit on the account (`cf_usage_report`, 2026-10-26). It is built only if a customer requirement appears that a prefix cannot meet, such as a contractual dedicated bucket or a per-customer key custody demand. The migration then moves one prefix into one new bucket, with no change to the key layout.
+
+### 10.2 DECIDED (N3): the Infrequent Access tier for old full manifests is not chosen now
+
+Design decision 13 (`archive/02-design.md`) is a post-launch flag "pending GA confirmation": a lifecycle rule would transition 30-day survivors to Infrequent Access for about a third off storage on the stable majority. Nothing is built.
+
+The measured figure does not make the case. The weekly `cf_usage_report` read R2 at 116.9 GB of a 200 GB ceiling on 2026-10-26 across all 16 buckets, which is the whole account and not only backups, and the design's own cost model puts storage for a 137 GB seed at about $2 a month. A third off that is cents, and Infrequent Access carries a per-GB retrieval fee, a minimum storage duration and a higher per-operation price, none of which is measured against a restore or a compaction pass here. Compaction and garbage collection read and delete old objects on a schedule, so a tier that charges for reads and early deletes can cost more than it saves until the access pattern is measured. No box in the program is blocked on the tier.
+
+Revisit when either trigger fires: backup storage passes about 50 percent of the 200 GB ceiling in the `cf_usage_report` weekly run (the figure is then large enough for a third to matter), or paying customers hold enough backup data that the monthly storage line is worth a measured test. The test is one lifecycle rule on `rediacc-backups-probe` with the restore and compaction drills run against it, reading the billed retrieval and early-delete lines before any production bucket is touched.

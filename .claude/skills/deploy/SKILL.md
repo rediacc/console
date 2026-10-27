@@ -51,7 +51,7 @@ Every deploy credential comes from Bitwarden Secrets Manager. **Without it nothi
 2. **The binary.** `bws` is installed on the host (`~/.local/bin/bws`) and in the devbox image. Run credentialed steps directly with `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile <p> -- ...`; `./run.sh devbox exec -- ...` wraps the same command when the host has no `bws`. `which bws` tells which case applies.
 3. **The profile.** `deploy-workers` in `.ci/config/secret-supply.json` binds exactly what a code deploy needs: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `TURNSTILE_SITE_KEY`. Confirm the names resolve (values are never printed):
    ```bash
-   ./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID TURNSTILE_SITE_KEY
+   PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID TURNSTILE_SITE_KEY
    ```
    All three names printed means ready. A missing name is an operator task (the store entry is absent), not something to work around.
 
@@ -60,13 +60,13 @@ The `deploy-workers` profile does NOT carry the Worker runtime secrets (`ACCOUNT
 **The local secrets path.** One command per region and channel pushes the 29 runtime secrets to the account Worker, through the profile `account-secrets-<region>-<target>` (six profiles, one per Worker, in `.ci/config/secret-supply.json`):
 
 ```bash
-# names only, nothing read or sent:
+# stops after the wrangler pin check; prints names only, reads no credential, contacts no service:
 PYTHONPATH=.ci python3 -m rediacc_ci.deploy.account_secrets_local --region eu --target stable --dry-run
 # the push (operator-authorized, see section 0):
 PYTHONPATH=.ci python3 -m rediacc_ci.deploy.account_secrets_local --region eu --target stable
 ```
 
-It derives the Worker name, suffix, buckets, R2 jurisdiction and SES region from `regions.json`, refuses unless the wrangler pin agrees (section 4), then hydrates the profile, runs the Turnstile drift preflight and refuses on drift or on no verdict, and only then runs `set_account_worker_secrets` (one `wrangler secret bulk`, so the assets binding survives). CI's own `set_account_worker_secrets` step is the other path (section 2).
+It derives the Worker name, suffix, buckets, R2 jurisdiction and SES region from `regions.json`, refuses unless the wrangler pin agrees (`wrangler_pin`, section 4), then hydrates the profile, runs the Turnstile drift preflight and refuses on drift or on no verdict, and only then runs `set_account_worker_secrets` (one `wrangler secret bulk`, so the assets binding survives). CI's own `set_account_worker_secrets` step is the other path (section 2). Exit codes: 0 pushed (or dry run complete), 1 a refusal, 2 a usage error.
 
 **Stale secrets on a Worker.** `wrangler secret bulk` only adds, so a renamed key stays on the Worker. List what the live Workers hold beyond the push, names only:
 
