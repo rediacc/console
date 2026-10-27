@@ -403,6 +403,7 @@
     "ci:quick": "(PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access preflight || true) && tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts --quick",
     "ci:list": "tsx scripts/ci-runner/run.ts --list",
     "pins": "tsx scripts/pins/pins.ts",
+    "release:local": "PYTHONPATH=\"$PWD/.ci\" PYTHONPYCACHEPREFIX=/dev/null /usr/bin/python3 -P -s -m rediacc_ci.release.local",
     "vm:check": "PYTHONPATH=.ci python3 -m rediacc_ci.drills.vm_check",
     "ci:serial": "tsx scripts/ci-runner/run.ts --jobs 1",
     "quality": "npm run ci",
