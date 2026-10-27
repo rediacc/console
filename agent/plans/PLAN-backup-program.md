@@ -321,7 +321,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
     (ticked) 2026-10-24T16:00:01Z by d778be9d: commit:166ba413e (account 8e7d44e, elite 4d69f70) I5 on-premise skips maintenance under CI_MODE through the shared helper, elite compose exposes BACKUP_MAINTENANCE_INTERVAL_MS; vitest rc=0 (35 passed), 16 of 19 failed before the fix
 - [x] I6: The startup log names the public endpoint and region. Accept: a test pins the log line.
     (ticked) 2026-10-25T07:55:58Z by d778be9d: account 7bfbc416: I6 per the P4 writer report; vitest backup-policy-scope, backup-server-ops, backup-isolation-suite, backup-retention and dto-conformance 127 passed in the lead rerun
-- [ ] I7: A drill variant that boots entry/on-premise.ts (not dev-gateway) against RustFS and runs private/elite/scripts/s3-conformance-probe.sh; it becomes part of the backup receipt (J4). Accept: drill rc=0 locally.
+- [x] I7: A drill variant that boots entry/on-premise.ts (not dev-gateway) against RustFS and runs private/elite/scripts/s3-conformance-probe.sh; it becomes part of the backup receipt (J4). Accept: drill rc=0 locally.
+    (ticked) 2026-10-27T19:35:29Z by d778be9d: rc=0 PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup_onprem rc=0 2026-10-27, 7/7 assertions (conformance probe passes on RustFS, planted closed-port control fails, on-premise entry boots and answers server-info, /backups/usage 401 unauthenticated, test and admin routes absent), 11s
 
 ### Phase J: gates, CI binding and push enforcement
 
@@ -337,8 +338,10 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [x] J5: Unbound-test complaint: extend check_test_file_orphans.py and check:ci-e2e-coverage so every Go test package, vitest file, e2e suite and drill leg is reached by some CI job or carries a BLOCKER-reasoned allowlist entry; suite 26 and backup_restore lose their allowlist entries. Accept: the gate fails on today's tree for suite 26, then passes after J6.
     (ticked) 2026-10-25T13:03:30Z by d778be9d: commit:041e3f166: J5 per the wave-2 writer reports and the integration pass; cli tsc rc=0, CLI vitest src 3452 passed, check:ci-cli-contract, check:ci-parity, check:ci-e2e-coverage and the new backup gates rc=0 (lead reruns)
 - [ ] J6: Suite 26 runs in CI on the VM fleet with the account gateway (BACKUP_STORAGE_SUITE=1 set by the workflow), at least nightly and on backup-path changes. Accept: a green CI run id recorded here.
-- [ ] J7: Drill legs b-d drive real renet instead of host-built cells. Accept: drill rc=0 with renet in the loop.
-- [ ] J8: Drill leg l: GC and retention through /backup/maintenance against RustFS, asserting that bytes go down and the floor holds. Accept: KNOWN_LEGS includes l; drill rc=0.
+- [x] J7: Drill legs b-d drive real renet instead of host-built cells. Accept: drill rc=0 with renet in the loop.
+    (ticked) 2026-10-27T19:35:32Z by d778be9d: rc=0 PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup --renet --vm 192.168.111.11 --legs a,b,c,d rc=0 2026-10-27, 26/26 (renet snapshot stores the seed, ledger moves by exactly the uploaded bytes, the incremental moves one cell, both snapshots restore byte-identical via renet backup restore), 2m36s
+- [x] J8: Drill leg l: GC and retention through /backup/maintenance against RustFS, asserting that bytes go down and the floor holds. Accept: KNOWN_LEGS includes l; drill rc=0.
+    (ticked) 2026-10-27T19:35:36Z by d778be9d: rc=0 PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup --legs a,l rc=0 2026-10-27, 57/57 (keep-last-7 prunes nothing, keep-last-1 deletes only the two oldest above the floor of 3, orphans held until grace then the ledger falls by exactly the two cells, snapshots 2 and 4 restore byte-identical), 54s
 - [ ] J9: The renet full test suite (btrfs tier) runs on every renet change in CI, not only on full_suite (.github/workflows/ct-tests.yml:2335,2416). Accept: CI run id.
 - [x] J10: Extend githooks.py pre_push (:290) so a terminal push of backup paths also needs the receipt, or record the operator's ruling not to. Accept: hook test, or the ruling cited.
     (ticked) 2026-10-27T00:39:26Z by d778be9d: githooks.py pre_push calls backup_receipt_refusal (.claude/rediacc_hooks/git/githooks.py); PYTHONPATH=.ci pytest -q .claude/rediacc_hooks/tests/test_githook_backup_receipt.py rc=0 (13 passed, 2026-10-27); ruff check and format --check rc=0. DEPS-WAIVED: no dependency on the shell-sandbox or account-vm-check plans
@@ -403,7 +406,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 
 ### Phase O: browse TOC and remote browse (folded from PLAN-chunk-store-browse-toc-and-remote.md by A2)
 
-- [ ] O1: Holds the place until A2 copies the 11 boxes verbatim here after PR #600 merges; the A2 commit ticks it.
+- [x] O1: Holds the place until A2 copies the 11 boxes verbatim here after PR #600 merges; the A2 commit ticks it.
+    (ticked) 2026-10-27T19:36:06Z by d778be9d: commit:c37040351 A2 closed the TOC plan into agent/plans/_done/PLAN-chunk-store-browse-toc-and-remote.md (11 of 11 boxes ticked, last d96400c32) instead of folding it, per operator /ask 2026-10-23; the placeholder has nothing left to hold
 
 ### Phase R: config, licence and machine findings from 2026-10-15
 

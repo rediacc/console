@@ -13,6 +13,7 @@ Owns: private/account/src/services/executor-issuer.service.ts, private/account/s
 
 - **2026-10-26 ~05:30Z "Plan multi-org now, same branch".** Multi-org support is designed now and lands on branch 1023-1 next to PLAN-proxy-cd-six-targets.
 - **Inherited from PLAN-proxy-cd-six-targets, unchanged:** 7 deployable configs (ASKED:2026-10-25T19:08Z); its max_instances = 3 and 21-in-total ceiling are superseded by ASKED:2026-10-26T15:26Z "Per-org, raise the cap": max_instances = 25 per proxy config, at most 175 in total, `sleepAfter` unchanged at 2 minutes. The binding mints, with no exported EXECUTOR_TOKEN (ASKED:2026-10-25T19:08Z). Each region stays closed until its smoke passes (ASKED:2026-10-25T18:18Z). The web client re-grants transparently (ASKED:2026-10-25T18:18Z). Secrets travel only through bws_env, and only their names appear anywhere (order 2026-10-25T18:10Z).
+- **Relation to PLAN-executor-durable-object-policy.** For the `durable` backend of that plan, Design item 3's capacity (the `max_instances` count and the `CAPACITY_ERROR` start-error guess), MU1 and MU2 are superseded: the `ExecutorCapacity` coordinator counts leases, and `AccountEgress` takes its context from per-instance props. The `container` backend keeps this plan's design unchanged until that plan's Phase 3.
 - **Standing posture:** there are no external users, so this is a clean break. No compatibility shims, no dual-format principals, and no fallback to ROOT_EMAIL ownership.
 
 ## Context
