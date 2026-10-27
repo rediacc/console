@@ -258,16 +258,17 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
 
 ### Account (private/account submodule PR first)
 
-- [ ] A1 [account-issuer] `route` answers the tier, after S1.
+- [x] A1 [account-issuer] `route` answers the tier, after S1.
   - `ExecutorIssuer.route(bearer)` answers `{ orgId, tier }`, where `tier` is `'high'` iff the primary live subscription plan is BUSINESS or ENTERPRISE, computed inside the existing entitlement read with no new query.
   - The refusal shape is unchanged.
   - Tests: a PROFESSIONAL org gets `standard`, a BUSINESS org and an ENTERPRISE org get `high`, a refused token still gets exactly `route-refused`, and no field beyond `orgId` and `tier` is answered.
+    (ticked) 2026-10-27T19:41:04Z by d778be9d: commit:5acbb97d5 (account 6dde7c6) route answers {orgId, tier}; executor-issuer-route.test.ts rc=0 (12); typecheck rc=0. DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: private/account/src/services/executor-issuer.service.ts (route only), workers/account/src/index.ts (the route signature only), private/account/tests/integration/executor-issuer-route.test.ts. Accept: `cd private/account && npx vitest run tests/integration/executor-issuer-route.test.ts` exits 0 and `npm run typecheck` exits 0.
 
 ### Proxy Worker
 
-- [ ] W1 [proxy] `OrgExecutor` with the rebuilt helpers (Design items 2 and 5), after S1.
+- [x] W1 [proxy] `OrgExecutor` with the rebuilt helpers (Design items 2 and 5), after S1.
   - Covers start, env, readiness, proxying with in-flight counting, the `sleepAfter = '2m'` alarm, image-drift restart, constructor recovery after a deploy, and the pin checks.
   - Tests against a fake `ctx.container` (start, running, monitor, destroy, getTcpPort, interceptOutboundHttp, images):
     - the env set is exactly the four names;
@@ -279,6 +280,7 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
     - a constructor finding a running container re-acquires and re-attaches;
     - a second org's pin is refused;
     - an id mismatch is refused.
+    (ticked) 2026-10-27T19:41:02Z by d778be9d: commit:5acbb97d5 OrgExecutor in workers/proxy/src/org-executor.ts with 29 tests covering every W1 checklist line; npm run test:unit rc=0 (162); tsc rc=0. DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: workers/proxy/src/org-executor.ts, workers/proxy/src/__tests__/org-executor.test.ts. Accept: `cd workers/proxy && npm run test:unit` exits 0 and `npx tsc --noEmit -p workers/proxy/tsconfig.json` exits 0.
 - [x] W2 [proxy] `ExecutorCapacity`, the coordinator (Design item 3), after S1.
@@ -342,10 +344,11 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
   - proxy-binding-wiring.test.ts refuses any wrangler config under workers/ that binds entrypoint `AccountEgress` or `ContainerProxy`, with a control that plants one.
 
   -- Owns: private/account/tests/integration/proxy-binding-wiring.test.ts. Accept: `cd private/account && npx vitest run tests/integration/proxy-binding-wiring.test.ts` exits 0, and fails on the planted binding.
-- [ ] X1 [docs] docs/observability/signals/proxy.md, the deploy skill paragraph, and the relation line in PLAN-console-executor-multi-org.
+- [x] X1 [docs] docs/observability/signals/proxy.md, the deploy skill paragraph, and the relation line in PLAN-console-executor-multi-org.
   - proxy.md covers the two backends, `rediacc.proxy.size`, the `oom-heavy` outcome, the coordinator, and the forward-only phases.
   - The deploy skill paragraph covers the phase order and that Phase 1 and Phase 3 records are forward-only.
   - The PLAN-console-executor-multi-org relation line says that Design item 3's capacity, MU1 and MU2 are superseded for the durable backend.
+    (ticked) 2026-10-27T19:41:08Z by d778be9d: commit:8524acc42 proxy.md durable-object section, deploy skill phase paragraph, multi-org relation bullet; prose-style no finding in the three files. DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: docs/observability/signals/proxy.md, .claude/skills/deploy/SKILL.md, agent/plans/PLAN-console-executor-multi-org.md (relation lines only). Accept: `npm run check:ci-prose-style` exits 0, and `grep -n 'PLAN-executor-durable-object-policy' agent/plans/PLAN-console-executor-multi-org.md docs/observability/signals/proxy.md` matches both.
 
