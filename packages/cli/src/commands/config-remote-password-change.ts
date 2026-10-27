@@ -181,6 +181,24 @@ export async function buildPasswordSlot(
   return { kdfParams, wrappedCek: await wrapCekForSlot(cek, slotSecret, serverSecret) };
 }
 
+/** True when `slot`, unwrapped with `password` and the server secret, yields this device's CEK. */
+export async function slotOpensCek(
+  slot: { kdfParams: SlotKdfParams; wrappedCek: string },
+  password: string,
+  material: { cek: CryptoKey; serverSecret: Uint8Array }
+): Promise<boolean> {
+  const { derivePasswordSlotSecret, unwrapCekForSlot } = await import(
+    '@rediacc/shared/config-crypto'
+  );
+  try {
+    const secret = await derivePasswordSlotSecret(password, slot.kdfParams);
+    const unwrapped = await unwrapCekForSlot(slot.wrappedCek, secret, material.serverSecret);
+    return await sameKey(unwrapped, material.cek);
+  } catch {
+    return false;
+  }
+}
+
 /** True when two AES keys hold the same raw bytes. */
 async function sameKey(a: CryptoKey, b: CryptoKey): Promise<boolean> {
   const { exportAesKey } = await import('@rediacc/shared/config-crypto');
@@ -276,6 +294,10 @@ export async function changeConfigPassword(configName: string, newPassword: stri
 
   // 3. The new slot replaces this member's password slot (putSlot upserts on store+user+method).
   const slot = await buildPasswordSlot(material.cek, newPassword, material.serverSecret);
+  // The old slot is replaced by the PUT, so the new one must open this CEK before it is sent.
+  if (!(await slotOpensCek(slot, newPassword, material))) {
+    throw new ValidationError(t('commands.config.remote.password.change.verifyOtherKey'));
+  }
   const put = await withSpinner(
     t('commands.config.remote.password.change.writing'),
     () =>

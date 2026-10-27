@@ -225,6 +225,18 @@ describe('buildPasswordSlot', () => {
   });
 });
 
+describe('slotOpensCek', () => {
+  it('accepts a slot that opens this CEK and refuses one that does not, before any PUT', async () => {
+    const cek = state.cek as CryptoKey;
+    const serverSecret = state.serverSecret as Uint8Array;
+    const slot = await mod.buildPasswordSlot(cek, NEW_PASSWORD, serverSecret);
+    expect(await mod.slotOpensCek(slot, NEW_PASSWORD, { cek, serverSecret })).toBe(true);
+    expect(await mod.slotOpensCek(slot, 'not-the-password', { cek, serverSecret })).toBe(false);
+    const other = await crypto.generateCek();
+    expect(await mod.slotOpensCek(slot, NEW_PASSWORD, { cek: other, serverSecret })).toBe(false);
+  });
+});
+
 describe('resolveNewPassword', () => {
   it('reads stdin under --new-password-stdin', async () => {
     mockReadStdinValue.mockResolvedValue(NEW_PASSWORD);
