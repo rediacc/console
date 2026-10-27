@@ -79,7 +79,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 25 plans done, 367 of 506 boxes done (72%).
+Promoted: 6 of 25 plans done, 366 of 506 boxes done (72%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -107,7 +107,7 @@ Promoted: 6 of 25 plans done, 367 of 506 boxes done (72%).
 | 22 | PLAN-console-executor-multi-org.md | 14/20 | 6 open |
 | 23 | PLAN-executor-durable-object-policy.md | 2/21 | 19 open |
 | 24 | PLAN-local-release.md | 14/16 | 2 open |
-| 25 | PLAN-config-server-key.md | 4/6 | 2 open |
+| 25 | PLAN-config-server-key.md | 3/6 | 3 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge

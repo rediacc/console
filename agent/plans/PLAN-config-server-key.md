@@ -38,11 +38,12 @@ Design memo: Plan agent aecb122b, 2026-10-27, summarized in the boxes below.
     (ticked) 2026-10-27T13:31:52Z by d778be9d: 153810bd1 and 5242185e8: set_account_worker_secrets per-channel key, profiles, deploy_bench, cd-deploy-account fetch; pytest rc=0 (111, then 54); account_secrets_local --region eu --target edge --dry-run lists ACCOUNT_CONFIG_SERVER_KEY; check_bws_map and check:ci-secret-supply rc=0 after K3
 - [ ] K3 [lead] Mint the seven secrets in Bitwarden, in process (`secrets.token_bytes(32)`), through `bws_env store-from-env`. No value appears on argv or in a log.
   - Accept: the map gate resolves all seven names, and after deploy, `prune_worker_secrets --json` shows the key under `live` and no `CONFIG_SERVER_KEY`.
-- [x] K4 [writer] Rewrap tool `.ci/rediacc_ci/ops/rewrap_config_server_key.py --region --target [--apply] [--verify]`.
+- [ ] K4 [writer] Rewrap tool `.ci/rediacc_ci/ops/rewrap_config_server_key.py --region --target [--apply] [--verify]`.
   - It hydrates the Worker's own key, selects the untagged rows through `wrangler d1 execute`, and seals them through the K1 helper in `private/account/scripts/rewrap-config-server-key.ts`, so the output is byte-compatible by construction.
   - It takes a D1 bookmark first, then writes compare-and-swap UPDATEs from a temp file. `--verify` exits 0 only when no untagged row is left.
   - Accept: its pytest rc=0. Then, per Worker after deploy, `--apply` followed by `--verify` rc=0, seven times, bench included.
     (ticked) 2026-10-27T12:54:58Z by d778be9d: 1b76188e1: .ci/rediacc_ci/ops/rewrap_config_server_key.py with the account helper ae9d3bec; pytest rc=0 (17 in the tool test); the per-Worker live --apply/--verify runs after K3 and each deploy
+    (reopened) 2026-10-27 by d778be9d: the tool and its tests landed in 1b76188e1; the box stays open until the per-Worker --apply and --verify runs after K3 and each deploy.
 - [x] K5 [writer] Mirror alignment. The mirror runs before this plan (operator, 11:05Z). After K1, `mirror_config_store.py` refuses an untagged row or a kid that does not match the stable key, because its old CONFIG_SERVER_KEY pre-check goes blind once the key is in `KEYS`.
   - Accept: its pytest rc=0, with cases for an untagged row and a mismatched kid.
     (ticked) 2026-10-27T12:55:00Z by d778be9d: 1b76188e1: mirror_config_store refuses an untagged row or a foreign kid once both Workers hold ACCOUNT_CONFIG_SERVER_KEY; pytest rc=0
