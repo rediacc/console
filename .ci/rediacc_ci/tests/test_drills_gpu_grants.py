@@ -217,7 +217,10 @@ def test_v2_rules_verdict() -> None:
     nobpf = "CGV=2 CG=/x\nNOBPFTOOL\n"
     ok, why = g.cgroup_rules_verdict(nobpf, nobpf)
     assert not ok
-    assert "bpftool" in why
+    assert why == g.BPFTOOL_PREREQUISITE
+    assert "PREREQUISITE MISSING" in why
+    assert "linux-tools-common" in why
+    assert "provisioning" in why
 
 
 def test_cgroup_verdict_refuses_mixed_or_missing_versions() -> None:

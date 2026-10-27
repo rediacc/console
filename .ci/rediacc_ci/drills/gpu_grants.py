@@ -229,6 +229,13 @@ def open_verdict(text: str) -> tuple[bool, str]:
     return (ENXIO in joined and EPERM not in joined), "open: %s" % (joined or "<nothing>")
 
 
+BPFTOOL_PREREQUISITE = (
+    "PREREQUISITE MISSING, not a device-cgroup verdict: v2 rule read needs bpftool on the worker and provisioning does not install it; "
+    "add it to the ops VM provisioning (pkgset in private/renet: Ubuntu linux-tools-common + linux-tools-$(uname -r), "
+    "Debian/Fedora/openSUSE/Oracle bpftool) or install it now with `sudo apt-get install -y linux-tools-common linux-tools-$(uname -r)`"
+)
+
+
 def cgroup_script(socket: str, names: tuple[str, ...]) -> str:
     """Root on the worker: for each container (by name, on the repo daemon at `socket`), a `== <name>` section with its cgroup version and its device rules: v1 `devices.list` as `RULE:` lines, v2 every device program `bpftool cgroup list` names, dumped as `XL:` lines (`NOBPFTOOL` without bpftool)."""
     body = (
@@ -298,7 +305,7 @@ def cgroup_rules_verdict(granted: str, baseline: str) -> tuple[bool, str]:
             len(b),
         )
     if "NOBPFTOOL" in granted or "NOBPFTOOL" in baseline:
-        return False, "v2: bpftool is not installed on the worker"
+        return False, BPFTOOL_PREREQUISITE
     granted_imm, baseline_imm = v2_compare_immediates(granted), v2_compare_immediates(baseline)
     extra_imm = sorted(granted_imm - baseline_imm)
     progs = len(re.findall(r"^PROG=", granted, re.MULTILINE))
