@@ -547,6 +547,24 @@
         "5ac35d6c"
       ]
     },
+    "agent/plans/PLAN-config-server-key.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 3,
+      "done": 3,
+      "open_sigs": [
+        "4f529c92",
+        "5491e758",
+        "c38ce2cd"
+      ],
+      "done_sigs": [
+        "3dcaeba4",
+        "a3c03a4f",
+        "aa8197f8"
+      ]
+    },
     "agent/plans/PLAN-config-sync-hardening.md": {
       "status": "draft",
       "owner": "d778be9d",
