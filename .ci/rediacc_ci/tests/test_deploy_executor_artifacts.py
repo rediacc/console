@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from rediacc_ci.deploy import deploy_proxy, deploy_record
 from rediacc_ci.deploy import executor_artifacts as ea
 
 if TYPE_CHECKING:
@@ -122,6 +123,17 @@ def test_second_stage_with_unequal_bytes_refuses_and_leaves_the_first(r2, tmp_pa
 def test_stage_refuses_a_non_release_version(tmp_path):
     with pytest.raises(ea.ArtifactError, match="not a plain release version"):
         ea.stage("1.4", "x", make_sources(tmp_path / "src"))
+
+
+def test_branch_label_is_accepted_everywhere_and_other_suffixes_are_not():
+    """An unreleased build is staged under an honest branch label (operator 2026-10-27), never a bare release number."""
+    label = "2.4.0-branch.c0ffbb26fb69"
+    for rx in (ea._VERSION_RE, deploy_proxy.VERSION_RE, deploy_record.VERSION_RE):
+        assert rx.match(label)
+        assert not rx.match("2.4.0-rc.1")
+        assert not rx.match("2.4.0-branch.XYZ")
+        assert not rx.match("2.4")
+    assert ea.check_version(label) == label
 
 
 @pytest.mark.usefixtures("r2")

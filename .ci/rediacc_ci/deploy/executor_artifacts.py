@@ -59,7 +59,7 @@ NATIVE_MODULES = ("ssh2", "cpu-features")
 LOCAL_VERSION = "0.0.0-local"
 DEFAULT_DEST = "workers/proxy/stage"
 
-_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(-branch\.[0-9a-f]{7,40})?$")
 
 
 class ArtifactError(Exception):

@@ -74,7 +74,7 @@ MISSING_VERSION = (
     "--version is required for a %s deploy: the image is built from the release's "
     "executor artifacts (executor_artifacts fetch --version V)"
 )
-VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(-branch\.[0-9a-f]{7,40})?$")
 
 # The directory holding the `rediacc_ci` package (`.ci`).
 PACKAGE_PARENT = str(pathlib.Path(__file__).resolve().parents[2])

@@ -63,7 +63,7 @@ PROXY_REL = "/".join(PROXY_SUBDIR)
 # The last release each target's proxy passed its smoke on, outside `executor/` so executor_artifacts' version listing never sees it.
 POINTER_PREFIX = "executor-deployments/"
 
-VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(-branch\.[0-9a-f]{7,40})?$")
 
 # wrangler's answer for a Worker that has never been deployed (`This Worker does not exist on your account. [code: 10007]`).
 WORKER_ABSENT_RE = re.compile(r"\[code: 10007\]|does not exist on your account|script_not_found")
