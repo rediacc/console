@@ -53,7 +53,7 @@ Every deploy credential comes from Bitwarden Secrets Manager. **Without it nothi
    ```bash
    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID TURNSTILE_SITE_KEY
    ```
-   All three names printed means ready. A missing name is an operator task (the store entry is absent), not something to work around.
+   On a host without `bws`, prefix it with `./run.sh devbox exec --` as step 2 says. All three names printed means ready. A missing name is an operator task (the store entry is absent), not something to work around.
 
 The `deploy-workers` profile does NOT carry the Worker runtime secrets (`ACCOUNT_*` keys, `AWS_SES_*`, `STRIPE_*`, `OBS_OTLP_*`, `SELLER_*`). A code deploy keeps the secrets already on the Worker; only a secrets push changes them.
 
