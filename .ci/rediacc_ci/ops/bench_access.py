@@ -4,6 +4,7 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access list
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add <ip>
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access remove <ip>
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access preflight     # ci:quick's step: probe bench, run add-current only on a 403, never fails
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access clear         # empty the list, enforcement stays on
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access disable       # delete the rule, bench is open again
 
@@ -15,7 +16,11 @@ WHAT THE RULE BLOCKS. Every request to a bench host (the route patterns of `work
 
 EXPIRY. Every address is allowed for `TTL_DAYS` (7) days from the run that added it. The add time lives in the rule's own `description` (`RULE_DESCRIPTION | added ip=<UTC time> ...`), so the Cloudflare rule is the only store and no local state exists. Every mutating run first drops the addresses older than 7 days (the CLI's clock, UTC), then applies its verb; re-adding a live address refreshes its stamp; the 5-address cap counts what is left after the drop. A LEGACY address (in the expression but with no stamp, written before expiry existed or edited by hand) is treated as EXPIRED and dropped by the next mutating run, never stamped now, so an unknown age cannot become a permanent allowance. `list` is read-only and marks such entries. The expiry is enforced when the script runs, not by Cloudflare: an address stays in the rule past 7 days until the next run (the nightly `add-current` that the rotating IP already needs).
 
-THE LIST. At most `MAX_IPS` (5) single addresses, oldest first in the rule's expression, which is the record: `add-current` appends the caller's address (re-adding one moves it to the end) and evicts from the front when the list is full. With no rule yet, the first `add` creates it holding the caller's own address, so the first enforcement cannot lock the caller out. `add-current` asks Cloudflare's own trace endpoint for the IPv4 and the IPv6 address it sees (one family may be unreachable and is then skipped), so a dual-stack host is allowed in whichever family curl or node picks.
+IPv6 IS KEPT AS A /64. A host's IPv6 address is a privacy address that rotates within its /64, so an IPv6 `add`, `remove` or detected address is canonicalized to its /64 network (`2001:a61:50d0:3b01::/64`) and re-adding an address inside it refreshes that one entry. A CIDR given by hand is accepted only for IPv6 /64 or narrower (down to /128); IPv4 stays one address. The prefix is written into `ip.src in {...}` as Cloudflare's CIDR literal. Under WSL `add-current` also asks the Windows host (powershell.exe, api64.ipify.org and api.ipify.org) for its egress addresses, because a Windows browser leaves over a different family than the WSL guest; a family that does not answer is skipped with a note.
+
+PREFLIGHT. `preflight` is the step ci:quick runs first (the `ci:quick` npm script): a read-only GET of bench from this machine (and from the Windows host under WSL), and only a 403 triggers `add-current`. It skips under CI=true, and it ALWAYS exits 0, printing one line on any error, so it can never fail ci:quick.
+
+THE LIST. At most `MAX_IPS` (5) entries (single addresses or IPv6 /64 prefixes), oldest first in the rule's expression, which is the record: `add-current` appends the caller's address (re-adding one moves it to the end) and evicts from the front when the list is full. With no rule yet, the first `add` creates it holding the caller's own address, so the first enforcement cannot lock the caller out. `add-current` asks Cloudflare's own trace endpoint for the IPv4 and the IPv6 address it sees (one family may be unreachable and is then skipped), so a dual-stack host is allowed in whichever family curl or node picks.
 
 AUTH. `cf_auth.resolve_scoped("bench-access", zone_id=ZONE_ID)`: a supplied `CF_MANAGEMENT_TOKEN`, or a token minted from the Global API Key with `Zone WAF Write` on the rediacc.com zone only (plus the user-scoped API Tokens pair its self-destruct needs), deleted at the end of the run. The script re-runs itself under the `bench-access` Bitwarden profile (`CF_GLOBAL_API_KEY`, `CF_EMAIL`) when neither is in the environment. The credential reaches curl on its stdin (`rediacc_ci.core.curl_stdin`), never on argv, and is never printed.
 """
@@ -33,10 +38,12 @@ import time
 import tomllib
 import typing
 import urllib.error
+import urllib.request
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import https
 from rediacc_ci.ops import apply_cf_redirect_rules, cf_auth
+from rediacc_ci.well_known import BENCH_ORIGIN
 
 ZONE_ID = apply_cf_redirect_rules.ZONE_ID
 PHASE = "http_request_firewall_custom"
@@ -59,6 +66,14 @@ TRACE_TIMEOUT_S = 8.0
 AUTH_RETRIES = 15
 AUTH_RETRY_S = 2.0
 ENTRYPOINT_MISSING = 10003
+V6_PREFIX = 64
+BENCH_URL = BENCH_ORIGIN + "/"
+PROBE_TIMEOUT_S = 10.0
+# Cloudflare answers the default `Python-urllib` agent 403 whatever the source IP (measured 2026-10-27), so the probe names itself.
+PROBE_AGENT = "rediacc-bench-access/1"
+POWERSHELL = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+HOST_IP_URLS = ("https://api64.ipify.org", "https://api.ipify.org")
+WSL_MARKER = "/proc/sys/fs/binfmt_misc/WSLInterop"
 Entry = tuple[str, datetime.datetime | None]
 IP_SET = re.compile(r"ip\.src in \{([^}]*)\}")
 
@@ -88,11 +103,28 @@ def bench_hosts(root=None) -> list[str]:
 
 
 def normalize_ip(text: str) -> str:
-    """The canonical text of one IPv4 or IPv6 address; AccessError for anything else (a CIDR included)."""
+    """The canonical entry text for one address or prefix: an IPv4 address as itself, an IPv6 address as its /64 network, a hand-written IPv6 CIDR as given when its prefix is /64 to /128. AccessError for anything else (a broader IPv6 prefix, an IPv4 range, garbage)."""
+    raw = text.strip()
+    if "/" not in raw:
+        try:
+            ip = ipaddress.ip_address(raw)
+        except ValueError:
+            raise AccessError("not a single IP address: %r" % text) from None
+        if ip.version == 4:
+            return str(ip)
+        return str(ipaddress.ip_network("%s/%d" % (ip, V6_PREFIX), strict=False))
     try:
-        return str(ipaddress.ip_address(text.strip()))
+        net = ipaddress.ip_network(raw, strict=False)
     except ValueError:
         raise AccessError("not a single IP address: %r" % text) from None
+    if net.version == 4 and net.prefixlen == 32:
+        return str(net.network_address)
+    if net.version == 6 and net.prefixlen >= V6_PREFIX:
+        return str(net)
+    raise AccessError(
+        "refusing %r: only an IPv4 address or an IPv6 prefix of /%d to /128 may be allowed"
+        % (text, V6_PREFIX)
+    )
 
 
 def expression(hosts: list[str], ips: list[str]) -> str:
@@ -109,7 +141,15 @@ def expression(hosts: list[str], ips: list[str]) -> str:
 def ips_of(rule_expression: str) -> list[str]:
     """The allowed IPs of a rule this script wrote, in stored order (oldest first)."""
     found = IP_SET.search(rule_expression)
-    return found.group(1).split() if found else []
+    out: list[str] = []
+    for raw in found.group(1).split() if found else []:
+        try:
+            canonical = normalize_ip(raw)  # a bare IPv6 written before /64 entries reads as its /64
+        except AccessError:
+            canonical = raw
+        if canonical not in out:
+            out.append(canonical)
+    return out
 
 
 def describe(entries: list[Entry]) -> str:
@@ -285,6 +325,125 @@ def detect_public_ips(
     return found
 
 
+def in_wsl() -> bool:
+    """True under WSL (the interop marker or WSL_DISTRO_NAME)."""
+    return os.path.exists(WSL_MARKER) or bool(os.environ.get("WSL_DISTRO_NAME"))
+
+
+def _powershell(command: str) -> str:
+    done = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-Command", command],
+        capture_output=True,
+        text=True,
+        timeout=PROBE_TIMEOUT_S + 10,
+        check=False,
+    )
+    if done.returncode != 0:
+        raise OSError("powershell exit %d" % done.returncode)
+    return done.stdout
+
+
+def detect_host_ips(
+    run_ps: typing.Callable[[str], str] | None = None, wsl: bool | None = None
+) -> list[str]:
+    """The Windows host's egress addresses when running under WSL, else []. Each family fails soft with a printed note."""
+    if not (in_wsl() if wsl is None else wsl):
+        return []
+    run_ps = run_ps or _powershell
+    found: list[str] = []
+    for url in HOST_IP_URLS:
+        try:
+            text = run_ps("(Invoke-RestMethod -TimeoutSec 10 %s)" % url).strip()
+            ip = str(ipaddress.ip_address(text))
+        except (OSError, ValueError, subprocess.SubprocessError):
+            print("note: the Windows host did not answer at %s; skipped" % url)
+            continue
+        if ip not in found:
+            found.append(ip)
+    return found
+
+
+def detect_current(
+    trace: typing.Callable[[], list[str]] | None = None,
+    host: typing.Callable[[], list[str]] = detect_host_ips,
+) -> list[str]:
+    """This machine's addresses (Cloudflare trace) plus, under WSL, the Windows host's; AccessError only when both are empty."""
+    trace = trace or detect_public_ips
+    host_ips = host()
+    try:
+        found = trace()
+    except AccessError:
+        if not host_ips:
+            raise
+        found = []
+    return found + [ip for ip in host_ips if ip not in found]
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *_args, **_kwargs):
+        return None
+
+
+def _probe_local() -> int:
+    """The HTTP status of bench from this machine (a redirect is followed; only a 403 matters)."""
+    opener = https.build_opener(_NoRedirect())
+    try:
+        with opener.open(
+            https.build_request(BENCH_URL, method="GET", headers={"User-Agent": PROBE_AGENT}),
+            timeout=PROBE_TIMEOUT_S,
+        ) as r:
+            return r.status
+    except urllib.error.HTTPError as exc:
+        exc.close()
+        return exc.code
+
+
+_PS_PROBE = (
+    "try { (Invoke-WebRequest -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 10 %s).StatusCode }"
+    " catch { if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 'err' } }"
+)
+
+
+def _probe_host() -> int:
+    """The HTTP status of bench from the Windows host (WSL only)."""
+    out = _powershell(_PS_PROBE % BENCH_URL).strip().splitlines()
+    return int(out[-1]) if out else 0
+
+
+def preflight(
+    probes: tuple[typing.Callable[[], int], ...] | None = None,
+    add: typing.Callable[[], int] | None = None,
+    environ: typing.Mapping[str, str] | None = None,
+) -> int:
+    """ci:quick's step: probe bench; only a 403 from some egress runs add-current. Skips under CI=true and ALWAYS returns 0."""
+    env = os.environ if environ is None else environ
+    if env.get("CI") == "true":
+        print("bench-access: skipped under CI")
+        return 0
+    try:
+        if probes is None:
+            probes = (_probe_local, _probe_host) if in_wsl() else (_probe_local,)
+        statuses = [probe() for probe in probes]
+        if 403 not in statuses:
+            print("bench-access: bench reachable (%s)" % ", ".join(str(s) for s in statuses))
+            return 0
+        print("bench-access: bench answered 403, allowing this machine's addresses")
+        rc = (add or (lambda: main(["add-current"])))()
+        if rc != 0:
+            print("bench-access: add-current exited %d; continuing" % rc)
+    except (
+        OSError,
+        ValueError,
+        RuntimeError,
+        subprocess.SubprocessError,
+        AccessError,
+        cf_auth.CfAuthError,
+        SystemExit,
+    ) as exc:
+        print("bench-access: skipped (%s: %s)" % (type(exc).__name__, exc))
+    return 0
+
+
 def _fetch_trace(url: str) -> str:
     request = https.build_request(url, method="GET")
     try:
@@ -319,7 +478,7 @@ def run(
     command: str,
     argument: str | None,
     api: Api,
-    detect: typing.Callable[[], list[str]] = detect_public_ips,
+    detect: typing.Callable[[], list[str]] = detect_current,
     root=None,
     clock: typing.Callable[[], datetime.datetime] = lambda: datetime.datetime.now(datetime.UTC),
 ) -> int:
@@ -339,7 +498,12 @@ def run(
     for gone in expired:
         log.warn("dropped %s: older than %d days or with no add time" % (gone, TTL_DAYS))
     if command in ("add-current", "add"):
-        new = detect() if command == "add-current" else [normalize_ip(argument or "")]
+        new = list(
+            dict.fromkeys(
+                normalize_ip(ip)
+                for ip in (detect() if command == "add-current" else [argument or ""])
+            )
+        )
         for ip in new:
             ips, evicted = with_ip(ips, ip, now)
             for gone in evicted:
@@ -369,7 +533,15 @@ HELP = (
     + PROFILE
     + " Bitwarden profile, or CF_MANAGEMENT_TOKEN, or CF_GLOBAL_API_KEY + CF_EMAIL.\n"
 )
-VERBS = {"add-current": 0, "list": 0, "disable": 0, "clear": 0, "add": 1, "remove": 1}
+VERBS = {
+    "preflight": 0,
+    "add-current": 0,
+    "list": 0,
+    "disable": 0,
+    "clear": 0,
+    "add": 1,
+    "remove": 1,
+}
 
 
 def _reexec_under_profile(argv: list[str]) -> int | None:
@@ -407,9 +579,11 @@ def main(argv: list[str]) -> int:
         return 0
     if not argv or argv[0] not in VERBS or len(argv) - 1 != VERBS[argv[0]]:
         log.error(
-            "usage: bench_access add-current | list | add <ip> | remove <ip> | clear | disable"
+            "usage: bench_access preflight | add-current | list | add <ip> | remove <ip> | clear | disable"
         )
         return 2
+    if argv[0] == "preflight":
+        return preflight()
     rebound = _reexec_under_profile(argv)
     if rebound is not None:
         return rebound

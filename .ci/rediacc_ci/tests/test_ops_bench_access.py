@@ -153,9 +153,9 @@ def test_list_remove_and_clear(capsys):
     _run(api, "list")
     out = capsys.readouterr().out
     assert "203.0.113.1" in out
-    assert "2001:db8::1" in out
+    assert "2001:db8::/64" in out
     _run(api, "remove", "203.0.113.1")
-    assert ba.ips_of(api.mine()[0]["expression"]) == ["2001:db8::1"]
+    assert ba.ips_of(api.mine()[0]["expression"]) == ["2001:db8::/64"]
     with pytest.raises(ba.AccessError, match="not in the allowlist"):
         _run(api, "remove", "203.0.113.1")
     _run(api, "clear")
@@ -192,7 +192,7 @@ def test_disable_deletes_only_our_rule():
 def test_add_current_uses_the_detected_addresses():
     api = FakeCloudflare()
     _run(api, "add-current", detect=lambda: ["198.51.100.7", "2001:db8::7"])
-    assert ba.ips_of(api.mine()[0]["expression"]) == ["198.51.100.7", "2001:db8::7"]
+    assert ba.ips_of(api.mine()[0]["expression"]) == ["198.51.100.7", "2001:db8::/64"]
 
 
 def test_detect_reads_each_family_and_skips_one_that_fails():
@@ -213,10 +213,11 @@ def test_detect_names_the_failure_when_no_family_answers():
 
 
 def test_a_cidr_or_garbage_is_not_an_address():
-    for bad in ("203.0.113.0/24", "not-an-ip", "1.2.3"):
+    for bad in ("not-an-ip", "1.2.3", "2001:db8::/zz"):
         with pytest.raises(ba.AccessError, match="not a single IP address"):
             ba.normalize_ip(bad)
-    assert ba.normalize_ip(" 2001:0db8:0:0:0:0:0:1 ") == "2001:db8::1"
+    assert ba.normalize_ip("203.0.113.9/32") == "203.0.113.9"
+    assert ba.normalize_ip(" 2001:0db8:0:0:0:0:0:1 ") == "2001:db8::/64"
 
 
 def test_a_cloudflare_refusal_is_a_named_error():
@@ -405,3 +406,138 @@ def test_a_clock_with_microseconds_still_reads_back_equal():
     CLOCK.now = CLOCK.now.replace(microsecond=506870)
     assert _run(api, "add", "203.0.113.1") == 0
     assert _stored(api)[0][1] == CLOCK.now.replace(microsecond=0)
+
+
+def test_an_ipv6_address_is_stored_as_its_slash_64_in_the_cloudflare_set():
+    api = FakeCloudflare()
+    _run(api, "add", "2001:a61:50d0:3b01:ccbd:c78c:8df7:242c")
+    (rule,) = api.mine()
+    assert "ip.src in {2001:a61:50d0:3b01::/64}" in rule["expression"]
+    assert "=2026-10-27T05:00:00Z" in rule["description"]
+    assert [ip for ip, _ in _stored(api)] == ["2001:a61:50d0:3b01::/64"]
+
+
+def test_readding_inside_a_slash_64_refreshes_that_one_entry():
+    api = FakeCloudflare()
+    _run(api, "add", "2001:db8:1:2:aaaa::1")
+    _run(api, "add", "203.0.113.1")
+    CLOCK.advance(days=3)
+    _run(api, "add", "2001:db8:1:2:bbbb::2")
+    stored = dict(_stored(api))
+    assert list(stored) == ["203.0.113.1", "2001:db8:1:2::/64"]
+    assert stored["2001:db8:1:2::/64"] == CLOCK.now
+
+
+def test_remove_by_address_removes_its_slash_64():
+    api = FakeCloudflare()
+    _run(api, "add", "2001:db8:1:2:aaaa::1")
+    _run(api, "remove", "2001:db8:1:2:cccc::9")
+    assert _stored(api) == []
+
+
+def test_a_broad_ipv6_prefix_or_an_ipv4_range_is_refused():
+    for bad in ("2001:db8::/32", "2001:db8:1:2::/63", "2001:db8::/1", "203.0.113.0/24"):
+        with pytest.raises(ba.AccessError, match="refusing"):
+            ba.normalize_ip(bad)
+    assert ba.normalize_ip("2001:db8:1:2::5/128") == "2001:db8:1:2::5/128"
+    assert ba.normalize_ip("2001:db8:1:2:3::/80") == "2001:db8:1:2:3::/80"
+    assert ba.normalize_ip("2001:db8:1:2:9::7/64") == "2001:db8:1:2::/64"
+
+
+def test_a_bare_ipv6_in_an_existing_rule_reads_as_its_slash_64():
+    legacy = {
+        "id": "old",
+        "description": ba.RULE_DESCRIPTION + " | added 2001:db8::1=2026-10-27T04:00:00Z",
+        "action": "block",
+        "expression": ba.expression(HOSTS, ["2001:db8::1"]),
+    }
+    api = FakeCloudflare(other_rules=[legacy])
+    _run(api, "add", "2001:db8::77")
+    assert [ip for ip, _ in _stored(api)] == ["2001:db8::/64"]
+
+
+def test_host_detection_needs_wsl_and_asks_each_family(capsys):
+    asked: list[str] = []
+
+    def powershell(command):
+        asked.append(command)
+        if "api64" in command:
+            return "2001:a61:50d0:3b01:ccbd:c78c:8df7:242c\r\n"
+        raise OSError("no v4")
+
+    assert ba.detect_host_ips(powershell, wsl=False) == []
+    assert asked == []
+    assert ba.detect_host_ips(powershell, wsl=True) == ["2001:a61:50d0:3b01:ccbd:c78c:8df7:242c"]
+    assert len(asked) == 2
+    assert "api.ipify.org; skipped" in capsys.readouterr().out
+
+
+def test_wsl_is_detected_from_the_interop_marker_or_the_distro_name(monkeypatch):
+    monkeypatch.setattr(ba.os.path, "exists", lambda _p: False)
+    monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
+    assert ba.in_wsl() is False
+    monkeypatch.setenv("WSL_DISTRO_NAME", "Ubuntu")
+    assert ba.in_wsl() is True
+    monkeypatch.delenv("WSL_DISTRO_NAME")
+    monkeypatch.setattr(ba.os.path, "exists", lambda p: p == ba.WSL_MARKER)
+    assert ba.in_wsl() is True
+
+
+def test_detect_current_merges_the_host_and_survives_a_dead_trace():
+    both = ba.detect_current(lambda: ["62.0.0.1"], lambda: ["62.0.0.1", "2001:db8:1:2::9"])
+    assert both == ["62.0.0.1", "2001:db8:1:2::9"]
+
+    def dead():
+        raise ba.AccessError("down")
+
+    assert ba.detect_current(dead, lambda: ["2001:db8:1:2::9"]) == ["2001:db8:1:2::9"]
+    with pytest.raises(ba.AccessError):
+        ba.detect_current(dead, list)
+
+
+def test_preflight_skips_when_bench_already_answers(capsys):
+    added: list[int] = []
+    rc = ba.preflight(
+        probes=(lambda: 302, lambda: 200), add=lambda: added.append(1) or 0, environ={}
+    )
+    assert rc == 0
+    assert added == []
+    assert "reachable (302, 200)" in capsys.readouterr().out
+
+
+def test_preflight_adds_on_a_403_from_any_egress():
+    added: list[int] = []
+    rc = ba.preflight(
+        probes=(lambda: 302, lambda: 403), add=lambda: added.append(1) or 0, environ={}
+    )
+    assert rc == 0
+    assert added == [1]
+
+
+def test_preflight_does_nothing_under_ci(capsys):
+    def boom():
+        raise AssertionError("probed under CI")
+
+    assert ba.preflight(probes=(boom,), add=boom, environ={"CI": "true"}) == 0
+    assert "skipped under CI" in capsys.readouterr().out
+
+
+def test_preflight_never_fails(capsys):
+    def offline():
+        raise OSError("offline")
+
+    def bad_add():
+        raise ba.AccessError("cloudflare said no")
+
+    assert ba.preflight(probes=(offline,), add=lambda: 1, environ={}) == 0
+    assert ba.preflight(probes=(lambda: 403,), add=bad_add, environ={}) == 0
+    assert ba.preflight(probes=(lambda: 403,), add=lambda: 1, environ={}) == 0
+    out = capsys.readouterr().out
+    assert "skipped (OSError: offline)" in out
+    assert "cloudflare said no" in out
+    assert "add-current exited 1" in out
+
+
+def test_main_preflight_returns_zero_without_credentials(monkeypatch):
+    monkeypatch.setenv("CI", "true")
+    assert ba.main(["preflight"]) == 0
