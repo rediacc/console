@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
-"""Mirror one remote config store from a stable account database into its edge twin, at the database level: same CEK, same password and recovery slots (worklist #046d4339, operator ruling ASKED:2026-10-27T09:45Z).
+"""Mirror one remote config store from a stable account database into its edge twin or into bench, at the database level: same CEK, same password and recovery slots (worklist #046d4339, operator ruling ASKED:2026-10-27T09:45Z; bench, PR-TASK 9f92c43e, 2026-10-27).
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge --list-stores
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge --store <id> [--dry-run]
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge --store <id> --apply --i-understand-edge-write
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to bench --store <id> [--dry-run | --apply --i-understand-edge-write]
+
+THE TARGET. `<region>-edge` of the source's region, or `bench` (bench.rediacc.com): its D1, CONFIG_BUCKET, Worker name, REGION and WebAuthn RP ID are read from workers/account/wrangler.bench.toml, since regions.json does not list it, and its REGION must be the source's. Everything below that says "edge" holds for bench too, and the output names the target by its channel (`edge` or `bench`). `--i-understand-edge-write` acknowledges a write to either.
 
 WHY IT WORKS. A key slot wraps the CEK under `deriveWrappingKey(slotSecret, serverSecret)` (packages/shared/src/config-crypto/cek.ts, slots.ts), and `serverSecret` is the store's own `config_stores.server_secret`. Copying the store row and the slot rows byte for byte therefore lets the same master password or recovery code unlock the edge copy. The blobs are copied by their recorded `r2_key`, and the envelope v3 AAD binds `(storeId, configId, teamId, version, sdkEpoch)`, so those ids are kept; the operator's user id may be remapped.
 
 THE MIRROR IS A FORK. Nothing syncs afterwards: a push to either side diverges them.
 
-WHAT IS COPIED. Verbatim: `config_stores` (but `require_passkey` is written 0 on edge, operator answer ASKED:2026-10-27T10:35Z), `config_entries` and `config_versions`. Filtered: the operator's `config_key_slots` of method password and recovery, and the operator's `config_user_identities` with every passkey column cleared. PASSKEYS DO NOT CARRY OVER: the WebAuthn RP ID is the stable host on stable and the edge host on edge, so a stable passkey can never sign in on edge. Identity rows: the organization, its live subscriptions (status active, grace or inactive and not expired), the operator's org membership, the teams the entries use and the operator's memberships of them. The OPERATOR is the org owner; no other member's user row, slots or identity is copied, and the plan names them by count only. Never copied: `config_tokens`, `config_executor_grants`, `config_cek_handoffs`, `config_cek_rotations`. A `config_versions.created_by_user_id` that names another member is written NULL.
+WHAT IS COPIED. Verbatim: `config_stores` (but `require_passkey` is written 0 on edge, operator answer ASKED:2026-10-27T10:35Z), `config_entries` and `config_versions`. Filtered: the operator's `config_key_slots` of method password and recovery, and the operator's `config_user_identities` with every passkey column cleared. PASSKEYS DO NOT CARRY OVER: the WebAuthn RP ID is each end's own host (`WEBAUTHN_RP_ID` of its wrangler config: the stable host, the edge host, bench.rediacc.com), so a stable passkey can never sign in on the target; the plan prints both RP IDs. Identity rows: the organization, its live subscriptions (status active, grace or inactive and not expired), the operator's org membership, the teams the entries use and the operator's memberships of them. The OPERATOR is the org owner; no other member's user row, slots or identity is copied, and the plan names them by count only. Never copied: `config_tokens`, `config_executor_grants`, `config_cek_handoffs`, `config_cek_rotations`. A `config_versions.created_by_user_id` that names another member is written NULL.
 
 IDENTITY. Case A: no edge user has the operator's `email_hash`, so the user row is copied with the same id. Case B: edge user X has it, so the operator's id is rewritten to X in `config_key_slots.user_id`, `config_user_identities.user_id`, `config_versions.created_by_user_id`, `org_memberships.user_id`, `team_memberships.user_id` and `organizations.owner_user_id`.
 
-REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). An edge D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. An edge row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on edge is printed as a note. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
+REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). An edge D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. An edge row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on edge is printed as a note. `customer_id` is never compared: it is a per-environment Stripe id (edge bills through a separate Stripe account and bench runs with Stripe disabled), so a reused org carrying its own is printed as a note and an inserted org keeps the stable id as an inert label. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
 
-PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row (not yet rewrapped by `rediacc_ci.ops.rewrap_config_server_key`) or a `csk1` row whose kid is not the stable key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_STABLE` by the rewrap helper); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
+PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row (not yet rewrapped by `rediacc_ci.ops.rewrap_config_server_key`) or a `csk1` row whose kid is not the EDGE key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE`, or `ACCOUNT_CONFIG_SERVER_KEY_BENCH` for bench, by the rewrap helper; each channel holds its own key, so a row rewrapped under the stable key refuses here); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
 
 THE APPLY, in order: the pre-checks; the edge D1 bookmark (`wrangler d1 time-travel info`, parsed by `deploy_record.parse_bookmark`; no bookmark, no write); the rollback files written to `--out-dir` and their paths printed with the time-travel restore command; the R2 copy, each object fetched to a temp dir, put, read back and compared by sha256; one `wrangler d1 execute --file` of plain INSERTs (never OR REPLACE) ending with an `event_log` row `config.store.mirrored`; then a re-read of every inserted row compared column by column with the plan, and `PRAGMA foreign_key_check` on every touched table compared with the check taken before the write.
 
@@ -70,6 +73,10 @@ EVENT_SOURCE = "ops-mirror-config-store"
 STORE_ID = re.compile(r"^[A-Za-z0-9_-]{8,64}\Z")
 SQL_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,128}\Z")
 END_NAME = re.compile(r"^([a-z]+)-(stable|edge)\Z")
+# bench.rediacc.com: one non-regional target, named by itself; its region is the REGION var of its wrangler config.
+BENCH_END = "bench"
+# The channels a mirror may write; the label each one carries in the output is the channel itself.
+TARGET_CHANNELS = ("edge", target_mod.BENCH_TARGET)
 R2_KEY = re.compile(r"^[A-Za-z0-9_.=:@+-]+(/[A-Za-z0-9_.=:@+-]+)*\Z")
 
 LIVE_STATUSES = ("active", "grace", "inactive")
@@ -98,10 +105,10 @@ TABLE_ORDER = (
     "event_log",
 )
 # Identity tables: an edge row with the same id is REUSED when these columns match (user ids compared after the case-B remap) and refused when one differs; never updated. The store's own rows refuse on any collision.
-# customer_id is a billing id per environment (edge bills through a separate Stripe account), so the same org legitimately carries a different customer_id on edge; it identifies nothing across environments and is not compared. Edge's own org and subscription rows agree with each other, which is all the config routes need.
+# customer_id is a billing id per environment (edge bills through a separate Stripe account), so the same org legitimately carries a different customer_id on edge; it identifies nothing across environments and is not compared. A subscription is matched on the org it belongs to (`org_id`), which is the same id on both sides.
 IDENTITY_MATCH = {
     "organizations": ("owner_user_id",),
-    "subscriptions": (),
+    "subscriptions": ("org_id",),
     "org_memberships": ("org_id", "user_id"),
     "teams": ("org_id", "slug"),
     "team_memberships": ("team_id", "user_id"),
@@ -195,6 +202,7 @@ class End:
     bucket: str
     jurisdiction: str
     worker: str
+    rp_id: str = ""
 
 
 def _regions(root: pathlib.Path) -> list[dict]:
@@ -217,41 +225,73 @@ def stable_names(root: pathlib.Path) -> tuple[set[str], set[str]]:
     return dbs, buckets
 
 
-def resolve_end(root: pathlib.Path, name: str) -> End:
-    match = END_NAME.match(name or "")
-    region_doc = None
-    if match:
-        region_doc = next((r for r in _regions(root) if r.get("id") == match.group(1)), None)
-    if not match or region_doc is None:
-        raise RefusedError("%s is not <region>-stable or <region>-edge for a known region" % name)
-    region, channel = match.group(1), match.group(2)
-    config = target_mod.account_config(channel, region)
-    path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)
+def _account_doc(path: pathlib.Path) -> tuple[dict, str, dict]:
+    """(the wrangler config, its D1 database name, its CONFIG_BUCKET entry)."""
     try:
         doc = tomllib.loads(path.read_text(encoding="utf-8"))
         database = doc["d1_databases"][0]["database_name"]
         bucket = next(b for b in doc["r2_buckets"] if b.get("binding") == "CONFIG_BUCKET")
     except (OSError, tomllib.TOMLDecodeError, KeyError, IndexError, TypeError, StopIteration):
         raise RefusedError("%s has no readable D1 database or CONFIG_BUCKET" % path) from None
+    return doc, str(database), bucket
+
+
+def resolve_end(root: pathlib.Path, name: str) -> End:
+    """One end: `<region>-stable` or `<region>-edge` from regions.json and the region's wrangler config, or `bench`, whose Worker name and region come from wrangler.bench.toml itself (regions.json does not list it)."""
+    if name == BENCH_END:
+        config = target_mod.account_config(target_mod.BENCH_TARGET, "")
+        path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)
+        doc, database, bucket = _account_doc(path)
+        variables = doc.get("vars") if isinstance(doc.get("vars"), dict) else {}
+        region = str(variables.get("REGION") or "")
+        if not any(r.get("id") == region for r in _regions(root)):
+            raise RefusedError("%s names no known REGION (%r)" % (path, region))
+        return End(
+            name=name,
+            channel=target_mod.BENCH_TARGET,
+            region=region,
+            config=config,
+            database=database,
+            bucket=str(bucket.get("bucket_name") or ""),
+            jurisdiction=str(bucket.get("jurisdiction") or ""),
+            worker=str(doc.get("name") or ""),
+            rp_id=str(variables.get("WEBAUTHN_RP_ID") or ""),
+        )
+    match = END_NAME.match(name or "")
+    region_doc = None
+    if match:
+        region_doc = next((r for r in _regions(root) if r.get("id") == match.group(1)), None)
+    if not match or region_doc is None:
+        raise RefusedError(
+            "%s is not <region>-stable, <region>-edge for a known region, or bench" % name
+        )
+    region, channel = match.group(1), match.group(2)
+    config = target_mod.account_config(channel, region)
+    path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)
+    doc, database, bucket = _account_doc(path)
+    variables = doc.get("vars") if isinstance(doc.get("vars"), dict) else {}
     worker = region_doc.get("edgeWorkerName" if channel == "edge" else "workerName")
     return End(
         name=name,
         channel=channel,
         region=region,
         config=config,
-        database=str(database),
+        database=database,
         bucket=str(bucket.get("bucket_name") or ""),
         jurisdiction=str(bucket.get("jurisdiction") or ""),
         worker=str(worker or ""),
+        rp_id=str(variables.get("WEBAUTHN_RP_ID") or ""),
     )
 
 
 def check_ends(root: pathlib.Path, src: End, dst: End) -> None:
-    """The source is a stable end, the target an edge end of the same region, and no stable name is a write target."""
+    """The source is a stable end, the target an edge end of the same region or bench (whose REGION must be the source's), and no stable name is a write target."""
     if src.channel != "stable":
         raise RefusedError("--from %s: the source must be a stable end" % src.name)
-    if dst.channel != "edge":
-        raise RefusedError("--to %s: the target must be an edge end" % dst.name)
+    if dst.channel not in TARGET_CHANNELS:
+        raise RefusedError("--to %s: the target must be an edge end or bench" % dst.name)
+    if not dst.worker:
+        raise RefusedError("--to %s: the target names no Worker" % dst.name)
     if src.region != dst.region:
         raise RefusedError(
             "--from and --to must name one region (%s, %s)" % (src.region, dst.region)
@@ -425,6 +465,10 @@ class D1:
 
 # wrangler's answer for a missing object (R2 NoSuchKey, API code 10007).
 OBJECT_ABSENT = re.compile(r"does not exist|NoSuchKey|\b10007\b|not found", re.IGNORECASE)
+# A missing or misnamed bucket also answers "does not exist"; it is checked first so it refuses instead of reading as an absent object.
+BUCKET_ABSENT = re.compile(
+    r"\bbucket\b[^\n]*(does not exist|not found)|NoSuchBucket|\b10006\b", re.IGNORECASE
+)
 
 
 class R2:
@@ -469,6 +513,11 @@ class R2:
         )
         if code == 0:
             return True
+        if BUCKET_ABSENT.search(text):
+            raise RefusedError(
+                "r2: bucket %s does not exist or is not reachable with this token (wrangler exited %d)"
+                % (self.end.bucket, code)
+            )
         if OBJECT_ABSENT.search(text):
             return False
         raise RefusedError(
@@ -688,7 +737,7 @@ def _edge_identity_rows(dst: Reader, source: dict) -> dict[str, list[dict]]:
             "id = @ORG@ OR customer_id = @CUST@",
         ),
         "subscriptions": (
-            "id, customer_id, status, expires_at",
+            "id, customer_id, org_id, status, expires_at",
             "id IN @SUBS@ OR customer_id = @CUST@",
         ),
         "org_memberships": ("id, org_id, user_id", "id IN @OMS@ OR org_id = @ORG@"),
@@ -744,9 +793,13 @@ def read_target(dst: Reader, source: dict) -> dict:
 
 
 def resolve_identity(
-    planned: list[tuple[str, dict]], edge: dict[str, list[dict]], org_id: str, customer_id: str
+    planned: list[tuple[str, dict]],
+    edge: dict[str, list[dict]],
+    org_id: str,
+    customer_id: str,
+    label: str = "edge",
 ) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]], list[str]]:
-    """(rows to insert, rows reused as (table, edge row), conflicts) for the identity tables. A conflict names the table and column(s) and an id prefix, never a value."""
+    """(rows to insert, rows reused as (table, target row), conflicts) for the identity tables. A conflict names the table and column(s) and an id prefix, never a value; `label` names the target (its channel, edge or bench)."""
     insert: list[tuple[str, dict]] = []
     reused: list[tuple[str, dict]] = []
     conflicts: list[str] = []
@@ -767,7 +820,7 @@ def resolve_identity(
             str(r.get("id")) != str(row["id"]) and all(r.get(c) == row.get(c) for c in key)
             for r in rows
         ):
-            conflicts.append("%s (%s) is held by another edge row" % (table, ", ".join(key)))
+            conflicts.append("%s (%s) is held by another %s row" % (table, ", ".join(key), label))
             continue
         insert.append((table, row))
     org_reused = any(t == "organizations" and str(r["id"]) == org_id for t, r in reused)
@@ -779,8 +832,8 @@ def resolve_identity(
     ]
     if stranger and not org_reused:
         conflicts.append(
-            "subscriptions (customer_id) has %d edge row(s) for a customer whose org is not on edge"
-            % len(stranger)
+            "subscriptions (customer_id) has %d %s row(s) for a customer whose org is not on %s"
+            % (len(stranger), label, label)
         )
     return insert, reused, conflicts
 
@@ -788,15 +841,15 @@ def resolve_identity(
 # ---- schema parity -----------------------------------------------------------
 
 
-def schema_parity(src: Reader, dst: Reader) -> list[str]:
-    """Refuses drift the copy cannot carry; returns the summary lines."""
+def schema_parity(src: Reader, dst: Reader, label: str = "edge") -> list[str]:
+    """Refuses drift the copy cannot carry; returns the summary lines. `label` names the target (its channel)."""
     src_m = {str(r.get("name")) for r in src.query("SELECT name FROM d1_migrations")}
     dst_m = {str(r.get("name")) for r in dst.query("SELECT name FROM d1_migrations")}
     missing = sorted(src_m - dst_m)
     if missing:
         raise RefusedError(
-            "schema: %d stable migration(s) are not applied on edge (%s): deploy edge first"
-            % (len(missing), ", ".join(missing[:5]))
+            "schema: %d stable migration(s) are not applied on %s (%s): deploy %s first"
+            % (len(missing), label, ", ".join(missing[:5]), label)
         )
     sql = "; ".join("PRAGMA table_info(%s)" % ident(t) for t in TABLE_ORDER)
     src_cols, dst_cols = src.query_many(sql), dst.query_many(sql)
@@ -805,11 +858,13 @@ def schema_parity(src: Reader, dst: Reader) -> list[str]:
     problems = []
     for table, s_rows, d_rows in zip(TABLE_ORDER, src_cols, dst_cols, strict=True):
         if not d_rows:
-            problems.append("%s is missing on edge" % table)
+            problems.append("%s is missing on %s" % (table, label))
             continue
         s_names = {str(r["name"]) for r in s_rows}
         d_by = {str(r["name"]): r for r in d_rows}
-        problems += ["%s.%s is missing on edge" % (table, c) for c in sorted(s_names - set(d_by))]
+        problems += [
+            "%s.%s is missing on %s" % (table, c, label) for c in sorted(s_names - set(d_by))
+        ]
         for name, r in sorted(d_by.items()):
             if (
                 name not in s_names
@@ -817,12 +872,14 @@ def schema_parity(src: Reader, dst: Reader) -> list[str]:
                 and r.get("dflt_value") is None
                 and not int(r.get("pk") or 0)
             ):
-                problems.append("%s.%s is NOT NULL with no default on edge only" % (table, name))
+                problems.append(
+                    "%s.%s is NOT NULL with no default on %s only" % (table, name, label)
+                )
     if problems:
         raise RefusedError("schema: " + "; ".join(problems))
     return [
-        "schema: %d stable migration(s) all applied on edge (%d there); %d table(s) compatible"
-        % (len(src_m), len(dst_m), len(TABLE_ORDER))
+        "schema: %d stable migration(s) all applied on %s (%d there); %d table(s) compatible"
+        % (len(src_m), label, len(dst_m), len(TABLE_ORDER))
     ]
 
 
@@ -852,16 +909,16 @@ def secret_names(token: str, account: str, workers: list[str]) -> dict[str, set[
     return out
 
 
-def stable_key_kid(root: pathlib.Path, src: End) -> str | None:
-    """The csk1 kid of the stable Worker's own key, computed by the Worker's code (the rewrap helper's `kid` mode); None when the key is not in the environment."""
+def key_kid(root: pathlib.Path, end: End) -> tuple[str, str | None]:
+    """(environment name, csk1 kid) of one Worker's own key, the kid computed by the Worker's code (the rewrap helper's `kid` mode); the kid is None when the key is not in the environment. The name comes from `rewrap.key_env_name`, so a refusal names the variable that was actually read."""
     try:
-        name = rewrap.key_env_name(root, src.channel, src.region)
+        name = rewrap.key_env_name(root, end.channel, end.region)
         value = os.environ.get(name)
         if not value:
-            return None
-        return str(rewrap.run_helper(root, value, "kid", None, [])["kid"])
+            return name, None
+        return name, str(rewrap.run_helper(root, value, "kid", None, [])["kid"])
     except rewrap.RefusedError as exc:
-        raise RefusedError("the stable key's kid could not be computed: %s" % exc) from None
+        raise RefusedError("the %s key's kid could not be computed: %s" % (end.name, exc)) from None
 
 
 def check_server_key(
@@ -869,11 +926,11 @@ def check_server_key(
     src: End,
     dst: End,
     value: object,
-    stable_kid: Callable[[], str | None],
+    target_kid: Callable[[], tuple[str, str | None]],
 ) -> str:
-    """Whether the store's `server_recoverable_org_passphrase` will open on edge; refuses when it would not.
+    """Whether the store's `server_recoverable_org_passphrase` will open on the target (edge or bench); refuses when it would not. Messages name the target by its channel.
 
-    Two names are compared. `CONFIG_SERVER_KEY` is what the code before PLAN-config-server-key K1 reads (falling back to the public constant). `ACCOUNT_CONFIG_SERVER_KEY` is what K1 reads, sealing `csk1.<kid>.` rows; once it is pushed, presence alone says nothing about the row, so the row itself is checked: an untagged row is refused (it still needs the rewrap on stable), and so is a `csk1` row whose kid is not the stable key's. Only while BOTH Workers still lack the new key (today's state) does an untagged row pass.
+    Two names are compared. `CONFIG_SERVER_KEY` is what the code before PLAN-config-server-key K1 reads (falling back to the public constant). `ACCOUNT_CONFIG_SERVER_KEY` is what K1 reads, sealing `csk1.<kid>.` rows; once it is pushed, presence alone says nothing about the row, so the row itself is checked: an untagged row is refused (it still needs the rewrap on stable), and so is a `csk1` row whose kid is not the kid of the key the target holds (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE` or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, since Worker secrets are write-only). Each channel has its own key (PLAN-config-server-key K2), so a row sealed under the stable key refuses: it would not open on the target. Only while BOTH Workers still lack the new key does an untagged row pass.
     """
     a, b = names.get(src.worker), names.get(dst.worker)
     if a is None or b is None:
@@ -881,13 +938,14 @@ def check_server_key(
     for name in (SERVER_KEY_NAME, WORKER_KEY_NAME):
         if (name in a) != (name in b):
             raise RefusedError(
-                "%s is %s on %s and %s on %s: server_recoverable_org_passphrase would not decrypt on edge"
+                "%s is %s on %s and %s on %s: server_recoverable_org_passphrase would not decrypt on %s"
                 % (
                     name,
                     "set" if name in a else "absent",
                     src.worker,
                     "set" if name in b else "absent",
                     dst.worker,
+                    dst.channel,
                 )
             )
     tagged = isinstance(value, str) and value.startswith(CSK_TAG)
@@ -904,8 +962,8 @@ def check_server_key(
                 WORKER_KEY_NAME,
             )
         return (
-            "%s: set on both Workers; the values cannot be read back (write-only), so the first edge pull is the proof"
-            % SERVER_KEY_NAME
+            "%s: set on both Workers; the values cannot be read back (write-only), so the first %s pull is the proof"
+            % (SERVER_KEY_NAME, dst.channel)
         )
     if value is None:
         return "%s: set on both Workers; the store has no server-recoverable passphrase" % (
@@ -914,22 +972,23 @@ def check_server_key(
     match = CSK_VALUE.match(value) if isinstance(value, str) else None
     if not match:
         raise RefusedError(
-            "%s is set on both Workers but the store's server_recoverable_org_passphrase is untagged: run rediacc_ci.ops.rewrap_config_server_key on %s first"
-            % (WORKER_KEY_NAME, src.name)
+            "%s is set on both Workers but the store's server_recoverable_org_passphrase is untagged: run PYTHONPATH=.ci python3 -m rediacc_ci.ops.rewrap_config_server_key --target %s --region %s --apply --verify first"
+            % (WORKER_KEY_NAME, src.channel, src.region)
         )
-    want = stable_kid()
+    name, want = target_kid()
     if want is None:
         raise RefusedError(
-            "the store's row is csk1.%s, but the stable key is not in the environment to compare its kid (%s)"
-            % (match.group(1), rewrap.KEY_NAME_PREFIX + src.region.upper() + "_STABLE")
+            "the store's row is csk1.%s, but the %s key is not in the environment to compare its kid (%s)"
+            % (match.group(1), dst.channel, name)
         )
     if match.group(1) != want:
         raise RefusedError(
-            "the store's row is sealed under kid %s, not the stable key's kid %s"
-            % (match.group(1), want)
+            "the store's row is sealed under kid %s, not the %s key's kid %s: it would not open on %s"
+            % (match.group(1), dst.channel, want, dst.worker)
         )
-    return "%s: set on both Workers; the store's row is sealed under the stable key (kid %s)" % (
+    return "%s: set on both Workers; the store's row is sealed under the %s key (kid %s)" % (
         WORKER_KEY_NAME,
+        dst.channel,
         want,
     )
 
@@ -974,10 +1033,10 @@ SECRET_COLUMNS = {
 
 
 def secret_values(source: dict) -> list[str]:
-    """Every secret value of the copied rows, for `Wrangler.mask`: the store's key material, the operator's credentials and every slot's wrapped CEK."""
+    """Every non-empty secret value of the copied rows, for `Wrangler.mask`: the store's key material, the operator's credentials and every slot's wrapped CEK. A short value is masked too: over-redacting a failure message is safe, printing a secret is not."""
     out = [str(source[k].get(c) or "") for k, cols in SECRET_COLUMNS.items() for c in cols]
     out += [str(s.get("wrapped_cek") or "") for s in source["slots"]]
-    return [v for v in out if len(v) >= 4]
+    return [v for v in out if v]
 
 
 def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_id: str) -> Plan:
@@ -990,13 +1049,13 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
         )
     if target["collisions"]:
         raise RefusedError(
-            "edge already holds rows this copy would write: %s; nothing written"
-            % ", ".join(target["collisions"])
+            "%s already holds rows this copy would write: %s; nothing written"
+            % (dst.channel, ", ".join(target["collisions"]))
         )
     if target["user_by_hash"] is None and target["user_id_taken"]:
         raise RefusedError(
-            "edge holds user %s under another email: case A cannot keep the id"
-            % prefix(operator["id"])
+            "%s holds user %s under another email: case A cannot keep the id"
+            % (dst.channel, prefix(operator["id"]))
         )
     op = str(operator["id"])
     known_teams = {str(t["id"]) for t in source["teams"]}
@@ -1015,8 +1074,8 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
     kept_slots = [s for s in op_slots if s.get("method") in COPY_SLOT_METHODS]
     if not any(int(s.get("cek_generation") or 0) == gen for s in kept_slots):
         raise RefusedError(
-            "the operator %s holds no password or recovery slot at CEK generation %d: the edge copy could not be unlocked"
-            % (prefix(op), gen)
+            "the operator %s holds no password or recovery slot at CEK generation %d: the %s copy could not be unlocked"
+            % (prefix(op), gen, dst.channel)
         )
     passkey_slots = [s for s in source["slots"] if s.get("method") == "passkey"]
     other_slots = [s for s in source["slots"] if s.get("user_id") != op]
@@ -1037,12 +1096,12 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
         for m in source["team_memberships"]
     ]
     identity_rows, reused_rows, conflicts = resolve_identity(
-        planned, target["identity"], str(org["id"]), str(org["customer_id"])
+        planned, target["identity"], str(org["id"]), str(org["customer_id"]), dst.channel
     )
     if conflicts:
         raise RefusedError(
-            "edge holds identity rows that conflict with this copy: %s; nothing written"
-            % "; ".join(conflicts)
+            "%s holds identity rows that conflict with this copy: %s; nothing written"
+            % (dst.channel, "; ".join(conflicts))
         )
     inserts: list[tuple[str, dict]] = []
     reused: list[tuple[str, str]] = []
@@ -1112,8 +1171,8 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
         (
             "identity: case A, operator %s copied with the same id" % prefix(op)
             if case == "A"
-            else "identity: case B, operator %s remapped to edge user %s"
-            % (prefix(op), prefix(edge_user))
+            else "identity: case B, operator %s remapped to %s user %s"
+            % (prefix(op), dst.channel, prefix(edge_user))
         ),
         "copy: "
         + ", ".join(
@@ -1121,7 +1180,7 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
             for t in TABLE_ORDER
             if t != "event_log"
         ),
-        "reused on edge (never updated): "
+        "reused on %s (never updated): " % dst.channel
         + (
             ", ".join(
                 "%s %d" % (t, n)
@@ -1140,15 +1199,16 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
             max(int(counts.get("members") or 0) - len(source["org_memberships"]), 0),
         ),
         "never copied: " + ", ".join("%s %d" % (t, int(counts.get(t) or 0)) for t in NEVER_COPIED),
-        "identities: passkey columns cleared (passkeys do not carry over to the edge RP ID)",
+        "identities: passkey columns cleared (passkeys do not carry over: WebAuthn RP ID %s on %s, %s on %s)"
+        % (src.rp_id or "?", src.name, dst.rp_id or "?", dst.name),
         "versions: created_by of another member written NULL on %d" % nulled,
         "r2: %d object(s) %s -> %s (%s)"
         % (len(keys), src.bucket, dst.bucket, dst.jurisdiction or "no jurisdiction"),
     ]
     if reset:
         lines.append(
-            "require_passkey: 1 on %s, written 0 on %s (edge is password/recovery only)"
-            % (src.name, dst.name)
+            "require_passkey: 1 on %s, written 0 on %s (%s is password/recovery only)"
+            % (src.name, dst.name, dst.channel)
         )
     if unscoped:
         lines.append(
@@ -1160,12 +1220,24 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
             or (row.get("expires_at") and str(row["expires_at"]) <= now)
         ):
             lines.append(
-                "subscriptions: reused %s is %s on edge (not live), left as it is"
+                "subscriptions: reused %s is %s on %s (not live), left as it is"
                 % (
                     prefix(row["id"]),
                     "expired" if row.get("status") in LIVE_STATUSES else str(row.get("status")),
+                    dst.channel,
                 )
             )
+    for table, row in reused_rows:
+        if table == "organizations" and row.get("customer_id") != org.get("customer_id"):
+            lines.append(
+                "organizations: reused %s carries its own %s customer_id (a per-environment Stripe id, never compared)"
+                % (prefix(row["id"]), dst.channel)
+            )
+    if any(t == "organizations" for t, _ in identity_rows):
+        lines.append(
+            "organizations: customer_id copied from %s as it is; billing ids are per environment and never compared"
+            % src.name
+        )
     if not source["subscriptions"]:
         lines.append("subscriptions: the org has no live subscription; none copied")
     if not source["org_memberships"]:
@@ -1270,8 +1342,8 @@ def edge_objects_absent(keys: list[str], dst: R2) -> str:
         )
     if held:
         raise RefusedError(
-            "edge bucket %s already holds %d of the %d object(s) this copy would write; nothing written"
-            % (dst.end.bucket, held, len(keys))
+            "%s bucket %s already holds %d of the %d object(s) this copy would write; nothing written"
+            % (dst.end.channel, dst.end.bucket, held, len(keys))
         )
     return "r2: none of the %d object(s) exists on %s yet" % (len(keys), dst.end.bucket)
 
@@ -1335,7 +1407,7 @@ def apply(
 ) -> None:
     dst = dst_d1.end
     bookmark = dst_d1.bookmark()
-    log.info("edge D1 bookmark taken before any write: %s" % bookmark)
+    log.info("%s D1 bookmark taken before any write: %s" % (dst.channel, bookmark))
     out_dir = out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     sql_path, sh_path, ins_path = (
@@ -1367,16 +1439,21 @@ def _now() -> str:
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog=SELF, description=(__doc__ or "").splitlines()[0])
     p.add_argument("--from", dest="src", required=True, help="source end, e.g. eu-stable")
-    p.add_argument("--to", dest="dst", required=True, help="target end, e.g. eu-edge")
+    p.add_argument("--to", dest="dst", required=True, help="target end: eu-edge, or bench")
     p.add_argument("--store", default=None, help="full config store id")
     p.add_argument(
         "--list-stores", action="store_true", help="list the source's stores (read-only)"
     )
     p.add_argument("--dry-run", action="store_true", help="plan only (the default)")
     p.add_argument(
-        "--apply", action="store_true", help="write edge; needs --i-understand-edge-write"
+        "--apply", action="store_true", help="write the target; needs --i-understand-edge-write"
     )
-    p.add_argument("--i-understand-edge-write", dest="ack", action="store_true")
+    p.add_argument(
+        "--i-understand-edge-write",
+        dest="ack",
+        action="store_true",
+        help="acknowledges a write to the target (edge or bench)",
+    )
     p.add_argument("--out-dir", default=None, help="where the rollback files go")
     return p
 
@@ -1403,7 +1480,9 @@ def run(
         log.error("--apply and --dry-run exclude each other")
         return 2
     if args.apply and not args.ack:
-        log.error("--apply writes the edge database and bucket: add --i-understand-edge-write")
+        log.error(
+            "--apply writes the %s database and bucket: add --i-understand-edge-write" % args.dst
+        )
         return 2
     if not args.list_stores and not args.store:
         log.error("--store <id> or --list-stores is required")
@@ -1458,14 +1537,14 @@ def _work(
         str(source["operator"].get("email_hash") or ""),
     ]
     wrangler.mask += secret_values(source)
-    lines = schema_parity(src, dst)
+    lines = schema_parity(src, dst, dst_end.channel)
     lines.append(
         check_server_key(
             secret_names(token, env["CLOUDFLARE_ACCOUNT_ID"], [src_end.worker, dst_end.worker]),
             src_end,
             dst_end,
             source["store"].get("server_recoverable_org_passphrase"),
-            lambda: stable_key_kid(root, src_end),
+            lambda: key_kid(root, dst_end),
         )
     )
     target = read_target(dst, source)
