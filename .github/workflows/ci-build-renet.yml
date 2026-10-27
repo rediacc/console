@@ -316,7 +316,7 @@ jobs:
 
       - name: Stage assets + cross-compile Darwin/Windows
         env:
-          # The cross builds bake the production key and version exactly as build_renet does; extract_renet_from_image refuses without both (PLAN-local-release W1-E).
+          # The cross builds bake the production key and version exactly as build_renet does; extract_renet_from_image refuses without both (PLAN-local-release W1-E). The check of the result against the production key is the local release's `renet-key-gate` step (rediacc_ci/release/local.py), which runs over private/bin/renet-* before anything is staged; this workflow only builds.
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.build.extract_renet_from_image --tag "${{ inputs.renet_tag }}" --version "${{ inputs.next_version }}" --output ./private/bin --only cross
 

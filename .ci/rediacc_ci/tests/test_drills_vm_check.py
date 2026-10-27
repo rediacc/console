@@ -2172,6 +2172,11 @@ def test_an_empty_base_is_a_usage_error_not_the_push_base(argv: list[str]) -> No
         vm_check.parse_args(argv, {})
 
 
+def test_a_padded_base_ref_is_stripped_before_it_is_used() -> None:
+    options = vm_check.parse_args(["--changed", "--base", "  v2.4.0 "], {})
+    assert options.base == "v2.4.0"
+
+
 # --------------------------------------------------------------------------- the account phase (PLAN-account-vm-check.md AV4)
 
 

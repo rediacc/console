@@ -866,7 +866,9 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     parser.add_argument("--wait", dest="wait_s", type=float, default=DEFAULT_WAIT_S)
     parser.add_argument("--only", default="")
     ns = parser.parse_args(rest)
-    if ns.base is not None and not ns.base.strip():
+    if ns.base is not None:
+        ns.base = ns.base.strip()
+    if ns.base is not None and not ns.base:
         parser.error("--base needs a ref")
     if ns.base is not None and not ns.changed:
         parser.error("--base only applies with --changed")

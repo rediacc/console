@@ -58,8 +58,11 @@ permissions: {}
 #     ancestor of (or equal to) main's tip. Every other job needs it.
 #   * The two jobs that hold the BWS and R2 credentials (fetch-renet, upload)
 #     never check out inputs.sha: their only checkout is main's tip, so every
-#     action they run (setup-aws, bws-secrets) and every file they read is
-#     main's. What crosses into them from the sha is DATA: the built artifacts.
+#     action they run (setup-aws, bws-secrets) and every file they read from
+#     the repository is main's, `.ci/config/well-known.env` included (the
+#     bucket the upload goes to is main's choice, not the sha's). What crosses
+#     into them from the sha is DATA: `upload` runs the downloaded dist/cli
+#     artifacts' checksums but executes none of them.
 #   * build-sea and install do check out inputs.sha, because those are the
 #     bytes under release. They hold no secret: contents: read on the job token
 #     and nothing from Bitwarden.
@@ -300,7 +303,9 @@ jobs:
 
       # Each binary AND its `<binary>.sha256` (build_cli_executables writes
       # the bare filename into it), and each checksum must verify, before
-      # anything is uploaded and so before .complete can exist.
+      # anything is uploaded and so before .complete can exist. The checksum
+      # is written by the same build as the binary, so it proves the artifact
+      # survived the download intact; it says nothing about the build itself.
       - name: Refuse an incomplete or unverified set
         working-directory: dist/cli
         run: |
@@ -312,6 +317,8 @@ jobs:
       - name: Install the pinned aws CLI
         uses: ./.github/actions/setup-aws
 
+      # main's tip, on purpose: this job holds the R2 credentials, so the
+      # destination bucket must not be chosen by the dispatched sha.
       - name: Load well-known
         run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
 

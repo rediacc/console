@@ -1,6 +1,7 @@
 """rediacc_ci.ops.bench_access: the bench IP allowlist as one WAF custom rule, against a fake Cloudflare."""
 
 import datetime
+import http.client
 import json
 import subprocess
 from typing import Any
@@ -456,6 +457,44 @@ def test_a_bare_ipv6_in_an_existing_rule_reads_as_its_slash_64():
     assert [ip for ip, _ in _stored(api)] == ["2001:db8::/64"]
 
 
+def test_a_bare_ipv6_legacy_entry_keeps_its_stamp_under_the_slash_64():
+    legacy = {
+        "id": "old",
+        "description": ba.RULE_DESCRIPTION + " | added 2001:db8::1=2026-10-27T04:00:00Z",
+        "action": "block",
+        "expression": ba.expression(HOSTS, ["2001:db8::1"]),
+    }
+    # the stamp was written under the bare address and applies to the same address read back as its /64
+    (entry,) = ba.entries_of(legacy)
+    assert entry[0] == "2001:db8::/64"
+    assert entry[1] == datetime.datetime(2026, 10, 27, 4, tzinfo=datetime.UTC)
+
+
+def test_a_malformed_stamp_pair_is_skipped_and_that_address_is_legacy():
+    stamps = ba.stamps_of(
+        ba.RULE_DESCRIPTION + ba.STAMP_MARK + "203.0.113.1=garbage 203.0.113.2=2026-10-27T04:00:00Z"
+        " not-an-ip=2026-10-27T04:00:00Z"
+    )
+    assert list(stamps) == ["203.0.113.2"]
+    rule = {
+        "description": ba.RULE_DESCRIPTION + ba.STAMP_MARK + "203.0.113.1=garbage",
+        "expression": ba.expression(HOSTS, ["203.0.113.1"]),
+    }
+    assert ba.entries_of(rule) == [("203.0.113.1", None)]
+    # a legacy entry is dropped by the next mutating run (fail closed: an unreadable age never becomes an allowance)
+    kept, dropped = ba.live_entries(ba.entries_of(rule), CLOCK.now)
+    assert kept == []
+    assert dropped == ["203.0.113.1"]
+
+
+def test_only_the_exact_marker_or_the_marker_with_stamps_is_ours():
+    assert ba.is_ours({"description": ba.RULE_DESCRIPTION})
+    assert ba.is_ours({"description": ba.RULE_DESCRIPTION + ba.STAMP_MARK + "203.0.113.1=x"})
+    assert not ba.is_ours({"description": ba.RULE_DESCRIPTION + " (copy for staging)"})
+    assert not ba.is_ours({"description": "other"})
+    assert not ba.is_ours({})
+
+
 def test_host_detection_needs_wsl_and_asks_each_family(capsys):
     asked: list[str] = []
 
@@ -512,6 +551,27 @@ def test_preflight_adds_on_a_403_from_any_egress():
     )
     assert rc == 0
     assert added == [1]
+
+
+def test_preflight_a_failing_host_probe_does_not_hide_a_local_403():
+    added: list[int] = []
+
+    def host():
+        raise ValueError("invalid literal for int(): 'err'")
+
+    rc = ba.preflight(probes=(lambda: 403, host), add=lambda: added.append(1) or 0, environ={})
+    assert rc == 0
+    assert added == [1]
+    rc = ba.preflight(probes=(host, lambda: 403), add=lambda: added.append(1) or 0, environ={})
+    assert added == [1, 1]
+
+
+def test_preflight_survives_a_malformed_http_reply(capsys):
+    def bad_status():
+        raise http.client.BadStatusLine("")
+
+    assert ba.preflight(probes=(bad_status,), add=lambda: 0, environ={}) == 0
+    assert "skipped (BadStatusLine" in capsys.readouterr().out
 
 
 def test_preflight_does_nothing_under_ci(capsys):

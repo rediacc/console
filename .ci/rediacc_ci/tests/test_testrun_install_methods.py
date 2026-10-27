@@ -767,14 +767,27 @@ def test_the_container_timeout_fits_inside_every_callers_budget() -> None:
 def test_the_powershell_command_doubles_every_apostrophe(path: str) -> None:
     """An apostrophe in the path is doubled inside the single-quoted literal, so the quoted body round-trips to the exact path and the quote count stays even."""
     command = port.powershell_version_command(pathlib.PureWindowsPath(path))
-    assert command.startswith("& '") and command.endswith("' --version"), command
+    assert command.startswith("& '"), command
+    assert command.endswith("' --version"), command
     body = command[len("& '") : -len("' --version")]
-    assert "'" not in body.replace("''", ""), "an undoubled apostrophe would end the literal early: %s" % command
+    assert "'" not in body.replace("''", ""), (
+        "an undoubled apostrophe would end the literal early: %s" % command
+    )
     assert body.replace("''", "'") == path
     assert command.count("'") % 2 == 0, command
+
+
+@pytest.mark.parametrize("quote", ["\u2018", "\u2019", "\u201a", "\u201b"])
+def test_the_powershell_command_doubles_typographic_single_quotes(quote: str) -> None:
+    """PowerShell treats these four as single quotes, so each is doubled inside the literal."""
+    path = "C:\\Users\\O%sBrien\\rdc.exe" % quote
+    command = port.powershell_version_command(pathlib.PureWindowsPath(path))
+    assert "O%s%sBrien" % (quote, quote) in command, command
 
 
 def test_the_powershell_command_leaves_a_plain_path_alone() -> None:
     """The control in the other direction: a path with no apostrophe is quoted and otherwise unchanged."""
     path = r"C:\Temp\binary-win-arm64\rdc.exe"
-    assert port.powershell_version_command(pathlib.PureWindowsPath(path)) == "& '%s' --version" % path
+    assert (
+        port.powershell_version_command(pathlib.PureWindowsPath(path)) == "& '%s' --version" % path
+    )

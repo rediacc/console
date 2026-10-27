@@ -16,7 +16,7 @@ WHAT THE RULE BLOCKS. Every request to a bench host (the route patterns of `work
 
 EXPIRY. Every address is allowed for `TTL_DAYS` (7) days from the run that added it. The add time lives in the rule's own `description` (`RULE_DESCRIPTION | added ip=<UTC time> ...`), so the Cloudflare rule is the only store and no local state exists. Every mutating run first drops the addresses older than 7 days (the CLI's clock, UTC), then applies its verb; re-adding a live address refreshes its stamp; the 5-address cap counts what is left after the drop. A LEGACY address (in the expression but with no stamp, written before expiry existed or edited by hand) is treated as EXPIRED and dropped by the next mutating run, never stamped now, so an unknown age cannot become a permanent allowance. `list` is read-only and marks such entries. The expiry is enforced when the script runs, not by Cloudflare: an address stays in the rule past 7 days until the next run (the nightly `add-current` that the rotating IP already needs).
 
-IPv6 IS KEPT AS A /64. A host's IPv6 address is a privacy address that rotates within its /64, so an IPv6 `add`, `remove` or detected address is canonicalized to its /64 network (`2001:a61:50d0:3b01::/64`) and re-adding an address inside it refreshes that one entry. A CIDR given by hand is accepted only for IPv6 /64 or narrower (down to /128); IPv4 stays one address. The prefix is written into `ip.src in {...}` as Cloudflare's CIDR literal. Under WSL `add-current` also asks the Windows host (powershell.exe, api64.ipify.org and api.ipify.org) for its egress addresses, because a Windows browser leaves over a different family than the WSL guest; a family that does not answer is skipped with a note.
+IPv6 IS KEPT AS A /64. A host's IPv6 address is a privacy address that rotates within its /64, so an IPv6 `add`, `remove` or detected address is canonicalized to its /64 network (`2001:a61:50d0:3b01::/64`) and re-adding an address inside it refreshes that one entry. A CIDR given by hand is accepted only for IPv6 /64 or narrower (down to /128); IPv4 stays one address. The allowance is the whole /64: every host sharing that prefix, not only the caller's machine, passes the rule. The prefix is written into `ip.src in {...}` as Cloudflare's CIDR literal. Under WSL `add-current` also asks the Windows host (powershell.exe, api64.ipify.org and api.ipify.org) for its egress addresses, because a Windows browser leaves over a different family than the WSL guest; a family that does not answer is skipped with a note.
 
 PREFLIGHT. `preflight` is the step ci:quick runs first (the `ci:quick` npm script): a read-only GET of bench from this machine (and from the Windows host under WSL), and only a 403 triggers `add-current`. It skips under CI=true, and it ALWAYS exits 0, printing one line on any error, so it can never fail ci:quick.
 
@@ -28,6 +28,7 @@ AUTH. `cf_auth.resolve_scoped("bench-access", zone_id=ZONE_ID)`: a supplied `CF_
 from __future__ import annotations
 
 import datetime
+import http.client
 import ipaddress
 import json
 import os
@@ -180,7 +181,9 @@ def entries_of(rule: dict) -> list[Entry]:
 
 
 def is_ours(rule: dict) -> bool:
-    return str(rule.get("description", "")).startswith(RULE_DESCRIPTION)
+    """True for a rule whose description is the marker alone or the marker followed by the stamp list `describe` writes; a foreign description that merely begins with the marker is not ours."""
+    text = str(rule.get("description", ""))
+    return text == RULE_DESCRIPTION or text.startswith(RULE_DESCRIPTION + STAMP_MARK)
 
 
 def live_entries(entries: list[Entry], now: datetime.datetime) -> tuple[list[Entry], list[str]]:
@@ -423,7 +426,21 @@ def preflight(
     try:
         if probes is None:
             probes = (_probe_local, _probe_host) if in_wsl() else (_probe_local,)
-        statuses = [probe() for probe in probes]
+        statuses = []
+        failed: list[Exception] = []
+        for probe in probes:
+            try:
+                statuses.append(probe())
+            except (
+                OSError,
+                ValueError,
+                subprocess.SubprocessError,
+                http.client.HTTPException,
+            ) as exc:
+                # one egress that cannot be probed (no powershell, a timeout, a non-numeric reply) must not hide a 403 on another
+                failed.append(exc)
+        if not statuses and failed:
+            raise failed[0]
         if 403 not in statuses:
             print("bench-access: bench reachable (%s)" % ", ".join(str(s) for s in statuses))
             return 0
@@ -436,6 +453,7 @@ def preflight(
         ValueError,
         RuntimeError,
         subprocess.SubprocessError,
+        http.client.HTTPException,
         AccessError,
         cf_auth.CfAuthError,
         SystemExit,

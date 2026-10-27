@@ -440,3 +440,68 @@ def test_cgroup_script_installs_bpftool_before_declaring_it_missing() -> None:
     assert script.index("ensure_bpftool >/dev/null") < script.index("echo NOBPFTOOL")
     assert "linux-tools-common" in script
     assert "dnf install -y bpftool" in script
+
+
+def _run_ensure_bpftool(tmp_path, tools: tuple[str, ...], fail: tuple[str, ...] = ()) -> list[str]:
+    """Run the script's `ensure_bpftool` with only stub package managers on PATH; return the commands they were called with."""
+    stubs = tmp_path / "bin"
+    stubs.mkdir()
+    log = tmp_path / "calls"
+    for tool in (*tools, "uname"):
+        rc = 1 if tool in fail else 0
+        body = 'echo "$0 $*" >> %s\n' % log
+        body = "echo 6.1.0-test\n" if tool == "uname" else body
+        (stubs / tool).write_text("#!/bin/sh\n%sexit %d\n" % (body, 0 if tool == "uname" else rc))
+        (stubs / tool).chmod(0o755)
+    function = g.cgroup_script("/s", ("a",)).split("rd() {")[0]
+    done = subprocess.run(
+        ["/bin/bash", "-c", function + " ensure_bpftool"],
+        env={"PATH": str(stubs)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode in (0, 1), done.stderr
+    return (
+        [ln.replace(str(stubs) + "/", "") for ln in log.read_text().splitlines()]
+        if log.exists()
+        else []
+    )
+
+
+def test_ensure_bpftool_apt_updates_the_index_then_installs(tmp_path) -> None:
+    calls = _run_ensure_bpftool(tmp_path, ("apt-get", "dnf"))
+    assert calls[0] == "apt-get update -qq"
+    assert calls[1] == "apt-get install -y linux-tools-common linux-tools-6.1.0-test"
+    assert len(calls) == 2
+
+
+def test_ensure_bpftool_apt_falls_back_to_the_bpftool_package(tmp_path) -> None:
+    calls = _run_ensure_bpftool(tmp_path, ("apt-get",), fail=("apt-get",))
+    assert calls[-1] == "apt-get install -y bpftool"
+
+
+def test_ensure_bpftool_uses_dnf_then_zypper(tmp_path) -> None:
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    assert _run_ensure_bpftool(tmp_path / "a", ("dnf", "zypper")) == ["dnf install -y bpftool"]
+    assert _run_ensure_bpftool(tmp_path / "b", ("zypper",)) == [
+        "zypper --non-interactive install bpftool"
+    ]
+
+
+def test_cgroup_script_tries_the_install_once_for_all_containers() -> None:
+    script = g.cgroup_script("/s", ("a", "b", "c"))
+    guard = '[ -n "$BT_TRIED" ] || { BT_TRIED=1; ensure_bpftool'
+    assert script.count(guard) == 1
+    assert script.index("command -v bpftool >/dev/null 2>&1 || [ -n") < script.index(guard)
+    assert script.index(guard) < script.index("echo NOBPFTOOL")
+
+
+def test_the_prerequisite_message_names_a_command_per_distro_family() -> None:
+    for command in (
+        "apt-get install",
+        "dnf install -y bpftool",
+        "zypper --non-interactive install bpftool",
+    ):
+        assert command in g.BPFTOOL_PREREQUISITE
