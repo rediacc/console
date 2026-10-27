@@ -295,17 +295,26 @@ def _mirror_push_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
     return mirror_main_refusal(repo, local_oid)
 
 
-# THE RELEASE RUN (box W1-D of agent/plans/PLAN-local-release.md). A local release, `python3 -m rediacc_ci.release.local`, pushes what CD pushed: the tap repository's formula commit and the like, some of them to `main`. A line is admitted only when `REDIACC_RELEASE_RUN` names a record under `.ci/cache/release/` of the console root whose pid is a live ancestor of this hook with a matching start time and argv, whose tree is the console's `HEAD^{tree}`, and which lists that exact `(toplevel, remote_ref, oid)`; `release_run.py` beside this file is the record format, its writer and its reader. An admitted line skips the branch rules and the backup check (the release gates judged both before any push); every other line meets the rules below unchanged. When the variable is set and admits nothing, the reason goes to stderr so a release's refusal is not a mystery.
-def _release_admitted(repo: str, lines: list[list[str]]) -> set[int]:
+# THE RELEASE RUN (box W1-D of agent/plans/PLAN-local-release.md). A local release, `python3 -m rediacc_ci.release.local`, pushes what CD pushed: the tap repository's formula commit and the like, some of them to `main`. A line is admitted only when `REDIACC_RELEASE_RUN` names a record under `.ci/cache/release/` of the console root whose pid is a live ancestor of this hook with a matching start time and argv, that provably ran the console's tracked, unmodified entry, whose tree is the console's `HEAD^{tree}`, and which lists that exact `(toplevel, remote, remote_ref, oid)`, `remote` being the first argument git hands this hook; `release_run.py` beside this file is the record format, its writer and its reader. An admitted line skips the branch rules and the backup check (the release gates judged both before any push); every other line meets the rules below unchanged. When the variable is set, every line it does not admit gets a reason on stderr, a failed record and an unlisted line alike, so a release's refusal is not a mystery.
+def _release_admitted(repo: str, remote: str, lines: list[list[str]]) -> set[int]:
     """The `id()`s of the pushed lines a live release run admits; empty when the variable is unset or the record fails."""
     if not os.environ.get(rr.ENV) or not repo:
         return set()
     try:
-        triples = rr.admitted_pushes(CONSOLE_ROOT)
+        keys = rr.admitted_pushes(CONSOLE_ROOT)
     except rr.RecordError as exc:
         sys.stderr.write("commit-policy: the release run admits nothing (%s)\n" % exc)
         return set()
-    return {id(line) for line in lines if rr.admits(triples, repo, line[2], line[1])}
+    admitted = set()
+    for line in lines:
+        if rr.admits(keys, repo, remote, line[2], line[1]):
+            admitted.add(id(line))
+            continue
+        sys.stderr.write(
+            "commit-policy: the release run does not list (%s, %s, %s, %s); this line meets the ordinary rules\n"
+            % rr.admission_key(repo, remote, line[2], line[1])
+        )
+    return admitted
 
 
 def pre_push(argv: list[str], stdin: str) -> int:
@@ -324,7 +333,7 @@ def pre_push(argv: list[str], stdin: str) -> int:
                 % (MIRROR_REMOTE, reason)
             )
         return 0
-    released = _release_admitted(repo, lines)
+    released = _release_admitted(repo, remote, lines)
     for line in lines:
         _local_ref, local_oid, remote_ref, remote_oid = line
         if not remote_ref.startswith("refs/heads/"):
