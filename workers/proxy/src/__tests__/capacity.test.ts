@@ -17,7 +17,9 @@ vi.mock('cloudflare:workers', () => ({
 }));
 
 import {
+  CAPACITY_NAME,
   type CapacityEnv,
+  capacityStub,
   capFrom,
   ExecutorCapacity,
   HARD_CAP,
@@ -274,5 +276,22 @@ describe('the input gate', () => {
     const answers = await Promise.all(orgs(50).map((org) => cap.acquire(org, 'heavy')));
     expect(answers.filter((a) => a.ok)).toHaveLength(HARD_HEAVY_CAP);
     expect(cap.count()).toMatchObject({ total: HARD_HEAVY_CAP, heavy: HARD_HEAVY_CAP });
+  });
+});
+
+describe('capacityStub', () => {
+  it('names the one coordinator instance, whatever the caller', () => {
+    const names: string[] = [];
+    const namespace = {
+      idFromName: (name: string) => {
+        names.push(name);
+        return { name } as unknown as DurableObjectId;
+      },
+      get: (id: DurableObjectId) => ({ id }) as unknown as DurableObjectStub<ExecutorCapacity>,
+    } as unknown as DurableObjectNamespace<ExecutorCapacity>;
+    capacityStub(namespace);
+    capacityStub(namespace);
+    expect(names).toEqual([CAPACITY_NAME, CAPACITY_NAME]);
+    expect(CAPACITY_NAME).toBe('capacity:v1');
   });
 });
