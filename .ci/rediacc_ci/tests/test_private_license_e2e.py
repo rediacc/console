@@ -201,11 +201,28 @@ if ROLE == "renet":
         sys.exit(1)
 
     if args[:2] == ["backup", "restore"]:
+        lineage = opt("--lineage")
         blob = load(LIC + "/repos/" + opt("--repo"))
+        holder = None
+        if blob is not None and (blob.get("opts") or {}).get("-grand-guid") == lineage:
+            holder = opt("--repo")
+        elif blob is None:
+            for d in sorted(os.listdir(LIC + "/repos")) if os.path.isdir(LIC + "/repos") else []:
+                other = load(LIC + "/repos/" + d)
+                if other is not None and (other.get("opts") or {}).get("-grand-guid") == lineage:
+                    holder = d
+                    break
+        if holder is not None:
+            if CFG.get("bug", {}).get(label) == "restore-license-required":
+                sys.stderr.write(json.dumps({"code": "LICENSE_REQUIRED", "reason": "missing"}, separators=(",", ":")) + "\n")
+                sys.exit(10)
+            print(json.dumps({"status": "failed", "licenseFrom": holder}, separators=(",", ":")))
+            sys.stderr.write("restore failed: storage session mint failed\n")
+            sys.exit(1)
         if blob is None:
             sys.stderr.write(json.dumps({"code": "LICENSE_REQUIRED", "reason": "missing"}, separators=(",", ":")) + "\n")
             sys.exit(10)
-        if (blob.get("opts") or {}).get("-grand-guid") != opt("--lineage"):
+        if (blob.get("opts") or {}).get("-grand-guid") != lineage:
             print("repository %s belongs to lineage %s" % (opt("--repo"), (blob.get("opts") or {}).get("-grand-guid", "(none)")))
             sys.stderr.write("restore refused\n")
             sys.exit(1)
@@ -631,6 +648,8 @@ def test_the_scenario_table_is_complete(tmp_path):
         "S7b",
         "S11a",
         "S11b",
+        "S11c",
+        "S11d",
     ]
 
 
@@ -941,3 +960,11 @@ def test_a_stat_that_keeps_failing_ends_at_the_deadline(tmp_path, monkeypatch, c
         assert root in capsys.readouterr().err
     finally:
         pathlib.Path(lock).unlink(missing_ok=True)
+
+
+def test_a_restore_that_reports_license_required_on_a_lineage_match_fails_s11c(tmp_path):
+    """MUTANT. A binary that answers LICENSE_REQUIRED even though the license carries the lineage turns S11c red, so the positive scenario can fail."""
+    out = _port(tmp_path, {"bug": {"enforcing": "restore-license-required"}})
+    assert out["exit"] == 1
+    assert "[enforcing] S11c FAIL" in out["stderr"]
+    assert "[enforcing] S11d FAIL" in out["stderr"]

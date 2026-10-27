@@ -79,6 +79,7 @@ type config struct {
 
 	datastoreID        string
 	renewalURL         string
+	grandGuid          string
 	storageFingerprint string
 }
 
@@ -122,6 +123,8 @@ func run() error {
 		"bind the license to a datastore identity (payload datastoreId); empty = unbound, which is what a pre-binding license looks like")
 	flag.StringVar(&cfg.renewalURL, "renewal-url", "",
 		"stamp the self-renewal endpoint into the payload (payload renewalUrl)")
+	flag.StringVar(&cfg.grandGuid, "grand-guid", "",
+		"stamp the backup lineage (payload grandGuid) the license is a credential for")
 	flag.StringVar(&cfg.storageFingerprint, "storage-fingerprint", "",
 		"bind the license to a repo path's storage fingerprint; the literal value, or 'auto:<path>' to compute it the way the scan does")
 	flag.Parse()
@@ -221,6 +224,7 @@ func mint(cfg config) error {
 		MaxRepositorySizeGb:  cfg.maxSizeGb,
 		DatastoreID:          cfg.datastoreID,
 		RenewalURL:           cfg.renewalURL,
+		GrandGuid:            cfg.grandGuid,
 		StorageFingerprint:   storageFingerprint,
 		IssuedAt:             issuedAt,
 		RefreshRecommendedAt: refreshAt,

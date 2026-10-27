@@ -70,6 +70,10 @@ FP_GUID = "1ce1ce2e-0000-0000-0000-00000000000f"
 RESTORE_GUID = "1ce1ce2e-0000-0000-0000-0000000000c1"
 RESTORE_LINEAGE = "1ce1ce2e-0000-0000-0000-0000000000c2"
 RESTORE_SNAPSHOT = "snap-license-e2e"
+# A second repo of the same lineage: restore falls back to its license when the target holds none.
+RESTORE_HOLDER_GUID = "1ce1ce2e-0000-0000-0000-0000000000c3"
+# Points at a closed port, and ends in /licenses/renew so the session URL guard accepts it: the storage session mint then fails at the network, which is past the license step.
+RESTORE_SESSION_URL = "http://127.0.0.1:1/licenses/renew"
 
 # Datastore identities. UUID-shaped because that is what `datastore create` mints and what the store's path-segment guard accepts.
 PARENT_DS_ID = "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa"
@@ -221,6 +225,7 @@ class Battery:
                     self.repo_license_root + "/" + SEQ_GUID_B,
                     self.repo_license_root + "/" + FP_GUID,
                     self.repo_license_root + "/" + RESTORE_GUID,
+                    self.repo_license_root + "/" + RESTORE_HOLDER_GUID,
                 ]
             )
             _exec(
@@ -527,6 +532,33 @@ class Battery:
         else:
             self.record_pass(scenario, "exit 1, refused without LICENSE_REQUIRED (%s)" % needle)
 
+    def assert_restore_reached_session(self, scenario: str, licence_from: str, *cmd: str) -> None:
+        """A license of the right lineage gets PAST the license step: exit 1 at the storage session mint (no server listens), no LICENSE_REQUIRED, and the stdout record names the license that was used."""
+        stderr = self.run_renet(*cmd)
+        combined = self.stdout_and(stderr)
+        if self.renet_code == 10 or b"LICENSE_REQUIRED" in stderr:
+            self.record_fail(
+                scenario,
+                "a license of the lineage was refused at the license step (exit %d): %s"
+                % (self.renet_code, _head_flat(stderr)),
+            )
+        elif self.renet_code != 1:
+            self.record_fail(
+                scenario,
+                "expected exit 1, got %d; stderr: %s" % (self.renet_code, _head_flat(stderr)),
+            )
+        elif b"storage session mint failed" not in combined:
+            self.record_fail(
+                scenario,
+                "exit 1 but the storage session mint was never reached: %s" % _head_flat(stderr),
+            )
+        elif b'"licenseFrom":"%s"' % licence_from.encode() not in combined:
+            self.record_fail(
+                scenario, "licenseFrom is not %s: %s" % (licence_from, _head_flat(combined))
+            )
+        else:
+            self.record_pass(scenario, "past the license step, licenseFrom=%s" % licence_from)
+
     def stdout_and(self, stderr: bytes) -> bytes:
         """The restore record on stdout carries the reason in prose; stderr carries the error line."""
         with open(self.work + "/stdout.txt", "rb") as fh:
@@ -708,6 +740,17 @@ class Battery:
         self.mint(RESTORE_GUID, "-renewal-url", "http://127.0.0.1:1/license/renew")
         self.install_license(RESTORE_GUID)
         self.assert_restore_refused_plainly("S11b", "belongs to lineage", *restore)
+        # S11c: the target's own license carries the lineage, so restore gets past the license step and stops at the storage session mint (nothing listens).
+        self.mint(RESTORE_GUID, "-grand-guid", RESTORE_LINEAGE, "-renewal-url", RESTORE_SESSION_URL)
+        self.install_license(RESTORE_GUID)
+        self.assert_restore_reached_session("S11c", RESTORE_GUID, *restore)
+        # S11d: with no license on the target, another license of the lineage is the credential.
+        self._sudo("rm", "-rf", self.repo_license_root + "/" + RESTORE_GUID)
+        self.mint(
+            RESTORE_HOLDER_GUID, "-grand-guid", RESTORE_LINEAGE, "-renewal-url", RESTORE_SESSION_URL
+        )
+        self.install_license(RESTORE_HOLDER_GUID)
+        self.assert_restore_reached_session("S11d", RESTORE_HOLDER_GUID, *restore)
 
     def expect_control_failure(self, binary: str, label: str, required: str) -> bool:
         """Run the battery against a binary that MUST NOT pass it. False when it passes, or fails for the wrong reason."""
