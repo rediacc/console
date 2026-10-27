@@ -20,6 +20,7 @@ import type { RepositoryConfig } from '../../types/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { isRenetFlagUnsupported, renetOlderThanCliMessage } from '../executor/job-client.js';
 import { parseCapturedJson } from '../executor/renet-output.js';
 
 /** The renet function that runs `renet runtime converge`. */
@@ -207,9 +208,20 @@ export async function readRuntimeStatus(
   sftp: Pick<SFTPClient, 'exec'>,
   remoteRenetPath: string,
   datastore: string,
-  policy?: RuntimePolicy
+  policy?: RuntimePolicy,
+  machineName?: string
 ): Promise<RuntimeStatus> {
-  const stdout = await sftp.exec(buildRuntimeStatusCommand(remoteRenetPath, datastore, policy));
+  let stdout: string;
+  try {
+    stdout = await sftp.exec(buildRuntimeStatusCommand(remoteRenetPath, datastore, policy));
+  } catch (error) {
+    // A flag the remote renet does not know is version skew; cobra rejects it before the command body runs, so nothing changed on the machine.
+    const message = error instanceof Error ? error.message : String(error);
+    if (machineName && isRenetFlagUnsupported(message)) {
+      throw new Error(renetOlderThanCliMessage(machineName));
+    }
+    throw error;
+  }
   return parseRuntimeStatus(stdout);
 }
 
@@ -444,7 +456,13 @@ async function runStalePass(
 ): Promise<{ report: ConvergeReport | null; ran: boolean }> {
   let status: RuntimeStatus;
   try {
-    status = await readRuntimeStatus(deps.sftp, deps.remoteRenetPath, deps.datastore);
+    status = await readRuntimeStatus(
+      deps.sftp,
+      deps.remoteRenetPath,
+      deps.datastore,
+      undefined,
+      deps.machineName
+    );
   } catch (error) {
     outputService.warn(
       t('commands.machine.converge.statusUnreadable', {

@@ -144,7 +144,9 @@ async function readStaleCount(
     const status = await readRuntimeStatus(
       session.sftp,
       session.remoteRenetPath,
-      session.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH
+      session.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+      undefined,
+      machineName
     );
     return status.stale;
   } catch (error) {
