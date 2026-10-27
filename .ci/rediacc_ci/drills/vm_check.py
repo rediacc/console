@@ -859,14 +859,16 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         prog="npm run vm:check --", description=__doc__.split("\n", 1)[0]
     )
     parser.add_argument("--changed", action="store_true")
-    parser.add_argument("--base", default="")
+    parser.add_argument("--base", default=None)
     parser.add_argument("--os", dest="os_image", default="")
     parser.add_argument("--parent", default=env.get("VM_CHECK_PARENT") or DEFAULT_PARENT)
     parser.add_argument("--machine", default="")
     parser.add_argument("--wait", dest="wait_s", type=float, default=DEFAULT_WAIT_S)
     parser.add_argument("--only", default="")
     ns = parser.parse_args(rest)
-    if ns.base and not ns.changed:
+    if ns.base is not None and not ns.base.strip():
+        parser.error("--base needs a ref")
+    if ns.base is not None and not ns.changed:
         parser.error("--base only applies with --changed")
     only = frozenset(s.strip() for s in ns.only.split(",") if s.strip())
     unknown = sorted(only - only_step_ids())
@@ -877,7 +879,7 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         )
     return Options(
         changed=ns.changed,
-        base=ns.base,
+        base=ns.base or "",
         os_image=ns.os_image,
         parent=ns.parent,
         machine=ns.machine,

@@ -2164,6 +2164,14 @@ def test_base_without_changed_is_a_usage_error() -> None:
         vm_check.parse_args(["--base", "v2.4.0"], {})
 
 
+@pytest.mark.parametrize(
+    "argv", [["--changed", "--base", ""], ["--base", ""], ["--changed", "--base", "  "]]
+)
+def test_an_empty_base_is_a_usage_error_not_the_push_base(argv: list[str]) -> None:
+    with pytest.raises(SystemExit):
+        vm_check.parse_args(argv, {})
+
+
 # --------------------------------------------------------------------------- the account phase (PLAN-account-vm-check.md AV4)
 
 
