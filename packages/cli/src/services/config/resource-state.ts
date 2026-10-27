@@ -31,6 +31,7 @@ import type {
   RepositoryConfig,
   SSHContent,
 } from '../../types/index.js';
+import { announcePush, isNoopPush } from './push-visibility.js';
 import { mergeRemoteIntoCache, writeRemoteCache } from './remote-cache.js';
 
 // =============================================================================
@@ -547,10 +548,14 @@ export class RemoteResourceState implements ResourceState {
   private async pushOnce(build: (base: RdcConfig) => RdcConfig): Promise<PushAttempt> {
     const base = await configFileStorage.loadDecrypted(this.configName);
     const merged = build(base);
+    // Nothing a push carries changed: the version stays, no push goes out (R2).
+    if (isNoopPush(merged, base)) return { pushed: base };
     try {
       // The cache is the server copy at `this.version`: a committed path it holds that `merged` drops is a deletion, proven by a tombstone (T9).
       const result = await this.adapter.push(merged, this.version, { base });
+      const from = this.version;
       this.version = result.version;
+      announcePush(this.configName, from, result.version, merged, base);
       let cached: RdcConfig = merged;
       await configFileStorage.updateCache(this.configName, () => {
         cached = mergeRemoteIntoCache(merged, merged, result.version);

@@ -117,6 +117,39 @@ describe('RemoteResourceState persist', () => {
     expect(written.resources?.machines).toHaveProperty('m2');
   });
 
+  it('skips the push when the write changes nothing: no push, no version bump', async () => {
+    const adapter = createAdapter();
+    const state = loadState(adapter);
+
+    await state.setMachines({ m1: { ip: '10.0.0.1', user: 'root' } });
+
+    expect(adapter.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.updateCache).not.toHaveBeenCalled();
+  });
+
+  it('prints one stderr line per push naming versions, command and changed pointers', async () => {
+    const adapter = createAdapter();
+    adapter.push.mockResolvedValue({ version: 5 });
+    const write = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const { setInvocationCommand } = await import('../config/push-visibility.js');
+    setInvocationCommand('machine add');
+    try {
+      await loadState(adapter).setMachines({
+        m1: { ip: '10.0.0.1', user: 'root' },
+        m2: { ip: '10.0.0.2', user: 'root' },
+      });
+      const lines = write.mock.calls.map((c) => String(c[0]));
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toContain(`config ${CONFIG_NAME}: pushed v4`);
+      expect(lines[0]).toContain('v5');
+      expect(lines[0]).toContain('"machine add"');
+      expect(lines[0]).toContain('/resources/machines/m2');
+    } finally {
+      write.mockRestore();
+      setInvocationCommand('');
+    }
+  });
+
   it('replays a 409 by re-applying ONLY the mutated bucket over the fresh pull', async () => {
     const adapter = createAdapter();
     // First push conflicts; the fresh pull is at v5 with a DIFFERENT bucket

@@ -22,6 +22,7 @@ import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
 import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
 import { configService } from './services/config/config-resources.js';
+import { setInvocationCommand } from './services/config/push-visibility.js';
 import { auditService } from './services/core/audit.js';
 import { outputService } from './services/core/output.js';
 import { currentRequestContext, exitProcess } from './services/core/request-context.js';
@@ -197,6 +198,7 @@ export function createCli(): Command {
     .option('-b, --background', t('options.background'))
     .hook('preAction', async (thisCommand, actionCommand) => {
       const opts = thisCommand.opts();
+      setInvocationCommand(commandPathOf(actionCommand));
       const effectiveFormat = resolveOutputFormat(
         opts.output as OutputFormat,
         thisCommand.getOptionValueSource('output')

@@ -622,8 +622,11 @@
           "rateLimited": "El servidor de cuentas está limitando las renovaciones de tokens de configuración ({{error}}). Espera un minuto y vuelve a ejecutar el comando.",
           "refused": "El servidor de cuentas no renovó el token de configuración de este dispositivo ({{error}}). No se cambió nada en este dispositivo; ejecuta el comando de nuevo."
         },
+        "pushVisibility": "configuración {{config}}: se envió v{{from}} → v{{to}} con \"{{command}}\": {{changes}}",
         "versions": {
           "description": "Listar las versiones anteriores de esta configuración que guarda el servidor",
+          "optionExplain": "Mostrar los punteros JSON que cambió cada versión, a partir de las versiones que guarda el servidor",
+          "explainFirst": "(versión más antigua guardada)",
           "empty": "El servidor no guarda versiones anteriores de la configuración \"{{config}}\"."
         },
         "restore": {

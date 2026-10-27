@@ -622,8 +622,11 @@
           "rateLimited": "账户服务器正在限制配置令牌续期（{{error}}）。请等待一分钟后重新运行命令。",
           "refused": "账户服务器未续期此设备的配置令牌（{{error}}）。此设备上未做任何更改；请重新运行该命令。"
         },
+        "pushVisibility": "配置 {{config}}：v{{from}} → v{{to}}，由 \"{{command}}\" 推送：{{changes}}",
         "versions": {
           "description": "列出服务器保存的此配置的早期版本",
+          "optionExplain": "根据服务器保存的版本，显示每个版本更改的 JSON 指针",
+          "explainFirst": "（保存的最早版本）",
           "empty": "服务器未保存配置 \"{{config}}\" 的任何早期版本。"
         },
         "restore": {

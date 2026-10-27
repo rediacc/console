@@ -3634,7 +3634,19 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.config.remote.versions.description",
       "label": "List the earlier versions of this config kept on the server",
-      "options": [],
+      "options": [
+        {
+          "flags": "--explain",
+          "long": "explain",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.versions.optionExplain",
+          "label": "Show the JSON pointers each version changed, from the versions the server kept"
+        }
+      ],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,

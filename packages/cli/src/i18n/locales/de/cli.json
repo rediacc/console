@@ -622,8 +622,11 @@
           "rateLimited": "Der Kontoserver begrenzt gerade das Erneuern von Konfigurations-Tokens ({{error}}). Warte eine Minute und führe den Befehl erneut aus.",
           "refused": "Der Kontoserver hat das Konfigurations-Token dieses Geräts nicht erneuert ({{error}}). Auf diesem Gerät wurde nichts geändert; führe den Befehl erneut aus."
         },
+        "pushVisibility": "Konfiguration {{config}}: v{{from}} → v{{to}} veröffentlicht durch \"{{command}}\": {{changes}}",
         "versions": {
           "description": "Frühere Versionen dieser Konfiguration auflisten, die der Server aufbewahrt",
+          "optionExplain": "Die JSON-Pointer anzeigen, die jede Version geändert hat, anhand der vom Server aufbewahrten Versionen",
+          "explainFirst": "(älteste aufbewahrte Version)",
           "empty": "Der Server bewahrt keine früheren Versionen der Konfiguration \"{{config}}\" auf."
         },
         "restore": {

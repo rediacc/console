@@ -152,12 +152,12 @@
         "remove": {
           "bound": "Varundusstrateegiat \"{{strategy}}\" ei saa eemaldada: seda seob veel {{count}} masinat: {{machines}}.",
           "boundNext": "Lahuta see esmalt nendest masinatest või eemalda see koos sidumistega.",
-          "description": "Eemalda varundusStrateegia või sihtkoht",
+          "description": "Eemalda varundusstrateegia või sihtkoht",
           "nextForce": "Eemalda strateegia ja kõik sidumised ühe muudatusega.",
           "nextUnbind": "Lahuta strateegia ühest masinast.",
           "optionDestination": "Eemalda ainult see sihtkoht (säilitab teised sihtkohad)",
           "optionUnbind": "Eemalda strateegia ka igast masinast, mis seda seob",
-          "removed": "VarundusStrateegia eemaldatud",
+          "removed": "Varundusstrateegia eemaldatud",
           "unboundWarn": "Strateegia \"{{strategy}}\" eemaldati ja lahutati masinatest: {{machines}}. Nendele masinatele juba paigaldatud taimerid jäävad alles, kuni seal käivitatakse \"rdc backup schedule\"."
         },
         "set": {
@@ -622,8 +622,11 @@
           "rateLimited": "Kontoserver piirab praegu konfiguratsioonitõendite uuendamist ({{error}}). Oota minut ja käivita käsk uuesti.",
           "refused": "Kontoserver ei uuendanud selle seadme konfiguratsioonitõendit ({{error}}). Selles seadmes ei muudetud midagi; käivita käsk uuesti."
         },
+        "pushVisibility": "konfiguratsioon {{config}}: v{{from}} → v{{to}} saadetud käsuga \"{{command}}\": {{changes}}",
         "versions": {
           "description": "Loetle serveris hoitavad selle konfiguratsiooni varasemad versioonid",
+          "optionExplain": "Näita JSON-viiteid, mida iga versioon muutis, serveris hoitavate versioonide põhjal",
+          "explainFirst": "(vanim hoitav versioon)",
           "empty": "Server ei hoia konfiguratsiooni \"{{config}}\" varasemaid versioone."
         },
         "restore": {

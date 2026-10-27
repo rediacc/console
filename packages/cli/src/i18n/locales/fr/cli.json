@@ -622,8 +622,11 @@
           "rateLimited": "Le serveur de comptes limite les renouvellements de jetons de configuration ({{error}}). Attendez une minute puis relancez la commande.",
           "refused": "Le serveur de comptes n'a pas renouvelé le jeton de configuration de cet appareil ({{error}}). Rien n'a été modifié sur cet appareil ; exécutez à nouveau la commande."
         },
+        "pushVisibility": "configuration {{config}} : v{{from}} → v{{to}} publiée par \"{{command}}\" : {{changes}}",
         "versions": {
           "description": "Lister les versions antérieures de cette configuration conservées sur le serveur",
+          "optionExplain": "Afficher les pointeurs JSON modifiés par chaque version, d'après les versions conservées par le serveur",
+          "explainFirst": "(version conservée la plus ancienne)",
           "empty": "Le serveur ne conserve aucune version antérieure de la configuration \"{{config}}\"."
         },
         "restore": {

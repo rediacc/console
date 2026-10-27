@@ -622,8 +622,11 @@
           "rateLimited": "Hesap sunucusu yapılandırma belirteci yenilemelerini sınırlıyor ({{error}}). Bir dakika bekleyip komutu yeniden çalıştırın.",
           "refused": "Hesap sunucusu bu cihazın yapılandırma belirtecini yenilemedi ({{error}}). Bu cihazda hiçbir şey değiştirilmedi; komutu yeniden çalıştırın."
         },
+        "pushVisibility": "{{config}} yapılandırması: v{{from}} → v{{to}} sürümü \"{{command}}\" tarafından gönderildi: {{changes}}",
         "versions": {
           "description": "Sunucuda saklanan bu yapılandırmanın önceki sürümlerini listeler",
+          "optionExplain": "Sunucunun sakladığı sürümlerden, her sürümün değiştirdiği JSON işaretçilerini gösterir",
+          "explainFirst": "(saklanan en eski sürüm)",
           "empty": "Sunucu \"{{config}}\" yapılandırmasının önceki sürümlerinden hiçbirini saklamıyor."
         },
         "restore": {

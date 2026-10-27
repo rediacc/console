@@ -183,10 +183,26 @@ async function activeRemoteAdapter() {
   return adapter;
 }
 
-async function showVersions(configName: string, format: OutputFormat): Promise<void> {
+async function showVersions(
+  configName: string,
+  format: OutputFormat,
+  explain = false
+): Promise<void> {
   const adapter = await activeRemoteAdapter();
   const { listRemoteVersions } = await import('../services/config/remote-restore.js');
   const versions = await listRemoteVersions(adapter);
+  if (explain && versions.length > 0) {
+    const { explainVersions } = await import('../services/config/push-visibility.js');
+    const rows = await explainVersions(adapter, versions);
+    outputService.print(
+      rows.map((row) => ({
+        ...row,
+        changes: row.changes ?? t('commands.config.remote.versions.explainFirst'),
+      })),
+      format
+    );
+    return;
+  }
   if (versions.length === 0 && format === DEFAULT_OUTPUT_FORMAT) {
     outputService.info(t('commands.config.remote.versions.empty', { config: configName }));
     return;
@@ -437,12 +453,13 @@ export function registerRemoteCommands(configCommand: Command): void {
   remote
     .command('versions')
     .description(t('commands.config.remote.versions.description'))
-    .action(async () => {
+    .option('--explain', t('commands.config.remote.versions.optionExplain'))
+    .action(async (options: { explain?: boolean }) => {
       try {
         const configName = configService.getEffectiveConfigName();
         const program = configCommand.parent;
         const format = (program?.opts().output ?? DEFAULT_OUTPUT_FORMAT) as OutputFormat;
-        await showVersions(configName, format);
+        await showVersions(configName, format, options.explain === true);
       } catch (error) {
         handleError(error);
       }

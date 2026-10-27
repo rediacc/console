@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1929,
-    "sourceCommit": "0166081bfe22d5d4e957acb631809186bd84a4e7"
+    "keyCount": 1932,
+    "sourceCommit": "7fbecfdadee35ba9537df5f5c455f12c1e35ff36"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -422,6 +422,7 @@
     "commands.config.remote.offlineNoCache": "106e5282",
     "commands.config.remote.passkeySecretMissing": "b907e121",
     "commands.config.remote.preconditionFailed": "3a76701e",
+    "commands.config.remote.pushVisibility": "f1556e44",
     "commands.config.remote.refresh.description": "1461f3c2",
     "commands.config.remote.refresh.notEnabled": "ceef9fe7",
     "commands.config.remote.refresh.pulled": "36850474",
@@ -466,6 +467,8 @@
     "commands.config.remote.unreachable": "94ef6738",
     "commands.config.remote.versions.description": "65f41d46",
     "commands.config.remote.versions.empty": "58598c25",
+    "commands.config.remote.versions.explainFirst": "dad82b6c",
+    "commands.config.remote.versions.optionExplain": "5a355bc9",
     "commands.config.remote.writeFailedClosed": "33c2ad58",
     "commands.config.remote.writeFailedServerError": "03cd66a0",
     "commands.config.rotateCek.cancelled": "50092125",

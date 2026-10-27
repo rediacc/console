@@ -622,8 +622,11 @@
           "rateLimited": "Il server degli account sta limitando i rinnovi dei token di configurazione ({{error}}). Attendi un minuto ed esegui di nuovo il comando.",
           "refused": "Il server degli account non ha rinnovato il token di configurazione di questo dispositivo ({{error}}). Su questo dispositivo non è stato modificato nulla; esegui di nuovo il comando."
         },
+        "pushVisibility": "configurazione {{config}}: v{{from}} → v{{to}} inviata da \"{{command}}\": {{changes}}",
         "versions": {
           "description": "Elenca le versioni precedenti di questa configurazione conservate sul server",
+          "optionExplain": "Mostra i puntatori JSON modificati da ogni versione, in base alle versioni conservate dal server",
+          "explainFirst": "(versione conservata più vecchia)",
           "empty": "Il server non conserva versioni precedenti della configurazione \"{{config}}\"."
         },
         "restore": {

@@ -388,8 +388,11 @@
           "rateLimited": "The account server is limiting config token renewals ({{error}}). Wait a minute and run the command again.",
           "refused": "The account server did not renew this device's config token ({{error}}). Nothing was changed on this device; run the command again."
         },
+        "pushVisibility": "config {{config}}: pushed v{{from}} → v{{to}} by \"{{command}}\": {{changes}}",
         "versions": {
           "description": "List the earlier versions of this config kept on the server",
+          "optionExplain": "Show the JSON pointers each version changed, from the versions the server kept",
+          "explainFirst": "(oldest kept version)",
           "empty": "The server keeps no earlier versions of config \"{{config}}\"."
         },
         "restore": {
