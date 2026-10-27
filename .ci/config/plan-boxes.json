@@ -1027,8 +1027,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 2,
+      "open": 13,
+      "done": 3,
       "open_sigs": [
         "05a9a216",
         "0b081d62",
@@ -1042,12 +1042,12 @@
         "65539bb7",
         "cb4b552c",
         "d12c9338",
-        "d20d0201",
-        "fd2a3231"
+        "d20d0201"
       ],
       "done_sigs": [
         "57ba8ee2",
-        "7522f126"
+        "7522f126",
+        "fd2a3231"
       ]
     },
     "agent/plans/PLAN-localize-cheat-sheet-rendering.md": {

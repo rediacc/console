@@ -41,7 +41,7 @@ Design inputs, summarized below with file:line:
   - Owns: release-requires.json, order.py and test_release_order.py.
   - Accept: the pytest rc=0, and R1 is active for the current account pointer and reports `cli-behind` against v2.4.0.
     (ticked) 2026-10-27T07:53:15Z by d778be9d: 524b36b9e: .ci/config/release-requires.json R1-config-envelope and rediacc_ci.release.order; pytest test_release_order.py rc=0 (14); live edge read rc=1 "cli-behind: R1-config-envelope needs 2c3324a44, 95bcc8dad in a released CLI on edge; published v2.4.0 lacks them"
-- [ ] W1-D [writer] Release-run admission at the git layer.
+- [x] W1-D [writer] Release-run admission at the git layer.
   - The entry writes `.ci/cache/release/run-<id>.json` holding `{pid, pid_start, cmdline, tree, version, channel, pushes:[{toplevel, remote_ref, oid}]}` and exports `REDIACC_RELEASE_RUN`.
   - The `githooks.py` pre_push (:318-329) admits a pushed line only when all three hold:
     - the record's pid is in the hook's parent chain, with a matching `/proc` start time and a cmdline of `-m rediacc_ci.release.local`;
@@ -50,6 +50,7 @@ Design inputs, summarized below with file:line:
   - `block_git_hook_bypass.py:11` refuses `REDIACC_RELEASE_RUN` set by an agent, as it already refuses `COMMIT_POLICY_OK`.
   - Owns: githooks.py, test_githook_release_run.py, block_git_hook_bypass.py and test-block_git_hook_bypass.py.
   - Accept: `run_tests.py -k "githook_release_run or git_hook_bypass"` rc=0, and a forged record, a wrong tree or an unlisted ref is refused.
+    (ticked) 2026-10-27T08:03:42Z by d778be9d: 875b03844: .claude/rediacc_hooks/git/release_run.py and githooks.py pre_push admission plus block_git_hook_bypass; run_tests.py -k "githook_release_run or git_hook_bypass" rc=0 (23), with planted failures turning each check red
 - [ ] W1-E [writer] Renet key gate.
   - Today no release step refuses a renet built without the production key:
     - `private/renet/build.sh:414-444` falls back to the DEV key with only a warning.
