@@ -21,14 +21,14 @@ Body-Sig: c53fc49d68240238
 ### f8a81c2f.1 [medium] packages/cli/src/services/config/resource-state.ts:551
 Anchor: in-diff
 Claim: The no-op check compares merged against the local cache `base` (loadDecrypted), not the server copy, so when the cache lags a newer server version, a write that equals the stale cache returns early without pushing and the newer server value stays, where the old code would have hit a 409 and replayed the intended value.
-Resolution: open
+Resolution: fixed ae1d0e860368d839f9570d6b42d530fc3a6eb071 | d778be9d 2026-10-27T05:23:42Z
 
 ### f8a81c2f.2 [medium] packages/cli/src/services/config/push-visibility.ts:126
 Anchor: in-diff
 Claim: explainVersions pulls every kept version and awaits each one in sequence, so one version that cannot be decrypted or pulled (e.g. after a key rotation) makes `config remote versions --explain` fail entirely, while plain `versions` still lists them all.
-Resolution: open
+Resolution: fixed ae1d0e860368d839f9570d6b42d530fc3a6eb071 | d778be9d 2026-10-27T05:23:43Z
 
 ### f8a81c2f.3 [low] packages/cli/src/services/config/push-visibility.ts:104
 Anchor: in-diff
 Claim: announcePush writes to stderr unconditionally, so every real push prints a line even under --quiet or -o json, where the user asked for no extra output; no test covers those modes.
-Resolution: open
+Resolution: fixed ae1d0e860368d839f9570d6b42d530fc3a6eb071 | d778be9d 2026-10-27T05:23:43Z
