@@ -80,7 +80,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, wrangler
 from rediacc_ci.deploy import clone_d1
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
@@ -245,17 +245,17 @@ def jq_names(program: str, cwd: str) -> str:
 
 def create_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 create "$DB_NAME" --location eeur` (twin :104)."""
-    return ["npx", "wrangler", "d1", "create", db_name, "--location", D1_LOCATION]
+    return [*wrangler.ARGV, "d1", "create", db_name, "--location", D1_LOCATION]
 
 
 def info_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 info "$DB_NAME" --json` (twin :105)."""
-    return ["npx", "wrangler", "d1", "info", db_name, "--json"]
+    return [*wrangler.ARGV, "d1", "info", db_name, "--json"]
 
 
 def delete_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 delete "$db" --skip-confirmation` (twin :71)."""
-    return ["npx", "wrangler", "d1", "delete", db_name, "--skip-confirmation"]
+    return [*wrangler.ARGV, "d1", "delete", db_name, "--skip-confirmation"]
 
 
 def migrations_argv(db_name: str) -> list[str]:
@@ -264,8 +264,7 @@ def migrations_argv(db_name: str) -> list[str]:
     The `--config` value is the BASENAME, not the path the file was written to, because the twin has `cd workers/www` first.
     """
     return [
-        "npx",
-        "wrangler",
+        *wrangler.ARGV,
         "d1",
         "migrations",
         "apply",

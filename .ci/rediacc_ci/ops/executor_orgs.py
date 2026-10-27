@@ -28,6 +28,7 @@ import tomllib
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler
 from rediacc_ci.deploy import console_executor as target_mod
 
 if TYPE_CHECKING:
@@ -107,8 +108,7 @@ def prefix(org_id: str) -> str:
 
 def d1_argv(database: str, config: str, command: str = ORGS_SQL) -> list[str]:
     return [
-        "npx",
-        "wrangler",
+        *wrangler.ARGV,
         "d1",
         "execute",
         database,

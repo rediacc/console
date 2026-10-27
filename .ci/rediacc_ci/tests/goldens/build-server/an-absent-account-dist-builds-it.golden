@@ -12,7 +12,7 @@ Run with:
   docker run --rm -p 8080:80 rediacc-server-onprem:dev
 --- stderr ---
 --- calls ---
-CALL npx	vite	build	--outDir	dist
+CALL npx	--no-install	vite	build	--outDir	dist
 CALL npm	pack	--pack-destination	<root>/cli-npm
 CALL docker	buildx	build	--file	Dockerfile	--target	onprem	--build-arg	ACCOUNT_ENTRY=on-premise	--build-arg	ACCOUNT_ED25519_PUBLIC_KEY=	--build-arg	VITE_APP_VERSION=dev	--tag	rediacc-server-onprem:dev	--load	.
 --- staged ---

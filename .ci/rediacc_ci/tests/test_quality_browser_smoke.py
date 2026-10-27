@@ -145,7 +145,13 @@ def test_pure_helpers() -> None:
     assert "-v" in argv
     assert argv[argv.index("-v") + 1] == "/repo:/work"
     assert argv[argv.index("-w") + 1] == "/work"
-    assert argv[-4:] == ["npx", "tsx", "scripts/gates/check-browser-smoke.ts", "--selftest"]
+    assert argv[-5:] == [
+        "npx",
+        "--no-install",
+        "tsx",
+        "scripts/gates/check-browser-smoke.ts",
+        "--selftest",
+    ]
     assert "CI=true" not in argv, "this is the sibling page-density's flag, not this one's"
 
 

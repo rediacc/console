@@ -259,7 +259,7 @@ class Run:
     def start_stripe_listen(self, secret_key: str) -> str:
         log.step("Syncing Stripe products/prices to sandbox...")
         subprocess.run(
-            ["npx", "tsx", "scripts/stripe-sync.ts"],
+            ["npx", "--no-install", "tsx", "scripts/stripe-sync.ts"],
             cwd=self.account_dir,
             env={**os.environ, "STRIPE_SECRET_KEY": secret_key},
             stderr=subprocess.STDOUT,
@@ -366,7 +366,7 @@ class Run:
         if sandbox_key:
             env["STRIPE_SANDBOX_SECRET_KEY"] = sandbox_key
         self.backend = subprocess.Popen(
-            ["npx", "tsx", "src/entry/node.ts"],
+            ["npx", "--no-install", "tsx", "src/entry/node.ts"],
             cwd=self.account_dir,
             env=env,
             stdin=subprocess.DEVNULL,
@@ -403,14 +403,16 @@ class Run:
         for browser in projects:
             if (
                 subprocess.run(
-                    ["npx", "playwright", "install", browser], cwd=self.e2e_dir, check=False
+                    ["npx", "--no-install", "playwright", "install", browser],
+                    cwd=self.e2e_dir,
+                    check=False,
                 ).returncode
                 != 0
             ):
                 raise RefusedError(f"npx playwright install {browser} failed")
             if common.is_ci():
                 subprocess.run(
-                    ["npx", "playwright", "install-deps", browser],
+                    ["npx", "--no-install", "playwright", "install-deps", browser],
                     cwd=self.e2e_dir,
                     stderr=subprocess.DEVNULL,
                     check=False,
@@ -420,6 +422,7 @@ class Run:
         log.step("Running Account Portal E2E tests...")
         cmd = [
             "npx",
+            "--no-install",
             "playwright",
             "test",
             *[f"--project={p}" for p in projects],

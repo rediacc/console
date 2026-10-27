@@ -77,6 +77,7 @@ def test_deploy_secrets_never_push_the_switch(monkeypatch: pytest.MonkeyPatch) -
         "ACCOUNT_X25519_PUBLIC_KEY",
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
+        "ACCOUNT_CONFIG_SERVER_KEY",
     ):
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.setenv("ROOT_EMAIL", "root@example.invalid")

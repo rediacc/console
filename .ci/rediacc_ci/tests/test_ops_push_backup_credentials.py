@@ -43,15 +43,15 @@ class FakeWrangler:
 
     def __call__(self, argv: list[str], cwd: str, stdin: str | None) -> tuple[int, str, str]:
         self.calls.append((list(argv), cwd, stdin))
-        if argv[2:4] == ["secret", "list"]:
+        if argv[3:5] == ["secret", "list"]:
             names = self.lists.pop(0)
             return 0, "\n" + json.dumps([{"name": n, "type": "secret_text"} for n in names]), ""
-        if argv[2:4] == ["secret", "bulk"]:
+        if argv[3:5] == ["secret", "bulk"]:
             return self.bulk_rc, "Uploaded 4 secrets %s\n" % self.echo, ""
         raise AssertionError("unexpected command %r" % argv)
 
     def bulk_calls(self) -> list[tuple[list[str], str, str | None]]:
-        return [c for c in self.calls if c[0][2:4] == ["secret", "bulk"]]
+        return [c for c in self.calls if c[0][3:5] == ["secret", "bulk"]]
 
 
 def _fetch(healthy: list[bool]):
@@ -108,7 +108,15 @@ def test_bench_pushes_exactly_four_keys_once_on_stdin() -> None:
     assert rc == 0, rc
     (bulk,) = runner.bulk_calls()
     argv, cwd, stdin = bulk
-    assert argv == ["npx", "wrangler", "secret", "bulk", "--name", "rediacc-account-bench"]
+    assert argv == [
+        "npx",
+        "--no-install",
+        "wrangler",
+        "secret",
+        "bulk",
+        "--name",
+        "rediacc-account-bench",
+    ]
     assert cwd == str(paths.repo_root() / "workers" / "account")
     assert json.loads(stdin or "") == {
         "ACCOUNT_BACKUP_S3_ENDPOINT": ENDPOINT,
@@ -116,9 +124,9 @@ def test_bench_pushes_exactly_four_keys_once_on_stdin() -> None:
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": KEY_ID,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": SECRET,
     }
-    lists = [c[0] for c in runner.calls if c[0][2:4] == ["secret", "list"]]
+    lists = [c[0] for c in runner.calls if c[0][3:5] == ["secret", "list"]]
     assert lists == [pbc.list_argv("rediacc-account-bench")] * 2
-    assert [c[0][2:4] for c in runner.calls] == [
+    assert [c[0][3:5] for c in runner.calls] == [
         ["secret", "list"],
         ["secret", "bulk"],
         ["secret", "list"],
@@ -181,7 +189,7 @@ def test_dry_run_runs_only_the_read_only_steps() -> None:
     text, rc = _push(pbc.plan("edge", "us"), runner, dry_run=True)
     assert rc == 0
     assert runner.bulk_calls() == []
-    assert [c[0][2:4] for c in runner.calls] == [["secret", "list"]]
+    assert [c[0][3:5] for c in runner.calls] == [["secret", "list"]]
     for name in pbc.PUSHED:
         assert name in text
     assert "edge-rediacc-account-us" in text

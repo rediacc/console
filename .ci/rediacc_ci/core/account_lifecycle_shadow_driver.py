@@ -247,7 +247,7 @@ DEV_JOB = [
 def gateway(rc: int = 0) -> dict:
     return row(
         "npx",
-        "tsx src/entry/dev-gateway.ts",
+        "--no-install tsx src/entry/dev-gateway.ts",
         rc=rc,
         sh=WAIT_FOR_JOB + envdump(*GATEWAY_ENV) + STATE_DUMP,
     )
@@ -435,7 +435,7 @@ SCENARIOS: dict[str, list[Case]] = {
             rows=[
                 row(
                     "npx",
-                    "tsx scripts/stripe-sync.ts",
+                    "--no-install tsx scripts/stripe-sync.ts",
                     out="".join("sync %d\n" % i for i in range(7)),
                 ),
                 row("stripe", "listen *", sh=STRIPE_READY),
@@ -469,7 +469,15 @@ SCENARIOS: dict[str, list[Case]] = {
             "sync-fails",
             "stripe-auto",
             env=STRIPE_ENV,
-            rows=[row("npx", "tsx scripts/stripe-sync.ts", rc=3, out="a\nb\n", err="sync broke\n")],
+            rows=[
+                row(
+                    "npx",
+                    "--no-install tsx scripts/stripe-sync.ts",
+                    rc=3,
+                    out="a\nb\n",
+                    err="sync broke\n",
+                )
+            ],
             pids=True,
         ),
     ],
@@ -623,7 +631,11 @@ SCENARIOS: dict[str, list[Case]] = {
     ],
     "test": [
         Case("args", "test", ["--reporter", "dot", "src/a.test.ts"]),
-        Case("vitest-fails", "test", rows=[row("npx", "vitest *", rc=4, out="1 failed\n")]),
+        Case(
+            "vitest-fails",
+            "test",
+            rows=[row("npx", "--no-install vitest *", rc=4, out="1 failed\n")],
+        ),
         Case("no-node", "test", unstub=("node",), hidden=("node",)),
     ],
     "e2e": [
@@ -632,21 +644,21 @@ SCENARIOS: dict[str, list[Case]] = {
             "test-e2e",
             ["--grep", "billing"],
             env={**E2E_ENV_BASE, "GATEWAY_PORT": "4811"},
-            rows=[*busy(4811), row("npx", "playwright *", sh=envdump(*E2E_ENV))],
+            rows=[*busy(4811), row("npx", "--no-install playwright *", sh=envdump(*E2E_ENV))],
             show=E2E_ENV,
         ),
         Case(
             "server-env",
             "test-e2e",
             env={**E2E_ENV_BASE, "REDIACC_ACCOUNT_SERVER": "http://localhost:4822/account"},
-            rows=[*busy(4822), row("npx", "playwright *", sh=envdump(*E2E_ENV))],
+            rows=[*busy(4822), row("npx", "--no-install playwright *", sh=envdump(*E2E_ENV))],
             setup=("no_e2e_modules",),
         ),
         Case(
             "state-file",
             "test-e2e",
             env={**E2E_ENV_BASE, "ROOT_EMAIL": "root@example.test"},
-            rows=[*busy(4833), row("npx", "playwright *", sh=envdump(*E2E_ENV))],
+            rows=[*busy(4833), row("npx", "--no-install playwright *", sh=envdump(*E2E_ENV))],
             setup=("state_port", "defaults_no_webhook"),
         ),
         Case("no-port", "test-e2e", env=E2E_ENV_BASE),
@@ -660,7 +672,7 @@ SCENARIOS: dict[str, list[Case]] = {
                 "STRIPE_SANDBOX_SECRET_KEY": "sk_test_shadow",
                 "STRIPE_E2E_WEBHOOK_SECRET": "whsec_from_shell",
             },
-            rows=[*busy(4855), row("npx", "playwright *", sh=envdump(*E2E_ENV))],
+            rows=[*busy(4855), row("npx", "--no-install playwright *", sh=envdump(*E2E_ENV))],
         ),
         Case(
             "install-fails",
@@ -676,7 +688,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "playwright-fails",
             "test-e2e",
             env={**E2E_ENV_BASE, "GATEWAY_PORT": "4811"},
-            rows=[*busy(4811), row("npx", "playwright *", rc=2, err="2 failed\n")],
+            rows=[*busy(4811), row("npx", "--no-install playwright *", rc=2, err="2 failed\n")],
         ),
     ],
     "dev": [

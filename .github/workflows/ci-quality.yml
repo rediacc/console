@@ -2326,6 +2326,9 @@ jobs:
       - name: Account env files retired
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_account_env_retired.py
+      - name: Config server key constant confined
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_config_server_key_constant.py
       - name: Backup credential isolation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_backup_credential_isolation.py

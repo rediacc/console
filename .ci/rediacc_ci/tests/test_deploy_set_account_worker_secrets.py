@@ -269,7 +269,9 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
     """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-nine keys in the twin's order, on the stable EU channel: the Stripe pair present, the SES pair fanned in from the EU names, the endpoint carrying its `eu` jurisdiction label, and the STABLE bucket rather than the edge one."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
-    assert old_calls.splitlines()[0] == ("npx\twrangler\tsecret\tbulk\t--name\trediacc-account-eu")
+    assert old_calls.splitlines()[0] == (
+        "npx\t--no-install\twrangler\tsecret\tbulk\t--name\trediacc-account-eu"
+    )
     assert document(old_calls) == (
         "{\n"
         '  "ACCOUNT_ED25519_PRIVATE_KEY": "e1",\n'
@@ -678,6 +680,7 @@ def test_pure_helpers() -> None:
 
     assert port.wrangler_argv("rediacc-account-us") == [
         "npx",
+        "--no-install",
         "wrangler",
         "secret",
         "bulk",

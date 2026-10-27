@@ -267,7 +267,7 @@ class OnPrem:
         self.server_log = self.work / "onprem-server.log"
         with self.server_log.open("wb") as sink:
             self.server = self.spawn(
-                ["npx", "tsx", "src/entry/on-premise.ts"],
+                ["npx", "--no-install", "tsx", "src/entry/on-premise.ts"],
                 cwd=str(self.root / "private" / "account"),
                 env={**os.environ, **overrides},
                 stdin=subprocess.DEVNULL,

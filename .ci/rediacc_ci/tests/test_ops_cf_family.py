@@ -455,7 +455,7 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
 
     assert shape(bash_calls) == shape(port_calls)
     npx = [c for c in port_calls if c["tool"] == "npx"]
-    assert npx[0]["argv"][:4] == ["wrangler", "d1", "migrations", "apply"]
+    assert npx[0]["argv"][:5] == ["--no-install", "wrangler", "d1", "migrations", "apply"]
     assert {"CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"} <= set(npx[0]["cf_env"])
     assert not {"CF_GLOBAL_API_KEY", "CF_EMAIL", "CF_API_KEY"} & set(npx[0]["cf_env"])
     # The "Dropping N tables: ..." line lists them in drop order, which is the delta pinned below.
@@ -712,6 +712,8 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     """The twin's environment as the port's profile binds it: the R2 trio renamed to the three backup names, and the stored root password the port's seed reads (DECLARED DELTA: the retired bash seeded nothing)."""
     bound = {R2_TO_BACKUP.get(name, name): value for name, value in env.items()}
     bound["BENCH_ROOT_PASSWORD"] = "bench-root-password-1"
+    # PLAN-config-server-key K2: the port reads the bench-only key the deploy-bench profile binds; the retired bash never did, so its env (and every golden key) is unchanged. A fake value, never a real key.
+    bound["ACCOUNT_CONFIG_SERVER_KEY"] = "fake-config-server-key-for-tests"
     return bound
 
 
@@ -731,12 +733,21 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
         if raw["tool"] == "sleep":
             continue
         # DECLARED DELTA (b7d7bdfe0): the port prints the D1 bookmark before migrating, a `wrangler d1 time-travel info` call the retired bash never made.
-        if raw["tool"] == "npx" and raw["argv"][1:4] == ["d1", "time-travel", "info"]:
+        if raw["tool"] == "npx" and raw["argv"][2:5] == ["d1", "time-travel", "info"]:
             continue
         if _is_seed_call(raw):
             continue
-        kept = [n for n in raw.get("cf_env") or () if n not in R2_TO_BACKUP]
-        out.append({**raw, "cf_env": kept} if raw.get("cf_env") else raw)
+        call = dict(raw)
+        # DECLARED DELTA: the port runs `npx --no-install vite build` so npx never downloads vite; the retired bash ran a bare `npx vite build`, which is what the golden recorded. The flag is dropped here, only for vite, so every other argv still compares verbatim.
+        if call["tool"] == "npx" and call["argv"][:2] == ["--no-install", "vite"]:
+            call["argv"] = call["argv"][1:]
+        # DECLARED DELTA (PLAN-config-server-key K2): the port pushes ACCOUNT_CONFIG_SERVER_KEY, a secret the retired bash never held. Dropped from the compared body; `test_deploy_bench_matches_bash` asserts it present first.
+        if isinstance(call.get("stdin"), dict):
+            call["stdin"] = {
+                k: v for k, v in call["stdin"].items() if k != "ACCOUNT_CONFIG_SERVER_KEY"
+            }
+        kept = [n for n in call.get("cf_env") or () if n not in R2_TO_BACKUP]
+        out.append({**call, "cf_env": kept} if call.get("cf_env") else call)
     return out
 
 
@@ -759,6 +770,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         "ACCOUNT_X25519_PRIVATE_KEY",
     ]
     assert secrets["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-bench"
+    assert secrets["ACCOUNT_CONFIG_SERVER_KEY"] == "fake-config-server-key-for-tests"
     assert secrets["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.example.invalid"
     # The bash's fallback fired: with only the R2 trio in its environment it pushed the trio as the backup credential. The port received the same values under the backup names (`_port_deploy_env`).
     bash_secrets = next(c["stdin"] for c in bash_calls if c["tool"] == "npx" and c["stdin"])
@@ -829,7 +841,8 @@ def test_delta_arguments_are_rejected_not_ignored(world: h.World) -> None:
     rc_b, _, _ = world.twin_run("scripts/ops/deploy-bench.sh", ["--dry-run"], env)
     assert rc_b == 0
     assert any(
-        c["tool"] == "npx" and c["argv"][:2] == ["wrangler", "deploy"] for c in world.calls()
+        c["tool"] == "npx" and c["argv"][:3] == ["--no-install", "wrangler", "deploy"]
+        for c in world.calls()
     )
     world.reset_log()
     rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", ["--dry-run"], env)
@@ -845,7 +858,8 @@ def test_delta_secrets_are_validated_before_the_first_remote_write(world: h.Worl
     assert rc_b == 1
     assert "ROOT_EMAIL is EMPTY" in h.strip(err_b)
     assert any(
-        c["tool"] == "npx" and c["argv"][:2] == ["wrangler", "deploy"] for c in world.calls()
+        c["tool"] == "npx" and c["argv"][:3] == ["--no-install", "wrangler", "deploy"]
+        for c in world.calls()
     )  # the control: deployed first
     world.reset_log()
     rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
@@ -861,7 +875,9 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
     env = world.env(**TOKEN_ENV, **DEPLOY_ENV)
     assert "ACCOUNT_BACKUP_S3_ENDPOINT" not in env
     assert _port_deploy_env(env)["ACCOUNT_BACKUP_S3_ENDPOINT"] == env["CLOUDFLARE_R2_ENDPOINT"]
-    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    # Only the R2 trio stays untranslated: the config key is the port's own, so it must not be what refuses.
+    keyed = {**env, "ACCOUNT_CONFIG_SERVER_KEY": _port_deploy_env(env)["ACCOUNT_CONFIG_SERVER_KEY"]}
+    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], keyed)
     assert rc_p == 1
     assert "ACCOUNT_BACKUP_S3_ENDPOINT is EMPTY for bench" in h.strip(err_p)
     assert "r2-secret" not in err_p
@@ -902,7 +918,7 @@ def test_deploy_bench_refuses_on_a_check_that_could_not_run_and_never_pushes(
     assert "rotation drift detected" not in text
     assert "rotation rotate" not in text
     assert not any(
-        c["tool"] == "npx" and c["argv"][:3] == ["wrangler", "secret", "bulk"]
+        c["tool"] == "npx" and c["argv"][:4] == ["--no-install", "wrangler", "secret", "bulk"]
         for c in world.calls()
     )  # nothing was pushed
 
@@ -915,7 +931,7 @@ def test_deploy_bench_still_refuses_on_drift_and_never_pushes(world: h.World) ->
     assert rc == 1
     assert "rotation drift detected" in h.strip(err)
     assert not any(
-        c["tool"] == "npx" and c["argv"][:3] == ["wrangler", "secret", "bulk"]
+        c["tool"] == "npx" and c["argv"][:4] == ["--no-install", "wrangler", "secret", "bulk"]
         for c in world.calls()
     )
 

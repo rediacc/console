@@ -75,11 +75,14 @@ def side_region(rel: pathlib.PurePosixPath) -> tuple[str, str]:
     return "stable", stem or "-"
 
 
-def load_configs(root: pathlib.Path) -> tuple[list[Config], list[Binding]]:
+def load_configs(root: pathlib.Path, only: str | None = None) -> tuple[list[Config], list[Binding]]:
+    """Every Worker config under `workers/`, or just the one at repo-relative path `only`: the others are not even read, so an unparseable sibling cannot block a caller that audits a single config."""
     configs: list[Config] = []
     bindings: list[Binding] = []
     for path in sorted((root / "workers").glob("*/wrangler*.toml")):
         rel = pathlib.PurePosixPath(path.relative_to(root).as_posix())
+        if only is not None and str(rel) != only:
+            continue
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
         except (OSError, tomllib.TOMLDecodeError) as exc:
@@ -135,14 +138,19 @@ def list_workers(account: str, token: str, fetch: Fetch = _get) -> set[str]:
     return names
 
 
-def audit(root: pathlib.Path, env: typing.Mapping[str, str], fetch: Fetch = _get) -> dict:
-    """The report dict; `rc` is 0, 1 or 77, `error` is set on 77."""
+def audit(
+    root: pathlib.Path,
+    env: typing.Mapping[str, str],
+    fetch: Fetch = _get,
+    only: str | None = None,
+) -> dict:
+    """The report dict; `rc` is 0, 1 or 77, `error` is set on 77. `only` restricts it to one config (see `load_configs`)."""
     token = (env.get("CLOUDFLARE_API_TOKEN") or "").strip()
     account = (env.get("CLOUDFLARE_ACCOUNT_ID") or "").strip()
     try:
         if not token or not account:
             raise AuditError("CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID unset or empty")
-        configs, bindings = load_configs(root)
+        configs, bindings = load_configs(root, only)
         live = list_workers(account, token, fetch)
     except AuditError as exc:
         return {"rc": EX_UNAVAILABLE, "error": str(exc), "bindings": [], "not_deployed": []}

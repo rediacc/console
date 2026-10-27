@@ -10,5 +10,5 @@ Deleted database migration-test-a
 ✓ Deleting: migration-test-a
 ✓ Deleted 1 of 1 stale databases
 --- calls ---
-npx	wrangler	d1	list	--json
-npx	wrangler	d1	delete	migration-test-a	--skip-confirmation
+npx	--no-install	wrangler	d1	list	--json
+npx	--no-install	wrangler	d1	delete	migration-test-a	--skip-confirmation

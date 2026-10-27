@@ -49,6 +49,7 @@ import typing
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import awscli
+from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.deploy import console_executor, deploy_proxy, executor_artifacts
 
 SELF = "rediacc_ci.deploy.deploy_record"
@@ -127,11 +128,20 @@ def pointer_key(target: str, region: str) -> str:
 
 
 def deployments_argv(config: str) -> list[str]:
-    return ["npx", "wrangler", "deployments", "list", "--json", "--config", config]
+    return [*wrangler_cmd.ARGV, "deployments", "list", "--json", "--config", config]
 
 
 def time_travel_argv(database: str, config: str) -> list[str]:
-    return ["npx", "wrangler", "d1", "time-travel", "info", database, "--json", "--config", config]
+    return [
+        *wrangler_cmd.ARGV,
+        "d1",
+        "time-travel",
+        "info",
+        database,
+        "--json",
+        "--config",
+        config,
+    ]
 
 
 def _capture(argv: list[str], cwd: pathlib.Path) -> tuple[int, str, str]:
@@ -206,10 +216,11 @@ def d1_bookmark(cwd: pathlib.Path, database: str, config: str) -> str:
 
 
 def restore_command(database: str, bookmark: str, config: str) -> str:
-    return "npx wrangler d1 time-travel restore %s --bookmark=%s --config %s/%s" % (
+    return "cd %s && %s d1 time-travel restore %s --bookmark=%s --config %s" % (
+        ACCOUNT_REL,
+        " ".join(wrangler_cmd.ARGV),
         database,
         bookmark,
-        ACCOUNT_REL,
         config,
     )
 
@@ -217,7 +228,12 @@ def restore_command(database: str, bookmark: str, config: str) -> str:
 def worker_rollback_command(version_id: str | None, rel: str, config: str) -> str:
     if not version_id:
         return "none: no earlier deployment of this Worker exists"
-    return "npx wrangler rollback %s --config %s/%s" % (version_id, rel, config)
+    return "cd %s && %s rollback %s --config %s" % (
+        rel,
+        " ".join(wrangler_cmd.ARGV),
+        version_id,
+        config,
+    )
 
 
 def proxy_redeploy_command(target: str, region: str, release: str) -> str:

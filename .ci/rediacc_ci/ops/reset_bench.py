@@ -30,6 +30,7 @@ import sys
 import urllib.parse
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler
 from rediacc_ci.ops import cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
@@ -158,8 +159,7 @@ def _wipe_d1(auth: cf_auth.Auth, env: dict[str, str]) -> None:
     _npm_install_if_needed(worker_dir, env)
     _run(
         [
-            "npx",
-            "wrangler",
+            *wrangler.ARGV,
             "d1",
             "migrations",
             "apply",

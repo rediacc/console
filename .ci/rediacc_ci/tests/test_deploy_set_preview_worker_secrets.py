@@ -192,7 +192,7 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
     """ONE CALL, PINNED AGAINST LITERAL BYTES rather than against the port's own builders, so a change in both would still be caught. The argv, then the fifteen keys in order with the four legitimately-empty ones present as empty strings."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
-    assert old_calls.splitlines()[0] == "npx\twrangler\tsecret\tbulk\t--name\tpr-123"
+    assert old_calls.splitlines()[0] == "npx\t--no-install\twrangler\tsecret\tbulk\t--name\tpr-123"
     assert document(old_calls) == (
         "{\n"
         '  "ACCOUNT_ED25519_PRIVATE_KEY": "e1",\n'
@@ -394,6 +394,7 @@ def test_pure_helpers() -> None:
 
     assert port.wrangler_argv("pr-7") == [
         "npx",
+        "--no-install",
         "wrangler",
         "secret",
         "bulk",

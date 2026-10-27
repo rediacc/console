@@ -23,6 +23,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler
 
 PR_RE = re.compile(r"^[0-9]+$")
 
@@ -139,7 +140,7 @@ def main(argv: list[str]) -> int:
 
     try:
         listed = subprocess.run(
-            ["npx", "wrangler", "d1", "list", "--json"],
+            [*wrangler.ARGV, "d1", "list", "--json"],
             cwd=worker_dir,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
@@ -161,8 +162,7 @@ def main(argv: list[str]) -> int:
         sys.stdout.flush()
         executed = subprocess.run(
             [
-                "npx",
-                "wrangler",
+                *wrangler.ARGV,
                 "d1",
                 "execute",
                 d["db_name"],

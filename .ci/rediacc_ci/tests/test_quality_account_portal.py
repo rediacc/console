@@ -21,6 +21,7 @@ from rediacc_ci.tests import differential as diff
 # A stub pair that RECORDS every invocation instead of just exiting. The gate is a sequence of process launches, so the sequence is the artifact worth capturing: one line per launch, holding the working directory and the whole argv.
 _RECORDING_STUB = """#!/usr/bin/env bash
 { printf '%s' "$(basename "$0")"; printf ' %s' "$@"; printf '\\t%s\\n' "$PWD"; } >> "$TRACE"
+[ "$1" = "--no-install" ] && shift
 case "$1 $2 $3" in
     "tsc --noEmit -p") exit "${STUB_E2E_RC:-0}" ;;
 esac
@@ -95,12 +96,12 @@ def test_the_healthy_run_launches_exactly_six_commands(tmp_path: pathlib.Path) -
     assert rc == 0
     root = str((tmp_path / "tree").resolve())
     assert [argv for argv, _ in rows] == [
-        "npx tsc --noEmit",
-        "npx tsc --noEmit",
-        "npx tsc --noEmit -p e2e/tsconfig.json",
-        "npx biome check private/account/web/src/",
+        "npx --no-install tsc --noEmit",
+        "npx --no-install tsc --noEmit",
+        "npx --no-install tsc --noEmit -p e2e/tsconfig.json",
+        "npx --no-install biome check private/account/web/src/",
         "npm run build:account-onboarding",
-        "npx vite build",
+        "npx --no-install vite build",
     ]
     assert [cwd for _, cwd in rows] == [
         root + "/private/account/web",  # phase 2, the frontend
@@ -151,7 +152,7 @@ def test_the_lint_phase_is_the_one_that_does_not_stop(tmp_path: pathlib.Path) ->
     rc, rows = _trace(tmp_path, STUB_LINT_RC="1")
     assert rc == 0
     assert len(rows) == 6
-    assert rows[-1][0] == "npx vite build"
+    assert rows[-1][0] == "npx --no-install vite build"
 
 
 def test_phase_seven_refuses_a_build_that_produced_nothing(tmp_path: pathlib.Path) -> None:

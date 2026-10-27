@@ -1252,7 +1252,7 @@ def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
         "obs previous-instance call#1| kill -9 4194303",
         "obs reuse-rustfs side#9| env WEBAUTHN_ORIGIN=http://localhost:%d" % ACCOUNT_DEV_PORT,
         "obs no-docker-with-stripe side#16| state pids=N N N",
-        "obs no-docker-with-stripe bg| npx astro dev --port 4802 --host 192.0.2.10",
+        "obs no-docker-with-stripe bg| npx --no-install astro dev --port 4802 --host 192.0.2.10",
         "obs gateway-fails rc=3",
         "obs astro-never rc=1",
         "obs state-missing-key rc=1",

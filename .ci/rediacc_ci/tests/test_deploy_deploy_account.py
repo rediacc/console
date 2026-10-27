@@ -281,10 +281,10 @@ def test_the_two_wrangler_calls_are_pinned_in_full(tmp_path: pathlib.Path) -> No
     assert old_calls == (
         "npm\tinstall\n"
         "  cwd=account\n"
-        "npx\twrangler\td1\tmigrations\tapply\taccount-db-eu\t--remote\t--config\twrangler.eu.toml\n"
+        "npx\t--no-install\twrangler\td1\tmigrations\tapply\taccount-db-eu\t--remote\t--config\twrangler.eu.toml\n"
         "  cwd=account\n"
         "  token='tok'\n"
-        "npx\twrangler\tdeploy\t--config\twrangler.eu.toml\n"
+        "npx\t--no-install\twrangler\tdeploy\t--config\twrangler.eu.toml\n"
         "  cwd=account\n"
         "  token='tok'\n"
     )
@@ -626,7 +626,52 @@ def test_an_existing_service_worker_lets_the_deploy_run(tmp_path: pathlib.Path) 
         tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu,edge-rediacc-proxy-eu"
     )
     assert new.returncode == 0, new.stderr
-    order = [line.split("\t")[0:3] for line in calls.splitlines() if not line.startswith("  ")]
+    order = [line.split("\t")[0:4] for line in calls.splitlines() if not line.startswith("  ")]
     assert [o[0] for o in order] == ["curl", "npx", "npx"]
-    assert order[1][1:] == ["wrangler", "d1"]
-    assert order[2][1:] == ["wrangler", "deploy"]
+    assert order[1][1:] == ["--no-install", "wrangler", "d1"]
+    assert order[2][1:] == ["--no-install", "wrangler", "deploy"]
+
+
+def test_an_unreadable_sibling_config_does_not_block_a_deploy_without_services(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review d127ac64.1: only the deployed config is read, so a sibling that is not TOML cannot block a deploy whose own config binds no service, and that deploy makes no API call."""
+    root = _fixture_root(
+        tmp_path,
+        configs={
+            "wrangler.edge-eu.toml": 'name = "edge-rediacc-account-eu"\n' + FIXTURE_TOML,
+            "wrangler.eu.toml": "this = is = not toml\n",
+        },
+    )
+    new, calls = _run_with_curl(tmp_path, root)
+    assert new.returncode == 0, new.stderr
+    assert "curl" not in calls
+    assert "cannot read the Worker configs" not in new.stderr
+
+
+def test_an_unreadable_sibling_config_does_not_block_a_deploy_with_services(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _fixture_root(
+        tmp_path,
+        configs={
+            "wrangler.edge-eu.toml": SERVICES_TOML,
+            "wrangler.eu.toml": "this = is = not toml\n",
+        },
+    )
+    new, calls = _run_with_curl(
+        tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu,edge-rediacc-proxy-eu"
+    )
+    assert new.returncode == 0, new.stderr
+    assert "curl" in calls
+
+
+def test_an_unreadable_own_config_still_refuses(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(
+        tmp_path,
+        configs={"wrangler.edge-eu.toml": 'database_name = "db"\nthis = is = not toml\n'},
+    )
+    new, calls = _run_with_curl(tmp_path, root)
+    assert new.returncode == 1
+    assert "npx" not in calls
+    assert "cannot read the Worker configs" in new.stderr

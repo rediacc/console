@@ -715,7 +715,7 @@ def _table() -> tuple[Step, ...]:
         Step(
             "stripe-sync",
             "publish",
-            ("npx", "tsx", "scripts/stripe-sync.ts"),
+            ("npx", "--no-install", "tsx", "scripts/stripe-sync.ts"),
             profiles=("release-local",),
             cwd="clone:private/account",
         ),
@@ -724,6 +724,7 @@ def _table() -> tuple[Step, ...]:
             "publish",
             (
                 "npx",
+                "--no-install",
                 "tsx",
                 "private/account/scripts/verify-webhook.ts",
                 "--expected-url",

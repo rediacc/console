@@ -413,7 +413,7 @@ def stripe_auto() -> int:
     log.info("Syncing Stripe products/prices...")
     try:
         _tail(
-            ["npx", "tsx", "scripts/stripe-sync.ts"],
+            ["npx", "--no-install", "tsx", "scripts/stripe-sync.ts"],
             5,
             cwd=account.account_dir(),
             extra_env={"STRIPE_SECRET_KEY": key},
@@ -880,13 +880,23 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     log_dir = account.log_directory()
     log.step("Starting Astro dev server on :%d..." % astro_port)
     astro_pid = spawn_background(
-        ["npx", "astro", "dev", "--port", str(astro_port), "--host", dev_bind, "--ignore-lock"],
+        [
+            "npx",
+            "--no-install",
+            "astro",
+            "dev",
+            "--port",
+            str(astro_port),
+            "--host",
+            dev_bind,
+            "--ignore-lock",
+        ],
         cwd=os.path.join(root, "packages", "www"),
         log_path=os.path.join(log_dir, "astro.log"),
     )
     log.step("Starting Vite dev server on :%d..." % vite_port)
     vite_pid = spawn_background(
-        ["npx", "vite", "--port", str(vite_port), "--host", dev_bind],
+        ["npx", "--no-install", "vite", "--port", str(vite_port), "--host", dev_bind],
         cwd=os.path.join(account.account_dir(), "web"),
         log_path=os.path.join(log_dir, "vite.log"),
     )
@@ -916,7 +926,7 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     directory = account.account_dir()
     _cd_or_die(directory)
     status = _run(
-        ["npx", "tsx", "src/entry/dev-gateway.ts"],
+        ["npx", "--no-install", "tsx", "src/entry/dev-gateway.ts"],
         cwd=directory,
         extra_env={
             "GATEWAY_PORT": str(gateway_port),
@@ -1008,7 +1018,7 @@ def test(args: list[str]) -> int:
     log.step("Running account tests")
     directory = account.account_dir()
     _cd_or_die(directory)
-    status = _run(["npx", "vitest", "run", *args], cwd=directory)
+    status = _run(["npx", "--no-install", "vitest", "run", *args], cwd=directory)
     if status != 0:
         raise ErrexitError(status, "vitest exited %d" % status)
     return 0
@@ -1073,7 +1083,16 @@ def test_e2e(args: list[str]) -> int:
     log.step("Running account E2E tests (gateway on :%s)" % gateway_port)
     _cd_or_die(e2e_dir)
     status = _run(
-        ["npx", "playwright", "test", "--project=chromium", "--reporter=list", *args], cwd=e2e_dir
+        [
+            "npx",
+            "--no-install",
+            "playwright",
+            "test",
+            "--project=chromium",
+            "--reporter=list",
+            *args,
+        ],
+        cwd=e2e_dir,
     )
     if status != 0:
         raise ErrexitError(status, "playwright exited %d" % status)

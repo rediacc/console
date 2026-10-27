@@ -148,7 +148,7 @@ def run(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> typing.Calla
         drill.init()
 
         def spawn(argv: list[str], **kwargs: typing.Any) -> typing.Any:
-            assert argv == ["npx", "tsx", "src/entry/on-premise.ts"]
+            assert argv == ["npx", "--no-install", "tsx", "src/entry/on-premise.ts"]
             assert kwargs["cwd"].endswith("private/account")
             assert kwargs["env"]["ON_PREMISE_MODE"] == "true"
             return FakeServer(log_lines, kwargs["stdout"])

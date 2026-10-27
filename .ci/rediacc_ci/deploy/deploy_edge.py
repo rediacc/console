@@ -35,7 +35,7 @@ import sys
 import typing
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, wrangler
 from rediacc_ci.deploy import deploy_record
 from rediacc_ci.well_known import EDGE_ORIGIN
 
@@ -74,7 +74,7 @@ def strip_newlines(token: str) -> str:
 
 def deploy_argv() -> list[str]:
     """`npx wrangler deploy --config wrangler.edge.toml` (:35)."""
-    return ["npx", "wrangler", "deploy", "--config", CONFIG]
+    return [*wrangler.ARGV, "deploy", "--config", CONFIG]
 
 
 def needs_npm_install(worker_dir: pathlib.Path) -> bool:

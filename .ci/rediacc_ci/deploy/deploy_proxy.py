@@ -33,7 +33,7 @@ import time
 import urllib.parse
 
 from rediacc_ci import log
-from rediacc_ci.core import common, https
+from rediacc_ci.core import common, https, wrangler
 from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.version import resolve_version
 
@@ -185,8 +185,7 @@ def artifacts_argv(verb: str, *args: str) -> list[str]:
 
 def dry_run_argv(config: str) -> list[str]:
     return [
-        "npx",
-        "wrangler",
+        *wrangler.ARGV,
         "deploy",
         "--dry-run",
         "--outdir",
@@ -199,18 +198,22 @@ def dry_run_argv(config: str) -> list[str]:
 
 
 def deploy_argv(config: str) -> list[str]:
-    return ["npx", "wrangler", "deploy", "--config", config]
+    return [*wrangler.ARGV, "deploy", "--config", config]
 
 
 def deployments_argv(config: str) -> list[str]:
-    return ["npx", "wrangler", "deployments", "list", "--json", "--config", config]
+    return [*wrangler.ARGV, "deployments", "list", "--json", "--config", config]
 
 
 def rollback_command(config: str, previous: str | None) -> str:
     """What reverts this deploy: the Worker's previous version, or nothing on a first deploy."""
     if not previous:
         return "none: no earlier deployment of this Worker exists"
-    return "npx wrangler rollback %s --config %s/%s" % (previous, WORKER_REL, config)
+    return "cd %s && npx --no-install wrangler rollback %s --config %s" % (
+        WORKER_REL,
+        previous,
+        config,
+    )
 
 
 def reexec_argv(argv: list[str]) -> list[str]:

@@ -48,7 +48,7 @@ SECRETS = {
     "server_secret": "SERVER-SECRET-VALUE-zz",
     "sdk_master": "SDK-MASTER-VALUE-zz",
     "encrypted_org_passphrase": "ENC-PASSPHRASE-VALUE-zz",
-    "server_recoverable_org_passphrase": "SRV-PASSPHRASE-VALUE-zz",
+    "server_recoverable_org_passphrase": "csk1.abcdef12.SRV-PASSPHRASE-VALUE-zz",
 }
 WRAPPED = {"passkey": "WRAPPED-PK-zz", "password": "WRAPPED-PW-zz", "recovery": "WRAPPED-RC-zz"}
 BLOBS = {
@@ -523,6 +523,7 @@ def test_case_a_user_id_taken_under_another_email_refuses(dbs) -> None:
 
 
 LEGACY_ROW = "SRV-PASSPHRASE-VALUE-zz"
+TAGGED_ROW = "csk1.abcdef12.SRV-PASSPHRASE-VALUE-zz"
 EDGE_KID = "abcdef12"
 EDGE_KEY_ENV = "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE"
 NEW = {"ACCOUNT_CONFIG_SERVER_KEY"}
@@ -543,8 +544,9 @@ def _check(src_names: set[str], dst_names: set[str], value: object, kid=_no_kid)
 
 
 def test_server_key_presence_mismatch_refuses() -> None:
-    assert "built-in fallback key" in _check(set(), set(), LEGACY_ROW)
-    assert "set on both" in _check({"CONFIG_SERVER_KEY"}, {"CONFIG_SERVER_KEY"}, LEGACY_ROW)
+    assert "sealed under the edge key" in _check(
+        {"CONFIG_SERVER_KEY"}, {"CONFIG_SERVER_KEY"} | NEW, TAGGED_ROW, _edge(EDGE_KID)
+    )
     with pytest.raises(
         mod.RefusedError, match="CONFIG_SERVER_KEY is set on rediacc-account-eu and absent"
     ):
@@ -553,18 +555,13 @@ def test_server_key_presence_mismatch_refuses() -> None:
         mod.check_server_key({SRC.worker: set()}, SRC, DST, LEGACY_ROW, _no_kid)
 
 
-def test_new_key_on_one_worker_only_passes_an_untagged_row() -> None:
-    """The legacy path opens an untagged row whatever ACCOUNT_CONFIG_SERVER_KEY a Worker holds."""
-    assert "rewrites it under its own" in _check(set(), NEW, LEGACY_ROW)
-    assert "built-in fallback key" in _check(NEW, set(), LEGACY_ROW)
-
-
-def test_untagged_row_passes_once_both_workers_hold_the_key() -> None:
-    assert "opens it through its legacy path" in _check(NEW, NEW, LEGACY_ROW)
-
-
-def test_untagged_row_passes_while_both_workers_lack_the_key() -> None:
-    assert "built-in fallback key" in _check(set(), set(), LEGACY_ROW)
+@pytest.mark.parametrize(
+    ("src_names", "dst_names"), [(set(), set()), (set(), NEW), (NEW, set()), (NEW, NEW)]
+)
+def test_untagged_row_refuses_whatever_the_workers_hold(src_names, dst_names) -> None:
+    """PLAN-config-server-key K6 removed the legacy path: no account server opens an untagged row."""
+    with pytest.raises(mod.RefusedError, match=r"untagged .* K6 removed the legacy path"):
+        _check(src_names, dst_names, LEGACY_ROW)
 
 
 def test_tagged_row_without_the_key_on_either_worker_refuses() -> None:
@@ -576,7 +573,7 @@ def test_a_row_not_sealed_under_the_edge_key_refuses() -> None:
     """Each channel holds its own key, so a row sealed under the stable key (any kid but edge's) cannot open on edge."""
     with pytest.raises(
         mod.RefusedError,
-        match="kid 99999999, not the edge key's kid abcdef12: it would not open on edge-rediacc-account-eu, and no step reseals it",
+        match="kid 99999999, not the edge key's kid abcdef12: it would not open on edge-rediacc-account-eu, and no step reseals it under the target's key yet",
     ):
         _check(NEW, NEW, "csk1.99999999.Zm9v", _edge(EDGE_KID))
 
@@ -597,17 +594,14 @@ def test_store_without_a_passphrase_needs_no_kid() -> None:
     assert "no server-recoverable passphrase" in _check(NEW, NEW, None)
 
 
-def test_key_kid_comes_from_the_rewrap_helper(monkeypatch) -> None:
-    seen = {}
+def test_config_server_key_id_matches_the_worker_vector() -> None:
+    """The same vector private/account/tests/unit/config-server-key.test.ts pins for configServerKeyId."""
+    assert mod.config_server_key_id("kid-vector-key") == "9025a7ba"
 
-    def helper(_root, key, mode, payload, _secrets):
-        seen.update(key=key, mode=mode, payload=payload)
-        return {"kid": EDGE_KID}
 
-    monkeypatch.setattr(mod.rewrap, "run_helper", helper)
-    monkeypatch.setenv(EDGE_KEY_ENV, "edge-key-value")
-    assert mod.key_kid(paths.repo_root(), DST) == (EDGE_KEY_ENV, EDGE_KID)
-    assert seen == {"key": "edge-key-value", "mode": "kid", "payload": None}
+def test_key_kid_is_the_kid_of_the_environment_key(monkeypatch) -> None:
+    monkeypatch.setenv(EDGE_KEY_ENV, "kid-vector-key")
+    assert mod.key_kid(paths.repo_root(), DST) == (EDGE_KEY_ENV, "9025a7ba")
     monkeypatch.delenv(EDGE_KEY_ENV)
     assert mod.key_kid(paths.repo_root(), DST) == (EDGE_KEY_ENV, None)
 
@@ -1033,8 +1027,8 @@ import json, os, pathlib, shutil, sqlite3, sys
 argv = sys.argv[1:]
 with open(os.environ["FAKE_LOG"], "a") as f:
     f.write(json.dumps(["npx"] + argv) + "\n")
-assert argv[0] == "wrangler"
-args = argv[1:]
+assert argv[:2] == ["--no-install", "wrangler"]
+args = argv[2:]
 def opt(name):
     return args[args.index(name) + 1]
 dbdir = pathlib.Path(os.environ["FAKE_DB_DIR"])
@@ -1112,7 +1106,9 @@ def fake(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, dbs) -> dict:
     monkeypatch.setenv("CF_MANAGEMENT_TOKEN", "cf-token-secret-value")
     for name in ("CF_GLOBAL_API_KEY", "CF_EMAIL", "REDIACC_BWS_PROFILES"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(mod, "secret_names", lambda _t, _a, workers: {w: set() for w in workers})
+    monkeypatch.setattr(mod, "secret_names", lambda _t, _a, workers: {w: set(NEW) for w in workers})
+    # The row is sealed under kid abcdef12; both targets read it back as their own key's kid.
+    monkeypatch.setattr(mod, "key_kid", lambda _root, _end: (EDGE_KEY_ENV, EDGE_KID))
     return {"log": log, "r2": r2, "dir": tmp_path}
 
 
@@ -1142,8 +1138,8 @@ def _apply_argv(fake: dict) -> list[str]:
 def _kind(call: list) -> str:
     if "time-travel" in call:
         return "bookmark"
-    if call[2:4] == ["r2", "object"]:
-        return "r2-" + call[4]
+    if call[3:5] == ["r2", "object"]:
+        return "r2-" + call[5]
     if "--file" in call:
         return "file"
     return "read"
@@ -1173,11 +1169,11 @@ def test_apply_takes_the_bookmark_first_then_r2_then_one_file(fake, capsys) -> N
     assert kinds.count("r2-put") == len(BLOBS)
     for c in calls:
         if _kind(c) == "r2-put":
-            assert c[5].startswith("edge-rediacc-configs-eu/")
+            assert c[6].startswith("edge-rediacc-configs-eu/")
             assert c[c.index("--jurisdiction") + 1] == "eu"
             assert "--remote" in c
         if _kind(c) == "file":
-            assert c[4] == "edge-account-db-eu"
+            assert c[5] == "edge-account-db-eu"
             assert "--remote" in c
     for key, data in BLOBS.items():
         assert (fake["r2"] / "eu__edge-rediacc-configs-eu" / key).read_bytes() == data
@@ -1229,7 +1225,7 @@ def test_bad_arguments_touch_nothing(fake) -> None:
 def test_list_stores_is_read_only(fake, capsys) -> None:
     assert mod.main([*BASE, "--list-stores"]) == 0
     (call,) = _calls(fake["log"])
-    assert call[4] == "account-db-eu"
+    assert call[5] == "account-db-eu"
     text = capsys.readouterr()
     assert mod.prefix(STORE) in text.out + text.err
     assert STORE not in text.out + text.err
@@ -1424,20 +1420,26 @@ def test_a_missing_edge_bucket_refuses_instead_of_reading_as_absent(
     assert "bucket edge-rediacc-configs-eu does not exist" in text.out + text.err
 
 
-def test_a_four_character_secret_is_masked_and_a_flag_is_not(dbs) -> None:
-    """A one-character value such as "1" would redact every matching character of every output line."""
+def test_a_short_secret_is_masked_as_a_whole_token_only(dbs) -> None:
+    """Review 73939061.1: a 3-character secret stays hidden, and a 1-character value no longer redacts every matching character."""
     source = mod.read_source(Sqlite(dbs[0]), STORE, NOW)
-    source["operator"]["totp_secret"] = "abcd"
+    source["operator"]["totp_secret"] = "k9Z"
     source["operator"]["password_salt"] = "1"
     values = mod.secret_values(source)
-    assert "abcd" in values
-    assert "1" not in values
+    assert {"k9Z", "1"} <= set(values)
     assert "" not in values
+    w = mod.Wrangler.__new__(mod.Wrangler)
+    w.mask, w.redact = values, []
+    shown = w._shown("failed: k9Z rejected; 10 rows, code 1")
+    assert "k9Z" not in shown
+    assert "10 rows" in shown
+    assert shown.endswith("code <redacted>")
 
 
-def test_server_key_line_says_values_cannot_be_compared() -> None:
-    line = _check({"CONFIG_SERVER_KEY"}, {"CONFIG_SERVER_KEY"}, LEGACY_ROW)
-    assert "cannot be read back" in line
+def test_a_legacy_key_name_on_both_workers_still_checks_the_kid() -> None:
+    names = {"CONFIG_SERVER_KEY"} | NEW
+    with pytest.raises(mod.RefusedError, match="not the edge key's kid abcdef12"):
+        _check(names, names, "csk1.99999999.Zm9v", _edge(EDGE_KID))
 
 
 def test_read_source_tolerates_a_source_without_the_newest_tables(dbs) -> None:
@@ -1571,15 +1573,13 @@ def _bench_kid() -> tuple[str, str | None]:
 
 
 def test_bench_server_key_checks_read_the_bench_worker_and_key() -> None:
-    assert "absent on rediacc-account-bench" in _bench_check(set(), set(), LEGACY_ROW)
-    assert "rediacc-account-bench opens it through its legacy path" in _bench_check(
-        set(), NEW, LEGACY_ROW
-    )
+    with pytest.raises(mod.RefusedError, match=r"untagged .* hand rediacc-account-bench a store"):
+        _bench_check(NEW, NEW, LEGACY_ROW)
     line = _bench_check(NEW, NEW, "csk1.%s.Zm9v" % BENCH_KID, _bench_kid)
     assert "sealed under the bench key (kid bbbbbbbb)" in line
     with pytest.raises(
         mod.RefusedError,
-        match="not the bench key's kid bbbbbbbb: it would not open on rediacc-account-bench",
+        match="not the bench key's kid bbbbbbbb: it would not open on rediacc-account-bench, and no step reseals",
     ):
         _bench_check(NEW, NEW, "csk1.99999999.Zm9v", _bench_kid)
     with pytest.raises(
@@ -1589,9 +1589,8 @@ def test_bench_server_key_checks_read_the_bench_worker_and_key() -> None:
 
 
 def test_key_kid_for_bench_reads_the_bench_variable(monkeypatch) -> None:
-    monkeypatch.setattr(mod.rewrap, "run_helper", lambda *_a: {"kid": BENCH_KID})
-    monkeypatch.setenv(BENCH_KEY_ENV, "bench-key-value")
-    assert mod.key_kid(ROOT, BENCH) == (BENCH_KEY_ENV, BENCH_KID)
+    monkeypatch.setenv(BENCH_KEY_ENV, "kid-vector-key")
+    assert mod.key_kid(ROOT, BENCH) == (BENCH_KEY_ENV, "9025a7ba")
     monkeypatch.delenv(BENCH_KEY_ENV)
     assert mod.key_kid(ROOT, BENCH) == (BENCH_KEY_ENV, None)
 
@@ -1622,7 +1621,7 @@ def test_a_bench_apply_writes_bench_without_a_jurisdiction(fake, capsys) -> None
     assert kinds.index("bookmark") < kinds.index("r2-put") < kinds.index("file")
     for c in calls:
         if _kind(c) == "r2-put":
-            assert c[5].startswith("rediacc-configs-bench/")
+            assert c[6].startswith("rediacc-configs-bench/")
             assert "--jurisdiction" not in c
             assert c[c.index("--config") + 1] == "wrangler.bench.toml"
         if _kind(c) in ("file", "bookmark"):

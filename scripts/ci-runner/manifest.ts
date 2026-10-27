@@ -1672,6 +1672,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // agent/plans/PLAN-config-server-key.md K6: the legacy config-key constant stays deleted and its name stays confined to the one file that may mention it.
+    id: 'check:ci-config-server-key-constant',
+    run: 'npm run check:ci-config-server-key-constant',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_config_server_key_constant.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Config server key constant confined',
+    },
+  },
+  {
     // The other half of `agent/plans/PLAN-bws-rotation-on-failure.md`. That plan deleted `.ci/config/bws-token-expiry.json` and its one reader, on the ruling that a hand-written date is a second source of truth nothing can check, and that a non-zero `bws` is the only signal there is. What remains is a PROCEDURE, and this asserts the three claims that procedure rests on: one
     // notice file, one classifier (the trapguard ring keeps a copy it cannot import, and the copy is compared here), and five emitters that still reach it.
     // NO `paths:` DELIBERATELY. The claim spans five files in five different trees plus the absence of a sixth, so a path table would have to list them all and would silently drop the gate on the one PR that reintroduced the deleted file from somewhere unlisted. An entry without paths is always selected, which is the correct cost for a five-way agreement.

@@ -20,6 +20,7 @@ import sys
 import typing
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler
 from rediacc_ci.ops import cf_auth
 from rediacc_ci.well_known import RELEASES_BUCKET
 
@@ -83,8 +84,7 @@ class Wrangler:
     def __init__(self, env: dict[str, str]):
         self.env = env
         local = paths.repo_root() / "workers" / "www"
-        binary = local / "node_modules" / ".bin" / "wrangler"
-        self.argv = [str(binary)] if binary.exists() else ["npx", "wrangler"]
+        self.argv = wrangler.require(local, env)
         self.cwd = str(local)
 
     def __call__(self, *args: str) -> tuple[int, str]:

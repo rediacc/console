@@ -96,6 +96,7 @@ def docker_argv(root: str, image: str) -> list[str]:
         "CI=true",
         image,
         "npx",
+        "--no-install",
         "tsx",
         *GATE_ARGS,
     ]
@@ -146,7 +147,7 @@ def main(argv: list[str]) -> int:
         if no_docker != "1":
             print(NOTE_NO_DOCKER)
             sys.stdout.flush()
-        return _exec(["npx", "tsx", *GATE_ARGS])
+        return _exec(["npx", "--no-install", "tsx", *GATE_ARGS])
 
     image = image_for(playwright_version())
     print("page density: %s (tag derived from the installed playwright package)" % image)

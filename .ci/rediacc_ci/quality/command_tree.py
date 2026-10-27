@@ -93,7 +93,13 @@ COMMITTED_REL = "packages/cli/scripts/command-tree.json"
 
 # The two child commands, as the twin spells them. Lists rather than strings because there is no shell here and nothing needs word splitting.
 BUILD_CMD = ["npm", "run", "build:packages"]
-EXPORT_CMD = ["npx", "tsx", "packages/cli/scripts/export-command-tree.ts", "--output"]
+EXPORT_CMD = [
+    "npx",
+    "--no-install",
+    "tsx",
+    "packages/cli/scripts/export-command-tree.ts",
+    "--output",
+]
 
 # `head -40` in the twin: enough of a diff to see what moved, short enough that a regenerated tree does not bury the fix instructions under 4000 lines.
 DIFF_CAP = 40

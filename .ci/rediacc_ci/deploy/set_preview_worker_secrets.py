@@ -52,7 +52,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, wrangler
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_preview_worker_secrets"
@@ -182,7 +182,7 @@ def _jq(argv: list[str], document: str) -> tuple[int, str]:
 
 def wrangler_argv(worker: str) -> list[str]:
     """`npx wrangler secret bulk --name "$WORKER"` (:103)."""
-    return ["npx", "wrangler", "secret", "bulk", "--name", worker]
+    return [*wrangler.ARGV, "secret", "bulk", "--name", worker]
 
 
 def _wrangler(argv: list[str], payload: str) -> int:

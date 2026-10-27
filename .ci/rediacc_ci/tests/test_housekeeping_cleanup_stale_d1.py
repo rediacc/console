@@ -3,7 +3,7 @@
 WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/cleanup-stale-d1.sh` and the port over two fresh scratch directories and compared exit code, stdout, stderr and the `npx` call log. The K=5 ledger `.ci/shadow/w7p6-cleanup-stale-d1.observations.jsonl` recorded that comparison over five distinct trees, in a disposable scratch git repository outside this
 checkout. The twin has now been deleted and every case that executed it compares against `goldens/cleanup-stale-d1/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
-A RECORDING FAKE `npx` ON A PREPENDED PATH, AND `npx` IS THE RIGHT THING TO STUB. Both call sites go through it -- `npx wrangler d1 list --json` and `npx wrangler d1 delete <name> --skip-confirmation` -- and `require_cmd` guards `npx`, never `wrangler`. Stubbing `wrangler` alone would leave the subject resolving the REAL npx, which would try to fetch the wrangler package from the
+A RECORDING FAKE `npx` ON A PREPENDED PATH, AND `npx` IS THE RIGHT THING TO STUB. Both call sites go through it -- `npx --no-install wrangler d1 list --json` and `npx --no-install wrangler d1 delete <name> --skip-confirmation` -- and `require_cmd` guards `npx`, never `wrangler`. Stubbing `wrangler` alone would leave the subject resolving the REAL npx, which would try to fetch the wrangler package from the
 network on a cold cache, so the fake answers as npx and dispatches the `wrangler d1 ...` shapes itself. A `wrangler` stub is installed beside it and records to the same log, purely so that a future call site that drops the `npx` prefix cannot silently reach the real CLI; `test_the_port_cannot_reach_a_real_wrangler` asserts both resolutions.
 
 WHAT WOULD HAPPEN WITHOUT THE STUB IS NOT HYPOTHETICAL: this subject's entire purpose is `wrangler d1 delete --skip-confirmation`, against whatever Cloudflare account `CLOUDFLARE_ACCOUNT_ID` names, with no confirmation prompt to stop it. `CLOUDFLARE_API_TOKEN` is pinned to a fixture value in every case for the same reason, so even a leaked real wrangler would be
@@ -55,8 +55,12 @@ argv = sys.argv[1:]
 with open(os.environ["FAKE_LOG"], "a") as fh:
     fh.write(os.path.basename(sys.argv[0]) + "\\t" + "\\t".join(argv) + "\\n")
 
-# `npx wrangler d1 ...` and a bare `wrangler d1 ...` are the same two shapes.
-rest = argv[1:] if argv[:1] == ["wrangler"] else argv
+# `npx --no-install wrangler d1 ...` and a bare `wrangler d1 ...` are the same two shapes.
+rest = argv[:]
+if rest[:1] == ["--no-install"]:
+    rest = rest[1:]
+if rest[:1] == ["wrangler"]:
+    rest = rest[1:]
 
 if rest[:2] == ["d1", "list"]:
     rc = int(os.environ.get("FAKE_LIST_RC", "0"))
@@ -466,7 +470,7 @@ def test_an_unreachable_api_is_a_green_exit() -> None:
     """HAZARD 1, PINNED. `2>/dev/null || true` threw away both the status and the message, so an expired token is indistinguishable from an empty account and the reaper exits 0 having reaped nothing. This test exists so the day someone makes the failure loud, they have to come here."""
     exit_code, stdout, stderr, calls = recorded("an-unreachable-api")
     assert exit_code == 0
-    assert calls == ["npx\twrangler\td1\tlist\t--json"]
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"]
     assert stdout == ""
     assert "✓ No D1 databases found (or API unavailable)" in stderr
     # The real reason never reached anyone.
@@ -476,7 +480,7 @@ def test_an_unreachable_api_is_a_green_exit() -> None:
 def test_a_non_json_banner_with_no_array_is_the_same_green_exit() -> None:
     exit_code, _, stderr, calls = recorded("a-banner-with-no-array")
     assert exit_code == 0
-    assert calls == ["npx\twrangler\td1\tlist\t--json"]
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"]
     assert "✓ No D1 databases found (or API unavailable)" in stderr
 
 
@@ -484,7 +488,7 @@ def test_a_banner_before_the_array_is_stripped_and_the_array_is_read() -> None:
     """`sed -n '/^\\[/,$p'` existed for exactly this: wrangler prints chatter before its JSON."""
     exit_code, _, stderr, calls = recorded("a-banner-before-the-array")
     assert exit_code == 0
-    assert calls == ["npx\twrangler\td1\tlist\t--json"]
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"]
     assert "✓ Found 1 total D1 databases" in stderr
     assert "✓ No stale migration-test databases found" in stderr
 
@@ -492,7 +496,7 @@ def test_a_banner_before_the_array_is_stripped_and_the_array_is_read() -> None:
 def test_a_database_that_does_not_carry_the_prefix_is_never_touched() -> None:
     exit_code, _, stderr, calls = recorded("a-database-without-the-prefix")
     assert exit_code == 0
-    assert calls == ["npx\twrangler\td1\tlist\t--json"]
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"]
     assert "✓ Found 2 total D1 databases" in stderr
     assert "✓ No stale migration-test databases found" in stderr
 
@@ -500,7 +504,7 @@ def test_a_database_that_does_not_carry_the_prefix_is_never_touched() -> None:
 def test_a_prefixed_database_newer_than_the_cutoff_survives() -> None:
     exit_code, _, stderr, calls = recorded("a-prefixed-database-newer-than-the-cutoff")
     assert exit_code == 0
-    assert calls == ["npx\twrangler\td1\tlist\t--json"]
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"]
     assert "✓ No stale migration-test databases found" in stderr
 
 
@@ -508,9 +512,9 @@ def test_the_real_delete_path_is_one_call_per_stale_database_in_array_order() ->
     exit_code, stdout, stderr, calls = recorded("the-real-delete-path")
     assert exit_code == 0
     assert calls == [
-        "npx\twrangler\td1\tlist\t--json",
-        "npx\twrangler\td1\tdelete\tmigration-test-b\t--skip-confirmation",
-        "npx\twrangler\td1\tdelete\tmigration-test-a\t--skip-confirmation",
+        "npx\t--no-install\twrangler\td1\tlist\t--json",
+        "npx\t--no-install\twrangler\td1\tdelete\tmigration-test-b\t--skip-confirmation",
+        "npx\t--no-install\twrangler\td1\tdelete\tmigration-test-a\t--skip-confirmation",
     ], calls
     assert "→ Found 2 stale database(s)" in stderr
     assert "✓ Deleting: migration-test-b" in stderr
@@ -523,7 +527,9 @@ def test_the_real_delete_path_is_one_call_per_stale_database_in_array_order() ->
 def test_dry_run_lists_and_deletes_nothing() -> None:
     exit_code, stdout, stderr, calls = recorded("a-dry-run")
     assert exit_code == 0
-    assert calls == ["npx\twrangler\td1\tlist\t--json"], "a --dry-run deleted something"
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"], (
+        "a --dry-run deleted something"
+    )
     assert stdout == ""
     assert "⚠ DRY-RUN mode: no deletions will be performed" in stderr
     assert "⚠ [DRY-RUN] Would delete: migration-test-a" in stderr
@@ -535,7 +541,7 @@ def test_dry_run_lists_and_deletes_nothing() -> None:
 def test_dry_run_still_prints_nothing_extra_when_there_is_nothing_stale() -> None:
     exit_code, _, stderr, calls = recorded("a-dry-run-with-nothing-stale")
     assert exit_code == 0
-    assert calls == ["npx\twrangler\td1\tlist\t--json"]
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"]
     assert "DRY-RUN" not in stderr
 
 
@@ -561,7 +567,9 @@ def test_an_unparseable_max_age_dies_with_dates_own_status_and_message() -> None
     """HAZARD 3: `--max-age` was interpolated into `date` unvalidated, and under `set -e` the command substitution took the run down. The port EXECUTES the same `date` for exactly this reason, so the message is the same binary's."""
     exit_code, _, stderr, calls = recorded("an-unparseable-max-age")
     assert exit_code == 1
-    assert calls == ["npx\twrangler\td1\tlist\t--json"], "the cutoff failed after the listing"
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"], (
+        "the cutoff failed after the listing"
+    )
     assert "invalid date" in stderr
     assert "Cutoff:" not in stderr
 
@@ -591,7 +599,7 @@ def test_the_cutoff_line_is_the_only_clock_dependent_output() -> None:
 def test_an_empty_array_is_zero_total_and_no_stale() -> None:
     exit_code, _, stderr, calls = recorded("an-empty-array")
     assert exit_code == 0
-    assert calls == ["npx\twrangler\td1\tlist\t--json"]
+    assert calls == ["npx\t--no-install\twrangler\td1\tlist\t--json"]
     assert "✓ Found 0 total D1 databases" in stderr
     assert "✓ No stale migration-test databases found" in stderr
 

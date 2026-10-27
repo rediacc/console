@@ -240,15 +240,16 @@ def test_before_records_every_handle_and_the_rollback_commands(world):
     )
     assert (
         rb["3_account"]
-        == "npx wrangler rollback %s --config workers/account/wrangler.edge-eu.toml" % ACCOUNT_OLD
+        == "cd workers/account && npx --no-install wrangler rollback %s --config wrangler.edge-eu.toml"
+        % ACCOUNT_OLD
     )
     assert rb["4_d1"] == (
-        "npx wrangler d1 time-travel restore edge-account-db-eu --bookmark=%s --config workers/account/wrangler.edge-eu.toml"
+        "cd workers/account && npx --no-install wrangler d1 time-travel restore edge-account-db-eu --bookmark=%s --config wrangler.edge-eu.toml"
         % BOOKMARK
     )
     assert (world.tmp / "github_output").read_text() == "proxy_exists=true\n"
-    tt = [c for c in calls(world.log) if c["argv"][1:4] == ["d1", "time-travel", "info"]]
-    assert tt[0]["argv"][4:] == [
+    tt = [c for c in calls(world.log) if c["argv"][2:5] == ["d1", "time-travel", "info"]]
+    assert tt[0]["argv"][5:] == [
         "edge-account-db-eu",
         "--json",
         "--config",
@@ -270,7 +271,7 @@ def test_before_with_no_proxy_worker_says_bootstrap_and_has_no_proxy_rollback(wo
 def test_before_without_a_pointer_offers_only_the_worker_script_rollback(world):
     assert run_before(world) == 0
     rb = json.loads(world.before().read_text())["rollback"]["2_proxy"]
-    assert rb.startswith("npx wrangler rollback %s" % PROXY_OLD)
+    assert rb.startswith("cd workers/proxy && npx --no-install wrangler rollback %s" % PROXY_OLD)
     assert "Worker script only" in rb
 
 
@@ -374,9 +375,9 @@ def test_account_only_before_needs_no_staged_executor_and_no_proxy(world, capsys
     }
     assert rec["d1"] == {"database": "edge-account-db-eu", "bookmark": BOOKMARK}
     assert rec["rollback"] == {
-        "3_account": "npx wrangler rollback %s --config workers/account/wrangler.edge-eu.toml"
+        "3_account": "cd workers/account && npx --no-install wrangler rollback %s --config wrangler.edge-eu.toml"
         % ACCOUNT_OLD,
-        "4_d1": "npx wrangler d1 time-travel restore edge-account-db-eu --bookmark=%s --config workers/account/wrangler.edge-eu.toml"
+        "4_d1": "cd workers/account && npx --no-install wrangler d1 time-travel restore edge-account-db-eu --bookmark=%s --config wrangler.edge-eu.toml"
         % BOOKMARK,
     }
     assert "proxy" not in rec
@@ -385,7 +386,10 @@ def test_account_only_before_needs_no_staged_executor_and_no_proxy(world, capsys
     assert not [c for c in seen if c["argv"][0] == "aws"], "R2 is not read"
     assert not [c for c in seen if c["cwd"] == "proxy"], "the proxy Worker is not looked up"
     out = capsys.readouterr().out
-    assert "restore D1: npx wrangler d1 time-travel restore edge-account-db-eu" in out
+    assert (
+        "restore D1: cd workers/account && npx --no-install wrangler d1 time-travel restore edge-account-db-eu"
+        in out
+    )
 
 
 def test_account_only_before_still_refuses_a_missing_bookmark(world):
@@ -408,7 +412,7 @@ def test_an_account_only_record_rolls_back_by_printing_and_refuses_bootstrap_and
     before_calls = len(calls(world.log))
     assert dr.main(["rollback", "--before", str(world.before())]) == 0
     out = capsys.readouterr().out
-    assert "npx wrangler rollback %s" % ACCOUNT_OLD in out
+    assert "npx --no-install wrangler rollback %s" % ACCOUNT_OLD in out
     assert "--bookmark=%s" % BOOKMARK in out
     assert len(calls(world.log)) == before_calls, "an account-only rollback runs nothing"
     assert (
@@ -506,8 +510,8 @@ def actions(world: World) -> list[str]:
     for c in calls(world.log):
         if c["argv"][0] == "deploy_proxy":
             out.append("deploy_proxy " + " ".join(c["argv"][1:]))
-        elif c["argv"][1:3] == ["secret", "delete"]:
-            out.append("secret delete " + c["argv"][3])
+        elif c["argv"][2:4] == ["secret", "delete"]:
+            out.append("secret delete " + c["argv"][4])
     return out
 
 
@@ -525,7 +529,10 @@ def test_rollback_closes_the_executor_first_then_redeploys_the_previous_release(
     ]
     out = capsys.readouterr().out
     account_at, d1_at = (
-        out.index("account Worker: npx wrangler rollback %s" % ACCOUNT_OLD),
+        out.index(
+            "account Worker: cd workers/account && npx --no-install wrangler rollback %s"
+            % ACCOUNT_OLD
+        ),
         out.index("D1 restore:"),
     )
     assert account_at < d1_at
@@ -554,7 +561,7 @@ def test_rollback_without_a_release_on_record_prints_the_worker_rollback_and_run
     world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
     assert rollback(world) == 0
     assert actions(world) == ["secret delete EXECUTOR_MODE"]
-    assert "npx wrangler rollback %s" % PROXY_OLD in capsys.readouterr().err
+    assert "npx --no-install wrangler rollback %s" % PROXY_OLD in capsys.readouterr().err
 
 
 def test_rollback_reports_a_failed_redeploy_and_an_unconfirmed_close(world, monkeypatch):
@@ -828,7 +835,7 @@ def test_the_www_record_carries_the_version_ids_the_rollback_command_and_the_smo
     assert rec["version_after"] == "wv-2"
     assert rec["worker"] == "edge-rediacc-www"
     assert rec["rollback_command"] == (
-        "npx wrangler rollback wv-1 --config workers/www/wrangler.edge.toml"
+        "cd workers/www && npx --no-install wrangler rollback wv-1 --config wrangler.edge.toml"
     )
     assert rec["smoke_rc"] is None
     assert www_after(out) == 0

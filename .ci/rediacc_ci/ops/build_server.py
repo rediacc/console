@@ -190,7 +190,7 @@ def main(argv: list[str]) -> int:
         "private/account/web/dist",
         "account-web-assets",
         "private/account/web",
-        ["npx", "vite", "build", "--outDir", "dist"],
+        ["npx", "--no-install", "vite", "build", "--outDir", "dist"],
     )
     if rc != 0:
         return rc

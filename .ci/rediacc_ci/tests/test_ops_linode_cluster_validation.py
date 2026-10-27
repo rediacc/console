@@ -264,6 +264,6 @@ def test_plan_generates_with_a_json_spec_and_runs_terraform(world: h.World) -> N
     assert p[0] == 0, p[2]
     calls = world.calls()
     npx = next(c for c in calls if c["tool"] == "npx")
-    assert npx["argv"][0] == "tsx"
-    assert npx["argv"][1].endswith("gen.mts")
+    assert npx["argv"][:2] == ["--no-install", "tsx"]
+    assert npx["argv"][2].endswith("gen.mts")
     assert [c["argv"][:1] for c in calls if c["tool"] == "terraform"] == [["init"], ["plan"]]

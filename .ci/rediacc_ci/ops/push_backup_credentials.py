@@ -34,6 +34,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from rediacc_ci import paths
+from rediacc_ci.core import wrangler
 from rediacc_ci.deploy import set_account_worker_secrets
 from rediacc_ci.ops import portal_health
 
@@ -183,7 +184,7 @@ def payload(p: Plan, environ: dict[str, str] | None = None) -> dict[str, str]:
 
 
 def list_argv(worker: str) -> list[str]:
-    return ["npx", "wrangler", "secret", "list", "--name", worker, "--format", "json"]
+    return [*wrangler.ARGV, "secret", "list", "--name", worker, "--format", "json"]
 
 
 def bulk_argv(worker: str) -> list[str]:

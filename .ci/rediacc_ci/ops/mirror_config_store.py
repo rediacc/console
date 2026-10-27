@@ -18,7 +18,7 @@ IDENTITY. Case A: no edge user has the operator's `email_hash`, so the user row 
 
 REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). An edge D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. An edge row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on edge is printed as a note. `customer_id` is never compared: it is a per-environment Stripe id (edge bills through a separate Stripe account and bench runs with Stripe disabled), so a reused org carrying its own is printed as a note and an inserted org keeps the stable id as an inert label. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
 
-PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row (not yet rewrapped by `rediacc_ci.ops.rewrap_config_server_key`) or a `csk1` row whose kid is not the EDGE key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE`, or `ACCOUNT_CONFIG_SERVER_KEY_BENCH` for bench, by the rewrap helper; each channel holds its own key, so a row rewrapped under the stable key refuses here); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
+PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row or a `csk1` row whose kid is not the EDGE key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE`, or `ACCOUNT_CONFIG_SERVER_KEY_BENCH` for bench, by `config_server_key_id`; each channel holds its own key, so a row rewrapped under the stable key refuses here); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
 
 THE APPLY, in order: the pre-checks; the edge D1 bookmark (`wrangler d1 time-travel info`, parsed by `deploy_record.parse_bookmark`; no bookmark, no write); the rollback files written to `--out-dir` and their paths printed with the time-travel restore command; the R2 copy, each object fetched to a temp dir, put, read back and compared by sha256; one `wrangler d1 execute --file` of plain INSERTs (never OR REPLACE) ending with an `event_log` row `config.store.mirrored`; then a re-read of every inserted row compared column by column with the plan, and `PRAGMA foreign_key_check` on every touched table compared with the check taken before the write.
 
@@ -37,6 +37,7 @@ import argparse
 import dataclasses
 import datetime
 import hashlib
+import hmac
 import json
 import os
 import pathlib
@@ -50,11 +51,11 @@ import uuid
 from typing import TYPE_CHECKING, Protocol
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.deploy import console_executor as target_mod
 from rediacc_ci.deploy import deploy_record
 from rediacc_ci.ops import cf_auth
 from rediacc_ci.ops import prune_worker_secrets as prune
-from rediacc_ci.ops import rewrap_config_server_key as rewrap
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -345,7 +346,15 @@ class Wrangler:
         if SQL_ECHO.search(msg):
             return "(wrangler echoed SQL; the message is withheld because it may carry row data)"
         for value in sorted((v for v in self.mask if v), key=len, reverse=True):
-            msg = msg.replace(value, "<redacted>")
+            if len(value) >= MASK_MIN:
+                msg = msg.replace(value, "<redacted>")
+            else:
+                # A short value is replaced only as a whole token: a substring replace of "1" would redact every 1 in the line.
+                msg = re.sub(
+                    r"(?<![A-Za-z0-9+/=_.-])%s(?![A-Za-z0-9+/=_.-])" % re.escape(value),
+                    "<redacted>",
+                    msg,
+                )
         for value in self.redact:
             if value:
                 msg = msg.replace(value, prefix(value))
@@ -353,7 +362,7 @@ class Wrangler:
 
     def run(self, argv: list[str], what: str) -> str:
         proc = subprocess.run(
-            ["npx", "wrangler", *argv],
+            [*wrangler_cmd.require(self.worker_dir, self.env), *argv],
             cwd=self.worker_dir,
             env=self.env,
             stdin=subprocess.DEVNULL,
@@ -371,7 +380,7 @@ class Wrangler:
     def probe(self, argv: list[str]) -> tuple[int, str]:
         """(exit code, raw stdout+stderr) of one wrangler call that may fail by design; the text is classified by the caller and never printed."""
         proc = subprocess.run(
-            ["npx", "wrangler", *argv],
+            [*wrangler_cmd.require(self.worker_dir, self.env), *argv],
             cwd=self.worker_dir,
             env=self.env,
             stdin=subprocess.DEVNULL,
@@ -450,7 +459,9 @@ class D1:
         )
 
     def bookmark(self) -> str:
-        argv = deploy_record.time_travel_argv(self.end.database, self.end.config)[2:]
+        argv = deploy_record.time_travel_argv(self.end.database, self.end.config)[
+            len(wrangler_cmd.ARGV) :
+        ]
         try:
             out = self.wrangler.run(argv, "d1 time-travel info on %s" % self.end.database)
         except RefusedError as exc:
@@ -909,16 +920,38 @@ def secret_names(token: str, account: str, workers: list[str]) -> dict[str, set[
     return out
 
 
-def key_kid(root: pathlib.Path, end: End) -> tuple[str, str | None]:
-    """(environment name, csk1 kid) of one Worker's own key, the kid computed by the Worker's code (the rewrap helper's `kid` mode); the kid is None when the key is not in the environment. The name comes from `rewrap.key_env_name`, so a refusal names the variable that was actually read."""
+KEY_NAME_PREFIX = "ACCOUNT_CONFIG_SERVER_KEY_"
+
+
+def key_env_name(root: pathlib.Path, target: str, region: str) -> str:
+    """The bws name of one Worker's own key: `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_<STABLE|EDGE>` (`SUFFIX` is the region's `secretSuffix` in regions.json) or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`."""
+    if target == target_mod.BENCH_TARGET:
+        return KEY_NAME_PREFIX + "BENCH"
     try:
-        name = rewrap.key_env_name(root, end.channel, end.region)
-        value = os.environ.get(name)
-        if not value:
-            return name, None
-        return name, str(rewrap.run_helper(root, value, "kid", None, [])["kid"])
-    except rewrap.RefusedError as exc:
+        doc = json.loads((root / "regions.json").read_text(encoding="utf-8"))
+        suffix = next(str(r["secretSuffix"]) for r in doc["regions"] if str(r.get("id")) == region)
+    except (OSError, ValueError, KeyError, TypeError, StopIteration):
+        raise RefusedError("regions.json names no secretSuffix for region %s" % region) from None
+    if not re.match(r"^[A-Z]+\Z", suffix):
+        raise RefusedError("regions.json secretSuffix of %s is not upper-case letters" % region)
+    return "%s%s_%s" % (KEY_NAME_PREFIX, suffix, target.upper())
+
+
+def config_server_key_id(key: str) -> str:
+    """The csk1 kid of a key: the first 8 hex characters of HMAC-SHA256(key, "kid"), as `configServerKeyId` in private/account/src/services/config-server-key.ts computes it (both sides pin the same vector in their tests). A divergence only makes the kid comparison refuse, never a wrong write."""
+    return hmac.new(key.encode("utf-8"), b"kid", hashlib.sha256).hexdigest()[:8]
+
+
+def key_kid(root: pathlib.Path, end: End) -> tuple[str, str | None]:
+    """(environment name, csk1 kid) of one Worker's own key; the kid is None when the key is not in the environment. The name comes from `key_env_name`, so a refusal names the variable that was actually read."""
+    try:
+        name = key_env_name(root, end.channel, end.region)
+    except RefusedError as exc:
         raise RefusedError("the %s key's kid could not be computed: %s" % (end.name, exc)) from None
+    value = os.environ.get(name)
+    if not value:
+        return name, None
+    return name, config_server_key_id(value)
 
 
 def check_server_key(
@@ -930,7 +963,7 @@ def check_server_key(
 ) -> str:
     """Whether the store's `server_recoverable_org_passphrase` will open on the target (edge or bench); refuses when it would not. Messages name the target by its channel.
 
-    An untagged row was sealed under the legacy key: `CONFIG_SERVER_KEY`, which the code before PLAN-config-server-key K1 reads, or the public constant it falls back to, which is also the only key K1's legacy path (legacy-server-key.ts) opens. So `CONFIG_SERVER_KEY` presence must match on both Workers, and an untagged row then opens on the target whatever `ACCOUNT_CONFIG_SERVER_KEY` it holds; K1 code rewrites it under the target's own key on first read. A `csk1.<kid>.` row opens only under the key that sealed it, so the target must hold `ACCOUNT_CONFIG_SERVER_KEY` and its kid must match (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE` or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, since Worker secrets are write-only). Each channel has its own key (K2), so a row sealed under the stable key refuses: there is no reseal step yet (worklist #fc0490ad).
+    `CONFIG_SERVER_KEY` (the pre-K1 name) must still match on both Workers, so a Worker that kept the old name is caught. An untagged row refuses: PLAN-config-server-key K6 removed the legacy path, so no account server opens one any more. A `csk1.<kid>.` row opens only under the key that sealed it, so the target must hold `ACCOUNT_CONFIG_SERVER_KEY` and its kid must match (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE` or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, since Worker secrets are write-only). Each channel has its own key (K2), so a row sealed under the stable key refuses: there is no reseal step yet (worklist #fc0490ad).
     """
     a, b = names.get(src.worker), names.get(dst.worker)
     if a is None or b is None:
@@ -951,24 +984,9 @@ def check_server_key(
         return "the store has no server-recoverable passphrase"
     match = CSK_VALUE.match(value) if isinstance(value, str) else None
     if not match:
-        if SERVER_KEY_NAME in a:
-            # Worker secrets are write-only and no bws entry holds CONFIG_SERVER_KEY, so presence is all that can be compared from here.
-            return (
-                "%s: set on both Workers and the row is untagged; the values cannot be read back (write-only), so the first %s pull is the proof"
-                % (SERVER_KEY_NAME, dst.channel)
-            )
-        if WORKER_KEY_NAME in b:
-            return (
-                "the row is untagged (legacy key); %s opens it through its legacy path and rewrites it under its own %s on first read"
-                % (
-                    dst.worker,
-                    WORKER_KEY_NAME,
-                )
-            )
-        return "%s and %s: absent on %s; the untagged row opens under the built-in fallback key" % (
-            SERVER_KEY_NAME,
-            WORKER_KEY_NAME,
-            dst.worker,
+        raise RefusedError(
+            "the store's server_recoverable_org_passphrase is untagged (sealed before csk1): no account server opens it since PLAN-config-server-key K6 removed the legacy path, so copying it would hand %s a store it refuses"
+            % dst.worker
         )
     if WORKER_KEY_NAME not in b:
         raise RefusedError(
@@ -1028,15 +1046,15 @@ SECRET_COLUMNS = {
 }
 
 
-# Shorter values (a flag such as "0" or "1") are not secrets, and masking them would redact every matching character of every output line.
+# Values at least this long are masked wherever they occur; a shorter one is masked only as a whole token, so a short secret is still hidden without redacting every matching character of the output.
 MASK_MIN = 4
 
 
 def secret_values(source: dict) -> list[str]:
-    """Every non-empty secret value of the copied rows, for `Wrangler.mask`: the store's key material, the operator's credentials and every slot's wrapped CEK. Values under MASK_MIN characters are skipped: none is a secret, and masking one garbles every line."""
+    """Every non-empty secret value of the copied rows, for `Wrangler.mask`: the store's key material, the operator's credentials and every slot's wrapped CEK. Every non-empty value is returned; `Wrangler._shown` masks one shorter than MASK_MIN only as a whole token."""
     out = [str(source[k].get(c) or "") for k, cols in SECRET_COLUMNS.items() for c in cols]
     out += [str(s.get("wrapped_cek") or "") for s in source["slots"]]
-    return [v for v in out if len(v) >= MASK_MIN]
+    return [v for v in out if v]
 
 
 def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_id: str) -> Plan:

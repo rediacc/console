@@ -131,7 +131,7 @@ def test_list_prints_prefixes_only(fake, capsys) -> None:
     assert ORG_B not in text
     assert "2 of 5 orgs entitled" in text
     (call,) = _calls(fake)
-    assert call[:5] == ["npx", "wrangler", "d1", "execute", "edge-account-db-eu"]
+    assert call[:6] == ["npx", "--no-install", "wrangler", "d1", "execute", "edge-account-db-eu"]
     assert "--remote" in call
     assert "--json" in call
     assert "server_recoverable_org_passphrase IS NOT NULL" in " ".join(call)
@@ -258,7 +258,7 @@ def test_bad_target_is_refused_before_any_call(fake) -> None:
 
 def test_bench_reads_the_bench_database(fake) -> None:
     assert _run("list", "--target", "bench") == 0
-    assert _calls(fake)[0][4] == "account-db-bench"
+    assert _calls(fake)[0][5] == "account-db-bench"
 
 
 def test_reexec_runs_this_module_under_the_profile() -> None:

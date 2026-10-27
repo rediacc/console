@@ -156,6 +156,7 @@ def test_main_runs_the_gateway_under_the_backup_plane_profile_in_the_account_dir
         "backup-plane",
         "--",
         "npx",
+        "--no-install",
         "tsx",
         "src/entry/dev-gateway.ts",
     ]

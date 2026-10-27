@@ -22,6 +22,8 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
 
   9. THE STORED PASSWORD IS SET ON AN EXISTING ROOT USER THROUGH THE RESET FLOW (`set_root_password`, `--set-root-password`). The account server has no root route that sets a password, but it has `POST /account/api/v1/auth/forgot` (mails a reset link, kind `password-reset`) and `POST /account/api/v1/auth/reset {token, password}` (sets it, clears the lockout, revokes every session). Bench copies each outgoing email into the D1 table `captured_emails` (EMAIL_CAPTURE_D1, bench only), so the run asks for the link, reads the newest `password-reset` row for ROOT_EMAIL through `wrangler d1 execute` and posts the token with the stored password. The token is extracted in process and never printed, logged or put on argv. Wrangler authenticates with the Global API Key pair, as the documented captured-email read does.
 
+  10. BENCH SIGNS LICENCES WITH THE PRODUCTION ED25519 PAIR (operator ruling 2026-10-27, "Bench signs with production key"). The deploy-bench profile binds `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` from the unsuffixed store entries the edge and stable account-secrets profiles bind (fingerprint fb37f1ae16f8b7c0 through `renet_key_gate.key_fingerprint`), where the bash pushed the DEV pair, so a released renet, which bakes the production public key, verifies a bench licence. The X25519 pair stays DEV: it is the E2E envelope key, not the licence signer, and every bench config already carries the DEV X25519 public key as its account `e2ePublicKey`, so moving it would fail every bench response with "Decryption failed". The values are still read by name from the environment; only the profile binding changed, and `tests/test_ops_deploy_bench.py` pins it.
+
 THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, and are never logged; the `OBS_OTLP_CREDENTIALS` validity probe reports only that the value is not a JSON {user, pass} object, never the value.
 """
 
@@ -39,6 +41,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.well_known import BENCH_ORIGIN
 
@@ -230,10 +233,14 @@ BOOKMARK_PATTERN = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{1
 
 
 def restore_command(bookmark: str) -> str:
-    return "npx wrangler d1 time-travel restore %s --bookmark=%s --config %s" % (
-        DB_NAME,
-        bookmark,
-        CONFIG,
+    return (
+        "cd %s && npx --no-install wrangler d1 time-travel restore %s --bookmark=%s --config %s"
+        % (
+            "workers/account",
+            DB_NAME,
+            bookmark,
+            CONFIG,
+        )
     )
 
 
@@ -241,7 +248,7 @@ def capture_bookmark(worker_dir) -> str | None:
     """Print the D1 bookmark taken BEFORE the migrations, with the exact restore command: a Worker rollback does not undo a migration, so the bookmark is the rollback handle. A failed capture is reported loudly and returns None; the deploy goes on (the migrations are not blocked on a read-only query, and the bash had no bookmark at all)."""
     try:
         proc = subprocess.run(
-            ["npx", "wrangler", "d1", "time-travel", "info", DB_NAME, "--config", CONFIG],
+            [*wrangler.ARGV, "d1", "time-travel", "info", DB_NAME, "--config", CONFIG],
             cwd=str(worker_dir),
             capture_output=True,
             text=True,
@@ -491,7 +498,7 @@ def _d1_rows(sql: str) -> list[dict]:
         env.pop(name, None)
     env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
     env["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
-    argv = ["npx", "wrangler", "d1", "execute", DB_NAME, "--remote", "--config", CONFIG]
+    argv = [*wrangler.ARGV, "d1", "execute", DB_NAME, "--remote", "--config", CONFIG]
     argv.extend(["--json", "--command", sql])
     proc = subprocess.run(
         argv,
@@ -614,7 +621,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     build_env["VITE_TURNSTILE_SITE_KEY"] = TURNSTILE_SITEKEY
     build_env["VITE_CI_MODE"] = "false"
     _run(
-        ["npx", "vite", "build", "--outDir", str(worker_dir / "dist" / "account")],
+        ["npx", "--no-install", "vite", "build", "--outDir", str(worker_dir / "dist" / "account")],
         web_dir,
         "vite build",
         env=build_env,
@@ -626,19 +633,19 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     capture_bookmark(worker_dir)
     log.step("Applying D1 migrations to %s (remote)" % DB_NAME)
     _run(
-        ["npx", "wrangler", "d1", "migrations", "apply", DB_NAME, "--remote", "--config", CONFIG],
+        [*wrangler.ARGV, "d1", "migrations", "apply", DB_NAME, "--remote", "--config", CONFIG],
         worker_dir,
         "wrangler d1 migrations apply",
     )
     log.info("Migrations applied")
 
     log.step("Deploying %s → https://%s" % (WORKER_NAME, DOMAIN))
-    _run(["npx", "wrangler", "deploy", "--config", CONFIG], worker_dir, "wrangler deploy")
+    _run([*wrangler.ARGV, "deploy", "--config", CONFIG], worker_dir, "wrangler deploy")
     log.info("Worker deployed")
 
     _rotation_check(root)
     _run(
-        ["npx", "wrangler", "secret", "bulk", "--name", WORKER_NAME],
+        [*wrangler.ARGV, "secret", "bulk", "--name", WORKER_NAME],
         worker_dir,
         "wrangler secret bulk",
         stdin=body,

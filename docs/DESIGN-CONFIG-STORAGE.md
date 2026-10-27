@@ -19,7 +19,7 @@ This section describes the system as built. Where an older section below says mo
 
 **The claim.** Stored configs are confidential against a compromise of the server's storage and against a passive operator. Every blob is bound to its store, config, team and version, so the server cannot swap one config's blob for another's or edit a blob undetected. The design does NOT protect against an operator who serves malicious portal code, or who withholds the newest version from a device that has never seen it.
 
-Confidentiality rests on one key, the CEK. The server holds the other two layers' keys: the org passphrase (layer 3, stored server-recoverable) and `sdkMaster` (layer 1). Layer 2 is the CEK, wrapped per slot under `HKDF(slotSecret ‖ serverSecret)`; the slot secret stays on the device (the OS keyring for the CLI, RAM in the portal).
+Confidentiality rests on one key, the CEK. The server holds the other two layers' keys: the org passphrase (layer 3, stored server-recoverable under the per-Worker `ACCOUNT_CONFIG_SERVER_KEY`, see [The layer-3 server key](#the-layer-3-server-key)) and `sdkMaster` (layer 1). Layer 2 is the CEK, wrapped per slot under `HKDF(slotSecret ‖ serverSecret)`; the slot secret stays on the device (the OS keyring for the CLI, RAM in the portal).
 
 ### What the server can and cannot learn or do
 
@@ -235,6 +235,16 @@ At rest in DB:  orgEnc(clientEnc_CEK(serverKeyEnc_SDK(ssh_keys)))
                 orgEnc(clientEnc_CEK(serverKeyEnc_SDK(repositories)))
 ```
 
+### The layer-3 server key
+
+The org passphrase that layer 3 encrypts under is itself stored server-recoverable, in `config_stores.server_recoverable_org_passphrase`, sealed under a server key that never enters the database.
+
+- **The key.** Each account Worker holds its own Worker secret, `ACCOUNT_CONFIG_SERVER_KEY`. Every channel and region (stable and edge in eu, us and asia, plus bench) has a separate key, and none is shared.
+- **The seal.** AES-256-GCM under `HKDF-SHA256(key, salt "rediacc-config-server-v1", info "server-encryption")`, imported non-extractable, with AAD `csk1|<storeId>`. The stored form is `csk1.<kid>.<base64(iv || ct)>`, where `kid` is the first 8 hex characters of `HMAC-SHA256(key, "kid")`. The AAD binds a row to its store, so a row copied onto another store does not open; the kid names the sealing key without revealing it.
+- **No fallback.** A Worker without `ACCOUNT_CONFIG_SERVER_KEY` refuses every layer-3 operation with `ConfigServerKeyMissingError` (HTTP 503). A row in any other form, including the untagged base64 rows written before `csk1`, is refused with `ConfigServerKeyMismatchError` and never opened, and so is a `csk1` row whose kid or tag does not verify. The only built-in key is a constant that `resolveConfigServerKey` returns under `TEST_MODE`, which the Cloudflare entry pins off; `check:ci-config-server-key-constant` confines that constant to `private/account/src/services/config-server-key.ts` behind the `TEST_MODE` guard.
+
+Every account database was rewrapped from the untagged form to `csk1` before the untagged opener was deleted (`agent/plans/PLAN-config-server-key.md`, K4 and K6).
+
 The SDK layer uses **time-windowed derived keys**. The master SDK never leaves the server — the client only receives a derived key valid for a specific time window (default: 5 minutes). Each config entry stores the `sdkEpoch` it was encrypted with, so the server can re-derive the correct key on pull.
 
 ```
@@ -253,7 +263,7 @@ Example (window = 300s / 5 min):
 
 **Security properties of each layer:**
 - Compromised server code → sees `clientEnc_CEK(serverKeyEnc_SDK(values))` → has `sdkMaster` but CEK blocks access to the SDK layer
-- Compromised DB → sees `orgEnc(clientEnc_CEK(serverKeyEnc_SDK(values)))` → three keys needed, has none
+- Compromised DB → sees `orgEnc(clientEnc_CEK(serverKeyEnc_SDK(values)))` with `sdkMaster` in the clear → the org passphrase needs the Worker's `ACCOUNT_CONFIG_SERVER_KEY`, which is not in the database, and the CEK layer needs a slot secret
 - Compromised CEK alone → can remove CEK layer → `serverKeyEnc_SDK(values)` → needs `sdk_derived` from server → server rejects revoked members
 - Captured `sdk_derived` → only decrypts configs from that specific time window — future windows use different derived keys
 - Compromised passkey alone → no `server_secret` → can't derive CEK
@@ -986,7 +996,7 @@ This prevents a rogue server from substituting the handoff public key.
 
 | Attack | Result |
 |--------|--------|
-| DB dump stolen | D1 holds `sdkMaster` and `serverSecret` in the clear and the org passphrase under a server key; the CEK layer still needs a slot secret. A master password slot can be guessed offline from that data |
+| DB dump stolen | D1 holds `sdkMaster` and `serverSecret` in the clear. The org passphrase is sealed `csk1.<kid>.` under the Worker's own `ACCOUNT_CONFIG_SERVER_KEY`, a Worker secret that is not in D1, so a dump alone does not expose it ([The layer-3 server key](#the-layer-3-server-key)); the CEK layer still needs a slot secret. A master password slot can be guessed offline from that data |
 | Server memory inspected during request | Sees `clientEnc_CEK(serverKeyEnc_SDK(values))` — has SDK but CEK blocks access |
 | Removed member with CEK | Server access ends at removal (slots and config tokens deleted). A kept CEK plus a blob obtained elsewhere still needs that blob's `sdk_derived`; a CEK rotation closes the risk for later blobs |
 | Removed member with CEK + captured `sdk_derived` | Only decrypts configs from that specific time window — future configs use different derived keys they never received |

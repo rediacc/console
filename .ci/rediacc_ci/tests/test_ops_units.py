@@ -76,6 +76,7 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
         "ACCOUNT_X25519_PUBLIC_KEY",
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
+        "ACCOUNT_CONFIG_SERVER_KEY",
     ):
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.setenv("ROOT_EMAIL", "root@example.invalid")
@@ -88,7 +89,7 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     payload = deploy_bench.secrets_payload()
-    assert len(payload) == 29
+    assert len(payload) == 30
     assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.invalid"
     assert payload["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"] == "bench-id"
     assert payload["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] == "bench-secret"
@@ -111,6 +112,7 @@ def test_deploy_bench_refuses_the_account_wide_r2_token_as_a_backup_credential(
         "ACCOUNT_X25519_PUBLIC_KEY",
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
+        "ACCOUNT_CONFIG_SERVER_KEY",
     ):
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.setenv("ROOT_EMAIL", "root@example.invalid")
@@ -319,11 +321,21 @@ def test_the_d1_bookmark_and_restore_command_print_before_the_migrations(
 ) -> None:
     calls = _fake_time_travel(monkeypatch, 0, "The current bookmark is '%s'\n" % BOOKMARK)
     assert deploy_bench.capture_bookmark(Path(".")) == BOOKMARK
-    assert calls[0][:6] == ["npx", "wrangler", "d1", "time-travel", "info", "account-db-bench"]
+    assert calls[0][:7] == [
+        "npx",
+        "--no-install",
+        "wrangler",
+        "d1",
+        "time-travel",
+        "info",
+        "account-db-bench",
+    ]
     out = capsys.readouterr()
     assert BOOKMARK in out.out + out.err
     assert (
-        "npx wrangler d1 time-travel restore account-db-bench --bookmark=%s" % BOOKMARK in out.out
+        "cd workers/account && npx --no-install wrangler d1 time-travel restore account-db-bench --bookmark=%s"
+        % BOOKMARK
+        in out.out
     )
 
 

@@ -26,6 +26,7 @@ import tomllib
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler
 
 if TYPE_CHECKING:
     import pathlib
@@ -148,17 +149,16 @@ def worker_name(config_path: pathlib.Path) -> str:
 
 
 def put_argv(worker: str, config: str) -> list[str]:
-    return ["npx", "wrangler", "secret", "put", MODE_KEY, "--name", worker, "--config", config]
+    return [*wrangler.ARGV, "secret", "put", MODE_KEY, "--name", worker, "--config", config]
 
 
 def delete_argv(worker: str, config: str) -> list[str]:
-    return ["npx", "wrangler", "secret", "delete", MODE_KEY, "--name", worker, "--config", config]
+    return [*wrangler.ARGV, "secret", "delete", MODE_KEY, "--name", worker, "--config", config]
 
 
 def list_argv(worker: str, config: str) -> list[str]:
     return [
-        "npx",
-        "wrangler",
+        *wrangler.ARGV,
         "secret",
         "list",
         "--name",

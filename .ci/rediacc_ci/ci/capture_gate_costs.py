@@ -43,7 +43,7 @@ from rediacc_ci.ci import gate_costs
 
 Env = dict[str, str]
 
-RUNNER = ("npx", "tsx", "scripts/ci-runner/run.ts")
+RUNNER = ("npx", "--no-install", "tsx", "scripts/ci-runner/run.ts")
 RUNNER_TAIL = ("--jobs", "1", "--sched", "slots", "--json")
 KILL_AFTER_S = 30.0
 DEFAULT_QUICK_BOUND = "12m"

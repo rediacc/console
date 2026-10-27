@@ -84,11 +84,14 @@ sys.stdout.write(json.dumps({{"success": False, "errors": [{{"message": "no fake
 FAKE_NPX = """#!{py}
 import json, os, sys
 argv = sys.argv[1:]
+raw = argv
+assert raw[:1] == ["--no-install"], raw
+argv = raw[1:]
 stdin = None
 if argv[:3] == ["wrangler", "secret", "bulk"]:
     stdin = sys.stdin.read()
 with open(os.environ["FAKE_LOG"], "a") as fh:
-    fh.write(json.dumps({{"tool": "npx", "argv": argv, "cwd": os.path.relpath(os.getcwd(), os.environ["FAKE_ROOT"]),
+    fh.write(json.dumps({{"tool": "npx", "argv": raw, "cwd": os.path.relpath(os.getcwd(), os.environ["FAKE_ROOT"]),
                           "stdin": json.loads(stdin) if stdin else None,
                           "cf_env": sorted(k for k in os.environ if k.startswith(("CLOUDFLARE_", "CF_")))}}) + "\\n")
 if argv[:3] == ["wrangler", "d1", "export"] and "--remote" in argv:

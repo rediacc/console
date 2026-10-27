@@ -120,7 +120,7 @@ E2E_SUBDIRS = ("src", "tests")
 TS_SUFFIX = ".ts"
 
 # The forward half, run from the repository root exactly as the twin runs it.
-FORWARD_ARGV = ("npx", "tsx", "scripts/gates/check-e2e-coverage.ts")
+FORWARD_ARGV = ("npx", "--no-install", "tsx", "scripts/gates/check-e2e-coverage.ts")
 
 # The array the reverse half reads, and the three patterns that bound it. The
 # twin uses bash `=~` on each line, which finds the FIRST match in the line, so

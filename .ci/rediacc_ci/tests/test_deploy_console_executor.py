@@ -26,8 +26,8 @@ args = sys.argv[1:]
 stdin = sys.stdin.read() if not sys.stdin.isatty() else ""
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
     fh.write(json.dumps({"argv": args, "stdin": stdin, "cwd": os.path.basename(os.getcwd())}) + "\n")
-assert args[0] == "wrangler", args
-cmd = args[1:]
+assert args[:2] == ["--no-install", "wrangler"], args
+cmd = args[2:]
 store_path = pathlib.Path(os.environ["FAKE_STORE"])
 store = json.loads(store_path.read_text()) if store_path.is_file() else []
 scenario_path = os.environ.get("FAKE_SCENARIO", "")
@@ -151,6 +151,7 @@ def test_enable_puts_the_value_on_stdin_never_on_argv_and_reads_it_back(fake, tm
     log = calls(fake)
     put = log[0]
     assert put["argv"] == [
+        "--no-install",
         "wrangler",
         "secret",
         "put",
@@ -163,7 +164,7 @@ def test_enable_puts_the_value_on_stdin_never_on_argv_and_reads_it_back(fake, tm
     assert put["stdin"] == "proxy"
     assert put["cwd"] == "account"
     assert all("proxy" not in c["argv"] for c in log)
-    assert log[1]["argv"][:3] == ["wrangler", "secret", "list"]
+    assert log[1]["argv"][:4] == ["--no-install", "wrangler", "secret", "list"]
     assert "--format" in log[1]["argv"]
     assert store(tmp_path) == ["EXECUTOR_MODE"]
 
@@ -250,7 +251,7 @@ def test_disable_deletes_the_secret_with_no_stdin_and_confirms_it_is_gone(fake, 
     (tmp_path / "store.json").write_text(json.dumps(["EXECUTOR_MODE", "OTHER"]))
     assert ce.main(["--disable", "--target", "edge", "--region", "eu"]) == 0
     log = calls(fake)
-    assert log[0]["argv"][:4] == ["wrangler", "secret", "delete", "EXECUTOR_MODE"]
+    assert log[0]["argv"][:5] == ["--no-install", "wrangler", "secret", "delete", "EXECUTOR_MODE"]
     assert log[0]["stdin"] == ""
     assert store(tmp_path) == ["OTHER"]
 
@@ -277,7 +278,7 @@ def test_disable_with_an_unparseable_listing_is_unknown(monkeypatch):
 
 def test_bench_disable_names_the_bench_worker(fake):
     assert ce.main(["--disable", "--target", "bench"]) == 0
-    assert calls(fake)[0]["argv"][4:8] == [
+    assert calls(fake)[0]["argv"][5:9] == [
         "--name",
         "rediacc-account-bench",
         "--config",

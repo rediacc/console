@@ -36,7 +36,7 @@ from rediacc_ci.core import bws_env, env
 PRODUCTION_BUCKET = "rediacc-backups"
 ALREADY_THERE = ("BucketAlreadyOwnedByYou", "BucketAlreadyExists")
 PROFILE = "backup-plane"
-GATEWAY_COMMAND = ["npx", "tsx", "src/entry/dev-gateway.ts"]
+GATEWAY_COMMAND = ["npx", "--no-install", "tsx", "src/entry/dev-gateway.ts"]
 
 
 def knobs(environ: dict[str, str]) -> dict[str, str]:

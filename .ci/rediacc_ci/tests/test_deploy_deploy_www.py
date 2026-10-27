@@ -98,11 +98,11 @@ if tool == "npm":
     sys.stdout.write("added 0 packages in 0s\n")
     sys.exit(0)
 
-if argv[:1] != ["wrangler"]:
+if argv[:2] != ["--no-install", "wrangler"]:
     sys.stderr.write("fake npx: unmodelled tool %r\n" % (argv[:1],))
     sys.exit(127)
 
-rest = argv[1:]
+rest = argv[2:]
 state = load()
 
 if rest[:2] == ["d1", "info"]:
@@ -329,7 +329,7 @@ def test_production_deploys_with_no_config_flag_and_never_touches_d1(tmp_path) -
 
     proc, calls, config = old
     assert proc.returncode == 0, proc.stderr
-    assert _calls(calls) == ["npx wrangler deploy"], calls
+    assert _calls(calls) == ["npx --no-install wrangler deploy"], calls
     assert config == "", "the production lane generated a config file"
     assert proc.stdout == "Deployed worker\n", repr(proc.stdout)
     assert "Deploying www production worker..." in proc.stderr
@@ -343,14 +343,14 @@ def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_p
     assert proc.returncode == 0, proc.stderr
     # THE SHAPE: one info that finds nothing, a create, a second info, the migrations, the deploy. NO delete, because the database did not exist.
     assert _calls(calls) == [
-        "npx wrangler d1 info account-db-pr-379 --json",
-        "npx wrangler d1 create account-db-pr-379 --location eeur",
-        "npx wrangler d1 info account-db-pr-379 --json",
+        "npx --no-install wrangler d1 info account-db-pr-379 --json",
+        "npx --no-install wrangler d1 create account-db-pr-379 --location eeur",
+        "npx --no-install wrangler d1 info account-db-pr-379 --json",
         (
-            "npx wrangler d1 migrations apply account-db-pr-379 --remote "
+            "npx --no-install wrangler d1 migrations apply account-db-pr-379 --remote "
             "--config wrangler.preview.toml"
         ),
-        "npx wrangler deploy --config wrangler.preview.toml",
+        "npx --no-install wrangler deploy --config wrangler.preview.toml",
     ], calls
 
     # The generated config, byte for byte, is what the deploy was handed.
@@ -392,15 +392,15 @@ def test_an_existing_database_is_deleted_first(tmp_path) -> None:
     proc, calls, _config = old
     assert proc.returncode == 0, proc.stderr
     assert _calls(calls) == [
-        "npx wrangler d1 info account-db-pr-42 --json",
-        "npx wrangler d1 delete account-db-pr-42 --skip-confirmation",
-        "npx wrangler d1 create account-db-pr-42 --location eeur",
-        "npx wrangler d1 info account-db-pr-42 --json",
+        "npx --no-install wrangler d1 info account-db-pr-42 --json",
+        "npx --no-install wrangler d1 delete account-db-pr-42 --skip-confirmation",
+        "npx --no-install wrangler d1 create account-db-pr-42 --location eeur",
+        "npx --no-install wrangler d1 info account-db-pr-42 --json",
         (
-            "npx wrangler d1 migrations apply account-db-pr-42 --remote "
+            "npx --no-install wrangler d1 migrations apply account-db-pr-42 --remote "
             "--config wrangler.preview.toml"
         ),
-        "npx wrangler deploy --config wrangler.preview.toml",
+        "npx --no-install wrangler deploy --config wrangler.preview.toml",
     ], calls
     assert "Deleting existing D1 database: account-db-pr-42 (clean slate)" in proc.stderr
     assert "Deleted account-db-pr-42" in proc.stderr
@@ -434,7 +434,7 @@ def test_fact_a_valueless_name_deploys_a_worker_called_true(tmp_path) -> None:
 
     proc, calls, config = old
     assert proc.returncode == 0, proc.stderr
-    assert "npx wrangler d1 create account-db-pr-true --location eeur" in _calls(calls)
+    assert "npx --no-install wrangler d1 create account-db-pr-true --location eeur" in _calls(calls)
     assert 'name = "true"' in config
     assert "Deploying preview worker: true" in proc.stderr
 
@@ -448,7 +448,9 @@ def test_fact_a_non_pr_name_is_accepted_verbatim(tmp_path) -> None:
 
     proc, calls, config = old
     assert proc.returncode == 0, proc.stderr
-    assert "npx wrangler d1 create account-db-pr-staging --location eeur" in _calls(calls)
+    assert "npx --no-install wrangler d1 create account-db-pr-staging --location eeur" in _calls(
+        calls
+    )
     assert 'name = "staging"' in config
 
 
@@ -526,7 +528,7 @@ def test_a_failed_uuid_lookup_after_create_is_the_one_self_refusal(tmp_path) -> 
     assert proc.returncode == 1
     assert "✗ Failed to retrieve UUID for newly created D1 database: account-db-pr-5" in proc.stderr
     assert config == "", "a refused run still generated a config"
-    assert _calls(calls)[-1] == "npx wrangler d1 info account-db-pr-5 --json"
+    assert _calls(calls)[-1] == "npx --no-install wrangler d1 info account-db-pr-5 --json"
 
 
 def test_an_npx_failure_mid_run_stops_with_npxs_status(tmp_path) -> None:
@@ -603,8 +605,8 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     planted_file = root / "planted_deploy_www.py"
     source = PORT_FILE.read_text(encoding="utf-8")
     mutant = source.replace(
-        'return ["npx", "wrangler", "d1", "create", db_name, "--location", D1_LOCATION]',
-        'return ["npx", "wrangler", "d1", "create", db_name]',
+        'return [*wrangler.ARGV, "d1", "create", db_name, "--location", D1_LOCATION]',
+        'return [*wrangler.ARGV, "d1", "create", db_name]',
     )
     assert mutant != source, "the plant did not apply; the control is broken, not the gate"
     planted_file.write_text(mutant, encoding="utf-8")
@@ -640,32 +642,43 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     assert new_proc.stdout == old_proc.stdout, "the plant changed stdout; wrong plant"
     assert new_proc.stderr == old_proc.stderr, "the plant changed stderr; wrong plant"
     assert new_calls != old_calls, "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
-    assert "npx wrangler d1 create account-db-pr-3\n" in new_calls
+    assert "npx --no-install wrangler d1 create account-db-pr-3\n" in new_calls
 
 
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
 def test_the_argv_builders_match_the_twins_words() -> None:
-    assert port.info_argv("d") == ["npx", "wrangler", "d1", "info", "d", "--json"]
+    assert port.info_argv("d") == ["npx", "--no-install", "wrangler", "d1", "info", "d", "--json"]
     assert port.delete_argv("d") == [
         "npx",
+        "--no-install",
         "wrangler",
         "d1",
         "delete",
         "d",
         "--skip-confirmation",
     ]
-    assert port.create_argv("d") == ["npx", "wrangler", "d1", "create", "d", "--location", "eeur"]
+    assert port.create_argv("d") == [
+        "npx",
+        "--no-install",
+        "wrangler",
+        "d1",
+        "create",
+        "d",
+        "--location",
+        "eeur",
+    ]
     assert port.migrations_argv("d")[-2:] == ["--config", "wrangler.preview.toml"]
     assert port.preview_deploy_argv() == [
         "npx",
+        "--no-install",
         "wrangler",
         "deploy",
         "--config",
         "wrangler.preview.toml",
     ]
-    assert port.production_deploy_argv() == ["npx", "wrangler", "deploy"]
+    assert port.production_deploy_argv() == ["npx", "--no-install", "wrangler", "deploy"]
 
 
 def test_strip_newlines_removes_both_bytes_anywhere_in_the_token() -> None:

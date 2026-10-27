@@ -5,7 +5,7 @@
   "dotenv_names": 0,
   "mentions": {
     ".ci/config/bws-unrequested.json": 2,
-    ".ci/config/secret-supply.json": 4,
+    ".ci/config/secret-supply.json": 3,
     ".ci/rediacc_ci/core/account.py": 2,
     ".ci/rediacc_ci/core/env.py": 3,
     ".ci/rediacc_ci/core/local_common.py": 1,

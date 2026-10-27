@@ -89,7 +89,7 @@ import sys
 import typing
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, wrangler
 from rediacc_ci.deploy import deploy_record
 from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN
 
@@ -215,24 +215,23 @@ def is_protected(db_name: str) -> bool:
 
 def info_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 info "$db_name" --json` (twin :44)."""
-    return ["npx", "wrangler", "d1", "info", db_name, "--json"]
+    return [*wrangler.ARGV, "d1", "info", db_name, "--json"]
 
 
 def delete_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 delete "$DB_NAME" --skip-confirmation` (twin :77)."""
-    return ["npx", "wrangler", "d1", "delete", db_name, "--skip-confirmation"]
+    return [*wrangler.ARGV, "d1", "delete", db_name, "--skip-confirmation"]
 
 
 def create_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 create "$DB_NAME" --location eeur` (twin :82)."""
-    return ["npx", "wrangler", "d1", "create", db_name, "--location", D1_LOCATION]
+    return [*wrangler.ARGV, "d1", "create", db_name, "--location", D1_LOCATION]
 
 
 def migrations_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 migrations apply "$DB_NAME" --remote --config ...` (twin :137)."""
     return [
-        "npx",
-        "wrangler",
+        *wrangler.ARGV,
         "d1",
         "migrations",
         "apply",
@@ -245,12 +244,12 @@ def migrations_argv(db_name: str) -> list[str]:
 
 def preview_deploy_argv() -> list[str]:
     """`npx wrangler deploy --config wrangler.preview.toml` (twin :140)."""
-    return ["npx", "wrangler", "deploy", "--config", PREVIEW_CONFIG]
+    return [*wrangler.ARGV, "deploy", "--config", PREVIEW_CONFIG]
 
 
 def production_deploy_argv() -> list[str]:
     """`npx wrangler deploy` (twin :146). No config flag at all."""
-    return ["npx", "wrangler", "deploy"]
+    return [*wrangler.ARGV, "deploy"]
 
 
 def preview_toml(worker_name: str, db_name: str, db_uuid: str) -> str:

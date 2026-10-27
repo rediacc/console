@@ -13,6 +13,8 @@ import re
 import subprocess
 import sys
 
+from rediacc_ci.core import wrangler
+
 BUCKET_NAME = re.compile(r'^\s*bucket_name\s*=\s*"([^"]+)"', re.MULTILINE)
 JURISDICTION = re.compile(r"^\s*jurisdiction\s*=", re.MULTILINE)
 LISTED_NAME = re.compile(r"^name:\s+(\S+)", re.MULTILINE)
@@ -115,7 +117,7 @@ def buckets(config):
         )
         return 1
     listing = subprocess.run(
-        ["npx", "wrangler", "r2", "bucket", "list"], capture_output=True, text=True, check=False
+        [*wrangler.ARGV, "r2", "bucket", "list"], capture_output=True, text=True, check=False
     )
     if listing.returncode != 0:
         print("✗ could not list R2 buckets: %s" % listing.stderr.strip()[:300], file=sys.stderr)
@@ -126,7 +128,7 @@ def buckets(config):
             continue
         print("→ creating R2 bucket %s (bound in %s, absent)" % (bucket, config))
         made = subprocess.run(
-            ["npx", "wrangler", "r2", "bucket", "create", bucket],
+            [*wrangler.ARGV, "r2", "bucket", "create", bucket],
             capture_output=True,
             text=True,
             check=False,

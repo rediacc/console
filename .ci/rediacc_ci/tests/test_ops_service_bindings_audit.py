@@ -114,3 +114,18 @@ def test_the_local_dev_config_is_not_audited(tmp_path: pathlib.Path) -> None:
     assert rep["rc"] == 0
     assert rep["bindings"] == []
     assert rep["not_deployed"] == []
+
+
+def test_only_reads_just_the_named_config(tmp_path: pathlib.Path) -> None:
+    _tree(tmp_path)
+    (tmp_path / "workers" / "proxy" / "wrangler.eu.toml").write_text("not = = toml\n")
+    configs, bindings = mod.load_configs(tmp_path, "workers/account/wrangler.edge-eu.toml")
+    assert [c.worker for c in configs] == ["edge-rediacc-account-eu"]
+    assert [b.service for b in bindings] == ["edge-rediacc-proxy-eu"]
+    rep = mod.audit(
+        tmp_path, ENV, _fetch(["edge-rediacc-proxy-eu"]), "workers/account/wrangler.edge-eu.toml"
+    )
+    assert rep["rc"] == 0
+    assert [r["config"] for r in rep["bindings"]] == ["workers/account/wrangler.edge-eu.toml"]
+    # Without `only`, the same unreadable sibling is no verdict.
+    assert mod.audit(tmp_path, ENV, _fetch([]))["rc"] == mod.EX_UNAVAILABLE

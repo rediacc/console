@@ -57,6 +57,7 @@ import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.ops import service_bindings_audit
 
 if typing.TYPE_CHECKING:
@@ -163,10 +164,10 @@ def check_services(
 ) -> None:
     """Refuse before any migration when a `[[services]]` target of the deployed config is not a Worker on the account, or when the audit gives no verdict (rc 77).
 
-    NOT PART OF THE TWIN. wrangler refuses a Worker whose service binding names a missing Worker only at `wrangler deploy`, after the migrations: the 2026-10-27 eu edge run applied 0060 through 0066 and then died on code 10143 for `edge-rediacc-proxy-eu`. The parsing and the account listing are `rediacc_ci.ops.service_bindings_audit`'s, filtered to this one config, so another config's missing target never blocks this deploy. A config with no bindings makes no API call, and the run is byte-identical to the twin's.
+    NOT PART OF THE TWIN. wrangler refuses a Worker whose service binding names a missing Worker only at `wrangler deploy`, after the migrations: the 2026-10-27 eu edge run applied 0060 through 0066 and then died on code 10143 for `edge-rediacc-proxy-eu`. The parsing and the account listing are `rediacc_ci.ops.service_bindings_audit`'s, restricted to this one config (`only`): the sibling configs are not even read, so another config's missing target or parse error never blocks this deploy. A config with no bindings makes no API call, and the run is byte-identical to the twin's.
     """
     try:
-        _, bindings = service_bindings_audit.load_configs(root)
+        _, bindings = service_bindings_audit.load_configs(root, config_rel)
     except service_bindings_audit.AuditError as exc:
         raise ServiceBindingError(
             "The service-bindings audit cannot read the Worker configs (%s); no migration was applied"
@@ -174,7 +175,7 @@ def check_services(
         ) from None
     if not any(b.config == config_rel for b in bindings):
         return
-    report = service_bindings_audit.audit(root, env, fetch)
+    report = service_bindings_audit.audit(root, env, fetch, config_rel)
     if report["rc"] == service_bindings_audit.EX_UNAVAILABLE:
         raise ServiceBindingError(
             "The service-bindings audit gave no verdict for %s (%s); no migration was applied"
@@ -196,12 +197,21 @@ def check_services(
 
 def migrations_argv(db_name: str, config: str) -> list[str]:
     """`npx wrangler d1 migrations apply "$DB_NAME" --remote --config "$CONFIG"` (:60)."""
-    return ["npx", "wrangler", "d1", "migrations", "apply", db_name, "--remote", "--config", config]
+    return [
+        *wrangler_cmd.ARGV,
+        "d1",
+        "migrations",
+        "apply",
+        db_name,
+        "--remote",
+        "--config",
+        config,
+    ]
 
 
 def deploy_argv(config: str) -> list[str]:
     """`npx wrangler deploy --config "$CONFIG"` (:64)."""
-    return ["npx", "wrangler", "deploy", "--config", config]
+    return [*wrangler_cmd.ARGV, "deploy", "--config", config]
 
 
 def _run(argv: list[str]) -> int:

@@ -201,7 +201,7 @@ def npm_argv(directory: str, *, has_lockfile: bool) -> list[str]:
 
 def tsc_argv(config: str) -> list[str]:
     """`npx tsc --noEmit -p "$config"` (twin :103)."""
-    return ["npx", "tsc", "--noEmit", "-p", config]
+    return ["npx", "--no-install", "tsc", "--noEmit", "-p", config]
 
 
 def _run(argv: list[str], **kwargs) -> int:

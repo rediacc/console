@@ -139,7 +139,7 @@ def _helper_cmd(repo: pathlib.Path) -> list[str]:
     tsx = repo / "node_modules" / ".bin" / "tsx"
     return [
         str(tsx) if tsx.is_file() else "npx",
-        *([] if tsx.is_file() else ["tsx"]),
+        *([] if tsx.is_file() else ["--no-install", "tsx"]),
         str(repo / HELPER_REL),
     ]
 

@@ -94,7 +94,7 @@ def _npm(*args: str) -> int:
 
 
 def _tsx(script: str) -> int:
-    return _run(["npx", "tsx", str(root() / script)])
+    return _run(["npx", "--no-install", "tsx", str(root() / script)])
 
 
 Arm = Callable[[list[str]], int]

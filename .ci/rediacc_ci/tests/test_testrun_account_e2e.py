@@ -39,7 +39,7 @@ SECRETS = {
 # `tsx` becomes the stub server (so /health answers) after leaving a child behind that outlives a wrapper-only kill; everything else is the recording fake.
 NPX_BODY = ts.FAKE_TEMPLATE.replace(
     'out="FAKE_OUT_$up"',
-    'if [[ "$1" == "tsx" && "$2" == src/entry/node.ts ]]; then python3 -c "import threading; threading.Event().wait()" >/dev/null 2>&1 & echo $! > "$FAKE_ORPHAN"; exec python3 "'
+    'if [[ " $* " == *" tsx src/entry/node.ts "* ]]; then python3 -c "import threading; threading.Event().wait()" >/dev/null 2>&1 & echo $! > "$FAKE_ORPHAN"; exec python3 "'
     + str(STUB)
     + '" "$PORT" "$STUB_LOG" "$STUB_MODE" >/dev/null 2>&1; fi\nout="FAKE_OUT_$up"',
     1,
@@ -231,7 +231,10 @@ def norm_calls(case: Case) -> list[tuple]:
     rows = []
     for call in case.out.calls:
         cwd = call["cwd"].replace(str(case.root), "<ROOT>")
-        rows.append((call["tool"], [a for a in call["argv"] if "localhost" not in a], cwd))
+        argv = [a for a in call["argv"] if "localhost" not in a]
+        if call["tool"] == "npx" and argv[:1] == ["--no-install"]:
+            argv = argv[1:]  # asserted separately: `test_default_run_matches_the_twin`
+        rows.append((call["tool"], argv, cwd))
     return rows
 
 
@@ -275,6 +278,10 @@ def test_default_run_matches_the_twin(tmp_path: pathlib.Path, reap: list[int | N
     old, new = run_both(tmp_path, reap, [])
     assert old.out.code == 0, old.out.err
     assert norm_calls(old) == norm_calls(new)
+    # npx never downloads an unpinned tool: every npx call the port makes carries --no-install.
+    npx_calls = [c for c in new.out.calls if c["tool"] == "npx"]
+    assert npx_calls, "the run made no npx call"
+    assert all(c["argv"][:1] == ["--no-install"] for c in npx_calls), npx_calls
     assert old.out.code == new.out.code
     assert any(c[1][:2] == ["playwright", "install"] for c in norm_calls(old))
     assert any(c[1][:2] == ["playwright", "test"] for c in norm_calls(old))

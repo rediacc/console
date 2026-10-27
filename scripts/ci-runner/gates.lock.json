@@ -1752,6 +1752,20 @@
     }
   },
   {
+    "id": "check:ci-config-server-key-constant",
+    "run": "npm run check:ci-config-server-key-constant",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_config_server_key_constant.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Config server key constant confined"
+    }
+  },
+  {
     "id": "check:ci-bws-rotation-notice",
     "run": "npm run check:ci-bws-rotation-notice",
     "gate": true,

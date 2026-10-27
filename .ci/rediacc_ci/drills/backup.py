@@ -1356,7 +1356,7 @@ class Backup:
         )
         # tsx is resolved from the CLI package, where its devDependency and tsconfig live: the cwd moves only for this command.
         with _cwd(d.root / "packages" / "cli"):
-            d.run(["npx", "tsx", str(script), str(self.work / "prune.json")])
+            d.run(["npx", "--no-install", "tsx", str(script), str(self.work / "prune.json")])
         d.assert_exit(0, "the CLI parser consumes renet's real output")
         found = self.field("rows")
         rows = [r for r in (found if isinstance(found, list) else []) if isinstance(r, dict)]

@@ -5,4 +5,4 @@ exit: 0
 → Listing D1 databases...
 ✓ No D1 databases found (or API unavailable)
 --- calls ---
-npx	wrangler	d1	list	--json
+npx	--no-install	wrangler	d1	list	--json

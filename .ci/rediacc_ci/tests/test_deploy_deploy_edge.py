@@ -233,7 +233,7 @@ def test_the_one_wrangler_call_is_pinned_in_full(tmp_path: pathlib.Path) -> None
     assert old_calls == (
         "npm\tinstall\n"
         "  cwd=www\n"
-        "npx\twrangler\tdeploy\t--config\twrangler.edge.toml\n"
+        "npx\t--no-install\twrangler\tdeploy\t--config\twrangler.edge.toml\n"
         "  cwd=www\n"
         "  token='tok'\n"
     )

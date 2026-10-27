@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.ops import deploy_bench
 from rediacc_ci.well_known import BENCH_ORIGIN
 
@@ -284,12 +285,12 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: events.append("rotation"))
     monkeypatch.setattr(
-        deploy_bench, "_run", lambda argv, *_a, **_k: events.append(" ".join(argv[:4]))
+        deploy_bench, "_run", lambda argv, *_a, **_k: events.append(" ".join(argv[:5]))
     )
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: events.append("seed"))
     deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
     assert events[-1] == "seed"
-    assert events[-2] == "npx wrangler secret bulk"
+    assert events[-2] == "npx --no-install wrangler secret bulk"
     assert events.count("seed") == 1
 
 
@@ -327,3 +328,23 @@ def test_an_empty_config_server_key_refuses_the_bench_push(monkeypatch):
     _bench_env(monkeypatch, ACCOUNT_CONFIG_SERVER_KEY="")
     with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_CONFIG_SERVER_KEY"):
         deploy_bench.secrets_payload()
+
+
+def _deploy_bench_profile() -> dict:
+    supply = json.loads(paths.from_root(".ci", "config", "secret-supply.json").read_text("utf-8"))
+    return supply["consumers"]["deploy-bench"]
+
+
+def test_bench_signs_licences_with_the_production_ed25519_pair():
+    """Operator ruling 2026-10-27: the licence signer is the unsuffixed production pair the edge and stable account-secrets profiles bind, never the DEV one."""
+    required = _deploy_bench_profile()["required"]
+    assert "ACCOUNT_ED25519_PRIVATE_KEY" in required
+    assert "ACCOUNT_ED25519_PUBLIC_KEY" in required
+    assert not any(line.startswith("ACCOUNT_ED25519_") and "_DEV" in line for line in required)
+
+
+def test_bench_keeps_the_dev_x25519_envelope_key():
+    """The X25519 pair is the E2E envelope key every bench config already holds as its e2ePublicKey; it is not the licence signer and stays DEV."""
+    required = _deploy_bench_profile()["required"]
+    assert "ACCOUNT_X25519_PRIVATE_KEY_DEV > ACCOUNT_X25519_PRIVATE_KEY" in required
+    assert "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY" in required

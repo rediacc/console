@@ -110,12 +110,14 @@ import sys
 
 log = os.environ["FAKE_CALL_LOG"]
 with open(log) as fh:
-    deployed = "npx\\twrangler\\tdeploy\\t--config" in fh.read()
+    deployed = "npx\\t--no-install\\twrangler\\tdeploy\\t--config" in fh.read()
 with open(log, "a") as fh:
     fh.write("npx\\t" + "\\t".join(sys.argv[1:]) + "\\n")
     fh.write("  cwd=" + os.path.basename(os.getcwd()) + "\\n")
 
 args = sys.argv[1:]
+assert args[:1] == ["--no-install"], args
+args = args[1:]
 prev = {"created_on": "2026-10-01T00:00:00Z", "versions": [{"version_id": os.environ["FAKE_PREV_ID"], "percentage": 100}]}
 if args[:3] == ["wrangler", "deployments", "list"]:
     if not deployed:
@@ -305,11 +307,11 @@ def _release_calls(root: pathlib.Path, config: str, host: str) -> str:
     return (
         f"executor_artifacts\tfetch\t--version\t{VERSION}\t--dest\t{stage}\n"
         "  cwd=root\n"
-        f"npx\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
+        f"npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
         "  cwd=proxy\n"
-        f"npx\twrangler\tdeploy\t--config\t{config}\n"
+        f"npx\t--no-install\twrangler\tdeploy\t--config\t{config}\n"
         "  cwd=proxy\n"
-        f"npx\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
+        f"npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
         "  cwd=proxy\n"
         f"{CURL}https://{host}/v1/health\n"
         f"{CURL}https://{host}/v1/server-info\n"
@@ -351,7 +353,8 @@ def test_each_target_deploys_its_own_config_with_the_pinned_argv(
         in proc.stderr
     )
     assert (
-        "✓ Rollback: npx wrangler rollback %s --config workers/proxy/%s\n" % (PREV_ID, config)
+        "✓ Rollback: cd workers/proxy && npx --no-install wrangler rollback %s --config %s\n"
+        % (PREV_ID, config)
         in proc.stderr
     )
     assert "npm" not in calls
@@ -504,7 +507,7 @@ def test_a_dry_run_works_for_every_target_without_credentials(
     )
     assert proc.returncode == 0, proc.stderr
     assert calls == (
-        "npx\twrangler\tdeploy\t--dry-run\t--outdir\t%s\t--containers-rollout\tnone\t--config\t%s\n  cwd=proxy\n"
+        "npx\t--no-install\twrangler\tdeploy\t--dry-run\t--outdir\t%s\t--containers-rollout\tnone\t--config\t%s\n  cwd=proxy\n"
         % (port.DRY_RUN_OUTDIR, config)
     )
     assert proc.stderr.endswith("✓ Dry run passed. Nothing was deployed.\n")
@@ -549,11 +552,11 @@ def test_a_bench_deploy_builds_from_the_tree_and_stages_locally(tmp_path: pathli
         "  cwd=root\n"
         f"executor_artifacts\tstage-local\t--dest\t{stage}\n"
         "  cwd=root\n"
-        f"npx\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
+        f"npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
         "  cwd=proxy\n"
-        f"npx\twrangler\tdeploy\t--config\t{config}\n"
+        f"npx\t--no-install\twrangler\tdeploy\t--config\t{config}\n"
         "  cwd=proxy\n"
-        f"npx\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
+        f"npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
         "  cwd=proxy\n"
         f"{CURL}https://{PROXY_BENCH_HOST}/v1/health\n"
         f"{CURL}https://{PROXY_BENCH_HOST}/v1/server-info\n"
@@ -837,7 +840,7 @@ def test_the_record_carries_what_a_rollback_needs(tmp_path: pathlib.Path) -> Non
         "previous_version_id": PREV_ID,
         "artifacts_version": VERSION,
         "smoke_rc": 0,
-        "rollback": "npx wrangler rollback %s --config workers/proxy/wrangler.edge-us.toml"
+        "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.edge-us.toml"
         % PREV_ID,
     }
 
@@ -873,7 +876,7 @@ def test_smoke_only_without_a_record_reads_the_newest_deployment(tmp_path: pathl
     )
     assert proc.returncode == 0, proc.stderr
     assert calls.startswith(
-        "npx\twrangler\tdeployments\tlist\t--json\t--config\twrangler.asia.toml\n"
+        "npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\twrangler.asia.toml\n"
     )
     assert "on version %s." % PREV_ID in proc.stderr
 
@@ -921,12 +924,13 @@ def _profiles() -> dict:
     ]
 
 
-def test_the_bench_profile_binds_the_dev_public_key_and_the_workers_token() -> None:
+def test_the_bench_profile_binds_the_production_public_key_and_the_workers_token() -> None:
+    """Bench signs licences with the production key (operator ruling 2026-10-27), so its proxy renet verifies with it."""
     profile = _profiles()[port.BENCH_PROFILE]
     assert set(profile["required"]) == {
         "CLOUDFLARE_API_TOKEN",
         "CLOUDFLARE_ACCOUNT_ID",
-        "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
+        "ACCOUNT_ED25519_PUBLIC_KEY",
     }
     assert "EXECUTOR_TOKEN" not in profile["why"]
 

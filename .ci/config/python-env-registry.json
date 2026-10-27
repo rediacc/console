@@ -751,6 +751,9 @@
       "NETWORK_CIDR",
       "PROVIDER"
     ],
+    ".ci/rediacc_ci/ops/login_bench.py": [
+      "REDIACC_BWS_PROFILES"
+    ],
     ".ci/rediacc_ci/ops/mirror_config_store.py": [
       "*name",
       "CF_EMAIL",
@@ -774,9 +777,6 @@
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
       "REDIACC_BWS_PROFILES"
     ],
-    ".ci/rediacc_ci/ops/rewrap_config_server_key.py": [
-      "*key_name"
-    ],
     ".ci/rediacc_ci/ops/scrub_sentinel.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT",
@@ -784,6 +784,9 @@
     ],
     ".ci/rediacc_ci/ops/telemetry_delivery.py": [
       "OBS_GRAFANA_READ_TOKEN"
+    ],
+    ".ci/rediacc_ci/ops/totp.py": [
+      "REDIACC_BENCH_TOTP_SEED"
     ],
     ".ci/rediacc_ci/paths.py": [
       "REDIACC_CI_ROOT"
@@ -1787,9 +1790,6 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_ops_mirror_config_store.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_ops_rewrap_config_server_key.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py": [

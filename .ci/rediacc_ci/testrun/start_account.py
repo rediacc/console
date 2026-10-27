@@ -237,7 +237,7 @@ def start_server(
     }
     with open(log_file, "wb") as sink:
         return subprocess.Popen(
-            ["npx", "tsx", "src/entry/node.ts"],
+            ["npx", "--no-install", "tsx", "src/entry/node.ts"],
             cwd=account_dir,
             env=env,
             stdin=subprocess.DEVNULL,

@@ -784,7 +784,9 @@ def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
         return 1
     try:
         proc = subprocess.run(
-            ["npx", "tsx", "scripts/rotation/index.ts", *argv], cwd=directory, check=False
+            ["npx", "--no-install", "tsx", "scripts/rotation/index.ts", *argv],
+            cwd=directory,
+            check=False,
         )
     except FileNotFoundError:
         log.error("npx: command not found")
@@ -906,7 +908,16 @@ def db_launch(plan: DbPlan, env: dict[str, str] | None = None) -> int:
         log.warn("Chrome blocks that hosted page from reaching a local server unless you enable")
         log.warn('"Local network access" for local.drizzle.studio in Site information.')
         child = subprocess.run(
-            ["npx", "drizzle-kit", "studio", "--port", str(plan.port), "--host", bind],
+            [
+                "npx",
+                "--no-install",
+                "drizzle-kit",
+                "studio",
+                "--port",
+                str(plan.port),
+                "--host",
+                bind,
+            ],
             cwd=directory,
             env={**environ, "DATABASE_PATH": plan.database},
             check=False,
