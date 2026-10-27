@@ -408,6 +408,17 @@ describe('finalizeEnable --config-id (attach to an existing store entry)', () =>
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
   });
 
+  it('with --config-id given, a failed list is the error itself, not advice to pass --config-id', async () => {
+    mockAdapterInstance.listConfigs.mockRejectedValue(new Error('list boom'));
+    const err = await finalizeEnable(pendingRemote(undefined), CONFIG_NAME, {
+      configId: ATTACH_ID,
+    }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toBe('list boom');
+    expect(mockAdapterInstance.pull).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+  });
+
   it('never seeds a new entry when the attached entry pulls 404', async () => {
     mockAdapterInstance.listConfigs.mockResolvedValue([
       { configId: ATTACH_ID, version: 1, lastModified: 'y' },

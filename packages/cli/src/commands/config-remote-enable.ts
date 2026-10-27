@@ -338,17 +338,25 @@ async function chooseAttachTarget(
   if (!explicitId && !interactive) return undefined;
 
   // An id named, or a prompt about to be shown, needs the list: guessing without it would mint a duplicate entry.
-  const entries = await listEntries(adapter);
+  const entries = await listEntries(adapter, explicitId === undefined);
   if (explicitId) return requireEntry(entries, explicitId);
   if (!entries || entries.length === 0) return undefined;
   return pickEntry(entries);
 }
 
-/** The store's entries; a failed list is refused with a named error, never downgraded to creating a new entry. */
-async function listEntries(adapter: RemoteConfigAdapter): Promise<RemoteConfigEntry[] | undefined> {
+/**
+ * The store's entries; a failed list is refused, never downgraded to creating a new entry. The
+ * named error suggests `--config-id` only when none was given (`suggestId`); with an id named, the
+ * list failure itself is the error, since that remedy was already tried.
+ */
+async function listEntries(
+  adapter: RemoteConfigAdapter,
+  suggestId: boolean
+): Promise<RemoteConfigEntry[] | undefined> {
   try {
     return await adapter.listConfigs();
   } catch (error) {
+    if (!suggestId) throw error;
     throw new ValidationError(
       t('commands.config.remote.enable.listFailedRefused', {
         error: error instanceof Error ? error.message : String(error),
