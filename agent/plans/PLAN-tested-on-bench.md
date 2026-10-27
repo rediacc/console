@@ -178,7 +178,7 @@ Worklist: pending -- filed at promotion
 
 ## Operator rulings 2026-10-27 (answers to the questions below)
 
-1. Renet and every surface: "Let's go with bench only not edge. I'll call subscription command after copy from EU config to bench." The live targets are bench (account, proxy, www, cli) and hostinger reached through the `eu-bench` rdc config (cli, renet), the EU stable store mirrored to bench. Edge is not a live-proof target; vm:check does not substitute. Every edge reference above is superseded by this ruling.
+1. Renet and every surface: "Let's go with bench only not edge. I'll call subscription command after copy from EU config to bench." The live targets are bench (account, proxy, www, cli) and hostinger reached through the `eu-bench` rdc config (cli, renet), the EU stable store mirrored to bench. Edge is not a live-proof target; vm:check does not substitute. Every edge reference above is superseded by this ruling. Confirmed ASKED:2026-10-27T14:33Z: "Yes, bench + hostinger via eu-bench".
 2. Opt-out: only with a ruling. `Live-Proof: none` passes only when it cites a closed worklist item or a committed operator quote.
 3. Backfill: fresh runs for all. No `--retro` receipts; the four closed plans each get a new live run, and V4 drops `record --retro`.
 4. Enforcement: LP1 to LP6 fail CI from the landing commit; forward-only judging keeps existing work green.
