@@ -28,5 +28,25 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-plan-implementation",
+      "findings": [
+        "P-A1:agent/plans/PLAN-backup-program.md",
+        "P-A1:agent/plans/PLAN-cloudflare-proxy.md",
+        "P-A1:agent/plans/PLAN-cloudflare-spend-guard.md",
+        "P-A1:agent/plans/PLAN-config-networkid-discovery.md",
+        "P-A1:agent/plans/PLAN-console-executor-multi-org.md",
+        "P-A1:agent/plans/PLAN-executor-durable-object-policy.md",
+        "P-A1:agent/plans/PLAN-gpu-device-grants.md",
+        "P-A1:agent/plans/PLAN-plan-preflight.md",
+        "P-A1:agent/plans/PLAN-proxy-cd-six-targets.md",
+        "P-A1:agent/plans/PLAN-renet-runtime-converge.md",
+        "P-A1:agent/plans/PLAN-sandbox-tenant-separation.md",
+        "P-A1:agent/plans/PLAN-sync-remote-file-ownership.md",
+        "P-A1:agent/plans/PLAN-telemetry-export.md"
+      ],
+      "reason": "P-A1 is a merge-time condition, and a local ci:quick run has no PR body, so it cannot see the Operational-Reason line the 1023-1 PR carries, which check:ci-plan-implementation admits in CI (operator ruling 2026-10-02; push and babysit authorised ASKED:2026-10-27T05:00Z). Each named plan still has open boxes of two kinds: live or post-merge runs that close only after the push or the merge (edge and stable rollout, the first CD run, scheduled runs on main, hostinger steps behind the eu-remote re-bind), and implementation boxes queued in this PR's turbo batch. CI still judges every key; this entry is removed before the merge."
+    }
+  ]
 }
