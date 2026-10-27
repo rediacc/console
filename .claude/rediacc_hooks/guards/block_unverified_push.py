@@ -1599,24 +1599,34 @@ RECEIPT_REL = ".ci/cache/prepush-receipt.json"
 #: The runner's per-tree archive (`scripts/ci-runner/run.ts` archiveReceipt), one whole-lane receipt per `headTree`.
 RECEIPT_ARCHIVE_REL = ".ci/cache/receipts"
 NO_RECEIPT = "no local gate run has judged this tree."
+#: `read_receipt`'s marker for a per-tree copy that is not admissible for the tree it is filed under.
+MISFILED = "__misfiled__"
 
 
 def read_receipt(root, tree):
     """The receipt that speaks for `tree`: the per-tree archive copy `.ci/cache/receipts/<tree>.json` first, then the latest `.ci/cache/prepush-receipt.json`. None when neither file exists.
 
     The archive copy wins because the latest file is overwritten by every whole run, so a run at another tree after the one that judged `tree` would otherwise void a receipt that is still true. A copy that EXISTS but does not parse returns `{UNPARSEABLE: <path: error>}` rather than falling through to the latest file: a corrupt receipt for this very tree is a finding, not an absence. Only `receipt_refusal`'s callers use this; `run()` keeps its own read of the latest file. THE TWO READERS DIFFER ON PURPOSE: after a whole run at another tree, this reader still finds the receipt for `tree` and `receipt_refusal` can admit it, while `run()` reads the latest file and refuses the same push as "a different tree". The release judges one exact tree, which the archive names; a push judges whatever the runner wrote last.
+
+    THE DIVERGENCE IS SAFE BY CONSTRUCTION. A per-tree copy is admissible only when its own `headTree` equals `tree` exactly and its `whole` is `true`; the runner archives only whole receipts, under their own `headTree` (`scripts/ci-runner/run.ts` writeReceipt and archiveReceipt). A copy that fails either test is refused through `{MISFILED: <why>}`, never read past: it cannot ride an `advances` chain, and it does not fall through to the latest file. So the per-tree copy admits only a whole run that judged this exact tree, through the same verdict `run()` applies, and the release gate (`.ci/rediacc_ci/release/local_gates.py`) relies on exactly that.
     """
-    candidates = []
+    archive = None
     if isinstance(tree, str) and TREE_RE.match(tree):
-        candidates.append(pathlib.Path(root) / RECEIPT_ARCHIVE_REL / ("%s.json" % tree))
-    candidates.append(pathlib.Path(root) / RECEIPT_REL)
-    for path in candidates:
-        if not path.is_file():
+        archive = pathlib.Path(root) / RECEIPT_ARCHIVE_REL / ("%s.json" % tree)
+    for path in (archive, pathlib.Path(root) / RECEIPT_REL):
+        if path is None or not path.is_file():
             continue
         try:
-            return json.loads(path.read_text(encoding="utf-8"))
+            doc = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
             return {UNPARSEABLE: "%s: %s" % (path, exc)}
+        if path == archive:
+            named = doc.get("headTree") if isinstance(doc, dict) else None
+            if named != tree:
+                return {MISFILED: "%s names tree %r, not %s" % (path, named, tree)}
+            if doc.get("whole") is not True:
+                return {MISFILED: "%s is not a whole-lane receipt (whole is not true)" % path}
+        return doc
     return None
 
 
@@ -1676,6 +1686,11 @@ def receipt_refusal(root, tree, receipt):
         return NO_RECEIPT
     if isinstance(receipt, dict) and UNPARSEABLE in receipt:
         return "the receipt does not parse (%s). Re-run `%s`." % (receipt[UNPARSEABLE], V2_REGEN)
+    if isinstance(receipt, dict) and MISFILED in receipt:
+        return "the per-tree receipt is not admissible for this tree: %s. Re-run `%s`." % (
+            receipt[MISFILED],
+            V2_REGEN,
+        )
     why, _chain = _receipt_front(root, tree, receipt)
     if why is not None:
         # v2_verdict answers a non-v2 receipt with text, so an empty string never reaches here; refuse anyway rather than read "" as consent.

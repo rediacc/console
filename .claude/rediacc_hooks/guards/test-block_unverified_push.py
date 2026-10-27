@@ -1618,6 +1618,32 @@ def test_receipt_refusal():
     cases.append(
         (True, "does not parse" in why, "READER: a corrupt per-tree copy refuses, no fallthrough")
     )
+    # SAFE BY CONSTRUCTION (5429d717.1): a per-tree copy is admissible only for the exact tree it names and only from a whole run. The latest file here is the good, admissible receipt, so each refusal below also proves there is no fallthrough to it.
+    misfiled = dict(json.loads(good), headTree="1" * 40)
+    archive.write_text(json.dumps(misfiled), encoding="utf-8")
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (
+            True,
+            "not admissible" in why and "1" * 40 in why,
+            "READER: a per-tree copy whose content names another tree is refused",
+        )
+    )
+    archive.write_text(json.dumps(dict(json.loads(good), whole=False)), encoding="utf-8")
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (
+            True,
+            "not admissible" in why and "whole" in why,
+            "READER: a per-tree copy from a narrowed run is refused",
+        )
+    )
+    archive.write_text("[]", encoding="utf-8")
+    why = _refusal_at(pt) or ""
+    cases.append((True, "not admissible" in why, "READER: a non-object per-tree copy is refused"))
+    # Their control: the admissible copy for this tree, same world, is admitted.
+    archive.write_text(good, encoding="utf-8")
+    cases.append((None, _refusal_at(pt), "READER CONTROL: the admissible per-tree copy admits"))
 
     # NO FAIL-OPEN: the function never consults the environment. An unparseable receipt object (the reader's marker, and a document that is not an object at all) and an empty dict all refuse.
     why = GM.receipt_refusal(str(green), _head_tree(green), {GM.UNPARSEABLE: "x.json: bad"}) or ""
@@ -1675,6 +1701,47 @@ def test_receipt_refusal():
         % (len(admitted), len(GM.FIXTURES), ", ".join(admitted))
     )
     cases.append((True, len(GM.FIXTURES) > 10, "PARITY: the sweep saw the fixture set"))
+
+    # READER SWEEP (5429d717.2): each world's latest receipt filed as the per-tree copy for its HEAD tree. Where that copy is admissible (it names the tree and is whole) read_receipt's verdict must be the latest-file verdict, word for word; where it is not, read_receipt must refuse it as not admissible rather than read past it.
+    same = misfiled_n = absent = 0
+    for name in sorted(GM.FIXTURES):
+        w = _world(name)
+        latest_w = w / GM.RECEIPT_REL
+        if not latest_w.is_file():
+            absent += 1
+            cases.append(
+                (GM.NO_RECEIPT, _refusal_at(w), "READER SWEEP %s: no receipt reads as none" % name)
+            )
+            continue
+        tree_w = _head_tree(w)
+        doc = json.loads(latest_w.read_text(encoding="utf-8"))
+        copy = w / GM.RECEIPT_ARCHIVE_REL / ("%s.json" % tree_w)
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_text(json.dumps(doc), encoding="utf-8")
+        via = _refusal_at(w)
+        if doc.get("headTree") == tree_w and doc.get("whole") is True:
+            same += 1
+            cases.append(
+                (
+                    _refusal_latest(w),
+                    via,
+                    "READER SWEEP %s: the per-tree copy gives the latest-file verdict" % name,
+                )
+            )
+        else:
+            misfiled_n += 1
+            cases.append(
+                (
+                    True,
+                    via is not None and "not admissible" in via,
+                    "READER SWEEP %s: an inadmissible per-tree copy is refused" % name,
+                )
+            )
+    print(
+        "  reader sweep: %d admissible copies matched, %d inadmissible refused, %d without a receipt"
+        % (same, misfiled_n, absent)
+    )
+    cases.append((True, same > 10, "READER SWEEP: most worlds produced an admissible copy"))
 
 
 test_receipt_refusal()
