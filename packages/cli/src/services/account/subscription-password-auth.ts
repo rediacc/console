@@ -53,24 +53,37 @@ export async function resolvePasswordLoginInput(
   return { email, password, ...(totp ? { totp } : {}) };
 }
 
-interface Reply<T> {
+export interface SessionReply<T> {
   status: number;
   body: T;
   cookie?: string;
 }
+type Reply<T> = SessionReply<T>;
 
-async function post<T>(
+/**
+ * One account API call over plain fetch (TLS), carrying the session cookie when given. Plain fetch,
+ * not the tunnelled client: the tunnel drops Set-Cookie, and the cookie is this session's only proof.
+ */
+export async function sessionRequest<T>(
   serverUrl: string,
+  method: 'GET' | 'POST' | 'PUT',
   path: string,
-  body: unknown,
+  body?: unknown,
   cookie?: string
-): Promise<Reply<T>> {
+): Promise<SessionReply<T>> {
   const resp = await fetch(`${serverUrl}${API}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
-    body: JSON.stringify(body),
+    method,
+    headers: {
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(cookie ? { Cookie: cookie } : {}),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   return readReply<T>(resp);
+}
+
+function post<T>(serverUrl: string, path: string, body: unknown, cookie?: string) {
+  return sessionRequest<T>(serverUrl, 'POST', path, body, cookie);
 }
 
 async function readReply<T>(resp: Response): Promise<Reply<T>> {
@@ -97,7 +110,7 @@ function refusal(step: string, reply: Reply<{ error?: string; code?: string }>):
 }
 
 /** Log in with email and password (plus a 2FA code when required) and return the session cookie. */
-async function openSession(serverUrl: string, input: PasswordLoginInput): Promise<string> {
+export async function openSession(serverUrl: string, input: PasswordLoginInput): Promise<string> {
   const login = await post<{
     requiresTwoFactor?: boolean;
     challengeToken?: string;

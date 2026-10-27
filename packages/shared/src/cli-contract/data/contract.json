@@ -3546,6 +3546,43 @@
       "path": [
         "config",
         "remote",
+        "password",
+        "change"
+      ],
+      "pathKey": "config remote password change",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.config.remote.password.change.description",
+      "label": "Change the master password: re-wrap the config key from this device's enrollment under a new password slot",
+      "options": [
+        {
+          "flags": "--new-password-stdin",
+          "long": "new-password-stdin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.password.change.optionNewPasswordStdin",
+          "label": "Read the new master password from stdin (otherwise REDIACC_NEW_CONFIG_PASSWORD, or a prompt on a TTY)"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "remote",
         "refresh"
       ],
       "pathKey": "config remote refresh",

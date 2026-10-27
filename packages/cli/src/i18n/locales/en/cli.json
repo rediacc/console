@@ -341,6 +341,9 @@
           "passwordTokenNotEnrollable": "This API token cannot enroll a config slot because it is not tied to a user in an organization. Issue a personal token from your own account in the web portal and retry.",
           "passwordForbidden": "The account server refused the config enrollment: {{error}}",
           "passwordNoSlot": "No password slot is provisioned for your config storage. Add one from the portal (Config Storage > key slots), then retry.",
+          "passwordNoStorage": "Config storage is not configured for your organization. Set it up from the portal (Config Storage), then retry.",
+          "passwordConfigNotReadable": "The account server cannot offer that config to this login: {{error}}",
+          "passwordNotFound": "The account server could not find what the enrollment needs: {{error}}",
           "passwordWrong": "Could not unlock the config with that password. Check REDIACC_CONFIG_PASSWORD (or the password you entered) and try again.",
           "optionForce": "Replace differing local content with the server copy without confirmation",
           "optionConfigId": "Attach to this existing config of the store instead of creating a new entry",
@@ -379,6 +382,38 @@
         },
         "status": {
           "description": "Show remote connection status"
+        },
+        "password": {
+          "description": "Manage this member's config-store master password (the password key slot)",
+          "change": {
+            "description": "Change the master password: re-wrap the config key from this device's enrollment under a new password slot",
+            "optionNewPasswordStdin": "Read the new master password from stdin (otherwise REDIACC_NEW_CONFIG_PASSWORD, or a prompt on a TTY)",
+            "newPasswordMissing": "The new master password is needed: pipe it with --new-password-stdin or set {{env}}.",
+            "newPasswordStdinEmpty": "--new-password-stdin read an empty password.",
+            "newPasswordTooShort": "The new master password must be at least {{min}} characters.",
+            "newPasswordPrompt": "New master password",
+            "newPasswordConfirm": "Repeat the new master password",
+            "newPasswordMismatch": "The two new master passwords differ.",
+            "emailPrompt": "Account email",
+            "loginPasswordPrompt": "Account password",
+            "totpPrompt": "Two-factor code for the sign-in",
+            "stepUpPrompt": "Two-factor code for re-authentication (from a later 30-second step than the sign-in code)",
+            "stepUpRequired": "Changing the master password needs re-authentication: set {{field}} to a two-factor code from a later 30-second step than {{loginField}}.",
+            "stepUpSameCode": "{{field}} repeats {{loginField}}; a two-factor step is accepted once, so it needs the code from the next step.",
+            "stepUpRefused": "Re-authentication refused (HTTP {{status}}): {{error}}. {{field}} must be a code from a later 30-second step than the sign-in code.",
+            "unlocking": "Unlocking the config key from this device's enrollment...",
+            "unlocked": "Config key unlocked",
+            "writing": "Writing the new password slot...",
+            "written": "Password slot written",
+            "slotRefused": "The server refused the new password slot (HTTP {{status}}): {{error}}",
+            "verifying": "Unlocking the store with the new password...",
+            "verified": "The new password unlocks the store",
+            "verifyFailed": "The new password slot was written, but unlocking it with the new password failed: {{error}}",
+            "verifyOtherStore": "the server answered for a different config store",
+            "verifyNoUnlock": "the new password does not open the server's password slot",
+            "verifyOtherKey": "the password slot holds a different config key than this device",
+            "success": "Master password of config \"{{name}}\" changed; the new password unlocks the store."
+          }
         },
         "refresh": {
           "description": "Force re-fetch config from remote storage",

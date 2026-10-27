@@ -524,6 +524,29 @@ export function registerRemoteCommands(configCommand: Command): void {
       }
     });
 
+  // remote password change
+  remote
+    .command('password')
+    .description(t('commands.config.remote.password.description'))
+    .command('change')
+    .description(t('commands.config.remote.password.change.description'))
+    .option(
+      '--new-password-stdin',
+      t('commands.config.remote.password.change.optionNewPasswordStdin')
+    )
+    .action(async (options: { newPasswordStdin?: boolean }) => {
+      try {
+        const { changeConfigPassword, resolveNewPassword } = await import(
+          './config-remote-password-change.js'
+        );
+        // Read first: a refused password leaves no session or server write behind.
+        const newPassword = await resolveNewPassword(options.newPasswordStdin === true);
+        await changeConfigPassword(configService.getEffectiveConfigName(), newPassword);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // remote refresh
   remote
     .command('refresh')

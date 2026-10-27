@@ -390,6 +390,45 @@ describe('config remote enable --password', () => {
     });
   }
 
+  const notFoundCases: { name: string; serverMessage: string; expected: RegExp }[] = [
+    {
+      name: 'a missing password slot',
+      serverMessage:
+        'You have no password slot on this config store; unlock with another method or enroll one.',
+      expected: /No password slot is provisioned/,
+    },
+    {
+      name: 'storage not configured',
+      serverMessage: 'Config storage is not configured',
+      expected: /Config storage is not configured for your organization/,
+    },
+    {
+      name: 'a config outside the token scope',
+      serverMessage: 'Config abc not found or not readable by this token.',
+      expected: /cannot offer that config to this login: Config abc not found or not readable/,
+    },
+    {
+      name: 'an unrecognised 404',
+      serverMessage: 'Some future not-found',
+      expected: /could not find what the enrollment needs: Some future not-found/,
+    },
+  ];
+
+  for (const { name, serverMessage, expected } of notFoundCases) {
+    it(`maps the 404 for ${name} to its own message`, async () => {
+      mockAccountServerFetch.mockRejectedValue(
+        Object.assign(new Error(serverMessage), { status: 404 })
+      );
+      process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+      const failure = await enablePassword(API_URL, CONFIG_NAME).catch((e: unknown) => e);
+      expect((failure as Error).message).toMatch(expected);
+      if (name !== 'a missing password slot') {
+        expect((failure as Error).message).not.toMatch(/No password slot is provisioned/);
+      }
+      expect(secureMem.size).toBe(0);
+    });
+  }
+
   it('surfaces the central TOKEN_IP_MISMATCH message unchanged', async () => {
     // accountServerFetch has already localized the IP refusal (prompted, or explained both remedies) by the time it reaches the enroll handler.
     const central =
@@ -442,7 +481,9 @@ describe('config remote enable --password', () => {
 
   it('maps a 404 to the "no password slot provisioned" message', async () => {
     mockAccountServerFetch.mockRejectedValue(
-      Object.assign(new Error('Not found'), { status: 404 })
+      Object.assign(new Error('You have no password slot on this config store; enroll one.'), {
+        status: 404,
+      })
     );
     process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
 

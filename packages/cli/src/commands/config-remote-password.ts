@@ -60,6 +60,26 @@ function describeEnrollForbidden(error: unknown): string {
 }
 
 /**
+ * The 404s of password-enroll are distinct conditions that the server tells apart only by message
+ * (routes/configs.ts): no password slot for this member, storage not configured for the org, or the
+ * requested config absent or unreadable by the token (for instance outside the token's team). Each
+ * gets its own text; anything unrecognised repeats the server's words.
+ */
+function describeEnrollNotFound(error: unknown): string {
+  const serverMessage = (error as { message?: string }).message ?? '';
+  if (serverMessage.includes('slot on this config store')) {
+    return t('commands.config.remote.enable.passwordNoSlot');
+  }
+  if (serverMessage.includes('Config storage is not configured')) {
+    return t('commands.config.remote.enable.passwordNoStorage');
+  }
+  if (serverMessage.includes('not found or not readable')) {
+    return t('commands.config.remote.enable.passwordConfigNotReadable', { error: serverMessage });
+  }
+  return t('commands.config.remote.enable.passwordNotFound', { error: serverMessage });
+}
+
+/**
  * Resolve the config master password for a headless password enrollment.
  * Order mirrors requireMasterPassword: REDIACC_CONFIG_PASSWORD env → interactive
  * prompt. There is nothing to verify it against locally, a wrong password fails
@@ -110,7 +130,7 @@ export async function passwordCredentials(
       throw new ValidationError(describeEnrollForbidden(error));
     }
     if (status === 404) {
-      throw new ValidationError(t('commands.config.remote.enable.passwordNoSlot'));
+      throw new ValidationError(describeEnrollNotFound(error));
     }
     throw error;
   }

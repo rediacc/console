@@ -7,7 +7,7 @@ order: 2
 language: pt
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/pt/cli.json
-sourceHash: "f0cd20da158ab915"
+sourceHash: "ca640d69d394088a"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -218,8 +218,10 @@ rdc config remote enable [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--password` | {{t:cli.commands.config.remote.enable.optionPassword}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--password-stdin` | {{t:cli.commands.config.remote.enable.optionPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--api-url <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.config.remote.enable.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--config-id <id>` | {{t:cli.commands.config.remote.enable.optionConfigId}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-config-remote-disable"></a>
@@ -245,6 +247,24 @@ rdc config remote disable [options]
 ```bash
 rdc config remote status
 ```
+
+#### password
+
+{{t:cli.commands.config.remote.password.description}}
+
+<a id="cli-local-config-remote-password-change"></a>
+**change:**
+
+{{t:cli.commands.config.remote.password.change.description}}
+
+```bash
+rdc config remote password change [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--new-password-stdin` | {{t:cli.commands.config.remote.password.change.optionNewPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-config-remote-refresh"></a>
 #### refresh
@@ -2765,6 +2785,7 @@ rdc subscription login [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-t, --token <token>` | {{t:cli.options.apiToken}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--password-stdin` | {{t:cli.commands.subscription.login.optionPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--server <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 
 

@@ -4242,6 +4242,28 @@
               "subcommands": []
             },
             {
+              "name": "password",
+              "descriptionKey": "commands.config.remote.password.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": [
+                {
+                  "name": "change",
+                  "descriptionKey": "commands.config.remote.password.change.description",
+                  "options": [
+                    {
+                      "flags": "--new-password-stdin",
+                      "descriptionKey": "commands.config.remote.password.change.optionNewPasswordStdin",
+                      "mandatory": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "arguments": [],
+                  "subcommands": []
+                }
+              ]
+            },
+            {
               "name": "refresh",
               "descriptionKey": "commands.config.remote.refresh.description",
               "options": [],
