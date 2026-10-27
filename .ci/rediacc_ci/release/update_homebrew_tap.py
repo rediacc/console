@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/release/update-homebrew-tap.sh`.
 
-Rewrites `Formula/rediacc-cli.rb` in the `private/homebrew-tap` submodule with a new version and the four platform SHA256 checksums, then optionally commits and pushes it and moves the parent repository's submodule pointer.
+Rewrites `Formula/rediacc-cli.rb` in the `private/homebrew-tap` submodule with a new version and the four platform SHA256 checksums, then optionally commits and pushes it to the TAP repository. The console's `private/homebrew-tap` gitlink is never staged, committed or pushed: a local release cannot push console `main`.
 
 Usage: update_homebrew_tap.py --version X.Y.Z [--push | --stage-only]
        [--local-checksums <dir>] [--dry-run]
@@ -31,7 +31,7 @@ FOUR EXTERNAL PROGRAMS ARE STILL INVOKED, DELIBERATELY, and each for the same re
 `awk '{print $1}' "$file"` on a MISSING file writes an implementation-specific
 diagnostic to stderr and exits 2, which `set -e` turns into the script's exit code. gawk, mawk and busybox awk word that diagnostic differently, so the only way both sides say the same thing on the same machine is for both to ask the same awk.
 
-THREE `set -u` DEATHS ARE REPRODUCED IN SHAPE, NOT IN COORDINATES, and the differential pins the difference rather than hiding it. `--version` and `--local-checksums` read `"$2"` unguarded, and `commit_and_push` / `update_submodule_pointer` read `"$GIT_BOT_NAME"` / `"$GIT_BOT_EMAIL"`, which `.ci/config/constants.sh:164-166` deliberately does NOT declare. Each is a live crash path a
+THREE `set -u` DEATHS ARE REPRODUCED IN SHAPE, NOT IN COORDINATES, and the differential pins the difference rather than hiding it. `--version` and `--local-checksums` read `"$2"` unguarded, and `commit_and_push` reads `"$GIT_BOT_NAME"` / `"$GIT_BOT_EMAIL"`, which `.ci/config/constants.sh:164-166` deliberately does NOT declare. Each is a live crash path a
 caller can reach, so the port exits 1 and writes bash's own `<script>: line <n>: <name>: unbound variable`. The script name and the line number are the port's own, because they are true of the port; every other byte and the exit code agree.
 
 CONSTANTS ARE LITERALS WITH A DRIFT TEST, not a bash parser. Two scalars are read out of `.ci/config/constants.sh` by the twin -- `HOMEBREW_FORMULA_PATH` (:288) and `RELEASES_BASE_URL` (:200) -- and both are reproduced below with their line references. `test_constants_have_not_drifted` reads constants.sh and asserts the pair still matches, so a change there turns the test RED
@@ -183,9 +183,6 @@ def checksum_url(base: str, version: str, filename: str) -> str:
 def commit_message(version: str) -> str:
     """`:239`. `[skip ci]` is load-bearing: without it the tap runs its own CI."""
     return "chore(release): bump rediacc-cli to %s [skip ci]" % version
-
-
-POINTER_COMMIT_MESSAGE = "chore(release): update homebrew-tap submodule pointer [skip ci]"
 
 
 def releases_base_url(env: dict[str, str] | None = None) -> str:
@@ -493,58 +490,6 @@ def commit_and_push(tap_dir: pathlib.Path, version: str, *, dry_run: bool) -> in
     return 0
 
 
-def stage_submodule_pointer(repo_root: pathlib.Path, *, dry_run: bool) -> int:
-    """`:246-257`. Stages the pointer and stops, for `commit.sh` to pick up."""
-    if dry_run:
-        log.info("[DRY-RUN] Would stage submodule pointer for %s" % TAP_SUBMODULE)
-        return 0
-    rc = _git(["add", TAP_SUBMODULE], cwd=str(repo_root)).returncode
-    if rc != 0:
-        return rc
-    log.info("Staged %s submodule pointer in parent repo" % TAP_SUBMODULE)
-    return 0
-
-
-def update_submodule_pointer(repo_root: pathlib.Path, *, dry_run: bool) -> int:
-    """`:259-278`. Stages, and pushes the parent repo when the pointer moved."""
-    if dry_run:
-        log.info("[DRY-RUN] Would update submodule pointer")
-        return 0
-
-    rc = _git(["add", TAP_SUBMODULE], cwd=str(repo_root)).returncode
-    if rc != 0:
-        return rc
-
-    if _git(["diff", "--cached", "--quiet"], cwd=str(repo_root)).returncode == 0:
-        log.info("No submodule pointer changes")
-        return 0
-
-    frame = inspect.currentframe()
-    line = frame.f_lineno if frame else 0
-    bot_name = require_env("GIT_BOT_NAME", line)
-    bot_email = require_env("GIT_BOT_EMAIL", line)
-
-    rc = _git(
-        [
-            "-c",
-            "user.name=%s" % bot_name,
-            "-c",
-            "user.email=%s" % bot_email,
-            "commit",
-            "-m",
-            POINTER_COMMIT_MESSAGE,
-        ],
-        cwd=str(repo_root),
-    ).returncode
-    if rc != 0:
-        return rc
-    rc = _git([*auth_args(), "push", "origin", "HEAD:main"], cwd=str(repo_root)).returncode
-    if rc != 0:
-        return rc
-    log.info("Committed and pushed homebrew-tap submodule pointer update")
-    return 0
-
-
 def require_sources(root: pathlib.Path) -> None:
     """`source constants.sh` (:26), plus what it refuses on.
 
@@ -599,7 +544,7 @@ def main(argv: list[str]) -> int:
 
     checksum_dir = pathlib.Path(tempfile.mkdtemp())
     try:
-        return _run(root, tap_dir, formula, checksum_dir, opts)
+        return _run(tap_dir, formula, checksum_dir, opts)
     except UnboundVariableError as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -609,7 +554,6 @@ def main(argv: list[str]) -> int:
 
 
 def _run(
-    root: pathlib.Path,
     tap_dir: pathlib.Path,
     formula: pathlib.Path,
     checksum_dir: pathlib.Path,
@@ -631,19 +575,11 @@ def _run(
     if rc != 0:
         return rc
 
-    # `--stage-only` WINS over `--push` (:303-309). Both flags together is not refused, it is silently resolved, and the port resolves it the same way.
-    if opts.stage_only:
+    # `--push` and `--stage-only` both commit and push the formula to the tap; neither touches the console's gitlink any more.
+    if opts.stage_only or opts.push:
         rc = commit_and_push(tap_dir, opts.version, dry_run=opts.dry_run)
         if rc != 0:
             return rc
-        rc = stage_submodule_pointer(root, dry_run=opts.dry_run)
-    elif opts.push:
-        rc = commit_and_push(tap_dir, opts.version, dry_run=opts.dry_run)
-        if rc != 0:
-            return rc
-        rc = update_submodule_pointer(root, dry_run=opts.dry_run)
-    if rc != 0:
-        return rc
 
     log.info("Homebrew tap update complete")
     return 0

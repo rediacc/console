@@ -231,6 +231,22 @@ def run_both(tmp_path: pathlib.Path, floor_text: str | None, **kw):
     return old, new, old_calls, new_calls, old_floor
 
 
+def run_new(tmp_path: pathlib.Path, floor_text: str | None, **kw):
+    """The port alone, for the cases whose behavior deliberately left the twin: an advance no longer commits or pushes, so its goldens (which record the git calls) no longer apply. Returns `(proc, calls, floor)`."""
+    fix = _fixture(tmp_path, floor_text)
+    proc, calls = _run(fix, tmp_path, "new", **kw)
+    return proc, calls, _floor(fix)
+
+
+def _assert_no_git(calls: list[str]) -> None:
+    """THE ACCEPTANCE: no git argv at all, so nothing can push console `main`."""
+    assert not any(c.startswith("git\t") for c in calls), "the port ran git: %s" % calls
+    assert not any("push" in c.split("\t") for c in calls), "the port pushed: %s" % calls
+
+
+WROTE = "::notice::wrote .ci/config/release-contract-floor.txt in the working tree; commit it with the next PR\n"
+
+
 def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
@@ -259,33 +275,26 @@ def sentinels(*versions: str) -> str:
     return "\t".join("cli/%s/.released" % v for v in versions) + "\n"
 
 
-def test_the_ratchet_advances_and_commits(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls, floor = run_both(
-        tmp_path, "v1.2.21\n", FAKE_AWS_OUT=sentinels("v1.3.0", "v1.4.0")
-    )
-    assert old.returncode == 0
-    assert old.stdout == "::notice::advancing ratchet v1.2.21 -> v1.3.0\n"
+def test_the_ratchet_advances_in_the_working_tree_and_runs_no_git(
+    tmp_path: pathlib.Path,
+) -> None:
+    proc, calls, floor = run_new(tmp_path, "v1.2.21\n", FAKE_AWS_OUT=sentinels("v1.3.0", "v1.4.0"))
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout == "::notice::advancing ratchet v1.2.21 -> v1.3.0\n" + WROTE
     assert floor == "v1.3.0\n", "the new floor was not written"
-    assert old_calls == [
-        LIST_CALL,
-        "git\tconfig\tuser.name\tFixture Bot",
-        "git\tconfig\tuser.email\tbot@example.invalid",
-        "git\tadd\t.ci/config/release-contract-floor.txt",
-        "git\tcommit\t-m\tchore(release-state): advance contract floor to v1.3.0 [skip ci]",
-        "git\tpush\torigin\tHEAD:main",
-    ]
-    _assert_agree(old, new, "advance", old_calls, new_calls)
+    assert calls == [LIST_CALL]
+    _assert_no_git(calls)
 
 
 def test_the_oldest_sentinel_wins_not_the_first_key_listed(tmp_path: pathlib.Path) -> None:
     """`sort -uV | head -1`. R2 returns keys in lexical order, where `v1.10.0` precedes `v1.9.0`; the floor must be the VERSION-oldest, not the first key."""
-    old, new, old_calls, new_calls, floor = run_both(
+    proc, calls, floor = run_new(
         tmp_path, "v1.0.0\n", FAKE_AWS_OUT=sentinels("v1.10.0", "v1.9.0", "v1.11.0")
     )
-    assert old.returncode == 0
+    assert proc.returncode == 0
     assert floor == "v1.9.0\n", "lexical order was used instead of version order"
-    assert "advancing ratchet v1.0.0 -> v1.9.0" in old.stdout
-    _assert_agree(old, new, "version-order", old_calls, new_calls)
+    assert "advancing ratchet v1.0.0 -> v1.9.0" in proc.stdout
+    _assert_no_git(calls)
 
 
 def test_an_equal_observation_is_a_no_op_with_no_git_at_all(tmp_path: pathlib.Path) -> None:
@@ -333,37 +342,37 @@ def test_a_missing_floor_file_is_a_warning_and_a_clean_exit(tmp_path: pathlib.Pa
 
 
 def test_a_floor_file_with_no_semver_line_reads_as_unset(tmp_path: pathlib.Path) -> None:
-    """`grep -E '^v[0-9]+\\.[0-9]+\\.[0-9]+$' | head -1` finds nothing, and the twin then prints `<unset>` while COMPARING against `v0.0.0`. Two different defaults for one empty value, reproduced rather than harmonised."""
-    old, new, old_calls, new_calls, floor = run_both(
+    """`grep -E '^v[0-9]+\\.[0-9]+\\.[0-9]+$' | head -1` finds nothing, and the message then prints `<unset>` while COMPARING against `v0.0.0`. Two different defaults for one empty value, kept from the twin."""
+    proc, calls, floor = run_new(
         tmp_path,
         "# the floor is not recorded yet\n\nv1.2.3-rc.1\n",
         FAKE_AWS_OUT=sentinels("v1.3.0"),
     )
-    assert old.returncode == 0
-    assert old.stdout == "::notice::advancing ratchet <unset> -> v1.3.0\n"
+    assert proc.returncode == 0
+    assert proc.stdout == "::notice::advancing ratchet <unset> -> v1.3.0\n" + WROTE
     assert floor == "v1.3.0\n"
-    _assert_agree(old, new, "unset-floor", old_calls, new_calls)
+    _assert_no_git(calls)
 
 
 def test_a_prerelease_sentinel_is_not_a_floor_candidate(tmp_path: pathlib.Path) -> None:
     """The sentinel filter is STRICT semver, so `v1.3.0-rc.1` is invisible and the floor is the oldest RELEASE sentinel."""
-    old, new, old_calls, new_calls, floor = run_both(
+    proc, calls, floor = run_new(
         tmp_path, "v1.0.0\n", FAKE_AWS_OUT=sentinels("v1.3.0-rc.1", "v1.4.0")
     )
-    assert old.returncode == 0
+    assert proc.returncode == 0
     assert floor == "v1.4.0\n"
-    _assert_agree(old, new, "prerelease-sentinel", old_calls, new_calls)
+    _assert_no_git(calls)
 
 
 def test_a_non_sentinel_key_under_the_prefix_is_ignored(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls, floor = run_both(
+    proc, calls, floor = run_new(
         tmp_path,
         "v1.0.0\n",
         FAKE_AWS_OUT="cli/v1.2.0/rdc-linux-x64\tcli/v1.5.0/.released\n",
     )
-    assert old.returncode == 0
+    assert proc.returncode == 0
     assert floor == "v1.5.0\n", "a binary key was mistaken for a sentinel"
-    _assert_agree(old, new, "non-sentinel-key", old_calls, new_calls)
+    _assert_no_git(calls)
 
 
 def test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket(
@@ -391,34 +400,28 @@ def test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket(
     _assert_agree(old, new, "aws-fails", old_calls, new_calls)
 
 
-def test_defect_the_floor_file_is_written_before_git_runs(tmp_path: pathlib.Path) -> None:
-    """THE HALF-APPLIED-RATCHET DEFECT, PINNED. The write happens first and every git call is unguarded under `set -e`, so a refused commit exits with git's status having ALREADY modified the tree. Only the leftover bytes show it, which is why `run_both` compares the floor file at all."""
-    old, new, old_calls, new_calls, floor = run_both(
+def test_a_git_that_would_refuse_everything_is_never_asked(tmp_path: pathlib.Path) -> None:
+    """The old half-applied-ratchet defect (file written, then a failing `git commit` leaving the tree modified) cannot happen: no git runs, so a `git` that refuses every verb changes neither the exit code nor the call log."""
+    proc, calls, floor = run_new(
         tmp_path,
         "v1.0.0\n",
         FAKE_AWS_OUT=sentinels("v1.6.0"),
         FAKE_GIT_FAIL_ON="commit",
         FAKE_GIT_RC="3",
     )
-    assert old.returncode == 3, "the twin no longer dies on git's own status"
-    assert floor == "v1.6.0\n", "the twin no longer leaves the tree modified"
-    assert "advancing ratchet v1.0.0 -> v1.6.0" in old.stdout
-    assert "fake git: commit refused" in old.stderr, "git's diagnostic was swallowed"
-    assert not any("push" in c for c in old_calls), "the push ran after the commit failed"
-    _assert_agree(old, new, "commit-fails", old_calls, new_calls)
-
-
-def test_a_failed_push_is_fatal_too(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls, floor = run_both(
-        tmp_path,
-        "v1.0.0\n",
-        FAKE_AWS_OUT=sentinels("v1.6.0"),
-        FAKE_GIT_FAIL_ON="push",
-        FAKE_GIT_RC="128",
-    )
-    assert old.returncode == 128
+    assert proc.returncode == 0
     assert floor == "v1.6.0\n"
-    _assert_agree(old, new, "push-fails", old_calls, new_calls)
+    assert proc.stderr == ""
+    _assert_no_git(calls)
+
+
+def test_a_no_op_run_runs_no_git_either(tmp_path: pathlib.Path) -> None:
+    """The no-advance paths ran no git in the twin; they still run none. Together with the advance cases, no argv of the fake `git` exists in any case, so none can push `main`."""
+    for floor_text, out in (("v1.5.0\n", sentinels("v1.2.0")), ("v1.5.0\n", "\n")):
+        proc, calls, floor = run_new(tmp_path, floor_text, FAKE_AWS_OUT=out)
+        assert proc.returncode == 0
+        assert floor == floor_text
+        _assert_no_git(calls)
 
 
 def test_missing_aws_is_refused_before_missing_git(tmp_path: pathlib.Path) -> None:
@@ -433,7 +436,7 @@ def test_missing_aws_is_refused_before_missing_git(tmp_path: pathlib.Path) -> No
 
 def test_each_required_variable_is_demanded_in_order(tmp_path: pathlib.Path) -> None:
     """DIVERGENCE 1 IS ASSERTED, NOT ASSUMED. `${VAR:?msg}` is a bash diagnostic
-    carrying the twin's path and line number; the port names itself instead. The stream, the exit code, the order and the absence of any aws or git call must all agree."""
+    carrying the twin's path and line number; the port names itself instead. The stream, the exit code, the order and the absence of any aws or git call must all agree. The twin also demanded GIT_BOT_NAME and GIT_BOT_EMAIL; with no commit the port does not, which `test_the_git_identity_is_no_longer_demanded` pins."""
     for name in port.REQUIRED_ENV:
         fix = _fixture(tmp_path, "v1.0.0\n")
         old, old_calls = _run_old(fix, tmp_path, drop_env=(name,))
@@ -454,16 +457,39 @@ def test_each_required_variable_is_demanded_in_order(tmp_path: pathlib.Path) -> 
         )
 
 
+def test_the_git_identity_is_no_longer_demanded(tmp_path: pathlib.Path) -> None:
+    assert "GIT_BOT_NAME" not in port.REQUIRED_ENV
+    assert "GIT_BOT_EMAIL" not in port.REQUIRED_ENV
+    proc, calls, floor = run_new(
+        tmp_path,
+        "v1.0.0\n",
+        drop_env=("GIT_BOT_NAME", "GIT_BOT_EMAIL"),
+        FAKE_AWS_OUT=sentinels("v1.2.0"),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert floor == "v1.2.0\n"
+    _assert_no_git(calls)
+
+
+def test_the_floor_lags_the_oldest_sentinel_and_one_run_closes_it(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The lag `release.cd_preflight --checks c` warns about is closed by this module writing the file; a second run is then a no-op."""
+    fix = _fixture(tmp_path, "v1.0.0\n")
+    first, _ = _run(fix, tmp_path, "new", FAKE_AWS_OUT=sentinels("v1.2.0"))
+    again, _ = _run(fix, tmp_path, "new", FAKE_AWS_OUT=sentinels("v1.2.0"))
+    assert "advancing ratchet v1.0.0 -> v1.2.0" in first.stdout
+    assert "no change" in again.stdout
+    assert _floor(fix) == "v1.2.0\n"
+
+
 def test_an_empty_variable_is_refused_like_an_unset_one(tmp_path: pathlib.Path) -> None:
     """`${VAR:?}` fires on set-but-EMPTY, which is what an unfilled workflow
     input actually looks like."""
-    fix = _fixture(tmp_path, "v1.0.0\n")
-    old, old_calls = _run_old(fix, tmp_path, GIT_BOT_EMAIL="")
-    new, new_calls = _run(fix, tmp_path, "new", GIT_BOT_EMAIL="")
-    assert old.returncode == 1 == new.returncode
-    assert "GIT_BOT_EMAIL" in old.stderr
-    assert "GIT_BOT_EMAIL" in new.stderr
-    assert old_calls == [] == new_calls
+    proc, calls, _floor_text = run_new(tmp_path, "v1.0.0\n", CLOUDFLARE_R2_ENDPOINT="")
+    assert proc.returncode == 1
+    assert "CLOUDFLARE_R2_ENDPOINT" in proc.stderr
+    assert calls == []
 
 
 def test_the_fixture_root_is_not_this_checkout(tmp_path: pathlib.Path) -> None:
@@ -541,9 +567,9 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
 
     fix = _fixture(tmp_path, "v1.5.0\n")
     (fix / ".ci" / "rediacc_ci" / "release" / PORT.name).write_text(mutated, encoding="utf-8")
-    bad, bad_calls = _run(fix, tmp_path, "new", FAKE_AWS_OUT=sentinels("v1.2.0"))
+    bad, _bad_calls = _run(fix, tmp_path, "new", FAKE_AWS_OUT=sentinels("v1.2.0"))
     assert _floor(fix) == "v1.2.0\n", "the mutant did not walk the ratchet backwards"
-    assert any("commit" in c for c in bad_calls), "the mutant did not reach the commit"
+    assert WROTE in bad.stdout, "the mutant did not reach the write"
     assert bad.returncode == 0, "the plant is invisible in the exit code, as intended"
 
     fix = _fixture(tmp_path, "v1.5.0\n")

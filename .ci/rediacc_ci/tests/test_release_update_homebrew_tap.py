@@ -654,13 +654,30 @@ def test_a_local_checksum_directory_that_does_not_exist_is_fatal_on_the_first_na
     assert_agree(old, new, "missing-local-dir")
 
 
-# --------------------------------------------------------------------------- The commit / push / pointer paths ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The commit / push paths (tap only) ---------------------------------------------------------------------------
 
 
-def test_push_commits_in_the_tap_then_commits_and_pushes_the_pointer(
+def run_new_only(tmp_path: pathlib.Path, args: list[str], **kw):
+    """The port alone, for the cases whose behavior deliberately left the twin (the console gitlink path is gone), so the twin's goldens no longer apply."""
+    return _run(tmp_path, "new", args, **kw)
+
+
+def assert_pushes_only_the_tap(calls: list[str], root: pathlib.Path, *, pushes: int) -> None:
+    """THE ACCEPTANCE. Every `git push` argv is scoped by `-C <tree>/private/homebrew-tap`, none runs in the console tree, and the console gitlink is never staged or committed."""
+    tap = "git\t-C\t%s\t" % (root / "private" / "homebrew-tap")
+    pushed = [c for c in calls if "\tpush\t" in c]
+    assert len(pushed) == pushes, pushed
+    assert all(c.startswith(tap) for c in pushed), "a push left the tap repository: %s" % pushed
+    assert not any(c.startswith(("git\tadd\t", "git\tcommit\t")) for c in calls), (
+        "the console tree was staged or committed: %s" % calls
+    )
+    assert not any("submodule pointer" in c for c in calls)
+
+
+def test_push_commits_and_pushes_the_formula_to_the_tap_only(
     tmp_path: pathlib.Path,
 ) -> None:
-    old, new = run_both(
+    proc, calls, _formula, root, _tmp = run_new_only(
         tmp_path,
         ["--version", "2.5.0", "--push"],
         GIT_BOT_NAME="Rediacc Bot",
@@ -668,80 +685,69 @@ def test_push_commits_in_the_tap_then_commits_and_pushes_the_pointer(
         FAKE_GIT_DIFF_RC="1",
         FAKE_GIT_DIFF_CACHED_RC="1",
     )
-    assert old[0].returncode == 0, old[0].stderr
-    flat = "\n".join(old[1])
+    assert proc.returncode == 0, proc.stderr
+    flat = "\n".join(calls)
     assert "chore(release): bump rediacc-cli to 2.5.0 [skip ci]" in flat
-    assert "chore(release): update homebrew-tap submodule pointer [skip ci]" in flat
     assert "user.name=Rediacc Bot" in flat
-    assert flat.count("push\torigin\tHEAD:main") == 2
-    assert "✓ Pushed to homebrew-tap" in old[0].stderr
-    assert "✓ Committed and pushed homebrew-tap submodule pointer update" in old[0].stderr
-    assert_agree(old, new, "push")
+    assert "✓ Pushed to homebrew-tap" in proc.stderr
+    assert "pointer" not in proc.stderr
+    assert_pushes_only_the_tap(calls, root, pushes=1)
 
 
-def test_stage_only_commits_in_the_tap_and_only_stages_the_pointer(
+def test_stage_only_pushes_the_tap_and_stages_nothing_in_the_console(
     tmp_path: pathlib.Path,
 ) -> None:
-    old, new = run_both(
+    proc, calls, _formula, root, _tmp = run_new_only(
         tmp_path,
         ["--version", "2.5.0", "--stage-only"],
         GIT_BOT_NAME="Rediacc Bot",
         GIT_BOT_EMAIL="bot@rediacc.com",
     )
-    assert old[0].returncode == 0, old[0].stderr
-    flat = "\n".join(old[1])
-    assert "chore(release): bump rediacc-cli to 2.5.0 [skip ci]" in flat
-    assert "submodule pointer [skip ci]" not in flat
-    assert flat.count("push\torigin\tHEAD:main") == 1, "the parent repo was pushed"
-    assert "Staged private/homebrew-tap submodule pointer in parent repo" in old[0].stderr
-    assert_agree(old, new, "stage-only")
+    assert proc.returncode == 0, proc.stderr
+    assert "chore(release): bump rediacc-cli to 2.5.0 [skip ci]" in "\n".join(calls)
+    assert "Staged" not in proc.stderr
+    assert_pushes_only_the_tap(calls, root, pushes=1)
 
 
-def test_stage_only_wins_over_push_when_both_are_given(tmp_path: pathlib.Path) -> None:
-    """Not refused, silently resolved (:303-309). Reproduced, not repaired."""
-    old, new = run_both(
+def test_both_flags_given_still_pushes_the_tap_once(tmp_path: pathlib.Path) -> None:
+    proc, calls, _formula, root, _tmp = run_new_only(
         tmp_path,
         ["--version", "2.5.0", "--push", "--stage-only"],
         GIT_BOT_NAME="B",
         GIT_BOT_EMAIL="b@e",
     )
-    assert old[0].returncode == 0
-    assert "Staged private/homebrew-tap submodule pointer" in old[0].stderr
-    assert "Committed and pushed homebrew-tap submodule pointer" not in old[0].stderr
-    assert_agree(old, new, "both-flags")
+    assert proc.returncode == 0, proc.stderr
+    assert_pushes_only_the_tap(calls, root, pushes=1)
 
 
-def test_an_unchanged_formula_is_not_committed(tmp_path: pathlib.Path) -> None:
-    old, new = run_both(
+def test_an_unchanged_formula_is_not_committed_and_nothing_is_pushed(
+    tmp_path: pathlib.Path,
+) -> None:
+    proc, calls, _formula, root, _tmp = run_new_only(
         tmp_path,
         ["--version", "2.5.0", "--push"],
         GIT_BOT_NAME="B",
         GIT_BOT_EMAIL="b@e",
         FAKE_GIT_DIFF_RC="0",
     )
-    assert old[0].returncode == 0
-    assert "✓ Formula already at version 2.5.0" in old[0].stderr
-    flat = "\n".join(old[1])
-    assert "bump rediacc-cli to 2.5.0" not in flat, "an unchanged formula was committed"
-    # AND THE POINTER STILL MOVES. `commit_and_push` returning early does not stop `update_submodule_pointer`, so the parent repo is still committed and pushed when its index says the gitlink changed. Reproduced, not repaired.
-    assert "update homebrew-tap submodule pointer [skip ci]" in flat
-    assert_agree(old, new, "already-current")
+    assert proc.returncode == 0
+    assert "✓ Formula already at version 2.5.0" in proc.stderr
+    assert "bump rediacc-cli to 2.5.0" not in "\n".join(calls), "an unchanged formula was committed"
+    # The twin still moved the console pointer here; that path is gone, so nothing is pushed anywhere.
+    assert_pushes_only_the_tap(calls, root, pushes=0)
 
 
-def test_no_pointer_change_is_reported_and_nothing_is_pushed(
-    tmp_path: pathlib.Path,
-) -> None:
-    old, new = run_both(
+def test_a_cached_diff_in_the_console_is_never_consulted(tmp_path: pathlib.Path) -> None:
+    proc, calls, _formula, root, _tmp = run_new_only(
         tmp_path,
         ["--version", "2.5.0", "--push"],
         GIT_BOT_NAME="B",
         GIT_BOT_EMAIL="b@e",
         FAKE_GIT_DIFF_CACHED_RC="0",
     )
-    assert old[0].returncode == 0
-    assert "✓ No submodule pointer changes" in old[0].stderr
-    assert "\n".join(old[1]).count("push\torigin\tHEAD:main") == 1
-    assert_agree(old, new, "no-pointer-change")
+    assert proc.returncode == 0
+    assert not any("--cached" in c for c in calls)
+    assert_pushes_only_the_tap(calls, root, pushes=1)
 
 
 def test_neither_push_nor_stage_only_writes_the_formula_and_stops(
@@ -776,40 +782,36 @@ def test_a_missing_git_bot_name_kills_the_run_after_the_formula_was_written(
 def test_github_pat_is_passed_per_command_and_never_persisted(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The token authenticates the fetch and both pushes through `-c` credential-helper arguments that hold no secret, and nothing writes git config.
+    """The token authenticates the fetch and the tap push through `-c` credential-helper arguments that hold no secret, and nothing writes git config.
 
-    A `git config --global` insteadOf write once left a plaintext PAT in ~/.gitconfig, which the devbox shares with the host. Reverting either side to that write turns this red on three counts: a `config` call, the token in argv, and a scratch-HOME gitconfig.
+    A `git config --global` insteadOf write once left a plaintext PAT in ~/.gitconfig, which the devbox shares with the host. Reverting to that write turns this red on three counts: a `config` call, the token in argv, and a scratch-HOME gitconfig.
     """
-    old, new = run_both(
+    proc, calls, _formula, root, _tmp = run_new_only(
         tmp_path,
         ["--version", "2.5.0", "--push"],
         GITHUB_PAT="ghp_secret",
         GIT_BOT_NAME="B",
         GIT_BOT_EMAIL="b@e",
     )
-    assert old[0].returncode == 0, old[0].stderr
-    for side in (old, new):
-        calls = side[1]
-        assert not any("\tconfig\t" in c for c in calls), calls
-        assert not any("ghp_secret" in c for c in calls), "the token reached argv"
-        helper = ("credential." + GH_ORIGIN + ".helper=") + port.CREDENTIAL_HELPER
-        authed = [c for c in calls if helper in c]
-        verbs = sorted(c.rsplit("\t", 3)[1] if "fetch" not in c else "fetch" for c in authed)
-        assert verbs == ["fetch", "push", "push"], authed
-        for c in authed:
-            assert ("\tcredential." + GH_ORIGIN + ".helper=\t") in c, "the reset entry is missing"
-        assert not (tmp_path / "old-home" / ".gitconfig").exists()
-        assert not (tmp_path / "new-home" / ".gitconfig").exists()
-    assert_agree(old, new, "github-pat")
+    assert proc.returncode == 0, proc.stderr
+    assert not any("\tconfig\t" in c for c in calls), calls
+    assert not any("ghp_secret" in c for c in calls), "the token reached argv"
+    helper = ("credential." + GH_ORIGIN + ".helper=") + port.CREDENTIAL_HELPER
+    authed = [c for c in calls if helper in c]
+    verbs = sorted(c.rsplit("\t", 3)[1] if "fetch" not in c else "fetch" for c in authed)
+    assert verbs == ["fetch", "push"], authed
+    for c in authed:
+        assert ("\tcredential." + GH_ORIGIN + ".helper=\t") in c, "the reset entry is missing"
+    assert not (tmp_path / "new-home" / ".gitconfig").exists()
+    assert_pushes_only_the_tap(calls, root, pushes=1)
 
 
 def test_no_github_pat_means_no_credential_arguments(tmp_path: pathlib.Path) -> None:
-    old, new = run_both(
+    proc, calls, *_ = run_new_only(
         tmp_path, ["--version", "2.5.0", "--push"], GIT_BOT_NAME="B", GIT_BOT_EMAIL="b@e"
     )
-    assert old[0].returncode == 0, old[0].stderr
-    assert not any("credential." in c for c in old[1] + new[1])
-    assert_agree(old, new, "no-pat")
+    assert proc.returncode == 0, proc.stderr
+    assert not any("credential." in c for c in calls)
 
 
 def test_the_credential_helper_answers_real_git_with_the_token(tmp_path: pathlib.Path) -> None:

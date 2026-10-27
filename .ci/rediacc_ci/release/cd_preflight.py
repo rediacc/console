@@ -605,6 +605,13 @@ def check_c(state: State, version: str, phase: str, release_sha: str) -> Result:
             % (ratchet, len(below), ", ".join(below))
         )
         status = WARN
+    elif key(ratchet) < key(oldest):
+        lines.append(
+            "ratchet %s lags the oldest sentinel %s: `release.advance_contract_floor` writes the "
+            "new floor into the working tree, and it is committed in the next PR"
+            % (ratchet, oldest)
+        )
+        status = WARN
     else:
         lines.append("ratchet %s, sentinels %s..%s" % (ratchet, oldest, newest))
 
