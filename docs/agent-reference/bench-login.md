@@ -37,4 +37,4 @@ The X25519 pair stays DEV. It is the E2E envelope key, not the licence signer, a
 
 The `deploy-proxy-bench` profile binds the production ED25519 public key too, so the renet the bench proxy image builds verifies a production-signed bench licence; the bench proxy was redeployed with it on 2026-10-27 (version 5622d50c).
 
-A TOTP step is accepted once per user (account 8c656b6). Two runs that log in within the same 30 s step collide: the second is refused "Invalid verification code". A run that follows `npm run login:bench`, such as `rdc config remote master-password change`, waits for the next step first.
+A TOTP step is accepted once per user (account 8c656b6). Two runs that log in within the same 30 s step collide: the second is refused "Invalid verification code". Nothing waits automatically: a caller that runs a second TOTP-using command right after `npm run login:bench` (for example `rdc config remote master-password change`) must itself wait for the next 30 s step before computing the codes, or it is refused before anything is written.
