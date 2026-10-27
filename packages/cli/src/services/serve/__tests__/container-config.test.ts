@@ -22,6 +22,7 @@ import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import {
   cekHandoffEncrypt,
+  ENVELOPE_VERSION,
   exportAesKey,
   fromBase64,
   generateCek,
@@ -289,6 +290,10 @@ describe('container-tier config loading', () => {
         // The executor must present the token it was just minted, not its own.
         expect((init?.headers as Record<string, string>)['X-Config-Token']).toBe(
           'rct_executor_scoped'
+        );
+        // A pull without the envelope header gets 426 against a v3 store (the R1 clean break).
+        expect((init?.headers as Record<string, string>)['x-config-envelope']).toBe(
+          String(ENVELOPE_VERSION)
         );
         return json({
           newServerToken: 'rct_rotated',

@@ -29,7 +29,7 @@
  */
 
 import type { EncryptedConfigPayload } from '@rediacc/shared/config-crypto';
-import { fromBase64, importAesKey } from '@rediacc/shared/config-crypto';
+import { ENVELOPE_VERSION, fromBase64, importAesKey } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { decryptConfigPullPayload } from '@rediacc/shared/config-schema';
@@ -160,7 +160,9 @@ export function createContainerConfigLoader(
     const query = teamId ? `?teamId=${encodeURIComponent(teamId)}` : '';
     const response = await doFetch(
       `${accountUrl}/account/api/v1/configs/${encodeURIComponent(configId)}${query}`,
-      { headers: { 'X-Config-Token': configToken } }
+      {
+        headers: { 'X-Config-Token': configToken, 'x-config-envelope': String(ENVELOPE_VERSION) },
+      }
     );
     if (!response.ok) {
       throw new SessionError(await describe(response, 'could not fetch the config'));
