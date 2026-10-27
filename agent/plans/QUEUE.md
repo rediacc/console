@@ -68,11 +68,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-telemetry-export.md -- 15 of 19 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 788 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 796 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 5 live of writer_cap 15 (session d778be9d): worker:aabc3edfa85c103da, worker:a3ffcb19915615228, worker:a83ea4cd6abad5502, worker:a69ef6aa333d1ce44, worker:a68886512a32cfd83.
-- Leased items: 5: #1f4389ae (worker:a68886512a32cfd83, d778be9d), #21f84f7a (worker:a69ef6aa333d1ce44, d778be9d), #465831fe (worker:a83ea4cd6abad5502, d778be9d), #d83dc217 (worker:a3ffcb19915615228, d778be9d), #ebabe5f0 (worker:aabc3edfa85c103da, d778be9d).
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:aac67a07a9faaf219, worker:ab9569561cb8a8da7, worker:a69ef6aa333d1ce44.
+- Leased items: 5: #046d4339 (worker:a0df4a65119b8a78f, d778be9d), #05b714ba (worker:aac67a07a9faaf219, d778be9d), #226748db (worker:aac67a07a9faaf219, d778be9d), #d2ff072e (worker:ab9569561cb8a8da7, d778be9d), #e0db46c5 (worker:a69ef6aa333d1ce44, d778be9d).
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 7; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 

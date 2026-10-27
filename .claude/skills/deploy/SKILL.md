@@ -41,14 +41,14 @@ npm run release:local -- --channel edge --workers-only --regions eu,us
 **Stable (asked).** Stable is CI/CD only, through `promote-stable.yml` after the 7-day soak, and needs `RELEASE_ASKED` naming the operator's answer:
 
 ```bash
-RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z gh workflow run "Release to Production" -f force=true
+RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z gh workflow run "Release to Production"
 ```
 
 Watch a run with the ci-watch skill (`.ci/scripts/ci/ci-trace.py --wait --run <id>`), never a hand-rolled poll.
 
-**eu.** The eu account has no active users. The rollback handle and the D1 bookmark are still recorded, and the deploy record holds both.
+**eu.** Every eu deploy records the rollback handle and the D1 bookmark in its deploy record.
 
-**Bench.** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` stays as it is, and so does the manual bench proxy (section 4a).
+**Bench.** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` stays as it is, and so does the bench proxy (section 4a), which the `block_unasked_release` guard admits from agent Bash as `deploy_proxy --target bench`.
 
 ## 3. Local path: the credentials (bws)
 

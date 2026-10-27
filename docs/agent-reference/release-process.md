@@ -117,11 +117,11 @@ The version comes from `resolve_version --bump-type` inside the entry, from the 
 2. **Builds**, in the release clone, each step timed: renet under the `release-local` bws profile (the production `ACCOUNT_ED25519_PUBLIC_KEY`) followed by the signing-key gate, the CLI bundle and npm tarball, the Linux SEAs (linux-x64, both musl targets, linux-arm64 in a `linux/arm64` node container) and the Docker renet, rdc and server images through buildx.
 3. **Assist dispatch**, started at minute zero: `local-release-assist.yml` builds the mac and win SEAs and runs the mac and win install legs against the staged bytes. The entry awaits it before stage.
 4. **Stage**: signed packages, manifest, pages, package repos, the `:edge` Docker retag, validation and the R2 upload.
-5. **Seal and tag**: `write_release_sentinel` seals `cli/v<V>/.released`, and `rediacc_ci.release.tag` creates `v<V>` at once. The pair is one unit, held by the `STEPS` invariant test: the tag precedes every step that can fail.
+5. **Seal and tag**: `write_release_sentinel` seals `cli/v<V>/.released`, and `rediacc_ci.release.tag` creates `v<V>` at once. The pair is one unit, held by the `STEPS` invariant test: the tag follows the seal at once, and precedes every later step that can fail. A failure before the seal (builds, assist, stage) leaves no sentinel and no tag, so the version stays free and a re-run starts clean.
 6. **Publish**: promote to `:V` and `:latest`, the Stripe sync and webhook verify, cleanup of the channel tags.
 7. **Deploys**, each with a deploy record: www and the executor artifacts, then per region the account Worker (behind the order check), the account secrets, the proxy and the console executor.
 8. **Smoke**: `verify_edge_endpoints` and a Linux install quick check in local docker.
-9. **Tag and release**: submodule tags, the Homebrew tap formula commit, the contract-floor ratchet and the GitHub Release.
+9. **Tag and release**: submodule tags, the Homebrew tap formula commit, the contract-floor ratchet (written into the working tree for the next PR, never pushed to `main`) and the GitHub Release.
 10. **Record**: the release record in R2.
 
 Neither the local entry nor CD pushes console `main` for release state. The tap repository receives its formula commit, admitted at the git layer by the release-run record; the contract floor is an ordinary commit in the next PR, and `cd_preflight --checks c` warns when it lags.

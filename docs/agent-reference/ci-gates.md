@@ -512,7 +512,7 @@ Every merge to `main` runs the release pipeline (`cd-v2.yml` deploys edge on gre
 **Edge and bench are free; stable is asked** (operator ruling ASKED 2026-10-27T09:45Z, agent/plans/PLAN-local-release.md). An agent may release edge with `npm run release:local -- --channel edge` (or `--workers-only`), as a faster path beside CD, and may deploy bench. Every stable deploy (eu, us, asia) is CI/CD only and needs the operator's request in the task. `block_unasked_release` (pre-bash) admits a stable target only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the transcript within 300 s:
 
 ```
-RELEASE_ASKED=ASKED:2026-10-27T09:14Z <stable deploy command>
+RELEASE_ASKED=ASKED:2026-10-27T09:45Z <stable deploy command>
 ```
 
 `--dry-run` always passes. The guard refuses the raw publish verbs from agent Bash: `wrangler deploy` and `wrangler rollback`, `gh release create`, a `git push` of a `v*` tag, `docker` or `buildx` with `--push`, `-m rediacc_ci.deploy.*`, and `-m` on the release publishers (`create_github_release`, `tag_submodules`, `update_homebrew_tap`, `mark_production`). Agent writes under `.ci/cache/release/` are refused too. A manual CD re-dispatch still needs the operator's request in the task.
