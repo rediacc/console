@@ -29,7 +29,8 @@ Each level has a distinct owner: this invocation > this shell/CI job > the persi
 | Variable | Purpose |
 |---|---|
 | `REDIACC_TOKEN` | The account api-token, for every flow that needs one: subscription auth, config-store password enrollment, `rdc serve` executor auth. Scopes live inside the token; the server enforces them. Replaces the former `REDIACC_SUBSCRIPTION_TOKEN`, `REDIACC_API_TOKEN`, and `REDIACC_EXECUTOR_TOKEN`. |
-| `REDIACC_CONFIG_PASSWORD` | Password-slot secret for headless remote-config unlock. |
+| `REDIACC_STORE_MASTER_PASSWORD` | The config store's master password, which opens its password slot for headless `rdc config remote enable --master-password`. |
+| `REDIACC_NEW_STORE_MASTER_PASSWORD` | The new store master password for `rdc config remote master-password change` when `--new-master-password-stdin` is not given. |
 | `REDIACC_MASTER_PASSWORD` | Master password for configs encrypted at rest. |
 
 Tokens obtained interactively are stored per config at `<configDir>/api-token-<config>.json`. There is no shared token file.
@@ -124,4 +125,5 @@ These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappea
 | `RDC_DEBUG_RENET_PROVISION`, `RDC_TIMING_CHART`, `REDIACC_DAEMON_DEBUG`, `DEBUG` | `REDIACC_DEBUG` scopes |
 | `REDIACC_NO_COLOR` | `NO_COLOR` |
 | `REDIACC_TEAM` | none (a config field; the env override was unused) |
+| `REDIACC_CONFIG_PASSWORD` / `REDIACC_NEW_CONFIG_PASSWORD` | `REDIACC_STORE_MASTER_PASSWORD` / `REDIACC_NEW_STORE_MASTER_PASSWORD` |
 | `server.json` (file, not env) | `account.*` fields in the active config |

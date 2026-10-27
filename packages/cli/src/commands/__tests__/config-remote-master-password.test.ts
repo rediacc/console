@@ -1,5 +1,5 @@
 /**
- * Headless password enrollment (`rdc config remote enable --password`).
+ * Headless master password enrollment (`rdc config remote enable --master-password`).
  *
  * The crypto is REAL here on purpose: the plan bans a mocked-crypto-only proof
  * for this path. We build a genuine password slot (derive → wrap a real CEK under
@@ -125,7 +125,7 @@ import {
 } from '@rediacc/shared/config-crypto';
 import { buildConfigPushPayload } from '@rediacc/shared/config-schema';
 import type { RdcConfig } from '../../types/index.js';
-import { enablePassword } from '../config-remote-password.js';
+import { enableMasterPassword } from '../config-remote-master-password.js';
 
 // ─── Fixture constants ───────────────────────────────────────────────────
 
@@ -209,12 +209,12 @@ function wireConfigApi(session: unknown, config: unknown) {
   });
 }
 
-describe('config remote enable --password', () => {
+describe('config remote enable --master-password', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     secureMem.clear();
     tokenMem.clear();
-    delete process.env.REDIACC_CONFIG_PASSWORD;
+    delete process.env.REDIACC_STORE_MASTER_PASSWORD;
     delete process.env.REDIACC_TOKEN;
     const localConfig = {
       schemaVersion: 3,
@@ -244,10 +244,10 @@ describe('config remote enable --password', () => {
       }
       return Promise.resolve({ data: f.config });
     });
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
     await expect(
-      enablePassword(API_URL, CONFIG_NAME, { configId: CONFIG_ID })
+      enableMasterPassword(API_URL, CONFIG_NAME, { configId: CONFIG_ID })
     ).resolves.toBeUndefined();
 
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
@@ -260,9 +260,9 @@ describe('config remote enable --password', () => {
     const f = await provision(PASSWORD);
     mockAccountServerFetch.mockResolvedValue(f.enroll);
     wireConfigApi(f.session, f.config);
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
-    await expect(enablePassword(API_URL, CONFIG_NAME)).resolves.toBeUndefined();
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).resolves.toBeUndefined();
 
     // Empty body; userId is resolved server-side from the token.
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
@@ -290,13 +290,13 @@ describe('config remote enable --password', () => {
     });
   });
 
-  it('uses an explicit password (the --password-stdin value) with no env password set', async () => {
+  it('uses an explicit password (the --master-password-stdin value) with no env password set', async () => {
     const f = await provision(PASSWORD);
     mockAccountServerFetch.mockResolvedValue(f.enroll);
     wireConfigApi(f.session, f.config);
 
     await expect(
-      enablePassword(API_URL, CONFIG_NAME, { password: PASSWORD })
+      enableMasterPassword(API_URL, CONFIG_NAME, { masterPassword: PASSWORD })
     ).resolves.toBeUndefined();
     expect(secureMem.size).toBe(1);
   });
@@ -305,9 +305,9 @@ describe('config remote enable --password', () => {
     const f = await provision(PASSWORD, null);
     mockAccountServerFetch.mockResolvedValue(f.enroll);
     wireConfigApi(f.session, f.config);
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
-    await enablePassword(API_URL, CONFIG_NAME);
+    await enableMasterPassword(API_URL, CONFIG_NAME);
 
     const savedPointer = mockConfigFileStorage.save.mock.calls.at(-1)?.[0];
     expect(savedPointer.remote.teamId).toBeUndefined();
@@ -318,10 +318,10 @@ describe('config remote enable --password', () => {
     const f = await provision(PASSWORD);
     mockAccountServerFetch.mockResolvedValue(f.enroll);
     wireConfigApi(f.session, f.config);
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
     process.env.REDIACC_TOKEN = 'rdc_api_tok_abc';
 
-    await enablePassword(API_URL, CONFIG_NAME);
+    await enableMasterPassword(API_URL, CONFIG_NAME);
 
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
       '/account/api/v1/configs/password-enroll',
@@ -334,9 +334,9 @@ describe('config remote enable --password', () => {
     const f = await provision(PASSWORD);
     mockAccountServerFetch.mockResolvedValue(f.enroll);
     wireConfigApi(f.session, f.config);
-    process.env.REDIACC_CONFIG_PASSWORD = 'wrong password entirely';
+    process.env.REDIACC_STORE_MASTER_PASSWORD = 'wrong password entirely';
 
-    await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
       /Could not unlock the config with that password/
     );
 
@@ -382,9 +382,9 @@ describe('config remote enable --password', () => {
       mockAccountServerFetch.mockRejectedValue(
         Object.assign(new Error(serverMessage), { status: 403 })
       );
-      process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+      process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
-      await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(expected);
+      await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(expected);
       expect(secureMem.size).toBe(0);
       expect(tokenMem.size).toBe(0);
     });
@@ -419,8 +419,8 @@ describe('config remote enable --password', () => {
       mockAccountServerFetch.mockRejectedValue(
         Object.assign(new Error(serverMessage), { status: 404 })
       );
-      process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
-      const failure = await enablePassword(API_URL, CONFIG_NAME).catch((e: unknown) => e);
+      process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+      const failure = await enableMasterPassword(API_URL, CONFIG_NAME).catch((e: unknown) => e);
       expect((failure as Error).message).toMatch(expected);
       if (name !== 'a missing password slot') {
         expect((failure as Error).message).not.toMatch(/No password slot is provisioned/);
@@ -436,9 +436,9 @@ describe('config remote enable --password', () => {
     mockAccountServerFetch.mockRejectedValue(
       Object.assign(new Error(central), { status: 403, code: 'TOKEN_IP_MISMATCH' })
     );
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
-    const failure = await enablePassword(API_URL, CONFIG_NAME).catch((e: unknown) => e);
+    const failure = await enableMasterPassword(API_URL, CONFIG_NAME).catch((e: unknown) => e);
     expect((failure as Error).message).toBe(central);
     expect(secureMem.size).toBe(0);
     expect(tokenMem.size).toBe(0);
@@ -446,7 +446,7 @@ describe('config remote enable --password', () => {
 
   it('no longer matches the IP refusal by its text', () => {
     const source = readFileSync(
-      fileURLToPath(new URL('../config-remote-password.ts', import.meta.url)),
+      fileURLToPath(new URL('../config-remote-master-password.ts', import.meta.url)),
       'utf8'
     );
     expect(source).not.toContain('bound to a different IP');
@@ -456,9 +456,9 @@ describe('config remote enable --password', () => {
     mockAccountServerFetch.mockRejectedValue(
       Object.assign(new Error('Some future policy said no'), { status: 403 })
     );
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
-    await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
       /refused the config enrollment: Some future policy said no/
     );
     expect(secureMem.size).toBe(0);
@@ -472,9 +472,9 @@ describe('config remote enable --password', () => {
         code: 'REQUIRE_PASSKEY',
       })
     );
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
-    await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
       /requires a passkey to unlock config storage/
     );
   });
@@ -485,21 +485,21 @@ describe('config remote enable --password', () => {
         status: 404,
       })
     );
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
-    await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
       /No password slot is provisioned/
     );
   });
 
-  it('requires REDIACC_CONFIG_PASSWORD when stdin is not a TTY', async () => {
+  it('requires REDIACC_STORE_MASTER_PASSWORD when stdin is not a TTY', async () => {
     const f = await provision(PASSWORD);
     mockAccountServerFetch.mockResolvedValue(f.enroll);
     wireConfigApi(f.session, f.config);
-    // No REDIACC_CONFIG_PASSWORD set; vitest stdin is not a TTY.
+    // No REDIACC_STORE_MASTER_PASSWORD set; vitest stdin is not a TTY.
 
-    await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(
-      /config master password is required/
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+      /A master password is required/
     );
   });
 });

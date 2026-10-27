@@ -39,7 +39,7 @@ class Transfer:
         self.d = drill
         self.restart = restart_gateway
         self.rdc = str(drill.root / "rdc.sh")
-        # A fresh dev user, and so a fresh store, on every run: a second run's `config remote enable --password` against the store the first left behind dies with a raw WebCrypto OperationError.
+        # A fresh dev user, and so a fresh store, on every run: a second run's `config remote enable --master-password` against the store the first left behind dies with a raw WebCrypto OperationError.
         self.email = "drill-transfer-%d@rediacc.io" % int(time.time())
         self.device1 = ""
         self.device2 = ""
@@ -206,12 +206,12 @@ class Transfer:
             "config",
             "remote",
             "enable",
-            "--password",
+            "--master-password",
             "--api-url",
             self.server_url,
             REDIACC_CONFIG=CONFIG_NAME,
             REDIACC_TOKEN=self.minted_token,
-            REDIACC_CONFIG_PASSWORD=STORE_PASSWORD,
+            REDIACC_STORE_MASTER_PASSWORD=STORE_PASSWORD,
             REDIACC_DEFAULT_OUTPUT="table",
         )
         d.assert_exit(0, "headless password enrollment succeeds with no browser")
@@ -352,12 +352,12 @@ class Transfer:
             "config",
             "remote",
             "enable",
-            "--password",
+            "--master-password",
             "--api-url",
             self.server_url,
             REDIACC_CONFIG=CONFIG_NAME,
             REDIACC_TOKEN=self.minted_token,
-            REDIACC_CONFIG_PASSWORD=STORE_PASSWORD,
+            REDIACC_STORE_MASTER_PASSWORD=STORE_PASSWORD,
             REDIACC_DEFAULT_OUTPUT="table",
         )
         d.assert_exit(0, "the second device enrolls with the same password slot")

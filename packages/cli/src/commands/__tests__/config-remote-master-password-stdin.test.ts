@@ -1,15 +1,19 @@
-/** `rdc config remote enable --password-stdin`: the master password is read from stdin and handed on, never argv. */
+/** `rdc config remote enable --master-password-stdin`: the master password is read from stdin and handed on, never argv. */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockReadStdinValue, mockEnablePassword, mockHandleError, mockLoad } = vi.hoisted(() => ({
-  mockReadStdinValue: vi.fn(),
-  mockEnablePassword: vi.fn(),
-  mockHandleError: vi.fn(),
-  mockLoad: vi.fn(),
-}));
+const { mockReadStdinValue, mockEnableMasterPassword, mockHandleError, mockLoad } = vi.hoisted(
+  () => ({
+    mockReadStdinValue: vi.fn(),
+    mockEnableMasterPassword: vi.fn(),
+    mockHandleError: vi.fn(),
+    mockLoad: vi.fn(),
+  })
+);
 
 vi.mock('../../utils/stdin.js', () => ({ readStdinValue: mockReadStdinValue }));
-vi.mock('../config-remote-password.js', () => ({ enablePassword: mockEnablePassword }));
+vi.mock('../config-remote-master-password.js', () => ({
+  enableMasterPassword: mockEnableMasterPassword,
+}));
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: { load: mockLoad },
 }));
@@ -37,29 +41,29 @@ async function run(args: string[]): Promise<void> {
   await config.parseAsync(['node', 'rdc', 'remote', 'enable', ...args], { from: 'node' });
 }
 
-describe('config remote enable --password-stdin', () => {
+describe('config remote enable --master-password-stdin', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLoad.mockResolvedValue({ schemaVersion: 3, id: 'x', version: 1 });
   });
 
-  it('passes the stdin password to the enroll without --password', async () => {
+  it('passes the stdin master password to the enroll without --master-password', async () => {
     mockReadStdinValue.mockResolvedValue(SECRET);
-    await run(['--password-stdin']);
-    expect(mockEnablePassword).toHaveBeenCalledWith(
+    await run(['--master-password-stdin']);
+    expect(mockEnableMasterPassword).toHaveBeenCalledWith(
       'https://account.example.com',
       expect.any(String),
-      expect.objectContaining({ password: SECRET })
+      expect.objectContaining({ masterPassword: SECRET })
     );
     expect(mockHandleError).not.toHaveBeenCalled();
   });
 
   it('refuses an empty stdin without echoing anything', async () => {
     mockReadStdinValue.mockResolvedValue('');
-    await run(['--password-stdin']);
-    expect(mockEnablePassword).not.toHaveBeenCalled();
+    await run(['--master-password-stdin']);
+    expect(mockEnableMasterPassword).not.toHaveBeenCalled();
     const err = mockHandleError.mock.calls[0][0] as Error;
-    expect(err.message).toContain('--password-stdin');
+    expect(err.message).toContain('--master-password-stdin');
   });
 
   it('has no option that takes the password as a value', () => {

@@ -232,13 +232,18 @@ function linkedApiUrl(linked: RemoteConfig, configName: string, requested?: stri
 
 /**
  * `config remote enable` on a linked config whose enrollment is lost: obtain fresh credentials
- * the way a first enable does (the portal handoff, or the password slot with `--password`) and
+ * the way a first enable does (the portal handoff, or the master password's slot with `--master-password`) and
  * apply them with `reenrollDevice`.
  */
 export async function reenroll(
   configName: string,
   linked: RemoteConfig,
-  options: { password?: boolean; passwordValue?: string; apiUrl?: string; configId?: string }
+  options: {
+    masterPassword?: boolean;
+    masterPasswordValue?: string;
+    apiUrl?: string;
+    configId?: string;
+  }
 ): Promise<void> {
   const apiUrl = linkedApiUrl(linked, configName, options.apiUrl);
   // A re-enrollment is for the config this one is linked to; naming another is refused up front.
@@ -254,12 +259,18 @@ export async function reenroll(
   outputService.info(t('commands.config.remote.enable.reenrolling', { name: configName }));
 
   let version: number;
-  if (options.password) {
-    const { passwordCredentials, passwordFailure } = await import('./config-remote-password.js');
-    const credentials = await passwordCredentials(apiUrl, options.configId, options.passwordValue);
+  if (options.masterPassword) {
+    const { masterPasswordCredentials, masterPasswordFailure } = await import(
+      './config-remote-master-password.js'
+    );
+    const credentials = await masterPasswordCredentials(
+      apiUrl,
+      options.configId,
+      options.masterPasswordValue
+    );
     version = await reenrollDevice(credentials, configName, linked).catch(
       async (error: unknown) => {
-        throw await passwordFailure(error);
+        throw await masterPasswordFailure(error);
       }
     );
   } else {

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: de
-sourceHash: "5cc07f3849026632"
-sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
+sourceHash: "060357b48d8c7154"
+sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
 ---
 
 # Konfigurationsspeicher
@@ -69,7 +69,7 @@ Ein Passkey lässt sich später auf der Seite „Config Storage“ hinzufügen. 
 Eine Maschine ohne Browser (ein Server, ein CI-Runner, ein Executor-Daemon) kann sich mit der Master-Passwort-Methode in einen bestehenden Speicher einbinden:
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 Voraussetzungen:

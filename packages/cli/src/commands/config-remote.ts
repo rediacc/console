@@ -382,31 +382,31 @@ function enableOptions(options: { force?: boolean; configId?: string }): {
   };
 }
 
-/** A first enable: the password slot (headless) or the portal relay handoff. */
+/** A first enable: the master password's slot (headless) or the portal relay handoff. */
 async function enableFirst(
   configName: string,
   options: { apiUrl?: string; force?: boolean; configId?: string },
-  usePassword: boolean,
-  password: string | undefined
+  useMasterPassword: boolean,
+  masterPassword: string | undefined
 ): Promise<void> {
   const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
   const opts = enableOptions(options);
-  if (usePassword) {
-    const { enablePassword } = await import('./config-remote-password.js');
-    await enablePassword(apiUrl, configName, { ...opts, password });
+  if (useMasterPassword) {
+    const { enableMasterPassword } = await import('./config-remote-master-password.js');
+    await enableMasterPassword(apiUrl, configName, { ...opts, masterPassword });
   } else {
     await enableRelay(apiUrl, configName, opts);
   }
 }
 
-/** The master password under --password-stdin (never argv): read before anything else so a refusal leaves nothing behind. */
-async function readPasswordStdin(): Promise<string> {
+/** The master password under --master-password-stdin (never argv): read before anything else so a refusal leaves nothing behind. */
+async function readMasterPasswordStdin(): Promise<string> {
   const { readStdinValue } = await import('../utils/stdin.js');
-  const password = await readStdinValue();
-  if (!password) {
-    throw new ValidationError(t('commands.config.remote.enable.passwordStdinEmpty'));
+  const masterPassword = await readStdinValue();
+  if (!masterPassword) {
+    throw new ValidationError(t('commands.config.remote.enable.masterPasswordStdinEmpty'));
   }
-  return password;
+  return masterPassword;
 }
 
 export function registerRemoteCommands(configCommand: Command): void {
@@ -418,15 +418,17 @@ export function registerRemoteCommands(configCommand: Command): void {
   remote
     .command('enable')
     .description(t('commands.config.remote.enable.description'))
-    .option('--password', t('commands.config.remote.enable.optionPassword'))
-    .option('--password-stdin', t('commands.config.remote.enable.optionPasswordStdin'))
+    .option('--master-password', t('commands.config.remote.enable.optionMasterPassword'))
+    .option('--master-password-stdin', t('commands.config.remote.enable.optionMasterPasswordStdin'))
     .option('--api-url <url>', t('commands.config.remote.enable.optionApiUrl'))
     .option('--force', t('commands.config.remote.enable.optionForce'))
     .option('--config-id <id>', t('commands.config.remote.enable.optionConfigId'))
     .action(async (options) => {
       try {
-        const usePassword = Boolean(options.password || options.passwordStdin);
-        const stdinPassword = options.passwordStdin ? await readPasswordStdin() : undefined;
+        const useMasterPassword = Boolean(options.masterPassword || options.masterPasswordStdin);
+        const stdinMasterPassword = options.masterPasswordStdin
+          ? await readMasterPasswordStdin()
+          : undefined;
         const configName = configService.getEffectiveConfigName();
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
         const config = await configFileStorage.load(configName);
@@ -444,15 +446,15 @@ export function registerRemoteCommands(configCommand: Command): void {
             );
           }
           await reenroll(configName, config.remote, {
-            password: usePassword,
-            passwordValue: stdinPassword,
+            masterPassword: useMasterPassword,
+            masterPasswordValue: stdinMasterPassword,
             apiUrl: options.apiUrl,
             configId: options.configId,
           });
           return;
         }
 
-        await enableFirst(configName, options, usePassword, stdinPassword);
+        await enableFirst(configName, options, useMasterPassword, stdinMasterPassword);
       } catch (error) {
         handleError(error);
       }
@@ -524,24 +526,26 @@ export function registerRemoteCommands(configCommand: Command): void {
       }
     });
 
-  // remote password change
+  // remote master-password change
   remote
-    .command('password')
-    .description(t('commands.config.remote.password.description'))
+    .command('master-password')
+    .description(t('commands.config.remote.masterPassword.description'))
     .command('change')
-    .description(t('commands.config.remote.password.change.description'))
+    .description(t('commands.config.remote.masterPassword.change.description'))
     .option(
-      '--new-password-stdin',
-      t('commands.config.remote.password.change.optionNewPasswordStdin')
+      '--new-master-password-stdin',
+      t('commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin')
     )
-    .action(async (options: { newPasswordStdin?: boolean }) => {
+    .action(async (options: { newMasterPasswordStdin?: boolean }) => {
       try {
-        const { changeConfigPassword, resolveNewPassword } = await import(
-          './config-remote-password-change.js'
+        const { changeMasterPassword, resolveNewMasterPassword } = await import(
+          './config-remote-master-password-change.js'
         );
-        // Read first: a refused password leaves no session or server write behind.
-        const newPassword = await resolveNewPassword(options.newPasswordStdin === true);
-        await changeConfigPassword(configService.getEffectiveConfigName(), newPassword);
+        // Read first: a refused master password leaves no session or server write behind.
+        const newMasterPassword = await resolveNewMasterPassword(
+          options.newMasterPasswordStdin === true
+        );
+        await changeMasterPassword(configService.getEffectiveConfigName(), newMasterPassword);
       } catch (error) {
         handleError(error);
       }

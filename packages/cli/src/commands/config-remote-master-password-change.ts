@@ -1,11 +1,11 @@
 /**
- * `rdc config remote password change`: replace this member's master password (the `password` key slot)
+ * `rdc config remote master-password change`: replace this member's master password (the `password` key slot)
  * without the portal.
  *
  * The CEK never leaves this process. It comes from THIS device's own enrollment (slot secret in secure
  * storage, wrapped CEK beside the config token), proven current by a pull before anything is written.
  * The new slot is built exactly as the portal's buildPasswordSlot builds it (fresh PBKDF2 params, the
- * shared wrapCekForSlot pipeline), so `config remote enable --password` unlocks it. The write is
+ * shared wrapCekForSlot pipeline), so `config remote enable --master-password` unlocks it. The write is
  * PUT /configs/slots/password, which needs a cookie session that is 2FA-enabled and ELEVATED: a
  * password login does not elevate, POST /auth/reauth/totp does, and a TOTP step is spent once per user,
  * so the step-up code must come from a later step than the sign-in code.
@@ -27,11 +27,11 @@ import { askInput, askPassword } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 
 /** The new master password, when not piped on stdin. Never argv. */
-export const NEW_CONFIG_PASSWORD_ENV = 'REDIACC_NEW_CONFIG_PASSWORD';
+export const NEW_STORE_MASTER_PASSWORD_ENV = 'REDIACC_NEW_STORE_MASTER_PASSWORD';
 /** A TOTP code from a later 30-second step than REDIACC_LOGIN_TOTP, spent on the re-authentication. */
 export const LOGIN_TOTP_NEXT_ENV = 'REDIACC_LOGIN_TOTP_NEXT';
 /** The portal's floor (ConfigKeySlots addPasswordSlot). */
-export const MIN_CONFIG_PASSWORD_LENGTH = 8;
+export const MIN_MASTER_PASSWORD_LENGTH = 8;
 
 const TOTP_PATTERN = /^\d{6}$/;
 const EMAIL_PATTERN = /^\S+@\S+$/;
@@ -41,41 +41,47 @@ function interactive(): boolean {
 }
 
 function checkLength(password: string): string {
-  if (password.length < MIN_CONFIG_PASSWORD_LENGTH) {
+  if (password.length < MIN_MASTER_PASSWORD_LENGTH) {
     throw new ValidationError(
-      t('commands.config.remote.password.change.newPasswordTooShort', {
-        min: MIN_CONFIG_PASSWORD_LENGTH,
+      t('commands.config.remote.masterPassword.change.newPasswordTooShort', {
+        min: MIN_MASTER_PASSWORD_LENGTH,
       })
     );
   }
   return password;
 }
 
-/** The new master password: stdin under --new-password-stdin, else the env, else a confirmed TTY prompt. */
-export async function resolveNewPassword(fromStdin: boolean): Promise<string> {
+/** The new master password: stdin under --new-master-password-stdin, else the env, else a confirmed TTY prompt. */
+export async function resolveNewMasterPassword(fromStdin: boolean): Promise<string> {
   if (fromStdin) {
     const { readStdinValue } = await import('../utils/stdin.js');
     const value = await readStdinValue();
     if (!value) {
-      throw new ValidationError(t('commands.config.remote.password.change.newPasswordStdinEmpty'));
+      throw new ValidationError(
+        t('commands.config.remote.masterPassword.change.newPasswordStdinEmpty')
+      );
     }
     return checkLength(value);
   }
-  const fromEnv = process.env[NEW_CONFIG_PASSWORD_ENV];
+  const fromEnv = process.env[NEW_STORE_MASTER_PASSWORD_ENV];
   if (fromEnv) return checkLength(fromEnv);
   if (!interactive()) {
     throw new ValidationError(
-      t('commands.config.remote.password.change.newPasswordMissing', {
-        env: NEW_CONFIG_PASSWORD_ENV,
+      t('commands.config.remote.masterPassword.change.newPasswordMissing', {
+        env: NEW_STORE_MASTER_PASSWORD_ENV,
       })
     );
   }
   const first = checkLength(
-    await askPassword(t('commands.config.remote.password.change.newPasswordPrompt'))
+    await askPassword(t('commands.config.remote.masterPassword.change.newPasswordPrompt'))
   );
-  const second = await askPassword(t('commands.config.remote.password.change.newPasswordConfirm'));
+  const second = await askPassword(
+    t('commands.config.remote.masterPassword.change.newPasswordConfirm')
+  );
   if (first !== second) {
-    throw new ValidationError(t('commands.config.remote.password.change.newPasswordMismatch'));
+    throw new ValidationError(
+      t('commands.config.remote.masterPassword.change.newPasswordMismatch')
+    );
   }
   return first;
 }
@@ -88,16 +94,24 @@ export async function resolveLoginInput(): Promise<PasswordLoginInput> {
   let email = process.env[LOGIN_EMAIL_ENV]?.trim();
   if (!email) {
     if (!interactive()) throw missing(LOGIN_EMAIL_ENV);
-    email = await askInput(t('commands.config.remote.password.change.emailPrompt'), EMAIL_PATTERN);
+    email = await askInput(
+      t('commands.config.remote.masterPassword.change.emailPrompt'),
+      EMAIL_PATTERN
+    );
   }
   let password = process.env[LOGIN_PASSWORD_ENV];
   if (!password) {
     if (!interactive()) throw missing(LOGIN_PASSWORD_ENV);
-    password = await askPassword(t('commands.config.remote.password.change.loginPasswordPrompt'));
+    password = await askPassword(
+      t('commands.config.remote.masterPassword.change.loginPasswordPrompt')
+    );
   }
   let totp = process.env[LOGIN_TOTP_ENV]?.trim();
   if (!totp && interactive()) {
-    totp = await askInput(t('commands.config.remote.password.change.totpPrompt'), TOTP_PATTERN);
+    totp = await askInput(
+      t('commands.config.remote.masterPassword.change.totpPrompt'),
+      TOTP_PATTERN
+    );
   }
   return { email, password, ...(totp ? { totp } : {}) };
 }
@@ -108,18 +122,21 @@ async function resolveStepUpCode(loginTotp: string | undefined): Promise<string>
   if (!code) {
     if (!interactive()) {
       throw new ValidationError(
-        t('commands.config.remote.password.change.stepUpRequired', {
+        t('commands.config.remote.masterPassword.change.stepUpRequired', {
           field: LOGIN_TOTP_NEXT_ENV,
           loginField: LOGIN_TOTP_ENV,
         })
       );
     }
-    code = await askInput(t('commands.config.remote.password.change.stepUpPrompt'), TOTP_PATTERN);
+    code = await askInput(
+      t('commands.config.remote.masterPassword.change.stepUpPrompt'),
+      TOTP_PATTERN
+    );
   }
   // The server spends a TOTP step once per user; the sign-in already spent this one.
   if (loginTotp && code === loginTotp) {
     throw new ValidationError(
-      t('commands.config.remote.password.change.stepUpSameCode', {
+      t('commands.config.remote.masterPassword.change.stepUpSameCode', {
         field: LOGIN_TOTP_NEXT_ENV,
         loginField: LOGIN_TOTP_ENV,
       })
@@ -158,7 +175,7 @@ export async function elevateSession(
   );
   if (reply.status >= 400) {
     throw new ValidationError(
-      t('commands.config.remote.password.change.stepUpRefused', {
+      t('commands.config.remote.masterPassword.change.stepUpRefused', {
         status: reply.status,
         error: reply.body.error ?? `HTTP ${reply.status}`,
         field: LOGIN_TOTP_NEXT_ENV,
@@ -181,22 +198,28 @@ export async function buildPasswordSlot(
   return { kdfParams, wrappedCek: await wrapCekForSlot(cek, slotSecret, serverSecret) };
 }
 
-/** True when `slot`, unwrapped with `password` and the server secret, yields this device's CEK. */
+/**
+ * True when `slot`, unwrapped with `password` and the server secret, yields this device's CEK.
+ * Only the unwrap itself may answer false (a wrong key fails its AES-GCM authentication); a
+ * derive or key-import error is a defect, not a mismatch, and propagates.
+ */
 export async function slotOpensCek(
   slot: { kdfParams: SlotKdfParams; wrappedCek: string },
   password: string,
   material: { cek: CryptoKey; serverSecret: Uint8Array }
 ): Promise<boolean> {
-  const { derivePasswordSlotSecret, unwrapCekForSlot } = await import(
+  const { cekUnwrap, derivePasswordSlotSecret, deriveWrappingKey } = await import(
     '@rediacc/shared/config-crypto'
   );
+  const secret = await derivePasswordSlotSecret(password, slot.kdfParams);
+  const wrappingKey = await deriveWrappingKey(secret, material.serverSecret);
+  let unwrapped: CryptoKey;
   try {
-    const secret = await derivePasswordSlotSecret(password, slot.kdfParams);
-    const unwrapped = await unwrapCekForSlot(slot.wrappedCek, secret, material.serverSecret);
-    return await sameKey(unwrapped, material.cek);
+    unwrapped = await cekUnwrap(slot.wrappedCek, wrappingKey);
   } catch {
     return false;
   }
+  return sameKey(unwrapped, material.cek);
 }
 
 /** True when two AES keys hold the same raw bytes. */
@@ -208,26 +231,26 @@ async function sameKey(a: CryptoKey, b: CryptoKey): Promise<boolean> {
 
 /**
  * Prove the server's password slot opens with the NEW password, through the material
- * `enable --password` reads (passwordCredentials), and that it yields this store's CEK.
+ * `enable --master-password` reads (masterPasswordCredentials), and that it yields this store's CEK.
  * Nothing is stored and no slot is written.
  */
-export async function verifyNewPassword(
+export async function verifyNewMasterPassword(
   apiUrl: string,
   remote: { storeId: string; configId: string; teamId?: string },
   password: string,
   expected: { cek: CryptoKey; serverSecret: Uint8Array }
 ): Promise<void> {
   const fail = (error: string) =>
-    new ValidationError(t('commands.config.remote.password.change.verifyFailed', { error }));
-  const { passwordCredentials } = await import('./config-remote-password.js');
+    new ValidationError(t('commands.config.remote.masterPassword.change.verifyFailed', { error }));
+  const { masterPasswordCredentials } = await import('./config-remote-master-password.js');
   const { fromBase64, unwrapCekForSlot } = await import('@rediacc/shared/config-crypto');
 
-  let credentials: Awaited<ReturnType<typeof passwordCredentials>>;
+  let credentials: Awaited<ReturnType<typeof masterPasswordCredentials>>;
   try {
     // The enroll route narrows a team-scoped token to configs of that team, so a config with no team
     // is unreachable by configId from such a token (404). The store is what the verify compares, so
     // the config is only named when it belongs to a team.
-    credentials = await passwordCredentials(
+    credentials = await masterPasswordCredentials(
       apiUrl,
       remote.teamId ? remote.configId : undefined,
       password
@@ -236,7 +259,7 @@ export async function verifyNewPassword(
     throw fail(error instanceof Error ? error.message : String(error));
   }
   if (credentials.storeId !== remote.storeId) {
-    throw fail(t('commands.config.remote.password.change.verifyOtherStore'));
+    throw fail(t('commands.config.remote.masterPassword.change.verifyOtherStore'));
   }
   let unlocked: CryptoKey;
   try {
@@ -246,15 +269,15 @@ export async function verifyNewPassword(
       expected.serverSecret
     );
   } catch {
-    throw fail(t('commands.config.remote.password.change.verifyNoUnlock'));
+    throw fail(t('commands.config.remote.masterPassword.change.verifyNoUnlock'));
   }
   if (!(await sameKey(unlocked, expected.cek))) {
-    throw fail(t('commands.config.remote.password.change.verifyOtherKey'));
+    throw fail(t('commands.config.remote.masterPassword.change.verifyOtherKey'));
   }
 }
 
 /** Run the change for `configName`; the new password is resolved by the caller (stdin is read first). */
-export async function changeConfigPassword(configName: string, newPassword: string): Promise<void> {
+export async function changeMasterPassword(configName: string, newPassword: string): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const config = await configFileStorage.load(configName);
   if (!hasRemoteConfig(config)) {
@@ -276,12 +299,12 @@ export async function changeConfigPassword(configName: string, newPassword: stri
     getSecureStorage()
   );
   const material = await withSpinner(
-    t('commands.config.remote.password.change.unlocking'),
+    t('commands.config.remote.masterPassword.change.unlocking'),
     async () => {
       await adapter.pull();
       return adapter.unlockKeyMaterial();
     },
-    t('commands.config.remote.password.change.unlocked')
+    t('commands.config.remote.masterPassword.change.unlocked')
   );
 
   // 2. Cookie session, elevated.
@@ -296,10 +319,10 @@ export async function changeConfigPassword(configName: string, newPassword: stri
   const slot = await buildPasswordSlot(material.cek, newPassword, material.serverSecret);
   // The old slot is replaced by the PUT, so the new one must open this CEK before it is sent.
   if (!(await slotOpensCek(slot, newPassword, material))) {
-    throw new ValidationError(t('commands.config.remote.password.change.verifyOtherKey'));
+    throw new ValidationError(t('commands.config.remote.masterPassword.change.verifyOtherKey'));
   }
   const put = await withSpinner(
-    t('commands.config.remote.password.change.writing'),
+    t('commands.config.remote.masterPassword.change.writing'),
     () =>
       sessionRequest<ErrorBody>(
         apiUrl,
@@ -308,11 +331,11 @@ export async function changeConfigPassword(configName: string, newPassword: stri
         { storeId: remote.storeId, kdfParams: slot.kdfParams, wrappedCek: slot.wrappedCek },
         cookie
       ),
-    t('commands.config.remote.password.change.written')
+    t('commands.config.remote.masterPassword.change.written')
   );
   if (put.status >= 400) {
     throw new ValidationError(
-      t('commands.config.remote.password.change.slotRefused', {
+      t('commands.config.remote.masterPassword.change.slotRefused', {
         status: put.status,
         error: put.body.error ?? `HTTP ${put.status}`,
       })
@@ -321,10 +344,12 @@ export async function changeConfigPassword(configName: string, newPassword: stri
 
   // 4. Read it back the way a headless enrollment does.
   await withSpinner(
-    t('commands.config.remote.password.change.verifying'),
-    () => verifyNewPassword(apiUrl, remote, newPassword, material),
-    t('commands.config.remote.password.change.verified')
+    t('commands.config.remote.masterPassword.change.verifying'),
+    () => verifyNewMasterPassword(apiUrl, remote, newPassword, material),
+    t('commands.config.remote.masterPassword.change.verified')
   );
 
-  outputService.success(t('commands.config.remote.password.change.success', { name: configName }));
+  outputService.success(
+    t('commands.config.remote.masterPassword.change.success', { name: configName })
+  );
 }

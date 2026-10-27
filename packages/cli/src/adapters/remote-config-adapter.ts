@@ -502,7 +502,7 @@ export class RemoteConfigAdapter {
 
   /**
    * The CEK together with the store's serverSecret it was unwrapped under: the two halves a NEW
-   * key slot is wrapped from (`rdc config remote password change`). Both stay in this process.
+   * key slot is wrapped from (`rdc config remote master-password change`). Both stay in this process.
    */
   unlockKeyMaterial(): Promise<{ cek: CryptoKey; serverSecret: Uint8Array }> {
     return this.tokenStorage.withLease(this.configName, async (lease) => {

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ar
-sourceHash: "5cc07f3849026632"
-sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
+sourceHash: "060357b48d8c7154"
+sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
 ---
 
 # تخزين الإعدادات
@@ -69,7 +69,7 @@ sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 يمكن لجهاز بلا متصفح (خادم، أو عامل CI، أو خدمة تنفيذ) التسجيل في مخزن قائم باستخدام طريقة كلمة المرور الرئيسية:
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 المتطلبات:

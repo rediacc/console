@@ -4146,14 +4146,14 @@
               "descriptionKey": "commands.config.remote.enable.description",
               "options": [
                 {
-                  "flags": "--password",
-                  "descriptionKey": "commands.config.remote.enable.optionPassword",
+                  "flags": "--master-password",
+                  "descriptionKey": "commands.config.remote.enable.optionMasterPassword",
                   "mandatory": false,
                   "defaultValue": null
                 },
                 {
-                  "flags": "--password-stdin",
-                  "descriptionKey": "commands.config.remote.enable.optionPasswordStdin",
+                  "flags": "--master-password-stdin",
+                  "descriptionKey": "commands.config.remote.enable.optionMasterPasswordStdin",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -4242,18 +4242,18 @@
               "subcommands": []
             },
             {
-              "name": "password",
-              "descriptionKey": "commands.config.remote.password.description",
+              "name": "master-password",
+              "descriptionKey": "commands.config.remote.masterPassword.description",
               "options": [],
               "arguments": [],
               "subcommands": [
                 {
                   "name": "change",
-                  "descriptionKey": "commands.config.remote.password.change.description",
+                  "descriptionKey": "commands.config.remote.masterPassword.change.description",
                   "options": [
                     {
-                      "flags": "--new-password-stdin",
-                      "descriptionKey": "commands.config.remote.password.change.optionNewPasswordStdin",
+                      "flags": "--new-master-password-stdin",
+                      "descriptionKey": "commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin",
                       "mandatory": false,
                       "defaultValue": null
                     }

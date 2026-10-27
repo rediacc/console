@@ -67,7 +67,7 @@ A passkey can be added later from the Config Storage page. Keep at least two unl
 A machine with no browser (a server, a CI runner, an executor daemon) can enroll into an existing store with the master password method:
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 Requirements:

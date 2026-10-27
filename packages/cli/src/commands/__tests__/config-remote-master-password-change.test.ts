@@ -1,9 +1,9 @@
 /**
- * `rdc config remote password change`: the master password slot is rebuilt from this device's CEK.
+ * `rdc config remote master-password change`: the master password slot is rebuilt from this device's CEK.
  *
  * Crypto is REAL: a genuine CEK and serverSecret, the slot built by the command, PUT to a fake
- * server that keeps it, and the verify reads it back through passwordCredentials (the code
- * `enable --password` runs) and unwraps it with PBKDF2 + HKDF + AES-GCM. Only I/O is mocked:
+ * server that keeps it, and the verify reads it back through masterPasswordCredentials (the code
+ * `enable --master-password` runs) and unwraps it with PBKDF2 + HKDF + AES-GCM. Only I/O is mocked:
  * fetch (the cookie session), accountServerFetch (password-enroll), the adapter's enrollment.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -88,7 +88,7 @@ vi.mock('../../adapters/remote-config-adapter.js', () => ({
 }));
 
 const crypto = await import('@rediacc/shared/config-crypto');
-const mod = await import('../config-remote-password-change.js');
+const mod = await import('../config-remote-master-password-change.js');
 
 function json(status: number, body: unknown, setCookie?: string): Response {
   return new Response(JSON.stringify(body), {
@@ -167,7 +167,7 @@ beforeEach(async () => {
   vi.stubEnv('REDIACC_LOGIN_PASSWORD', LOGIN_PASSWORD);
   vi.stubEnv('REDIACC_LOGIN_TOTP', LOGIN_TOTP);
   vi.stubEnv('REDIACC_LOGIN_TOTP_NEXT', NEXT_TOTP);
-  vi.stubEnv('REDIACC_NEW_CONFIG_PASSWORD', '');
+  vi.stubEnv('REDIACC_NEW_STORE_MASTER_PASSWORD', '');
   mockAccountServerFetch.mockImplementation((path: string) => {
     if (path !== '/account/api/v1/configs/password-enroll' || !state.slot) {
       return Promise.reject(Object.assign(new Error('Not found'), { status: 404 }));
@@ -235,43 +235,51 @@ describe('slotOpensCek', () => {
     const other = await crypto.generateCek();
     expect(await mod.slotOpensCek(slot, NEW_PASSWORD, { cek: other, serverSecret })).toBe(false);
   });
+
+  it('lets a key-derivation error propagate instead of answering false', async () => {
+    const cek = state.cek as CryptoKey;
+    const serverSecret = state.serverSecret as Uint8Array;
+    const slot = await mod.buildPasswordSlot(cek, NEW_PASSWORD, serverSecret);
+    const broken = { ...slot, kdfParams: { ...slot.kdfParams, iterations: 0 } };
+    await expect(mod.slotOpensCek(broken, NEW_PASSWORD, { cek, serverSecret })).rejects.toThrow();
+  });
 });
 
-describe('resolveNewPassword', () => {
-  it('reads stdin under --new-password-stdin', async () => {
+describe('resolveNewMasterPassword', () => {
+  it('reads stdin under --new-master-password-stdin', async () => {
     mockReadStdinValue.mockResolvedValue(NEW_PASSWORD);
-    await expect(mod.resolveNewPassword(true)).resolves.toBe(NEW_PASSWORD);
+    await expect(mod.resolveNewMasterPassword(true)).resolves.toBe(NEW_PASSWORD);
   });
 
   it('refuses an empty stdin by naming the flag', async () => {
     mockReadStdinValue.mockResolvedValue('');
-    await expect(mod.resolveNewPassword(true)).rejects.toThrow('--new-password-stdin');
+    await expect(mod.resolveNewMasterPassword(true)).rejects.toThrow('--new-master-password-stdin');
   });
 
-  it('reads REDIACC_NEW_CONFIG_PASSWORD without stdin', async () => {
-    vi.stubEnv('REDIACC_NEW_CONFIG_PASSWORD', NEW_PASSWORD);
-    await expect(mod.resolveNewPassword(false)).resolves.toBe(NEW_PASSWORD);
+  it('reads REDIACC_NEW_STORE_MASTER_PASSWORD without stdin', async () => {
+    vi.stubEnv('REDIACC_NEW_STORE_MASTER_PASSWORD', NEW_PASSWORD);
+    await expect(mod.resolveNewMasterPassword(false)).resolves.toBe(NEW_PASSWORD);
     expect(mockReadStdinValue).not.toHaveBeenCalled();
   });
 
   it('names both inputs when neither is given off a TTY', async () => {
-    const error = await mod.resolveNewPassword(false).catch((e: Error) => e);
-    expect((error as Error).message).toContain('--new-password-stdin');
-    expect((error as Error).message).toContain('REDIACC_NEW_CONFIG_PASSWORD');
+    const error = await mod.resolveNewMasterPassword(false).catch((e: Error) => e);
+    expect((error as Error).message).toContain('--new-master-password-stdin');
+    expect((error as Error).message).toContain('REDIACC_NEW_STORE_MASTER_PASSWORD');
     expect(mockAskPassword).not.toHaveBeenCalled();
   });
 
   it('refuses a password below the portal floor', async () => {
     mockReadStdinValue.mockResolvedValue('short');
-    await expect(mod.resolveNewPassword(true)).rejects.toThrow(
-      String(mod.MIN_CONFIG_PASSWORD_LENGTH)
+    await expect(mod.resolveNewMasterPassword(true)).rejects.toThrow(
+      String(mod.MIN_MASTER_PASSWORD_LENGTH)
     );
   });
 });
 
-describe('changeConfigPassword', () => {
+describe('changeMasterPassword', () => {
   it('logs in, elevates, writes the slot and verifies it with the new password', async () => {
-    await mod.changeConfigPassword('eu-bench', NEW_PASSWORD);
+    await mod.changeMasterPassword('eu-bench', NEW_PASSWORD);
 
     expect(state.pulls).toBe(1);
     expect(state.calls).toEqual([
@@ -281,7 +289,7 @@ describe('changeConfigPassword', () => {
       'POST /auth/reauth/totp',
       'PUT /configs/slots/password',
     ]);
-    // The slot the server holds opens with the new password, through enable --password's own read.
+    // The slot the server holds opens with the new password, through enable --master-password's own read.
     const slot = state.slot as { kdfParams: crypto.SlotKdfParams; wrappedCek: string };
     const secret = await crypto.derivePasswordSlotSecret(NEW_PASSWORD, slot.kdfParams);
     const back = await crypto.unwrapCekForSlot(
@@ -302,7 +310,7 @@ describe('changeConfigPassword', () => {
 
   it('omits configId from the verify when the local remote has no team', async () => {
     await mod
-      .verifyNewPassword(API, { storeId: STORE_ID, configId: CONFIG_ID }, NEW_PASSWORD, {
+      .verifyNewMasterPassword(API, { storeId: STORE_ID, configId: CONFIG_ID }, NEW_PASSWORD, {
         cek: state.cek as CryptoKey,
         serverSecret: state.serverSecret as Uint8Array,
       })
@@ -315,7 +323,7 @@ describe('changeConfigPassword', () => {
 
   it('names the config in the verify when the local remote has a team', async () => {
     await mod
-      .verifyNewPassword(
+      .verifyNewMasterPassword(
         API,
         { storeId: STORE_ID, configId: CONFIG_ID, teamId: 'team-1' },
         NEW_PASSWORD,
@@ -331,14 +339,14 @@ describe('changeConfigPassword', () => {
   it('skips the step-up while the account is already elevated', async () => {
     state.elevated = true;
     vi.stubEnv('REDIACC_LOGIN_TOTP_NEXT', '');
-    await mod.changeConfigPassword('eu-bench', NEW_PASSWORD);
+    await mod.changeMasterPassword('eu-bench', NEW_PASSWORD);
     expect(state.calls).not.toContain('POST /auth/reauth/totp');
     expect(state.slot).toBeDefined();
   });
 
   it('refuses without a step-up code, naming REDIACC_LOGIN_TOTP_NEXT, before any slot write', async () => {
     vi.stubEnv('REDIACC_LOGIN_TOTP_NEXT', '');
-    const error = await mod.changeConfigPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
+    const error = await mod.changeMasterPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
     expect((error as Error).message).toContain('REDIACC_LOGIN_TOTP_NEXT');
     expect(state.calls).not.toContain('PUT /configs/slots/password');
     expect(mockAskInput).not.toHaveBeenCalled();
@@ -346,14 +354,14 @@ describe('changeConfigPassword', () => {
 
   it('refuses a step-up code that repeats the sign-in code (one use per step)', async () => {
     vi.stubEnv('REDIACC_LOGIN_TOTP_NEXT', LOGIN_TOTP);
-    const error = await mod.changeConfigPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
+    const error = await mod.changeMasterPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
     expect((error as Error).message).toContain('REDIACC_LOGIN_TOTP_NEXT');
     expect(state.calls).not.toContain('POST /auth/reauth/totp');
   });
 
   it('surfaces a refused step-up with its status and the server message', async () => {
     state.reauthStatus = 400;
-    const error = await mod.changeConfigPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
+    const error = await mod.changeMasterPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
     expect((error as Error).message).toContain('HTTP 400');
     expect((error as Error).message).toContain('Invalid verification code');
     expect(state.slot).toBeUndefined();
@@ -363,7 +371,7 @@ describe('changeConfigPassword', () => {
     state.putStatus = 403;
     state.putError =
       'This config store requires a passkey; other unlock methods cannot be enrolled.';
-    const error = await mod.changeConfigPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
+    const error = await mod.changeMasterPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
     const message = (error as Error).message;
     expect(message).toContain('HTTP 403');
     expect(message).toContain('requires a passkey');
@@ -381,21 +389,49 @@ describe('changeConfigPassword', () => {
       configId: CONFIG_ID,
       teamId: null,
     });
-    const error = await mod.changeConfigPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
+    const error = await mod.changeMasterPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
     expect((error as Error).message).toContain('was written');
     expectNoSecret((error as Error).message);
   });
 
+  it('refuses a built slot that does not open this CEK, before any slot write', async () => {
+    vi.resetModules();
+    vi.doMock('@rediacc/shared/config-crypto', async (importOriginal) => {
+      const real = await importOriginal<typeof import('@rediacc/shared/config-crypto')>();
+      return {
+        ...real,
+        // buildPasswordSlot wraps a CEK other than this device's.
+        wrapCekForSlot: async (_cek: CryptoKey, slotSecret: Uint8Array, serverSecret: Uint8Array) =>
+          real.wrapCekForSlot(await real.generateCek(), slotSecret, serverSecret),
+      };
+    });
+    try {
+      const isolated = await import('../config-remote-master-password-change.js');
+      const error = await isolated
+        .changeMasterPassword('eu-bench', NEW_PASSWORD)
+        .catch((e: Error) => e);
+      expect((error as Error).message).toContain('different config key');
+      // The run reached the elevated session, then stopped before the PUT.
+      expect(state.calls).toContain('GET /auth/reauth/status');
+      expect(state.calls).not.toContain('PUT /configs/slots/password');
+      expect(state.slot).toBeUndefined();
+      expect(mockAccountServerFetch).not.toHaveBeenCalled();
+    } finally {
+      vi.doUnmock('@rediacc/shared/config-crypto');
+      vi.resetModules();
+    }
+  });
+
   it('names the missing login field off a TTY', async () => {
     vi.stubEnv('REDIACC_LOGIN_PASSWORD', '');
-    const error = await mod.changeConfigPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
+    const error = await mod.changeMasterPassword('eu-bench', NEW_PASSWORD).catch((e: Error) => e);
     expect((error as Error).message).toContain('REDIACC_LOGIN_PASSWORD');
     expect(state.calls).toEqual([]);
   });
 });
 
 describe('command registration', () => {
-  it('registers `remote password change` with no option that takes a password value', async () => {
+  it('registers `remote master-password change` with no option that takes a password value', async () => {
     vi.doMock('../../services/config/config-resources.js', () => ({
       configService: { getEffectiveConfigName: () => 'rediacc' },
     }));
@@ -405,10 +441,10 @@ describe('command registration', () => {
     registerRemoteCommands(config);
     const change = config.commands
       .find((c) => c.name() === 'remote')
-      ?.commands.find((c) => c.name() === 'password')
+      ?.commands.find((c) => c.name() === 'master-password')
       ?.commands.find((c) => c.name() === 'change');
     expect(change).toBeDefined();
-    expect(change?.options.map((o) => o.long)).toEqual(['--new-password-stdin']);
+    expect(change?.options.map((o) => o.long)).toEqual(['--new-master-password-stdin']);
     expect(change?.options.filter((o) => o.required)).toEqual([]);
   });
 });

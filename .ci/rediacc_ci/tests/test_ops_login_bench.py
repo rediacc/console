@@ -12,7 +12,7 @@ VALUES = {
     login_bench.EMAIL_ENV: "operator@example.invalid",
     login_bench.PW_ENV: "pw-Secret-31337",
     login_bench.TOTP_SEED_ENV: SEED,
-    login_bench.STORE_PW_ENV: "store-Secret-4242",
+    login_bench.MASTER_PW_ENV: "store-Secret-4242",
 }
 FIXED_NOW = 1_800_000_010.0  # 20 s left in the window
 
@@ -180,7 +180,7 @@ def test_the_steps_run_in_order_against_bench_and_eu_bench():
         "config",
         "remote",
         "enable",
-        "--password",
+        "--master-password",
         "--config-id",
         login_bench.CONFIG_ID,
         "--api-url",
@@ -209,8 +209,8 @@ def test_each_child_gets_only_its_own_values_by_name():
     assert login["REDIACC_LOGIN_EMAIL"] == VALUES[login_bench.EMAIL_ENV]
     assert login["REDIACC_LOGIN_PASSWORD"] == VALUES[login_bench.PW_ENV]
     assert login["REDIACC_LOGIN_TOTP"] == code
-    assert "REDIACC_CONFIG_PASSWORD" not in login
-    assert enable["REDIACC_CONFIG_PASSWORD"] == VALUES[login_bench.STORE_PW_ENV]
+    assert "REDIACC_STORE_MASTER_PASSWORD" not in login
+    assert enable["REDIACC_STORE_MASTER_PASSWORD"] == VALUES[login_bench.MASTER_PW_ENV]
     assert "REDIACC_LOGIN_PASSWORD" not in enable
     for child in (access, login, enable, status):
         for name in login_bench.SOURCE_NAMES:

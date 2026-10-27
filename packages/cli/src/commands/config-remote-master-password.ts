@@ -9,10 +9,10 @@ import { askPassword } from '../utils/prompt.js';
 import { applyHandoff } from './config-remote-enable.js';
 import type { DeviceCredentials } from './config-remote-handoff.js';
 
-// ─── Headless Password Enroll ────────────────────────────────────────────
+// ─── Headless Master Password Enroll ─────────────────────────────────────────
 
 /** Shape of POST /configs/password-enroll (config:enroll api-token auth). */
-interface PasswordEnrollResponse {
+interface MasterPasswordEnrollResponse {
   method: 'password';
   kdfParams: SlotKdfParams;
   wrappedCek: string;
@@ -39,24 +39,24 @@ interface PasswordEnrollResponse {
  *
  * Anything unrecognised repeats the server's own words rather than guessing.
  */
-function describeEnrollForbidden(error: unknown): string {
+function describeMasterPasswordEnrollForbidden(error: unknown): string {
   const { code, message } = error as { code?: string; message?: string };
   const serverMessage = message ?? '';
 
   if (code === TOKEN_IP_MISMATCH) return serverMessage;
   if (code === 'REQUIRE_PASSKEY' || serverMessage.includes('requires a passkey')) {
-    return t('commands.config.remote.enable.passwordRequirePasskey');
+    return t('commands.config.remote.enable.masterPasswordRequirePasskey');
   }
   if (serverMessage.includes('Missing required scope')) {
-    return t('commands.config.remote.enable.passwordMissingScope');
+    return t('commands.config.remote.enable.masterPasswordMissingScope');
   }
   if (serverMessage.includes('team is no longer available')) {
-    return t('commands.config.remote.enable.passwordTeamGone');
+    return t('commands.config.remote.enable.masterPasswordTeamGone');
   }
   if (serverMessage.includes('no associated user') || serverMessage.includes('no organization')) {
-    return t('commands.config.remote.enable.passwordTokenNotEnrollable');
+    return t('commands.config.remote.enable.masterPasswordTokenNotEnrollable');
   }
-  return t('commands.config.remote.enable.passwordForbidden', { error: serverMessage });
+  return t('commands.config.remote.enable.masterPasswordForbidden', { error: serverMessage });
 }
 
 /**
@@ -65,57 +65,59 @@ function describeEnrollForbidden(error: unknown): string {
  * requested config absent or unreadable by the token (for instance outside the token's team). Each
  * gets its own text; anything unrecognised repeats the server's words.
  */
-function describeEnrollNotFound(error: unknown): string {
+function describeMasterPasswordEnrollNotFound(error: unknown): string {
   const serverMessage = (error as { message?: string }).message ?? '';
   if (serverMessage.includes('slot on this config store')) {
-    return t('commands.config.remote.enable.passwordNoSlot');
+    return t('commands.config.remote.enable.masterPasswordNoSlot');
   }
   if (serverMessage.includes('Config storage is not configured')) {
-    return t('commands.config.remote.enable.passwordNoStorage');
+    return t('commands.config.remote.enable.masterPasswordNoStorage');
   }
   if (serverMessage.includes('not found or not readable')) {
-    return t('commands.config.remote.enable.passwordConfigNotReadable', { error: serverMessage });
+    return t('commands.config.remote.enable.masterPasswordConfigNotReadable', {
+      error: serverMessage,
+    });
   }
-  return t('commands.config.remote.enable.passwordNotFound', { error: serverMessage });
+  return t('commands.config.remote.enable.masterPasswordNotFound', { error: serverMessage });
 }
 
 /**
- * Resolve the config master password for a headless password enrollment.
- * Order mirrors requireMasterPassword: REDIACC_CONFIG_PASSWORD env → interactive
- * prompt. There is nothing to verify it against locally, a wrong password fails
- * the probe pull below with a clear message.
+ * Resolve the master password for a headless enrollment against its password slot.
+ * Order: the given value (--master-password-stdin) → REDIACC_STORE_MASTER_PASSWORD env →
+ * interactive prompt. There is nothing to verify it against locally, a wrong master
+ * password fails the probe pull below with a clear message.
  */
-function resolveConfigPassword(given?: string): Promise<string> {
+function resolveMasterPassword(given?: string): Promise<string> {
   if (given) return Promise.resolve(given);
-  const envPassword = process.env.REDIACC_CONFIG_PASSWORD;
-  if (envPassword) return Promise.resolve(envPassword);
+  const envMasterPassword = process.env.REDIACC_STORE_MASTER_PASSWORD;
+  if (envMasterPassword) return Promise.resolve(envMasterPassword);
 
   if (process.stdin.isTTY !== true) {
-    throw new ValidationError(t('commands.config.remote.enable.passwordNonInteractive'));
+    throw new ValidationError(t('commands.config.remote.enable.masterPasswordNonInteractive'));
   }
-  return askPassword(t('commands.config.remote.enable.passwordPrompt'));
+  return askPassword(t('commands.config.remote.enable.masterPasswordPrompt'));
 }
 
 /**
- * The device credentials of a PRE-PROVISIONED password slot, with no browser.
+ * The device credentials of the master password's PRE-PROVISIONED password slot, with no browser.
  *
  * The password slot itself is created ahead of time in the portal, where the
  * browser session holds the CEK. Here the headless box merely UNLOCKS it: its
  * own account token (scope config:enroll) fetches the slot's public kdfParams,
  * the opaque wrappedCek, a fresh config token, and the pointer coordinates; the
- * shared password (out of band) derives the slot secret locally. Nothing is
- * stored here: a first enable (`enablePassword`) and a re-enrollment
+ * master password (out of band) derives the slot secret locally. Nothing is
+ * stored here: a first enable (`enableMasterPassword`) and a re-enrollment
  * (config-remote-reenroll.ts) both store the result and prove it with a pull.
  */
-export async function passwordCredentials(
+export async function masterPasswordCredentials(
   apiUrl: string,
   configId?: string,
-  password?: string
+  masterPassword?: string
 ): Promise<DeviceCredentials> {
   // 1. Ask the server to hand back the pre-provisioned password slot. userId is resolved server-side from the token creator; the body carries only the chosen configId (`--config-id`), which scopes the match when the token reads several configs. An api token with the config:enroll scope authenticates the call.
-  let enroll: PasswordEnrollResponse;
+  let enroll: MasterPasswordEnrollResponse;
   try {
-    enroll = await accountServerFetch<PasswordEnrollResponse>(
+    enroll = await accountServerFetch<MasterPasswordEnrollResponse>(
       '/account/api/v1/configs/password-enroll',
       {
         method: 'POST',
@@ -127,18 +129,18 @@ export async function passwordCredentials(
   } catch (error) {
     const status = (error as { status?: number }).status;
     if (status === 403) {
-      throw new ValidationError(describeEnrollForbidden(error));
+      throw new ValidationError(describeMasterPasswordEnrollForbidden(error));
     }
     if (status === 404) {
-      throw new ValidationError(describeEnrollNotFound(error));
+      throw new ValidationError(describeMasterPasswordEnrollNotFound(error));
     }
     throw error;
   }
 
-  // 2. Derive the 32-byte slot secret from the shared password + public kdfParams.
-  const resolvedPassword = await resolveConfigPassword(password);
+  // 2. Derive the 32-byte slot secret from the master password + public kdfParams.
+  const resolvedMasterPassword = await resolveMasterPassword(masterPassword);
   const { derivePasswordSlotSecret } = await import('@rediacc/shared/config-crypto');
-  const slotSecret = await derivePasswordSlotSecret(resolvedPassword, enroll.kdfParams);
+  const slotSecret = await derivePasswordSlotSecret(resolvedMasterPassword, enroll.kdfParams);
 
   // 3. The same shape the browser handoff carries: the slot secret under a fresh local key id, the token, the wrapped CEK and the pointer coordinates.
   return {
@@ -155,29 +157,29 @@ export async function passwordCredentials(
   };
 }
 
-/** A wrong password surfaces as a CEK unwrap failure (RemoteStaleSlotError from the adapter): name it. */
-export async function passwordFailure(error: unknown): Promise<unknown> {
+/** A wrong master password surfaces as a CEK unwrap failure (RemoteStaleSlotError from the adapter): name it. */
+export async function masterPasswordFailure(error: unknown): Promise<unknown> {
   const { RemoteStaleSlotError } = await import('../adapters/remote-config-adapter.js');
   return error instanceof RemoteStaleSlotError
-    ? new ValidationError(t('commands.config.remote.enable.passwordWrong'))
+    ? new ValidationError(t('commands.config.remote.enable.masterPasswordWrong'))
     : error;
 }
 
 /**
- * Enroll this box against the password slot: store the credentials exactly like the browser
+ * Enroll this box against the master password's slot: store the credentials exactly like the browser
  * handoff and let the probe pull fail fast (`applyHandoff` removes what it stored on any failure,
  * so a retry starts from a clean slate).
  */
-export async function enablePassword(
+export async function enableMasterPassword(
   apiUrl: string,
   configName: string,
-  opts: { force?: boolean; configId?: string; password?: string } = {}
+  opts: { force?: boolean; configId?: string; masterPassword?: string } = {}
 ): Promise<void> {
-  const credentials = await passwordCredentials(apiUrl, opts.configId, opts.password);
+  const credentials = await masterPasswordCredentials(apiUrl, opts.configId, opts.masterPassword);
   try {
     await applyHandoff(credentials, configName, opts);
   } catch (error) {
-    throw await passwordFailure(error);
+    throw await masterPasswordFailure(error);
   }
 
   outputService.success(t('commands.config.remote.enable.success', { name: configName, apiUrl }));

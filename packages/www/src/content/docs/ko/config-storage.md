@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ko
-sourceHash: "5cc07f3849026632"
-sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
+sourceHash: "060357b48d8c7154"
+sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
 ---
 
 # 설정 저장소
@@ -69,7 +69,7 @@ PRF 요건은 패스키 슬롯에만 적용됩니다. 마스터 비밀번호와 
 브라우저가 없는 머신(서버, CI 러너, 실행기 데몬 등)도 마스터 비밀번호 방법으로 기존 저장소에 등록할 수 있습니다.
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 요건:

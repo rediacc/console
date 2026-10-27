@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: it
-sourceHash: "5cc07f3849026632"
-sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
+sourceHash: "060357b48d8c7154"
+sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
 ---
 
 # Archivio di Configurazione
@@ -69,7 +69,7 @@ Puoi aggiungere una passkey in seguito dalla pagina Config Storage. Mantieni alm
 Una macchina senza browser (un server, un runner CI, un daemon executor) può iscriversi a un archivio esistente con il metodo della password principale:
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 Requisiti:

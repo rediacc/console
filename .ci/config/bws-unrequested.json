@@ -248,9 +248,9 @@
       "kind": "no-github-twin",
       "reason": "The base32 TOTP seed of the operator's bench account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
     },
-    "REDIACC_BENCH_CONFIG_PASSWORD": {
+    "REDIACC_BENCH_MASTER_PASSWORD": {
       "kind": "no-github-twin",
-      "reason": "The master password of the eu-bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
+      "reason": "The master password of the eu-bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
     }
   },
   "no_fetch_jobs": {}

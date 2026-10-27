@@ -57,6 +57,10 @@ const BANNED: Banned[] = [
   { token: 'RDC_SKIP_SETUP_CHECK' },
   { token: 'RDC_DEBUG_RENET_PROVISION' },
   { token: 'RDC_TIMING_CHART' },
+  // The store's master password (#06c28cd5): renamed REDIACC_STORE_MASTER_PASSWORD /
+  // REDIACC_NEW_STORE_MASTER_PASSWORD, with no fallback read of the old names.
+  { token: 'REDIACC_CONFIG_PASSWORD' },
+  { token: 'REDIACC_NEW_CONFIG_PASSWORD' },
   // `docs/environment-variables.md:107` retires this in favour of the REDIACC_DEBUG scopes, and until 2026-09-09 nothing enforced it -- the bare name could not be added
   // while the matcher was a substring test, because it swallows every REDIACC_DEBUG.
   // Scoped to the CLI and shared surfaces this file walks: `DEBUG` is ALSO the npm `debug`

@@ -230,7 +230,7 @@ export type ApiTokenScope =
   // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is privileged (owner/admin only); `proxy:exec` is creatable by any member.
   | 'proxy:exec'
   | 'proxy:admin'
-  // Config plane: `config:enroll` lets a headless CLI add a password key slot to its own config-store membership (rdc config remote enable --password). Creatable by any member — not privileged.
+  // Config plane: `config:enroll` lets a headless CLI add a password key slot to its own config-store membership (rdc config remote enable --master-password). Creatable by any member — not privileged.
   | 'config:enroll'
   // Backup plane: `backup:read` lets a CLI query the subscription's backup storage state through the tunnel (usage, manifest index, verify). Read-only, creatable by any member — not privileged. The MACHINE never holds this: it commits its own manifests via the license-blob storage session.
   | 'backup:read'

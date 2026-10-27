@@ -7,11 +7,11 @@ BENCH ONLY (operator order 2026-10-27). The run refuses, with a named error and 
 
 THE STEPS, in order:
 
-  1. Re-execute under the `bench-login` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_BENCH_EMAIL, REDIACC_BENCH_PASSWORD, REDIACC_BENCH_TOTP_SEED and REDIACC_BENCH_CONFIG_PASSWORD.
+  1. Re-execute under the `bench-login` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_BENCH_EMAIL, REDIACC_BENCH_PASSWORD, REDIACC_BENCH_TOTP_SEED and REDIACC_BENCH_MASTER_PASSWORD.
   2. Refuse a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming its Bitwarden entry, before anything else runs.
   3. Refresh the bench IP allowlist (`rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile). The four bench values are removed from that child's environment.
   4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server https://bench.rediacc.com` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
-  5. Run `./rdc.sh --config eu-bench config remote enable --password --config-id <CONFIG_ID> --api-url https://bench.rediacc.com` with REDIACC_CONFIG_PASSWORD in the child environment, unless `config remote status` already reports the config connected to CONFIG_ID on bench: enable refuses a linked config ("nothing to enable", exit 2, measured 2026-10-27 on the first live run), so a second run skips the step instead of failing on it.
+  5. Run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url https://bench.rediacc.com` with REDIACC_STORE_MASTER_PASSWORD in the child environment, unless `config remote status` already reports the config connected to CONFIG_ID on bench: enable refuses a linked config ("nothing to enable", exit 2, measured 2026-10-27 on the first live run), so a second run skips the step instead of failing on it.
   6. Print `./rdc.sh --config eu-bench config remote status`.
 
 SECRETS. Every value travels by name in a child's environment: never on argv, never printed, never logged. Each `rdc` child gets only the values its own step needs, and `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from it, so an inherited dev selection cannot redirect the login to another server or config. A failed step exits 1 naming the step.
@@ -40,20 +40,20 @@ MIN_WINDOW_LEFT = 5
 EMAIL_ENV = "REDIACC_BENCH_EMAIL"
 PW_ENV = "REDIACC_BENCH_PASSWORD"
 TOTP_SEED_ENV = "REDIACC_BENCH_TOTP_SEED"
-STORE_PW_ENV = "REDIACC_BENCH_CONFIG_PASSWORD"
-SOURCE_NAMES = (EMAIL_ENV, PW_ENV, TOTP_SEED_ENV, STORE_PW_ENV)
+MASTER_PW_ENV = "REDIACC_BENCH_MASTER_PASSWORD"
+SOURCE_NAMES = (EMAIL_ENV, PW_ENV, TOTP_SEED_ENV, MASTER_PW_ENV)
 
-# The names the CLI reads (packages/cli/src/services/account/subscription-password-auth.ts, packages/cli/src/commands/config-remote-password.ts).
+# The names the CLI reads (packages/cli/src/services/account/subscription-password-auth.ts, packages/cli/src/commands/config-remote-master-password.ts).
 LOGIN_EMAIL_ENV = "REDIACC_LOGIN_EMAIL"
 LOGIN_PW_ENV = "REDIACC_LOGIN_PASSWORD"
 LOGIN_TOTP_ENV = "REDIACC_LOGIN_TOTP"
-CLI_STORE_PW_ENV = "REDIACC_CONFIG_PASSWORD"
+CLI_STORE_MASTER_PW_ENV = "REDIACC_STORE_MASTER_PASSWORD"
 CHILD_SECRET_NAMES = (
     *SOURCE_NAMES,
     LOGIN_EMAIL_ENV,
     LOGIN_PW_ENV,
     LOGIN_TOTP_ENV,
-    CLI_STORE_PW_ENV,
+    CLI_STORE_MASTER_PW_ENV,
 )
 # Inherited selections that would point `./rdc.sh` somewhere other than eu-bench on bench.
 SCRUBBED_SELECTORS = ("RDC_DEV", "REDIACC_CONFIG", "REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER")
@@ -243,7 +243,7 @@ def login(
         )
     else:
         enable_env = dict(clean)
-        enable_env[CLI_STORE_PW_ENV] = values[STORE_PW_ENV]
+        enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
         _step(
             run,
             "Enabling the remote config store (config remote enable)",
@@ -252,7 +252,7 @@ def login(
                 "config",
                 "remote",
                 "enable",
-                "--password",
+                "--master-password",
                 "--config-id",
                 CONFIG_ID,
                 "--api-url",

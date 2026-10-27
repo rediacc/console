@@ -11,7 +11,7 @@
 3. Refuses a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming the Bitwarden entry and its id (exit 2).
 4. Refreshes the bench IP allowlist with `rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile.
 5. Derives the six-digit TOTP code in memory (`rediacc_ci.ops.totp`, RFC 6238, HMAC-SHA1, 30 s, 6 digits) and runs `./rdc.sh --config eu-bench subscription login --server https://bench.rediacc.com`.
-6. Runs `./rdc.sh --config eu-bench config remote enable --password --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench.rediacc.com`, unless `config remote status` already reports `eu-bench` connected to that config id on bench. `enable` refuses a linked config with "nothing to enable" (exit 2), so a repeat run skips the step instead of failing on it.
+6. Runs `./rdc.sh --config eu-bench config remote enable --master-password --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench.rediacc.com`, unless `config remote status` already reports `eu-bench` connected to that config id on bench. `enable` refuses a linked config with "nothing to enable" (exit 2), so a repeat run skips the step instead of failing on it.
 7. Prints `./rdc.sh --config eu-bench config remote status`.
 
 ## The secrets
@@ -23,7 +23,7 @@ The `bench-login` consumer in `.ci/config/secret-supply.json` binds four Bitward
 | `REDIACC_BENCH_EMAIL` | the operator's bench login address | `REDIACC_LOGIN_EMAIL` |
 | `REDIACC_BENCH_PASSWORD` | the operator's bench login password | `REDIACC_LOGIN_PASSWORD` |
 | `REDIACC_BENCH_TOTP_SEED` | the base32 TOTP seed of that account | `REDIACC_LOGIN_TOTP`, the derived code only |
-| `REDIACC_BENCH_CONFIG_PASSWORD` | the master password of the eu-bench remote config store | `REDIACC_CONFIG_PASSWORD` |
+| `REDIACC_BENCH_MASTER_PASSWORD` | the master password of the eu-bench remote config store | `REDIACC_STORE_MASTER_PASSWORD` |
 
 Every value travels by name in a child's environment. None is put on argv, printed or logged, and each `rdc` child receives only the values its own step needs. `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from every child, so an inherited dev selection cannot point the login at another server or config. The allowlist child receives none of the four.
 

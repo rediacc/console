@@ -3483,26 +3483,27 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Link this config to remote encrypted storage",
       "options": [
         {
-          "flags": "--password",
-          "long": "password",
+          "flags": "--master-password",
+          "long": "master-password",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.config.remote.enable.optionPassword",
+          "sensitive": true,
+          "descriptionKey": "commands.config.remote.enable.optionMasterPassword",
           "label": "Enroll headlessly with a pre-provisioned password slot (no browser)"
         },
         {
-          "flags": "--password-stdin",
-          "long": "password-stdin",
+          "flags": "--master-password-stdin",
+          "long": "master-password-stdin",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.config.remote.enable.optionPasswordStdin",
-          "label": "Like --password, reading the config master password from stdin"
+          "descriptionKey": "commands.config.remote.enable.optionMasterPasswordStdin",
+          "label": "Like --master-password, reading the master password from stdin"
         },
         {
           "flags": "--api-url <url>",
@@ -3554,26 +3555,26 @@ export const CLI_CONTRACT: CliContract = {
       "path": [
         "config",
         "remote",
-        "password",
+        "master-password",
         "change"
       ],
-      "pathKey": "config remote password change",
+      "pathKey": "config remote master-password change",
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.password.change.description",
+      "descriptionKey": "commands.config.remote.masterPassword.change.description",
       "label": "Change the master password: re-wrap the config key from this device's enrollment under a new password slot",
       "options": [
         {
-          "flags": "--new-password-stdin",
-          "long": "new-password-stdin",
+          "flags": "--new-master-password-stdin",
+          "long": "new-master-password-stdin",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.config.remote.password.change.optionNewPasswordStdin",
-          "label": "Read the new master password from stdin (otherwise REDIACC_NEW_CONFIG_PASSWORD, or a prompt on a TTY)"
+          "descriptionKey": "commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin",
+          "label": "Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)"
         }
       ],
       "positionals": [],

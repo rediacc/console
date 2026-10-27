@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: zh
-sourceHash: "5cc07f3849026632"
-sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
+sourceHash: "060357b48d8c7154"
+sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
 ---
 
 # 配置存储
@@ -69,7 +69,7 @@ PRF要求仅适用于通行密钥这一种密钥槽。主密码和恢复码方�
 没有浏览器的机器（服务器、CI运行器、执行器守护进程）可以通过主密码方式注册到已有的存储中：
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 前提条件：

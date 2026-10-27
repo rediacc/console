@@ -7,7 +7,7 @@ order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "ca640d69d394088a"
+sourceHash: "1bc7440fe8b4a64b"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -217,8 +217,8 @@ rdc config remote enable [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--password` | {{t:cli.commands.config.remote.enable.optionPassword}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--password-stdin` | {{t:cli.commands.config.remote.enable.optionPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--master-password` | {{t:cli.commands.config.remote.enable.optionMasterPassword}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--master-password-stdin` | {{t:cli.commands.config.remote.enable.optionMasterPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--api-url <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.config.remote.enable.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--config-id <id>` | {{t:cli.commands.config.remote.enable.optionConfigId}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -248,22 +248,22 @@ rdc config remote disable [options]
 rdc config remote status
 ```
 
-#### password
+#### master-password
 
-{{t:cli.commands.config.remote.password.description}}
+{{t:cli.commands.config.remote.masterPassword.description}}
 
-<a id="cli-local-config-remote-password-change"></a>
+<a id="cli-local-config-remote-master-password-change"></a>
 **change:**
 
-{{t:cli.commands.config.remote.password.change.description}}
+{{t:cli.commands.config.remote.masterPassword.change.description}}
 
 ```bash
-rdc config remote password change [options]
+rdc config remote master-password change [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--new-password-stdin` | {{t:cli.commands.config.remote.password.change.optionNewPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--new-master-password-stdin` | {{t:cli.commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-config-remote-refresh"></a>
