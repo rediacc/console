@@ -34,7 +34,15 @@ GIT_ENV = {
     "GIT_CONFIG_GLOBAL": "/dev/null",
     "GIT_CONFIG_SYSTEM": "/dev/null",
 }
-STRIP = ("COMMIT_POLICY_OK", "REDIACC_RELEASE_RUN", "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")
+# BASH_ENV: this host's profiler re-execs a bash by its `$0`, which the argv-spoof case sets to the interpreter path.
+STRIP = (
+    "COMMIT_POLICY_OK",
+    "REDIACC_RELEASE_RUN",
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "BASH_ENV",
+)
 
 
 def _load(name: str, path: pathlib.Path):
@@ -49,7 +57,22 @@ def _load(name: str, path: pathlib.Path):
 
 RR = _load("release_run_under_test", HOOKS / "release_run.py")
 MODULE = RR.ENTRY_MODULE
-ENTRY_ARGV = [sys.executable, "-P", "-s", "-m", MODULE]
+
+
+def _system_python() -> str | None:
+    """A root-installed interpreter by an absolute path, the only kind `interpreter_refusal` admits; the runner's own `sys.executable` is often a user-owned venv link."""
+    for candidate in (os.path.realpath(sys.executable), "/usr/bin/python3"):
+        if (
+            os.path.isabs(candidate)
+            and os.path.exists(candidate)
+            and RR.interpreter_refusal(candidate, os.path.realpath(candidate)) == ""
+        ):
+            return candidate
+    return None
+
+
+PY = _system_python()
+ENTRY_ARGV = [PY or "/usr/bin/python3", "-P", "-s", "-m", MODULE]
 
 # The fake entry; its config is the LAST argument, so it runs the same as a module, a script or `-c` code. Mode "sleep" only lives (the forged-pid sibling); mode "push" writes the record and runs the hook as its child.
 ENTRY = r"""
@@ -63,7 +86,7 @@ if cfg["mode"] == "sleep":
 spec = importlib.util.spec_from_file_location("rr", cfg["release_run"])
 rr = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(rr)
-pid = cfg.get("record_pid") or os.getpid()
+pid = cfg.get("record_pid") or int(os.environ.get("FORGE_PID") or 0) or os.getpid()
 try:
     path = rr.write_release_run(cfg["console"], cfg["run_id"], tree=cfg["tree"], version="9.9.9",
                                 channel="edge", pushes=cfg["pushes"], pid=pid)
@@ -132,9 +155,13 @@ def _plant(folder: pathlib.Path) -> pathlib.Path:
 
 
 def _make_console(
-    root: pathlib.Path, *, with_hooks: bool = False, symlink_entry: bool = False
+    root: pathlib.Path,
+    *,
+    with_hooks: bool = False,
+    symlink_entry: bool = False,
+    outside_link: pathlib.Path | None = None,
 ) -> pathlib.Path:
-    """A console checkout whose committed `.ci/rediacc_ci/release/local.py` is the fake entry; `with_hooks` also commits a copy of the real git hooks, so a `core.hooksPath` there makes this the hooks' CONSOLE_ROOT; `symlink_entry` commits `local.py` as a symlink to the entry beside it. Sleeps out `SETTLE_S`."""
+    """A console checkout whose committed `.ci/rediacc_ci/release/local.py` is the fake entry; `with_hooks` also commits a copy of the real git hooks, so a `core.hooksPath` there makes this the hooks' CONSOLE_ROOT; `symlink_entry` commits `local.py` as a symlink to the entry beside it; `outside_link` commits `release/tag.py` as a symlink to that file outside the tree. Sleeps out `SETTLE_S`."""
     root.mkdir()
     _git(root, "init", "-q", "-b", "main")
     (root / "a.txt").write_text("a\n", encoding="utf-8")
@@ -144,6 +171,8 @@ def _make_console(
         local = root / ".ci/rediacc_ci/release/local.py"
         local.rename(local.with_name("real_local.py"))
         local.symlink_to("real_local.py")
+    if outside_link is not None:
+        (root / ".ci/rediacc_ci/release/tag.py").symlink_to(outside_link)
     if with_hooks:
         hooks = root / ".claude" / "rediacc_hooks"
         shutil.copytree(HOOKS, hooks / "git", ignore=shutil.ignore_patterns("__pycache__"))
@@ -201,11 +230,14 @@ class World:
         cwd=None,
         env=None,
         release_run=None,
+        executable=None,
+        script=None,
+        stdin=None,
         **cfg,
     ) -> subprocess.CompletedProcess:
         self.n += 1
         console = console or self.console
-        stdin = "refs/heads/main %s refs/heads/main %s\n" % (self.oid, ZERO)
+        stdin = stdin or "refs/heads/main %s refs/heads/main %s\n" % (self.oid, ZERO)
         conf = {
             "mode": "push",
             "release_run": str(release_run or HOOKS / "release_run.py"),
@@ -231,6 +263,8 @@ class World:
         path.write_text(json.dumps(conf), encoding="utf-8")
         return subprocess.run(
             [*(argv or ENTRY_ARGV), str(path)],
+            executable=executable,
+            input=script,
             cwd=str(cwd or self.tmp),
             capture_output=True,
             text=True,
@@ -243,6 +277,11 @@ class World:
 def _need_proc() -> None:
     if not os.path.exists("/proc/self/stat"):
         pytest.skip("the release-run admission reads /proc; without it nothing is admitted")
+    if PY is None:
+        pytest.fail(
+            "no root-installed python3 here (tried the runner's %s and /usr/bin/python3), so the admitted direction cannot be exercised; install the system python3"
+            % sys.executable
+        )
 
 
 @pytest.fixture(scope="module")
@@ -345,7 +384,7 @@ def test_a_missing_record_file_is_refused(world: World) -> None:
 
 def test_a_planted_module_in_the_cwd_is_refused(world: World) -> None:
     plant = _plant(world.tmp / "plant")
-    proc = world.run(argv=[sys.executable, "-s", "-m", MODULE], cwd=plant, forge=True)
+    proc = world.run(argv=[ENTRY_ARGV[0], "-s", "-m", MODULE], cwd=plant, forge=True)
     assert "writer refused" in proc.stderr
     _refused(proc, "runs without -P")
 
@@ -362,17 +401,17 @@ def test_a_planted_module_ahead_on_pythonpath_is_refused(world: World) -> None:
 def test_a_script_ahead_of_the_module_words_is_refused(world: World) -> None:
     script = world.tmp / "evil.py"
     script.write_text(ENTRY, encoding="utf-8")
-    proc = world.run(argv=[sys.executable, "-P", "-s", str(script), "-m", MODULE], forge=True)
+    proc = world.run(argv=[ENTRY_ARGV[0], "-P", "-s", str(script), "-m", MODULE], forge=True)
     _refused(proc, "is not `python3")
 
 
 def test_code_ahead_of_the_module_words_is_refused(world: World) -> None:
-    proc = world.run(argv=[sys.executable, "-c", ENTRY, "-m", MODULE], forge=True)
+    proc = world.run(argv=[ENTRY_ARGV[0], "-c", ENTRY, "-m", MODULE], forge=True)
     _refused(proc, "is not `python3")
 
 
 def test_no_user_site_guard_is_refused(world: World) -> None:
-    proc = world.run(argv=[sys.executable, "-P", "-m", MODULE], forge=True)
+    proc = world.run(argv=[ENTRY_ARGV[0], "-P", "-m", MODULE], forge=True)
     _refused(proc, "runs without -s")
 
 
@@ -415,6 +454,97 @@ def test_a_committed_symlink_entry_is_refused(tmp_path: pathlib.Path) -> None:
     _refused(world.run(forge=True), "is not a tracked regular file")
 
 
+def test_a_committed_symlink_to_outside_the_tree_is_refused(tmp_path: pathlib.Path) -> None:
+    """Review finding a6188f8e.2: git sees the link text, never the target, so a rewritten target is invisible to the status check."""
+    _need_proc()
+    outside = tmp_path / "outside.py"
+    outside.write_text("", encoding="utf-8")
+    world = World(tmp_path, _make_console(tmp_path / "console", outside_link=outside))
+    _refused(world.run(forge=True), "release/tag.py is a symlink")
+
+
+# Review finding a6188f8e.1: argv is the caller's to choose, the executable is not.
+
+
+def test_an_entry_shaped_argv_on_another_binary_is_refused(world: World) -> None:
+    """`bash` (root-owned) started with argv `python3 -P -s -m rediacc_ci.release.local <cfg>`, the `exec -a` trick, reading its script from stdin: it has a child write a record naming the bash pid by hand and run the hook. Only the executable gives it away."""
+    script = world.tmp / "evil.py"
+    script.write_text(ENTRY, encoding="utf-8")
+    bash = os.path.realpath(shutil.which("bash") or "/bin/bash")
+    proc = world.run(
+        executable=bash,
+        script='FORGE_PID=$$ "%s" "%s" "${@: -1}"\n' % (sys.executable, script),
+        forge=True,
+    )
+    _refused(proc, "is not a Python interpreter")
+
+
+def test_a_copied_interpreter_is_refused(world: World) -> None:
+    copy = world.tmp / "bin" / "python3"
+    copy.parent.mkdir()
+    shutil.copy2(os.path.realpath(ENTRY_ARGV[0]), copy)
+    proc = world.run(argv=[str(copy), *ENTRY_ARGV[1:]], forge=True)
+    assert "writer refused" in proc.stderr, proc.stderr
+    _refused(proc, "is not root-owned")
+
+
+def test_a_user_writable_venv_is_refused(world: World) -> None:
+    """The venv's `python` links to the root-owned interpreter, so `/proc/<pid>/exe` is clean; its own directory is not, and its site-packages run `.pth` files whatever `-s` says."""
+    venv = world.tmp / "venv"
+    subprocess.run(
+        [ENTRY_ARGV[0], "-m", "venv", "--without-pip", str(venv)], check=True, env=_env()
+    )
+    python = venv / "bin" / "python3"
+    proc = world.run(argv=[str(python), *ENTRY_ARGV[1:]], forge=True)
+    _refused(proc, "is not root-owned")
+
+
+def test_an_interpreter_found_on_path_is_refused(world: World) -> None:
+    proc = world.run(argv=["python3", *ENTRY_ARGV[1:]], executable=ENTRY_ARGV[0], forge=True)
+    _refused(proc, "not by an absolute interpreter path")
+
+
+@pytest.mark.parametrize(
+    ("argv0", "exe", "want"),
+    [
+        ("{py}", "{py}", ""),
+        ("python3", "{py}", "not by an absolute interpreter path"),
+        ("/bin/bash", "/usr/bin/bash", "is not a Python interpreter"),
+        ("{py}", "{py} (deleted)", "is not a file on disk"),
+        ("/usr/bin/python3-fake", "{py}", "does not resolve to its executable"),
+    ],
+)
+def test_interpreter_refusal(argv0: str, exe: str, want: str) -> None:
+    if PY is None:
+        pytest.fail("no root-installed python3 here")
+    real = os.path.realpath(PY)
+    got = RR.interpreter_refusal(argv0.replace("{py}", PY), exe.replace("{py}", real))
+    if want:
+        assert want in got
+    else:
+        assert got == ""
+
+
+def test_a_tag_push_beside_a_listed_main_prints_no_release_noise(world: World) -> None:
+    """Review finding a6188f8e.3: a tag the rules admit anyway is unlisted, and says nothing about it."""
+    stdin = "refs/heads/main %s refs/heads/main %s\nrefs/tags/v9 %s refs/tags/v9 %s\n" % (
+        world.oid,
+        ZERO,
+        world.oid,
+        ZERO,
+    )
+    proc = world.run(stdin=stdin)
+    assert proc.returncode == 0, proc.stderr
+    assert "release run" not in proc.stderr, proc.stderr
+
+
+def test_a_tag_only_push_prints_no_release_noise(world: World) -> None:
+    stdin = "refs/tags/v9 %s refs/tags/v9 %s\n" % (world.oid, ZERO)
+    proc = world.run(stdin=stdin)
+    assert proc.returncode == 0, proc.stderr
+    assert "release run" not in proc.stderr, proc.stderr
+
+
 def test_a_real_git_push_through_the_real_hooks(tmp_path: pathlib.Path) -> None:
     """End to end: `git push` with core.hooksPath at a committed copy of the real hooks inside a fixture console, so that console is their CONSOLE_ROOT and its tracked fake entry is the entry."""
     _need_proc()
@@ -440,7 +570,7 @@ def test_the_planted_module_exploit_against_the_real_console(tmp_path: pathlib.P
     plant = _plant(tmp_path / "plant")
     push = ["git", "push", "-q", "origin", "HEAD:refs/heads/main"]
     proc = world.run(
-        argv=[sys.executable, "-m", MODULE],
+        argv=[ENTRY_ARGV[0], "-m", MODULE],
         cwd=plant,
         tree=_git(REPO_ROOT, "rev-parse", "HEAD^{tree}"),
         child=push,

@@ -295,26 +295,37 @@ def _mirror_push_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
     return mirror_main_refusal(repo, local_oid)
 
 
-# THE RELEASE RUN (box W1-D of agent/plans/PLAN-local-release.md). A local release, `python3 -m rediacc_ci.release.local`, pushes what CD pushed: the tap repository's formula commit and the like, some of them to `main`. A line is admitted only when `REDIACC_RELEASE_RUN` names a record under `.ci/cache/release/` of the console root whose pid is a live ancestor of this hook with a matching start time and argv, that provably ran the console's tracked, unmodified entry, whose tree is the console's `HEAD^{tree}`, and which lists that exact `(toplevel, remote, remote_ref, oid)`, `remote` being the first argument git hands this hook; `release_run.py` beside this file is the record format, its writer and its reader. An admitted line skips the branch rules and the backup check (the release gates judged both before any push); every other line meets the rules below unchanged. When the variable is set, every line it does not admit gets a reason on stderr, a failed record and an unlisted line alike, so a release's refusal is not a mystery.
-def _release_admitted(repo: str, remote: str, lines: list[list[str]]) -> set[int]:
-    """The `id()`s of the pushed lines a live release run admits; empty when the variable is unset or the record fails."""
+# THE RELEASE RUN (box W1-D of agent/plans/PLAN-local-release.md). A local release, `python3 -m rediacc_ci.release.local`, pushes what CD pushed: the tap repository's formula commit and the like, some of them to `main`. A line is admitted only when `REDIACC_RELEASE_RUN` names a record under `.ci/cache/release/` of the console root whose pid is a live ancestor of this hook with a matching start time and argv, that provably ran the console's tracked, unmodified entry, whose tree is the console's `HEAD^{tree}`, and which lists that exact `(toplevel, remote, remote_ref, oid)`, `remote` being the first argument git hands this hook; `release_run.py` beside this file is the record format, its writer and its reader. An admitted line skips the branch rules and the backup check (the release gates judged both before any push); every other line meets the rules below unchanged. When the variable is set, a failed record says why on stderr at once, and a line the record does not list says so beside the refusal of that line, and only then: a tag or an ordinary branch push the rules admit anyway prints no release-run noise.
+def _release_admitted(
+    repo: str, remote: str, lines: list[list[str]]
+) -> tuple[set[int], dict[int, str]]:
+    """The `id()`s of the pushed lines a live release run admits, and for each line a valid record does not list, the note `_refuse_lines` prints if that line is refused; both empty when the variable is unset or the record fails."""
     if not os.environ.get(rr.ENV) or not repo:
-        return set()
+        return set(), {}
     try:
         keys = rr.admitted_pushes(CONSOLE_ROOT)
     except rr.RecordError as exc:
         sys.stderr.write("commit-policy: the release run admits nothing (%s)\n" % exc)
-        return set()
-    admitted = set()
+        return set(), {}
+    admitted: set[int] = set()
+    notes: dict[int, str] = {}
     for line in lines:
         if rr.admits(keys, repo, remote, line[2], line[1]):
             admitted.add(id(line))
             continue
-        sys.stderr.write(
+        notes[id(line)] = (
             "commit-policy: the release run does not list (%s, %s, %s, %s); this line meets the ordinary rules\n"
             % rr.admission_key(repo, remote, line[2], line[1])
         )
-    return admitted
+    return admitted, notes
+
+
+def _refuse_lines(notes: dict[int, str], refused: list[list[str]], message: str) -> int:
+    """`_refuse(message)`, after the release-run note of each refused line a valid record did not list."""
+    for line in refused:
+        if id(line) in notes:
+            sys.stderr.write(notes[id(line)])
+    return _refuse(message)
 
 
 def pre_push(argv: list[str], stdin: str) -> int:
@@ -333,7 +344,7 @@ def pre_push(argv: list[str], stdin: str) -> int:
                 % (MIRROR_REMOTE, reason)
             )
         return 0
-    released = _release_admitted(repo, remote, lines)
+    released, notes = _release_admitted(repo, remote, lines)
     for line in lines:
         _local_ref, local_oid, remote_ref, remote_oid = line
         if not remote_ref.startswith("refs/heads/"):
@@ -344,31 +355,38 @@ def pre_push(argv: list[str], stdin: str) -> int:
         if name == "main":
             reason = _main_push_refusal(repo, remote, current, lines, line)
             if reason:
-                return _refuse(
+                return _refuse_lines(
+                    notes,
+                    [line],
                     "this pushes to `main` and is not the fast-forward fallback (%s).\n"
                     "Landings go through `gh pr merge <n> --rebase --auto`. The one direct push\n"
                     "(operator ruling 2026-10-02) is a fast-forward of the live branch's pushed tip\n"
                     "that is the open PR's head with CI Complete green:\n"
                     "`git push origin origin/<live MMDD-N branch>:main`, one refspec, nothing forced."
-                    % reason
+                    % reason,
                 )
             continue
         if local_oid == cp.ZERO_OID:
             continue
         if remote_oid == cp.ZERO_OID and name != current:
-            return _refuse(
+            return _refuse_lines(
+                notes,
+                [line],
                 "this creates the remote branch `%s`, and the one live branch is `%s`."
-                % (name, current or "(detached)")
+                % (name, current or "(detached)"),
             )
-    reason = backup_receipt_refusal(repo, [line for line in lines if id(line) not in released])
+    unreleased = [line for line in lines if id(line) not in released]
+    reason = backup_receipt_refusal(repo, unreleased)
     if reason:
-        return _refuse(
+        return _refuse_lines(
+            notes,
+            [line for line in unreleased if line[2].startswith("refs/heads/")],
             "this push touches the backup paths and no VERIFIED backup receipt covers it.\n"
             "%s\n"
             "The pre-bash guard `block_backup_unverified_push` admits the same push with an\n"
             "operator answer: %s='<drill-unavailable|not-runtime|deadline>: <why, %d+ chars>\n"
             "ASKED:<YYYY-MM-DDTHH:MM>Z' on the push. This hook checks its shape only; the guard\n"
-            "proves the ASKED minute." % (reason, BACKUP_REASON_ENV, BACKUP_MIN_WHY)
+            "proves the ASKED minute." % (reason, BACKUP_REASON_ENV, BACKUP_MIN_WHY),
         )
     return 0
 

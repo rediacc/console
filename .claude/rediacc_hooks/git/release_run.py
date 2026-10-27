@@ -10,26 +10,27 @@ THE RECORD. The entry writes `.ci/cache/release/run-<id>.json` of the console ro
 
 THE ENTRY INVOCATION, the one shape `entry_refusal` admits, so the module that ran can only be the console's tracked file:
 
-    PYTHONPATH=<console>/.ci PYTHONPYCACHEPREFIX=/dev/null python3 -P -s -m rediacc_ci.release.local ...
+    PYTHONPATH=<console>/.ci PYTHONPYCACHEPREFIX=/dev/null /usr/bin/python3 -P -s -m rediacc_ci.release.local ...
 
+  - a root-installed interpreter, by an absolute path (`interpreter_refusal`): `/proc/<pid>/exe` is a `python3[.N]` that, with every directory above it, is root-owned and writable by no group or other, and argv[0] resolves to it through directories locked the same way. Argv is whatever the caller says (`exec -a`, a hand-written record for a `bash` or `sleep` whose argv reads like the entry, review finding a6188f8e.1); the executable is not. A copied interpreter and a user-writable venv are refused: a venv's site-packages run their `.pth` files whatever `-s` says, even when its `python` links to `/usr/bin/python3`.
   - `-P` (or PYTHONSAFEPATH): `python3 -m` otherwise puts the cwd first on sys.path, so a planted `rediacc_ci/release/local.py` in any directory would run as the entry (review finding 875b0384.1). With it, the first PYTHONPATH entry, `<console>/.ci` by its real path, is where `rediacc_ci` resolves.
   - `-s` (or PYTHONNOUSERSITE): the user site directory runs any `.pth` file in it at start-up, before the module.
   - PYTHONPYCACHEPREFIX=/dev/null: no `__pycache__` file is ever read. A timestamp `.pyc` is trusted on its header alone (mtime and size), so a planted one runs other code under a pristine source; `/dev/null/...` can never exist.
   - nothing between the interpreter and `-m` but those flags (`-B`, `-u` too): `python3 evil.py -m rediacc_ci.release.local` and `python3 -c <code> -m ...` carry the same two words and run other code.
   - no other PYTHON* variable (each one listed in the refusal), and no LD_* variable (LD_PRELOAD runs native code inside the interpreter).
 
-THE PACKAGE ON DISK, read when the hook runs: `.ci/rediacc_ci/__init__.py`, `.ci/rediacc_ci/release/__init__.py` and `.ci/rediacc_ci/release/local.py` are tracked regular files; nothing under `.ci/rediacc_ci` differs from HEAD, is untracked or is ignored, `__pycache__` aside (an untracked `tag/` package shadows a tracked `tag.py`, an ignored `.so` shadows a source); and nothing there changed less than `SETTLE_S` before the entry started, so a file swapped for the start and restored afterwards (the hook reads it later) is caught by its ctime, which no unprivileged caller can set back.
+THE PACKAGE ON DISK, read when the hook runs: `.ci/rediacc_ci/__init__.py`, `.ci/rediacc_ci/release/__init__.py` and `.ci/rediacc_ci/release/local.py` are tracked regular files; nothing under `.ci/rediacc_ci` differs from HEAD, is untracked or is ignored, `__pycache__` aside (an untracked `tag/` package shadows a tracked `tag.py`, an ignored `.so` shadows a source); nothing there is a symlink (git compares the link text, not its target, so a tracked link to a file outside the tree could point at anything, review finding a6188f8e.2); and nothing there changed less than `SETTLE_S` before the entry started, so a file swapped for the start and restored afterwards (the hook reads it later) is caught by its ctime, which no unprivileged caller can set back.
 
 WHAT ADMITS A PUSHED LINE, all of it, or the line falls through to the hook's ordinary rules unchanged:
 
   1. `REDIACC_RELEASE_RUN` names a readable record whose real path is under `.ci/cache/release/` of the console root;
-  2. the record's pid is in the hook's parent process chain, its `/proc/<pid>/stat` start time equals `pid_start` (a recycled pid fails here), its live argv equals the recorded `cmdline`, and `entry_refusal` passes it: the invocation and the package above;
+  2. the record's pid is in the hook's parent process chain, its `/proc/<pid>/stat` start time equals `pid_start` (a recycled pid fails here), its live argv equals the recorded `cmdline`, and `entry_refusal` passes it: the interpreter, the invocation and the package above;
   3. the record's tree equals the console's `git rev-parse HEAD^{tree}`;
   4. the exact `(toplevel, remote, remote_ref, oid)` of the line is listed in `pushes`.
 
 WHY A PROCESS-CHAIN PROOF, NOT A TOKEN. A file an agent can write and a variable an agent can set prove nothing on their own. The record is admitted only while the process it names is alive, ran the console's committed entry, and is an ancestor of this very hook, so a forged record names either a process that is not our ancestor, one whose start time or argv disagrees, or one that ran something else. `block_git_hook_bypass` refuses an agent command that sets `REDIACC_RELEASE_RUN`, and W2-C refuses agent writes under `.ci/cache/release/`.
 
-WHAT THIS DOES NOT PROVE. An interpreter installation the user can write (its stdlib, or a venv's own site-packages) can still run other code before the module; the system `/usr/bin/python3` is root-owned. A committed change to the entry is admitted like any commit: the tree check binds the record to HEAD, and review judges HEAD.
+WHAT THIS DOES NOT PROVE. A user who is root, or who can write a root-owned install, defeats every ownership check here. A committed change to the entry is admitted like any commit: the tree check binds the record to HEAD, and review judges HEAD.
 
 LINUX `/proc` ONLY. Without `/proc` (macOS) no chain can be read, so nothing is admitted and every line meets the ordinary rules: fail closed, said in the reason.
 
@@ -41,6 +42,8 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
+import stat
 import subprocess
 import time
 
@@ -73,6 +76,8 @@ PY_ENV_ALLOWED = frozenset(
 )
 # Seconds before the entry's start inside which a change under `.ci/rediacc_ci` refuses; covers the tick and clock error of `start_epoch`.
 SETTLE_S = 1.0
+# The basename `/proc/<pid>/exe` must carry: argv can be set to anything (`exec -a`, `execve`), the executable cannot.
+INTERPRETER_NAME = re.compile(r"^python3(\.[0-9]+)?$")
 # The variables git exports into a hook that point a `git` call at the PUSHING repository; the console question must not inherit them.
 _REPO_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_PREFIX", "GIT_COMMON_DIR")
 _CHAIN_LIMIT = 64
@@ -286,12 +291,18 @@ def package_refusal(console_root: str | os.PathLike, started: float) -> str:
     limit = started - SETTLE_S
     for folder, dirs, files in os.walk(root):
         dirs[:] = [d for d in dirs if d != "__pycache__"]
-        for name in [".", *files]:
+        for name in [".", *dirs, *files]:
             path = os.path.join(folder, name) if name != "." else folder
             try:
-                changed = os.lstat(path).st_ctime
+                st = os.lstat(path)
             except OSError:
                 return "%s cannot be read" % path
+            if stat.S_ISLNK(st.st_mode):
+                return (
+                    "%s is a symlink; its target is outside what git and this check compare, so the package admits none"
+                    % os.path.relpath(path, console_root)
+                )
+            changed = st.st_ctime
             if changed > limit:
                 return (
                     "%s changed %.2fs after the entry started (less than %.1fs before counts), so the entry may have run another version of it"
@@ -304,15 +315,72 @@ def package_refusal(console_root: str | os.PathLike, started: float) -> str:
     return ""
 
 
+def proc_exe(pid: int) -> str | None:
+    """The executable `pid` runs, from `/proc/<pid>/exe` (the kernel's resolved path); None when unreadable."""
+    try:
+        return os.readlink("/proc/%d/exe" % pid)
+    except OSError:
+        return None
+
+
+def _locked_refusal(path: str) -> str:
+    """ "" when `path` and every directory above it are owned by root and writable by no group or other, else the first that is not. A symlink's own bits mean nothing; its directory is checked as an ancestor."""
+    parts = pathlib.PurePosixPath(path).parts
+    for i in range(len(parts), 0, -1):
+        here = str(pathlib.PurePosixPath(*parts[:i]))
+        try:
+            st = os.lstat(here)
+        except OSError:
+            return "%s cannot be read" % here
+        if stat.S_ISLNK(st.st_mode):
+            continue
+        if st.st_uid != 0 or st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+            return "%s is not root-owned and closed to writes (uid %d, mode %o)" % (
+                here,
+                st.st_uid,
+                stat.S_IMODE(st.st_mode),
+            )
+    return ""
+
+
+def interpreter_refusal(argv0: str, exe: str) -> str:
+    """ "" when the process provably runs a root-installed Python interpreter, else why not.
+
+    `exe` (`/proc/<pid>/exe`) names the binary, which no argv trick changes: it must be a `python3[.N]`, and it and its directories must be root-owned and closed to writes, so a copied or rebuilt interpreter fails. `argv0` must be absolute and resolve to `exe`, and its own directories (as typed, and as resolved) must be locked the same way: Python finds a venv's `pyvenv.cfg` beside the path it was started by, and a venv's site-packages run their `.pth` files whatever `-s` says, so a user-writable venv is refused even when its `python` links to `/usr/bin/python3`.
+    """
+    if not exe or not os.path.isabs(exe) or exe.endswith(" (deleted)"):
+        return "its executable %r is not a file on disk" % exe
+    if not INTERPRETER_NAME.match(os.path.basename(exe)):
+        return "its executable %s is not a Python interpreter" % exe
+    if not os.path.isabs(argv0):
+        return (
+            "it was started as %r, not by an absolute interpreter path, so where Python looked for a venv cannot be told"
+            % argv0
+        )
+    if os.path.realpath(argv0) != exe:
+        return "it was started as %s, which does not resolve to its executable %s" % (argv0, exe)
+    for path in (exe, argv0, os.path.realpath(os.path.dirname(argv0))):
+        why = _locked_refusal(path)
+        if why:
+            return (
+                "its interpreter is not a root-installed one: %s (a user-writable install or venv can run other code before the module)"
+                % why
+            )
+    return ""
+
+
 def entry_refusal(console_root: str | os.PathLike, pid: int) -> str:
     """ "" when the live process `pid` provably ran the console's tracked, unmodified entry, else why not."""
     argv = proc_cmdline(pid)
     environ = proc_environ(pid)
     ticks = proc_start(pid)
-    if argv is None or environ is None or ticks is None:
+    exe = proc_exe(pid)
+    if argv is None or environ is None or ticks is None or exe is None:
         return "/proc/%d cannot be read" % pid
-    return invocation_refusal(console_root, argv, environ) or package_refusal(
-        console_root, start_epoch(ticks)
+    return (
+        interpreter_refusal(argv[0] if argv else "", exe)
+        or invocation_refusal(console_root, argv, environ)
+        or package_refusal(console_root, start_epoch(ticks))
     )
 
 
