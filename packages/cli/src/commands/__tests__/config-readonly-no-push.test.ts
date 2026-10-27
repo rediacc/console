@@ -57,7 +57,7 @@ const { RemoteResourceState } = await import('../../services/config/resource-sta
 function adapter() {
   return {
     push,
-    pull: vi.fn(),
+    pull: vi.fn().mockResolvedValue({ config: doc, version: 1, sdkEpoch: 1 }),
     testConnection: vi.fn().mockResolvedValue(true),
     listVersions: vi.fn().mockResolvedValue([{ version: 1, archivedAt: 't', sdkEpoch: 1 }]),
     pullVersion: vi.fn().mockResolvedValue({ config: doc, version: 1 }),

@@ -548,8 +548,12 @@ export class RemoteResourceState implements ResourceState {
   private async pushOnce(build: (base: RdcConfig) => RdcConfig): Promise<PushAttempt> {
     const base = await configFileStorage.loadDecrypted(this.configName);
     const merged = build(base);
-    // Nothing a push carries changed: the version stays, no push goes out (R2).
-    if (isNoopPush(merged, base)) return { pushed: base };
+    // Nothing a push carries changed: the version stays, no push goes out (R2). The cache may lag
+    // the server, though, and "equals the cache" then says nothing about the server's copy: a
+    // newer server value would win over the intended one. So a no-op is skipped only after one
+    // pull confirms the server is still at the version this state was built on; otherwise the
+    // push goes out, takes the 409 and replays the intended value as it always did.
+    if (isNoopPush(merged, base) && (await this.serverIsAt(this.version))) return { pushed: base };
     try {
       // The cache is the server copy at `this.version`: a committed path it holds that `merged` drops is a deletion, proven by a tombstone (T9).
       const result = await this.adapter.push(merged, this.version, { base });
@@ -564,6 +568,15 @@ export class RemoteResourceState implements ResourceState {
       return { pushed: cached };
     } catch (error) {
       if (error instanceof RemoteVersionConflictError) return { conflict: error };
+      throw this.toWriteError(error);
+    }
+  }
+
+  /** True when the server's current version is `version`. An unreachable server fails closed. */
+  private async serverIsAt(version: number): Promise<boolean> {
+    try {
+      return (await this.adapter.pull()).version === version;
+    } catch (error) {
       throw this.toWriteError(error);
     }
   }

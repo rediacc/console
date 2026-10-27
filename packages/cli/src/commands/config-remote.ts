@@ -195,9 +195,11 @@ async function showVersions(
     const { explainVersions } = await import('../services/config/push-visibility.js');
     const rows = await explainVersions(adapter, versions);
     outputService.print(
-      rows.map((row) => ({
+      rows.map(({ unreadable, ...row }) => ({
         ...row,
-        changes: row.changes ?? t('commands.config.remote.versions.explainFirst'),
+        changes: unreadable
+          ? t('commands.config.remote.versions.explainUnreadable', { reason: unreadable })
+          : (row.changes ?? t('commands.config.remote.versions.explainFirst')),
       })),
       format
     );

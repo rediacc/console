@@ -119,6 +119,12 @@ describe('RemoteResourceState persist', () => {
 
   it('skips the push when the write changes nothing: no push, no version bump', async () => {
     const adapter = createAdapter();
+    // The server is still at the version the state was built on: the cache is current.
+    adapter.pull.mockResolvedValue({
+      config: structuredClone(baseConfig),
+      version: 4,
+      sdkEpoch: 1,
+    });
     const state = loadState(adapter);
 
     await state.setMachines({ m1: { ip: '10.0.0.1', user: 'root' } });
@@ -127,10 +133,74 @@ describe('RemoteResourceState persist', () => {
     expect(mockConfigFileStorage.updateCache).not.toHaveBeenCalled();
   });
 
+  it('does not skip a write that equals a LAGGING cache: the push takes the 409 and the intended value lands', async () => {
+    const adapter = createAdapter();
+    const lagging = structuredClone(baseConfig);
+    (lagging.resources as { machines: unknown }).machines = {
+      m1: { ip: '10.0.0.5', user: 'root' },
+    };
+    // The on-disk cache holds m1=10.0.0.5, which is exactly what this write sets; the state was
+    // built on m1=10.0.0.1, and the server (v5) moved m1 to 10.0.0.99 meanwhile.
+    mockConfigFileStorage.loadDecrypted.mockImplementationOnce(() =>
+      Promise.resolve(structuredClone(lagging))
+    );
+    adapter.pull.mockResolvedValue({
+      config: {
+        ...structuredClone(baseConfig),
+        resources: {
+          ...structuredClone(baseConfig).resources,
+          machines: { m1: { ip: '10.0.0.99', user: 'root' } },
+        },
+      },
+      version: 5,
+      sdkEpoch: 1,
+    });
+    adapter.push
+      .mockRejectedValueOnce(new RemoteVersionConflictError('Version conflict: current is 5'))
+      .mockResolvedValueOnce({ version: 6 });
+    const state = loadState(adapter);
+
+    await state.setMachines({ m1: { ip: '10.0.0.5', user: 'root' } });
+
+    expect(adapter.push).toHaveBeenCalledTimes(2);
+    const [replayDoc, replayVersion] = adapter.push.mock.calls[1] as [RdcConfig, number];
+    expect(replayVersion).toBe(5);
+    expect(replayDoc.resources?.machines?.m1).toEqual({ ip: '10.0.0.5', user: 'root' });
+  });
+
+  it('stays silent under --quiet and -o json, prints otherwise', async () => {
+    const { outputService } = await import('../core/output.js');
+    const { setOutputFormat } = await import('../../utils/errors.js');
+    const write = vi.spyOn(console, 'error').mockImplementation(() => true);
+    let n = 0;
+    const run = async () => {
+      n += 1;
+      const adapter = createAdapter();
+      adapter.push.mockResolvedValue({ version: 5 });
+      await loadState(adapter).setMachines({ [`m${n}`]: { ip: '10.0.0.9', user: 'root' } });
+    };
+    try {
+      outputService.setQuiet(true);
+      await run();
+      expect(write).not.toHaveBeenCalled();
+      outputService.setQuiet(false);
+      setOutputFormat('json');
+      await run();
+      expect(write).not.toHaveBeenCalled();
+      setOutputFormat('table');
+      await run();
+      expect(write).toHaveBeenCalled();
+    } finally {
+      outputService.setQuiet(false);
+      setOutputFormat('table');
+      write.mockRestore();
+    }
+  });
+
   it('prints one stderr line per push naming versions, command and changed pointers', async () => {
     const adapter = createAdapter();
     adapter.push.mockResolvedValue({ version: 5 });
-    const write = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const write = vi.spyOn(console, 'error').mockImplementation(() => true);
     const { setInvocationCommand } = await import('../config/push-visibility.js');
     setInvocationCommand('machine add');
     try {
@@ -138,12 +208,15 @@ describe('RemoteResourceState persist', () => {
         m1: { ip: '10.0.0.1', user: 'root' },
         m2: { ip: '10.0.0.2', user: 'root' },
       });
-      const lines = write.mock.calls.map((c) => String(c[0]));
-      expect(lines).toHaveLength(1);
-      expect(lines[0]).toContain(`config ${CONFIG_NAME}: pushed v4`);
-      expect(lines[0]).toContain('v5');
-      expect(lines[0]).toContain('"machine add"');
-      expect(lines[0]).toContain('/resources/machines/m2');
+      // The prose writer may wrap at the terminal width: compare the whitespace-collapsed text.
+      const text = write.mock.calls
+        .map((c) => String(c[0]))
+        .join(' ')
+        .replace(/\s+/g, ' ');
+      expect(text).toContain(`config ${CONFIG_NAME}: pushed v4`);
+      expect(text).toContain('v5');
+      expect(text).toContain('"machine add"');
+      expect(text).toContain('/resources/machines/m2');
     } finally {
       write.mockRestore();
       setInvocationCommand('');

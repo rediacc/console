@@ -14,6 +14,8 @@ import type {
 } from '../../adapters/remote-config-adapter.js';
 import { t } from '../../i18n/index.js';
 import type { RdcConfig } from '../../types/index.js';
+import { getOutputFormat } from '../../utils/errors.js';
+import { outputService } from '../core/output.js';
 
 /** The most pointers one line names; the rest is a count. */
 const MAX_POINTERS = 8;
@@ -101,7 +103,9 @@ export function announcePush(
     command: commandPath || '-',
     changes: describeChange(merged, base) || '-',
   });
-  process.stderr.write(`${line}\n`);
+  // outputService.info honours --quiet; a machine-readable run (-o json) keeps stderr to errors.
+  if (getOutputFormat() === 'json') return;
+  outputService.info(line);
 }
 
 export interface ExplainedVersion {
@@ -109,6 +113,8 @@ export interface ExplainedVersion {
   archivedAt: string;
   /** The pointers this version changed against the next older kept version; null for the oldest. */
   changes: string | null;
+  /** Why the version could not be read (pull or decrypt failed); `changes` is null then. */
+  unreadable?: string;
 }
 
 /**
@@ -123,7 +129,20 @@ export async function explainVersions(
   const rows: ExplainedVersion[] = [];
   let previous: RdcConfig | null = null;
   for (const info of ascending) {
-    const { config } = await adapter.pullVersion(info.version);
+    let config: RdcConfig;
+    try {
+      ({ config } = await adapter.pullVersion(info.version));
+    } catch (error) {
+      // One unreadable version (a rotated key, a pruned archive) must not hide the rest; the next
+      // readable version is diffed against the last one that could be read.
+      rows.push({
+        version: info.version,
+        archivedAt: info.archivedAt,
+        changes: null,
+        unreadable: error instanceof Error ? error.message : String(error),
+      });
+      continue;
+    }
     rows.push({
       version: info.version,
       archivedAt: info.archivedAt,
