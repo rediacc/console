@@ -153,7 +153,7 @@ Design inputs, summarized below with file:line:
 
 ### Wave 3 (one clean break, after W2)
 
-- [ ] W3-A [writer] Workflows.
+- [x] W3-A [writer] Workflows.
   - Delete these workflows:
     - `cd-v2.yml`;
     - `promote-stable.yml`, whose cron would race a local stable release;
@@ -166,6 +166,7 @@ Design inputs, summarized below with file:line:
   - The `push: main` CI run on the released SHA stays as the after-the-fact check, and the entry records its run id in the release record.
   - Owns: the listed workflows.
   - Accept: actionlint is clean, and `npm run check:ci-workflows` and `npm run check:ci-workflow-invariants` exit rc=0.
+    (ticked) 2026-10-27T10:19:52Z by d778be9d: 46e754823: .github/workflows/local-release-assist.yml (scope narrowed by the ASKED:2026-10-27T09:45Z ruling, which keeps cd-v2 and promote-stable); check:ci-workflows, check:ci-actionlint, check:ci-parity, check:ci-workflow-invariants rc=0
 - [ ] W3-B [writer] Invariants and dead modules.
   - Port the release-order phase of `ci_workflow_invariants.py` (:33-60, :357-560) to check the W2-B `STEPS` table.
   - Delete these modules and their tests:
