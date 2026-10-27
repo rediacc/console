@@ -44,6 +44,10 @@
       "kind": "no-github-twin",
       "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair."
     },
+    "ACCOUNT_CONFIG_SERVER_KEY_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it."
+    },
     "ACCOUNT_ED25519_PRIVATE_KEY_DEV": {
       "kind": "no-github-twin",
       "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
