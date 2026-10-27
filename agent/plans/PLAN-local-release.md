@@ -51,7 +51,7 @@ Design inputs, summarized below with file:line:
   - Owns: githooks.py, test_githook_release_run.py, block_git_hook_bypass.py and test-block_git_hook_bypass.py.
   - Accept: `run_tests.py -k "githook_release_run or git_hook_bypass"` rc=0, and a forged record, a wrong tree or an unlisted ref is refused.
     (ticked) 2026-10-27T08:03:42Z by d778be9d: 875b03844: .claude/rediacc_hooks/git/release_run.py and githooks.py pre_push admission plus block_git_hook_bypass; run_tests.py -k "githook_release_run or git_hook_bypass" rc=0 (23), with planted failures turning each check red
-- [ ] W1-E [writer] Renet key gate.
+- [x] W1-E [writer] Renet key gate.
   - Today no release step refuses a renet built without the production key:
     - `private/renet/build.sh:414-444` falls back to the DEV key with only a warning.
     - The cached path, `.ci/rediacc_ci/build/extract_renet_from_image.py:478-486`, cross-builds darwin and windows renet with no key and no version.
@@ -62,6 +62,7 @@ Design inputs, summarized below with file:line:
   - Remove the keyless cross-build from the cached path.
   - Owns: renet_key_gate.py with its test, and extract_renet_from_image.py.
   - Accept: the pytest rc=0, with fixtures for an empty key, the DEV key and the production key.
+    (ticked) 2026-10-27T08:24:23Z by d778be9d: a0e9c10d1: .ci/rediacc_ci/release/renet_key_gate.py plus the keyed cached cross build and ci-build-renet.yml; pytest rc=0 (81); live run refused all 9 local binaries as DEV key
 
 ### Wave 2 (after W1)
 
@@ -124,11 +125,12 @@ Design inputs, summarized below with file:line:
   - Add a `("release:local","aws")` prerequisite row to `block_host_toolchain_run.py:84-103`.
   - Owns: block_unasked_release.py, test-block_unasked_release.py and block_host_toolchain_run.py.
   - Accept: `run_tests.py -k unasked_release` rc=0; `--dry-run` passes; a raw `wrangler deploy` is refused.
-- [ ] W2-D [writer] Durable deploy records.
+- [x] W2-D [writer] Durable deploy records.
   - `deploy_record.after --sink r2` (`.ci/rediacc_ci/deploy/deploy_record.py:665`) writes `release-records/v<V>/<channel>/deploy-record-<target>-<region>.json` once, through `write_once_guard`. Today the record is a 3-day artifact (`cd-deploy-account.yml:676`).
   - Add a www record (the version id before and after, the `wrangler rollback` command and the smoke rc) to `deploy_www.py` and `deploy_edge.py`, and put the account smoke rc into the account record.
   - Owns: deploy_record.py, deploy_www.py, deploy_edge.py and test_deploy_*.py.
   - Accept: pytest rc=0, and a www record carries the version id, the rollback command and the smoke rc.
+    (ticked) 2026-10-27T08:24:25Z by d778be9d: a364733cc: deploy_record after --sink r2 write-once records and the www record in deploy_www.py and deploy_edge.py; pytest rc=0 (73)
 - [x] W2-E [writer] The tag module, `rediacc_ci.release.tag`.
   - Lift it from the inline bash at `cd-v2.yml:256-272`. It creates `v<V>` idempotently and refuses on an unknown `ls-remote` result.
   - Add the `release-local` bws profile to `.ci/config/secret-supply.json`. It binds:
