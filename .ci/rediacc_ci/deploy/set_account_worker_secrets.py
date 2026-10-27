@@ -290,11 +290,16 @@ class GuardError(ScriptRefusalError):
 
     def __init__(self, name: str, worker: str, target: str, suffix: str) -> None:
         self.name = name
-        super().__init__(
+        lines = [
             "%s: %s is EMPTY for WORKER_NAME=%s TARGET=%s SUFFIX=%s."
             % (SELF, name, worker, target, suffix),
             *GUARD_EXPLANATION,
-        )
+        ]
+        if name == "ACCOUNT_CONFIG_SERVER_KEY":
+            # The Worker key is fed from a per-region, per-channel store entry, so the name above is not one the store holds.
+            channel = CHANNEL_STABLE if target == STABLE else CHANNEL_EDGE
+            lines.append("  Its store entry is %s_%s_%s." % (CONFIG_KEY_PREFIX, suffix, channel))
+        super().__init__(*lines)
 
 
 def read_env() -> dict[str, str]:

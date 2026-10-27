@@ -956,6 +956,8 @@ def test_an_empty_config_server_key_is_refused_by_its_worker_key(
     assert proc.returncode == 1
     assert calls == ""
     assert "ACCOUNT_CONFIG_SERVER_KEY is EMPTY for" in proc.stderr
+    # The printed Worker key is not a store name, so the refusal names the store entry too.
+    assert "Its store entry is %s." % name in proc.stderr
     assert port.REQUIRED_NONEMPTY[-1] == "ACCOUNT_CONFIG_SERVER_KEY"
 
 
