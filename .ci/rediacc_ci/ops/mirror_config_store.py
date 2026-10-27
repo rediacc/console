@@ -15,7 +15,7 @@ IDENTITY. Case A: no edge user has the operator's `email_hash`, so the user row 
 
 REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). An edge D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. An edge row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on edge is printed as a note. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
 
-PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (it encrypts `server_recoverable_org_passphrase`, falling back to a constant, config.service.ts getServerEncryptionKey; the check reads secret NAMES through `prune_worker_secrets.survey`, where the name shows as an extra because no deploy pushes it); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
+PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row (not yet rewrapped by `rediacc_ci.ops.rewrap_config_server_key`) or a `csk1` row whose kid is not the stable key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_STABLE` by the rewrap helper); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
 
 THE APPLY, in order: the pre-checks; the edge D1 bookmark (`wrangler d1 time-travel info`, parsed by `deploy_record.parse_bookmark`; no bookmark, no write); the rollback files written to `--out-dir` and their paths printed with the time-travel restore command; the R2 copy, each object fetched to a temp dir, put, read back and compared by sha256; one `wrangler d1 execute --file` of plain INSERTs (never OR REPLACE) ending with an `event_log` row `config.store.mirrored`; then a re-read of every inserted row compared column by column with the plan, and `PRAGMA foreign_key_check` on every touched table compared with the check taken before the write.
 
@@ -44,19 +44,26 @@ import sys
 import tempfile
 import tomllib
 import uuid
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from rediacc_ci import log, paths
 from rediacc_ci.deploy import console_executor as target_mod
 from rediacc_ci.deploy import deploy_record
 from rediacc_ci.ops import cf_auth
 from rediacc_ci.ops import prune_worker_secrets as prune
+from rediacc_ci.ops import rewrap_config_server_key as rewrap
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 SELF = "rediacc_ci.ops.mirror_config_store"
 PURPOSE = "mirror-config-store"
 PROFILE = "mirror-config-store"
 PREFIX_LEN = 8
 SERVER_KEY_NAME = "CONFIG_SERVER_KEY"
+WORKER_KEY_NAME = "ACCOUNT_CONFIG_SERVER_KEY"
+CSK_TAG = "csk1."
+CSK_VALUE = re.compile(r"^csk1\.([0-9a-f]{8})\.")
 EVENT_TYPE = "config.store.mirrored"
 EVENT_SOURCE = "ops-mirror-config-store"
 
@@ -828,45 +835,102 @@ def fk_violations(dst: Reader) -> set[tuple]:
     return out
 
 
-# ---- CONFIG_SERVER_KEY -------------------------------------------------------
+# ---- the config server key --------------------------------------------------
 
 
-def secret_presence(token: str, account: str, workers: list[str]) -> dict[str, bool]:
-    """Whether each Worker holds CONFIG_SERVER_KEY, by name: no deploy pushes it, so `prune_worker_secrets.survey` lists it as an extra exactly when it is set."""
-    if SERVER_KEY_NAME in prune.expected_names():
-        raise RefusedError(
-            "%s is now a pushed secret, so the survey cannot tell its presence; check by hand"
+def secret_names(token: str, account: str, workers: list[str]) -> dict[str, set[str]]:
+    """The secret NAMES each Worker holds, read from the Workers secrets listing (values are write-only and never returned)."""
+    out: dict[str, set[str]] = {}
+    for worker in workers:
+        try:
+            listed = prune.http_fetch("GET", prune.secrets_path(account, worker), token)
+        except prune.ApiError as exc:
+            raise RefusedError("the Worker secret names could not be read: %s" % exc) from None
+        if not isinstance(listed, list):
+            raise RefusedError("the secrets list of %s is not a list" % worker)
+        out[worker] = {str(i.get("name")) for i in listed if isinstance(i, dict)}
+    return out
+
+
+def stable_key_kid(root: pathlib.Path, src: End) -> str | None:
+    """The csk1 kid of the stable Worker's own key, computed by the Worker's code (the rewrap helper's `kid` mode); None when the key is not in the environment."""
+    try:
+        name = rewrap.key_env_name(root, src.channel, src.region)
+        value = os.environ.get(name)
+        if not value:
+            return None
+        return str(rewrap.run_helper(root, value, "kid", None, [])["kid"])
+    except rewrap.RefusedError as exc:
+        raise RefusedError("the stable key's kid could not be computed: %s" % exc) from None
+
+
+def check_server_key(
+    names: dict[str, set[str]],
+    src: End,
+    dst: End,
+    value: object,
+    stable_kid: Callable[[], str | None],
+) -> str:
+    """Whether the store's `server_recoverable_org_passphrase` will open on edge; refuses when it would not.
+
+    Two names are compared. `CONFIG_SERVER_KEY` is what the code before PLAN-config-server-key K1 reads (falling back to the public constant). `ACCOUNT_CONFIG_SERVER_KEY` is what K1 reads, sealing `csk1.<kid>.` rows; once it is pushed, presence alone says nothing about the row, so the row itself is checked: an untagged row is refused (it still needs the rewrap on stable), and so is a `csk1` row whose kid is not the stable key's. Only while BOTH Workers still lack the new key (today's state) does an untagged row pass.
+    """
+    a, b = names.get(src.worker), names.get(dst.worker)
+    if a is None or b is None:
+        raise RefusedError("the secret names are unknown for a Worker")
+    for name in (SERVER_KEY_NAME, WORKER_KEY_NAME):
+        if (name in a) != (name in b):
+            raise RefusedError(
+                "%s is %s on %s and %s on %s: server_recoverable_org_passphrase would not decrypt on edge"
+                % (
+                    name,
+                    "set" if name in a else "absent",
+                    src.worker,
+                    "set" if name in b else "absent",
+                    dst.worker,
+                )
+            )
+    tagged = isinstance(value, str) and value.startswith(CSK_TAG)
+    if WORKER_KEY_NAME not in a:
+        if tagged:
+            raise RefusedError(
+                "the store's server_recoverable_org_passphrase is a csk1 row, but neither Worker holds %s"
+                % WORKER_KEY_NAME
+            )
+        # Worker secrets are write-only and no bws entry holds CONFIG_SERVER_KEY, so presence is all that can be compared from here.
+        if SERVER_KEY_NAME not in a:
+            return "%s and %s: absent on both Workers (both use the built-in fallback key)" % (
+                SERVER_KEY_NAME,
+                WORKER_KEY_NAME,
+            )
+        return (
+            "%s: set on both Workers; the values cannot be read back (write-only), so the first edge pull is the proof"
             % SERVER_KEY_NAME
         )
-    rows = [prune.Row("", "", w) for w in workers]
-    try:
-        prune.survey(rows, account, token, prune.http_fetch)
-    except prune.ApiError as exc:
-        raise RefusedError("the Worker secret names could not be read: %s" % exc) from None
-    return {r.worker: SERVER_KEY_NAME in r.extras for r in rows}
-
-
-def check_server_key(presence: dict[str, bool], src: End, dst: End) -> str:
-    a, b = presence.get(src.worker), presence.get(dst.worker)
-    if a is None or b is None:
-        raise RefusedError("%s presence is unknown for a Worker" % SERVER_KEY_NAME)
-    if a != b:
-        raise RefusedError(
-            "%s is %s on %s and %s on %s: server_recoverable_org_passphrase would not decrypt on edge"
-            % (
-                SERVER_KEY_NAME,
-                "set" if a else "absent",
-                src.worker,
-                "set" if b else "absent",
-                dst.worker,
-            )
+    if value is None:
+        return "%s: set on both Workers; the store has no server-recoverable passphrase" % (
+            WORKER_KEY_NAME
         )
-    # Worker secrets are write-only and no bws entry holds CONFIG_SERVER_KEY, so presence is all that can be compared from here.
-    if not a:
-        return "%s: absent on both Workers (both use the built-in fallback key)" % SERVER_KEY_NAME
-    return (
-        "%s: set on both Workers; the values cannot be read back (write-only), so the first edge pull is the proof"
-        % SERVER_KEY_NAME
+    match = CSK_VALUE.match(value) if isinstance(value, str) else None
+    if not match:
+        raise RefusedError(
+            "%s is set on both Workers but the store's server_recoverable_org_passphrase is untagged: run rediacc_ci.ops.rewrap_config_server_key on %s first"
+            % (WORKER_KEY_NAME, src.name)
+        )
+    want = stable_kid()
+    if want is None:
+        raise RefusedError(
+            "the store's row is csk1.%s, but the stable key is not in the environment to compare its kid (%s)"
+            % (match.group(1), rewrap.KEY_NAME_PREFIX + src.region.upper() + "_STABLE")
+        )
+    if match.group(1) != want:
+        raise RefusedError(
+            "the store's row is sealed under kid %s, not the stable key's kid %s"
+            % (match.group(1), want)
+        )
+    return "%s: set on both Workers; the store's row is sealed under the stable key (kid %s)" % (
+        WORKER_KEY_NAME,
+        want,
     )
 
 
@@ -1397,9 +1461,11 @@ def _work(
     lines = schema_parity(src, dst)
     lines.append(
         check_server_key(
-            secret_presence(token, env["CLOUDFLARE_ACCOUNT_ID"], [src_end.worker, dst_end.worker]),
+            secret_names(token, env["CLOUDFLARE_ACCOUNT_ID"], [src_end.worker, dst_end.worker]),
             src_end,
             dst_end,
+            source["store"].get("server_recoverable_org_passphrase"),
+            lambda: stable_key_kid(root, src_end),
         )
     )
     target = read_target(dst, source)

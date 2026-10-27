@@ -516,37 +516,108 @@ def test_case_a_user_id_taken_under_another_email_refuses(dbs) -> None:
         plan_for(src, dst)
 
 
-def test_server_key_presence_mismatch_refuses() -> None:
-    assert "absent on both" in mod.check_server_key(
-        {SRC.worker: False, DST.worker: False}, SRC, DST
+LEGACY_ROW = "SRV-PASSPHRASE-VALUE-zz"
+STABLE_KID = "abcdef12"
+NEW = {"ACCOUNT_CONFIG_SERVER_KEY"}
+
+
+def _no_kid() -> str | None:
+    raise AssertionError("the stable kid must not be computed here")
+
+
+def _check(src_names: set[str], dst_names: set[str], value: object, kid=_no_kid) -> str:
+    return mod.check_server_key(
+        {SRC.worker: src_names, DST.worker: dst_names}, SRC, DST, value, kid
     )
-    assert "set on both" in mod.check_server_key({SRC.worker: True, DST.worker: True}, SRC, DST)
+
+
+def test_server_key_presence_mismatch_refuses() -> None:
+    assert "absent on both" in _check(set(), set(), LEGACY_ROW)
+    assert "set on both" in _check({"CONFIG_SERVER_KEY"}, {"CONFIG_SERVER_KEY"}, LEGACY_ROW)
     with pytest.raises(
         mod.RefusedError, match="CONFIG_SERVER_KEY is set on rediacc-account-eu and absent"
     ):
-        mod.check_server_key({SRC.worker: True, DST.worker: False}, SRC, DST)
+        _check({"CONFIG_SERVER_KEY"}, set(), LEGACY_ROW)
     with pytest.raises(mod.RefusedError, match="unknown"):
-        mod.check_server_key({SRC.worker: True}, SRC, DST)
+        mod.check_server_key({SRC.worker: set()}, SRC, DST, LEGACY_ROW, _no_kid)
 
 
-def test_server_key_presence_reads_names_through_the_survey(monkeypatch) -> None:
+def test_new_key_on_one_worker_only_refuses() -> None:
+    with pytest.raises(
+        mod.RefusedError, match="ACCOUNT_CONFIG_SERVER_KEY is absent on rediacc-account-eu and set"
+    ):
+        _check(set(), NEW, LEGACY_ROW)
+
+
+def test_untagged_row_refuses_once_both_workers_hold_the_key() -> None:
+    with pytest.raises(
+        mod.RefusedError,
+        match=r"untagged: run rediacc_ci\.ops\.rewrap_config_server_key on eu-stable",
+    ):
+        _check(NEW, NEW, LEGACY_ROW)
+
+
+def test_untagged_row_passes_while_both_workers_lack_the_key() -> None:
+    assert "built-in fallback key" in _check(set(), set(), LEGACY_ROW)
+
+
+def test_tagged_row_without_the_key_on_either_worker_refuses() -> None:
+    with pytest.raises(mod.RefusedError, match="neither Worker holds"):
+        _check(set(), set(), "csk1.%s.Zm9v" % STABLE_KID)
+
+
+def test_mismatched_kid_refuses() -> None:
+    with pytest.raises(mod.RefusedError, match="kid 99999999, not the stable key's kid abcdef12"):
+        _check(NEW, NEW, "csk1.99999999.Zm9v", lambda: STABLE_KID)
+
+
+def test_matching_kid_passes() -> None:
+    line = _check(NEW, NEW, "csk1.%s.Zm9v" % STABLE_KID, lambda: STABLE_KID)
+    assert "sealed under the stable key (kid abcdef12)" in line
+
+
+def test_tagged_row_without_the_stable_key_in_the_environment_refuses() -> None:
+    with pytest.raises(mod.RefusedError, match="ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE"):
+        _check(NEW, NEW, "csk1.%s.Zm9v" % STABLE_KID, lambda: None)
+
+
+def test_store_without_a_passphrase_needs_no_kid() -> None:
+    assert "no server-recoverable passphrase" in _check(NEW, NEW, None)
+
+
+def test_stable_key_kid_comes_from_the_rewrap_helper(monkeypatch) -> None:
+    seen = {}
+
+    def helper(_root, key, mode, payload, _secrets):
+        seen.update(key=key, mode=mode, payload=payload)
+        return {"kid": STABLE_KID}
+
+    monkeypatch.setattr(mod.rewrap, "run_helper", helper)
+    monkeypatch.setenv("ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE", "stable-key-value")
+    assert mod.stable_key_kid(paths.repo_root(), SRC) == STABLE_KID
+    assert seen == {"key": "stable-key-value", "mode": "kid", "payload": None}
+    monkeypatch.delenv("ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE")
+    assert mod.stable_key_kid(paths.repo_root(), SRC) is None
+
+
+def test_secret_names_reads_the_listing(monkeypatch) -> None:
     def fetch(_method, path, _token, _body=None):
         if "edge-" in path:
             return [{"name": "API_KEY", "type": "secret_text"}]
         return [{"name": "CONFIG_SERVER_KEY", "type": "secret_text"}]
 
     monkeypatch.setattr(mod.prune, "http_fetch", fetch)
-    found = mod.secret_presence("tok", "acct", [SRC.worker, DST.worker])
-    assert found == {SRC.worker: True, DST.worker: False}
+    found = mod.secret_names("tok", "acct", [SRC.worker, DST.worker])
+    assert found == {SRC.worker: {"CONFIG_SERVER_KEY"}, DST.worker: {"API_KEY"}}
 
 
-def test_server_key_presence_refuses_when_the_survey_fails(monkeypatch) -> None:
+def test_secret_names_refuses_when_the_listing_fails(monkeypatch) -> None:
     def fetch(_method, _path, _token, _body=None):
         raise mod.prune.ApiError("HTTP 403")
 
     monkeypatch.setattr(mod.prune, "http_fetch", fetch)
     with pytest.raises(mod.RefusedError, match="could not be read"):
-        mod.secret_presence("tok", "acct", [SRC.worker, DST.worker])
+        mod.secret_names("tok", "acct", [SRC.worker, DST.worker])
 
 
 def test_schema_parity_passes_on_identical_schemas(dbs) -> None:
@@ -1019,9 +1090,7 @@ def fake(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, dbs) -> dict:
     monkeypatch.setenv("CF_MANAGEMENT_TOKEN", "cf-token-secret-value")
     for name in ("CF_GLOBAL_API_KEY", "CF_EMAIL", "REDIACC_BWS_PROFILES"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(
-        mod, "secret_presence", lambda _t, _a, workers: dict.fromkeys(workers, False)
-    )
+    monkeypatch.setattr(mod, "secret_names", lambda _t, _a, workers: {w: set() for w in workers})
     return {"log": log, "r2": r2, "dir": tmp_path}
 
 
@@ -1317,7 +1386,7 @@ def test_an_unclassifiable_r2_probe_refuses(fake, monkeypatch) -> None:
 
 
 def test_server_key_line_says_values_cannot_be_compared() -> None:
-    line = mod.check_server_key({SRC.worker: True, DST.worker: True}, SRC, DST)
+    line = _check({"CONFIG_SERVER_KEY"}, {"CONFIG_SERVER_KEY"}, LEGACY_ROW)
     assert "cannot be read back" in line
 
 
