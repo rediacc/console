@@ -921,14 +921,14 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
 | .ci/rediacc_ci/quality | 115 | .py 115 |
-| .ci/rediacc_ci/release | 33 | .py 33 |
+| .ci/rediacc_ci/release | 34 | .py 34 |
 | .ci/rediacc_ci/review | 7 | .py 7 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 441 | .py 441 |
+| .ci/rediacc_ci/tests | 442 | .py 442 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |

@@ -6,6 +6,8 @@ THE WALK BACK (PLAN-plan-per-pr-loop R2). With a release on every merge the newe
 
 A NIGHTLY THAT CONCLUDED `failure` (`NIGHTLY_CONCLUSION`) reaches the waiver only when `nightly_tested_edge.nightly_failures_are_drift_only` accepts its jobs (read for `NIGHTLY_RUN_ID` in `GITHUB_REPOSITORY`); otherwise it decides `ready=false` with no soak fallback, exactly as the workflow's `if:` refused every red nightly before. Any other non-success conclusion is refused the same way.
 
+THE DECISION IS `select`, a pure function of the values (box W2-A of agent/plans/PLAN-local-release.md): `main` reads the environment, calls it, prints its lines and writes `$GITHUB_OUTPUT`, and `rediacc_ci.release.local_gates` calls it directly for a local stable promote.
+
 An older selection is promotable only from its CHANNEL SNAPSHOT (`rediacc_ci.deploy.channel_snapshot`): R2's `<dir>/edge/` channel trees carry the newest edge's signed metadata only, and every edge release also writes its own to `snapshots/v<ver>/`. `CHANNEL_SNAPSHOTS` (`list_channel_snapshots`' JSON list of versions with a complete snapshot) says which exist; an older selection without one is named and reported `blocked=` (releases cut before snapshots existed have none). See the R2 note in `main`.
 
 DATE PARSING IS SHELLED OUT, NOT REIMPLEMENTED. The twin tries GNU `date -d` first, then BSD `date -j -f "%Y-%m-%dT%H:%M:%S"`, so it accepts a wider set of `EDGE_DATE` spellings than a hand-rolled `datetime.fromisoformat` would (GNU `date -d` parses far more than ISO-8601). Re-deriving that parser would be a second implementation of a contract the system `date` binary already owns,
@@ -27,11 +29,15 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from rediacc_ci.core import ghx
 from rediacc_ci.release import nightly_tested_edge
 from rediacc_ci.release.list_edge_releases import semver
 from rediacc_ci.release.nightly_tested_edge import edge_tested_by_nightly
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 SELF = "rediacc_ci.release.check_soak_period"
 
@@ -98,6 +104,131 @@ class Edge:
     age_days: int
 
 
+class SelectError(Exception):
+    """A value `select` could not read; the message is the stderr line `main` prints before it exits 1."""
+
+
+@dataclass(frozen=True)
+class Selection:
+    """`select`'s verdict: the chosen edge (None when nothing is ready), the rule that decided (`force`, `nightly` or `soak`), whether R2 cannot carry the choice (`blocked`), and the human lines `main` prints, in order."""
+
+    selected: Edge | None
+    path: str
+    blocked: bool
+    lines: tuple[str, ...]
+
+    @property
+    def ready(self) -> bool:
+        return self.selected is not None and not self.blocked
+
+
+def select(
+    *,
+    edge_version: str,
+    edge_date: str,
+    soak_days: int,
+    now_epoch: int,
+    force: bool = False,
+    stable_version: str = "",
+    releases: tuple[tuple[str, str], ...] = (),
+    snapshots: frozenset[str] = frozenset(),
+    nightly: bool = False,
+    nightly_head_sha: str = "",
+    nightly_tested: Callable[[], tuple[bool, str]] | None = None,
+    tested_by_nightly: Callable[[str, str], tuple[bool, str]] | None = None,
+    epoch: Callable[[str], int | None] | None = None,
+) -> Selection:
+    """The edge release to promote, decided from the values alone: no environment, no `$GITHUB_OUTPUT`, no stdout. `main` is this plus the environment reading and the output writing; the local release (`rediacc_ci.release.local_gates`) calls it directly.
+
+    The readers that touch the world are injected: `epoch` (an `EDGE_DATE` spelling as epoch seconds, default the twin's `date` chain), `nightly_tested` (whether the triggering nightly passed, default the env-driven `_nightly_tested`) and `tested_by_nightly` (default `nightly_tested_edge.edge_tested_by_nightly`). Raises SelectError, before deciding anything, on a date it cannot read.
+    """
+    to_epoch = epoch or _epoch
+    edge_epoch = to_epoch(edge_date)
+    if edge_epoch is None:
+        # The twin's `set -e` aborted here with no message; this one names the value -- see the module docstring.
+        raise SelectError(f"{SELF}: EDGE_DATE could not be parsed as a date (got {edge_date!r})")
+    newest_key = semver(edge_version)
+    stable_key = semver(stable_version)
+    newest = Edge(edge_version, edge_date, int((now_epoch - edge_epoch) / 86400))
+    # The walk's candidates, newest first: the newest edge (R2's manifest, its own date), then every older listed release that is still newer than stable. A listed release above the newest edge is not an edge release yet.
+    older: list[Edge] = []
+    for version, date in releases:
+        key = semver(version)
+        if key is None or newest_key is None or key >= newest_key:
+            continue
+        if not in_walk(version, stable_version):
+            continue
+        when = to_epoch(date)
+        if when is None:
+            raise SelectError(
+                f"{SELF}: EDGE_RELEASES date for v{version} could not be parsed (got {date!r})"
+            )
+        older.append(Edge(version, date, int((now_epoch - when) / 86400)))
+    older.sort(key=lambda e: semver(e.version) or (0, 0, 0), reverse=True)
+    newest_in_bounds = in_walk(edge_version, stable_version)
+    walk = ([newest] if newest_in_bounds else []) + older
+
+    lines = [f"Edge release age: {newest.age_days} days (soak: {soak_days} days)"]
+
+    selected: Edge | None = None
+    path = "soak"
+    if force:
+        lines.append("Force promotion requested, skipping soak check")
+        selected, path = newest, "force"
+    else:
+        # The nightly waiver (operator ruling 2026-09-30): a green scheduled Console CI run releases edge to stable without the soak, but only for an edge whose tagged commit that run's head provably contains -- the newest such edge. Anything short of proof falls through to the soak rule below.
+        if nightly:
+            tested, reason = (nightly_tested or _nightly_tested)()
+            lines.append(f"Nightly verdict: {reason}")
+            if not tested:
+                lines.append("Decided by: the nightly did not pass its tests, not promoting")
+                return Selection(None, "nightly", False, tuple(lines))
+            prove = tested_by_nightly or edge_tested_by_nightly
+            for edge in walk:
+                proven, reason = prove(edge.version, nightly_head_sha)
+                lines.append(f"Nightly check: {reason}")
+                if proven:
+                    lines.append(
+                        "Decided by: green nightly contains the edge commit, skipping soak check"
+                    )
+                    selected, path = edge, "nightly"
+                    break
+        if selected is None:
+            if newest.age_days >= soak_days and newest_in_bounds:
+                lines.append("Soak period complete")
+                selected = newest
+            else:
+                if newest.age_days < soak_days:
+                    lines.append(f"Edge needs {soak_days - newest.age_days} more day(s) of soak")
+                for edge in older:
+                    lines.append(f"Older edge v{edge.version}: {edge.age_days} days")
+                    if edge.age_days >= soak_days:
+                        lines.append(
+                            f"Soak period complete for v{edge.version}, the newest edge release that has soaked"
+                        )
+                        selected = edge
+                        break
+                if selected is None and stable_key is not None:
+                    lines.append(
+                        f"No edge release newer than stable v{stable_version} has soaked {soak_days} days"
+                    )
+
+    # R2's CHANNEL TREES CARRY ONLY THE NEWEST EDGE. Each `<dir>/edge/` tree's signed channel metadata (apt Release/InRelease, rpm repomd.xml, APKINDEX, the pacman db, cli/edge/manifest.json) describes `EDGE_VERSION` alone. An older selection is promoted from its own channel snapshot (`snapshots/v<ver>/`, written by every edge release since channel snapshots were introduced), which `promote_r2_to_stable` reads and verifies. Without one, promoting it from edge/ would ship the newest edge's packages under the older version's name while Docker and the Workers got the older one, a split release, so it is named and not promoted.
+    older_selected = selected is not None and selected.version != edge_version
+    blocked = older_selected and selected is not None and selected.version not in snapshots
+    if blocked and selected is not None:
+        lines.append(
+            f"Not promoting v{selected.version}: R2's <dir>/edge/ channel trees carry only v{edge_version}, "
+            f"and no channel snapshot snapshots/v{selected.version}/ exists "
+            f"(releases cut before channel snapshots were introduced have none)"
+        )
+    elif older_selected and selected is not None:
+        lines.append(
+            f"Promoting v{selected.version} from its channel snapshot snapshots/v{selected.version}/"
+        )
+    return Selection(selected, path, blocked, tuple(lines))
+
+
 def main(argv: list[str]) -> int:
     del argv
     output_path = _require("GITHUB_OUTPUT")
@@ -115,114 +246,50 @@ def main(argv: list[str]) -> int:
     if not edge_version:
         print(f"{SELF}: EDGE_VERSION must be set", file=sys.stderr)
         return 1
-    force = os.environ.get("FORCE", "")
-    stable_version = os.environ.get("STABLE_VERSION", "")
-    releases_text = os.environ.get("EDGE_RELEASES", "")
     try:
         snapshots = _snapshots(os.environ.get("CHANNEL_SNAPSHOTS", ""))
     except (ValueError, TypeError) as exc:
         print(f"{SELF}: CHANNEL_SNAPSHOTS is not a version list ({exc})", file=sys.stderr)
         return 1
 
-    edge_epoch = _epoch(edge_date)
+    # The order of the refusals is the twin's: EDGE_DATE (and the clock), then EDGE_RELEASES, then the dates inside it.
+    if _epoch(edge_date) is None:
+        print(
+            f"{SELF}: EDGE_DATE could not be parsed as a date (got {edge_date!r})", file=sys.stderr
+        )
+        return 1
     now_proc = subprocess.run(["date", "+%s"], capture_output=True, text=True, check=False)
-    if edge_epoch is None or now_proc.returncode != 0:
-        # The twin's `set -e` aborted here with no message; this one names the value -- see the module docstring.
+    if now_proc.returncode != 0:
         print(
             f"{SELF}: EDGE_DATE could not be parsed as a date (got {edge_date!r})", file=sys.stderr
         )
         return 1
     now_epoch = int(now_proc.stdout.strip())
-
     try:
-        listed = _candidates(releases_text)
+        listed = _candidates(os.environ.get("EDGE_RELEASES", ""))
     except (ValueError, TypeError) as exc:
         print(f"{SELF}: EDGE_RELEASES is not a release list ({exc})", file=sys.stderr)
         return 1
 
-    newest_key = semver(edge_version)
-    stable_key = semver(stable_version)
-    newest = Edge(edge_version, edge_date, int((now_epoch - edge_epoch) / 86400))
-    # The walk's candidates, newest first: the newest edge (R2's manifest, its own date), then every older listed release that is still newer than stable. A listed release above the newest edge is not an edge release yet.
-    older: list[Edge] = []
-    for version, date in listed:
-        key = semver(version)
-        if key is None or newest_key is None or key >= newest_key:
-            continue
-        if not in_walk(version, stable_version):
-            continue
-        epoch = _epoch(date)
-        if epoch is None:
-            print(
-                f"{SELF}: EDGE_RELEASES date for v{version} could not be parsed (got {date!r})",
-                file=sys.stderr,
-            )
-            return 1
-        older.append(Edge(version, date, int((now_epoch - epoch) / 86400)))
-    older.sort(key=lambda e: semver(e.version) or (0, 0, 0), reverse=True)
-    newest_in_bounds = in_walk(edge_version, stable_version)
-    walk = ([newest] if newest_in_bounds else []) + older
-
-    print(f"Edge release age: {newest.age_days} days (soak: {soak_days} days)")
-
-    selected: Edge | None = None
-    path = "soak"
-    if force == "true":
-        print("Force promotion requested, skipping soak check")
-        selected, path = newest, "force"
-    else:
-        # The nightly waiver (operator ruling 2026-09-30): a green scheduled Console CI run releases edge to stable without the soak, but only for an edge whose tagged commit that run's head provably contains -- the newest such edge. Anything short of proof falls through to the soak rule below.
-        nightly = os.environ.get("PROMOTE_TRIGGER", "") == "workflow_run"
-        if nightly:
-            tested, reason = _nightly_tested()
-            print(f"Nightly verdict: {reason}")
-            if not tested:
-                print("Decided by: the nightly did not pass its tests, not promoting")
-                _write(output_path, None, "nightly", blocked=False)
-                return 0
-            head_sha = os.environ.get("NIGHTLY_HEAD_SHA", "")
-            for edge in walk:
-                proven, reason = edge_tested_by_nightly(edge.version, head_sha)
-                print(f"Nightly check: {reason}")
-                if proven:
-                    print("Decided by: green nightly contains the edge commit, skipping soak check")
-                    selected, path = edge, "nightly"
-                    break
-        if selected is None:
-            if newest.age_days >= soak_days and newest_in_bounds:
-                print("Soak period complete")
-                selected = newest
-            else:
-                if newest.age_days < soak_days:
-                    print(f"Edge needs {soak_days - newest.age_days} more day(s) of soak")
-                for edge in older:
-                    print(f"Older edge v{edge.version}: {edge.age_days} days")
-                    if edge.age_days >= soak_days:
-                        print(
-                            f"Soak period complete for v{edge.version}, the newest edge release that has soaked"
-                        )
-                        selected = edge
-                        break
-                if selected is None and stable_key is not None:
-                    print(
-                        f"No edge release newer than stable v{stable_version} has soaked {soak_days} days"
-                    )
-
-    # R2's CHANNEL TREES CARRY ONLY THE NEWEST EDGE. Each `<dir>/edge/` tree's signed channel metadata (apt Release/InRelease, rpm repomd.xml, APKINDEX, the pacman db, cli/edge/manifest.json) describes `EDGE_VERSION` alone. An older selection is promoted from its own channel snapshot (`snapshots/v<ver>/`, written by every edge release since channel snapshots were introduced), which `promote_r2_to_stable` reads and verifies. Without one, promoting it from edge/ would ship the newest edge's packages under the older version's name while Docker and the Workers got the older one, a split release, so it is named and not promoted.
-    older_selected = selected is not None and selected.version != edge_version
-    blocked = older_selected and selected is not None and selected.version not in snapshots
-    if blocked and selected is not None:
-        print(
-            f"Not promoting v{selected.version}: R2's <dir>/edge/ channel trees carry only v{edge_version}, "
-            f"and no channel snapshot snapshots/v{selected.version}/ exists "
-            f"(releases cut before channel snapshots were introduced have none)"
+    try:
+        verdict = select(
+            edge_version=edge_version,
+            edge_date=edge_date,
+            soak_days=soak_days,
+            now_epoch=now_epoch,
+            force=os.environ.get("FORCE", "") == "true",
+            stable_version=os.environ.get("STABLE_VERSION", ""),
+            releases=tuple(listed),
+            snapshots=snapshots,
+            nightly=os.environ.get("PROMOTE_TRIGGER", "") == "workflow_run",
+            nightly_head_sha=os.environ.get("NIGHTLY_HEAD_SHA", ""),
         )
-    elif older_selected and selected is not None:
-        print(
-            f"Promoting v{selected.version} from its channel snapshot snapshots/v{selected.version}/"
-        )
-
-    _write(output_path, selected, path, blocked=blocked)
+    except SelectError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    for line in verdict.lines:
+        print(line)
+    _write(output_path, verdict.selected, verdict.path, blocked=verdict.blocked)
     return 0
 
 
