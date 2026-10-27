@@ -391,7 +391,8 @@ def sentinel_exists(product: str, version: str, endpoint: str | None = None) -> 
     )
     if proc.returncode == 0:
         return Probe.YES
-    if re.search(r"404|Not Found|NoSuchKey", proc.stderr, re.IGNORECASE):
+    # 127 is "no aws binary" (see _run); its "command not found" text would otherwise match the case-insensitive Not Found below and read as an absent sentinel.
+    if proc.returncode != 127 and re.search(r"404|Not Found|NoSuchKey", proc.stderr, re.IGNORECASE):
         return Probe.NO
     _log_error(
         "rsv_sentinel_exists: could not determine whether %s/%s/%s exists (exit %d); "
