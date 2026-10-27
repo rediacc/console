@@ -1,5 +1,6 @@
 """rediacc_ci.ops.bench_access: the bench IP allowlist as one WAF custom rule, against a fake Cloudflare."""
 
+import datetime
 import json
 import subprocess
 from typing import Any
@@ -56,7 +57,7 @@ class FakeCloudflare:
         return [
             r
             for r in (self.ruleset or {}).get("rules", [])
-            if r["description"] == ba.RULE_DESCRIPTION
+            if r["description"].startswith(ba.RULE_DESCRIPTION)
         ]
 
 
@@ -65,8 +66,33 @@ def _hosts(monkeypatch):
     monkeypatch.setattr(ba, "bench_hosts", lambda _root=None: HOSTS)
 
 
+class Clock:
+    """A settable UTC clock for `ba.run`."""
+
+    def __init__(self):
+        self.now = datetime.datetime(2026, 10, 27, 5, 0, tzinfo=datetime.UTC)
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, **kwargs):
+        self.now += datetime.timedelta(**kwargs)
+
+
+CLOCK = Clock()
+
+
+@pytest.fixture(autouse=True)
+def _clock():
+    CLOCK.__init__()
+
+
 def _run(api, command, argument=None, detect=lambda: ["198.51.100.7"]):
-    return ba.run(command, argument, api, detect=detect)
+    return ba.run(command, argument, api, detect=detect, clock=CLOCK)
+
+
+def _stored(api):
+    return ba.entries_of(api.mine()[0])
 
 
 def test_first_add_creates_the_rule_holding_the_callers_ip(capsys):
@@ -287,3 +313,95 @@ def test_cf_auth_mints_the_zone_waf_group_on_the_zone_only(monkeypatch):
     assert auth.token == "minted"
     with pytest.raises(cf_auth.CfAuthError, match="needs a zone id"):
         cf_auth.create_scoped_token("k", "e@x", "bench-access")
+
+
+def test_each_ip_carries_its_add_time_in_the_rule_description():
+    api = FakeCloudflare()
+    _run(api, "add", "203.0.113.1")
+    CLOCK.advance(hours=3)
+    _run(api, "add", "203.0.113.2")
+    (rule,) = api.mine()
+    assert rule["description"] == (
+        ba.RULE_DESCRIPTION
+        + " | added 203.0.113.1=2026-10-27T05:00:00Z 203.0.113.2=2026-10-27T08:00:00Z"
+    )
+    assert [ip for ip, _ in _stored(api)] == ["203.0.113.1", "203.0.113.2"]
+
+
+def test_an_ip_older_than_seven_days_is_dropped_before_adding():
+    api = FakeCloudflare()
+    _run(api, "add", "203.0.113.1")
+    CLOCK.advance(days=6, hours=23)
+    _run(api, "add", "203.0.113.2")
+    assert [ip for ip, _ in _stored(api)] == ["203.0.113.1", "203.0.113.2"]
+    CLOCK.advance(hours=2)  # .1 is now 7d 1h old, .2 is 2h old
+    _run(api, "add", "203.0.113.3")
+    assert [ip for ip, _ in _stored(api)] == ["203.0.113.2", "203.0.113.3"]
+
+
+def test_expiry_applies_to_remove_and_clear_runs_too():
+    api = FakeCloudflare()
+    _run(api, "add", "203.0.113.1")
+    _run(api, "add", "203.0.113.2")
+    CLOCK.advance(days=8)
+    with pytest.raises(ba.AccessError, match="not in the allowlist"):
+        _run(api, "remove", "203.0.113.1")  # already expired, so not live
+    _run(api, "clear")
+    assert _stored(api) == []
+
+
+def test_readding_a_live_ip_refreshes_its_stamp():
+    api = FakeCloudflare()
+    _run(api, "add", "203.0.113.1")
+    CLOCK.advance(days=5)
+    _run(api, "add", "203.0.113.1")
+    CLOCK.advance(days=5)  # 10 days after the first add, 5 after the refresh
+    _run(api, "add", "203.0.113.2")
+    stored = dict(_stored(api))
+    assert set(stored) == {"203.0.113.1", "203.0.113.2"}
+    assert stored["203.0.113.1"] == CLOCK.now - datetime.timedelta(days=5)
+
+
+def test_the_cap_counts_after_expiry():
+    api = FakeCloudflare()
+    for n in range(1, 6):
+        _run(api, "add", "203.0.113.%d" % n)
+        CLOCK.advance(days=1)
+    CLOCK.advance(days=2)  # .1 is 7d old and .2 is 6d old at the next run: .1 expires
+    _run(api, "add", "203.0.113.9")
+    ips = [ip for ip, _ in _stored(api)]
+    assert ips == ["203.0.113.%d" % n for n in (2, 3, 4, 5, 9)]  # five, none evicted
+    _run(api, "add", "203.0.113.10")
+    ips = [ip for ip, _ in _stored(api)]
+    assert ips == ["203.0.113.%d" % n for n in (3, 4, 5, 9, 10)]  # now the cap evicts the oldest
+
+
+def test_a_legacy_ip_with_no_stamp_is_expired(capsys):
+    legacy = {
+        "id": "old",
+        "description": ba.RULE_DESCRIPTION,
+        "action": "block",
+        "expression": ba.expression(HOSTS, ["192.0.2.1", "192.0.2.2"]),
+    }
+    api = FakeCloudflare(other_rules=[legacy])
+    _run(api, "list")
+    assert "no add time" in capsys.readouterr().out
+    _run(api, "add", "203.0.113.1")
+    assert [ip for ip, _ in _stored(api)] == ["203.0.113.1"]
+    assert "192.0.2" not in api.mine()[0]["expression"]
+
+
+def test_a_partly_stamped_description_expires_only_the_unstamped():
+    api = FakeCloudflare()
+    _run(api, "add", "203.0.113.1")
+    rule = api.mine()[0]
+    rule["expression"] = ba.expression(HOSTS, ["203.0.113.1", "192.0.2.5"])
+    _run(api, "add", "203.0.113.2")
+    assert [ip for ip, _ in _stored(api)] == ["203.0.113.1", "203.0.113.2"]
+
+
+def test_a_clock_with_microseconds_still_reads_back_equal():
+    api = FakeCloudflare()
+    CLOCK.now = CLOCK.now.replace(microsecond=506870)
+    assert _run(api, "add", "203.0.113.1") == 0
+    assert _stored(api)[0][1] == CLOCK.now.replace(microsecond=0)

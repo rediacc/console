@@ -13,6 +13,8 @@ THE MECHANISM: a zone WAF custom rule (Cloudflare Rulesets API, phase `http_requ
 
 WHAT THE RULE BLOCKS. Every request to a bench host (the route patterns of `workers/*/wrangler.bench.toml`: bench.rediacc.com and proxy.bench.rediacc.com) whose source IP is not in the list, EXCEPT `GET` of the two health paths (`/account/api/v1/health`, `/v1/health`). The exemption is what keeps the automated callers working: `telemetry-probe.yml` (six-hourly, GitHub runner egress, a different IP every run) probes exactly those two paths, and a health answer discloses nothing but liveness. The proxy Worker's own calls to the account Worker are service bindings (`workers/proxy/wrangler.bench.toml` ACCOUNT and ISSUER), which never pass the zone's edge rules. Every other caller (deploy_bench, deploy_proxy's smoke past /v1/health, console_executor, the CLI against `--config bench`, the portal in a browser) is an operator or an AI session on its own machine and runs `add-current` first.
 
+EXPIRY. Every address is allowed for `TTL_DAYS` (7) days from the run that added it. The add time lives in the rule's own `description` (`RULE_DESCRIPTION | added ip=<UTC time> ...`), so the Cloudflare rule is the only store and no local state exists. Every mutating run first drops the addresses older than 7 days (the CLI's clock, UTC), then applies its verb; re-adding a live address refreshes its stamp; the 5-address cap counts what is left after the drop. A LEGACY address (in the expression but with no stamp, written before expiry existed or edited by hand) is treated as EXPIRED and dropped by the next mutating run, never stamped now, so an unknown age cannot become a permanent allowance. `list` is read-only and marks such entries. The expiry is enforced when the script runs, not by Cloudflare: an address stays in the rule past 7 days until the next run (the nightly `add-current` that the rotating IP already needs).
+
 THE LIST. At most `MAX_IPS` (5) single addresses, oldest first in the rule's expression, which is the record: `add-current` appends the caller's address (re-adding one moves it to the end) and evicts from the front when the list is full. With no rule yet, the first `add` creates it holding the caller's own address, so the first enforcement cannot lock the caller out. `add-current` asks Cloudflare's own trace endpoint for the IPv4 and the IPv6 address it sees (one family may be unreachable and is then skipped), so a dual-stack host is allowed in whichever family curl or node picks.
 
 AUTH. `cf_auth.resolve_scoped("bench-access", zone_id=ZONE_ID)`: a supplied `CF_MANAGEMENT_TOKEN`, or a token minted from the Global API Key with `Zone WAF Write` on the rediacc.com zone only (plus the user-scoped API Tokens pair its self-destruct needs), deleted at the end of the run. The script re-runs itself under the `bench-access` Bitwarden profile (`CF_GLOBAL_API_KEY`, `CF_EMAIL`) when neither is in the environment. The credential reaches curl on its stdin (`rediacc_ci.core.curl_stdin`), never on argv, and is never printed.
@@ -20,6 +22,7 @@ AUTH. `cf_auth.resolve_scoped("bench-access", zone_id=ZONE_ID)`: a supplied `CF_
 
 from __future__ import annotations
 
+import datetime
 import ipaddress
 import json
 import os
@@ -39,6 +42,10 @@ ZONE_ID = apply_cf_redirect_rules.ZONE_ID
 PHASE = "http_request_firewall_custom"
 PROFILE = "bench-access"
 MAX_IPS = 5
+TTL_DAYS = 7
+TTL = datetime.timedelta(days=TTL_DAYS)
+STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+STAMP_MARK = " | added "
 # The rule is found by this description; nothing else on the zone is read or written.
 RULE_DESCRIPTION = "rediacc bench IP allowlist (rediacc_ci.ops.bench_access)"
 # GET of these paths is never blocked: telemetry-probe.yml probes them from runners with no fixed IP.
@@ -52,6 +59,7 @@ TRACE_TIMEOUT_S = 8.0
 AUTH_RETRIES = 15
 AUTH_RETRY_S = 2.0
 ENTRYPOINT_MISSING = 10003
+Entry = tuple[str, datetime.datetime | None]
 IP_SET = re.compile(r"ip\.src in \{([^}]*)\}")
 
 
@@ -104,20 +112,61 @@ def ips_of(rule_expression: str) -> list[str]:
     return found.group(1).split() if found else []
 
 
-def rule_body(hosts: list[str], ips: list[str]) -> dict:
+def describe(entries: list[Entry]) -> str:
+    """The rule description: the fixed marker plus `ip=<UTC time>` per address, in list order."""
+    stamped = ["%s=%s" % (ip, at.strftime(STAMP_FORMAT)) for ip, at in entries if at is not None]
+    return RULE_DESCRIPTION + (STAMP_MARK + " ".join(stamped) if stamped else "")
+
+
+def stamps_of(description: str) -> dict[str, datetime.datetime]:
+    """The `ip -> add time` pairs a description carries; a malformed pair is skipped (that address is then legacy)."""
+    _, _, tail = description.partition(STAMP_MARK)
+    found: dict[str, datetime.datetime] = {}
+    for pair in tail.split():
+        ip, _, text = pair.rpartition("=")
+        try:
+            found[normalize_ip(ip)] = datetime.datetime.strptime(text, STAMP_FORMAT).replace(
+                tzinfo=datetime.UTC
+            )
+        except (AccessError, ValueError):
+            continue
+    return found
+
+
+def entries_of(rule: dict) -> list[Entry]:
+    """The (ip, add time or None) pairs of a rule this script wrote, in stored order."""
+    stamps = stamps_of(str(rule.get("description", "")))
+    return [(ip, stamps.get(ip)) for ip in ips_of(str(rule.get("expression", "")))]
+
+
+def is_ours(rule: dict) -> bool:
+    return str(rule.get("description", "")).startswith(RULE_DESCRIPTION)
+
+
+def live_entries(entries: list[Entry], now: datetime.datetime) -> tuple[list[Entry], list[str]]:
+    """(the entries younger than `TTL`, the dropped addresses); an entry with no stamp is legacy and dropped."""
+    kept = [(ip, at) for ip, at in entries if at is not None and now - at < TTL]
+    kept_ips = {ip for ip, _ in kept}
+    return kept, [ip for ip, _ in entries if ip not in kept_ips]
+
+
+def rule_body(hosts: list[str], entries: list[Entry]) -> dict:
+    ips = [ip for ip, _ in entries]
     return {
-        "description": RULE_DESCRIPTION,
+        "description": describe(entries),
         "enabled": True,
         "action": "block",
         "expression": expression(hosts, ips),
     }
 
 
-def with_ip(current: list[str], new: str, limit: int = MAX_IPS) -> tuple[list[str], list[str]]:
-    """(the list after adding `new`, the addresses evicted): a repeat moves to the end, and the oldest leave first when more than `limit` remain."""
-    ips = [ip for ip in current if ip != new] + [new]
-    evicted = ips[: max(0, len(ips) - limit)]
-    return ips[len(evicted) :], evicted
+def with_ip(
+    current: list[Entry], new: str, now: datetime.datetime, limit: int = MAX_IPS
+) -> tuple[list[Entry], list[str]]:
+    """(the list after adding `new` stamped `now`, the addresses evicted): a repeat moves to the end with a fresh stamp, and the oldest leave first when more than `limit` remain."""
+    entries = [e for e in current if e[0] != new] + [(new, now)]
+    evicted = [ip for ip, _ in entries[: max(0, len(entries) - limit)]]
+    return entries[len(evicted) :], evicted
 
 
 class CloudflareApi:
@@ -155,7 +204,7 @@ def _entrypoint(api: Api) -> tuple[str | None, dict | None]:
             return None, None
         raise _fail("reading the zone's custom rules", answer)
     result = answer.get("result") or {}
-    mine = [r for r in result.get("rules") or [] if r.get("description") == RULE_DESCRIPTION]
+    mine = [r for r in result.get("rules") or [] if is_ours(r)]
     if len(mine) > 1:
         raise AccessError(
             "%d rules carry the description %r; delete the extras in the Cloudflare dashboard"
@@ -164,16 +213,22 @@ def _entrypoint(api: Api) -> tuple[str | None, dict | None]:
     return str(result.get("id")), (mine[0] if mine else None)
 
 
+def current_entries(api: Api) -> list[Entry] | None:
+    """The allowed (ip, add time) pairs in stored order, or None when no rule exists (bench is open)."""
+    _, rule = _entrypoint(api)
+    return None if rule is None else entries_of(rule)
+
+
 def current_ips(api: Api) -> list[str] | None:
     """The allowed IPs in stored order, or None when no rule exists (bench is open)."""
-    _, rule = _entrypoint(api)
-    return None if rule is None else ips_of(str(rule.get("expression", "")))
+    entries = current_entries(api)
+    return None if entries is None else [ip for ip, _ in entries]
 
 
-def save(api: Api, hosts: list[str], ips: list[str]) -> list[str]:
-    """Write the rule with `ips` (create or replace) and return what Cloudflare now holds."""
+def save(api: Api, hosts: list[str], entries: list[Entry]) -> list[Entry]:
+    """Write the rule with `entries` (create or replace) and return what was written."""
     ruleset_id, rule = _entrypoint(api)
-    body = rule_body(hosts, ips)
+    body = rule_body(hosts, entries)
     if ruleset_id is None:
         answer = api.request(
             "PUT",
@@ -188,10 +243,10 @@ def save(api: Api, hosts: list[str], ips: list[str]) -> list[str]:
         )
     if answer.get("success") is not True:
         raise _fail("writing the bench allowlist rule", answer)
-    stored = current_ips(api)
-    if stored != ips:
-        raise AccessError("the stored list is %s after writing %s" % (stored, ips))
-    return ips
+    stored = current_entries(api)
+    if stored != entries:
+        raise AccessError("the stored list is %s after writing %s" % (stored, entries))
+    return entries
 
 
 def delete_rule(api: Api) -> bool:
@@ -240,14 +295,23 @@ def _fetch_trace(url: str) -> str:
         raise OSError("HTTP %d" % exc.code) from exc
 
 
-def _print_list(ips: list[str] | None) -> None:
-    if ips is None:
+def _print_list(entries: list[Entry] | None, now: datetime.datetime | None = None) -> None:
+    if entries is None:
         print("no bench allowlist rule: bench is open to every IP")
         return
     print("bench allowlist (oldest first, at most %d):" % MAX_IPS)
-    for ip in ips:
-        print("  " + ip)
-    if not ips:
+    for ip, at in entries:
+        if at is None:
+            note = "no add time (legacy, dropped by the next add)"
+        else:
+            note = "added %s, expires %s" % (
+                at.strftime(STAMP_FORMAT),
+                (at + TTL).strftime(STAMP_FORMAT),
+            )
+            if now is not None and now - at >= TTL:
+                note += " (EXPIRED, dropped by the next add)"
+        print("  %s  %s" % (ip, note))
+    if not entries:
         print("  (empty: every IP but the health paths is blocked; run add-current)")
 
 
@@ -257,29 +321,35 @@ def run(
     api: Api,
     detect: typing.Callable[[], list[str]] = detect_public_ips,
     root=None,
+    clock: typing.Callable[[], datetime.datetime] = lambda: datetime.datetime.now(datetime.UTC),
 ) -> int:
     """Run one verb against `api`; 0 on success. Raises AccessError."""
     if command == "list":
-        _print_list(current_ips(api))
+        _print_list(current_entries(api), clock())
         return 0
     if command == "disable":
         print("rule deleted: bench is open again" if delete_rule(api) else "no rule to delete")
         return 0
     hosts = bench_hosts(root)
-    existing = current_ips(api)
-    ips = list(existing or [])
+    now = clock().replace(
+        microsecond=0
+    )  # stamps keep whole seconds, so the read-back compares equal
+    existing = current_entries(api)
+    ips, expired = live_entries(list(existing or []), now)
+    for gone in expired:
+        log.warn("dropped %s: older than %d days or with no add time" % (gone, TTL_DAYS))
     if command in ("add-current", "add"):
         new = detect() if command == "add-current" else [normalize_ip(argument or "")]
         for ip in new:
-            ips, evicted = with_ip(ips, ip)
+            ips, evicted = with_ip(ips, ip, now)
             for gone in evicted:
                 log.warn("evicted the oldest allowed IP %s (limit %d)" % (gone, MAX_IPS))
         print("allowing " + ", ".join(new))
     elif command == "remove":
         target = normalize_ip(argument or "")
-        if target not in ips:
+        if target not in [ip for ip, _ in ips]:
             raise AccessError("%s is not in the allowlist" % target)
-        ips.remove(target)
+        ips = [e for e in ips if e[0] != target]
     elif command == "clear":
         if existing is None:
             raise AccessError("no bench allowlist rule exists, so there is nothing to clear")
@@ -289,7 +359,7 @@ def run(
     save(api, hosts, ips)
     if not ips:
         log.warn("the list is empty: every bench request but the health paths is blocked")
-    _print_list(ips)
+    _print_list(ips, now)
     return 0
 
 

@@ -206,7 +206,7 @@ rdc run -f container_restart -m <machine> --param repository=<repo> --param cont
 | `python3 -m rediacc_ci.ops.deploy_bench` (run with `PYTHONPATH=.ci`) | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
 | `python3 -m rediacc_ci.ops.reset_bench` (run with `PYTHONPATH=.ci`) | Wipe bench D1 + R2 + worker secrets |
 | `python3 -m rediacc_ci.ops.backup_d1` (run with `PYTHONPATH=.ci`) | Export production/edge D1 databases to `.backups/` |
-| `python3 -m rediacc_ci.ops.bench_access add-current\|list\|add\|remove\|clear\|disable` (run with `PYTHONPATH=.ci`) | Bench IP allowlist: one zone WAF rule, 5 IPs at most, oldest evicted; a 403 from a bench host means run `add-current` (the two health paths stay open for `telemetry-probe.yml`) |
+| `python3 -m rediacc_ci.ops.bench_access add-current\|list\|add\|remove\|clear\|disable` (run with `PYTHONPATH=.ci`) | Bench IP allowlist: one zone WAF rule, 5 IPs at most, oldest evicted, each IP expires 7 days after it was added (stamp kept in the rule description, refreshed by re-adding); a 403 from a bench host means run `add-current` (the two health paths stay open for `telemetry-probe.yml`) |
 | `rediacc_ci.ops.cf_auth` | Shared Cloudflare auth helpers for the bench and backup operator scripts |
 
 ## Secret Rotation (`./run.sh rotation`)
