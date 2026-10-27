@@ -1,6 +1,6 @@
 ---
 name: deploy
-description: Deploy the account Worker (per region) and the www Worker to the EDGE or STABLE side from an agent session, for one or several regions, with the Bitwarden (bws) credentials the deploy needs. Covers the preferred CI dispatch, the local path, the keys, verification and rollback. Use whenever a task says deploy, publish, ship to edge/stable/production, or redeploy eu/us/asia.
+description: Deploy the account Worker (per region) and the www Worker to the EDGE or STABLE side from an agent session, for one or several regions, with the Bitwarden (bws) credentials the deploy needs. Covers the `release:local --channel edge --workers-only` path, the CI dispatch for stable, the keys, verification and rollback. Use whenever a task says deploy, publish, ship to edge/stable/production, or redeploy eu/us/asia.
 user-invocable: true
 ---
 
@@ -10,7 +10,7 @@ A fresh session knows none of this. Read it top to bottom once; every trap liste
 
 ## 0. Authorization comes first
 
-A deploy to either side reaches real users. Edge and stable are BOTH production-quality channels (CLAUDE.md, "Release Channels"). Run a deploy only when the operator asked for it **in this task**, naming the side and the regions. Approving a plan is not authorization (docs/agent-reference/ci-gates.md, "Never push to `main` or cut a release"). When the request is ambiguous about side or regions, ask with AskUserQuestion before anything else:
+A deploy to either side reaches real users. Edge and stable are BOTH production-quality channels (CLAUDE.md, "Release Channels"). Run a deploy only when the operator asked for it **in this task**, naming the side and the regions. Approving a plan is not authorization (docs/agent-reference/ci-gates.md, "Never push to `main` or cut a release unasked"). Bench and every edge target are free. Every stable target (eu, us, asia) is CI/CD only and runs with `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z`, the minute of the operator's answer, which `block_unasked_release` proves from the transcript. When the request is ambiguous about side or regions, ask with AskUserQuestion before anything else:
 
 - **Side:** `edge` (edge-rediacc-account-&lt;region&gt;, edge.rediacc.com) or `stable` (rediacc-account-&lt;region&gt;, www.rediacc.com). Stable is what customers use.
 - **Regions** (multi-select): `eu`, `us`, `asia`. The www Worker is global, not per region.
@@ -25,20 +25,30 @@ A deploy to either side reaches real users. Edge and stable are BOTH production-
 | www | stable | `rediacc-www` (www.rediacc.com) | `workers/www/wrangler.toml` | none |
 | www | edge | `edge-rediacc-www` (edge.rediacc.com) | `workers/www/wrangler.edge.toml` | none |
 
-Regions, domains and bucket names live in `regions.json`. The seven proxy Workers (`rediacc-proxy-{eu,us,asia}`, `edge-rediacc-proxy-{eu,us,asia}`, `rediacc-proxy-bench`) deploy through `rediacc_ci.deploy.deploy_proxy` with `workers/proxy/wrangler.<target>.toml`; section 4a covers the per-region steps. The bench proxy stays manual. The CLI release channels (R2 `edge/` and `stable/`) are promoted by `promote-stable.yml` and `cd-v2.yml`, not by this skill.
+Regions, domains and bucket names live in `regions.json`. The seven proxy Workers (`rediacc-proxy-{eu,us,asia}`, `edge-rediacc-proxy-{eu,us,asia}`, `rediacc-proxy-bench`) deploy through `release:local` (`deploy_proxy` with `workers/proxy/wrangler.<target>.toml`); section 4a covers the per-region steps. The bench proxy stays manual. The CLI release channels (R2 `edge/` and `stable/`) are published by CD and `release:local`, and promoted to stable by `promote-stable.yml`, not by this skill.
 
-## 2. Preferred path: let CI deploy
+## 2. Paths: edge locally or by CD, stable by CI/CD
 
-CI builds from a known commit and pushes the Worker secrets too. Prefer it whenever the code to ship is on `main`:
+**Edge (free).** `release:local` with `--workers-only` skips the version, builds, Docker and Release steps and redeploys the edge Workers for the listed regions. The entry builds in a clean release clone of `main` HEAD, runs the gates, applies the order check before any account deploy, and writes a deploy record per Worker to R2 (docs/agent-reference/release-process.md). CD also deploys edge on every merge.
 
 ```bash
-# Edge, Workers only (all regions in regions.json), from the latest green CI run on main:
-gh workflow run "Release to Edge" -f release_mode=retry -f deploy_workers_only=true
-# Stable after the 7-day soak, or forced:
-gh workflow run "Release to Production" -f force=true
+npm run release:local -- --channel edge --workers-only --regions eu,us --dry-run
+npm run release:local -- --channel edge --workers-only --regions eu,us
 ```
 
-`release_mode` accepts only `retry` or `patch`. `publish_stable=true` on "Release to Edge" is the hotfix path that skips the soak. Watch the run with the ci-watch skill (`.ci/scripts/ci/ci-trace.py --wait --run <id>`), never a hand-rolled poll. CI deploys every region in `regions.json`; a single-region deploy needs the local path below.
+`--dry-run` prints every step with profile and key names, reads no secret value and writes nothing. The entry sets `APP_VERSION`, builds the portal with the Turnstile key and refuses a build without it, checks the `wrangler_pin`, applies the region's D1 migrations, and pushes the account Worker secrets through `account_secrets_local`. The raw `rediacc_ci.deploy.*` modules and `wrangler deploy` are refused from agent Bash.
+
+**Stable (asked).** Stable is CI/CD only, through `promote-stable.yml` after the 7-day soak, and needs `RELEASE_ASKED` naming the operator's answer:
+
+```bash
+RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z gh workflow run "Release to Production" -f force=true
+```
+
+Watch a run with the ci-watch skill (`.ci/scripts/ci/ci-trace.py --wait --run <id>`), never a hand-rolled poll.
+
+**eu.** The eu account has no active users. The rollback handle and the D1 bookmark are still recorded, and the deploy record holds both.
+
+**Bench.** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` stays as it is, and so does the manual bench proxy (section 4a).
 
 ## 3. Local path: the credentials (bws)
 
@@ -57,16 +67,9 @@ Every deploy credential comes from Bitwarden Secrets Manager. **Without it nothi
 
 The `deploy-workers` profile does NOT carry the Worker runtime secrets (`ACCOUNT_*` keys, `AWS_SES_*`, `STRIPE_*`, `OBS_OTLP_*`, `SELLER_*`). A code deploy keeps the secrets already on the Worker; only a secrets push changes them.
 
-**The local secrets path.** One command per region and channel pushes the 29 runtime secrets to the account Worker, through the profile `account-secrets-<region>-<target>` (six profiles, one per Worker, in `.ci/config/secret-supply.json`):
+**The secrets step.** `release:local` pushes the 29 runtime secrets to each account Worker through `rediacc_ci.deploy.account_secrets_local`, with the profile `account-secrets-<region>-<target>` (six profiles, one per Worker, in `.ci/config/secret-supply.json`). `--dry-run` on the entry prints the profile and key names only, reads no credential and contacts no service.
 
-```bash
-# stops after the wrangler pin check; prints names only, reads no credential, contacts no service:
-PYTHONPATH=.ci python3 -m rediacc_ci.deploy.account_secrets_local --region eu --target stable --dry-run
-# the push (operator-authorized, see section 0):
-PYTHONPATH=.ci python3 -m rediacc_ci.deploy.account_secrets_local --region eu --target stable
-```
-
-It derives the Worker name, suffix, buckets, R2 jurisdiction and SES region from `regions.json`, refuses unless the wrangler pin agrees (`wrangler_pin`, section 4), then hydrates the profile, runs the Turnstile drift preflight and refuses on drift or on no verdict, and only then runs `set_account_worker_secrets` (one `wrangler secret bulk`, so the assets binding survives). CI's own `set_account_worker_secrets` step is the other path (section 2). Exit codes: 0 pushed (or dry run complete), 1 a refusal, 2 a usage error.
+The step derives the Worker name, suffix, buckets, R2 jurisdiction and SES region from `regions.json`, refuses unless the wrangler pin agrees (`wrangler_pin`, section 4), then hydrates the profile, runs the Turnstile drift preflight and refuses on drift or on no verdict, and only then runs `set_account_worker_secrets` (one `wrangler secret bulk`, so the assets binding survives). CI's own `set_account_worker_secrets` step is the other path (section 2). Exit codes: 0 pushed (or dry run complete), 1 a refusal, 2 a usage error.
 
 **Stale secrets on a Worker.** `wrangler secret bulk` only adds, so a renamed key stays on the Worker. List what the live Workers hold beyond the push, names only:
 
@@ -77,58 +80,17 @@ PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers 
 
 The default is a listing. `--archive --region <r>` is the way to remove extras: Worker secrets are write-only, so each extra's value is read from bws (`LEGACY_BWS` maps a legacy name to its successor key), PUT as `__ARCHIVE_<NAME>`, confirmed listed, and only then deleted; a name with no bws value is reported and left in place. Add `--dry-run` to see which names have a recoverable value without writing anything. `--delete` alone keeps no copy. Both remove through Cloudflare's `DELETE /accounts/{id}/workers/scripts/{name}/secrets/{secret}`, which keeps the ASSETS binding (measured 2026-10-15); `wrangler secret delete` mints a new Worker version and does not. The archive PUT is not measured for the ASSETS binding yet, so check the Worker's static assets after the first run. `check:ci-worker-secret-names` prints the same extras when a token is in its environment.
 
-## 4. Local path: the steps
+## 4. What the entry does per deploy
 
-**Deploy only committed code.** The build reads the working tree. A tree that holds another writer's half-finished change (a migration included) ships that change to production. Check first:
+The entry deploys only committed code, from the release clone. A dirty shared checkout never ships, and the clean-clone gate refuses a `HEAD` that differs from `origin/main`.
 
-```bash
-git status --porcelain -- private/account packages workers   # must print nothing
-git -C private/account status --porcelain                      # must print nothing
-```
-
-**The account Worker, per region.** Build once, then deploy each chosen region. `SIDE` is `edge` or `production`; any value other than the literal `edge` deploys **production** (`deploy_account.py` does not validate it), so spell it exactly.
-
-```bash
-SIDE=edge                 # or: production
-REGIONS="eu us"           # any of: eu us asia
-./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- bash -c '
-  set -euo pipefail
-  npm run build:packages
-  ( cd private/account/web && VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" VITE_CI_MODE=false \
-      npx vite build --outDir ../../../workers/account/dist/account --emptyOutDir )
-  grep -rqF -- "$TURNSTILE_SITE_KEY" workers/account/dist/account/assets \
-    || { echo "portal build has no Turnstile key: refusing to deploy"; exit 1; }
-  PYTHONPATH=.ci python3 -m rediacc_ci.deploy.wrangler_pin
-  for r in '"$REGIONS"'; do
-    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region "$r" --target '"$SIDE"'
-  done'
-```
-
-`wrangler_pin` refuses the deploy unless `WRANGLER_VERSION` in `.ci/config/constants.sh`, the `wrangler` entry of `workers/account/package.json` (an exact version) and the installed `workers/account/node_modules/wrangler` agree; the fix is `npm ci --prefix workers/account`. `deploy_account` applies the region's D1 migrations (`wrangler d1 migrations apply --remote`), then `wrangler deploy`. Record the `Current Version ID` it prints for each region: that id is the rollback handle.
-
-**The www Worker (global).** Stable uses `rediacc_ci.deploy.deploy_www` (no arguments), edge uses `rediacc_ci.deploy.deploy_edge`:
-
-```bash
-WWW_MODULE=deploy_edge    # or: deploy_www  (stable)
-./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- bash -c '
-  set -euo pipefail
-  npm run build:packages
-  APP_VERSION="$(PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --current)" PUBLIC_VIDEO_CDN_BASE_URL=https://media.rediacc.com \
-    npm run build -w @rediacc/www
-  rm -rf workers/www/dist && mkdir -p workers/www/dist && cp -r packages/www/dist/* workers/www/dist/
-  ( cd private/account/web && VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" VITE_CI_MODE=false \
-      npx vite build --outDir ../../../workers/www/dist/account )
-  grep -rqF -- "$TURNSTILE_SITE_KEY" workers/www/dist/account/assets \
-    || { echo "portal build has no Turnstile key: refusing to deploy"; exit 1; }
-  ( cd workers/www && npm install )
-  PYTHONPATH=.ci python3 -m rediacc_ci.deploy.'"$WWW_MODULE"''
-```
-
-`APP_VERSION` puts the release version in the footer; without it the site shows `0.0.0-dev` and `verify_edge_endpoints` fails. The Turnstile check is not optional. On 2026-09-24 a portal built without the key reached production and nobody could log in.
+- **Account Worker, per region.** The portal is built with `VITE_TURNSTILE_SITE_KEY` and the build is refused when the key is absent from `assets` (on 2026-09-24 a portal built without it reached production and nobody could log in). `wrangler_pin` refuses unless `WRANGLER_VERSION` in `.ci/config/constants.sh`, the `wrangler` entry of `workers/account/package.json` and the installed `workers/account/node_modules/wrangler` agree; the fix is `npm ci --prefix workers/account`. `deploy_account` then applies the region's D1 migrations and runs `wrangler deploy`.
+- **www Worker (global).** Built with `APP_VERSION` set to the release version, because without it the site shows `0.0.0-dev` and `verify_edge_endpoints` fails.
+- **Records.** The `Current Version ID` of each Worker is the rollback handle, and it lands in the deploy record under `release-records/v<V>/<channel>/` in R2.
 
 ### 4a. Proxy steps inside the per-region account deploy
 
-Per PLAN-proxy-cd-six-targets (box D2), the per-region deploy job (`cd-deploy-account.yml`, called by edge CD, `promote-stable.yml` and the cd-v2 hotfix) deploys the region's proxy Worker beside the account Worker. The proxy reaches the account Worker over the `ACCOUNT` and `ISSUER` (`ExecutorIssuer`, an RPC entrypoint with `route(bearer)`, `issue(orgId)` and `probe()`) service bindings, and the account config binds `EXECUTOR` back to the proxy. Order:
+Per PLAN-proxy-cd-six-targets (box D2), the per-region deploy job (run by `release:local`, CD and `promote-stable.yml`) deploys the region's proxy Worker beside the account Worker. The proxy reaches the account Worker over the `ACCOUNT` and `ISSUER` (`ExecutorIssuer`, an RPC entrypoint with `route(bearer)`, `issue(orgId)` and `probe()`) service bindings, and the account config binds `EXECUTOR` back to the proxy. Order:
 
 1. Record before: account and proxy version ids and the D1 time-travel bookmark taken before migrations.
 2. Bootstrap proxy deploy, only when the proxy Worker does not exist yet, so the account's `EXECUTOR` binding resolves.
@@ -139,9 +101,9 @@ Per PLAN-proxy-cd-six-targets (box D2), the per-region deploy job (`cd-deploy-ac
 
 Per PLAN-console-executor-multi-org, one region serves every entitled org. The proxy keys one executor container per org (25 per target at most, a further org gets the coded 503 `EXECUTOR_CAPACITY`), and each org's token is issued with the issuer key `executor:<ENVIRONMENT>:<REGION>:<orgId>`. Migration 0066 (the per-org block column) lands with the account deploy, so the D1 bookmark of step 1 covers it. `executor_orgs list` and `verify` read each org's entitlement from the target's D1, and `block` and `unblock` close and reopen one org without touching the others.
 
-The deploy record `deploy-record-<target>-<region>.json` (worker names, version ids before and after, D1 bookmark, smoke rc, artifact manifest sha256s, rollback command) goes to the job summary and an artifact. Report it per section 7.
+The deploy record `deploy-record-<target>-<region>.json` (worker names, version ids before and after, D1 bookmark, smoke rc, artifact manifest sha256s, rollback command) is written once to R2 under `release-records/`. Report it per section 7.
 
-Rollback runs in reverse order (`if: failure()`): disable the console executor (`wrangler secret delete EXECUTOR_MODE`), redeploy the previous proxy version from the record (nothing for a first deploy), then the account rollback and D1 restore commands are printed and stay human-run. Cloudflare documents no container rollback, so the previous proxy version is redeployed from its own config and fetched artifacts. A redeploy ends every executor session; the web client re-grants.
+On failure the entry rolls back in reverse order: disable the console executor (`wrangler secret delete EXECUTOR_MODE`), redeploy the previous proxy version from the record (nothing for a first deploy), then the account rollback and D1 restore commands are printed and stay human-run. Cloudflare documents no container rollback, so the previous proxy version is redeployed from its own config and fetched artifacts. A redeploy ends every executor session; the web client re-grants.
 
 Bench stays manual: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench` builds renet locally with the dev licence key, because the release renet cannot run under a bench executor.
 
@@ -159,7 +121,7 @@ Then probe the route or page the change touched: a new route answering its expec
 
 ## 6. Rollback
 
-The repo's model is fix-forward (re-dispatch "Release to Edge" with `release_mode=retry`, or deploy the corrected commit). For an immediate revert, wrangler's own rollback works with the version id recorded in step 4:
+The repo's model is fix-forward (run `release:local` again, or merge the corrected commit and let CD deploy it). For an immediate revert, wrangler's own rollback works with the version id in the deploy record. The command is the operator's, because the guard refuses `wrangler rollback` from agent Bash:
 
 ```bash
 ./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- \

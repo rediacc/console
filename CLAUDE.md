@@ -261,9 +261,9 @@ Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits;
 
 ## Release Channels
 
-Two channels, both production-quality: **edge** (continuously deployed on every merge to main) and **stable** (the default, promoted from edge after a 7-day soak).
+Two channels, both production-quality: **edge** (released by CD on every merge to main, or by the agent's faster extra path `npm run release:local -- --channel edge`, which shares the R2 sentinel lock) and **stable** (the default, promoted from edge by `promote-stable.yml` after the 7-day soak; CI/CD only, and a stable deploy always needs `RELEASE_ASKED`).
 
-**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries the channel URLs, the R2 layout, and the dispatch commands.
+**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries the channel URLs, the R2 layout, the dispatch commands, and the local entry's flags, gates and rollback.
 
 ## Media Assets (tutorial/solution videos + tutorial-narration audio)
 
@@ -273,14 +273,17 @@ Tutorial and solution videos and the tutorial-narration audio cache live in Clou
 
 ## CI/CD Pipeline
 
-Single pipeline: CI validates everything BEFORE publish. CD is a thin promote step, and if CI fails, CD never triggers.
+CI validates everything BEFORE publish. CD is a thin promote step, and if CI fails, CD never triggers. Edge also has a local path: `release:local` publishes it from the machine, and the main-branch CI run on the released SHA stays as an after-the-fact check.
 
 ```
 CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
 CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 -> deploy edge
+npm run release:local -- --channel edge [--dry-run] [--workers-only --regions <list>]
 ```
 
-**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries `release_mode`'s semantics (GitHub itself rejects anything but `patch`/`retry`), the hotfix and workers-only dispatch inputs, and the 7-day soak / `force` behavior on the production promote.
+The mac and win SEAs and install legs of a local release run in the dispatched `local-release-assist.yml`.
+
+**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries `release_mode`'s semantics (GitHub itself rejects anything but `patch`/`retry`), the hotfix and workers-only dispatch inputs, the 7-day soak / `force` behavior on the production promote, and the local entry's gates, order check, deploy records and rollback.
 
 ## Quality Gates and the BLOCKER convention
 

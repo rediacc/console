@@ -265,21 +265,10 @@ The release state is no longer main-only. `cd-preflight` (CD Preflight in `ci.ym
   - This is the ONLY situation in which committing on `main` is allowed without the operator calling it a hotfix in the task. It applies **after** a merge performed by this command, to a failure in that merge's own release path. Everything else goes on the one feature branch.
   - It does **not** extend to re-cutting a release. Re-dispatching stays the operator's call (`gh workflow run "Release to Edge" -f ci_run_id=<console-ci-run-id> -f release_mode=retry`), because that ships artifacts rather than fixing code.
 
-### 6. Re-sync main AFTER the release run, because CD pushes to main during step 5
+### 6. Re-sync main after the release run
 
-**This step is not optional for a release-worthy merge, and step 4 does not cover it.** (For a `bump-none` merge there is no release run, so none of the two commits below are written and the checkout is at most one fast-forward behind. Re-sync anyway, it is cheap, but do not go hunting for a homebrew-tap pointer move that never happened.) The release run does not only tag and
-deploy; it pushes **two commits back to `main`** after your merge, every single time:
+The merge still releases edge through CD, but CD no longer pushes to console `main`: the contract floor is an ordinary commit in the next PR and there is no console homebrew gitlink bump. The merge is therefore the last write to `main` and there is no resync trap: the local checkout is at most one fast-forward behind. An agent may also release edge itself with `release:local --channel edge` (docs/agent-reference/release-process.md).
 
-```
-chore(release): update homebrew-tap submodule pointer [skip ci]
-chore(release-state): advance contract floor to vX.Y.Z [skip ci]
-```
-
-(10 of the last 30 commits on `main` are the first of those. It is the rule, not an edge case.)
-
-So when step 4 ran, `main` was correct. By the time step 5 finishes, the local checkout is **2 commits behind** *and* its `private/homebrew-tap` record is one commit behind what `origin/main` now records. The next session opens on a tree showing `M private/homebrew-tap`, which is the trap, because that dirty pointer is **stale, not ahead**.
-
-Once the Release run is green:
 - `git fetch origin --prune`
 - `git merge --ff-only origin/main`
 - `git submodule update --init --recursive`

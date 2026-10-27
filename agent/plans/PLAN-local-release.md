@@ -234,6 +234,24 @@ Design inputs, summarized below with file:line:
    - This is the decision most worth the operator's veto.
 7. New bws entries are written by the session through `bws_env store-from-env`, following the 2026-10-23 ruling that there are no operator steps.
 
+## Rulings (operator, ASKED:2026-10-27T09:45Z), which supersede the boxes and decisions above where they differ
+
+1. Provenance for a local edge release is a SHA256 manifest of every artifact, signed with the release GPG key (decision 6 confirmed).
+2. The tag, tap and GitHub Release pushes use the session's GitHub token (risk R3 accepted).
+3. "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD."
+   - Stable releases and stable Worker deploys stay CI/CD-only (`promote-stable.yml`), and always need a proven `RELEASE_ASKED`.
+   - `release:local --channel stable` is refused.
+   - Edge and bench are free for the agent.
+4. Both edge paths stay. `cd-v2.yml` keeps releasing edge on every merge, and `release:local --channel edge` is the agent's extra, faster path. The two share the R2 sentinel lock (W2-A), so one version cannot be released twice.
+
+Consequences for the boxes:
+- W3-A shrinks to adding `local-release-assist.yml`. `cd-v2.yml`, `promote-stable.yml`, the CD deploy workflows, ci.yml's `finalize-release-sentinel` and the main-branch pushes in cd-stage and ci-build-docker all stay.
+- W3-B keeps the CD release-order phase of `ci_workflow_invariants.py` and adds the `STEPS` invariant beside it. It deletes no module that CD still calls.
+- W2-B refuses `--channel stable` and stable `--workers-only` targets.
+- W2-C needs a proven ASKED for every stable target, in every region, and frees edge and bench.
+- L2 becomes the first CI/CD stable promote after the soak, asked, with the R3 live check.
+- The eu stable config store is mirrored into eu edge, and a local `eu-edge` config uses it (worklist #046d4339). Live checks such as R3 run there first.
+
 ## Timings (CI today; L1 measures local)
 
 CI job times today:
