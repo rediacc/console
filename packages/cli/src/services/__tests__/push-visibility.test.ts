@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { RemoteUnreachableError } from '../../adapters/remote-config-errors.js';
+import { RemoteAuthError, RemoteUnreachableError } from '../../adapters/remote-config-errors.js';
 import type { RdcConfig } from '../../types/index.js';
 import { changedPointers, explainVersions } from '../config/push-visibility.js';
 
@@ -56,6 +56,15 @@ describe('config remote versions --explain', () => {
     await expect(
       explainVersions({ pullVersion } as never, [{ version: 1, archivedAt: 't1', sdkEpoch: 1 }])
     ).rejects.toBeInstanceOf(RemoteUnreachableError);
+  });
+
+  it('a refused token ends the run instead of marking every row unreadable', async () => {
+    const pullVersion = vi.fn(() =>
+      Promise.reject(new RemoteAuthError('token-rejected', 'token rejected'))
+    );
+    await expect(
+      explainVersions({ pullVersion } as never, [{ version: 1, archivedAt: 't1', sdkEpoch: 1 }])
+    ).rejects.toBeInstanceOf(RemoteAuthError);
   });
 
   it('escapes pointer segments', () => {
