@@ -2,16 +2,16 @@
 
 WHY. agent/plans/PLAN-local-release.md moves the edge release to one local entry, `npm run release:local -- --channel edge [--dry-run]` (`rediacc_ci.release.local`, box W2-B). The operator ruling of 2026-10-27T09:45Z sets the line this guard (box W2-C) holds: "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD." So:
 
-  1. EDGE AND BENCH ARE FREE, with no question: `npm run release:local -- --channel edge` (with or without `--dry-run`), `deploy_edge`, `deploy_account --target edge` in any region, `account_secrets_local --target edge`, `deploy_proxy`/`console_executor --target edge|bench`, `deploy_bench`, and `set_*_worker_secrets` whose `TARGET`/`WORKER_NAME` on the command line name edge.
+  1. EDGE AND BENCH ARE FREE, with no question: `npm run release:local -- --channel edge` (with or without `--dry-run`), `deploy_edge`, `deploy_account --target edge` in any region, `account_secrets_local --target edge`, `deploy_proxy`/`console_executor --target edge|bench` (`--target` read in every prefix spelling argparse accepts, `--tar` included), `deploy_bench`, and `set_*_worker_secrets` whose `TARGET`/`WORKER_NAME` on the command line name edge.
   2. EVERY STABLE TARGET NEEDS A PROVEN ASK, in every region, eu included (the 2026-09-26 eu exemption is retired by this ruling): `deploy_account` with any `--target` but `edge` (its default is production), `deploy_www`, `account_secrets_local`/`deploy_proxy`/`console_executor` with a stable target, `set_*_worker_secrets` for a stable Worker or with no target on the command line, `wrangler deploy|rollback` on a stable config, and the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
-  3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is promoted by `.github/workflows/promote-stable.yml` only. A run of the entry naming no channel is refused too, because npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all).
-  4. THE RAW PUBLISH VERBS STAY REFUSED, with no escape: `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`), `docker push` (and `image push`, `manifest push`), a `docker build`/`buildx build` with `--push` or a registry output, `docker buildx imagetools create`, a `wrangler deploy|rollback|publish|versions deploy` on an edge, bench or preview config (the edge modules above are its path), and `-m` on the release entry's own steps (`upload_to_r2`, `upload_repos_to_r2`, `write_release_sentinel`, `create_github_release`, `tag_submodules`, `update_homebrew_tap`), which the entry runs in order with its gates and record.
+  3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is promoted by `.github/workflows/promote-stable.yml` only. A run of the entry naming no channel is refused too, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
+  4. THE RAW PUBLISH VERBS STAY REFUSED, with no escape: `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`, and `--follow-tags` on any push but the GitLab mirror push of `main`), `docker push` (and `image push`, `manifest push`, `compose push|publish`, `compose build --push`), a `docker build`/`buildx build` with `--push` or a registry output (`-o` attached or bundled too), `docker buildx imagetools create`, `wrangler pages deploy|publish`, a `wrangler deploy|rollback|publish|versions deploy` on an edge, bench or preview config (judged on the config's file name, never the directories above it) (the edge modules above are its path), and `-m` on the release entry's own steps (`upload_to_r2`, `upload_repos_to_r2`, `write_release_sentinel`, `create_github_release`, `tag_submodules`, `update_homebrew_tap`), which the entry runs in order with its gates and record.
 
 A SHELL-WRITE TWIN rides the same module: an agent write under `.ci/cache/release/` (a redirect, `tee`, `sed -i`, a copy or move onto it, `rm`, `mkdir`, `touch`, `chmod`, a mutating `git` inside the release clone, an interpreter program writing there) is refused. Decision 1 of the plan judges cleanliness on a fresh clone of HEAD at `.ci/cache/release/<tree>/`; a clone a session can edit by hand proves nothing. Only the entry and its gates module write there. The Edit and Write tools are NOT judged here: that half is a pre-edit guard this module cannot be (one module, one chain).
 
-A `--help`/`-h` on a publish module passes, and so does `--dry-run` on one whose own source declares `--dry-run` (a module that does not would reject the flag or, read with `parse_known_args`, ignore it and publish; the source is what says which). `set_preview_worker_secrets` is not judged: a preview Worker is never stable.
+A `--help`/`-h` on a publish module passes, as does `--help` on a `wrangler`, `gh` or `docker` publish verb, and so does `--dry-run` on one whose own source declares `--dry-run` (a module that does not would reject the flag or, read with `parse_known_args`, ignore it and publish; the source is what says which). `set_preview_worker_secrets` is not judged: a preview Worker is never stable.
 
-WRAPPERS ARE UNWRAPPED. `./run.sh devbox exec -- ...`, `bws_env exec ... -- ...` and `docker exec <container> ...` hand their tail to another process, so the tail is judged as a command of its own with the outer environment carried in. `npm run <script>` is judged by the script's own text from the package.json of the directory it runs in (`--prefix`, a path `-w`, or `cd`), because `workers/mta-sts`'s `npm run deploy` is a `wrangler deploy` that names no publish verb on the command line.
+WRAPPERS ARE UNWRAPPED. `./run.sh devbox exec -- ...`, `bws_env exec ... -- ...` and `docker exec <container> ...` hand their tail to another process, so the tail is judged as a command of its own with the outer environment carried in. `npm run <script>` is judged by the script's own text from the package.json of each directory it runs in (`--prefix`, `cd`, or each workspace `-w` names by path or package name, every one under `--workspaces`), because `workers/mta-sts`'s `npm run deploy` is a `wrangler deploy` that names no publish verb on the command line.
 
 WHAT IT DOES NOT SEE: a publish verb assembled at run time, `gh api` POSTs to the releases endpoint, a `TARGET` or `WORKER_NAME` the session's own environment holds (absent from the command line, it reads as stable, the fail-closed direction), a path into `.ci/cache/release/` spelled through a glob or a symlink the word does not resolve through, and a program that builds the path from parts. The release record and the R2 sentinel are what a release leaves behind, so a release this guard missed is still visible after the fact.
 
@@ -20,6 +20,7 @@ ORDER 62, ahead of `block_vm_unverified_push` (63) and `block_backup_unverified_
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`); it is judged by `test-block_unasked_release.py` beside it, which also plants DEFECT and every MUTANT.
 """
 
+import glob
 import json
 import os
 import re
@@ -62,6 +63,26 @@ MUTANTS = {
         "    if not word:\n        return False",
         "    if True:\n        return False",
     ),
+    "module-no-channel-says-npm": (
+        "NO_CHANNEL_REFUSAL if npm else NO_CHANNEL_MODULE_REFUSAL",
+        "NO_CHANNEL_REFUSAL",
+    ),
+    "config-path-judged-whole": (
+        '_EDGE_CONFIG.search(_base(config.replace("\\\\", "/")).lower())',
+        're.search(r"edge|bench|preview", config.lower())',
+    ),
+    "follow-tags-ignored": (
+        'if parsed.on("follow-tags") and not _mirror_push(parsed.operands):',
+        "if False:",
+    ),
+    "target-prefix-ignored": ("not name.startswith(spelled)", "spelled != name"),
+    "workspace-name-ignored": ("elif value in spaces:", "elif False:"),
+    "short-output-ignored": (
+        'outputs = [_option(args, "--output"), *_short_values(args, "o")]',
+        'outputs = [_option(args, "--output"), _option(args, "-o")]',
+    ),
+    "compose-push-ignored": ("    if verb in COMPOSE_PUSH_VERBS:\n", "    if False:\n"),
+    "pages-ignored": ('if sub == "pages" and', 'if False and sub == "pages" and'),
 }
 
 ASK_ENV = "RELEASE_ASKED"
@@ -122,11 +143,34 @@ NO_CHANNEL_REFUSAL = (
     "release:local names no --channel edge after `--` (npm hands the script only the words "
     "after `--`)"
 )
+# The same refusal for `python3 -m rediacc_ci.release.local`, where npm is not involved and every word reaches the module (review 22a275ab.1).
+NO_CHANNEL_MODULE_REFUSAL = "python3 -m %s names no --channel edge" % RELEASE_MODULE
 
 WRANGLER_PUBLISH = ("deploy", "rollback", "publish")
+# An edge, bench or preview config, judged on the file NAME as a whole dot- or dash-separated word (`wrangler.edge-eu.toml`, `wrangler.bench.toml`): the directories above it say nothing about the Worker, so `/srv/edge-tools/wrangler.eu.toml` is the stable eu config and needs an ask, not a refusal (review 22a275ab.2).
+_EDGE_CONFIG = re.compile(r"(?:\A|[.\-_])(?:edge|bench|preview)(?:[.\-_]|\Z)")
+# `wrangler pages deploy|publish` publishes a Pages site, which no release path runs (review 2e939f2a.6).
+WRANGLER_PAGES_PUBLISH = ("deploy", "publish")
 WRANGLER_VALUE_OPTIONS = ("-c", "--config", "-e", "--env", "--cwd", "--env-file")
 GH_RELEASE_PUBLISH = ("create", "upload", "edit", "delete")
 DOCKER_PUSH_VERBS = (("push",), ("image", "push"), ("manifest", "push"))
+DOCKER_NAMES = ("docker", "docker-buildx", "podman", "docker-compose", "podman-compose")
+# `docker compose push` pushes every service image, `compose publish` the project as an OCI artifact, and `compose build --push` builds and pushes (review 2e939f2a.6).
+COMPOSE_PUSH_VERBS = ("push", "publish")
+COMPOSE_VALUE_OPTIONS = (
+    "-f",
+    "--file",
+    "-p",
+    "--project-name",
+    "--project-directory",
+    "--profile",
+    "--env-file",
+    "--ansi",
+    "--progress",
+    "--parallel",
+)
+# The shorthands of `docker build`/`buildx build` that take a value; in a bundle (`-qo...`) the first of them takes the rest of the word, so `-otype=registry` is `--output type=registry` (pflag's rule, review 2e939f2a.5).
+DOCKER_SHORT_VALUES = "tfom"
 DOCKER_VALUE_OPTIONS = (
     "-t",
     "--tag",
@@ -152,6 +196,8 @@ DOCKER_EXEC_VALUE_OPTIONS = (
     "--env-file",
     "--detach-keys",
 )
+# The console's GitLab mirror remote, `githooks.MIRROR_REMOTE` (.claude/rediacc_hooks/git/githooks.py), whose one admitted push carries `--follow-tags`.
+MIRROR_REMOTE = "gitlab"
 # A tag ref a release owns: `v1.2.3`, `refs/tags/v1.2.3`, or a pattern over them.
 _TAG_REF = re.compile(r"\A(?:refs/tags/)?v[0-9*]")
 # How deep wrappers and npm scripts are followed; past it the command is refused as unreadable.
@@ -374,21 +420,86 @@ def _declares_dry_run(root, module):
 
 
 def _npm_run(run):
-    """`(script, args after the script, the directory option)` for an `npm run <script>`, else None."""
+    """`(script, args after the script, every npm argument)` for an `npm run <script>`, else None."""
     if _base(run.name) != "npm":
         return None
     args = list(run.argv)
-    directory = (
-        _option(args, "--prefix")
-        or _option(args, "-C")
-        or _option(args, "-w")
-        or _option(args, "--workspace")
-    )
     words = _positionals(args, NPM_VALUE_OPTIONS)
     if len(words) < 2 or words[0] not in NPM_RUN_VERBS:
         return None
     script = words[1]
-    return script, args[args.index(script) + 1 :], directory
+    return script, args[args.index(script) + 1 :], args
+
+
+def _values(args, names):
+    """Every value any of `names` takes in `args`, apart (`-w x`) or attached (`--workspace=x`), up to `--`."""
+    out = []
+    for k, word in enumerate(args):
+        if word == "--":
+            break
+        for name in names:
+            if word == name and k + 1 < len(args):
+                out.append(args[k + 1])
+            elif word.startswith(name + "="):
+                out.append(word[len(name) + 1 :])
+    return out
+
+
+def _package(directory):
+    """The parsed `<directory>/package.json` as a dict, or {}."""
+    try:
+        with open(os.path.join(directory, "package.json"), encoding="utf-8") as handle:
+            doc = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _workspaces(home):
+    """`(root, {name: directory})`: the nearest of `home` and its parents whose package.json declares `workspaces`, and each workspace it globs to, by its package name. `(home, {})` when none declares any."""
+    here = home
+    while True:
+        spaces = _package(here).get("workspaces")
+        if isinstance(spaces, dict):
+            spaces = spaces.get("packages")
+        if isinstance(spaces, list):
+            found = {}
+            for pattern in spaces:
+                if not isinstance(pattern, str) or pattern.startswith("!"):
+                    continue
+                for directory in sorted(glob.glob(os.path.join(here, pattern))):
+                    name = _package(directory).get("name")
+                    if isinstance(name, str):
+                        found[name] = os.path.normpath(directory)
+            return here, found
+        parent = os.path.dirname(here)
+        if not here or parent == here:
+            return home, {}
+        here = parent
+
+
+def _npm_dirs(where, args):
+    """Every directory an `npm run` runs its script in: the prefix (`--prefix`, `-C`, else the run's own directory), or, when workspaces are selected, each one. `-w`/`--workspace` names a workspace by PATH or by package NAME (review 2e939f2a.4), and repeats; `--workspaces`/`-ws` selects all of them, and `--include-workspace-root` adds the root back."""
+    home = _join(where, _option(args, "--prefix") or _option(args, "-C"))
+    picked = _values(args, ("-w", "--workspace"))
+    every = "-ws" in args or _bool_on(args, "--workspaces") or _bool_on(args, "--ws")
+    if not picked and not every:
+        return [home]
+    root, spaces = _workspaces(home)
+    dirs = list(spaces.values()) if every else []
+    for value in picked:
+        paths = [_join(base, value) for base in (home, root)]
+        hit = next((d for d in paths if os.path.isfile(os.path.join(d, "package.json"))), "")
+        if hit:
+            dirs.append(hit)
+        elif value in spaces:
+            dirs.append(spaces[value])
+        else:
+            # A parent directory of workspaces selects every workspace inside it.
+            dirs.extend(d for d in spaces.values() for p in paths if d.startswith(p + os.sep))
+    if _bool_on(args, "--include-workspace-root"):
+        dirs.append(root)
+    return list(dict.fromkeys(dirs))
 
 
 def _npm_script_text(directory, script):
@@ -410,18 +521,26 @@ def _channel(args, npm):
     return _option(tail, "--channel")
 
 
-def _entry_verdict(channel):
-    """`(kind, what, note)` for a run of the release entry on `channel`."""
+def _entry_verdict(channel, npm):
+    """`(kind, what, note)` for a run of the release entry on `channel`, launched through `npm run` when `npm` is true."""
     if channel == "edge":
         return "", "", ""
     if channel == "stable":
         return "refuse", STABLE_CHANNEL_REFUSAL, ""
-    return "refuse", NO_CHANNEL_REFUSAL, ""
+    return "refuse", NO_CHANNEL_REFUSAL if npm else NO_CHANNEL_MODULE_REFUSAL, ""
 
 
 def _tag_ref(ref):
     """Does one push refspec side name a release tag?"""
     return _TAG_REF.match(ref) is not None
+
+
+def _mirror_push(operands):
+    """Is this the GitLab mirror push of `main` (`githooks.MIRROR_REMOTE`, one refspec `main:main` or `refs/heads/main:refs/heads/main`)?"""
+    return operands[:1] == [MIRROR_REMOTE] and operands[1:] in (
+        ["main:main"],
+        ["refs/heads/main:refs/heads/main"],
+    )
 
 
 def _pushes_release_tag(args):
@@ -432,6 +551,9 @@ def _pushes_release_tag(args):
         return "git push --tags (every tag, the v* release tags included)"
     if parsed.on("mirror"):
         return "git push --mirror (every ref, the v* release tags included)"
+    # `--follow-tags` also pushes every annotated tag that points into the pushed history, so a v* release tag rides a branch push (review 2e939f2a.1). The one push that carries it by design is the GitLab mirror push of step 6b in .claude/commands/pr-merge.md, `git push gitlab refs/heads/main:refs/heads/main --follow-tags`; it copies only what GitHub's `main` holds, and `block_push_to_protected_branch` with the git-level `pre-push` hook (`githooks._mirror_push_refusal`) judge its URL and refs.
+    if parsed.on("follow-tags") and not _mirror_push(parsed.operands):
+        return "git push --follow-tags (the annotated v* release tags in the pushed history ride along)"
     for spec in parsed.operands[1:]:
         for side in spec.lstrip("+").split(":"):
             if side and _tag_ref(side):
@@ -483,8 +605,24 @@ def _account_channel(rest):
     return "edge" if target == "edge" else "stable"
 
 
+def _prefix_option(args, name):
+    """The last value an argparse option `name` takes in `args`, spelled in full or as any prefix of at least `--x` (`--tar eu`, `--targ=eu`), or "". argparse accepts a unique prefix by default (`allow_abbrev`), and `deploy_proxy`/`console_executor` keep that default (review 2e939f2a.2); an ambiguous prefix makes argparse exit before any deploy, so reading every prefix as `name` errs only toward the stable reading."""
+    found = ""
+    for k, word in enumerate(args):
+        if word == "--":
+            break
+        spelled, eq, value = word.partition("=")
+        if len(spelled) < 3 or not spelled.startswith("--") or not name.startswith(spelled):
+            continue
+        if eq:
+            found = value
+        elif k + 1 < len(args):
+            found = args[k + 1]
+    return found
+
+
 def _target_channel(rest):
-    target = _option(rest, "--target")
+    target = _prefix_option(rest, "--target")
     return "edge" if target in EDGE_TARGETS else "stable"
 
 
@@ -515,12 +653,14 @@ def _wrangler_publish(args):
     """`(kind, what, note)` for a `wrangler` run: a publish on a stable config needs a proven ask, one on an edge, bench or preview config is refused for its module."""
     words = _positionals(args, WRANGLER_VALUE_OPTIONS)
     sub = words[0] if words else ""
+    if sub == "pages" and words[1:2] and words[1] in WRANGLER_PAGES_PUBLISH:
+        return "refuse", "wrangler pages %s (publishes a Pages site)" % words[1], ""
     publishes = sub in WRANGLER_PUBLISH or (sub == "versions" and words[1:2] == ["deploy"])
     if not publishes or "--dry-run" in args:
         return "", "", ""
     verb = " ".join(words[:2] if sub == "versions" else [sub])
     config = _option(args, "--config") or _option(args, "-c") or "wrangler.toml"
-    if re.search(r"edge|bench|preview", config.lower()):
+    if _EDGE_CONFIG.search(_base(config.replace("\\", "/")).lower()):
         return (
             "refuse",
             "wrangler %s on %s (an edge or bench Worker deploys through its module)"
@@ -530,14 +670,69 @@ def _wrangler_publish(args):
     return "ask", "wrangler %s on the stable config %s" % (verb, config), ""
 
 
+def _asks_help(args):
+    """Does `--help` stand among the options (before any `--`)? A help run publishes nothing."""
+    head = args[: args.index("--")] if "--" in args else args
+    return "--help" in head
+
+
+def _short_values(args, letter):
+    """Every value the shorthand `-<letter>` takes in `args`: apart (`-o v`), attached (`-ov`, `-o=v`), or closing a bundle of value-less shorthands (`-qov`). Measured on pflag's rule: the first value-taking letter of a bundle takes the rest of the word."""
+    out = []
+    for k, word in enumerate(args):
+        if word == "--":
+            break
+        if not word.startswith("-") or word.startswith("--") or len(word) < 2:
+            continue
+        for j, char in enumerate(word[1:], start=1):
+            if char not in DOCKER_SHORT_VALUES:
+                continue
+            if char == letter:
+                rest = word[j + 1 :].removeprefix("=")
+                if rest:
+                    out.append(rest)
+                elif k + 1 < len(args):
+                    out.append(args[k + 1])
+            break
+    return out
+
+
+def _bool_on(args, name):
+    """Is the boolean `name` set, as `--name` or `--name=<anything but false/0>`?"""
+    on = False
+    for word in args:
+        if word == "--":
+            break
+        if word == name:
+            on = True
+        elif word.startswith(name + "="):
+            on = word[len(name) + 1 :].lower() not in ("false", "0")
+    return on
+
+
+def _compose_publish(name, args):
+    """`(kind, what, note)` for the words after `docker compose` (or a `docker-compose` run)."""
+    words = _positionals(args, COMPOSE_VALUE_OPTIONS)
+    verb = words[0] if words else ""
+    if verb in COMPOSE_PUSH_VERBS:
+        return "refuse", "%s %s" % (name, verb), ""
+    if verb == "build" and _bool_on(args, "--push"):
+        return "refuse", "%s build --push" % name, ""
+    return "", "", ""
+
+
 def _docker_publish(name, args):
+    if name in ("docker-compose", "podman-compose"):
+        return _compose_publish(name, args)
     words = _positionals(args, DOCKER_VALUE_OPTIONS)
+    if words[:1] == ["compose"]:
+        return _compose_publish("%s compose" % name, args[args.index("compose") + 1 :])
     if any(tuple(words[: len(v)]) == v for v in DOCKER_PUSH_VERBS):
         return "refuse", "%s %s" % (name, " ".join(words[:2])), ""
     building = "build" in words[:2] or words[:1] == ["buildx"]
-    outputs = [_option(args, "-o"), _option(args, "--output")]
+    outputs = [_option(args, "--output"), *_short_values(args, "o")]
     if building and (
-        "--push" in args or any("type=registry" in o or "push=true" in o for o in outputs)
+        _bool_on(args, "--push") or any("type=registry" in o or "push=true" in o for o in outputs)
     ):
         return "refuse", "%s %s --push" % (name, " ".join(words[:2])), ""
     if words[:3] == ["buildx", "imagetools", "create"] and "--dry-run" not in args:
@@ -551,10 +746,12 @@ def _publish(run, where, root, env):
     args = list(run.argv)
     npm = _npm_run(run)
     if npm is not None and npm[0] == RELEASE_SCRIPT:
-        return _entry_verdict(_channel(npm[1], npm=True))
+        return _entry_verdict(_channel(npm[1], npm=True), npm=True)
     module = _module(run, where)
     if module == RELEASE_MODULE:
-        return _entry_verdict(_channel(_module_args(run), npm=False))
+        return _entry_verdict(_channel(_module_args(run), npm=False), npm=False)
+    if _asks_help(args) and (name.startswith("wrangler") or name in ("gh", *DOCKER_NAMES)):
+        return "", "", ""
     if name.startswith("wrangler"):
         return _wrangler_publish(args)
     if name == "gh":
@@ -566,7 +763,7 @@ def _publish(run, where, root, env):
         _globals, verb, rest = commit_policy.git_split(args)
         what = _pushes_release_tag(rest) if verb == "push" else ""
         return ("refuse", what, "") if what else ("", "", "")
-    if name in ("docker", "docker-buildx", "podman"):
+    if name in DOCKER_NAMES:
         return _docker_publish(name, args)
     if module in PUBLISH_MODULES:
         return _module_publish(module, _module_args(run), root, env)
@@ -598,14 +795,19 @@ def _judge(cmd, where_root, env, root, depth, found):
         # The entry is judged by name above, on the words npm hands it; following its script text too would judge it twice.
         if npm is None or npm[0] == RELEASE_SCRIPT:
             continue
-        script, args, directory = npm
-        home = _join(where, directory)
-        text = _npm_script_text(home, script)
-        if text:
-            tail = args[args.index("--") + 1 :] if "--" in args else []
-            _judge(
-                ("%s %s" % (text, shlex.join(tail))).strip(), home, merged, root, depth + 1, found
-            )
+        script, args, npm_args = npm
+        tail = args[args.index("--") + 1 :] if "--" in args else []
+        for home in _npm_dirs(where, npm_args):
+            text = _npm_script_text(home, script)
+            if text:
+                _judge(
+                    ("%s %s" % (text, shlex.join(tail))).strip(),
+                    home,
+                    merged,
+                    root,
+                    depth + 1,
+                    found,
+                )
 
 
 # --------------------------------------------------------------------------- the shell-write twin

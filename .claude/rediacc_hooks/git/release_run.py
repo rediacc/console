@@ -324,7 +324,10 @@ def proc_exe(pid: int) -> str | None:
 
 
 def _locked_refusal(path: str) -> str:
-    """ "" when `path` and every directory above it are owned by root and writable by no group or other, else the first that is not. A symlink's own bits mean nothing; its directory is checked as an ancestor."""
+    """ "" when `path` and every directory above it are owned by root and writable by no group or other, else the first that is not. A symlink's own bits mean nothing; its directory is checked as an ancestor, and the path it resolves to is checked the same way, ancestors included.
+
+    THE TARGET OF EVERY SYMLINK COMPONENT IS CHECKED (review 120e8ea7.1). Python looks for `pyvenv.cfg` beside the path it was started by and one level up, by the typed path: started as `/srv/L/d/python3`, where `/srv/L` is a symlink into a user-writable directory and `d` links to `/usr/bin`, it reads `/srv/L/pyvenv.cfg` from that user directory. Skipping the link and checking only `realpath(dirname(argv0))` (`/usr/bin`) admitted it; the resolved `/srv/L` is what has to be locked.
+    """
     parts = pathlib.PurePosixPath(path).parts
     for i in range(len(parts), 0, -1):
         here = str(pathlib.PurePosixPath(*parts[:i]))
@@ -333,6 +336,14 @@ def _locked_refusal(path: str) -> str:
         except OSError:
             return "%s cannot be read" % here
         if stat.S_ISLNK(st.st_mode):
+            try:
+                landed = os.path.realpath(here, strict=True)
+            except (OSError, RuntimeError):
+                return "%s does not resolve" % here
+            # `landed` holds no symlink, so this recursion is one level deep.
+            why = _locked_refusal(landed)
+            if why:
+                return "%s (the target of %s)" % (why, here)
             continue
         if st.st_uid != 0 or st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
             return "%s is not root-owned and closed to writes (uid %d, mode %o)" % (

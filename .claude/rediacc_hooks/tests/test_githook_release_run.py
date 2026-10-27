@@ -499,6 +499,28 @@ def test_a_user_writable_venv_is_refused(world: World) -> None:
     _refused(proc, "is not root-owned")
 
 
+def test_a_symlinked_directory_into_a_writable_dir_is_refused(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 120e8ea7.1: `argv0` passes through a symlink into a writable directory, and a second link there leads back to the interpreter's root-owned directory. Python reads `pyvenv.cfg` one level above the typed path, inside the writable directory.
+
+    `/proc/self/cwd` is the root-owned-looking symlink: `/proc` is root's, `self` and `cwd` are links, so the typed path crosses no unlinked user directory and the old check, which skipped every link and resolved only `dirname(argv0)`, admitted it."""
+    if PY is None:
+        pytest.fail("no root-installed python3 here")
+    real = os.path.realpath(PY)
+    writable = tmp_path / "w"
+    writable.mkdir()
+    writable.chmod(0o777)
+    (writable / "d").symlink_to(os.path.dirname(real))
+    monkeypatch.chdir(writable)
+    argv0 = "/proc/self/cwd/d/%s" % os.path.basename(real)
+    assert os.path.realpath(argv0) == real, "the planted path must resolve to the interpreter"
+    got = RR.interpreter_refusal(argv0, real)
+    assert "is not root-owned" in got, got
+    assert str(writable) in got, got
+    assert "the target of /proc/self/cwd" in got, got
+
+
 def test_an_interpreter_found_on_path_is_refused(world: World) -> None:
     proc = world.run(argv=["python3", *ENTRY_ARGV[1:]], executable=ENTRY_ARGV[0], forge=True)
     _refused(proc, "not by an absolute interpreter path")

@@ -66,6 +66,19 @@ def transcript(answer_ts):
     return str(path)
 
 
+def workspace_fixture():
+    """A project root whose `workspaces` glob holds two packages: `@fx/site`, whose `deploy` is a `wrangler deploy`, and `@fx/lib`, whose `deploy` only echoes. `-w` names them by package name or by path."""
+    top = pathlib.Path(tempfile.mkdtemp(prefix="npm-ws-", dir=RUN_TMP))
+    (top / "package.json").write_text(json.dumps({"name": "fx", "workspaces": ["sites/*"]}))
+    for leaf, name, deploy in (("a", "@fx/site", "wrangler deploy"), ("b", "@fx/lib", "echo hi")):
+        (top / "sites" / leaf).mkdir(parents=True)
+        (top / "sites" / leaf / "package.json").write_text(
+            json.dumps({"name": name, "scripts": {"deploy": deploy}})
+        )
+    return str(top)
+
+
+WS = workspace_fixture()
 TR = transcript("2026-01-01T00:00:30Z")
 ASK = "RELEASE_ASKED=ASKED:2026-01-01T00:00Z"
 ASK_ELSEWHERE = "RELEASE_ASKED=ASKED:2026-01-01T00:10Z"
@@ -104,6 +117,13 @@ CASES = [
         "names no --channel edge",
     ),
     ("entry: no channel", "npm run release:local", None, B, "names no --channel edge"),
+    (
+        "entry by module, no channel: the reason names no npm",
+        "%s rediacc_ci.release.local --dry-run" % PY,
+        None,
+        B,
+        "python3 -m rediacc_ci.release.local names no --channel edge",
+    ),
     ("entry: no channel, dry run", "npm run release:local -- --dry-run", None, B, "no --channel"),
     (
         "entry: stable channel",
@@ -247,8 +267,84 @@ CASES = [
         B,
         "wrangler deploy",
     ),
+    (
+        "wrangler deploy on a stable config under an edge-named dir",
+        "npx wrangler deploy --config /srv/edge-bench/wrangler.eu.toml",
+        None,
+        B,
+        "carries no RELEASE_ASKED",
+    ),
+    (
+        "wrangler deploy on a stable config under an edge-named dir, proven ASKED",
+        "%s npx wrangler deploy --config /srv/edge-bench/wrangler.eu.toml" % ASK,
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "wrangler deploy on a config whose name holds edge inside a word",
+        "%s npx wrangler deploy -c wrangler.knowledge.toml" % ASK,
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "wrangler deploy on an edge config by full path",
+        "%s npx wrangler deploy -c /srv/x/workers/proxy/wrangler.edge-us.toml" % ASK,
+        TR,
+        B,
+        "deploys through its module",
+    ),
+    (
+        "wrangler pages deploy",
+        "npx wrangler pages deploy dist --project-name site",
+        None,
+        B,
+        "wrangler pages deploy",
+    ),
+    ("wrangler pages publish", "npx wrangler pages publish dist", None, B, "pages publish"),
+    ("wrangler pages project list", "npx wrangler pages project list", None, A, ""),
+    ("wrangler pages deploy --help", "npx wrangler pages deploy --help", None, A, ""),
+    ("wrangler deploy --help", "npx wrangler deploy --help", None, A, ""),
     ("wrangler deploy dry run", "npx wrangler deploy --dry-run --outdir /tmp/x", None, A, ""),
     ("the proxy dry-run npm script", "npm --prefix workers/proxy run dry-run", None, A, ""),
+    (
+        "npm run deploy -w by workspace name",
+        "cd %s && npm run deploy -w @fx/site" % WS,
+        None,
+        B,
+        "wrangler deploy",
+    ),
+    (
+        "npm run deploy --workspace= by name, after another",
+        "cd %s && npm run deploy -w @fx/lib --workspace=@fx/site" % WS,
+        None,
+        B,
+        "wrangler deploy",
+    ),
+    ("npm run deploy -w by path", "npm --prefix %s run deploy -w sites/a" % WS, None, B, "deploy"),
+    (
+        "npm run deploy across every workspace",
+        "cd %s && npm run deploy --workspaces" % WS,
+        None,
+        B,
+        "wrangler deploy",
+    ),
+    (
+        "npm run deploy across a parent dir of workspaces",
+        "cd %s && npm run deploy -w sites" % WS,
+        None,
+        B,
+        "wrangler deploy",
+    ),
+    (
+        "npm run deploy -w a workspace whose deploy only echoes",
+        "cd %s && npm run deploy -w @fx/lib" % WS,
+        None,
+        A,
+        "",
+    ),
+    ("npm run deploy at a root with no deploy", "cd %s && npm run deploy" % WS, None, A, ""),
     ("wrangler tail", "npx wrangler tail edge-rediacc-www", None, A, ""),
     ("wrangler d1 migrations list", "npx wrangler d1 migrations list DB --remote", None, A, ""),
     ("wrangler deployments list", "npx wrangler deployments list", None, A, ""),
@@ -283,6 +379,29 @@ CASES = [
     ("push a mirror", "git push --mirror origin", None, B, "--mirror"),
     ("push a submodule v tag", "git -C private/renet push origin v0.9.1", None, B, "release tag"),
     ("push a v tag pattern", "git push origin 'refs/tags/v*'", None, B, "release tag"),
+    (
+        "push a branch with --follow-tags",
+        "git push --follow-tags origin 1023-1",
+        None,
+        B,
+        "--follow-tags",
+    ),
+    (
+        "push main to gitlab with --follow-tags beside another ref",
+        "git push gitlab refs/heads/main:refs/heads/main 1023-1 --follow-tags",
+        None,
+        B,
+        "--follow-tags",
+    ),
+    (
+        "the GitLab mirror push of main with --follow-tags",
+        "git push gitlab refs/heads/main:refs/heads/main --follow-tags",
+        None,
+        A,
+        "",
+    ),
+    ("the mirror push, main:main", "git push gitlab main:main --follow-tags", None, A, ""),
+    ("push the branch, --no-follow-tags", "git push --no-follow-tags origin 1023-1", None, A, ""),
     ("push the branch", "git push origin 1023-1", None, A, ""),
     (
         "push a branch named v-ish under refs/heads",
@@ -327,6 +446,47 @@ CASES = [
         B,
         "imagetools create",
     ),
+    (
+        "buildx registry output, attached -o",
+        "docker buildx build -otype=registry -t x .",
+        None,
+        B,
+        "--push",
+    ),
+    ("buildx registry output, -o=", "docker buildx build -o=type=registry .", None, B, "--push"),
+    (
+        "buildx registry output, bundled -qo",
+        "docker buildx build -qotype=registry .",
+        None,
+        B,
+        "push",
+    ),
+    (
+        "buildx image output push=true",
+        "docker buildx build -otype=image,push=true .",
+        None,
+        B,
+        "push",
+    ),
+    ("buildx --push=true", "docker buildx build --push=true -t x .", None, B, "--push"),
+    ("buildx --push=false", "docker buildx build --push=false -t x .", None, A, ""),
+    ("buildx attached docker output", "docker buildx build -otype=docker -t x .", None, A, ""),
+    ("buildx tag bundle ahead of o", "docker buildx build -totype=registry .", None, A, ""),
+    ("docker compose push", "docker compose push", None, B, "docker compose push"),
+    (
+        "docker compose push with -f and -p",
+        "docker compose -f compose.yml -p proj push web",
+        None,
+        B,
+        "compose push",
+    ),
+    ("docker compose publish", "docker compose publish ghcr.io/x/app:1", None, B, "publish"),
+    ("docker-compose push", "docker-compose push", None, B, "docker-compose push"),
+    ("docker compose build --push", "docker compose build --push", None, B, "build --push"),
+    ("docker compose build", "docker compose build", None, A, ""),
+    ("docker compose pull", "docker compose -p proj pull", None, A, ""),
+    ("docker compose push --help", "docker compose push --help", None, A, ""),
+    ("docker push --help", "docker push --help", None, A, ""),
     ("docker build", "docker build -t x .", None, A, ""),
     ("buildx build --load", "docker buildx build --load -t x .", None, A, ""),
     ("docker pull", "docker pull ghcr.io/rediacc/renet:1.2.3", None, A, ""),
@@ -423,6 +583,27 @@ CASES = [
     (
         "deploy_proxy --target=bench",
         "%s rediacc_ci.deploy.deploy_proxy --target=bench" % PY,
+        None,
+        A,
+        "",
+    ),
+    (
+        "deploy_proxy bench, then an argparse prefix names eu",
+        "%s rediacc_ci.deploy.deploy_proxy --target=bench --tar eu" % PY,
+        None,
+        B,
+        "a stable target",
+    ),
+    (
+        "console_executor edge, then --targ=stable",
+        "%s rediacc_ci.deploy.console_executor --enable --target edge --targ=stable" % PY,
+        None,
+        B,
+        "a stable target",
+    ),
+    (
+        "deploy_proxy --tar bench",
+        "%s rediacc_ci.deploy.deploy_proxy --tar bench --region eu" % PY,
         None,
         A,
         "",
@@ -538,6 +719,14 @@ CASES = [
         None,
         B,
         "tag_submodules",
+    ),
+    (
+        # bws_env exec reads its own options up to `--` and exits 2 at the first other word (.ci/rediacc_ci/core/bws_env.py _exec_verb), so with no separator the tail never runs (review 2e939f2a.3).
+        "bws_env exec with no separator runs nothing",
+        "%s rediacc_ci.core.bws_env exec --profile p npx wrangler deploy" % PY,
+        None,
+        A,
+        "",
     ),
     (
         "a release step with a proven ASKED",
@@ -741,15 +930,18 @@ def run(command, transcript_path, broken=None):
     return proc.returncode == 2, proc.stderr
 
 
+def verdict_ok(want, needle, got, err):
+    if needle.startswith("!"):
+        return got == want and needle[1:] not in err
+    return got == want and (not needle or needle in err)
+
+
 fails = 0
 blocked = 0
 for name, command, tr, want, needle in CASES:
     got, err = run(command, tr)
     blocked += got
-    if needle.startswith("!"):
-        ok = got == want and needle[1:] not in err
-    else:
-        ok = got == want and (not needle or needle in err)
+    ok = verdict_ok(want, needle, got, err)
     fails += not ok
     print(
         "%-62s want=%-8s got=%-8s %s"
@@ -776,16 +968,30 @@ MUST_FLIP = {
     "stable-config-unasked": "wrangler deploy on a stable config, no ASKED",
     "tag-push-ignored": "push a v tag",
     "release-dir-ignored": "rm in the clone",
+    "module-no-channel-says-npm": "entry by module, no channel: the reason names no npm",
+    "config-path-judged-whole": (
+        "wrangler deploy on a stable config under an edge-named dir, proven ASKED"
+    ),
+    "follow-tags-ignored": "push a branch with --follow-tags",
+    "target-prefix-ignored": "deploy_proxy bench, then an argparse prefix names eu",
+    "workspace-name-ignored": "npm run deploy -w by workspace name",
+    "short-output-ignored": "buildx registry output, attached -o",
+    "compose-push-ignored": "docker compose push",
+    "pages-ignored": "wrangler pages deploy",
 }
+# A control passes when the planted copy breaks its case's verdict: the refusal flips to allowed, the admission to refused, or the named reason goes missing.
 for label, mutant in CONTROLS:
     must = MUST_FLIP[label]
-    command, tr = next((c, t) for n, c, t, _w, _n in CASES if n == must)
-    still, _err = run(command, tr, broken=mutant)
-    if still:
+    command, tr, want, needle = next((c, t, w, nd) for nm, c, t, w, nd in CASES if nm == must)
+    got, err = run(command, tr, broken=mutant)
+    if verdict_ok(want, needle, got, err):
         fails += 1
-        print("*** FAIL *** %s control: planted %r; %r still refused" % (label, mutant[1], must))
+        print("*** FAIL *** %s control: planted %r; %r still passes" % (label, mutant[1], must))
     else:
-        print("%s control: planted %r; %r flipped to allowed" % (label, mutant[1], must))
+        print(
+            "%s control: planted %r; %r broke (got %s)"
+            % (label, mutant[1], must, "BLOCKED" if got else "allowed")
+        )
 
 print()
 if len(CASES) < 100 or blocked < 40 or len(CASES) - blocked < 40:

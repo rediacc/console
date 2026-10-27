@@ -1645,6 +1645,46 @@ def test_receipt_refusal():
     archive.write_text(good, encoding="utf-8")
     cases.append((None, _refusal_at(pt), "READER CONTROL: the admissible per-tree copy admits"))
 
+    # SAME-TREE DIVERGENCE (review 96b512e4.2): the per-tree copy is the whole green run at this tree, and the latest file is a narrowed run at the SAME tree, green and then red. The runner never writes that pair (read_receipt's docstring: a narrowed run does not replace a whole latest file), so it arises only by hand; this pins what each reader does then. read_receipt admits the whole copy; run() and receipt_refusal over the latest object refuse the narrowed run.
+    for label, extra in (
+        ("green", {"whole": False}),
+        ("red", {"whole": False, "exitCode": 1, "failed": ["check:format"]}),
+    ):
+        latest.write_text(json.dumps(dict(json.loads(good), **extra)), encoding="utf-8")
+        cases.append(
+            (
+                tree,
+                json.loads(latest.read_text(encoding="utf-8")).get("headTree"),
+                "SAME-TREE DIVERGENCE (%s): the latest file names this very tree" % label,
+            )
+        )
+        cases.append(
+            (
+                None,
+                _refusal_at(pt),
+                "SAME-TREE DIVERGENCE (%s narrowed latest): the whole per-tree copy admits" % label,
+            )
+        )
+        rc, err = drive(pt, V2_PUSH)
+        cases.append((2, rc, "SAME-TREE DIVERGENCE (%s narrowed latest): run() refuses" % label))
+        why = _refusal_latest(pt) or ""
+        cases.append(
+            (
+                True,
+                "NARROWED" in why and why in err,
+                "SAME-TREE DIVERGENCE (%s narrowed latest): the latest object refuses as narrowed, with run()'s text"
+                % label,
+            )
+        )
+    # Its control: without the per-tree copy the narrowed latest refuses through read_receipt too, so the None above is the copy's work.
+    archive.unlink()
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (True, "NARROWED" in why, "SAME-TREE CONTROL: without the copy the narrowed latest refuses")
+    )
+    archive.write_text(good, encoding="utf-8")
+    latest.write_text(good, encoding="utf-8")
+
     # NO FAIL-OPEN: the function never consults the environment. An unparseable receipt object (the reader's marker, and a document that is not an object at all) and an empty dict all refuse.
     why = GM.receipt_refusal(str(green), _head_tree(green), {GM.UNPARSEABLE: "x.json: bad"}) or ""
     cases.append(
@@ -1702,12 +1742,22 @@ def test_receipt_refusal():
     )
     cases.append((True, len(GM.FIXTURES) > 10, "PARITY: the sweep saw the fixture set"))
 
-    # READER SWEEP (5429d717.2): each world's latest receipt filed as the per-tree copy for its HEAD tree. Where that copy is admissible (it names the tree and is whole) read_receipt's verdict must be the latest-file verdict, word for word; where it is not, read_receipt must refuse it as not admissible rather than read past it.
+    # READER SWEEP (5429d717.2): each world's latest receipt filed as the per-tree copy for its HEAD tree. Where that copy is admissible read_receipt's verdict must be the latest-file verdict, word for word; where it is not, read_receipt must refuse it as not admissible rather than read past it.
+    # WHICH WORLD IS WHICH IS FROZEN HERE BY NAME (review 96b512e4.3), read off the FIXTURES table rather than recomputed with the reader's own predicate, so an error in that predicate shows as a world in the wrong group: push-narrowed is not whole, push-wrong-tree and push-advance-forged name another tree, push-no-receipt writes none. A world added to FIXTURES defaults to admissible; if it is not, its case fails until it is named here.
+    sweep_inadmissible = {"push-narrowed", "push-wrong-tree", "push-advance-forged"}
+    sweep_absent = {"push-no-receipt"}
+    cases.append(
+        (
+            set(),
+            (sweep_inadmissible | sweep_absent) - set(GM.FIXTURES),
+            "READER SWEEP: every world the table names is a fixture",
+        )
+    )
     same = misfiled_n = absent = 0
     for name in sorted(GM.FIXTURES):
         w = _world(name)
         latest_w = w / GM.RECEIPT_REL
-        if not latest_w.is_file():
+        if name in sweep_absent or not latest_w.is_file():
             absent += 1
             cases.append(
                 (GM.NO_RECEIPT, _refusal_at(w), "READER SWEEP %s: no receipt reads as none" % name)
@@ -1719,7 +1769,7 @@ def test_receipt_refusal():
         copy.parent.mkdir(parents=True, exist_ok=True)
         copy.write_text(json.dumps(doc), encoding="utf-8")
         via = _refusal_at(w)
-        if doc.get("headTree") == tree_w and doc.get("whole") is True:
+        if name not in sweep_inadmissible:
             same += 1
             cases.append(
                 (
@@ -1741,7 +1791,17 @@ def test_receipt_refusal():
         "  reader sweep: %d admissible copies matched, %d inadmissible refused, %d without a receipt"
         % (same, misfiled_n, absent)
     )
-    cases.append((True, same > 10, "READER SWEEP: most worlds produced an admissible copy"))
+    # The exact split (review 96b512e4.4), so a regression that moves a world between the groups fails here even if each world's own case were somehow skipped.
+    want_same = len(GM.FIXTURES) - len(sweep_inadmissible) - len(sweep_absent)
+    cases.append(
+        (
+            (want_same, len(sweep_inadmissible), len(sweep_absent)),
+            (same, misfiled_n, absent),
+            "READER SWEEP: %d admissible, %d inadmissible, %d without a receipt"
+            % (want_same, len(sweep_inadmissible), len(sweep_absent)),
+        )
+    )
+    cases.append((True, want_same > 10, "READER SWEEP: most worlds produced an admissible copy"))
 
 
 test_receipt_refusal()
