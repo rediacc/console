@@ -29,12 +29,13 @@ Design memo: Plan agent aecb122b, 2026-10-27, summarized in the boxes below.
   - Delete `getServerEncryptionKey`, `serverEncrypt` and `serverDecrypt`; the five call sites use seal and open with storeId.
   - Accept: `cd private/account && npx vitest run tests/unit/config-server-key.test.ts tests/integration/config-server-key-migration.test.ts tests/integration/config-cek-rotation.test.ts tests/integration/console-session.test.ts && npm run typecheck` rc=0.
     (ticked) 2026-10-27T12:54:56Z by d778be9d: account 70718348 (pointer 1b76188e1): config-server-key.ts, legacy-server-key.ts, the five call sites, node.ts boot refusal; vitest rc=0 (50), check:ci-account-server rc=0 (2912), typecheck rc=0
-- [ ] K2 [writer] Provisioning.
+- [x] K2 [writer] Provisioning.
   - The Worker secret is named `ACCOUNT_CONFIG_SERVER_KEY`. It is never `CONFIG_SERVER_KEY`, because the running code would read that name at once and fail every layer-3 read.
   - Bitwarden names: `ACCOUNT_CONFIG_SERVER_KEY_<EU|US|ASIA>_<STABLE|EDGE>` and `ACCOUNT_CONFIG_SERVER_KEY_BENCH`. Each channel and region gets its own key; none is shared.
   - `set_account_worker_secrets` gains a computed `KEYS` row using the `backup_pair` channel logic, refuses a value from the other channel, and lists the key in `REQUIRED_NONEMPTY`.
   - Each account-secrets profile binds its one name. `deploy-bench` binds the bench name, and `deploy_bench.py` pushes it. `cd-deploy-account.yml` fetches the matrix's name.
   - Accept: the two deploy test files rc=0; `check_bws_map.py` and `check_secret_supply.py` rc=0; `account_secrets_local --region eu --target edge --dry-run` lists `ACCOUNT_CONFIG_SERVER_KEY`.
+    (ticked) 2026-10-27T13:31:52Z by d778be9d: 153810bd1 and 5242185e8: set_account_worker_secrets per-channel key, profiles, deploy_bench, cd-deploy-account fetch; pytest rc=0 (111, then 54); account_secrets_local --region eu --target edge --dry-run lists ACCOUNT_CONFIG_SERVER_KEY; check_bws_map and check:ci-secret-supply rc=0 after K3
 - [ ] K3 [lead] Mint the seven secrets in Bitwarden, in process (`secrets.token_bytes(32)`), through `bws_env store-from-env`. No value appears on argv or in a log.
   - Accept: the map gate resolves all seven names, and after deploy, `prune_worker_secrets --json` shows the key under `live` and no `CONFIG_SERVER_KEY`.
 - [x] K4 [writer] Rewrap tool `.ci/rediacc_ci/ops/rewrap_config_server_key.py --region --target [--apply] [--verify]`.
