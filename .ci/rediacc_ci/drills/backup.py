@@ -1,12 +1,12 @@
 """Port of `scripts/drills/backup.sh` (1505 lines): the live chunk-store battery.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup [--legs a,b,c,d,e,f,g,h,j,k,l] [--selftest] [--renet] [--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]
+    PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup [--legs a,b,c,d,e,f,g,h,j,k,l,m] [--selftest] [--renet] [--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]
 
 WHAT IT IS FOR. The backup-storage program replaces whole-image pushes with a content-addressed chunk store: a fixed cell grid over the LUKS image, SHA-256 of the ciphertext cell as object key and dedup key, a manifest per snapshot, and a control plane that mints sessions, answers which of a set of hashes are already held, mints delete-free write grants under a byte quota and commits manifests. This drill drives the whole path with real bytes over a real wire.
 
 COST. No virtual machines for the default legs. It runs against `./run.sh account dev` (restarted by the drill) and the RustFS that script starts on :9100, and uploads a few hundred kilobytes. Leg i (`rdc backup verify` on a real repo) is opt-in and refuses itself by name when no machine is there.
 
-LEGS, one claim each. a: a session mints from a license blob alone (with a tampered-blob control). b: seed upload, real PUTs through presigned URLs, a ledger that moved by exactly the bytes that moved. c: incremental upload, one changed cell transfers. d: both snapshots restore byte-identically through a read grant. e: the quota refuses at mint time, with the control that one byte of headroom lets the same request through. f: `rdc backup usage` and `rdc backup manifests` against the live server. g: the real `renet repository prune --output json` through the real CLI parser. h: the shapes renet's session client sends, against the live server. i: opt-in machine leg. j: a write session cannot read and a read session cannot write. k: a lapsed subscription still restores inside the retention window. l: GC and retention through the test-only `/test/backup/maintenance` seam: a keep-last-1 policy prunes down to the per-stream floor of 3, the freed chunks stay until the grace passes, then the stored bytes go down by exactly the orphaned cells, and the kept snapshots (the collapsed oldest included) restore byte-identically.
+LEGS, one claim each. a: a session mints from a license blob alone (with a tampered-blob control). b: seed upload, real PUTs through presigned URLs, a ledger that moved by exactly the bytes that moved. c: incremental upload, one changed cell transfers. d: both snapshots restore byte-identically through a read grant. e: the quota refuses at mint time, with the control that one byte of headroom lets the same request through. f: `rdc backup usage` and `rdc backup manifests` against the live server. g: the real `renet repository prune --output json` through the real CLI parser. h: the shapes renet's session client sends, against the live server. i: opt-in machine leg. j: a write session cannot read and a read session cannot write. k: a lapsed subscription still restores inside the retention window. l: GC and retention through the test-only `/test/backup/maintenance` seam: a keep-last-1 policy prunes down to the per-stream floor of 3, the freed chunks stay until the grace passes, then the stored bytes go down by exactly the orphaned cells, and the kept snapshots (the collapsed oldest included) restore byte-identically. m: the scheduled verify (levels b and c of `runMaintenance`) against the real store: a control pass reports two checked chunks and nothing missing or corrupt, then one chunk object is deleted and another overwritten straight in RustFS, and the next pass names the first as missing and the second as corrupt.
 
 NOT PROVEN HERE, said plainly: by default no machine runs `renet backup snapshot` or `renet backup restore` in this host-only drill, and legs b-d produce their own cells. `--renet` (with `--vm`) swaps legs b-d for the real thing: a repository on the worker is snapshotted, one cell is rewritten, it is snapshotted again, and both are restored by renet and byte-compared (`rediacc_ci.drills.backup_renet`); the FIEMAP/anchor half is still renet's btrfs tier.
 
@@ -55,16 +55,20 @@ from rediacc_ci.drills import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-KNOWN_LEGS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]
-DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k,l"
+KNOWN_LEGS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"]
+DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k,l,m"
 CELL_BYTES = 65536
 CELLS = 8
 # Cell 2 and cell 6 are holes: all-zero, elided from the manifest as "" the way FIEMAP-driven ZERO detection elides an unwritten extent.
 HOLES = frozenset({2, 6})
 # Leg l commits this many snapshots into one chain; the per-stream retention floor (3) keeps them from being pruned down to the declared keepLast of 1.
 L_SNAPSHOTS = 5
+# Leg m seeds exactly two non-zero cells (the sample of 3 always covers both), and its two maintenance clocks sit past leg l's +17 days plus the 7-day verify interval.
+M_CELLS = (0, 1)
+M_CONTROL_DAYS = 25
+M_TAMPER_DAYS = 33
 USAGE = (
-    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l] [--selftest] [--renet] "
+    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m] [--selftest] [--renet] "
     "[--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
 DRILL_PASSWORD = "DrillBackup123!"
@@ -99,6 +103,23 @@ def make_unique_image(path: str | os.PathLike, step: int) -> None:
         block = hashlib.sha256(tag.encode()).digest() * (CELL_BYTES // 32)
         image[cell * CELL_BYTES : (cell + 1) * CELL_BYTES] = block
     pathlib.Path(path).write_bytes(bytes(image))
+
+
+def make_two_cell_image(path: str | os.PathLike) -> dict:
+    """The leg m fixture: the same grid with only cells `M_CELLS` non-zero (the rest are holes, elided as ""). Writes the image and returns its plan, which cannot come from `plan_of` because that hashes every non-`HOLES` cell."""
+    image = bytearray(CELLS * CELL_BYTES)
+    cells = [""] * CELLS
+    for cell in M_CELLS:
+        block = hashlib.sha256(("leg-m|cell-%d" % cell).encode()).digest() * (CELL_BYTES // 32)
+        image[cell * CELL_BYTES : (cell + 1) * CELL_BYTES] = block
+        cells[cell] = sha256_hex(block)
+    pathlib.Path(path).write_bytes(bytes(image))
+    return {
+        "cellBytes": CELL_BYTES,
+        "imageBytes": len(image),
+        "cells": cells,
+        "unique": [c for c in cells if c],
+    }
 
 
 def sha256_hex(data: bytes) -> str:
@@ -200,7 +221,7 @@ class Options:
 
     def needs_plane(self) -> bool:
         """Any leg that talks to the control plane needs BOTH the dev gateway and a reachable chunk store (g and i do not)."""
-        return any(self.enabled(leg) for leg in "abcdefhjkl")
+        return any(self.enabled(leg) for leg in "abcdefhjklm")
 
     def using_real_store(self) -> bool:
         return bool(self.store_endpoint)
@@ -399,7 +420,7 @@ class Backup:
         self.d.out.write(
             "\n  This drill runs against ./run.sh account dev and the RustFS it starts on\n"
             "  :%s. It provisions NOTHING and needs NO virtual machines.\n\n"
-            "    legs a,b,c,d,e,f,h,j,k,l the dev gateway (restarted by this drill) + Docker for\n"
+            "    legs a,b,c,d,e,f,h,j,k,l,m the dev gateway (restarted by this drill) + Docker for\n"
             "                        the RustFS chunk store. A few hundred KB uploaded into\n"
             "                        bucket %s, under this run's own tenant prefix.\n"
             "    leg  g              the LOCAL renet binary and a throwaway datastore\n"
@@ -416,7 +437,9 @@ class Backup:
         ok = True
         if o.needs_plane() and not _docker_ok():
             log.error("Docker is not available, so ./run.sh account dev cannot start RustFS.")
-            log.error("Legs a,b,c,d,e,f,h,j,k,l all need the chunk store; only leg g can run here:")
+            log.error(
+                "Legs a,b,c,d,e,f,h,j,k,l,m all need the chunk store; only leg g can run here:"
+            )
             log.error("    ./run.sh drill backup --legs g")
             ok = False
         if o.enabled("g"):
@@ -425,7 +448,7 @@ class Backup:
                 log.error(
                     "Build it:  (cd private/renet && ./build.sh dev), or run any ./rdc.sh command."
                 )
-                log.error("Or drop the leg:  ./run.sh drill backup --legs a,b,c,d,e,f,h,j,k,l")
+                log.error("Or drop the leg:  ./run.sh drill backup --legs a,b,c,d,e,f,h,j,k,l,m")
                 ok = False
             if not shutil.which("npx"):
                 log.error("Leg g runs the CLI's own parser through tsx and needs npx on PATH.")
@@ -565,6 +588,28 @@ class Backup:
             )
         code, _ = wire.http_call("PUT", url, payload, headers, json_body=False)
         return str(code)
+
+    def s3_creds(self) -> tuple[str, str, str]:
+        """(region, access key, secret) of the store credentials the drill itself holds."""
+        o = self.o
+        if o.using_real_store():
+            return o.store_region, o.store_key, o.store_secret
+        return S3_REGION, o.rustfs_key, o.rustfs_secret
+
+    def s3_delete(self, url: str) -> str:
+        region, key, secret = self.s3_creds()
+        headers = wire.sigv4_headers("DELETE", url, b"", region, key, secret)
+        code, _ = wire.http_call("DELETE", url, b"", headers, json_body=False)
+        return str(code)
+
+    def chunk_url(self, lineage: str, digest: str) -> str:
+        return "%s/%s/t/%s/l/%s/c/%s" % (
+            self.store_url(),
+            self.bucket,
+            self.subscription_id,
+            lineage,
+            digest,
+        )
 
     def setup_store_bucket(self) -> None:
         d = self.d
@@ -1523,10 +1568,11 @@ class Backup:
         stream_id: str,
         image: pathlib.Path,
         parent: tuple[str, dict] | None,
+        plan: dict | None = None,
     ) -> dict:
-        """Upload the cells the lineage lacks, write the manifest through the grant and commit, as one machine run (on `self.lineage` and `self.session_token`). Returns the image's plan."""
+        """Upload the cells the lineage lacks, write the manifest through the grant and commit, as one machine run (on `self.lineage` and `self.session_token`). Returns the image's plan (`plan_of(image)` unless the caller built one)."""
         d = self.d
-        plan = plan_of(image)
+        plan = plan if plan is not None else plan_of(image)
         lineage = self.lineage
         exists = self.session_api(
             "POST", "/exists", {"lineageGuid": lineage, "hashes": plan["unique"]}
@@ -1745,6 +1791,78 @@ class Backup:
                 shas[index], _sha_file(out), "and is byte-identical to what was uploaded"
             )
 
+    # ------------------------------------------------------------------ leg m
+
+    def verify_entries(self, report: dict, lineage: str, level: str) -> list[dict]:
+        """The verify results a maintenance report holds for one lineage and level."""
+        return [
+            e
+            for e in _as_list(report.get("verify"))
+            if isinstance(e, dict) and e.get("lineageGuid") == lineage and e.get("level") == level
+        ]
+
+    def leg_m_scheduled_verify(self) -> None:
+        d = self.d
+        d.step("Leg m: the scheduled verify (head and sample) names a chunk tampered in the store")
+        lineage = str(uuid.uuid4())
+        _blob, _machine_id, token = self.mint_lineage_session(lineage)
+        saved = (self.lineage, self.session_token)
+        self.lineage, self.session_token = lineage, token
+        snapshot = "snap-m-%d" % int(time.time())
+        image = self.work / "image-m.bin"
+        plan = make_two_cell_image(image)
+        try:
+            stream = self.session_api(
+                "POST", "/streams", {"repositoryGuid": lineage, "lineageGuid": lineage}
+            )
+            d.assert_equal("200", self.status, "a stream opens on the new lineage")
+            stream_id = wire.jstr(self.field("streamId", stream))
+            self.commit_l_snapshot(0, snapshot, stream_id, image, None, plan)
+        finally:
+            self.lineage, self.session_token = saved
+        chunk_a, chunk_b = (plan["cells"][i] for i in M_CELLS)
+        d.assert_equal("2", str(len(plan["unique"])), "control: the lineage holds two chunks")
+
+        # CONTROL: an untampered store verifies clean, so the findings below are the tampering and not the pass.
+        control = self.run_maintenance(M_CONTROL_DAYS)
+        heads = self.verify_entries(control, lineage, "head")
+        samples = self.verify_entries(control, lineage, "sample")
+        self.av(len(heads), 1, "CONTROL: one head result for the lineage")
+        if heads:
+            self.av(heads[0].get("checked"), 2, "and it HEADed both chunks")
+            self.av(heads[0].get("missing"), [], "and found none missing")
+        self.av(len(samples), 1, "CONTROL: one sample result for the lineage")
+        if samples:
+            self.av(samples[0].get("corrupt"), [], "and the sample found nothing corrupt")
+            self.av(samples[0].get("missing"), [], "nor missing")
+
+        # Tamper in the store with the admin key: chunk A is deleted, chunk B is overwritten with other bytes of the same length (no If-None-Match, so the PUT replaces it).
+        d.last_cmd = "DELETE the object of chunk A in the store"
+        d.assert_equal(
+            "204", self.s3_delete(self.chunk_url(lineage, chunk_a)), "chunk A is deleted"
+        )
+        d.last_cmd = "PUT other bytes over the object of chunk B in the store"
+        d.assert_equal(
+            "200",
+            self.s3_put(self.chunk_url(lineage, chunk_b), b"\xff" * CELL_BYTES),
+            "chunk B is overwritten with different bytes",
+        )
+
+        later = self.run_maintenance(M_TAMPER_DAYS)
+        heads = self.verify_entries(later, lineage, "head")
+        samples = self.verify_entries(later, lineage, "sample")
+        self.av(len(heads), 1, "one head result after the tampering")
+        if heads:
+            self.av(heads[0].get("missing"), [chunk_a], "the head pass names exactly chunk A")
+        self.av(len(samples), 1, "one sample result after the tampering")
+        if samples:
+            self.av(
+                chunk_a in _as_list(samples[0].get("missing")),
+                True,
+                "the sample names chunk A as missing",
+            )
+            self.av(samples[0].get("corrupt"), [chunk_b], "and chunk B as corrupt, by hash")
+
     # ------------------------------------------------------------------ leg k
 
     def lapse_subscription(self) -> bool:
@@ -1819,10 +1937,10 @@ class Backup:
         self.setup_account()
         self.setup_renet()
 
-        # Legs b-f, h, j, k and l all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
+        # Legs b-f, h, j, k, l and m all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
         if o.needs_plane() and not o.enabled("a"):
             log.error(
-                "Legs b-f, h, j, k and l all run inside the session leg a mints, and there is no"
+                "Legs b-f, h, j, k, l and m all run inside the session leg a mints, and there is no"
             )
             log.error("session on disk to inherit. Include leg a:  --legs a,%s" % o.legs)
             raise SystemExit(1)
@@ -1840,6 +1958,8 @@ class Backup:
             ("j", self.leg_j_write_grant_cannot_read),
             # Leg l runs before k: k suspends the subscription, and l needs an entitled one to commit snapshots.
             ("l", self.leg_l_gc_and_retention),
+            # Leg m needs an entitled subscription too (it commits), and runs its clock past leg l's.
+            ("m", self.leg_m_scheduled_verify),
             ("k", self.leg_k_lapsed_restore),
         ):
             if o.enabled(leg):
