@@ -482,17 +482,12 @@ COLLISIONS = [
     (
         "org id, other customer",
         lambda c: edge_org(c, ORG, "other-cust-1"),
-        CONFLICT + r"organizations row org00000 differs in customer_id, owner_user_id",
+        CONFLICT + r"organizations row org00000 differs in owner_user_id",
     ),
     (
         "customer id under another org id",
         lambda c: edge_org(c, "edge-org-0001", CUST),
         CONFLICT + r"organizations \(customer_id\) is held by another edge row",
-    ),
-    (
-        "subscription id, other customer",
-        _seed_sub,
-        CONFLICT + r"subscriptions row sub00000 differs in customer_id",
     ),
     ("team id, other org", _seed_team, CONFLICT + r"teams row team0000 differs in org_id, slug"),
     ("store id", _seed_store, r"edge already holds rows this copy would write: store id"),
@@ -819,8 +814,6 @@ MISMATCHES = [
         "owner_user_id",
         "UPDATE organizations SET owner_user_id = 'someone-else-0001'",
     ),
-    ("organizations", "customer_id", "UPDATE organizations SET customer_id = 'cust-other-0001'"),
-    ("subscriptions", "customer_id", "UPDATE subscriptions SET customer_id = 'cust-other-0001'"),
     ("org_memberships", "user_id", "UPDATE org_memberships SET user_id = 'someone-else-0001'"),
     ("teams", "slug", "UPDATE teams SET slug = 'renamed-slug'"),
     ("team_memberships", "user_id", "UPDATE team_memberships SET user_id = 'someone-else-0001'"),
@@ -1333,3 +1326,16 @@ def test_read_source_tolerates_a_source_without_the_newest_tables(dbs) -> None:
     dbs[0].commit()
     source = mod.read_source(Sqlite(dbs[0]), STORE, NOW)
     assert source["store"]["id"] == STORE
+
+
+def test_edge_billing_ids_differ_and_the_identity_rows_are_still_reused(dbs) -> None:
+    """Edge bills through a separate Stripe account, so the same org and subscription carry another customer_id there."""
+    src, dst = dbs
+    clone_identity(src, dst, ALL_IDENTITY)
+    dst.execute("PRAGMA foreign_keys = OFF")
+    dst.execute("UPDATE organizations SET customer_id = 'cust-edge-0001'")
+    dst.execute("UPDATE subscriptions SET customer_id = 'cust-edge-0001'")
+    dst.commit()
+    plan = plan_for(src, dst)
+    assert not plan.rows("organizations")
+    assert not plan.rows("subscriptions")

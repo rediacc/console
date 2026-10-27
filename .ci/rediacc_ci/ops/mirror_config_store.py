@@ -91,9 +91,10 @@ TABLE_ORDER = (
     "event_log",
 )
 # Identity tables: an edge row with the same id is REUSED when these columns match (user ids compared after the case-B remap) and refused when one differs; never updated. The store's own rows refuse on any collision.
+# customer_id is a billing id per environment (edge bills through a separate Stripe account), so the same org legitimately carries a different customer_id on edge; it identifies nothing across environments and is not compared. Edge's own org and subscription rows agree with each other, which is all the config routes need.
 IDENTITY_MATCH = {
-    "organizations": ("customer_id", "owner_user_id"),
-    "subscriptions": ("customer_id",),
+    "organizations": ("owner_user_id",),
+    "subscriptions": (),
     "org_memberships": ("org_id", "user_id"),
     "teams": ("org_id", "slug"),
     "team_memberships": ("team_id", "user_id"),
