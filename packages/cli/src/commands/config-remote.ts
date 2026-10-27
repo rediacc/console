@@ -25,7 +25,7 @@ const DEFAULT_OUTPUT_FORMAT: OutputFormat = 'table';
 async function enableRelay(
   apiUrl: string,
   configName: string,
-  opts: { force?: boolean } = {}
+  opts: { force?: boolean; configId?: string } = {}
 ): Promise<void> {
   // Before any portal link: no login token, or a missing 2FA, refuses here instead of mid-flow in the browser.
   const { token, email } = await checkEnablePrerequisites(apiUrl);
@@ -371,6 +371,17 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
 
 // ─── Command Registration ────────────────────────────────────────────────
 
+/** The finalize options the `enable` flags carry. */
+function enableOptions(options: { force?: boolean; configId?: string }): {
+  force: boolean;
+  configId?: string;
+} {
+  return {
+    force: Boolean(options.force),
+    ...(options.configId ? { configId: options.configId } : {}),
+  };
+}
+
 export function registerRemoteCommands(configCommand: Command): void {
   const remote = configCommand
     .command('remote')
@@ -383,6 +394,7 @@ export function registerRemoteCommands(configCommand: Command): void {
     .option('--password', t('commands.config.remote.enable.optionPassword'))
     .option('--api-url <url>', t('commands.config.remote.enable.optionApiUrl'))
     .option('--force', t('commands.config.remote.enable.optionForce'))
+    .option('--config-id <id>', t('commands.config.remote.enable.optionConfigId'))
     .action(async (options) => {
       try {
         const configName = configService.getEffectiveConfigName();
@@ -409,7 +421,7 @@ export function registerRemoteCommands(configCommand: Command): void {
         }
 
         const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
-        const opts = { force: Boolean(options.force) };
+        const opts = enableOptions(options);
 
         if (options.password) {
           const { enablePassword } = await import('./config-remote-password.js');

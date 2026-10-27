@@ -30,7 +30,7 @@ import {
   type RenetAccess,
   readSSHKey,
 } from '../services/renet/renet-execution.js';
-import { ValidationError } from '../utils/errors.js';
+import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -139,7 +139,34 @@ export async function executeSubscriptionStatus(): Promise<void> {
   if (!status) {
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
-  outputRemoteStatus(status, await readConfigRepoGuids());
+  const configGuids = await readConfigRepoGuids();
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(subscriptionStatusData(status, configGuids), format);
+    return;
+  }
+  outputRemoteStatus(status, configGuids);
+}
+
+/** The structured form of the account view, for `-o json|yaml|csv`: the same facts the table prints. */
+function subscriptionStatusData(
+  status: NonNullable<Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>>,
+  configGuids?: Set<string>
+): Record<string, unknown> {
+  const recent = status.repoLicenses.recent;
+  return {
+    organization: status.orgName ?? null,
+    team: status.teamName ?? null,
+    plan: status.planCode,
+    status: status.status,
+    machineSlots: status.machineSlots,
+    repoLicenseIssuances: status.repoLicenseIssuances,
+    repoLicenses:
+      recent && configGuids
+        ? { ...splitRepoLicensesByConfig(recent, configGuids), scope: 'config' }
+        : { ...status.repoLicenses, scope: 'account' },
+    overLimitCount: status.machineSlots.machines.filter((m) => m.overLimit).length,
+  };
 }
 
 /** The repository GUIDs this config holds, or undefined when the config cannot be read. */

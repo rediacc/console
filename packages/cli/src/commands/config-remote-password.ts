@@ -86,8 +86,11 @@ function resolveConfigPassword(): Promise<string> {
  * stored here: a first enable (`enablePassword`) and a re-enrollment
  * (config-remote-reenroll.ts) both store the result and prove it with a pull.
  */
-export async function passwordCredentials(apiUrl: string): Promise<DeviceCredentials> {
-  // 1. Ask the server to hand back the pre-provisioned password slot. userId is resolved server-side from the token creator, so the body is empty. An api token with the config:enroll scope authenticates the call.
+export async function passwordCredentials(
+  apiUrl: string,
+  configId?: string
+): Promise<DeviceCredentials> {
+  // 1. Ask the server to hand back the pre-provisioned password slot. userId is resolved server-side from the token creator; the body carries only the chosen configId (`--config-id`), which scopes the match when the token reads several configs. An api token with the config:enroll scope authenticates the call.
   let enroll: PasswordEnrollResponse;
   try {
     enroll = await accountServerFetch<PasswordEnrollResponse>(
@@ -96,7 +99,7 @@ export async function passwordCredentials(apiUrl: string): Promise<DeviceCredent
         method: 'POST',
         serverUrl: apiUrl,
         token: process.env.REDIACC_TOKEN,
-        body: {},
+        body: configId ? { configId } : {},
       }
     );
   } catch (error) {
@@ -146,9 +149,9 @@ export async function passwordFailure(error: unknown): Promise<unknown> {
 export async function enablePassword(
   apiUrl: string,
   configName: string,
-  opts: { force?: boolean } = {}
+  opts: { force?: boolean; configId?: string } = {}
 ): Promise<void> {
-  const credentials = await passwordCredentials(apiUrl);
+  const credentials = await passwordCredentials(apiUrl, opts.configId);
   try {
     await applyHandoff(credentials, configName, opts);
   } catch (error) {

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1937,
-    "sourceCommit": "f8a81c2fafef9a6e5ca0aadd1705c8cd6e0d5be3"
+    "keyCount": 1943,
+    "sourceCommit": "2c3324a444d393350f52f65ea92ea67cd5383574"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -372,14 +372,20 @@
     "commands.config.remote.disable.success": "cdf41581",
     "commands.config.remote.enable.alreadyEnabled": "e44b1890",
     "commands.config.remote.enable.approveAs": "4b189fde",
+    "commands.config.remote.enable.attachEntry": "a7d87183",
+    "commands.config.remote.enable.attachNew": "2979832b",
+    "commands.config.remote.enable.attachPrompt": "b05b9279",
     "commands.config.remote.enable.cancelled": "5348e55f",
+    "commands.config.remote.enable.configIdNotFound": "ef9c7d52",
     "commands.config.remote.enable.description": "26d99cec",
     "commands.config.remote.enable.expired": "04d8205a",
     "commands.config.remote.enable.handoffNotForThisRun": "3a6cc913",
     "commands.config.remote.enable.handoffUnreadable": "04e3d612",
+    "commands.config.remote.enable.listFailed": "7871bec0",
     "commands.config.remote.enable.loginRequired": "86b80da8",
     "commands.config.remote.enable.openRelay": "188e378a",
     "commands.config.remote.enable.optionApiUrl": "a3435115",
+    "commands.config.remote.enable.optionConfigId": "4f321636",
     "commands.config.remote.enable.optionForce": "6c3cebd2",
     "commands.config.remote.enable.optionPassword": "16b61ac5",
     "commands.config.remote.enable.overwriteAborted": "abfd52db",

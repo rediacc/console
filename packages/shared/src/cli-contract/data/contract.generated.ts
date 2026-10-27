@@ -3515,6 +3515,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.config.remote.enable.optionForce",
           "label": "Replace differing local content with the server copy without confirmation"
+        },
+        {
+          "flags": "--config-id <id>",
+          "long": "config-id",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.enable.optionConfigId",
+          "label": "Attach to this existing config of the store instead of creating a new entry"
         }
       ],
       "positionals": [],

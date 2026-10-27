@@ -9,6 +9,7 @@ vi.mock('../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
+const mockPrint = vi.hoisted(() => vi.fn());
 const infos = vi.hoisted(() => [] as string[]);
 const warns = vi.hoisted(() => [] as string[]);
 vi.mock('../../services/core/output.js', () => ({
@@ -16,7 +17,7 @@ vi.mock('../../services/core/output.js', () => ({
     info: (m: string) => infos.push(m),
     warn: (m: string) => warns.push(m),
     success: vi.fn(),
-    print: vi.fn(),
+    print: mockPrint,
   },
 }));
 
@@ -40,6 +41,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
 const mockFetch = vi.hoisted(() => vi.fn());
 vi.mock('../../services/account/account-client.js', () => ({ accountServerFetch: mockFetch }));
 
+import { setOutputFormat } from '../../utils/errors.js';
 import { settleRepoLicense } from '../repo-delete-settle.js';
 import { executeSubscriptionStatus, splitRepoLicensesByConfig } from '../subscription-actions.js';
 
@@ -95,6 +97,42 @@ describe('subscription status reconcile view', () => {
     expect(out).toContain('"totalTrackedRepos":2');
     expect(out).toContain('remoteRepoLicensesNotInConfig:{"count":2}');
     expect(out).not.toContain('commands.subscription.status.remoteRepoLicenses:');
+  });
+
+  it('emits structured data through outputService.print under -o json, with no info lines', async () => {
+    mockReport.mockResolvedValue({
+      orgName: 'Acme',
+      planCode: 'ENTERPRISE',
+      status: 'active',
+      machineSlots: { active: 1, max: 2, machines: [{ machineId: 'm1', overLimit: true }] },
+      repoLicenseIssuances: { used: 0, limit: 10 },
+      repoLicenses: {
+        totalTrackedRepos: 4,
+        validCount: 2,
+        refreshRecommendedCount: 1,
+        hardExpiredCount: 1,
+        recent,
+      },
+    });
+    mockListRepos.mockResolvedValue([{ name: 'x', config: { repositoryGuid: 'a' } }]);
+    mockPrint.mockClear();
+    setOutputFormat('json');
+    try {
+      await executeSubscriptionStatus();
+    } finally {
+      setOutputFormat('table');
+    }
+    expect(infos).toEqual([]);
+    expect(mockPrint).toHaveBeenCalledTimes(1);
+    const [data, format] = mockPrint.mock.calls[0] as [Record<string, unknown>, string];
+    expect(format).toBe('json');
+    expect(data).toMatchObject({
+      organization: 'Acme',
+      plan: 'ENTERPRISE',
+      status: 'active',
+      overLimitCount: 1,
+      repoLicenses: { totalTrackedRepos: 1, notInConfigCount: 3, scope: 'config' },
+    });
   });
 
   it('falls back to the server totals when the server sends no per-repo list', async () => {

@@ -92,6 +92,14 @@ export interface PushResult {
   version: number;
 }
 
+/** One entry of the store's config list. */
+export interface RemoteConfigEntry {
+  configId: string;
+  version: number;
+  lastModified: string;
+  teamId?: string | null;
+}
+
 /** One archived version of a config, as `GET /configs/:id/versions` lists it. */
 export interface RemoteVersionInfo {
   version: number;
@@ -269,6 +277,21 @@ export class RemoteConfigAdapter {
         archivedAt: createdAt,
         sdkEpoch,
       }));
+    });
+  }
+
+  /**
+   * The configs of this store visible to this device (GET /configs): what `config remote enable`
+   * offers to attach to. Needs no configId, so a pointer that has not chosen one can call it.
+   */
+  listConfigs(): Promise<RemoteConfigEntry[]> {
+    return this.tokenStorage.withLease(this.configName, async (lease) => {
+      this.requireToken(lease);
+      const listed = await this.fetch<{ configs?: RemoteConfigEntry[] }>(
+        lease,
+        '/account/api/v1/configs'
+      );
+      return listed.data.configs ?? [];
     });
   }
 

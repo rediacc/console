@@ -229,6 +229,20 @@ describe('config remote enable --password', () => {
     mockConfigFileStorage.getConfigPath.mockReturnValue(`/tmp/${CONFIG_NAME}.json`);
   });
 
+  it('sends --config-id to password-enroll so the server scopes the match', async () => {
+    const f = await provision(PASSWORD);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+
+    await enablePassword(API_URL, CONFIG_NAME, { configId: 'cfg-chosen' }).catch(() => undefined);
+
+    expect(mockAccountServerFetch).toHaveBeenCalledWith(
+      '/account/api/v1/configs/password-enroll',
+      expect.objectContaining({ method: 'POST', body: { configId: 'cfg-chosen' } })
+    );
+  });
+
   it('unlocks a pre-provisioned slot end to end (derive → wrap → enroll → probe unwrap)', async () => {
     const f = await provision(PASSWORD);
     mockAccountServerFetch.mockResolvedValue(f.enroll);

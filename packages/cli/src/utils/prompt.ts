@@ -63,3 +63,17 @@ export async function askInput(message: string, pattern: RegExp): Promise<string
   ]);
   return String(answer).trim();
 }
+
+/**
+ * Pick one of `choices` from a list. Renders on stderr, so `--output json` stdout stays clean.
+ * Returns the chosen `value`.
+ */
+export async function askChoice<V extends string>(
+  message: string,
+  choices: { name: string; value: V }[]
+): Promise<V> {
+  requireInteractive('Selection');
+  const prompt = await getPrompt({ output: process.stderr });
+  const { answer } = await prompt([{ type: 'list', name: 'answer', message, choices }]);
+  return answer as V;
+}
