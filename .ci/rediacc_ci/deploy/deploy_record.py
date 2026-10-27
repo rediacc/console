@@ -2,6 +2,7 @@
 """The deploy record of one target's account-plus-proxy release, and the steps that read it (agent/plans/PLAN-proxy-cd-six-targets.md, Design item 9, box D2).
 
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record before    --target T --region R --version V --out BEFORE.json
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record before    --target T --region R --account-only --out BEFORE.json
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record bootstrap --before BEFORE.json --record PROXY-BOOTSTRAP.json
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record rollback  --before BEFORE.json
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_record after     --before BEFORE.json --proxy-record PROXY.json --manifest workers/proxy/stage/manifest.json
@@ -16,6 +17,8 @@ BEFORE, TAKEN BEFORE THE MIGRATIONS. `deploy_account` applies the D1 migrations 
   - the release version the proxy last passed its smoke on, from the pointer `executor-deployments/<target>-<region>.json` in the releases bucket (written by `after`), which is what `rollback` redeploys;
   - the executor manifest sha256s of `executor/v<V>/manifest.json`, the bytes this deploy will build from.
 Every one of those is either a value or a stated absence. A lookup that FAILED (wrangler errored without saying the Worker does not exist, the bookmark did not parse, R2 answered anything but NoSuchKey, the version is not staged) is unknown, and unknown exits 1 before anything is deployed. `before` also appends `proxy_exists=true|false` to `$GITHUB_OUTPUT`, which is the bootstrap step's condition.
+
+ACCOUNT ONLY (`before --account-only`). An account deploy that touches no proxy (`deploy_account` alone) needs the account version and the D1 bookmark, not the executor manifest, so this form reads neither the proxy nor R2. Its record carries `account_only: true`, the account and D1 handles and the rollback steps `3_account` and `4_d1`; `rollback` prints those two and runs nothing, and `bootstrap` and `after` refuse it.
 
 BOOTSTRAP (U1). An account config binds EXECUTOR to its own target's proxy Worker, and wrangler refuses to deploy a Worker whose `[[services]]` names a Worker that does not exist. The first deploy of a target therefore deploys the proxy first, against the account Worker that is live before this release. That Worker may not export ExecutorIssuer yet, so the proxy's `/v1/ready` smoke can fail on bootstrap: `bootstrap` accepts a non-zero `deploy_proxy` exit only when its record names a deployed version id (the Worker exists, which is all the account deploy needs), and refuses otherwise. The real deploy and smoke follow after the account deploy.
 
@@ -464,6 +467,46 @@ def manifest_sha256s(manifest: dict, version: str) -> dict[str, str]:
 # ---- before -----------------------------------------------------------------
 
 
+def take_account_before(repo_root: pathlib.Path, target: str, region: str) -> dict:
+    """The ACCOUNT-ONLY before record (`before --account-only`): the account Worker's version, the D1 bookmark and their two rollback commands, for an account deploy that touches no proxy, so no executor manifest is read. Raises RecordError on any unknown, as `take_before` does."""
+    check_target(target, region)
+    account_dir = repo_root.joinpath(*ACCOUNT_SUBDIR)
+    acfg = account_config(target, region)
+    adoc = read_toml(account_dir / acfg)
+    account = worker_name(adoc, account_dir / acfg)
+    database = database_name(adoc, account_dir / acfg)
+    _, account_version = worker_version(account_dir, acfg, account)
+    bookmark = d1_bookmark(account_dir, database, acfg)
+    return {
+        "schema": SCHEMA,
+        "phase": "before",
+        "account_only": True,
+        "taken_at": now(),
+        "target": target,
+        "region": region,
+        "version": None,
+        "account": {
+            "worker": account,
+            "config": "%s/%s" % (ACCOUNT_REL, acfg),
+            "version_before": account_version,
+        },
+        "d1": {"database": database, "bookmark": bookmark},
+        "rollback": {
+            "3_account": worker_rollback_command(account_version, ACCOUNT_REL, acfg),
+            "4_d1": restore_command(database, bookmark, acfg),
+        },
+    }
+
+
+def refuse_account_only(before: dict, verb: str) -> None:
+    """`bootstrap` and `after` need the proxy half an account-only record does not carry."""
+    if before.get("account_only"):
+        raise RecordError(
+            "the before record is account-only (taken with --account-only): it carries no proxy or executor handle, so %s cannot run from it"
+            % verb
+        )
+
+
 def take_before(repo_root: pathlib.Path, target: str, region: str, version: str) -> dict:
     """The record taken before anything is deployed. Raises RecordError on any unknown."""
     check_target(target, region)
@@ -595,6 +638,23 @@ def github_output(pairs: dict[str, str]) -> None:
 
 
 def cmd_before(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
+    if args.account_only:
+        record = take_account_before(repo_root, args.target, args.region)
+        write_json(pathlib.Path(args.out), record)
+        log.info(
+            "Before (account only): account %s at %s; D1 %s bookmark %s."
+            % (
+                record["account"]["worker"],
+                record["account"]["version_before"] or "(never deployed)",
+                record["d1"]["database"],
+                record["d1"]["bookmark"],
+            )
+        )
+        print("  roll back the Worker: %s" % record["rollback"]["3_account"])
+        print("  restore D1: %s" % record["rollback"]["4_d1"])
+        return 0
+    if not args.version:
+        raise RecordError("--version is required unless --account-only")
     record = take_before(repo_root, args.target, args.region, args.version)
     write_json(pathlib.Path(args.out), record)
     exists = "true" if record["proxy"]["existed"] else "false"
@@ -635,6 +695,7 @@ def _run_child(argv: list[str]) -> int:
 def cmd_bootstrap(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     del repo_root
     before = read_json(pathlib.Path(args.before), "the before record")
+    refuse_account_only(before, "bootstrap")
     if before["proxy"]["existed"]:
         log.error(
             "bootstrap refused: the before record says %s already exists; the regular proxy deploy covers it"
@@ -681,6 +742,12 @@ def cmd_bootstrap(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
 
 def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     before = read_json(pathlib.Path(args.before), "the before record")
+    if before.get("account_only"):
+        # No executor or proxy was touched: only the two human-run commands remain, printed as step 3 always is.
+        log.step("Rollback (account only): nothing is run; the account and D1 commands follow.")
+        print("  roll back the Worker: %s" % before["rollback"]["3_account"])
+        print("  restore D1: %s" % before["rollback"]["4_d1"])
+        return 0
     target, region = before["target"], before["region"]
     failures = []
 
@@ -838,6 +905,7 @@ def summary_markdown(record: dict) -> str:
 
 def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     before = read_json(pathlib.Path(args.before), "the before record")
+    refuse_account_only(before, "after")
     proxy_path = pathlib.Path(args.proxy_record)
     proxy_record = read_json(proxy_path, "the proxy record") if proxy_path.is_file() else None
     manifest_path = pathlib.Path(args.manifest)
@@ -948,8 +1016,13 @@ def _parser() -> argparse.ArgumentParser:
     be = sub.add_parser("before", help="the record taken before the migrations")
     be.add_argument("--target", required=True)
     be.add_argument("--region", required=True)
-    be.add_argument("--version", required=True)
+    be.add_argument("--version", default="", help="required unless --account-only")
     be.add_argument("--out", required=True)
+    be.add_argument(
+        "--account-only",
+        action="store_true",
+        help="record only the account version, the D1 bookmark and their rollback commands; no executor manifest is read",
+    )
     bo = sub.add_parser("bootstrap", help="deploy a proxy Worker that does not exist yet")
     bo.add_argument("--before", required=True)
     bo.add_argument("--record", required=True)

@@ -498,7 +498,11 @@ def test_the_first_of_two_database_blocks_wins(tmp_path: pathlib.Path) -> None:
     assert old.returncode == 0, old.stderr
     assert "apply\tfirst-db\t--remote" in old_calls
     assert "second-db" not in old_calls
-    _assert_agree(old, new, "two-blocks", old_calls, new_calls)
+    # THE SERVICES PREFLIGHT DIVERGES HERE ON PURPOSE: a duplicate key is not TOML, so `service_bindings_audit` gives no verdict (rc 77) and the port refuses before migrating, where the twin migrated `first-db`.
+    assert new.returncode == 1
+    assert "npx" not in new_calls
+    assert "cannot read the Worker configs" in new.stderr
+    assert "no migration was applied" in new.stderr
 
 
 def test_a_tab_indented_unspaced_assignment_still_parses(tmp_path: pathlib.Path) -> None:
@@ -558,3 +562,71 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.deploy_account"
     assert port.__name__ == port.SELF
+
+
+# --------------------------------------------------------------------------- The services preflight (port only: the twin had none) ---------------------------------------------------------------------------
+
+SERVICES_TOML = (
+    'name = "edge-rediacc-account-eu"\n'
+    + FIXTURE_TOML
+    + '\n[[services]]\nbinding = "EXECUTOR"\nservice = "edge-rediacc-proxy-eu"\n'
+)
+
+# The Cloudflare Workers listing `service_bindings_audit` reads, answered from FAKE_CF_WORKERS (comma list); FAKE_CF_FAIL makes the API refuse. It logs the URL, never a header.
+FAKE_CURL = """#!/usr/bin/python3
+import json
+import os
+import sys
+
+with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
+    fh.write("curl\\t" + sys.argv[-1] + "\\n")
+if os.environ.get("FAKE_CF_FAIL"):
+    sys.stdout.write(json.dumps({"success": False, "result": []}))
+    sys.exit(0)
+names = [n for n in os.environ.get("FAKE_CF_WORKERS", "").split(",") if n]
+sys.stdout.write(json.dumps({"success": True, "result": [{"id": n} for n in names]}))
+"""
+
+
+def _run_with_curl(tmp_path: pathlib.Path, root: pathlib.Path, **extra: str):
+    curl = tmp_path / "new-bin" / "curl"
+    curl.parent.mkdir(parents=True, exist_ok=True)
+    curl.write_text(FAKE_CURL, encoding="utf-8")
+    curl.chmod(0o755)
+    return _run_live(
+        PORT, tmp_path, root, ("--region", "eu", "--target", "edge"), with_wrangler=True, **extra
+    )
+
+
+def test_a_missing_service_worker_refuses_before_any_migration(tmp_path: pathlib.Path) -> None:
+    """The 2026-10-27 eu edge run: the twin applied 0060-0066, then wrangler refused the deploy with code 10143 because EXECUTOR named a proxy Worker that did not exist. The preflight refuses first, and no migration runs."""
+    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
+    new, calls = _run_with_curl(tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu")
+    assert new.returncode == 1, new.stderr
+    assert "curl\thttps://api.cloudflare.com/client/v4/accounts/acct/workers/scripts" in calls
+    assert "npx" not in calls, "wrangler ran before the refusal"
+    assert "names Worker edge-rediacc-proxy-eu, which does not exist" in new.stderr
+    assert "deploy edge-rediacc-proxy-eu first" in new.stderr
+    assert "no migration was applied" in new.stderr
+    assert "Applying migrations" not in new.stderr
+
+
+def test_an_audit_with_no_verdict_refuses_too(tmp_path: pathlib.Path) -> None:
+    """rc 77: an account listing that answers nothing confirms nothing, so it refuses as a missing Worker does."""
+    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
+    new, calls = _run_with_curl(tmp_path, root, FAKE_CF_FAIL="1")
+    assert new.returncode == 1
+    assert "npx" not in calls
+    assert "gave no verdict for workers/account/wrangler.edge-eu.toml" in new.stderr
+
+
+def test_an_existing_service_worker_lets_the_deploy_run(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
+    new, calls = _run_with_curl(
+        tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu,edge-rediacc-proxy-eu"
+    )
+    assert new.returncode == 0, new.stderr
+    order = [line.split("\t")[0:3] for line in calls.splitlines() if not line.startswith("  ")]
+    assert [o[0] for o in order] == ["curl", "npx", "npx"]
+    assert order[1][1:] == ["wrangler", "d1"]
+    assert order[2][1:] == ["wrangler", "deploy"]

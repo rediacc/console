@@ -341,6 +341,107 @@ def test_before_refuses_every_unknown_and_writes_nothing(world, monkeypatch, cas
     assert not (world.tmp / "github_output").exists()
 
 
+# ---- before --account-only ---------------------------------------------------
+
+
+def run_account_before(world: World) -> int:
+    return dr.main(
+        [
+            "before",
+            "--target",
+            "edge",
+            "--region",
+            "eu",
+            "--account-only",
+            "--out",
+            str(world.before()),
+        ]
+    )
+
+
+def test_account_only_before_needs_no_staged_executor_and_no_proxy(world, capsys):
+    """The 2026-10-27 eu edge deploy: no executor/v<V>/ was staged anywhere, and the account-only deploy still needs its bookmark first."""
+    (world.bucket / "executor" / ("v%s" % VERSION) / "manifest.json").unlink()
+    world.set(account=ACCOUNT_OLD, proxy=None)
+    assert run_account_before(world) == 0
+    rec = json.loads(world.before().read_text())
+    assert rec["account_only"] is True
+    assert rec["version"] is None
+    assert rec["account"] == {
+        "worker": "edge-rediacc-account-eu",
+        "config": "workers/account/wrangler.edge-eu.toml",
+        "version_before": ACCOUNT_OLD,
+    }
+    assert rec["d1"] == {"database": "edge-account-db-eu", "bookmark": BOOKMARK}
+    assert rec["rollback"] == {
+        "3_account": "npx wrangler rollback %s --config workers/account/wrangler.edge-eu.toml"
+        % ACCOUNT_OLD,
+        "4_d1": "npx wrangler d1 time-travel restore edge-account-db-eu --bookmark=%s --config workers/account/wrangler.edge-eu.toml"
+        % BOOKMARK,
+    }
+    assert "proxy" not in rec
+    assert "executor_manifest" not in rec
+    seen = calls(world.log)
+    assert not [c for c in seen if c["argv"][0] == "aws"], "R2 is not read"
+    assert not [c for c in seen if c["cwd"] == "proxy"], "the proxy Worker is not looked up"
+    out = capsys.readouterr().out
+    assert "restore D1: npx wrangler d1 time-travel restore edge-account-db-eu" in out
+
+
+def test_account_only_before_still_refuses_a_missing_bookmark(world):
+    world.set(account=ACCOUNT_OLD, proxy=None, time_travel={"rc": 1, "err": "rate limited"})
+    assert run_account_before(world) == 1
+    assert not world.before().exists()
+
+
+def test_before_without_account_only_still_needs_a_version(world):
+    rc = dr.main(["before", "--target", "edge", "--region", "eu", "--out", str(world.before())])
+    assert rc == 1
+    assert not world.before().exists()
+
+
+def test_an_account_only_record_rolls_back_by_printing_and_refuses_bootstrap_and_after(
+    world, capsys
+):
+    assert run_account_before(world) == 0
+    capsys.readouterr()
+    before_calls = len(calls(world.log))
+    assert dr.main(["rollback", "--before", str(world.before())]) == 0
+    out = capsys.readouterr().out
+    assert "npx wrangler rollback %s" % ACCOUNT_OLD in out
+    assert "--bookmark=%s" % BOOKMARK in out
+    assert len(calls(world.log)) == before_calls, "an account-only rollback runs nothing"
+    assert (
+        dr.main(
+            [
+                "bootstrap",
+                "--before",
+                str(world.before()),
+                "--record",
+                str(world.dir / "proxy-bootstrap.json"),
+            ]
+        )
+        == 1
+    )
+    assert (
+        dr.main(
+            [
+                "after",
+                "--before",
+                str(world.before()),
+                "--proxy-record",
+                str(world.dir / "proxy.json"),
+                "--manifest",
+                str(world.dir / "manifest.json"),
+                "--out",
+                str(world.dir / "record.json"),
+            ]
+        )
+        == 1
+    )
+    assert not (world.dir / "record.json").exists()
+
+
 # ---- bootstrap --------------------------------------------------------------
 
 

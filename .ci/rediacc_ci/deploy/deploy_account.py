@@ -39,6 +39,8 @@ this campaign has ruled on before (`deploy/set_www_worker_secrets.py`, `deploy/w
      common.sh's path and line. The port prints `rediacc_ci.deploy.deploy_account: printf:
      ...` with the same status, following `autopilot/sweep_collect.py:284`.
 
+ONE DIVERGENCE IN BEHAVIOUR, ON PURPOSE: THE SERVICES PREFLIGHT. Before any migration, each `[[services]]` target of the config must be a Worker on the account, as `rediacc_ci.ops.service_bindings_audit` lists them; a MISSING target, or an audit with no verdict (rc 77, an unparseable config included), refuses with exit 1 and nothing is migrated (`check_services`). The twin migrated first and let `wrangler deploy` fail on code 10143 afterwards. A config with no `[[services]]` runs exactly as the twin did.
+
 `:?` IS AN UNSET-OR-EMPTY TEST, so `--region=` refuses exactly as an absent
 `--region` does. Driven; a port testing only for presence would resolve `wrangler..toml` and report it missing instead.
 
@@ -55,6 +57,7 @@ import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.ops import service_bindings_audit
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -148,6 +151,49 @@ def database_name(config: str) -> str:
     return out.decode("utf-8", "surrogateescape").rstrip("\n")
 
 
+class ServiceBindingError(Exception):
+    """A `[[services]]` target the preflight could not confirm exists. Nothing has been migrated when this is raised."""
+
+
+def check_services(
+    root: pathlib.Path,
+    config_rel: str,
+    env: typing.Mapping[str, str],
+    fetch: service_bindings_audit.Fetch = service_bindings_audit._get,
+) -> None:
+    """Refuse before any migration when a `[[services]]` target of the deployed config is not a Worker on the account, or when the audit gives no verdict (rc 77).
+
+    NOT PART OF THE TWIN. wrangler refuses a Worker whose service binding names a missing Worker only at `wrangler deploy`, after the migrations: the 2026-10-27 eu edge run applied 0060 through 0066 and then died on code 10143 for `edge-rediacc-proxy-eu`. The parsing and the account listing are `rediacc_ci.ops.service_bindings_audit`'s, filtered to this one config, so another config's missing target never blocks this deploy. A config with no bindings makes no API call, and the run is byte-identical to the twin's.
+    """
+    try:
+        _, bindings = service_bindings_audit.load_configs(root)
+    except service_bindings_audit.AuditError as exc:
+        raise ServiceBindingError(
+            "The service-bindings audit cannot read the Worker configs (%s); no migration was applied"
+            % exc
+        ) from None
+    if not any(b.config == config_rel for b in bindings):
+        return
+    report = service_bindings_audit.audit(root, env, fetch)
+    if report["rc"] == service_bindings_audit.EX_UNAVAILABLE:
+        raise ServiceBindingError(
+            "The service-bindings audit gave no verdict for %s (%s); no migration was applied"
+            % (config_rel, report["error"])
+        )
+    missing = [
+        r for r in report["bindings"] if r["config"] == config_rel and r["status"] == "MISSING"
+    ]
+    if missing:
+        raise ServiceBindingError(
+            "%s; no migration was applied"
+            % "; ".join(
+                "Service binding %s in %s names Worker %s, which does not exist: deploy %s first, then re-run this deploy"
+                % (r["binding"], config_rel, r["service"], r["service"])
+                for r in missing
+            )
+        )
+
+
 def migrations_argv(db_name: str, config: str) -> list[str]:
     """`npx wrangler d1 migrations apply "$DB_NAME" --remote --config "$CONFIG"` (:60)."""
     return ["npx", "wrangler", "d1", "migrations", "apply", db_name, "--remote", "--config", config]
@@ -210,6 +256,11 @@ def main(argv: list[str]) -> int:
         return 1
 
     log.step("Deploying account worker: %s %s (%s)" % (target, region, config))
+    try:
+        check_services(common.repo_root(), "/".join((*WORKER_SUBDIR, config)), os.environ)
+    except ServiceBindingError as exc:
+        log.error(str(exc))
+        return 1
     log.step("Applying migrations to %s..." % db_name)
     status = _run(migrations_argv(db_name, config))
     if status != 0:
