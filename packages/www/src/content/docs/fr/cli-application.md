@@ -7,7 +7,7 @@ order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "146aa0670c3cf42b"
+sourceHash: "f0cd20da158ab915"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -261,8 +261,13 @@ rdc config remote refresh
 {{t:cli.commands.config.remote.versions.description}}
 
 ```bash
-rdc config remote versions
+rdc config remote versions [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--explain` | {{t:cli.commands.config.remote.versions.optionExplain}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-config-remote-restore"></a>
 #### restore
@@ -2517,6 +2522,7 @@ rdc backup strategy remove <strategy> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--destination <name>` | {{t:cli.commands.backup.strategy.remove.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--unbind` | {{t:cli.commands.backup.strategy.remove.optionUnbind}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-backup-strategy-list"></a>
