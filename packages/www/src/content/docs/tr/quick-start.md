@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: tr
-sourceHash: "3c59bf71050fb556"
+sourceHash: "05e87ddd9ad815ff"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -75,7 +75,7 @@ rdc machine setup my-server  # renet kurulumu + veri deposu oluşturma
 
 ```bash
 rdc config show                            # Okunabilir özet
-cat ~/.config/rediacc/rediacc.json         # Ham JSON: makineler, repolar, depolar, SSH anahtarı
+cat ~/.config/rediacc/rediacc.json         # Ham JSON: makineler, repolar, yedekleme hedefleri, SSH anahtarı
 ```
 
 **Tek dosya = tek ortam.** Başka bir dizüstü bilgisayara kopyalayın ve hazırsınız.

@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: et
-sourceHash: "3c59bf71050fb556"
+sourceHash: "05e87ddd9ad815ff"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -75,7 +75,7 @@ rdc machine setup my-server  # Provisioonib renet + loob andmehoidla
 
 ```bash
 rdc config show                            # Inimloetav kokkuvõte
-cat ~/.config/rediacc/rediacc.json         # Toores JSON: masinad, hoidlad, mäluhoidlad, SSH-võti
+cat ~/.config/rediacc/rediacc.json         # Toores JSON: masinad, hoidlad, varunduse sihtkohad, SSH-võti
 ```
 
 **Üks fail = üks keskkond.** Kopeeri see teise sülearvutisse ja oled valmis.

@@ -73,7 +73,7 @@ rdc machine setup my-server  # Provisions renet + creates datastore
 
 ```bash
 rdc config show                            # Human-readable summary
-cat ~/.config/rediacc/rediacc.json         # Raw JSON: machines, repos, storages, SSH key
+cat ~/.config/rediacc/rediacc.json         # Raw JSON: machines, repos, backup destinations, SSH key
 ```
 
 **One file = one environment.** Copy it to another laptop and you're ready.

@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: ru
-sourceHash: "3c59bf71050fb556"
+sourceHash: "05e87ddd9ad815ff"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -75,7 +75,7 @@ rdc machine setup my-server  # Устанавливает renet + создаёт
 
 ```bash
 rdc config show                            # Удобочитаемая сводка
-cat ~/.config/rediacc/rediacc.json         # Исходный JSON: машины, репозитории, хранилища, SSH-ключ
+cat ~/.config/rediacc/rediacc.json         # Исходный JSON: машины, репозитории, места резервного копирования, SSH-ключ
 ```
 
 **Один файл = одно окружение.** Скопируйте его на другой ноутбук, и всё готово к работе.

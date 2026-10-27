@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: ar
-sourceHash: "3c59bf71050fb556"
+sourceHash: "05e87ddd9ad815ff"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -75,7 +75,7 @@ rdc machine setup my-server  # يجهّز renet + ينشئ مخزن البيان
 
 ```bash
 rdc config show                            # ملخص سهل القراءة
-cat ~/.config/rediacc/rediacc.json         # ملف JSON الخام: الأجهزة، المستودعات، التخزين، مفتاح SSH
+cat ~/.config/rediacc/rediacc.json         # ملف JSON الخام: الأجهزة، المستودعات، وجهات النسخ الاحتياطي، مفتاح SSH
 ```
 
 **ملف واحد = بيئة واحدة.** انسخه إلى جهاز محمول آخر وستكون جاهزًا.

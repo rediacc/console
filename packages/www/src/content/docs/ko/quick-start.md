@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: ko
-sourceHash: "3c59bf71050fb556"
+sourceHash: "05e87ddd9ad815ff"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -75,7 +75,7 @@ rdc machine setup my-server  # renet 프로비저닝 + 데이터스토어 생성
 
 ```bash
 rdc config show                            # 사람이 읽기 쉬운 요약
-cat ~/.config/rediacc/rediacc.json         # 원시 JSON: 머신, 리포지터리, 스토리지, SSH 키
+cat ~/.config/rediacc/rediacc.json         # 원시 JSON: 머신, 리포지터리, 백업 대상, SSH 키
 ```
 
 **파일 하나 = 환경 하나.** 다른 노트북에 복사하면 바로 사용할 수 있습니다.

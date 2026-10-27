@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: zh
-sourceHash: "3c59bf71050fb556"
+sourceHash: "05e87ddd9ad815ff"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -75,7 +75,7 @@ rdc machine setup my-server  # 配置 renet + 创建数据存储
 
 ```bash
 rdc config show                            # 可读的摘要信息
-cat ~/.config/rediacc/rediacc.json         # 原始 JSON：机器、仓库、存储、SSH 密钥
+cat ~/.config/rediacc/rediacc.json         # 原始 JSON：机器、仓库、备份目标、SSH 密钥
 ```
 
 **一个文件 = 一个环境。** 复制到另一台笔记本电脑即可使用。

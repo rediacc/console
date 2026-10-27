@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: ja
-sourceHash: "3c59bf71050fb556"
+sourceHash: "05e87ddd9ad815ff"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -75,7 +75,7 @@ rdc machine setup my-server  # renet のプロビジョニング + データス�
 
 ```bash
 rdc config show                            # 人間が読みやすい形式の概要
-cat ~/.config/rediacc/rediacc.json         # 生の JSON: マシン、リポジトリ、ストレージ、SSH キー
+cat ~/.config/rediacc/rediacc.json         # 生の JSON: マシン、リポジトリ、バックアップ先、SSH キー
 ```
 
 **1つのファイル = 1つの環境。** 別のラップトップにコピーすればすぐに使えます。

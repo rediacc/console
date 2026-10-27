@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: -1
 language: it
-sourceHash: "3c59bf71050fb556"
+sourceHash: "05e87ddd9ad815ff"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -75,7 +75,7 @@ rdc machine setup my-server  # Provvede renet + crea il datastore
 
 ```bash
 rdc config show                            # Riepilogo leggibile
-cat ~/.config/rediacc/rediacc.json         # JSON grezzo: macchine, repo, archiviazioni, chiave SSH
+cat ~/.config/rediacc/rediacc.json         # JSON grezzo: macchine, repo, destinazioni di backup, chiave SSH
 ```
 
 **Un file = un ambiente.** Copialo su un altro laptop e sei pronto.
