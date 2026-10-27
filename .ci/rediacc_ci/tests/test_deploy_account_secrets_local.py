@@ -107,6 +107,11 @@ def test_every_region_and_channel_has_a_profile_binding_its_suffix():
             other = "EDGE" if target == "stable" else "STABLE"
             assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_" + own in names
             assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_" + other not in names
+            # One config server key per region and channel: its own name and no other.
+            assert "ACCOUNT_CONFIG_SERVER_KEY_%s_%s" % (suffix, own) in names
+            assert [n for n in names if n.startswith("ACCOUNT_CONFIG_SERVER_KEY")] == [
+                "ACCOUNT_CONFIG_SERVER_KEY_%s_%s" % (suffix, own)
+            ]
 
 
 def test_profile_binds_every_variable_the_push_reads():
@@ -121,11 +126,12 @@ def test_profile_binds_every_variable_the_push_reads():
 
 
 @pytest.mark.parametrize("target", ["stable", "edge"])
-def test_dry_run_prints_the_29_names_and_no_value(target, capsys):
+def test_dry_run_prints_the_30_names_and_no_value(target, capsys):
     rc = local.run(["--region", "eu", "--target", target, "--dry-run"])
     out = capsys.readouterr().out
     assert rc == 0
-    assert "29 Worker key(s) pushed:" in out
+    assert "30 Worker key(s) pushed:" in out
+    assert "  ACCOUNT_CONFIG_SERVER_KEY\n" in out
     for key, _v, _s in pusher.KEYS:
         assert "  %s\n" % key in out
     assert "rediacc-backups-eu" in out

@@ -389,6 +389,7 @@
       "*name"
     ],
     ".ci/rediacc_ci/deploy/set_account_worker_secrets.py": [
+      "*key_name",
       "*name",
       "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE",
       "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE",
@@ -711,6 +712,7 @@
       "ACCOUNT_BACKUP_S3_BUCKET",
       "ACCOUNT_BACKUP_S3_ENDPOINT",
       "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+      "ACCOUNT_CONFIG_SERVER_KEY",
       "ACCOUNT_ED25519_PRIVATE_KEY",
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "ACCOUNT_JWT_SECRET",
@@ -750,6 +752,7 @@
       "PROVIDER"
     ],
     ".ci/rediacc_ci/ops/mirror_config_store.py": [
+      "*name",
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
       "CF_MANAGEMENT_TOKEN"
@@ -770,6 +773,9 @@
       "CLOUDFLARE_R2_ENDPOINT",
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
       "REDIACC_BWS_PROFILES"
+    ],
+    ".ci/rediacc_ci/ops/rewrap_config_server_key.py": [
+      "*key_name"
     ],
     ".ci/rediacc_ci/ops/scrub_sentinel.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
@@ -1781,6 +1787,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_ops_mirror_config_store.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_ops_rewrap_config_server_key.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py": [

@@ -291,3 +291,39 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
     assert events[-1] == "seed"
     assert events[-2] == "npx wrangler secret bulk"
     assert events.count("seed") == 1
+
+
+def _bench_env(monkeypatch, **overrides):
+    values = {
+        "ACCOUNT_ED25519_PRIVATE_KEY": "e1",
+        "ACCOUNT_ED25519_PUBLIC_KEY": "e2",
+        "ACCOUNT_X25519_PRIVATE_KEY": "x1",
+        "ACCOUNT_X25519_PUBLIC_KEY": "x2",
+        "ACCOUNT_SERVER_API_KEY": "ak",
+        "ACCOUNT_JWT_SECRET": "jw",
+        "ACCOUNT_CONFIG_SERVER_KEY": "ck",
+        "ROOT_EMAIL": "root@example.invalid",
+        "AWS_SES_ACCESS_KEY_ID": "sk",
+        "AWS_SES_SECRET_ACCESS_KEY": "ss",
+        "CLOUDFLARE_TURNSTILE_SECRET_KEY": "ts",
+        "OBS_OTLP_CREDENTIALS": '{"user":"u","pass":"p"}',
+        **overrides,
+    }
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setattr(deploy_bench, "_backup_values", lambda: ("https://e", "bk", "bs"))
+    monkeypatch.setattr(deploy_bench, "bench_bucket", lambda: "bucket")
+
+
+def test_the_payload_carries_the_config_server_key(monkeypatch):
+    """Layer 3 of the config store: the bench key reaches the Worker under its Worker name (PLAN-config-server-key K2)."""
+    _bench_env(monkeypatch)
+    payload = deploy_bench.secrets_payload()
+    assert payload["ACCOUNT_CONFIG_SERVER_KEY"] == "ck"
+    assert "CONFIG_SERVER_KEY" not in payload
+
+
+def test_an_empty_config_server_key_refuses_the_bench_push(monkeypatch):
+    _bench_env(monkeypatch, ACCOUNT_CONFIG_SERVER_KEY="")
+    with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_CONFIG_SERVER_KEY"):
+        deploy_bench.secrets_payload()
