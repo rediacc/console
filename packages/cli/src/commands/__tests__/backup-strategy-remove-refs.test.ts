@@ -70,3 +70,22 @@ describe('backup strategy remove references', () => {
     expect(m.update).not.toHaveBeenCalled();
   });
 });
+
+describe('strategy remove option conflicts', () => {
+  it('refuses --unbind together with --destination instead of ignoring --unbind', async () => {
+    const { Command } = await import('commander');
+    const { registerBackupStrategyCommands } = await import('../backup-strategy.js');
+    const backup = new Command('backup').exitOverride();
+    registerBackupStrategyCommands(backup);
+    for (const sub of backup.commands) sub.exitOverride();
+    const remove = backup.commands
+      .find((c) => c.name() === 'strategy')
+      ?.commands.find((c) => c.name() === 'remove');
+    remove?.exitOverride().configureOutput({ writeErr: () => {} });
+    await expect(
+      backup.parseAsync(['strategy', 'remove', 's1', '--destination', 'd1', '--unbind'], {
+        from: 'user',
+      })
+    ).rejects.toThrow(/cannot be used with/);
+  });
+});
