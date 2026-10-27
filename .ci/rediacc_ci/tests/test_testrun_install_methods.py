@@ -755,3 +755,26 @@ def test_the_container_timeout_fits_inside_every_callers_budget() -> None:
                 minutes.group(1),
             )
     assert jobs_checked, "no calling job declares a timeout: this check would be vacuous"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        r"C:\Users\O'Brien\AppData\Local\Temp\rediacc-sh-1-install-methods-x\binary-win-x64\rdc.exe",
+        r"C:\a''b\'lead\trail'\rdc.exe",
+    ],
+)
+def test_the_powershell_command_doubles_every_apostrophe(path: str) -> None:
+    """An apostrophe in the path is doubled inside the single-quoted literal, so the quoted body round-trips to the exact path and the quote count stays even."""
+    command = port.powershell_version_command(pathlib.PureWindowsPath(path))
+    assert command.startswith("& '") and command.endswith("' --version"), command
+    body = command[len("& '") : -len("' --version")]
+    assert "'" not in body.replace("''", ""), "an undoubled apostrophe would end the literal early: %s" % command
+    assert body.replace("''", "'") == path
+    assert command.count("'") % 2 == 0, command
+
+
+def test_the_powershell_command_leaves_a_plain_path_alone() -> None:
+    """The control in the other direction: a path with no apostrophe is quoted and otherwise unchanged."""
+    path = r"C:\Temp\binary-win-arm64\rdc.exe"
+    assert port.powershell_version_command(pathlib.PureWindowsPath(path)) == "& '%s' --version" % path

@@ -51,12 +51,25 @@ concurrency:
 # loudly, rather than silently inheriting a scope nobody audited it for.
 permissions: {}
 
+# WHICH CODE SEES A SECRET. The `if:` on every job pins the dispatched ref to
+# the default branch, so the workflow file and `github.sha` are main's tip.
+# `inputs.sha` is a separate, caller-chosen commit, so:
+#   * `admit` runs first, holds no secret, and refuses unless inputs.sha is an
+#     ancestor of (or equal to) main's tip. Every other job needs it.
+#   * The two jobs that hold the BWS and R2 credentials (fetch-renet, upload)
+#     never check out inputs.sha: their only checkout is main's tip, so every
+#     action they run (setup-aws, bws-secrets) and every file they read is
+#     main's. What crosses into them from the sha is DATA: the built artifacts.
+#   * build-sea and install do check out inputs.sha, because those are the
+#     bytes under release. They hold no secret: contents: read on the job token
+#     and nothing from Bitwarden.
+
 jobs:
-  fetch-renet:
-    name: Fetch staged renet
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    # Checkout plus R2 reads with the bws-secrets credentials. No GitHub API.
+  admit:
+    name: Admit the sha
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    # Checkout of main's history only. No secret, no API, no write.
     permissions:
       contents: read
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
@@ -69,9 +82,38 @@ jobs:
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version '$VERSION' is not X.Y.Z"; exit 1; }
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha '$SHA' is not a full 40-hex commit sha"; exit 1; }
 
+      # main's tip (github.sha, pinned by the `if:`), with every commit but no
+      # file contents: the ancestry walk needs commits only.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
+      # An unknown object makes merge-base exit 128 and a non-ancestor exit 1;
+      # both take the refusal, so only a commit in main's history passes.
+      - name: Refuse a sha that is not in the default branch's history
+        run: |
+          git merge-base --is-ancestor "$SHA" HEAD || { echo "::error::sha $SHA is not an ancestor of (or equal to) $GITHUB_REF tip $GITHUB_SHA; only merged code is built with release secrets"; exit 1; }
+          echo "admitted: $SHA is in the history of $GITHUB_REF at $GITHUB_SHA"
+
+  fetch-renet:
+    name: Fetch staged renet
+    needs: [admit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Checkout of main's tip plus R2 reads with the bws-secrets credentials.
+    # No GitHub API, and never the dispatched sha (see WHICH CODE SEES A SECRET).
+    permissions:
+      contents: read
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/profiler
         with:
@@ -231,10 +273,11 @@ jobs:
 
   upload:
     name: Upload to R2 staging
-    needs: [build-sea, install]
+    needs: [admit, build-sea, install]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Checkout plus R2 writes with the bws-secrets credentials. No GitHub API.
+    # Checkout of main's tip plus R2 writes with the bws-secrets credentials.
+    # No GitHub API, and never the dispatched sha (see WHICH CODE SEES A SECRET).
     permissions:
       contents: read
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
@@ -243,8 +286,6 @@ jobs:
       SHA: ${{ inputs.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.sha }}
 
       - uses: ./.github/actions/profiler
         with:
@@ -257,10 +298,15 @@ jobs:
           path: dist/cli/
           merge-multiple: true
 
-      - name: Refuse an incomplete set
+      # Each binary AND its `<binary>.sha256` (build_cli_executables writes
+      # the bare filename into it), and each checksum must verify, before
+      # anything is uploaded and so before .complete can exist.
+      - name: Refuse an incomplete or unverified set
+        working-directory: dist/cli
         run: |
           for f in rdc-mac-arm64 rdc-mac-x64 rdc-win-x64.exe rdc-win-arm64.exe; do
-            [[ -s "dist/cli/$f" ]] || { echo "::error::dist/cli/$f is missing; refusing to upload a partial set"; exit 1; }
+            [[ -s "$f" && -s "$f.sha256" ]] || { echo "::error::dist/cli/$f or dist/cli/$f.sha256 is missing; refusing to upload a partial set"; exit 1; }
+            sha256sum --check --strict "$f.sha256"
           done
 
       - name: Install the pinned aws CLI

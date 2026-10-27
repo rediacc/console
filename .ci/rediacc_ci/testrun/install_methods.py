@@ -150,6 +150,14 @@ def parse(argv: list[str]) -> Config:
     return cfg
 
 
+def powershell_version_command(binary: pathlib.PurePath) -> str:
+    """`& '<binary>' --version` for PowerShell, with the path single-quoted and each `'` in it doubled, PowerShell's only escape inside a single-quoted string.
+
+    The call operator and an absolute path, because the local binary sits under the mkdtemp test dir, which is absolute: the twin's `.\\<dir>\\rdc.exe` named a path PowerShell cannot resolve.
+    """
+    return "& '%s' --version" % str(binary).replace("'", "''")
+
+
 def verify_version(output: str, expected: str) -> bool:
     """There is ALWAYS a version, or this fails. Exact token match; never a silent pass.
 
@@ -421,8 +429,7 @@ class Runner:
                         "Local Windows binary copied but no powershell.exe to run it; SKIPPING the version assertion rather than reporting a pass."
                     )
                     return SKIPPED
-                # `&` with the absolute path: `download_dir` sits under the mkdtemp test dir, which is absolute, so the twin's `.\<dir>\rdc.exe` named a path PowerShell cannot resolve.
-                output = self.powershell(f"& '{target}' --version")
+                output = self.powershell(powershell_version_command(target))
             else:
                 output = self.run_binary(target, "--version")
             if not verify_version(output, cfg.version):
