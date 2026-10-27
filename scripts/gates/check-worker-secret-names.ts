@@ -430,6 +430,7 @@ if (problems.length > 0) {
 
 /** One surveyed Worker as `prune_worker_secrets --json` prints it. */
 interface LiveRow {
+  region?: string;
   worker: string;
   extras: string[];
 }
@@ -451,6 +452,25 @@ export function liveExtraLines(json: string): string[] | null {
   }
 }
 
+// The one spelling of the removal command; `<region>` is filled per region with extras.
+// The prune verb refuses --archive without an explicit --region (exit 2), and the unit test
+// `test_ops_prune_worker_secrets.py` reads this constant and runs it through the verb.
+const PRUNE_HINT =
+  'PYTHONPATH=.ci python3 -m rediacc_ci.ops.prune_worker_secrets --region <region> --archive';
+
+/** The distinct regions of the Workers that hold extras, in listing order. */
+export function liveExtraRegions(json: string): string[] {
+  try {
+    const doc = JSON.parse(json) as { workers?: LiveRow[] };
+    const regions = (doc.workers ?? [])
+      .filter((w) => Array.isArray(w.extras) && w.extras.length > 0 && w.region)
+      .map((w) => w.region as string);
+    return [...new Set(regions)];
+  } catch {
+    return [];
+  }
+}
+
 // Control: both outcomes and the unreadable case must come out distinct.
 {
   const withExtra = liveExtraLines(
@@ -469,6 +489,12 @@ export function liveExtraLines(json: string): string[] | null {
     );
     process.exit(1);
   }
+}
+
+function removeLines(json: string): string {
+  const regions = liveExtraRegions(json);
+  const names = regions.length > 0 ? regions : ['<region>'];
+  return names.map((r) => `    ${PRUNE_HINT.replace('<region>', r)}`).join('\n');
 }
 
 function reportLiveExtras(): void {
@@ -499,7 +525,7 @@ function reportLiveExtras(): void {
     console.log(
       `  Live extras (advisory, ${lines.length} Worker(s)): secrets the push no longer carries:\n` +
         lines.map((l) => `    ${l}`).join('\n') +
-        '\n  Remove with: python3 -m rediacc_ci.ops.prune_worker_secrets --delete'
+        `\n  Remove with (archives each value from bws first, then deletes):\n${removeLines(out)}`
     );
   }
 }
