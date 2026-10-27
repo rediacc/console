@@ -31,7 +31,7 @@ Design inputs, summarized below with file:line:
   - Owns: vm_check.py and test_drills_vm_check.py.
   - Accept: the pytest rc=0, and a receipt written with `--base v2.4.0` names the ref.
     (ticked) 2026-10-27T07:39:43Z by d778be9d: 0f5cfa3c9: vm_check.py --changed --base <ref>, trigger.base in the receipt; pytest test_drills_vm_check.py rc=0 (252) with the main plus --base v2.4.0 case
-- [ ] W1-C [writer] Order declaration.
+- [x] W1-C [writer] Order declaration.
   - Add `.ci/config/release-requires.json`. Its first entry is R1-config-envelope: since account aaf3c251, with cli_commits 2c3324a44 and 95bcc8dad.
   - Add `rediacc_ci.release.order.account_refusal(channel, account_pointer)`:
     - An entry is active when `since` is an ancestor of the account pointer.
@@ -40,6 +40,7 @@ Design inputs, summarized below with file:line:
   - Correct `ENVELOPE_MIN_RDC` at `private/account/src/routes/configs.ts:145`. It names the version that writes v3, not the first one that sends the header. Set it from the release that ships the header.
   - Owns: release-requires.json, order.py and test_release_order.py.
   - Accept: the pytest rc=0, and R1 is active for the current account pointer and reports `cli-behind` against v2.4.0.
+    (ticked) 2026-10-27T07:53:15Z by d778be9d: 524b36b9e: .ci/config/release-requires.json R1-config-envelope and rediacc_ci.release.order; pytest test_release_order.py rc=0 (14); live edge read rc=1 "cli-behind: R1-config-envelope needs 2c3324a44, 95bcc8dad in a released CLI on edge; published v2.4.0 lacks them"
 - [ ] W1-D [writer] Release-run admission at the git layer.
   - The entry writes `.ci/cache/release/run-<id>.json` holding `{pid, pid_start, cmdline, tree, version, channel, pushes:[{toplevel, remote_ref, oid}]}` and exports `REDIACC_RELEASE_RUN`.
   - The `githooks.py` pre_push (:318-329) admits a pushed line only when all three hold:
