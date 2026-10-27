@@ -28,11 +28,6 @@ export function setInvocationCommand(path: string): void {
   commandPath = path;
 }
 
-/** The command path of this invocation, or '' before the hook ran. */
-export function getInvocationCommand(): string {
-  return commandPath;
-}
-
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -83,7 +78,7 @@ export function isNoopPush(merged: RdcConfig, base: RdcConfig): boolean {
 }
 
 /** The pointers a push of `merged` over `base` changes, capped for one line. */
-export function describeChange(merged: RdcConfig, base: RdcConfig): string {
+function describeChange(merged: RdcConfig, base: RdcConfig): string {
   const pointers = changedPointers(projection(base), projection(merged));
   const shown = pointers.slice(0, MAX_POINTERS).join(', ');
   return pointers.length > MAX_POINTERS ? `${shown}, +${pointers.length - MAX_POINTERS}` : shown;

@@ -226,6 +226,10 @@
     "workers/proxy": {
       "project": [
         "src/**/*.ts"
+      ],
+      "ignoreDependencies": [
+        // BLOCKER: `cloudflare:workers` (the DurableObject base of src/capacity.ts) is a module the workerd runtime provides, not an npm package; knip reads the scheme as an unlisted dependency named `cloudflare`, and there is nothing to install
+        "cloudflare"
       ]
     },
     "workers/www": {
@@ -239,7 +243,9 @@
     },
     "private/account/e2e": {
       "entry": [
-        "tests/**/*.ts"
+        "tests/**/*.ts",
+        // Run BY PATH: `npx playwright test --config playwright.live.config.ts`; knip only follows imports.
+        "playwright.live.config.ts"
       ],
       "project": [
         "**/*.ts"

@@ -74,7 +74,7 @@ export function machineRemovePlacementError(
 }
 
 /** Repos whose datastore placement names a datastore currently attached to `machineName`. */
-export function reposOnAttachedDatastores(
+function reposOnAttachedDatastores(
   machineName: string,
   attachedTo: Record<string, { attachedTo?: string }>,
   repos: { name: string; config: RepositoryConfig }[]

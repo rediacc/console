@@ -1,7 +1,7 @@
 /**
  * `ExecutorCapacity`: the per-target coordinator that admits at most the cap of executor containers (agent/plans/PLAN-executor-durable-object-policy.md Design item 3).
  *
- * The `durable_object` scheduling policy does not support `max_instances`, so the cap moves into code. One instance per target (`idFromName(CAPACITY_NAME)`) holds one lease row per org. A lease expires on its own after LEASE_MS, so a crashed or redeployed OrgExecutor frees its slot with no cleanup path, and the alarm sweeps what nobody renewed.
+ * The `durable_object` scheduling policy does not support `max_instances`, so the cap moves into code. One instance per target (`idFromName('capacity:v1')`, the suffix versions the table shape) holds one lease row per org. A lease expires on its own after LEASE_MS, so a crashed or redeployed OrgExecutor frees its slot with no cleanup path, and the alarm sweeps what nobody renewed.
  *
  * Every decision runs on the synchronous SQLite API with no `await` between the read that counts the holders and the write that admits one, so concurrent `acquire` calls cannot interleave inside a decision and never admit more than the cap.
  */
@@ -14,8 +14,6 @@ export const HARD_CAP = 25;
 export const HARD_HEAVY_CAP = 5;
 /** A lease's life: OrgExecutor's `sleepAfter` of 120 s plus 60 s of grace for a renew in flight. */
 export const LEASE_MS = 180_000;
-/** The name of the one coordinator instance per target. The suffix versions the table shape. */
-export const CAPACITY_NAME = 'capacity:v1';
 
 /** The instance size class a lease is counted under. `heavy` leases also count against the heavy sub-cap. */
 export type ExecutorSize = 'light' | 'heavy';
@@ -46,13 +44,6 @@ export interface CapacityEnv {
 export function capFrom(value: string | undefined, hard: number): number {
   if (value === undefined || !/^\d+$/.test(value)) return hard;
   return Math.min(Number.parseInt(value, 10), hard);
-}
-
-/** The stub of the target's one coordinator instance, so every caller names the same instance. */
-export function capacityStub(
-  namespace: DurableObjectNamespace<ExecutorCapacity>
-): DurableObjectStub<ExecutorCapacity> {
-  return namespace.get(namespace.idFromName(CAPACITY_NAME));
 }
 
 function isSize(size: unknown): size is ExecutorSize {
