@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 45 | 0 | 6 | 6774 |
-| `agent/plans/PLAN-backup-program.md` | approved | 483 | 74 | 121 | 105554 |
+| `agent/plans/PLAN-backup-program.md` | approved | 483 | 74 | 121 | 105557 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
 | `agent/plans/PLAN-backup-toc-exact-opt-in.md` | proposed | 69 | 8 | 0 | 11399 |
@@ -568,7 +568,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 128 | 1 | 5 | 19743 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 199 | 4 | 15 | 50012 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
-| `agent/plans/PLAN-tested-on-bench.md` | approved | 300 | 19 | 0 | 38728 |
+| `agent/plans/PLAN-tested-on-bench.md` | approved | 300 | 19 | 0 | 38805 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
