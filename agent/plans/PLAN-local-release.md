@@ -19,12 +19,13 @@ Design inputs, summarized below with file:line:
 
 ### Wave 1 (disjoint, start now)
 
-- [ ] W1-A [writer] Receipt API.
+- [x] W1-A [writer] Receipt API.
   - Factor the verdict at `.claude/rediacc_hooks/guards/block_unverified_push.py:1678-1749` into a pure `receipt_refusal(root, tree, receipt) -> str | None`.
   - Drop the environment fail-opens: a missing `jq` allows at :1675, and a failed fetch allows at :850-855. Drop the event object too. `run()` calls the new function.
   - The reader tries the per-tree copy `.ci/cache/receipts/<headTree>.json` (`scripts/ci-runner/run.ts:3246-3250`) before the latest file.
   - Owns: block_unverified_push.py and test-block_unverified_push.py.
   - Accept: `python3 .claude/rediacc_hooks/run_tests.py -k unverified_push` rc=0 with the goldens unchanged, and `receipt_refusal` is None only on the push-green fixture.
+    (ticked) 2026-10-27T09:31:13Z by d778be9d: 163c32f9d, 5429d7175, 96b512e49: receipt_refusal and read_receipt in .claude/rediacc_hooks/guards/block_unverified_push.py; run_tests.py -k unverified_push rc=0 (1515, goldens unchanged)
 - [x] W1-B [writer] `vm:check --base <ref>`.
   - On `main`, `--changed` diffs against origin/main, which is HEAD, so it checks nothing and writes no receipt (`.ci/rediacc_ci/drills/vm_check.py:28`, `vm_check_trigger.py:275-310`).
   - Add `--base`, recorded in the receipt as `trigger.base`.
