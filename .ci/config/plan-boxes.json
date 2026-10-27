@@ -552,14 +552,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 5,
-      "open_sigs": [
-        "5491e758"
-      ],
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
       "done_sigs": [
         "3dcaeba4",
         "4f529c92",
+        "5491e758",
         "a3c03a4f",
         "aa8197f8",
         "c38ce2cd"

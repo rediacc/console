@@ -49,11 +49,12 @@ Design memo: Plan agent aecb122b, 2026-10-27, summarized in the boxes below.
 - [x] K5 [writer] Mirror alignment. The mirror runs before this plan (operator, 11:05Z). After K1, `mirror_config_store.py` refuses an untagged row or a kid that does not match the stable key, because its old CONFIG_SERVER_KEY pre-check goes blind once the key is in `KEYS`.
   - Accept: its pytest rc=0, with cases for an untagged row and a mismatched kid.
     (ticked) 2026-10-27T12:55:00Z by d778be9d: 1b76188e1: mirror_config_store refuses an untagged row or a foreign kid once both Workers hold ACCOUNT_CONFIG_SERVER_KEY; pytest rc=0
-- [ ] K6 [writer] Landing B, gated on K4's `--verify` rc=0 on all seven databases.
+- [x] K6 [writer] Landing B, gated on K4's `--verify` rc=0 on all seven databases.
   - Delete `legacy-server-key.ts` and the legacy branch.
   - Add `check_config_server_key_constant.py`, which confines the dev constant to `config-server-key.ts` under TEST_MODE.
   - Correct `DESIGN-CONFIG-STORAGE.md:989` and the layer-3 section.
   - Accept: the gate rc=0, the account vitest rc=0, and `grep -rn rediacc-config-server-dev-key private/account/src` returns only `config-server-key.ts`.
+    (ticked) 2026-10-27T18:22:52Z by d778be9d: commit:a9603a30d (account 35f8262) legacy-server-key.ts and the rewrap tool deleted; openOrgPassphrase refuses an untagged row; check:ci-config-server-key-constant rc=0 and wired; DESIGN-CONFIG-STORAGE.md corrected; account vitest and check:ci-account-server rc=0; grep finds the dev constant only in config-server-key.ts
 
 ## Order
 
