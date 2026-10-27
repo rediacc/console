@@ -129,7 +129,7 @@ Design inputs, summarized below with file:line:
   - Add a www record (the version id before and after, the `wrangler rollback` command and the smoke rc) to `deploy_www.py` and `deploy_edge.py`, and put the account smoke rc into the account record.
   - Owns: deploy_record.py, deploy_www.py, deploy_edge.py and test_deploy_*.py.
   - Accept: pytest rc=0, and a www record carries the version id, the rollback command and the smoke rc.
-- [ ] W2-E [writer] The tag module, `rediacc_ci.release.tag`.
+- [x] W2-E [writer] The tag module, `rediacc_ci.release.tag`.
   - Lift it from the inline bash at `cd-v2.yml:256-272`. It creates `v<V>` idempotently and refuses on an unknown `ls-remote` result.
   - Add the `release-local` bws profile to `.ci/config/secret-supply.json`. It binds:
     - `ACCOUNT_ED25519_PUBLIC_KEY`;
@@ -143,6 +143,7 @@ Design inputs, summarized below with file:line:
   - A GHCR token, and a GitHub token for the tag and the Release, are written into the store by the session through `bws_env store-from-env`.
   - Owns: tag.py, test_release_tag.py and the secret-supply profile.
   - Accept: pytest rc=0, and `npm run check:ci-secret-supply` rc=0.
+    (ticked) 2026-10-27T08:05:24Z by d778be9d: bc4b577c9: .ci/rediacc_ci/release/tag.py and the release-local profile in .ci/config/secret-supply.json; pytest test_release_tag.py rc=0 (7); npm run check:ci-secret-supply rc=0; AWS_SES_ACCESS_KEY_ID/SECRET exist only as regional pairs, left to W2-B
 
 ### Wave 3 (one clean break, after W2)
 
