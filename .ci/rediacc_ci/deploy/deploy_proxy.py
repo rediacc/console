@@ -209,8 +209,9 @@ def rollback_command(config: str, previous: str | None) -> str:
     """What reverts this deploy: the Worker's previous version, or nothing on a first deploy."""
     if not previous:
         return "none: no earlier deployment of this Worker exists"
-    return "cd %s && npx --no-install wrangler rollback %s --config %s" % (
+    return "cd %s && %s rollback %s --config %s" % (
         WORKER_REL,
+        " ".join(wrangler.ARGV),
         previous,
         config,
     )
