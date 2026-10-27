@@ -1,26 +1,25 @@
-## SESSION d778be9d 2026-10-27T10:41:45Z
+## SESSION d778be9d 2026-10-27T13:38:20Z
 
-# d778be9d STATE (2026-10-27T10:45Z), branch 1023-1, unpushed (about 840 commits; backup push overdue #9a72a504)
+# d778be9d STATE (2026-10-27T13:20Z), branch 1023-1, unpushed (~865 commits; backup push overdue)
 
 ## Big pieces
-- PLAN-local-release (13/16; open W3-B, L1, L2).
-- PLAN-backup-program (about 75 open, mostly VM, live and Q boxes).
-- The eu stable-to-edge config store mirror (#046d4339).
+- PLAN-config-server-key: K1, K2 and K5 done; K3 keys minted (a22b9b8a) but open until the post-deploy check; K4 reopened (362b9f21) for its live runs; K6 last.
+- PLAN-local-release: 13/16; L1 and L2 live.
+- PLAN-backup-program: about 75 open, mostly VM and live boxes.
 
-## Operator rulings today (ASKED)
-- 05:00Z: R1 clean break done (aaf3c251, c28723f6; portal and executor header 326bb806, 95bcc8da). Bench IPs expire after 7 days (d08c2787); ci:quick preflight auto-adds IPv4 and the IPv6 /64 (69ba2455). /pr-babysit allowed (carry 101b56da).
-- 06:37Z: local release when verification is green; PLAN-local-release promoted as entry 24.
-- 09:45Z: GPG-signed SHA256 manifest; session gh token; STABLE is CI/CD-only and ASKED; edge and bench via agent or CD; both edge paths kept (plan Rulings section).
-- 10:35Z: the mirror copies only the operator, password/recovery only; local config eu-edge.
+## Done today (operator ASKED)
+- R1 clean break, bench IP auto-refresh via the ci:quick preflight (IPv6 /64).
+- PLAN-local-release W1-W3. Rulings 09:45Z: stable is CI/CD-only and ASKED; edge and bench are free; both edge paths kept.
+- eu stable to eu-edge store mirror applied 12:14Z (bookmark 00000a1f; rollback .ci/cache/mirror-config-store/20261027T121422-c7b1e776/rollback.sh). The operator enrolled eu-edge, and config show decrypts.
+- CONFIG_SERVER_KEY: no on-premise config storage (refuse at boot); elite mints the key at install (6eacca42).
 
-## Delegated (live)
-- ab9569561cb8a8da7 #d2ff072e: W2-C guard update (stable ASKED everywhere, edge/bench free, ORDER 62/63/64, NEEDS_SCRIPT row). Accept: run_tests -k unasked_release/host_toolchain/vm_unverified/backup_unverified, plus dispatch/differential/wiring.
-- aac67a07a9faaf219 #226748db #9bb9bde0 #05b714ba: W3-B STEPS invariant, tag create/push split, vault entries, bash_env fix, review 7c25d047.* (high), assist R2 contract. Accept: check:ci-workflow-invariants, pytest, check:ci-secret-supply, release:local --dry-run.
-- aacb1b183fa5ca4a5 #046d4339: mirror_config_store M1-M5 offline. The lead then runs M6 (dry run) and M7 (apply, plus the eu-edge config).
+## Delegated
+- a9c9857f236753a34 #6c56b804: 15 review findings in /tmp/rf/key2.tsv (mirror_config_store, rewrap py and ts, config.service.ts, set_account_worker_secrets, elite credentials.sh and compose). Accept: their pytest, check:ci-account-server if config.service changes, tsc -p private/account/scripts, elite test-credentials.sh.
+- aa366be530fb4057c #b7d40433: 8 findings in /tmp/rf/misc2.tsv (block_unasked_release, test-block_unverified_push, bench_access, release/local.py). Accept: run_tests -k "unasked_release or unverified_push or host_toolchain", their pytest, release:local --dry-run.
 
 ## Next action
-1. Write the plan for security finding #caef1cc3: CONFIG_SERVER_KEY falls back to a public constant (config.service.ts:2929-2955). Start it now with a Plan agent; it needs to be settled before the mirror applies.
-2. As each report lands: spot-check, commit by path (gen-docs when hooks or workflows change), mark findings, tick boxes with the sha.
-3. Register every NEW env read in one pass with check_python_env_registry.py --write-baseline --allow-new.
-4. ci:quick on a still tree, then the backup push, then the PR with Operational-Reason, then babysit.
-5. Parked: #53b05748 (not before 2026-10-31T06:00Z, cron bbf56276); #44631d73 and #61315099 wait for L1.
+1. As each report lands: re-run its acceptance, commit by path (submodule first, then pointer; gen-docs when hooks or workflows change), then `--review-mark` each id from its /tmp/rf file with the fix sha.
+2. Run `python3 .claude/hooks/stop/wl_review.py --check`, and batch any new findings the same way.
+3. ci:quick on a still tree, then TURBO_PUSH_REASON='backup: ...' push of 1023-1 and its submodules, then the PR with Operational-Reason, then babysit.
+4. Key rollout: set each Worker's key with account_secrets_local before deploying (CD deploys before it sets secrets), deploy, then rewrap --apply/--verify per Worker (stable via CI/CD with an ASK). Then tick K3/K4, then K6.
+5. Parked: #53b05748 (not before 2026-10-31T06:00Z, cron bbf56276); #44631d73 and #61315099 wait for L1; #fc0490ad (mirror reseal step).
