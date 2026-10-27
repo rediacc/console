@@ -56,6 +56,9 @@
     ".ci/rediacc_ci/build/canonicalise_gpg_key.py": [
       "RELEASE_GPG_PASSPHRASE"
     ],
+    ".ci/rediacc_ci/build/extract_renet_from_image.py": [
+      "ACCOUNT_ED25519_PUBLIC_KEY"
+    ],
     ".ci/rediacc_ci/build/generate_cli_manifest.py": [
       "GITHUB_SHA",
       "RELEASES_BASE_URL"
@@ -348,6 +351,8 @@
       "REDIACC_SMOKE_RESOLVE_WINDOW_S"
     ],
     ".ci/rediacc_ci/deploy/deploy_record.py": [
+      "DEPLOY_RECORD_OUT",
+      "DEPLOY_RECORD_VERSION",
       "GITHUB_OUTPUT",
       "GITHUB_STEP_SUMMARY"
     ],
@@ -687,7 +692,8 @@
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
       "CF_MANAGEMENT_TOKEN",
-      "REDIACC_BWS_PROFILES"
+      "REDIACC_BWS_PROFILES",
+      "WSL_DISTRO_NAME"
     ],
     ".ci/rediacc_ci/ops/build_server.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY"
@@ -742,6 +748,11 @@
       "HOME",
       "NETWORK_CIDR",
       "PROVIDER"
+    ],
+    ".ci/rediacc_ci/ops/mirror_config_store.py": [
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
+      "CF_MANAGEMENT_TOKEN"
     ],
     ".ci/rediacc_ci/ops/prune_worker_secrets.py": [
       "CLOUDFLARE_ACCOUNT_ID",
@@ -1119,9 +1130,7 @@
     ".ci/rediacc_ci/release/advance_contract_floor.py": [
       "*name",
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
-      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
-      "GIT_BOT_EMAIL",
-      "GIT_BOT_NAME"
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
     ],
     ".ci/rediacc_ci/release/assert_artifact_version.py": [
       "*name"
@@ -1189,9 +1198,29 @@
       "GITHUB_OUTPUT",
       "GITHUB_REPOSITORY"
     ],
+    ".ci/rediacc_ci/release/local.py": [
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_ENDPOINT",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
+      "PATH",
+      "RELEASE_GPG_PASSPHRASE",
+      "RELEASE_GPG_PRIVATE_KEY"
+    ],
+    ".ci/rediacc_ci/release/local_gates.py": [
+      "GITHUB_REPOSITORY",
+      "REDIACC_TRANSCRIPT_PATH"
+    ],
     ".ci/rediacc_ci/release/mark_production.py": [
       "GITHUB_REPOSITORY",
       "VERSION"
+    ],
+    ".ci/rediacc_ci/release/order.py": [
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_ENDPOINT",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+    ],
+    ".ci/rediacc_ci/release/renet_key_gate.py": [
+      "ACCOUNT_ED25519_PUBLIC_KEY"
     ],
     ".ci/rediacc_ci/release/reprobe_r2_sentinel.py": [
       "*name"
@@ -1750,6 +1779,9 @@
     ".ci/rediacc_ci/tests/test_ops_executor_orgs.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_ops_mirror_config_store.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py": [
       "GOCACHE"
     ],
@@ -2284,9 +2316,17 @@
       "WHY_ON_EDIT_SIMILAR"
     ],
     ".claude/rediacc_hooks/git/githooks.py": [
+      "*rr.ENV",
       "BACKUP_CHECK_PUSH_REASON",
       "COMMIT_POLICY_OK",
       "GEN_DOCS_PRECOMMIT_VERBOSE"
+    ],
+    ".claude/rediacc_hooks/git/release_run.py": [
+      "PYTHONNOUSERSITE",
+      "PYTHONPATH",
+      "PYTHONPYCACHEPREFIX",
+      "PYTHONSAFEPATH",
+      "REDIACC_RELEASE_RUN"
     ],
     ".claude/rediacc_hooks/guards/block_host_toolchain_run.py": [
       "AWS_BIN"
