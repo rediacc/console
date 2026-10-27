@@ -3,8 +3,8 @@
 Status: approved -- operator answered the four questions 2026-10-27 (see Operator rulings); filed 2026-10-27 from the operator request of the same day ("For all the plans we need a rule on ci side that ticks 'tested on bench' rule ... Plus on hostinger maybe")
 Depends-On: no-dep -- builds on gates and verbs that already landed (check:ci-plan-boxes, check:ci-plan-implementation, worklist.py --plan-tick); no open plan blocks it
 Priority: P2 -- process rule; nothing is broken today, but live-only boxes currently live in carried reds (P-A1) with no typed evidence
-Concurrency: parallel -- V1, V2 and V3 own disjoint files; V4 follows V1; V5 follows V1 to V4; V6 (migration) and V7 (pilot) run last and alone
-Owns: .ci/config/live-proof.json, .ci/rediacc_ci/quality/live_proof.py, .ci/rediacc_ci/ops/live_proof.py, .ci/scripts/quality/check_plan_live_proof.py, .ci/rediacc_ci/tests/test_quality_live_proof.py, .ci/rediacc_ci/tests/test_ops_live_proof.py, .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py, .ci/rediacc_ci/ops/deploy_bench.py (the version capture only), .ci/rediacc_ci/tests/test_ops_deploy_bench.py, .claude/hooks/stop/wl_plandeps.py (the Live-Proof grammar only), .claude/hooks/stop/test-plandeps.py, .claude/hooks/stop/worklist.py (the --live-proof verb only), .claude/hooks/stop/worklist_messages.py, .claude/rediacc_hooks/guards/block_plan_without_depends.py, agent/ledgers/live-proof.jsonl, package.json (one script line), .ci/config/lane-durations.json (one entry), docs/agent-reference/plan-records.md, agent/plans/PLAN-*.md (V6 only: the Live-Proof header line and the LP boxes), .ci/config/plan-boxes.json
+Concurrency: parallel -- V1 first and alone. V2, V3 and V4 run in parallel after V1. V5 follows V1 and V4. V6 follows V3 and V5. V7 (migration) and V8 (pilot) run last and alone. V9 follows V6.
+Owns: .ci/config/proof-tiers.json, .ci/rediacc_ci/proof/**, .ci/rediacc_ci/drills/vm_check_trigger.py (moved to proof/surfaces.py), .ci/rediacc_ci/drills/vm_check_receipt.py (moved to proof/vm_tier.py), .ci/rediacc_ci/drills/vm_check.py (imports, go_buildinfo move, schema 3 writer only), .ci/rediacc_ci/drills/backup_check_trigger.py (the import path only), .ci/rediacc_ci/release/local_gates.py (the vm-check gate imports only), .claude/rediacc_hooks/guards/block_vm_unverified_push.py (module names, schema 3, mutants), .claude/rediacc_hooks/guards/test-block_vm_unverified_push.py, .claude/rediacc_hooks/guards/block_backup_unverified_push.py (the import path only), .ci/rediacc_ci/ops/live_proof.py, .ci/scripts/quality/check_plan_live_proof.py, .ci/rediacc_ci/tests/test_proof_surfaces.py, .ci/rediacc_ci/tests/test_proof_receipt.py, .ci/rediacc_ci/tests/test_proof_vm_tier.py, .ci/rediacc_ci/tests/test_proof_live_tier.py, .ci/rediacc_ci/tests/test_drills_vm_check_trigger.py (moved), .ci/rediacc_ci/tests/test_drills_vm_check_receipt.py (moved), .ci/rediacc_ci/tests/test_drills_vm_check.py, .ci/rediacc_ci/tests/test_drills_backup_check_trigger.py, .ci/rediacc_ci/tests/test_release_local_gates.py, .ci/rediacc_ci/tests/test_ops_live_proof.py, .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py, .ci/rediacc_ci/ops/deploy_bench.py (the version capture only), .ci/rediacc_ci/tests/test_ops_deploy_bench.py, .claude/hooks/stop/wl_plandeps.py (the Live-Proof grammar only), .claude/hooks/stop/test-plandeps.py, .claude/hooks/stop/worklist.py (the --live-proof verb only), .claude/hooks/stop/worklist_messages.py, .claude/rediacc_hooks/guards/block_plan_without_depends.py, .claude/rediacc_hooks/guards/test-block_plan_without_depends.py, agent/ledgers/live-proof.jsonl, package.json (one script line), .ci/config/lane-durations.json (the new and renamed entries), .ci/config/shards/quality-pytest.json (the renamed entries), CLAUDE.md (the vm:check module names only), .claude/agents/ops-vms.md, .claude/agents/e2e-local.md, docs/agent-reference/ci-gates.md (the vm:check module names only), docs/agent-reference/plan-records.md, agent/plans/PLAN-*.md (V7 only: the Live-Proof header line and the LP boxes), .ci/config/plan-boxes.json
 Live-Proof: none -- CI and agent tooling only; deploy_bench.py is deploy tooling, not a deployable surface
 Owner: d778be9d
 First-Seen: 2026-10-27
@@ -30,34 +30,40 @@ Worklist: pending -- filed at promotion
      "submodules":{"private/account":{"pointer":"<sha>","checkout":"<sha>","modified":false},"private/renet":{...}},
      "inputs":"<live-proof inputs digest, item 6>",
      "deploy":{"surface":"account|proxy|www|cli|renet","worker":"<name>|null","version_id":"<uuid>|<renet/cli version>",
-               "source":"bench-cache|r2:release-records/...|rdc:eu-edge","deployed_head":"<sha>","confirmed_live":true},
+               "source":"bench-cache|r2:release-records/...|rdc:eu-bench","deployed_head":"<sha>","confirmed_live":true},
      "check":{"id":"<registry id>","argv":["..."],"rc":0,"duration_s":41.2,"log_sha256":"<hex>","tail":["<=20 scrubbed lines"]},
-     "verdict":"PASS","retro":false}
+     "status":"VERIFIED","tier":"live","surfaces":["..."],"renet":{"built":"<sha>","modified":false,"sha256":"<hex>"},"ladder":{"vm":"<vm run id>"}}
 
 - The full log stays in `.ci/cache/live-proof/<id>.log`, which is gitignored. Only its sha256 is committed.
 - Before writing, the recorder refuses any row that carries a secret value. It runs `deploy_record.refuse_secret_values` over the serialized row and the secret-shape scanner over the tail. Hostinger rows name the rdc config (`eu-bench`) and the machine alias, never an address.
 
-**2. Which plans need it: derived, then declared.**
-- `.ci/config/live-proof.json` holds a surface map. Each surface has globs, excludes and admissible targets:
+**2. Which plans need it: one surface map, shared with vm:check.**
+- `.ci/config/proof-tiers.json` is the only surface map. It is read only through `rediacc_ci.proof.surfaces`, the vm:check trigger moved there (Design item 6). Surface entries are console-relative globs in the Owns grammar. They are matched with `wl_planconc.glob_regex` for a changed path and with `wl_planconc.owns_overlap` for a plan's Owns, so the push guard, `release:local` and this gate cannot disagree about what a path touches.
 
-  | Surface | Globs | Admissible targets |
-  |---|---|---|
-  | account | `private/account/src/**`, the account migrations and wrangler files, `workers/account/**`, `packages/shared/src/**` | bench |
-  | proxy | `workers/proxy/src/**`, `workers/proxy/wrangler*.toml`, `workers/proxy/Dockerfile` | bench |
-  | www | `packages/www/src/**`, `workers/www/**` | bench |
-  | cli | `packages/cli/src/**` | bench, hostinger |
-  | renet | `private/renet/cmd/**`, `private/renet/pkg/**`, `private/renet/proxy/**` | hostinger |
+  | Surface | Globs | Live targets | VM phase |
+  |---|---|---|---|
+  | renet | `private/renet/cmd/**`, `private/renet/pkg/**`, `private/renet/proxy/**`, `private/renet/build.sh`, `private/renet/go.mod`, `private/renet/go.sum`, `private/renet/embed-assets.lock.json` | hostinger | renet |
+  | cli-remote | `packages/cli/src/remote/**`, `packages/cli/src/services/repo/repo-key-deployment.ts` | hostinger | renet |
+  | cli | `packages/cli/src/**` | bench, hostinger | none |
+  | account | `private/account/{src,web,drizzle,scripts}/**`, `private/account/{package.json,package-lock.json,tsconfig.json,wrangler*.toml,dev.defaults.env,docker-compose.yml,Dockerfile}`, `packages/shared/src/**` | bench | account |
+  | account-worker | `workers/account/**` | bench | none |
+  | proxy | `workers/proxy/src/**`, `workers/proxy/wrangler*.toml`, `workers/proxy/Dockerfile` | bench | none |
+  | www | `packages/www/src/**`, `workers/www/**` | bench | none |
 
-  The excludes cover `**/tests/**`, `**/*.test.ts`, `**/*_test.go`, `**/testdata/**` and `**/*.md`.
+  - One exclude list serves both tiers: `**/*_test.go`, `**/*.test.ts`, `**/*.test.tsx`, `**/*.spec.ts`, `**/*.spec.tsx`, `**/__tests__/**`, `**/testdata/**`, `**/tests/**`, `**/e2e/**`, `**/*.md`.
+  - `tiers.vm.instrument` lists the drill files whose change needs a new VM run but which are not deployable code, each with its phases. These are the 13 drill entries of today's `CONSOLE_PATHS`. The live tier has no instrument list.
+  - The map widens vm:check on purpose. The renet phase gains `proxy/**` and `build.sh`: build.sh embeds `proxy/docker-compose.yml` into the binary through a gitignored copy, so a Traefik pin bump never triggered vm:check before. The account phase gains `packages/shared/src/**`, which `private/account/package.json` depends on, and `wrangler*.toml`.
+- A path may hit several surfaces (a `packages/cli/src/remote/` file is both cli-remote and cli). A plan must cover each one.
 - A plan is **required** when all of these hold:
   - it is a live plan: not a stub, not under `_done/` or `_removed/`, and its Status is not in `wl_planfile.FINISHED_STATES`;
-  - its `Owns:` globs intersect a surface glob, decided by `wl_planconc.owns_overlap`, the same engine the concurrency guard uses.
+  - its `Owns:` globs intersect at least one surface glob, minus the excludes.
 - A bare submodule path (`private/renet`, `private/account`) claims the gitlink, not the code, so it is not a surface claim.
-- Deploy tooling (`.ci/rediacc_ci/deploy/**`, `ops/deploy_bench.py`, `release/**`) is not a surface.
+- Deploy tooling (`.ci/rediacc_ci/deploy/**`, `ops/deploy_bench.py`, `release/**`) and proof tooling (`.ci/rediacc_ci/proof/**`, the vm:check drills) are not surfaces.
 - A required plan declares its proof in a header line inside the 12-line X window:
   - `Live-Proof: bench|hostinger[, <target>...] -- <reason>`, or
-  - `Live-Proof: none -- <reason>` (gated, item 3 LP2).
-- Every surface the plan touches must be covered by at least one declared target admissible for that surface. For example, a plan that touches both account and renet declares `bench, hostinger`.
+  - `Live-Proof: none -- <reason>`, which passes only under a resolvable ruling (ruling 2; LP2).
+- Every touched surface must be covered by at least one declared target admissible for it. For example, a plan touching account and renet declares `bench, hostinger`.
+- The VM tier does not substitute for the live tier, and the live tier does not substitute for the VM tier (ruling 1).
 
 **3. The CI-side rule: a new gate, `check:ci-plan-live-proof`.**
 - It is a separate gate rather than an extension. `check_plan_implementation.py` is already 2494 lines and owns the clock, and the house shape is one concern per gate.
@@ -67,13 +73,13 @@ Worklist: pending -- filed at promotion
   - **LP1** A required plan has no `Live-Proof:` line, or the line is malformed, emphasized, duplicated or outside the window. The grammar lives in `wl_plandeps` beside Depends-On, so the pre-edit guard and the gate share one parser.
   - **LP2** A declared target is not admissible for a touched surface, or a touched surface is left uncovered. `none` on a required plan passes only under a resolvable waiver (see Question 2), resolved through `wl_planfile.resolve_ruling`.
   - **LP3** A required plan that declares targets lacks one `LP-<target> [live]` box per target. Each such box must carry an `Accept: live-proof <target> <check-id> [args]` sub-line.
-  - **LP4** An `LP-<target>` box moved from open to done on this branch with no receipt row matching all of the following: plan, box sig, target, `verdict: PASS`, `check.rc == 0`, `dirty: false`, and the Accept line's check id and arguments.
+  - **LP4** An `LP-<target>` box moved from open to done on this branch with no receipt row matching all of the following: plan, box sig, target, `status: VERIFIED`, `check.rc == 0`, `dirty: false`, and the Accept line's check id and arguments.
   - **LP5** A matching receipt is invalid. Any one of these makes it invalid:
     - its `head` is not an ancestor of the commit that ticked the box (judged through the rebase successor map, the way P-A4 judges, via `make_successor_of`);
     - `tree` or `head` does not resolve;
     - the `inputs` digest recomputed at `head` differs from the digest at the ticking commit, meaning surface code changed after the proof;
     - `deploy.deployed_head` differs from `head`;
-    - `deploy.confirmed_live` is false for bench or edge;
+    - `deploy.confirmed_live` is false for any target;
     - the version id is malformed;
     - the schema is unknown;
     - the `id` does not hash to the row;
@@ -85,38 +91,75 @@ Worklist: pending -- filed at promotion
     - a check id named in an Accept line is absent from the registry.
 
     Zero parsed plans is CANNOT RUN (exit 77), never green.
-- **Advisory lines, printed every run, red or green:** every `retro: true` receipt on the branch, and every `Live-Proof: none` on a required plan.
+- **Advisory lines, printed every run, red or green:** every `Live-Proof: none` on a required plan.
 - **Forward-only.** LP4 to LP6 judge only transitions in commits dated strictly after `baseline_at` in `.ci/config/live-proof.json`, the device P-A2 uses. On the landing commit the gate is silent on transitions by construction. LP1 to LP3 judge every live required plan from V6 on.
 - **No allowlist and no suppression** (`docs/agent-reference/suppressions.md`). The waiver is a named operator ruling, never a config entry.
 
 **4. How the receipt is produced.**
-- **Engine.** `rediacc_ci.ops.live_proof` (pure decision logic in `rediacc_ci.quality.live_proof`, shared with the gate):
+- **Engine.** The live tier lives in `rediacc_ci.proof.live_tier`: row body, ledger read, match and validation, shared with the gate. Its envelope and identity judge come from `rediacc_ci.proof.receipt`, the same ones the VM tier uses. The command line is `rediacc_ci.ops.live_proof`:
 
-      PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan <rel> --box <sig> --target bench|hostinger [--region eu] --check <id> [-- <args>] [--write]
+      PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan <rel> --box <sig> --target bench|hostinger [--region eu] --check <id> [--write]
       PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify [--plan <rel>]     # the gate's LP5 over the ledger, locally
-      PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record ... --retro --evidence <r2-key|review-file|commit> --write   # V6 backfill only
 
-- **Check registry.** `checks` in `live-proof.json` maps an id to an argv template, its admissible targets and the surfaces it covers. Free argv is refused, so `true` cannot pass as a check. Initial entries:
-  - `account-smoke`: `/health` plus `.well-known/server-info` on `bench.rediacc.com` or `edge-<region>.rediacc.com`.
-  - `edge-smoke`: `rediacc_ci.deploy.verify_edge_endpoints`.
-  - `proxy-ready`: `rediacc_ci.deploy.deploy_proxy --smoke-only`.
-  - `drill:<name>`: any `rediacc_ci.drills.<name>` that takes a target.
-  - `rdc`: `./rdc.sh --config eu-bench <args>`, where the args are recorded verbatim after the scrub.
-  - `npm`: `npm run <script>`, where the script must be in an allowlist inside the registry.
+  There is no `--retro` (ruling 3). A dry run is the default; `--write` appends a VERIFIED row only. A FAILED or NOT_VERIFIED run keeps its log in `.ci/cache/live-proof/` and writes nothing to the ledger.
+- **Check registry.** `tiers.live.checks` in `proof-tiers.json` maps an id to a fixed argv, its targets and the surfaces it covers.
+  - The only parameters are values the registry itself names, such as a machine alias from `tiers.live.targets.hostinger.machines`.
+  - There are no free arguments, no generic `rdc` or `npm` entry, and no allowlist.
+  - A plan that needs a behaviour-specific check adds a named entry in its own Owns.
+  - Initial entries:
+    - `account-smoke` (bench; account, account-worker): `/health` and `.well-known/server-info` on `bench.rediacc.com`.
+    - `proxy-ready` (bench; proxy): `rediacc_ci.deploy.deploy_proxy --smoke-only` against bench.
+    - `www-smoke` (bench; www): the bench www root answers 200. V5 names the URL; LP7 refuses a surface with no check.
+    - `cli-bench` (bench; cli): `./rdc.sh --config eu-bench subscription status`.
+    - `renet-live` (hostinger; renet, cli-remote, cli), for each alias in `tiers.live.targets.hostinger.machines`:
+      1. `surfaces.renet_identity()`, the P1 rule moved out of vm_check: `go version -m private/renet/bin/renet` carries the renet pointer as `vcs.revision` with `vcs.modified=false`, after one `./rdc.sh --version` rebuild. The sha256 of `bin/renet` is recorded.
+      2. `./rdc.sh --config eu-bench machine status <alias> -o json`: rc 0 and `stale_binary == []`. This call provisions the tree's binary when the hashes differ.
+      3. `./rdc.sh --config eu-bench term connect <alias> -c "/usr/lib/rediacc/renet/current/renet hash"` must equal that sha256. That sets `deploy.confirmed_live`, with `deploy.version_id = "renet:<vcs.revision>@sha256:<64 hex>"`.
+      4. A version guard refusing the upload, or any later hash mismatch, is a named refusal `not-live`, never a pass.
 - **Deploy identity, read and confirmed live (not believed).**
-  - **bench:** V2 makes `deploy_bench` parse wrangler's version id and write `.ci/cache/live-deploys/bench.json` with `{version_id, head, tree, dirty, submodules, at}`. The recorder reads that file. Under the `deploy-bench` Bitwarden profile it then confirms through `wrangler deployments status` that this version serves 100% at check time.
-  - **edge:** the recorder reads the deploy record that `release:local --channel edge` wrote (local `DEPLOY_RECORD_OUT` or R2 `release-records/v<V>/edge/deploy-record-edge-<region>.json`) and confirms live the same way. This catches a peer or CD redeploying edge mid-proof.
-  - **hostinger:** the recorder records `renet version` and the CLI version that `./rdc.sh --config <cfg>` reports. `rdc.sh` builds renet from source, so the version must name `head`.
-- **Refusals.** The recorder refuses a dirty tree on surface paths and a modified submodule checkout. It also refuses a deploy whose `deployed_head` differs from HEAD, and a live version that no longer matches the deploy record.
-- **Agent verb.** `worklist.py --live-proof <me> <plan> <LP-box-sig> [--tick] [--write]` reads the box's Accept line, delegates to the engine and, with `--tick`, closes the box through `wl_planrec.plan_tick` in the same run. Its evidence line is `live-proof <id> <target> <check> rc=0 v=<version>`, and it writes the ledger and `plan-boxes.json` together, so the tick and the receipt always land in one commit (the `--plan-tick` pairing rule).
-- **R2 mirror.** Not in scope. The committed ledger is the system of record. A write-once mirror under `live-proof/` can follow without changing the schema.
+  - **bench:** V4 makes `deploy_bench` parse wrangler's version id and write `.ci/cache/live-deploys/bench.json` with `{version_id, head, tree, dirty, submodules, at}`. The recorder reads that file. Under the `deploy-bench` Bitwarden profile it then confirms through `wrangler deployments status` that this version serves 100% at check time.
+  - **hostinger:** confirmed by `renet-live` steps 1 to 3. The machine runs the binary built from `head`'s renet pointer, byte for byte. `renet version` alone is a semver and proves nothing.
+- **Tier ladder.** For any surface with a VM phase (renet, cli-remote, account), the recorder first calls `proof.vm_tier.admit(root, tree, surfaces.inputs(root, tree, tier="vm"), phases)`. It refuses unless the VM tier admits the head tree, and it records `ladder.vm` (the VM run id) in the row. No branch build reaches bench or hostinger before it passes on the ops VMs. CI cannot read the VM cache, so this is a recorder refusal, not a gate rule.
+- **Refusals.** The recorder refuses all of these through `proof.receipt.identity_refusal`, the same judge the push guard applies:
+  - a dirty tree on surface paths;
+  - a submodule checkout that is not its pointer, or is modified;
+  - a renet build that is not the pointer, or is modified;
+  - a deploy whose `deployed_head` differs from HEAD;
+  - a live version that no longer matches the deploy record.
+
+  The codes are the shared `Verdict` vocabulary: `build-mismatch`, `modified-build`, `checkout-mismatch`, `modified-checkout`, `not-live`.
+- **Secrets.** `deploy_record.refuse_secret_values` runs over the serialized row and the secret-shape scanner over the tail. Hostinger rows name the rdc config (`eu-bench`) and the machine alias, never an address.
+- **Agent verb.** `worklist.py --live-proof <me> <plan> <LP-box-sig> [--tick] [--write]` reads the box's Accept line, delegates to the engine and, with `--tick`, closes the box through `wl_planrec.plan_tick` in the same run. Its evidence line is `live-proof <id> <target> <check> rc=0 v=<version>`. It writes the ledger and `plan-boxes.json` together, so the tick and the receipt land in one commit.
+- **R2 mirror.** Not in scope; the committed ledger is the system of record.
 
 **5. Interplay with existing gates.**
-- An LP box is an ordinary open box. P-A1 counts it, and since bench and edge are free for agents it closes pre-merge.
+- An LP box is an ordinary open box. P-A1 counts it, and bench is free for agents, and a hostinger run needs the V8 confirmation; either closes pre-merge.
 - The live boxes that today ride in the carried reds become LP boxes with a typed exit, which shrinks the carry instead of growing it.
 - P-A2 and P-A4 still apply to LP boxes: an investigation row first (`--plan-investigate`), then the receipt, then the tick.
 
-**6. Inputs digest.** It is computed by `git ls-tree` at a commit, as `lp1` followed by sorted blob lines. It covers paths matching both the plan's Owns and the surface globs, minus the excludes. For surfaces inside a submodule it uses the gitlink pointer, which is the vm:check v2 precedent and is coarse on purpose, because CI cannot rely on submodule objects. Staleness is judged only at the ticking commit, never at HEAD, so a commit after the tick never reopens a closed plan.
+**6. One proof family: surfaces, digest, receipt envelope, judges.**
+- **Module layout.** It is a clean break: the old paths are deleted, with no re-export shim.
+  - `rediacc_ci/proof/surfaces.py` is `drills/vm_check_trigger.py`, moved. It holds the `proof-tiers.json` loader, glob matching, `changed_paths` (now returning `Changed.surfaces`, with VM phases derived through `tiers.vm.phases`), `push_base`, the submodule range, the inputs digest, `account_worktree_digest`, and `go_buildinfo` plus `renet_identity`, moved from `drills/vm_check.py`.
+  - `rediacc_ci/proof/receipt.py` holds the envelope, the status vocabulary, `Verdict`, `identity(root, surfaces)` (captures the envelope), `identity_refusal(receipt, surfaces)`, `row_id` and the atomic writer.
+  - `rediacc_ci/proof/vm_tier.py` is `drills/vm_check_receipt.py`, moved, at schema 3.
+  - `rediacc_ci/proof/live_tier.py` is new.
+  - `backup_check_trigger.py` keeps its own tables and imports the git arithmetic from `proof.surfaces`.
+- **The envelope**, shared by both tiers: `tier` (`vm` or `live`), `schema`, `status` (VERIFIED, FAILED or NOT_VERIFIED), `tree`, `head`, `dirty`, `inputs`, `surfaces`, `submodules` (`{"private/renet": {pointer, checkout, modified}, "private/account": {...}}`) and `renet` (`{built, modified, sha256}`, null when no touched surface needs renet).
+  - The VM body adds `phases`, `fleet`, `forks`, `steps`, `teardown`, `runId`, `gateway`, `runDir` and the timings. Its old top-level `account` and `renet` blocks fold into `submodules` and `renet`.
+  - The live body adds `id`, `at`, `by`, `plan`, `box`, `target`, `region`, `deploy`, `check` and `ladder`.
+  - Storage stays per tier. VM receipts stay in the gitignored `.ci/cache/vm-check/`, keyed by tree, because they carry VM addresses and logs and are judged locally. Live rows go to the committed `agent/ledgers/live-proof.jsonl`, because CI judges them with no secrets and no network.
+- **One inputs digest**, `surfaces.inputs(root, tree, surfaces, instrument=())`, version `v3`:
+  1. a `v3` line;
+  2. the sorted `git ls-tree -r` blob lines of the console paths in the given surfaces and instrument globs, excludes applied (the full tree listed, then filtered in Python, so the glob grammar is the map's own);
+  3. the gitlink pointer of each submodule a given surface lives in, sorted.
+
+  The VM tier passes `tiers.vm` (its phases' surfaces plus its instrument). The live tier passes the plan's touched surfaces. A worktree twin hashes worktree blobs and submodule HEADs, as v2 did. Submodules are covered by pointer, which is coarse on purpose, because CI cannot rely on submodule objects. A v2 digest never equals a v3 one.
+- **One judge family.** Every judge uses `receipt.identity_refusal` for the build and checkout rules and reports through the shared `Verdict` codes:
+  - the push guard `block_vm_unverified_push` and the `release:local` vm-check gate judge the VM tier through `vm_tier.admit`;
+  - `check:ci-plan-live-proof` (item 3) judges the live tier.
+
+  The live tier has no push guard, because its point of admission is the plan tick, which CI sees. `release:local` gets no live gate: a release cut from `main` already carries the green `check:ci-plan-live-proof`.
+- **Staleness.** It is judged only at the ticking commit: the live-tier digest recomputed at `head` must equal the digest at the ticking commit, never at HEAD, so a commit after the tick never reopens a closed plan.
 
 **7. Migration.**
 - **Exempt, never judged:** everything in `_done/` and `_removed/`, compacted records, and stubs. Also every live plan whose Owns hit no surface (census of 2026-10-27, for example):
@@ -140,9 +183,69 @@ Worklist: pending -- filed at promotion
   - config-networkid-discovery (cli plus renet)
   - sync-remote-file-ownership (cli)
   - renet-runtime-converge, sandbox-tenant-separation, gpu-device-grants, hostinger-upgrade-followups, backup-toc-exact-opt-in (renet)
-- **Required, zero open boxes, not yet finished:** converge-preflight-and-repo-recovery, renet-fetch-retries, renet-bridge-leftovers, backup-presign-bucket-require-and-wrangler-vars, renet-run-docker-sock-isolation (a write-up only; expected to get `none` under a ruling). V6 adds the LP boxes. Each then needs a fresh run or, per Question 3, a `--retro` row citing existing evidence, printed as ADVISORY on every run.
+- **Required, zero open boxes, not yet finished:** converge-preflight-and-repo-recovery, renet-fetch-retries, renet-bridge-leftovers, backup-presign-bucket-require-and-wrangler-vars, renet-run-docker-sock-isolation (a write-up only; expected to get `none` under a ruling). V7 adds the LP boxes. Each then needs a fresh run (ruling 3).
 
 ## Tasks
+
+- [ ] V1 [writer] The proof package core.
+  - `.ci/config/proof-tiers.json` holds `surfaces` (the item 2 table), `exclude`, `tiers.vm` (`phases`, `instrument`), and `tiers.live` (`baseline_at` unset until V6, `targets` with `hostinger.config: eu-bench` and `hostinger.machines`, `checks`, `pointer_only`).
+  - `git mv` `drills/vm_check_trigger.py` to `proof/surfaces.py` and replace its constant tables with the loader. It gains glob matching through `wl_planconc.glob_regex` (with the `paths.on_sys_path(paths.hooks_stop_dir())` hop `check_plan_deps.py:113` uses), `Changed.surfaces`, digest `v3` taking a surface set, and `go_buildinfo` plus `renet_identity` moved from `vm_check.py:687`.
+  - New `proof/receipt.py` holds the envelope, `Verdict`, `identity`, `identity_refusal` and `row_id`.
+  - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_proof_surfaces.py .ci/rediacc_ci/tests/test_proof_receipt.py -q` rc=0. The cases are the moved trigger tests plus these new ones:
+    - `private/renet/proxy/docker-compose.yml` and `private/renet/build.sh` hit renet (each fails against today's `RENET_PATHS`);
+    - `packages/shared/src/x.ts` hits account;
+    - a test file and a `.md` hit nothing;
+    - glob parity with `owns_overlap` over the item 7 census Owns;
+    - a v3 digest of a tree differs from its v2 digest;
+    - a live-tier digest for `{account}` does not move when only the renet pointer moves;
+    - one negative case per `identity_refusal` code.
+- [ ] V2 [writer] Move the VM tier onto the family.
+  - `git mv` `drills/vm_check_receipt.py` to `proof/vm_tier.py`, at schema 3 (envelope plus VM body; schema 2 is unread, the same clean break as before).
+  - Then update every importer in the same commit: `drills/vm_check.py`, `drills/backup_check_trigger.py`, `release/local_gates.py`, `block_vm_unverified_push.py` (`TRIGGER_MOD`, `RECEIPT_MOD` and the mutant source lines), `block_backup_unverified_push.py`, the moved tests, `quality-pytest.json`, `lane-durations.json`, and the module names in CLAUDE.md, ops-vms.md, e2e-local.md and ci-gates.md.
+  - Accept:
+    - `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_proof_vm_tier.py .ci/rediacc_ci/tests/test_drills_vm_check.py .ci/rediacc_ci/tests/test_drills_backup_check_trigger.py .ci/rediacc_ci/tests/test_release_local_gates.py -q` rc=0;
+    - `python3 .claude/rediacc_hooks/guards/test-block_vm_unverified_push.py` rc=0 and `python3 .claude/rediacc_hooks/guards/test-block_backup_unverified_push.py` rc=0, with every mutant still caught;
+    - `grep -rn "vm_check_trigger\|vm_check_receipt" .ci .claude CLAUDE.md docs --include=*.py --include=*.md --include=*.json` prints nothing outside `agent/`;
+    - `npm run vm:check` exit 0, writing a `tier: vm`, schema 3 `receipt.json`.
+- [ ] V3 [writer] The `Live-Proof:` grammar in `wl_plandeps`, with the X-field shape and the 12-line window. A `none -- <reason>` line must cite a closed worklist item or a committed operator quote (ruling 2). The pre-edit guard `block_plan_without_depends.py` refuses a new plan whose Owns hit a surface in `proof-tiers.json` and that carries no Live-Proof line.
+  - Accept: `python3 .claude/hooks/stop/test-plandeps.py` rc=0 and `python3 .claude/rediacc_hooks/guards/test-block_plan_without_depends.py` rc=0, with cases for a missing, malformed, emphasized, out-of-window and rulingless-`none` line.
+- [ ] V4 [writer] Bench version capture. `deploy_bench` parses `Current Version ID:` and writes `.ci/cache/live-deploys/bench.json` from `proof.receipt.identity`. An unparsed id is a named DeployError after the deploy.
+  - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_deploy_bench.py -q` rc=0, with a test that fails on today's code (no cache file written).
+- [ ] V5 [writer] The live tier and recorder: `proof/live_tier.py` and `ops/live_proof.py` (`record`, `verify`; no `--retro`).
+  - The registry has fixed argv only (no `rdc` or `npm` passthrough), with the item 4 entries including `renet-live`.
+  - The recorder confirms bench through wrangler and hostinger through the hash, applies the tier ladder via `vm_tier.admit`, and refuses secrets. It writes VERIFIED rows only.
+  - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_proof_live_tier.py .ci/rediacc_ci/tests/test_ops_live_proof.py -q` rc=0, with recording fakes for wrangler, curl, `go version -m` and rdc. Cases:
+    - a dirty tree refuses;
+    - a moved bench version refuses;
+    - a remote `renet hash` that differs from the local sha256 refuses `not-live`;
+    - a non-empty `stale_binary` refuses;
+    - a `bin/renet` with `vcs.modified=true` refuses `modified-build`;
+    - a renet run with no admitting VM receipt refuses (ladder);
+    - a check id or machine alias outside the registry refuses;
+    - a planted secret in the tail refuses;
+    - the row id round-trips.
+- [ ] V6 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py`.
+  - Rules LP1 to LP7, with every edge reference removed. LP7 also fires on a surface with an admissible target but no registry check.
+  - The advisory line for `Live-Proof: none`, the gate metadata (`lane: quality-branch`, `selftest: true`), the `package.json` script `check:ci-plan-live-proof` and a lane-durations entry. Set `baseline_at` to the landing date.
+  - Accept: `npm run check:ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent), and `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
+- [ ] V7 [lead] Migration.
+  - Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan. Re-run the item 7 census against the widened map first: renet now includes `proxy/**`, and account includes `packages/shared/src/**`.
+  - Each `none` needs a ruling (ruling 2). Each zero-open-box plan gets a fresh-run LP box (ruling 3). Then regenerate `plan-boxes.json`.
+  - Accept: `npm run check:ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings, `npm run check:ci-plan-boxes` rc=0, `npm run check:ci-plan-deps` rc=0.
+- [ ] V8 [lead] Pilot: one real receipt on each target. Before running, ASK the operator to confirm a branch renet may be provisioned on hostinger (this restarts the router and daemons).
+  - bench: PLAN-config-server-key's LP-bench box after its K3, with `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
+  - hostinger: one renet-surface plan's LP-hostinger box through `renet-live` on `--config eu-bench`; candidate PLAN-hostinger-upgrade-followups T1, whose Traefik pin is renet-embedded. Run it after a VERIFIED `npm run vm:check -- --changed` on the same tree.
+  - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0 and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-hostinger-upgrade-followups.md` rc=0. Also `npm run check:ci-plan-live-proof` rc=0 on each ticking commit.
+- [ ] V9 [writer] Docs.
+  - A "Live proof" section in `docs/agent-reference/plan-records.md`: the header, the LP box form, the verb, the envelope and live body, the ladder and the LP rules.
+  - A "Proof tiers" paragraph in `docs/agent-reference/ci-gates.md`: one map, the VM and live tiers, and which judge reads which.
+  - Accept: `npm run check:ci-plan-citations` rc=0 and the docs lint lane rc=0.
+- [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface (proof tooling is excluded by item 2). V8 exercises the tooling end to end on both targets.
+  - Accept: `npm run check:ci-plan-live-proof` rc=0 on the commit that ticks V8.
+
+### Tasks of the first draft (superseded by the revision above)
+
+Kept byte for byte because a box is a durable record. Each closes, ticked with its evidence line, when the revised task that replaces it lands: first-draft V1 with revised V1, V2 with V3, V3 with V4, V4 with V5, V5 with V6, V6 with V7, V7 with V8, V8 with V9, and the first-draft LP-none with the revised LP-none.
 
 - [ ] V1 [writer] Engine core and config.
   - `.ci/config/live-proof.json`: `baseline_at` (unset until V5), `surfaces`, `checks`, `pointer_only`.
@@ -182,6 +285,8 @@ Worklist: pending -- filed at promotion
 2. Opt-out: only with a ruling. `Live-Proof: none` passes only when it cites a closed worklist item or a committed operator quote.
 3. Backfill: fresh runs for all. No `--retro` receipts; the four closed plans each get a new live run, and V4 drops `record --retro`.
 4. Enforcement: LP1 to LP6 fail CI from the landing commit; forward-only judging keeps existing work green.
+
+5. Renet and consolidation, operator 2026-10-27: "we might also need bench test for @private/renet as well! We already had "ops" related testing enforcement. Maybe we can related similar code or consolidate". Design items 2, 4 and 6 and the task list were revised the same day: one surface map (`.ci/config/proof-tiers.json`) shared with vm:check, one inputs digest (v3), one receipt envelope with a VM tier and a live tier, one judge family, and a ladder (no live run without an admitting VM receipt). V8's hostinger pilot asks the operator first, because provisioning a branch renet restarts the router and daemons on a production machine.
 
 ## Questions for the operator (answered above)
 

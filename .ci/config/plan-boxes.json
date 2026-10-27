@@ -552,15 +552,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 4,
+      "open": 3,
+      "done": 3,
       "open_sigs": [
         "4f529c92",
-        "5491e758"
+        "5491e758",
+        "a3c03a4f"
       ],
       "done_sigs": [
         "3dcaeba4",
-        "a3c03a4f",
         "aa8197f8",
         "c38ce2cd"
       ]
@@ -1857,6 +1857,36 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-tested-on-bench.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 19,
+      "done": 0,
+      "open_sigs": [
+        "0f30f980",
+        "114951f1",
+        "203c921c",
+        "2be92af1",
+        "2e5d99e8",
+        "2f44fc06",
+        "38efe1b5",
+        "40c6930d",
+        "4803406f",
+        "75d91648",
+        "76643438",
+        "7a56a242",
+        "7acacf6d",
+        "9262ee30",
+        "b80617d6",
+        "c026b09c",
+        "c5b50ba5",
+        "d221e989",
+        "db8168ad"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-testing-surface-audit.md": {
