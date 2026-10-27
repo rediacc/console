@@ -396,6 +396,6 @@ History; the code is on `origin/main` in 3b96d5133 and the gate wiring in 0868e3
 
 ## Relations
 
-- C2 is closed by PLAN-proxy-cd-six-targets L5: the console executor reaches the stable targets through CD there, with EXECUTOR_MODE a CD-managed secret rather than a `[vars]` entry.
+- C2 closes with PLAN-proxy-cd-six-targets L5, still open: the console executor reaches the stable targets through CD there, with the account Worker's `EXECUTOR_MODE` (not the retired `REDIACC_EXECUTOR_MODE`) a CD-managed secret rather than a `[vars]` entry.
 - The "Operator: redeploy ... `EXECUTOR_TOKEN`" box is superseded by ASKED:2026-10-25T19:08Z ("A: binding mints"): the proxy holds no exported token; the ISSUER binding mints one per org (PLAN-proxy-cd-six-targets design item 5, PLAN-console-executor-multi-org A2).
 - Teardown stays this plan's fallback.

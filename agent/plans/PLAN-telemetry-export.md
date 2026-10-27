@@ -183,6 +183,6 @@ A first attempt that probed within 1 minute of disabling still printed PASS for 
 
 ## Relations
 
-- T15 is closed by PLAN-proxy-cd-six-targets L8, with its outputs recorded in this plan's "Proxy results" section when L8 runs.
+- T15 closes with PLAN-proxy-cd-six-targets L8, still open, with its outputs recorded in this plan's "Proxy results" section when L8 runs.
 - T16's proxy-host clause is met by PLAN-proxy-cd-six-targets T1 and L8; T16's own acceptance (a scheduled run on main) stays here.
 - T14's config half is subsumed by PLAN-proxy-cd-six-targets K1 and G2; its source half already landed.
