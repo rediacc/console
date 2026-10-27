@@ -66,7 +66,7 @@ Design inputs, summarized below with file:line:
 
 ### Wave 2 (after W1)
 
-- [ ] W2-A [writer] Gates module, `rediacc_ci.release.local_gates`.
+- [x] W2-A [writer] Gates module, `rediacc_ci.release.local_gates`.
   - It imports W1-A's `receipt_refusal` (the way `.ci/rediacc_ci/ci/gate_model.py:113-117` imports the guard) and `vm_check_receipt.admit` (`.ci/rediacc_ci/drills/vm_check_receipt.py:374-388`).
   - It refuses unless all of these hold:
     - a whole, green ci:quick receipt exists for HEAD's tree;
@@ -78,6 +78,7 @@ Design inputs, summarized below with file:line:
   - For stable, factor a pure `select()` out of `check_soak_period.main` (:101). It needs the tag, the sentinel and an edge record `release-records/v<V>/edge.json` with smoke rc 0, aged at least SOAK_DAYS. `--force` skips the age only with a proven ASKED minute.
   - Owns: local_gates.py, check_soak_period.py and test_release_*.py for both.
   - Accept: pytest rc=0 over every case in the Tests section.
+    (ticked) 2026-10-27T09:13:08Z by d778be9d: 3332bed60: .ci/rediacc_ci/release/local_gates.py and check_soak_period select(); pytest rc=0 (79); live run names ci-quick, vm-check, backup, origin-main and lock refusals
 - [ ] W2-B [writer] The entry, `rediacc_ci.release.local`, plus `"release:local"` in package.json. It is one declarative `STEPS` table, in this order:
   1. Version: `resolve_version --bump-type`, from the labels since the last tag.
   2. Gates: W2-A.
@@ -112,7 +113,7 @@ Design inputs, summarized below with file:line:
     - `npm run release:local -- --channel edge --dry-run` prints the full step list and exits 0 on green receipts, or names the refusal;
     - a fake bws that returns `CANARY-...` never shows in stdout or stderr;
     - a `STEPS` invariant test passes: the sentinel is immediately followed by the tag, the tag comes before any step that can fail, and the CLI publish comes before any account deploy.
-- [ ] W2-C [writer] The `block_unasked_release` guard (pre-bash).
+- [x] W2-C [writer] The `block_unasked_release` guard (pre-bash).
   - It admits `npm run release:local` without `--dry-run` only when it carries `RELEASE_ASKED=ASKED:<minute>`, proven through the transcript (`block_vm_unverified_push.py:655-669`).
   - It refuses these raw publish verbs from agent Bash:
     - `wrangler deploy` and `wrangler rollback`;
@@ -125,6 +126,7 @@ Design inputs, summarized below with file:line:
   - Add a `("release:local","aws")` prerequisite row to `block_host_toolchain_run.py:84-103`.
   - Owns: block_unasked_release.py, test-block_unasked_release.py and block_host_toolchain_run.py.
   - Accept: `run_tests.py -k unasked_release` rc=0; `--dry-run` passes; a raw `wrangler deploy` is refused.
+    (ticked) 2026-10-27T09:13:10Z by d778be9d: 2e939f2ab: .claude/rediacc_hooks/guards/block_unasked_release.py; test-block_unasked_release.py rc=0 (147 cases); run_tests -k "unasked_release or host_toolchain" rc=0 (314)
 - [x] W2-D [writer] Durable deploy records.
   - `deploy_record.after --sink r2` (`.ci/rediacc_ci/deploy/deploy_record.py:665`) writes `release-records/v<V>/<channel>/deploy-record-<target>-<region>.json` once, through `write_once_guard`. Today the record is a 3-day artifact (`cd-deploy-account.yml:676`).
   - Add a www record (the version id before and after, the `wrangler rollback` command and the smoke rc) to `deploy_www.py` and `deploy_edge.py`, and put the account smoke rc into the account record.
