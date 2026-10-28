@@ -47,6 +47,7 @@ import { RepositoryMethods } from './methods/RepositoryMethods';
 import { SetupMethods } from './methods/SetupMethods';
 import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
+import { formatExecutionLog } from './outputRedaction';
 import { buildPasswordVault } from './passwordVault';
 import { feedStdin } from './stdinFeed';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
@@ -335,14 +336,10 @@ export class RenetFunctionsTestRunner {
   /**
    * Log command execution outputs for Playwright capture.
    */
-  private logExecutionResult(stdout: string, stderr: string, code: number): void {
-    if (stdout.trim()) {
-      log(`[STDOUT]\n${stdout}`);
+  private logExecutionResult(stdout: string, stderr: string, code: number, redact = false): void {
+    for (const line of formatExecutionLog(stdout, stderr, code, redact)) {
+      log(line);
     }
-    if (stderr.trim()) {
-      log(`[STDERR]\n${stderr}`);
-    }
-    log(`[EXIT] ${code}`);
   }
 
   /**
@@ -350,12 +347,14 @@ export class RenetFunctionsTestRunner {
    * Pattern: Host → SSH → Bridge → SSH → Target → command
    * Outputs are logged to console so Playwright can capture them.
    *
+   * `options.redactOutput` logs only the byte counts of stdout and stderr while still returning them, for a command whose output is a secret.
+   *
    * `options.stdin` is the secret channel: the text is written to the command's standard input through both SSH hops and never appears in the command line or the log (only its length does). Secrets (repository passphrases) go here, never into `command`.
    */
   async executeViaBridge(
     command: string,
     timeout?: number,
-    options?: { stdin?: string }
+    options?: { stdin?: string; redactOutput?: boolean }
   ): Promise<ExecResult> {
     const cmdTimeout = timeout ?? this.defaultTimeout;
     const escapedForBridge = this.sshExecutor.escapeForNestedSSH(command);
@@ -389,7 +388,9 @@ export class RenetFunctionsTestRunner {
           code: 1,
         });
       }
-      return this.executeOnVM(this.targetVM, command, timeout);
+      return this.executeOnVM(this.targetVM, command, timeout, {
+        redactOutput: options?.redactOutput,
+      });
     };
 
     try {
@@ -401,7 +402,7 @@ export class RenetFunctionsTestRunner {
         feedStdin(pending.child.stdin, options.stdin);
       }
       const { stdout, stderr } = await pending;
-      this.logExecutionResult(stdout, stderr, 0);
+      this.logExecutionResult(stdout, stderr, 0, options?.redactOutput);
       return { stdout, stderr, code: 0 };
     } catch (error: unknown) {
       const err = error as Error & {
@@ -416,7 +417,7 @@ export class RenetFunctionsTestRunner {
       const stderr = failure.prefix + (err.stderr ?? '');
       const code = failure.code;
 
-      this.logExecutionResult(stdout, stderr, code);
+      this.logExecutionResult(stdout, stderr, code, options?.redactOutput);
 
       if (/renet: command not found|No such file or directory/.test(stderr)) {
         return fallbackDirect('renet not found on target via bridge');
@@ -430,7 +431,12 @@ export class RenetFunctionsTestRunner {
    * Execute a command on a remote VM via SSH.
    * Outputs are logged to console so Playwright can capture them.
    */
-  async executeOnVM(host: string, command: string, timeout?: number): Promise<ExecResult> {
+  async executeOnVM(
+    host: string,
+    command: string,
+    timeout?: number,
+    options?: { redactOutput?: boolean }
+  ): Promise<ExecResult> {
     const cmdTimeout = timeout ?? this.defaultTimeout;
 
     // Get SSH options fresh each time (never cache - keys may be created after instantiation)
@@ -451,7 +457,7 @@ export class RenetFunctionsTestRunner {
         timeout: cmdTimeout,
         maxBuffer: EXEC_MAX_BUFFER,
       });
-      this.logExecutionResult(stdout, stderr, 0);
+      this.logExecutionResult(stdout, stderr, 0, options?.redactOutput);
       return { stdout, stderr, code: 0 };
     } catch (error: unknown) {
       const err = error as Error & {
@@ -801,7 +807,7 @@ export class RenetFunctionsTestRunner {
     cmd += this.buildRepositoryPolicyFlags(opts);
 
     // Execute via two-hop SSH: Host → Bridge → Target
-    return this.executeViaBridge(cmd, opts.timeout);
+    return this.executeViaBridge(cmd, opts.timeout, { redactOutput: opts.redactOutput });
   }
 
   /**

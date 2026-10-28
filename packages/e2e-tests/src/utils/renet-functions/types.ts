@@ -36,6 +36,8 @@ export interface TestFunctionOptions {
   format?: string;
   force?: boolean;
   timeout?: number;
+  /** The function's output is a secret: log byte counts, return the real value. */
+  redactOutput?: boolean;
   uid?: string;
   // Filesystem formatting parameters
   filesystem?: string;

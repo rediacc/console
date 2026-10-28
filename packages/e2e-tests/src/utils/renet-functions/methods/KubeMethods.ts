@@ -124,6 +124,7 @@ export class KubeMethods {
   kubeJoinToken(opts: KubeTargetOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_join_token',
+      redactOutput: true,
       mountPath: opts.mountPath,
       networkId: opts.networkId,
     });
@@ -175,6 +176,7 @@ export class KubeMethods {
   kubeKubeconfig(opts: KubeTargetOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_kubeconfig',
+      redactOutput: true,
       mountPath: opts.mountPath,
       networkId: opts.networkId,
     });
