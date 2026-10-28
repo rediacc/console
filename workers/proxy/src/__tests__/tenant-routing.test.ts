@@ -422,7 +422,7 @@ describe('sizing on the durable backend', () => {
   });
 
   it('a running container keeps its started size: the span names the size pin answers', async () => {
-    durable.answers = [{ ok: true, size: 'heavy' }];
+    durable.answers = [{ ok: true, size: 'heavy', egressUnreachableRecent: false }];
     const { ctx, attrs } = traced();
     await worker.fetch(call('rdt_a'), durableEnv(), ctx);
 
