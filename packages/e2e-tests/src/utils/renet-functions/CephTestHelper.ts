@@ -1,4 +1,4 @@
-import { RenetFunctionsTestRunner, ExecResult } from './RenetFunctionsTestRunner';
+import { ExecResult, RenetFunctionsTestRunner } from './RenetFunctionsTestRunner';
 
 /**
  * Ceph-specific test utilities for managing pools, images, snapshots, and clones.

@@ -6,12 +6,12 @@ import { describe, expect, it } from 'vitest';
 import {
   chunkKeys,
   corruptStoredChunk,
-  type StoreAccess,
-  type StoreCurl,
   flipByteScript,
   lineageChunkKeys,
   parseListKeys,
   parseNextToken,
+  type StoreAccess,
+  type StoreCurl,
   storeAccessFromEnv,
 } from '../backup/chunkCorruption';
 
