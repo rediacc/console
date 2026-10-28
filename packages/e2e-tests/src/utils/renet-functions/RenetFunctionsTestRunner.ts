@@ -39,6 +39,8 @@ import { KubeMethods } from './methods/KubeMethods';
 import type { RegistryUpOptions, RegistryWireOptions } from './methods/RegistryMethods';
 import { RegistryMethods } from './methods/RegistryMethods';
 import type {
+  DockerPruneFunctionOptions,
+  RepositoryDockerPruneOptions,
   RepositoryPolicyGetOptions,
   RepositoryPolicySetOptions,
   RepositoryTrimOptions,
@@ -765,7 +767,7 @@ export class RenetFunctionsTestRunner {
    * the renet side's cobra Changed() detection fires; docker/report-only are
    * plain boolean flags.
    */
-  private buildRepositoryPolicyFlags(opts: TestFunctionOptions): string {
+  private buildRepositoryPolicyFlags(opts: DockerPruneFunctionOptions): string {
     let flags = '';
     if (opts.autoGrow !== undefined) flags += ` --auto-grow ${String(opts.autoGrow)}`;
     if (opts.maxQuota) flags += ` --max-quota ${opts.maxQuota}`;
@@ -778,6 +780,16 @@ export class RenetFunctionsTestRunner {
     if (opts.reportOnly) flags += ` --report-only`;
     // machine_converge_runtime: derived from the renet ParamDef registry as a boolean flag.
     if (opts.dryRun) flags += ` --dry-run`;
+    return flags + this.buildDockerPruneFlags(opts);
+  }
+
+  /** repository_docker_prune: plain boolean flags. */
+  private buildDockerPruneFlags(opts: DockerPruneFunctionOptions): string {
+    let flags = '';
+    if (opts.apply) flags += ` --apply`;
+    if (opts.offline) flags += ` --offline`;
+    if (opts.allImages) flags += ` --all-images`;
+    if (opts.noTrim) flags += ` --no-trim`;
     return flags;
   }
 
@@ -1210,6 +1222,8 @@ export class RenetFunctionsTestRunner {
   repositoryPolicyGet = (opts?: RepositoryPolicyGetOptions) =>
     this.repositoryMethods.repositoryPolicyGet(opts);
   repositoryTrim = (opts?: RepositoryTrimOptions) => this.repositoryMethods.repositoryTrim(opts);
+  repositoryDockerPrune = (opts?: RepositoryDockerPruneOptions) =>
+    this.repositoryMethods.repositoryDockerPrune(opts);
   repositoryLogs = (
     name: string,
     opts?: { container?: string; lines?: string; datastorePath?: string }

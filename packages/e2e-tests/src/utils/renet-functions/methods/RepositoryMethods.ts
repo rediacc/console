@@ -30,6 +30,23 @@ export interface RepositoryTrimOptions {
   datastorePath?: string;
 }
 
+/** repository_docker_prune params (classify and reclaim one repository's Docker storage). */
+export interface RepositoryDockerPruneOptions {
+  /** Repository GUID. */
+  name?: string;
+  datastorePath?: string;
+  /** Reclaim; without it the run only reports. */
+  apply?: boolean;
+  /** Stop the daemon and quarantine orphan overlay2 directories (requires apply). */
+  offline?: boolean;
+  allImages?: boolean;
+  noTrim?: boolean;
+}
+
+/** TestFunctionOptions carrying the docker-prune flags (the flag builder reads them). */
+export type DockerPruneFunctionOptions = TestFunctionOptions &
+  Pick<RepositoryDockerPruneOptions, 'apply' | 'offline' | 'allImages' | 'noTrim'>;
+
 /**
  * Repository management methods for RenetFunctionsTestRunner.
  */
@@ -248,5 +265,18 @@ export class RepositoryMethods {
       dockerVolumes: opts.dockerVolumes,
       reportOnly: opts.reportOnly,
     });
+  }
+
+  repositoryDockerPrune(opts: RepositoryDockerPruneOptions = {}): Promise<ExecResult> {
+    const call: DockerPruneFunctionOptions = {
+      function: 'repository_docker_prune',
+      name: opts.name,
+      datastorePath: opts.datastorePath,
+      apply: opts.apply,
+      offline: opts.offline,
+      allImages: opts.allImages,
+      noTrim: opts.noTrim,
+    };
+    return this.testFunction(call);
   }
 }

@@ -397,6 +397,40 @@ test.describe('Repository Error Handling @bridge', () => {
  * self-installs (it arms from the daemon's StartForeground, not plain machine
  * setup — see private/renet CLAUDE.md "Autostart & auto-recovery").
  */
+const DOCKER_PRUNE_CLASSES = ['A', 'B', 'C', 'D', 'G', 'E', 'F1', 'F2', 'L', 'Q'];
+
+interface DockerPruneRecord {
+  network_id: number;
+  mode: string;
+  classes: Record<string, unknown>;
+  errors: string[] | null;
+  refused?: string;
+}
+
+/**
+ * Pull the docker-prune record out of a run's output. `functions once` may
+ * re-emit the verb's stdout inside msg="[verb] {\"...\"}", so each line is tried
+ * bare and then unescaped. Raw stdout and stderr are used: the record has capitals.
+ */
+function tryParseRecord(candidate: string): DockerPruneRecord | undefined {
+  try {
+    const parsed = JSON.parse(candidate) as DockerPruneRecord | null;
+    return parsed?.classes ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseDockerPruneRecord(stdout: string, stderr: string): DockerPruneRecord {
+  for (const line of `${stdout}\n${stderr}`.split('\n')) {
+    const body = line.slice(line.indexOf('{'), line.lastIndexOf('}') + 1);
+    const found =
+      tryParseRecord(body) ?? tryParseRecord(body.replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
+    if (found) return found;
+  }
+  throw new Error(`no docker-prune record in output:\n${stdout}\n${stderr}`);
+}
+
 test.describe
   .serial('Repository size policy, trim, and maintain timer @bridge @lifecycle', () => {
     let runner: RenetFunctionsTestRunner;
@@ -460,5 +494,51 @@ test.describe
         'systemctl is-enabled rediacc-storage-maintain.timer 2>/dev/null || true'
       );
       expect(enabled.stdout.trim(), 'storage-maintain timer not enabled').toMatch(/enabled|static/);
+    });
+
+    test('5. docker-prune dry run returns a JSON record with every class key', async () => {
+      const run = await runner.repositoryDockerPrune({ name: repositoryName, datastorePath });
+      expect(runner.isSuccess(run), `docker-prune: ${runner.getCombinedOutput(run)}`).toBe(true);
+      const record = parseDockerPruneRecord(run.stdout, run.stderr);
+      expect(record.mode).toBe('dry-run');
+      for (const key of DOCKER_PRUNE_CLASSES) {
+        expect(Object.keys(record.classes), `class ${key} missing from the record`).toContain(key);
+      }
+    });
+
+    test('6. docker-prune --apply online finishes with no errors', async () => {
+      const run = await runner.repositoryDockerPrune({
+        name: repositoryName,
+        datastorePath,
+        apply: true,
+      });
+      expect(runner.isSuccess(run), `docker-prune --apply: ${runner.getCombinedOutput(run)}`).toBe(
+        true
+      );
+      const record = parseDockerPruneRecord(run.stdout, run.stderr);
+      expect(record.mode).toBe('online');
+      expect(record.refused ?? '').toBe('');
+      expect(record.errors ?? []).toEqual([]);
+    });
+
+    test('7. docker-prune --apply --offline brings the daemon back', async () => {
+      const run = await runner.repositoryDockerPrune({
+        name: repositoryName,
+        datastorePath,
+        apply: true,
+        offline: true,
+      });
+      expect(
+        runner.isSuccess(run),
+        `docker-prune --apply --offline: ${runner.getCombinedOutput(run)}`
+      ).toBe(true);
+      const record = parseDockerPruneRecord(run.stdout, run.stderr);
+      expect(record.mode).toBe('offline');
+      expect(record.errors ?? []).toEqual([]);
+      // The daemon must answer again on the repository's own socket.
+      const info = await runner.executeViaBridge(
+        `sudo docker -H unix:///var/run/rediacc/docker-${record.network_id}.sock info --format '{{.ServerVersion}}'`
+      );
+      expect(info.code, `docker info after offline prune: ${info.stderr}`).toBe(0);
     });
   });
