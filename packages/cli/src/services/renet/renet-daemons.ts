@@ -91,7 +91,8 @@ export interface DaemonUpgradeReport {
   /** False when the remote renet has no `daemons upgrade` or it failed; `stale` then comes from the probe. */
   ran: boolean;
   restarted: RenetProcess[];
-  stale: RenetProcess[];
+  /** `reason` says why a unit was left stale, e.g. that an earlier unit in the rolling restart failed. */
+  stale: (RenetProcess & { reason?: string })[];
   failed: (RenetProcess & { error?: string })[];
   /** Per-repo health after each supervisor restart (`--include-docker`); empty from an older renet. */
   repos: RepoHealth[];
@@ -122,14 +123,18 @@ export function parseDaemonUpgradeJson(output: string): Omit<DaemonUpgradeReport
     failed: [],
     repos: Array.isArray(parsed) ? [] : parseRepoHealth((parsed as { repos?: unknown }).repos),
   };
-  for (const e of entries) {
-    const proc = toRenetProcess(e);
-    if (e.action === 'restarted') report.restarted.push(proc);
-    else if (e.action === 'failed')
-      report.failed.push({ ...proc, ...(typeof e.error === 'string' && { error: e.error }) });
-    else if (e.action !== 'current') report.stale.push(proc);
-  }
+  for (const e of entries) sortEntry(report, e);
   return report;
+}
+
+/** File one process entry under restarted, failed or stale, keeping renet's error or reason. */
+function sortEntry(report: Omit<DaemonUpgradeReport, 'ran'>, e: DaemonUpgradeEntry): void {
+  const proc = toRenetProcess(e);
+  const detail = typeof e.error === 'string' && e.error ? e.error : undefined;
+  if (e.action === 'restarted') report.restarted.push(proc);
+  else if (e.action === 'failed') report.failed.push({ ...proc, ...(detail && { error: detail }) });
+  else if (e.action !== 'current')
+    report.stale.push({ ...proc, ...(detail && { reason: detail }) });
 }
 
 function text(value: unknown): string {

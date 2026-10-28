@@ -102,6 +102,30 @@ describe('renet daemons upgrade (C2)', () => {
     ]);
   });
 
+  it('keeps the reason a unit was left stale after an earlier unit failed', () => {
+    const report = parseDaemonUpgradeJson(
+      JSON.stringify({
+        processes: [
+          {
+            pid: 505,
+            unit: 'rediacc-docker-2880.service',
+            exe: 'x (deleted)',
+            action: 'stale',
+            error: 'not restarted: rediacc-docker-2816.service failed first',
+          },
+        ],
+      })
+    );
+    expect(report.stale).toEqual([
+      {
+        pid: 505,
+        unit: 'rediacc-docker-2880.service',
+        exe: 'x (deleted)',
+        reason: 'not restarted: rediacc-docker-2816.service failed first',
+      },
+    ]);
+  });
+
   it('refreshRouter restarts the router AND runs daemons upgrade, saying what it restarted and what is stale', async () => {
     const sftp = fakeSftp({
       'systemctl is-active --quiet rediacc-router': 'RESTARTED\n',
