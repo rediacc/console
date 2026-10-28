@@ -1864,8 +1864,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 17,
-      "done": 2,
+      "open": 15,
+      "done": 4,
       "open_sigs": [
         "0f30f980",
         "114951f1",
@@ -1875,10 +1875,8 @@
         "38efe1b5",
         "40c6930d",
         "4803406f",
-        "75d91648",
         "7a56a242",
         "7acacf6d",
-        "9262ee30",
         "b80617d6",
         "c026b09c",
         "c5b50ba5",
@@ -1887,7 +1885,9 @@
       ],
       "done_sigs": [
         "2be92af1",
-        "76643438"
+        "75d91648",
+        "76643438",
+        "9262ee30"
       ]
     },
     "agent/plans/PLAN-testing-surface-audit.md": {
