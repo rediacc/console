@@ -215,7 +215,7 @@ Worklist: pending -- filed at promotion
 - [x] V4 [writer] Bench version capture. `deploy_bench` parses `Current Version ID:` and writes `.ci/cache/live-deploys/bench.json` from `proof.receipt.identity`. An unparsed id is a named DeployError after the deploy.
   - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_deploy_bench.py -q` rc=0, with a test that fails on today's code (no cache file written).
     (ticked) 2026-10-28T05:24:27Z by d778be9d: 2026-10-28 by d778be9d: commit:5c1c9ab2a + commit:fc6c2cebb; pytest test_ops_deploy_bench.py rc=0 (25 passed: parsed id, missing id is a named DeployError writing nothing, overwrite, live version wins); live deploy_bench rc=0 twice, second writes bench.json version_id 6b822ba9 (the 100% version deploy_record reads) with deployed_version_id 335ce034
-- [ ] V5 [writer] The live tier and recorder: `proof/live_tier.py` and `ops/live_proof.py` (`record`, `verify`; no `--retro`).
+- [x] V5 [writer] The live tier and recorder: `proof/live_tier.py` and `ops/live_proof.py` (`record`, `verify`; no `--retro`).
   - The registry has fixed argv only (no `rdc` or `npm` passthrough), with the item 4 entries including `renet-live`.
   - The recorder confirms bench through wrangler and hostinger through the hash, applies the tier ladder via `vm_tier.admit`, and refuses secrets. It writes VERIFIED rows only.
   - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_proof_live_tier.py .ci/rediacc_ci/tests/test_ops_live_proof.py -q` rc=0, with recording fakes for wrangler, curl, `go version -m` and rdc. Cases:
@@ -228,6 +228,7 @@ Worklist: pending -- filed at promotion
     - a check id or machine alias outside the registry refuses;
     - a planted secret in the tail refuses;
     - the row id round-trips.
+    (ticked) 2026-10-28T09:31:52Z by d778be9d: 2026-10-28 by d778be9d: commit:b8f513f40; pytest test_proof_live_tier, test_ops_live_proof, test_proof_surfaces, test_proof_receipt, test_proof_vm_tier rc=0 (420 passed); 14 judges each broken once turned a test red; env reads registered in a07548252
 - [ ] V6 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py`.
   - Rules LP1 to LP7, with every edge reference removed. LP7 also fires on a surface with an admissible target but no registry check.
   - The advisory line for `Live-Proof: none`, the gate metadata (`lane: quality-branch`, `selftest: true`), the `package.json` script `check:ci-plan-live-proof` and a lane-durations entry. Set `baseline_at` to the landing date.
