@@ -233,22 +233,37 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     }
     await this.touch();
 
-    await this.startupSettled();
+    // Wait out a start in progress, then decide with no await between the check and `serialized`, which sets `this.startup` synchronously: two pins arriving together can then never both start a container.
+    while (this.startup !== undefined) {
+      await this.startup.catch(() => undefined);
+    }
     if (this.isDraining()) return refusal('EXECUTOR_CAPACITY', 'draining');
 
     const container = this.ctx.container;
     if (container?.running && this.record) {
-      // A running instance does not take application rollouts; it moves to the new image at the first moment nothing is in flight.
-      if (this.record.image !== this.currentImage() && this.inFlight === 0) {
-        const runningSize = this.record.size;
-        return this.serialized(async () => {
-          await this.stopContainer('image-drift');
-          return this.start(orgId, runningSize);
-        });
+      const image = this.currentImage();
+      // A running instance does not take application rollouts. The drift check runs on each pin, so a busy container moves to the new image at the first pin that finds nothing in flight, and an idle one either gets that pin or stops at `sleepAfter` and starts on the new image. A version that names no image is not drift: the running container keeps serving.
+      if (image !== undefined && this.record.image !== image && this.inFlight === 0) {
+        const running = this.record;
+        return this.serialized(() => this.restartOnNewImage(running));
       }
       return { ok: true, size: this.record.size };
     }
     return this.serialized(() => this.start(orgId, size));
+  }
+
+  /**
+   * Move a running container to the deployed image. The lease is secured before the old container is destroyed: a coordinator that refuses (or fails) leaves the old container serving and the drift is retried at a later pin, rather than leaving the org with no container. `start` then re-acquires, which the coordinator counts once per org.
+   */
+  private async restartOnNewImage(running: ExecutorRecord): Promise<PinAnswer> {
+    const lease = await this.acquireLease(running.orgId, running.size);
+    if (lease === 'failed' || !lease.ok) {
+      console.warn('proxy: org executor image restart deferred: no lease');
+      return { ok: true, size: running.size };
+    }
+    this.lastRenew = Date.now();
+    await this.stopContainer('image-drift');
+    return this.start(running.orgId, running.size);
   }
 
   /** Why `pin(orgId, size)` is refused, or undefined when it is admitted. */
@@ -262,7 +277,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
 
   /** Wait out any start or restart in progress. */
   private async startupSettled(): Promise<void> {
-    while (this.startup !== undefined) await this.startup;
+    while (this.startup !== undefined) await this.startup.catch(() => undefined);
   }
 
   /** Read through a method so the flag is re-read after every await rather than narrowed. */
@@ -436,6 +451,22 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     if (!lease.ok) return refusal('EXECUTOR_CAPACITY', lease.reason);
     this.lastRenew = Date.now();
 
+    const failure = await this.launch(container, orgId, size, image);
+    if (failure === undefined) return { ok: true, size };
+    await this.stopContainer(failure.reason);
+    // A container that exited on its own during readiness has had its slot released by `onExit` already.
+    if (!failure.releasedByExit) await this.releaseLease(orgId);
+    return refusal('EXECUTOR_START_FAILED', failure.reason);
+  }
+
+  /** Register the intercept, start the container, record it, attach `monitor()` and wait for readiness. Answers undefined once ready, else why it failed and whether its own exit already released the slot. */
+  private async launch(
+    container: Container,
+    orgId: string,
+    size: ExecutorSize,
+    image: string
+  ): Promise<{ reason: string; releasedByExit: boolean } | undefined> {
+    let generation: number | undefined;
     try {
       // Registered before `start`, so no egress call can escape to DNS in between.
       await this.registerEgress(container, orgId);
@@ -449,19 +480,22 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       });
       // Attached before any await, so an exit right after start is not missed.
       this.attachMonitor(container);
+      generation = this.generation;
       this.record = { orgId, size, image, startedAt: Date.now() };
       await this.ctx.storage.put(RECORD_KEY, this.record);
-      if (!(await this.waitReady(container, this.generation))) {
-        throw new Error('not-ready');
-      }
-    } catch (error) {
-      const reason =
-        error instanceof Error && error.message === 'not-ready' ? 'not-ready' : 'start-threw';
-      await this.stopContainer(reason);
-      await this.releaseLease(orgId);
-      return refusal('EXECUTOR_START_FAILED', reason);
+      if (await this.waitReady(container, generation)) return undefined;
+      return { reason: 'not-ready', releasedByExit: this.exitedIn(generation) };
+    } catch {
+      return {
+        reason: 'start-threw',
+        releasedByExit: generation !== undefined && this.exitedIn(generation),
+      };
     }
-    return { ok: true, size };
+  }
+
+  /** Whether the container of `generation` exited on its own (its `onExit` ran). */
+  private exitedIn(generation: number): boolean {
+    return this.generation === generation && this.exited !== undefined;
   }
 
   /** Route `account.internal` to the egress entrypoint with this instance's props. Registering again replaces the props without dropping open connections. */

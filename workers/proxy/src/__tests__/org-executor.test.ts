@@ -384,6 +384,65 @@ describe('start', () => {
   });
 });
 
+describe('review 5acbb97d', () => {
+  it('5acbb97d.1: two concurrent pins with no container start exactly one container on one lease', async () => {
+    const h = harness();
+    await h.ready;
+    const answers = await Promise.all([h.executor.pin(ORG, 'light'), h.executor.pin(ORG, 'light')]);
+    expect(answers).toEqual([
+      { ok: true, size: 'light' },
+      { ok: true, size: 'light' },
+    ]);
+    expect(h.container.starts).toHaveLength(1);
+    expect(h.capacity.acquire).toHaveBeenCalledTimes(1);
+    expect(h.container.destroys).toHaveLength(0);
+  });
+
+  it('5acbb97d.1: three concurrent pins still start exactly one container', async () => {
+    const h = harness();
+    await h.ready;
+    await Promise.all([1, 2, 3].map(() => h.executor.pin(ORG, 'light')));
+    expect(h.container.starts).toHaveLength(1);
+    expect(h.container.destroys).toHaveLength(0);
+  });
+
+  it('5acbb97d.2: an image-drift restart the coordinator refuses keeps the old container serving', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 'light');
+    h.container.images = { executor: IMAGE_V2 };
+    h.capacity.acquire.mockResolvedValue({ ok: false, reason: 'full' });
+    expect(await h.executor.pin(ORG, 'light')).toEqual({ ok: true, size: 'light' });
+    expect(h.container.destroys).toHaveLength(0);
+    expect(h.container.running).toBe(true);
+    const response = await h.executor.fetch(new Request('https://proxy/a'));
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('from-app');
+  });
+
+  it('5acbb97d.3: a monitor() rejection during readiness releases the lease exactly once', async () => {
+    const h = harness();
+    await h.ready;
+    h.container.health = () => {
+      h.container.exit(Object.assign(new Error('exited'), { exitCode: 1 }));
+      return new Response('booting', { status: 503 });
+    };
+    expect(await h.executor.pin(ORG, 'light')).toMatchObject({ code: 'EXECUTOR_START_FAILED' });
+    await flush();
+    expect(h.capacity.release).toHaveBeenCalledTimes(1);
+  });
+
+  it('5acbb97d.4: a version with no images.executor does not destroy a running container', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 'light');
+    h.container.images = {};
+    expect(await h.executor.pin(ORG, 'light')).toEqual({ ok: true, size: 'light' });
+    expect(h.container.destroys).toHaveLength(0);
+    expect(h.container.starts).toHaveLength(1);
+  });
+});
+
 describe('the pin', () => {
   it('refuses an org whose name does not derive this instance id', async () => {
     const h = harness();
