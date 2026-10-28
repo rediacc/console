@@ -132,7 +132,12 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
                 g = g[2:]
             if g.endswith("/"):
                 g = g.rstrip("/") + "/**"
-            elif root is not None and not _has_wild(g) and (pathlib.Path(root) / g).is_dir():
+            elif (
+                root is not None
+                and not _has_wild(g)
+                and (pathlib.Path(root) / g).is_dir()
+                and g not in _submodule_roots(root)
+            ):
                 g += "/**"
             why = glob_problem(g)
             if why:
@@ -141,6 +146,15 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
             if g and g not in out:
                 out.append(g)
     return out, problems
+
+
+def _submodule_roots(root) -> frozenset[str]:
+    """The submodule paths `.gitmodules` declares. A bare submodule root in an Owns line names its gitlink (the pointer bump), not every file of the submodule: `private/renet (the gitlink bump only)` widened to `private/renet/**` made a plan claim all of renet and refused every renet writer beside it."""
+    try:
+        text = (pathlib.Path(root) / ".gitmodules").read_text(encoding="utf-8")
+    except OSError:
+        return frozenset()
+    return frozenset(m.strip().strip("/") for m in re.findall(r"^\s*path\s*=\s*(.+)$", text, re.M))
 
 
 def _has_wild(glob: str) -> bool:

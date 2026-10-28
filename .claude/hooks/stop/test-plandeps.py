@@ -679,6 +679,17 @@ check(
 )
 check("normalize: a trailing slash", X.normalize_owns(["dir/"])[0], ["dir/**"])
 check("normalize: ./ and // dropped", X.normalize_owns(["./a//b"])[0], ["a/b"])
+import tempfile as _tf
+
+with _tf.TemporaryDirectory() as _d:
+    (pathlib.Path(_d) / "sub/inner").mkdir(parents=True)
+    (pathlib.Path(_d) / "plain").mkdir()
+    (pathlib.Path(_d) / ".gitmodules").write_text('[submodule "sub"]\n\tpath = sub\n\turl = x\n')
+    check(
+        "normalize: a submodule root stays its gitlink, a plain directory widens",
+        X.normalize_owns(["sub", "plain", "sub/inner"], _d)[0],
+        ["sub", "plain/**", "sub/inner/**"],
+    )
 for bad in ("/etc/x", "a/../b", "!a", "a\\b", "{a,b}/{c,d}/{e,f}/{g,h}/{i,j}/{k,l}", "a/{b"):
     check("normalize: refuses %r" % bad, bool(X.normalize_owns([bad])[1]), True)
 check(
