@@ -1834,9 +1834,10 @@ jobs:
           [ -n "$AGENT_BROWSER_VERSION" ] || { echo "AGENT_BROWSER_VERSION not found in .devcontainer/Dockerfile" >&2; exit 1; }
           before="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
           cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false --before "${before}"
-          # The installed version must be the one the devcontainer pins, so a sed that misreads the ARG fails here.
-          installed="$(agent-browser --version)"
-          case "$installed" in *"$AGENT_BROWSER_VERSION"*) ;; *) echo "agent-browser reports '$installed', want $AGENT_BROWSER_VERSION" >&2; exit 1 ;; esac
+          # The installed version is checked against the ARG line itself, not against the sed's result, so a misread fails here.
+          installed="$(agent-browser --version | awk '{print $NF}')"
+          grep -qxE "ARG AGENT_BROWSER_VERSION=[\"']?${installed//./\\.}[\"']?[[:space:]]*" .devcontainer/Dockerfile \
+            || { echo "agent-browser reports '$installed', which is not the ARG in .devcontainer/Dockerfile" >&2; exit 1; }
 
       # A silent-install failure (a broken postinstall, a PATH the shell that
       # ran npm install cannot see, a platform binary that never got selected)
