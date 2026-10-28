@@ -5,7 +5,7 @@ Depends-On: PLAN-shell-sandbox-readonly-view.md, PLAN-account-vm-check.md
 Supersedes: agent/plans/PLAN-rclone-decommission.md, agent/plans/PLAN-cold-path.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-restore-target-license.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-chunk-store-browse-toc-and-remote.md
 Priority: P1 -- hostinger has had no backup since 2026-08-14, and a restore can overwrite its own source
 Concurrency: parallel -- operator /ask 2026-10-23 ("Parallel, per-phase Owns"): writers take disjoint per-phase Owns declared on their spawn (account backup services; renet chunkstore and restore; renet daemons; CLI backup), and phases touching files other live plans hold (account types/env.ts, drizzle/meta, CLI locales, gates.lock, renet pkg/i18n) wait for those plans
-Owns: private/renet/**, private/account/**, private/elite/**, packages/cli/src/**, packages/shared/src/**, packages/e2e-tests/**, packages/www/src/content/**, workers/account/**, .ci/rediacc_ci/**, .ci/scripts/quality/**, .ci/config/**, .claude/rediacc_hooks/**, .claude/skills/**, .claude/agents/backup-storage.md, scripts/gates/**, docs/backup-storage/**, docs/design/**, .github/workflows/**
+Owns: agent/plans/PLAN-backup-program.md, packages/e2e-tests/tests/26-backup-storage-cli.test.ts, private/elite/**, agent/ledgers/live-proof.jsonl
 Owner: 5cc33087
 First-Seen: 2026-10-15
 

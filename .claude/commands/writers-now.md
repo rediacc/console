@@ -1,7 +1,7 @@
 ---
-description: Drain the Promoted plans in agent/plans/QUEUE.md with parallel writers. Reads the generated progress table, classifies every open box of every unfinished Promoted plan (local now, live on bench/edge, live on hostinger, post-merge, operator, already done), then fans out writers on the local-now and bench/edge work with disjoint file ownership up to writer_cap, leases each, and keeps going until every open box is either ticked or genuinely waiting on something named. Free text after the command narrows it to matching plans.
+description: Drain the Promoted plans in agent/plans/QUEUE.md with parallel writers. One invocation starts at least one writer per unfinished Promoted plan, and three for a plan with more than five open boxes (split by thirds of its open boxes), filling writer_cap. Each writer gets a self-contained brief with the plan's Owns as its boundary and handles every box class itself (local, already done, bench, hostinger, post-merge, operator). A writer the concurrency guard refuses is queued, never dropped. The read-only survey is optional and lands in a file. Free text after the command narrows it to matching plans.
 argument-hint: "[filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan]"
-allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(python3 -c:*)
+allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(.claude/hooks/stop/worklist.py --update:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(python3 -c:*)
 ---
 
 ## The queue, gathered
@@ -15,47 +15,92 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claud
 
 ## What to do
 
-**Drain, do not report.** The operator types this instead of a long prompt; it means "the Promoted plans have open boxes, get parallel writers on everything that can move now". The output is writers running and boxes ticking, not a status essay. Rules of CLAUDE.md apply unchanged (rule 1 commits, rule 3 verification, rule 4 writer discipline).
+**Drain, do not report, and do not survey first.** The operator types this instead of a long prompt; it means "every unfinished Promoted plan gets a writer now". Earlier versions surveyed first and then started a few hand-built batches, and run after run left most Promoted plans untouched. The output of one invocation is a writer on EVERY unfinished Promoted plan (or a queued item naming why it is not running yet), not a status essay. Rules of CLAUDE.md apply unchanged (rule 1 commits, rule 3 verification, rule 4 writer discipline).
 
 ### 1. Pick the plans
 
-Every Promoted plan whose row is not `done`, in table order (the order already puts prerequisites first). With a filter, keep only plans whose file name matches it. Skip a plan whose `Depends-On:` prerequisite is unfinished unless its boxes carry a `DEPS-WAIVED:` ruling.
+Every Promoted plan whose row is not `done`, in table order (the order already puts prerequisites first). With a filter, keep only plans whose file name matches it. A plan whose `Depends-On:` prerequisite is unfinished still gets its writer when the prerequisite is also in this round; the writer's brief names the prerequisite, and the writer leaves boxes that need its output as `blocked-on-dep`. A plan whose prerequisite is outside the round and unfinished is skipped unless its boxes carry a `DEPS-WAIVED:` ruling.
 
-### 2. Classify every open box, once, with read-only agents
+### 2. Build the roster, mechanically
 
-Fan out `Explore`/`general-purpose` agents (read-only; they do not count against the cap), one per plan or per group of small plans, model `sonnet`. Each returns, per open box: the 8-hex signature (from `.ci/config/plan-boxes.json` `open_sigs`), a one-line summary, and exactly one class:
+The roster comes from the progress table and the plan files, not from a survey. For each picked plan, list its open boxes in file order with their 8-hex signatures (`open_sigs` in `.ci/config/plan-boxes.json`, or the `- [ ]` lines of the plan).
 
-- **LOCAL-NOW**: code, tests, docs or config doable in this checkout now;
-- **LIVE-BENCH**: needs bench or edge (agents deploy bench freely, and edge per the deploy skill's own gates; `npm run login:bench` logs in headlessly; ops VMs via `./rdc.sh ops up`);
-- **LIVE-HOSTINGER**: needs the production hostinger machine (always available; through `eu-bench` or `eu-remote`);
-- **POST-MERGE**: needs `main`, a released CLI or renet, CD, a nightly, or the stable promote;
-- **OPERATOR**: needs an operator decision or operator-only access;
-- **ALREADY-DONE**: the tree already holds it (cite file:line or commit) and only the tick is missing.
+- **Five or fewer open boxes**: one writer takes them all.
+- **More than five open boxes**: three writers, each a contiguous third of the open boxes in file order (sizes differ by at most one).
+- **Free slots** are `writer_cap` minus the live writers counted by the gathered leases and this session's running agents.
+- **Order of starting**: first one writer per plan in table order (the first third for a split plan), then the second and third thirds in table order. Whatever does not fit in the free slots is queued (step 5), in that same order.
+- **Filling the cap**: when every planned writer fits and slots remain, the largest remaining share above five boxes splits into thirds again, repeated until the slots run out or no share is above five.
 
-Plus, for LOCAL-NOW and LIVE-BENCH boxes, the files each would touch. A box whose code landed but whose live accept is open is classified by the open half.
+Writers of the same plan share the plan's `Owns:` boundary (the concurrency guard judges plans, so siblings are not refused against each other). Each sibling's brief names the other siblings' box ranges, which keeps file collisions out: a file one sibling's boxes plainly need belongs to that sibling, and a writer that finds it must edit a sibling's file stops and puts the exact change in its report for the lead.
 
-### 3. Tick what is already done
+### 3. The survey, optional and on disk
 
-For each ALREADY-DONE box: `worklist.py --plan-investigate <me> <plan> <sig> present <kind>:<token> -- <evidence> --write`, then `--plan-tick` with the commit and the command that proves it. Spot-check the evidence first (rule 3); an agent's "already done" is a hypothesis.
+A survey helps only when it does not hold the writers back. When one is wanted, start a single background `general-purpose` agent (model `sonnet`, read-only) in the same message as the writers, never before them. It classifies every open box of the round into the classes of the brief below, with file:line evidence, and WRITES the result to `/tmp/writers-now/<branch>-<UTC stamp>.md`, returning only the path and per-class counts. The lead reads the counts, not the file. Writers are told the path and treat it as a hint, never as a reason to skip their own check of a box.
 
-### 4. Fan out writers
+### 4. Start the writers, all at once
 
-- **Batches**: group LOCAL-NOW boxes (and LIVE-BENCH boxes whose run is cheap and safe) into batches with DISJOINT file ownership. One plan may need several batches; one batch never spans two writers' files. Respect each plan's `Owns:` and `Concurrency:` header (`block_plan_concurrency` refuses overlap).
-- **Cap**: fill up to `writer_cap` live writers, counting writers already running. Overflow batches are leased to `worker:queue` and started as slots free.
-- **Model**: `sonnet` for implementation against an existing oracle (ports, tests, sweeps, translations); `opus` when the writer creates the oracle (new gate, guard, schema, design). Never `haiku` for writes.
-- **Brief** (each one stands alone): the plan path and box labels with signatures; what the survey found (file:line); the exact files owned and a ban on every other file; the acceptance command per box; the rules: writers never commit, no `git checkout/restore/stash/clean/add/reset`, no regenerate or sync script (name it for the lead), never vitest from the repo root, report changed files and every command with its exit code, and say which half of each box remains live.
-- **Track**: one worklist item per batch (`--add`), leased to the real agent id once it returns (`--lease <me> <id> +120 worker:<agent-id>`). Run `--plan-investigate` for each box before its writer starts.
+Every writer that fits is started in ONE message with parallel Agent calls. Model: `sonnet` when the plan's open boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold its writer back: it is started anyway, and `block_plan_concurrency` decides.
 
-### 5. As each writer reports
+Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards and are copied from the plan header:
 
-Spot-check against the artifact (rule 4), rerun its acceptance commands, regenerate what it named, commit by path (submodules first, then the pointer), `--plan-tick` each finished box with the commit and the proof, settle its per-commit review findings, then start the next queued batch.
+```
+Plan: agent/plans/<PLAN-file>.md
+Owns: <the plan's Owns: globs, verbatim>
 
-### 6. Live and parked boxes
+PR-TASK <the plan's epic id>, repo <repo root>. Boxes (this writer's share, with signatures):
+  <sig> <label>
+  ...
+Siblings on this plan: <writer A: sigs ...; writer B: sigs ...>, or "none".
+Prerequisite in this round: <PLAN-x.md, or "none">.
+Survey hint, if present: </tmp/writers-now/...md>.
 
-- LIVE-BENCH boxes get a writer or the lead as soon as nothing in the tree they need is mid-edit (a vm:check or a drill rebuilds the CLI; no CLI writer runs beside one). A LIVE-HOSTINGER box is run by the lead after the box's own acceptance command is named in the writer brief; a writer does not change the production machine beyond that named command, and a step the plan does not name goes to the operator.
+Boundary: only files matching the Owns globs above. Any other file, or a file a sibling's boxes
+plainly need, is not edited: the exact change goes into the report for the lead.
+
+Handle each box by its class, which this writer determines itself from the tree:
+- LOCAL: code, tests, docs or config doable in this checkout. Implement it and run its acceptance
+  command.
+- ALREADY-DONE: the tree already holds it. Change nothing; cite file:line or the commit, and run
+  the command that proves it.
+- BENCH: needs bench or edge. Land the code half, then run the box's own named accept command on
+  bench (`npm run login:bench` logs in headlessly; bench deploys are free). A run that rebuilds the
+  CLI (vm:check, a drill) or deploys edge is not run here: name the exact command for the lead.
+- HOSTINGER: needs the production hostinger machine. Land the code half and name the exact
+  acceptance command; the production machine is not touched by this writer.
+- POST-MERGE: needs main, a released CLI or renet, CD, a nightly or the stable promote. Land any
+  local half and name what closes the box after the merge.
+- OPERATOR: needs an operator decision or operator-only access. Change nothing; write the decision
+  as one question with the recommended option first.
+A box whose code landed but whose live accept is open is classified by its open half.
+
+Rules: never commit; no git checkout, restore, stash, clean, reset or add; no regenerate or sync
+script (name it for the lead instead); never vitest from the repo root; no edits outside the
+boundary.
+
+Report, one block per box signature:
+  <sig> <class> <done|partial|untouched|blocked-on-dep>
+  files: <changed paths>
+  commands: <each command run, with its exit code>
+  remains: <the half still open and the exact command or decision that closes it, or "nothing">
+```
+
+**Track** each writer as one worklist item (`--add`, text naming the plan and its box signatures), and lease it to the real agent id only after the Agent call returns it (`--lease <me> <id> +120 worker:<agent-id>`). `--plan-investigate` each box when its writer starts.
+
+### 5. A refused writer is queued, never dropped
+
+A spawn refused by `block_agent_cap` (cap full) gets its item leased to `worker:queue` with the refusal in the note. A spawn refused by `block_plan_concurrency` (an exclusive plan, or an Owns overlap with a live writer) stays an open item, and `--update <me> <id> queued: refused by block_plan_concurrency behind <plan> (#<holding item>)` records the guard's exact refusal. Either way the brief is kept verbatim in the item's text or the round log, so the retry is a copy, not a rewrite. When a writer reports, the queue is retried in the order of step 2 before anything new starts.
+
+### 6. As each writer reports
+
+Spot-check against the artifact (rule 4), rerun its acceptance commands, run any regenerate it named, commit by path (submodules first, then the pointer), and `--plan-tick` each box it finished with the commit and the proof. An ALREADY-DONE box is closed with `--plan-investigate <me> <plan> <sig> present <kind>:<token> -- <evidence> --write` and then `--plan-tick`, after the cited evidence is checked (an agent's "already done" is a hypothesis). Settle the per-commit review findings, then start the next queued writer.
+
+### 7. Live and parked boxes
+
+- A BENCH command a writer named runs as soon as nothing it needs is mid-edit (a vm:check or a drill rebuilds the CLI; no CLI writer runs beside one).
+- A HOSTINGER command runs by the lead, exactly as named; a step the plan does not name goes to the operator.
 - POST-MERGE boxes stay open and are named once in the report; they close after the merge.
-- OPERATOR boxes become one batched `AskUserQuestion` (recommended option first), never one question per box.
+- OPERATOR questions from every writer become one batched `AskUserQuestion` (recommended option first), never one question per box.
 
-### 7. Report in one screen
+### 8. Report in one screen
 
-Writers running (batch, plan, boxes, agent), boxes ticked this round with commits, and the boxes still open by class. No narration of the survey.
+Writers running (plan, share, agent), writers queued with the refusal that holds each, boxes ticked this round with commits, and the boxes still open by class. No narration of the survey.
