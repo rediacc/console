@@ -468,6 +468,12 @@ Operator order 2026-10-28 (no customers yet): the durable_object rollout goes st
 | Target | Phase | Proxy version (previous, new) | Account version (A1) | D1 | Smoke rc | Rollback | Backend | Cold start median | Org A run | Org B run |
 |---|---|---|---|---|---|---|---|---|---|---|
 
+L0 drills on bench, 2026-10-28 (proxy 628b1496 -> 2eff069a durable, E1 2 passed, idle drill 0-1-2-1-0 recorded earlier):
+- Drill 2 (BUSINESS heavy): org 61fa8f2c's subscription set PROFESSIONAL -> BUSINESS by a direct D1 write (restored after, read back PROFESSIONAL), then 27-91 rc 0 with `/v1/ready` polled every 5 s on 2eff069a: executors total 0 -> 1 -> 2 and heavy 0 -> 1 at 21:01:34Z, rc 0. The span attribute `rediacc.proxy.size` was not read.
+- Drill 3 (redeploy during an open run): `deploy_proxy --target bench --record` rc 0 (smoke rc 0, new version 1b818024, previous 2eff069a, backend durable, cold start 93 ms) landed between two back-to-back 27-91 runs, so it did not overlap one. The real overlap used `wrangler rollback 2eff069a` rc 0 at 21:09:28Z, 75 s into a 27-91 run (21:08:13Z to 21:10:15Z): the run passed (rc 0) and the pre-existing executor leases (total 2) survived the version switch. This is a version switch, not a rebuild-and-upload, and the executor image was unchanged.
+- Drill 1 (cap 2) not run: the cap is a var in workers/proxy/wrangler.bench.toml and deploy_proxy takes no override, so it needs that file edited to "2" and back; bench also has only two test logins (A and B), so a third concurrent entitled org needs one more provisioned org with a login and a store. Not done.
+- Drill 4 (rollback to Phase 1 container version 0ac1523d) not run: the pre-bash hook refuses `wrangler rollback` on a bench config as a raw publish verb. Bench ends on 2eff069a, durable, cap 25, smoke rc 0.
+
 ## Decisions taken as defaults (open to operator veto)
 
 1. **A new class and binding beside the old, routed by a per-target var.** The guide demands a new class and namespace. A var lets each target flip on its own (bench, then edge, then stable) and keeps one `wrangler rollback` inside the window where no class lifecycle changes.
