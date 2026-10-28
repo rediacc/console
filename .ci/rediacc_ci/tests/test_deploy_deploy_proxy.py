@@ -134,6 +134,16 @@ if args[:3] == ["wrangler", "deployments", "list"]:
         new = {"created_on": "2026-10-25T20:00:00Z", "versions": [{"version_id": listed, "percentage": 100}]}
         print(json.dumps([new, prev]))
     sys.exit(0)
+if args[:3] == ["wrangler", "versions", "view"]:
+    view_rc = int(os.environ.get("FAKE_VIEW_RC", "0"))
+    if view_rc:
+        sys.stderr.write("wrangler: version not found\\n")
+        sys.exit(view_rc)
+    bindings = [{"type": "secret_text", "name": "SOME_SECRET"}]
+    if os.environ.get("FAKE_VIEW_BACKEND", "container"):
+        bindings.append({"type": "plain_text", "name": "EXECUTOR_BACKEND", "text": os.environ.get("FAKE_VIEW_BACKEND", "container")})
+    print(json.dumps({"id": args[3], "resources": {"bindings": bindings}}))
+    sys.exit(0)
 rc = int(os.environ.get("FAKE_NPX_RC", "0"))
 if rc:
     sys.stderr.write("wrangler: deploy failed\\n")
@@ -1302,6 +1312,8 @@ def _rollback_calls(config: str, host: str, version_id: str) -> str:
     return (
         f"npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
         "  cwd=proxy\n"
+        f"npx\t--no-install\twrangler\tversions\tview\t{version_id}\t--json\t--config\t{config}\n"
+        "  cwd=proxy\n"
         f"npx\t--no-install\twrangler\trollback\t{version_id}\t--message\t"
         f"{port.ROLLBACK_MESSAGE}\t--yes\t--config\t{config}\n"
         "  cwd=proxy\n"
@@ -1339,12 +1351,13 @@ def test_a_bench_rollback_runs_wrangler_rollback_smokes_and_records(
         "config": "workers/proxy/wrangler.bench.toml",
         "rolled_back": True,
         "version_id": TO_ID,
+        "requested_version_id": TO_ID,
         "previous_version_id": PREV_ID,
         "artifacts_version": None,
         "smoke_rc": 0,
         "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.bench.toml"
         % PREV_ID,
-        "backend": None,
+        "backend": "container",
         "migration_tag": "v2",
         "var_overrides": {},
     }
@@ -1769,7 +1782,139 @@ def test_a_rollback_the_listing_does_not_confirm_still_writes_its_record(
     assert "curl" not in calls
     written = json.loads(record.read_text())
     assert written["rolled_back"] is True
-    assert written["version_id"] == TO_ID
-    assert written["listed_version_id"] == PREV_ID
+    assert written["version_id"] == PREV_ID, "version_id is what is live, not the target"
+    assert written["requested_version_id"] == TO_ID
     assert written["smoke_rc"] is None
     assert "names %s at 100%%" % PREV_ID in written["failure"]
+
+
+# ---- review a4d57548 and the bench drill: what a rollback record says is live ----
+
+
+def test_smoke_only_after_a_failed_rollback_smokes_the_live_version_not_the_target(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The listing named PREV_ID after `wrangler rollback`, so the record's `version_id` is PREV_ID and a later `--smoke-only` smokes it (review a4d57548.1)."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_LISTED_ID=PREV_ID,
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--smoke-only", "--record", str(record)),
+        FAKE_READY_VERSION=PREV_ID,
+        FAKE_READY_TIMEOUT="0",
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "on version %s." % PREV_ID in proc.stderr
+    assert "wrangler" not in calls, "the record named the live version, so nothing is listed"
+    assert json.loads(record.read_text())["requested_version_id"] == TO_ID
+
+
+def test_the_previous_release_differs_for_no_version_and_a_version(tmp_path: pathlib.Path) -> None:
+    """The pin under review a4d57548.2: with no version the newest tag is the answer, even when that is the live release itself; with the release named, the one before it."""
+    repo = _tagged_repo(tmp_path, ("v1.0.0", "v2.0.0"))
+    assert port.previous_release_tag(repo, None) == "v2.0.0"
+    assert port.previous_release_tag(repo, "2.0.0") == "v1.0.0"
+
+
+def test_an_edge_rollback_asks_the_forward_only_question_about_the_live_release(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The record names the live release 1.2.3, so the rollback compares against the tag after v1.2.3's position (v2.3.2, whose config is at v1), as a deploy of 1.2.3 would: forward-only. Asked with no version it would read v1.2.3 itself and say a plain rollback (review a4d57548.2)."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    record.write_text(
+        json.dumps({"artifacts_version": VERSION, "migration_tag": "v2"}), encoding="utf-8"
+    )
+    previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V1)
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "edge", "--region", "us", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_LISTED_ID=TO_ID,
+        FAKE_READY_VERSION=TO_ID,
+        FAKE_PREV_CONFIG=previous,
+    )
+    assert proc.returncode == 0, proc.stderr
+    want = "forward-only: Durable Object class lifecycle change (v2); fix forward"
+    assert json.loads(record.read_text())["rollback"] == want
+
+
+def test_an_edge_rollback_with_no_recorded_release_says_so(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "edge", "--region", "us", "--rollback", TO_ID),
+        FAKE_LISTED_ID=TO_ID,
+        FAKE_READY_VERSION=TO_ID,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "no record names the release of the live" in proc.stderr
+
+
+@pytest.mark.parametrize(
+    ("view_backend", "view_rc", "backend"),
+    [
+        ("container", "0", "container"),
+        ("durable", "0", "durable"),
+        ("container", "1", "unknown"),
+        ("", "0", "unknown"),
+    ],
+    ids=["container", "durable", "view-fails", "no-backend-var"],
+)
+def test_a_rollback_records_the_target_versions_own_backend(
+    tmp_path: pathlib.Path, view_backend: str, view_rc: str, backend: str
+) -> None:
+    """The drill rolled bench back to a container version and recorded backend null: the backend is the target version's own, read with `wrangler versions view --json`, and "unknown" when it cannot be read."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_LISTED_ID=TO_ID,
+        FAKE_READY_VERSION=TO_ID,
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+        FAKE_VIEW_BACKEND=view_backend,
+        FAKE_VIEW_RC=view_rc,
+    )
+    assert proc.returncode == 0, proc.stderr
+    written = json.loads(record.read_text())
+    assert written["backend"] == backend
+    assert written["migration_tag"] == "unknown", "no earlier record: unknown, never null"
+    assert "SOME_SECRET" not in proc.stdout + proc.stderr
+
+
+def test_the_versions_view_reader_takes_only_the_named_plain_text_var() -> None:
+    view = {
+        "resources": {
+            "bindings": [
+                {"type": "secret_text", "name": "EXECUTOR_BACKEND", "text": "s3cret"},
+                {"type": "plain_text", "name": "EXECUTOR_BACKEND", "text": "container"},
+            ]
+        }
+    }
+    assert port.version_plain_var(json.dumps(view), "EXECUTOR_BACKEND") == "container"
+    assert port.version_plain_var(json.dumps(view), "EXECUTOR_CAP") is None
+    assert port.version_plain_var("not json", "EXECUTOR_BACKEND") is None
+    assert port.versions_view_argv("c.toml", TO_ID) == [
+        "npx",
+        "--no-install",
+        "wrangler",
+        "versions",
+        "view",
+        TO_ID,
+        "--json",
+        "--config",
+        "c.toml",
+    ]
