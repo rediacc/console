@@ -117,6 +117,17 @@ describe('access in the config', () => {
     ]);
   });
 
+  it('refuses two keys whose blobs differ only in unused padding bits', () => {
+    // 'Y=' and 'Z=' differ only in the two bits atob drops, so both decode to one key.
+    const twin = KEY_EC.replace('l7Y= ec', 'l7Z= twin');
+    expect(twin).not.toBe(KEY_EC);
+    const access = {
+      sourceRanges: { ipv4: ['10.0.0.0/8'] },
+      keys: { ec: { publicKey: KEY_EC }, twin: { publicKey: twin } },
+    };
+    expect(issues(access)).toEqual(['access keys ec and twin declare the same public key']);
+  });
+
   it('refuses a stated type that differs from the blob', () => {
     const access = {
       sourceRanges: { ipv4: ['10.0.0.0/8'] },

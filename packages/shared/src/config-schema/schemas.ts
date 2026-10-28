@@ -692,6 +692,20 @@ export function parseOpenSshPublicKey(
   return comment === undefined ? { type, blob } : { type, blob, comment };
 }
 
+/**
+ * The base64 blob re-encoded from its decoded bytes, or null when it does not decode. Two
+ * spellings of one key (atob ignores unused padding bits, so 'AAA=' and 'AAB=' decode alike)
+ * give the same value, which is what sshd compares; key identity is judged on this, never on the
+ * text.
+ */
+export function canonicalKeyBlob(blob: string): string | null {
+  try {
+    return btoa(atob(blob));
+  } catch {
+    return null;
+  }
+}
+
 const OpenSshPublicKeySchema = z.string().superRefine((value, ctx) => {
   const parsed = parseOpenSshPublicKey(value);
   if (parsed === null) {
@@ -793,8 +807,9 @@ export const AccessSchema = z
           message: `access key ${name} resolves to no source range; set sourceRanges on the key or on access (an unrestricted key belongs in credentials.ssh)`,
         });
       }
-      const blob = parseOpenSshPublicKey(key.publicKey)?.blob;
-      if (blob === undefined) continue;
+      const raw = parseOpenSshPublicKey(key.publicKey)?.blob;
+      const blob = raw === undefined ? null : canonicalKeyBlob(raw);
+      if (blob === null) continue;
       const owner = blobOwner.get(blob);
       if (owner === undefined) {
         blobOwner.set(blob, name);

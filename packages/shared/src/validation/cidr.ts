@@ -33,14 +33,14 @@ function parseIPv4(text: string): bigint | null {
   return value;
 }
 
-function parseIPv6Groups(text: string): number[] | null {
+function parseIPv6Groups(text: string, quadAllowed: boolean): number[] | null {
   if (text === '') return [];
   const groups: number[] = [];
   const parts = text.split(':');
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     // An embedded dotted-quad is only allowed as the final 32 bits.
-    if (i === parts.length - 1 && part.includes('.')) {
+    if (quadAllowed && i === parts.length - 1 && part.includes('.')) {
       const v4 = parseIPv4(part);
       if (v4 === null) return null;
       groups.push(Number(v4 >> 16n), Number(v4 & 0xffffn));
@@ -56,9 +56,10 @@ function parseIPv6Groups(text: string): number[] | null {
 function expandIPv6Groups(text: string): number[] | null {
   const halves = text.split('::');
   if (halves.length > 2) return null;
-  if (halves.length === 1) return parseIPv6Groups(text);
-  const head = parseIPv6Groups(halves[0]);
-  const tail = parseIPv6Groups(halves[1]);
+  // The dotted quad may only end the whole address, so the head of a '::' split never takes one.
+  if (halves.length === 1) return parseIPv6Groups(text, true);
+  const head = parseIPv6Groups(halves[0], false);
+  const tail = parseIPv6Groups(halves[1], true);
   if (head === null || tail === null) return null;
   const missing = 8 - head.length - tail.length;
   if (missing < 1) return null;
