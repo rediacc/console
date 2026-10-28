@@ -50,6 +50,19 @@ sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 
 在开发环境中，如果没有配置真实的执行器，账户服务器会自行以模拟数据流和明显是伪造的数据（资源名称带 `mock-` 前缀）来响应命令请求。这使得整个控制台（包括表单、流式输出和结果渲染）都可以在没有机器、也无需解锁的情况下被完整地演练。真正执行命令则需要真实的执行器。
 
+## 限制执行器的连接来源
+
+配置中的 `access` 存储桶保存 SSH 密钥允许的 IPv4 和 IPv6 来源范围。范围可以按整个配置、按密钥和按机器设置，机器只接受来自其执行器所连接地址的密钥。
+
+- `rdc config access add <key> --public-key ... --hosted-executor` 注册密钥，并附加托管执行器的两个范围：`104.28.0.0/16` 和 `2a09:bac0::/29`。二者都是观测到的 Cloudflare 出口范围，并非 Cloudflare 发布的列表，因此可能发生变化。
+- `rdc machine access set <machine> --key <key>` 为机器分配密钥；`--ipv4`、`--ipv6` 和 `--clear-ranges` 用于调整该机器的范围。
+- `rdc machine access push <machine>` 将访问行写入机器，`--dry-run` 只显示结果而不做任何更改。
+- `rdc machine access show <machine>` 输出当前生效的访问行。
+
+`machine setup` 会重新应用访问行，因此重建后的机器会恢复其限制。
+
+如果某次 push 会把当前 SSH 会话锁在门外（其地址不在所用密钥的范围内），则会以 `ACCESS_LOCKOUT` 被拒绝，且不会写入任何内容。如果机器上的文件在此期间发生了变化，push 会以 `ACCESS_FILE_CHANGED` 被拒绝；由于没有应用任何更改，可以放心重试。
+
 ## 相关
 
 - [网页控制台](/zh/docs/web-console)：基于此模型构建的浏览器客户端

@@ -50,6 +50,19 @@ La consola web lee ese mismo flag para decidir si un comando recibe o no un bot�
 
 En desarrollo, cuando no hay un ejecutor real configurado, el servidor de la cuenta responde él mismo a las solicitudes de comandos con flujos simulados y datos claramente falsos (nombres de recursos con el prefijo `mock-`). Esto permite ejercitar toda la consola, incluidos formularios, streaming y renderizado de resultados, sin necesidad de una máquina ni de un desbloqueo. La ejecución real requiere un ejecutor real.
 
+## Restringir desde dónde se conecta el ejecutor
+
+El bucket `access` de la configuración contiene los rangos de origen IPv4 e IPv6 permitidos para las claves SSH. Los rangos se pueden fijar para toda la configuración, por clave y por máquina, de modo que una máquina acepte una clave solo desde las direcciones desde las que se conecta su ejecutor.
+
+- `rdc config access add <key> --public-key ... --hosted-executor` registra una clave y asocia los dos rangos del ejecutor alojado: `104.28.0.0/16` y `2a09:bac0::/29`. Ambos son rangos de salida de Cloudflare observados, no una lista que Cloudflare publique, por lo que pueden cambiar.
+- `rdc machine access set <machine> --key <key>` asigna una clave a una máquina; `--ipv4`, `--ipv6` y `--clear-ranges` ajustan los rangos de esa máquina.
+- `rdc machine access push <machine>` escribe las líneas de acceso en la máquina, y `--dry-run` muestra el resultado sin cambiar nada.
+- `rdc machine access show <machine>` muestra las líneas de acceso vigentes.
+
+`machine setup` vuelve a aplicar las líneas de acceso, de modo que una máquina reconstruida recupera sus restricciones.
+
+Un push que dejaría fuera la sesión SSH actual, porque su dirección queda fuera de los rangos de la clave en uso, se rechaza con `ACCESS_LOCKOUT` y no se escribe nada. Un push se rechaza con `ACCESS_FILE_CHANGED` cuando el archivo cambió en la máquina entretanto; no se aplicó nada, así que el push se puede reintentar sin riesgo.
+
 ## Relacionado
 
 - [Consola web](/es/docs/web-console), el cliente de navegador construido sobre este modelo
