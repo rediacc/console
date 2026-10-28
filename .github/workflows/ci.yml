@@ -1096,7 +1096,7 @@ jobs:
 
       - uses: ./.github/actions/profiler
         with:
-          runner-label: ubuntu-latest
+          runner-label: ubuntu-slim
 
       - name: Install the pinned aws CLI
         uses: ./.github/actions/setup-aws

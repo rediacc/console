@@ -2463,6 +2463,30 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // THE LOCAL EDGE RELEASE, registered for the reason pins is: a hand-written package.json key counts against check:ci-package-key-budget. gate:false because it PUBLISHES (R2, workers, the edge deploy); the scheduler never runs it.
+    id: 'release:local',
+    run: 'npm run release:local',
+    gate: false,
+    leaves: ['.ci/rediacc_ci/release/local.py'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: a publisher, not a validation. CI releases edge through cd-v2.yml on a green main run; this is the agent path beside it, and its flow is judged in CI by test_release_local and test_release_local_gates. A quality step here would claim CI publishes a release on every run.',
+    },
+  },
+  {
+    // THE BENCH LOGIN, registered for the reason pins is: a hand-written package.json key counts against check:ci-package-key-budget. gate:false because it logs a config in to bench with the operator account and edits the IP allowlist; the scheduler never runs it.
+    id: 'login:bench',
+    run: 'npm run login:bench',
+    gate: false,
+    leaves: ['.ci/rediacc_ci/ops/login_bench.py'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: needs the bench-login Bitwarden profile and a reachable bench account server, neither of which a CI runner holds. Its flow is judged in CI by test_ops_login_bench through fakes.',
+    },
+  },
+  {
     id: 'check:ci-syncpack-sources',
     run: 'npm run check:ci-syncpack-sources',
     gate: true,

@@ -92,6 +92,10 @@
           "evidence": ".ci/rediacc_ci/review/__init__.py:3 (cite) agent/reviews/<branch>/"
         },
         {
+          "id": "check:ci-plan-live-proof",
+          "evidence": ".ci/scripts/quality/check_plan_implementation.py:1386 (cite) agent/reviews/<branch>/clean.jsonl"
+        },
+        {
           "id": "check:ci-plan-record",
           "evidence": ".claude/hooks/stop/wl_agents.py:245 (glob) *.md"
         },
@@ -277,6 +281,10 @@
           "evidence": ".ci/scripts/quality/check_plan_citations.py:130 (cite) agent/worklist/*"
         },
         {
+          "id": "check:ci-plan-live-proof",
+          "evidence": ".claude/hooks/stop/wl_checks.py:205 (cite) agent/worklist/<prefix>.jsonl"
+        },
+        {
           "id": "check:ci-plan-record",
           "evidence": ".ci/scripts/quality/check_plan_citations.py:130 (cite) agent/worklist/*"
         },
@@ -433,6 +441,10 @@
           "evidence": ".claude/hooks/stop/wl_checks.py:1158 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-plan-live-proof",
+          "evidence": ".claude/hooks/stop/wl_reggate.py:73 (cite) agent/reggate"
+        },
+        {
           "id": "check:ci-plan-record",
           "evidence": ".ci/scripts/quality/check_plan_record.py:180 (cite) agent/reggate/<branch>.jsonl"
         },
@@ -581,6 +593,10 @@
           "evidence": ".ci/scripts/quality/check_plan_implementation.py:551 (cite) agent/ledgers/plan-investigation.jsonl."
         },
         {
+          "id": "check:ci-plan-live-proof",
+          "evidence": ".claude/hooks/stop/wl_checks.py:5512 (cite) agent/ledgers/effort-outcomes.jsonl."
+        },
+        {
           "id": "check:ci-plan-record",
           "evidence": ".ci/scripts/quality/check_plan_record.py:78 (cite) agent/ledgers/census-plan-record.jsonl"
         },
@@ -653,6 +669,42 @@
         {
           "id": "check:ci-operator-rulings",
           "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
+        },
+        {
+          "id": "check:ci-embed-asset-versions",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-gates-lock",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-gen-manifest",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-package-key-budget",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-parity",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-selftest-reachability",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:types:incremental",
+          "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
         }
       ]
     }

@@ -79,7 +79,11 @@
       // even in its own file, is still reported, which is how the genuinely dead
       // `rel` helper in scripts/lib/repo-root.ts was found and removed.
       "ignoreExportsUsedInFile": true,
-      "project": ["scripts/**/*.ts"]
+      "project": ["scripts/**/*.ts"],
+      "ignoreBinaries": [
+        // BLOCKER: .github/workflows/cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
+        "wrangler"
+      ]
     },
     "packages/locales": {
       "project": ["*.js"]

@@ -231,7 +231,8 @@ export function resolveInvocations(
     // TRACKED one wins; a module resolving to nothing tracked is reported as
     // `missing-module:<name>` rather than silently becoming `python3`, because a leaf
     // nobody can find is the failure this gate exists to catch.
-    if (prog === 'python3' || prog === 'python') {
+    // AN ABSOLUTE INTERPRETER PATH IS THE SAME INTERPRETER. `release:local` runs `/usr/bin/python3 -P -s -m rediacc_ci.release.local` on purpose (no venv on the release path), and before this the arm missed it and resolved the leaf to `/usr/bin/python3`, so its honest `leaves:` read as a registration error.
+    if (/^(?:\/usr(?:\/local)?\/bin\/)?python3?$/.test(prog)) {
       const mIdx = rest.findIndex((a) => a === '-m');
       if (mIdx >= 0) {
         const mod = rest[mIdx + 1] ?? '';
@@ -697,6 +698,13 @@ function control(): void {
     // A module nobody tracks is NAMED, not silently swallowed. Reporting it as `python3` would be the old bug wearing a new coat.
     if (leaves('python3 -m no.such.module')[0] !== 'missing-module:no.such.module') {
       fail('an untracked `-m` module is not reported by name');
+    }
+    // An absolute interpreter path with interpreter flags resolves the same way, and never to the interpreter itself.
+    if (
+      leaves('/usr/bin/python3 -P -s -m rediacc_ci.quality.npmrc')[0] !==
+      '.ci/rediacc_ci/quality/npmrc.py'
+    ) {
+      fail('an absolute `/usr/bin/python3 -m` invocation does not resolve to its module');
     }
     // CONTROL: a plain script invocation is unchanged, so the arm cannot eat that form.
     if (leaves('python3 tools/solo.py')[0] !== 'tools/solo.py') {
