@@ -3,7 +3,7 @@
 
 WHAT IT GENERATES. `workers/proxy/wrangler.template.toml` plus `regions.json` give `wrangler.<target>.toml` for the six deployable targets, `eu`, `us`, `asia` (production) and `edge-eu`, `edge-us`, `edge-asia` (edge). Each names `rediacc-proxy-<r>` or `edge-rediacc-proxy-<r>` (regions.json `proxyWorkerName` / `edgeProxyWorkerName`), routes the custom domain `proxy.<domain>` or `proxy.<edgeDomain>` (the WK_PROXY_*_HOST values of .ci/config/well-known.env), and binds both ACCOUNT (entrypoint CloudflareInternal) and ISSUER (entrypoint ExecutorIssuer) to the same target's account Worker (agent/plans/PLAN-proxy-cd-six-targets.md Design item 7).
 
-WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container budget, Durable Object and migration blocks, telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
+WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container blocks (the legacy `ExecutorContainer` entry at its budget beside the `OrgExecutor` entry of the `durable_object` scheduling policy, which carries no `max_instances` or `instance_type`), the Durable Object bindings, the migration list v1, v2 (and v3), the `EXECUTOR_BACKEND` / `EXECUTOR_CAP` / `EXECUTOR_HEAVY_CAP` vars (a backend in {container, durable}, caps at most 25 and 5), telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
 
 USAGE.
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs [generate]   write the six configs
@@ -53,9 +53,25 @@ MAX_INSTANCES = 25
 DEV_ISSUER_SERVICE = "rediacc-executor-issuer-dev"
 DEV_ACCOUNT_URL = "http://127.0.0.1:9"
 CONTAINER_CLASS = "ExecutorContainer"
+DURABLE_CLASS = "OrgExecutor"
+CAPACITY_CLASS = "ExecutorCapacity"
+SCHEDULING_POLICY = "durable_object"
+DURABLE_IMAGE_KEY = "executor"
+DURABLE_IMAGE = {"dockerfile": "./Dockerfile", "build_context": "../.."}
+BACKENDS = ("container", "durable")
+# The ceilings the Worker enforces in src/capacity.ts (HARD_CAP, HARD_HEAVY_CAP); a var above either is refused here too.
+MAX_EXECUTOR_CAP = 25
+MAX_EXECUTOR_HEAVY_CAP = 5
 ACCOUNT_BINDING = ("ACCOUNT", "CloudflareInternal")
 ISSUER_BINDING = ("ISSUER", "ExecutorIssuer")
 FORBIDDEN_TEXT = "EXECUTOR_TOKEN"
+# Per target, the three vars that route and bound the durable backend (PLAN-executor-durable-object-policy.md Design item 2). The backend flips one target at a time by editing BACKEND_BY_TARGET and regenerating; the caps are decimal strings the Worker parses.
+BACKEND_BY_TARGET: dict[str, str] = dict.fromkeys(
+    ("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "bench", "dev"), "container"
+)
+CAP_BY_TARGET: dict[str, str] = dict.fromkeys(BACKEND_BY_TARGET, "25")
+HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(BACKEND_BY_TARGET, "5")
+EXECUTOR_VARS = ("EXECUTOR_BACKEND", "EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
 PLACEHOLDER_RE = re.compile(r"@@[A-Z_]+@@")
 
 # The WK_PROXY_*_HOST value for each (region, channel); --check holds each equal to proxy.<domain> from regions.json.
@@ -113,6 +129,7 @@ class Target:
     max_instances: int
     generated: bool
     own_tokens: frozenset[str]
+    executor_vars: tuple[tuple[str, str], ...] = ()
 
 
 class ConfigError(Exception):
@@ -132,6 +149,15 @@ def load_regions(root: pathlib.Path) -> list[dict]:
 
 def _region_tokens(regions: list[dict]) -> frozenset[str]:
     return frozenset(str(r.get("id", "")).lower() for r in regions)
+
+
+def executor_vars(key: str) -> tuple[tuple[str, str], ...]:
+    """The durable-backend vars a target's config carries, from the three per-target tables."""
+    return (
+        ("EXECUTOR_BACKEND", BACKEND_BY_TARGET[key]),
+        ("EXECUTOR_CAP", CAP_BY_TARGET[key]),
+        ("EXECUTOR_HEAVY_CAP", HEAVY_CAP_BY_TARGET[key]),
+    )
 
 
 def targets(regions: list[dict]) -> dict[str, Target]:
@@ -173,6 +199,7 @@ def targets(regions: list[dict]) -> dict[str, Target]:
                 max_instances=MAX_INSTANCES,
                 generated=True,
                 own_tokens=frozenset({rid, EDGE} if edge else {rid}),
+                executor_vars=executor_vars(key),
             )
     out["bench"] = Target(
         key="bench",
@@ -190,6 +217,7 @@ def targets(regions: list[dict]) -> dict[str, Target]:
         max_instances=MAX_INSTANCES,
         generated=False,
         own_tokens=frozenset({"bench"}),
+        executor_vars=executor_vars("bench"),
     )
     out["dev"] = Target(
         key="dev",
@@ -204,6 +232,7 @@ def targets(regions: list[dict]) -> dict[str, Target]:
         max_instances=MAX_INSTANCES,
         generated=False,
         own_tokens=frozenset({"dev"}),
+        executor_vars=executor_vars("dev"),
     )
     return out
 
@@ -223,6 +252,7 @@ def render(template: str, target: Target) -> str:
         "ACCOUNT_SERVICE": account,
         "OTLP_LOGS": target.destinations[0],
         "OTLP_TRACES": target.destinations[1],
+        **dict(target.executor_vars),
     }
     text = template
     for key, value in values.items():
@@ -243,6 +273,96 @@ def _routes(config: dict) -> list:
 
 def _pattern(entry) -> str:
     return str(entry.get("pattern", "")) if isinstance(entry, dict) else str(entry)
+
+
+def _executor_var_refusals(variables: dict) -> list[str]:
+    out: list[str] = []
+    backend = variables.get("EXECUTOR_BACKEND")
+    if backend not in BACKENDS:
+        out.append("vars.EXECUTOR_BACKEND is %r, not one of %s" % (backend, "/".join(BACKENDS)))
+    for name, ceiling in (
+        ("EXECUTOR_CAP", MAX_EXECUTOR_CAP),
+        ("EXECUTOR_HEAVY_CAP", MAX_EXECUTOR_HEAVY_CAP),
+    ):
+        raw = variables.get(name)
+        if not (isinstance(raw, str) and raw.isascii() and raw.isdecimal()):
+            out.append("vars.%s is %r, not a decimal string" % (name, raw))
+        elif int(raw) > ceiling:
+            out.append("vars.%s is %r, over the ceiling of %d" % (name, raw, ceiling))
+    return out
+
+
+def _executor_refusals(config: dict, target: Target) -> list[str]:
+    """The container, Durable Object and migration blocks: the legacy and durable entries together, or the durable entry alone once Phase 3 retires the legacy class."""
+    out: list[str] = []
+    raw = config.get("containers")
+    containers = [c for c in raw if isinstance(c, dict)] if isinstance(raw, list) else []
+    legacy = [c for c in containers if c.get("class_name") == CONTAINER_CLASS]
+    durable = [c for c in containers if c.get("class_name") == DURABLE_CLASS]
+    if len(containers) != len(legacy) + len(durable) or len(durable) != 1 or len(legacy) > 1:
+        out.append(
+            "[[containers]] is %r, not the %s entry beside at most one %s entry"
+            % ([c.get("class_name") for c in containers], DURABLE_CLASS, CONTAINER_CLASS)
+        )
+    for entry in legacy:
+        for ckey, cvalue in (
+            ("image", "./Dockerfile"),
+            ("image_build_context", "../.."),
+            ("max_instances", target.max_instances),
+        ):
+            if entry.get(ckey) != cvalue:
+                out.append("[[containers]] %s is %r, not %r" % (ckey, entry.get(ckey), cvalue))
+        if "scheduling_policy" in entry:
+            out.append("[[containers]] %s names a scheduling_policy" % CONTAINER_CLASS)
+    for entry in durable:
+        if entry.get("scheduling_policy") != SCHEDULING_POLICY:
+            out.append(
+                "[[containers]] %s scheduling_policy is %r, not %r"
+                % (DURABLE_CLASS, entry.get("scheduling_policy"), SCHEDULING_POLICY)
+            )
+        out.extend(
+            "[[containers]] %s sets %s; wrangler refuses it under %s, and the cap lives in capacity.ts"
+            % (DURABLE_CLASS, key, SCHEDULING_POLICY)
+            for key in ("max_instances", "instance_type")
+            if key in entry
+        )
+        if entry.get("images") != {DURABLE_IMAGE_KEY: DURABLE_IMAGE}:
+            out.append(
+                "[[containers]] %s images is %r, not exactly {%r: %r}"
+                % (DURABLE_CLASS, entry.get("images"), DURABLE_IMAGE_KEY, DURABLE_IMAGE)
+            )
+        extra = sorted(set(entry) - {"class_name", "scheduling_policy", "images"})
+        if extra:
+            out.append("[[containers]] %s carries %s, which it may not" % (DURABLE_CLASS, extra))
+
+    bindings = (config.get("durable_objects") or {}).get("bindings")
+    wanted = [
+        {"name": "ORG_EXECUTOR", "class_name": DURABLE_CLASS},
+        {"name": "EXECUTOR_CAPACITY", "class_name": CAPACITY_CLASS},
+    ]
+    legacy_binding = {"name": "EXECUTOR", "class_name": CONTAINER_CLASS}
+    allowed = ([legacy_binding, *wanted], wanted)
+    if bindings not in allowed or (bindings == wanted and legacy):
+        out.append(
+            "[[durable_objects.bindings]] is %r, not %s"
+            % (bindings, " or ".join(repr(a) for a in allowed))
+        )
+    if (bindings == allowed[0]) != bool(legacy):
+        out.append(
+            "the EXECUTOR binding and the %s entry must stand or go together" % CONTAINER_CLASS
+        )
+
+    v1 = {"tag": "v1", "new_sqlite_classes": [CONTAINER_CLASS]}
+    v2 = {"tag": "v2", "new_sqlite_classes": [DURABLE_CLASS, CAPACITY_CLASS]}
+    v3 = {"tag": "v3", "deleted_classes": [CONTAINER_CLASS]}
+    migrations = config.get("migrations")
+    if migrations not in ([v1, v2], [v1, v2, v3]):
+        out.append("[[migrations]] is %r, not v1, v2 (and v3)" % (migrations,))
+    elif (migrations == [v1, v2, v3]) == bool(legacy):
+        out.append(
+            "the v3 migration and the %s entry cannot both stand or both go" % CONTAINER_CLASS
+        )
+    return out
 
 
 def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> list[str]:
@@ -300,8 +420,9 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
             out.append("vars.%s is %r, not %r" % (key, variables.get(key), value))
     out.extend(
         "vars.%s is not one a %s config may carry" % (key, target.key)
-        for key in sorted(set(variables) - set(want))
+        for key in sorted(set(variables) - set(want) - set(EXECUTOR_VARS))
     )
+    out.extend(_executor_var_refusals(variables))
 
     services = config.get("services") or []
     seen: dict[str, list[dict]] = {}
@@ -336,25 +457,7 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
             % (config.get("version_metadata"), VERSION_BINDING)
         )
 
-    containers = config.get("containers") or []
-    if len(containers) != 1 or not isinstance(containers[0], dict):
-        out.append("[[containers]] has %d entries, not exactly one" % len(containers))
-    else:
-        entry = containers[0]
-        for ckey, cvalue in (
-            ("class_name", CONTAINER_CLASS),
-            ("image", "./Dockerfile"),
-            ("image_build_context", "../.."),
-            ("max_instances", target.max_instances),
-        ):
-            if entry.get(ckey) != cvalue:
-                out.append("[[containers]] %s is %r, not %r" % (ckey, entry.get(ckey), cvalue))
-    bindings = (config.get("durable_objects") or {}).get("bindings")
-    if bindings != [{"name": "EXECUTOR", "class_name": CONTAINER_CLASS}]:
-        out.append("[[durable_objects.bindings]] is %r, not the one EXECUTOR binding" % (bindings,))
-    migrations = config.get("migrations")
-    if migrations != [{"tag": "v1", "new_sqlite_classes": [CONTAINER_CLASS]}]:
-        out.append("[[migrations]] is %r, not the one v1 migration" % (migrations,))
+    out.extend(_executor_refusals(config, target))
 
     observability = config.get("observability")
     if target.destinations is None:

@@ -45,8 +45,9 @@ vi.mock('@cloudflare/containers', () => ({
 }));
 
 import { forwardAccountEgress as forward } from '../egress';
-import worker, { type Env, ExecutorContainer, executorEnvVars } from '../index';
+import worker, { type Env, ExecutorContainer } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
+import { executorEnv as executorEnvVars } from '../org-executor';
 import { resetReadyCache } from '../ready';
 
 const ACCOUNT_URL = 'https://account.test';
@@ -207,6 +208,28 @@ describe('ExecutorContainer (B1)', () => {
 
   it('keeps the sleep timeout at the budgeted two minutes', () => {
     expect(new ExecutorContainer({} as never, env()).sleepAfter).toBe('2m');
+  });
+});
+
+describe('the main module exports (wrangler deploy, workerd start)', () => {
+  it('exports every bound Durable Object class and the AccountEgress entrypoint, and nothing that is not a class', async () => {
+    const main = await import('../index');
+    // wrangler refuses a deploy whose bound Durable Objects are not exported ("Your Worker depends on the following Durable Objects, which are not exported in your entrypoint file"), and OrgExecutor reaches the egress through ctx.exports.AccountEgress.
+    for (const name of [
+      'ExecutorContainer',
+      'OrgExecutor',
+      'ExecutorCapacity',
+      'AccountEgress',
+      'ContainerProxy',
+    ]) {
+      expect(typeof (main as Record<string, unknown>)[name], name).toBe('function');
+    }
+    // workerd treats every export of the main module as an entrypoint and refuses to start on a plain value.
+    for (const [name, value] of Object.entries(main)) {
+      if (name === 'default') continue;
+      expect(typeof value, name).toBe('function');
+      expect(String(value).startsWith('class'), name).toBe(true);
+    }
   });
 });
 

@@ -14,7 +14,7 @@ THE VERSION ID. `wrangler deploy` output is teed to stdout and the `Current Vers
 
 THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 401, and `/v1/ready` 200 with `workerVersion` equal to the captured id, polled for up to READY_TIMEOUT_S, because "deploy success means the rollout started" and an old instance may answer first. `--smoke-only` skips the deploy and smokes the version the record (`--record`) names, else the newest deployment's. A fresh custom domain is retried past a cached NXDOMAIN and then pinned through DNS-over-HTTPS.
 
-THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc and the rollback command (the deploy record of Design item 9 reads it). The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
+THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the `backend` (`EXECUTOR_BACKEND`), the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The rollback (the deploy record of Design item 9 reads it). The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
 
 A DRY RUN (`--dry-run`) runs the config refusals and `wrangler deploy --dry-run --containers-rollout none` for any target, and needs no credentials, fetch or build. The `none` rollout is load-bearing: wrangler 4.152's dry run DOES build the container image (measured 2026-10-25, it failed on the unstaged `workers/proxy/stage/`), and `none` compiles the Worker without building or updating any container. The image itself is built and booted by check:ci-proxy-image-smoke.
 """
@@ -30,6 +30,7 @@ import re
 import subprocess
 import sys
 import time
+import tomllib
 import urllib.parse
 
 from rediacc_ci import log
@@ -215,6 +216,93 @@ def rollback_command(config: str, previous: str | None) -> str:
         previous,
         config,
     )
+
+
+def forward_only_rollback(tag: str) -> str:
+    """The record's `rollback` for a deploy wrangler refuses to roll back: it crosses a Durable Object class lifecycle change."""
+    return "forward-only: Durable Object class lifecycle change (%s); fix forward" % tag
+
+
+def config_migrations(text: str) -> list[dict[str, object]] | None:
+    """The `[[migrations]]` list of a config's text, in file order; None when the text is not TOML."""
+    try:
+        data = tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return None
+    found = data.get("migrations", [])
+    return [dict(m) for m in found if isinstance(m, dict)] if isinstance(found, list) else None
+
+
+def migration_tag(migrations: list[dict[str, object]] | None) -> str | None:
+    """The tag of the last migration, or None for a config with none."""
+    if not migrations:
+        return None
+    tag = migrations[-1].get("tag")
+    return str(tag) if tag else None
+
+
+def _git(repo_root: pathlib.Path, *args: str) -> str | None:
+    try:
+        proc = subprocess.run(
+            ["git", *args], cwd=str(repo_root), capture_output=True, text=True, check=False
+        )
+    except OSError:
+        return None
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def previous_release_tag(repo_root: pathlib.Path, version: str | None) -> str | None:
+    """The newest `v*` tag other than this release's own, or None when git names none."""
+    listing = _git(repo_root, "tag", "--list", "v*", "--sort=-v:refname")
+    for tag in (listing or "").split():
+        if tag != "v%s" % version:
+            return tag
+    return None
+
+
+def previous_release_migrations(
+    repo_root: pathlib.Path, config: str, version: str | None
+) -> list[dict[str, object]] | None:
+    """The `[[migrations]]` list of this config at the previous release tag (`git show <tag>:workers/proxy/<config>`); None when no tag or no such file exists."""
+    tag = previous_release_tag(repo_root, version)
+    if tag is None:
+        return None
+    text = _git(repo_root, "show", "%s:%s/%s" % (tag, WORKER_REL, config))
+    return None if text is None else config_migrations(text)
+
+
+def is_forward_only(
+    current: list[dict[str, object]] | None, previous: list[dict[str, object]] | None
+) -> bool:
+    """A deploy is forward-only when the migrations list differs from the previous release's. With no previous list there is nothing to compare, so it is not."""
+    return previous is not None and current is not None and current != previous
+
+
+def bench_forward_only(current: str | None, recorded: str | None) -> bool:
+    """Bench has no release tag: it compares the last migration tag with the one its last record kept."""
+    return recorded is not None and current != recorded
+
+
+def read_record_field(path: pathlib.Path | None, key: str) -> str | None:
+    """One string field of an existing record file, or None."""
+    if path is None or not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    value = data.get(key) if isinstance(data, dict) else None
+    return str(value) if value else None
+
+
+def config_var(path: pathlib.Path, name: str) -> str | None:
+    """One `[vars]` string of a config file, or None."""
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    value = data.get("vars", {}).get(name)
+    return str(value) if value is not None else None
 
 
 def reexec_argv(argv: list[str]) -> list[str]:
@@ -426,14 +514,19 @@ def _ready_state(body: str, code: str) -> tuple[bool, str]:
     return False, "status %s, reason %s" % (code or "nothing", data.get("reason") or "none given")
 
 
-def wait_ready(fetch: _Fetcher, url: str, version_id: str) -> int:
-    """Poll /v1/ready until it answers 200 with `workerVersion == version_id`, for up to READY_TIMEOUT_S."""
+def wait_ready(
+    fetch: _Fetcher, url: str, version_id: str, timing: dict[str, int] | None = None
+) -> int:
+    """Poll /v1/ready until it answers 200 with `workerVersion == version_id`, for up to READY_TIMEOUT_S. `timing["cold_start_ms"]` gets the wait until that first ready answer."""
+    started = time.perf_counter()
     deadline = time.monotonic() + READY_TIMEOUT_S
     last = "no answer"
     while True:
         body, code = _curl_body(url + "/v1/ready", fetch.pin)
         ready, said = _ready_state(body, code)
         if ready and said == version_id:
+            if timing is not None:
+                timing["cold_start_ms"] = round((time.perf_counter() - started) * 1000)
             return 0
         last = "ready on version %s, not %s" % (said or "(none)", version_id) if ready else said
         if time.monotonic() >= deadline:
@@ -445,7 +538,7 @@ def wait_ready(fetch: _Fetcher, url: str, version_id: str) -> int:
         _sleep(READY_INTERVAL_S)
 
 
-def smoke(host: str, version_id: str) -> int:
+def smoke(host: str, version_id: str, timing: dict[str, int] | None = None) -> int:
     """The post-deploy smoke: /v1/health 200, an unauthenticated /v1/server-info 401, then /v1/ready on the deployed version."""
     url = "https://" + host
     log.step("Smoke-testing %s..." % url)
@@ -461,7 +554,7 @@ def smoke(host: str, version_id: str) -> int:
             % (info or "nothing")
         )
         return 1
-    if wait_ready(fetch, url, version_id) != 0:
+    if wait_ready(fetch, url, version_id, timing) != 0:
         return 1
     log.info(SMOKE_PASSED % version_id)
     return 0
@@ -626,6 +719,16 @@ def main(argv: list[str]) -> int:
     if status != 0:
         return status
 
+    current_migrations = config_migrations(worker_dir.joinpath(config).read_text(encoding="utf-8"))
+    current_tag = migration_tag(current_migrations)
+    if bench:
+        forward_only = bench_forward_only(
+            current_tag, read_record_field(record_path, "migration_tag")
+        )
+    else:
+        forward_only = is_forward_only(
+            current_migrations, previous_release_migrations(repo_root, config, args.version)
+        )
     os.chdir(worker_dir)
     previous = deployed_version(config)
     log.step("Deploying %s and its container image (config: %s)..." % (spec.name, config))
@@ -646,8 +749,12 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    smoke_rc = smoke(host, version_id)
-    rollback = rollback_command(config, previous)
+    timing: dict[str, int] = {}
+    smoke_rc = smoke(host, version_id, timing)
+    if forward_only and previous:
+        rollback = forward_only_rollback(current_tag or "migration change")
+    else:
+        rollback = rollback_command(config, previous)
     if record_path is not None:
         write_record(
             record_path,
@@ -661,6 +768,9 @@ def main(argv: list[str]) -> int:
                 "artifacts_version": None if bench else args.version,
                 "smoke_rc": smoke_rc,
                 "rollback": rollback,
+                "backend": config_var(worker_dir.joinpath(config), "EXECUTOR_BACKEND"),
+                "migration_tag": current_tag,
+                "cold_start_ms": timing.get("cold_start_ms"),
             },
         )
     if smoke_rc != 0:

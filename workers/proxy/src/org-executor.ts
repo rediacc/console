@@ -14,8 +14,9 @@ import {
   type ExecutorSize,
 } from './capacity';
 import { EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
+import { INSTANCE_BY_SIZE } from './sizing';
 
-/** The host the container addresses the account server by; the intercept routes it to the egress entrypoint (src/index.ts ACCOUNT_EGRESS_HOST says why). */
+/** The host the container addresses the account server by; the intercept routes it to the egress entrypoint (src/index.ts, the `ExecutorContainer` comment, says why). */
 export const ACCOUNT_EGRESS_HOST = 'account.internal';
 /** The main-module export the intercept binds, through `ctx.exports` (Design A: per-instance props). */
 export const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
@@ -37,14 +38,6 @@ const DEFAULT_REGION = 'eu';
 const RECORD_KEY = 'executor';
 const ORG_KEY = 'org';
 const OOM_KEY = 'oomAt';
-
-/**
- * The instance each size class starts on. Each `instance:` value is a literal, which the cost guard (box G1) reads: LIGHT is the basic-equivalent custom size S1 chose (Spike record, DU3), HEAVY is `standard-1`.
- */
-const INSTANCE_BY_SIZE = {
-  light: { instance: { vcpu: 0.25, memoryMib: 1024, diskMb: 4000 } },
-  heavy: { instance: 'standard-1' },
-} as const satisfies Record<ExecutorSize, Pick<ContainerStartupOptions, 'instance'>>;
 
 /** The props the egress entrypoint receives: set only here, by Durable Object code, never by the container or the caller. The egress cross-checks `containerId === env.ORG_EXECUTOR.idFromName(orgId).toString()`. */
 export interface ExecutorEgressProps {
@@ -81,7 +74,7 @@ type EgressFactory = (options: { props: ExecutorEgressProps }) => Fetcher;
 type ExitResult = { clean: true } | { clean: false; error: unknown };
 
 /**
- * The environment `rdc serve --mode container` boots with: exactly these four names (the same set as src/index.ts `executorEnvVars`).
+ * The environment `rdc serve --mode container` boots with: exactly these four names, on both backends (src/index.ts `ExecutorContainer.pin` uses it too).
  *
  * REDIACC_TOKEN is the placeholder that authenticates nothing; the egress swaps it for the org's issued token, so no real token ever enters the container.
  */
@@ -273,6 +266,11 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     if (this.pinnedOrg !== undefined && this.pinnedOrg !== orgId) return 'pin-org-conflict';
     if (size !== 'light' && size !== 'heavy') return 'pin-size-invalid';
     return undefined;
+  }
+
+  /** When this org's executor last exited out of memory (epoch ms), or undefined. The Worker reads it to size the next start (src/sizing.ts `chooseSize`). */
+  async oomAt(): Promise<number | undefined> {
+    return await this.ctx.storage.get<number>(OOM_KEY);
   }
 
   /** Wait out any start or restart in progress. */

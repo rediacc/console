@@ -22,15 +22,49 @@
  */
 
 import { Container, getContainer } from '@cloudflare/containers';
-import { accountEgress, EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
+import type { ExecutorCapacity } from './capacity';
+import { accountEgress } from './egress';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
+import {
+  ACCOUNT_EGRESS_HOST,
+  type ExecutorRefusalCode,
+  executorEnv,
+  type OrgExecutor,
+  type PinAnswer,
+} from './org-executor';
 import { readiness } from './ready';
+import {
+  chooseSize,
+  type ExecutorTier,
+  heavyFullFallback,
+  type SizeChoice,
+  tierOf,
+} from './sizing';
 
+// Every export of the main module is an entrypoint or a Durable Object class: workerd refuses to start on a plain value, and wrangler refuses a deploy whose bound Durable Object classes are not exported here.
 // Outbound interception (ExecutorContainer.outboundByHost) runs through this entrypoint; without the re-export a container start fails with "ctx.exports.ContainerProxy is undefined".
 export { ContainerProxy } from '@cloudflare/containers';
+// The cap coordinator, bound as EXECUTOR_CAPACITY.
+export { ExecutorCapacity } from './capacity';
+// The `durable_object` backend's egress, reached through `ctx.exports.AccountEgress` by OrgExecutor (Design A).
+export { AccountEgress } from './egress';
+// The `durable_object` backend's per-org executor, bound as ORG_EXECUTOR.
+export { OrgExecutor } from './org-executor';
 
 export interface Env {
+  /** The legacy backend (the @cloudflare/containers `ExecutorContainer`), routed to when EXECUTOR_BACKEND is `container`. */
   EXECUTOR: DurableObjectNamespace<ExecutorContainer>;
+  /** The `durable_object` backend (src/org-executor.ts), routed to when EXECUTOR_BACKEND is `durable`. A version routed to it without the binding refuses with EXECUTOR_START_FAILED. */
+  ORG_EXECUTOR?: DurableObjectNamespace<OrgExecutor>;
+  /** The target's cap coordinator (src/capacity.ts); OrgExecutor holds a lease on it for each running container. */
+  EXECUTOR_CAPACITY?: DurableObjectNamespace<ExecutorCapacity>;
+  /**
+   * Which backend this version routes every request to: `durable` for ORG_EXECUTOR, anything else (`container`, unset) for EXECUTOR. Generated per target by proxy_configs.py `BACKEND_BY_TARGET`. Chosen per version, never per request, so one version never routes an org to both backends.
+   */
+  EXECUTOR_BACKEND?: string;
+  /** The coordinator's cap and heavy sub-cap, decimal strings (src/capacity.ts `capFrom`). */
+  EXECUTOR_CAP?: string;
+  EXECUTOR_HEAVY_CAP?: string;
   /** Account server base URL, e.g. https://eu.rediacc.com */
   ACCOUNT_URL: string;
   /**
@@ -90,30 +124,10 @@ function tagRequest(span: RuntimeSpan | undefined, request: Request, env: Env): 
 }
 
 /**
- * The environment `rdc serve --mode container` boots with: exactly these four names.
+ * The legacy backend's container. The environment it boots with is src/org-executor.ts `executorEnv`, the same four names OrgExecutor starts with: REDIACC_TOKEN is a fixed placeholder that authenticates nothing, and REDIACC_EXECUTOR_ORG_ID is set here by Durable Object code in `pin`, never by the container or the caller.
  *
- * REDIACC_TOKEN is a fixed placeholder that authenticates nothing: the container's account calls all go to `http://account.internal` (ACCOUNT_EGRESS_HOST says why), and src/egress.ts swaps the placeholder for the org's issued token on the four calls that need it. No real token ever enters the container's environment. REDIACC_EXECUTOR_ORG_ID is the org the executor is pinned to (the executor refuses a caller of any other org). It is set by Durable Object code in `ExecutorContainer.pin`, never by the container or the caller.
+ * The container addresses the account server as ACCOUNT_EGRESS_HOST (`account.internal`). A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post the container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. So `pin` installs the `accountEgress` handler for that name, and `accountEgress` (src/egress.ts) checks the instance and org, checks the request against the allowlist, swaps the placeholder for the org's issued token, and sends it over the ACCOUNT binding (or to ACCOUNT_URL under `wrangler dev`, which has no binding). The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet.
  */
-export function executorEnvVars(env: Env, orgId: string): Record<string, string> {
-  return {
-    REDIACC_TOKEN: EXECUTOR_TOKEN_PLACEHOLDER,
-    REDIACC_ACCOUNT_SERVER: `http://${ACCOUNT_EGRESS_HOST}`,
-    REDIACC_REGION: configured(env.REGION, DEFAULT_REGION),
-    REDIACC_EXECUTOR_ORG_ID: orgId,
-  };
-}
-
-/**
- * The host the container addresses the account server by.
- *
- * A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post the container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. So the container talks to this name instead, `ExecutorContainer.pin` installs the `accountEgress` handler for it, and `accountEgress` (src/egress.ts) checks the instance and org, checks the request against the allowlist, swaps the placeholder for the org's issued token, and sends it over the ACCOUNT binding (or to ACCOUNT_URL under `wrangler dev`, which has no binding). The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet. Not exported: workerd treats every export of the main module as an entrypoint and refuses to start on a plain string (caught by check:ci-proxy-wrangler-dev-e2e).
- */
-const ACCOUNT_EGRESS_HOST = 'account.internal';
-
-/** What a failed container start says when the target is at max_instances. MU2 (agent/plans/PLAN-console-executor-multi-org.md) records the real text on bench; until then this matches the likely wordings and anything else is a start failure, never silently a capacity answer. */
-const CAPACITY_ERROR =
-  /capacity|max(?:imum)?[_ -]?instances|instance limit|too many (?:containers|instances)|quota/i;
-
 export class ExecutorContainer extends Container<Env> {
   // The named outbound handlers. An ASSIGNMENT in a static block, never a `static outboundHandlers = ...` field: @cloudflare/containers keeps the handlers in a registry behind an inherited static setter keyed by class name, and under ES2022 define semantics a field becomes an own property that shadows the setter, so the registry stays empty, ContainerProxy finds no handler and the request falls through to a plain fetch of account.internal that dies at DNS with a 530 (bench, 2026-10-24, two deploys). There is deliberately no static outboundByHost: an instance that was never pinned has no handler for account.internal and its call is refused.
   static {
@@ -153,7 +167,7 @@ export class ExecutorContainer extends Container<Env> {
       throw new Error('pin-org-conflict');
     }
     this.pinnedOrg = orgId;
-    const envVars = executorEnvVars(this.env, orgId);
+    const envVars = executorEnv(this.env, orgId);
     // A later start (after the instance slept) that does not go through `pin` still carries the org.
     this.envVars = envVars;
     await this.setOutboundByHost(ACCOUNT_EGRESS_HOST, 'accountEgress', {
@@ -184,7 +198,12 @@ interface Refusal {
  *
  * Returns a Refusal for anything that is not an active proxy:exec token of an entitled org. The Worker deliberately learns nothing else: it needs a routing key, not an identity. The executor does the real verification again on its own.
  */
-async function resolveTenant(request: Request, env: Env): Promise<string | Refusal> {
+interface Tenant {
+  orgId: string;
+  tier: ExecutorTier;
+}
+
+async function resolveTenant(request: Request, env: Env): Promise<Tenant | Refusal> {
   const auth = request.headers.get('authorization');
   const token = auth?.replace(/^Bearer\s+/i, '').trim();
   if (!token) return refuse('no-bearer');
@@ -196,14 +215,30 @@ async function resolveTenant(request: Request, env: Env): Promise<string | Refus
   } catch (error) {
     return refuse(error instanceof IssuerError ? error.reason : 'issuer-route-failed', true);
   }
-  const orgId: unknown = (answer as { orgId?: unknown } | undefined)?.orgId;
+  const routed = answer as { orgId?: unknown; tier?: unknown } | undefined;
+  const orgId = routed?.orgId;
   if (typeof orgId !== 'string' || orgId === '') return refuse('route-refused');
-  // One warm executor per org: the Durable Object name is the org alone.
-  return orgId;
+  // One warm executor per org: the Durable Object name is the org alone. A missing tier (an older account Worker) is `standard`.
+  return { orgId, tier: tierOf(routed?.tier) };
 }
 
-/** Pin the org's instance and start it. Answers undefined on success, else the response for a failed start. */
-async function startExecutor(
+/** The 503 for a refused start. Only EXECUTOR_CAPACITY carries `Retry-After: 30`, and its outcome is `capacity`. */
+function startRefused(code: ExecutorRefusalCode, span: RuntimeSpan | undefined): Response {
+  if (code === 'EXECUTOR_CAPACITY') {
+    console.warn('proxy: executor start refused: capacity');
+    span?.setAttribute('rediacc.proxy.outcome', 'capacity');
+    return Response.json(
+      { error: 'No executor capacity is free right now.', code },
+      { status: 503, headers: { 'retry-after': '30' } }
+    );
+  }
+  console.warn('proxy: executor start failed');
+  span?.setAttribute('rediacc.proxy.outcome', 'start-failed');
+  return Response.json({ error: 'The executor could not be started.', code }, { status: 503 });
+}
+
+/** Pin the legacy backend's instance and start it. Answers undefined on success, else the response for a failed start. Any failure is EXECUTOR_START_FAILED: only the coordinator of the `durable` backend answers capacity, and error text is never guessed at. */
+async function startLegacyExecutor(
   container: { pin(orgId: string): Promise<void> },
   orgId: string,
   span: RuntimeSpan | undefined
@@ -211,29 +246,74 @@ async function startExecutor(
   try {
     await container.pin(orgId);
     return undefined;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : '';
-    if (CAPACITY_ERROR.test(message)) {
-      console.warn('proxy: executor start refused: capacity');
-      span?.setAttribute('rediacc.proxy.outcome', 'capacity');
-      return Response.json(
-        {
-          error: 'No executor capacity is free right now.',
-          code: 'EXECUTOR_CAPACITY',
-        },
-        { status: 503, headers: { 'retry-after': '30' } }
-      );
-    }
-    console.warn('proxy: executor start failed');
-    span?.setAttribute('rediacc.proxy.outcome', 'start-failed');
-    return Response.json(
-      {
-        error: 'The executor could not be started.',
-        code: 'EXECUTOR_START_FAILED',
-      },
-      { status: 503 }
-    );
+  } catch {
+    return startRefused('EXECUTOR_START_FAILED', span);
   }
+}
+
+/** The legacy backend: the org's ExecutorContainer, pinned and started, then forwarded to. */
+async function viaContainer(
+  request: Request,
+  env: Env,
+  tenant: Tenant,
+  span: RuntimeSpan | undefined
+): Promise<Response> {
+  // Same org, same instance, every time.
+  const container = getContainer(env.EXECUTOR, tenant.orgId);
+  const failed = await startLegacyExecutor(container, tenant.orgId, span);
+  if (failed) return failed;
+  span?.setAttribute('rediacc.proxy.outcome', 'forwarded');
+  return container.fetch(request);
+}
+
+/** The slice of an OrgExecutor stub the Worker calls. */
+interface OrgExecutorStub {
+  oomAt(): Promise<number | undefined>;
+  pin(orgId: string, size: SizeChoice['size']): Promise<PinAnswer>;
+  fetch(request: Request): Promise<Response>;
+}
+
+/**
+ * Size the start (src/sizing.ts) and pin the org's OrgExecutor. A heavy start the coordinator refuses as `heavy-full` is retried LIGHT only for an org that is HEAVY by its tier alone; an OOM-flagged org gets the capacity refusal. Throws when the Durable Object cannot be reached.
+ */
+async function pinSized(
+  stub: OrgExecutorStub,
+  tenant: Tenant,
+  span: RuntimeSpan | undefined
+): Promise<PinAnswer> {
+  const choice = chooseSize(tenant.tier, await stub.oomAt(), Date.now());
+  span?.setAttribute('rediacc.proxy.size', choice.size);
+  const answer = await stub.pin(tenant.orgId, choice.size);
+  if (answer.ok || answer.code !== 'EXECUTOR_CAPACITY' || answer.reason !== 'heavy-full') {
+    return answer;
+  }
+  const fallback = heavyFullFallback(choice);
+  if (fallback === undefined) return answer;
+  span?.setAttribute('rediacc.proxy.size', fallback);
+  return await stub.pin(tenant.orgId, fallback);
+}
+
+/** The `durable_object` backend: the org's OrgExecutor, sized, pinned and forwarded to. Every refusal is the coordinator's or the Durable Object's code, never a guess. */
+async function viaOrgExecutor(
+  request: Request,
+  env: Env,
+  tenant: Tenant,
+  span: RuntimeSpan | undefined
+): Promise<Response> {
+  const namespace = env.ORG_EXECUTOR;
+  if (!namespace) return startRefused('EXECUTOR_START_FAILED', span);
+  const stub = namespace.get(namespace.idFromName(tenant.orgId)) as unknown as OrgExecutorStub;
+  let answer: PinAnswer;
+  try {
+    answer = await pinSized(stub, tenant, span);
+  } catch {
+    return startRefused('EXECUTOR_START_FAILED', span);
+  }
+  if (!answer.ok) return startRefused(answer.code, span);
+  // The size the container runs on, which a running container keeps from its start.
+  span?.setAttribute('rediacc.proxy.size', answer.size);
+  span?.setAttribute('rediacc.proxy.outcome', 'forwarded');
+  return stub.fetch(request);
 }
 
 export default {
@@ -257,7 +337,7 @@ export default {
     }
 
     const tenant = await resolveTenant(request, env);
-    if (typeof tenant !== 'string') {
+    if ('reason' in tenant) {
       span?.setAttribute('rediacc.proxy.outcome', `refused:${tenant.reason}`);
       if (tenant.unavailable) {
         return Response.json(
@@ -271,11 +351,9 @@ export default {
       );
     }
 
-    // Same org, same instance, every time.
-    const container = getContainer(env.EXECUTOR, tenant);
-    const failed = await startExecutor(container, tenant, span);
-    if (failed) return failed;
-    span?.setAttribute('rediacc.proxy.outcome', 'forwarded');
-    return container.fetch(request);
+    // The backend is the version's, never the request's (Design item 2).
+    return env.EXECUTOR_BACKEND === 'durable'
+      ? viaOrgExecutor(request, env, tenant, span)
+      : viaContainer(request, env, tenant, span);
   },
 };

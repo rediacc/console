@@ -43,8 +43,9 @@ vi.mock('@cloudflare/containers', () => ({
   },
 }));
 
-import worker, { type Env, ExecutorContainer, executorEnvVars } from '../index';
+import worker, { type Env, ExecutorContainer } from '../index';
 import type { ExecutorIssuerRpc } from '../issued-token';
+import { executorEnv as executorEnvVars, type PinAnswer } from '../org-executor';
 
 /** Which org a caller token belongs to; anything else is refused. */
 const ORG_OF: Record<string, string> = { rdt_a: 'org-a', rdt_b: 'org-b' };
@@ -148,48 +149,270 @@ describe('front door', () => {
   });
 });
 
-describe('capacity', () => {
-  function traced(): { ctx: ExecutionContext; attrs: Record<string, unknown> } {
-    const attrs: Record<string, unknown> = {};
-    const ctx = {
-      tracing: {
-        getActiveSpan: () => ({
-          setAttribute: (k: string, v: unknown) => (attrs[k] = v),
-        }),
-      },
-    } as unknown as ExecutionContext;
-    return { ctx, attrs };
-  }
+function traced(): { ctx: ExecutionContext; attrs: Record<string, unknown> } {
+  const attrs: Record<string, unknown> = {};
+  const ctx = {
+    tracing: {
+      getActiveSpan: () => ({
+        setAttribute: (k: string, v: unknown) => (attrs[k] = v),
+      }),
+    },
+  } as unknown as ExecutionContext;
+  return { ctx, attrs };
+}
 
-  it('a capacity error on start is a 503 EXECUTOR_CAPACITY with Retry-After 30 and the capacity outcome', async () => {
-    lib.pinError = new Error('Maximum instances reached for this container application');
-    const { ctx, attrs } = traced();
-    const response = await worker.fetch(call('rdt_a'), env(issuer()), ctx);
+describe('legacy start failures', () => {
+  it('a start error is a 503 EXECUTOR_START_FAILED whatever its text: capacity is never guessed from error text', async () => {
+    for (const text of [
+      'Maximum instances reached for this container application',
+      'container capacity exceeded',
+      'image pull failed',
+    ]) {
+      lib.pinError = new Error(text);
+      const { ctx, attrs } = traced();
+      const response = await worker.fetch(call('rdt_a'), env(issuer()), ctx);
 
-    expect(response.status).toBe(503);
-    expect(response.headers.get('retry-after')).toBe('30');
-    expect(await response.json()).toMatchObject({ code: 'EXECUTOR_CAPACITY' });
-    expect(attrs['rediacc.proxy.outcome']).toBe('capacity');
+      expect(response.status).toBe(503);
+      expect(response.headers.get('retry-after')).toBeNull();
+      expect(await response.json()).toMatchObject({ code: 'EXECUTOR_START_FAILED' });
+      expect(attrs['rediacc.proxy.outcome']).toBe('start-failed');
+    }
   });
 
-  it('never falls back to another org instance on a capacity error', async () => {
+  it('never falls back to another org instance on a failed start', async () => {
     lib.pinError = new Error('container capacity exceeded');
     await worker.fetch(call('rdt_a'), env(issuer()));
 
     expect(lib.names).toEqual(['org-a']);
   });
+});
 
-  it('another start failure is a 503 that is not labelled capacity', async () => {
-    lib.pinError = new Error('image pull failed');
-    const { ctx, attrs } = traced();
-    const response = await worker.fetch(call('rdt_a'), env(issuer()), ctx);
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The `durable` backend's ORG_EXECUTOR namespace: records every stub it hands out and every pin, answering from `answers` in order (an empty queue answers ok on the asked size). */
+const durable = {
+  gets: [] as string[],
+  oomAt: undefined as number | undefined,
+  pins: [] as [string, string][],
+  answers: [] as PinAnswer[],
+  pinThrows: false as boolean,
+  fetches: [] as string[],
+};
+
+function orgExecutors(): Env['ORG_EXECUTOR'] {
+  return {
+    idFromName: (name: string) => ({ name }),
+    get: (doId: { name: string }) => {
+      durable.gets.push(doId.name);
+      return {
+        oomAt: () => Promise.resolve(durable.oomAt),
+        pin: (orgId: string, size: string) => {
+          durable.pins.push([orgId, size]);
+          if (durable.pinThrows) return Promise.reject(new Error('do unreachable'));
+          return Promise.resolve(durable.answers.shift() ?? { ok: true, size });
+        },
+        fetch: () => {
+          durable.fetches.push(doId.name);
+          return Promise.resolve(Response.json({ from: 'org-executor', name: doId.name }));
+        },
+      };
+    },
+  } as unknown as Env['ORG_EXECUTOR'];
+}
+
+/** An issuer whose route also answers a tier: `rdt_high` is a BUSINESS org, `rdt_std` a PROFESSIONAL one, and `rdt_a` comes from an older account Worker with no tier. */
+function tieredIssuer(): Issuer {
+  const counts = issuer();
+  const tiers: Record<string, { orgId: string; tier?: string }> = {
+    rdt_high: { orgId: 'org-high', tier: 'high' },
+    rdt_std: { orgId: 'org-std', tier: 'standard' },
+    rdt_a: { orgId: 'org-a' },
+  };
+  (counts.binding as unknown as { route: unknown }).route = (bearer: string) => {
+    counts.routes.push(bearer);
+    return Promise.resolve(tiers[bearer] ?? { refused: 'route-refused' });
+  };
+  return counts;
+}
+
+function durableEnv(extra: Partial<Env> = {}): Env {
+  return env(tieredIssuer(), {
+    EXECUTOR_BACKEND: 'durable',
+    ORG_EXECUTOR: orgExecutors(),
+    ...extra,
+  });
+}
+
+describe('backend routing by EXECUTOR_BACKEND', () => {
+  beforeEach(() => {
+    durable.gets = [];
+    durable.oomAt = undefined;
+    durable.pins = [];
+    durable.answers = [];
+    durable.pinThrows = false;
+    durable.fetches = [];
+  });
+
+  for (const backend of ['container', undefined, '', 'Durable', 'org-executor']) {
+    it(`EXECUTOR_BACKEND=${JSON.stringify(backend)} routes every request to EXECUTOR and never to ORG_EXECUTOR`, async () => {
+      const e = durableEnv({ EXECUTOR_BACKEND: backend });
+      for (const token of ['rdt_a', 'rdt_high', 'rdt_a']) {
+        const response = await worker.fetch(call(token), e);
+        expect(await response.json()).toMatchObject({ from: 'container' });
+      }
+
+      expect(lib.names).toEqual(['org-a', 'org-high', 'org-a']);
+      expect(durable.gets).toEqual([]);
+    });
+  }
+
+  it('durable routes every request to ORG_EXECUTOR and never to EXECUTOR', async () => {
+    const e = durableEnv();
+    for (const token of ['rdt_a', 'rdt_high', 'rdt_a']) {
+      const response = await worker.fetch(call(token), e);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ from: 'org-executor' });
+    }
+
+    expect(durable.gets).toEqual(['org-a', 'org-high', 'org-a']);
+    expect(durable.fetches).toEqual(['org-a', 'org-high', 'org-a']);
+    expect(lib.names).toEqual([]);
+    expect(lib.pins).toEqual([]);
+  });
+
+  it('durable without an ORG_EXECUTOR binding is a 503 EXECUTOR_START_FAILED, never a fall back to EXECUTOR', async () => {
+    const response = await worker.fetch(call('rdt_a'), durableEnv({ ORG_EXECUTOR: undefined }));
 
     expect(response.status).toBe(503);
-    expect(response.headers.get('retry-after')).toBeNull();
-    expect(await response.json()).toMatchObject({
-      code: 'EXECUTOR_START_FAILED',
-    });
+    expect(await response.json()).toMatchObject({ code: 'EXECUTOR_START_FAILED' });
+    expect(lib.names).toEqual([]);
+  });
+
+  it('a route refusal starts nothing on the durable backend', async () => {
+    const response = await worker.fetch(call('rdt_stranger'), durableEnv());
+
+    expect(response.status).toBe(401);
+    expect(durable.gets).toEqual([]);
+  });
+});
+
+describe('sizing on the durable backend', () => {
+  beforeEach(() => {
+    durable.gets = [];
+    durable.oomAt = undefined;
+    durable.pins = [];
+    durable.answers = [];
+    durable.pinThrows = false;
+    durable.fetches = [];
+  });
+
+  it("tier 'high' starts heavy (standard-1)", async () => {
+    await worker.fetch(call('rdt_high'), durableEnv());
+    expect(durable.pins).toEqual([['org-high', 'heavy']]);
+  });
+
+  it("tier 'standard' and a missing tier start light", async () => {
+    await worker.fetch(call('rdt_std'), durableEnv());
+    await worker.fetch(call('rdt_a'), durableEnv());
+    expect(durable.pins).toEqual([
+      ['org-std', 'light'],
+      ['org-a', 'light'],
+    ]);
+  });
+
+  it('an OOM flag within 7 days starts heavy, and an 8-day-old flag starts light', async () => {
+    durable.oomAt = Date.now() - 6 * DAY_MS;
+    await worker.fetch(call('rdt_a'), durableEnv());
+    durable.oomAt = Date.now() - 8 * DAY_MS;
+    await worker.fetch(call('rdt_a'), durableEnv());
+
+    expect(durable.pins).toEqual([
+      ['org-a', 'heavy'],
+      ['org-a', 'light'],
+    ]);
+  });
+
+  it('with the heavy slots full, a high-tier org retries and runs light', async () => {
+    durable.answers = [{ ok: false, code: 'EXECUTOR_CAPACITY', reason: 'heavy-full' }];
+    const { ctx, attrs } = traced();
+    const response = await worker.fetch(call('rdt_high'), durableEnv(), ctx);
+
+    expect(response.status).toBe(200);
+    expect(durable.pins).toEqual([
+      ['org-high', 'heavy'],
+      ['org-high', 'light'],
+    ]);
+    expect(attrs['rediacc.proxy.size']).toBe('light');
+    expect(attrs['rediacc.proxy.outcome']).toBe('forwarded');
+  });
+
+  it('with the heavy slots full, an OOM-flagged org gets 503 EXECUTOR_CAPACITY with Retry-After 30 and no light retry', async () => {
+    durable.oomAt = Date.now() - DAY_MS;
+    durable.answers = [{ ok: false, code: 'EXECUTOR_CAPACITY', reason: 'heavy-full' }];
+    const { ctx, attrs } = traced();
+    const response = await worker.fetch(call('rdt_high'), durableEnv(), ctx);
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('retry-after')).toBe('30');
+    expect(await response.json()).toMatchObject({ code: 'EXECUTOR_CAPACITY' });
+    expect(durable.pins).toEqual([['org-high', 'heavy']]);
+    expect(durable.fetches).toEqual([]);
+    expect(attrs['rediacc.proxy.outcome']).toBe('capacity');
+  });
+
+  it('a full target is a 503 EXECUTOR_CAPACITY with Retry-After 30, from the coordinator answer alone', async () => {
+    durable.answers = [{ ok: false, code: 'EXECUTOR_CAPACITY', reason: 'full' }];
+    const response = await worker.fetch(call('rdt_a'), durableEnv());
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('retry-after')).toBe('30');
+    expect(await response.json()).toMatchObject({ code: 'EXECUTOR_CAPACITY' });
+    expect(durable.pins).toEqual([['org-a', 'light']]);
+  });
+
+  it('a start failure answer, or a Durable Object that cannot be reached, is a 503 EXECUTOR_START_FAILED without Retry-After', async () => {
+    durable.answers = [{ ok: false, code: 'EXECUTOR_START_FAILED', reason: 'not-ready' }];
+    const answered = await worker.fetch(call('rdt_a'), durableEnv());
+    durable.pinThrows = true;
+    const { ctx, attrs } = traced();
+    const thrown = await worker.fetch(call('rdt_a'), durableEnv(), ctx);
+
+    for (const response of [answered, thrown]) {
+      expect(response.status).toBe(503);
+      expect(response.headers.get('retry-after')).toBeNull();
+      expect(await response.json()).toMatchObject({ code: 'EXECUTOR_START_FAILED' });
+    }
     expect(attrs['rediacc.proxy.outcome']).toBe('start-failed');
+    expect(durable.fetches).toEqual([]);
+  });
+
+  it('a running container keeps its started size: the span names the size pin answers', async () => {
+    durable.answers = [{ ok: true, size: 'heavy' }];
+    const { ctx, attrs } = traced();
+    await worker.fetch(call('rdt_a'), durableEnv(), ctx);
+
+    expect(durable.pins).toEqual([['org-a', 'light']]);
+    expect(attrs['rediacc.proxy.size']).toBe('heavy');
+  });
+
+  it('the span carries rediacc.proxy.size and no org id, on every outcome', async () => {
+    const answers: PinAnswer[][] = [
+      [],
+      [{ ok: false, code: 'EXECUTOR_CAPACITY', reason: 'heavy-full' }],
+      [{ ok: false, code: 'EXECUTOR_CAPACITY', reason: 'full' }],
+      [{ ok: false, code: 'EXECUTOR_START_FAILED', reason: 'not-ready' }],
+    ];
+    for (const queue of answers) {
+      durable.answers = [...queue];
+      const { ctx, attrs } = traced();
+      await worker.fetch(call('rdt_high'), durableEnv(), ctx);
+
+      expect(['light', 'heavy']).toContain(attrs['rediacc.proxy.size']);
+      for (const value of Object.values(attrs)) {
+        expect(String(value)).not.toContain('org-');
+        expect(String(value)).not.toContain('rdt_');
+      }
+    }
   });
 });
 

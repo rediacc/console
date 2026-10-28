@@ -19,7 +19,10 @@ export interface IssuedToken {
 /** The RPC surface of the account Worker's `ExecutorIssuer` entrypoint. */
 export interface ExecutorIssuerRpc extends Rpc.WorkerEntrypointBranded {
   issue(orgId: string): Promise<IssuedToken>;
-  route(bearer: string): Promise<{ orgId: string } | { refused: string }>;
+  /** The org behind a caller's own proxy:exec token, and its sizing tier (`high` for a BUSINESS or ENTERPRISE plan, `standard` otherwise; an older account Worker answers no tier, which counts as `standard`). */
+  route(
+    bearer: string
+  ): Promise<{ orgId: string; tier?: 'standard' | 'high' } | { refused: string }>;
   /** Writes nothing: whether the issuer env parses and D1 answers, and what a token it issues would carry. */
   probe(): Promise<{ ok: true; scopes: string[]; ttlMs: number }>;
 }

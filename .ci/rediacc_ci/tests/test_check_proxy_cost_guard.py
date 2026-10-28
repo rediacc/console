@@ -35,6 +35,19 @@ image = "./Dockerfile"
 max_instances = %d
 """
 EU = "wrangler.eu.toml"
+# The durable_object entry (box K1) and its code-cap vars, appended to the eu fixture by `_durable`. EXECUTOR_BACKEND is `container` as on the live tree during the dual run.
+DURABLE = """
+[vars]
+EXECUTOR_BACKEND = "container"
+EXECUTOR_CAP = "25"
+EXECUTOR_HEAVY_CAP = "5"
+
+[[containers]]
+class_name = "OrgExecutor"
+scheduling_policy = "durable_object"
+"""
+CAPACITY_REL = ("workers", "proxy", "src", "capacity.ts")
+EXECUTOR_REL = ("workers", "proxy", "src", "org-executor.ts")
 
 
 def _digest() -> str:
@@ -93,7 +106,9 @@ def test_the_real_tree_is_within_budget() -> None:
     assert proc.returncode == 0, proc.stderr
     assert "at max_instances <= 25 in " in proc.stdout
     assert "deployable" in proc.stdout
-    assert "1 sleepAfter assignment(s)" in proc.stdout
+    assert "sleepAfter assignment(s) <= 120s" in proc.stdout
+    assert "instance size(s) in the allowlist" in proc.stdout
+    assert "worst case $" in proc.stdout
 
 
 def test_the_glob_sees_every_config_in_the_real_tree() -> None:
@@ -355,3 +370,203 @@ def test_a_planted_total_of_one_seventy_six_fails(tmp_path: pathlib.Path) -> Non
     proc = _run("--root", str(root))
     assert proc.returncode == 1, proc.stdout + proc.stderr
     assert "total max_instances = 176" in proc.stderr
+
+
+# ---- the durable_object entry (box G1): no max_instances or instance_type, caps in code, literal sizes, dollars ----
+
+
+def _durable(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A fixture tree whose eu config also carries the durable OrgExecutor entry and the cap vars."""
+    root = _copy(tmp_path)
+    eu = root / "workers" / "proxy" / EU
+    eu.write_text(eu.read_text(encoding="utf-8") + DURABLE, encoding="utf-8")
+    return root
+
+
+def test_the_unplanted_durable_copy_passes_so_the_plants_below_are_what_fires(
+    tmp_path: pathlib.Path,
+) -> None:
+    proc = _run("--root", str(_durable(tmp_path)))
+    assert proc.returncode == 0, proc.stderr
+    assert "worst case $" in proc.stdout
+
+
+def test_a_planted_max_instances_on_the_durable_entry_fails(tmp_path: pathlib.Path) -> None:
+    root = _durable(tmp_path)
+    eu = root / "workers" / "proxy" / EU
+    _replace(
+        eu,
+        'scheduling_policy = "durable_object"\n',
+        'scheduling_policy = "durable_object"\nmax_instances = 25\n',
+    )
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "OrgExecutor is scheduling_policy = durable_object and sets max_instances" in proc.stderr
+
+
+def test_a_planted_instance_type_on_the_durable_entry_fails(tmp_path: pathlib.Path) -> None:
+    root = _durable(tmp_path)
+    eu = root / "workers" / "proxy" / EU
+    _replace(
+        eu,
+        'scheduling_policy = "durable_object"\n',
+        'scheduling_policy = "durable_object"\ninstance_type = "basic"\n',
+    )
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "sets instance_type" in proc.stderr
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        (
+            'EXECUTOR_CAP = "25"',
+            'EXECUTOR_CAP = "26"',
+            'EXECUTOR_CAP = "26" is over the budget of 25',
+        ),
+        (
+            'EXECUTOR_HEAVY_CAP = "5"',
+            'EXECUTOR_HEAVY_CAP = "6"',
+            'EXECUTOR_HEAVY_CAP = "6" is over the budget of 5',
+        ),
+        ('EXECUTOR_CAP = "25"', "EXECUTOR_CAP = 25", "EXECUTOR_CAP = 25 is not a decimal string"),
+        ('EXECUTOR_CAP = "25"\n', "", "[vars] EXECUTOR_CAP as a decimal string"),
+    ],
+)
+def test_a_planted_cap_var_fails(tmp_path: pathlib.Path, old: str, new: str, message: str) -> None:
+    root = _durable(tmp_path)
+    _replace(root / "workers" / "proxy" / EU, old, new)
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert message in proc.stderr
+
+
+def test_a_planted_unreadable_backend_fails(tmp_path: pathlib.Path) -> None:
+    root = _durable(tmp_path)
+    _replace(
+        root / "workers" / "proxy" / EU,
+        'EXECUTOR_BACKEND = "container"',
+        'EXECUTOR_BACKEND = "both"',
+    )
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "routed backend" in proc.stderr
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        ("HARD_CAP = 25;", "HARD_CAP = 30;", "HARD_CAP = 30 is over the budget of 25"),
+        (
+            "HARD_HEAVY_CAP = 5;",
+            "HARD_HEAVY_CAP = 6;",
+            "HARD_HEAVY_CAP = 6 is over the budget of 5",
+        ),
+        ("HARD_CAP = 25;", "HARD_CAP = envCap();", "HARD_CAP = envCap() is not an integer literal"),
+    ],
+)
+def test_a_planted_hard_cap_fails(tmp_path: pathlib.Path, old: str, new: str, message: str) -> None:
+    root = _durable(tmp_path)
+    _replace(root.joinpath(*CAPACITY_REL), old, new)
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert message in proc.stderr
+    assert "workers/proxy/src/capacity.ts:" in proc.stderr
+
+
+def test_a_deleted_capacity_file_fails_when_a_durable_entry_exists(tmp_path: pathlib.Path) -> None:
+    root = _durable(tmp_path)
+    root.joinpath(*CAPACITY_REL).unlink()
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "capacity.ts is missing" in proc.stderr
+
+
+def test_a_legacy_only_tree_does_not_need_capacity_ts(tmp_path: pathlib.Path) -> None:
+    root = _copy(tmp_path)
+    root.joinpath(*CAPACITY_REL).unlink()
+    proc = _run("--root", str(root))
+    assert proc.returncode == 0, proc.stderr
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("instance: 'standard-1'", "instance: 'standard-2'"),
+        ("instance: 'standard-1'", "instance: HEAVY_SIZE"),
+        ("diskMb: 4000", "diskMb: 8000"),
+    ],
+)
+def test_a_planted_instance_size_fails(tmp_path: pathlib.Path, old: str, new: str) -> None:
+    root = _durable(tmp_path)
+    # The size table lives in whichever source file defines it (it moved from org-executor.ts to sizing.ts), so the anchor is found, not named.
+    holders = [
+        p
+        for p in sorted(root.joinpath("workers", "proxy", "src").glob("*.ts"))
+        if old in p.read_text(encoding="utf-8")
+    ]
+    assert holders, "the anchor %r is in no source file; the size table moved" % old
+    holders[0].write_text(
+        holders[0].read_text(encoding="utf-8").replace(old, new, 1), encoding="utf-8"
+    )
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "is not an allowed literal" in proc.stderr
+    assert "workers/proxy/src/%s:" % holders[0].name in proc.stderr
+
+
+def test_a_second_custom_instance_object_fails(tmp_path: pathlib.Path) -> None:
+    root = _durable(tmp_path)
+    path = root.joinpath(*EXECUTOR_REL)
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + "\nexport const EXTRA = { instance: { vcpu: 1, memoryMib: 2048, diskMb: 4000 } };\n",
+        encoding="utf-8",
+    )
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "is not an allowed literal" in proc.stderr
+
+
+def test_a_deleted_org_executor_sleep_after_fails(tmp_path: pathlib.Path) -> None:
+    root = _durable(tmp_path)
+    _replace(root.joinpath(*EXECUTOR_REL), "sleepAfter = '2m';", "")
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "class OrgExecutor sets no sleepAfter" in proc.stderr
+
+
+def test_a_config_over_three_hundred_dollars_fails_and_the_limit_passes(
+    tmp_path: pathlib.Path,
+) -> None:
+    """25 awake of which 5 are heavy is $281.05, under $300. Heavy at 25 of 25 is $684.25, over it; the vars stay legal-looking only up to their own budgets, so this plant also trips the heavy budget."""
+    root = _durable(tmp_path)
+    assert _run("--root", str(root)).returncode == 0
+    _replace(
+        root / "workers" / "proxy" / EU, 'EXECUTOR_HEAVY_CAP = "5"', 'EXECUTOR_HEAVY_CAP = "25"'
+    )
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert "over the per-config limit of $300" in proc.stderr
+
+
+def test_a_deployable_set_over_twenty_one_hundred_dollars_fails(tmp_path: pathlib.Path) -> None:
+    """Seven durable targets at $281.05 are $1,967.35 and pass; an eighth is also an eighth config, so the dollar line is planted through the set limit alone by pricing seven at full cap and heavy at the budget plus the dev-free copy of one more under a name the count refuses."""
+    extra = {f"wrangler.t{i}.toml": 1 for i in range(5)}
+    root = _copy(tmp_path, extra)
+    for name in (EU, "wrangler.bench.toml", *extra):
+        path = root / "workers" / "proxy" / name
+        path.write_text(path.read_text(encoding="utf-8") + DURABLE, encoding="utf-8")
+    proc = _run("--root", str(root))
+    assert proc.returncode == 0, proc.stderr
+    assert "$1967.35/month" in proc.stdout
+    # An eighth deployable config exceeds the set's dollars and its count.
+    path = root / "workers" / "proxy" / "wrangler.t9.toml"
+    path.write_text(CONTAINERS % 1 + DURABLE, encoding="utf-8")
+    proc = _run("--root", str(root))
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    assert (
+        "the deployable configs cost $2248.40/month worst case, over the limit of $2100"
+        in proc.stderr
+    )

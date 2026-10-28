@@ -194,6 +194,115 @@ def test_max_instances_twenty_six_is_refused() -> None:
     assert "[[containers]] max_instances is 26, not 25" in out, out
 
 
+def test_max_instances_on_the_durable_entry_is_refused() -> None:
+    text = plant(
+        real("eu"),
+        'scheduling_policy = "durable_object"\n',
+        'scheduling_policy = "durable_object"\nmax_instances = 25\n',
+    )
+    out = refusals(text, "eu")
+    assert any("OrgExecutor sets max_instances" in r for r in out), out
+
+
+def test_instance_type_on_the_durable_entry_is_refused() -> None:
+    text = plant(
+        real("bench"),
+        'scheduling_policy = "durable_object"\n',
+        'scheduling_policy = "durable_object"\ninstance_type = "basic"\n',
+    )
+    out = refusals(text, "bench")
+    assert any("OrgExecutor sets instance_type" in r for r in out), out
+
+
+def test_executor_cap_twenty_six_is_refused() -> None:
+    text = plant(real("us"), 'EXECUTOR_CAP = "25"', 'EXECUTOR_CAP = "26"')
+    out = refusals(text, "us")
+    assert "vars.EXECUTOR_CAP is '26', over the ceiling of 25" in out, out
+
+
+def test_executor_heavy_cap_six_is_refused() -> None:
+    text = plant(real("us"), 'EXECUTOR_HEAVY_CAP = "5"', 'EXECUTOR_HEAVY_CAP = "6"')
+    out = refusals(text, "us")
+    assert "vars.EXECUTOR_HEAVY_CAP is '6', over the ceiling of 5" in out, out
+
+
+def test_a_non_decimal_cap_is_refused() -> None:
+    text = plant(real("dev"), 'EXECUTOR_CAP = "25"', "EXECUTOR_CAP = 25")
+    out = refusals(text, "dev")
+    assert "vars.EXECUTOR_CAP is 25, not a decimal string" in out, out
+
+
+def test_executor_backend_both_is_refused() -> None:
+    text = plant(real("edge-eu"), 'EXECUTOR_BACKEND = "container"', 'EXECUTOR_BACKEND = "both"')
+    out = refusals(text, "edge-eu")
+    assert "vars.EXECUTOR_BACKEND is 'both', not one of container/durable" in out, out
+
+
+def test_executor_backend_durable_is_accepted() -> None:
+    text = plant(real("eu"), 'EXECUTOR_BACKEND = "container"', 'EXECUTOR_BACKEND = "durable"')
+    assert refusals(text, "eu") == []
+
+
+def test_a_missing_v2_migration_is_refused() -> None:
+    text = plant(
+        real("eu"),
+        '[[migrations]]\ntag = "v2"\nnew_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]\n',
+        "",
+    )
+    out = refusals(text, "eu")
+    assert any("[[migrations]] is" in r and "not v1, v2" in r for r in out), out
+
+
+def test_a_missing_capacity_binding_is_refused() -> None:
+    text = plant(
+        real("asia"),
+        '[[durable_objects.bindings]]\nname = "EXECUTOR_CAPACITY"\nclass_name = "ExecutorCapacity"\n',
+        "",
+    )
+    out = refusals(text, "asia")
+    assert any("[[durable_objects.bindings]] is" in r for r in out), out
+
+
+def test_a_missing_durable_entry_is_refused() -> None:
+    text = plant(
+        real("eu"),
+        '[[containers]]\nclass_name = "OrgExecutor"\nscheduling_policy = "durable_object"\n\n'
+        '[containers.images.executor]\ndockerfile = "./Dockerfile"\nbuild_context = "../.."\n',
+        "",
+    )
+    out = refusals(text, "eu")
+    assert any("[[containers]] is ['ExecutorContainer']" in r for r in out), out
+
+
+def test_a_wrong_durable_image_is_refused() -> None:
+    text = plant(
+        real("eu"), 'build_context = "../.."\n\n[[durable', 'build_context = "."\n\n[[durable'
+    )
+    out = refusals(text, "eu")
+    assert any("OrgExecutor images is" in r for r in out), out
+
+
+def test_the_one_entry_shape_after_phase_three_is_accepted() -> None:
+    text = real("bench")
+    legacy = text[
+        text.index('[[containers]]\nclass_name = "ExecutorContainer"') : text.index(
+            "# The `durable_object`"
+        )
+    ]
+    text = text.replace(legacy, "")
+    text = plant(
+        text,
+        '[[durable_objects.bindings]]\nname = "EXECUTOR"\nclass_name = "ExecutorContainer"\n\n',
+        "",
+    )
+    text = plant(
+        text,
+        'new_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]\n',
+        'new_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]\n\n[[migrations]]\ntag = "v3"\ndeleted_classes = ["ExecutorContainer"]\n',
+    )
+    assert refusals(text, "bench") == []
+
+
 def test_an_env_table_is_refused() -> None:
     text = real("eu") + '\n[env.x]\nname = "rediacc-proxy-x"\n'
     out = refusals(text, "eu")

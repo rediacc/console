@@ -17,6 +17,9 @@ compatibility_flags = ["nodejs_compat"]
 # Overridden by the gate's `--var ACCOUNT_URL:...`; this value only keeps a hand-run from
 # reaching production by accident.
 ACCOUNT_URL = "http://127.0.0.1:9"
+EXECUTOR_BACKEND = "container"
+EXECUTOR_CAP = "25"
+EXECUTOR_HEAVY_CAP = "5"
 
 # The executor token source under `wrangler dev`: the gate runs a stub issuer Worker by this name
 # beside this one, standing in for the account Worker's ExecutorIssuer entrypoint.
@@ -35,10 +38,35 @@ image_build_context = "../.."
 instance_type = "basic"
 max_instances = 25
 
+# The `durable_object` scheduling policy entry (agent/plans/PLAN-executor-durable-object-policy.md
+# Design item 2), beside the old one until Phase 3. It carries no max_instances and no
+# instance_type: wrangler refuses both under this policy (spike DU6), so the cap of 25 lives in
+# src/capacity.ts and each start names its own instance size.
+[[containers]]
+class_name = "OrgExecutor"
+scheduling_policy = "durable_object"
+
+[containers.images.executor]
+dockerfile = "./Dockerfile"
+build_context = "../.."
+
 [[durable_objects.bindings]]
 name = "EXECUTOR"
 class_name = "ExecutorContainer"
 
+[[durable_objects.bindings]]
+name = "ORG_EXECUTOR"
+class_name = "OrgExecutor"
+
+[[durable_objects.bindings]]
+name = "EXECUTOR_CAPACITY"
+class_name = "ExecutorCapacity"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["ExecutorContainer"]
+
+# v2 adds the two classes of the durable backend; v1 stays until Phase 3 retires its class.
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]

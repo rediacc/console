@@ -674,9 +674,25 @@ def selftest() -> bool:
             {"binding": "ISSUER", "service": "rediacc-account-eu", "entrypoint": "ExecutorIssuer"},
         ],
         "version_metadata": {"binding": VERSION_METADATA_BINDING},
-        "containers": [{"class_name": "ExecutorContainer", "image": "./Dockerfile"}],
-        "durable_objects": {"bindings": [{"name": "EXECUTOR", "class_name": "ExecutorContainer"}]},
-        "migrations": [{"tag": "v1", "new_sqlite_classes": ["ExecutorContainer"]}],
+        "containers": [
+            {"class_name": "ExecutorContainer", "image": "./Dockerfile", "max_instances": 25},
+            {
+                "class_name": "OrgExecutor",
+                "scheduling_policy": "durable_object",
+                "images": {"executor": {"dockerfile": "./Dockerfile", "build_context": "../.."}},
+            },
+        ],
+        "durable_objects": {
+            "bindings": [
+                {"name": "EXECUTOR", "class_name": "ExecutorContainer"},
+                {"name": "ORG_EXECUTOR", "class_name": "OrgExecutor"},
+                {"name": "EXECUTOR_CAPACITY", "class_name": "ExecutorCapacity"},
+            ]
+        },
+        "migrations": [
+            {"tag": "v1", "new_sqlite_classes": ["ExecutorContainer"]},
+            {"tag": "v2", "new_sqlite_classes": ["OrgExecutor", "ExecutorCapacity"]},
+        ],
     }
     dev = {k: v for k, v in deploy.items() if k not in ("routes", "services")}
     dev = {

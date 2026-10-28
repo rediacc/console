@@ -21,7 +21,7 @@ vi.mock('@cloudflare/containers', () => ({
 }));
 
 import { forwardAccountEgress as forward } from '../egress';
-import { type Env, executorEnvVars } from '../index';
+import type { Env } from '../index';
 import {
   type ExecutorIssuerRpc,
   type IssuedToken,
@@ -29,6 +29,7 @@ import {
   issuedToken as issued,
   resetIssuedTokenCache,
 } from '../issued-token';
+import { executorEnv as executorEnvVars } from '../org-executor';
 import { resetReadyCache } from '../ready';
 
 const ACCOUNT_URL = 'https://account.test';

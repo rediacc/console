@@ -14,6 +14,8 @@ Nothing else noticed a raise: a reviewer reads `max_instances = 20` as a capacit
 
 THE RULE. Every `[[containers]]` entry names `max_instances`, an integer at or under MAX_INSTANCES_BUDGET (absent means the platform default, which is not a budget). Every container class it names is defined under `workers/proxy/src/` and sets `sleepAfter` in its own body, and EVERY `sleepAfter` assignment in that source, the class field or any override, is a literal the library parses (`'<n>s|m|h'`, or a number of seconds) at or under SLEEP_AFTER_BUDGET_S. A value this gate cannot read (a variable, a call) is a finding, never a pass: an unknown idle time is an unchecked one.
 
+THE DURABLE ENTRY (PLAN-executor-durable-object-policy.md Design item 7, box G1). A `[[containers]]` entry with `scheduling_policy = "durable_object"` (the OrgExecutor) carries neither `max_instances` (it caps nothing under that policy) nor `instance_type`. Its cap moves into code: every config with one carries `[vars] EXECUTOR_CAP` and `EXECUTOR_HEAVY_CAP` as decimal strings at or under MAX_INSTANCES_BUDGET and HEAVY_BUDGET, `workers/proxy/src/capacity.ts` defines `HARD_CAP` and `HARD_HEAVY_CAP` as integer literals at or under the same budgets, and every `instance:` value in the source is one of the allowed literals (`'lite'`, `'standard-1'`, or the one custom object in ALLOWED_CUSTOM_INSTANCE). A config's instance count is its ROUTED backend's cap (`max_instances` of the default entry when `EXECUTOR_BACKEND = "container"`, `EXECUTOR_CAP` when `"durable"`), and its worst-case dollar line is `(cap - heavy) * LIGHT_MONTHLY_USD + heavy * HEAVY_MONTHLY_USD`, at most MAX_CONFIG_MONTHLY_USD per config and MAX_TOTAL_MONTHLY_USD for the deployable set.
+
 RAISING THE BUDGET is a decision, not a fix: change the constant below in the same commit as the section 4 pricing that justifies it.
 
 ANTI-VACUITY. Zero `[[containers]]` entries in either config, zero source files, or a missing config is exit 2 (no verdict), never a green. The instrument controls (`--selftest`) run before every real check, in both directions. The success line prints the counts it judged.
@@ -45,6 +47,23 @@ MAX_INSTANCES_BUDGET = 25
 MAX_DEPLOYABLE_CONFIGS = 7
 MAX_TOTAL_INSTANCES = 175
 SLEEP_AFTER_BUDGET_S = 120
+# Heavy (`standard-1`) instances a target may hold at once (PLAN-executor-durable-object-policy.md Decisions 3).
+HEAVY_BUDGET = 5
+# Worst-case dollars per config and per deployable set, every instance pinned awake for 30 days (Decisions 4). Memory plus disk at https://developers.cloudflare.com/containers/pricing/ ("+$0.0000025 per additional GiB-second", "+$0.00000007 per additional GB-second"): the LIGHT custom size (1/4 vCPU, 1 GiB, 4 GB) is about $7.21 and `standard-1` (1/2 vCPU, 4 GiB, 8 GB) about $27.37. CPU bills on active use only. 20 x 7.21 + 5 x 27.37 is about $281 per target.
+LIGHT_MONTHLY_USD = 7.21
+HEAVY_MONTHLY_USD = 27.37
+MAX_CONFIG_MONTHLY_USD = 300
+MAX_TOTAL_MONTHLY_USD = 2100
+DURABLE_POLICY = "durable_object"
+# The one custom size LIGHT may use (Spike S1, DU3); every other `instance:` is `lite` or `standard-1`.
+ALLOWED_INSTANCE_NAMES = ("lite", "standard-1")
+ALLOWED_CUSTOM_INSTANCE = {"vcpu": 0.25, "memoryMib": 1024, "diskMb": 4000}
+CAPACITY_REL = ("workers", "proxy", "src", "capacity.ts")
+CAP_VARS = (("EXECUTOR_CAP", MAX_INSTANCES_BUDGET), ("EXECUTOR_HEAVY_CAP", HEAVY_BUDGET))
+HARD_CAP_NAMES = (("HARD_CAP", MAX_INSTANCES_BUDGET), ("HARD_HEAVY_CAP", HEAVY_BUDGET))
+DECIMAL_RE = re.compile(r"^\d+$")
+INSTANCE_RE = re.compile(r"\binstance\s*:\s*")
+INT_LITERAL_RE = re.compile(r"^\d+$")
 
 # `@cloudflare/containers` lib/container.js: the idle timeout a class gets when it sets none.
 LIBRARY_DEFAULT_SLEEP_AFTER = "10m"
@@ -118,15 +137,40 @@ def container_findings(
     seen = 0
     for entry in containers:
         name = entry.get("class_name", "<no class_name>")
-        if "max_instances" not in entry:
+        policy = entry.get("scheduling_policy", "default")
+        has_max = "max_instances" in entry
+        where = "%s:%s" % (rel, lines[seen] if has_max and seen < len(lines) else "?")
+        if has_max:
+            seen += 1
+        if policy == DURABLE_POLICY:
+            if has_max:
+                findings.append(
+                    "%s: [[containers]] %s is scheduling_policy = %s and sets max_instances, which "
+                    "caps nothing under that policy (wrangler refuses it) and reads as a budget. "
+                    "Delete it; the cap is EXECUTOR_CAP in [vars] and HARD_CAP in src/capacity.ts."
+                    % (where, name, DURABLE_POLICY)
+                )
+            if "instance_type" in entry:
+                findings.append(
+                    "%s: [[containers]] %s is scheduling_policy = %s and sets instance_type, which "
+                    "applies only to the default policy. Delete it; each start names its own "
+                    "`instance:` size." % (rel, name, DURABLE_POLICY)
+                )
+            continue
+        if policy != "default":
+            findings.append(
+                "%s: [[containers]] %s has scheduling_policy = %r, which this gate does not know, "
+                "so its cost is unchecked. Use 'default' or %r."
+                % (rel, name, policy, DURABLE_POLICY)
+            )
+            continue
+        if not has_max:
             findings.append(
                 "%s: [[containers]] %s sets no max_instances, so the platform default applies "
                 "instead of the budget of %d. Add `max_instances = %d`."
                 % (rel, name, MAX_INSTANCES_BUDGET, MAX_INSTANCES_BUDGET)
             )
             continue
-        where = "%s:%s" % (rel, lines[seen] if seen < len(lines) else "?")
-        seen += 1
         value = entry["max_instances"]
         if not isinstance(value, int) or isinstance(value, bool):
             findings.append(
@@ -195,6 +239,213 @@ def sleep_after_findings(sources: dict[str, str], class_names: list[str]) -> tup
     return judged, findings
 
 
+def is_durable(entry: dict) -> bool:
+    return entry.get("scheduling_policy") == DURABLE_POLICY
+
+
+def is_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def parse_cap_var(raw: object) -> int | None:
+    """A cap var as the Worker reads it: a plain decimal string only (capacity.ts capFrom)."""
+    if isinstance(raw, str) and DECIMAL_RE.match(raw):
+        return int(raw)
+    return None
+
+
+def vars_findings(config: dict, rel: str) -> tuple[int, int, list[str]]:
+    """`(cap, heavy_cap, findings)` of a config's `[vars]` caps. An absent or unreadable var reads as its budget, an over-budget one as written, so the dollar line is a worst case either way."""
+    found: dict[str, int] = {}
+    findings: list[str] = []
+    config_vars = config.get("vars") or {}
+    for key, budget in CAP_VARS:
+        parsed = parse_cap_var(config_vars.get(key))
+        if key not in config_vars:
+            findings.append(
+                "%s: a durable_object entry needs [vars] %s as a decimal string at or under %d; "
+                'it is missing, so the cap is unchecked. Add `%s = "%d"`.'
+                % (rel, key, budget, key, budget)
+            )
+        elif parsed is None:
+            findings.append(
+                "%s: [vars] %s = %r is not a decimal string, so the Worker falls back to its hard "
+                "cap and this gate cannot read it. Write it as a string of digits at or under %d."
+                % (rel, key, config_vars[key], budget)
+            )
+        elif parsed > budget:
+            findings.append(
+                '%s: [vars] %s = "%d" is over the budget of %d. Lower it, or raise the budget '
+                "constant in .ci/scripts/quality/check_proxy_cost_guard.py together with the "
+                "pricing that justifies it." % (rel, key, parsed, budget)
+            )
+        found[key] = parsed if parsed is not None else budget
+    cap, heavy = found["EXECUTOR_CAP"], found["EXECUTOR_HEAVY_CAP"]
+    if heavy > cap:
+        findings.append(
+            "%s: [vars] EXECUTOR_HEAVY_CAP = %d is over EXECUTOR_CAP = %d; heavy instances count "
+            "inside the cap." % (rel, heavy, cap)
+        )
+    return cap, heavy, findings
+
+
+def routed_count(containers: list[dict], config: dict, rel: str) -> tuple[int, int, list[str]]:
+    """`(instances, heavy, findings)` of the ROUTED backend: the default entries' max_instances under EXECUTOR_BACKEND = container, EXECUTOR_CAP under durable. A config with no durable entry is its default entries' sum, as before."""
+    legacy = sum(
+        c["max_instances"]
+        for c in containers
+        if not is_durable(c) and is_int(c.get("max_instances"))
+    )
+    if not any(is_durable(c) for c in containers):
+        return legacy, 0, []
+    cap, heavy, findings = vars_findings(config, rel)
+    has_legacy = any(not is_durable(c) for c in containers)
+    backend = (config.get("vars") or {}).get("EXECUTOR_BACKEND")
+    if not has_legacy or backend == "durable":
+        return cap, heavy, findings
+    if backend != "container":
+        findings.append(
+            "%s: [vars] EXECUTOR_BACKEND = %r with both backends configured, so the routed "
+            'backend, and with it the instance count, is unchecked. Use "container" or '
+            '"durable".' % (rel, backend)
+        )
+    return legacy, 0, findings
+
+
+def monthly_usd(instances: int, heavy: int, durable: bool) -> float:
+    """Worst-case dollars, every instance awake 30 days. A config with a durable entry is priced on its own cap whichever backend is routed, since the flip is one var."""
+    if not durable:
+        return instances * LIGHT_MONTHLY_USD
+    return (instances - heavy) * LIGHT_MONTHLY_USD + heavy * HEAVY_MONTHLY_USD
+
+
+def dollar_findings(per_config: dict[str, float], deployable: list[str]) -> list[str]:
+    """The per-config and deployable-set dollar rules over `{config name: worst-case USD}`."""
+    findings = [
+        "workers/proxy/%s: worst case $%.2f/month pinned awake, over the per-config limit of "
+        "$%d (Decisions 4). Lower EXECUTOR_CAP or EXECUTOR_HEAVY_CAP."
+        % (name, usd, MAX_CONFIG_MONTHLY_USD)
+        for name, usd in sorted(per_config.items())
+        if usd > MAX_CONFIG_MONTHLY_USD
+    ]
+    total = sum(per_config[n] for n in deployable)
+    if total > MAX_TOTAL_MONTHLY_USD:
+        findings.append(
+            "workers/proxy: the deployable configs cost $%.2f/month worst case, over the limit of "
+            "$%d (Decisions 4)." % (total, MAX_TOTAL_MONTHLY_USD)
+        )
+    return findings
+
+
+def strip_comments(text: str) -> str:
+    """`text` with `//` and `/* */` comment bodies blanked (newlines kept), string literals respected."""
+    out: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        two = text[i : i + 2]
+        if two == "//":
+            while i < n and text[i] != "\n":
+                i += 1
+        elif two == "/*":
+            end = text.find("*/", i + 2)
+            end = n if end < 0 else end + 2
+            out.append("".join("\n" if c == "\n" else " " for c in text[i:end]))
+            i = end
+        elif ch in "'\"`":
+            j = i + 1
+            while j < n and text[j] != ch:
+                j += 2 if text[j] == "\\" else 1
+            out.append(text[i : j + 1])
+            i = j + 1
+        else:
+            out.append(ch)
+            i += 1
+    return "".join(out)
+
+
+def parse_instance(raw: str) -> bool:
+    """True when `raw` (an `instance:` value) is one of the allowed literals."""
+    value = raw.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"`":
+        return value[1:-1] in ALLOWED_INSTANCE_NAMES
+    if value.startswith("{") and value.endswith("}"):
+        fields: dict[str, float] = {}
+        for part in value[1:-1].split(","):
+            if not part.strip():
+                continue
+            key, sep, num = part.partition(":")
+            if not sep or not NUMBER_RE.match(num.strip()):
+                return False
+            fields[key.strip()] = float(num.strip())
+        return fields == {k: float(v) for k, v in ALLOWED_CUSTOM_INSTANCE.items()}
+    return False
+
+
+def instance_findings(sources: dict[str, str]) -> tuple[int, list[str]]:
+    """`(instance values judged, findings)`: every `instance:` value is an allowed literal, so a size cannot grow unseen."""
+    findings: list[str] = []
+    judged = 0
+    for rel, raw_text in sorted(sources.items()):
+        text = strip_comments(raw_text)
+        for match in INSTANCE_RE.finditer(text):
+            start = match.end()
+            if text[start : start + 1] == "{":
+                end = text.find("}", start)
+                value = text[start : end + 1] if end >= 0 else text[start:]
+            else:
+                tail = re.match(r"[^;,\n}]+", text[start:])
+                value = tail.group(0) if tail else ""
+            judged += 1
+            if not parse_instance(value):
+                findings.append(
+                    "%s:%d: instance: %s is not an allowed literal ('lite', 'standard-1', or %s), "
+                    "so the instance size, and its price, is unchecked. Use one of those, or raise "
+                    "the allowlist in .ci/scripts/quality/check_proxy_cost_guard.py together with "
+                    "the pricing that justifies it."
+                    % (
+                        rel,
+                        line_of(text, match.start()),
+                        " ".join(value.split()),
+                        "{ vcpu: 0.25, memoryMib: 1024, diskMb: 4000 }",
+                    )
+                )
+    return judged, findings
+
+
+def hard_cap_findings(sources: dict[str, str]) -> list[str]:
+    """`HARD_CAP` and `HARD_HEAVY_CAP` in capacity.ts are integer literals at or under their budgets."""
+    rel = "/".join(CAPACITY_REL)
+    text = strip_comments(sources.get(rel, ""))
+    findings: list[str] = []
+    if not text:
+        return [
+            "%s is missing, so HARD_CAP and HARD_HEAVY_CAP cannot be checked for a config with a "
+            "durable_object entry." % rel
+        ]
+    for name, budget in HARD_CAP_NAMES:
+        match = re.search(r"\bconst\s+%s\b[^=\n]*=\s*([^;\n]+)" % name, text)
+        if match is None:
+            findings.append(
+                "%s: defines no `const %s`, so the code cap is unchecked." % (rel, name)
+            )
+            continue
+        raw = match.group(1).strip()
+        where = "%s:%d" % (rel, line_of(text, match.start()))
+        if not INT_LITERAL_RE.match(raw):
+            findings.append(
+                "%s: %s = %s is not an integer literal this gate can read, so the cap is "
+                "unchecked. Write it as a literal at or under %d." % (where, name, raw, budget)
+            )
+        elif int(raw) > budget:
+            findings.append(
+                "%s: %s = %s is over the budget of %d. Lower it, or raise the budget constant in "
+                ".ci/scripts/quality/check_proxy_cost_guard.py together with the pricing that "
+                "justifies it." % (where, name, raw, budget)
+            )
+    return findings
+
+
 def read_sources(root: pathlib.Path) -> dict[str, str]:
     src = root.joinpath(*SOURCE_REL)
     out: dict[str, str] = {}
@@ -237,6 +488,8 @@ def check(root: pathlib.Path) -> int:
     containers: list[dict] = []
     findings: list[str] = []
     counts: dict[str, int] = {}
+    dollars: dict[str, float] = {}
+    any_durable = False
     proxy_dir = root.joinpath(*PROXY_REL)
     configs = (
         [c for c in sorted(proxy_dir.glob(CONFIG_GLOB)) if c.name != TEMPLATE_CONFIG]
@@ -268,13 +521,17 @@ def check(root: pathlib.Path) -> int:
             return 2
         containers += these
         findings += these_findings
+        durable = any(is_durable(c) for c in these)
+        any_durable = any_durable or durable
+        routed, heavy, routed_findings = routed_count(these, tomllib.loads(text), rel)
+        instances = routed
+        findings += routed_findings
+        if durable:
+            # The flip between backends is one var, so price the durable cap whichever is routed.
+            instances, heavy, _ = vars_findings(tomllib.loads(text), rel)
+        dollars[wrangler.name] = monthly_usd(instances, heavy, durable)
         if wrangler.name != DEV_CONFIG:
-            counts[wrangler.name] = sum(
-                c["max_instances"]
-                for c in these
-                if isinstance(c.get("max_instances"), int)
-                and not isinstance(c["max_instances"], bool)
-            )
+            counts[wrangler.name] = routed
     for name, config_total in sorted(counts.items()):
         if config_total > MAX_INSTANCES_BUDGET:
             findings.append(
@@ -282,6 +539,7 @@ def check(root: pathlib.Path) -> int:
                 "per-config budget of %d." % (name, config_total, MAX_INSTANCES_BUDGET)
             )
     findings += total_findings(counts)
+    findings += dollar_findings(dollars, list(counts))
     sources = read_sources(root)
     if not sources:
         print(
@@ -293,6 +551,10 @@ def check(root: pathlib.Path) -> int:
     names = sorted({str(c.get("class_name", "")) for c in containers if c.get("class_name")})
     judged, sleep_findings = sleep_after_findings(sources, names)
     findings += sleep_findings
+    instances_judged, instance_problems = instance_findings(sources)
+    findings += instance_problems
+    if any_durable:
+        findings += hard_cap_findings(sources)
     if findings:
         for finding in findings:
             print("FAIL  %s" % finding, file=sys.stderr)
@@ -306,7 +568,8 @@ def check(root: pathlib.Path) -> int:
     print(
         "proxy cost guard: OK, %d container(s) at max_instances <= %d in %d config(s) "
         "(%d deployable, %d instance(s) in total, at most %d), "
-        "%d sleepAfter assignment(s) <= %ds across %d source file(s)."
+        "%d sleepAfter assignment(s) <= %ds, %d instance size(s) in the allowlist, "
+        "worst case $%.2f/month (limit $%d), across %d source file(s)."
         % (
             len(containers),
             MAX_INSTANCES_BUDGET,
@@ -316,6 +579,9 @@ def check(root: pathlib.Path) -> int:
             MAX_TOTAL_INSTANCES,
             judged,
             SLEEP_AFTER_BUDGET_S,
+            instances_judged,
+            sum(dollars[n] for n in counts),
+            MAX_TOTAL_MONTHLY_USD,
             len(sources),
         )
     )
@@ -396,6 +662,123 @@ def selftest() -> bool:
         "an eighth deployable config fires", len(total_findings(dict.fromkeys("abcdefgh", 1))) == 1
     )
     control("a total of 176 fires", len(total_findings({"a": 88, "b": 88})) == 1)
+    durable = '[[containers]]\nclass_name = "O"\nscheduling_policy = "durable_object"\n%s'
+    control("a durable entry with neither field is clean", not container_findings(durable % "")[1])
+    control(
+        "a durable entry with max_instances fires",
+        len(container_findings(durable % "max_instances = 25\n")[1]) == 1,
+    )
+    control(
+        "a durable entry with instance_type fires",
+        len(container_findings(durable % 'instance_type = "basic"\n')[1]) == 1,
+    )
+    control(
+        "an unknown scheduling_policy fires",
+        len(container_findings(SELFTEST_TOML % "2" + 'scheduling_policy = "x"\n')[1]) == 1,
+    )
+    good_vars = {"vars": {"EXECUTOR_CAP": "25", "EXECUTOR_HEAVY_CAP": "5"}}
+    control("caps of 25 and 5 are clean", not vars_findings(good_vars, "c")[2])
+    control(
+        'EXECUTOR_CAP = "26" fires',
+        len(vars_findings({"vars": {"EXECUTOR_CAP": "26", "EXECUTOR_HEAVY_CAP": "5"}}, "c")[2])
+        == 1,
+    )
+    control(
+        'EXECUTOR_HEAVY_CAP = "6" fires',
+        len(vars_findings({"vars": {"EXECUTOR_CAP": "25", "EXECUTOR_HEAVY_CAP": "6"}}, "c")[2])
+        == 1,
+    )
+    control(
+        "a non-string cap fires",
+        len(vars_findings({"vars": {"EXECUTOR_CAP": 25, "EXECUTOR_HEAVY_CAP": "5"}}, "c")[2]) == 1,
+    )
+    control("absent cap vars fire", len(vars_findings({}, "c")[2]) == 2)
+    both = [
+        {"class_name": "A", "max_instances": 25},
+        {"class_name": "O", "scheduling_policy": DURABLE_POLICY},
+    ]
+    routed = {
+        "vars": {"EXECUTOR_BACKEND": "container", "EXECUTOR_CAP": "10", "EXECUTOR_HEAVY_CAP": "1"}
+    }
+    control("container routing counts max_instances", routed_count(both, routed, "c")[0] == 25)
+    durable_routed = {"vars": {**routed["vars"], "EXECUTOR_BACKEND": "durable"}}
+    control("durable routing counts EXECUTOR_CAP", routed_count(both, durable_routed, "c")[0] == 10)
+    control("an unreadable backend fires", len(routed_count(both, good_vars, "c")[2]) == 1)
+    control(
+        "the worst case per target is about $281 and within the limit",
+        280 < monthly_usd(25, 5, True) < 282
+        and not dollar_findings({"a": monthly_usd(25, 5, True)}, ["a"]),
+    )
+    control("a config over $300 fires", len(dollar_findings({"a": 301.0}, ["a"])) == 1)
+    control(
+        "a deployable set over $2,100 fires",
+        len(
+            dollar_findings(
+                {
+                    "a": 299.0,
+                    "b": 299.0,
+                    "c": 299.0,
+                    "d": 299.0,
+                    "e": 299.0,
+                    "f": 299.0,
+                    "g": 299.0,
+                    "h": 299.0,
+                },
+                list("abcdefgh"),
+            )
+        )
+        == 1,
+    )
+    control(
+        "the dev config's dollars are not in the set",
+        not dollar_findings({"a": 299.0, "dev": 299.0}, ["a"]),
+    )
+    cap_ok = {
+        "workers/proxy/src/capacity.ts": "export const HARD_CAP = 25;\nexport const HARD_HEAVY_CAP = 5;\n"
+    }
+    control("HARD_CAP 25 and HARD_HEAVY_CAP 5 are clean", not hard_cap_findings(cap_ok))
+    for label, old, new in (
+        ("HARD_CAP = 30", "HARD_CAP = 25", "HARD_CAP = 30"),
+        ("HARD_HEAVY_CAP = 6", "HARD_HEAVY_CAP = 5", "HARD_HEAVY_CAP = 6"),
+        ("a non-literal HARD_CAP", "HARD_CAP = 25", "HARD_CAP = LIMIT"),
+    ):
+        planted = {
+            "workers/proxy/src/capacity.ts": cap_ok["workers/proxy/src/capacity.ts"].replace(
+                old, new
+            )
+        }
+        control("%s fires" % label, len(hard_cap_findings(planted)) == 1)
+    control("a missing capacity.ts fires", len(hard_cap_findings({"x.ts": "1"})) == 1)
+    control(
+        "a missing HARD_CAP definition fires",
+        len(
+            hard_cap_findings(
+                {"workers/proxy/src/capacity.ts": "export const HARD_HEAVY_CAP = 5;\n"}
+            )
+        )
+        == 1,
+    )
+    clean = "const A = { light: { instance: { vcpu: 0.25, memoryMib: 1024, diskMb: 4000 } }, heavy: { instance: 'standard-1' }, x: { instance: 'lite' } };\n"
+    control("the three allowed sizes are clean", instance_findings({"s.ts": clean}) == (3, []))
+    for label, src in (
+        ("standard-2", "x = { instance: 'standard-2' };"),
+        ("a variable", "x = { instance: SIZE };"),
+        ("a second custom object", "x = { instance: { vcpu: 1, memoryMib: 1024, diskMb: 4000 } };"),
+        (
+            "an extra custom field",
+            "x = { instance: { vcpu: 0.25, memoryMib: 1024, diskMb: 4000, extra: 1 } };",
+        ),
+    ):
+        control("instance: %s fires" % label, len(instance_findings({"s.ts": src})[1]) == 1)
+    control(
+        "an instance: in a comment is not a size",
+        instance_findings({"s.ts": "// instance: SIZE\n/* instance: 'standard-4' */\nx = 1;"})
+        == (0, []),
+    )
+    control(
+        "a // inside a string does not hide the next size",
+        len(instance_findings({"s.ts": "u = 'http://x'; v = { instance: 'standard-2' };"})[1]) == 1,
+    )
     return ok
 
 

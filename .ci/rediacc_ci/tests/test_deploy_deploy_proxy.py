@@ -139,6 +139,25 @@ if "--dry-run" not in args and not os.environ.get("FAKE_NO_VERSION_LINE"):
     sys.stdout.write("Deployed rediacc-proxy triggers\\nCurrent Version ID: " + os.environ["FAKE_NEW_ID"] + "\\n")
 """
 
+# A git that knows one previous release tag, `v2.3.2`, and answers `git show v2.3.2:<path>` with the file named by FAKE_PREV_CONFIG. Without FAKE_PREV_CONFIG it fails, as a checkout with no tag does. It logs nothing: git is not part of the recorded calls.
+FAKE_GIT = """#!/usr/bin/python3
+import os
+import sys
+
+args = sys.argv[1:]
+prev = os.environ.get("FAKE_PREV_CONFIG")
+if not prev:
+    sys.exit(1)
+if args[:2] == ["tag", "--list"]:
+    print("v%s" % "1.2.3")
+    print("v2.3.2")
+    sys.exit(0)
+if args[:1] == ["show"] and args[1].startswith("v2.3.2:"):
+    sys.stdout.write(open(prev).read())
+    sys.exit(0)
+sys.exit(1)
+"""
+
 # Codes by path. /v1/ready is asked with `-w '\\n%{http_code}'`, so it prints its body, a newline, then the code.
 FAKE_CURL = """#!/usr/bin/python3
 import json
@@ -221,7 +240,12 @@ def _bin(tmp_path: pathlib.Path) -> tuple[str, str]:
         link = stub / real_name
         if not link.exists():
             link.symlink_to(real)
-    for name, body in (("npx", FAKE_NPX), ("npm", FAKE_NPM), ("curl", FAKE_CURL)):
+    for name, body in (
+        ("npx", FAKE_NPX),
+        ("npm", FAKE_NPM),
+        ("curl", FAKE_CURL),
+        ("git", FAKE_GIT),
+    ):
         fake = stub / name
         fake.write_text(body, encoding="utf-8")
         fake.chmod(0o755)
@@ -831,7 +855,9 @@ def test_the_record_carries_what_a_rollback_needs(tmp_path: pathlib.Path) -> Non
         ("--target", "edge", "--region", "us", "--version", VERSION, "--record", str(record)),
     )
     assert proc.returncode == 0, proc.stderr
-    assert json.loads(record.read_text()) == {
+    written = json.loads(record.read_text())
+    assert isinstance(written.pop("cold_start_ms"), int)
+    assert written == {
         "target": "edge",
         "region": "us",
         "worker": "edge-rediacc-proxy-us",
@@ -842,7 +868,103 @@ def test_the_record_carries_what_a_rollback_needs(tmp_path: pathlib.Path) -> Non
         "smoke_rc": 0,
         "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.edge-us.toml"
         % PREV_ID,
+        "backend": "container",
+        "migration_tag": "v2",
     }
+
+
+def _previous_config(
+    tmp_path: pathlib.Path, root: pathlib.Path, config: str, migrations: str
+) -> str:
+    """A copy of `config` whose `[[migrations]]` tables are replaced by `migrations`: the previous release's file."""
+    text = (root / "workers" / "proxy" / config).read_text(encoding="utf-8")
+    head = text[: text.index("[[migrations]]")]
+    tail = text[text.index("# Telemetry export") :]
+    path = tmp_path / "previous.toml"
+    path.write_text(head + migrations + "\n" + tail, encoding="utf-8")
+    return str(path)
+
+
+V1 = '[[migrations]]\ntag = "v1"\nnew_sqlite_classes = ["ExecutorContainer"]\n'
+V2 = V1 + '\n[[migrations]]\ntag = "v2"\nnew_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]\n'
+
+
+def test_a_v1_to_v2_deploy_is_forward_only(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V1)
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "edge", "--region", "us", "--version", VERSION, "--record", str(record)),
+        FAKE_PREV_CONFIG=previous,
+    )
+    assert proc.returncode == 0, proc.stderr
+    want = "forward-only: Durable Object class lifecycle change (v2); fix forward"
+    written = json.loads(record.read_text())
+    assert written["rollback"] == want
+    assert written["migration_tag"] == "v2"
+    assert written["previous_version_id"] == PREV_ID
+    assert "Rollback: " + want + "\n" in proc.stderr
+    assert "wrangler rollback" not in proc.stderr
+
+
+def test_a_v2_to_v2_deploy_writes_the_rollback_command(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V2)
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "edge", "--region", "us", "--version", VERSION, "--record", str(record)),
+        FAKE_PREV_CONFIG=previous,
+    )
+    assert proc.returncode == 0, proc.stderr
+    want = (
+        "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.edge-us.toml"
+    )
+    assert json.loads(record.read_text())["rollback"] == want % PREV_ID
+    assert "forward-only" not in proc.stderr
+
+
+def test_a_deploy_with_no_previous_release_config_is_not_forward_only(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "edge", "--region", "us", "--version", VERSION, "--record", str(record)),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "forward-only" not in json.loads(record.read_text())["rollback"]
+
+
+def test_bench_is_forward_only_when_its_recorded_migration_tag_differs(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    args = ("--target", "bench", "--record", str(record))
+    for recorded, forward in (("v1", True), ("v2", False)):
+        record.write_text(json.dumps({"migration_tag": recorded}), encoding="utf-8")
+        proc, _calls = _run(tmp_path, root, args, **BENCH_PROFILE_ENV)
+        assert proc.returncode == 0, proc.stderr
+        written = json.loads(record.read_text())
+        assert written["migration_tag"] == "v2"
+        assert written["rollback"].startswith("forward-only:") is forward
+
+
+def test_the_forward_only_rule_compares_whole_migration_lists() -> None:
+    v1 = port.config_migrations(V1)
+    v2 = port.config_migrations(V2)
+    assert port.is_forward_only(v2, v1)
+    assert port.is_forward_only(v1, v2)
+    assert not port.is_forward_only(v2, v2)
+    assert not port.is_forward_only(v2, None)
+    assert port.migration_tag(v2) == "v2"
+    assert port.migration_tag([]) is None
 
 
 def test_smoke_only_smokes_the_recorded_version_and_deploys_nothing(tmp_path: pathlib.Path) -> None:
@@ -996,7 +1118,7 @@ def _smoke_fixture(monkeypatch, answers, doh=None):
     monkeypatch.setattr(port, "_curl", fake)
     monkeypatch.setattr(port, "_sleep", sleeps.append)
     monkeypatch.setattr(port, "_doh_lookup", lambda _host: doh)
-    monkeypatch.setattr(port, "wait_ready", lambda _fetch, _url, _version: 0)
+    monkeypatch.setattr(port, "wait_ready", lambda _fetch, _url, _version, _timing=None: 0)
     monkeypatch.setenv(port.RESOLVE_WINDOW_ENV, "1000")
     monkeypatch.setenv(port.DOH_URL_ENV, "https://doh.invalid/dns-query")
     return fake, sleeps
