@@ -62,24 +62,24 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 9 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/_done/PLAN-stop-hook-rulings-campaign.md -- 17 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-program.md -- 125 of 195 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 126 of 196 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 25 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-telemetry-export.md -- 15 of 19 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 889 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 909 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a4ea81bec486e1a4e, worker:a390020fe5a47744e.
-- Leased items: 4: #0579bfae (worker:a4ea81bec486e1a4e, d778be9d), #0f1798ee (worker:a390020fe5a47744e, d778be9d), #5b7302fd (worker:a390020fe5a47744e, d778be9d), #dba13629 (worker:a390020fe5a47744e, d778be9d).
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 0.
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 7; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 8 of 27 plans done, 397 of 536 boxes done (74%).
+Promoted: 9 of 28 plans done, 399 of 546 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -99,10 +99,10 @@ Promoted: 8 of 27 plans done, 397 of 536 boxes done (74%).
 | 14 | PLAN-config-networkid-discovery.md | 7/7 | done |
 | 15 | PLAN-renet-fetch-retries.md | 2/2 | done |
 | 16 | PLAN-cloudflare-spend-guard.md | 7/9 | 2 open |
-| 17 | PLAN-renet-runtime-converge.md | 3/4 | 1 open |
+| 17 | PLAN-renet-runtime-converge.md | 4/4 | done |
 | 18 | PLAN-sandbox-tenant-separation.md | 6/7 | 1 open |
 | 19 | PLAN-converge-preflight-and-repo-recovery.md | 18/18 | done |
-| 20 | PLAN-gpu-device-grants.md | 10/12 | 2 open |
+| 20 | PLAN-gpu-device-grants.md | 11/12 | 1 open |
 | 21 | PLAN-proxy-cd-six-targets.md | 24/34 | 10 open |
 | 22 | PLAN-console-executor-multi-org.md | 14/20 | 6 open |
 | 23 | PLAN-executor-durable-object-policy.md | 11/21 | 10 open |
@@ -110,6 +110,7 @@ Promoted: 8 of 27 plans done, 397 of 536 boxes done (74%).
 | 25 | PLAN-config-server-key.md | 6/6 | done |
 | 26 | PLAN-tested-on-bench.md | 7/20 | 13 open |
 | 27 | PLAN-per-flavor-renet-binary-paths.md | 0/8 | 8 open |
+| 28 | PLAN-org-executor-connect-timeout-relocate.md | 0/10 | 10 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -139,6 +140,7 @@ Promoted: 8 of 27 plans done, 397 of 536 boxes done (74%).
 25. agent/plans/PLAN-config-server-key.md -- security finding #caef1cc3: layer 3 encrypted under a public constant; operator ASKED:2026-10-27T11:05Z refuse at boot, mirror first; two landings with a bounded rewrap
 26. agent/plans/PLAN-tested-on-bench.md -- operator request 2026-10-27, four questions answered same day
 27. agent/plans/PLAN-per-flavor-renet-binary-paths.md -- finding #950036d0 (2026-10-28, vm:check vmc-10280533-5ddf37 NOT_VERIFIED at A2.3): a plain ./rdc.sh flips the shared bin/renet flavor under the license drill; fix-in-session rule (CLAUDE.md rule 2), triage PLAN+SUBAGENT
+28. agent/plans/PLAN-org-executor-connect-timeout-relocate.md -- finding #a150016d (edge-us org B's executor never reaches its machine; org C on a new Durable Object passes); operator ASKED:2026-10-28T06:55Z "Ride this PR now"
 
 ## Generated
 
