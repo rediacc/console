@@ -2,6 +2,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
 import {
   currentRequestContext,
+  DispatchExit,
   exitProcess,
   writeStdout,
 } from '../services/core/request-context.js';
@@ -36,6 +37,33 @@ function isRetryable(error: CliError): boolean {
   return retryableCodes.includes(error.exitCode);
 }
 
+/** A CliError that also carries the named machine-readable code of the failure behind it. */
+type NamedCliError = CliError & { errorCode?: string };
+
+/**
+ * A DispatchExit that keeps the named code and guidance of the failure that ended the command. The served result is built from it, so a command that opens its own SSH connection reports the same errorCode an executor.execute failure does. Still a DispatchExit, so every instanceof check on it holds.
+ */
+export class DispatchFailure extends DispatchExit {
+  constructor(
+    code: number,
+    readonly errorCode: string,
+    readonly guidance: string | undefined
+  ) {
+    super(code);
+  }
+}
+
+/** The named code and guidance of an error that carries one (an SSH connect failure), or undefined. */
+export function namedFailureOf(
+  error: unknown
+): { errorCode: string; guidance: string | undefined } | undefined {
+  if (error instanceof DispatchFailure) {
+    return { errorCode: error.errorCode, guidance: error.guidance };
+  }
+  const named = sshConnectError(error);
+  return named?.errorCode ? { errorCode: named.errorCode, guidance: named.guidance } : undefined;
+}
+
 /** Get actionable guidance for an error */
 function getGuidance(error: CliError): string | undefined {
   if (error.guidance) return error.guidance;
@@ -62,6 +90,9 @@ function outputJsonError(cliError: CliError): void {
         code: cliError.code,
         message: cliError.message,
         ...(cliError.details?.length && { details: cliError.details }),
+        ...((cliError as NamedCliError).errorCode && {
+          errorCode: (cliError as NamedCliError).errorCode,
+        }),
         retryable: isRetryable(cliError),
         guidance: getGuidance(cliError),
         ...(cliError.next && { next: cliError.next }),
@@ -126,6 +157,10 @@ export function handleError(error: unknown): never {
 
   // Exit synchronously. On a laptop this is process.exit() as it always was. Inside an executor dispatch it throws instead, because a command that fails
   // for one tenant must not kill the process serving everyone else.
+  const named = namedFailureOf(error);
+  if (named && currentRequestContext()) {
+    throw new DispatchFailure(cliError.exitCode, named.errorCode, named.guidance);
+  }
   exitProcess(cliError.exitCode);
 }
 
@@ -203,15 +238,21 @@ function remoteConfigError(error: unknown): CliError | undefined {
 /**
  * A named SSH connect failure (remote/sftp/connect-error.ts), matched by name like the remote-config errors so this module does not import the SFTP client.
  */
-function sshConnectError(error: unknown): CliError | undefined {
+function sshConnectError(error: unknown): NamedCliError | undefined {
   if (!(error instanceof Error) || error.name !== 'SshConnectError') return undefined;
-  const named = error as Error & { exitCode?: number; retryable?: boolean; guidance?: string };
+  const named = error as Error & {
+    exitCode?: number;
+    retryable?: boolean;
+    guidance?: string;
+    errorCode?: string;
+  };
   const network = named.exitCode === EXIT_CODES.NETWORK_ERROR;
   return {
     code: network ? ERROR_CODES.NETWORK_ERROR : ERROR_CODES.GENERAL_ERROR,
     message: error.message,
     exitCode: network ? EXIT_CODES.NETWORK_ERROR : EXIT_CODES.GENERAL_ERROR,
     retryable: named.retryable === true,
+    ...(named.errorCode && { errorCode: named.errorCode }),
     ...(named.guidance && { guidance: named.guidance }),
   };
 }

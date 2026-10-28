@@ -41,6 +41,7 @@ vi.mock('../../config/config-resources.js', () => ({
 
 process.env.REDIACC_TELEMETRY_DISABLED = '1';
 
+import { SshConnectError } from '../../../remote/sftp/connect-error.js';
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
 import { serveCrypto } from '../crypto.js';
@@ -93,6 +94,17 @@ function failing(errorCode?: string): ServeDeps['executor'] {
         error: 'down',
         ...(errorCode ? { errorCode } : {}),
       });
+    },
+  };
+}
+
+/** A command whose own SSH connect throws, bypassing executor.execute's result path. */
+function throwing(kind: 'unreachable' | 'refused'): ServeDeps['executor'] {
+  return {
+    execute(): Promise<ExecuteResult> {
+      return Promise.reject(
+        new SshConnectError({ kind, host: '10.0.0.1', port: 22, timeoutMs: 5000, cause: 'x' })
+      );
     },
   };
 }
@@ -201,6 +213,27 @@ describe('egress-unreachable report', () => {
     const { result } = await postCommand(failing(code), createEgressReporter({ fetchImpl }));
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(result.errorGuidance).toBeUndefined();
+  });
+
+  it('a thrown unreachable SshConnectError yields EGRESS_UNREACHABLE and exactly one report', async () => {
+    const fetchImpl = answerFetch({ count: 1, threshold: 3, relocated: false });
+    const { result } = await postCommand(
+      throwing('unreachable'),
+      createEgressReporter({ fetchImpl })
+    );
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(6);
+    expect(result.errorCode).toBe('EGRESS_UNREACHABLE');
+    expect(result.errorGuidance).toMatch(/Attempt 1 of 3/);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('a thrown refused SshConnectError yields SSH_REFUSED and no report', async () => {
+    const fetchImpl = answerFetch({ count: 1, threshold: 3, relocated: false });
+    const { result } = await postCommand(throwing('refused'), createEgressReporter({ fetchImpl }));
+    expect(result.errorCode).toBe('SSH_REFUSED');
+    expect(result.errorGuidance).toMatch(/SSH service is running/);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('never reports from the daemon tier', async () => {

@@ -38,6 +38,7 @@ import type { Command } from 'commander';
 import { CommanderError } from 'commander';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { createCli } from '../../cli.js';
+import { namedFailureOf } from '../../utils/errors.js';
 import { configService } from '../config/config-resources.js';
 import {
   type CommandRequestContext,
@@ -484,11 +485,21 @@ function toFailure(
 ): ExecuteResult {
   if (lastResult && !lastResult.success) return lastResult;
 
+  // The named code (EGRESS_UNREACHABLE, SSH_REFUSED, ...) of a failure the command raised itself, either rethrown by handleError as a DispatchFailure or thrown bare, so every path reaches the served result with it.
+  const named = namedFailureOf(error);
+  const namedFields = named
+    ? {
+        errorCode: named.errorCode,
+        ...(named.guidance ? { errorGuidance: named.guidance } : {}),
+      }
+    : {};
+
   if (error instanceof DispatchExit) {
     return {
       success: error.code === 0,
       exitCode: error.code,
       error: error.code === 0 ? undefined : stderr.trim() || error.message,
+      ...namedFields,
       durationMs,
     };
   }
@@ -507,6 +518,7 @@ function toFailure(
     success: false,
     exitCode: 1,
     error: error instanceof Error ? error.message : 'The command failed.',
+    ...namedFields,
     durationMs,
   };
 }

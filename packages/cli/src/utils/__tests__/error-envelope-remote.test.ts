@@ -85,3 +85,19 @@ describe('error envelope: remote-config errors', () => {
     expect(envelopeFor(new Error('plain failure')).code).toBe(ERROR_CODES.GENERAL_ERROR);
   });
 });
+
+describe('error envelope: SSH connect failures', () => {
+  it('keeps NETWORK_ERROR and carries the named errorCode', async () => {
+    const { SshConnectError } = await import('../../remote/sftp/connect-error.js');
+    const error = new SshConnectError({
+      kind: 'unreachable',
+      host: '10.0.0.1',
+      port: 22,
+      timeoutMs: 5000,
+      cause: 'x',
+    });
+    const entry = envelopeFor(error);
+    expect(entry.code).toBe(ERROR_CODES.NETWORK_ERROR);
+    expect(entry.errorCode).toBe('EGRESS_UNREACHABLE');
+  });
+});
