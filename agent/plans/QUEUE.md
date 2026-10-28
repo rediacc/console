@@ -69,18 +69,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1043 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1067 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 9 live of writer_cap 25 (session d778be9d): worker:a3684448fcc5958f4, worker:a303e91cca9814022, worker:ac64af563b548367f, worker:a51fcb9c84b92518b, worker:a208678779c3e0b06, worker:ab1f2464a70df89d6, worker:a4965c594288fef11, worker:a66673529879b9279, worker:a100790f3a0ccd3f5.
-- Leased items: 10: #01ed6429 (worker:a100790f3a0ccd3f5, d778be9d), #17af1a97 (worker:ac64af563b548367f, d778be9d), #5869be8f (worker:a51fcb9c84b92518b, d778be9d), #65b434e1 (worker:a3684448fcc5958f4, d778be9d), #92b63cf2 (worker:a208678779c3e0b06, d778be9d), #a150016d (worker:queue, d778be9d), #b3f35073 (worker:a66673529879b9279, d778be9d), #b4e733d4 (worker:ab1f2464a70df89d6, d778be9d), #be5f652d (worker:a303e91cca9814022, d778be9d), #e11d949b (worker:a4965c594288fef11, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a4896bac56892e683.
+- Leased items: 3: #736c233b (worker:a4896bac56892e683, d778be9d), #90ed58ba (worker:b9n6m0njs, d778be9d), #a150016d (worker:queue, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 2 of 31 plans done, 481 of 604 boxes done (79%).
+Promoted: 2 of 31 plans done, 482 of 604 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -114,7 +114,7 @@ Promoted: 2 of 31 plans done, 481 of 604 boxes done (79%).
 | 28 | PLAN-org-executor-connect-timeout-relocate.md | 8/12 | 4 open |
 | 29 | PLAN-backup-restore-path.md | 6/10 | 4 open |
 | 30 | PLAN-ssh-key-source-ranges.md | 9/11 | 2 open |
-| 31 | PLAN-repo-docker-storage-prune.md | 9/14 | 5 open |
+| 31 | PLAN-repo-docker-storage-prune.md | 10/14 | 4 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
