@@ -48,7 +48,8 @@ Writers: **R** renet (`private/renet/**`), **B** the CLI and shared packages, **
     (ticked) 2026-10-25T11:06:43Z by d778be9d: commit:1498835931713e: T5 per the networkid writer; CLI vitest src 3369 passed, cli tsc rc=0, check:ci-i18n-cli-key-usage rc=0 (lead reruns)
 - [x] T6 [B] i18n: add `networkIdInUse`, `networkIdUndiscoverable` and `networkIdDiverged` to every `packages/cli/src/i18n/locales/*/cli.json`, after the hardening plan's i18n commits.
     (ticked) 2026-10-25T11:06:44Z by d778be9d: commit:1498835931713e: T6 per the networkid writer; CLI vitest src 3369 passed, cli tsc rc=0, check:ci-i18n-cli-key-usage rc=0 (lead reruns)
-- [ ] T7 [lead] Closure: run the mutation controls in section 4.4 by hand, each must turn its test red; confirm the account integration lane lists `config-sync/network-id.test.ts` and the renet unit lane runs the new guard cases; flip N1-N6 from `it.fails` to `it` (T3, T4 and T5 flip their own) and delete their guards; record the outcome in the hardening plan's F20 entry.
+- [x] T7 [lead] Closure: run the mutation controls in section 4.4 by hand, each must turn its test red; confirm the account integration lane lists `config-sync/network-id.test.ts` and the renet unit lane runs the new guard cases; flip N1-N6 from `it.fails` to `it` (T3, T4 and T5 flip their own) and delete their guards; record the outcome in the hardening plan's F20 entry.
+    (ticked) 2026-10-28T04:24:49Z by d778be9d: commit:7cda4ca5b the nine section 4.4 mutations run by hand, each red (renet M8 go test -tags nolicense ./cmd/renet/ -run NetworkID|Guard rc=0, 14 pass), N1-N6 plain it, the lane picks network-id.test.ts by the tests/integration glob, outcome recorded under F20 in PLAN-config-sync-hardening.md. DEPS-WAIVED: PLAN-config-sync-hardening's one open box is the T15 live smoke; the push and harness this needs landed
 
 ## 1. What happened before state sync, and what the fallback still covers
 

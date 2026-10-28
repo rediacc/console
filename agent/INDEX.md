@@ -489,7 +489,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 99 | 4 | 4 | 33934 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
-| `agent/plans/PLAN-config-networkid-discovery.md` | approved | 184 | 1 | 6 | 25332 |
+| `agent/plans/PLAN-config-networkid-discovery.md` | approved | 185 | 0 | 7 | 25792 |
 | `agent/plans/PLAN-config-server-key.md` | approved | 74 | 0 | 6 | 10137 |
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 478 | 1 | 18 | 59500 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 364 | 6 | 14 | 65434 |

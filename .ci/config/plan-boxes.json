@@ -533,18 +533,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 6,
-      "open_sigs": [
-        "b1ee5c7d"
-      ],
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
       "done_sigs": [
         "17eb8443",
         "3022db4c",
         "497bd19f",
         "5a66b9aa",
         "5ac35d6c",
-        "721413cb"
+        "721413cb",
+        "b1ee5c7d"
       ]
     },
     "agent/plans/PLAN-config-server-key.md": {
