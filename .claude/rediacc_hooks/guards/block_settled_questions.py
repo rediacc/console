@@ -152,6 +152,8 @@ PUSH_TO_MAIN = r"^( [a-z_]+){0,2} to (origin )?main([^a-z]|$)"
 # skipped when it sits inside a backtick span that does not start with `git` or `gh` (the span names some other program's command), or when it directly ends an unquoted `rdc <word>...` chain. `git push` in backticks, "push the branch" and every bare spelling of the ruling ("push now?") still count.
 NAMED_SPAN_GIT = r"^\s*(git|gh)(?![a-z_-])"
 NAMED_RDC_CHAIN = r"(^|[^a-z_-])rdc( [a-z_|-]+){1,3} $"
+# A timing word (or an "or wait" alternative) directly after the verb asks WHEN to run it ("should we rdc repo push now?"), so the chain is not a named command there (review c5695bf5.1). A later "now" ("rdc machine access push be barred from MCP now?") still reads as part of the question about the verb.
+NAMED_RDC_TIMING_AFTER = r"^[a-z]+\s+(now|yet|first|later|today|tonight|or (wait|keep|hold|continue|finish|not))(?![a-z])"
 
 
 def _named_command(sentence, start):
@@ -161,7 +163,9 @@ def _named_command(sentence, start):
         # The span runs from its opening backtick through the occurrence, so `gh pr create` reads its own `gh`.
         span = sentence[before.rfind("`") + 1 :]
         return not re.search(NAMED_SPAN_GIT, span)
-    return bool(re.search(NAMED_RDC_CHAIN, before))
+    return bool(re.search(NAMED_RDC_CHAIN, before)) and not re.search(
+        NAMED_RDC_TIMING_AFTER, sentence[start:]
+    )
 
 
 # A header that IS the action carries it, as HEADER_OBJECT does for the permission rule: "Push" over "Now, or after the batch?".

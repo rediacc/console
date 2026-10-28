@@ -180,6 +180,21 @@ describe('repo prune execution', () => {
     expect(out.print).toHaveBeenCalledWith(rec, 'json');
   });
 
+  it('exits non-zero when the scan refuses the run', async () => {
+    const saved = process.exitCode;
+    process.exitCode = undefined;
+    try {
+      mockExecute.mockResolvedValue({
+        success: true,
+        stdout: JSON.stringify(record({ refused: 'daemon busy' })),
+      });
+      await run('shop', '--apply', '--offline', '-y');
+      expect(process.exitCode).toBe(1);
+    } finally {
+      process.exitCode = saved;
+    }
+  });
+
   it('surveys every mounted repository on -m as a dry run', async () => {
     mockExecute
       .mockResolvedValueOnce({

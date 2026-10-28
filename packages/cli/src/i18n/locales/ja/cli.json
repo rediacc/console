@@ -1292,7 +1292,7 @@
         "description": "設定のアクセスキーをマシンに紐付け、それぞれの送信元範囲に制限したうえでマシンの authorized_keys に書き込む",
         "descriptionShort": "マシンにインストールされたアクセスキーを管理する",
         "notBound": "アクセスキー \"{{key}}\" は \"{{name}}\" に紐付けられていません",
-        "optionKey": "アクセスキー名（ 'config access list' を参照）",
+        "optionKey": "アクセスキー名（'config access list' を参照）",
         "push": {
           "change": "{{action}} {{line}} 行目: {{key}}",
           "description": "マシンに紐付けられたアクセスキーをその authorized_keys に書き込み、同じキーの既存の行は引き継ぐ。紐付けが外れたキーについては、この設定が書いた行を削除する。rdc 自身のセッションが締め出される変更は拒否し、プッシュ中にファイルが変更された場合は何も書き込まない",

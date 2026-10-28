@@ -66,6 +66,12 @@ REFUSE = [
         "",
         "decided by the hooks",
     ),
+    (
+        "push timing: a time word right after an unquoted rdc verb",
+        "Should we rdc repo push now?",
+        "",
+        "decided by the hooks",
+    ),
     ("permission: may I push", "May I push these to origin?", "", "BLOCKED"),
     ("permission: open the pr", "Should I open the PR?", "", "BLOCKED"),
 ]

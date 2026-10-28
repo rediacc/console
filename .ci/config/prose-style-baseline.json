@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2764,
- "files": 679,
+ "count": 2762,
+ "files": 677,
  "by_rule": {
   "R1": 1509,
   "R11": 143,
   "R14": 1,
   "R18": 13,
   "R19": 55,
-  "R2": 603,
-  "R7": 440
+  "R2": 602,
+  "R7": 439
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -258,11 +258,6 @@
    "R2": [
     "9e2cedcb715f97ba",
     "b39a8ca9e061ef7c"
-   ]
-  },
-  ".ci/rediacc_ci/infra/build_renet.py": {
-   "R2": [
-    "a5ab50fecaf8d1de"
    ]
   },
   ".ci/rediacc_ci/paths.py": {
@@ -4472,11 +4467,6 @@
   "packages/shared/src/config-schema/coverage.ts": {
    "R7": [
     "45555480992775db"
-   ]
-  },
-  "packages/shared/src/config-schema/schemas.ts": {
-   "R7": [
-    "49d2141c92213b6b"
    ]
   },
   "packages/shared/src/config-schema/state-schema.ts": {

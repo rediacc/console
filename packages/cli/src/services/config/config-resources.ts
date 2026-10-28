@@ -8,11 +8,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import {
-  type AccessConfig,
-  bindingSourceRanges,
-  type RdcState,
-} from '@rediacc/shared/config-schema';
+import type { RdcState } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import {
@@ -32,7 +28,7 @@ import type {
 } from '../../types/index.js';
 import { outputService } from '../core/output.js';
 import { currentRequestConfig } from '../core/request-context.js';
-import { ConfigServiceBase } from './config-base.js';
+import { ConfigAccessService, dropAccessBindings } from './config-access.js';
 import {
   assertClusterMembersUnique,
   assertUniqueName,
@@ -68,38 +64,10 @@ async function assertValidResourceName(name: string): Promise<void> {
   assertResourceName(name);
 }
 
+export { dropAccessBindings } from './config-access.js';
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
-function isEmptyAccess(access: AccessConfig): boolean {
-  return access.sourceRanges === undefined && Object.keys(access.keys ?? {}).length === 0;
-}
-
-/**
- * `access` without any binding to `machineName`. A key whose only range was that binding's would
- * resolve to no range once the binding is gone, which the schema refuses; such a key takes the
- * dropped binding's ranges as its own, so it stays valid and installed nowhere.
- */
-export function dropAccessBindings(access: AccessConfig, machineName: string): AccessConfig {
-  const keys = { ...(access.keys ?? {}) };
-  for (const [keyName, key] of Object.entries(keys)) {
-    const binding = key.machines?.[machineName];
-    if (binding === undefined) continue;
-    const { [machineName]: _removed, ...machines } = key.machines ?? {};
-    const orphaned =
-      Object.keys(machines).length === 0 &&
-      key.sourceRanges === undefined &&
-      access.sourceRanges === undefined;
-    const ownRanges = bindingSourceRanges(binding);
-    keys[keyName] = {
-      ...key,
-      machines,
-      ...(orphaned && ownRanges ? { sourceRanges: ownRanges } : {}),
-    };
-  }
-  return { ...access, keys };
-}
-
-class ConfigService extends ConfigServiceBase {
+class ConfigService extends ConfigAccessService {
   /**
    * The current config. Inside a request-scoped dispatch (the container tier)
    * it is the config decrypted for the session, never a file and never the
@@ -135,7 +103,7 @@ class ConfigService extends ConfigServiceBase {
   /**
    * Load the current (or named) config, failing when none is active.
    */
-  protected async requireSelfHosted(configName?: string): Promise<RdcConfig> {
+  protected override async requireSelfHosted(configName?: string): Promise<RdcConfig> {
     const config = configName ? await configFileStorage.load(configName) : await this.getCurrent();
     if (!config) throw new Error('No active config');
     return config;
@@ -354,33 +322,6 @@ class ConfigService extends ConfigServiceBase {
         ...('certEmail' in updates ? { certEmail: updates.certEmail } : {}),
       },
     }));
-  }
-
-  // ============================================================================
-  // Access keys (PLAN-ssh-key-source-ranges)
-  // ============================================================================
-
-  /** The active config's `access` bucket, or undefined when it declares none. */
-  async getAccess(): Promise<AccessConfig | undefined> {
-    const config = await this.requireSelfHosted();
-    return config.access;
-  }
-
-  /**
-   * Edit the active config's `access` bucket through the synced write path. `edit` receives the
-   * bucket of the document being written (an empty one when absent) and must derive its result
-   * from it, because a push replays the edit on the fresh server copy after a version conflict.
-   * A result with neither ranges nor keys removes the bucket.
-   */
-  async updateAccess(edit: (access: AccessConfig) => AccessConfig | undefined): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    await this.requireSelfHosted(name);
-    await updateSyncedConfig(name, (cfg) => {
-      const next = edit(structuredClone(cfg.access ?? {}));
-      const { access: _dropped, ...rest } = cfg;
-      if (next === undefined || isEmptyAccess(next)) return rest;
-      return { ...rest, access: next };
-    });
   }
 
   // ============================================================================

@@ -429,6 +429,14 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason:
       "Rewrites the machine's authorized_keys from the config's access bindings. Who can log in is an operator decision.",
   },
+  // Same ruling's intent: `access remove` unbinds a key from a machine, which also changes who may log in once pushed.
+  'machine access remove': {
+    mcpExcludeReason:
+      'Unbinds an SSH key from a machine, which changes who `machine access push` lets in. Access changes are an operator decision.',
+  },
+  'machine access show': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
   // ★ OPERATOR-RULED: the cert cache is KEY MATERIAL. `clear` DESTROYS it. Only `status`, which returns no material, is agent surface. (These are #61's trio: they were declared destructive precisely so the console would confirm them; that is not a licence to also hand them to an agent.)
   'machine infra cert pull': {
     mcpExcludeReason:
@@ -477,6 +485,22 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'config current': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  // Same intent as the ASKED:2026-10-28T13:29Z ruling on `machine access set|push`: the config access writers declare the keys and source ranges every machine binding installs, so they change who may log in. `list` reads them and stays callable.
+  'config access add': {
+    mcpExcludeReason:
+      'Declares an SSH access key and its source ranges, which decides who may log in once bound and pushed. Access changes are an operator decision.',
+  },
+  'config access remove': {
+    mcpExcludeReason:
+      'Removes an SSH access key from the config, which changes who may log in once pushed. Access changes are an operator decision.',
+  },
+  'config access ranges': {
+    mcpExcludeReason:
+      'Sets the config-wide source ranges access keys may log in from. Access changes are an operator decision.',
+  },
+  'config access list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'config audit log': {

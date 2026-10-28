@@ -2611,6 +2611,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Declares an SSH access key and its source ranges, which decides who may log in once bound and pushed. Access changes are an operator decision.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -2635,6 +2636,10 @@ export const CLI_CONTRACT: CliContract = {
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -2704,6 +2709,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Sets the config-wide source ranges access keys may log in from. Access changes are an operator decision.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -2737,6 +2743,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Removes an SSH access key from the config, which changes who may log in once pushed. Access changes are an operator decision.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -5537,6 +5544,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Unbinds an SSH key from a machine, which changes who `machine access push` lets in. Access changes are an operator decision.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -5649,6 +5657,10 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",

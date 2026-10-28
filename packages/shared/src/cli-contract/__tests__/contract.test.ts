@@ -148,7 +148,9 @@ describe('CLI contract', () => {
     // server, no network, no credentials" — it does NOT mean the caller's laptop, and reading it that way is how a reviewer would talk themselves into `other`-plane, which would then refuse to run through a proxy. Update this only when the surface genuinely changes.
     //
     // 85 -> 88: `machine gpu list`, `repo gpu grant` and `repo gpu revoke` landed (PLAN-gpu-device-grants). Each runs a renet function on the machine that holds the GPU (the grant writes the machine's CDI grant file and the list reads its inventory), is non-interactive, and its config mirror is a cache of renet's own listing, so all three are genuinely proxy-capable like `repo up`.
-    expect(proxyCapableCommands().length).toBe(88);
+    //
+    // 88 -> 89: `repo prune` landed (PLAN-repo-docker-storage-prune R5). It runs repository_docker_prune on the machine holding the repository and is non-interactive, so it is proxy-capable like `repo trim`. `machine access push` (PLAN-ssh-key-source-ranges C1) is machine-plane but excluded below: an executor never rewrites its own access.
+    expect(proxyCapableCommands().length).toBe(89);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -175,6 +177,8 @@ describe('CLI contract', () => {
     ];
     // Caller-held secrets: the executor would restart repo daemons with its own env secrets, not the caller's.
     excluded.push('machine converge');
+    // Rewrites the machine's authorized_keys, including the executor's own key's line: an executor never changes its own access (PLAN-ssh-key-source-ranges C1).
+    excluded.push('machine access push');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);
