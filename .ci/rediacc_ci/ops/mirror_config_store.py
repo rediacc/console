@@ -243,7 +243,8 @@ def resolve_end(root: pathlib.Path, name: str) -> End:
         config = target_mod.account_config(target_mod.BENCH_TARGET, "")
         path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)
         doc, database, bucket = _account_doc(path)
-        variables = doc.get("vars") if isinstance(doc.get("vars"), dict) else {}
+        raw_vars = doc.get("vars")
+        variables: dict = raw_vars if isinstance(raw_vars, dict) else {}
         region = str(variables.get("REGION") or "")
         if not any(r.get("id") == region for r in _regions(root)):
             raise RefusedError("%s names no known REGION (%r)" % (path, region))
@@ -270,7 +271,8 @@ def resolve_end(root: pathlib.Path, name: str) -> End:
     config = target_mod.account_config(channel, region)
     path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)
     doc, database, bucket = _account_doc(path)
-    variables = doc.get("vars") if isinstance(doc.get("vars"), dict) else {}
+    raw_vars = doc.get("vars")
+    variables = raw_vars if isinstance(raw_vars, dict) else {}
     worker = region_doc.get("edgeWorkerName" if channel == "edge" else "workerName")
     return End(
         name=name,

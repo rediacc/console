@@ -1644,8 +1644,10 @@ def internal_release_record(step: Step, run: Run) -> int:
     """Write the release record to R2 through a `_write-record` child under the profile, once per key."""
     record = release_record(run)
     out = pathlib.Path(run.ctx["out"])
+    # tree-write: safe ctx["out"] is <root>/.ci/cache/release/out-<run id> (CLONE_REL, set in main); only a release:local run reaches this step
     out.mkdir(parents=True, exist_ok=True)
     body = out / "release-record.json"
+    # tree-write: safe ctx["out"] is <root>/.ci/cache/release/out-<run id> (CLONE_REL, set in main); only a release:local run reaches this step
     body.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     prefix = RECORD_PREFIX % record["version"]
     keys = ["%s/run-%s.json" % (prefix, run.ctx["run_id"])]
@@ -1814,7 +1816,9 @@ def provenance_main(argv: list[str]) -> int:
         print("%s _provenance: RELEASE_GPG_PRIVATE_KEY is not bound" % SELF, file=sys.stderr)
         return 1
     sums = root / "dist" / "cli" / SUMS_NAME
+    # tree-write: safe --root is the release clone under .ci/cache/release (the provenance step runs `_provenance --root .` in it); no gate invokes _provenance
     sums.parent.mkdir(parents=True, exist_ok=True)
+    # tree-write: safe --root is the release clone under .ci/cache/release (the provenance step runs `_provenance --root .` in it); no gate invokes _provenance
     sums.write_text(manifest, encoding="utf-8")
     with tempfile.TemporaryDirectory(prefix="gnupg-") as home:
         env = dict(os.environ, GNUPGHOME=home)
@@ -1903,7 +1907,7 @@ def _assist_r2(root: pathlib.Path) -> tuple[str, str, dict[str, str]]:
 
 def _aws(args: list[str], endpoint: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     return awscli.run(
-        ["aws", *args, "--endpoint-url", endpoint], env=env, capture_output=True, text=True
+        [awscli.AWS, *args, "--endpoint-url", endpoint], env=env, capture_output=True, text=True
     )
 
 

@@ -458,6 +458,8 @@ def record_www_deploy(
         log.error("%s www record: %s" % (SELF, exc))
         return 1
     rc = deploy_rc_fn()
+    after: str | None
+    after_error: str | None
     try:
         _, after = worker_version(cwd, config, before["worker"])
     except RecordError as exc:
@@ -631,7 +633,9 @@ def now() -> str:
 
 
 def write_json(path: pathlib.Path, data: dict) -> None:
+    # tree-write: safe the caller's --out/--record path, $RUNNER_TEMP/deploy-record/ in cd-deploy-account.yml; no gate runs a deploy_record verb
     path.parent.mkdir(parents=True, exist_ok=True)
+    # tree-write: safe the caller's --out/--record path, $RUNNER_TEMP/deploy-record/ in cd-deploy-account.yml; no gate runs a deploy_record verb
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
@@ -719,6 +723,7 @@ def cmd_bootstrap(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         )
         return 1
     record = pathlib.Path(args.record)
+    # tree-write: safe the bootstrap verb's --record path, $RUNNER_TEMP/deploy-record/ in cd-deploy-account.yml; no gate runs a deploy_record verb
     record.unlink(missing_ok=True)
     log.step(
         "Bootstrap: %s does not exist yet, and the account config binds EXECUTOR to it, so it is deployed before the account Worker..."

@@ -147,7 +147,7 @@ def deploy_account_findings(source: str) -> list[str]:
     if main is None:
         return ["%s: no main(); the check would pass vacuously" % DEPLOY_ACCOUNT_REL]
     calls = _calls_in(main)
-    first = {}
+    first: dict[str, int] = {}
     for line, name in sorted(calls):
         first.setdefault(name, line)
     deploy = first.get("deploy_argv")

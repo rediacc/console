@@ -190,11 +190,14 @@ export function schemaKeys(text: string): Set<string> {
  * that merely mention it; a `KEY: $var` line alone matches any jq object. A file
  * doing both is piping a hand-built payload at a Worker, which is the class.
  */
+/** A Python `wrangler secret bulk` argv: a literal `"wrangler"` head or the pinned `wrangler.ARGV` splat. */
+const PY_BULK_ARGV = /(?:"wrangler"|\bwrangler\.ARGV),\s*"secret",\s*"bulk"/;
+
 export function looksLikeBuilder(text: string, file = ''): boolean {
   if (file.endsWith('.py')) {
-    // A Python builder spells the command as an argv list, and the file must also
-    // carry a payload the extractors can read: a test that only quotes the argv has none.
-    return /"wrangler",\s*"secret",\s*"bulk"/.test(text) && keysOf(file, text).length > 0;
+    // A Python builder spells the command as an argv list, and the file must also carry a payload the extractors can read: a test that only quotes the argv has none.
+    // Two spellings of the head: the literal `"wrangler"` and the pinned `*wrangler.ARGV` from rediacc_ci.core.wrangler (`npx --no-install wrangler`), which every port moved to in a9603a30d. Recognising only the literal made the sweep find ZERO builders across the whole tree.
+    return PY_BULK_ARGV.test(text) && keysOf(file, text).length > 0;
   }
   return text.includes('wrangler secret bulk') && pushedKeys(text).length > 0;
 }
@@ -287,7 +290,17 @@ export function looksLikeBuilder(text: string, file = ''): boolean {
     );
     process.exit(1);
   }
+  // The pinned head every port uses: `[*wrangler.ARGV, "secret", "bulk", ...]`.
+  const pinnedBuilder =
+    'KEYS = (\n    ("API_KEY", "api"),\n)\n\ndef argv(n):\n    return [*wrangler.ARGV, "secret", "bulk", "--name", n]\n';
+  if (!looksLikeBuilder(pinnedBuilder, 'x.py')) {
+    console.error(
+      '✗ instrument control: the discovery predicate did not recognise a Python port whose argv starts with the pinned `*wrangler.ARGV`. Every real port spells it that way, so the sweep below would find none of them.'
+    );
+    process.exit(1);
+  }
   if (
+    looksLikeBuilder('KEYS = (\n    ("API_KEY", "api"),\n)\n\nX = [*wrangler.ARGV, "secret", "put"]\n', 'z.py') ||
     looksLikeBuilder('# see `npx wrangler secret bulk` for how deploys push secrets\n') ||
     looksLikeBuilder("jq -n '{\n  API_KEY: $a,\n}' > payload.json\n") ||
     looksLikeBuilder('assert argv("n") == ["npx", "wrangler", "secret", "bulk"]\n', 'test_x.py') ||

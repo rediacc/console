@@ -102,11 +102,8 @@ A_COMMENT_BECOMES_THE_DATABASE_NAME = True
 THE_LAST_QUOTE_WINS = True
 
 
-# A portal built without the Turnstile sitekey renders no widget while the Worker enforces
-# Turnstile, so every login answers "Captcha verification required" (stable eu/us/asia,
-# 2026-10-28: deploy_bench had rebuilt workers/account/dist/account for bench, which has no
-# captcha, and the next production deploy uploaded that keyless portal). This tool uploads
-# whatever dist is on disk, so it proves the dist carries the key before anything is written.
+# A portal built without the Turnstile sitekey renders no widget while the Worker enforces Turnstile, so every login answers "Captcha verification required" (stable eu/us/asia, 2026-10-28: deploy_bench had rebuilt workers/account/dist/account for bench, which has no captcha, and the next production deploy uploaded that keyless portal).
+# This tool uploads whatever dist is on disk, so it proves the dist carries the key before anything is written.
 SITEKEY_SHAPE = re.compile(r"^0x[0-9A-Za-z_-]{16,}$")
 PORTAL_ASSETS = ("dist", "account", "assets")
 REBUILD_HINT = (

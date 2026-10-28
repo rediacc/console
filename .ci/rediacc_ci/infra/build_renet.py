@@ -22,7 +22,7 @@ from rediacc_ci.core import local_common, renet_flavor
 from rediacc_ci.infra import renet_embed_cache
 
 # U+2014, written as an escape so no em dash is typed into a file under `.ci/rediacc_ci`, which `check:ci-em-dash-surfaces` scans.
-_EM_DASH = "—"
+_EM_DASH = "\u2014"
 
 # The three `uname -s` prefixes that mean Windows.
 _WINDOWS_UNAME_PREFIXES = ("MINGW", "MSYS", "CYGWIN")

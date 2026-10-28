@@ -26,9 +26,10 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.core import curl_stdin
+from rediacc_ci.well_known import CF_API_BASE
 
 EX_UNAVAILABLE = 77
-API = "https://api.cloudflare.com/client/v4"
+API = CF_API_BASE
 MAX_PAGES = 50
 PER_PAGE = 100
 

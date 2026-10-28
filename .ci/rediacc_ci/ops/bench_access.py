@@ -188,7 +188,7 @@ def is_ours(rule: dict) -> bool:
 
 def live_entries(entries: list[Entry], now: datetime.datetime) -> tuple[list[Entry], list[str]]:
     """(the entries younger than `TTL`, the dropped addresses); an entry with no stamp is legacy and dropped."""
-    kept = [(ip, at) for ip, at in entries if at is not None and now - at < TTL]
+    kept: list[Entry] = [(ip, at) for ip, at in entries if at is not None and now - at < TTL]
     kept_ips = {ip for ip, _ in kept}
     return kept, [ip for ip, _ in entries if ip not in kept_ips]
 
@@ -440,7 +440,7 @@ def preflight(
         if probes is None:
             probes = (_probe_local, _probe_host) if in_wsl() else (_probe_local,)
         statuses = []
-        failed: list[Exception] = []
+        failed: list[BaseException] = []
         for probe in probes:
             try:
                 statuses.append(probe())

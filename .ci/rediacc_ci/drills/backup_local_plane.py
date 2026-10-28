@@ -130,7 +130,7 @@ def gateway_environment(k: dict[str, str], environ: dict[str, str]) -> dict[str,
 
 def build_parser() -> argparse.ArgumentParser:
     return argparse.ArgumentParser(
-        prog="python3 -m rediacc_ci.drills.backup_local_plane",
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup_local_plane",
         description=(
             "Create the local RustFS probe bucket and replace this process with the account "
             "dev gateway on the bridge address. Takes no arguments: every knob is an "

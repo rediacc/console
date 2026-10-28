@@ -158,8 +158,9 @@ BACKUP_PAIR_EDGE = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
 )
 
-# The config server key's vault name, `<PREFIX>_<SUFFIX>_<CHANNEL>`: one per region and channel, none shared.
-CONFIG_KEY_PREFIX = "ACCOUNT_CONFIG_SERVER_KEY"
+# The region-and-channel fan-ins, `<PREFIX>_<SUFFIX>_<CHANNEL>`: one vault name per region and channel, none shared. `read_env` reads both channels of this run's region so `config_server_key` can refuse the other one. A tuple, as `SUFFIXED_PREFIXES` is, because `check:ci-builder-env-contract` reads the prefixes from it and expands each over the three regions and both channels to meet the six names cd-deploy-account.yml exports.
+SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = ("ACCOUNT_CONFIG_SERVER_KEY",)
+CONFIG_KEY_PREFIX = SUFFIXED_CHANNEL_PREFIXES[0]
 CHANNEL_STABLE = "STABLE"
 CHANNEL_EDGE = "EDGE"
 
@@ -365,9 +366,10 @@ def read_env() -> dict[str, str]:
         name = "%s_%s" % (prefix, suffix)
         env[name] = os.environ.get(name, "")
     # BOTH channels' config server key names for this region, so that `resolve` can REFUSE the other one.
-    for channel in (CHANNEL_STABLE, CHANNEL_EDGE):
-        key_name = "%s_%s_%s" % (CONFIG_KEY_PREFIX, suffix, channel)
-        env[key_name] = os.environ.get(key_name, "")
+    for prefix in SUFFIXED_CHANNEL_PREFIXES:
+        for channel in (CHANNEL_STABLE, CHANNEL_EDGE):
+            key_name = "%s_%s_%s" % (prefix, suffix, channel)
+            env[key_name] = os.environ.get(key_name, "")
     return env
 
 

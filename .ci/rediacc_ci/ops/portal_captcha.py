@@ -177,7 +177,7 @@ def fix_command(host: str, regions: list[dict] | None = None) -> str:
         )
     return (
         "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-secrets-%s-stable -- "
-        "sh -c '%s && python3 -m rediacc_ci.deploy.deploy_account --region %s'; %s"
+        "sh -c '%s && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region %s'; %s"
         % (region, REBUILD.replace('"', '\\"'), region, rollback)
     )
 
@@ -212,7 +212,10 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write((__doc__ or "") + "\n")
         return 0
     if any(a.startswith("-") for a in args):
-        print("usage: python3 -m rediacc_ci.ops.portal_captcha [host ...]", file=sys.stderr)
+        print(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.portal_captcha [host ...]",
+            file=sys.stderr,
+        )
         return 2
     return run(args or default_hosts())
 

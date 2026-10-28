@@ -470,11 +470,11 @@ def check_c(report: Report, root: str) -> bool:
     return True
 
 
-# What counts as checking the build's exit code in the Python port: the `_run(["./build.sh", "dev"], ...)` call compared against 0 in an `if`. (The bash twin accepted four spellings, `if ! (...)`, `) ||` and `|| {`; none exists in the port.)
-BUILD_GUARD_RE = re.compile(
-    r'if _run\(\["\./build\.sh", "dev"\][^\n]*\)\s*!=\s*0:',
-    re.MULTILINE,
-)
+# What counts as checking the build's exit code in the Python port: the `_run(["./build.sh", "dev", ...], ...)` call compared against 0 in an `if`. The argv may carry more elements after "dev" (the per-flavor `renet_flavor.build_flag(flavor)` since the flavor split); a regex that pinned the argv to exactly two elements stopped matching the live call and turned D red on correct code. (The bash twin accepted four spellings, `if ! (...)`, `) ||` and `|| {`; none exists in the port.)
+BUILD_CALL = r'_run\(\["\./build\.sh", "dev"(?:, [^\]\n]+)?\][^\n]*\)'
+BUILD_GUARD_RE = re.compile(r"if %s\s*!=\s*0:" % BUILD_CALL, re.MULTILINE)
+# The D control's mutation: the same guarded call, captured so the plant can keep the call and drop the check.
+BUILD_GUARD_PLANT_RE = re.compile(r"if (%s)\s*!=\s*0:" % BUILD_CALL)
 
 
 def check_d(report: Report, file: pathlib.Path) -> bool:
@@ -813,14 +813,12 @@ def main(argv: list[str] | None = None) -> int:
         # D-control: restore the unchecked invocation.
         lc_broken = tmpdir / "lc-broken.py"
         lc_text = read_text(local_common_py)
-        d_old = 'if _run(["./build.sh", "dev"], cwd=renet_dir) != 0:'
-        lc_broken.write_text(
-            lc_text.replace(d_old, '_run(["./build.sh", "dev"], cwd=renet_dir)\n    if False:')
-            if d_old in lc_text
-            else lc_text,
-            encoding="utf-8",
+        # Keep the call, drop the comparison: `if _run([...]) != 0:` becomes `_run([...])` then `if False:`. Exactly one site must change, or the control proves nothing.
+        lc_mutated, d_hits = BUILD_GUARD_PLANT_RE.subn(
+            lambda m: "%s\n    if False:" % m.group(1), lc_text
         )
-        if "if False:" not in read_text(lc_broken):
+        lc_broken.write_text(lc_mutated, encoding="utf-8")
+        if d_hits != 1 or BUILD_GUARD_RE.search(read_text(lc_broken)):
             print(
                 "%sCONTROL IS VACUOUS%s: D -- mutation did not apply." % (red, nc), file=sys.stderr
             )
@@ -1050,6 +1048,29 @@ def selftest() -> int:
             encoding="utf-8",
         )
         ctl.truthy("CONTROL: a guarded build passes D", check_d(report, good))
+        flavored = tmpdir / "flavored.py"
+        flavored.write_text(
+            "def ensure_renet_built(env=None, flavor=None):\n"
+            '    if _run(["./build.sh", "dev", renet_flavor.build_flag(flavor)], cwd=renet_dir) != 0:\n'
+            "        return False\n"
+            "    return True\n",
+            encoding="utf-8",
+        )
+        ctl.truthy(
+            "CONTROL: a guarded build with a flavor flag after dev passes D",
+            check_d(report, flavored),
+        )
+        flavored_bad = tmpdir / "flavored-bad.py"
+        flavored_bad.write_text(
+            "def ensure_renet_built(env=None, flavor=None):\n"
+            '    _run(["./build.sh", "dev", renet_flavor.build_flag(flavor)], cwd=renet_dir)\n'
+            "    return os.path.isfile(renet_bin)\n",
+            encoding="utf-8",
+        )
+        ctl.falsy(
+            "PLANT: the flavored invocation with its exit code unchecked fails D",
+            check_d(report, flavored_bad),
+        )
         bad = tmpdir / "bad.py"
         bad.write_text(
             "def ensure_renet_built(env=None):\n"
