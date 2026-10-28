@@ -101,6 +101,20 @@ On hostinger the repo `hermes` held 277 overlay2 directories, 20.5 GB of them re
 - [x] L1 [live] Ops VM, after R5 and F1 with the renet pointer bumped (`./rdc.sh ops`): with the pre-F1 renet, repeat L0's leak cycle until D, E and G are non-zero, run `rdc repo prune <ref>` (dry run), then `--apply --offline -y`, then a dry run again; with the F1 renet, repeat the leak cycle twice and dry-run again. Owns: none (proof rows only). Accept: the first dry run reports D, E and G non-zero with sizes within 10% of `du` on the listed paths; after the apply D, E, F1, F2, G and L are 0, `ImageInspect` succeeds on every image, every previously running container runs, `trimmed_bytes` > 0 and `downtime_seconds` is recorded; after the F1 cycles D, E and G stay 0; a `live_proof` row is filed for the `renet` and `cli` surfaces.
     (ticked) 2026-10-28T18:32:10Z by d778be9d: L1 on ops VM rediacc22 (operator ruling ASKED:2026-10-28T18:21Z): pre-F1 renet 182162f made the leak; first dry run (current renet scanner) D 1 E 4 G 6 equal to du byte for byte; repo prune --apply --offline -y rc=0, downtime 15.0s, trimmed 3938308096, container restarted, image inspect ok; dry run after all classes 0; two F1 cycles E 0; live-proof receipt from L2 on hostinger today
 - [ ] L2 [live] Hostinger, dry run only, under the operator ruling: `rdc repo prune -m hostinger --output json` across every mounted repository, no `--apply`. Owns: agent/plans/PLAN-repo-docker-storage-prune.md (the survey table under this box only). Accept: a table of repositories with every class count and its bytes, class E included; no write on the machine; a `live_proof` row filed.
+  L2 survey, `rdc repo prune -m hostinger --output json` (dry run, 2026-10-28T18:42Z, rc=0); each cell is count / MiB:
+
+  | Repository | network | A | B | C | D | E | F1 | F2 | G | L | Q | estimate MiB |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | demo-stackoverflow | 10176 | 0 | 0 | 0 | 0 | 28 / 78.3 | 0 | 0 | 4 / 0.1 | 0 | 0 | 78.3 |
+  | erpnext | 3008 | 0 | 0 | 2 / 6.2 | 0 | 176 / 1011.1 | 0 | 0 | 0 | 0 | 0 | 1017.2 |
+  | gitlab | 2944 | 1 / 3587.1 | 0 | 0 | 0 | 16 / 110.6 | 0 | 0 | 0 | 0 | 0 | 110.6 |
+  | hermes | 22912 | 6 / 4171.4 | 0 | 0 | 0 | 0 | 18 / 9.3 | 87 / 1.3 | 0 | 233 / 0.8 | 0 | 11.4 |
+  | mail | 3264 | 1 / 42.4 | 0 | 0 | 0 | 80 / 55.4 | 0 | 0 | 0 | 0 | 0 | 55.4 |
+  | marketing | 3200 | 1 / 256.1 | 0 | 0 | 0 | 168 / 469.2 | 0 | 0 | 0 | 0 | 0 | 469.2 |
+  | mautic | 23168 | 0 | 0 | 0 | 0 | 100 / 79.6 | 0 | 0 | 0 | 0 | 0 | 79.6 |
+  | miscellaneous | 2816 | 2 / 9466.2 | 0 | 0 | 0 | 7 / 2411.9 | 0 | 0 | 0 | 0 | 0 | 7138.5 |
+  | nextcloud | 2880 | 0 | 0 | 0 | 0 | 135 / 2526.2 | 0 | 0 | 0 | 0 | 0 | 2526.2 |
+  | observability | 3136 | 0 | 0 | 0 | 0 | 138 / 14.2 | 0 | 0 | 0 | 0 | 0 | 14.2 |
 - [x] L3 [live] Hostinger `--apply`, OPERATOR APPROVAL REQUIRED. DEFAULT: not run. Ask with the L2 table attached (repositories, reclaimable bytes, expected downtime each); on approval run `rdc repo prune <ref> --apply` online first, then `--offline -y` only for the repositories the operator names, in the window the operator chooses. Owns: none. Accept: the operator's ASKED ruling quoted here; for each approved repository a post-run dry run shows D, E, F1, F2, G and L at 0 and its services answer their health checks.
     (ticked) 2026-10-28T20:42:23Z by d778be9d: commit:16e2234b1 live: demo-stackoverflow offline prune rc=0 after the reconcile-lock fix; post-run dry run D/E/F1/F2/G/L 0 on all 9 approved repos; 40/40 containers running, 0 unhealthy; ASKED 2026-10-28 "Apply to all safe repos now"
 - [ ] R7 [writer] Close: move this plan to agent/plans/_done/, citing the commits of R1-R6 and F1 and the L1 and L2 proof rows. Owns: agent/plans/PLAN-repo-docker-storage-prune.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
