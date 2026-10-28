@@ -8,7 +8,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { RdcState } from '@rediacc/shared/config-schema';
+import type { AccessConfig, RdcState } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import {
@@ -65,6 +65,34 @@ async function assertValidResourceName(name: string): Promise<void> {
 }
 
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
+
+function isEmptyAccess(access: AccessConfig): boolean {
+  return access.sourceRanges === undefined && Object.keys(access.keys ?? {}).length === 0;
+}
+
+/**
+ * `access` without any binding to `machineName`. A key whose only range was that binding's would
+ * resolve to no range once the binding is gone, which the schema refuses; such a key takes the
+ * dropped binding's ranges as its own, so it stays valid and installed nowhere.
+ */
+export function dropAccessBindings(access: AccessConfig, machineName: string): AccessConfig {
+  const keys = { ...(access.keys ?? {}) };
+  for (const [keyName, key] of Object.entries(keys)) {
+    const binding = key.machines?.[machineName];
+    if (binding === undefined) continue;
+    const { [machineName]: _removed, ...machines } = key.machines ?? {};
+    const orphaned =
+      Object.keys(machines).length === 0 &&
+      key.sourceRanges === undefined &&
+      access.sourceRanges === undefined;
+    keys[keyName] = {
+      ...key,
+      machines,
+      ...(orphaned && binding.sourceRanges ? { sourceRanges: binding.sourceRanges } : {}),
+    };
+  }
+  return { ...access, keys };
+}
 
 class ConfigService extends ConfigServiceBase {
   /**
@@ -231,6 +259,12 @@ class ConfigService extends ConfigServiceBase {
     delete machines[machineName];
     await state.setMachines(machines);
 
+    // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4).
+    const access = (await this.getCurrent())?.access;
+    if (Object.values(access?.keys ?? {}).some((key) => key.machines?.[machineName])) {
+      await this.updateAccess((current) => dropAccessBindings(current, machineName));
+    }
+
     // #89, third site of the class (see dropMachineObservations).
     await dropMachineObservations(this.getEffectiveConfigName(), machineName);
 
@@ -305,6 +339,33 @@ class ConfigService extends ConfigServiceBase {
         ...('certEmail' in updates ? { certEmail: updates.certEmail } : {}),
       },
     }));
+  }
+
+  // ============================================================================
+  // Access keys (PLAN-ssh-key-source-ranges)
+  // ============================================================================
+
+  /** The active config's `access` bucket, or undefined when it declares none. */
+  async getAccess(): Promise<AccessConfig | undefined> {
+    const config = await this.requireSelfHosted();
+    return config.access;
+  }
+
+  /**
+   * Edit the active config's `access` bucket through the synced write path. `edit` receives the
+   * bucket of the document being written (an empty one when absent) and must derive its result
+   * from it, because a push replays the edit on the fresh server copy after a version conflict.
+   * A result with neither ranges nor keys removes the bucket.
+   */
+  async updateAccess(edit: (access: AccessConfig) => AccessConfig | undefined): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    await this.requireSelfHosted(name);
+    await updateSyncedConfig(name, (cfg) => {
+      const next = edit(structuredClone(cfg.access ?? {}));
+      const { access: _dropped, ...rest } = cfg;
+      if (next === undefined || isEmptyAccess(next)) return rest;
+      return { ...rest, access: next };
+    });
   }
 
   // ============================================================================
