@@ -191,7 +191,9 @@ def test_ceilings_come_from_the_json_report_object(tmp_path):
 
 def test_default_ceilings_agree_with_the_ruled_report_object():
     """Review 24da2fcc.1: a duplicated default drifted (100 against the ruled 350); every ruled key must equal its default."""
-    report = json.loads((ur.Path(__file__).resolve().parents[2] / "config/cf-spend-guard.json").read_text())["report"]
+    report = json.loads(
+        (ur.Path(__file__).resolve().parents[2] / "config/cf-spend-guard.json").read_text()
+    )["report"]
     ruled = {k: v for k, v in report.items() if k in ur.DEFAULT_CEILINGS}
     assert ruled, "the report object must carry ceilings"
     for key, value in ruled.items():

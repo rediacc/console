@@ -744,9 +744,7 @@ def test_an_unbound_or_malformed_sitekey_refuses(tmp_path: pathlib.Path) -> None
 
 # --------------------------------------------------------------------------- The post-deploy portal smoke (2026-10-28) ---------------------------------------------------------------------------
 
-ROUTED_TOML = (
-    'routes = [\n  { pattern = "%s", custom_domain = true }\n]\n' % EU_HOST + FIXTURE_TOML
-)
+ROUTED_TOML = 'routes = [\n  { pattern = "%s", custom_domain = true }\n]\n' % EU_HOST + FIXTURE_TOML
 LOGIN_HTML = '<script type="module" src="/account/assets/index-AbC123.js"></script>'
 
 

@@ -554,9 +554,7 @@ def test_detect_current_merges_the_host_and_survives_a_dead_trace():
 
 def test_preflight_skips_when_bench_already_answers(capsys):
     added: list[int] = []
-    rc = ba.preflight(
-        probes=(lambda: 302, lambda: 200), add=_adder(added), environ={}
-    )
+    rc = ba.preflight(probes=(lambda: 302, lambda: 200), add=_adder(added), environ={})
     assert rc == 0
     assert added == []
     assert "reachable (302, 200)" in capsys.readouterr().out
@@ -564,9 +562,7 @@ def test_preflight_skips_when_bench_already_answers(capsys):
 
 def test_preflight_adds_on_a_403_from_any_egress():
     added: list[int] = []
-    rc = ba.preflight(
-        probes=(lambda: 302, lambda: 403), add=_adder(added), environ={}
-    )
+    rc = ba.preflight(probes=(lambda: 302, lambda: 403), add=_adder(added), environ={})
     assert rc == 0
     assert added == [1]
 

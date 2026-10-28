@@ -132,7 +132,16 @@ def _gate(root: pathlib.Path, map_path: pathlib.Path, *argv: str) -> harness.Run
 
 def _gate_on_base(root: pathlib.Path, map_path: pathlib.Path, base: str) -> harness.RunResult:
     return harness.run(
-        [sys.executable, str(GATE), "--root", str(root), "--base", base, "--proof-map", str(map_path)],
+        [
+            sys.executable,
+            str(GATE),
+            "--root",
+            str(root),
+            "--base",
+            base,
+            "--proof-map",
+            str(map_path),
+        ],
         cwd=paths.repo_root(),
     )
 

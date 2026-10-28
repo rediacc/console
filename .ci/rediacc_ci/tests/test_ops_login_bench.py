@@ -99,9 +99,10 @@ def test_an_unknown_argument_is_refused():
 
 
 def test_the_explicit_bench_target_is_accepted():
-    assert login_bench.parse_args(
-        ["--server", BENCH_ORIGIN + "/", "--config", "eu-bench"]
-    ) == (login_bench.SERVER, login_bench.CONFIG)
+    assert login_bench.parse_args(["--server", BENCH_ORIGIN + "/", "--config", "eu-bench"]) == (
+        login_bench.SERVER,
+        login_bench.CONFIG,
+    )
     assert login_bench.SERVER == BENCH_ORIGIN
 
 
@@ -256,9 +257,7 @@ def test_the_code_comes_from_the_next_window_when_the_current_one_is_closing():
     assert code == totp.code(SEED, at=1_800_000_031.0)
 
 
-def _status(
-    config_id=login_bench.CONFIG_ID, api_url=BENCH_ORIGIN, status="connected"
-):
+def _status(config_id=login_bench.CONFIG_ID, api_url=BENCH_ORIGIN, status="connected"):
     return (
         0,
         json.dumps(
