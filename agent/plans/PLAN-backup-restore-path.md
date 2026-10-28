@@ -181,6 +181,7 @@ Two more facts shape the design. `luks.Device.GetDataOffset` (pkg/luks/resize.go
   4. Run the same with `--path <a directory>`.
   5. Compare with `./rdc.sh --config eu-bench term connect hostinger -c "sha256sum <live file> /tmp/rdc-restore-path-<stamp>/<basename>"`.
   6. Read the record's `chunksFetched` and `cellsTotal`.
+  Accept: live-proof hostinger renet-live machine=hostinger
 
   Owns: agent/plans/PLAN-backup-restore-path.md. Accept: the live_proof record rc 0; both restore commands rc 0; the two sha256 values equal; `chunksFetched` below `cellsTotal`; and `--path /no/such/path` rc 19 with `test ! -e /tmp/rdc-restore-path-<stamp>-missing` rc 0 on the machine.
 - [ ] R7 [writer] Close N4b. Tick box N4b in agent/plans/PLAN-backup-program.md, citing R4's and R5's commits and L1's live_proof row, then move this plan to agent/plans/_done/. Owns: agent/plans/PLAN-backup-program.md, agent/plans/PLAN-backup-restore-path.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
