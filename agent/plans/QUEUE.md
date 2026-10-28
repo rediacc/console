@@ -68,18 +68,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-telemetry-export.md -- 15 of 19 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 884 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 887 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 6 live of writer_cap 15 (session d778be9d): worker:a4ea81bec486e1a4e, worker:a390020fe5a47744e, worker:ae6af612a3dedaa90, worker:a4102af851d3d9829, worker:a09694a69daa4b43c, worker:aba0b2864587f9230.
-- Leased items: 7: #0579bfae (worker:a4ea81bec486e1a4e, d778be9d), #06e41237 (worker:a09694a69daa4b43c, d778be9d), #0f1798ee (worker:a390020fe5a47744e, d778be9d), #1ff85853 (worker:ae6af612a3dedaa90, d778be9d), #39d6d2c0 (worker:a4102af851d3d9829, d778be9d), #5b7302fd (worker:a4102af851d3d9829, d778be9d), #e1bf1ed8 (worker:aba0b2864587f9230, d778be9d).
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a4ea81bec486e1a4e, worker:a390020fe5a47744e.
+- Leased items: 3: #0579bfae (worker:a4ea81bec486e1a4e, d778be9d), #0f1798ee (worker:a390020fe5a47744e, d778be9d), #5b7302fd (worker:a390020fe5a47744e, d778be9d).
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 7; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 8 of 26 plans done, 380 of 525 boxes done (72%).
+Promoted: 8 of 26 plans done, 386 of 525 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -105,7 +105,7 @@ Promoted: 8 of 26 plans done, 380 of 525 boxes done (72%).
 | 20 | PLAN-gpu-device-grants.md | 10/12 | 2 open |
 | 21 | PLAN-proxy-cd-six-targets.md | 24/34 | 10 open |
 | 22 | PLAN-console-executor-multi-org.md | 14/20 | 6 open |
-| 23 | PLAN-executor-durable-object-policy.md | 5/21 | 16 open |
+| 23 | PLAN-executor-durable-object-policy.md | 11/21 | 10 open |
 | 24 | PLAN-local-release.md | 14/16 | 2 open |
 | 25 | PLAN-config-server-key.md | 6/6 | done |
 | 26 | PLAN-tested-on-bench.md | 0/19 | 19 open |

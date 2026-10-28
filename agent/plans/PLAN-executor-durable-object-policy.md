@@ -296,7 +296,7 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
     (ticked) 2026-10-26T20:35:14Z by d778be9d: f2ac4d05: workers/proxy/src/capacity.ts ExecutorCapacity with 22 tests covering the box list (25 then full, re-acquire counted once, 6th heavy heavy-full while light passes, a 180 s lapse frees at acquire and alarm, caps 2/40/garbage, 50 concurrent never past the cap); cd workers/proxy && npm run test:unit rc=0 (129 tests). DEPS-WAIVED: W2 builds on multi-org W1 and W2, both ticked; ML5 gates only the live boxes L1 and later
 
   -- Owns: workers/proxy/src/capacity.ts, workers/proxy/src/__tests__/capacity.test.ts. Accept: `cd workers/proxy && npm run test:unit` exits 0.
-- [ ] W3 [proxy] The egress for the S1 verdict, after S1 and W1.
+- [x] W3 [proxy] The egress for the S1 verdict, after S1 and W1.
   - **Design A:** `export class AccountEgress extends WorkerEntrypoint<Env, { orgId: string; containerId: string }>`, whose `fetch` calls today's `forwardAccountEgress` after the props and containerId checks (workers/proxy/src/egress.ts:116-130, moved from `ctx.params` to `this.ctx.props`).
   - **Design B or C:** the capability mint, the coordinator hash table, and the constant-time lookup. Under C, also the `/v1/egress/*` route.
   - Tests:
@@ -305,9 +305,10 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
     - org A's capability presented for org B: 403;
     - a capability of a stopped container: 403;
     - the allowlist and the placeholder rule unchanged on the new path (the existing egress.test.ts cases reused).
+    (ticked) 2026-10-28T04:44:51Z by d778be9d: commit:e2f07089b AccountEgress entrypoint, test:unit rc=0 (177). DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: workers/proxy/src/egress.ts, workers/proxy/src/__tests__/egress.test.ts. Accept: `cd workers/proxy && npm run test:unit` exits 0.
-- [ ] W4 [proxy] Routing and sizing (Design items 2 and 4), after A1, W1, W2 and W3.
+- [x] W4 [proxy] Routing and sizing (Design items 2 and 4), after A1, W1, W2 and W3.
   - The Worker routes by `EXECUTOR_BACKEND`. `sizing.ts` holds the LIGHT literal from S1 and the rule. The capacity 503 comes from the coordinator answer, and `CAPACITY_ERROR` is deleted.
   - Tests:
     - `container` routes to `EXECUTOR` and `durable` routes to `ORG_EXECUTOR`, with never both in one version;
@@ -316,32 +317,37 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
     - an OOM flag within 7 days gets `standard-1`, and an 8-day-old flag gets LIGHT;
     - with heavy slots full, a high-tier org gets LIGHT and an OOM-flagged org gets 503 `EXECUTOR_CAPACITY` with `Retry-After: 30`;
     - the span carries `rediacc.proxy.size` and no org id.
+    (ticked) 2026-10-28T04:44:58Z by d778be9d: commit:5f89146dc EXECUTOR_BACKEND routing, sizing.ts, re-exports, no CAPACITY_ERROR; test:unit rc=0 (203), deploy dry-run rc=0. DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: workers/proxy/src/index.ts, workers/proxy/src/sizing.ts, workers/proxy/src/__tests__/tenant-routing.test.ts, workers/proxy/src/__tests__/sizing.test.ts, workers/proxy/src/__tests__/index.test.ts. Accept: `cd workers/proxy && npm run test:unit` exits 0, and `grep -n 'CAPACITY_ERROR' workers/proxy/src/index.ts` prints nothing.
 
 ### Configs, deploy, gates
 
-- [ ] K1 [proxy-config] The template, the generator and the hand-written configs (Design item 2), after S1 and the commit of #9638ab6b.
+- [x] K1 [proxy-config] The template, the generator and the hand-written configs (Design item 2), after S1 and the commit of #9638ab6b.
   - The template gains the `OrgExecutor` entry with `images.executor`, the `ORG_EXECUTOR` and `EXECUTOR_CAPACITY` bindings, migration v2, and the three vars from `BACKEND_BY_TARGET`, `CAP_BY_TARGET` and `HEAVY_CAP_BY_TARGET`, all `container` and `"25"` and `"5"` at first. wrangler.bench.toml and wrangler.dev.toml are updated by hand.
   - `config_refusals` requires exactly the two entries (or exactly the one `OrgExecutor` entry once C1 lands), the two or three bindings, the migration list v1, v2 (and v3), `EXECUTOR_BACKEND` in {container, durable}, `EXECUTOR_CAP` at most 25, and no `max_instances` or `instance_type` on the durable entry.
   - proxy_wrangler_dev_e2e builds the matching dev config. If DU5 failed, it records the fake-container path.
+    (ticked) 2026-10-28T04:44:53Z by d778be9d: commit:5f89146dc durable config entry, bindings, v2, cap vars; proxy_configs --check rc=0, 48 tests. DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: workers/proxy/wrangler*.toml, .ci/rediacc_ci/deploy/proxy_configs.py, .ci/rediacc_ci/tests/test_deploy_proxy_configs.py, .ci/rediacc_ci/quality/proxy_wrangler_dev_e2e.py. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs --check` exits 0; `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_deploy_proxy_configs.py` exits 0, including planted refusals for `max_instances` on the durable entry, `EXECUTOR_CAP = "26"` and `EXECUTOR_BACKEND = "both"`; and `npm run check:ci-proxy-deploy-dry-run` exits 0.
-- [ ] D1 [proxy-deploy] Forward-only detection and the record fields (Design item 6), after K1.
+- [x] D1 [proxy-deploy] Forward-only detection and the record fields (Design item 6), after K1.
   - deploy_proxy compares the config's `[[migrations]]` with `git show <previous release tag>:<config>`. Bench uses its last recorded tag, kept in the record.
   - On a difference, the record says `forward-only` and the closing lines print no `wrangler rollback`.
   - The record gains `backend`, `migration_tag` and `cold_start_ms` (the first `/v1/ready` after the deploy).
   - The twin golden is re-recorded with `regolden --source port`.
+    (ticked) 2026-10-28T04:45:00Z by d778be9d: commit:5f89146dc forward-only detection and record fields; test_deploy_deploy_proxy rc=0. DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py, .ci/rediacc_ci/tests/goldens/twins/deploy.deploy-proxy.jsonl. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py` exits 0, including a v1-to-v2 case that writes `forward-only` and a v2-to-v2 case that writes the rollback command.
-- [ ] G1 [gates] The cost guard for the policy (Design item 7), after K1 and W2.
+- [x] G1 [gates] The cost guard for the policy (Design item 7), after K1 and W2.
   - Adds `HEAVY_BUDGET = 5`, `MAX_CONFIG_MONTHLY_USD = 300`, `MAX_TOTAL_MONTHLY_USD = 2100` and the price constants citing https://developers.cloudflare.com/containers/pricing/.
   - Adds the durable-entry rules, the cap-literal read of capacity.ts, the instance-literal allowlist, and the routed-backend count.
   - The selftest gains one control for each new rule, in both directions.
+    (ticked) 2026-10-28T04:44:56Z by d778be9d: commit:5f89146dc durable-entry cost rules; check:ci-proxy-cost-guard rc=0, selftest rc=0, 46 tests. DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: .ci/scripts/quality/check_proxy_cost_guard.py, .ci/rediacc_ci/tests/test_check_proxy_cost_guard.py. Accept: `npm run check:ci-proxy-cost-guard` exits 0, and exits 1 on each of: a planted `max_instances` on the durable entry, `EXECUTOR_CAP = "26"`, `HARD_CAP = 30`, `instance: 'standard-2'`, a non-literal `instance`, an `OrgExecutor` with no `sleepAfter`, and a planted config total over $2,100.
-- [ ] G2 [gates] The binding fence (Design item 8), after W3.
+- [x] G2 [gates] The binding fence (Design item 8), after W3.
   - proxy-binding-wiring.test.ts refuses any wrangler config under workers/ that binds entrypoint `AccountEgress` or `ContainerProxy`, with a control that plants one.
+    (ticked) 2026-10-28T04:45:03Z by d778be9d: commit:5f89146dc binding fence in account a5ab704; vitest proxy-binding-wiring rc=0 (51), fails on a planted binding. DEPS-WAIVED: the multi-org prerequisite's open boxes are live runs that gate only this plan's live boxes L1 and later
 
   -- Owns: private/account/tests/integration/proxy-binding-wiring.test.ts. Accept: `cd private/account && npx vitest run tests/integration/proxy-binding-wiring.test.ts` exits 0, and fails on the planted binding.
 - [x] X1 [docs] docs/observability/signals/proxy.md, the deploy skill paragraph, and the relation line in PLAN-console-executor-multi-org.
