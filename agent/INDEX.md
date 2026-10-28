@@ -524,7 +524,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-org-executor-connect-timeout-relocate.md` | executing | 313 | 2 | 8 | 38778 |
-| `agent/plans/PLAN-per-flavor-renet-binary-paths.md` | executing | 150 | 8 | 0 | 24225 |
+| `agent/plans/PLAN-per-flavor-renet-binary-paths.md` | executing | 158 | 0 | 8 | 25798 |
 | `agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md` | executing | 81 | 1 | 6 | 16086 |
 | `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 50 | 7 | 0 | 7813 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 120 | 0 | 16 | 19072 |

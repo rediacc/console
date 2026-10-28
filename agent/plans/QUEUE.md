@@ -79,7 +79,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 9 of 28 plans done, 408 of 546 boxes done (74%).
+Promoted: 10 of 28 plans done, 416 of 546 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -109,7 +109,7 @@ Promoted: 9 of 28 plans done, 408 of 546 boxes done (74%).
 | 24 | PLAN-local-release.md | 14/16 | 2 open |
 | 25 | PLAN-config-server-key.md | 6/6 | done |
 | 26 | PLAN-tested-on-bench.md | 7/20 | 13 open |
-| 27 | PLAN-per-flavor-renet-binary-paths.md | 0/8 | 8 open |
+| 27 | PLAN-per-flavor-renet-binary-paths.md | 8/8 | done |
 | 28 | PLAN-org-executor-connect-timeout-relocate.md | 8/10 | 2 open |
 <!-- queue:progress:end -->
 
