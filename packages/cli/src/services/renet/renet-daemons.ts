@@ -64,6 +64,28 @@ export async function probeStaleRenetProcesses(
   return parseStaleRenetProcesses(await sftp.exec(buildRenetProcessProbeCommand(currentPath)));
 }
 
+/** One container of a repository after its supervisor restart. */
+export interface RepoContainerHealth {
+  id: string;
+  name: string;
+  /** docker state: running, exited, ..., or `missing` when the container is gone. */
+  state: string;
+  /** healthcheck status, or `none` when the container has no healthcheck. */
+  health: string;
+}
+
+/**
+ * A repository after its `rediacc-docker-N` supervisor restart: the containers that ran before it,
+ * started again by renet, and whether each is running (and healthy where it has a healthcheck).
+ */
+export interface RepoHealth {
+  unit: string;
+  networkId: number;
+  healthy: boolean;
+  containers: RepoContainerHealth[];
+  error?: string;
+}
+
 /** What `renet daemons upgrade --json` did, or what is still stale when it could not run. */
 export interface DaemonUpgradeReport {
   /** False when the remote renet has no `daemons upgrade` or it failed; `stale` then comes from the probe. */
@@ -71,6 +93,8 @@ export interface DaemonUpgradeReport {
   restarted: RenetProcess[];
   stale: RenetProcess[];
   failed: (RenetProcess & { error?: string })[];
+  /** Per-repo health after each supervisor restart (`--include-docker`); empty from an older renet. */
+  repos: RepoHealth[];
 }
 
 interface DaemonUpgradeEntry {
@@ -92,7 +116,12 @@ export function parseDaemonUpgradeJson(output: string): Omit<DaemonUpgradeReport
   const entries: DaemonUpgradeEntry[] = Array.isArray(parsed)
     ? (parsed as DaemonUpgradeEntry[])
     : (((parsed as { processes?: unknown }).processes ?? []) as DaemonUpgradeEntry[]);
-  const report: Omit<DaemonUpgradeReport, 'ran'> = { restarted: [], stale: [], failed: [] };
+  const report: Omit<DaemonUpgradeReport, 'ran'> = {
+    restarted: [],
+    stale: [],
+    failed: [],
+    repos: Array.isArray(parsed) ? [] : parseRepoHealth((parsed as { repos?: unknown }).repos),
+  };
   for (const e of entries) {
     const proc = toRenetProcess(e);
     if (e.action === 'restarted') report.restarted.push(proc);
@@ -101,6 +130,29 @@ export function parseDaemonUpgradeJson(output: string): Omit<DaemonUpgradeReport
     else if (e.action !== 'current') report.stale.push(proc);
   }
   return report;
+}
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+/** The `repos` array of the report: one entry per supervisor restarted with --include-docker. */
+function parseRepoHealth(value: unknown): RepoHealth[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((entry: Record<string, unknown>) => ({
+    unit: text(entry.unit) || '-',
+    networkId: Number(entry.network_id),
+    healthy: entry.healthy === true,
+    containers: (Array.isArray(entry.containers) ? entry.containers : []).map(
+      (c: Record<string, unknown>) => ({
+        id: text(c.id),
+        name: text(c.name),
+        state: text(c.state),
+        health: text(c.health) || 'none',
+      })
+    ),
+    ...(typeof entry.error === 'string' && entry.error && { error: entry.error }),
+  }));
 }
 
 function toRenetProcess(e: DaemonUpgradeEntry): RenetProcess {
@@ -121,6 +173,15 @@ export function reportDaemonUpgrade(report: DaemonUpgradeReport): void {
     outputService.info(
       `Restarted renet daemons on the new binary: ${describeProcesses(report.restarted)}`
     );
+  }
+  const healthy = report.repos.filter((r) => r.healthy);
+  if (healthy.length > 0) {
+    const repos = healthy
+      .map(
+        (r) => `${r.unit} (${r.containers.length} container${r.containers.length === 1 ? '' : 's'})`
+      )
+      .join(', ');
+    outputService.info(`Repositories running and healthy after the restart: ${repos}`);
   }
   for (const f of report.failed) {
     outputService.warn(
@@ -159,7 +220,7 @@ export async function upgradeDaemons(
     } catch {
       stale = [];
     }
-    return { ran: false, restarted: [], stale, failed: [] };
+    return { ran: false, restarted: [], stale, failed: [], repos: [] };
   }
 }
 

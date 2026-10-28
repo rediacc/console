@@ -16,6 +16,7 @@ const {
   buildRenetProcessProbeCommand,
   parseDaemonUpgradeJson,
   parseStaleRenetProcesses,
+  reportDaemonUpgrade,
   upgradeDaemons,
 } = await import('../renet/renet-daemons.js');
 const { REMOTE_RENET_PATH, renetProvisioner } = await import('../renet/renet-provisioner.js');
@@ -140,5 +141,75 @@ describe('renet daemons upgrade (C2)', () => {
     expect(await renetProvisioner.refreshRouter(sftp, CUR)).toBe(false);
     expect(sftp.calls.some((c) => c.includes('daemons upgrade --json'))).toBe(true);
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('per-repo health after a supervisor restart (C3)', () => {
+  beforeEach(() => {
+    info.mockReset();
+    warn.mockReset();
+  });
+
+  // The rediacc21 finding: a supervisor restart left the repo's container Exited (255). renet now
+  // starts the containers that were running and reports each repository's health.
+  const UNHEALTHY = 'network 2880: containers not running and healthy within 2m0s: web exited/none';
+  const REPORT = {
+    processes: [
+      { pid: 101, unit: 'rediacc-docker-2816.service', exe: CUR, action: 'restarted' },
+      {
+        pid: 102,
+        unit: 'rediacc-docker-2880.service',
+        exe: CUR,
+        action: 'failed',
+        error: UNHEALTHY,
+      },
+    ],
+    repos: [
+      {
+        unit: 'rediacc-docker-2816.service',
+        network_id: 2816,
+        healthy: true,
+        containers: [{ id: 'aaa', name: 'app', state: 'running', health: 'healthy' }],
+      },
+      {
+        unit: 'rediacc-docker-2880.service',
+        network_id: 2880,
+        healthy: false,
+        error: UNHEALTHY,
+        containers: [{ id: 'bbb', name: 'web', state: 'exited', health: 'none' }],
+      },
+    ],
+  };
+
+  it('carries each repository and its containers into the report', () => {
+    const report = parseDaemonUpgradeJson(JSON.stringify(REPORT));
+    expect(report.repos).toEqual([
+      {
+        unit: 'rediacc-docker-2816.service',
+        networkId: 2816,
+        healthy: true,
+        containers: [{ id: 'aaa', name: 'app', state: 'running', health: 'healthy' }],
+      },
+      {
+        unit: 'rediacc-docker-2880.service',
+        networkId: 2880,
+        healthy: false,
+        error: UNHEALTHY,
+        containers: [{ id: 'bbb', name: 'web', state: 'exited', health: 'none' }],
+      },
+    ]);
+    expect(report.failed.map((p) => p.pid)).toEqual([102]);
+  });
+
+  it('a renet that predates the repo report yields no repos', () => {
+    expect(parseDaemonUpgradeJson(JSON.stringify({ processes: [] })).repos).toEqual([]);
+  });
+
+  it('names the healthy repositories and warns on the unhealthy one', () => {
+    reportDaemonUpgrade({ ran: true, ...parseDaemonUpgradeJson(JSON.stringify(REPORT)) });
+    expect(info).toHaveBeenCalledWith(
+      expect.stringContaining('rediacc-docker-2816.service (1 container)')
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(UNHEALTHY));
   });
 });

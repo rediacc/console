@@ -33,6 +33,8 @@ describe('isRenetFlagUnsupported', () => {
     "[repository_up] unknown flag: --project-directory\nSee 'docker compose --help'",
     'unknown flag: --project-directory',
     "[step] docker: unknown shorthand flag: 'x' in -x",
+    'error: unknown flag: --x',
+    '[step] ERROR: unknown flag: --x',
   ])('does not match docker or step text: %s', (output) => {
     expect(isRenetFlagUnsupported(output)).toBe(false);
   });

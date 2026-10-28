@@ -1,6 +1,10 @@
 /**
  * `rdc machine restart-services <name> [--include-docker]`: a rolling restart of the renet daemons
  * that still run a replaced binary. renet confirms each unit healthy before it restarts the next.
+ * With --include-docker a `rediacc-docker-N` supervisor restart also restarts that repo's dockerd:
+ * renet records the containers running before it, starts them again, waits until each is running
+ * (and healthy where it has a healthcheck), reports the repo under `repos`, and stops the rolling
+ * restart at the first repo that does not come back (its supervisor is `failed`, so the exit is 1).
  */
 
 import type { Command } from 'commander';
