@@ -750,6 +750,14 @@
       "NETWORK_CIDR",
       "PROVIDER"
     ],
+    ".ci/rediacc_ci/ops/live_proof.py": [
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
+      "CLAUDE_CODE_SESSION_ID",
+      "CLOUDFLARE_API_TOKEN",
+      "REDIACC_BWS_PROFILES",
+      "WORKLIST_SESSION_ID"
+    ],
     ".ci/rediacc_ci/ops/login_bench.py": [
       "REDIACC_BWS_PROFILES"
     ],
