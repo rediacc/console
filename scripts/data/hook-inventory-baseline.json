@@ -37,6 +37,8 @@
   ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
   ".claude/rediacc_hooks/guards/block_inline_python.py",
   ".claude/rediacc_hooks/guards/block_inline_workflow_run.py",
+  ".claude/rediacc_hooks/guards/block_live_proof_ledger_shell_write.py",
+  ".claude/rediacc_hooks/guards/block_live_proof_ledger_write.py",
   ".claude/rediacc_hooks/guards/block_long_sleep.py",
   ".claude/rediacc_hooks/guards/block_merge_with_unpushed.py",
   ".claude/rediacc_hooks/guards/block_missing_npm_script.py",
