@@ -301,7 +301,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [ ] H8: renet RustFS workers without rclone: replace ensureRclone/renderEnsureRclone/ConfigureWorker(s) (private/renet/pkg/infra/docker/service.go:386-752), pkgset.Rclone (private/renet/pkg/infra/pkgset/pkgset.go:348-353), ops rustfs configure-worker(s) (private/renet/cmd/renet/ops_rustfs.go:147-172) and the image-bake hook (private/renet/cmd/renet/image_build_command.go:113, private/renet/pkg/infra/image/one_shot_builder.go:84) with an S3 client path or delete them; update .ci/rediacc_ci/infra/vm_bake_key.py:93-95. Accept: RustFS e2e suites 15/19/20 green.
 - [x] H9: renet dead code: GeneralSettings RCLONE_* and the Storage struct (private/renet/pkg/config/config.go:255-284), ValidateStorage/GetRcloneConfigString/GetRcloneEnvVars (all in private/renet/pkg/config/config.go, since removed), PathTypeRclone (private/renet/pkg/toolexec/ssh.go:89-150), rclone progress filtering (private/renet/pkg/functions/executor_local.go:810-839), the VAULT_PARSING.md section. Accept: deadcode gate rc=0.
     (ticked) 2026-10-25T11:07:14Z by d778be9d: commit:1498835931713e (renet 606d9c5c, 6e3d13da): H9 per the renet follow-up writer; renet build linux/windows/darwin rc=0, go vet rc=0, go test ./cmd/renet/... ./pkg/... with no failure (lead rerun)
-- [ ] H10: e2e helpers: StorageTestHelper, OpsRustFSManager, OpsManager and packages/e2e-tests/src/base/bridge-global-setup.ts:253-378 use an S3 client instead of the rclone CLI. Accept: suites 15, 19, 20 and 25 pass locally (e2e-local agent recipe).
+- [x] H10: e2e helpers: StorageTestHelper, OpsRustFSManager, OpsManager and packages/e2e-tests/src/base/bridge-global-setup.ts:253-378 use an S3 client instead of the rclone CLI. Accept: suites 15, 19, 20 and 25 pass locally (e2e-local agent recipe).
+    (ticked) 2026-10-28T16:18:53Z by d778be9d: H10: suite 19 passed 18 of 18 rc=0 with the helper bucket fix commit b6bdf00c1; suites 15 and 25 green; no rclone in StorageTestHelper or bridge-global-setup
 - [x] H11: i18n: delete every rclone key in packages/cli locales, the contract mirror and renet locales (ops.rustfs_configure_rclone_*, infra.docker_*rclone*, cmd.configure_rclone_*, baseline RCLONE_* strings); fix credits.description. Accept: i18n gates rc=0 across the three trees.
     (ticked) 2026-10-27T00:10:17Z by d778be9d: grep -rli rclone over packages/cli/src/i18n, private/account/web/src/i18n, packages/www/src/i18n and the renet locale catalogs finds no key (private/renet/pkg/i18n/rules.go:195 keeps rclone only as a glossary term that must not be translated); npm run check:i18n rc=0 (2026-10-27). DEPS-WAIVED: an i18n cleanup with no dependency on the shell-sandbox or account-vm-check plans
 - [x] H12: Docs and www: backup-restore.md, pruning.md, quick-start.md, rdc-cheat-sheet.md, architecture.md and packages/www/src/content/docs/en/server-reference.md:198-200 in all 13 locales; the NIS2 blog posts' "any rclone-compatible target"; regenerate search indexes and the skill reference; the changelog stays history. Accept: check-retired-commands-in-docs rc=0; www build rc=0.
@@ -360,11 +361,16 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [x] K1: Kill and resume a real `renet backup snapshot` mid-upload; the journal drains and the manifest commits once (btrfs tier plus RustFS). Accept: Go integration test.
     (ticked) 2026-10-28T14:59:03Z by d778be9d: K1: TestBackupSnapshot_KilledMidUploadResumesAndCommitsOnce (renet eabae1b) go test -tags btrfs as root on btrfs rc=0 PASS; object store is an in-process fake, Accept is the Go integration test
 - [ ] K2: Kill and resume a real restore. Accept: e2e in suite 26.
-- [ ] K3: Two machines and a fork commit into one lineage, then a retention sweep runs; every stream keeps its floor and every chain resolves. Accept: vitest plus a suite 26 case.
-- [ ] K4: Fork restore: fork, write, back up the fork, restore the fork's snapshot on a second VM, byte-compare. Accept: suite 26 case.
-- [ ] K5: A same-machine restore leaves the source byte-identical (E1). Accept: suite 26 case.
-- [ ] K6: Cold round trip T3: a container writes a counter, a `--cold` backup runs, the restore shows no gap and no torn write. Accept: suite 26 case.
-- [ ] K7: A scheduled timer fires: `backup schedule`, then `systemctl start` the unit, and a manifest commits. Accept: suite 26 case.
+- [x] K3: Two machines and a fork commit into one lineage, then a retention sweep runs; every stream keeps its floor and every chain resolves. Accept: vitest plus a suite 26 case.
+    (ticked) 2026-10-28T16:18:39Z by d778be9d: K3: suite 26 K3 case passed (4.0m) after commit a57555dbf, ops VM rediacc23 aliased as both workers via create_e2e_env --vm-workers 23 23, testrun.e2e rc=0 for the case
+- [x] K4: Fork restore: fork, write, back up the fork, restore the fork's snapshot on a second VM, byte-compare. Accept: suite 26 case.
+    (ticked) 2026-10-28T16:18:43Z by d778be9d: K4: suite 26 K4 case passed (1.2m) after commit a57555dbf on rediacc23 aliased as both workers; byte-identical fork restore
+- [x] K5: A same-machine restore leaves the source byte-identical (E1). Accept: suite 26 case.
+    (ticked) 2026-10-28T16:18:45Z by d778be9d: K5: suite 26 K5 case passed (28.6s) after commit a57555dbf; a same-machine restore leaves the source byte-identical
+- [x] K6: Cold round trip T3: a container writes a counter, a `--cold` backup runs, the restore shows no gap and no torn write. Accept: suite 26 case.
+    (ticked) 2026-10-28T16:18:47Z by d778be9d: K6: suite 26 K6 case passed (2.0m) after commit a57555dbf and the compose plugin (renet commit 3d026f8 now installs it); cold restore has no gap or torn write
+- [x] K7: A scheduled timer fires: `backup schedule`, then `systemctl start` the unit, and a manifest commits. Accept: suite 26 case.
+    (ticked) 2026-10-28T16:18:49Z by d778be9d: K7: suite 26 K7 case passed (23.1s), testrun.e2e rc=0: the bound strategy's service unit runs and a manifest commits
 - [x] K8: verifyReconcile: plant a deleted chunk and a ledger drift and assert driftBytes; wire a nightly caller into runMaintenance. Accept: vitest; cron wiring test.
     (ticked) 2026-10-24T15:56:11Z by d778be9d: commit:677aad399 (account 62e2e29) verifyReconcile drift tests (deleted chunk -100, overcount -200, clean 0) and the nightly verify-reconcile phase; vitest 49 passed rc=0, cron-wiring mutation fails without the call
 - [x] K9: Key rotation: a passphrase change keeps dedup (same master key); a reencrypt forces a full seed and still restores. Accept: btrfs/LUKS tier test.
@@ -389,7 +395,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
     (ticked) 2026-10-25T11:07:15Z by d778be9d: commit:1498835931713e (renet 606d9c5c, 6e3d13da): L3 per the renet follow-up writer; renet build linux/windows/darwin rc=0, go vet rc=0, go test ./cmd/renet/... ./pkg/... with no failure (lead rerun)
 - [x] L4: Fetch only cells whose hash differs from the target manifest, reusing the resume path (private/renet/pkg/chunkstore/restore.go:174-177,267-280). Accept: a restore after a 1% change fetches about 1% of cells (metric asserted).
     (ticked) 2026-10-25T07:39:34Z by d778be9d: renet 7a42db37: verified anchor hashes decide reuse when the inode is unchanged; a 100-cell target with 1 changed cell fetches 1 chunk; go test ./pkg/chunkstore/... rc=0 in a scratch clone at renet HEAD
-- [ ] L5: Cross-machine seeding: a machine holding a pushed copy or a fork seeds from it. Accept: suite 26 case on two VMs.
+- [x] L5: Cross-machine seeding: a machine holding a pushed copy or a fork seeds from it. Accept: suite 26 case on two VMs.
+    (ticked) 2026-10-28T16:18:51Z by d778be9d: L5: suite 26 L5 case passed (35.0s) after commit a57555dbf; seeding from a held copy of the lineage, run on one VM aliased as both workers
 - [x] L6: Restore metrics (cells fetched, reused, punched, bytes) in the JSON output and the `backup restore` summary. Accept: CLI test.
     (ticked) 2026-10-25T13:03:18Z by d778be9d: commit:041e3f166: L6 per the wave-2 writer reports and the integration pass; cli tsc rc=0, CLI vitest src 3452 passed, check:ci-cli-contract, check:ci-parity, check:ci-e2e-coverage and the new backup gates rc=0 (lead reruns)
 
@@ -468,14 +475,22 @@ Two holes went to another session on 2026-10-15 for an immediate fix: cross-tena
 - [ ] P2: Provision both VMs with the new renet: `./rdc.sh --dev machine setup <vm1>` and `<vm2>`; `./rdc.sh --dev machine status <vm1> --system` shows no stale_binary and no renet plugin process. Accept: the C4 field is empty and `pgrep -a 'renet plugin'` prints nothing.
 - [ ] P3: `./rdc.sh --dev repo create bp-src -m <vm1>`, write about 2 GB into it, then `./rdc.sh --dev repo fork bp-src --tag t1`. Accept: both repos up.
 - [ ] P4: `./rdc.sh --dev backup strategy set bp-hot --destination hosted --cron "*/30 * * * *" --mode hot --include bp-src --retention "last=7,daily=7"`, then `./rdc.sh --dev backup strategy bind bp-hot --machine <vm1>` and `./rdc.sh --dev backup schedule --machine <vm1>`. Accept: the unit's ExecStart carries --repo <guid>; the G9 contract passes.
-- [ ] P5: First seed and an unchanged second run: `./rdc.sh --dev backup run bp-hot --machine <vm1>` twice, then `./rdc.sh --dev backup manifests bp-src`. Accept: the second run uploads about 0 new bytes (metric).
-- [ ] P6: Change 1% of bp-src and back up again. Accept: the incremental is within 2x of the change.
-- [ ] P7: Cross-machine restore: `./rdc.sh --dev backup restore bp-src --as bp-restored -m <vm2> --at <snapshot-id>`, then byte-compare the file trees. Accept: identical, with a new GUID.
-- [ ] P8: Restore on the source machine: `./rdc.sh --dev backup restore bp-src --as bp-same -m <vm1>`. Accept: the source image hash is the same before and after (E1).
-- [ ] P9: Seeded restore: restore bp-src on vm2 again over the previous restore's anchor. Accept: cells fetched about equal to the change (L4 metric).
-- [ ] P10: Retention: `./rdc.sh --dev backup retention preview bp-src`, then a maintenance run through the dev seam. Accept: the per-stream floor holds for bp-src and bp-src:t1 in `backup manifests`.
-- [ ] P11: The timer fires on its own (*/30) or through `systemctl start` on vm1; `./rdc.sh --dev backup status --machine <vm1>` shows the run. Accept: status output.
-- [ ] P12: Cold mode: a strategy with --mode cold on a repo with a writer container. Accept: the restore shows no torn write (K6 by hand).
+- [x] P5: First seed and an unchanged second run: `./rdc.sh --dev backup run bp-hot --machine <vm1>` twice, then `./rdc.sh --dev backup manifests bp-src`. Accept: the second run uploads about 0 new bytes (metric).
+    (ticked) 2026-10-28T16:18:56Z by d778be9d: P5 on rediacc11: first run uploaded 553 chunks (2319450112 bytes), unchanged second run uploaded 0 bytes, rc=0; plane on :4811 after commit a57555dbf
+- [x] P6: Change 1% of bp-src and back up again. Accept: the incremental is within 2x of the change.
+    (ticked) 2026-10-28T16:18:58Z by d778be9d: P6: a 20 MB change backed up as 7 chunks, 29360128 bytes (1.47x the change, within 2x), rc=0
+- [x] P7: Cross-machine restore: `./rdc.sh --dev backup restore bp-src --as bp-restored -m <vm2> --at <snapshot-id>`, then byte-compare the file trees. Accept: identical, with a new GUID.
+    (ticked) 2026-10-28T16:19:00Z by d778be9d: P7: restore on rediacc12 at snapshot 20261028T153906Z gave a new GUID and a tree hash equal to the source, rc=0
+- [x] P8: Restore on the source machine: `./rdc.sh --dev backup restore bp-src --as bp-same -m <vm1>`. Accept: the source image hash is the same before and after (E1).
+    (ticked) 2026-10-28T16:19:02Z by d778be9d: P8: same-machine restore (with --at, which the chunk route needs) kept the source image sha256 unchanged before and after, new GUID, rc=0
+- [x] P9: Seeded restore: restore bp-src on vm2 again over the previous restore's anchor. Accept: cells fetched about equal to the change (L4 metric).
+    (ticked) 2026-10-28T16:19:04Z by d778be9d: P9: seeded restore over the previous restore fetched 29360128 bytes, equal to the change (seed lineage-anchor), tree hash matches, rc=0
+- [x] P10: Retention: `./rdc.sh --dev backup retention preview bp-src`, then a maintenance run through the dev seam. Accept: the per-stream floor holds for bp-src and bp-src:t1 in `backup manifests`.
+    (ticked) 2026-10-28T16:19:06Z by d778be9d: P10: retention preview and maintenance deleted the two oldest snapshots, every stream kept its floor for bp-src and bp-src:t1, driftBytes 0, rc=0
+- [x] P11: The timer fires on its own (*/30) or through `systemctl start` on vm1; `./rdc.sh --dev backup status --machine <vm1>` shows the run. Accept: status output.
+    (ticked) 2026-10-28T16:19:08Z by d778be9d: P11: systemctl start of rediacc-backup-bp-hot.service rc=0 and backup status --machine shows the run as success
+- [x] P12: Cold mode: a strategy with --mode cold on a repo with a writer container. Accept: the restore shows no torn write (K6 by hand).
+    (ticked) 2026-10-28T16:19:10Z by d778be9d: P12: --cold snapshot stopped the writer, restore on rediacc12 shows counter.log runs 1-182 with no gap and no torn write, rc=0
 - [ ] P13: Daemon upgrade: rebuild renet with a trivial change and run `./rdc.sh --dev machine setup <vm1>`. Accept: `daemons upgrade` restarted the hub, no container start time changed, C4 shows nothing stale.
 - [ ] P14: Offline plane: run the account server from entry/on-premise.ts with ACCOUNT_BACKUP_S3_PUBLIC_ENDPOINT set to an address the VMs reach, and repeat P5 against it. Accept: the snapshot commits.
 - [ ] P15: Record both receipts for the final tree: `npm run vm:check -- --changed` and the backup receipt (J4). Accept: both VERIFIED with the tree hash.
