@@ -25,7 +25,7 @@ Worklist: pending -- filed at promotion
 **1. The receipt.** One JSON row per live run, appended to `agent/ledgers/live-proof.jsonl`. The file is committed, so CI judges it with no secrets and no network. Shape (schema 1):
 
     {"schema":1,"id":"lp-<12 hex of sha256(row without id)>","at":"<UTC ISO>","by":"<session prefix>",
-     "plan":"agent/plans/PLAN-x.md","box":"<box sig>","target":"bench|hostinger","region":"eu|us|asia|null",
+     "plan":"agent/plans/PLAN-<name>.md","box":"<box sig>","target":"bench|hostinger","region":"eu|us|asia|null",
      "head":"<console commit>","tree":"<HEAD^{tree}>","dirty":false,
      "submodules":{"private/account":{"pointer":"<sha>","checkout":"<sha>","modified":false},"private/renet":{...}},
      "inputs":"<live-proof inputs digest, item 6>",
@@ -65,7 +65,7 @@ Worklist: pending -- filed at promotion
 - Every touched surface must be covered by at least one declared target admissible for it. For example, a plan touching account and renet declares `bench, hostinger`.
 - The VM tier does not substitute for the live tier, and the live tier does not substitute for the VM tier (ruling 1).
 
-**3. The CI-side rule: a new gate, `check:ci-plan-live-proof`.**
+**3. The CI-side rule: a new gate, `ci-plan-live-proof`.** (Its npm script carries the `check:` prefix once V5 registers it; every `npm run ci-plan-live-proof` below is that script.)
 - It is a separate gate rather than an extension. `check_plan_implementation.py` is already 2494 lines and owns the clock, and the house shape is one concern per gate.
 - It reads `.ci/config/plan-boxes.json` (proven equal to the tree by G-A0) and `agent/ledgers/live-proof.jsonl`, and it never re-parses boxes.
 - Lane `quality-branch`, `selftest: true`, control-first with one plant per rule (the `check_hint_corpus.py` and `check_plan_implementation.py` shape).
@@ -156,9 +156,9 @@ Worklist: pending -- filed at promotion
   The VM tier passes `tiers.vm` (its phases' surfaces plus its instrument). The live tier passes the plan's touched surfaces. A worktree twin hashes worktree blobs and submodule HEADs, as v2 did. Submodules are covered by pointer, which is coarse on purpose, because CI cannot rely on submodule objects. A v2 digest never equals a v3 one.
 - **One judge family.** Every judge uses `receipt.identity_refusal` for the build and checkout rules and reports through the shared `Verdict` codes:
   - the push guard `block_vm_unverified_push` and the `release:local` vm-check gate judge the VM tier through `vm_tier.admit`;
-  - `check:ci-plan-live-proof` (item 3) judges the live tier.
+  - `ci-plan-live-proof` (item 3) judges the live tier.
 
-  The live tier has no push guard, because its point of admission is the plan tick, which CI sees. `release:local` gets no live gate: a release cut from `main` already carries the green `check:ci-plan-live-proof`.
+  The live tier has no push guard, because its point of admission is the plan tick, which CI sees. `release:local` gets no live gate: a release cut from `main` already carries the green `ci-plan-live-proof`.
 - **Staleness.** It is judged only at the ticking commit: the live-tier digest recomputed at `head` must equal the digest at the ticking commit, never at HEAD, so a commit after the tick never reopens a closed plan.
 
 **7. Migration.**
@@ -189,7 +189,7 @@ Worklist: pending -- filed at promotion
 
 - [x] V1 [writer] The proof package core.
   - `.ci/config/proof-tiers.json` holds `surfaces` (the item 2 table), `exclude`, `tiers.vm` (`phases`, `instrument`), and `tiers.live` (`baseline_at` unset until V6, `targets` with `hostinger.config: eu-bench` and `hostinger.machines`, `checks`, `pointer_only`).
-  - `git mv` `drills/vm_check_trigger.py` to `proof/surfaces.py` and replace its constant tables with the loader. It gains glob matching through `wl_planconc.glob_regex` (with the `paths.on_sys_path(paths.hooks_stop_dir())` hop `check_plan_deps.py:113` uses), `Changed.surfaces`, digest `v3` taking a surface set, and `go_buildinfo` plus `renet_identity` moved from `vm_check.py:687`.
+  - `git mv` `drills/vm_check_trigger.py` to `proof/surfaces.py` and replace its constant tables with the loader. It gains glob matching through `wl_planconc.glob_regex` (with the `paths.on_sys_path(paths.hooks_stop_dir())` hop `.ci/scripts/quality/check_plan_deps.py:113` uses), `Changed.surfaces`, digest `v3` taking a surface set, and `go_buildinfo` plus `renet_identity` moved from `.ci/rediacc_ci/drills/vm_check.py:687`.
   - New `proof/receipt.py` holds the envelope, `Verdict`, `identity`, `identity_refusal` and `row_id`.
   - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_proof_surfaces.py .ci/rediacc_ci/tests/test_proof_receipt.py -q` rc=0. The cases are the moved trigger tests plus these new ones:
     - `private/renet/proxy/docker-compose.yml` and `private/renet/build.sh` hit renet (each fails against today's `RENET_PATHS`);
@@ -231,16 +231,16 @@ Worklist: pending -- filed at promotion
     (ticked) 2026-10-28T09:31:52Z by d778be9d: 2026-10-28 by d778be9d: commit:b8f513f40; pytest test_proof_live_tier, test_ops_live_proof, test_proof_surfaces, test_proof_receipt, test_proof_vm_tier rc=0 (420 passed); 14 judges each broken once turned a test red; env reads registered in a07548252
 - [ ] V6 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py`.
   - Rules LP1 to LP7, with every edge reference removed. LP7 also fires on a surface with an admissible target but no registry check.
-  - The advisory line for `Live-Proof: none`, the gate metadata (`lane: quality-branch`, `selftest: true`), the `package.json` script `check:ci-plan-live-proof` and a lane-durations entry. Set `baseline_at` to the landing date.
-  - Accept: `npm run check:ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent), and `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
+  - The advisory line for `Live-Proof: none`, the gate metadata (`lane: quality-branch`, `selftest: true`), the `package.json` script `ci-plan-live-proof` and a lane-durations entry. Set `baseline_at` to the landing date.
+  - Accept: `npm run ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent), and `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
 - [ ] V7 [lead] Migration.
   - Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan. Re-run the item 7 census against the widened map first: renet now includes `proxy/**`, and account includes `packages/shared/src/**`.
   - Each `none` needs a ruling (ruling 2). Each zero-open-box plan gets a fresh-run LP box (ruling 3). Then regenerate `plan-boxes.json`.
-  - Accept: `npm run check:ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings, `npm run check:ci-plan-boxes` rc=0, `npm run check:ci-plan-deps` rc=0.
+  - Accept: `npm run ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings, `npm run check:ci-plan-boxes` rc=0, `npm run check:ci-plan-deps` rc=0.
 - [ ] V8 [lead] Pilot: one real receipt on each target. Before running, ASK the operator to confirm a branch renet may be provisioned on hostinger (this restarts the router and daemons).
   - bench: PLAN-config-server-key's LP-bench box after its K3, with `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - hostinger: one renet-surface plan's LP-hostinger box through `renet-live` on `--config eu-bench`; candidate PLAN-hostinger-upgrade-followups T1, whose Traefik pin is renet-embedded. Run it after a VERIFIED `npm run vm:check -- --changed` on the same tree.
-  - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0 and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-hostinger-upgrade-followups.md` rc=0. Also `npm run check:ci-plan-live-proof` rc=0 on each ticking commit.
+  - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0 and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-hostinger-upgrade-followups.md` rc=0. Also `npm run ci-plan-live-proof` rc=0 on each ticking commit.
 - [ ] V9 [writer] Docs.
   - A "Live proof" section in `docs/agent-reference/plan-records.md`: the header, the LP box form, the verb, the envelope and live body, the ladder and the LP rules.
   - A "Proof tiers" paragraph in `docs/agent-reference/ci-gates.md`: one map, the VM and live tiers, and which judge reads which.
@@ -248,7 +248,7 @@ Worklist: pending -- filed at promotion
 - [ ] V10 [writer] Ledger integrity (review findings 2a2941c4.1 and 2a2941c4.5). CI judges `agent/ledgers/live-proof.jsonl` with no secrets and no network, and LP5 checks only that a row's `id` hashes to its content, so a hand-written row with a recomputed id and `verdict: PASS` would pass the gate. A pre-edit and pre-bash guard refuses any write to that ledger except the append `python3 -m rediacc_ci.ops.live_proof record --write` makes, and the recorder stamps each row with the run's log digest that `verify` re-reads from `.ci/cache/live-proof/` when present. An `LP-<target>` or `LP-none` box tick names the V6 gate's pass on the same tree.
   - Accept: the guard's `test-*.py` rc=0 with a planted hand-appended row refused and a recorder append allowed; `pytest -q .ci/rediacc_ci/tests/test_ops_live_proof.py` rc=0 with a row whose log digest mismatches refused by `verify`.
 - [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface (proof tooling is excluded by item 2). V8 exercises the tooling end to end on both targets.
-  - Accept: `npm run check:ci-plan-live-proof` rc=0 on the commit that ticks V8.
+  - Accept: `npm run ci-plan-live-proof` rc=0 on the commit that ticks V8.
 
 ### Tasks of the first draft (superseded by the revision above)
 
@@ -280,11 +280,11 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
     - `true` as a check refuses
     - the row id round-trips
 - [ ] V5 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py` (LP1 to LP7, the advisory lines, the gate metadata block with `lane: quality-branch` and `selftest: true`), its `package.json` script `check:ci-plan-live-proof`, and a lane-durations entry. Set `baseline_at` to the landing date.
-  - Accept: `npm run check:ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent). `npm run check:ci-plan-live-proof` rc=0 on the landing tree, where it reports LP1 findings for the V6 set as expected until V6 lands in the same PR. `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
+  - Accept: `npm run ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent). `npm run ci-plan-live-proof` rc=0 on the landing tree, where it reports LP1 findings for the V6 set as expected until V6 lands in the same PR. `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
 - [ ] V6 [lead] Migration. Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan listed in Design item 7, then regenerate `plan-boxes.json`. Any `none` gets the waiver Question 2 settles. Retro rows only as Question 3 allows.
-  - Accept: `npm run check:ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings; `npm run check:ci-plan-boxes` rc=0; `npm run check:ci-plan-deps` rc=0.
+  - Accept: `npm run ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings; `npm run check:ci-plan-boxes` rc=0; `npm run check:ci-plan-deps` rc=0.
 - [ ] V7 [lead] Pilot: one real receipt end to end on bench and one on hostinger through `--config eu-bench`. Candidate: PLAN-config-server-key's live box, after its K3 provisioning. Run `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
-  - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0, and `npm run check:ci-plan-live-proof` rc=0 on the commit that ticks it.
+  - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0, and `npm run ci-plan-live-proof` rc=0 on the commit that ticks it.
 - [ ] V8 [writer] Docs: a "Live proof" section in `docs/agent-reference/plan-records.md` covering the header, the LP box form, the verb, the receipt schema and the LP rules.
   - Accept: `npm run check:ci-plan-citations` rc=0 and the docs lint lane rc=0.
 - [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface. V7 is its live exercise.

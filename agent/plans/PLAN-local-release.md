@@ -27,7 +27,7 @@ Design inputs, summarized below with file:line:
   - Accept: `python3 .claude/rediacc_hooks/run_tests.py -k unverified_push` rc=0 with the goldens unchanged, and `receipt_refusal` is None only on the push-green fixture.
     (ticked) 2026-10-27T09:31:13Z by d778be9d: 163c32f9d, 5429d7175, 96b512e49: receipt_refusal and read_receipt in .claude/rediacc_hooks/guards/block_unverified_push.py; run_tests.py -k unverified_push rc=0 (1515, goldens unchanged)
 - [x] W1-B [writer] `vm:check --base <ref>`.
-  - On `main`, `--changed` diffs against origin/main, which is HEAD, so it checks nothing and writes no receipt (`.ci/rediacc_ci/drills/vm_check.py:28`, `vm_check_trigger.py:275-310`).
+  - On `main`, `--changed` diffs against origin/main, which is HEAD, so it checks nothing and writes no receipt (`.ci/rediacc_ci/drills/vm_check.py:28`, the `--changed` trigger module (`vm_check_trigger.py`, lines 275-310 of the release-cache copy)).
   - Add `--base`, recorded in the receipt as `trigger.base`.
   - Owns: vm_check.py and test_drills_vm_check.py.
   - Accept: the pytest rc=0, and a receipt written with `--base v2.4.0` names the ref.
@@ -48,7 +48,7 @@ Design inputs, summarized below with file:line:
     - the record's pid is in the hook's parent chain, with a matching `/proc` start time and a cmdline of `-m rediacc_ci.release.local`;
     - the record's tree equals the console `HEAD^{tree}`;
     - that exact `(toplevel, remote_ref, oid)` is listed.
-  - `block_git_hook_bypass.py:11` refuses `REDIACC_RELEASE_RUN` set by an agent, as it already refuses `COMMIT_POLICY_OK`.
+  - `.claude/rediacc_hooks/guards/block_git_hook_bypass.py:11` refuses `REDIACC_RELEASE_RUN` set by an agent, as it already refuses `COMMIT_POLICY_OK`.
   - Owns: githooks.py, test_githook_release_run.py, block_git_hook_bypass.py and test-block_git_hook_bypass.py.
   - Accept: `run_tests.py -k "githook_release_run or git_hook_bypass"` rc=0, and a forged record, a wrong tree or an unlisted ref is refused.
     (ticked) 2026-10-27T08:03:42Z by d778be9d: 875b03844: .claude/rediacc_hooks/git/release_run.py and githooks.py pre_push admission plus block_git_hook_bypass; run_tests.py -k "githook_release_run or git_hook_bypass" rc=0 (23), with planted failures turning each check red
@@ -68,7 +68,7 @@ Design inputs, summarized below with file:line:
 ### Wave 2 (after W1)
 
 - [x] W2-A [writer] Gates module, `rediacc_ci.release.local_gates`.
-  - It imports W1-A's `receipt_refusal` (the way `.ci/rediacc_ci/ci/gate_model.py:113-117` imports the guard) and `vm_check_receipt.admit` (`.ci/rediacc_ci/drills/vm_check_receipt.py:374-388`).
+  - It imports W1-A's `receipt_refusal` (the way `.ci/rediacc_ci/ci/gate_model.py:113-117` imports the guard) and `vm_check_receipt.admit` (the receipt module's `admit` (`vm_check_receipt.py`, lines 374-388 of the release-cache copy)).
   - It refuses unless all of these hold:
     - a whole, green ci:quick receipt exists for HEAD's tree;
     - the vm:check hits since the channel's previous release tag are admitted by a VERIFIED receipt;
@@ -84,7 +84,7 @@ Design inputs, summarized below with file:line:
   1. Version: `resolve_version --bump-type`, from the labels since the last tag.
   2. Gates: W2-A.
   3. Builds, in the release clone, each step timed:
-     - renet (`build_renet.py:582-607`) under `bws_env exec --profile release-local` for `ACCOUNT_ED25519_PUBLIC_KEY`, then the W1-E gate;
+     - renet (`.ci/rediacc_ci/build/build_renet.py:582-607`) under `bws_env exec --profile release-local` for `ACCOUNT_ED25519_PUBLIC_KEY`, then the W1-E gate;
      - the CLI bundle and npm tarball;
      - the SEAs for linux-x64, the two musl targets, and linux-arm64 (in a linux/arm64 node:24 container);
      - the Docker renet, rdc and server images, through buildx.
@@ -116,7 +116,7 @@ Design inputs, summarized below with file:line:
     - a fake bws that returns `CANARY-...` never shows in stdout or stderr;
     - a `STEPS` invariant test passes: the sentinel is immediately followed by the tag, the tag comes before any step that can fail, and the CLI publish comes before any account deploy.
 - [x] W2-C [writer] The `block_unasked_release` guard (pre-bash).
-  - It admits `npm run release:local` without `--dry-run` only when it carries `RELEASE_ASKED=ASKED:<minute>`, proven through the transcript (`block_vm_unverified_push.py:655-669`).
+  - It admits `npm run release:local` without `--dry-run` only when it carries `RELEASE_ASKED=ASKED:<minute>`, proven through the transcript (`.claude/rediacc_hooks/guards/block_vm_unverified_push.py:655-669`).
   - It refuses these raw publish verbs from agent Bash:
     - `wrangler deploy` and `wrangler rollback`;
     - `gh release create`;
@@ -125,18 +125,18 @@ Design inputs, summarized below with file:line:
     - `-m rediacc_ci.deploy.*`;
     - `-m` on the release publishers (`create_github_release`, `tag_submodules`, `update_homebrew_tap`, `mark_production`).
   - A shell-write twin refuses agent writes under `.ci/cache/release/`.
-  - Add a `("release:local","aws")` prerequisite row to `block_host_toolchain_run.py:84-103`.
+  - Add a `("release:local","aws")` prerequisite row to `.claude/rediacc_hooks/guards/block_host_toolchain_run.py:84-103`.
   - Owns: block_unasked_release.py, test-block_unasked_release.py and block_host_toolchain_run.py.
   - Accept: `run_tests.py -k unasked_release` rc=0; `--dry-run` passes; a raw `wrangler deploy` is refused.
     (ticked) 2026-10-27T09:13:10Z by d778be9d: 2e939f2ab: .claude/rediacc_hooks/guards/block_unasked_release.py; test-block_unasked_release.py rc=0 (147 cases); run_tests -k "unasked_release or host_toolchain" rc=0 (314)
 - [x] W2-D [writer] Durable deploy records.
-  - `deploy_record.after --sink r2` (`.ci/rediacc_ci/deploy/deploy_record.py:665`) writes `release-records/v<V>/<channel>/deploy-record-<target>-<region>.json` once, through `write_once_guard`. Today the record is a 3-day artifact (`cd-deploy-account.yml:676`).
+  - `deploy_record.after --sink r2` (`.ci/rediacc_ci/deploy/deploy_record.py:665`) writes `release-records/v<V>/<channel>/deploy-record-<target>-<region>.json` once, through `write_once_guard`. Today the record is a 3-day artifact (`.github/workflows/cd-deploy-account.yml:676`).
   - Add a www record (the version id before and after, the `wrangler rollback` command and the smoke rc) to `deploy_www.py` and `deploy_edge.py`, and put the account smoke rc into the account record.
   - Owns: deploy_record.py, deploy_www.py, deploy_edge.py and test_deploy_*.py.
   - Accept: pytest rc=0, and a www record carries the version id, the rollback command and the smoke rc.
     (ticked) 2026-10-27T08:24:25Z by d778be9d: a364733cc: deploy_record after --sink r2 write-once records and the www record in deploy_www.py and deploy_edge.py; pytest rc=0 (73)
 - [x] W2-E [writer] The tag module, `rediacc_ci.release.tag`.
-  - Lift it from the inline bash at `cd-v2.yml:256-272`. It creates `v<V>` idempotently and refuses on an unknown `ls-remote` result.
+  - Lift it from the inline bash at `.github/workflows/cd-v2.yml:256-272`. It creates `v<V>` idempotently and refuses on an unknown `ls-remote` result.
   - Add the `release-local` bws profile to `.ci/config/secret-supply.json`. It binds:
     - `ACCOUNT_ED25519_PUBLIC_KEY`;
     - `RELEASE_GPG_PRIVATE_KEY` and `RELEASE_GPG_PASSPHRASE`;
@@ -284,7 +284,7 @@ The local estimate is 20-25 min with builds in parallel, against about 60 min fo
 ## Gaps that stay on CI
 
 The mac SEAs, the win SEAs, and the mac and win install legs all stay on CI. All four run in `local-release-assist.yml`, dispatched at minute zero and awaited before stage.
-- **mac SEAs:** need a macOS host node and ad-hoc codesign (`build_cli_executables.py:714-760`).
+- **mac SEAs:** need a macOS host node and ad-hoc codesign (`.ci/rediacc_ci/build/build_cli_executables.py:714-760`).
 - **win SEAs:** need a host `node.exe` and the native smoke test.
 - **mac and win install legs:** need those runners.
 
@@ -295,7 +295,7 @@ The mac SEAs, the win SEAs, and the mac and win install legs all stay on CI. All
 - **R3, tokens.** The tag and tap pushes run on the session's GitHub token, not the CI App token. If a ruleset refuses that token, W2-E adds a minimal dispatch job that mints the App token for those pushes only.
 - **R4, missing host tools.** `aws`, `nfpm` and `clang` are missing on the host. The entry checks its prerequisites first, and the devbox is the fallback.
 - **R5, racing releases.** Two local releases at once are prevented by the lock check in W2-A.
-- **R6, server:stable.** The scheduled promote never moved `server:stable` (`promote-stable.yml:215-227`), while the hotfix lane does. The local stable promote moves all three images on purpose.
+- **R6, server:stable.** The scheduled promote never moved `server:stable` (`.github/workflows/promote-stable.yml:215-227`), while the hotfix lane does. The local stable promote moves all three images on purpose.
 
 ## Results
 

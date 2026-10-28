@@ -24,27 +24,27 @@ Worklist: #a150016d (finding), PR-TASK 9f92c43e
 So the container's account egress works, and only its outbound TCP to the machine is dropped. The drop happens upstream of the host.
 
 **Why it never recovers (verified in repo).**
-- The Durable Object name is the org id alone on both backends: `getContainer(env.EXECUTOR, tenant.orgId)` (workers/proxy/src/index.ts:263) and `namespace.idFromName(tenant.orgId)` (index.ts:317).
-- Both pins refuse any other id (index.ts:164, org-executor.ts:267).
-- Both egress identity checks require `containerId === idFromName(orgId)` (egress.ts:137, egress.ts:160).
+- The Durable Object name is the org id alone on both backends: `getContainer(env.EXECUTOR, tenant.orgId)` (workers/proxy/src/index.ts:263) and `namespace.idFromName(tenant.orgId)` (workers/proxy/src/index.ts:317).
+- Both pins refuse any other id (workers/proxy/src/index.ts:164, workers/proxy/src/org-executor.ts:267).
+- Both egress identity checks require `containerId === idFromName(orgId)` (workers/proxy/src/egress.ts:137, workers/proxy/src/egress.ts:160).
 - No code path ever gives an org a different object. Whatever placement the object (and so its container) has, the org keeps.
 
 **The error is anonymous (verified in repo).**
 - `SFTPClient.connect` sets `readyTimeout` to `DEFAULTS.SSH.READY_TIMEOUT`, which is 10000 (packages/cli/src/remote/sftp/client.ts:85, packages/shared/src/config/defaults.ts:42).
-- It turns every ssh2 `error` into `SSH connection error: <message>` (client.ts:116-122), whatever the cause.
+- It turns every ssh2 `error` into `SSH connection error: <message>` (packages/cli/src/remote/sftp/client.ts:116-122), whatever the cause.
 - ssh2 1.17.0 tells the causes apart, and the CLI throws that information away:
-  - A connect that never completes and a peer that never sends a banner both give `Timed out while waiting for handshake` with `level = 'client-timeout'` (node_modules/ssh2/lib/client.js:1112-1118).
-  - Only the first lacks the client `connect` event, which ssh2 emits once the TCP socket connects (client.js:767).
-  - A refused connect is `level = 'client-socket'` with `code = 'ECONNREFUSED'` (client.js:801-806).
-  - An authentication failure is `client-authentication` (client.js:404, 469).
+  - A connect that never completes and a peer that never sends a banner both give `Timed out while waiting for handshake` with `level = 'client-timeout'` (ssh2 `lib/client.js`, lines 1112-1118 of the installed copy).
+  - Only the first lacks the client `connect` event, which ssh2 emits once the TCP socket connects (ssh2 `lib/client.js`, line 767).
+  - A refused connect is `level = 'client-socket'` with `code = 'ECONNREFUSED'` (ssh2 `lib/client.js`, lines 801-806).
+  - An authentication failure is `client-authentication` (ssh2 `lib/client.js`, lines 404 and 469).
 - `LocalExecutorService.execute` then flattens the throw to `{ success: false, exitCode: 1, error }` with no `errorCode` (packages/cli/src/services/executor/local-executor.ts:593-601).
 - A raw throw falls to `normalizeError`'s GENERAL_ERROR fallback (packages/cli/src/utils/errors.ts:249-255). That is the GENERAL_ERROR the console shows.
 
-**Which backend org B is on (verified in repo, check on edge first).** The brief places the id at index.ts:317, the `durable` path. However, every generated config routes `container`:
+**Which backend org B is on (verified in repo, check on edge first).** The brief places the id at workers/proxy/src/index.ts:317, the `durable` path. However, every generated config routes `container`:
 - `BACKEND_BY_TARGET` is `container` for all eight targets (.ci/rediacc_ci/deploy/proxy_configs.py:69-71).
-- wrangler.edge-us.toml:18 says `EXECUTOR_BACKEND = "container"`.
+- workers/proxy/wrangler.edge-us.toml:18 says `EXECUTOR_BACKEND = "container"`.
 
-Unless a hand deploy flipped edge-us, org B runs on the legacy `ExecutorContainer` (index.ts:132-179, default scheduling, `max_instances = 25`), and its id comes from index.ts:263. `npx wrangler versions view` on edge-us settles this before E10. The legacy class retires at PLAN-executor-durable-object-policy C1, and Cloudflare freezes it after 2026-12-31. This plan builds relocation on `durable` only and keeps the legacy backend as it is (Design 7).
+Unless a hand deploy flipped edge-us, org B runs on the legacy `ExecutorContainer` (workers/proxy/src/index.ts:132-179, default scheduling, `max_instances = 25`), and its id comes from workers/proxy/src/index.ts:263. `npx wrangler versions view` on edge-us settles this before E10. The legacy class retires at PLAN-executor-durable-object-policy C1, and Cloudflare freezes it after 2026-12-31. This plan builds relocation on `durable` only and keeps the legacy backend as it is (Design 7).
 
 **Claims and where they stand.**
 
@@ -53,8 +53,8 @@ Verified in repo, with the citations above:
 - the 10 s readyTimeout;
 - the ssh2 error levels and the `connect` event;
 - the flattening to exit 1;
-- the lease keyed by org id (capacity.ts:74 and 99-104);
-- the OOM flags as a per-org value the Worker reads (org-executor.ts:40-42, 274-281; index.ts:286 and 299-306);
+- the lease keyed by org id (workers/proxy/src/capacity.ts:74 and 99-104);
+- the OOM flags as a per-org value the Worker reads (workers/proxy/src/org-executor.ts:40-42, 274-281; workers/proxy/src/index.ts:286 and 299-306);
 - the route already reading the `organizations` row for each request (private/account/src/services/executor-issuer.service.ts:130-135).
 
 Platform assumptions, to verify on bench or edge:
@@ -83,13 +83,13 @@ Platform assumptions, to verify on bench or edge:
      - `auth` gives `SSH_AUTH_FAILED`, exit 1, not retryable.
      - `other` keeps today's message with exit 1 and no code.
    - The `unreachable` message names the cause: `<host>:<port> never answered the TCP connection attempt within 10 s; the address is valid but no reply came back. The machine may be down, a firewall may be dropping the traffic, or the executor's network path to it is blocked.`
-   - `SFTPClient.connect` (client.ts:73-130) records `tcpConnected` on the client `connect` event and rejects with `SshConnectError`. The host-key mismatch path (client.ts:117-119) stays first and unchanged.
+   - `SFTPClient.connect` (packages/cli/src/remote/sftp/client.ts:73-130) records `tcpConnected` on the client `connect` event and rejects with `SshConnectError`. The host-key mismatch path (packages/cli/src/remote/sftp/client.ts:117-119) stays first and unchanged.
    - The constructor takes an optional client factory (default `new SSHClient()`), so a test can plant an ssh2 client.
 
 2. **The error reaches the envelope and the console with its name.**
-   - `LocalExecutorService.execute` catches `SshConnectError` (local-executor.ts:593-601) and returns `{ success: false, exitCode, error: message, errorCode, errorGuidance, durationMs }`.
-   - `ExecuteResult` already has `errorCode` and `errorGuidance` (packages/cli/src/services/executor/types.ts:161-172), and serve prefers a failed `lastResult` over a reconstructed one (packages/cli/src/services/serve/command-dispatch.ts:484). So the result line `rdc serve` writes (server.ts:316-318) carries the code to the console unchanged.
-   - `normalizeError` gets a name-keyed entry for `SshConnectError`, following the `REMOTE_CONFIG_ERRORS` precedent (utils/errors.ts:166-198). A laptop path that throws it raw then exits 6 with `NETWORK_ERROR` and `retryable: true`, not GENERAL_ERROR.
+   - `LocalExecutorService.execute` catches `SshConnectError` (packages/cli/src/services/executor/local-executor.ts:593-601) and returns `{ success: false, exitCode, error: message, errorCode, errorGuidance, durationMs }`.
+   - `ExecuteResult` already has `errorCode` and `errorGuidance` (packages/cli/src/services/executor/types.ts:161-172), and serve prefers a failed `lastResult` over a reconstructed one (packages/cli/src/services/serve/command-dispatch.ts:484). So the result line `rdc serve` writes (packages/cli/src/services/serve/server.ts:316-318) carries the code to the console unchanged.
+   - `normalizeError` gets a name-keyed entry for `SshConnectError`, following the `REMOTE_CONFIG_ERRORS` precedent (packages/cli/src/utils/errors.ts:166-198). A laptop path that throws it raw then exits 6 with `NETWORK_ERROR` and `retryable: true`, not GENERAL_ERROR.
 
 3. **The executor reports the failure through the one path that works.**
    - In container mode, when a result carries `errorCode === 'EGRESS_UNREACHABLE'`, server.ts awaits `deps.reportEgressUnreachable()` before writing the result line.
@@ -105,7 +105,7 @@ Platform assumptions, to verify on bench or edge:
    - Forward-only migration private/account/drizzle/0068_executor_placement.sql (0067 is the latest) adds two columns to `organizations` (private/account/src/db/schema.ts:394-410):
      - `executor_placement integer NOT NULL DEFAULT 0`;
      - `executor_relocated_at text`.
-   - `ExecutorIssuerService.route` adds `executorPlacement` to the select it already runs (executor-issuer.service.ts:130-135) and answers `{ orgId, tier, placement }`. This costs no extra query and no extra hop on the hot path.
+   - `ExecutorIssuerService.route` adds `executorPlacement` to the select it already runs (private/account/src/services/executor-issuer.service.ts:130-135) and answers `{ orgId, tier, placement }`. This costs no extra query and no extra hop on the hot path.
    - The new RPC `relocate(orgId, fromPlacement)` is exposed on the `ExecutorIssuer` entrypoint (workers/account/src/index.ts:86-99) through private/account/src/entry/cloudflare.ts. It runs one compare-and-set:
      `UPDATE organizations SET executor_placement = executor_placement + 1, executor_relocated_at = <now> WHERE id = ? AND executor_placement = ? AND (executor_relocated_at IS NULL OR executor_relocated_at <= <now - RELOCATE_MIN_INTERVAL>)`
    - It answers one of:
@@ -113,51 +113,51 @@ Platform assumptions, to verify on bench or edge:
      - `{ ok: false, reason: 'stale', placement }` when another caller already moved the org;
      - `{ ok: false, reason: 'budget', placement }` within 30 minutes of the last move;
      - `{ ok: false, reason: 'unknown-org' }`.
-   - D1 is chosen over the coordinator because D1 is the org's system of record, survives a coordinator table-shape bump (capacity.ts:17-18), adds nothing to the request path, and can be read or reset by the operator with `wrangler d1 execute`.
+   - D1 is chosen over the coordinator because D1 is the org's system of record, survives a coordinator table-shape bump (workers/proxy/src/capacity.ts:17-18), adds nothing to the request path, and can be read or reset by the operator with `wrangler d1 execute`.
    - workers/proxy/src/placement.ts owns:
      - `executorName(orgId, placement)`, which is `` `${orgId}:p${placement}` `` for every placement, 0 included. This is a clean break, and it discards nothing live because no target routes `durable` yet;
      - `placementOf(value)`: a non-negative safe integer, else undefined;
      - `UNREACHABLE_THRESHOLD = 3`;
      - `UNREACHABLE_WINDOW_MS = 600_000`;
      - `unreachableRecent(at, now)`.
-   - `resolveTenant` (index.ts:207-224) refuses with `refused:route-placement-missing` (503, unavailable) when the route gives no valid placement. It never guesses 0, because 0 is the possibly broken object.
-   - The word is "placement", not "generation", because `OrgExecutor.generation` already names the per-start counter (org-executor.ts:206).
+   - `resolveTenant` (workers/proxy/src/index.ts:207-224) refuses with `refused:route-placement-missing` (503, unavailable) when the route gives no valid placement. It never guesses 0, because 0 is the possibly broken object.
+   - The word is "placement", not "generation", because `OrgExecutor.generation` already names the per-start counter (workers/proxy/src/org-executor.ts:206).
 
 5. **OrgExecutor counts reports, relocates and retires.**
-   - `pin(orgId, placement, size)` checks `ctx.id.equals(idFromName(executorName(orgId, placement)))` in place of org-executor.ts:267.
+   - `pin(orgId, placement, size)` checks `ctx.id.equals(idFromName(executorName(orgId, placement)))` in place of workers/proxy/src/org-executor.ts:267.
    - `ORG_KEY` stores `{ orgId, placement }`.
-   - `ExecutorRecord` and `ExecutorEgressProps` gain `placement`. `recover` (org-executor.ts:599-631) destroys a running container whose record lacks it, as `unrecorded`.
+   - `ExecutorRecord` and `ExecutorEgressProps` gain `placement`. `recover` (workers/proxy/src/org-executor.ts:599-631) destroys a running container whose record lacks it, as `unrecorded`.
    - New RPC `recordEgressUnreachable(orgId, placement)`:
      - It refuses a mismatched org or placement.
      - It appends `Date.now()` to the `egressUnreachable` storage list, prunes entries older than `UNREACHABLE_WINDOW_MS`, and writes `egressUnreachableAt`.
      - Below `UNREACHABLE_THRESHOLD` it answers `{ count, threshold, relocated: false }`.
-     - At the threshold it calls `env.ISSUER.relocate(orgId, placement)`, bounded like the coordinator calls (org-executor.ts:132-142).
+     - At the threshold it calls `env.ISSUER.relocate(orgId, placement)`, bounded like the coordinator calls (workers/proxy/src/org-executor.ts:132-142).
      - On `ok` or `stale` it writes `retired = { to }`, sets `draining`, and answers `relocated: true`.
      - On `budget` or a failure it logs and answers `relocated: false`, and the org stays put.
    - A retired object behaves as follows:
-     - `pin` refuses with the new code `EXECUTOR_RELOCATED`, so `ExecutorRefusalCode` (org-executor.ts:67) gains it.
+     - `pin` refuses with the new code `EXECUTOR_RELOCATED`, so `ExecutorRefusalCode` (workers/proxy/src/org-executor.ts:67) gains it.
      - `holdLease` never re-acquires, so a retired object cannot take a slot back.
-     - When nothing is in flight, the existing drain (org-executor.ts:380-390) stops the container and releases the lease. The request whose report caused the move ends with its named result line before the container goes.
+     - When nothing is in flight, the existing drain (workers/proxy/src/org-executor.ts:380-390) stops the container and releases the lease. The request whose report caused the move ends with its named result line before the container goes.
    - The old object never touches the new id. Under (P-a), the first `get` of the new id must come from the Worker, so the new object is placed the way an object is placed for a fresh org.
-   - `PinAnswer`'s ok branch gains `egressUnreachableRecent: boolean`, so the Worker needs no extra RPC for the outcome. The OOM flags stay their own reads (org-executor.ts:274-281).
-   - `OrgExecutorEnv` (org-executor.ts:51-56) gains `ISSUER`. The Env comment at index.ts:72-74 is updated, because the issuer is now also called by `relocate`.
+   - `PinAnswer`'s ok branch gains `egressUnreachableRecent: boolean`, so the Worker needs no extra RPC for the outcome. The OOM flags stay their own reads (workers/proxy/src/org-executor.ts:274-281).
+   - `OrgExecutorEnv` (workers/proxy/src/org-executor.ts:51-56) gains `ISSUER`. The Env comment at workers/proxy/src/index.ts:72-74 is updated, because the issuer is now also called by `relocate`.
 
 6. **Leases are keyed by executor name, not by org.**
-   - `ExecutorCapacity.acquire/renew/release` take the executor name (capacity.ts:81-131).
-   - The table becomes `leases (executor TEXT PRIMARY KEY, size, expires_at)` under `CAPACITY_NAME = 'capacity:v2'`. The suffix exists to version the shape (capacity.ts:17-18).
-   - A late `release` from the retired object then cannot delete the new object's slot, as it could with the org-keyed row (capacity.ts:128-131). Two placements of one org briefly count as two, which errs on the safe side of the cap.
-   - `HARD_CAP` and `HARD_HEAVY_CAP` stay the literals the cost guard reads (capacity.ts:12-14).
+   - `ExecutorCapacity.acquire/renew/release` take the executor name (workers/proxy/src/capacity.ts:81-131).
+   - The table becomes `leases (executor TEXT PRIMARY KEY, size, expires_at)` under `CAPACITY_NAME = 'capacity:v2'`. The suffix exists to version the shape (workers/proxy/src/capacity.ts:17-18).
+   - A late `release` from the retired object then cannot delete the new object's slot, as it could with the org-keyed row (workers/proxy/src/capacity.ts:128-131). Two placements of one org briefly count as two, which errs on the safe side of the cap.
+   - `HARD_CAP` and `HARD_HEAVY_CAP` stay the literals the cost guard reads (workers/proxy/src/capacity.ts:12-14).
 
 7. **The Worker routes by placement and names the outcomes.**
-   - `viaOrgExecutor` (index.ts:309-332) derives the stub from `executorName(tenant.orgId, tenant.placement)` and pins with the placement.
+   - `viaOrgExecutor` (workers/proxy/src/index.ts:309-332) derives the stub from `executorName(tenant.orgId, tenant.placement)` and pins with the placement.
    - On `EXECUTOR_RELOCATED` it calls `resolveTenant` once more, and retries once if the placement went up. Otherwise it answers 503 `EXECUTOR_START_FAILED`.
-   - A forwarded request whose pin answer says `egressUnreachableRecent` gets the outcome `egress-unreachable` in place of `forwarded`, the way `oom-heavy` does (index.ts:327-330).
-   - `AccountEgress.fetch` (egress.ts:151-165):
+   - A forwarded request whose pin answer says `egressUnreachableRecent` gets the outcome `egress-unreachable` in place of `forwarded`, the way `oom-heavy` does (workers/proxy/src/index.ts:327-330).
+   - `AccountEgress.fetch` (workers/proxy/src/egress.ts:151-165):
      - It checks `containerId === ORG_EXECUTOR.idFromName(executorName(orgId, placement)).toString()`.
      - It answers `POST /executor/v1/egress-unreachable` (empty query) itself, before `forwardAccountEgress`, by calling `recordEgressUnreachable` on its own object.
      - It never forwards to ACCOUNT and never calls the issuer.
      - Its span gets `rediacc.proxy.outcome` set to `egress-unreachable`, or to `relocated` when the report triggered the move, through `activeSpan`, which moves to the new src/span.ts.
-   - The legacy `accountEgress` (egress.ts:125-141) is unchanged. It refuses the report as `route-not-allowed`, the executor falls back to its no-answer guidance, and the named error still reaches the user.
+   - The legacy `accountEgress` (workers/proxy/src/egress.ts:125-141) is unchanged. It refuses the report as `route-not-allowed`, the executor falls back to its no-answer guidance, and the named error still reaches the user.
 
 8. **Signals.**
    - docs/observability/signals/proxy.md, outcome row (line 35) and the durable section (line 88):
@@ -170,9 +170,9 @@ Platform assumptions, to verify on bench or edge:
 
 - **`locationHint` alone, or a hint per region beside the placement.** The hint applies only when the call creates the object (P-b), so it cannot move org B's existing object. Paired with a new id, it would pull the org away from the caller and add latency, and nothing in the evidence shows the whole region is bad: org A and org C pass from the same region. It is held back until E10 shows that a new id alone does not escape (P-e).
 - **`jurisdiction`.** It only fences objects into `eu` or `fedramp` (P-c), so it has no effect inside us or asia.
-- **The placement number in the coordinator.** The coordinator would join every request path as a per-target singleton. That changes the deliberate fail-open of a running container on coordinator trouble (org-executor.ts:429-432). A future table-shape bump (`capacity:v2` here) would also reset every org to its first object.
+- **The placement number in the coordinator.** The coordinator would join every request path as a per-target singleton. That changes the deliberate fail-open of a running container on coordinator trouble (workers/proxy/src/org-executor.ts:429-432). A future table-shape bump (`capacity:v2` here) would also reset every org to its first object.
 - **A forward-pointer chain in retired objects, with a "home" object at the bare org id.** It works without the account change. However, each cold isolate pays an extra RPC per org on a miss, the home object needs a second role, and an operator has nothing to read or reset.
-- **Scanning the NDJSON stream for the result line in the Durable Object.** It breaks the rule that routing never reads a command's output (index.ts:13-16). It also misfires on any renet event text that contains the code.
+- **Scanning the NDJSON stream for the result line in the Durable Object.** It breaks the rule that routing never reads a command's output (workers/proxy/src/index.ts:13-16). It also misfires on any renet event text that contains the code.
 - **A Worker-side TCP probe of the target (`cloudflare:sockets` `connect`) to prove the target valid before relocating.** Whether the intercept handler shares the container's egress path is unknown, so the probe may fail for the same reason the container does. It would also hand the container a TCP-connect primitive aimed wherever the container says. Under this plan a down machine costs at most one cold start per 30 minutes for its own org.
 - **Relocating on every single failure, or raising readyTimeout.** One failure is not a pattern, and churning objects throws away the warm pool for nothing. A longer timeout only delays the same SYN that never leaves.
 - **Relocation on the legacy `ExecutorContainer`.** That class is frozen after 2026-12-31 and retires at PLAN-executor-durable-object-policy C1. Building a second relocation path into it would be a compatibility shim.
@@ -249,7 +249,7 @@ Platform assumptions, to verify on bench or edge:
 
   Owns: workers/proxy/src/org-executor.ts, workers/proxy/src/__tests__/org-executor.test.ts. Accept: `cd workers/proxy && npm run typecheck && npx vitest run src/__tests__/org-executor.test.ts` rc 0.
 - [x] E7 [writer] Routing, egress route and outcomes (Design 7), after E4 and E6. Make these changes:
-  - `relocate` on `ExecutorIssuerRpc` (issued-token.ts:20);
+  - `relocate` on `ExecutorIssuerRpc` (workers/proxy/src/issued-token.ts:20);
   - src/span.ts;
   - `resolveTenant` reading `placement`;
   - `viaOrgExecutor` with the once-only re-route;
@@ -310,4 +310,4 @@ Platform assumptions, to verify on bench or edge:
 - **Deploy order.** The proxy refuses a route without `placement` (503). The account, with migration 0068, must deploy before the proxy on every target. CD already orders account before proxy. A local deploy must do the same, and E9 records it.
 - **Cross-submodule ordering.** E4 lands in private/account and needs a pointer bump. E7's Accept runs only on the bumped pointer.
 - **Re-entrancy (P-f).** The report reaches the object through its own container's intercept while a `fetch` on that object streams. If the platform deadlocks it, the 5 s report deadline keeps the command's result intact. E9 would then show no relocation, and the report has to move to an alarm-driven pull of a container route.
-- **Coordinator v2.** `capacity:v2` starts empty. On `durable` targets, running containers re-acquire on their next renew ('not-held', then acquire at org-executor.ts:433). Only bench runs `durable` before this lands.
+- **Coordinator v2.** `capacity:v2` starts empty. On `durable` targets, running containers re-acquire on their next renew ('not-held', then acquire at workers/proxy/src/org-executor.ts:433). Only bench runs `durable` before this lands.

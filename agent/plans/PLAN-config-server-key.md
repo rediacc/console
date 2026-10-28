@@ -10,7 +10,7 @@ First-Seen: 2026-10-27
 Worklist: #caef1cc3
 
 **Finding.** `private/account/src/services/config.service.ts:2929-2945` (`getServerEncryptionKey`) reads `process.env.CONFIG_SERVER_KEY ?? 'rediacc-config-server-dev-key'` and derives the AES-GCM key that encrypts `config_stores.server_recoverable_org_passphrase`.
-- Nothing sets the variable: it is not in `env.ts`, not in `KEYS` of `set_account_worker_secrets.py:184-214`, and not in any account-secrets profile or wrangler toml.
+- Nothing sets the variable: it is not in `env.ts`, not in `KEYS` of `.ci/rediacc_ci/deploy/set_account_worker_secrets.py:184-214`, and not in any account-secrets profile or wrangler toml.
 - So all seven account Workers (eu, us and asia, stable and edge, plus bench) encrypt layer 3 under the constant. The ciphertext carries no AAD and no key tag (`packages/shared/src/config-crypto/aes.ts:99-109`).
 - Severity is defense in depth, not an incident. The CEK layer still needs a slot secret, so a D1 dump does not expose config plaintext. It does expose every org passphrase, which contradicts `docs/DESIGN-CONFIG-STORAGE.md:989`.
 
@@ -20,11 +20,11 @@ Design memo: Plan agent aecb122b, 2026-10-27, summarized in the boxes below.
 
 - [x] K1 [writer] Key module and fail-closed (landing A).
   - New `private/account/src/services/config-server-key.ts`:
-    - `resolveConfigServerKey(env)` returns `ACCOUNT_CONFIG_SERVER_KEY`. The dev constant is returned only under TEST_MODE, resolved after `pinDeployedEnv` (`entry/cloudflare.ts:47-49`). Otherwise it throws `ConfigServerKeyMissingError`.
+    - `resolveConfigServerKey(env)` returns `ACCOUNT_CONFIG_SERVER_KEY`. The dev constant is returned only under TEST_MODE, resolved after `pinDeployedEnv` (`private/account/src/entry/cloudflare.ts:47-49`). Otherwise it throws `ConfigServerKeyMissingError`.
     - `sealServerSecret`/`openServerSecret`: HKDF with today's salt and info, a non-extractable key, AAD `csk1|<storeId>`, and output `csk1.<kid>.<base64(iv||ct)>`, where kid is 8 hex characters of HMAC-SHA256(key, "kid").
   - `legacy-server-key.ts` is the only file allowed to hold the constant. It opens an untagged row with it, and the row is rewritten on read with a compare-and-swap UPDATE.
   - Add `ACCOUNT_CONFIG_SERVER_KEY` to `envFields`.
-  - `app.ts:457-460` passes the key to ConfigService. On a deployed Worker without the key, only the config routes fail closed, with a mapped 5xx.
+  - `private/account/src/app.ts:457-460` passes the key to ConfigService. On a deployed Worker without the key, only the config routes fail closed, with a mapped 5xx.
   - `entry/node.ts` refuses to boot when `CONFIG_R2_*` is set without the key (operator: no on-premise config storage exists).
   - Delete `getServerEncryptionKey`, `serverEncrypt` and `serverDecrypt`; the five call sites use seal and open with storeId.
   - Accept: `cd private/account && npx vitest run tests/unit/config-server-key.test.ts tests/integration/config-server-key-migration.test.ts tests/integration/config-cek-rotation.test.ts tests/integration/console-session.test.ts && npm run typecheck` rc=0.
@@ -52,7 +52,7 @@ Design memo: Plan agent aecb122b, 2026-10-27, summarized in the boxes below.
 - [x] K6 [writer] Landing B, gated on K4's `--verify` rc=0 on all seven databases.
   - Delete `legacy-server-key.ts` and the legacy branch.
   - Add `check_config_server_key_constant.py`, which confines the dev constant to `config-server-key.ts` under TEST_MODE.
-  - Correct `DESIGN-CONFIG-STORAGE.md:989` and the layer-3 section.
+  - Correct `docs/DESIGN-CONFIG-STORAGE.md:989` and the layer-3 section.
   - Accept: the gate rc=0, the account vitest rc=0, and `grep -rn rediacc-config-server-dev-key private/account/src` returns only `config-server-key.ts`.
     (ticked) 2026-10-27T18:22:52Z by d778be9d: commit:a9603a30d (account 35f8262) legacy-server-key.ts and the rewrap tool deleted; openOrgPassphrase refuses an untagged row; check:ci-config-server-key-constant rc=0 and wired; DESIGN-CONFIG-STORAGE.md corrected; account vitest and check:ci-account-server rc=0; grep finds the dev constant only in config-server-key.ts
 

@@ -7,7 +7,7 @@ Depends-On: no-dep -- the fix touches the dev build path, its stamps and their c
 Priority: P1 -- vm:check A2.3 ends NOT_VERIFIED whenever another session runs a plain ./rdc.sh during the license drill (run vmc-10280533-5ddf37), which blocks every receipt that needs the account side
 Concurrency: parallel -- P1 first and alone (renet submodule commit plus the pointer bump). P2 follows P1. P3, P4 and P5 run in parallel after P2. P6 runs after P2 and only while no PLAN-tested-on-bench.md writer holds .ci/rediacc_ci/drills/vm_check.py or .ci/rediacc_ci/tests/test_drills_vm_check.py, which that plan also owns. P7 follows P2. P8 runs last and alone.
 Owns: private/renet/build.sh, private/renet/CLAUDE.md, private/renet (the gitlink bump only), .ci/rediacc_ci/core/renet_flavor.py (new), .ci/rediacc_ci/core/local_common.py, .ci/rediacc_ci/core/local_common_actions_shadow_driver.py (the ensure-renet-built rows only), rdc.sh, .ci/rediacc_ci/infra/build_renet.py, .ci/rediacc_ci/drills/license.py, .ci/rediacc_ci/drills/vm_check.py (the RDC_RENET_LICENSE scrub and two comments only), packages/cli/src/services/renet/renet-execution.ts, packages/cli/src/services/renet/renet-clean-build-fs.ts, packages/cli/src/services/renet/__tests__/renet-clean-build.test.ts, .ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py (new), .ci/rediacc_ci/tests/test_core_renet_flavor.py (new), .ci/rediacc_ci/tests/test_core_local_common_renet_stamp.py, .ci/rediacc_ci/tests/test_infra_build_renet.py, .ci/rediacc_ci/tests/test_drills_license_flavor.py (new), .ci/rediacc_ci/tests/test_drills_vm_check.py, .ci/config/shards/quality-pytest.json, .ci/config/lane-durations.json, .ci/config/python-env-registry.json, docs/agent-reference/local-env.md, docs/environment-variables.md, docs/dev-environments.md, .claude/agents/licensing-ops.md, agent/plans/PLAN-per-flavor-renet-binary-paths.md
-Live-Proof: none -- the change picks a local dev build's output path and its stamp; a plain build keeps the same bytes at the same path and no release or bench artifact changes (the release build writes private/bin through `build.sh build`, read by executor_artifacts.py:389); the proof instrument is the VM tier (vm:check A2.3 plus P1/V1.1); finding #950036d0
+Live-Proof: none -- the change picks a local dev build's output path and its stamp; a plain build keeps the same bytes at the same path and no release or bench artifact changes (the release build writes private/bin through `build.sh build`, read by .ci/rediacc_ci/deploy/executor_artifacts.py:389); the proof instrument is the VM tier (vm:check A2.3 plus P1/V1.1); finding #950036d0
 First-Seen: 2026-10-28
 Worklist: #950036d0 (finding), PR-TASK 9f92c43e
 
@@ -16,35 +16,35 @@ Worklist: #950036d0 (finding), PR-TASK 9f92c43e
 `private/renet/bin/renet` is one shared, mutable binary, and its flavor flips with `RDC_RENET_LICENSE`. Every reader picks it up through PATH or a hard-coded path, so any process that builds the other flavor swaps the binary under every other process.
 
 **The two writers to one path, with two stamps.**
-- `ensure_renet_built` (`.ci/rediacc_ci/core/local_common.py:1348-1444`) runs on every `./rdc.sh` through `prepare_cli` (`local_common.py:842-844`, called from `rdc.sh:80`). It derives `license_mode` from the environment (`local_common.py:1361`), keys `.ci/cache/build-renet.stamp` (`local_common.py:1360`) on source, renet HEAD, mode and account key plus a `bin=size:mtime` fingerprint (`local_common.py:1382-1396`, `1442`). It runs `./build.sh dev` with no flavor flag (`local_common.py:1403`), so `build.sh` re-reads the inherited environment to choose the flavor.
-- `build.sh dev` (`private/renet/build.sh:787-850`) sets `-tags nolicense` unless `RDC_RENET_LICENSE=1` (`build.sh:788`, `794-796`). An explicit `--license`/`--nolicense` wins over the env (`build.sh:797-803`). Both flavors are written to `$SCRIPT_DIR/bin/renet` (`build.sh:835-839`), and both stage `bin/renet-linux-{amd64,arm64}` in the same directory (`build.sh:849`).
-- `.ci/rediacc_ci/infra/build_renet.py` is the second writer. It builds the same path (`build_renet.py:183-184`, `237-241`) under a second stamp, `bin/.renet-build-identity` (`build_renet.py:191`, `260`). Its `build_identity` lets `RDC_RENET_LICENSE=1` override an explicit `--nolicense` (`build_renet.py:97-118`), the opposite of `build.sh:797-803`. So `RDC_RENET_LICENSE=1 build_renet --nolicense` builds nolicense and stamps it `enforce`.
-- `ensure_renet_built` also cross-compiles `bin/renet-linux-<arch>` on a non-Linux host with no `-tags` (`local_common.py:1410-1440`). A plain build on macOS therefore ships ENFORCING Linux binaries, after `build.sh dev` already staged them (`build.sh:849`).
+- `ensure_renet_built` (`.ci/rediacc_ci/core/local_common.py:1348-1444`) runs on every `./rdc.sh` through `prepare_cli` (`.ci/rediacc_ci/core/local_common.py:842-844`, called from `rdc.sh:80`). It derives `license_mode` from the environment (`.ci/rediacc_ci/core/local_common.py:1361`), keys `.ci/cache/build-renet.stamp` (`.ci/rediacc_ci/core/local_common.py:1360`) on source, renet HEAD, mode and account key plus a `bin=size:mtime` fingerprint (`.ci/rediacc_ci/core/local_common.py:1382-1396`, `1442`). It runs `./build.sh dev` with no flavor flag (`.ci/rediacc_ci/core/local_common.py:1403`), so `build.sh` re-reads the inherited environment to choose the flavor.
+- `build.sh dev` (`private/renet/build.sh:787-850`) sets `-tags nolicense` unless `RDC_RENET_LICENSE=1` (`private/renet/build.sh:788`, `794-796`). An explicit `--license`/`--nolicense` wins over the env (`private/renet/build.sh:797-803`). Both flavors are written to `$SCRIPT_DIR/bin/renet` (`private/renet/build.sh:835-839`), and both stage `bin/renet-linux-{amd64,arm64}` in the same directory (`private/renet/build.sh:849`).
+- `.ci/rediacc_ci/infra/build_renet.py` is the second writer. It builds the same path (`.ci/rediacc_ci/build/build_renet.py:183-184`, `237-241`) under a second stamp, `bin/.renet-build-identity` (`.ci/rediacc_ci/build/build_renet.py:191`, `260`). Its `build_identity` lets `RDC_RENET_LICENSE=1` override an explicit `--nolicense` (`.ci/rediacc_ci/build/build_renet.py:97-118`), the opposite of `private/renet/build.sh:797-803`. So `RDC_RENET_LICENSE=1 build_renet --nolicense` builds nolicense and stamps it `enforce`.
+- `ensure_renet_built` also cross-compiles `bin/renet-linux-<arch>` on a non-Linux host with no `-tags` (`.ci/rediacc_ci/core/local_common.py:1410-1440`). A plain build on macOS therefore ships ENFORCING Linux binaries, after `build.sh dev` already staged them (`private/renet/build.sh:849`).
 
 **Who reads it.**
 - `rdc.sh:96-98` puts `private/renet/bin` first on PATH, and `rdc.sh:104-106` says the file does not read `RDC_RENET_LICENSE`.
-- The CLI's default `renetPath` is `renet` (`packages/shared/src/config/defaults.ts:359`, `packages/cli/src/services/config/config-resources.ts:165`). `resolveRenetPath` resolves it with `which` (`packages/cli/src/services/renet/renet-execution.ts:63-85`), and `acquireRemoteRenet` uses it (`renet-execution.ts:370-386`).
-- `machine setup` uploads that host binary when the remote arch matches. Otherwise it uploads `renet-linux-<arch>` from the SAME directory (`packages/cli/src/services/renet/renet-provisioner.ts:492-517`). The SEA path uploads the embedded binary (`renet-provisioner.ts:497`), which `build.sh stage_linux` always builds nolicense (`build.sh:510-517`), so it is unaffected.
-- A dirty renet tree swaps in a clean build of HEAD (`selectRenetUploadBinary`, `renet-execution.ts:217-241`; `buildRenetAtCommit`, `renet-execution.ts:252-311`).
-  - Its cache `.ci/cache/renet-head/<commit>` is keyed by commit and keyed/keyless only (`renet-clean-build-fs.ts:30-55`), never by flavor.
-  - Its build inherits `process.env`, `RDC_RENET_LICENSE` included (`renet-clean-build-fs.ts:88-104`).
-  - It reads `work/bin/<name>` (`renet-execution.ts:286-295`, `renet-clean-build-fs.ts:25-27`).
+- The CLI's default `renetPath` is `renet` (`packages/shared/src/config/defaults.ts:359`, `packages/cli/src/services/config/config-resources.ts:165`). `resolveRenetPath` resolves it with `which` (`packages/cli/src/services/renet/renet-execution.ts:63-85`), and `acquireRemoteRenet` uses it (`packages/cli/src/services/renet/renet-execution.ts:370-386`).
+- `machine setup` uploads that host binary when the remote arch matches. Otherwise it uploads `renet-linux-<arch>` from the SAME directory (`packages/cli/src/services/renet/renet-provisioner.ts:492-517`). The SEA path uploads the embedded binary (`packages/cli/src/services/renet/renet-provisioner.ts:497`), which `build.sh stage_linux` always builds nolicense (`private/renet/build.sh:510-517`), so it is unaffected.
+- A dirty renet tree swaps in a clean build of HEAD (`selectRenetUploadBinary`, `packages/cli/src/services/renet/renet-execution.ts:217-241`; `buildRenetAtCommit`, `packages/cli/src/services/renet/renet-execution.ts:252-311`).
+  - Its cache `.ci/cache/renet-head/<commit>` is keyed by commit and keyed/keyless only (`packages/cli/src/services/renet/renet-clean-build-fs.ts:30-55`), never by flavor.
+  - Its build inherits `process.env`, `RDC_RENET_LICENSE` included (`packages/cli/src/services/renet/renet-clean-build-fs.ts:88-104`).
+  - It reads `work/bin/<name>` (`packages/cli/src/services/renet/renet-execution.ts:286-295`, `packages/cli/src/services/renet/renet-clean-build-fs.ts:25-27`).
   - So a cached nolicense build at commit X is handed to an enforcing request at commit X.
 - The license drill:
   - `setup_sandbox` sets `RDC_RENET_LICENSE=1` for every CLI call (`.ci/rediacc_ci/drills/license.py:574-575`).
-  - `setup_config` runs `config init` and then `verify_renet_flavor` (`license.py:654-659`), which reads `go version -m private/renet/bin/renet` (`license.py:627-652`, path at `license.py:631`).
-  - `machine setup` then uploads whatever is on PATH (`license.py:674`). The drill allows a dirty tree (`license.py:1350`), so it uploads the working-tree binary.
+  - `setup_config` runs `config init` and then `verify_renet_flavor` (`.ci/rediacc_ci/drills/license.py:654-659`), which reads `go version -m private/renet/bin/renet` (`.ci/rediacc_ci/drills/license.py:627-652`, path at `.ci/rediacc_ci/drills/license.py:631`).
+  - `machine setup` then uploads whatever is on PATH (`.ci/rediacc_ci/drills/license.py:674`). The drill allows a dirty tree (`.ci/rediacc_ci/drills/license.py:1350`), so it uploads the working-tree binary.
   - The check and the use are two separate moments, and any plain `./rdc.sh` in between rebuilds the path as nolicense.
 - vm:check:
   - P1 reads the build identity of `bin/renet` (`.ci/rediacc_ci/drills/vm_check.py:12`, `928`, `1431-1458`).
-  - V1.1 accepts the deployed hash of `bin/renet` or `bin/renet-linux-amd64` (`vm_check.py:2150-2156`).
-  - A2 runs before P5 on the assumption that P5's plain `./rdc.sh` deploys the default build back (`vm_check.py:17`, `1361`).
+  - V1.1 accepts the deployed hash of `bin/renet` or `bin/renet-linux-amd64` (`.ci/rediacc_ci/drills/vm_check.py:2150-2156`).
+  - A2 runs before P5 on the assumption that P5's plain `./rdc.sh` deploys the default build back (`.ci/rediacc_ci/drills/vm_check.py:17`, `1361`).
   - The proof receipt binds `bin/renet` (`.ci/rediacc_ci/proof/surfaces.py:43`, `647-686`; `.ci/rediacc_ci/proof/receipt.py:10-11`, `212-219`) and records no flavor.
 - Readers that need nolicense and stay on `bin/renet`:
-  - `ops_host_check.py:88`
-  - `drills/backup.py:302-303`
-  - `converge_preflight.py:327-329` and `upgrade_converge.py:247` (copy `ctx.renet_bin`)
-  - the CI workflows, all through `build_renet --nolicense`: `ci-vm-bake.yml:127`, `ci-ops-test.yml:81`, `ci-ops-test.yml:272`, `ct-e2e-probe.yml:133`, `ct-e2e-probe.yml:232`
+  - `.ci/rediacc_ci/proxies/ops_host_check.py:88`
+  - `.ci/rediacc_ci/drills/backup.py:302-303`
+  - `.ci/rediacc_ci/drills/converge_preflight.py:327-329` and `.ci/rediacc_ci/drills/upgrade_converge.py:247` (copy `ctx.renet_bin`)
+  - the CI workflows, all through `build_renet --nolicense`: `.github/workflows/ci-vm-bake.yml:127`, `.github/workflows/ci-ops-test.yml:81`, `.github/workflows/ci-ops-test.yml:272`, `.github/workflows/ct-e2e-probe.yml:133`, `.github/workflows/ct-e2e-probe.yml:232`
 - Not readers:
   - `check:ci-renet-types` builds into its own scratch directory (`.ci/rediacc_ci/quality/renet_types.py:151-158`).
   - The proxy image smoke and the executor stage read `private/bin/renet-linux-amd64` from the release build (`.ci/rediacc_ci/quality/proxy_image_smoke.py:21`, `.ci/rediacc_ci/deploy/executor_artifacts.py:389`).
@@ -78,8 +78,8 @@ Worklist: #950036d0 (finding), PR-TASK 9f92c43e
 
 3. **One builder, one stamp per flavor.**
    - `ensure_renet_built(env, flavor=None)` resolves the flavor from `RDC_RENET_LICENSE` (the one env read, which stays in `local_common.py`). It runs `./build.sh dev <build_flag>` explicitly and stamps `stamp_path(flavor)` with the existing key (source, head, flavor, account key) plus `bin=`.
-   - The non-Linux cross-compile block (`local_common.py:1410-1440`) is deleted, because `build.sh dev` already stages both Linux arches with the right tags.
-   - `ensure_docker_installed` runs the binary of the flavor it built and removes that flavor's stamp (`local_common.py:1233-1245`).
+   - The non-Linux cross-compile block (`.ci/rediacc_ci/core/local_common.py:1410-1440`) is deleted, because `build.sh dev` already stages both Linux arches with the right tags.
+   - `ensure_docker_installed` runs the binary of the flavor it built and removes that flavor's stamp (`.ci/rediacc_ci/core/local_common.py:1233-1245`).
    - `build_renet.py` becomes a thin CI wrapper. It keeps the embed-cache verdict and the `RENET_BINARY`/`GITHUB_ENV` output, and calls `ensure_renet_built(flavor=flavor_for(...))`.
    - `bin/.renet-build-identity` and `.ci/cache/build-renet.stamp` are no longer read or written. A first run after the change rebuilds each flavor once (clean break, no migration code).
 
@@ -155,4 +155,4 @@ Worklist: #950036d0 (finding), PR-TASK 9f92c43e
 - **First run rebuilds.** The first `./rdc.sh` after the change rebuilds `bin/renet` once (new stamp location), and the first enforcing run builds `bin/enforce/` from scratch. Both are a few minutes, once.
 - **Shared build inputs are still racy.** `build.sh dev`'s prelude (`_embed_assets_or_die`, `embed_proxy`, `ebpf_generate`) still writes flavor-independent generated inputs under `pkg/`, which two concurrent builds of different flavors can both touch. That hazard predates this plan and is out of scope. If it reproduces, it is a separate finding.
 - **CI behaviour change.** `build_renet.py` now runs `ensure_renet_built`'s source fingerprint instead of the identity-only stamp. All five workflow calls pass `--nolicense`, so their `RENET_BINARY` path is unchanged. The CI run of the PR exercises them.
-- **SEA is not covered.** The SEA (`--native`) always embeds a nolicense renet (`build.sh:510-517`), so `RDC_RENET_LICENSE=1` has no effect there, before and after this plan.
+- **SEA is not covered.** The SEA (`--native`) always embeds a nolicense renet (`private/renet/build.sh:510-517`), so `RDC_RENET_LICENSE=1` has no effect there, before and after this plan.
