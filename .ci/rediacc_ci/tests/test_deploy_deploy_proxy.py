@@ -1535,7 +1535,7 @@ def test_var_is_refused_off_bench(
 def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`--var KEY=VALUE` becomes wrangler's `--var KEY:VALUE` (a colon inside the value survives, wrangler splits at the first), in order, and the toml is not touched."""
+    """`--var KEY=VALUE` becomes wrangler's `--var KEY:VALUE`, in order, the toml is not touched, and the record names the overrides and the overridden backend."""
     root = _fixture_root(tmp_path)
     config = root / "workers" / "proxy" / "wrangler.bench.toml"
     before = config.read_bytes()
@@ -1549,7 +1549,7 @@ def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
             "--var",
             "EXECUTOR_BACKEND=container",
             "--var",
-            "ACCOUNT_URL=https://bench.example:8443",
+            "EXECUTOR_CAP=2",
             "--record",
             str(record),
         ),
@@ -1558,15 +1558,63 @@ def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
     assert proc.returncode == 0, proc.stderr
     assert (
         "npx\t--no-install\twrangler\tdeploy\t--var\tEXECUTOR_BACKEND:container\t"
-        "--var\tACCOUNT_URL:https://bench.example:8443\t--config\twrangler.bench.toml\n"
+        "--var\tEXECUTOR_CAP:2\t--config\twrangler.bench.toml\n"
     ) in calls
     assert config.read_bytes() == before, "the toml must never be rewritten"
     data = json.loads(record.read_text())
-    assert data["var_overrides"] == {
-        "EXECUTOR_BACKEND": "container",
-        "ACCOUNT_URL": "https://bench.example:8443",
-    }
+    assert data["var_overrides"] == {"EXECUTOR_BACKEND": "container", "EXECUTOR_CAP": "2"}
     assert data["backend"] == "container", "the record names the overridden backend"
+
+
+def test_a_colon_in_a_var_value_survives_wranglers_first_colon_split() -> None:
+    assert port.var_args({"K": "a:b:c"}) == ["--var", "K:a:b:c"]
+
+
+@pytest.mark.parametrize(
+    ("word", "fragment"),
+    [
+        (
+            "ACCOUNT_URL=https://evil.example",
+            "vars.ACCOUNT_URL is 'https://evil.example', not 'https://bench.rediacc.com'",
+        ),
+        ("ENVIRONMENT=production", "vars.ENVIRONMENT is 'production', not 'bench'"),
+        ("EXECUTOR_CAP=99", "vars.EXECUTOR_CAP is '99', over the ceiling of 25"),
+        ("EXECUTOR_BACKEND=lambda", "vars.EXECUTOR_BACKEND is 'lambda', not one of"),
+        ("EXECUTOR_CAP=EXECUTOR_TOKEN", "the token comes from the ISSUER binding"),
+    ],
+    ids=["account-url", "environment", "cap-over-ceiling", "unknown-backend", "token-text"],
+)
+@pytest.mark.parametrize("dry_run", [False, True], ids=["deploy", "dry-run"])
+def test_a_var_the_config_refusals_reject_is_refused_before_anything_runs(
+    tmp_path: pathlib.Path, word: str, fragment: str, dry_run: bool
+) -> None:
+    """An override passes exactly the gate the toml passes: `config_refusals` judges the config as the overrides leave it, so a `--var` cannot deploy a host, environment or cap the config could not carry."""
+    root = _fixture_root(tmp_path)
+    args = ("--target", "bench", "--var", word, *(("--dry-run",) if dry_run else ()))
+    proc, calls = _run(
+        tmp_path,
+        root,
+        args,
+        drop_env=("CLOUDFLARE_API_TOKEN",),
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert calls == ""
+    assert "--var %s refused: " % word.partition("=")[0] in proc.stderr, proc.stderr
+    assert fragment in proc.stderr, proc.stderr
+
+
+def test_the_rendered_override_parses_back_to_exactly_the_overridden_vars() -> None:
+    text = (PROXY_DIR / "wrangler.bench.toml").read_text(encoding="utf-8")
+    rendered = port.with_var_overrides(text, {"EXECUTOR_CAP": '2" # "x\\'})
+    assert rendered is not None
+    got = tomllib.loads(rendered)
+    assert got["vars"]["EXECUTOR_CAP"] == '2" # "x\\'
+    assert {k: v for k, v in got.items() if k != "vars"} == {
+        k: v for k, v in tomllib.loads(text).items() if k != "vars"
+    }
+    inline = 'name = "w"\nvars = { EXECUTOR_CAP = "25" }\n'
+    assert port.with_var_overrides(inline, {"EXECUTOR_CAP": "2"}) is None
 
 
 def test_var_reaches_the_bench_dry_run_too(tmp_path: pathlib.Path) -> None:
@@ -1632,3 +1680,96 @@ def test_help_names_both_new_options() -> None:
     text = port._parser().format_help()
     assert "--rollback VERSION_ID" in text
     assert "--var KEY=VALUE" in text
+
+
+# ---- review 4a915178: the rollback's revert line, id case and failure record ----
+
+
+@pytest.mark.parametrize(("recorded", "forward"), [("v1", True), ("v2", False)])
+def test_a_rollback_consults_the_forward_only_check_for_its_revert_line(
+    tmp_path: pathlib.Path, recorded: str, forward: bool
+) -> None:
+    """The same check a deploy makes: bench's config is at v2, so a record at v1 makes the revert forward-only and a record at v2 leaves the plain command (review 4a915178.2)."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    record.write_text(json.dumps({"migration_tag": recorded}), encoding="utf-8")
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_LISTED_ID=TO_ID,
+        FAKE_READY_VERSION=TO_ID,
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 0, proc.stderr
+    written = json.loads(record.read_text())
+    if forward:
+        want = "forward-only: Durable Object class lifecycle change (v2); fix forward"
+        assert written["rollback"] == want
+        assert "Rollback: %s\n" % want in proc.stderr
+    else:
+        assert written["rollback"].startswith("cd workers/proxy && npx --no-install wrangler")
+    assert written["migration_tag"] == recorded, "a rollback undoes no migration"
+
+
+def test_the_shared_forward_only_check_reads_the_previous_release_off_bench(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _fixture_root(tmp_path)
+    worker = root / "workers" / "proxy"
+    v1 = port.config_migrations(V1)
+    monkeypatch.setattr(port, "previous_release_migrations", lambda *_a: v1)
+    monkeypatch.setattr(port, "shallow_checkout", lambda _r: False)
+    state = port.forward_only_state(
+        root, worker, "wrangler.edge-us.toml", bench=False, record_path=None, version=None
+    )
+    assert state == (True, "v2")
+    assert port.revert_line("c", PREV_ID, True, "v2").startswith("forward-only:")
+    assert port.revert_line("c", None, True, "v2").startswith("none:")
+
+
+UPPER_ID = "ABCDEF01-2345-4678-9ABC-DEF012345678"
+
+
+def test_an_uppercase_rollback_id_is_lowercased_for_wrangler_the_smoke_and_the_record(
+    tmp_path: pathlib.Path,
+) -> None:
+    """`wrangler deployments list` and `/v1/ready` print lowercase ids (review 4a915178.3)."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    low = UPPER_ID.lower()
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", UPPER_ID, "--record", str(record)),
+        FAKE_LISTED_ID=low,
+        FAKE_READY_VERSION=low,
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert calls == _rollback_calls("wrangler.bench.toml", PROXY_BENCH_HOST, low)
+    assert UPPER_ID not in calls + proc.stderr
+    assert json.loads(record.read_text())["version_id"] == low
+
+
+def test_a_rollback_the_listing_does_not_confirm_still_writes_its_record(
+    tmp_path: pathlib.Path,
+) -> None:
+    """wrangler has already moved the Worker, so the record is kept, with the failure named and no smoke (review 4a915178.4)."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_LISTED_ID=PREV_ID,
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert "curl" not in calls
+    written = json.loads(record.read_text())
+    assert written["rolled_back"] is True
+    assert written["version_id"] == TO_ID
+    assert written["listed_version_id"] == PREV_ID
+    assert written["smoke_rc"] is None
+    assert "names %s at 100%%" % PREV_ID in written["failure"]

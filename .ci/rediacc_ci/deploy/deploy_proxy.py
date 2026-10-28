@@ -19,9 +19,9 @@ THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version
 
 A DRY RUN (`--dry-run`) runs the config refusals and `wrangler deploy --dry-run --containers-rollout none` for any target, and needs no credentials, fetch or build. The `none` rollout is load-bearing: wrangler 4.152's dry run DOES build the container image (measured 2026-10-25, it failed on the unstaged `workers/proxy/stage/`), and `none` compiles the Worker without building or updating any container. The image itself is built and booted by check:ci-proxy-image-smoke.
 
-A ROLLBACK (`--rollback <version-id>`) runs `wrangler rollback <id> --message <m> --yes --config <config>` against the config the target deploys with (`--yes` because wrangler otherwise prompts twice), then the same cross-check (`wrangler deployments list` must name the id at 100%), the same smoke on that id, and the same record with `rolled_back: true`. The key is `rolled_back`, not `rollback`, because `rollback` already holds the command that reverts this run, which `deploy_record` reads; here that is a rollback to the version that was live before. The id must be a full version UUID (`wrangler deployments list` prints them), checked before any credential. `backend` is null in a rollback record, since the restored version's `[vars]` are not the config's, and `migration_tag` is carried from the existing record, since a rollback undoes no Durable Object migration. A rollback builds and fetches nothing, so `--version`, `--var`, `--dry-run` and `--smoke-only` are refused beside it: a `--dry-run` would let the release guard (`block_unasked_release`, which admits any `--dry-run` of this module) wave through a stable rollback that then published. Every target may roll back; a stable one is held by that guard's `RELEASE_ASKED` proof exactly as a stable deploy is, because the guard judges this module by its `--target`, not by its verb.
+A ROLLBACK (`--rollback <version-id>`) runs `wrangler rollback <id> --message <m> --yes --config <config>` against the config the target deploys with (`--yes` because wrangler otherwise prompts twice), then the same cross-check (`wrangler deployments list` must name the id at 100%), the same smoke on that id, and the same record with `rolled_back: true`. A cross-check that fails still writes the record, with `smoke_rc` null, the `listed_version_id` and the `failure`, and exits 1: wrangler has already moved the Worker. The id is lowercased before wrangler, the smoke and the record. The key is `rolled_back`, not `rollback`, because `rollback` already holds the command that reverts this run, which `deploy_record` reads; here that is a rollback to the version that was live before, or the forward-only notice when the same forward-only check a deploy makes (the config's `[[migrations]]` against the previous release's, bench: against its recorded tag) says wrangler would refuse it. The id must be a full version UUID (`wrangler deployments list` prints them), checked before any credential. `backend` is null in a rollback record, since the restored version's `[vars]` are not the config's, and `migration_tag` is carried from the existing record, since a rollback undoes no Durable Object migration. A rollback builds and fetches nothing, so `--version`, `--var`, `--dry-run` and `--smoke-only` are refused beside it: a `--dry-run` would let the release guard (`block_unasked_release`, which admits any `--dry-run` of this module) wave through a stable rollback that then published. Every target may roll back; a stable one is held by that guard's `RELEASE_ASKED` proof exactly as a stable deploy is, because the guard judges this module by its `--target`, not by its verb.
 
-A VARS OVERRIDE (`--var KEY=VALUE`, repeatable) is bench only, refused on any other target. KEY must already be a `[vars]` key of the config and may be given once. It reaches wrangler as `wrangler deploy --var KEY:VALUE` (wrangler's own spelling, split at the first colon), so the toml is never rewritten and the override lasts for this deploy only. The record carries `var_overrides` (empty without any), and `backend` names an overridden `EXECUTOR_BACKEND`.
+A VARS OVERRIDE (`--var KEY=VALUE`, repeatable) is bench only, refused on any other target. KEY must already be a `[vars]` key of the config and may be given once, and the config as the overrides leave it must pass the same `config_refusals` the toml does, so an override can change an executor knob (`EXECUTOR_CAP=2`) but never a host or anything else the gate pins (`ACCOUNT_URL`). It reaches wrangler as `wrangler deploy --var KEY:VALUE` (wrangler's own spelling, split at the first colon), so the toml is never rewritten and the override lasts for this deploy only. The record carries `var_overrides` (empty without any), and `backend` names an overridden `EXECUTOR_BACKEND`.
 """
 
 from __future__ import annotations
@@ -264,6 +264,52 @@ def parse_var_overrides(values: list[str], config_text: str, config: str) -> dic
     if reasons:
         raise RefusedError(*reasons)
     return out
+
+
+_TABLE_HEADER_RE = re.compile(r"\s*\[")
+
+
+def with_var_overrides(text: str, overrides: dict[str, str]) -> str | None:
+    """The config text with each overridden `[vars]` line rewritten to its new value (a TOML basic string, JSON-escaped), so `proxy_configs.config_refusals` can judge exactly what wrangler will deploy. None when the result does not parse back to the config's vars with the overrides applied (a `[vars]` table not spelled one `KEY = "value"` per line): an override that cannot be checked is not deployed."""
+    lines = text.splitlines(keepends=True)
+    in_vars = False
+    for k, line in enumerate(lines):
+        if _TABLE_HEADER_RE.match(line):
+            in_vars = line.strip() == "[vars]"
+            continue
+        if not in_vars:
+            continue
+        key = line.split("=", 1)[0].strip()
+        if key in overrides and "=" in line:
+            lines[k] = "%s = %s\n" % (key, json.dumps(overrides[key], ensure_ascii=False))
+    rendered = "".join(lines)
+    try:
+        want = {**tomllib.loads(text).get("vars", {}), **overrides}
+        got = tomllib.loads(rendered).get("vars", {})
+    except tomllib.TOMLDecodeError:
+        return None
+    return rendered if got == want else None
+
+
+def override_refusals(
+    repo_root: pathlib.Path, text: str, spec: proxy_configs.Target, overrides: dict[str, str]
+) -> list[str]:
+    """`proxy_configs.config_refusals` on the config as the overrides leave it: a `--var` passes exactly the gate the toml does, so it cannot deploy a host, binding or cap the config itself could not carry."""
+    if not overrides:
+        return []
+    rendered = with_var_overrides(text, overrides)
+    if rendered is None:
+        return [
+            "--var %s: the override cannot be checked against the config refusals "
+            '(its [vars] table is not one KEY = "value" per line)' % ", ".join(overrides)
+        ]
+    region_ids = frozenset(
+        str(r.get("id", "")).lower() for r in proxy_configs.load_regions(repo_root)
+    )
+    return [
+        "--var %s refused: %s" % (", ".join(overrides), reason)
+        for reason in proxy_configs.config_refusals(rendered, spec, region_ids)
+    ]
 
 
 def deployments_argv(config: str) -> list[str]:
@@ -759,16 +805,60 @@ def rollback_refusals(args: argparse.Namespace) -> list[str]:
     return reasons
 
 
+def forward_only_state(
+    repo_root: pathlib.Path,
+    worker_dir: pathlib.Path,
+    config: str,
+    *,
+    bench: bool,
+    record_path: pathlib.Path | None,
+    version: str | None,
+) -> tuple[bool, str | None]:
+    """(forward-only, the config's last migration tag): the config's `[[migrations]]` against the previous release's (bench: against the tag its last record kept). A deploy and a rollback ask the same question, because a revert line wrangler would refuse is not a revert line."""
+    current_migrations = config_migrations(worker_dir.joinpath(config).read_text(encoding="utf-8"))
+    current_tag = migration_tag(current_migrations)
+    if bench:
+        return (
+            bench_forward_only(current_tag, read_record_field(record_path, "migration_tag")),
+            current_tag,
+        )
+    previous_migrations = previous_release_migrations(repo_root, config, version)
+    if previous_migrations is None and shallow_checkout(repo_root):
+        log.warn(
+            "this is a shallow checkout, so the previous release's tags and [[migrations]] for %s are unreadable: the forward-only check is skipped and the rollback line assumes a plain rollback"
+            % config
+        )
+    return is_forward_only(current_migrations, previous_migrations), current_tag
+
+
+def revert_line(config: str, previous: str | None, forward_only: bool, tag: str | None) -> str:
+    """The record's `rollback`: the forward-only notice when the run crossed a migration change and there is a version to return to, else the plain `wrangler rollback` command."""
+    if forward_only and previous:
+        return forward_only_rollback(tag or "migration change")
+    return rollback_command(config, previous)
+
+
 def run_rollback(
     spec: proxy_configs.Target,
+    repo_root: pathlib.Path,
     worker_dir: pathlib.Path,
     target: str,
     region: str,
     version_id: str,
     record_path: pathlib.Path | None,
 ) -> int:
-    """`wrangler rollback <id>`, the deployments cross-check, the smoke on that id, and the record."""
+    """`wrangler rollback <id>`, the deployments cross-check, the smoke on that id, and the record. The id is lowercased first, as `wrangler deployments list` and `/v1/ready` print it, so wrangler, the smoke and the record all name one spelling."""
     config = spec.config
+    version_id = version_id.lower()
+    forward_only, current_tag = forward_only_state(
+        repo_root,
+        worker_dir,
+        config,
+        bench=target == BENCH_TARGET,
+        record_path=record_path,
+        version=None,
+    )
+    recorded_tag = read_record_field(record_path, "migration_tag")
     os.chdir(worker_dir)
     previous = deployed_version(config)
     log.step(
@@ -779,16 +869,11 @@ def run_rollback(
     if status != 0:
         return status
     listed = deployed_version(config)
-    if (listed or "").lower() != version_id.lower():
-        log.error(
-            "wrangler rollback to %s returned, but `wrangler deployments list` names %s at 100%%"
-            % (version_id, listed or "no version")
-        )
-        return 1
-    timing: dict[str, int] = {}
-    smoke_rc = smoke(spec.routes[0], version_id, timing)
-    revert = rollback_command(config, previous)
-    if record_path is not None:
+    revert = revert_line(config, previous, forward_only, current_tag)
+
+    def record(**fields: object) -> None:
+        if record_path is None:
+            return
         write_record(
             record_path,
             {
@@ -800,14 +885,25 @@ def run_rollback(
                 "version_id": version_id,
                 "previous_version_id": previous,
                 "artifacts_version": None,
-                "smoke_rc": smoke_rc,
                 "rollback": revert,
                 "backend": None,
-                "migration_tag": read_record_field(record_path, "migration_tag"),
-                "cold_start_ms": timing.get("cold_start_ms"),
+                "migration_tag": recorded_tag,
                 "var_overrides": {},
+                **fields,
             },
         )
+
+    if (listed or "").lower() != version_id:
+        failure = (
+            "wrangler rollback to %s returned, but `wrangler deployments list` names %s at 100%%"
+            % (version_id, listed or "no version")
+        )
+        log.error(failure)
+        record(smoke_rc=None, cold_start_ms=None, listed_version_id=listed, failure=failure)
+        return 1
+    timing: dict[str, int] = {}
+    smoke_rc = smoke(spec.routes[0], version_id, timing)
+    record(smoke_rc=smoke_rc, cold_start_ms=timing.get("cold_start_ms"))
     if smoke_rc != 0:
         log.error("Rollback: %s" % revert)
         return smoke_rc
@@ -843,6 +939,9 @@ def main(argv: list[str]) -> int:
         if args.var and args.smoke_only:
             raise RefusedError("--var is refused with --smoke-only: nothing is deployed")
         overrides = parse_var_overrides(args.var, text, spec.config)
+        reasons = override_refusals(repo_root, text, spec, overrides)
+        if reasons:
+            raise RefusedError(*reasons)
         if not bench and args.rollback is None and not args.dry_run and not args.smoke_only:
             if not args.version:
                 raise RefusedError(MISSING_VERSION % target)
@@ -877,7 +976,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     if args.rollback is not None:
-        return run_rollback(spec, worker_dir, target, region, args.rollback, record_path)
+        return run_rollback(spec, repo_root, worker_dir, target, region, args.rollback, record_path)
 
     if args.smoke_only:
         os.chdir(worker_dir)
@@ -911,20 +1010,9 @@ def main(argv: list[str]) -> int:
     if status != 0:
         return status
 
-    current_migrations = config_migrations(worker_dir.joinpath(config).read_text(encoding="utf-8"))
-    current_tag = migration_tag(current_migrations)
-    if bench:
-        forward_only = bench_forward_only(
-            current_tag, read_record_field(record_path, "migration_tag")
-        )
-    else:
-        previous_migrations = previous_release_migrations(repo_root, config, args.version)
-        if previous_migrations is None and shallow_checkout(repo_root):
-            log.warn(
-                "this is a shallow checkout, so the previous release's tags and [[migrations]] for %s are unreadable: the forward-only check is skipped and the rollback line assumes a plain rollback"
-                % config
-            )
-        forward_only = is_forward_only(current_migrations, previous_migrations)
+    forward_only, current_tag = forward_only_state(
+        repo_root, worker_dir, config, bench=bench, record_path=record_path, version=args.version
+    )
     os.chdir(worker_dir)
     previous = deployed_version(config)
     log.step("Deploying %s and its container image (config: %s)..." % (spec.name, config))
@@ -947,10 +1035,7 @@ def main(argv: list[str]) -> int:
 
     timing: dict[str, int] = {}
     smoke_rc = smoke(host, version_id, timing)
-    if forward_only and previous:
-        rollback = forward_only_rollback(current_tag or "migration change")
-    else:
-        rollback = rollback_command(config, previous)
+    rollback = revert_line(config, previous, forward_only, current_tag)
     if record_path is not None:
         write_record(
             record_path,
