@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 31 plans done, 441 of 575 boxes done (76%).
+Promoted: 11 of 31 plans done, 442 of 575 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -113,7 +113,7 @@ Promoted: 11 of 31 plans done, 441 of 575 boxes done (76%).
 | 27 | PLAN-per-flavor-renet-binary-paths.md | 8/8 | done |
 | 28 | PLAN-org-executor-connect-timeout-relocate.md | 8/10 | 2 open |
 | 29 | PLAN-backup-restore-path.md | 6/8 | 2 open |
-| 30 | PLAN-ssh-key-source-ranges.md | 7/9 | 2 open |
+| 30 | PLAN-ssh-key-source-ranges.md | 8/9 | 1 open |
 | 31 | PLAN-repo-docker-storage-prune.md | 6/12 | 6 open |
 <!-- queue:progress:end -->
 
