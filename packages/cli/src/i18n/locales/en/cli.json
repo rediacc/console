@@ -1752,6 +1752,7 @@
         "optionPath": "Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)",
         "optionTo": "Directory to place the restored path under (default: the machine's restores folder for the snapshot)",
         "toNeedsPath": "--to places a --path restore, so pass --path with it.",
+        "pathEmpty": "{{flag}} needs a value, but it was empty or blank.",
         "pathNeedsAt": "--path restores one file or directory from a point in time, so pass --at <time|snapshot> with it.",
         "pathConflict": "--path cannot be combined with {{flag}}: it restores files into a folder and creates no repository.",
         "pathNeedsMachine": "\"{{place}}\" is not a machine. A path restore runs on a machine: use repo@<machine> or pass -m <machine>.",

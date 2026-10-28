@@ -79,6 +79,7 @@
         "optionPath": "Restaurar apenas este arquivo ou diretório do snapshot, sem restaurar o repositório inteiro (exige --at)",
         "optionTo": "Diretório onde colocar o caminho restaurado (padrão: a pasta de restaurações da máquina para o snapshot)",
         "toNeedsPath": "--to define onde fica uma restauração com --path, então informe também --path.",
+        "pathEmpty": "{{flag}} precisa de um valor, mas ele está vazio.",
         "pathNeedsAt": "--path restaura um arquivo ou diretório de um ponto no tempo, então informe também --at <hora|snapshot>.",
         "pathConflict": "--path não pode ser combinado com {{flag}}: ele restaura arquivos em uma pasta e não cria repositório.",
         "pathNeedsMachine": "\"{{place}}\" não é uma máquina. A restauração de caminho roda em uma máquina: use repo@<máquina> ou passe -m <máquina>.",

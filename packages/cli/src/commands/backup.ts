@@ -22,7 +22,7 @@ import { resolveRemoteName } from '../utils/remote-resolve.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { assertMachineExists } from './_validate.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
-import { assertRestorePathFlags, runRestorePath } from './backup-restore-path.js';
+import { assertRestorePathFlags, isPathRoute, runRestorePath } from './backup-restore-path.js';
 import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
 import {
   parseRestoreStats,
@@ -157,7 +157,7 @@ function registerBackupRestore(backup: Command): void {
       try {
         assertRestorePathFlags(options);
         // One path out of a snapshot: no target record, network id or credential copy, so it branches before resolveRestoreTarget.
-        if (options.path && options.at) {
+        if (isPathRoute(options) && options.path !== undefined && options.at) {
           await restorePathRoute(artifactRef, { ...options, path: options.path, at: options.at });
           return;
         }
@@ -240,11 +240,13 @@ async function restorePathRoute(
     throw new ValidationError(t('commands.backup.restore.placeRequired'));
   }
   const place = await resolveRemoteName(ref.place);
-  if (place.type === 'cluster') {
+  // The source machine owns the backup stream the snapshot is chosen from. A cluster place names no machine, so `-m` supplies it; a machine place is the source itself. `-m` otherwise only moves where the restore RUNS, as it does for a whole-image restore.
+  if (place.type === 'cluster' && !options.machine) {
     throw new ValidationError(t('commands.backup.restore.pathNeedsMachine', { place: ref.place }));
   }
+  const sourceMachine = place.type === 'cluster' ? (options.machine as string) : place.name;
   const repoKey = ref.tag ? `${ref.name}:${ref.tag}` : ref.name;
-  const machineName = options.machine ?? place.name;
+  const machineName = options.machine ?? sourceMachine;
   await runRestorePath({
     repoKey,
     machineName,
@@ -259,7 +261,7 @@ async function restorePathRoute(
         await streamScopeFor({
           at,
           anyStream: options.anyStream ?? false,
-          source: { repoName: repoKey, machine: place.name },
+          source: { repoName: repoKey, machine: sourceMachine },
           debug: options.debug,
         })
       ),

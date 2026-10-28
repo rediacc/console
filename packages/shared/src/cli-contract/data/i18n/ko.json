@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "전송 후 복원된 저장소를 배포합니다",
   "commands.backup.restore.pathCompleted": "{{name}}에서 복원을 마쳤습니다",
   "commands.backup.restore.pathConflict": "--path는 {{flag}}와(과) 함께 쓸 수 없습니다. 파일을 폴더로 복원할 뿐 저장소를 만들지 않습니다.",
+  "commands.backup.restore.pathEmpty": "값이 비어 있습니다 ({{flag}}). 값을 지정하세요.",
   "commands.backup.restore.pathFailed": "{{name}}에서 경로를 복원하지 못했습니다",
   "commands.backup.restore.pathFetched": "셀 {{total}}개 중 {{selected}}개를 가져왔습니다({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path는 특정 시점의 파일이나 디렉터리를 복원하므로 --at <시간|스냅샷>도 함께 지정하세요.",

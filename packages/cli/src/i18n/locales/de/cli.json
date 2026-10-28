@@ -79,6 +79,7 @@
         "optionPath": "Nur diese Datei oder dieses Verzeichnis aus dem Snapshot wiederherstellen, ohne das ganze Repository zurückzuspielen (braucht --at)",
         "optionTo": "Verzeichnis, in dem der wiederhergestellte Pfad abgelegt wird (Standard: der Wiederherstellungsordner der Maschine für den Snapshot)",
         "toNeedsPath": "--to legt das Ziel einer --path-Wiederherstellung fest, gib daher --path mit an.",
+        "pathEmpty": "{{flag}} braucht einen Wert, er ist aber leer.",
         "pathNeedsAt": "--path stellt eine Datei oder ein Verzeichnis zu einem Zeitpunkt wieder her, gib daher --at <Zeit|Snapshot> mit an.",
         "pathConflict": "--path lässt sich nicht mit {{flag}} kombinieren: Es stellt Dateien in einen Ordner wieder her und legt kein Repository an.",
         "pathNeedsMachine": "\"{{place}}\" ist keine Maschine. Eine Pfad-Wiederherstellung läuft auf einer Maschine: nutze repo@<Maschine> oder übergib -m <Maschine>.",

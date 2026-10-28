@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Déployer le dépôt restauré après le transfert",
   "commands.backup.restore.pathCompleted": "Restauration depuis {{name}} terminée",
   "commands.backup.restore.pathConflict": "--path ne se combine pas avec {{flag}} : il restaure des fichiers dans un dossier et ne crée aucun dépôt.",
+  "commands.backup.restore.pathEmpty": "{{flag}} attend une valeur, mais elle est vide.",
   "commands.backup.restore.pathFailed": "Impossible de restaurer le chemin depuis {{name}}",
   "commands.backup.restore.pathFetched": "{{selected}} cellules récupérées sur {{total}} ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path restaure un fichier ou un dossier à un instant donné, ajoutez donc --at <heure|instantané>.",

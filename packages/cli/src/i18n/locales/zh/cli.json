@@ -79,6 +79,7 @@
         "optionPath": "只从快照中恢复这个文件或目录，不恢复整个仓库（需要 --at）",
         "optionTo": "存放已恢复路径的目录（默认为该快照在机器上的恢复文件夹）",
         "toNeedsPath": "--to 用来指定 --path 恢复的存放位置，请同时加上 --path。",
+        "pathEmpty": "{{flag}} 需要一个值，但传入的是空值。",
         "pathNeedsAt": "--path 恢复某个时间点的文件或目录，请同时加上 --at <时间|快照>。",
         "pathConflict": "--path 不能与 {{flag}} 一起使用：它只把文件恢复到文件夹中，不会创建仓库。",
         "pathNeedsMachine": "“{{place}}”不是机器。路径恢复在机器上运行：请使用 repo@<机器>，或传入 -m <机器>。",

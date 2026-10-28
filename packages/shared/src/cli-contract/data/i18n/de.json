@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Das wiederhergestellte Repository nach der Übertragung bereitstellen",
   "commands.backup.restore.pathCompleted": "Aus {{name}} wiederhergestellt",
   "commands.backup.restore.pathConflict": "--path lässt sich nicht mit {{flag}} kombinieren: Es stellt Dateien in einen Ordner wieder her und legt kein Repository an.",
+  "commands.backup.restore.pathEmpty": "{{flag}} braucht einen Wert, er ist aber leer.",
   "commands.backup.restore.pathFailed": "Der Pfad konnte nicht aus {{name}} wiederhergestellt werden",
   "commands.backup.restore.pathFetched": "{{selected}} von {{total}} Zellen abgerufen ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path stellt eine Datei oder ein Verzeichnis zu einem Zeitpunkt wieder her, gib daher --at <Zeit|Snapshot> mit an.",

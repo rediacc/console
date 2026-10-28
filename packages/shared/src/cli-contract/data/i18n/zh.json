@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "传输完成后部署恢复的仓库",
   "commands.backup.restore.pathCompleted": "已完成从 {{name}} 的恢复",
   "commands.backup.restore.pathConflict": "--path 不能与 {{flag}} 一起使用：它只把文件恢复到文件夹中，不会创建仓库。",
+  "commands.backup.restore.pathEmpty": "{{flag}} 需要一个值，但传入的是空值。",
   "commands.backup.restore.pathFailed": "无法从 {{name}} 恢复该路径",
   "commands.backup.restore.pathFetched": "已获取 {{total}} 个单元中的 {{selected}} 个（{{bytes}}）。",
   "commands.backup.restore.pathNeedsAt": "--path 恢复某个时间点的文件或目录，请同时加上 --at <时间|快照>。",

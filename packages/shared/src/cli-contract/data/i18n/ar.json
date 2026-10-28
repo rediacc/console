@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "نشر المستودع المُستعاد بعد النقل",
   "commands.backup.restore.pathCompleted": "اكتملت الاستعادة من {{name}}",
   "commands.backup.restore.pathConflict": "لا يمكن الجمع بين --path و{{flag}}: فهو يستعيد الملفات إلى مجلد ولا ينشئ مستودعاً.",
+  "commands.backup.restore.pathEmpty": "يحتاج {{flag}} إلى قيمة، لكنها فارغة.",
   "commands.backup.restore.pathFailed": "تعذّرت استعادة المسار من {{name}}",
   "commands.backup.restore.pathFetched": "تم جلب {{selected}} من أصل {{total}} خلية ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "يستعيد --path ملفاً أو مجلداً من نقطة زمنية، فأضف --at <الوقت|اللقطة> معه.",

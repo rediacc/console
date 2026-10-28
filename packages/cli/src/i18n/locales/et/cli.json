@@ -79,6 +79,7 @@
         "optionPath": "Taasta hetktõmmisest ainult see fail või kaust, taastamata kogu hoidlat (vajab --at)",
         "optionTo": "Kaust, kuhu taastatud tee paigutatakse (vaikimisi masina taastamiskaust selle hetktõmmise jaoks)",
         "toNeedsPath": "--to määrab --path taastamise sihtkoha, nii et lisa ka --path.",
+        "pathEmpty": "{{flag}} vajab väärtust, kuid see on tühi.",
         "pathNeedsAt": "--path taastab faili või kausta kindlast ajahetkest, nii et lisa ka --at <aeg|hetktõmmis>.",
         "pathConflict": "--path ei sobi kokku lipuga {{flag}}: see taastab failid kausta ega loo hoidlat.",
         "pathNeedsMachine": "\"{{place}}\" ei ole masin. Tee taastamine jookseb masinas: kasuta repo@<masin> või anna -m <masin>.",

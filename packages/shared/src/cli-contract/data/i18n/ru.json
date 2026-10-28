@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Развернуть восстановленный репозиторий после передачи",
   "commands.backup.restore.pathCompleted": "Восстановление из {{name}} завершено",
   "commands.backup.restore.pathConflict": "--path нельзя сочетать с {{flag}}: он восстанавливает файлы в папку и не создаёт репозиторий.",
+  "commands.backup.restore.pathEmpty": "Для {{flag}} нужно значение, но оно пустое.",
   "commands.backup.restore.pathFailed": "Не удалось восстановить путь из {{name}}",
   "commands.backup.restore.pathFetched": "Загружено ячеек: {{selected}} из {{total}} ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path восстанавливает файл или каталог на определённый момент, поэтому укажите и --at <время|снимок>.",

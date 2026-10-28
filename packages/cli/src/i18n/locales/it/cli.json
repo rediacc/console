@@ -79,6 +79,7 @@
         "optionPath": "Ripristina solo questo file o questa cartella dallo snapshot, senza ripristinare l'intero repository (richiede --at)",
         "optionTo": "Cartella in cui collocare il percorso ripristinato (predefinita: la cartella dei ripristini della macchina per lo snapshot)",
         "toNeedsPath": "--to indica dove va un ripristino con --path, quindi aggiungi anche --path.",
+        "pathEmpty": "{{flag}} richiede un valore, ma è vuoto.",
         "pathNeedsAt": "--path ripristina un file o una cartella a un certo momento, quindi aggiungi anche --at <ora|snapshot>.",
         "pathConflict": "--path non si combina con {{flag}}: ripristina file in una cartella e non crea alcun repository.",
         "pathNeedsMachine": "\"{{place}}\" non è una macchina. Il ripristino di un percorso gira su una macchina: usa repo@<macchina> oppure passa -m <macchina>.",

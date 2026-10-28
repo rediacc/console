@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Juuruta taastatud hoidla pärast ülekannet",
   "commands.backup.restore.pathCompleted": "Taastamine hoidlast {{name}} lõpetatud",
   "commands.backup.restore.pathConflict": "--path ei sobi kokku lipuga {{flag}}: see taastab failid kausta ega loo hoidlat.",
+  "commands.backup.restore.pathEmpty": "{{flag}} vajab väärtust, kuid see on tühi.",
   "commands.backup.restore.pathFailed": "Teed ei õnnestunud hoidlast {{name}} taastada",
   "commands.backup.restore.pathFetched": "Toodud {{selected}} lahtrit {{total}}-st ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path taastab faili või kausta kindlast ajahetkest, nii et lisa ka --at <aeg|hetktõmmis>.",

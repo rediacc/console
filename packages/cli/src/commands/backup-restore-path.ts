@@ -30,13 +30,19 @@ interface RestorePathRecord {
   bytesFetched: number;
 }
 
-/** The flags `--path` cannot be combined with: each belongs to the whole-image restore. */
+/** The flags `--path` cannot be combined with: each belongs to the whole-image restore, or is a placement the verb cannot honour (`backup_restore_path` takes the datastore from the machine's vault, not a parameter). */
 const PATH_INCOMPATIBLE_FLAGS = [
   ['as', '--as'],
   ['up', '--up'],
   ['healthWindow', '--health-window'],
   ['healthTimeout', '--health-timeout'],
+  ['datastore', '--datastore'],
 ] as const;
+
+/** True when `--path` was given at all, even as an empty string: the route is chosen on presence, never truthiness. */
+export function isPathRoute(options: { path?: string }): boolean {
+  return options.path !== undefined;
+}
 
 /** Refuses a bad flag combination before anything executes. */
 export function assertRestorePathFlags(options: {
@@ -44,14 +50,21 @@ export function assertRestorePathFlags(options: {
   path?: string;
   to?: string;
   as?: string;
+  datastore?: string;
   up?: boolean;
   healthWindow?: string;
   healthTimeout?: string;
 }): void {
-  if (options.to && !options.path) {
+  if (options.to !== undefined && options.path === undefined) {
     throw new ValidationError(t('commands.backup.restore.toNeedsPath'));
   }
-  if (!options.path) return;
+  if (options.path === undefined) return;
+  if (!options.path.trim()) {
+    throw new ValidationError(t('commands.backup.restore.pathEmpty', { flag: '--path' }));
+  }
+  if (options.to !== undefined && !options.to.trim()) {
+    throw new ValidationError(t('commands.backup.restore.pathEmpty', { flag: '--to' }));
+  }
   if (!options.at) {
     throw new ValidationError(t('commands.backup.restore.pathNeedsAt'));
   }

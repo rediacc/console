@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2003,
-    "sourceCommit": "49db3f9b794d689af380e8be588ed6c5b0276ec0"
+    "keyCount": 2004,
+    "sourceCommit": "957a67f6f88f183cd85145042d0d3e045578518c"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -58,6 +58,7 @@
     "commands.backup.restore.optionUp": "af3ea910",
     "commands.backup.restore.pathCompleted": "a42a1e13",
     "commands.backup.restore.pathConflict": "d0f89a91",
+    "commands.backup.restore.pathEmpty": "675fba3b",
     "commands.backup.restore.pathFailed": "410b45b4",
     "commands.backup.restore.pathFetched": "383ce37d",
     "commands.backup.restore.pathNeedsAt": "14545ee7",

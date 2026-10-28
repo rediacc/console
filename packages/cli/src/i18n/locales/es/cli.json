@@ -79,6 +79,7 @@
         "optionPath": "Restaurar solo este archivo o directorio de la instantánea, sin restaurar todo el repositorio (requiere --at)",
         "optionTo": "Directorio donde colocar la ruta restaurada (por defecto, la carpeta de restauraciones de la máquina para la instantánea)",
         "toNeedsPath": "--to indica dónde se coloca una restauración con --path, así que añade también --path.",
+        "pathEmpty": "{{flag}} necesita un valor, pero está vacío.",
         "pathNeedsAt": "--path restaura un archivo o directorio de un momento concreto, así que añade también --at <hora|instantánea>.",
         "pathConflict": "--path no se puede combinar con {{flag}}: restaura archivos en una carpeta y no crea ningún repositorio.",
         "pathNeedsMachine": "\"{{place}}\" no es una máquina. Una restauración de ruta se ejecuta en una máquina: usa repo@<máquina> o pasa -m <máquina>.",

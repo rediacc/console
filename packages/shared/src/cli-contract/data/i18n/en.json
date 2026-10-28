@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Deploy the restored repository after the transfer",
   "commands.backup.restore.pathCompleted": "Restored from {{name}}",
   "commands.backup.restore.pathConflict": "--path cannot be combined with {{flag}}: it restores files into a folder and creates no repository.",
+  "commands.backup.restore.pathEmpty": "{{flag}} needs a value, but it was empty or blank.",
   "commands.backup.restore.pathFailed": "Could not restore the path from {{name}}",
   "commands.backup.restore.pathFetched": "Fetched {{selected}} of {{total}} cells ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path restores one file or directory from a point in time, so pass --at <time|snapshot> with it.",

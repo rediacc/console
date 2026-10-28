@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Implementar o repositório restaurado após a transferência",
   "commands.backup.restore.pathCompleted": "Restauração de {{name}} concluída",
   "commands.backup.restore.pathConflict": "--path não pode ser combinado com {{flag}}: ele restaura arquivos em uma pasta e não cria repositório.",
+  "commands.backup.restore.pathEmpty": "{{flag}} precisa de um valor, mas ele está vazio.",
   "commands.backup.restore.pathFailed": "Não foi possível restaurar o caminho de {{name}}",
   "commands.backup.restore.pathFetched": "{{selected}} de {{total}} células obtidas ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path restaura um arquivo ou diretório de um ponto no tempo, então informe também --at <hora|snapshot>.",

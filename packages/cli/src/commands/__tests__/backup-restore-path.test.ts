@@ -172,6 +172,11 @@ describe('backup restore --path', () => {
   it.each([
     ['--path without --at', ['r@m1', '--path', '/a']],
     ['--to without --path', ['r@m1', '--at', SNAPSHOT, '--to', '/b']],
+    ['an empty --to without --path', ['r@m1', '--at', SNAPSHOT, '--to', '']],
+    [
+      '--path with --datastore (the verb takes none)',
+      ['r@m1', '--at', SNAPSHOT, '--path', '/a', '--datastore', 'd'],
+    ],
     ['--path with --up', ['r@m1', '--at', SNAPSHOT, '--path', '/a', '--up']],
     ['--path with --as', ['r@m1', '--at', SNAPSHOT, '--path', '/a', '--as', 'x']],
     [
@@ -180,6 +185,21 @@ describe('backup restore --path', () => {
     ],
   ])('refuses %s with a ValidationError and executes nothing', async (_label, argv) => {
     await expect(run(argv)).rejects.toBeInstanceOf(ValidationError);
+    expect(mockExecuteRepoFunction).not.toHaveBeenCalled();
+    expect(mockExecutorExecute).not.toHaveBeenCalled();
+    expect(mockAddRepository).not.toHaveBeenCalled();
+  });
+
+  // The message is asserted, not only the error class: with routing on truthiness an empty
+  // --path falls through to the whole-image restore, which throws its own ValidationError.
+  it.each([
+    ['an empty --path', '--path', ['r@m1', '--at', SNAPSHOT, '--path', '']],
+    ['a blank --path', '--path', ['r@m1', '--at', SNAPSHOT, '--path', '  ']],
+    ['an empty --to', '--to', ['r@m1', '--at', SNAPSHOT, '--path', '/a', '--to', '']],
+  ])('refuses %s naming the empty flag and executes nothing', async (_label, flag, argv) => {
+    await expect(run(argv)).rejects.toThrow(
+      `commands.backup.restore.pathEmpty ${JSON.stringify({ flag })}`
+    );
     expect(mockExecuteRepoFunction).not.toHaveBeenCalled();
     expect(mockExecutorExecute).not.toHaveBeenCalled();
     expect(mockAddRepository).not.toHaveBeenCalled();
@@ -236,5 +256,62 @@ describe('backup restore --path', () => {
     expect(process.exitCode).toBe(19);
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockSuccess).not.toHaveBeenCalled();
+  });
+
+  it('with a cluster place and -m, runs on -m and scopes the stream to -m', async () => {
+    mockResolveRemoteName.mockResolvedValue({ type: 'cluster', name: 'c1' });
+    mockExecutorExecute.mockResolvedValue({ success: true, exitCode: 0 });
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [{ snapshotId: SNAPSHOT, streamId: 's1', createdAt: '2026-08-14T09:00:00.000Z' }],
+    });
+    mockExecuteRepoFunction.mockImplementation((fn: string) =>
+      Promise.resolve(
+        fn === 'backup_verify'
+          ? {
+              success: true,
+              exitCode: 0,
+              stdout: JSON.stringify({ status: 'verified', snapshotId: SNAPSHOT }),
+            }
+          : { success: true, exitCode: 0, stdout: JSON.stringify(record) }
+      )
+    );
+
+    await run(['r@c1', '--at', '2026-08-14T12:00:00Z', '--path', '/a', '-m', 'm2']);
+
+    const machines = mockExecuteRepoFunction.mock.calls.map((c) => [c[0], c[2]]);
+    expect(machines).toContainEqual(['backup_verify', 'm2']);
+    expect(machines).toContainEqual(['backup_restore_path', 'm2']);
+  });
+
+  it('with a cluster place and no -m, refuses naming the fix', async () => {
+    mockResolveRemoteName.mockResolvedValue({ type: 'cluster', name: 'c1' });
+    await expect(run(['r@c1', '--at', SNAPSHOT, '--path', '/a'])).rejects.toThrow(
+      'pathNeedsMachine'
+    );
+    expect(mockExecuteRepoFunction).not.toHaveBeenCalled();
+  });
+
+  it('with a machine place and -m other, scopes the stream to the place and runs on -m', async () => {
+    mockExecutorExecute.mockResolvedValue({ success: true, exitCode: 0 });
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [{ snapshotId: SNAPSHOT, streamId: 's1', createdAt: '2026-08-14T09:00:00.000Z' }],
+    });
+    mockExecuteRepoFunction.mockImplementation((fn: string) =>
+      Promise.resolve(
+        fn === 'backup_verify'
+          ? {
+              success: true,
+              exitCode: 0,
+              stdout: JSON.stringify({ status: 'verified', snapshotId: SNAPSHOT }),
+            }
+          : { success: true, exitCode: 0, stdout: JSON.stringify(record) }
+      )
+    );
+
+    await run(['r@m1', '--at', '2026-08-14T12:00:00Z', '--path', '/a', '-m', 'm2']);
+
+    const machines = mockExecuteRepoFunction.mock.calls.map((c) => [c[0], c[2]]);
+    expect(machines).toContainEqual(['backup_verify', 'm1']);
+    expect(machines).toContainEqual(['backup_restore_path', 'm2']);
   });
 });

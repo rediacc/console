@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Aktarımdan sonra geri yüklenen depoyu dağıt",
   "commands.backup.restore.pathCompleted": "{{name}} üzerinden geri yükleme tamamlandı",
   "commands.backup.restore.pathConflict": "--path, {{flag}} ile birlikte kullanılamaz: dosyaları bir klasöre geri yükler ve depo oluşturmaz.",
+  "commands.backup.restore.pathEmpty": "{{flag}} için bir değer gerekir, ancak boş bırakılmış.",
   "commands.backup.restore.pathFailed": "Yol {{name}} deposundan geri yüklenemedi",
   "commands.backup.restore.pathFetched": "{{total}} hücrenin {{selected}} tanesi alındı ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path bir dosyayı veya dizini belirli bir zamandan geri yükler; yanına --at <zaman|anlık görüntü> de ekleyin.",

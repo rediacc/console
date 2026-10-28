@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Desplegar el repositorio restaurado tras la transferencia",
   "commands.backup.restore.pathCompleted": "Restauración desde {{name}} completada",
   "commands.backup.restore.pathConflict": "--path no se puede combinar con {{flag}}: restaura archivos en una carpeta y no crea ningún repositorio.",
+  "commands.backup.restore.pathEmpty": "{{flag}} necesita un valor, pero está vacío.",
   "commands.backup.restore.pathFailed": "No se pudo restaurar la ruta desde {{name}}",
   "commands.backup.restore.pathFetched": "Se obtuvieron {{selected}} de {{total}} celdas ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path restaura un archivo o directorio de un momento concreto, así que añade también --at <hora|instantánea>.",

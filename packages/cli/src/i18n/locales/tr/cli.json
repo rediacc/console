@@ -79,6 +79,7 @@
         "optionPath": "Tüm depoyu geri yüklemeden, anlık görüntüden yalnızca bu dosyayı veya dizini geri yükle (--at gerekir)",
         "optionTo": "Geri yüklenen yolun yerleştirileceği dizin (varsayılan: makinenin bu anlık görüntü için geri yükleme klasörü)",
         "toNeedsPath": "--to, --path ile yapılan geri yüklemenin hedefini belirler; yanına --path de ekleyin.",
+        "pathEmpty": "{{flag}} için bir değer gerekir, ancak boş bırakılmış.",
         "pathNeedsAt": "--path bir dosyayı veya dizini belirli bir zamandan geri yükler; yanına --at <zaman|anlık görüntü> de ekleyin.",
         "pathConflict": "--path, {{flag}} ile birlikte kullanılamaz: dosyaları bir klasöre geri yükler ve depo oluşturmaz.",
         "pathNeedsMachine": "\"{{place}}\" bir makine değil. Yol geri yüklemesi bir makinede çalışır: repo@<makine> kullanın veya -m <makine> verin.",

@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "Distribuisci il repository ripristinato dopo il trasferimento",
   "commands.backup.restore.pathCompleted": "Ripristino da {{name}} completato",
   "commands.backup.restore.pathConflict": "--path non si combina con {{flag}}: ripristina file in una cartella e non crea alcun repository.",
+  "commands.backup.restore.pathEmpty": "{{flag}} richiede un valore, ma è vuoto.",
   "commands.backup.restore.pathFailed": "Impossibile ripristinare il percorso da {{name}}",
   "commands.backup.restore.pathFetched": "Recuperate {{selected}} celle su {{total}} ({{bytes}}).",
   "commands.backup.restore.pathNeedsAt": "--path ripristina un file o una cartella a un certo momento, quindi aggiungi anche --at <ora|snapshot>.",

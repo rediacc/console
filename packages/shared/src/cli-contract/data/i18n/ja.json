@@ -50,6 +50,7 @@
   "commands.backup.restore.optionUp": "転送後に復元したリポジトリをデプロイする",
   "commands.backup.restore.pathCompleted": "{{name}} からの復元が完了しました",
   "commands.backup.restore.pathConflict": "--path は {{flag}} と併用できません。ファイルをフォルダーに復元するだけで、リポジトリは作成しません。",
+  "commands.backup.restore.pathEmpty": "{{flag}} には値が必要ですが、空になっています。",
   "commands.backup.restore.pathFailed": "{{name}} からパスを復元できませんでした",
   "commands.backup.restore.pathFetched": "{{total}} セルのうち {{selected}} セルを取得しました（{{bytes}}）。",
   "commands.backup.restore.pathNeedsAt": "--path は特定時点のファイルまたはディレクトリを復元します。--at <時刻|スナップショット> も一緒に指定してください。",
