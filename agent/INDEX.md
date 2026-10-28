@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 45 | 0 | 6 | 6774 |
-| `agent/plans/PLAN-backup-program.md` | approved | 490 | 69 | 127 | 108570 |
+| `agent/plans/PLAN-backup-program.md` | approved | 495 | 64 | 132 | 109784 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 196 | 2 | 6 | 34282 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -542,7 +542,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 50 | 0 | 2 | 6321 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 96 | 0 | 3 | 10758 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 40 | 0 | 4 | 8308 |
-| `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 113 | 5 | 7 | 28558 |
+| `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 114 | 5 | 7 | 30253 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
@@ -573,7 +573,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 129 | 0 | 6 | 20106 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 199 | 4 | 15 | 50012 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
-| `agent/plans/PLAN-tested-on-bench.md` | approved | 310 | 12 | 8 | 42424 |
+| `agent/plans/PLAN-tested-on-bench.md` | approved | 312 | 10 | 10 | 42902 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |

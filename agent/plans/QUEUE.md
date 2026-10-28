@@ -80,12 +80,12 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 12 of 31 plans done, 445 of 575 boxes done (77%).
+Promoted: 12 of 31 plans done, 452 of 575 boxes done (78%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 16/16 | done |
-| 2 | PLAN-backup-program.md | 127/196 | 69 open |
+| 2 | PLAN-backup-program.md | 132/196 | 64 open |
 | 3 | PLAN-cloudflare-proxy.md | 25/29 | 4 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 6/6 | done |
 | 5 | PLAN-telemetry-export.md | 15/19 | 4 open |
@@ -109,7 +109,7 @@ Promoted: 12 of 31 plans done, 445 of 575 boxes done (77%).
 | 23 | PLAN-executor-durable-object-policy.md | 12/21 | 9 open |
 | 24 | PLAN-local-release.md | 14/16 | 2 open |
 | 25 | PLAN-config-server-key.md | 6/6 | done |
-| 26 | PLAN-tested-on-bench.md | 8/20 | 12 open |
+| 26 | PLAN-tested-on-bench.md | 10/20 | 10 open |
 | 27 | PLAN-per-flavor-renet-binary-paths.md | 8/8 | done |
 | 28 | PLAN-org-executor-connect-timeout-relocate.md | 8/10 | 2 open |
 | 29 | PLAN-backup-restore-path.md | 6/8 | 2 open |

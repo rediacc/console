@@ -245,8 +245,9 @@ Worklist: pending -- filed at promotion
   - A "Live proof" section in `docs/agent-reference/plan-records.md`: the header, the LP box form, the verb, the envelope and live body, the ladder and the LP rules.
   - A "Proof tiers" paragraph in `docs/agent-reference/ci-gates.md`: one map, the VM and live tiers, and which judge reads which.
   - Accept: `npm run check:ci-plan-citations` rc=0 and the docs lint lane rc=0.
-- [ ] V10 [writer] Ledger integrity (review findings 2a2941c4.1 and 2a2941c4.5). CI judges `agent/ledgers/live-proof.jsonl` with no secrets and no network, and LP5 checks only that a row's `id` hashes to its content, so a hand-written row with a recomputed id and `verdict: PASS` would pass the gate. A pre-edit and pre-bash guard refuses any write to that ledger except the append `python3 -m rediacc_ci.ops.live_proof record --write` makes, and the recorder stamps each row with the run's log digest that `verify` re-reads from `.ci/cache/live-proof/` when present. An `LP-<target>` or `LP-none` box tick names the V6 gate's pass on the same tree.
+- [x] V10 [writer] Ledger integrity (review findings 2a2941c4.1 and 2a2941c4.5). CI judges `agent/ledgers/live-proof.jsonl` with no secrets and no network, and LP5 checks only that a row's `id` hashes to its content, so a hand-written row with a recomputed id and `verdict: PASS` would pass the gate. A pre-edit and pre-bash guard refuses any write to that ledger except the append `python3 -m rediacc_ci.ops.live_proof record --write` makes, and the recorder stamps each row with the run's log digest that `verify` re-reads from `.ci/cache/live-proof/` when present. An `LP-<target>` or `LP-none` box tick names the V6 gate's pass on the same tree.
   - Accept: the guard's `test-*.py` rc=0 with a planted hand-appended row refused and a recorder append allowed; `pytest -q .ci/rediacc_ci/tests/test_ops_live_proof.py` rc=0 with a row whose log digest mismatches refused by `verify`.
+    (ticked) 2026-10-28T14:59:29Z by d778be9d: V10: ledger guards in commit 22b7a40cd; test-block_live_proof_ledger_write.py rc=0 (FAILURES 0), the shell-write guard test rc=0, test_ops_live_proof.py 37 passed including the log-digest mismatch refused by verify
 - [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface (proof tooling is excluded by item 2). V8 exercises the tooling end to end on both targets.
   - Accept: `npm run ci-plan-live-proof` rc=0 on the commit that ticks V8.
 
@@ -272,13 +273,14 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
 - [x] V3 [writer] Bench version capture. `deploy_bench` parses `Current Version ID:` from the wrangler deploy output and writes `.ci/cache/live-deploys/bench.json` with `{version_id, head, tree, dirty, submodules, at}` and no secret values. An unparsed version id is a named DeployError after the deploy, never a silent skip.
   - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_deploy_bench.py -q` rc=0, with a test that fails on today's code (no cache file written).
     (ticked) 2026-10-28T05:24:30Z by d778be9d: 2026-10-28 by d778be9d: superseded first-draft box, closed with revised V4 (sig 9262ee30) as the plan's first-draft note orders; commit:fc6c2cebb
-- [ ] V4 [writer] The recorder `rediacc_ci.ops.live_proof`: `record`, `verify`, and `record --retro`; check-registry argv expansion; live version confirmation for bench and edge; hostinger `renet version` via `./rdc.sh`; and the secret refusal. Dry run is the default and `--write` appends.
+- [x] V4 [writer] The recorder `rediacc_ci.ops.live_proof`: `record`, `verify`, and `record --retro`; check-registry argv expansion; live version confirmation for bench and edge; hostinger `renet version` via `./rdc.sh`; and the secret refusal. Dry run is the default and `--write` appends.
   - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_live_proof.py -q` rc=0, with recording fakes for wrangler, curl and rdc. Cases:
     - a dirty tree refuses
     - a moved live version refuses
     - a planted secret in the tail refuses
     - `true` as a check refuses
     - the row id round-trips
+    (ticked) 2026-10-28T14:59:04Z by d778be9d: superseded first-draft V4, closed with revised V5 (c5b50ba5, commit b8f513f40); test_ops_live_proof.py 37 passed: dirty tree, moved bench version, planted secret refuse
 - [ ] V5 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py` (LP1 to LP7, the advisory lines, the gate metadata block with `lane: quality-branch` and `selftest: true`), its `package.json` script `check:ci-plan-live-proof`, and a lane-durations entry. Set `baseline_at` to the landing date.
   - Accept: `npm run ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent). `npm run ci-plan-live-proof` rc=0 on the landing tree, where it reports LP1 findings for the V6 set as expected until V6 lands in the same PR. `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
 - [ ] V6 [lead] Migration. Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan listed in Design item 7, then regenerate `plan-boxes.json`. Any `none` gets the waiver Question 2 settles. Retro rows only as Question 3 allows.

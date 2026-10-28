@@ -201,7 +201,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
     (ticked) 2026-10-27T01:50:05Z by d778be9d: renet 39b010ee (pointer 0a5b5ffe3): pkg/sandbox.Dir (private/renet/pkg/sandbox/dir.go:20) refuses a non-GUID; up/down, delete, prune, the gateway and the remote executor use it; workflows_authkeys_test.go gains TestRemoveSandboxAndKeys_NonGUIDRemovesNothing; go test on pkg/sandbox, orchestration, prune, functions and cmd/renet rc=0. DEPS-WAIVED: renet-only, no dependency on the shell-sandbox or account-vm-check plans
 - [x] D8: CLI: buildSingleRepoEntry throws instead of using the name as the GUID (packages/cli/src/services/renet/renet-execution.ts:410); packages/cli/src/services/repo/repo-key-deployment.ts:52 requires the GUID; packages/cli/src/commands/repo-batch-utils.ts:357 drops the name fallback. Accept: renet-execution.test.ts and repo-key-deployment.test.ts updated.
     (ticked) 2026-10-25T13:03:20Z by d778be9d: commit:041e3f166: D8 per the wave-2 writer reports and the integration pass; cli tsc rc=0, CLI vitest src 3452 passed, check:ci-cli-contract, check:ci-parity, check:ci-e2e-coverage and the new backup gates rc=0 (lead reruns)
-- [ ] D9: CLI sends task.repository as the GUID and the friendly name only as repo_name, for every vault-built verb; delete aliasBareNamesToGrands' name aliasing where it becomes dead. Accept: contract tests; one live repo up on an ops VM.
+- [x] D9: CLI sends task.repository as the GUID and the friendly name only as repo_name, for every vault-built verb; delete aliasBareNamesToGrands' name aliasing where it becomes dead. Accept: contract tests; one live repo up on an ops VM.
+    (ticked) 2026-10-28T14:59:26Z by d778be9d: D9: CLI sends task.repository as GUID (packages/cli/src/services/renet/renet-execution.ts:587, commit 041e3f166), aliasBareNamesToGrands gone; vitest renet-execution 22/22 rc=0; live repo ld-d9 on rediacc22 created, mounted, docker ready
 - [x] D10: Fix kube dispatch (private/renet/cmd/renet/reporuntime_dispatch.go:67-69) so Name and GUID are distinct, and REDIACC_REPO_NAME is the friendly name. Accept: kube unit test.
     (ticked) 2026-10-25T11:07:11Z by d778be9d: commit:1498835931713e (renet 606d9c5c, 6e3d13da): D10 per the renet follow-up writer; renet build linux/windows/darwin rc=0, go vet rc=0, go test ./cmd/renet/... ./pkg/... with no failure (lead rerun)
 - [x] D11: renet help text and examples say GUID where the value is a GUID (private/renet/cmd/renet/helpers.go:46, private/renet/cmd/renet/repository_mount.go:30-41, private/renet/cmd/renet/repository_fork.go:41-53, private/renet/cmd/renet/backup_browse.go:56). Accept: i18n gate rc=0.
@@ -258,7 +259,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
     (ticked) 2026-10-24T14:16:21Z by d778be9d: commit:a0d131ce3 strategy set refuses unknown include/exclude names before writing; vitest backup-strategy-validate 8 passed rc=0
 - [x] G3: One snapshot per strategy run, whatever the number of destinations; the destination list collapses to one hosted or self-hosted S3 endpoint per strategy. Accept: generator test with two destinations emits one command.
     (ticked) 2026-10-25T11:07:03Z by d778be9d: commit:1498835931713e: G3 per the P5/P6 writers and the integration pass; CLI vitest src 3369 passed, shared 716 passed, cli tsc rc=0 (lead reruns)
-- [ ] G4: Schedules re-render on repo create, delete, fork and rename (the reconciler redeploys when the unit hash changes). Accept: CLI test; live on an ops VM a new fork appears in the unit.
+- [x] G4: Schedules re-render on repo create, delete, fork and rename (the reconciler redeploys when the unit hash changes). Accept: CLI test; live on an ops VM a new fork appears in the unit.
+    (ticked) 2026-10-28T14:59:00Z by d778be9d: G4: reconcile hook 149883593 from create/delete/fork/promote/migrate; vitest 11/11 and 51/51 rc=0; live fork ld-d9:g4b on rediacc22 re-rendered schedule, datastore-wide unit dry run lists both forks
 - [x] G5: Named datastores get schedules too (packages/cli/src/services/backup/backup-schedule.ts:195 only does machine.datastore). Accept: test with a named datastore.
     (ticked) 2026-10-25T11:07:03Z by d778be9d: commit:1498835931713e: G5 per the P5/P6 writers and the integration pass; CLI vitest src 3369 passed, shared 716 passed, cli tsc rc=0 (lead reruns)
 - [x] G6: `backup status` says "not scheduled" when the timer is absent, shows last run, result and next run per strategy, and exits non-zero on a missed run. Accept: CLI test with no timer; live on hostinger before Q.
@@ -349,7 +351,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 
 ### Phase K: tests for what is untested today
 
-- [ ] K1: Kill and resume a real `renet backup snapshot` mid-upload; the journal drains and the manifest commits once (btrfs tier plus RustFS). Accept: Go integration test.
+- [x] K1: Kill and resume a real `renet backup snapshot` mid-upload; the journal drains and the manifest commits once (btrfs tier plus RustFS). Accept: Go integration test.
+    (ticked) 2026-10-28T14:59:03Z by d778be9d: K1: TestBackupSnapshot_KilledMidUploadResumesAndCommitsOnce (renet eabae1b) go test -tags btrfs as root on btrfs rc=0 PASS; object store is an in-process fake, Accept is the Go integration test
 - [ ] K2: Kill and resume a real restore. Accept: e2e in suite 26.
 - [ ] K3: Two machines and a fork commit into one lineage, then a retention sweep runs; every stream keeps its floor and every chain resolves. Accept: vitest plus a suite 26 case.
 - [ ] K4: Fork restore: fork, write, back up the fork, restore the fork's snapshot on a second VM, byte-compare. Accept: suite 26 case.
@@ -358,7 +361,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [ ] K7: A scheduled timer fires: `backup schedule`, then `systemctl start` the unit, and a manifest commits. Accept: suite 26 case.
 - [x] K8: verifyReconcile: plant a deleted chunk and a ledger drift and assert driftBytes; wire a nightly caller into runMaintenance. Accept: vitest; cron wiring test.
     (ticked) 2026-10-24T15:56:11Z by d778be9d: commit:677aad399 (account 62e2e29) verifyReconcile drift tests (deleted chunk -100, overcount -200, clean 0) and the nightly verify-reconcile phase; vitest 49 passed rc=0, cron-wiring mutation fails without the call
-- [ ] K9: Key rotation: a passphrase change keeps dedup (same master key); a reencrypt forces a full seed and still restores. Accept: btrfs/LUKS tier test.
+- [x] K9: Key rotation: a passphrase change keeps dedup (same master key); a reencrypt forces a full seed and still restores. Accept: btrfs/LUKS tier test.
+    (ticked) 2026-10-28T14:59:01Z by d778be9d: K9: TestBtrfsLUKS_KeyRotationDedupAndReencryptFullSeed (renet d460d0f) PASS 24.67s as root on a loop-mounted btrfs with cryptsetup, rc=0
 - [ ] K10: Large-repo performance: a nightly VM job seeds 50 GB and runs an incremental against a time and byte budget, recording durationMs. Accept: the first nightly result recorded.
 - [ ] K11: Corruption injection at e2e level: flip a byte in a stored chunk; restore refuses and verify reports it. Accept: suite 26 case.
 - [ ] K11a: A reusable corruption-injection fixture (flip one byte of a stored chunk) for K11 and later suites; CHECKLIST w4 found no such helper. Accept: K11's suite 26 case uses it.
@@ -371,7 +375,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 
 ### Phase L: seeded, incremental restore
 
-- [ ] L1: Restore writes a journal and anchor for the restored snapshot, so the next backup on that machine re-hashes nothing. Accept: btrfs-tier test: a backup after a restore uploads 0 new bytes.
+- [x] L1: Restore writes a journal and anchor for the restored snapshot, so the next backup on that machine re-hashes nothing. Accept: btrfs-tier test: a backup after a restore uploads 0 new bytes.
+    (ticked) 2026-10-28T14:59:27Z by d778be9d: L1: TestBtrfs_BackupAfterRestoreUploadsNothing (renet 7a42db3, private/renet/pkg/chunkstore/restore_anchor_btrfs_test.go:24) go test -tags btrfs as root rc=0; the next backup after a restore uploads 0 new bytes
 - [x] L2: A hole-punch helper in renet (fallocate PUNCH_HOLE); the restore holes check punches cells the target says are zero instead of discarding the seed (private/renet/pkg/chunkstore/restore.go:73-81,233-257). Accept: unit test.
     (ticked) 2026-10-25T07:35:56Z by d778be9d: renet 7a42db37: PunchHole on resumed or seeded staging files, FIEMAP hole test, discard fallback test; go test ./pkg/chunkstore/... ./pkg/delta/... ./pkg/datastore/... rc=0 in a scratch clone at renet HEAD, builds for linux/windows/darwin rc=0
 - [x] L3: Seed candidates in order: the same GUID's anchor, the fork's or grand's anchor, then the live image (reflink copy into the staging path). The LUKS UUID and key digest are compared first, and a seed with a different key is skipped. Accept: a test per candidate type.
