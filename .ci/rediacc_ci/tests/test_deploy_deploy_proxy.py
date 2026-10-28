@@ -990,6 +990,18 @@ def test_the_previous_release_tag_is_older_than_the_release_not_just_different(
     assert port.previous_release_tag(tmp_path / "nowhere", "2.0.0") is None
 
 
+def test_an_untagged_release_older_than_the_newest_tag_compares_against_its_own_line(
+    tmp_path: pathlib.Path,
+) -> None:
+    """c7233ce0.2: an untagged hotfix 1.2.5 with v1.3.0 present is older than v1.3.0, so its previous release is v1.2.0."""
+    repo = _tagged_repo(tmp_path, ("v1.2.0", "v1.3.0"))
+    assert port.previous_release_tag(repo, "1.2.5") == "v1.2.0"
+    assert port.previous_release_tag(repo, "1.3.1") == "v1.3.0"
+    assert port.previous_release_tag(repo, "1.1.9") is None
+    assert port.previous_release_tag(repo, "not-a-version") == "v1.3.0"
+    assert port.previous_release_tag(repo, None) == "v1.3.0"
+
+
 def test_a_shallow_checkout_is_named_not_silently_treated_as_a_first_release(
     tmp_path: pathlib.Path,
 ) -> None:

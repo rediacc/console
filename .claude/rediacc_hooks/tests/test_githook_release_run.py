@@ -689,7 +689,9 @@ def test_invocation_refusal_resolves_a_symlinked_ci(tmp_path: pathlib.Path) -> N
     assert "first PYTHONPATH entry" in got
 
 
-def test_a_procfs_override_that_is_not_root_locked_is_ignored(tmp_path: pathlib.Path) -> None:
+def test_a_procfs_override_that_is_not_root_locked_is_ignored(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The seam moves the procfs root only to a root-owned, write-closed directory: a caller-chosen one would let it forge the process table the admission trusts, so it is ignored and the default answers. A non-absolute and an empty value are ignored the same way."""
     default = RR._procfs_root({})
     fake = tmp_path / "fakeproc"
@@ -697,12 +699,10 @@ def test_a_procfs_override_that_is_not_root_locked_is_ignored(tmp_path: pathlib.
     assert RR._procfs_root({RR.PROCFS_ENV: str(fake)}) == default
     assert RR._procfs_root({RR.PROCFS_ENV: "relative/procfs"}) == default
     assert RR._procfs_root({RR.PROCFS_ENV: ""}) == default
-    # the other direction: a root-locked directory is honoured. The host's /usr is not assumed
-    # root-owned and closed, so the directory is chosen from the same predicate the seam uses.
-    locked = next(
-        (d for d in ("/usr", "/etc", "/bin") if os.path.isdir(d) and not RR._locked_refusal(d)),
-        None,
-    )
-    if locked is None:
-        pytest.skip("no root-locked directory on this host")
-    assert RR._procfs_root({RR.PROCFS_ENV: locked + "/"}) == locked.rstrip("/")
+    # the other direction: a directory the lock check accepts is honoured. The check is stubbed for
+    # one directory, so this runs on every host (no dependence on /usr being root-owned and closed)
+    # and does not reuse the predicate to choose its own input.
+    real = RR._locked_refusal
+    monkeypatch.setattr(RR, "_locked_refusal", lambda p: "" if p == str(fake) else real(p))
+    assert RR._procfs_root({RR.PROCFS_ENV: str(fake) + "/"}) == str(fake)
+    assert RR._procfs_root({RR.PROCFS_ENV: str(tmp_path)}) == default

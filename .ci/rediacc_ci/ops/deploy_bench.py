@@ -36,6 +36,7 @@ import shutil
 import string
 import subprocess
 import sys
+import threading
 import time
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
@@ -215,6 +216,24 @@ def secrets_payload() -> dict[str, str]:
     }
 
 
+def _feed_stdin(popen: subprocess.Popen, stdin: str | None) -> threading.Thread | None:
+    """Write `stdin` to the child on a thread, so the output is read meanwhile (a child that fills its stdout before reading its input cannot deadlock) and a child that exits without reading it (BrokenPipeError) leaves its own output and exit status to say why."""
+    if stdin is None or popen.stdin is None:
+        return None
+    pipe = popen.stdin
+
+    def feed() -> None:
+        try:
+            pipe.write(stdin)
+            pipe.close()
+        except (BrokenPipeError, OSError):
+            pass
+
+    thread = threading.Thread(target=feed, daemon=True)
+    thread.start()
+    return thread
+
+
 def _run(
     argv: list[str],
     cwd,
@@ -235,13 +254,13 @@ def _run(
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         ) as popen:
-            if stdin is not None and popen.stdin is not None:
-                popen.stdin.write(stdin)
-                popen.stdin.close()
+            feeder = _feed_stdin(popen, stdin)
             for line in popen.stdout or ():
                 sys.stdout.write(line)
                 sys.stdout.flush()
                 lines.append(line)
+            if feeder is not None:
+                feeder.join()
         if popen.returncode != 0:
             raise DeployError("%s failed (exit %d)" % (what, popen.returncode))
         return "".join(lines)

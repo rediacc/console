@@ -155,6 +155,8 @@ interface HarnessOptions {
   sameIdForEveryOrg?: boolean;
   /** Storage keys whose `put` rejects. */
   failPut?: string[];
+  /** Storage keys whose `delete` rejects. */
+  failDelete?: string[];
 }
 
 function harness(options: HarnessOptions = {}): Harness {
@@ -179,7 +181,10 @@ function harness(options: HarnessOptions = {}): Harness {
         storage.set(key, structuredClone(value));
         return Promise.resolve();
       },
-      delete: (key: string) => Promise.resolve(storage.delete(key)),
+      delete: (key: string) => {
+        if (options.failDelete?.includes(key)) return Promise.reject(new Error('delete failed'));
+        return Promise.resolve(storage.delete(key));
+      },
       setAlarm: (at: number | Date) => {
         alarm = typeof at === 'number' ? at : at.getTime();
         return Promise.resolve();
@@ -439,6 +444,23 @@ describe('review 5acbb97d', () => {
     expect(h.container.destroys).toEqual(['image-drift']);
     expect(h.container.running).toBe(true);
     expect((h.storage.get('executor') as ExecutorRecord).image).toBe(IMAGE_V2);
+  });
+
+  it('2ec734de.1: a restart whose image vanishes after the lease releases that lease', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 'light');
+    h.container.images = { executor: IMAGE_V2 };
+    h.capacity.release.mockClear();
+    h.capacity.acquire.mockImplementationOnce(() => {
+      h.container.images = {};
+      return Promise.resolve({ ok: true });
+    });
+    expect(await h.executor.pin(ORG, 'light')).toMatchObject({
+      code: 'EXECUTOR_START_FAILED',
+    });
+    expect(h.capacity.release).toHaveBeenCalledTimes(1);
+    expect(h.capacity.release).toHaveBeenCalledWith(ORG);
   });
 
   it('5acbb97d.3: a monitor() rejection during readiness releases the lease exactly once', async () => {
@@ -772,6 +794,23 @@ describe('exits', () => {
     expect(h.storage.has('oomAt')).toBe(true);
     expect(h.storage.has('executor')).toBe(false);
     expect(h.capacity.release).toHaveBeenCalledWith(ORG);
+  });
+
+  it('2ec734de.2: a failed record delete on exit still releases the slot, and a restart clears the stale record', async () => {
+    const h = harness({ failDelete: ['executor'] });
+    await h.ready;
+    await h.executor.pin(ORG, 'light');
+    h.container.exit();
+    await flush();
+    expect(h.capacity.release).toHaveBeenCalledWith(ORG);
+    expect(h.storage.has('executor')).toBe(true);
+    // The Durable Object restarts over the same storage; the container is dead, so the record is not recovered as running.
+    const restarted = harness({ storage: h.storage, container: h.container });
+    await restarted.ready;
+    expect(h.storage.has('executor')).toBe(false);
+    expect(h.container.destroys).toHaveLength(0);
+    expect(await restarted.executor.pin(ORG, 'light')).toMatchObject({ ok: true });
+    expect(h.container.starts).toHaveLength(2);
   });
 
   it('4ab1a051.5: a clean exit after a heavy OOM keeps oomHeavyAt for its window', async () => {

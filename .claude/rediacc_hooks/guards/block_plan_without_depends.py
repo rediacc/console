@@ -50,7 +50,7 @@ UNEXAMINED = (
     "edit passed UNEXAMINED. check:ci-plan-deps is the backstop."
 )
 
-HEADER = """BLOCKED: %s would be a live plan without a valid header (`Depends-On:` plus the Priority/Concurrency/Owns lines, and `Live-Proof:` when Owns hit a deployable surface).
+HEADER = """BLOCKED: %s would be a live plan without a valid header (`Depends-On:` or a `no-dep` reason, plus the Priority/Concurrency/Owns lines, and `Live-Proof:` when Owns hit a deployable surface).
 
 A plan does not start before the plans it needs are finished, so every live plan
 says what it needs, or says why it needs nothing:
@@ -388,10 +388,17 @@ def _live_findings(deps, conc, header, before_h, tree, rel, ev):
     was = before_h.get(deps.LIVE_PROOF) if before_h is not None else None
     now = header.get(deps.LIVE_PROOF)
     changed = now is not None and (was is None or was.value != now.value)
+    # An Owns edit moves the surfaces the declared targets must cover, so it re-runs LP2 like a Live-Proof edit.
+    was_owns = before_h.owns.globs if before_h is not None and before_h.owns is not None else None
+    owns_changed = owns is not None and was_owns is not None and list(owns.globs) != list(was_owns)
     hits = {}
     surface_live = {}
     declared = proof is not None and not proof.none
-    if owns is not None and owns.globs and ((is_new and now is None) or (declared and changed)):
+    if (
+        owns is not None
+        and owns.globs
+        and ((is_new and now is None) or (declared and (changed or owns_changed)))
+    ):
         try:
             hits = _owned_surfaces(conc, owns)
             surface_live = {
@@ -414,7 +421,7 @@ def _live_findings(deps, conc, header, before_h, tree, rel, ev):
     if not is_new:
         had = set(deps.live_proof_findings(before_h, False))
         out = [f for f in out if f not in had]
-    if declared and changed and hits:
+    if declared and (changed or owns_changed) and hits:
         # LP2 (PLAN-tested-on-bench item 2): every touched surface needs a declared target its
         # `live` list admits, and every declared target must be admissible for a touched surface.
         for name in sorted(hits):

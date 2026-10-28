@@ -409,6 +409,33 @@ def test_captured_output_is_echoed_as_it_arrives_and_returned(capsys, tmp_path):
         deploy_bench._run(["python3", "-c", "raise SystemExit(3)"], tmp_path, "x", capture=True)
 
 
+def test_captured_run_whose_child_exits_without_reading_stdin_reports_its_own_failure(
+    capsys, tmp_path
+):
+    """c7233ce0.1: a child that exits before consuming stdin raises DeployError (not BrokenPipeError) and its output is still echoed."""
+    script = "import sys; print('wrangler: bad token'); sys.exit(4)"
+    with pytest.raises(deploy_bench.DeployError, match="exit 4"):
+        deploy_bench._run(
+            ["python3", "-c", script],
+            tmp_path,
+            "secret put",
+            stdin="x" * (8 * 1024 * 1024),
+            capture=True,
+        )
+    assert "wrangler: bad token" in capsys.readouterr().out
+
+
+def test_captured_run_feeds_stdin_to_a_child_that_reads_it(tmp_path):
+    out = deploy_bench._run(
+        ["python3", "-c", "import sys; print(sys.stdin.read().upper())"],
+        tmp_path,
+        "echo",
+        stdin="abc",
+        capture=True,
+    )
+    assert out.strip() == "ABC"
+
+
 def _bench_env(monkeypatch, **overrides):
     values = {
         "ACCOUNT_ED25519_PRIVATE_KEY": "e1",

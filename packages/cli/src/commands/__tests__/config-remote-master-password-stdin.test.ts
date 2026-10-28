@@ -41,6 +41,22 @@ async function run(args: string[]): Promise<void> {
   await config.parseAsync(['node', 'rdc', 'remote', 'enable', ...args], { from: 'node' });
 }
 
+const takesPasswordValue = (o: { long?: string; required: boolean; optional: boolean }) =>
+  /password/.test(o.long ?? '') && (o.required || o.optional);
+
+describe('password option predicate', () => {
+  it('catches required and optional value forms but not a bare flag', () => {
+    const cmd = new Command('x')
+      .option('--a-password <v>')
+      .option('--b-password [v]')
+      .option('--c-password-stdin');
+    expect(cmd.options.filter(takesPasswordValue).map((o) => o.long)).toEqual([
+      '--a-password',
+      '--b-password',
+    ]);
+  });
+});
+
 describe('config remote enable --master-password-stdin', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -72,7 +88,7 @@ describe('config remote enable --master-password-stdin', () => {
     const enable = config.commands
       .find((c) => c.name() === 'remote')
       ?.commands.find((c) => c.name() === 'enable');
-    const valued = enable?.options.filter((o) => /password/.test(o.long ?? '') && o.required);
+    const valued = enable?.options.filter(takesPasswordValue);
     expect(valued).toEqual([]);
   });
 });

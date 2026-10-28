@@ -2755,6 +2755,15 @@ class VmCheck:
             path = receipt_mod.write(self.root, self._receipt(status, reason))
         else:
             log.error("HEAD^{tree} or the inputs digest is unreadable, so no receipt was written")
+            if status == receipt_mod.VERIFIED:
+                # A VERIFIED line with no receipt behind it would claim a proof nothing can back.
+                status, reason = (
+                    receipt_mod.NOT_VERIFIED,
+                    {
+                        "class": "no-receipt",
+                        "detail": "HEAD^{tree} or the inputs digest is unreadable, so no receipt could be written",
+                    },
+                )
         self._summary(status, reason, path)
         return EXIT_CODES[status]
 

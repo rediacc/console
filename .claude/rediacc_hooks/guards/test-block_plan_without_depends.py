@@ -177,6 +177,14 @@ def tree():
         "agent/plans/PLAN-lpok.md": plan(
             dep=DEP, x=xlp(live="Live-Proof: none -- tooling only, ruled in #%s" % CLOSED_ITEM)
         ),
+        # c27ca1eb.1: a declared bench target on a plan that owns no surface yet; an Owns edit onto renet must re-run LP2.
+        "agent/plans/PLAN-lpbench.md": plan(
+            dep=DEP,
+            x=xlp(
+                owns="docs/fixture/**",
+                live="Live-Proof: bench -- the cli against bench.rediacc.com",
+            ),
+        ),
         QUOTE_FILE: "The operator answered: %s.\n" % QUOTE,
         "agent/worklist/cafe0000.jsonl": "".join(json.dumps(e) + "\n" for e in STORE_EVENTS),
     }
@@ -527,6 +535,16 @@ CASES = [
         "a new plan owning a submodule directory (trailing slash) needs the line",
         write(NEW, plan(dep=DEP, x=xlp(owns="private/renet/"))),
         True,
+    ),
+    (
+        "c27ca1eb.1: an Edit moving Owns onto renet under a bench-only Live-Proof",
+        edit("agent/plans/PLAN-lpbench.md", "Owns: docs/fixture/**", "Owns: private/renet/cmd/**"),
+        True,
+    ),
+    (
+        "c27ca1eb.1: an Edit moving Owns between non-surface globs under a bench Live-Proof",
+        edit("agent/plans/PLAN-lpbench.md", "Owns: docs/fixture/**", "Owns: docs/other/**"),
+        False,
     ),
     (
         "a prose Edit to an existing surface plan without the line (V7 migrates it)",

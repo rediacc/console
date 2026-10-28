@@ -461,9 +461,15 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** The start sequence after the lease is held: intercept, start, record, monitor, readiness. Releases the lease when the start fails. */
   private async startLeased(orgId: string, size: ExecutorSize): Promise<PinAnswer> {
     const container = this.ctx.container;
-    if (!container) return refusal('EXECUTOR_START_FAILED', 'no-container');
+    if (!container) {
+      await this.releaseLease(orgId);
+      return refusal('EXECUTOR_START_FAILED', 'no-container');
+    }
     const image = this.currentImage();
-    if (image === undefined) return refusal('EXECUTOR_START_FAILED', 'no-image');
+    if (image === undefined) {
+      await this.releaseLease(orgId);
+      return refusal('EXECUTOR_START_FAILED', 'no-image');
+    }
     const failure = await this.launch(container, orgId, size, image);
     if (failure === undefined) return { ok: true, size };
     await this.stopContainer(failure.reason);
@@ -548,7 +554,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     } catch {
       console.warn('proxy: org executor exit bookkeeping failed');
     }
-    // The record goes whatever the OOM flags did: a dead container must never be recovered as running.
+    // The record is deleted whatever the OOM flags did. If this delete also fails, the stale record is harmless: `recover` finds no running container and clears it, so a dead container is never recovered as running.
     try {
       await this.ctx.storage.delete(RECORD_KEY);
     } catch {

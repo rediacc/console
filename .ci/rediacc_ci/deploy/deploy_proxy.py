@@ -257,12 +257,24 @@ def shallow_checkout(repo_root: pathlib.Path) -> bool:
     return (_git(repo_root, "rev-parse", "--is-shallow-repository") or "").strip() == "true"
 
 
+def _version_key(text: str) -> tuple[int, int, int] | None:
+    """(major, minor, patch) of `1.2.3` or `v1.2.3` (a pre-release suffix is ignored); None when the text is not that shape."""
+    match = re.match(r"v?(\d+)\.(\d+)\.(\d+)", text)
+    if match is None:
+        return None
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+
 def previous_release_tag(repo_root: pathlib.Path, version: str | None) -> str | None:
-    """The newest `v*` tag older than this release, or None when git names none. When this release's own tag exists the answer is the one after it, so redeploying an old release never compares against a newer release's migrations; a release not yet tagged is newer than every tag."""
+    """The newest `v*` tag older than this release, or None when git names none. When this release's own tag exists the answer is the one after it, so redeploying an old release never compares against a newer release's migrations. A release not yet tagged is placed by its version number, so an untagged hotfix 1.2.5 beside a v1.3.0 compares against v1.2.x, not the newer line; a version that is not `X.Y.Z` is treated as newer than every tag."""
     tags = (_git(repo_root, "tag", "--list", "v*", "--sort=-v:refname") or "").split()
     own = "v%s" % version
     if own in tags:
         tags = tags[tags.index(own) + 1 :]
+    else:
+        mine = _version_key(version or "")
+        if mine is not None:
+            tags = [t for t in tags if (key := _version_key(t)) is not None and key < mine]
     return tags[0] if tags else None
 
 

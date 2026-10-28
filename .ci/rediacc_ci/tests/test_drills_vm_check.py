@@ -819,6 +819,7 @@ def run_check(
     env: dict[str, str] | None = None,
     modified: bool | None = False,
     digest: str | None = ADIGEST,
+    inputs: str | None = DIGEST,
 ) -> tuple[int, str, dict[str, Any]]:
     out = io.StringIO()
     environ = {
@@ -835,7 +836,7 @@ def run_check(
         lock=m.Lock(tmp_path / "vm-check.lock"),
         out=out,
         environ=environ,
-        inputs_fn=lambda _root: DIGEST,
+        inputs_fn=lambda _root: inputs,
         account_modified_fn=lambda _root: modified,
         dirty_fn=lambda _root, _surfaces: False,
         renet_modified_fn=lambda _root: False,
@@ -1299,6 +1300,19 @@ def load_mutant(name: str, where: pathlib.Path) -> types.ModuleType:
 
 
 # --------------------------------------------------------------------------- the flow
+
+
+def test_an_unreadable_inputs_digest_writes_no_receipt_and_never_verifies(
+    tmp_path: pathlib.Path,
+) -> None:
+    """efed615f.1: a receipt carries a sha256 `inputs`, and `receipt.validate` refuses a null one, so a run whose digest is unreadable writes nothing the push guard could read (an `inputs: null` file was unreadable and backed no escape either). It must still exit non-zero, never VERIFIED, and leave no receipt.json or run record."""
+    world = make_world(tmp_path, stored_ok=True)
+    rc, out, receipt = run_check(tmp_path, world, inputs=None)
+    assert rc == vm_check.EXIT_NOT_VERIFIED
+    assert "vm:check VERIFIED" not in out
+    assert receipt == {}
+    cache = world.root / receipt_mod.CACHE_DIR
+    assert not list(cache.rglob("receipt.json")) if cache.exists() else True
 
 
 def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathlib.Path) -> None:
@@ -2634,7 +2648,7 @@ def test_a_config_holding_another_key_is_not_overwritten_and_names_the_fix(
 ) -> None:
     world = make_world(tmp_path, cli_key="wrong", stored_ok=True)
     rc, out, receipt = run_check(tmp_path, world)
-    assert rc != vm_check.EXIT_VERIFIED, out
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert world.key_set == [], "a config with a key of its own is never overwritten"
     assert "NOT VERIFIED (worker-ssh-key)" in out, out
     assert "All configured authentication methods failed" in out, out
@@ -2648,7 +2662,7 @@ def test_a_cold_run_missing_the_grand_on_another_worker_says_to_leave_a_warm_fle
     """A cold run's fresh VMs never hold the grand, and `ops down` removes them (2026-10-15T00:27Z); off the ops network the step stays the operator's."""
     world = make_world(tmp_path, running=(), grands=(), machines=NON_OPS_MACHINES, stored_ok=True)
     rc, out, _receipt = run_check(tmp_path, world, "--machine", "prod-1")
-    assert rc != vm_check.EXIT_VERIFIED, out
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up for vm:check to reuse" in out, out
     assert "ops up --basic, then ./rdc.sh repo create" in out, out
@@ -3146,7 +3160,7 @@ def test_an_unreadable_key_state_on_a_keyless_config_sets_nothing_and_p5_names_t
     """Review edb5f14e.2: with a config that really has no key, the early return must set nothing, so the run reaches P5 and stops at the ssh refusal with the fix named."""
     world = make_world(tmp_path, key_show="fail", cli_key="no", stored_ok=True)
     rc, out, _receipt = run_check(tmp_path, world)
-    assert rc != vm_check.EXIT_VERIFIED, out
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert world.key_set == [], "an unreadable key state must not set a key"
     assert "NOT VERIFIED (worker-ssh-key)" in out, out
     assert "config ssh set --key" in out, out

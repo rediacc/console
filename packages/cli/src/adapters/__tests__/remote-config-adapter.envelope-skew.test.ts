@@ -3,7 +3,9 @@
  * slot-key text, because it predates envelope v3 and reads every pull as v2, so the CEK layer's
  * check failed. That is format skew, not a slot-key mismatch. These pin the current reader:
  * it reads a v3 envelope, and an envelope newer than it reads names the version gap instead of
- * the slot key. The fixture is synthetic (random keys, no real config).
+ * the slot key. A v3 blob relabelled v2 stands in for the old reader's view: it exercises the
+ * current reader's integrity-check refusal, not rdc 1.3.12 code. The fixture is synthetic
+ * (random keys, no real config).
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -144,10 +146,22 @@ describe('RemoteConfigAdapter: envelope skew between rdc releases', () => {
     expect(result.config.resources?.machines?.m1).toMatchObject({ ip: '10.0.0.9' });
   });
 
-  it('an old reader (envelope labelled v2) fails closed, never returning the config', async () => {
+  it('a v3 blob relabelled v2 fails the integrity check closed, never returning the config', async () => {
     const f = await enrolled();
     wire(f.session, f.pull(2));
     await expect(f.adapter().pull()).rejects.toBeInstanceOf(RemoteConfigUndecryptableError);
+    const err = await f
+      .adapter()
+      .pull()
+      .then(
+        () => null,
+        (e: unknown) => e
+      );
+    expect(err).toBeInstanceOf(RemoteConfigUndecryptableError);
+    const message = (err as Error).message;
+    expect(message).toContain(CONFIG_ID);
+    expect(message).toContain('failed its integrity check');
+    expect(message).not.toMatch(/newer version of the CLI/);
   });
 
   it('an envelope newer than this reader names the version gap, not the slot key', async () => {
