@@ -315,6 +315,26 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-backup-restore-path.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 2,
+      "open_sigs": [
+        "094664ee",
+        "29fda24a",
+        "6f475942",
+        "a6aa3bb3",
+        "ea53c07a",
+        "faa10486"
+      ],
+      "done_sigs": [
+        "055c7d0d",
+        "f13a4009"
+      ]
+    },
     "agent/plans/PLAN-backup-restore-target-license.md": {
       "status": "compacted",
       "owner": "97604f47",

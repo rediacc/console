@@ -110,12 +110,13 @@ Two more facts shape the design. `luks.Device.GetDataOffset` (pkg/luks/resize.go
 
 ## Tasks
 
-- [ ] R1 [writer] Record per-file extents and a strict LUKS data offset (Design 1, first five bullets). Add `FileExtent`, `BrowseEntry.Extents`, `BrowseEntry.NoExtents`, `BrowseResult.LUKSDataOffset` and `BrowseOptions.RecordExtents`. Add the `fileExtents` helper, which keeps Logical, Length and the unwritten flag, and sets `NoExtents` on any refused flag. Wire it into `ListEntries` behind the flag. Add `luks.(*Device).DataOffsetStrict` over a pure parser shared with `GetDataOffset`, and `ImageHandle.DataOffset()`. Tests:
+- [x] R1 [writer] Record per-file extents and a strict LUKS data offset (Design 1, first five bullets). Add `FileExtent`, `BrowseEntry.Extents`, `BrowseEntry.NoExtents`, `BrowseResult.LUKSDataOffset` and `BrowseOptions.RecordExtents`. Add the `fileExtents` helper, which keeps Logical, Length and the unwritten flag, and sets `NoExtents` on any refused flag. Wire it into `ListEntries` behind the flag. Add `luks.(*Device).DataOffsetStrict` over a pure parser shared with `GetDataOffset`, and `ImageHandle.DataOffset()`. Tests:
   - `ListEntries` without the flag records no extents.
   - With the flag, a written file's extents sum to at least its size.
   - A file with a punched hole has a Logical gap.
   - An empty file has no extents and no `NoExtents`.
   - The pure parser returns the LUKS2 byte offset and the LUKS1 sector offset, and returns an error (not 16 MiB) on output with no offset.
+    (ticked) 2026-10-28T10:37:10Z by d778be9d: 2026-10-28 by d778be9d: renet 22fe263 (pointer in the next console commit); go test ./pkg/repodiff/ ./pkg/luks/ -run 'TestListEntries|TestParseDataOffset' rc=0 with no skips; go vet linux and darwin rc=0
 
   Owns: private/renet/pkg/repodiff/types.go, private/renet/pkg/repodiff/browse.go, private/renet/pkg/repodiff/extents_linux.go, private/renet/pkg/repodiff/mountset.go, private/renet/pkg/repodiff/browse_list_test.go, private/renet/pkg/luks/resize.go, private/renet/pkg/luks/luks_test.go. Accept: `cd private/renet && go test ./pkg/repodiff/ ./pkg/luks/ -run 'TestListEntries|TestParseDataOffset' -count=1` rc 0.
 - [ ] R2 [writer] Seal positions into staged listings only, and strip them from browse output (Design 1, last three bullets). `snapshotTOCListing` passes `RecordExtents: true` and stamps `LUKSDataOffset` on the staged branch. A strict-offset failure drops the extents and still seals. The live-mount branch carries neither. `browseAtSnapshot` clears all three fields. Tests in backup_snapshot_toc_test.go, through the existing opener seam:
@@ -126,13 +127,14 @@ Two more facts shape the design. `luks.Device.GetDataOffset` (pkg/luks/resize.go
   In backup_browse_at_test.go: browse-at JSON never contains the extents key or the offset key, even when the sealed listing has them.
 
   Owns: private/renet/cmd/renet/backup_snapshot_toc.go, private/renet/cmd/renet/backup_snapshot_toc_test.go, private/renet/cmd/renet/backup_browse_at.go, private/renet/cmd/renet/backup_browse_at_test.go. Accept: `cd private/renet && go test ./cmd/renet/ -run 'TestSnapshotTOC|TestBrowseAt' -count=1` rc 0.
-- [ ] R3 [writer] Fetch only the cells covering given image ranges (Design 2). Add `RestoreOptions.OnlyRanges` and `RestoreStats.CellsSelected`, and select through `TouchedCells` after `resolveChain`. Re-arm the grant with the selected hashes only. Refuse a partial restore onto an existing `DestPath` or with `Seeds`, under new i18n keys in every renet locale. New restore_ranges_test.go, using the existing `fakeReadStore` and `buildSnapshotFixture`:
+- [x] R3 [writer] Fetch only the cells covering given image ranges (Design 2). Add `RestoreOptions.OnlyRanges` and `RestoreStats.CellsSelected`, and select through `TouchedCells` after `resolveChain`. Re-arm the grant with the selected hashes only. Refuse a partial restore onto an existing `DestPath` or with `Seeds`, under new i18n keys in every renet locale. New restore_ranges_test.go, using the existing `fakeReadStore` and `buildSnapshotFixture`:
   - Two ranges in a 32-cell fixture fetch exactly the covering cells: the GET count equals `ChunksFetched`, which equals the selection size, below `CellsTotal - CellsZero`.
   - The selected cells are byte-identical to the source, and the unselected cells read as holes (SEEK_DATA).
   - The file length equals `ImageBytes`.
   - A range touching a ZeroCell fetches nothing for it.
   - An existing `DestPath` is refused with zero GETs.
   - nil `OnlyRanges` behaves exactly as before (the existing `TestRestore_*` stay green).
+    (ticked) 2026-10-28T10:37:13Z by d778be9d: 2026-10-28 by d778be9d: renet 675a01f (pointer in the next console commit); go test ./pkg/chunkstore/ rc=0 including six restore_ranges tests, two planted defects caught; i18n locales and hashes current
 
   Owns: private/renet/pkg/chunkstore/download.go, private/renet/pkg/chunkstore/restore.go, private/renet/pkg/chunkstore/restore_ranges_test.go, private/renet/pkg/i18n/locales/**. Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestRestore' -count=1` rc 0.
 - [ ] R4 [writer] The engine, the verb and the function (Design 3 and 4). Add pkg/restorepath (plan.go, restorepath_linux.go, restorepath_other.go). Add cmd/renet/backup_restore_path.go with the `openSnapshotListing` factoring in backup_browse_at.go, the `backup_restore_path` FunctionDef, the TierNone tiermap row, the AddCommand and help line in cmd/renet/backup.go, and the i18n keys in every renet locale. Regenerate the renet contract.
