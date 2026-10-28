@@ -372,7 +372,7 @@ export function handleRepoCreate(
   });
 }
 /** Handle post-delete success: cleanup, timeline, config-entry settlement, hints. */
-async function handleDeleteSuccess(
+export async function handleDeleteSuccess(
   name: string,
   machineName: string,
   repoConfig: DeletedRepoConfig,
@@ -396,7 +396,10 @@ async function handleDeleteSuccess(
   await reconcileBackupSchedules(machineName);
   await settleCloudBackups(name, repoConfig, purgeBackups);
   await settleRepoLicense(name, repoConfig);
-  outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
+  // --purge-backups just freed them: the hint that they outlive the repository would contradict that.
+  if (!purgeBackups) {
+    outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
+  }
 }
 
 /**
