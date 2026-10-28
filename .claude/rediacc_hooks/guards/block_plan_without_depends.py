@@ -14,6 +14,8 @@ THE OPERATOR FREEZE. An on-disk `Priority:` carrying `(operator)` is the operato
 
 PRE-BACKFILL RATCHET. The plan lands this guard in the same commit as the backfill of the field into every live plan (T10) and gives it no grandfather clause. In a shared working tree the guard is live the moment this file exists, while about thirty plans still lack the field; refusing every box tick on those plans would stop every parallel writer. So while `PRE_BACKFILL_RATCHET` is True, an edit that leaves a plan's pre-existing findings unchanged or fewer (same codes, no new one) is ALLOWED with a warning naming them, and anything that adds a finding is refused. T10 sets it to False in the commit that backfills the field; the suite reads the constant and flips its expectations with it.
 
+THE LIVE-PROOF LINE (agent/plans/PLAN-tested-on-bench.md V3). A NEW plan (no file on disk yet) whose `Owns:` hit a deployable surface in `.ci/config/proof-tiers.json` must carry a `Live-Proof:` line (LP1). The surfaces are read through `rediacc_ci.proof.surfaces` (`syspath.import_from_ci`), and an Owns glob hits a surface when `wl_planconc.owns_overlap` finds a shared path that the map's excludes do not drop; a bare submodule path (`private/renet`, the map's `pointer_only`) names the gitlink alone, so it overlaps no surface glob, while `private/renet/` normalises to `private/renet/**` and claims the code. On ANY live plan a `Live-Proof:` line that is malformed, emphasised, duplicated or outside the window is refused when the edit introduces that finding (an existing broken line is the CI gate's), and a `none` whose value is new or changed must resolve its cited ruling against the worklist store and the quoted file (LP2, `wl_plandeps.resolve_live_proof_waiver`). Existing plans without the line pass: box V7 migrates them and the gate judges them. A surface map that cannot be imported costs only this check, with a warning.
+
 ITS EVIDENCE. `OWN_SUITE = True` (never bash, so no golden), so the dedicated suite `.claude/rediacc_hooks/guards/test-block_plan_without_depends.py` drives this guard through the dispatcher in both directions against fixture plan trees, and plants `DEFECT` in-process; `.claude/hooks/stop/test-plandeps.py` covers the grammar it imports.
 
 FAILS OPEN, LOUDLY, when the grammar module cannot be imported (the sibling guards' convention). CI D1-D7 is the backstop.
@@ -37,6 +39,8 @@ PRE_BACKFILL_RATCHET = False
 # The operator freeze's comparison (PLAN-plan-priority-concurrency.md section 8): planting "" lets the AI change an operator value, and the EDGE_CASE that introduces `(operator)` with no operator turn must then change. The suite also plants the D1-D7 verdict (`VERDICT_DEFECT`).
 DEFECT = ("frozen = _freeze(before_h, header, rel, doc)", 'frozen = ""')
 VERDICT_DEFECT = ("problems = graph.check(rel)", "problems = []")
+# The Live-Proof verdict (PLAN-tested-on-bench V3): planting it drops every LP1/LP2 refusal.
+LIVE_DEFECT = ("lprob = _live_findings(deps, conc, header, before_h, tree, rel, ev)", "lprob = []")
 
 STOP_DIR = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
 PLAN_RE = re.compile(r"(?:^|/)agent/plans/PLAN-[^/]+\.md$")
@@ -46,7 +50,7 @@ UNEXAMINED = (
     "edit passed UNEXAMINED. check:ci-plan-deps is the backstop."
 )
 
-HEADER = """BLOCKED: %s would be a live plan without a valid header (`Depends-On:`, or a Priority/Concurrency/Owns line).
+HEADER = """BLOCKED: %s would be a live plan without a valid header (`Depends-On:`, or a Priority/Concurrency/Owns/Live-Proof line).
 
 A plan does not start before the plans it needs are finished, so every live plan
 says what it needs, or says why it needs nothing:
@@ -243,6 +247,22 @@ The X header lines (PLAN-plan-priority-concurrency.md section 1), inside the fir
     .ci/scripts/quality/check_plan_deps.py --set-x %s "Owns: ..." --write
 """
 
+LP_FOOTER = """
+The Live-Proof line (PLAN-tested-on-bench.md Design item 2), inside the first 12 lines:
+
+    Live-Proof: bench|hostinger[, <target>...] -- <reason, 12+ chars>
+    Live-Proof: none -- <reason citing a closed #<item id> or "<operator quote>" in <path>>
+
+Every deployable surface the Owns hit needs a target admissible for it (proof-tiers.json
+`surfaces.<name>.live`); edge and stable are never live-proof targets.
+"""
+
+SURFACES_MOD = "rediacc_ci.proof.surfaces"
+UNMAPPED = (
+    "block-plan-without-depends: the surface map could not be loaded (%s); the Live-Proof "
+    "requirement of %s passed UNEXAMINED. check:ci-plan-live-proof is the backstop."
+)
+
 PLAN_LEVEL_RE = re.compile(r"\bP([0-3])\b")
 
 
@@ -348,6 +368,55 @@ def _freeze(before, after, rel, doc):
     return ""
 
 
+def _owned_surfaces(conc, owns):
+    """{surface: [Owns glob, ...]} for the deployable surfaces a plan's Owns hit, from the one map (`rediacc_ci.proof.surfaces`). Raises ImportError (or the map's own error) when the map cannot be read; the caller warns and skips."""
+    surfaces = syspath.import_from_ci(SURFACES_MOD)
+    hits = {}
+    for name, surface in surfaces.MAP.surfaces.items():
+        for mine, _theirs, witness in conc.owns_overlap(owns.globs, surface.globs):
+            if not surfaces.excluded(witness):
+                hits.setdefault(name, []).append(mine)
+    return hits
+
+
+def _live_findings(deps, conc, header, before_h, tree, rel, ev):
+    """[(code, message)] for the result's `Live-Proof:` line. See the module docstring: required only on a NEW plan whose Owns hit a surface; grammar findings only when the edit introduces them; a new or changed `none` must resolve its ruling."""
+    is_new = before_h is None
+    required = False
+    owns = header.owns
+    if is_new and owns is not None and owns.globs and header.get(deps.LIVE_PROOF) is None:
+        try:
+            hits = _owned_surfaces(conc, owns)
+        # The map raises its own MapError (a ValueError) at import; any failure is blindness, said aloud.
+        except Exception as exc:
+            ev.warn(UNMAPPED % (exc, rel))
+            hits = {}
+        required = bool(hits)
+    out = deps.live_proof_findings(header, required)
+    if required:
+        out = [
+            (code, "%s (surfaces: %s)" % (msg, ", ".join(sorted(hits))))
+            if msg.startswith("no `")
+            else (code, msg)
+            for code, msg in out
+        ]
+    if not is_new:
+        had = set(deps.live_proof_findings(before_h, False))
+        out = [f for f in out if f not in had]
+    proof = header.live_proof
+    was = before_h.get(deps.LIVE_PROOF) if before_h is not None else None
+    now = header.get(deps.LIVE_PROOF)
+    if proof is not None and proof.none and (was is None or was.value != now.value):
+        import wl_planfile
+
+        ok, why = deps.resolve_live_proof_waiver(
+            tree, rel, proof, wl_planfile.store_item_states(tree)
+        )
+        if not ok:
+            out.append((deps.LP_WAIVER, "%s: %s" % (deps.LIVE_PROOF, why)))
+    return out
+
+
 def _result_text(doc, path):
     """(text, reason) for the document the tool call would leave, or (None, why) when it cannot be computed (the tool itself would fail, so there is nothing to judge)."""
     tin = doc.get("tool_input") or {}
@@ -419,6 +488,8 @@ def run(ev):
         graph = deps.Graph.load(tree, override={rel: text})
         problems = graph.check(rel)
         xprob = [(f.code, f.message) for f in conc.x_findings(header, text)]
+        lprob = _live_findings(deps, conc, header, before_h, tree, rel, ev)
+        xprob += lprob
         if not problems and not xprob:
             return hookio.ALLOW
         if problems and PRE_BACKFILL_RATCHET and path.is_file():
@@ -443,7 +514,9 @@ def run(ev):
     if len(both) > 12:
         lines.append("  ... and %d more\n" % (len(both) - 12))
     lines.append(FOOTER % rel)
-    if xprob:
+    if len(xprob) > len(lprob):
         lines.append(X_FOOTER % rel)
+    if lprob:
+        lines.append(LP_FOOTER)
     ev.warn_raw("".join(lines))
     return hookio.DENY
