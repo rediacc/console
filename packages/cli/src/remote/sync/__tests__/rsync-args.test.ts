@@ -54,4 +54,12 @@ describe('buildRsyncArgs', () => {
     expect(download).not.toContain('--mkpath');
     expect(download).not.toContain('--chown');
   });
+
+  it('protects the rediacc-managed tree from --delete on a mirror upload only', () => {
+    const up = buildRsyncArgs({ isUpload: true, mirror: true }, 'ssh', 'rediacc');
+    expect(up).toContain('--delete');
+    expect(up).toContain('--filter=P /.rediacc/');
+    const down = buildRsyncArgs({ mirror: true }, 'ssh', 'rediacc');
+    expect(down).not.toContain('--filter=P /.rediacc/');
+  });
 });

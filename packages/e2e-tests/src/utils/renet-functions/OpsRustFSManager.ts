@@ -185,8 +185,7 @@ export class OpsRustFSManager {
     bucket?: string
   ): Promise<{ success: boolean; message: string }> {
     const ip = calculateVMIp(vmId);
-    const DEFAULT_BUCKET_NAME = 'default';
-    const bucketName = bucket ?? DEFAULT_BUCKET_NAME;
+    const bucketName = bucket ?? DEFAULT_RUSTFS_BUCKET;
     console.warn(`[OpsRustFSManager] Verifying RustFS access from VM ${vmId} (${ip})...`);
 
     const result = await this.s3Request(

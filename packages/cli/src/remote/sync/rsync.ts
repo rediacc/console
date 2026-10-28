@@ -172,10 +172,14 @@ function addRemoteRsyncArgs(
 /** Add sync mode args (mirror, verify, excludes). */
 function addSyncModeArgs(
   args: string[],
-  options: { mirror?: boolean; verify?: boolean; exclude?: string[] }
+  options: { mirror?: boolean; verify?: boolean; exclude?: string[]; isUpload?: boolean }
 ): void {
   if (options.mirror) {
     args.push('--delete', '--exclude', '*.sock');
+    if (options.isUpload) {
+      // Protect (never delete) the rediacc-managed tree on the remote, including .rediacc/docker/data, the repo's Docker data-root.
+      args.push('--filter=P /.rediacc/');
+    }
   }
   if (options.verify) {
     args.push('--checksum', '--ignore-times');
