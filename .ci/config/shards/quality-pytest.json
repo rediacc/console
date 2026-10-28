@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-28T05:06:28.619Z",
+  "generatedAt": "2026-10-28T06:24:39.581Z",
   "legs": [
     {
       "index": 1,
@@ -491,6 +491,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_service_bindings_audit.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_units.py",
         "pytest:.ci/rediacc_ci/tests/test_paths.py",
+        "pytest:.ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_linux_packages.py",

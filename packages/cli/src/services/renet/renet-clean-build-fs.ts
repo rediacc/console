@@ -2,8 +2,32 @@ import * as fsSync from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-/** Marker written last into a finished clean build directory; first line the commit, second `keyed` or `keyless`. */
+/** Marker written last into a finished clean build directory; first line the commit, second `keyed` or `keyless`, third the flavor. */
 export const CLEAN_BUILD_MARKER = '.complete';
+
+export type RenetFlavor = 'nolicense' | 'enforce';
+
+/** Where `build.sh dev` writes each flavor, relative to the renet checkout; the same mapping as build.sh's `_dev_out_dir`. */
+export const RENET_FLAVOR_DIRS: Record<RenetFlavor, string> = {
+  nolicense: 'bin',
+  enforce: 'bin/enforce',
+};
+
+/** The explicit `build.sh dev` flag of each flavor. */
+export const RENET_FLAVOR_FLAGS: Record<RenetFlavor, string> = {
+  nolicense: '--nolicense',
+  enforce: '--license',
+};
+
+/** The flavor `go version -m` output describes: nolicense when the buildinfo carries `tags=nolicense`, enforce otherwise. */
+export function flavorOfBuildInfo(goVersionM: string): RenetFlavor {
+  return goVersionM.includes('tags=nolicense') ? 'nolicense' : 'enforce';
+}
+
+/** The cached build directory name of a commit and flavor. */
+export function cleanBuildDirName(commit: string, flavor: RenetFlavor): string {
+  return `${commit}-${flavor}`;
+}
 const LINUX_ARCHES = ['amd64', 'arm64'] as const;
 
 /** Where clean builds live: the console's gitignored .ci/cache, or the temp dir for a standalone renet. */
@@ -26,9 +50,9 @@ export function cleanBuildFiles(ext: string): string[] {
   return [`renet${ext}`, ...LINUX_ARCHES.map((arch) => `renet-linux-${arch}`)];
 }
 
-/** The marker body of a finished build: the commit, and whether the licence public key was compiled in. */
-export function cleanBuildMarker(commit: string, keyed: boolean): string {
-  return `${commit}\n${keyed ? 'keyed' : 'keyless'}\n`;
+/** The marker body of a finished build: the commit, whether the licence public key was compiled in, and the flavor. */
+export function cleanBuildMarker(commit: string, keyed: boolean, flavor: RenetFlavor): string {
+  return `${commit}\n${keyed ? 'keyed' : 'keyless'}\n${flavor}\n`;
 }
 
 /**
@@ -38,14 +62,15 @@ export function isCompleteCleanBuild(
   dir: string,
   commit: string,
   ext: string,
+  flavor: RenetFlavor,
   keyAvailable = false
 ): boolean {
   try {
-    const [markedCommit, markedKey] = fsSync
+    const [markedCommit, markedKey, markedFlavor] = fsSync
       .readFileSync(path.join(dir, CLEAN_BUILD_MARKER), 'utf-8')
       .trim()
       .split('\n');
-    if (markedCommit !== commit) return false;
+    if (markedCommit !== commit || markedFlavor !== flavor) return false;
     if (keyAvailable && markedKey !== 'keyed') return false;
     return cleanBuildFiles(ext).every((name) => fsSync.existsSync(path.join(dir, name)));
   } catch {
@@ -102,9 +127,13 @@ export function cleanBuildEnv(top: string): NodeJS.ProcessEnv {
   return env;
 }
 
+/** Removes the builds of every other commit; both flavors of `keep` stay. */
 export function pruneOtherCleanBuilds(root: string, keep: string): void {
   for (const name of fsSync.readdirSync(root)) {
-    if (name !== keep && /^[0-9a-f]{40}([0-9a-f]{24})?$/.test(name)) {
+    if (
+      !name.startsWith(`${keep}-`) &&
+      /^[0-9a-f]{40}([0-9a-f]{24})?(-(nolicense|enforce))?$/.test(name)
+    ) {
       fsSync.rmSync(path.join(root, name), { recursive: true, force: true });
     }
   }

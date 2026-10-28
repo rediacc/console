@@ -19,14 +19,19 @@ import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 import {
   CLEAN_BUILD_MARKER,
+  cleanBuildDirName,
   cleanBuildEnv,
   cleanBuildFiles,
   cleanBuildMarker,
   cleanBuildRoot,
   copyEmbeddedAssets,
+  flavorOfBuildInfo,
   isCompleteCleanBuild,
   pinCommittedEbpfObjects,
   pruneOtherCleanBuilds,
+  RENET_FLAVOR_DIRS,
+  RENET_FLAVOR_FLAGS,
+  type RenetFlavor,
 } from './renet-clean-build-fs.js';
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
@@ -178,26 +183,28 @@ export interface RenetUploadSelection {
 /** Process seams of the clean build; tests replace them, production uses the real tools. */
 export interface RenetCleanBuildDeps {
   git: (args: string[], cwd: string) => string;
-  /** Run renet's own `./build.sh dev` in `cwd`; build output goes to stderr. */
-  build: (cwd: string, env: NodeJS.ProcessEnv) => Promise<void>;
+  /** Run renet's own `./build.sh dev <flavorFlag>` in `cwd` (`--nolicense` or `--license`); build output goes to stderr. */
+  build: (cwd: string, env: NodeJS.ProcessEnv, flavorFlag: string) => Promise<void>;
   /** `go version -m <binary>` output. */
   goVersionM: (binary: string) => string;
 }
 
 const realCleanBuildDeps: RenetCleanBuildDeps = {
   git: gitOut,
-  build: (cwd, env) =>
+  build: (cwd, env, flavorFlag) =>
     new Promise((resolve, reject) => {
       // stdout is the CLI command's; build progress goes to stderr.
       // build.sh resolves against the child's cwd: a cwd-joined path would be resolved against cwd a second time when cwd is relative.
-      const child = spawn('bash', ['build.sh', 'dev'], {
+      const child = spawn('bash', ['build.sh', 'dev', flavorFlag], {
         cwd,
         env,
         stdio: ['ignore', 2, 2],
       });
       child.on('error', reject);
       child.on('close', (code) =>
-        code === 0 ? resolve() : reject(new Error(`bash build.sh dev exited ${code} in ${cwd}`))
+        code === 0
+          ? resolve()
+          : reject(new Error(`bash build.sh dev ${flavorFlag} exited ${code} in ${cwd}`))
       );
     }),
   goVersionM: (binary) =>
@@ -231,7 +238,8 @@ export async function selectRenetUploadBinary(
   outputService.info(
     `renet working tree ${state.top} has ${state.dirty.length} uncommitted path(s); using a build of committed HEAD ${commit.slice(0, 12)} (local edits not included; REDIACC_ALLOW_DIRTY_RENET=1 uploads the working-tree build)`
   );
-  const built = await buildRenetAtCommit(state.top, commit, deps);
+  const flavor = flavorOfBuildInfo(deps.goVersionM(localBinaryPath));
+  const built = await buildRenetAtCommit(state.top, commit, deps, flavor);
   return {
     localBinaryPath: built,
     cleanCommit: commit,
@@ -243,7 +251,9 @@ export async function selectRenetUploadBinary(
 /**
  * Build renet at `commit` with renet's own `./build.sh dev`, in a `git clone --shared` of `top`
  * (no worktree, nothing written to the source checkout), and return the host binary of the result.
- * Cached per commit under {@link cleanBuildRoot}; older commits' builds are pruned.
+ * `flavor` picks the explicit build.sh flag and the clone directory the binaries are read from
+ * ({@link RENET_FLAVOR_DIRS}). Cached per commit and flavor under {@link cleanBuildRoot}; other
+ * commits' builds are pruned, both flavors of this commit stay.
  *
  * The clone has its own `.git` directory, so Go stamps `vcs.revision=<commit>`; the stamp and a
  * clean clone are verified before the build is accepted. The gitignored embedded assets are copied
@@ -252,15 +262,16 @@ export async function selectRenetUploadBinary(
 export async function buildRenetAtCommit(
   top: string,
   commit: string,
-  deps: RenetCleanBuildDeps = realCleanBuildDeps
+  deps: RenetCleanBuildDeps = realCleanBuildDeps,
+  flavor: RenetFlavor = 'nolicense'
 ): Promise<string> {
   const root = cleanBuildRoot(top, deps);
   const ext = process.platform === 'win32' ? '.exe' : '';
-  const finalDir = path.join(root, commit);
+  const finalDir = path.join(root, cleanBuildDirName(commit, flavor));
   const hostBinary = path.join(finalDir, `renet${ext}`);
   const buildEnv = cleanBuildEnv(top);
   const keyed = Boolean(buildEnv.ACCOUNT_ED25519_PUBLIC_KEY);
-  if (isCompleteCleanBuild(finalDir, commit, ext, keyed)) return hostBinary;
+  if (isCompleteCleanBuild(finalDir, commit, ext, flavor, keyed)) return hostBinary;
 
   fsSync.mkdirSync(root, { recursive: true });
   const work = path.join(root, `work-${commit.slice(0, 12)}-${process.pid}`);
@@ -274,7 +285,7 @@ export async function buildRenetAtCommit(
     pinCommittedEbpfObjects(work);
 
     outputService.info(`Building renet ${commit.slice(0, 12)} from a clean clone...`);
-    await deps.build(work, buildEnv);
+    await deps.build(work, buildEnv, RENET_FLAVOR_FLAGS[flavor]);
 
     const left = deps.git(['status', '--porcelain'], work);
     if (left) {
@@ -284,8 +295,13 @@ export async function buildRenetAtCommit(
     }
     fsSync.mkdirSync(stage);
     for (const name of cleanBuildFiles(ext)) {
-      const built = path.join(work, 'bin', name);
+      const built = path.join(work, RENET_FLAVOR_DIRS[flavor], name);
       const info = deps.goVersionM(built);
+      if (flavorOfBuildInfo(info) !== flavor) {
+        throw new Error(
+          `The clean renet build ${built} is not the ${flavor} flavor that was requested`
+        );
+      }
       if (!info.includes(`vcs.revision=${commit}`) || !info.includes('vcs.modified=false')) {
         throw new Error(
           `The clean renet build ${built} does not carry vcs.revision=${commit} with vcs.modified=false`
@@ -293,16 +309,19 @@ export async function buildRenetAtCommit(
       }
       fsSync.renameSync(built, path.join(stage, name));
     }
-    fsSync.writeFileSync(path.join(stage, CLEAN_BUILD_MARKER), cleanBuildMarker(commit, keyed));
+    fsSync.writeFileSync(
+      path.join(stage, CLEAN_BUILD_MARKER),
+      cleanBuildMarker(commit, keyed, flavor)
+    );
     // A leftover directory (a cached build missing a binary, or a keyless one superseded by this keyed build) would make the rename fail with ENOTEMPTY on every run; a rename only ever publishes a whole directory, so what is there is stale.
-    if (!isCompleteCleanBuild(finalDir, commit, ext, keyed)) {
+    if (!isCompleteCleanBuild(finalDir, commit, ext, flavor, keyed)) {
       fsSync.rmSync(finalDir, { recursive: true, force: true });
     }
     try {
       fsSync.renameSync(stage, finalDir);
     } catch (err) {
       // A concurrent process finished the same commit first; its build is as good as ours.
-      if (!isCompleteCleanBuild(finalDir, commit, ext, keyed)) throw err;
+      if (!isCompleteCleanBuild(finalDir, commit, ext, flavor, keyed)) throw err;
     }
     pruneOtherCleanBuilds(root, commit);
   } finally {
