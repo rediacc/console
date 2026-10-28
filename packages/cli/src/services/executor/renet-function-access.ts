@@ -22,6 +22,7 @@ export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   backup_pull: 'provision',
   backup_push: 'provision',
   backup_restore: 'provision',
+  backup_restore_path: 'provision',
   backup_snapshot: 'provision',
   backup_verify: 'read-only',
   ceph_client_mount: 'provision',

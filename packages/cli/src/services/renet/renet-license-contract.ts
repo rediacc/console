@@ -143,9 +143,10 @@ export function isRepoProvisioningFunction(functionName: string): boolean {
   );
 }
 
-/** The chunk-store read verbs: restore, and browse of a stored snapshot. */
+/** The chunk-store read verbs: restore, restore of one path, and browse of a stored snapshot. */
 const RESTORE_LICENSE_FUNCTIONS: ReadonlySet<string> = new Set([
   'backup_restore',
+  'backup_restore_path',
   'backup_browse_at',
 ]);
 
