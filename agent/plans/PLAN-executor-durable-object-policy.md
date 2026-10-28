@@ -381,7 +381,7 @@ Each box records:
 - the cold-start median;
 - one org-A and one org-B `machine status` from the portal console (E1 of PLAN-console-executor-multi-org).
 
-- [ ] L0 [live] Bench, Phase 1 then Phase 2, with drills.
+- [x] L0 [live] Bench, Phase 1 then Phase 2, with drills.
   - Run deploy_bench (A1, no migration), then `deploy_proxy --target bench --record` with `container`, which is forward-only. Then flip bench to `durable` and deploy again.
   - Drills:
     - with `EXECUTOR_CAP = "2"` deployed for the drill, a third concurrent entitled org gets 503 `EXECUTOR_CAPACITY`, after which `"25"` is redeployed;
@@ -389,6 +389,7 @@ Each box records:
     - org A idles 150 s and its slot frees (coordinator `count()` through `/v1/ready`);
     - a redeploy during an open stream keeps the stream and the egress working (DU2 live);
     - `wrangler rollback` to the Phase 1 version restores `container` routing, and a forward redeploy restores `durable`.
+    (ticked) 2026-10-28T21:42:06Z by d778be9d: commit:8260719fb commit:a4d57548c all four drills observed on bench with codes recorded in the L0 live records; E1 rc 0 on durable with two org ids; both bench rows smoke rc 0; ends 2eff069a durable cap 25
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md (Live records). Accept: both bench rows have smoke rc 0; E1 against `https://bench.rediacc.com` exits 0 on `durable` with two org ids; and each drill's observed code is recorded.
 
@@ -471,8 +472,8 @@ Operator order 2026-10-28 (no customers yet): the durable_object rollout goes st
 L0 drills on bench, 2026-10-28 (proxy 628b1496 -> 2eff069a durable, E1 2 passed, idle drill 0-1-2-1-0 recorded earlier):
 - Drill 2 (BUSINESS heavy): org 61fa8f2c's subscription set PROFESSIONAL -> BUSINESS by a direct D1 write (restored after, read back PROFESSIONAL), then 27-91 rc 0 with `/v1/ready` polled every 5 s on 2eff069a: executors total 0 -> 1 -> 2 and heavy 0 -> 1 at 21:01:34Z, rc 0. The span attribute `rediacc.proxy.size` was not read.
 - Drill 3 (redeploy during an open run): `deploy_proxy --target bench --record` rc 0 (smoke rc 0, new version 1b818024, previous 2eff069a, backend durable, cold start 93 ms) landed between two back-to-back 27-91 runs, so it did not overlap one. The real overlap used `wrangler rollback 2eff069a` rc 0 at 21:09:28Z, 75 s into a 27-91 run (21:08:13Z to 21:10:15Z): the run passed (rc 0) and the pre-existing executor leases (total 2) survived the version switch. This is a version switch, not a rebuild-and-upload, and the executor image was unchanged.
-- Drill 1 (cap 2) not run: the cap is a var in workers/proxy/wrangler.bench.toml and deploy_proxy takes no override, so it needs that file edited to "2" and back; bench also has only two test logins (A and B), so a third concurrent entitled org needs one more provisioned org with a login and a store. Not done.
-- Drill 4 (rollback to Phase 1 container version 0ac1523d) not run: the pre-bash hook refuses `wrangler rollback` on a bench config as a raw publish verb. Bench ends on 2eff069a, durable, cap 25, smoke rc 0.
+- Drill 1 (cap 2): org C a87a3d01 provisioned on bench (`POST /auth/register`, then D1 writes: its COMMUNITY subscription set to PROFESSIONAL and one config_stores row copied from org B with a new id; `executor_orgs list` shows it entitled, 8 of 14). `deploy_proxy --target bench --var EXECUTOR_CAP=2 --record /tmp/rec-cap2.json` rc 0, version 5000cedc (previous 2eff069a), `/v1/ready` cap 2. A and B held open by a 27-91 run (rc 0, 1 passed), then `/v1/ready` executors total 2 cap 2 and org C's `POST /console/exec` answered 503 `EXECUTOR_CAPACITY` three times out of three. Redeploy without `--var` rc 0 (`--record /tmp/rec-cap25.json`), version e0a71aa3, `/v1/ready` cap 25.
+- Drill 4 (rollback): `deploy_proxy --target bench --rollback 0ac1523d-4490-4e7a-a441-69e068809dc1 --record /tmp/rec-rb.json` rc 0 (previous e0a71aa3), smoke rc 0, `/v1/ready` on 0ac1523d with no `executors` field (that version predates it). Container routing serves: 27-91 rc 0 (1 passed, 1.3m, real `machine status` for orgs 08103c52 and 61fa8f2c) and org C reached an executor (404 EXECUTOR_SESSION_UNKNOWN). After `--rollback 2eff069a-37c6-4622-9a7b-85cfe3ad57a8 --record /tmp/rec-rb2.json` rc 0, `/v1/ready` showed executors total 0 cap 25, so the container-routed runs took no coordinator leases. The rollback record carries `backend: null` and `migration_tag: null` (it reads no config var for a rolled-back version). Bench ends on 2eff069a, durable, cap 25, smoke rc 0.
 
 ## Decisions taken as defaults (open to operator veto)
 
