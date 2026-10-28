@@ -11,6 +11,7 @@ EVERY REFUSAL HAS A PASSING TWIN built from the same fixture with one fact chang
 import importlib.util
 import json
 import pathlib
+import tempfile
 
 import wl_planconc as X
 import wl_plandeps as D
@@ -679,9 +680,7 @@ check(
 )
 check("normalize: a trailing slash", X.normalize_owns(["dir/"])[0], ["dir/**"])
 check("normalize: ./ and // dropped", X.normalize_owns(["./a//b"])[0], ["a/b"])
-import tempfile as _tf
-
-with _tf.TemporaryDirectory() as _d:
+with tempfile.TemporaryDirectory() as _d:
     (pathlib.Path(_d) / "sub/inner").mkdir(parents=True)
     (pathlib.Path(_d) / "plain").mkdir()
     (pathlib.Path(_d) / ".gitmodules").write_text('[submodule "sub"]\n\tpath = sub\n\turl = x\n')
@@ -1228,8 +1227,8 @@ def lpv(value):
 
 check(
     "live-proof: one target",
-    lp("Live-Proof: bench -- the account smoke on bench.rediacc.com\n"),
-    (D.LiveProof(("bench",), "the account smoke on bench.rediacc.com"), []),
+    lp("Live-Proof: bench -- the account smoke on the bench origin\n"),
+    (D.LiveProof(("bench",), "the account smoke on the bench origin"), []),
 )
 check(
     "live-proof: the other target",

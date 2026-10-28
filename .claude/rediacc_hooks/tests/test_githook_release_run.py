@@ -74,6 +74,15 @@ def _system_python() -> str | None:
 PY = _system_python()
 ENTRY_ARGV = [PY or "/usr/bin/python3", "-P", "-s", "-m", MODULE]
 
+
+def _need_py() -> str:
+    """PY, or a failed test: the interpreter cases have no meaning without a root-installed python3."""
+    if PY is None:
+        pytest.fail("no root-installed python3 here")
+        raise AssertionError("pytest.fail returned")
+    return PY
+
+
 # The fake entry; its config is the LAST argument, so it runs the same as a module, a script or `-c` code. Mode "sleep" only lives (the forged-pid sibling); mode "push" writes the record and runs the hook as its child.
 ENTRY = r"""
 import importlib.util, json, os, subprocess, sys, time
@@ -505,9 +514,8 @@ def test_a_symlinked_directory_into_a_writable_dir_is_refused(
     """Review 120e8ea7.1: `argv0` passes through a symlink into a writable directory, and a second link there leads back to the interpreter's root-owned directory. Python reads `pyvenv.cfg` one level above the typed path, inside the writable directory.
 
     `/proc/self/cwd` is the root-owned-looking symlink: `/proc` is root's, `self` and `cwd` are links, so the typed path crosses no unlinked user directory and the old check, which skipped every link and resolved only `dirname(argv0)`, admitted it."""
-    if PY is None:
-        pytest.fail("no root-installed python3 here")
-    real = os.path.realpath(PY)
+    py = _need_py()
+    real = os.path.realpath(py)
     writable = tmp_path / "w"
     writable.mkdir()
     writable.chmod(0o777)
@@ -537,10 +545,9 @@ def test_an_interpreter_found_on_path_is_refused(world: World) -> None:
     ],
 )
 def test_interpreter_refusal(argv0: str, exe: str, want: str) -> None:
-    if PY is None:
-        pytest.fail("no root-installed python3 here")
-    real = os.path.realpath(PY)
-    got = RR.interpreter_refusal(argv0.replace("{py}", PY), exe.replace("{py}", real))
+    py = _need_py()
+    real = os.path.realpath(py)
+    got = RR.interpreter_refusal(argv0.replace("{py}", py), exe.replace("{py}", real))
     if want:
         assert want in got
     else:
@@ -699,9 +706,7 @@ def test_a_procfs_override_that_is_not_root_locked_is_ignored(
     assert RR._procfs_root({RR.PROCFS_ENV: str(fake)}) == default
     assert RR._procfs_root({RR.PROCFS_ENV: "relative/procfs"}) == default
     assert RR._procfs_root({RR.PROCFS_ENV: ""}) == default
-    # the other direction: a directory the lock check accepts is honoured. The check is stubbed for
-    # one directory, so this runs on every host (no dependence on /usr being root-owned and closed)
-    # and does not reuse the predicate to choose its own input.
+    # the other direction: a directory the lock check accepts is honoured. The check is stubbed for one directory, so this runs on every host (no dependence on /usr being root-owned and closed) and does not reuse the predicate to choose its own input.
     real = RR._locked_refusal
     monkeypatch.setattr(RR, "_locked_refusal", lambda p: "" if p == str(fake) else real(p))
     assert RR._procfs_root({RR.PROCFS_ENV: str(fake) + "/"}) == str(fake)

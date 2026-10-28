@@ -182,7 +182,7 @@ def tree():
             dep=DEP,
             x=xlp(
                 owns="docs/fixture/**",
-                live="Live-Proof: bench -- the cli against bench.rediacc.com",
+                live="Live-Proof: bench -- the cli against the bench origin",
             ),
         ),
         QUOTE_FILE: "The operator answered: %s.\n" % QUOTE,
@@ -431,7 +431,7 @@ CASES = [
     (
         "a new renet plan declaring only bench (not admissible for renet)",
         write(
-            NEW, plan(dep=DEP, x=xlp(live="Live-Proof: bench -- the cli against bench.rediacc.com"))
+            NEW, plan(dep=DEP, x=xlp(live="Live-Proof: bench -- the cli against the bench origin"))
         ),
         True,
     ),

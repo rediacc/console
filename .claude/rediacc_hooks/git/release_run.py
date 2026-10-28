@@ -465,8 +465,8 @@ def write_release_run(
         raise RecordError("run id %r is not a plain file-name part" % run_id)
     rows = []
     for push in pushes:
-        fields = [push.get(k) for k in PUSH_KEYS]
-        if not all(isinstance(f, str) for f in fields):
+        fields = [f for f in (push.get(k) for k in PUSH_KEYS) if isinstance(f, str)]
+        if len(fields) != len(PUSH_KEYS):
             raise RecordError("push entry %r needs %s strings" % (push, ", ".join(PUSH_KEYS)))
         if not all(fields):
             raise RecordError("push entry %r has an empty field" % push)
@@ -520,12 +520,12 @@ def load_record(console_root: str | os.PathLike, named: str) -> dict:
 
 def admitted_pushes(
     console_root: str | os.PathLike,
-    environ: dict | None = None,
+    environ: dict[str, str] | os._Environ[str] | None = None,
     chain: list[int] | None = None,
 ) -> set[tuple[str, str, str, str]]:
     """The `(toplevel, remote, remote_ref, oid)` keys a live release run admits, or RecordError naming the first condition that fails."""
-    environ = os.environ if environ is None else environ
-    record = load_record(console_root, environ.get(ENV, ""))
+    env = os.environ if environ is None else environ
+    record = load_record(console_root, env.get(ENV, ""))
     pid = record["pid"]
     if not os.path.exists(PROCFS_ROOT + "/self/stat"):
         raise RecordError("there is no /proc here, so no parent chain can be read")
@@ -551,12 +551,12 @@ def admitted_pushes(
             "the console HEAD^{tree} is %s, the record says %s"
             % (tree or "(unreadable)", record["tree"])
         )
-    out = set()
+    out: set[tuple[str, str, str, str]] = set()
     for push in record["pushes"]:
         if not isinstance(push, dict):
             continue
-        fields = [push.get(k) for k in PUSH_KEYS]
-        if all(isinstance(f, str) and f for f in fields):
+        fields = [f for f in (push.get(k) for k in PUSH_KEYS) if isinstance(f, str) and f]
+        if len(fields) == len(PUSH_KEYS):
             toplevel, remote, ref, oid = fields
             out.add((_norm_toplevel(toplevel), remote, ref, oid))
     return out

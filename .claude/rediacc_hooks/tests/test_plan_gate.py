@@ -841,8 +841,19 @@ def test_next_turbo_never_pairs_an_exclusive_plan_with_a_live_writers_plan(tmp_p
         ["e", "b"],
     )
     assert plan_gate.next_turbo(root, ("PLAN-live.md",), 3, in_set=(_t("live"),)) == [_t("b")]
-    # Control: with no live writer the exclusive plan is the pick, and it then pairs with nothing.
-    assert plan_gate.next_turbo(root, (), 3) == [_t("e")]
+    # Control: with no live writer the exclusive plan is the pick. It is a mutex over ITS files (dfb34f9d6, operator ruling 2026-10-28), so the disjoint b joins it.
+    assert plan_gate.next_turbo(root, (), 3) == [_t("e"), _t("b")]
+    # And a b whose Owns overlap e's does not.
+    overlap = _turbo_root(
+        tmp_path / "overlap",
+        {
+            "e": _xplan(conc="exclusive -- regenerates every golden"),
+            "b": _xplan(owns="docs/e/golden/**"),
+            "live": _xplan(),
+        },
+        ["e", "b"],
+    )
+    assert plan_gate.next_turbo(overlap, (), 3) == [_t("e")]
 
 
 def test_next_turbo_holds_an_exclusive_plan_while_a_planless_writer_runs(tmp_path):
@@ -854,8 +865,8 @@ def test_next_turbo_holds_an_exclusive_plan_while_a_planless_writer_runs(tmp_pat
     )
     assert plan_gate.next_turbo(root, (), 3, writers=2) == [_t("b"), _t("c")]
     assert plan_gate.next_turbo(root, (), 1, ceiling=False, writers=2) == [_t("b")]
-    # CONTROL: the same queue with no writer live names the exclusive plan alone.
-    assert plan_gate.next_turbo(root, (), 3, writers=0) == [_t("e")]
+    # CONTROL: the same queue with no writer live names the exclusive plan first; b and c, whose Owns it does not claim, join it (dfb34f9d6, the overlap rule).
+    assert plan_gate.next_turbo(root, (), 3, writers=0) == [_t("e"), _t("b"), _t("c")]
 
 
 def test_next_turbo_never_names_two_plans_claiming_one_file(tmp_path):

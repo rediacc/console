@@ -28,6 +28,7 @@ import shlex
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
 from rediacc_hooks.guards.block_host_toolchain_run import _python_target
+from rediacc_hooks.wellknown import IMAGE_REGISTRY
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -318,7 +319,7 @@ EDGE_CASES = [
     ("gh release view", "gh release view v1.2.3"),
     ("a v tag push", "git push origin v1.2.3"),
     ("a branch push", "git push origin 1231-9"),
-    ("docker push", "docker push ghcr.io/rediacc/renet:1.2.3"),
+    ("docker push", "docker push %s/renet:1.2.3" % IMAGE_REGISTRY),
     ("docker build", "docker build -t x ."),
     ("the stable www deploy", "%s rediacc_ci.deploy.deploy_www" % _PY),
     ("the edge www deploy", "%s rediacc_ci.deploy.deploy_edge" % _PY),
@@ -988,7 +989,7 @@ def run(ev):
         return hookio.ALLOW
     root = ev.project_dir
     cwd = ev.field("cwd") or root
-    found = []
+    found: list[tuple[str, str, str, dict[str, str]]] = []
     _judge(cmd, cwd, {}, root, 0, found)
 
     refusals = []

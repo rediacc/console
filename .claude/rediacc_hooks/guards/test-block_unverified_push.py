@@ -1690,6 +1690,7 @@ def test_receipt_refusal():
     cases.append(
         (True, "does not parse" in why and "x.json" in why, "RECEIPT API: the marker refuses")
     )
+    doc: object
     for doc in ([], "receipt", 2):
         why = GM.receipt_refusal(str(green), _head_tree(green), doc) or ""
         cases.append(

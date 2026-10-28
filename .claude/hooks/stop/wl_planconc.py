@@ -154,7 +154,9 @@ def _submodule_roots(root) -> frozenset[str]:
         text = (pathlib.Path(root) / ".gitmodules").read_text(encoding="utf-8")
     except OSError:
         return frozenset()
-    return frozenset(m.strip().strip("/") for m in re.findall(r"^\s*path\s*=\s*(.+)$", text, re.M))
+    return frozenset(
+        m.strip().strip("/") for m in re.findall(r"^\s*path\s*=\s*(.+)$", text, re.MULTILINE)
+    )
 
 
 def _has_wild(glob: str) -> bool:
@@ -711,7 +713,7 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
 
     `serving` is the set of plan basenames the spawn serves; `live` is live_plans' map; `xinfo(base) -> PlanX`; `declared` is the spawn's own Owns globs or None. A missing Owns fails closed as `**`.
 
-    A planless spawn is judged on `declared`. A spawn serving plans is judged on `declared` when it lies inside those plans' Owns (`narrowed_owns`), else on the plans' whole Owns; a live plan likewise on `live.owns[plan]` when `live` is a `LivePlans` whose holders all declared one inside the plan's Owns. The mutex rules never narrow: `exclusive` is a claim about the whole plan.
+    A planless spawn is judged on `declared`. A spawn serving plans is judged on `declared` as written when it declares one, else on the plans' whole Owns; a live plan likewise on `live.owns[plan]` when `live` is a `LivePlans` whose holders all declared one inside the plan's Owns. The mutex rules never narrow the LIVE side: a live exclusive plan refuses a spawn whose files are unknown or overlap the plan's whole Owns, and an exclusive plan cannot start while any other plan is live.
     """
     serving = set(serving or ())
     others = {p: h for p, h in (live or {}).items() if p not in serving and h}

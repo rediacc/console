@@ -21,6 +21,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks import guards
+from rediacc_hooks.wellknown import GH_REPO, IMAGE_REGISTRY
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[2]
@@ -378,7 +379,7 @@ CASES = [
     ("gh release delete", "gh release delete v1.2.3 --yes", None, B, "gh release delete"),
     (
         "gh release create with -R first",
-        "gh release -R rediacc/console create v1.2.3",
+        "gh release -R %s create v1.2.3" % GH_REPO,
         None,
         B,
         "gh release create",
@@ -452,22 +453,22 @@ CASES = [
     ("a local tag", "git tag v1.2.3", None, A, ""),
     ("fetch tags", "git fetch --tags origin", None, A, ""),
     # ------------------------------------------------------------- docker
-    ("docker push", "docker push ghcr.io/rediacc/renet:1.2.3", None, B, "docker push"),
+    ("docker push", "docker push %s/renet:1.2.3" % IMAGE_REGISTRY, None, B, "docker push"),
     (
         "docker image push",
-        "docker image push ghcr.io/rediacc/rdc:1.2.3",
+        "docker image push %s/rdc:1.2.3" % IMAGE_REGISTRY,
         None,
         B,
         "docker image push",
     ),
     (
         "docker manifest push",
-        "docker manifest push ghcr.io/rediacc/rdc:1.2.3",
+        "docker manifest push %s/rdc:1.2.3" % IMAGE_REGISTRY,
         None,
         B,
         "docker manifest push",
     ),
-    ("sudo docker push", "sudo docker push ghcr.io/rediacc/rdc:1.2.3", None, B, "docker push"),
+    ("sudo docker push", "sudo docker push %s/rdc:1.2.3" % IMAGE_REGISTRY, None, B, "docker push"),
     ("buildx build --push", "docker buildx build --push -t ghcr.io/x:1 .", None, B, "--push"),
     ("docker build --push", "docker build --push -t ghcr.io/x:1 .", None, B, "--push"),
     (
@@ -536,7 +537,7 @@ CASES = [
     ("buildx --help", "docker buildx build --help", None, A, ""),
     ("docker build", "docker build -t x .", None, A, ""),
     ("buildx build --load", "docker buildx build --load -t x .", None, A, ""),
-    ("docker pull", "docker pull ghcr.io/rediacc/renet:1.2.3", None, A, ""),
+    ("docker pull", "docker pull %s/renet:1.2.3" % IMAGE_REGISTRY, None, A, ""),
     ("buildx imagetools inspect", "docker buildx imagetools inspect ghcr.io/x:1", None, A, ""),
     # ------------------------------------------------------------- publish modules: edge and bench free, stable asked, entry steps refused
     ("deploy_edge is free", "%s rediacc_ci.deploy.deploy_edge" % PY, None, A, "!BLOCKED"),

@@ -371,7 +371,7 @@ def _freeze(before, after, rel, doc):
 def _owned_surfaces(conc, owns):
     """{surface: [Owns glob, ...]} for the deployable surfaces a plan's Owns hit, from the one map (`rediacc_ci.proof.surfaces`). Raises ImportError (or the map's own error) when the map cannot be read; the caller warns and skips."""
     surfaces = syspath.import_from_ci(SURFACES_MOD)
-    hits = {}
+    hits: dict[str, list[str]] = {}
     for name, surface in surfaces.MAP.surfaces.items():
         for mine, _theirs, witness in conc.owns_overlap(owns.globs, surface.globs):
             if not surfaces.excluded(witness):

@@ -43,12 +43,12 @@ INSTALLED_NAME = re.compile(r"renet(?:[._-].*)?")
 
 # A host spec: a hostname (optionally user@) followed by a colon. A local path containing a colon has a slash before it, so it cannot match here.
 HOST_SPEC = r"^[A-Za-z0-9_.-]+(@[A-Za-z0-9_.-]+)?:"
-# The same spec split into its host and path, for the ops-VM test.
-_HOST_PATH = re.compile(r"(?:[A-Za-z0-9_.-]+@)?([A-Za-z0-9_.-]+):(.*)", re.DOTALL)
+# The same spec split into its host and path, for the ops-VM test. Anchored like HOST_SPEC: it reads one scp operand from its first character.
+_HOST_PATH = re.compile(r"^(?:[A-Za-z0-9_.-]+@)?([A-Za-z0-9_.-]+):(.*)", re.DOTALL)
 # The local ops VMs, 192.168.111.0/24: dev-only, so an upload there is not a deploy unless it carries renet.
 OPS_VM = re.compile(r"192\.168\.111\.(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])")
-# A word bash would still expand (a glob or a brace list) names files this reader cannot list, so it is judged strictly.
-_EXPANDS = re.compile(r"[*?[{]")
+# A word bash would still expand (a glob or a brace list) names files this reader cannot list, so it is judged strictly. The characters that start one, tested per scp operand word; a set, since no pattern is involved.
+_EXPANDS = frozenset("*?[{")
 
 EDGE_CASES = [
     ("an upload names a host as its destination", "scp bin/renet host:/usr/local/bin/renet"),
@@ -259,7 +259,7 @@ def _renet_named(path):
 
 def _unreadable(word):
     """A word whose final value is known only at run time: an unresolved expansion, or a glob or brace list bash would still expand."""
-    return shellscan.unresolved(word) or bool(_EXPANDS.search(word))
+    return shellscan.unresolved(word) or any(ch in _EXPANDS for ch in word)
 
 
 def _dev_upload(sources, dest):
