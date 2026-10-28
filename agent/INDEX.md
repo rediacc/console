@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 45 | 0 | 6 | 6774 |
-| `agent/plans/PLAN-backup-program.md` | approved | 487 | 70 | 125 | 106873 |
+| `agent/plans/PLAN-backup-program.md` | approved | 489 | 70 | 126 | 108303 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
 | `agent/plans/PLAN-backup-toc-exact-opt-in.md` | proposed | 69 | 8 | 0 | 11399 |
@@ -486,7 +486,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | approved | 401 | 4 | 25 | 59650 |
-| `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 99 | 4 | 4 | 33934 |
+| `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 102 | 3 | 6 | 36472 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 185 | 0 | 7 | 25792 |
