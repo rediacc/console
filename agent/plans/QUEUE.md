@@ -79,7 +79,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 8 of 26 plans done, 396 of 527 boxes done (75%).
+Promoted: 8 of 27 plans done, 396 of 535 boxes done (74%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -109,6 +109,7 @@ Promoted: 8 of 26 plans done, 396 of 527 boxes done (75%).
 | 24 | PLAN-local-release.md | 14/16 | 2 open |
 | 25 | PLAN-config-server-key.md | 6/6 | done |
 | 26 | PLAN-tested-on-bench.md | 6/19 | 13 open |
+| 27 | PLAN-per-flavor-renet-binary-paths.md | 0/8 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -137,6 +138,7 @@ Promoted: 8 of 26 plans done, 396 of 527 boxes done (75%).
 24. agent/plans/PLAN-local-release.md -- operator ruling ASKED:2026-10-27T06:37Z: with no customers yet, a release may be published from the local machine when local verification is green; one comprehensive change, release:local edge and stable, gated on the ci:quick and vm:check receipts, CD publish path deleted
 25. agent/plans/PLAN-config-server-key.md -- security finding #caef1cc3: layer 3 encrypted under a public constant; operator ASKED:2026-10-27T11:05Z refuse at boot, mirror first; two landings with a bounded rewrap
 26. agent/plans/PLAN-tested-on-bench.md -- operator request 2026-10-27, four questions answered same day
+27. agent/plans/PLAN-per-flavor-renet-binary-paths.md -- finding #950036d0 (2026-10-28, vm:check vmc-10280533-5ddf37 NOT_VERIFIED at A2.3): a plain ./rdc.sh flips the shared bin/renet flavor under the license drill; fix-in-session rule (CLAUDE.md rule 2), triage PLAN+SUBAGENT
 
 ## Generated
 
