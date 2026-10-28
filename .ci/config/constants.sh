@@ -307,7 +307,7 @@ readonly SHFMT_SHA256_DARWIN_ARM64="b7c872db63553ccffc7253aba3ed7d4885a27d83f1ba
 
 # wrangler is installed globally in jobs that carry the production Cloudflare
 # API token, so it is pinned rather than floating on @latest.
-readonly WRANGLER_VERSION="4.152.0"
+readonly WRANGLER_VERSION="4.153.0"
 
 # Homebrew tap configuration
 readonly HOMEBREW_FORMULA_PATH="Formula/rediacc-cli.rb"
