@@ -1,5 +1,5 @@
 /**
- * Per-org routing and pinning (agent/plans/PLAN-console-executor-multi-org.md box W1).
+ * Per-org routing and pinning (agent/plans/PLAN-console-executor-multi-org.md box W1), and routing by placement on the `durable` backend (agent/plans/PLAN-org-executor-connect-timeout-relocate.md box E7).
  *
  * `ExecutorIssuer.route` is the account Worker's RPC (box A2); here it is a fake that counts calls. The Container base class is a stub that records what `pin` asks of it, so the tests prove what the Durable Object code requests, not what the library does with it (MU1 and MU3 were read in the library source, see the box notes).
  */
@@ -63,7 +63,7 @@ function issuer(mode: 'ok' | 'throws' = 'ok'): Issuer {
       counts.routes.push(bearer);
       if (mode === 'throws') return Promise.reject(new Error('issuer down'));
       const orgId = ORG_OF[bearer];
-      return Promise.resolve(orgId ? { orgId } : { refused: 'route-refused' });
+      return Promise.resolve(orgId ? { orgId, placement: 0 } : { refused: 'route-refused' });
     },
     issue: () => {
       counts.issues += 1;
@@ -97,7 +97,7 @@ beforeEach(() => {
 });
 
 describe('front door', () => {
-  it('two callers of two orgs reach two Durable Object names, each named by the org alone', async () => {
+  it('two callers of two orgs reach two legacy Durable Object names, each named by the org alone', async () => {
     const i = issuer();
     const a = await worker.fetch(call('rdt_a'), env(i));
     const b = await worker.fetch(call('rdt_b'), env(i));
@@ -139,13 +139,34 @@ describe('front door', () => {
 
   it('never mints at the front door, and a malformed route answer is refused', async () => {
     const i = issuer();
-    for (const answer of [{}, { orgId: '' }, { orgId: 7 }, undefined]) {
+    for (const answer of [{}, { orgId: '' }, { orgId: 7, placement: 0 }, undefined]) {
       (i.binding as unknown as { route: unknown }).route = () => Promise.resolve(answer);
       const response = await worker.fetch(call('rdt_a'), env(i));
       expect(response.status).toBe(401);
     }
     expect(i.issues).toBe(0);
     expect(lib.names).toEqual([]);
+  });
+
+  it('a route answer without a valid placement is a 503 refused:route-placement-missing that starts nothing, on either backend', async () => {
+    for (const backend of ['container', 'durable']) {
+      for (const placement of [undefined, -1, 1.5, '1', null]) {
+        const i = issuer();
+        (i.binding as unknown as { route: unknown }).route = () =>
+          Promise.resolve({ orgId: 'org-a', placement });
+        const { ctx, attrs } = traced();
+        const response = await worker.fetch(
+          call('rdt_a'),
+          env(i, { EXECUTOR_BACKEND: backend, ORG_EXECUTOR: orgExecutors() }),
+          ctx
+        );
+
+        expect(response.status).toBe(503);
+        expect(attrs['rediacc.proxy.outcome']).toBe('refused:route-placement-missing');
+      }
+    }
+    expect(lib.names).toEqual([]);
+    expect(durable.gets).toEqual([]);
   });
 });
 
@@ -195,6 +216,8 @@ const durable = {
   oomAt: undefined as number | undefined,
   oomHeavyAt: undefined as number | undefined,
   pins: [] as [string, string][],
+  /** The placement every pin was asked for, in order. */
+  placements: [] as number[],
   answers: [] as PinAnswer[],
   pinThrows: false as boolean,
   oomHeavyThrows: false as boolean,
@@ -212,10 +235,13 @@ function orgExecutors(): Env['ORG_EXECUTOR'] {
           durable.oomHeavyThrows
             ? Promise.reject(new Error('do unreachable'))
             : Promise.resolve(durable.oomHeavyAt),
-        pin: (orgId: string, size: string) => {
+        pin: (orgId: string, placement: number, size: string) => {
           durable.pins.push([orgId, size]);
+          durable.placements.push(placement);
           if (durable.pinThrows) return Promise.reject(new Error('do unreachable'));
-          return Promise.resolve(durable.answers.shift() ?? { ok: true, size });
+          return Promise.resolve(
+            durable.answers.shift() ?? { ok: true, size, egressUnreachableRecent: false }
+          );
         },
         fetch: () => {
           durable.fetches.push(doId.name);
@@ -226,13 +252,14 @@ function orgExecutors(): Env['ORG_EXECUTOR'] {
   } as unknown as Env['ORG_EXECUTOR'];
 }
 
-/** An issuer whose route also answers a tier: `rdt_high` is a BUSINESS org, `rdt_std` a PROFESSIONAL one, and `rdt_a` comes from an older account Worker with no tier. */
+/** An issuer whose route also answers a tier and a placement: `rdt_high` is a BUSINESS org, `rdt_std` a PROFESSIONAL one, `rdt_a` answers no tier, and `rdt_moved` is an org at placement 1. */
 function tieredIssuer(): Issuer {
   const counts = issuer();
-  const tiers: Record<string, { orgId: string; tier?: string }> = {
-    rdt_high: { orgId: 'org-high', tier: 'high' },
-    rdt_std: { orgId: 'org-std', tier: 'standard' },
-    rdt_a: { orgId: 'org-a' },
+  const tiers: Record<string, { orgId: string; tier?: string; placement: number }> = {
+    rdt_high: { orgId: 'org-high', tier: 'high', placement: 0 },
+    rdt_std: { orgId: 'org-std', tier: 'standard', placement: 0 },
+    rdt_a: { orgId: 'org-a', placement: 0 },
+    rdt_moved: { orgId: 'org-a', placement: 1 },
   };
   (counts.binding as unknown as { route: unknown }).route = (bearer: string) => {
     counts.routes.push(bearer);
@@ -255,6 +282,7 @@ describe('backend routing by EXECUTOR_BACKEND', () => {
     durable.oomAt = undefined;
     durable.oomHeavyAt = undefined;
     durable.pins = [];
+    durable.placements = [];
     durable.answers = [];
     durable.pinThrows = false;
     durable.oomHeavyThrows = false;
@@ -282,8 +310,9 @@ describe('backend routing by EXECUTOR_BACKEND', () => {
       expect(await response.json()).toMatchObject({ from: 'org-executor' });
     }
 
-    expect(durable.gets).toEqual(['org-a', 'org-high', 'org-a']);
-    expect(durable.fetches).toEqual(['org-a', 'org-high', 'org-a']);
+    expect(durable.gets).toEqual(['org-a:p0', 'org-high:p0', 'org-a:p0']);
+    expect(durable.fetches).toEqual(['org-a:p0', 'org-high:p0', 'org-a:p0']);
+    expect(durable.placements).toEqual([0, 0, 0]);
     expect(lib.names).toEqual([]);
     expect(lib.pins).toEqual([]);
   });
@@ -294,6 +323,15 @@ describe('backend routing by EXECUTOR_BACKEND', () => {
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({ code: 'EXECUTOR_START_FAILED' });
     expect(lib.names).toEqual([]);
+  });
+
+  it('a route answering placement 1 reaches the stub named org-a:p1 and pins with that placement', async () => {
+    const response = await worker.fetch(call('rdt_moved'), durableEnv());
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ from: 'org-executor', name: 'org-a:p1' });
+    expect(durable.gets).toEqual(['org-a:p1']);
+    expect(durable.placements).toEqual([1]);
   });
 
   it('a route refusal starts nothing on the durable backend', async () => {
@@ -310,6 +348,7 @@ describe('sizing on the durable backend', () => {
     durable.oomAt = undefined;
     durable.oomHeavyAt = undefined;
     durable.pins = [];
+    durable.placements = [];
     durable.answers = [];
     durable.pinThrows = false;
     durable.oomHeavyThrows = false;
@@ -358,6 +397,18 @@ describe('sizing on the durable backend', () => {
     const response = await worker.fetch(call('rdt_high'), durableEnv(), ctx);
     expect(response.status).toBe(200);
     expect(attrs['rediacc.proxy.outcome']).toBe('forwarded');
+  });
+
+  it('a pin answer with egressUnreachableRecent is served with outcome egress-unreachable, ahead of oom-heavy', async () => {
+    durable.oomAt = Date.now() - DAY_MS;
+    durable.oomHeavyAt = Date.now() - DAY_MS;
+    durable.answers = [{ ok: true, size: 'heavy', egressUnreachableRecent: true }];
+    const { ctx, attrs } = traced();
+    const response = await worker.fetch(call('rdt_a'), durableEnv(), ctx);
+
+    expect(response.status).toBe(200);
+    expect(durable.fetches).toEqual(['org-a:p0']);
+    expect(attrs['rediacc.proxy.outcome']).toBe('egress-unreachable');
   });
 
   it('a heavy OOM flag older than 7 days leaves the outcome forwarded', async () => {

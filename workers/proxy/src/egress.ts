@@ -9,11 +9,15 @@
  *   - an allowed bearer call is answered 503 with the reason code (`no-issuer`, `issuer-refused`, `issuer-refused:ISSUER_<CODE>` for a coded account refusal, or `issuer-malformed`) when no issued token can be had, and nothing is forwarded.
  *
  * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue(orgId)` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
+ *
+ * One request is answered here rather than forwarded: on the `durable_object` backend, `AccountEgress` answers the executor's egress-unreachable report (`POST /executor/v1/egress-unreachable`) itself, from its own OrgExecutor. The legacy `accountEgress` has no such route and refuses it as `route-not-allowed`.
  */
 
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { dropIssuedToken, type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
-import type { ExecutorEgressProps } from './org-executor';
+import type { EgressReportAnswer, ExecutorEgressProps } from './org-executor';
+import { executorName, placementOf } from './placement';
+import { activeSpan } from './span';
 
 /** The value REDIACC_TOKEN carries in the container. It authenticates nothing anywhere; the egress swaps it for the issued token. */
 export const EXECUTOR_TOKEN_PLACEHOLDER = 'rediacc-executor-placeholder';
@@ -76,9 +80,20 @@ export interface EgressEnv extends ForwardEnv {
   EXECUTOR: { idFromName(name: string): { toString(): string } };
 }
 
-/** The env slice `AccountEgress` reads: the same cross-check, against the `durable_object` backend's namespace. */
+/** The executor's report that it could not reach a machine: bodiless, with no query, answered by `AccountEgress` and never forwarded (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design items 3 and 7). */
+export const EGRESS_UNREACHABLE_PATH = '/executor/v1/egress-unreachable';
+
+/** The slice of an OrgExecutor stub the egress calls: only the report. */
+interface EgressReporter {
+  recordEgressUnreachable(orgId: string, placement: number): Promise<EgressReportAnswer>;
+}
+
+/** The env slice `AccountEgress` reads: the same cross-check, against the `durable_object` backend's namespace, and the report on the calling instance itself. */
 export interface DurableEgressEnv extends ForwardEnv {
-  ORG_EXECUTOR: { idFromName(name: string): { toString(): string } };
+  ORG_EXECUTOR: {
+    idFromName(name: string): { toString(): string };
+    get(id: { toString(): string }): EgressReporter;
+  };
 }
 
 /** Log a refusal by reason code, method and path only (never a header or a body), then answer it. */
@@ -141,9 +156,11 @@ export async function accountEgress(
 }
 
 /**
- * The egress entrypoint for the `durable_object` backend (Design A): `OrgExecutor` binds it through `ctx.exports.AccountEgress({ props: { orgId, containerId } })` and `interceptOutboundHttp` routes `account.internal` to that stub.
+ * The egress entrypoint for the `durable_object` backend (Design A): `OrgExecutor` binds it through `ctx.exports.AccountEgress({ props: { orgId, placement, containerId } })` and `interceptOutboundHttp` routes `account.internal` to that stub.
  *
- * Props are set only by Durable Object code, so the container cannot choose them. A request is refused 403 before the allowlist and before the issuer when the props are absent or malformed (`org-param-missing`), or when `containerId` is not `env.ORG_EXECUTOR.idFromName(orgId).toString()` (`container-org-mismatch`): an instance can only ever obtain its own org's issued token. Everything after those checks is `forwardAccountEgress`, so the allowlist and the placeholder swap are the same code as on the legacy path.
+ * Props are set only by Durable Object code, so the container cannot choose them. A request is refused 403 before the allowlist and before the issuer when the props are absent or malformed (`org-param-missing`), or when `containerId` is not `env.ORG_EXECUTOR.idFromName(executorName(orgId, placement)).toString()` (`container-org-mismatch`): an instance can only ever obtain its own org's issued token, and only report for itself.
+ *
+ * After those checks, `POST /executor/v1/egress-unreachable` with no query is answered here: `recordEgressUnreachable` on the calling instance, `{ count, threshold, relocated }` back to the executor, and the span outcome `egress-unreachable` (or `relocated` when the report moved the org). It never reaches ACCOUNT and never calls the issuer. Everything else is `forwardAccountEgress`, so the allowlist and the placeholder swap are the same code as on the legacy path.
  *
  * Not bound in any wrangler config (box G2 fences that): it is reached only through `ctx.exports`.
  */
@@ -153,14 +170,52 @@ export class AccountEgress extends WorkerEntrypoint<
 > {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    const { orgId, containerId } = this.ctx.props ?? {};
-    if (typeof orgId !== 'string' || orgId === '' || typeof containerId !== 'string') {
+    const { orgId, placement, containerId } = this.ctx.props ?? {};
+    const valid = placementOf(placement);
+    if (
+      typeof orgId !== 'string' ||
+      orgId === '' ||
+      valid === undefined ||
+      typeof containerId !== 'string'
+    ) {
       return refuseEgress('org-param-missing', request.method, url);
     }
-    if (containerId !== this.env.ORG_EXECUTOR.idFromName(orgId).toString()) {
+    const self = this.env.ORG_EXECUTOR.idFromName(executorName(orgId, valid));
+    if (containerId !== self.toString()) {
       return refuseEgress('container-org-mismatch', request.method, url);
     }
+    if (
+      request.method === 'POST' &&
+      url.pathname === EGRESS_UNREACHABLE_PATH &&
+      url.search === ''
+    ) {
+      return await this.reportUnreachable(self, orgId, valid, url);
+    }
     return await forwardAccountEgress(request, this.env, orgId);
+  }
+
+  /** Count the report on the calling instance and answer the executor without `ok`. A refused report is a 403 with its reason, an instance that cannot be reached a 503. */
+  private async reportUnreachable(
+    self: { toString(): string },
+    orgId: string,
+    placement: number,
+    url: URL
+  ): Promise<Response> {
+    const span = activeSpan(this.ctx);
+    let answer: EgressReportAnswer;
+    try {
+      answer = await this.env.ORG_EXECUTOR.get(self).recordEgressUnreachable(orgId, placement);
+    } catch {
+      span?.setAttribute('rediacc.proxy.outcome', 'egress-unreachable');
+      return refuseEgress('report-failed', 'POST', url, 503);
+    }
+    span?.setAttribute(
+      'rediacc.proxy.outcome',
+      answer.ok && answer.relocated ? 'relocated' : 'egress-unreachable'
+    );
+    if (!answer.ok) return refuseEgress(answer.reason, 'POST', url);
+    const { count, threshold, relocated } = answer;
+    return Response.json({ count, threshold, relocated });
   }
 }
 

@@ -32,7 +32,7 @@ Attributes set on the active span by `fetch`:
 | `rediacc.region` | The Worker's `REGION` var |
 | `deployment.environment` | The Worker's `ENVIRONMENT` var |
 | `rediacc.probe` | UUID from `X-Rediacc-Probe`, when present |
-| `rediacc.proxy.outcome` | `health`, `refused:<reason>`, `forwarded`, `capacity` or `start-failed` |
+| `rediacc.proxy.outcome` | `health`, `refused:<reason>` (among them `refused:route-placement-missing`, a 503 when `route` answers no valid placement), `forwarded`, `capacity`, `start-failed`, `oom-heavy`, `egress-unreachable` or `relocated` |
 
 A request carrying a valid probe UUID also writes one log line, `telemetry-probe <uuid>` (lower case), so the delivery check finds the trace and the log of the same request.
 
@@ -81,10 +81,31 @@ The capacity count per target over 14 days is the input of box ML6, and the cont
 
 Per PLAN-executor-durable-object-policy, the executor leaves the `Container` class of `@cloudflare/containers`, which Cloudflare maintains only through 2026-12-31, for the `durable_object` scheduling policy. Status: the spike (S1) and the `ExecutorCapacity` coordinator (W2) are landed. `OrgExecutor`, `AccountEgress`, the routing, the sizing, the configs and the cost guard (W1, W3, W4, K1, G1) are not, so every target still runs the `Container` class and none of the new signals below exists yet.
 
-- **Design A.** The spike showed per-instance outbound props holding under the policy, with zero cross answers in 40 interleaved calls. `OrgExecutor` registers `interceptOutboundHttp('account.internal', ctx.exports.AccountEgress({ props: { orgId, containerId } }))` before `start()`, and `AccountEgress` cross-checks `containerId` against `ORG_EXECUTOR.idFromName(orgId)`. Today's egress keeps the allowlist and the token swap.
+- **Design A.** The spike showed per-instance outbound props holding under the policy, with zero cross answers in 40 interleaved calls. `OrgExecutor` registers `interceptOutboundHttp('account.internal', ctx.exports.AccountEgress({ props: { orgId, placement, containerId } }))` before `start()`, and `AccountEgress` cross-checks `containerId` against `ORG_EXECUTOR.idFromName(executorName(orgId, placement))`. Today's egress keeps the allowlist and the token swap.
 - **Two backends per Worker version.** The `EXECUTOR` binding (`ExecutorContainer`) and the `ORG_EXECUTOR` binding (`OrgExecutor`, one Durable Object per org, new migration `v2`) sit side by side. The `EXECUTOR_BACKEND` var (`container` or `durable`) picks one per target and per version, never per request. A gradual rollout can briefly route one org to both, and the web client re-grants.
 - **Cap in code.** The policy rejects `max_instances`, so the `ExecutorCapacity` coordinator (one per target) holds expiring leases. `EXECUTOR_CAP` is bounded by the literal `HARD_CAP = 25`, and `EXECUTOR_HEAVY_CAP` by `HARD_HEAVY_CAP = 5`. A lease lasts 180 s (the 120 s idle sleep plus 60 s of grace), so a crashed or redeployed instance frees its slot without cleanup. A running instance renews its lease on requests (throttled) and from its idle alarm while a request is in flight, so a long session keeps its slot, and a renew the coordinator no longer holds is acquired again before the instance drains. `acquire` answering `full` or `heavy-full` gives the existing 503 `EXECUTOR_CAPACITY`, and a coordinator failure gives 503 `EXECUTOR_START_FAILED` rather than an uncounted start. The `CAPACITY_ERROR` text guess is retired for this backend.
 - **Sizing.** The size is chosen at each container start. An org runs `standard-1` (heavy) when `ExecutorIssuer.route` answers `tier: 'high'` (a BUSINESS or ENTERPRISE plan) or when an out-of-memory exit was recorded in the last 7 days, with at most 5 heavy slots per target. Everything else runs the custom size `{ vcpu: 0.25, memoryMib: 1024, diskMb: 4000 }`, the verdict of the spike, because `lite` (256 MiB) sat near 240 MiB idle in the earlier measurement. A high-tier org that finds the heavy slots full starts light, while an org that is heavy by an out-of-memory exit gets the capacity 503.
-- **New signals.** The span attribute `rediacc.proxy.size` takes `light` or `heavy` and never carries an org id. `rediacc.proxy.outcome` gains `oom-heavy`, for an out-of-memory exit under the heavy size.
+- **New signals.** The span attribute `rediacc.proxy.size` takes `light` or `heavy` and never carries an org id. `rediacc.proxy.outcome` gains `oom-heavy`, for an out-of-memory exit under the heavy size, and the relocation outcomes below.
 - **Cost ceiling.** Each config is held at or under $300 a month and the deployable set under $2,100, pinned awake, from the memory and disk prices of the Cloudflare pricing page: $0.0000025 per GiB-second and $0.00000007 per GB-second over 30 days awake, which is $7.21 for a light instance (1 GiB, 4 GB) and $27.37 for a heavy one (4 GiB, 8 GB), so about $281 per target at 20 light and 5 heavy. CPU is billed on active use only and is outside the ceiling.
 - **Phases.** Phase 1 deploys the new class beside the old with `EXECUTOR_BACKEND = container`. Phase 2 flips a target to `durable`: bench, then the edge targets, then the stable targets. Phase 3 deletes `ExecutorContainer` (migration `v3`) after 14 days on stable. Phase 1 and Phase 3 are class lifecycle changes, so `wrangler rollback` is refused across them, and their deploy records read `forward-only` with no rollback command. Phase 2 rolls back with `wrangler rollback` to a Phase 1 or later version, or by flipping the var back. No phase touches D1.
+
+## Relocation (durable backend)
+
+Per PLAN-org-executor-connect-timeout-relocate, an org whose executor container cannot reach its machine moves to a new Durable Object. The executor's name is `<orgId>:p<placement>`, and the placement is the D1 column `organizations.executor_placement`, which `ExecutorIssuer.route` answers with the org. The Worker refuses a route answer without a valid placement as `refused:route-placement-missing` (503) and never guesses 0, so the account Worker with migration 0068 deploys before the proxy on every target.
+
+- **Report.** An SSH connect that never gets a TCP answer ends in `EGRESS_UNREACHABLE`, and `rdc serve` posts a bodiless `POST http://account.internal/executor/v1/egress-unreachable`. `AccountEgress` answers it itself, from the calling instance's `recordEgressUnreachable`, and sends nothing to `ACCOUNT` or the issuer. Its span records `egress-unreachable`, or `relocated` when that report moved the org.
+- **Threshold.** Three reports inside a 10-minute window (`UNREACHABLE_THRESHOLD`, `UNREACHABLE_WINDOW_MS`) make the instance call `ExecutorIssuer.relocate(orgId, placement)`. That call bumps `executor_placement` by compare-and-set, at most once per 30 minutes per org. A `budget` answer leaves the org where it is.
+- **Retired object.** After a move the old instance refuses every pin with `EXECUTOR_RELOCATED`, never re-acquires its capacity lease, and stops its container once nothing is in flight, so the request whose report caused the move still ends with its result line. The Worker answers `EXECUTOR_RELOCATED` by asking `route` once more and re-routing once when the placement went up, else 503 `EXECUTOR_START_FAILED`.
+- **Forwarded outcome.** A request forwarded while the instance's latest report is inside the window records `egress-unreachable` in place of `forwarded`.
+- **Legacy backend.** `ExecutorContainer` has no relocation. Its `accountEgress` refuses the report as `route-not-allowed`, and the executor falls back to its no-answer guidance, so the named error still reaches the user.
+
+The log lines carry the placement and the count, never an org id:
+
+```
+proxy: org executor egress unreachable 2/3 at p0
+proxy: org executor relocated p0->p1
+proxy: org executor relocate refused: budget
+proxy: caller refused: route-placement-missing
+```
+
+The operator reads a placement with `wrangler d1 execute <database> --remote --command "SELECT executor_placement, executor_relocated_at FROM organizations WHERE id = '<org>'"`.

@@ -10,6 +10,8 @@
  * The token value is never logged and never handed to the container (src/egress.ts swaps it in on the way out).
  */
 
+import type { RelocateAnswer } from './org-executor';
+
 /** What `ExecutorIssuer.issue()` answers: the token and its expiry as an ISO 8601 instant. */
 export interface IssuedToken {
   token: string;
@@ -19,10 +21,14 @@ export interface IssuedToken {
 /** The RPC surface of the account Worker's `ExecutorIssuer` entrypoint. */
 export interface ExecutorIssuerRpc extends Rpc.WorkerEntrypointBranded {
   issue(orgId: string): Promise<IssuedToken>;
-  /** The org behind a caller's own proxy:exec token, and its sizing tier (`high` for a BUSINESS or ENTERPRISE plan, `standard` otherwise; an older account Worker answers no tier, which counts as `standard`). */
+  /** The org behind a caller's own proxy:exec token, its sizing tier (`high` for a BUSINESS or ENTERPRISE plan, `standard` otherwise; a missing tier counts as `standard`) and its executor placement (D1 `organizations.executor_placement`; the Worker refuses an answer without a valid one, src/index.ts `resolveTenant`). */
   route(
     bearer: string
-  ): Promise<{ orgId: string; tier?: 'standard' | 'high' } | { refused: string }>;
+  ): Promise<
+    { orgId: string; tier?: 'standard' | 'high'; placement: number } | { refused: string }
+  >;
+  /** Move the org's executor off `fromPlacement` by compare-and-set, at most once per 30 minutes. Called only by OrgExecutor at the egress-unreachable threshold (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design items 4 and 5). */
+  relocate(orgId: string, fromPlacement: number): Promise<RelocateAnswer>;
   /** Writes nothing: whether the issuer env parses and D1 answers, and what a token it issues would carry. */
   probe(): Promise<{ ok: true; scopes: string[]; ttlMs: number }>;
 }

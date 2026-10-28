@@ -5,7 +5,8 @@
  * The Worker does exactly two jobs and no more:
  *
  *   1. Decide WHICH container instance a request belongs to. The Durable Object
- *      id is derived from the org alone, so one org's commands always land on the
+ *      name is derived from the org (and, on the `durable` backend, its placement:
+ *      src/placement.ts `executorName`), so one org's commands always land on the
  *      same warm instance, and no other org's ever does. That is what makes the SSH connection pool and the
  *      decrypted-config cache worth having: a cold instance per command would
  *      throw both away every time.
@@ -32,6 +33,7 @@ import {
   type OrgExecutor,
   type PinAnswer,
 } from './org-executor';
+import { executorName, placementOf } from './placement';
 import { readiness } from './ready';
 import {
   chooseSize,
@@ -41,6 +43,7 @@ import {
   type SizeChoice,
   tierOf,
 } from './sizing';
+import { activeSpan, type RuntimeSpan } from './span';
 
 // Every export of the main module is an entrypoint or a Durable Object class: workerd refuses to start on a plain value, and wrangler refuses a deploy whose bound Durable Object classes are not exported here.
 // Outbound interception (ExecutorContainer.outboundByHost) runs through this entrypoint; without the re-export a container start fails with "ctx.exports.ContainerProxy is undefined".
@@ -69,7 +72,7 @@ export interface Env {
   /** Account server base URL, e.g. https://eu.rediacc.com */
   ACCOUNT_URL: string;
   /**
-   * Service binding to the regional account Worker's `ExecutorIssuer` entrypoint: `route(bearer)` names the caller's org, and `issue(orgId)` mints that org's short-lived account token (`proxy:exec` and `audit:write`). src/issued-token.ts caches the tokens per org. The container never sees one: it holds a placeholder that src/egress.ts swaps on the way out.
+   * Service binding to the regional account Worker's `ExecutorIssuer` entrypoint: `route(bearer)` names the caller's org and its executor placement, `issue(orgId)` mints that org's short-lived account token (`proxy:exec` and `audit:write`), and `relocate(orgId, fromPlacement)` is called only by OrgExecutor when its container keeps failing to reach a machine. src/issued-token.ts caches the tokens per org. The container never sees one: it holds a placeholder that src/egress.ts swaps on the way out.
    */
   ISSUER?: Service<ExecutorIssuerRpc>;
   /** The `[version_metadata]` binding: `/v1/ready` answers its `id` as `workerVersion`, so a deploy smoke can tell the new version from one still rolling out. */
@@ -93,24 +96,6 @@ function configured(value: string | undefined, fallback: string): string {
 }
 const PROBE_HEADER = 'x-rediacc-probe';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** The slice of the Workers runtime `Span` the proxy uses (the account Worker's middleware/tracing.ts declares the same). */
-interface RuntimeSpan {
-  setAttribute(key: string, value: boolean | number | string): unknown;
-}
-
-interface RuntimeTracing {
-  getActiveSpan(): RuntimeSpan | undefined;
-}
-
-/** The runtime's active span, which Workers Observability exports to the `destinations` in wrangler.toml; undefined when the host supplies no tracing (tests, wrangler dev without it). */
-function activeSpan(ctx: ExecutionContext | undefined): RuntimeSpan | undefined {
-  try {
-    return (ctx as unknown as { tracing?: RuntimeTracing } | undefined)?.tracing?.getActiveSpan?.();
-  } catch {
-    return undefined;
-  }
-}
 
 /** Identity attributes only: never a token, org id, team id or tenant key. */
 function tagRequest(span: RuntimeSpan | undefined, request: Request, env: Env): void {
@@ -202,6 +187,8 @@ interface Refusal {
 interface Tenant {
   orgId: string;
   tier: ExecutorTier;
+  /** The org's executor placement (D1 `organizations.executor_placement`): the `durable` backend's Durable Object is `executorName(orgId, placement)`. */
+  placement: number;
 }
 
 async function resolveTenant(request: Request, env: Env): Promise<Tenant | Refusal> {
@@ -216,11 +203,14 @@ async function resolveTenant(request: Request, env: Env): Promise<Tenant | Refus
   } catch (error) {
     return refuse(error instanceof IssuerError ? error.reason : 'issuer-route-failed', true);
   }
-  const routed = answer as { orgId?: unknown; tier?: unknown } | undefined;
+  const routed = answer as { orgId?: unknown; tier?: unknown; placement?: unknown } | undefined;
   const orgId = routed?.orgId;
   if (typeof orgId !== 'string' || orgId === '') return refuse('route-refused');
-  // One warm executor per org: the Durable Object name is the org alone. A missing tier (an older account Worker) is `standard`.
-  return { orgId, tier: tierOf(routed?.tier) };
+  // Never guessed as 0, because 0 may be the very object the org moved away from. An account Worker without migration 0068 answers no placement: the Worker's problem, so a 503.
+  const placement = placementOf(routed?.placement);
+  if (placement === undefined) return refuse('route-placement-missing', true);
+  // A missing tier is `standard`.
+  return { orgId, tier: tierOf(routed?.tier), placement };
 }
 
 /** The 503 for a refused start. Only EXECUTOR_CAPACITY carries `Retry-After: 30`, and its outcome is `capacity`. */
@@ -267,13 +257,10 @@ async function viaContainer(
   return container.fetch(request);
 }
 
-/** The slice of an OrgExecutor stub the Worker calls. */
-interface OrgExecutorStub {
-  oomAt(): Promise<number | undefined>;
-  oomHeavyAt(): Promise<number | undefined>;
-  pin(orgId: string, size: SizeChoice['size']): Promise<PinAnswer>;
+/** The slice of an OrgExecutor stub the Worker calls, typed from the class itself so a signature change there fails the typecheck here. */
+type OrgExecutorStub = Pick<OrgExecutor, 'oomAt' | 'oomHeavyAt' | 'pin'> & {
   fetch(request: Request): Promise<Response>;
-}
+};
 
 /**
  * Size the start (src/sizing.ts) and pin the org's OrgExecutor. A heavy start the coordinator refuses as `heavy-full` is retried LIGHT only for an org that is HEAVY by its tier alone; an OOM-flagged org gets the capacity refusal. Throws when the Durable Object cannot be reached.
@@ -285,14 +272,14 @@ async function pinSized(
 ): Promise<PinAnswer> {
   const choice = chooseSize(tenant.tier, await stub.oomAt(), Date.now());
   span?.setAttribute('rediacc.proxy.size', choice.size);
-  const answer = await stub.pin(tenant.orgId, choice.size);
+  const answer = await stub.pin(tenant.orgId, tenant.placement, choice.size);
   if (answer.ok || answer.code !== 'EXECUTOR_CAPACITY' || answer.reason !== 'heavy-full') {
     return answer;
   }
   const fallback = heavyFullFallback(choice);
   if (fallback === undefined) return answer;
   span?.setAttribute('rediacc.proxy.size', fallback);
-  return await stub.pin(tenant.orgId, fallback);
+  return await stub.pin(tenant.orgId, tenant.placement, fallback);
 }
 
 /** Whether the org's heavy container ran out of memory within OOM_WINDOW_MS: nothing larger exists, so the request is still served and only the outcome says so. A Durable Object that cannot answer is not an OOM. */
@@ -305,7 +292,43 @@ async function heavyOomRecent(stub: OrgExecutorStub, size: SizeChoice['size']): 
   }
 }
 
-/** The `durable_object` backend: the org's OrgExecutor, sized, pinned and forwarded to. Every refusal is the coordinator's or the Durable Object's code, never a guess. */
+/** The org's OrgExecutor at its placement, sized and pinned. Throws when the Durable Object cannot be reached. */
+async function pinAtPlacement(
+  namespace: NonNullable<Env['ORG_EXECUTOR']>,
+  tenant: Tenant,
+  span: RuntimeSpan | undefined
+): Promise<{ stub: OrgExecutorStub; answer: PinAnswer }> {
+  const name = executorName(tenant.orgId, tenant.placement);
+  const stub = namespace.get(namespace.idFromName(name)) as unknown as OrgExecutorStub;
+  return { stub, answer: await pinSized(stub, tenant, span) };
+}
+
+/** After an `EXECUTOR_RELOCATED` pin: the tenant at its new placement, when the issuer now names a higher one for the same org, else undefined. */
+async function relocatedTenant(
+  request: Request,
+  env: Env,
+  tenant: Tenant
+): Promise<Tenant | undefined> {
+  const again = await resolveTenant(request, env);
+  if ('reason' in again) return undefined;
+  if (again.orgId !== tenant.orgId || again.placement <= tenant.placement) return undefined;
+  return again;
+}
+
+/** The outcome of a forwarded request: `egress-unreachable` while the container's latest egress-unreachable report is recent, `oom-heavy` for a heavy container that recently ran out of memory, else `forwarded`. */
+async function forwardOutcome(
+  stub: OrgExecutorStub,
+  answer: Extract<PinAnswer, { ok: true }>
+): Promise<string> {
+  if (answer.egressUnreachableRecent) return 'egress-unreachable';
+  return (await heavyOomRecent(stub, answer.size)) ? 'oom-heavy' : 'forwarded';
+}
+
+/**
+ * The `durable_object` backend: the org's OrgExecutor at its placement, sized, pinned and forwarded to. Every refusal is the coordinator's or the Durable Object's code, never a guess.
+ *
+ * An `EXECUTOR_RELOCATED` pin means the instance retired after the org moved (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design item 7): the issuer is asked once more, and the request is re-routed once when the placement went up. Anything else, including a second `EXECUTOR_RELOCATED`, is a 503 EXECUTOR_START_FAILED.
+ */
 async function viaOrgExecutor(
   request: Request,
   env: Env,
@@ -314,20 +337,27 @@ async function viaOrgExecutor(
 ): Promise<Response> {
   const namespace = env.ORG_EXECUTOR;
   if (!namespace) return startRefused('EXECUTOR_START_FAILED', span);
-  const stub = namespace.get(namespace.idFromName(tenant.orgId)) as unknown as OrgExecutorStub;
-  let answer: PinAnswer;
+  let pinned: { stub: OrgExecutorStub; answer: PinAnswer };
   try {
-    answer = await pinSized(stub, tenant, span);
+    pinned = await pinAtPlacement(namespace, tenant, span);
+    if (!pinned.answer.ok && pinned.answer.code === 'EXECUTOR_RELOCATED') {
+      const moved = await relocatedTenant(request, env, tenant);
+      if (moved === undefined) return startRefused('EXECUTOR_START_FAILED', span);
+      pinned = await pinAtPlacement(namespace, moved, span);
+    }
   } catch {
     return startRefused('EXECUTOR_START_FAILED', span);
   }
-  if (!answer.ok) return startRefused(answer.code, span);
+  const { stub, answer } = pinned;
+  if (!answer.ok) {
+    return startRefused(
+      answer.code === 'EXECUTOR_RELOCATED' ? 'EXECUTOR_START_FAILED' : answer.code,
+      span
+    );
+  }
   // The size the container runs on, which a running container keeps from its start.
   span?.setAttribute('rediacc.proxy.size', answer.size);
-  span?.setAttribute(
-    'rediacc.proxy.outcome',
-    (await heavyOomRecent(stub, answer.size)) ? 'oom-heavy' : 'forwarded'
-  );
+  span?.setAttribute('rediacc.proxy.outcome', await forwardOutcome(stub, answer));
   return stub.fetch(request);
 }
 

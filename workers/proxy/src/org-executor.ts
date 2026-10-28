@@ -16,6 +16,7 @@ import {
   type ExecutorSize,
 } from './capacity';
 import { EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
+import type { ExecutorIssuerRpc } from './issued-token';
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
 import { INSTANCE_BY_SIZE } from './sizing';
 
@@ -63,17 +64,12 @@ export type RelocateAnswer =
   | { ok: false; reason: 'stale' | 'budget'; placement: number }
   | { ok: false; reason: 'unknown-org' };
 
-/** The slice of the issuer binding OrgExecutor calls: only `relocate`. */
-export interface ExecutorRelocator {
-  relocate(orgId: string, fromPlacement: number): Promise<RelocateAnswer>;
-}
-
 /** The env slice OrgExecutor reads. */
 export interface OrgExecutorEnv {
   ORG_EXECUTOR: { idFromName(name: string): DurableObjectId };
   EXECUTOR_CAPACITY: DurableObjectNamespace<ExecutorCapacity>;
   /** The account Worker's `ExecutorIssuer`, called only by `recordEgressUnreachable` at the threshold. Without it a report never relocates. */
-  ISSUER?: ExecutorRelocator;
+  ISSUER?: Pick<ExecutorIssuerRpc, 'relocate'>;
   /** Region label, handed to the executor as REDIACC_REGION; `eu` when unset or empty. */
   REGION?: string;
 }
