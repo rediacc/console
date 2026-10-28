@@ -97,6 +97,7 @@ async function triggerAdhocBackup(
   }
 
   const adhocUnit = `rediacc-backup-${name}-adhoc`;
+  await clearFinishedAdhocUnit(sftp, adhocUnit, name);
   const fullCmd = commands.join(' && ');
   const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} --remain-after-exit /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
 
@@ -116,8 +117,34 @@ async function triggerAdhocBackup(
   if (exitCode === 0) {
     outputService.success(`Ad-hoc backup started: ${adhocUnit}.service`);
   } else {
-    outputService.warn(`Failed to start ad-hoc backup for "${name}" (exit ${exitCode})`);
+    throw new Error(`Failed to start ad-hoc backup for "${name}" (exit ${exitCode})`);
   }
+}
+
+/**
+ * An ad-hoc unit lingers after it exits (`--remain-after-exit`), and systemd-run refuses a name that is
+ * still loaded. Refuse while it is running; otherwise stop it and clear its failed state so the next run can reuse the name.
+ */
+async function clearFinishedAdhocUnit(sftp: SFTPClient, unit: string, name: string): Promise<void> {
+  let subState = '';
+  await sftp.execStreaming(
+    `systemctl show -p SubState --value ${unit}.service 2>/dev/null || true`,
+    {
+      onStdout: (data) => {
+        subState += data;
+      },
+      onStderr: () => {},
+    }
+  );
+  if (['running', 'start', 'start-pre', 'start-post'].includes(subState.trim())) {
+    throw new Error(
+      `An ad-hoc backup for "${name}" is still running (${unit}.service). Wait for it, or cancel it with: rdc backup cancel ${name}`
+    );
+  }
+  await sftp.execStreaming(
+    `sudo systemctl stop ${unit}.service 2>/dev/null; sudo systemctl reset-failed ${unit}.service 2>/dev/null; true`,
+    { onStdout: () => {}, onStderr: () => {} }
+  );
 }
 
 /**

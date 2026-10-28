@@ -257,6 +257,9 @@ async function applyRetentionNow(name: string): Promise<void> {
     const { pushed } = await pushStrategyRetention(strategy, { overwrite: true });
     outputService.info(t('commands.backup.strategy.set.retentionPushed', { count: pushed }));
   } catch (error) {
+    // A 4xx is the server's verdict on this retention (plan limits, bad values): retrying cannot help, so it fails the command with the server's message. Only an unreachable server or a 5xx is a warning.
+    const status = (error as { status?: unknown } | null)?.status;
+    if (typeof status === 'number' && status >= 400 && status < 500) throw error;
     outputService.warn(
       t('commands.backup.strategy.set.retentionPushFailed', {
         strategy: name,

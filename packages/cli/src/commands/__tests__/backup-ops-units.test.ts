@@ -55,6 +55,8 @@ const machine = vi.hoisted(() => ({
   deployed: new Set<string>(),
   running: new Set<string>(),
   commands: [] as string[],
+  subState: 'dead',
+  runExit: 0,
 }));
 /** The machine: `systemctl cat` prints for a deployed unit, `is-active` answers from `running`. */
 function fakeExecStreaming(cmd: string, opts: { onStdout: (d: string) => void }): Promise<number> {
@@ -63,7 +65,8 @@ function fakeExecStreaming(cmd: string, opts: { onStdout: (d: string) => void })
   if (cat && machine.deployed.has(cat[1])) opts.onStdout('[Unit]\n');
   const active = /^systemctl is-active (\S+)/.exec(cmd);
   if (active) opts.onStdout(machine.running.has(active[1]) ? 'active\n' : 'inactive\n');
-  return Promise.resolve(0);
+  if (cmd.startsWith('systemctl show -p SubState')) opts.onStdout(`${machine.subState}\n`);
+  return Promise.resolve(cmd.startsWith('sudo systemd-run') ? machine.runExit : 0);
 }
 vi.mock('../../services/machine/machine-connection.js', () => ({
   machineConnections: {
@@ -96,6 +99,8 @@ beforeEach(() => {
   machine.deployed.clear();
   machine.running.clear();
   machine.commands.length = 0;
+  machine.subState = 'dead';
+  machine.runExit = 0;
   schedule.buildStrategyCommandsForMachine.mockReset();
   schedule.reportBackupScheduleStatus.mockReset();
 });
@@ -149,5 +154,29 @@ describe('backup status', () => {
 
     expect(schedule.reportBackupScheduleStatus).toHaveBeenCalledWith('m1', undefined);
     expect(machine.commands).toEqual([]);
+  });
+});
+
+describe('backup run ad hoc re-run', () => {
+  it('clears an exited ad-hoc unit before systemd-run', async () => {
+    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
+    await rdcBackup('run', 'nightly', '-m', 'm1');
+    const stopAt = machine.commands.findIndex((c) => c.includes('reset-failed'));
+    const runAt = machine.commands.findIndex((c) => c.startsWith('sudo systemd-run'));
+    expect(stopAt).toBeGreaterThan(-1);
+    expect(stopAt).toBeLessThan(runAt);
+  });
+
+  it('refuses while the ad-hoc unit is still running', async () => {
+    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
+    machine.subState = 'running';
+    await expect(rdcBackup('run', 'nightly', '-m', 'm1')).rejects.toThrow(/still running/);
+    expect(machine.commands.some((c) => c.startsWith('sudo systemd-run'))).toBe(false);
+  });
+
+  it('exits non-zero when systemd-run fails', async () => {
+    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
+    machine.runExit = 1;
+    await expect(rdcBackup('run', 'nightly', '-m', 'm1')).rejects.toThrow(/Failed to start/);
   });
 });
