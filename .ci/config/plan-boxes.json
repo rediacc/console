@@ -320,17 +320,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 4,
+      "open": 3,
+      "done": 5,
       "open_sigs": [
         "094664ee",
-        "6f475942",
         "a6aa3bb3",
         "ea53c07a"
       ],
       "done_sigs": [
         "055c7d0d",
         "29fda24a",
+        "6f475942",
         "f13a4009",
         "faa10486"
       ]
@@ -1724,20 +1724,21 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 0,
+      "open": 7,
+      "done": 2,
       "open_sigs": [
         "1d4d78e1",
-        "25c164cb",
         "38d70bfe",
         "4b71c828",
         "5dedfb94",
-        "83df7d0e",
         "966f84cd",
         "cfd016f3",
         "fde13b60"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "25c164cb",
+        "83df7d0e"
+      ]
     },
     "agent/plans/PLAN-ssr-nav-locale.md": {
       "status": "compacted",
