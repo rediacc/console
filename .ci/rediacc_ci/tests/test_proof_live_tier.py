@@ -16,6 +16,7 @@ from rediacc_ci.proof import live_tier as LT
 from rediacc_ci.proof import receipt as R
 from rediacc_ci.proof import surfaces as S
 from rediacc_ci.tests.test_proof_surfaces import World
+from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -195,8 +196,8 @@ def test_expand_fills_only_registry_values() -> None:
     checks = LT.registry()
     smoke = LT.expand(checks["account-smoke"], "bench")
     assert [r.argv[-1] for r in smoke] == [
-        "https://bench.rediacc.com/account/api/v1/health",
-        "https://bench.rediacc.com/account/api/v1/.well-known/server-info",
+        BENCH_ORIGIN + "/account/api/v1/health",
+        BENCH_ORIGIN + "/account/api/v1/.well-known/server-info",
     ]
     renet = LT.expand(checks["renet-live"], "hostinger")
     assert [(r.step.id, r.machine) for r in renet] == [

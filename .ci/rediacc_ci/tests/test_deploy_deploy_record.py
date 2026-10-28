@@ -851,13 +851,21 @@ def test_the_www_record_carries_the_version_ids_the_rollback_command_and_the_smo
 def test_the_www_record_is_inactive_without_the_env_and_refuses_before_a_deploy(
     monkeypatch, tmp_path
 ):
-    ran = []
+    ran: list[int] = []
+
+    def deploy(code: int):
+        def run() -> int:
+            ran.append(1)
+            return code
+
+        return run
+
     monkeypatch.delenv("DEPLOY_RECORD_OUT", raising=False)
-    assert dr.record_www_deploy(tmp_path, "c.toml", "www-edge", lambda: ran.append(1) or 7) == 7
+    assert dr.record_www_deploy(tmp_path, "c.toml", "www-edge", deploy(7)) == 7
     monkeypatch.setenv("DEPLOY_RECORD_OUT", str(tmp_path / "r.json"))
     monkeypatch.setenv("DEPLOY_RECORD_VERSION", "not-a-version")
     ran.clear()
-    assert dr.record_www_deploy(tmp_path, "c.toml", "www-edge", lambda: ran.append(1) or 0) == 1
+    assert dr.record_www_deploy(tmp_path, "c.toml", "www-edge", deploy(0)) == 1
     assert ran == []
 
 

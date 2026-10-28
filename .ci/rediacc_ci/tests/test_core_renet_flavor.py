@@ -48,9 +48,9 @@ def test_buildinfo_flavor_and_refusal():
     assert renet_flavor.buildinfo_flavor("no build lines") == ""
     assert renet_flavor.flavor_refusal("enforce", keyed) is None
     assert renet_flavor.flavor_refusal("nolicense", plain) is None
-    assert "nolicense" in renet_flavor.flavor_refusal("enforce", plain)
-    assert "public key" in renet_flavor.flavor_refusal("enforce", keyless)
-    assert "unknown" in renet_flavor.flavor_refusal("enforce", "")
+    assert "nolicense" in (renet_flavor.flavor_refusal("enforce", plain) or "")
+    assert "public key" in (renet_flavor.flavor_refusal("enforce", keyless) or "")
+    assert "unknown" in (renet_flavor.flavor_refusal("enforce", "") or "")
 
 
 def test_subdir_equals_build_sh_dev_out_dir():

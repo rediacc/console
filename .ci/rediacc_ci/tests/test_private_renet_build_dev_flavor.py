@@ -1,9 +1,6 @@
 """`build.sh dev` writes each license flavor into its own directory.
 
-A nolicense build owns `bin/`, an enforcing one owns `bin/enforce/`, so one never
-overwrites the other's binaries. The real `build.sh` is copied beside a stub
-`scripts/pull-with-retry.sh` and sourced; a fake `go` on PATH writes its argv into
-the `-o` file, so the only "build" is the fake.
+A nolicense build owns `bin/`, an enforcing one owns `bin/enforce/`, so one never overwrites the other's binaries. The real `build.sh` is copied beside a stub `scripts/pull-with-retry.sh` and sourced; a fake `go` on PATH writes its argv into the `-o` file, so the only "build" is the fake.
 """
 
 from __future__ import annotations

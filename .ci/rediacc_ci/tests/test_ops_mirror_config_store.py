@@ -13,12 +13,17 @@ import shlex
 import sqlite3
 import stat
 import typing
+from urllib.parse import urlparse
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ops import cf_auth
 from rediacc_ci.ops import mirror_config_store as mod
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN
+
+EU_HOST = urlparse(ACCOUNT_DEFAULT_ORIGIN).netloc
+BENCH_HOST = urlparse(BENCH_ORIGIN).netloc
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -1254,7 +1259,7 @@ def test_a_minted_token_is_destroyed_in_finally_when_the_write_fails(fake, monke
 
 @pytest.mark.usefixtures("fake")
 def test_a_supplied_token_is_not_destroyed(monkeypatch) -> None:
-    called = []
+    called: list[typing.Any] = []
     monkeypatch.setattr(cf_auth, "self_destruct", called.append)
     assert mod.main([*BASE, "--list-stores"]) == 0
     assert called == []
@@ -1473,11 +1478,11 @@ BENCH = mod.End(
     "rediacc-configs-bench",
     "",
     "rediacc-account-bench",
-    "bench.rediacc.com",
+    BENCH_HOST,
 )
 BENCH_KEY_ENV = "ACCOUNT_CONFIG_SERVER_KEY_BENCH"
 BENCH_KID = "bbbbbbbb"
-SRC_RP = dataclasses.replace(SRC, rp_id="eu.rediacc.com")
+SRC_RP = dataclasses.replace(SRC, rp_id=EU_HOST)
 
 
 def test_bench_resolves_from_its_own_wrangler_config() -> None:
@@ -1515,8 +1520,9 @@ def test_a_bench_plan_names_bench_and_both_rp_ids(dbs) -> None:
         in text
     )
     assert (
-        "passkeys do not carry over: WebAuthn RP ID eu.rediacc.com on eu-stable, "
-        "bench.rediacc.com on bench" in text
+        "passkeys do not carry over: WebAuthn RP ID %s on eu-stable, %s on bench"
+        % (EU_HOST, BENCH_HOST)
+        in text
     )
     assert "r2: 4 object(s) rediacc-configs-eu -> rediacc-configs-bench (no jurisdiction)" in text
     assert "customer_id copied from eu-stable as it is" in text

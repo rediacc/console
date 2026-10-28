@@ -1025,7 +1025,7 @@ def test_bench_is_forward_only_when_its_recorded_migration_tag_differs(
     args = ("--target", "bench", "--record", str(record))
     for recorded, forward in (("v1", True), ("v2", False)):
         record.write_text(json.dumps({"migration_tag": recorded}), encoding="utf-8")
-        proc, _calls = _run(tmp_path, root, args, **BENCH_PROFILE_ENV)
+        proc, _calls = _run(tmp_path, root, args, drop_env=(), **BENCH_PROFILE_ENV)
         assert proc.returncode == 0, proc.stderr
         written = json.loads(record.read_text())
         assert written["migration_tag"] == "v2"

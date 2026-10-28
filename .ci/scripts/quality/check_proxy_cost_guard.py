@@ -693,7 +693,7 @@ def selftest() -> bool:
         len(vars_findings({"vars": {"EXECUTOR_CAP": 25, "EXECUTOR_HEAVY_CAP": "5"}}, "c")[2]) == 1,
     )
     control("absent cap vars fire", len(vars_findings({}, "c")[2]) == 2)
-    both = [
+    both: list[dict] = [
         {"class_name": "A", "max_instances": 25},
         {"class_name": "O", "scheduling_policy": DURABLE_POLICY},
     ]

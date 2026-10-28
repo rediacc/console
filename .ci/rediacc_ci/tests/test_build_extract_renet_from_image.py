@@ -915,7 +915,8 @@ def test_the_cross_build_refuses_without_a_version(tmp_path) -> None:
 
 def test_the_cross_build_refuses_without_the_key(tmp_path) -> None:
     root = fixture(tmp_path)
-    for env in ({}, {"ACCOUNT_ED25519_PUBLIC_KEY": ""}):
+    envs: tuple[dict[str, str | None], ...] = ({}, {"ACCOUNT_ED25519_PUBLIC_KEY": ""})
+    for env in envs:
         _reset(root)
         proc, calls = _run(
             root,

@@ -6,6 +6,7 @@ A real local HTTP server stands in for the account Worker's POST /account/api/v1
 import json
 import subprocess
 import threading
+from typing import Any
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
@@ -286,18 +287,20 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: events.append("rotation"))
-    monkeypatch.setattr(
-        deploy_bench,
-        "_run",
-        lambda argv, *_a, **_k: events.append(" ".join(argv[:5])) or "Current Version ID: " + VID,
-    )
+
+    def fake_run(argv, *_a, **_k):
+        events.append(" ".join(argv[:5]))
+        return "Current Version ID: " + VID
+
+    monkeypatch.setattr(deploy_bench, "_run", fake_run)
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: events.append("seed"))
     recorded: list[tuple[str, str]] = []
-    monkeypatch.setattr(
-        deploy_bench,
-        "record_version",
-        lambda _r, out, live: (events.append("record"), recorded.append((out, live))),
-    )
+
+    def fake_record(_r, out, live):
+        events.append("record")
+        recorded.append((out, live))
+
+    monkeypatch.setattr(deploy_bench, "record_version", fake_record)
     monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a: (True, "live"))
     deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
     assert recorded == [("Current Version ID: " + VID, "live")]
@@ -361,7 +364,8 @@ def test_an_existing_bench_json_is_overwritten(monkeypatch, tmp_path):
 
 def test_a_blank_live_version_is_refused_not_replaced_by_the_printed_id(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
-    for blank in ("", "  ", None):
+    blanks: tuple[Any, ...] = ("", "  ", None)
+    for blank in blanks:
         with pytest.raises(deploy_bench.DeployError, match="live bench version"):
             deploy_bench.record_version(tmp_path, "Current Version ID: " + VID, blank)
     assert not (tmp_path / ".ci/cache/live-deploys/bench.json").exists()

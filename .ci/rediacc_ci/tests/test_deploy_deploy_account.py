@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import typing
+from urllib.parse import urlparse
 
 import pytest
 
@@ -26,6 +27,9 @@ from rediacc_ci.deploy import deploy_account as port
 from rediacc_ci.ops import portal_captcha as pc
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN
+
+EU_HOST = urlparse(ACCOUNT_DEFAULT_ORIGIN).netloc
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -608,8 +612,14 @@ def _run_with_curl(tmp_path: pathlib.Path, root: pathlib.Path, **extra: str):
     curl.parent.mkdir(parents=True, exist_ok=True)
     curl.write_text(FAKE_CURL, encoding="utf-8")
     curl.chmod(0o755)
-    return _run_live(
-        PORT, tmp_path, root, ("--region", "eu", "--target", "edge"), with_wrangler=True, **extra
+    return _run(
+        PORT,
+        tmp_path,
+        root,
+        ("--region", "eu", "--target", "edge"),
+        with_wrangler=True,
+        drop_env=(),
+        **extra,
     )
 
 
@@ -735,7 +745,7 @@ def test_an_unbound_or_malformed_sitekey_refuses(tmp_path: pathlib.Path) -> None
 # --------------------------------------------------------------------------- The post-deploy portal smoke (2026-10-28) ---------------------------------------------------------------------------
 
 ROUTED_TOML = (
-    'routes = [\n  { pattern = "eu.rediacc.com", custom_domain = true }\n]\n' + FIXTURE_TOML
+    'routes = [\n  { pattern = "%s", custom_domain = true }\n]\n' % EU_HOST + FIXTURE_TOML
 )
 LOGIN_HTML = '<script type="module" src="/account/assets/index-AbC123.js"></script>'
 
@@ -772,8 +782,8 @@ def test_the_smoke_passes_a_served_portal_that_carries_the_deployed_key(
         port.portal_smoke(config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None)
         is None
     )
-    assert ("POST", "https://eu.rediacc.com/account/api/v1/auth/login") not in calls
-    assert calls[0] == ("GET", "https://eu.rediacc.com/account/login")
+    assert ("POST", ACCOUNT_DEFAULT_ORIGIN + "/account/api/v1/auth/login") not in calls
+    assert calls[0] == ("GET", ACCOUNT_DEFAULT_ORIGIN + "/account/login")
 
 
 def test_the_smoke_refuses_the_2026_10_28_keyless_portal_on_an_enforcing_worker(
@@ -789,7 +799,7 @@ def test_the_smoke_refuses_the_2026_10_28_keyless_portal_on_an_enforcing_worker(
     )
     assert refusal is not None
     assert "BROKEN" in refusal
-    assert "eu.rediacc.com" in refusal
+    assert EU_HOST in refusal
     # The rebuild command and the rollback are both named.
     assert 'VITE_TURNSTILE_SITE_KEY=\\"$TURNSTILE_SITE_KEY\\"' in refusal
     assert "deploy_account --region eu" in refusal
@@ -879,12 +889,17 @@ def test_main_fails_a_deploy_whose_served_portal_is_broken(
     monkeypatch.setattr(port.common, "repo_root", lambda: root)
     monkeypatch.setattr(port, "portal_sitekey_refusal", lambda *_a: None)
     monkeypatch.setattr(port, "check_services", lambda *_a: None)
-    monkeypatch.setattr(
-        port, "_run", lambda argv: order.append(argv[-3] if "deploy" in argv else "migrate") or 0
-    )
-    monkeypatch.setattr(
-        port, "portal_smoke", lambda *_a: order.append("smoke") or "Portal smoke BROKEN"
-    )
+
+    def fake_run(argv):
+        order.append(argv[-3] if "deploy" in argv else "migrate")
+        return 0
+
+    def fake_smoke(*_a):
+        order.append("smoke")
+        return "Portal smoke BROKEN"
+
+    monkeypatch.setattr(port, "_run", fake_run)
+    monkeypatch.setattr(port, "portal_smoke", fake_smoke)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
     monkeypatch.chdir(tmp_path)

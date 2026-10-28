@@ -435,7 +435,7 @@ def test_g1_7_leaves_the_stamp_alone_when_mainpid_is_unreadable(monkeypatch) -> 
 
 
 def test_cgroup_script_installs_bpftool_before_declaring_it_missing() -> None:
-    script = g.cgroup_script("/var/run/rediacc/docker-1.sock", ("a",))
+    script = g.cgroup_script(RUNTIME_DIR + "/docker-1.sock", ("a",))
     assert "ensure_bpftool()" in script
     assert script.index("ensure_bpftool >/dev/null") < script.index("echo NOBPFTOOL")
     assert "linux-tools-common" in script

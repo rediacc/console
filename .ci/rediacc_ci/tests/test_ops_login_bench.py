@@ -6,6 +6,7 @@ import json
 import pytest
 
 from rediacc_ci.ops import login_bench, totp
+from rediacc_ci.well_known import BENCH_ORIGIN, EDGE_ORIGIN, SITE_ORIGIN
 
 SEED = base64.b32encode(b"bench-seed-0123456789").decode().rstrip("=")
 VALUES = {
@@ -68,9 +69,9 @@ def _secrets(env) -> list[str]:
 @pytest.mark.parametrize(
     "argv",
     [
-        ["--server", "https://www.rediacc.com"],
-        ["--server=https://edge.rediacc.com"],
-        ["--server", "http://bench.rediacc.com"],
+        ["--server", SITE_ORIGIN],
+        ["--server=" + EDGE_ORIGIN],
+        ["--server", BENCH_ORIGIN.replace("https:", "http:")],
         ["--server", "https://bench.rediacc.com.evil.invalid"],
     ],
 )
@@ -99,9 +100,9 @@ def test_an_unknown_argument_is_refused():
 
 def test_the_explicit_bench_target_is_accepted():
     assert login_bench.parse_args(
-        ["--server", "https://bench.rediacc.com/", "--config", "eu-bench"]
+        ["--server", BENCH_ORIGIN + "/", "--config", "eu-bench"]
     ) == (login_bench.SERVER, login_bench.CONFIG)
-    assert login_bench.SERVER == "https://bench.rediacc.com"
+    assert login_bench.SERVER == BENCH_ORIGIN
 
 
 # ---- the profile ---------------------------------------------------------------
@@ -172,7 +173,7 @@ def test_the_steps_run_in_order_against_bench_and_eu_bench():
         "subscription",
         "login",
         "--server",
-        "https://bench.rediacc.com",
+        BENCH_ORIGIN,
     ]
     assert argvs[2][1:] == [
         "--config",
@@ -184,7 +185,7 @@ def test_the_steps_run_in_order_against_bench_and_eu_bench():
         "--config-id",
         login_bench.CONFIG_ID,
         "--api-url",
-        "https://bench.rediacc.com",
+        BENCH_ORIGIN,
     ]
     assert argvs[3][1:] == ["--config", "eu-bench", "config", "remote", "status"]
     assert all(argv[0].endswith("/rdc.sh") for argv in argvs[1:])
@@ -256,7 +257,7 @@ def test_the_code_comes_from_the_next_window_when_the_current_one_is_closing():
 
 
 def _status(
-    config_id=login_bench.CONFIG_ID, api_url="https://bench.rediacc.com", status="connected"
+    config_id=login_bench.CONFIG_ID, api_url=BENCH_ORIGIN, status="connected"
 ):
     return (
         0,
@@ -284,7 +285,7 @@ def test_an_already_linked_config_skips_enable():
     "status",
     [
         _status(config_id="00000000-0000-0000-0000-000000000000"),
-        _status(api_url="https://www.rediacc.com"),
+        _status(api_url=SITE_ORIGIN),
         _status(status="disconnected"),
         (2, ""),
         (0, "not json"),

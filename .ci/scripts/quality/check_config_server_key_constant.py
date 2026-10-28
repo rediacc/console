@@ -33,10 +33,16 @@ import subprocess
 import sys
 import tempfile
 
+import _cipath
+from rediacc_ci.controls import plant
+
 CONSTANT = "rediacc-config-server-" + "dev-key"
 HOME_REL = "private/account/src/services/config-server-key.ts"
 HOME_REPO = "private/account"
 EXIT_CANNOT_RUN = 77
+# Floors for the REAL tree, measured 2026-10-28 at 7130 source files across 5 repos and 236 under private/account/src. A corpus that collapses below either one (a sparse checkout, an ls-files that lost a submodule) is VACUOUS and CANNOT RUN, never a pass. The selftest fixtures are a handful of files, so they scan with a floor of 1.
+MIN_SOURCES = 2000
+MIN_ACCOUNT_SRC = 80
 
 # Source by suffix. Anything else (images, lockfiles' siblings, prose) is not where a key gets used.
 SOURCE_SUFFIXES = (
@@ -187,17 +193,18 @@ def home_findings(text: str) -> tuple[list[str], int]:
     return out, guarded
 
 
-def scan(root: str) -> dict:
-    """The verdict data for one tree. Raises CannotRunError."""
+def scan(root: str, min_sources: int = 1, min_account_src: int = 1) -> dict:
+    """The verdict data for one tree. Raises CannotRunError, including when the corpus is below either floor."""
     files, submodules = corpus(root)
     sources = [
         f
         for f in files
         if is_source(f) and not is_record_path(f) and os.path.isfile(os.path.join(root, f))
     ]
-    if not sources:
+    if len(sources) < min_sources:
         raise CannotRunError(
-            "the scan found zero source files under %s; its green would mean nothing" % root
+            "VACUOUS: the scan found %d source file(s) under %s, floor %d; its green would mean nothing"
+            % (len(sources), root, min_sources)
         )
     findings: list[str] = []
     exempt: list[str] = []
@@ -230,9 +237,10 @@ def scan(root: str) -> dict:
         more, guarded = home_findings(home_text)
         findings.extend(more)
     account_src = sum(1 for f in sources if f.startswith(HOME_REPO + "/src/"))
-    if account_src == 0:
+    if account_src < min_account_src:
         raise CannotRunError(
-            "zero source files under %s/src; the account code is not in the corpus" % HOME_REPO
+            "VACUOUS: %d source file(s) under %s/src, floor %d; the account code is not in the corpus"
+            % (account_src, HOME_REPO, min_account_src)
         )
     return {
         "sources": len(sources),
@@ -286,11 +294,13 @@ def controls_fired() -> list[str]:
     """Each plant against a scratch repo; returns the plants that did NOT behave. Any entry means no verdict on the real tree may be issued."""
     missed: list[str] = []
 
-    def run_case(label: str, files: dict[str, str], expect: str | None) -> None:
+    def run_case(
+        label: str, files: dict[str, str], expect: str | None, floors: tuple[int, int] = (1, 1)
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = _fixture(tmp, files)
             try:
-                result = scan(root)
+                result = scan(root, *floors)
             except CannotRunError:
                 if expect != "cannot-run":
                     missed.append("%s: CANNOT RUN where a verdict was expected" % label)
@@ -330,8 +340,8 @@ def controls_fired() -> list[str]:
     run_case("R1 negative: prose and records are not source", files, None)
 
     files = _base()
-    files[HOME_REL] = HEALTHY_HOME.replace(
-        "const TEST_MODE_DEV_KEY", "export const TEST_MODE_DEV_KEY"
+    files[HOME_REL] = plant(
+        HEALTHY_HOME, "const TEST_MODE_DEV_KEY", "export const TEST_MODE_DEV_KEY"
     )
     run_case("R2 exported constant", files, "is exported")
 
@@ -340,24 +350,25 @@ def controls_fired() -> list[str]:
     run_case("R2 second declaration", files, "appears 2 time(s)")
 
     files = _base()
-    files[HOME_REL] = HEALTHY_HOME.replace(
+    files[HOME_REL] = plant(
+        HEALTHY_HOME,
         "const TEST_MODE_DEV_KEY = '%s';" % CONSTANT,
         "const TEST_MODE_DEV_KEY = ['%s'][0];" % CONSTANT,
     )
     run_case("R2 not a plain declaration", files, "not a plain")
 
     files = _base()
-    files[HOME_REL] = HEALTHY_HOME.replace(
-        "  throw new Error('missing');\n", "  return TEST_MODE_DEV_KEY;\n"
+    files[HOME_REL] = plant(
+        HEALTHY_HOME, "  throw new Error('missing');\n", "  return TEST_MODE_DEV_KEY;\n"
     )
     run_case("R3 unguarded fallback", files, "used outside")
 
     files = _base()
-    files[HOME_REL] = HEALTHY_HOME.replace("env.TEST_MODE", "env.LOCAL_DEV")
+    files[HOME_REL] = plant(HEALTHY_HOME, "env.TEST_MODE", "env.LOCAL_DEV")
     run_case("R3 guard on another flag", files, "used outside")
 
     files = _base()
-    files[HOME_REL] = HEALTHY_HOME.replace("  if (env.TEST_MODE) return TEST_MODE_DEV_KEY;\n", "")
+    files[HOME_REL] = plant(HEALTHY_HOME, "  if (env.TEST_MODE) return TEST_MODE_DEV_KEY;\n", "")
     run_case("R3 guard removed entirely", files, "never returned")
 
     files = _base()
@@ -375,6 +386,10 @@ def controls_fired() -> list[str]:
         {"packages/cli/src/index.ts": "export {};\n", "private/account/src/.keep": ""},
         "cannot-run",
     )
+    # The floors themselves: the healthy fixture (3 sources, 2 under the account src) is below each floor raised by one, so each must refuse on its own, and at its exact count it must not.
+    run_case("anti-vacuity: below the source floor", _base(), "cannot-run", (4, 1))
+    run_case("anti-vacuity: below the account source floor", _base(), "cannot-run", (1, 3))
+    run_case("anti-vacuity negative: exactly at both floors", _base(), None, (3, 2))
     return missed
 
 
@@ -411,7 +426,7 @@ def main(argv: list[str]) -> int:
         return 1
     root = args.root or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     try:
-        result = scan(root)
+        result = scan(root, MIN_SOURCES, MIN_ACCOUNT_SRC)
     except CannotRunError as exc:
         print("%sCANNOT RUN%s config-server-key-constant: %s" % (YELLOW, NC, exc), file=sys.stderr)
         return EXIT_CANNOT_RUN
@@ -432,8 +447,8 @@ def main(argv: list[str]) -> int:
     for rel in result["exempt"]:
         print("  exempt (tests directory): %s" % rel)
     print(
-        "%s✓%s config server key constant: %d source file(s) across %d repo(s), %d under %s/src;"
-        " 1 declaration, %d TEST_MODE-guarded return, %d test file(s) exempt"
+        "%s✓%s config server key constant: %d source file(s) across %d repo(s), %d under %s/src"
+        " (floors %d and %d); 1 declaration, %d TEST_MODE-guarded return, %d test file(s) exempt"
         % (
             GREEN,
             NC,
@@ -441,6 +456,8 @@ def main(argv: list[str]) -> int:
             result["repos"],
             result["account_src"],
             HOME_REPO,
+            MIN_SOURCES,
+            MIN_ACCOUNT_SRC,
             result["guarded"],
             len(result["exempt"]),
         )

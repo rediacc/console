@@ -365,7 +365,9 @@ def test_a_version_taken_mid_run_stops_before_publishing(
         del cwd, env, capture
         return (1, "") if "_lock-check" in argv and seen[-1] == taken_at else (0, "")
 
-    internal = dict.fromkeys(("gates", "release-run", "stamp", "release-record"), ok_row)
+    internal: dict[str, typing.Callable[[local.Step, local.Run], int]] = dict.fromkeys(
+        ("gates", "release-run", "stamp", "release-record"), ok_row
+    )
     run = TakenRun(root, ctx, runner=runner, internal=internal)
     assert run.execute(local.plan(["eu"])) == 1
     assert run.failed == taken_at
@@ -516,7 +518,9 @@ def test_a_failed_deploy_rolls_back_its_armed_region_and_still_writes_the_record
         del cwd, env, capture
         return (1, "") if "rediacc_ci.deploy.deploy_account" in argv and "us" in argv else (0, "")
 
-    internal = dict.fromkeys(("channel-version", "gates", "release-run", "release-record"), ok_row)
+    internal: dict[str, typing.Callable[[local.Step, local.Run], int]] = dict.fromkeys(
+        ("channel-version", "gates", "release-run", "release-record"), ok_row
+    )
     run = local.Run(root, ctx, runner=runner, internal=internal)
     assert run.execute(steps) == 1
     done = [r.id for r in run.results]

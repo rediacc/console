@@ -4,6 +4,7 @@ import datetime
 import http.client
 import json
 import subprocess
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -71,6 +72,9 @@ class Clock:
     """A settable UTC clock for `ba.run`."""
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.now = datetime.datetime(2026, 10, 27, 5, 0, tzinfo=datetime.UTC)
 
     def __call__(self):
@@ -85,7 +89,21 @@ CLOCK = Clock()
 
 @pytest.fixture(autouse=True)
 def _clock():
-    CLOCK.__init__()
+    CLOCK.reset()
+
+
+def _adder(added: list[int]) -> Callable[[], int]:
+    """An `add` callback that records its call and reports success."""
+
+    def add() -> int:
+        added.append(1)
+        return 0
+
+    return add
+
+
+def _explode() -> int:
+    raise ZeroDivisionError
 
 
 def _run(api, command, argument=None, detect=lambda: ["198.51.100.7"]):
@@ -537,7 +555,7 @@ def test_detect_current_merges_the_host_and_survives_a_dead_trace():
 def test_preflight_skips_when_bench_already_answers(capsys):
     added: list[int] = []
     rc = ba.preflight(
-        probes=(lambda: 302, lambda: 200), add=lambda: added.append(1) or 0, environ={}
+        probes=(lambda: 302, lambda: 200), add=_adder(added), environ={}
     )
     assert rc == 0
     assert added == []
@@ -547,7 +565,7 @@ def test_preflight_skips_when_bench_already_answers(capsys):
 def test_preflight_adds_on_a_403_from_any_egress():
     added: list[int] = []
     rc = ba.preflight(
-        probes=(lambda: 302, lambda: 403), add=lambda: added.append(1) or 0, environ={}
+        probes=(lambda: 302, lambda: 403), add=_adder(added), environ={}
     )
     assert rc == 0
     assert added == [1]
@@ -559,10 +577,10 @@ def test_preflight_a_failing_host_probe_does_not_hide_a_local_403():
     def host():
         raise ValueError("invalid literal for int(): 'err'")
 
-    rc = ba.preflight(probes=(lambda: 403, host), add=lambda: added.append(1) or 0, environ={})
+    rc = ba.preflight(probes=(lambda: 403, host), add=_adder(added), environ={})
     assert rc == 0
     assert added == [1]
-    rc = ba.preflight(probes=(host, lambda: 403), add=lambda: added.append(1) or 0, environ={})
+    rc = ba.preflight(probes=(host, lambda: 403), add=_adder(added), environ={})
     assert added == [1, 1]
 
 
@@ -585,11 +603,11 @@ def test_preflight_no_probe_failure_type_hides_another_egress_403(error, capsys)
         raise error
 
     for probes in ((lambda: 403, host), (host, lambda: 403)):
-        assert ba.preflight(probes=probes, add=lambda: added.append(1) or 0, environ={}) == 0
+        assert ba.preflight(probes=probes, add=_adder(added), environ={}) == 0
     assert added == [1, 1]
     assert "answered 403" in capsys.readouterr().out
     # Alone, the same failure is the printed skip, never a traceback.
-    assert ba.preflight(probes=(host,), add=lambda: 1 / 0, environ={}) == 0
+    assert ba.preflight(probes=(host,), add=_explode, environ={}) == 0
     assert "skipped (%s" % type(error).__name__ in capsys.readouterr().out
 
 

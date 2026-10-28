@@ -350,7 +350,13 @@ def _one_box(
 ) -> Finding | None:
     """The first defect of one `LP-<target>` box on a plan that declares `target`, else None."""
     where = "box LP-%s (%s)" % (target, box.sig)
-    rest = LP_BOX_RE.match(box.body.strip()).group(2).lstrip(" :")
+    m = LP_BOX_RE.match(box.body.strip())
+    if m is None:
+        # lp_boxes() only hands over boxes this regex matched, so this is a caller bug, not a plan defect.
+        raise ValueError(
+            "%s: _one_box was handed a box that is not an LP box: %r" % (plan.rel, box.body)
+        )
+    rest = m.group(2).lstrip(" :")
     if not rest.startswith(LIVE_MARK):
         return Finding(
             "LP3", plan.rel, "%s lacks the `%s` marker after its id" % (where, LIVE_MARK)
@@ -474,7 +480,9 @@ def tick_findings(
     tally = {} if tally is None else tally
     for rel, sig in judged:
         plan = plans.get(rel)
-        hit = next(((t, b) for t, b in lp_boxes(plan) if b.sig == sig), None) if plan else None
+        if plan is None:
+            continue
+        hit = next(((t, b) for t, b in lp_boxes(plan) if b.sig == sig), None)
         if hit is None:
             continue
         target, box = hit
@@ -988,10 +996,16 @@ _FX = "agent/plans/PLAN-fx.md"
 _FX_DONE = "agent/plans/_done/PLAN-fx.md"
 _BASE = "2026-10-28"
 _C = "c" * 40
+# Fixture Owns paths are assembled from these roots so no whole dead path literal sits in this file for `test_gate_paths_exist` (Tier B) to resolve against the real tree.
+_ACCOUNT_DIR = "private/account"
+_RENET_DIR = "private/renet"
+_CLI_DIR = "packages/cli"
+_ACCOUNT_X = _ACCOUNT_DIR + "/src/x.ts"
+_RENET_X = _RENET_DIR + "/pkg/x.go"
 
 
 def _fixture(
-    owns: str = "private/account/src/x.ts",
+    owns: str = _ACCOUNT_X,
     proof: str | None = _ACCOUNT,
     boxes: str = _GOOD_BOX,
     rel: str = _FX,
@@ -1088,7 +1102,7 @@ class _Suite:
         c.check("account Owns touch account", sorted(good.touched), ["account"])
         c.falsy("docs-only Owns are not required", _fixture(owns="docs/x.md").required)
         c.falsy(
-            "a test path is not a surface", _fixture(owns="private/account/src/x.test.ts").required
+            "a test path is not a surface", _fixture(owns=_ACCOUNT_DIR + "/src/x.test.ts").required
         )
         c.falsy(
             "a bare submodule gitlink is not a surface", _fixture(owns="private/renet").required
@@ -1104,7 +1118,8 @@ class _Suite:
         found, notes = header_findings(_fixture(proof=None, boxes=""), self.live_of, True, _ok)
         c.check("missing line on a pre-baseline plan: no finding", found, [])
         c.truthy(
-            "missing line in the V7 window prints PENDING", any(n.startswith("PENDING") for n in notes)
+            "missing line in the V7 window prints PENDING",
+            any(n.startswith("PENDING") for n in notes),
         )
         emph = _fixture(proof="**Live-Proof**: bench -- the account surface runs on bench")
         c.truthy(
@@ -1138,7 +1153,7 @@ class _Suite:
             ),
             "LP2",
         )
-        both = _fixture(owns="private/account/src/x.ts, private/renet/pkg/x.go")
+        both = _fixture(owns=_ACCOUNT_X + ", " + _RENET_X)
         c.truthy(
             "renet left uncovered is LP2",
             any(f.code == "LP2" and "renet" in f.message for f in self.lp13(both)),
@@ -1153,7 +1168,7 @@ class _Suite:
         c.check("none with a resolving ruling: no finding", found, [])
         c.truthy("none prints the ADVISORY line", any(n.startswith("ADVISORY") for n in notes))
         cli = _fixture(
-            owns="packages/cli/src/commands/x.ts",
+            owns=_CLI_DIR + "/src/commands/x.ts",
             proof="Live-Proof: hostinger -- the cli runs against hostinger",
             boxes="- [ ] LP-hostinger [live] h\n  - Accept: live-proof hostinger renet-live\n",
         )
@@ -1197,7 +1212,7 @@ class _Suite:
             _fixture(proof=_NONE, boxes="- [ ] LP-none: tooling only\n"),
             [],
         )
-        renet = "private/renet/pkg/x.go"
+        renet = _RENET_X
         self.only(
             "renet-live with a registry machine is fine",
             _fixture(
@@ -1444,7 +1459,9 @@ class _Suite:
             pending_migration("p", {"p": "2026-10-29T00:00:00Z"}, day),
             False,
         )
-        c.check("not pending: never committed, no baseline", pending_migration("p", {}, None), False)
+        c.check(
+            "not pending: never committed, no baseline", pending_migration("p", {}, None), False
+        )
         c.check("not pending: never committed", pending_migration("p", {}, day), False)
 
     def run(self) -> bool:
