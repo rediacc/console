@@ -256,10 +256,20 @@ NPM_INSTALL_SH = (
 BUILD_PACKAGES_GLOB = "-m rediacc_ci.setup.build_packages"
 BUILD_PACKAGES_SH = 'mkdir -p "$CONSOLE_ROOT_DIR/packages/shared/dist" "$CONSOLE_ROOT_DIR/packages/provisioning/dist"'
 BUNDLE_SH = "mkdir -p packages/cli/dist; printf 'bundle\\n' > packages/cli/dist/cli-bundle.cjs"
-RENET_BUILD_SH = (
-    "mkdir -p bin; printf 'renet\\n' > bin/renet; chmod +x bin/renet; touch -d @%d bin/renet"
-    % FIXED_MTIME
-)
+
+
+def _renet_build_sh(subdir: str) -> str:
+    return "mkdir -p %s; printf 'renet\\n' > %s/renet; chmod +x %s/renet; touch -d @%d %s/renet" % (
+        subdir,
+        subdir,
+        subdir,
+        FIXED_MTIME,
+        subdir,
+    )
+
+
+RENET_BUILD_SH = _renet_build_sh("bin")
+RENET_BUILD_SH_ENFORCE = _renet_build_sh("bin/enforce")
 MKTEMP_SH = 'd="$STUB_ROOT/mktmp"; mkdir -p "$d"; printf "%s\\n" "$d"'
 GCC_SH = 'out=""; while [ $# -gt 0 ]; do if [ "$1" = -o ]; then out="$2"; fi; shift; done; printf "#!/bin/sh\\nexit 0\\n" > "$out"; chmod +x "$out"'
 
@@ -669,7 +679,7 @@ SCENARIOS: dict[str, list[Case]] = {
                 DOCKER_DOWN,
                 row("sudo", "docker version", rc=1),
                 GO_NEW,
-                row("build.sh", "dev", sh=RENET_BUILD_SH),
+                row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH),
                 GROUP_OTHER,
             ],
         ),
@@ -681,7 +691,7 @@ SCENARIOS: dict[str, list[Case]] = {
                 DOCKER_DOWN,
                 row("sudo", "docker version", rc=1),
                 GO_NEW,
-                row("build.sh", "dev", sh=RENET_BUILD_SH),
+                row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH),
                 row("sudo", "*install-docker*", rc=1),
             ],
         ),
@@ -759,7 +769,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "renet-fresh",
             "ensure-renet-built",
             setup=("renet_tree",),
-            rows=[row("build.sh", "dev", sh=RENET_BUILD_SH)],
+            rows=[row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH)],
             env={"DEBUG": "true"},
             repeat=2,
         ),
@@ -767,28 +777,31 @@ SCENARIOS: dict[str, list[Case]] = {
             "renet-license-key",
             "ensure-renet-built",
             setup=("renet_tree", "renet_env"),
-            rows=[row("build.sh", "dev", sh=RENET_BUILD_SH)],
+            rows=[row("build.sh", "dev --license", sh=RENET_BUILD_SH_ENFORCE)],
             env={"RDC_RENET_LICENSE": "1"},
         ),
         Case(
             "renet-key-from-shell",
             "ensure-renet-built",
             setup=("renet_tree", "renet_env"),
-            rows=[row("build.sh", "dev", sh=RENET_BUILD_SH)],
+            rows=[row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH)],
             env={"ACCOUNT_ED25519_PUBLIC_KEY": "shell-key"},
         ),
         Case(
             "renet-build-fails",
             "ensure-renet-built",
             setup=("renet_tree",),
-            rows=[row("build.sh", "dev", rc=1, err="asset staging aborted\n")],
+            rows=[row("build.sh", "dev --nolicense", rc=1, err="asset staging aborted\n")],
         ),
         Case("renet-no-binary", "ensure-renet-built", setup=("renet_tree",)),
         Case(
             "renet-darwin",
             "ensure-renet-built",
             setup=("renet_tree", "renet_env"),
-            rows=[row("uname", "-s", out="Darwin\n"), row("build.sh", "dev", sh=RENET_BUILD_SH)],
+            rows=[
+                row("uname", "-s", out="Darwin\n"),
+                row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH),
+            ],
         ),
         Case(
             "renet-no-go",

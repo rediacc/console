@@ -3453,3 +3453,20 @@ def test_the_gateway_record_is_not_counted_as_an_old_receipt(tmp_path: pathlib.P
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert "earlier schema" not in out, out
+
+
+def test_the_license_flavor_never_reaches_the_check_s_own_calls(tmp_path: pathlib.Path) -> None:
+    """PLAN-per-flavor-renet-binary-paths P6: P1's `go version -m`, every `./rdc.sh` call and the drills run without RDC_RENET_LICENSE, and `renet_bin` stays the nolicense `bin/renet`."""
+    world = make_world(tmp_path)
+    rc, out, _receipt = run_check(tmp_path, world, env={"RDC_RENET_LICENSE": "1"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert world.calls, "the fake host saw no call"
+    version_calls = [
+        e for c, e in zip(world.calls, world.envs, strict=True) if c[:3] == ["go", "version", "-m"]
+    ]
+    assert version_calls, "P1 never read the binary's build info"
+    assert _rdc_envs(world), "no ./rdc.sh call was recorded"
+    carrying = [c for c, e in zip(world.calls, world.envs, strict=True) if "RDC_RENET_LICENSE" in e]
+    assert carrying == [], carrying
+    read = [c[3] for c in world.calls if c[:3] == ["go", "version", "-m"]]
+    assert all(p.endswith("/private/renet/bin/renet") for p in read), read

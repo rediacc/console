@@ -162,10 +162,8 @@ Locally you must paste the value. GitHub secrets are **write-only** -- `gh` can 
 Whatever you substitute, do NOT pipe an unchecked HTTP response into this variable. That was the original bug and it is worth stating plainly: with plain `curl -s` a 404 is SILENT, its HTML body becomes the value, and that HTML is baked into `keys.ProductionPublicKey` via ldflags. The build succeeds and every prod-signed licence then fails as `invalid_signature` -- exactly the
 symptom this variable exists to prevent. The documented cure was producing the disease.
 
-`RDC_RENET_LICENSE=1` drops the `--nolicense` build flag. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on your test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as
+`RDC_RENET_LICENSE=1` selects an enforcing build, which lives in `private/renet/bin/enforce/` and never replaces `bin/renet` (the nolicense build). The variable only decides which directory `./rdc.sh` puts on `PATH`, so an invocation without it keeps using the nolicense binary and nothing needs unsetting or rebuilding afterwards. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on the test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as
 `invalid_signature`.
-
-After reproducing, unset `RDC_RENET_LICENSE` (or remove from your shell) so subsequent `./rdc.sh` invocations rebuild the dev-friendly nolicense renet again.
 
 ## A real passkey provider in the account E2E suite
 

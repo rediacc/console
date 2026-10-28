@@ -618,7 +618,6 @@
       "RETRY_REPO"
     ],
     ".ci/rediacc_ci/infra/build_renet.py": [
-      "ACCOUNT_ED25519_PUBLIC_KEY",
       "GITHUB_ENV",
       "RDC_RENET_LICENSE"
     ],

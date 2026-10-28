@@ -42,6 +42,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
+from rediacc_ci.core import renet_flavor
 from rediacc_ci.drills import lib, vm_check, vm_ssh, wire
 
 if TYPE_CHECKING:
@@ -194,6 +195,16 @@ def preclean_script(renet: str) -> str:
         "exit $fail\n"
         % {"ds": DATASTORE_NAME, "tag": FORK_TAG, "renet": renet, "quiet": PRECLEAN_QUIET}
     )
+
+
+def _go_buildinfo(binary: str) -> str:
+    """`go version -m <binary>`, empty when the binary is missing or is not a Go binary."""
+    try:
+        return subprocess.run(
+            ["go", "version", "-m", binary], capture_output=True, text=True, check=False
+        ).stdout
+    except OSError:
+        return ""
 
 
 class License:
@@ -571,7 +582,7 @@ class License:
         (home / "rediacc").mkdir(parents=True, exist_ok=True)
         d.extra_env["XDG_CONFIG_HOME"] = str(home)
         d.extra_env["REDIACC_CONFIG"] = CONFIG_NAME
-        # This drill is ABOUT enforcement, so the renet it deploys must be the license-enforcing flavor with the dev account key baked in: the default dev build is nolicense (a permit-all stub that would make every leg vacuous). The build stamp hashes the effective mode, so this forces a rebuild here and the next plain ./rdc.sh rebuilds nolicense right back.
+        # This drill is ABOUT enforcement, so the renet it deploys must be the license-enforcing flavor with the dev account key baked in: the default dev build is nolicense (a permit-all stub that would make every leg vacuous). The enforcing build lives in its own directory (`bin/enforce/`), so a plain ./rdc.sh from another session builds the nolicense `bin/renet` and never touches it; `setup_config` pins the config to that binary with `--renet-path`.
         d.extra_env["RDC_RENET_LICENSE"] = "1"
         # See the universe drill: unpinned, a drill measures the json surface while describing the human one.
         d.extra_env["REDIACC_DEFAULT_OUTPUT"] = "table"
@@ -624,38 +635,45 @@ class License:
         if not d.account_admin_session(self.email, DRILL_PASSWORD, self.admin_jar):
             raise SystemExit(1)
 
+    def enforce_binary(self) -> str:
+        """The enforcing renet this drill deploys, named by path so no PATH lookup can swap it."""
+        return renet_flavor.binary(str(self.d.root / "private" / "renet"), "enforce")
+
     def verify_renet_flavor(self) -> None:
-        """Prove the flavor BEFORE deploying it. A wrong-flavored renet fails every leg with an error that reads like a licensing bug: an enforcing keyless build refuses everything with "public key not configured", a nolicense build permits everything. The buildinfo of an enforcing build carries no `-tags=nolicense` and DOES carry the baked dev key in ldflags."""
+        """Prove the flavor BEFORE deploying it. A wrong-flavored renet fails every leg with an error that reads like a licensing bug: an enforcing keyless build refuses everything with "public key not configured", a nolicense build permits everything. All three binaries of `bin/enforce/` are read (the host one and both Linux ones `machine setup` may upload), and `bin/renet`, the nolicense build, never is."""
         d = self.d
         d.step("Setup: the local renet build enforces licenses with the dev key")
-        binary = d.root / "private" / "renet" / "bin" / "renet"
-        try:
-            info = subprocess.run(
-                ["go", "version", "-m", str(binary)], capture_output=True, text=True, check=False
-            ).stdout
-        except OSError:
-            info = ""
-        if not info:
-            log.error("Cannot read build info from %s (missing or not a Go binary)." % binary)
-            raise SystemExit(1)
-        if "tags=nolicense" in info:
-            log.error("The renet at %s is a NOLICENSE build: every licensing" % binary)
-            log.error("assertion would be vacuous. RDC_RENET_LICENSE=1 should have")
-            log.error("forced an enforcing rebuild; check the build stamp logic.")
-            raise SystemExit(1)
-        if "ProductionPublicKey=" not in info:
-            log.error("The renet at %s has NO account public key baked in: every" % binary)
-            log.error("validation fails as 'public key not configured'. This is the")
-            log.error("signature of a foreign 'go build' overwriting bin/renet.")
-            log.error("Rebuild: RDC_RENET_LICENSE=1 (cd private/renet && ./build.sh dev)")
-            raise SystemExit(1)
-        d.note("enforcing build with baked key confirmed")
+        renet_dir = str(d.root / "private" / "renet")
+        binaries = [self.enforce_binary(), *renet_flavor.linux_binaries(renet_dir, "enforce")]
+        for binary in binaries:
+            info = _go_buildinfo(binary)
+            if not info:
+                log.error("Cannot read build info from %s (missing or not a Go binary)." % binary)
+                log.error("Build it: RDC_RENET_LICENSE=1 ./rdc.sh --version")
+                raise SystemExit(1)
+            refusal = renet_flavor.flavor_refusal("enforce", info)
+            if refusal is not None:
+                log.error("The renet at %s is not usable by this drill: %s." % (binary, refusal))
+                log.error("A nolicense build makes every licensing assertion vacuous and a keyless")
+                log.error(
+                    "one fails every validation. Rebuild: RDC_RENET_LICENSE=1 ./rdc.sh --version"
+                )
+                raise SystemExit(1)
+        d.note("enforcing build with baked key confirmed (%d binaries)" % len(binaries))
 
     def setup_config(self) -> None:
         d, o = self.d, self.o
         d.step("Setup: config, machines and subscription login")
-        self.cli("config", "init", CONFIG_NAME, "--server", self.server_url)
-        # config init above was the first CLI invocation, so the renet (re)build has happened by now; prove its flavor before machine setup deploys it.
+        self.cli(
+            "config",
+            "init",
+            CONFIG_NAME,
+            "--server",
+            self.server_url,
+            "--renet-path",
+            self.enforce_binary(),
+        )
+        # config init above was the first CLI invocation, so the enforcing build has happened by now; prove its flavor before machine setup deploys it.
         self.verify_renet_flavor()
         # Runs one command against the fresh config before anything else tunnels. It no longer repairs a missing E2E key: `config init` saves the key, and the CLI refuses, by name, a non-production server it holds no key for.
         self.cli("config", "current", "-o", "json")

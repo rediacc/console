@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-28T06:24:39.581Z",
+  "generatedAt": "2026-10-28T06:41:24.278Z",
   "legs": [
     {
       "index": 1,
@@ -85,6 +85,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_awscli.py",
         "pytest:.ci/rediacc_ci/tests/test_core_lease.py",
         "pytest:.ci/rediacc_ci/tests/test_core_platform.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_renet_flavor.py",
         "pytest:.ci/rediacc_ci/tests/test_core_review_budget.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_record.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_docker_to_stable_hotfix.py",
@@ -284,6 +285,7 @@
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_run_in_image.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_onprem.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_license_flavor.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_license_seed.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model_replay.py",
@@ -300,6 +302,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_probe_receipt_stability.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_telemetry_delivery.py",
         "pytest:.ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
+        "pytest:.ci/rediacc_ci/tests/test_proof_live_tier.py",
         "pytest:.ci/rediacc_ci/tests/test_proof_receipt.py",
         "pytest:.ci/rediacc_ci/tests/test_proof_surfaces.py",
         "pytest:.ci/rediacc_ci/tests/test_proof_vm_tier.py",
@@ -680,6 +683,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_family.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_live_proof.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_login_bench.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_portal_health.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_push_backup_credentials.py",

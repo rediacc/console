@@ -3,9 +3,10 @@
 A rebase-merge replays renet's commits under new SHAs with byte-identical trees. bin/renet stamps `vcs.revision`, and `npm run vm:check` refuses a binary whose revision is not the checkout (renet-build-mismatch). On 2026-10-23 the stamp held only the tree fingerprint, so `./rdc.sh --version` found it current and never rebuilt, and vm:check refused on every run (c32bb4884efa built, 0a89e786caef checked out).
 """
 
+import pathlib
 import subprocess
 
-from rediacc_ci.core import local_common
+from rediacc_ci.core import local_common, renet_flavor
 
 
 def _git(cwd, *args):
@@ -56,7 +57,8 @@ def _repo(path):
     _git(path, "config", "user.email", "t@example.com")
     _git(path, "config", "user.name", "t")
     (path / "main.go").write_text("package main\n")
-    _git(path, "add", "main.go")
+    (path / ".gitignore").write_text("bin/\n")  # renet's own checkout ignores its build output
+    _git(path, "add", "main.go", ".gitignore")
     _git(path, "commit", "-q", "-m", "one")
     return _git(path, "rev-parse", "HEAD")
 
@@ -102,10 +104,9 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
     assert fingerprint is not None
     source = local_common._subst(fingerprint)
     key = local_common.renet_stamp_key(source, local_common.renet_head(str(renet)), "nolicense", "")
-    stamp = tmp_path / ".ci" / "cache" / "build-renet.stamp"
-    stamp.parent.mkdir(parents=True)
+    stamp = renet_flavor.stamp_path(str(renet), "nolicense")
     local_common.write_stamp_hash(
-        str(stamp), "%s\nbin=%s" % (key, local_common.renet_artifact_fp(str(binary)))
+        stamp, "%s\nbin=%s" % (key, local_common.renet_artifact_fp(str(binary)))
     )
 
     assert local_common.ensure_renet_built(env) is True
@@ -113,4 +114,81 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
 
     _git(renet, "commit", "-q", "--allow-empty", "-m", "the same tree under a new commit")
     assert local_common.ensure_renet_built(env) is False
-    assert builds == [(["./build.sh", "dev"], str(renet))]
+    assert builds == [(["./build.sh", "dev", "--nolicense"], str(renet))]
+
+
+def _fake_build_env(tmp_path, monkeypatch):
+    """A renet checkout whose `./build.sh dev <flag>` is recorded and writes `<flag>` into the flavor directory build.sh would use."""
+    renet = tmp_path / "private" / "renet"
+    _repo(renet)
+    monkeypatch.setattr(local_common, "check_go_installed", lambda: None)
+    builds = []
+
+    def fake_run(argv, **_):
+        builds.append(argv[-1])
+        flavor = "enforce" if argv[-1] == "--license" else "nolicense"
+        out = pathlib.Path(renet_flavor.binary(str(renet), flavor))
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(argv[-1])
+        return 0
+
+    monkeypatch.setattr(local_common, "_run", fake_run)
+    return renet, builds
+
+
+def _env(tmp_path, license_env):
+    return {
+        "LOCAL_ROOT_DIR": str(tmp_path),
+        "RDC_RENET_LICENSE": license_env,
+        "ACCOUNT_ED25519_PUBLIC_KEY": "",
+    }
+
+
+def _snapshot(renet, flavor):
+    binary = pathlib.Path(renet_flavor.binary(str(renet), flavor))
+    stamp = pathlib.Path(renet_flavor.stamp_path(str(renet), flavor))
+    return (
+        binary.read_text(),
+        binary.stat().st_mtime_ns,
+        stamp.read_text(),
+        stamp.stat().st_mtime_ns,
+    )
+
+
+def test_a_plain_build_leaves_the_enforcing_binary_and_stamp_untouched(tmp_path, monkeypatch):
+    renet, builds = _fake_build_env(tmp_path, monkeypatch)
+
+    assert local_common.ensure_renet_built(_env(tmp_path, "1")) is True
+    enforcing = _snapshot(renet, "enforce")
+    assert enforcing[0] == "--license"
+
+    assert local_common.ensure_renet_built(_env(tmp_path, "0")) is True
+    assert _snapshot(renet, "enforce") == enforcing
+    assert pathlib.Path(renet_flavor.binary(str(renet), "nolicense")).read_text() == "--nolicense"
+
+    assert local_common.ensure_renet_built(_env(tmp_path, "1")) is True
+    assert builds == ["--license", "--nolicense"]
+
+
+def test_the_sequence_is_red_when_both_flavors_share_one_directory(tmp_path, monkeypatch):
+    """Mutant: with SUBDIR mapping both flavors to bin, the plain build overwrites the enforcing binary, and the third call has to rebuild."""
+    monkeypatch.setitem(renet_flavor.SUBDIR, "enforce", "bin")
+    _renet, builds = _fake_build_env(tmp_path, monkeypatch)
+
+    local_common.ensure_renet_built(_env(tmp_path, "1"))
+    local_common.ensure_renet_built(_env(tmp_path, "0"))
+    local_common.ensure_renet_built(_env(tmp_path, "1"))
+
+    assert builds != ["--license", "--nolicense"]
+
+
+def test_the_flavor_stamps_are_distinct_files(tmp_path, monkeypatch):
+    renet, _ = _fake_build_env(tmp_path, monkeypatch)
+    local_common.ensure_renet_built(_env(tmp_path, "1"))
+    local_common.ensure_renet_built(_env(tmp_path, "0"))
+    plain = renet_flavor.stamp_path(str(renet), "nolicense")
+    enforce = renet_flavor.stamp_path(str(renet), "enforce")
+    assert plain != enforce
+    assert pathlib.Path(plain).is_file()
+    assert pathlib.Path(enforce).is_file()
+    assert not (tmp_path / ".ci" / "cache" / "build-renet.stamp").exists()

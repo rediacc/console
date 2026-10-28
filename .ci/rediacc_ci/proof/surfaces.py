@@ -30,8 +30,8 @@ if TYPE_CHECKING:
     import re
     from collections.abc import Callable, Collection, Iterable, Sequence
 
-# The Owns glob grammar lives only in the Stop hooks; it is reachable once their directory is on sys.path (the check_plan_deps.py shape).
-paths.on_sys_path(paths.hooks_stop_dir())
+# The Owns glob grammar lives only in the Stop hooks; it is reachable once their directory is on sys.path (the check_plan_deps.py shape). The directory is taken from this checkout's code (paths.CI_DIR), as MAP_PATH is, never from $REDIACC_CI_ROOT: a drill run against a scratch root has no .claude/hooks there and failed with ModuleNotFoundError: wl_planconc.
+paths.on_sys_path(paths.hooks_stop_dir(paths.CI_DIR.parent))
 wl_planconc = importlib.import_module("wl_planconc")
 
 MAP_PATH = paths.CI_DIR / "config" / "proof-tiers.json"

@@ -73,7 +73,7 @@ A machine managed by more than one universe (e.g. production and bench both depl
 `keyId` is a 16-hex fingerprint of the signing server's Ed25519 public key. Each universe's renet build validates only the file its baked key (or a delegation cert chained to it) can verify; other universes' files are inert. Switching universes therefore never invalidates licenses: the first operation in a new universe issues that universe's license once (`missing` -> auto-issue),
 and both coexist afterwards.
 
-Dev builds of renet are compiled with the `nolicense` tag by default (no enforcement). To reproduce license-flow bugs locally, rebuild with enforcement:
+Dev builds of renet are compiled with the `nolicense` tag by default (no enforcement) into `private/renet/bin/renet`. To reproduce license-flow bugs locally, select the enforcing build, which lives in `private/renet/bin/enforce/` and never replaces `bin/renet`:
 
 ```bash
 ACCOUNT_ED25519_PUBLIC_KEY="<paste the value>" \

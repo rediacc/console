@@ -62,7 +62,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths, proc
-from rediacc_ci.core import devbox, toolchain
+from rediacc_ci.core import devbox, renet_flavor, toolchain
 from rediacc_ci.well_known import GO_DL_BASE
 
 # `.ci/lib/local-common.sh:65`. `-path` in find is plain fnmatch: `*` crosses `/`, which is what makes a bare `*/dist/*` prune everything under any `dist` below the start point.
@@ -1230,9 +1230,13 @@ def ensure_docker_installed(env: dict[str, str] | None = None) -> bool:
         return False
     if not ensure_go_installed(env):
         return False
-    if not ensure_renet_built(env):
+    flavor = renet_flavor.flavor_for(
+        (os.environ if env is None else env).get("RDC_RENET_LICENSE", "0")
+    )
+    if not ensure_renet_built(env, flavor):
         return False
-    renet = os.path.join(root, "private", "renet", "bin", "renet")
+    renet_dir = os.path.join(root, "private", "renet")
+    renet = renet_flavor.binary(renet_dir, flavor)
     if not (os.path.isfile(renet) and os.access(renet, os.X_OK)):
         log.error("renet was built but %s is not executable" % renet)
         return False
@@ -1242,7 +1246,7 @@ def ensure_docker_installed(env: dict[str, str] | None = None) -> bool:
     ensure_docker_group()
     reset_docker_memo()
     with contextlib.suppress(OSError):
-        os.remove(os.path.join(root, ".ci", "cache", "build-renet.stamp"))
+        os.remove(renet_flavor.stamp_path(renet_dir, flavor))
     log.info("Cleared the renet build stamp so assets get embedded on the next build")
     return True
 
@@ -1335,7 +1339,7 @@ def renet_head(renet_dir: str) -> str:
 
 
 def renet_stamp_key(source: str, head: str, license_mode: str, account_key: str) -> str:
-    """The digest `ensure_renet_built` stores in build-renet.stamp: the renet source fingerprint, renet's HEAD commit, the license mode and the account key.
+    """The digest `ensure_renet_built` stores in the flavor's .renet-build-stamp: the renet source fingerprint, renet's HEAD commit, the license mode and the account key.
 
     HEAD is in it because the binary stamps `vcs.revision`, and a rebase-merge leaves the tree byte-identical under a new commit, which the fingerprint alone reads as current. An empty `head` (see `renet_head`) keeps the old key's meaning.
     """
@@ -1345,20 +1349,23 @@ def renet_stamp_key(source: str, head: str, license_mode: str, account_key: str)
     return _hex_of(text.encode("utf-8", "surrogateescape"))
 
 
-def ensure_renet_built(env: dict[str, str] | None = None) -> bool:
-    """`ensure_renet_built`, `.ci/lib/local-common.sh:759`."""
+def ensure_renet_built(env: dict[str, str] | None = None, flavor: str | None = None) -> bool:
+    """`ensure_renet_built`, `.ci/lib/local-common.sh:759`, with one binary and one stamp per flavor (`renet_flavor`).
+
+    The flavor comes from `RDC_RENET_LICENSE` unless the caller names it, and `./build.sh dev` gets it as an explicit flag, so a build of one flavor never touches the other's binary or stamp.
+    """
     environ = os.environ if env is None else env
     root = local_root_dir(env)
     renet_dir = os.path.join(root, "private", "renet")
-    renet_bin = os.path.join(renet_dir, "bin", "renet")
+    flavor = flavor or renet_flavor.flavor_for(environ.get("RDC_RENET_LICENSE", "0"))
     system = _uname("-s")
-    if system.startswith(("MINGW", "MSYS", "CYGWIN")):
-        renet_bin = os.path.join(renet_dir, "bin", "renet.exe")
+    exe = ".exe" if system.startswith(("MINGW", "MSYS", "CYGWIN")) else ""
+    renet_bin = renet_flavor.binary(renet_dir, flavor, exe)
 
     check_go_installed()
 
-    stamp = os.path.join(root, ".ci", "cache", "build-renet.stamp")
-    license_mode = "enforce" if environ.get("RDC_RENET_LICENSE", "0") == "1" else "nolicense"
+    stamp = renet_flavor.stamp_path(renet_dir, flavor)
+    license_mode = flavor
     account_key = environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "")
     # The public-key cache `./run.sh setup` writes from Bitwarden, never private/account/.env (PLAN-account-env-to-bws T15).
     key_cache = os.path.join(renet_dir, "..", "account", ".cache", "public-keys.env")
@@ -1400,44 +1407,12 @@ def ensure_renet_built(env: dict[str, str] | None = None) -> bool:
     else:
         log.step("Building renet (first time, requires Docker for asset extraction)...")
 
-    if _run(["./build.sh", "dev"], cwd=renet_dir) != 0:
+    if _run(["./build.sh", "dev", renet_flavor.build_flag(flavor)], cwd=renet_dir) != 0:
         log.error("renet build failed (see the output above)")
         return False
     if not os.path.isfile(renet_bin):
         log.error("Renet build failed: binary not found at %s" % renet_bin)
         raise LocalCommonError("no renet binary", code=1)
-
-    if _uname("-s") != "Linux":
-        key_flags = ""
-        if account_key:
-            key_flags = (
-                "-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=%s" % account_key
-            )
-        described = (
-            _capture(["git", "describe", "--tags", "--always"], quiet_err=True, cwd=root)
-            if os.path.isdir(root)
-            else None
-        )
-        tag = (
-            _subst(described.stdout)
-            if described is not None and described.returncode == 0
-            else "dev"
-        )
-        version = "%s-dev" % tag
-        for arch in ("amd64", "arm64"):
-            log.step("Cross-compiling renet for linux/%s (remote provisioning)..." % arch)
-            _must(
-                [
-                    "go",
-                    "build",
-                    "-ldflags=-s -w -X main.Version=%s %s" % (version, key_flags),
-                    "-o",
-                    "bin/renet-linux-%s" % arch,
-                    "./cmd/renet",
-                ],
-                cwd=renet_dir,
-                env={**os.environ, "CGO_ENABLED": "0", "GOOS": "linux", "GOARCH": arch},
-            )
 
     write_stamp_hash(stamp, "%s\nbin=%s" % (current, renet_artifact_fp(renet_bin)))
     log.info("Renet built successfully")

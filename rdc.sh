@@ -94,7 +94,7 @@ if [[ ! -f "$ref_file" ]] || [[ "$cli_dist" -nt "$ref_file" ]]; then
 fi
 
 # Add renet binary directory to PATH so CLI can find it
-renet_bin_dir="$ROOT_DIR/private/renet/bin"
+renet_bin_dir="$ROOT_DIR/private/renet/bin"; [[ "${RDC_RENET_LICENSE:-0}" == "1" ]] && renet_bin_dir+="/enforce" # an enforcing build lives in bin/enforce/, so a plain run never changes it
 export PATH="$renet_bin_dir:$PATH"
 
 # WHICH UNIVERSE THIS RUNS AGAINST. Production is the default and `--dev` (or
@@ -102,8 +102,8 @@ export PATH="$renet_bin_dir:$PATH"
 # `./rdc.sh --config bench <cmd>`. Every universe is a named CLI config carrying its
 # own server, keys and token, so selecting one is the ONLY thing that changes here.
 # The 27 lines of prose that stood here said what docs/agent-reference/local-env.md
-# already says under 'The ./rdc.sh wrappers', including RDC_RENET_LICENSE=1, which is
-# an independent renet build modifier this file does not read at all.
+# already says under 'The ./rdc.sh wrappers', including RDC_RENET_LICENSE=1, which this
+# file reads only to pick the renet flavor directory on PATH above.
 if [[ "${1:-}" == "--dev" ]]; then
     RDC_DEV=1
     shift

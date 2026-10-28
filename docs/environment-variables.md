@@ -79,7 +79,7 @@ daemon client), `renet` (binary provisioning transfer), `timing` (fork timing ch
 | Variable | Purpose |
 |---|---|
 | `RDC_DEV=1` (or `./rdc.sh --dev`) | Wrapper sugar: seeds/refreshes the `dev` config from the running dev gateway and runs with `REDIACC_CONFIG=dev`. |
-| `RDC_RENET_LICENSE=1` | Builds dev renet WITHOUT the `nolicense` tag (license enforcement on). |
+| `RDC_RENET_LICENSE=1` | Selects the enforcing dev renet in `private/renet/bin/enforce/` (license enforcement on); `bin/renet` stays the nolicense build. |
 | `ACCOUNT_ED25519_PUBLIC_KEY` | Ldflags-injected master key for renet license validation. Build-time only; setting it at runtime has no effect. |
 
 ## Test and tooling harnesses (not read by the CLI)
