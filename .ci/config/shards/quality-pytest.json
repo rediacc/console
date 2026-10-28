@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-28T06:41:24.278Z",
+  "generatedAt": "2026-10-28T09:19:00.906Z",
   "legs": [
     {
       "index": 1,
@@ -117,6 +117,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_auth.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_deploy_bench.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_mirror_config_store.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_portal_captcha.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_prune_worker_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_r2_lifecycle.py",
         "pytest:.ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",

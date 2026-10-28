@@ -23,6 +23,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_account as port
+from rediacc_ci.ops import portal_captcha as pc
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
 
@@ -729,3 +730,165 @@ def test_an_unbound_or_malformed_sitekey_refuses(tmp_path: pathlib.Path) -> None
     assert "no built portal" in (
         port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}) or ""
     )
+
+
+# --------------------------------------------------------------------------- The post-deploy portal smoke (2026-10-28) ---------------------------------------------------------------------------
+
+ROUTED_TOML = (
+    'routes = [\n  { pattern = "eu.rediacc.com", custom_domain = true }\n]\n' + FIXTURE_TOML
+)
+LOGIN_HTML = '<script type="module" src="/account/assets/index-AbC123.js"></script>'
+
+
+def _fake_site(bundle: str, login_answer: str, calls: list, *, unreachable: int = 0):
+    """A served portal: the login page, its index bundle and the login API. The first `unreachable` requests get no answer."""
+
+    def fetch(method, url, _body):
+        calls.append((method, url))
+        if len(calls) <= unreachable:
+            return pc.Reply(0, error="URLError")
+        if url.endswith("/account/login"):
+            return pc.Reply(200, LOGIN_HTML)
+        if url.endswith("/account/assets/index-AbC123.js"):
+            return pc.Reply(200, bundle)
+        if url.endswith("/account/api/v1/auth/login") and method == "POST":
+            return pc.Reply(400, login_answer)
+        return pc.Reply(404, "")
+
+    return fetch
+
+
+ENFORCED = '{"error":"Captcha verification required"}'
+
+
+def test_the_smoke_passes_a_served_portal_that_carries_the_deployed_key(
+    tmp_path: pathlib.Path,
+) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    calls: list = []
+    fetch = _fake_site('const k="%s";' % FIXTURE_SITEKEY, ENFORCED, calls)
+    assert (
+        port.portal_smoke(config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None)
+        is None
+    )
+    assert ("POST", "https://eu.rediacc.com/account/api/v1/auth/login") not in calls
+    assert calls[0] == ("GET", "https://eu.rediacc.com/account/login")
+
+
+def test_the_smoke_refuses_the_2026_10_28_keyless_portal_on_an_enforcing_worker(
+    tmp_path: pathlib.Path,
+) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    calls: list = []
+    slept: list = []
+    fetch = _fake_site('const k="";', ENFORCED, calls)
+    refusal = port.portal_smoke(
+        config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, slept.append
+    )
+    assert refusal is not None
+    assert "BROKEN" in refusal
+    assert "eu.rediacc.com" in refusal
+    # The rebuild command and the rollback are both named.
+    assert 'VITE_TURNSTILE_SITE_KEY=\\"$TURNSTILE_SITE_KEY\\"' in refusal
+    assert "deploy_account --region eu" in refusal
+    assert "wrangler rollback" in refusal
+    assert "wrangler.eu.toml" in refusal
+    # It retried for propagation before refusing, and never printed the key.
+    assert len(slept) == 5
+    assert FIXTURE_SITEKEY not in refusal
+
+
+def test_the_smoke_refuses_a_bundle_carrying_another_key_than_the_deployed_one(
+    tmp_path: pathlib.Path,
+) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    fetch = _fake_site('const k="0x4AAAAAAAsomeOtherKey99";', ENFORCED, [])
+    refusal = port.portal_smoke(
+        config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None
+    )
+    assert refusal is not None
+    assert "BROKEN" in refusal
+
+
+def test_a_keyless_portal_on_a_worker_without_captcha_passes(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    fetch = _fake_site('const k="";', '{"error":"Invalid credentials"}', [])
+    assert (
+        port.portal_smoke(config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None)
+        is None
+    )
+
+
+def test_the_smoke_retries_through_propagation(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    calls: list = []
+    slept: list = []
+    fetch = _fake_site('const k="%s";' % FIXTURE_SITEKEY, ENFORCED, calls, unreachable=2)
+    assert (
+        port.portal_smoke(config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, slept.append)
+        is None
+    )
+    assert len(slept) == 2
+
+
+def test_an_unreachable_host_is_a_refusal_not_a_pass(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    fetch = _fake_site("", "", [], unreachable=10_000)
+    refusal = port.portal_smoke(
+        config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None
+    )
+    assert refusal is not None
+    assert "UNKNOWN" in refusal
+
+
+def test_a_config_without_a_route_is_not_smoked(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(FIXTURE_TOML)
+
+    def never(*_a):
+        raise AssertionError("no route, no request")
+
+    assert port.portal_smoke(config, {}, never, lambda _s: None) is None
+
+
+def test_every_production_and_edge_config_has_a_route_to_smoke() -> None:
+    worker = ROOT / "workers" / "account"
+    for region in ("eu", "us", "asia"):
+        for target in ("production", "edge"):
+            name = port.config_name(region, target)
+            assert port.route_host(worker / name) == (
+                "%s.rediacc.com" % region
+                if target == "production"
+                else "edge-%s.rediacc.com" % region
+            ), name
+
+
+def test_main_fails_a_deploy_whose_served_portal_is_broken(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """In process: the smoke runs AFTER `wrangler deploy` and its refusal is exit 1."""
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": ROUTED_TOML})
+    (root / "workers" / "account" / "node_modules").mkdir()
+    order: list[str] = []
+    monkeypatch.setattr(port.common, "repo_root", lambda: root)
+    monkeypatch.setattr(port, "portal_sitekey_refusal", lambda *_a: None)
+    monkeypatch.setattr(port, "check_services", lambda *_a: None)
+    monkeypatch.setattr(
+        port, "_run", lambda argv: order.append(argv[-3] if "deploy" in argv else "migrate") or 0
+    )
+    monkeypatch.setattr(
+        port, "portal_smoke", lambda *_a: order.append("smoke") or "Portal smoke BROKEN"
+    )
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+    monkeypatch.chdir(tmp_path)
+    assert port.main(["--region", "eu"]) == 1
+    assert order == ["migrate", "deploy", "smoke"]
+    monkeypatch.setattr(port, "portal_smoke", lambda *_a: None)
+    assert port.main(["--region", "eu"]) == 0

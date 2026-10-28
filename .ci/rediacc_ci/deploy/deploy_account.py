@@ -41,6 +41,8 @@ this campaign has ruled on before (`deploy/set_www_worker_secrets.py`, `deploy/w
 
 ONE DIVERGENCE IN BEHAVIOUR, ON PURPOSE: THE SERVICES PREFLIGHT. Before any migration, each `[[services]]` target of the config must be a Worker on the account, as `rediacc_ci.ops.service_bindings_audit` lists them; a MISSING target, or an audit with no verdict (rc 77, an unparseable config included), refuses with exit 1 and nothing is migrated (`check_services`). The twin migrated first and let `wrangler deploy` fail on code 10143 afterwards. A config with no `[[services]]` runs exactly as the twin did.
 
+TWO MORE DIVERGENCES, ON PURPOSE: THE PORTAL CHECKS (2026-10-28, stable served a keyless portal while its Worker enforced captcha). Before any write, the dist on disk must carry the bound TURNSTILE_SITE_KEY (`portal_sitekey_refusal`). After `wrangler deploy`, the host of the config's route must SERVE a portal that renders the captcha its Worker enforces (`portal_smoke`, `rediacc_ci.ops.portal_captcha`), retried briefly for propagation; a red names the rebuild command and the rollback, and exits 1. A config with no route skips the smoke silently, which keeps the twin differential's fixture runs byte-identical.
+
 `:?` IS AN UNSET-OR-EMPTY TEST, so `--region=` refuses exactly as an absent
 `--region` does. Driven; a port testing only for presence would resolve `wrangler..toml` and report it missing instead.
 
@@ -55,12 +57,14 @@ import re
 import shutil
 import subprocess
 import sys
+import time
+import tomllib
 import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import wrangler as wrangler_cmd
-from rediacc_ci.ops import service_bindings_audit
+from rediacc_ci.ops import portal_captcha, service_bindings_audit
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -129,6 +133,48 @@ def portal_sitekey_refusal(worker_dir: pathlib.Path, env: typing.Mapping[str, st
     return (
         "the built portal at %s carries no Turnstile sitekey, so login would show no captcha while the Worker enforces it; %s"
         % (assets, REBUILD_HINT)
+    )
+
+
+def route_host(config: pathlib.Path) -> str | None:
+    """The first custom-domain route pattern of the deployed wrangler config, or None when it has none (or is not TOML, which `wrangler deploy` would already have refused)."""
+    try:
+        with open(config, "rb") as fh:
+            routes = tomllib.load(fh).get("routes") or []
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    for route in routes:
+        pattern = route if isinstance(route, str) else (route or {}).get("pattern", "")
+        if pattern:
+            return pattern.split("/", 1)[0]
+    return None
+
+
+def portal_smoke(
+    config: pathlib.Path,
+    env: typing.Mapping[str, str],
+    fetch: portal_captcha.Http = portal_captcha.http,
+    sleep: typing.Callable[[float], None] = time.sleep,
+) -> str | None:
+    """After the deploy: None when the served portal renders the captcha its Worker enforces, else the refusal line.
+
+    The pre-deploy `portal_sitekey_refusal` proves the dist on disk; this proves what the host SERVES, which also catches a Worker version or asset upload that did not take. A config with no route has no host to ask and is not checked (every production and edge config carries one; the twin differential's fixture configs do not). An unreachable host after the retries is a refusal too: an unverified deploy is not a verified one.
+    """
+    host = route_host(config)
+    if host is None:
+        return None
+    key = (
+        env.get("TURNSTILE_SITE_KEY") or env.get("VITE_TURNSTILE_SITE_KEY") or ""
+    ).strip() or None
+    verdict = portal_captcha.check_with_retry(host, fetch, key, sleep=sleep)
+    if verdict.state == portal_captcha.OK:
+        log.info("Portal smoke: %s %s" % (host, verdict.why))
+        return None
+    return "Portal smoke %s on https://%s/account/login: %s. Fix: %s" % (
+        verdict.state,
+        host,
+        verdict.why,
+        portal_captcha.fix_command(host),
     )
 
 
@@ -322,6 +368,10 @@ def main(argv: list[str]) -> int:
     if status != 0:
         return status  # `set -e`
     log.info("Account worker deployed: %s %s" % (target, region))
+    smoke = portal_smoke(worker_dir / config, os.environ)
+    if smoke:
+        log.error(smoke)
+        return 1
     return 0
 
 

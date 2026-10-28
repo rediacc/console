@@ -15,6 +15,8 @@ from rediacc_ci.ops import deploy_bench
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 REGISTER_PATH = "/account/api/v1/auth/register"
+# The [assets] block deploy_bench requires before it builds the keyless portal (bench_assets_refusal).
+BENCH_ASSETS_TOML = '[assets]\ndirectory = "./bench/dist"\n'
 
 
 class _Server:
@@ -208,7 +210,7 @@ def test_a_403_names_the_bench_access_fix(server):
 def test_deploy_refuses_an_unset_password_before_the_first_remote_write(monkeypatch, tmp_path):
     worker = tmp_path / "workers" / "account"
     worker.mkdir(parents=True)
-    (worker / deploy_bench.CONFIG).write_text("")
+    (worker / deploy_bench.CONFIG).write_text(BENCH_ASSETS_TOML)
     monkeypatch.delenv(deploy_bench.ROOT_LOGIN_ENV)
     ran: list[str] = []
     monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
@@ -265,7 +267,7 @@ def test_main_takes_set_root_password(monkeypatch):
 def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
     worker = tmp_path / "workers" / "account"
     worker.mkdir(parents=True)
-    (worker / deploy_bench.CONFIG).write_text("")
+    (worker / deploy_bench.CONFIG).write_text(BENCH_ASSETS_TOML)
     (worker / "node_modules").mkdir()
     web = tmp_path / "private" / "account" / "web"
     (web / "node_modules").mkdir(parents=True)
@@ -368,7 +370,7 @@ def test_a_blank_live_version_is_refused_not_replaced_by_the_printed_id(monkeypa
 def test_a_missing_live_version_after_the_deploy_fails_the_deploy(monkeypatch, tmp_path):
     worker = tmp_path / "workers" / "account"
     worker.mkdir(parents=True)
-    (worker / deploy_bench.CONFIG).write_text("")
+    (worker / deploy_bench.CONFIG).write_text(BENCH_ASSETS_TOML)
     (worker / "node_modules").mkdir()
     (tmp_path / "private/account/web/node_modules").mkdir(parents=True)
     for name in (
@@ -490,3 +492,76 @@ def test_bench_keeps_the_dev_x25519_envelope_key():
     required = _deploy_bench_profile()["required"]
     assert "ACCOUNT_X25519_PRIVATE_KEY_DEV > ACCOUNT_X25519_PRIVATE_KEY" in required
     assert "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY" in required
+
+
+# --------------------------------------------------------------------------- The keyless bench portal never lands where production uploads from (2026-10-28) ---------------------------------------------------------------------------
+
+
+def test_the_real_bench_config_builds_outside_the_production_assets():
+    worker = paths.repo_root() / "workers" / "account"
+    assert deploy_bench.bench_assets_refusal(worker) is None
+    out = deploy_bench.portal_out_dir(worker)
+    assert worker / "dist" not in out.parents
+    assert out == worker / "bench" / "dist" / "account"
+
+
+@pytest.mark.parametrize(
+    ("toml", "needle"),
+    [
+        # The 2026-10-28 shape: bench serving, and so building, the production directory.
+        ('[assets]\ndirectory = "./dist"\n', "not ./bench/dist"),
+        ('[assets]\ndirectory = "./dist/bench"\n', "not ./bench/dist"),
+        ("", "not ./bench/dist"),
+        ("[assets\n", "cannot be read"),
+    ],
+)
+def test_a_bench_config_that_points_at_production_assets_is_refused(tmp_path, toml, needle):
+    (tmp_path / deploy_bench.CONFIG).write_text(toml)
+    refusal = deploy_bench.bench_assets_refusal(tmp_path)
+    assert refusal is not None
+    assert needle in refusal
+
+
+def _deploy_world(monkeypatch, tmp_path, toml, events):
+    worker = tmp_path / "workers" / "account"
+    worker.mkdir(parents=True)
+    (worker / deploy_bench.CONFIG).write_text(toml)
+    (worker / "node_modules").mkdir()
+    (tmp_path / "private/account/web/node_modules").mkdir(parents=True)
+    for name in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"):
+        monkeypatch.setenv(name, "x")
+    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
+    monkeypatch.setattr(deploy_bench, "root_password", lambda: "p")
+    monkeypatch.setattr(deploy_bench.cf_auth, "await_propagation", lambda _a: None)
+    monkeypatch.setattr(deploy_bench.bench_preflight, "lockfile", lambda _p: 0)
+    monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
+    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
+    monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
+    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
+    monkeypatch.setattr(deploy_bench, "record_version", lambda *_a: None)
+    monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a: (True, "live"))
+    monkeypatch.setattr(
+        deploy_bench,
+        "_run",
+        lambda argv, *_a, **_k: events.append(list(argv)) or "Current Version ID: " + VID,
+    )
+    return worker
+
+
+def test_the_bench_build_writes_into_bench_dist_and_never_dist(monkeypatch, tmp_path):
+    events: list[list[str]] = []
+    worker = _deploy_world(monkeypatch, tmp_path, BENCH_ASSETS_TOML, events)
+    deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    builds = [e for e in events if "vite" in e]
+    assert len(builds) == 1
+    out = builds[0][builds[0].index("--outDir") + 1]
+    assert out == str(worker / "bench" / "dist" / "account")
+    assert str(worker / "dist") not in out
+
+
+def test_a_bench_config_on_production_assets_stops_before_any_build_or_write(monkeypatch, tmp_path):
+    events: list[list[str]] = []
+    _deploy_world(monkeypatch, tmp_path, '[assets]\ndirectory = "./dist"\n', events)
+    with pytest.raises(deploy_bench.DeployError, match=r"not \./bench/dist"):
+        deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert events == []

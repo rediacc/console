@@ -38,6 +38,7 @@ import subprocess
 import sys
 import threading
 import time
+import tomllib
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
@@ -49,6 +50,7 @@ from rediacc_ci.proof import receipt
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
+    import pathlib
     from collections.abc import Callable
 
 BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
@@ -61,6 +63,9 @@ DOMAIN = BENCH_HOST
 # Bench is test-only (operator ruling 2026-10-13): the portal is built with NO site key, so the
 # widget never renders, and wrangler.bench.toml sets TURNSTILE_ENABLED=false for the API.
 TURNSTILE_SITEKEY = ""
+# The keyless bench portal is built OUTSIDE the production assets directory (`./dist` in every production and edge config), into the directory wrangler.bench.toml's [assets] names. On 2026-10-28 this tool rebuilt workers/account/dist/account for bench and the next production deploy uploaded that keyless portal to stable eu/us/asia, so no login could pass the captcha. `bench_assets_refusal` and `check:ci-portal-sitekey-guard` hold the separation.
+BENCH_ASSETS_REL = ("bench", "dist")
+PRODUCTION_ASSETS_REL = ("dist",)
 PROFILE = "deploy-bench"
 MISSING = "%s missing from the deploy-bench profile"
 HELP = (
@@ -662,6 +667,38 @@ def _seed_and_report() -> None:
     )
 
 
+def portal_out_dir(worker_dir) -> pathlib.Path:
+    """Where the keyless bench portal is built: `<worker>/bench/dist/account`, served at /account/ by the bench config's assets."""
+    return worker_dir.joinpath(*BENCH_ASSETS_REL, "account")
+
+
+def bench_assets_refusal(worker_dir) -> str | None:
+    """None when wrangler.bench.toml's [assets] directory is the bench build root and lies outside the production assets directory, else the refusal. Checked before the build, so a config edit can never steer the keyless build back into the directory a production deploy uploads."""
+    try:
+        with open(worker_dir / CONFIG, "rb") as fh:
+            directory = (tomllib.load(fh).get("assets") or {}).get("directory", "")
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        return "%s cannot be read for its [assets] directory: %s" % (CONFIG, exc)
+    assets = (worker_dir / directory).resolve() if directory else None
+    want = worker_dir.joinpath(*BENCH_ASSETS_REL).resolve()
+    production = worker_dir.joinpath(*PRODUCTION_ASSETS_REL).resolve()
+    if assets != want:
+        return (
+            "%s [assets] directory is %r, not ./%s: the bench portal is built there and nowhere else"
+            % (
+                CONFIG,
+                directory,
+                "/".join(BENCH_ASSETS_REL),
+            )
+        )
+    if want == production or production in want.parents or want in production.parents:
+        return "the bench portal build root %s overlaps the production assets %s" % (
+            want,
+            production,
+        )
+    return None
+
+
 def _deploy(auth: cf_auth.Auth, root) -> None:
     worker_dir = root / "workers" / "account"
     if not (worker_dir / CONFIG).is_file():
@@ -692,6 +729,10 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
         os.chdir(cwd)
 
     log.step("Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)")
+    refusal = bench_assets_refusal(worker_dir)
+    if refusal:
+        raise DeployError(refusal)
+    out_dir = portal_out_dir(worker_dir)
     web_dir = root / "private" / "account" / "web"
     if not (web_dir / "node_modules").is_dir():
         _run(["npm", "install"], web_dir, "npm install")
@@ -699,12 +740,12 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     build_env["VITE_TURNSTILE_SITE_KEY"] = TURNSTILE_SITEKEY
     build_env["VITE_CI_MODE"] = "false"
     _run(
-        ["npx", "--no-install", "vite", "build", "--outDir", str(worker_dir / "dist" / "account")],
+        ["npx", "--no-install", "vite", "build", "--outDir", str(out_dir)],
         web_dir,
         "vite build",
         env=build_env,
     )
-    log.info("Account portal built → %s" % (worker_dir / "dist" / "account"))
+    log.info("Account portal built → %s" % out_dir)
 
     if not (worker_dir / "node_modules").is_dir():
         _run(["npm", "install"], worker_dir, "npm install")

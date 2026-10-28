@@ -4,6 +4,11 @@ name: Telemetry Probe
 # and Loki are polled through the Grafana proxy until the span and the log of
 # that request show up (rediacc_ci.ops.telemetry_delivery). Red names the host
 # and signal that went silent. Read-only: nothing is written anywhere.
+#
+# The portal-captcha job (2026-10-28: stable served a login page with no Turnstile widget while the
+# Worker enforced captcha) checks every stable and edge account host renders the captcha its Worker
+# enforces (rediacc_ci.ops.portal_captcha). Red names the host and the fix command. It needs no secret,
+# and the one request beyond GETs is a refused dummy login.
 
 on:
   schedule:
@@ -44,3 +49,21 @@ jobs:
         env:
           OBS_GRAFANA_READ_TOKEN: ${{ env.BWS_OBS_GRAFANA_READ_TOKEN }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ops.telemetry_delivery
+
+  portal-captcha:
+    name: Portal Captcha Probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Probe every account portal for the captcha widget its Worker enforces
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ops.portal_captcha

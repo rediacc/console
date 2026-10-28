@@ -737,7 +737,16 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
             continue
         if _is_seed_call(raw):
             continue
+        # DECLARED DELTA (c7233ce09): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
+        if raw["tool"] == "npx" and raw["argv"][2:4] == ["deployments", "list"]:
+            continue
         call = dict(raw)
+        # DECLARED DELTA (2026-10-28): the keyless bench portal builds into bench/dist, never into the dist a production deploy uploads; the bash built into dist/account.
+        if call["tool"] == "npx" and "vite" in call["argv"]:
+            call["argv"] = [
+                a.replace("/workers/account/bench/dist/", "/workers/account/dist/")
+                for a in call["argv"]
+            ]
         # DECLARED DELTA: the port runs `npx --no-install vite build` so npx never downloads vite; the retired bash ran a bare `npx vite build`, which is what the golden recorded. The flag is dropped here, only for vite, so every other argv still compares verbatim.
         if call["tool"] == "npx" and call["argv"][:2] == ["--no-install", "vite"]:
             call["argv"] = call["argv"][1:]
@@ -761,7 +770,10 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
     assert any(_is_seed_call(c) for c in port_calls)
-    assert out_b == out_p
+    # DECLARED DELTA (c7233ce09): the port captures `wrangler deploy` to record its version and echoes that output to stdout; the bash's fake printed nothing there.
+    version_line = "Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d\n"
+    assert out_p.count(version_line) == 1
+    assert out_b == out_p.replace(version_line, "", 1)
     assert _deploy_shape(bash_calls) == _deploy_shape(port_calls)
     secrets = next(c["stdin"] for c in port_calls if c["tool"] == "npx" and c["stdin"])
     assert list(secrets)[:3] == [
@@ -795,6 +807,14 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         ln
         for ln in all_port_lines
         if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") and not ln.startswith(seed_lines)
+    ]
+    # DECLARED DELTA (c7233ce09): the port records the live bench version; asserted once, then dropped.
+    recorded = "✓ Bench version recorded in .ci/cache/live-deploys/bench.json"
+    assert port_lines.count(recorded) == 1
+    port_lines.remove(recorded)
+    # DECLARED DELTA (2026-10-28): the build line names bench/dist/account, where the bash named dist/account.
+    port_lines = [
+        ln.replace("/workers/account/bench/dist/", "/workers/account/dist/") for ln in port_lines
     ]
     assert [port_build if ln == bash_build else ln for ln in bash_lines] == port_lines
     assert "r2-secret" not in err_p
