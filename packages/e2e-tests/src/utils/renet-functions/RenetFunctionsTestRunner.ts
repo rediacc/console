@@ -347,8 +347,14 @@ export class RenetFunctionsTestRunner {
    * Execute a command on target VM via Bridge VM (two-hop SSH).
    * Pattern: Host → SSH → Bridge → SSH → Target → command
    * Outputs are logged to console so Playwright can capture them.
+   *
+   * `options.stdin` is the secret channel: the text is written to the command's standard input through both SSH hops and never appears in the command line or the log (only its length does). Secrets (repository passphrases) go here, never into `command`.
    */
-  async executeViaBridge(command: string, timeout?: number): Promise<ExecResult> {
+  async executeViaBridge(
+    command: string,
+    timeout?: number,
+    options?: { stdin?: string }
+  ): Promise<ExecResult> {
     const cmdTimeout = timeout ?? this.defaultTimeout;
     const escapedForBridge = this.sshExecutor.escapeForNestedSSH(command);
 
@@ -367,17 +373,32 @@ export class RenetFunctionsTestRunner {
 
     // Log the command being executed
     log(`\n[SSH ${this.bridgeVM} → ${this.targetVM}] ${command}`);
+    if (options?.stdin !== undefined) {
+      log(`[STDIN] ${options.stdin.length} bytes (redacted)`);
+    }
 
     const fallbackDirect = (reason: string): Promise<ExecResult> => {
       log(`[RenetFunctionsTestRunner] Falling back to direct SSH to ${this.targetVM}: ${reason}`);
+      if (options?.stdin !== undefined) {
+        // executeOnVM has no stdin channel; refuse rather than drop the secret or inline it.
+        return Promise.resolve({
+          stdout: '',
+          stderr: `${reason}; no stdin-capable fallback`,
+          code: 1,
+        });
+      }
       return this.executeOnVM(this.targetVM, command, timeout);
     };
 
     try {
-      const { stdout, stderr } = await execAsync(sshCmd, {
+      const pending = execAsync(sshCmd, {
         timeout: cmdTimeout,
         maxBuffer: EXEC_MAX_BUFFER,
       });
+      if (options?.stdin !== undefined) {
+        pending.child.stdin?.end(options.stdin);
+      }
+      const { stdout, stderr } = await pending;
       this.logExecutionResult(stdout, stderr, 0);
       return { stdout, stderr, code: 0 };
     } catch (error: unknown) {

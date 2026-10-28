@@ -222,6 +222,20 @@ test.describe
           .map((row) => `${row.type} ${row.name}`)
           .sort((a, b) => Number(a > b) - Number(a < b));
 
+      /** Mount the repository with the passphrase carried by the vault file (`repository_credentials`), never as a `--password` argument: the bridge runner logs every command line. */
+      const mountRepo = () =>
+        w1.executeWithVault(
+          'repository_mount',
+          new VaultBuilder()
+            .withFunction('repository_mount')
+            .withTeam(TEST_TEAM)
+            .withRepository(repo.guid, repo.guid, Number(repo.networkId))
+            .withRepositoryCredential(repo.guid, repo.credential)
+            .withMachine(w1.getTargetVM(), TEST_USER, DS)
+            .withDatastore(DS)
+            .withParams({ network_id: Number(repo.networkId) })
+        );
+
       const disableAutostart = async (): Promise<void> => {
         await w1.executeViaBridge(
           `sudo renet repository autostart disable --name "${repo.guid}" --datastore "${DS}"`
@@ -231,8 +245,10 @@ test.describe
       /** The machine-side `browse-at` verb's own JSON record, whose `listingSource` the CLI's row output does not carry. */
       const storedListingSource = async (snapshotId: string): Promise<string | undefined> => {
         const out = await w1.executeViaBridge(
-          `printf '%s\\n' '${repo.credential}' | sudo renet backup browse-at --datastore "${DS}" ` +
-            `--repo "${repo.guid}" --lineage "${repo.guid}" --at '${snapshotId}' --password-stdin`
+          `sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${repo.guid}" --lineage "${repo.guid}" --at '${snapshotId}' --password-stdin`,
+          undefined,
+          { stdin: `${repo.credential}\n` }
         );
         expect(out.code, `browse-at verb: ${w1.getCombinedOutput(out).slice(-800)}`).toBe(0);
         const record = parseEnvelope(out.stdout.trim().split('\n').pop() ?? '', out.stderr);
@@ -293,7 +309,7 @@ test.describe
 
       test('2. `rdc backup browse --at <id>` equals a local `backup browse` of the same content', async () => {
         // The snapshot builds its listing by reading the image, which it can only do through a LIVE mount of the repository with no autostart keyfile (this repo has none): the staged copy cannot be opened, so the listing is walked from the live mount and sealed as `listingSource: "live-mount"` (cmd/renet/backup_snapshot_toc.go snapshotTOCListing). An UNMOUNTED repo still stores WITHOUT a listing. So the repo stays mounted from the write, through the snapshot, to the local read: the password mount also writes the key, so this snapshot carries a sealed listing, and nothing changes between it and the local read.
-        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        const mounted = await mountRepo();
         expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
         let local: string[];
         try {
@@ -387,13 +403,15 @@ test.describe
       });
 
       test('2c. control: a snapshot of a repository WITH an autostart keyfile reports listingSource staged and prints no live-mount note', async () => {
-        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        const mounted = await mountRepo();
         expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
         let stagedSnapshotId = '';
         try {
           const autostart = await w1.executeViaBridge(
-            `printf '%s\\n' '${repo.credential}' | sudo renet repository autostart enable --name "${repo.guid}" ` +
-              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`
+            `sudo renet repository autostart enable --name "${repo.guid}" ` +
+              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`,
+            undefined,
+            { stdin: `${repo.credential}\n` }
           );
           expect(
             autostart.code,
@@ -436,8 +454,10 @@ test.describe
 
         // Control: the right passphrase opens the same snapshot, so test 3 refused on the passphrase and not on a broken fixture.
         const right = await w1.executeViaBridge(
-          `printf '%s\\n' '${repo.credential}' | sudo renet backup browse-at --datastore "${DS}" ` +
-            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`
+          `sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`,
+          undefined,
+          { stdin: `${repo.credential}\n` }
         );
         expect(right.code, `right passphrase: ${w1.getCombinedOutput(right).slice(-800)}`).toBe(0);
         expect(right.stdout).toContain(`browse-at-${stamp}.txt`);
@@ -490,7 +510,7 @@ test.describe
         let restoreSnapshotId = '';
         let liveFileHash = '';
         let liveTreeHash = '';
-        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        const mounted = await mountRepo();
         expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
         try {
           const plant = await sh(
@@ -509,8 +529,10 @@ test.describe
           expect(liveTreeHash.split('\n'), 'the live tree is not two files').toHaveLength(2);
 
           const autostart = await w1.executeViaBridge(
-            `printf '%s\\n' '${repo.credential}' | sudo renet repository autostart enable --name "${repo.guid}" ` +
-              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`
+            `sudo renet repository autostart enable --name "${repo.guid}" ` +
+              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`,
+            undefined,
+            { stdin: `${repo.credential}\n` }
           );
           expect(
             autostart.code,
@@ -665,7 +687,7 @@ test.describe
             JSON.stringify({ ...JSON.parse(tokenOriginal), serverUrl: sinkUrl }),
             { mode: 0o600 }
           );
-          const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+          const mounted = await mountRepo();
           expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
           const local = await sinkCli.runJson<CliEnvelope<unknown>>([
             'backup',
