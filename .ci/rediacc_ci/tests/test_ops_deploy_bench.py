@@ -290,7 +290,10 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
         lambda argv, *_a, **_k: events.append(" ".join(argv[:5])) or "Current Version ID: " + VID,
     )
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: events.append("seed"))
-    monkeypatch.setattr(deploy_bench, "record_version", lambda _r, _o: events.append("record"))
+    monkeypatch.setattr(
+        deploy_bench, "record_version", lambda _r, _o, _v=None: events.append("record")
+    )
+    monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a: (True, "live"))
     deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
     assert events[-1] == "record"
     assert events[-2] == "seed"
@@ -324,6 +327,14 @@ def test_a_parsed_version_id_writes_bench_json(monkeypatch, tmp_path):
     assert written["surfaces"] == ["account", "account-worker"]
     assert written["at"].endswith("Z")
     assert set(written) >= {"version_id", "head", "tree", "dirty", "submodules", "at"}
+
+
+def test_the_live_version_after_the_secrets_push_is_the_recorded_one(monkeypatch, tmp_path):
+    monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
+    live = "bb3e1ba3-ef59-4a56-9926-1e6a6ec47cec"
+    got = deploy_bench.record_version(tmp_path, "Current Version ID: " + VID, live)
+    assert got["version_id"] == live
+    assert got["deployed_version_id"] == VID
 
 
 def test_output_without_a_version_id_is_a_named_error_and_writes_nothing(monkeypatch, tmp_path):

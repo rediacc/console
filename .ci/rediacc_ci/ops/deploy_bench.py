@@ -42,6 +42,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
+from rediacc_ci.deploy import deploy_record
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.proof import receipt
 from rediacc_ci.well_known import BENCH_ORIGIN
@@ -256,8 +257,10 @@ VERSION_RECORD = (".ci", "cache", "live-deploys", "bench.json")
 VERSION_PATTERN = re.compile(r"Current Version ID:\s*([0-9a-fA-F][0-9a-fA-F-]{7,})")
 
 
-def record_version(root, output: str) -> dict:
-    """Write `.ci/cache/live-deploys/bench.json` from `proof.receipt.identity` plus the `Current Version ID:` of the wrangler deploy `output`, and return it. DeployError, with nothing written, when the output carries no id."""
+def record_version(root, output: str, live_version: str | None = None) -> dict:
+    """Write `.ci/cache/live-deploys/bench.json` from `proof.receipt.identity` plus the version bench serves, and return it. DeployError, with nothing written, when the deploy `output` carries no `Current Version ID:`.
+
+    `version_id` is `live_version`, the 100% version read after the secrets push, because `wrangler secret bulk` creates a newer version than the one `wrangler deploy` printed (measured 2026-10-28: deploy printed 0b4e20ac, bench served bb3e1ba3); `deployed_version_id` keeps the printed one. Without `live_version` both are the printed id."""
     match = VERSION_PATTERN.search(output)
     if not match:
         raise DeployError(
@@ -266,7 +269,8 @@ def record_version(root, output: str) -> dict:
             % "/".join(VERSION_RECORD)
         )
     record = {
-        "version_id": match.group(1),
+        "version_id": live_version or match.group(1),
+        "deployed_version_id": match.group(1),
         **receipt.identity(root, BENCH_SURFACES),
         "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
@@ -701,7 +705,8 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     log.info("Worker secrets pushed")
     _seed_and_report()
     # After the whole deploy, so a missing id fails a finished deploy rather than leaving secrets unpushed.
-    record_version(root, deploy_output)
+    _, live_version = deploy_record.worker_version(worker_dir, CONFIG, WORKER_NAME)
+    record_version(root, deploy_output, live_version)
     log.info("Bench version recorded in %s" % "/".join(VERSION_RECORD))
 
     print()
