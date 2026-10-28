@@ -92,7 +92,7 @@ Remove a machine from the config. Does not touch the machine itself.
 **Options:**
 
 - `-y, --yes`: Skip confirmation prompt
-- `--force`: Remove the machine even if repositories are still placed on it, leaving those placements dangling.
+- `--force`: Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling.
 
 > MCP tool
 
@@ -344,6 +344,45 @@ Remove the certificate cache
 
 > MCP excluded: Destroys cached TLS key material. Irreversible, and it is key material.
 
+### rdc machine access set <machine>
+
+Bind an access key to a machine. Ranges given here replace the key's ranges on this machine only. Apply with 'machine access push'
+
+**Options:**
+
+- `--key <key>`: Access key name (see 'config access list')
+- `--ipv4 <cidrs>`: IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)
+- `--ipv6 <cidrs>`: IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)
+- `--clear-ranges`: Drop this machine's own ranges, so the key's or the config's ranges apply
+
+> MCP excluded: Binds an SSH key to a machine, which decides who `machine access push` lets in. Access changes are an operator decision.
+
+### rdc machine access remove <machine>
+
+Unbind an access key from a machine. The next 'machine access push' removes its line
+
+**Options:**
+
+- `--key <key>`: Access key name (see 'config access list')
+
+> MCP excluded: Unbinds an SSH key from a machine, which changes who `machine access push` lets in. Access changes are an operator decision.
+
+### rdc machine access show <machine>
+
+Show the access keys bound to a machine and the ranges each resolves to there
+
+> MCP tool
+
+### rdc machine access push <machine>
+
+Write the access keys bound to a machine into its authorized_keys, adopting an existing line with the same key, and remove this config's lines for keys no longer bound. Refuses a change that would lock rdc's own session out, and writes nothing when the file changed during the push
+
+**Options:**
+
+- `--dry-run`: Show the changes without writing
+
+> MCP excluded: Rewrites the machine's authorized_keys from the config's access bindings. Who can log in is an operator decision.
+
 ### rdc backup strategy set <strategy>
 
 Create or update a backup strategy
@@ -389,6 +428,7 @@ Remove a backup strategy or destination
 **Options:**
 
 - `--destination <name>`: Remove only this destination (keeps other destinations)
+- `--unbind`: Also drop the strategy from every machine that binds it
 
 > MCP excluded: Backup policy mutation; use CLI directly.
 
@@ -562,6 +602,8 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `--datastore <name>`: Restore into this named datastore (its attached machine hosts it)
 - `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
 - `--any-stream`: With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)
+- `--path <file-or-dir>`: Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)
+- `--to <dir>`: Directory to place the restored path under (default: the machine's restores folder for the snapshot)
 - `--up`: Deploy the restored repository after the transfer
 - `--health-window <seconds>`: Total health-gate window in seconds (default 300)
 - `--health-timeout <seconds>`: Per-attempt health-check timeout in seconds (default 30)
@@ -1256,6 +1298,22 @@ Reclaim datastore pool space from mounted repositories (online, zero downtime). 
 
 > MCP tool
 
+### rdc repo prune [ref]
+
+Classify a repository's Docker storage and reclaim it: unused images, build cache, stopped containers, and overlay2 directories no image or container references. A dry run unless --apply. --apply reclaims through the Docker API with the repository online; --apply --offline also stops the repository's Docker daemon for the run and quarantines the orphan directories. Without a ref, surveys every mounted repository on -m (dry run only)
+
+**Options:**
+
+- `--apply`: Reclaim; without it the run only reports
+- `--offline`: Stop the repository's Docker daemon and quarantine orphan directories (requires --apply)
+- `--all-images`: Also remove tagged images no container uses
+- `--no-trim`: Skip the fstrim after an apply
+- `-y, --yes`: Skip confirmation prompt
+- `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
+
+> agent: fork-only | MCP excluded: Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.
+
 ### rdc repo policy set [ref]
 
 Set size policy fields. Only the flags you pass are changed; other stored fields keep their values. Enabling auto-grow requires --max-quota: the ceiling is your explicit consent to over-provision the pool
@@ -1666,15 +1724,56 @@ Show current SSH key configuration
 
 Remove SSH key from the current config
 
+### rdc config access add <key>
+
+Add an access key, or update an existing one in place while keeping its machine bindings. Ranges given here apply to the key on every machine unless a binding sets its own; without ranges the config-wide ranges apply
+
+**Options:**
+
+- `--public-key <key>`: OpenSSH public key line, or a path to a file holding it
+- `--hosted-executor`: Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)
+- `--ipv4 <cidrs>`: IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)
+- `--ipv6 <cidrs>`: IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)
+- `--no-restrict`: Write from= alone, without the no-forwarding, no-pty and no-user-rc restrictions
+
+> MCP excluded: Declares an SSH access key and its source ranges, which decides who may log in once bound and pushed. Access changes are an operator decision.
+
+### rdc config access remove <key>
+
+Remove an access key from the config
+
+> MCP excluded: Removes an SSH access key from the config, which changes who may log in once pushed. Access changes are an operator decision.
+
+### rdc config access ranges
+
+Set the source ranges every access key uses unless the key or its machine binding sets its own. Without options, show them
+
+**Options:**
+
+- `--hosted-executor`: Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)
+- `--ipv4 <cidrs>`: IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)
+- `--ipv6 <cidrs>`: IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)
+- `--clear`: Remove the config-wide ranges
+
+> MCP excluded: Sets the config-wide source ranges access keys may log in from. Access changes are an operator decision.
+
+### rdc config access list
+
+List the config's access keys
+
+> MCP tool
+
 ### rdc config remote enable
 
 Link this config to remote encrypted storage
 
 **Options:**
 
-- `--password`: Enroll headlessly with a pre-provisioned password slot (no browser)
+- `--master-password`: Enroll headlessly with a pre-provisioned password slot (no browser)
+- `--master-password-stdin`: Like --master-password, reading the master password from stdin
 - `--api-url <url>`: Account server URL
 - `--force`: Replace differing local content with the server copy without confirmation
+- `--config-id <id>`: Attach to this existing config of the store instead of creating a new entry
 
 ### rdc config remote disable
 
@@ -1693,6 +1792,10 @@ Show remote connection status
 
 List the earlier versions of this config kept on the server
 
+**Options:**
+
+- `--explain`: Show the JSON pointers each version changed, from the versions the server kept
+
 ### rdc config remote restore <version>
 
 Publish an earlier version of this config as its newest version
@@ -1700,6 +1803,14 @@ Publish an earlier version of this config as its newest version
 **Options:**
 
 - `-y, --yes`: Skip confirmation prompt
+
+### rdc config remote master-password change
+
+Change the master password: re-wrap the config key from this device's enrollment under a new password slot
+
+**Options:**
+
+- `--new-master-password-stdin`: Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)
 
 ### rdc config remote refresh
 
@@ -1888,6 +1999,7 @@ Authenticate via browser or API token
 **Options:**
 
 - `-t, --token <token>`: API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list).
+- `--password-stdin`: Sign in headlessly with the account password read from stdin (REDIACC_LOGIN_EMAIL required)
 - `--server <url>`: Account server URL
 
 ### rdc subscription logout
