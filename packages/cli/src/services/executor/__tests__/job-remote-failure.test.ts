@@ -20,12 +20,22 @@ function fakeSftp(exitCode: number, stderr: string) {
 }
 
 describe('isRenetFlagUnsupported', () => {
-  it.each(['Error: unknown flag: --since-line', "Error: unknown shorthand flag: 'x' in -x"])(
-    'matches %s',
-    (output) => {
-      expect(isRenetFlagUnsupported(output)).toBe(true);
-    }
-  );
+  it.each([
+    'Error: unknown flag: --since-line',
+    "Error: unknown shorthand flag: 'x' in -x",
+    'Command exited with code 1: Error: unknown flag: --policy\nUsage: renet runtime status',
+    'some output\nError: unknown flag: --datastore\n',
+  ])('matches %s', (output) => {
+    expect(isRenetFlagUnsupported(output)).toBe(true);
+  });
+
+  it.each([
+    "[repository_up] unknown flag: --project-directory\nSee 'docker compose --help'",
+    'unknown flag: --project-directory',
+    "[step] docker: unknown shorthand flag: 'x' in -x",
+  ])('does not match docker or step text: %s', (output) => {
+    expect(isRenetFlagUnsupported(output)).toBe(false);
+  });
 
   it.each(['Error: repository "flag-runner" not found', 'job j1 failed: device busy', ''])(
     'does not match %s',

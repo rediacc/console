@@ -15,15 +15,19 @@ export interface RepoEntryConfig {
 
 const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** A bare family name addresses the family's grand, whatever tag the grand is stored under. */
+/**
+ * A bare family name addresses the family's grand, whatever tag the grand is stored under. A family with no grand in the config (a restored repo is registered as `<name>:latest` with the lineage as its grandGuid) is addressed by its only member; with several members and no grand the name is ambiguous, so no fork is guessed.
+ */
 function findGrandByBareName(
   bareName: string,
   repositoryConfigs: Record<string, RepoEntryConfig>
 ): RepoEntryConfig | undefined {
-  return Object.entries(repositoryConfigs).find(
-    ([key, config]) =>
-      key.split(':')[0] === bareName && (!config.grandGuid || config.grandGuid === config.guid)
-  )?.[1];
+  const family = Object.entries(repositoryConfigs)
+    .filter(([key]) => key.split(':')[0] === bareName)
+    .map(([, config]) => config);
+  const grand = family.find((config) => !config.grandGuid || config.grandGuid === config.guid);
+  if (grand) return grand;
+  return family.length === 1 ? family[0] : undefined;
 }
 
 /** A repo ref resolves to its config entry by key, then by GUID; a ref that is itself a GUID needs no entry. */

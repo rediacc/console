@@ -152,10 +152,10 @@ export function isJobCommandUnsupported(output: string): boolean {
 }
 
 /**
- * Detect the other version-skew case: the remote renet has the command but not a flag this CLI passes (cobra: `unknown flag: --since-line`, `unknown shorthand flag: 'x' in -x`). Cobra rejects the invocation while parsing flags, before any command body runs, so the answer can name the skew without having changed anything on the machine.
+ * Detect the other version-skew case: the remote renet has the command but not a flag this CLI passes (cobra's own `Error: unknown flag: --since-line` or `Error: unknown shorthand flag: 'x' in -x` line, bare, after a `[step]` tag or after `: `; docker's own `unknown flag` text carries no `Error:` and does not count). Cobra rejects the invocation while parsing flags, before any command body runs, so the answer can name the skew without having changed anything on the machine.
  */
 export function isRenetFlagUnsupported(output: string): boolean {
-  return /unknown (shorthand )?flag\b/i.test(output);
+  return /(?:^|[:\]]\s)\s*Error: unknown (shorthand )?flag\b/im.test(output);
 }
 
 /** The answer to a renet that is older than the CLI talking to it. `machine` is the machine's name. */

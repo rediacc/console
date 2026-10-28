@@ -186,7 +186,7 @@ export async function pushStrategyRetention(
     }
     await accountServerFetch('/account/api/v1/backups/retention', {
       method: 'PUT',
-      body: JSON.stringify({ lineageGuid, ...strategy.retention }),
+      body: { lineageGuid, ...strategy.retention },
     });
     result.pushed++;
   }

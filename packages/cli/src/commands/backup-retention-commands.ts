@@ -319,7 +319,7 @@ export function registerBackupRetention(backup: Command): void {
         const { body, declared } = retentionSetBody(await resolveLineage(repoRef), options);
         const result = await accountServerFetch<BackupRetentionResponse>(
           '/account/api/v1/backups/retention',
-          { method: 'PUT', body: JSON.stringify(body) }
+          { method: 'PUT', body }
         );
         outputService.success(
           t('commands.backup.retention.set.success', { name: repoRef, count: String(declared) })

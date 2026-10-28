@@ -125,7 +125,18 @@ describe('pushStrategyRetention', () => {
   const puts = () =>
     mockFetch.mock.calls
       .filter((c) => (c[1] as { method?: string } | undefined)?.method === 'PUT')
-      .map((c) => JSON.parse((c[1] as { body: string }).body) as Record<string, unknown>);
+      .map((c) => (c[1] as { body: Record<string, unknown> }).body);
+
+  it('passes the PUT body as an object, since accountServerFetch serializes it itself', async () => {
+    mockFetch.mockResolvedValue({ policies: [] });
+    await pushStrategyRetention({ retention: { keepLast: 3 } }, {
+      overwrite: true,
+      machineName: 'm1',
+    } as never);
+    const bodies = puts();
+    expect(bodies.length).toBeGreaterThan(0);
+    for (const body of bodies) expect(typeof body).toBe('object');
+  });
 
   it('automatic push fills only lineages with no lineage-level policy, so a per-repo set wins', async () => {
     mockFetch.mockImplementation((_url: string, init?: { method?: string }) =>
