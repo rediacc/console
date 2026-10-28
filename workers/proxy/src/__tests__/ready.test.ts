@@ -179,3 +179,70 @@ describe('/v1/ready', () => {
     expect((await ready(env(issuer(probeOk), account(), metadata))).status).toBe(200);
   });
 });
+
+/** A coordinator namespace whose one stub answers `count()` from `count`, recording every name it is asked for. */
+function coordinator(
+  count: () => unknown,
+  names: string[] = []
+): NonNullable<Env['EXECUTOR_CAPACITY']> {
+  const stub = { count: async () => count() };
+  const idFromName = (name: string) => {
+    names.push(name);
+    return { toString: () => name };
+  };
+  return { idFromName, get: () => stub } as unknown as NonNullable<Env['EXECUTOR_CAPACITY']>;
+}
+
+const liveCount = () => ({ total: 3, heavy: 1, cap: 25, heavyCap: 5, extra: 'org-a' });
+const coordinatorDown = () => {
+  throw new Error('coordinator down');
+};
+
+describe('/v1/ready executors (box L0 drills)', () => {
+  it('adds the coordinator count, only its four integers, from the one capacity:v2 instance', async () => {
+    const names: string[] = [];
+    const capacity = coordinator(liveCount, names);
+    const e = env(issuer(probeOk), account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
+    expect(await ready(e)).toEqual({
+      status: 200,
+      body: {
+        ready: true,
+        workerVersion: VERSION_ID,
+        executors: { total: 3, heavy: 1, cap: 25, heavyCap: 5 },
+      },
+    });
+    expect(names).toEqual(['capacity:v2']);
+  });
+
+  it('leaves executors out, and stays ready, when the coordinator cannot answer', async () => {
+    const capacity = coordinator(coordinatorDown);
+    const e = env(issuer(probeOk), account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
+    expect(await ready(e)).toEqual({
+      status: 200,
+      body: { ready: true, workerVersion: VERSION_ID },
+    });
+  });
+
+  it('asks the coordinator nothing on a not-ready answer, and at most once per cache window', async () => {
+    let counts = 0;
+    const counting = () => {
+      counts += 1;
+      return liveCount();
+    };
+    const capacity = coordinator(counting);
+    const failing = issuer(() => Promise.reject(new Error('down')));
+    const down = env(failing, account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
+    expect((await ready(down)).status).toBe(503);
+    expect(counts).toBe(0);
+
+    resetReadyCache();
+    let clock = 1_000;
+    const now = () => clock;
+    const e = env(issuer(probeOk), account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
+    const polls = Array.from({ length: 10 }, () => e);
+    await Promise.all(polls.map((poll) => readiness(poll, now)));
+    clock += READY_CACHE_MS - 1;
+    await readiness(e, now);
+    expect(counts).toBe(1);
+  });
+});

@@ -276,6 +276,23 @@ describe('AccountEgress entrypoint (props and containerId checks)', () => {
     expect(seen).toEqual([]);
   });
 
+  it('refuses the E2E tunnel 403 route-not-allowed, before the issuer and with nothing forwarded', async () => {
+    // The CLI's core audit flush sends `POST tunnel` with the placeholder sealed inside the envelope (bench tail, 2026-10-28): the swap cannot reach it, and the tunnel re-dispatches to any route, so admitting it would void the allowlist.
+    const { egress, seen, state } = entry(OWN);
+    const response = await egress.fetch(
+      new Request(`${API}/tunnel`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-rediacc-encrypted' },
+        body: JSON.stringify({ v: 1, eph: 'x', ct: 'y' }),
+      })
+    );
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ reason: 'route-not-allowed' });
+    expect(state.issues).toEqual([]);
+    expect(seen).toEqual([]);
+  });
+
   it('refuses a bearer call that is not the placeholder, before the issuer', async () => {
     const { egress, seen, state } = entry(OWN);
     const response = await egress.fetch(

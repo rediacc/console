@@ -10,6 +10,8 @@
  *
  * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue(orgId)` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
  *
+ * `POST /account/api/v1/tunnel`, the CLI's E2E tunnel, is refused on purpose (`route-not-allowed`). Its bearer is sealed inside the envelope, so the placeholder swap cannot reach it and the account server would refuse the placeholder anyway; and the tunnel re-dispatches to any route, so admitting it would void this allowlist. The one container caller seen (bench `wrangler tail`, 2026-10-28) is the CLI's core audit flush (packages/cli/src/services/core/audit.ts via accountServerFetch), which the container tier's own audit (packages/cli/src/services/serve/audit.ts, the allowlisted `licenses/audit-events`) already covers.
+ *
  * One request is answered here rather than forwarded: on the `durable_object` backend, `AccountEgress` answers the executor's egress-unreachable report (`POST /executor/v1/egress-unreachable`) itself, from its own OrgExecutor. The legacy `accountEgress` has no such route and refuses it as `route-not-allowed`.
  */
 

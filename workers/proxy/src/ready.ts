@@ -3,9 +3,12 @@
  *
  * Unauthenticated, so a deploy smoke can poll it. There is no org-less token to introspect, so it asks the issuer's `probe()` (writes nothing and mints nothing: the issuer env parses, D1 answers, and the scopes an issued token would carry are listed) and then `GET server-info` over ACCOUNT, which together prove the ISSUER binding answers, the ACCOUNT binding answers, and a token would carry the scopes the executor needs. It answers 200 `{ ready: true, workerVersion }` with the `[version_metadata]` id, which is how the smoke tells the new version from an old one still rolling out, or 503 `{ ready: false, reason }` with a reason code.
  *
- * The answer, ready or not, is cached for READY_CACHE_MS and computed once per isolate at a time, so polling the endpoint cannot drive the issuer into a mint storm.
+ * A ready answer on a version with the EXECUTOR_CAPACITY binding also carries `executors`, the coordinator's `count()`: how many executor containers hold a live lease (`total`, of which `heavy`) and the caps in force. It is what a bench drill reads to watch a slot free or a heavy start land (agent/plans/PLAN-executor-durable-object-policy.md box L0). It is safe on an unauthenticated route because it is four small integers per target: no org id, executor name, placement or size of any one org, and the caps are the deployed config's. The count never decides readiness: a coordinator that cannot answer leaves `executors` out, so the deploy smoke keeps meaning what it meant.
+ *
+ * The answer, ready or not, is cached for READY_CACHE_MS and computed once per isolate at a time, so polling the endpoint cannot drive the issuer into a mint storm, nor the coordinator into one request per poll.
  */
 
+import { type CapacityCount, capacityStub, type ExecutorCapacity } from './capacity';
 import { type EgressEnv } from './egress';
 
 export const READY_CACHE_MS = 30_000;
@@ -15,10 +18,11 @@ const REQUIRED_SCOPES = ['proxy:exec', 'audit:write'] as const;
 
 export interface ReadyEnv extends EgressEnv {
   CF_VERSION_METADATA?: WorkerVersionMetadata;
+  EXECUTOR_CAPACITY?: DurableObjectNamespace<ExecutorCapacity>;
 }
 
 export type ReadyAnswer =
-  | { status: 200; body: { ready: true; workerVersion: string } }
+  | { status: 200; body: { ready: true; workerVersion: string; executors?: CapacityCount } }
   | { status: 503; body: { ready: false; reason: string } };
 
 let cachedAnswer: { at: number; answer: ReadyAnswer } | undefined;
@@ -42,9 +46,27 @@ async function computeReady(env: ReadyEnv): Promise<ReadyAnswer> {
   const probeFailure = await issuerProbeFailure(env);
   if (probeFailure !== undefined) return notReady(probeFailure);
   const reason = await serverInfoFailure(env);
-  return reason === undefined
-    ? { status: 200, body: { ready: true, workerVersion } }
-    : notReady(reason);
+  if (reason !== undefined) return notReady(reason);
+  const executors = await executorCount(env);
+  return {
+    status: 200,
+    body:
+      executors === undefined
+        ? { ready: true, workerVersion }
+        : { ready: true, workerVersion, executors },
+  };
+}
+
+/** The coordinator's live count with only its four integers copied out, or undefined without the binding or when the coordinator cannot answer. */
+async function executorCount(env: ReadyEnv): Promise<CapacityCount | undefined> {
+  if (!env.EXECUTOR_CAPACITY) return undefined;
+  try {
+    const { total, heavy, cap, heavyCap } = await capacityStub(env.EXECUTOR_CAPACITY).count();
+    return { total, heavy, cap, heavyCap };
+  } catch {
+    console.warn('proxy: ready: executor count unavailable');
+    return undefined;
+  }
 }
 
 /** Ask the issuer's `probe()`: undefined when it answers ok with every required scope, otherwise the reason code. */

@@ -390,6 +390,11 @@ Each box records:
     - `wrangler rollback` to the Phase 1 version restores `container` routing, and a forward redeploy restores `durable`.
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md (Live records). Accept: both bench rows have smoke rc 0; E1 against `https://bench.rediacc.com` exits 0 on `durable` with two org ids; and each drill's observed code is recorded.
+
+  Note 2026-10-28 (worklist #96ea8a0c): the first bench run could not observe two drills as written, so their observation points are corrected here.
+  - Idle slot: `GET /v1/ready` now carries `executors: { total, heavy, cap, heavyCap }`, the coordinator's `count()`, on a version with the EXECUTOR_CAPACITY binding (workers/proxy/src/ready.ts). The answer is cached 30 s per isolate, so the freed slot shows up to 30 s after the 120 s idle teardown, or after LEASE_MS (180 s) for a lapsed lease.
+  - BUSINESS size: read `executors.heavy` going from 0 to 1 in `/v1/ready` while the BUSINESS org is the only heavy holder. `rediacc.proxy.size` is an OTLP span attribute and never reaches `wrangler tail`; the span in the OTLP backend is the second witness.
+  - The tail line `proxy: account egress refused: route-not-allowed POST /account/api/v1/tunnel` is expected and not a drill failure. It is the CLI's core audit flush through the E2E tunnel, refused by design (workers/proxy/src/egress.ts module comment).
 - [ ] L1 [live] edge-eu, Phase 1 then Phase 2, before merge, through the deploy skill's local path. -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: both edge-eu rows have smoke rc 0, the Phase 1 row says forward-only, and E1 against `https://edge-eu.rediacc.com` exits 0 on `durable` with two org ids.
 - [ ] L2 [live] edge-us, as L1. -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: as L1 for edge-us.
 - [ ] L3 [live] edge-asia, as L1. -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: as L1 for edge-asia.
