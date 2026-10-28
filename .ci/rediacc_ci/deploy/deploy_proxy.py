@@ -2,7 +2,8 @@
 """Deploy the proxy Worker and its executor container image to one target, then prove the deployed version answers.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target edge|stable --region eu|us|asia --version V [--record PATH] [--smoke-only] [--dry-run]
-    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench [--region eu] [--record PATH] [--smoke-only] [--dry-run]
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench [--region eu] [--var KEY=VALUE ...] [--record PATH] [--smoke-only] [--dry-run]
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target edge|stable|bench [--region R] --rollback VERSION_ID [--record PATH]
 
 CD DEPLOYS IT (operator order 2026-10-25T18:10Z, agent/plans/PLAN-proxy-cd-six-targets.md). CD runs this module for each of the six targets inside the per-region release job (Design item 9): a deploy run, then `--smoke-only`, and the console executor is switched on only after that smoke passes. Bench stays a separate target run by hand, and deploys to all seven are allowed without asking. The module began as the port of the retired `.ci/scripts/deploy/deploy-proxy.sh`; the bash text stays recoverable through the `twin_blob` of `.ci/rediacc_ci/tests/goldens/twins/deploy.deploy-proxy.jsonl`, whose records are now the port's own answers (re-recorded with `regolden --source port`).
 
@@ -17,6 +18,10 @@ THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 40
 THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the `backend` (`EXECUTOR_BACKEND`), the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The deploy record of Design item 9 reads the rollback field. The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
 
 A DRY RUN (`--dry-run`) runs the config refusals and `wrangler deploy --dry-run --containers-rollout none` for any target, and needs no credentials, fetch or build. The `none` rollout is load-bearing: wrangler 4.152's dry run DOES build the container image (measured 2026-10-25, it failed on the unstaged `workers/proxy/stage/`), and `none` compiles the Worker without building or updating any container. The image itself is built and booted by check:ci-proxy-image-smoke.
+
+A ROLLBACK (`--rollback <version-id>`) runs `wrangler rollback <id> --message <m> --yes --config <config>` against the config the target deploys with (`--yes` because wrangler otherwise prompts twice), then the same cross-check (`wrangler deployments list` must name the id at 100%), the same smoke on that id, and the same record with `rolled_back: true`. The key is `rolled_back`, not `rollback`, because `rollback` already holds the command that reverts this run, which `deploy_record` reads; here that is a rollback to the version that was live before. The id must be a full version UUID (`wrangler deployments list` prints them), checked before any credential. `backend` is null in a rollback record, since the restored version's `[vars]` are not the config's, and `migration_tag` is carried from the existing record, since a rollback undoes no Durable Object migration. A rollback builds and fetches nothing, so `--version`, `--var`, `--dry-run` and `--smoke-only` are refused beside it: a `--dry-run` would let the release guard (`block_unasked_release`, which admits any `--dry-run` of this module) wave through a stable rollback that then published. Every target may roll back; a stable one is held by that guard's `RELEASE_ASKED` proof exactly as a stable deploy is, because the guard judges this module by its `--target`, not by its verb.
+
+A VARS OVERRIDE (`--var KEY=VALUE`, repeatable) is bench only, refused on any other target. KEY must already be a `[vars]` key of the config and may be given once. It reaches wrangler as `wrangler deploy --var KEY:VALUE` (wrangler's own spelling, split at the first colon), so the toml is never rewritten and the override lasts for this deploy only. The record carries `var_overrides` (empty without any), and `backend` names an overridden `EXECUTOR_BACKEND`.
 """
 
 from __future__ import annotations
@@ -77,6 +82,13 @@ MISSING_VERSION = (
     "executor artifacts (executor_artifacts fetch --version V)"
 )
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(-branch\.[0-9a-f]{7,40})?$")
+# A Worker version id as `wrangler deployments list` prints it: a full UUID, never a short prefix.
+WORKER_VERSION_RE = re.compile(
+    r"\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z", re.IGNORECASE
+)
+# A `--var` key: a `[vars]` name. No colon, because wrangler splits its own `--var KEY:VALUE` at the first one.
+VAR_KEY_RE = re.compile(r"\A[A-Za-z_][A-Za-z0-9_]*\Z")
+ROLLBACK_MESSAGE = "%s --rollback" % SELF
 
 # The directory holding the `rediacc_ci` package (`.ci`).
 PACKAGE_PARENT = str(pathlib.Path(__file__).resolve().parents[2])
@@ -185,7 +197,7 @@ def artifacts_argv(verb: str, *args: str) -> list[str]:
     return [sys.executable, "-m", "rediacc_ci.deploy.executor_artifacts", verb, *args]
 
 
-def dry_run_argv(config: str) -> list[str]:
+def dry_run_argv(config: str, overrides: dict[str, str] | None = None) -> list[str]:
     return [
         *wrangler.ARGV,
         "deploy",
@@ -194,13 +206,64 @@ def dry_run_argv(config: str) -> list[str]:
         DRY_RUN_OUTDIR,
         "--containers-rollout",
         "none",
+        *var_args(overrides or {}),
         "--config",
         config,
     ]
 
 
-def deploy_argv(config: str) -> list[str]:
-    return [*wrangler.ARGV, "deploy", "--config", config]
+def var_args(overrides: dict[str, str]) -> list[str]:
+    """`--var KEY:VALUE` per override, in the order given: wrangler's own flag and spelling."""
+    out: list[str] = []
+    for key, value in overrides.items():
+        out += ["--var", "%s:%s" % (key, value)]
+    return out
+
+
+def deploy_argv(config: str, overrides: dict[str, str] | None = None) -> list[str]:
+    return [*wrangler.ARGV, "deploy", *var_args(overrides or {}), "--config", config]
+
+
+def wrangler_rollback_argv(config: str, version_id: str) -> list[str]:
+    """`wrangler rollback <id>` on one config, with the message and `--yes` its two prompts would otherwise ask for."""
+    return [
+        *wrangler.ARGV,
+        "rollback",
+        version_id,
+        "--message",
+        ROLLBACK_MESSAGE,
+        "--yes",
+        "--config",
+        config,
+    ]
+
+
+def parse_var_overrides(values: list[str], config_text: str, config: str) -> dict[str, str]:
+    """`--var KEY=VALUE` words as an ordered dict; RefusedError naming every malformed, unknown or repeated one."""
+    try:
+        known = tomllib.loads(config_text).get("vars", {})
+    except tomllib.TOMLDecodeError:
+        known = {}
+    out: dict[str, str] = {}
+    reasons = []
+    for word in values:
+        key, eq, value = word.partition("=")
+        if not eq or not VAR_KEY_RE.match(key):
+            reasons.append(
+                "--var %r is not KEY=VALUE (KEY a [vars] name: letters, digits, underscore)" % word
+            )
+        elif key not in known:
+            reasons.append(
+                "--var %s: %s has no [vars] key %s to override (it names %s)"
+                % (key, config, key, ", ".join(sorted(known)) or "none")
+            )
+        elif key in out:
+            reasons.append("--var %s is given twice" % key)
+        else:
+            out[key] = value
+    if reasons:
+        raise RefusedError(*reasons)
+    return out
 
 
 def deployments_argv(config: str) -> list[str]:
@@ -630,9 +693,11 @@ def read_record_version(path: pathlib.Path | None) -> str | None:
     return str(value) if value else None
 
 
-def closing_lines(worker: str, version_id: str, rollback: str) -> tuple[str, ...]:
+def closing_lines(
+    worker: str, version_id: str, rollback: str, *, rolled_back: bool = False
+) -> tuple[str, ...]:
     return (
-        "Deployed %s: version %s." % (worker, version_id),
+        "%s %s: version %s." % ("Rolled back" if rolled_back else "Deployed", worker, version_id),
         "Rollback: %s" % rollback,
     )
 
@@ -656,7 +721,99 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run", action="store_true", help="compile the Worker with wrangler; deploy nothing"
     )
+    parser.add_argument(
+        "--rollback",
+        default=None,
+        metavar="VERSION_ID",
+        help="roll the target's Worker back to this version (full UUID), smoke it and record it",
+    )
+    parser.add_argument(
+        "--var",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="bench only, repeatable: override one [vars] value for this deploy (wrangler --var)",
+    )
     return parser
+
+
+def rollback_refusals(args: argparse.Namespace) -> list[str]:
+    """Why a `--rollback` run cannot go ahead as given; empty when it can."""
+    reasons = []
+    if not WORKER_VERSION_RE.match(args.rollback):
+        reasons.append(
+            "--rollback %r is not a full Worker version id (a UUID, as `wrangler deployments list` prints it)"
+            % args.rollback
+        )
+    for flag, given in (
+        ("--version", args.version),
+        ("--var", args.var),
+        ("--dry-run", args.dry_run),
+        ("--smoke-only", args.smoke_only),
+    ):
+        if given:
+            reasons.append(
+                "--rollback refuses %s: a rollback restores a deployed version and builds, fetches, "
+                "overrides and compiles nothing" % flag
+            )
+    return reasons
+
+
+def run_rollback(
+    spec: proxy_configs.Target,
+    worker_dir: pathlib.Path,
+    target: str,
+    region: str,
+    version_id: str,
+    record_path: pathlib.Path | None,
+) -> int:
+    """`wrangler rollback <id>`, the deployments cross-check, the smoke on that id, and the record."""
+    config = spec.config
+    os.chdir(worker_dir)
+    previous = deployed_version(config)
+    log.step(
+        "Rolling %s back to version %s (config: %s, live: %s)..."
+        % (spec.name, version_id, config, previous or "none")
+    )
+    status, _output = _run_tee(wrangler_rollback_argv(config, version_id))
+    if status != 0:
+        return status
+    listed = deployed_version(config)
+    if (listed or "").lower() != version_id.lower():
+        log.error(
+            "wrangler rollback to %s returned, but `wrangler deployments list` names %s at 100%%"
+            % (version_id, listed or "no version")
+        )
+        return 1
+    timing: dict[str, int] = {}
+    smoke_rc = smoke(spec.routes[0], version_id, timing)
+    revert = rollback_command(config, previous)
+    if record_path is not None:
+        write_record(
+            record_path,
+            {
+                "target": target,
+                "region": region,
+                "worker": spec.name,
+                "config": "%s/%s" % (WORKER_REL, config),
+                "rolled_back": True,
+                "version_id": version_id,
+                "previous_version_id": previous,
+                "artifacts_version": None,
+                "smoke_rc": smoke_rc,
+                "rollback": revert,
+                "backend": None,
+                "migration_tag": read_record_field(record_path, "migration_tag"),
+                "cold_start_ms": timing.get("cold_start_ms"),
+                "var_overrides": {},
+            },
+        )
+    if smoke_rc != 0:
+        log.error("Rollback: %s" % revert)
+        return smoke_rc
+    for line in closing_lines(spec.name, version_id, revert, rolled_back=True):
+        log.info(line)
+    return 0
 
 
 def main(argv: list[str]) -> int:
@@ -672,9 +829,21 @@ def main(argv: list[str]) -> int:
     record_path = pathlib.Path(args.record).resolve() if args.record else None
 
     try:
-        spec, _text = select(repo_root, target, args.region)
+        spec, text = select(repo_root, target, args.region)
         region = args.region or BENCH_REGION
-        if not bench and not args.dry_run and not args.smoke_only:
+        if args.rollback is not None:
+            reasons = rollback_refusals(args)
+            if reasons:
+                raise RefusedError(*reasons)
+        if args.var and not bench:
+            raise RefusedError(
+                "--var is refused on --target %s: a [vars] override is a bench drill tool, and "
+                "%s deploys exactly what its config says" % (target, target)
+            )
+        if args.var and args.smoke_only:
+            raise RefusedError("--var is refused with --smoke-only: nothing is deployed")
+        overrides = parse_var_overrides(args.var, text, spec.config)
+        if not bench and args.rollback is None and not args.dry_run and not args.smoke_only:
             if not args.version:
                 raise RefusedError(MISSING_VERSION % target)
             if not VERSION_RE.match(args.version):
@@ -692,7 +861,7 @@ def main(argv: list[str]) -> int:
             "Dry run: compiling the %s worker without deploying (config: %s)..."
             % (spec.name, config)
         )
-        status = _run(dry_run_argv(config))
+        status = _run(dry_run_argv(config, overrides))
         if status != 0:
             return status
         log.info("Dry run passed. Nothing was deployed.")
@@ -706,6 +875,9 @@ def main(argv: list[str]) -> int:
             return _run(reexec_argv(argv, PROFILE), env=package_env())
         print(MISSING_AUTH_MSG, file=sys.stderr, flush=True)
         return 1
+
+    if args.rollback is not None:
+        return run_rollback(spec, worker_dir, target, region, args.rollback, record_path)
 
     if args.smoke_only:
         os.chdir(worker_dir)
@@ -756,7 +928,7 @@ def main(argv: list[str]) -> int:
     os.chdir(worker_dir)
     previous = deployed_version(config)
     log.step("Deploying %s and its container image (config: %s)..." % (spec.name, config))
-    status, output = _run_tee(deploy_argv(config))
+    status, output = _run_tee(deploy_argv(config, overrides))
     if status != 0:
         return status
     version_id = parse_version_id(output)
@@ -792,9 +964,12 @@ def main(argv: list[str]) -> int:
                 "artifacts_version": None if bench else args.version,
                 "smoke_rc": smoke_rc,
                 "rollback": rollback,
-                "backend": config_var(worker_dir.joinpath(config), "EXECUTOR_BACKEND"),
+                "backend": overrides.get(
+                    "EXECUTOR_BACKEND", config_var(worker_dir.joinpath(config), "EXECUTOR_BACKEND")
+                ),
                 "migration_tag": current_tag,
                 "cold_start_ms": timing.get("cold_start_ms"),
+                "var_overrides": overrides,
             },
         )
     if smoke_rc != 0:

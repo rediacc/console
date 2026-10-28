@@ -102,7 +102,7 @@ if rc:
 sys.stdout.write("> build done\\n")
 """
 
-# `wrangler deploy` prints a version line; `wrangler deployments list --json` answers the deployments before the deploy, then after it.
+# `wrangler deploy` (with or without `--var`) and `wrangler rollback` print a version line; `wrangler deployments list --json` answers the deployments before either, then after it.
 FAKE_NPX = """#!/usr/bin/python3
 import json
 import os
@@ -110,7 +110,11 @@ import sys
 
 log = os.environ["FAKE_CALL_LOG"]
 with open(log) as fh:
-    deployed = "npx\\t--no-install\\twrangler\\tdeploy\\t--config" in fh.read()
+    deployed = any(
+        line.startswith(("npx\\t--no-install\\twrangler\\tdeploy\\t", "npx\\t--no-install\\twrangler\\trollback\\t"))
+        and "\\t--dry-run\\t" not in line
+        for line in fh
+    )
 with open(log, "a") as fh:
     fh.write("npx\\t" + "\\t".join(sys.argv[1:]) + "\\n")
     fh.write("  cwd=" + os.path.basename(os.getcwd()) + "\\n")
@@ -894,6 +898,7 @@ def test_the_record_carries_what_a_rollback_needs(tmp_path: pathlib.Path) -> Non
         % PREV_ID,
         "backend": "container",
         "migration_tag": "v2",
+        "var_overrides": {},
     }
 
 
@@ -1285,3 +1290,345 @@ def test_the_doh_lookup_reads_the_first_a_record(monkeypatch) -> None:
     monkeypatch.delenv(port.DOH_URL_ENV, raising=False)
     assert port._doh_lookup("proxy.test.example") == "198.51.100.9"
     assert "name=proxy.test.example" in seen["url"]
+
+
+# ---- --rollback <version-id> ------------------------------------------------
+
+# The version a drill rolls back to; the fake lists it at 100% once `wrangler rollback` has run.
+TO_ID = "33333333-3333-4333-8333-333333333333"
+
+
+def _rollback_calls(config: str, host: str, version_id: str) -> str:
+    return (
+        f"npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
+        "  cwd=proxy\n"
+        f"npx\t--no-install\twrangler\trollback\t{version_id}\t--message\t"
+        f"{port.ROLLBACK_MESSAGE}\t--yes\t--config\t{config}\n"
+        "  cwd=proxy\n"
+        f"npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
+        "  cwd=proxy\n"
+        f"{CURL}https://{host}/v1/health\n"
+        f"{CURL}https://{host}/v1/server-info\n"
+        f"{CURL_BODY}https://{host}/v1/ready\n"
+    )
+
+
+def test_a_bench_rollback_runs_wrangler_rollback_smokes_and_records(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The bench config, `wrangler rollback <id> --message --yes`, the listing cross-check, the smoke on that id, and the same record with `rolled_back: true`. Nothing is built, fetched or staged."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    record.write_text(json.dumps({"migration_tag": "v2", "version_id": PREV_ID}), encoding="utf-8")
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_LISTED_ID=TO_ID,
+        FAKE_READY_VERSION=TO_ID,
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert calls == _rollback_calls("wrangler.bench.toml", PROXY_BENCH_HOST, TO_ID)
+    written = json.loads(record.read_text())
+    assert isinstance(written.pop("cold_start_ms"), int)
+    assert written == {
+        "target": "bench",
+        "region": "eu",
+        "worker": "rediacc-proxy-bench",
+        "config": "workers/proxy/wrangler.bench.toml",
+        "rolled_back": True,
+        "version_id": TO_ID,
+        "previous_version_id": PREV_ID,
+        "artifacts_version": None,
+        "smoke_rc": 0,
+        "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.bench.toml"
+        % PREV_ID,
+        "backend": None,
+        "migration_tag": "v2",
+        "var_overrides": {},
+    }
+    assert "✓ Rolled back rediacc-proxy-bench: version %s.\n" % TO_ID in proc.stderr
+    assert "Deployed" not in proc.stderr
+
+
+def test_a_stable_rollback_uses_the_stable_config(tmp_path: pathlib.Path) -> None:
+    """Every target may roll back, against the config it deploys with; no `--version` is needed."""
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "stable", "--region", "us", "--rollback", TO_ID),
+        FAKE_LISTED_ID=TO_ID,
+        FAKE_READY_VERSION=TO_ID,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert calls == _rollback_calls("wrangler.us.toml", PROXY_US_HOST, TO_ID)
+
+
+def test_a_rollback_whose_smoke_fails_exits_1_and_records_it(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_LISTED_ID=TO_ID,
+        FAKE_READY_VERSION=TO_ID,
+        FAKE_READY_CODE="503",
+        FAKE_READY_TIMEOUT="0",
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert "✗ Smoke test failed: /v1/ready did not answer 200 on version %s" % TO_ID in proc.stderr
+    assert "✗ Rollback: cd workers/proxy && npx --no-install wrangler rollback %s" % PREV_ID in (
+        proc.stderr
+    )
+    assert "Rolled back" not in proc.stderr
+    assert calls.endswith("/v1/ready\n")
+    data = json.loads(record.read_text())
+    assert (data["rolled_back"], data["smoke_rc"], data["version_id"]) == (True, 1, TO_ID)
+
+
+def test_a_rollback_the_listing_does_not_confirm_fails_before_the_smoke(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID),
+        FAKE_LISTED_ID=PREV_ID,
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert "names %s at 100%%" % PREV_ID in proc.stderr
+    assert "curl" not in calls
+
+
+def test_a_failed_wrangler_rollback_propagates_and_smokes_nothing(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_NPX_RC="3",
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 3
+    assert "curl" not in calls
+    assert not record.exists()
+
+
+@pytest.mark.parametrize(
+    ("extra", "fragment"),
+    [
+        ((), "--rollback '0ac1523d' is not a full Worker version id"),
+        (("--dry-run",), "--rollback refuses --dry-run"),
+        (("--smoke-only",), "--rollback refuses --smoke-only"),
+        (("--version", VERSION), "--rollback refuses --version"),
+        (("--var", "EXECUTOR_BACKEND=container"), "--rollback refuses --var"),
+    ],
+    ids=["short-id", "dry-run", "smoke-only", "version", "var"],
+)
+def test_rollback_refusals_need_no_token_and_run_nothing(
+    tmp_path: pathlib.Path, extra: tuple[str, ...], fragment: str
+) -> None:
+    """A `--dry-run` beside `--rollback` is refused, not obeyed: the release guard admits any `--dry-run` of this module, so a dry run that rolled back stable would publish unasked."""
+    root = _fixture_root(tmp_path)
+    rollback_to = "0ac1523d" if not extra else TO_ID
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", rollback_to, *extra),
+        drop_env=("CLOUDFLARE_API_TOKEN",),
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert calls == ""
+    assert proc.stderr.startswith("✗ "), proc.stderr
+    assert fragment in proc.stderr, proc.stderr
+
+
+GUARD_DISPATCH = ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"
+GUARD_STEM = "block_unasked_release"
+
+
+def _guard(command: str) -> subprocess.CompletedProcess:
+    """One agent Bash payload through the real pre-bash release guard, with no transcript, so no ASKED minute can be proven."""
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(ROOT))
+    env.pop("RELEASE_ASKED", None)
+    payload = {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(ROOT)}
+    proc = subprocess.run(
+        [sys.executable, str(GUARD_DISPATCH), GUARD_STEM],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        cwd=str(ROOT),
+        timeout=60,
+    )
+    assert proc.returncode in (0, 2), "the guard crashed (rc %d): %s" % (
+        proc.returncode,
+        proc.stderr[-800:],
+    )
+    return proc
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    ["", "RELEASE_ASKED=ASKED:2026-01-01T00:00Z ", "RELEASE_ASKED=yes "],
+    ids=["no-ask", "unproven-ask", "malformed-ask"],
+)
+def test_a_stable_rollback_is_held_by_the_same_ask_as_a_stable_deploy(prefix: str) -> None:
+    """The stable deploy path's guard is `block_unasked_release`, which judges this module by its `--target`: a stable rollback is refused without a proven RELEASE_ASKED exactly as the stable deploy beside it is, and the bench rollback is free in the same run (both directions)."""
+    py = "PYTHONPATH=.ci python3 -m %s" % port.SELF
+    stable_deploy = _guard("%s%s --target stable --region eu --version %s" % (prefix, py, VERSION))
+    stable_rollback = _guard("%s%s --target stable --region eu --rollback %s" % (prefix, py, TO_ID))
+    bench_rollback = _guard("%s --target bench --rollback %s" % (py, TO_ID))
+    assert stable_deploy.returncode == 2, "control: the stable deploy itself must be refused"
+    assert stable_rollback.returncode == 2, stable_rollback.stderr
+    assert "deploy_proxy (a stable target)" in stable_rollback.stderr
+    assert "RELEASE_ASKED" in stable_rollback.stderr
+    assert bench_rollback.returncode == 0, bench_rollback.stderr
+
+
+def test_the_raw_wrangler_rollback_on_bench_stays_refused() -> None:
+    """The sanctioned path is this module: the guard keeps refusing the raw verb it replaces."""
+    proc = _guard(
+        "cd workers/proxy && npx wrangler rollback %s --config wrangler.bench.toml" % TO_ID
+    )
+    assert proc.returncode == 2
+    assert "a raw publish verb" in proc.stderr
+
+
+def test_the_new_options_keep_target_the_only_t_option() -> None:
+    """The guard reads `--target` by any `--t...` prefix and is sound only while no other long option starts with `--t`."""
+    longs = [o for a in port._parser()._actions for o in a.option_strings if o.startswith("--")]
+    assert "--rollback" in longs
+    assert "--var" in longs
+    assert [o for o in longs if o.startswith("--t")] == ["--target"]
+
+
+# ---- --var KEY=VALUE --------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("target", "region"),
+    [("edge", "eu"), ("stable", "eu")],
+)
+@pytest.mark.parametrize("dry_run", [False, True], ids=["deploy", "dry-run"])
+def test_var_is_refused_off_bench(
+    tmp_path: pathlib.Path, target: str, region: str, dry_run: bool
+) -> None:
+    root = _fixture_root(tmp_path)
+    args = ["--target", target, "--region", region, "--var", "EXECUTOR_BACKEND=durable"]
+    args += ["--dry-run"] if dry_run else ["--version", VERSION]
+    proc, calls = _run(tmp_path, root, tuple(args))
+    assert proc.returncode == 1, proc.stderr
+    assert calls == ""
+    assert "--var is refused on --target %s" % target in proc.stderr
+
+
+def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
+    tmp_path: pathlib.Path,
+) -> None:
+    """`--var KEY=VALUE` becomes wrangler's `--var KEY:VALUE` (a colon inside the value survives, wrangler splits at the first), in order, and the toml is not touched."""
+    root = _fixture_root(tmp_path)
+    config = root / "workers" / "proxy" / "wrangler.bench.toml"
+    before = config.read_bytes()
+    record = tmp_path / "record.json"
+    proc, calls = _run(
+        tmp_path,
+        root,
+        (
+            "--target",
+            "bench",
+            "--var",
+            "EXECUTOR_BACKEND=container",
+            "--var",
+            "ACCOUNT_URL=https://bench.example:8443",
+            "--record",
+            str(record),
+        ),
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert (
+        "npx\t--no-install\twrangler\tdeploy\t--var\tEXECUTOR_BACKEND:container\t"
+        "--var\tACCOUNT_URL:https://bench.example:8443\t--config\twrangler.bench.toml\n"
+    ) in calls
+    assert config.read_bytes() == before, "the toml must never be rewritten"
+    data = json.loads(record.read_text())
+    assert data["var_overrides"] == {
+        "EXECUTOR_BACKEND": "container",
+        "ACCOUNT_URL": "https://bench.example:8443",
+    }
+    assert data["backend"] == "container", "the record names the overridden backend"
+
+
+def test_var_reaches_the_bench_dry_run_too(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--var", "EXECUTOR_CAP=3", "--dry-run"),
+        drop_env=("CLOUDFLARE_API_TOKEN",),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert calls == (
+        "npx\t--no-install\twrangler\tdeploy\t--dry-run\t--outdir\t%s\t--containers-rollout\tnone\t"
+        "--var\tEXECUTOR_CAP:3\t--config\twrangler.bench.toml\n  cwd=proxy\n" % port.DRY_RUN_OUTDIR
+    )
+
+
+@pytest.mark.parametrize(
+    ("words", "fragment"),
+    [
+        (("EXECUTOR_BACKEND",), "--var 'EXECUTOR_BACKEND' is not KEY=VALUE"),
+        (("=durable",), "--var '=durable' is not KEY=VALUE"),
+        (("1BAD=x",), "--var '1BAD=x' is not KEY=VALUE"),
+        (("EXECUTOR:BACKEND=x",), "--var 'EXECUTOR:BACKEND=x' is not KEY=VALUE"),
+        (("EXECUTOR_BAKEND=durable",), "has no [vars] key EXECUTOR_BAKEND"),
+        (("EXECUTOR_CAP=1", "EXECUTOR_CAP=2"), "--var EXECUTOR_CAP is given twice"),
+    ],
+    ids=["no-equals", "no-key", "digit-key", "colon-key", "unknown-key", "repeated"],
+)
+def test_a_malformed_var_is_refused_before_anything_runs(
+    tmp_path: pathlib.Path, words: tuple[str, ...], fragment: str
+) -> None:
+    root = _fixture_root(tmp_path)
+    args: list[str] = ["--target", "bench"]
+    for word in words:
+        args += ["--var", word]
+    proc, calls = _run(
+        tmp_path,
+        root,
+        tuple(args),
+        drop_env=("CLOUDFLARE_API_TOKEN",),
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert calls == ""
+    assert fragment in proc.stderr, proc.stderr
+
+
+def test_var_is_refused_with_smoke_only(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--smoke-only", "--var", "EXECUTOR_CAP=3"),
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "--var is refused with --smoke-only" in proc.stderr
+
+
+def test_help_names_both_new_options() -> None:
+    text = port._parser().format_help()
+    assert "--rollback VERSION_ID" in text
+    assert "--var KEY=VALUE" in text
