@@ -200,7 +200,7 @@ Worklist: pending -- filed at promotion
     - a live-tier digest for `{account}` does not move when only the renet pointer moves;
     - one negative case per `identity_refusal` code.
     (ticked) 2026-10-28T05:15:08Z by d778be9d: 2026-10-28 by d778be9d: commit:ba86b0dec; pytest test_proof_surfaces.py test_proof_receipt.py rc=0 (220 passed, with the renet compose and build.sh hits, shared to account, test/.md to nothing, owns_overlap parity, v3 vs v2 digest, account digest stable on a renet pointer move, one negative per identity_refusal code); importers, guard test (97 cases) and 574-test rerun rc=0
-- [ ] V2 [writer] Move the VM tier onto the family.
+- [x] V2 [writer] Move the VM tier onto the family.
   - `git mv` `drills/vm_check_receipt.py` to `proof/vm_tier.py`, at schema 3 (envelope plus VM body; schema 2 is unread, the same clean break as before).
   - Then update every importer in the same commit: `drills/vm_check.py`, `drills/backup_check_trigger.py`, `release/local_gates.py`, `block_vm_unverified_push.py` (`TRIGGER_MOD`, `RECEIPT_MOD` and the mutant source lines), `block_backup_unverified_push.py`, the moved tests, `quality-pytest.json`, `lane-durations.json`, and the module names in CLAUDE.md, ops-vms.md, e2e-local.md and ci-gates.md.
   - Accept:
@@ -208,6 +208,7 @@ Worklist: pending -- filed at promotion
     - `python3 .claude/rediacc_hooks/guards/test-block_vm_unverified_push.py` rc=0 and `python3 .claude/rediacc_hooks/guards/test-block_backup_unverified_push.py` rc=0, with every mutant still caught;
     - `grep -rn "vm_check_trigger\|vm_check_receipt" .ci .claude CLAUDE.md docs --include=*.py --include=*.md --include=*.json` prints nothing outside `agent/`;
     - `npm run vm:check` exit 0, writing a `tier: vm`, schema 3 `receipt.json`.
+    (ticked) 2026-10-28T06:16:24Z by d778be9d: 2026-10-28 by d778be9d: commit:efed615f0; pytest test_proof_vm_tier.py test_drills_vm_check.py test_drills_backup_check_trigger.py test_release_local_gates.py rc=0 (774 with the proof and drill tests); test-block_vm_unverified_push.py rc=0 (98 cases) and test-block_backup_unverified_push.py rc=0; the vm_check_trigger/vm_check_receipt grep prints nothing outside .ci/cache; npm run vm:check exit 0, VERIFIED, 175 assertions 0 failed, receipt tier vm schema 3 (tree bf6f6c5c2b1e)
 - [x] V3 [writer] The `Live-Proof:` grammar in `wl_plandeps`, with the X-field shape and the 12-line window. A `none -- <reason>` line must cite a closed worklist item or a committed operator quote (ruling 2). The pre-edit guard `block_plan_without_depends.py` refuses a new plan whose Owns hit a surface in `proof-tiers.json` and that carries no Live-Proof line.
   - Accept: `python3 .claude/hooks/stop/test-plandeps.py` rc=0 and `python3 .claude/rediacc_hooks/guards/test-block_plan_without_depends.py` rc=0, with cases for a missing, malformed, emphasized, out-of-window and rulingless-`none` line.
     (ticked) 2026-10-28T05:33:18Z by d778be9d: 2026-10-28 by d778be9d: commit:0e5d2c31e; python3 .claude/hooks/stop/test-plandeps.py rc=0 (319 controls, with missing, malformed, emphasized, out-of-window and rulingless-none cases) and python3 .claude/rediacc_hooks/guards/test-block_plan_without_depends.py rc=0 (87 cases, 0 failures); check_plan_deps.py rc=0

@@ -569,7 +569,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 128 | 1 | 5 | 19743 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 199 | 4 | 15 | 50012 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
-| `agent/plans/PLAN-tested-on-bench.md` | approved | 308 | 14 | 6 | 41500 |
+| `agent/plans/PLAN-tested-on-bench.md` | approved | 309 | 13 | 7 | 42027 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
