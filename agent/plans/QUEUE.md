@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 31 plans done, 429 of 575 boxes done (74%).
+Promoted: 11 of 31 plans done, 433 of 575 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -112,9 +112,9 @@ Promoted: 11 of 31 plans done, 429 of 575 boxes done (74%).
 | 26 | PLAN-tested-on-bench.md | 8/20 | 12 open |
 | 27 | PLAN-per-flavor-renet-binary-paths.md | 8/8 | done |
 | 28 | PLAN-org-executor-connect-timeout-relocate.md | 8/10 | 2 open |
-| 29 | PLAN-backup-restore-path.md | 5/8 | 3 open |
-| 30 | PLAN-ssh-key-source-ranges.md | 2/9 | 7 open |
-| 31 | PLAN-repo-docker-storage-prune.md | 0/12 | 12 open |
+| 29 | PLAN-backup-restore-path.md | 6/8 | 2 open |
+| 30 | PLAN-ssh-key-source-ranges.md | 3/9 | 6 open |
+| 31 | PLAN-repo-docker-storage-prune.md | 2/12 | 10 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
