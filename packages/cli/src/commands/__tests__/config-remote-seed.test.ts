@@ -6,6 +6,10 @@
  * config's id; a differing existing store aborts without --force on a non-TTY
  * (credentials cleaned up); --force replaces local content with the server
  * copy; any non-404 pull error aborts with the local file untouched.
+ *
+ * A pull 404 seeds only when the store lists no config this token can see: on bench
+ * (2026-10-28) a handoff that named no config met a store already holding an org-wide
+ * one, and the old 404-means-empty rule seeded a second config beside it.
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -158,6 +162,7 @@ describe('finalizeEnable (seed-on-enable)', () => {
     mockConfigFileStorage.loadDecrypted.mockResolvedValue(structuredClone(localConfig));
     mockConfigFileStorage.save.mockResolvedValue(undefined);
     mockConfigFileStorage.getConfigPath.mockReturnValue(`/tmp/${CONFIG_NAME}.json`);
+    mockAdapterInstance.listConfigs.mockResolvedValue([]);
   });
 
   it('seeds a fresh store: 404 → push v0 (state included) → pull-back proof → cache written', async () => {
@@ -431,7 +436,8 @@ describe('finalizeEnable --config-id (attach to an existing store entry)', () =>
     expect(mockAdapterInstance.push).not.toHaveBeenCalled();
   });
 
-  it('without --config-id on a non-TTY, never lists and keeps the minted-id behaviour', async () => {
+  it('without --config-id on a non-TTY, an empty store list keeps the minted-id seed (once)', async () => {
+    mockAdapterInstance.listConfigs.mockResolvedValue([]);
     mockAdapterInstance.pull
       .mockRejectedValueOnce(new ConfigServerError('Config not found', 404))
       .mockResolvedValueOnce({ config: structuredClone(serverConfig), version: 1, sdkEpoch: 1 });
@@ -439,7 +445,114 @@ describe('finalizeEnable --config-id (attach to an existing store entry)', () =>
 
     await finalizeEnable(pendingRemote(undefined), CONFIG_NAME);
 
-    expect(mockAdapterInstance.listConfigs).not.toHaveBeenCalled();
+    // The 404 alone does not prove an empty store: the list is read, and only an empty one seeds.
+    expect(mockAdapterInstance.listConfigs).toHaveBeenCalledTimes(1);
+    expect(mockAdapterInstance.push).toHaveBeenCalledTimes(1);
+    expect(mockAdapterInstance.push.mock.calls[0]?.[1]).toBe(0);
     expect(adapterCtorArgs[0]?.[0]).toMatchObject({ configId: LOCAL_ID });
+  });
+});
+
+describe('finalizeEnable never seeds a second config beside an existing one', () => {
+  const EXISTING_ID = '3df57118-0000-4000-8000-000000000001';
+  const OTHER_ID = '3df57118-0000-4000-8000-000000000002';
+  const TEAM_ID = '44444444-4444-4444-8444-444444444444';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    adapterCtorArgs.length = 0;
+    secureMem.clear();
+    tokenMem.clear();
+    delete process.env.REDIACC_YES;
+    mockConfigFileStorage.loadDecrypted.mockResolvedValue(structuredClone(localConfig));
+    mockConfigFileStorage.save.mockResolvedValue(undefined);
+    mockConfigFileStorage.getConfigPath.mockReturnValue(`/tmp/${CONFIG_NAME}.json`);
+    mockAdapterInstance.push.mockResolvedValue({ version: 1 });
+  });
+
+  it('attaches to the one org-wide config the handoff did not name (bench 2026-10-28), zero pushes', async () => {
+    // The handoff named no config (the enroll could not see the org-wide one), so the minted id 404s; the list shows it.
+    mockAdapterInstance.listConfigs.mockResolvedValue([
+      { configId: EXISTING_ID, version: 7, lastModified: 'z', teamId: null },
+    ]);
+    mockAdapterInstance.pull
+      .mockRejectedValueOnce(new ConfigServerError('Config not found', 404))
+      .mockResolvedValueOnce({
+        config: { ...structuredClone(serverConfig), id: EXISTING_ID },
+        version: 7,
+        sdkEpoch: 1,
+      });
+
+    await finalizeEnable({ ...pendingRemote(undefined), teamId: TEAM_ID }, CONFIG_NAME, {
+      force: true,
+    });
+
+    expect(mockAdapterInstance.push).not.toHaveBeenCalled();
+    // The second pull addressed the existing org-wide entry, without the handoff's team.
+    const lastCtor = adapterCtorArgs.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCtor.configId).toBe(EXISTING_ID);
+    expect(lastCtor).not.toHaveProperty('teamId');
+    const saved = mockConfigFileStorage.save.mock.calls[0][0] as RdcConfig;
+    expect(saved.id).toBe(EXISTING_ID);
+    expect(saved.remote).toMatchObject({ configId: EXISTING_ID, cachedVersion: 7 });
+  });
+
+  it('still guards differing local content after attaching: non-TTY without --force aborts, zero pushes', async () => {
+    mockAdapterInstance.listConfigs.mockResolvedValue([
+      { configId: EXISTING_ID, version: 7, lastModified: 'z', teamId: null },
+    ]);
+    mockAdapterInstance.pull
+      .mockRejectedValueOnce(new ConfigServerError('Config not found', 404))
+      .mockResolvedValueOnce({
+        config: { ...structuredClone(serverConfig), id: EXISTING_ID },
+        version: 7,
+        sdkEpoch: 1,
+      });
+
+    await expect(applyHandoff(handoffPayload(undefined), CONFIG_NAME, {})).rejects.toThrow(
+      /--force/
+    );
+    expect(mockAdapterInstance.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+    expect(tokenMem.size).toBe(0);
+  });
+
+  it('refuses when several configs are visible and none was named, listing them, zero pushes', async () => {
+    mockAdapterInstance.listConfigs.mockResolvedValue([
+      { configId: EXISTING_ID, version: 7, lastModified: 'z', teamId: null },
+      { configId: OTHER_ID, version: 2, lastModified: 'y', teamId: TEAM_ID },
+    ]);
+    mockAdapterInstance.pull.mockRejectedValue(new ConfigServerError('Config not found', 404));
+
+    await expect(applyHandoff(handoffPayload(undefined), CONFIG_NAME, {})).rejects.toThrow(
+      new RegExp(`Available: ${EXISTING_ID}, ${OTHER_ID}`)
+    );
+    expect(mockAdapterInstance.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+    expect(tokenMem.size).toBe(0);
+  });
+
+  it('refuses when the handoff named a config that 404s while the store holds another, zero pushes', async () => {
+    mockAdapterInstance.listConfigs.mockResolvedValue([
+      { configId: EXISTING_ID, version: 7, lastModified: 'z', teamId: null },
+    ]);
+    mockAdapterInstance.pull.mockRejectedValue(new ConfigServerError('Config not found', 404));
+
+    await expect(finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME)).rejects.toThrow(
+      new RegExp(`${CONFIG_ID}[\\s\\S]*Available: ${EXISTING_ID}`)
+    );
+    expect(mockAdapterInstance.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+  });
+
+  it('refuses to seed when the store list cannot be read after the 404, zero pushes', async () => {
+    mockAdapterInstance.listConfigs.mockRejectedValue(new Error('list boom'));
+    mockAdapterInstance.pull.mockRejectedValue(new ConfigServerError('Config not found', 404));
+
+    await expect(finalizeEnable(pendingRemote(undefined), CONFIG_NAME)).rejects.toThrow(
+      /list boom[\s\S]*duplicate/
+    );
+    expect(mockAdapterInstance.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
   });
 });
