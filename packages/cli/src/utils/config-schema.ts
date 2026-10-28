@@ -215,6 +215,7 @@ export const CONFIG_KEY_ORDER = [
 
   // What it holds
   'resources',
+  'access',
   'state',
 
   // Infrastructure and authorization

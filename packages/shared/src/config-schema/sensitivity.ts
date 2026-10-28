@@ -89,6 +89,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   //
   // Not 'public' (public fields are excluded from pathsToCommit, which would leave the rules tamper-able) and not 'secret' either: the threat here is not someone reading the rules, it is someone quietly rewriting them.
   '/policy': { kind: 'identifier' },
+
+  // ── Access (SSH keys rdc installs on machines, with their source ranges) ── One committed value for the whole subtree, for the reason '/policy' is: the threat is a push that quietly rewrites who may log in from where (adds a key, widens a range), so ANY edit changes the commitment and a push made without knowing the current value is rejected.
+  '/access': { kind: 'identifier' },
   // The verifier is what the CLI uses to CHECK the master password BEFORE any decryption can happen. Encrypting it under the password it verifies is a bootstrapping deadlock, so it is stored in the clear by explicit override (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
   //
   // commit:false because it is HOST-LOCAL to the master-password at-rest mode and must never enter the remote config envelope. A remote config is stored under the CEK, not a master password, so the verifier is meaningless there — and committing it (without also syncing it, which we must not) would drop a committed pointer on every push/rotation round trip and brick the re-push.

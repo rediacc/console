@@ -80,3 +80,12 @@ export {
   validateSize,
   validateSSHPrivateKey,
 } from '../renet-contract/utils/validation.js';
+
+export {
+  canonicalCidr,
+  cidrContains,
+  isNetworkAddress,
+  type ParsedCidr,
+  parseCidr,
+  parseIpAddress,
+} from './cidr.js';

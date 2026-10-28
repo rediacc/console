@@ -64,6 +64,7 @@ const CARRIED_SECTIONS = [
   'defaults',
   'credentials',
   'resources',
+  'access',
   'infra',
   'policy',
   'state',
@@ -94,6 +95,15 @@ function allFamiliesConfig(): RdcConfig {
     renetPath: '/opt/bin/renet',
     state: { datastores: { ds1: { mounted: true } } },
     policy: { version: 1, defaults: { commands: { allow: ['repo *'] } } },
+    access: {
+      sourceRanges: { ipv4: ['104.28.0.0/16'], ipv6: ['2a09:bac0::/29'] },
+      keys: {
+        probe: {
+          publicKey: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f fixture',
+          machines: { m1: {} },
+        },
+      },
+    },
     credentials: { ssh: { privateKey: 'PRIV' } },
     resources: {
       machines: { m1: { ip: '10.0.0.1', user: 'root' } },
@@ -261,6 +271,7 @@ describe('resource families round trip', () => {
     expect(rebuilt.defaults).toEqual(original.defaults);
     expect(rebuilt.infra).toEqual(original.infra);
     expect(rebuilt.policy).toEqual(original.policy);
+    expect(rebuilt.access).toEqual(original.access);
     // Runtime state is shared by every device of a store (T17): networkIds above all.
     expect(rebuilt.state).toEqual(original.state);
 
