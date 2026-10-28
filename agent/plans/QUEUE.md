@@ -68,18 +68,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 5 of 6 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-telemetry-export.md -- 15 of 19 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 915 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 917 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:ac911806a0698cc88.
-- Leased items: 2: #a150016d (worker:ac911806a0698cc88, d778be9d), #b1f9c708 (worker:bkj1qmre2, d778be9d).
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a73f0f7fb6646a764.
+- Leased items: 2: #a150016d (worker:a73f0f7fb6646a764, d778be9d), #b1f9c708 (worker:bjub1tsf5, d778be9d).
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 7; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 9 of 28 plans done, 407 of 546 boxes done (74%).
+Promoted: 9 of 28 plans done, 408 of 546 boxes done (74%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -105,7 +105,7 @@ Promoted: 9 of 28 plans done, 407 of 546 boxes done (74%).
 | 20 | PLAN-gpu-device-grants.md | 11/12 | 1 open |
 | 21 | PLAN-proxy-cd-six-targets.md | 24/34 | 10 open |
 | 22 | PLAN-console-executor-multi-org.md | 14/20 | 6 open |
-| 23 | PLAN-executor-durable-object-policy.md | 11/21 | 10 open |
+| 23 | PLAN-executor-durable-object-policy.md | 12/21 | 9 open |
 | 24 | PLAN-local-release.md | 14/16 | 2 open |
 | 25 | PLAN-config-server-key.md | 6/6 | done |
 | 26 | PLAN-tested-on-bench.md | 7/20 | 13 open |

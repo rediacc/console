@@ -399,9 +399,10 @@ Each box records:
   - Phase 2 is the release that flips `BACKEND_BY_TARGET` for the three stable targets.
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: each stable target has a forward-only Phase 1 row and a Phase 2 row with smoke rc 0, and E1 against `https://eu.rediacc.com`, `https://us.rediacc.com` and `https://asia.rediacc.com` exits 0 on `durable` with two org ids each.
-- [ ] L6 [ops, post-merge] 14 days of observation on all six targets.
+- [x] L6 [ops, post-merge] 14 days of observation on all six targets.
   - A Grafana query gives, per target, the counts of `rediacc.proxy.outcome` in {capacity, start-failed, oom-heavy}, the split of `rediacc.proxy.size`, and the cold-start median.
   - The container line of `cf_usage_report` gives the spend.
+    (ticked) 2026-10-28T07:56:59Z by d778be9d: 2026-10-28 by d778be9d: superseded, not done: operator order 2026-10-28 (no customers yet) drops the 14-day observation; ruling recorded at agent/plans/PLAN-executor-durable-object-policy.md:447, stable approved ASKED:2026-10-28T07:56Z. DEPS-WAIVED: superseded box
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: the Live records carry the 14-day numbers for all six targets, and any non-zero capacity count carries an ASKED line on the cap.
 - [ ] L7 [live, post-merge] Phase 3 per target, after C1.
@@ -443,6 +444,16 @@ Each box records:
 | DU7 TCP 22 | `enableInternet: true`: connected to github.com:22, banner `SSH-2.0-...`. | holds |
 | Public route (Design C premise) | The container fetched the Worker's own workers.dev `/ping`: 200 pong. | reachable |
 | S1 verdict | cross_answers 0; record `.ci/cache/do-policy-spike/result.json`; teardown removed the Worker and the application. | GO (Design A) |
+
+## Ruling 2026-10-28: no staged soak
+
+Operator order 2026-10-28 (no customers yet): the durable_object rollout goes straight through instead of in stages. Stable approved for this wave at ASKED:2026-10-28T07:56Z ("Approve, local path"), and that minute is RELEASE_ASKED for every stable deploy in it.
+- L0 (bench) stays first and keeps its drills. Once L0 passes, L1 (edge-eu), L2 (edge-us), L3 (edge-asia) and L5 (stable-eu, stable-us, stable-asia) run as one wave, through the local deploy path, without repeating the bench-only drills per target.
+- Each target keeps the safety that costs nothing: the D1 bookmark and version ids recorded before its deploy, the deploy tool's smoke (`/v1/ready` 200 with the deployed workerVersion), and E1 (the live console specs) after it. A failed smoke or E1 stops the wave, and its rollback is recorded here.
+- L6 (the 14-day observation) is dropped and closes as superseded by this ruling.
+- L7 (Phase 3, removing the legacy Container class) runs as soon as every target is on `durable` and green, with no soak, and still last, because Phase 1 to Phase 2 is the only window where a rollback to `container` is possible.
+- L4 (the first CD edge run after merge) is unchanged.
+- Once edge-us is on `durable`, PLAN-org-executor-connect-timeout-relocate E10 (org B) runs and records which of its outcomes happened.
 
 ## Live records
 
