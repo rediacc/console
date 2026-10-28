@@ -12,6 +12,8 @@ WHAT COUNTS AS A WRITE, read by the lexer (`shellscan`) and never by a regex ove
 
 WHERE A WORD LANDS is read on disk as well as in text: each word is joined to the directory its run executes in (`shellscan.write_directory`) and resolved through symlinks, and a word with a glob is expanded there, so `cd agent/ledgers && echo x >> live-proof.jsonl`, `echo x >> agent/ledgers/live-pr*.jsonl` and a link to the ledger are each the ledger.
 
+SEARCHED TEXT IS NOT A PATH (worklist #4e20f8c5, 2026-10-28). A heredoc that read `agent/plans/PLAN-backup-program.md`, replaced an Owns line naming the ledger and wrote the PLAN back was refused: the replaced string ended in the ledger's name, so `s = s.replace(old, new)` bound `s` to "the ledger", and the next `s.replace(...)` read as a write into it. Two readings changed. The text a call SEARCHES FOR (`str.replace`'s first argument, `removeprefix`/`removesuffix`'s, `re.sub`'s pattern) is removed from the result, so it never makes a name the ledger; the replacement and the receiver still do, so `Path(t.replace('X', '<ledger>')).write_text(...)` is refused. And `str.replace(old, new)`, `removeprefix` and `removesuffix` are string methods, not file writes, so their receiver is not a write target (Path's one-argument `replace` still is).
+
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-block_live_proof_ledger_shell_write.py` beside it and against its own DEFECT, never against a golden.
 """
 
@@ -47,6 +49,20 @@ _WRITE_CALL = re.compile(
     r"(?i)(write|append|dump|save|copy|move|replace|rename|unlink|remove|truncate)"
 )
 _PATH_KEYWORDS = frozenset(("path", "file", "dst", "dest", "target", "filename"))
+_TWO_PATH_CALLS = frozenset(
+    (
+        "replace",
+        "rename",
+        "renames",
+        "move",
+        "copy",
+        "copy2",
+        "copyfile",
+        "copytree",
+        "link",
+        "symlink",
+    )
+)
 # Driving the recorder in-process with its write switch on, or its writing step directly.
 RECORDER_MODULE = re.compile(r"\blive_proof\b")
 RECORDER_WRITE = re.compile(r"\bwrite\s*=\s*True\b|_judge_and_write|\bjsonl_append\b")
@@ -64,6 +80,14 @@ MESSAGE = (
 
 EDGE_CASES = [
     ("append a row", "echo '{}' >> " + LEDGER_REL),
+    # #4e20f8c5: the refused PLAN edit. The ledger's path is text being replaced inside the PLAN, and the PLAN is the file written.
+    (
+        "python edits a PLAN line naming the ledger",
+        "python3 - <<'PY'\nimport pathlib\np = pathlib.Path('agent/plans/PLAN-backup-program.md')\n"
+        "s = p.read_text()\ns = s.replace('Owns: x, "
+        + LEDGER_REL
+        + "', 'Owns: x')\np.write_text(s)\nPY",
+    ),
     ("the recorder", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --write"),
     ("read the ledger", "jq . " + LEDGER_REL),
     ("tee the ledger", "printf x | tee -a " + LEDGER_REL),
@@ -118,9 +142,47 @@ def _operand_write(run, name, argv, base):
     return ""
 
 
+def _searched_text(node):
+    """The arguments of a string call that are SEARCHED FOR and removed, never carried into its result: `str.replace`'s old text (two or more arguments; Path's `replace` takes one), `removeprefix`/`removesuffix`'s affix, and `re.sub`/`re.subn`'s pattern."""
+    if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute) or not node.args:
+        return ()
+    attr = node.func.attr
+    if attr == "replace" and len(node.args) >= 2:
+        return (node.args[0],)
+    if attr in ("removeprefix", "removesuffix"):
+        return (node.args[0],)
+    module = node.func.value
+    if attr in ("sub", "subn") and isinstance(module, ast.Name) and module.id == "re":
+        return (node.args[0],)
+    return ()
+
+
+def _flow(expr):
+    """`ast.walk`, minus the subtrees a call searches for (`_searched_text`): text that cannot reach the expression's value."""
+    stack = [expr]
+    while stack:
+        node = stack.pop()
+        yield node
+        skip = _searched_text(node)
+        stack.extend(c for c in ast.iter_child_nodes(node) if not any(c is s for s in skip))
+
+
+def _string_edit(call):
+    """A string method whose name merely sounds like a file write: `str.replace(old, new)` (Path's `replace` takes one argument), `removeprefix`, `removesuffix`. Its receiver is text being edited, not a write target."""
+    func = call.func
+    if not isinstance(func, ast.Attribute):
+        return False
+    if isinstance(func.value, ast.Name) and func.value.id in ("os", "shutil"):
+        return False
+    return (func.attr == "replace" and len(call.args) + len(call.keywords) >= 2) or func.attr in (
+        "removeprefix",
+        "removesuffix",
+    )
+
+
 def _holds_ledger(expr, names):
-    """Whether a Python expression carries the ledger: a string naming it (or its file name), a name bound to one, a `ledger_path(...)` call, or the `LEDGER` constant."""
-    for n in ast.walk(expr):
+    """Whether a Python expression carries the ledger: a string naming it (or its file name), a name bound to one, a `ledger_path(...)` call, or the `LEDGER` constant. Searched text (`_flow`) is not carried."""
+    for n in _flow(expr):
         constant = (
             isinstance(n, ast.Constant)
             and isinstance(n.value, str)
@@ -170,10 +232,16 @@ def _python_writes_ledger(program):
             and isinstance(func.value, ast.Name)
             and func.value.id in imports
         )
+        # A module's `replace` (`os.replace(a, b)`, an aliased `import os as o`) is a file move and is judged below; a string's is an edit of text.
+        if not on_module and _string_edit(node):
+            continue
         if isinstance(func, ast.Attribute) and not on_module:
             parts = [func.value]
         else:
             parts = [*node.args[:1], *(k.value for k in node.keywords if k.arg in _PATH_KEYWORDS)]
+            # A two-path call takes its DESTINATION second (`os.replace(src, dst)`, `shutil.copy(src, dst)`), and `shellscan.python_write_targets` reads that only on a module spelled `os` or `shutil`, so an aliased `import os as o; o.replace(forged, <ledger>)` reached nothing (found with #4e20f8c5).
+            if _call_name(func) in _TWO_PATH_CALLS:
+                parts.extend(node.args[1:2])
         if any(_holds_ledger(p, names) for p in parts):
             return True
     return False

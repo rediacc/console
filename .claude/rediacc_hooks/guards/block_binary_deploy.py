@@ -9,6 +9,8 @@ That is the opposite of deploying a binary, and refusing it pushes the work onto
 The direction is decidable: scp's LAST argument is its destination, and a destination naming a remote host (`host:path`, `user@host:path`) is an upload. Anything else is a download.
 
 THE CLAUSE LOOP IS GONE (review a2d44aa4.1). The bash original split the command on `;&|` and read each clause with a here-string loop; its own comment recorded two ways that loop silently allowed every upload. The guard now reads shellscan's runs, so neither the split nor the loop exists, and scp's operands come from the shell's own word splitting instead of the last blank-separated field of a clause.
+
+AN UPLOAD TO A LOCAL OPS VM IS DEV WORK, NOT A DEPLOY (worklist #4e20f8c5, 2026-10-28). Every scp upload used to be refused, so `scp /tmp/ld-k9/chunkstore.test developer@192.168.111.22:/tmp/` (a Go test binary) and `scp Dockerfile compose.yml developer@192.168.111.22:/tmp/` (two text files) were both refused, though neither is the renet binary and the ops VMs (192.168.111.0/24) are dev-only by operator ruling: a guard blocking dev work there is the bug. An upload whose destination host is an ops VM is now allowed UNLESS a source has a renet name (`INSTALLED_NAME` on its basename), the destination path is the install directory or has a renet name, or any source or the destination is resolved only at run time (a variable, a substitution, a glob, a brace list), which stays judged strictly. Every other host is refused exactly as before.
 """
 
 import os
@@ -21,8 +23,8 @@ ORDER = 7
 
 # Dropping the host-spec test restores the `^scp ` behaviour the 2026-08-27 change removed: every scp is a deploy again, downloads included. It is the one line that separates "uploading a binary" from "pulling a log back".
 DEFECT = (
-    "return unread_upload or hookio.grep_q(HOST_SPEC, dest)",
-    "return True",
+    "upload = unread_upload or hookio.grep_q(HOST_SPEC, dest)",
+    "upload = True",
 )
 
 MESSAGE = (
@@ -41,6 +43,12 @@ INSTALLED_NAME = re.compile(r"renet(?:[._-].*)?")
 
 # A host spec: a hostname (optionally user@) followed by a colon. A local path containing a colon has a slash before it, so it cannot match here.
 HOST_SPEC = r"^[A-Za-z0-9_.-]+(@[A-Za-z0-9_.-]+)?:"
+# The same spec split into its host and path, for the ops-VM test.
+_HOST_PATH = re.compile(r"(?:[A-Za-z0-9_.-]+@)?([A-Za-z0-9_.-]+):(.*)", re.DOTALL)
+# The local ops VMs, 192.168.111.0/24: dev-only, so an upload there is not a deploy unless it carries renet.
+OPS_VM = re.compile(r"192\.168\.111\.(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])")
+# A word bash would still expand (a glob or a brace list) names files this reader cannot list, so it is judged strictly.
+_EXPANDS = re.compile(r"[*?[{]")
 
 EDGE_CASES = [
     ("an upload names a host as its destination", "scp bin/renet host:/usr/local/bin/renet"),
@@ -154,6 +162,31 @@ EDGE_CASES = [
     ("a download into a run-time path", 'scp host:/var/log/x "$DIR/"'),
     # One local source among host sources can still be the upload (review 70f58ef3.1).
     ("a mixed source list with a run-time destination", "scp bin/renet host:/x $(cat dest.txt)"),
+    # #4e20f8c5: an upload to a local ops VM (192.168.111.0/24) is dev work unless it carries renet. Both refusals of 2026-10-28 are allowed; every renet shape and every other host is still refused.
+    (
+        "a test binary to an ops VM is dev work",
+        "scp /tmp/ld-k9/chunkstore.test developer@192.168.111.22:/tmp/",
+    ),
+    (
+        "text files to an ops VM are dev work",
+        "scp Dockerfile compose.yml developer@192.168.111.22:/tmp/",
+    ),
+    ("an ops VM without a user", "scp -P 22 notes.txt 192.168.111.5:"),
+    ("bin/renet to an ops VM is a deploy", "scp bin/renet developer@192.168.111.22:/tmp/"),
+    ("renet-v2 to an ops VM is a deploy", "scp /tmp/renet-v2 192.168.111.22:/tmp/"),
+    ("a renet among other files to an ops VM", "scp a.txt bin/renet 192.168.111.22:/tmp/"),
+    ("any file into the install dir of an ops VM", "scp x.bin 192.168.111.22:/usr/local/bin/"),
+    ("any file renamed renet on an ops VM", "scp x.bin 192.168.111.22:/tmp/renet"),
+    ("any file to a non-ops host", "scp Dockerfile developer@10.0.0.5:/tmp/"),
+    ("a near-miss address is not an ops VM", "scp Dockerfile 192.168.1110.2:/tmp/"),
+    ("a run-time source to an ops VM", "scp $BIN 192.168.111.22:/tmp/"),
+    ("a glob source to an ops VM", "scp bin/* 192.168.111.22:/tmp/"),
+    ("a run-time destination with an ops VM elsewhere", "scp x 192.168.111.22:/a $(cat d)"),
+    (
+        "a test binary to an ops VM through xargs",
+        "echo /tmp/k.test | xargs -I{} scp {} 192.168.111.22:/tmp/",
+    ),
+    ("renet to an ops VM through xargs", "echo bin/renet | xargs -I{} scp {} 192.168.111.22:/tmp/"),
 ]
 
 
@@ -219,8 +252,34 @@ def _replace_marker(options):
     return None
 
 
+def _renet_named(path):
+    """Whether a path's last component (trailing slashes dropped) is the renet binary or a staged sibling."""
+    return bool(INSTALLED_NAME.fullmatch(os.path.basename(path.rstrip("/"))))
+
+
+def _unreadable(word):
+    """A word whose final value is known only at run time: an unresolved expansion, or a glob or brace list bash would still expand."""
+    return shellscan.unresolved(word) or bool(_EXPANDS.search(word))
+
+
+def _dev_upload(sources, dest):
+    """Whether an upload is dev work on a local ops VM: the destination host is one, nothing is read only at run time, no source has a renet name, and the copy does not land in the install directory or under a renet name (#4e20f8c5)."""
+    spec = _HOST_PATH.fullmatch(dest)
+    if spec is None or not OPS_VM.fullmatch(spec.group(1)):
+        return False
+    if _unreadable(dest) or any(_unreadable(src) for src in sources):
+        return False
+    if any(_renet_named(src) for src in sources):
+        return False
+    path = spec.group(2)
+    landed = os.path.normpath(path) if path else ""
+    return not (
+        landed == INSTALL_DIR or os.path.dirname(landed) == INSTALL_DIR or _renet_named(path)
+    )
+
+
 def _uploads(args):
-    """Whether scp given `args` sends a file to a host."""
+    """Whether scp given `args` sends a file to a host, as a deploy: an upload that is not dev work on an ops VM."""
     operands = _scp_operands(args)
     if len(operands) < 2:
         return False
@@ -229,7 +288,8 @@ def _uploads(args):
     unread_upload = shellscan.unresolved(dest) and not all(
         hookio.grep_q(HOST_SPEC, src) for src in operands[:-1]
     )
-    return unread_upload or hookio.grep_q(HOST_SPEC, dest)
+    upload = unread_upload or hookio.grep_q(HOST_SPEC, dest)
+    return upload and not _dev_upload(operands[:-1], dest)
 
 
 def run(ev):
