@@ -387,7 +387,7 @@ def last_touch(plan: Plan) -> dt.date | None:
 
     Risk 1 of the plan in one function. `git log` does not follow renames, so a move resets `%cI`; taking the older of the two means the move cannot buy freshness, and neither can re-writing the header, because the commit date is still in the minimum.
 
-    `Kept:` is the one header that may make a plan younger, because it is not typed freely: `--keep` writes it only against a well-formed ASKED minute naming the operator's answer. A Kept date OLDER than the minimum changes nothing, so a stale answer cannot age a plan either.
+    `Kept:` is the one header that may make a plan younger. `--keep` writes it only with a well-formed ASKED minute, but nothing here checks that minute against an operator answer: a hand-typed `Kept:` line is honoured the same way, so the header is trusted as written, like every other header in this family, and a review of the commit that adds it is what catches a forged one. A Kept date OLDER than the minimum changes nothing, so a stale answer cannot age a plan either.
     """
     dates = [d for d in (as_date(plan.first_seen), as_date(plan.last_commit)) if d is not None]
     base = min(dates) if dates else None

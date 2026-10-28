@@ -151,7 +151,7 @@ const RESTORE_LICENSE_FUNCTIONS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The chunk-store read verbs (`backup_restore`, `backup_browse_at`) that need a repo licence installed on the target
+ * The chunk-store read verbs (`backup_restore`, `backup_restore_path`, `backup_browse_at`) that need a repo licence installed on the target
  * machine BEFORE it runs, without being a repo-provisioning verb.
  *
  * `renet backup restore` and `renet backup browse-at` open a chunk-store session, and the licence blob is
