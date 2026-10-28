@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 30 plans done, 426 of 563 boxes done (75%).
+Promoted: 11 of 31 plans done, 426 of 575 boxes done (74%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -114,6 +114,7 @@ Promoted: 11 of 30 plans done, 426 of 563 boxes done (75%).
 | 28 | PLAN-org-executor-connect-timeout-relocate.md | 8/10 | 2 open |
 | 29 | PLAN-backup-restore-path.md | 4/8 | 4 open |
 | 30 | PLAN-ssh-key-source-ranges.md | 0/9 | 9 open |
+| 31 | PLAN-repo-docker-storage-prune.md | 0/12 | 12 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -146,6 +147,7 @@ Promoted: 11 of 30 plans done, 426 of 563 boxes done (75%).
 28. agent/plans/PLAN-org-executor-connect-timeout-relocate.md -- finding #a150016d (edge-us org B's executor never reaches its machine; org C on a new Durable Object passes); operator ASKED:2026-10-28T06:55Z "Ride this PR now"
 29. agent/plans/PLAN-backup-restore-path.md -- box N4b of PLAN-backup-program.md; operator ASKED 2026-10-28 "Plan it, ride this PR"; the sealed table of contents gains per-file extents, chunkstore a partial fetch, renet a restore-path verb
 30. agent/plans/PLAN-ssh-key-source-ranges.md -- operator ASKED 2026-10-28T11:31Z "make it rdc config based ... define IPv4 on rediacc config too, with IPv6"; the executor key's allowed source ranges live in the rdc config and rdc writes the authorized_keys from=; unblocks bench L0
+31. agent/plans/PLAN-repo-docker-storage-prune.md -- operator ASKED 2026-10-28T12:0xZ "do not cleanup directly! Maybe we need to improve the prune command/support of rdc"; rdc repo prune classifies and reclaims a repository's Docker storage and the reset stops leaking layers; hostinger gets the dry run only until the operator approves
 
 ## Generated
 

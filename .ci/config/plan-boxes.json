@@ -1507,6 +1507,29 @@
         "f48d7d67"
       ]
     },
+    "agent/plans/PLAN-repo-docker-storage-prune.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 12,
+      "done": 0,
+      "open_sigs": [
+        "0f938263",
+        "29961a0f",
+        "319e401a",
+        "6430ef63",
+        "72ea8088",
+        "73ea9ce4",
+        "99b77b08",
+        "b853022c",
+        "cc94874d",
+        "d1839d57",
+        "d77a6282",
+        "d866721c"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-require-testid-sweep.md": {
       "status": "compacted",
       "owner": "97604f47",
@@ -1694,6 +1717,26 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-ssh-key-source-ranges.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "1d4d78e1",
+        "25c164cb",
+        "38d70bfe",
+        "4b71c828",
+        "5dedfb94",
+        "83df7d0e",
+        "966f84cd",
+        "cfd016f3",
+        "fde13b60"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-ssr-nav-locale.md": {
