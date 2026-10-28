@@ -998,7 +998,7 @@
     "pytest:.ci/rediacc_ci/tests/gates/test_gate_go_deps_upstream.py": 22315.6,
     "pytest:.ci/rediacc_ci/tests/gates/test_gate_pin_remedies.py": 13668.5,
     "pytest:.ci/rediacc_ci/tests/test_drills_argv_secrets.py": 33.2,
-    "pytest:.ci/rediacc_ci/tests/test_drills_vm_check_trigger.py": 5273.3,
+    "pytest:.ci/rediacc_ci/tests/test_proof_surfaces.py": 5273.3,
     "pytest:.ci/rediacc_ci/tests/test_core_xml_trusted.py": 5.7,
     "pytest:.claude/rediacc_hooks/tests/test_githook_generated_artifacts.py": 165287.4,
     "pytest:.claude/rediacc_hooks/tests/test_wl_judge_state.py": 57.0,

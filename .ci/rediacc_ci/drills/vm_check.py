@@ -5,12 +5,12 @@
 
 Design 2 of agent/plans/PLAN-vm-check.md and Design 3 of agent/plans/PLAN-account-vm-check.md are the specification; each step below carries its id there.
 
-PHASES. There are two sides, the trigger's `renet` and `account` (`vm_check_trigger.SIDES`). With `--changed` the sides of `Changed.sides` are required; with no `--changed`, or a push base that cannot be resolved, both are. The renet phase is P5 and V1.1-V1.7; the account phase is A1.1-A1.4, A0 and A2.1-A2.3. P0-P4 and T run on every run, P1 included, because the license drill deploys renet too and the receipt check needs `renet.built == renet.pointer` even on an account-only receipt. `phases.<side>.ran` is true only when every step of that phase recorded a row and every such row is ok. The steps, in run order:
+PHASES. There are two sides, the trigger's `renet` and `account` (`rediacc_ci.proof.surfaces.SIDES`, the VM phases of `.ci/config/proof-tiers.json`). With `--changed` the sides of `Changed.sides` are required; with no `--changed`, or a push base that cannot be resolved, both are. The renet phase is P5 and V1.1-V1.7; the account phase is A1.1-A1.4, A0 and A2.1-A2.3. P0-P4 and T run on every run, P1 included, because the license drill deploys renet too and the receipt check needs `renet.built == renet.pointer` even on an account-only receipt. `phases.<side>.ran` is true only when every step of that phase recorded a row and every such row is ok. The steps, in run order:
 
   A1  account only, before P0, so the fleet lock is not held for the suites: A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED before any VM is touched.
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`). A run that gives up there judged nothing while a holder may still be running, so it writes neither `receipt.json` nor the tree archive: its record goes to `runs/<run id>/receipt.json` (`vm_check_receipt.write_run_record`), and the summary prints where.
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
-  A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `vm_check_trigger.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
+  A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `rediacc_ci.proof.surfaces.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
   P4  chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt, never in a suite's or a drill's environment. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it. The minted token names the gateway at this host's address on the VM network (`wire.bridge_host`, 192.168.111.254), never localhost: the CLI sends every licence request there and the account stamps each licence's renewalUrl from that request, so a localhost token left every fork's and the grand's blob unrenewable from the worker (2026-10-20). With no interface on that network yet (a cold fleet) the token is minted on localhost for the fleet steps and re-minted on the bridge address right after P2, before anything issues a licence. The subscription of ACCOUNT_LOGIN is kept across runs (`subscription_reuse_refusal` names when it is recreated instead), since `/test/ensure-subscription` deletes it and with it every licence an earlier run issued.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`). Under the dev config a worker absent from it is registered as OPS_WORKER_NAME (`machine add`), and a `--machine` name absent from it is `worker-not-in-config` naming the command; a dev config that cannot be listed ("Decryption failed") is `account-unavailable`.
   P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
@@ -25,7 +25,7 @@ VERDICTS. VERIFIED exit 0 (assertions ran, none failed, every required phase ran
 
 EVIDENCE. Each A1 suite's and A2 drill's full stdout and stderr is kept in `.ci/cache/vm-check/runs/<run id>/<step>-<name>.log` (the newest RUNS_KEEP run directories are kept), its row carries that path as `log`, and the receipt carries the directory as `runDir`. A row's `evidence` stays clipped to 200 bytes, so the log is where a failure is read in full.
 
-`--changed` evaluates `vm_check_trigger` against the push base in worktree mode; `--base <ref>` replaces that base with the named ref (recorded as `trigger.base`, `via` `--base`; an unknown ref exits with a message and runs nothing), which is how a run on `main` diffs against a tag; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 2 (`vm_check_receipt`): `phases`, `account` (`pointer`, `checkout`, `modified`, `gateway`) and `trigger.sides` beside the renet fields. Receipts of an earlier schema no longer count, and a run that finds some says so once.
+`--changed` evaluates `rediacc_ci.proof.surfaces` against the push base in worktree mode; `--base <ref>` replaces that base with the named ref (recorded as `trigger.base`, `via` `--base`; an unknown ref exits with a message and runs nothing), which is how a run on `main` diffs against a tag; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 2 (`vm_check_receipt`): `phases`, `account` (`pointer`, `checkout`, `modified`, `gateway`) and `trigger.sides` beside the renet fields. Receipts of an earlier schema no longer count, and a run that finds some says so once.
 
 The whole flow runs through `Host` and `Account`, so the tests drive it with a fake host and a fake account and never reach a VM, a gateway or a suite.
 """
@@ -65,7 +65,7 @@ from rediacc_ci.drills import (
     wire,
 )
 from rediacc_ci.drills import vm_check_receipt as receipt_mod
-from rediacc_ci.drills import vm_check_trigger as trigger
+from rediacc_ci.proof import surfaces as trigger
 from rediacc_ci.well_known import DATASTORE_PATH
 
 if TYPE_CHECKING:
@@ -682,19 +682,6 @@ def _data_list(raw: str) -> list[dict[str, Any]]:
     if not isinstance(data, list):
         return []
     return [d for d in data if isinstance(d, dict)]
-
-
-def go_buildinfo(text: str) -> tuple[str, bool | None]:
-    """(vcs.revision, vcs.modified) of `go version -m`; ("", None) for what it does not carry."""
-    revision = ""
-    modified: bool | None = None
-    for line in text.splitlines():
-        field = line.strip().split("\t")[-1].strip()
-        if field.startswith("vcs.revision="):
-            revision = field.split("=", 1)[1]
-        elif field.startswith("vcs.modified="):
-            modified = field.split("=", 1)[1] == "true"
-    return revision, modified
 
 
 def os_matches(image: str, os_id: str, version: str) -> bool:
@@ -1437,7 +1424,7 @@ class VmCheck:
 
     def _read_build(self) -> tuple[str, bool | None]:
         res = self.host.run(["go", "version", "-m", str(self.renet_bin)], env=self.environ)
-        return go_buildinfo(res.out) if res.rc == 0 else ("", None)
+        return trigger.go_buildinfo(res.out) if res.rc == 0 else ("", None)
 
     def p1_renet(self) -> None:
         self.renet["pointer"] = self.git("rev-parse", "HEAD:%s" % trigger.RENET_SUBMODULE)

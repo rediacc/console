@@ -2546,14 +2546,6 @@ def test_each_mutant_turns_its_scenario_red(tmp_path: pathlib.Path, name: str) -
 # --------------------------------------------------------------------------- helpers
 
 
-def test_go_buildinfo_reads_revision_and_modified() -> None:
-    text = (
-        "bin/renet: go1.24\n\tpath\tx\n\tbuild\tvcs.revision=%s\n\tbuild\tvcs.modified=true\n" % PTR
-    )
-    assert vm_check.go_buildinfo(text) == (PTR, True)
-    assert vm_check.go_buildinfo("") == ("", None)
-
-
 @pytest.mark.parametrize(
     ("image", "os_id", "version", "ok"),
     [

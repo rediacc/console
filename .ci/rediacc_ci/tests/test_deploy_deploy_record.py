@@ -1001,3 +1001,68 @@ def test_digits_412_in_stderr_are_not_an_existing_record(monkeypatch):
     with pytest.raises(dr.RecordError) as exc:
         dr.write_record_once({"version": VERSION}, "release-records/v1.0.0/edge/x.json")
     assert "already exists" not in str(exc.value)
+
+
+# ---- bws profile re-exec ----------------------------------------------------
+
+
+def _recording_run(monkeypatch, rc: int) -> list[list[str]]:
+    seen: list[list[str]] = []
+
+    def fake_run(argv, **_kw):
+        seen.append(argv)
+        return type("P", (), {"returncode": rc})()
+
+    monkeypatch.setattr(dr.subprocess, "run", fake_run)
+    return seen
+
+
+def test_missing_credentials_reexec_under_the_deploy_proxy_profile_when_unbound(world, monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    seen = _recording_run(monkeypatch, 7)
+    args = ["before", "--target", "edge", "--region", "eu", "--account-only", "--out", "x.json"]
+    assert dr.main(args) == 7
+    assert seen[0][1:7] == [
+        "-m",
+        "rediacc_ci.core.bws_env",
+        "exec",
+        "--profile",
+        "deploy-proxy",
+        "--",
+    ]
+    assert seen[0][-(len(args) + 2) :] == ["-m", dr.SELF, *args]
+    assert calls(world.log) == []
+
+
+def test_reexec_reads_the_target_from_the_before_record(world, monkeypatch, tmp_path):
+    before = tmp_path / "bench-before.json"
+    before.write_text(json.dumps({"target": "bench", "region": "eu"}))
+    monkeypatch.delenv("CLOUDFLARE_ACCOUNT_ID")
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    seen = _recording_run(monkeypatch, 0)
+    assert dr.main(["rollback", "--before", str(before)]) == 0
+    assert seen[0][5] == "deploy-proxy-bench"
+    assert calls(world.log) == []
+
+
+@pytest.mark.usefixtures("world")
+def test_a_bound_profile_with_missing_credentials_does_not_reexec_again(monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy")
+    monkeypatch.setattr(dr.subprocess, "run", lambda *_a, **_k: pytest.fail("re-exec"))
+    monkeypatch.setitem(dr.VERBS, "before", lambda _args, _root: 3)
+    assert (
+        dr.main(["before", "--target", "edge", "--region", "eu", "--account-only", "--out", "x"])
+        == 3
+    )
+
+
+@pytest.mark.usefixtures("world")
+def test_credentials_present_run_in_process_with_no_reexec(monkeypatch):
+    monkeypatch.setattr(dr.subprocess, "run", lambda *_a, **_k: pytest.fail("re-exec"))
+    monkeypatch.setitem(dr.VERBS, "before", lambda _args, _root: 0)
+    assert (
+        dr.main(["before", "--target", "edge", "--region", "eu", "--account-only", "--out", "x"])
+        == 0
+    )

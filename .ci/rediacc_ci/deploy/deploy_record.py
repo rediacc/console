@@ -30,7 +30,7 @@ DURABLE SINK (`after --sink r2 --channel edge|stable`, plan local-release W2-D).
 
 WWW RECORD (`www-after`). `deploy_www` and `deploy_edge` take the version id before and after through `take_www_before` / `build_www_record` when `DEPLOY_RECORD_OUT` names a file (the record carries `smoke_rc: null`); `www-after --record F --smoke-rc N [--sink r2 --channel C]` fills the smoke rc, and writes the same key family with target `www-<channel>` and region `global`. No record holds a secret value: `refuse_secret_values` checks the serialized record against the secret-named variables of the environment before it is written.
 
-ENVIRONMENT. `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and for R2 `CLOUDFLARE_R2_ENDPOINT` plus `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: the names of the `deploy-proxy` profile in .ci/config/secret-supply.json.
+ENVIRONMENT. `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and for R2 `CLOUDFLARE_R2_ENDPOINT` plus `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: the names of the `deploy-proxy` profile in .ci/config/secret-supply.json. A bare local call re-executes itself under `bws_env exec --profile deploy-proxy` (bench: `deploy-proxy-bench`) when either Cloudflare variable is unset and that profile is not bound, as `console_executor` does; the target is `--target`, or the `target` of the `--before` or `--record` file the verb reads.
 """
 
 from __future__ import annotations
@@ -1072,11 +1072,34 @@ VERBS = {
 }
 
 
+def record_target(args: argparse.Namespace) -> str:
+    """The target a verb acts on: `--target`, else the `target` of the record file it reads (`--before`, or `www-after`'s `--record`); empty when unreadable."""
+    target = getattr(args, "target", None)
+    if target:
+        return str(target)
+    source = getattr(args, "before", None) or (args.record if args.verb == "www-after" else None)
+    if not source:
+        return ""
+    try:
+        doc = json.loads(pathlib.Path(source).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    return str(doc.get("target") or "") if isinstance(doc, dict) else ""
+
+
 def main(argv: list[str]) -> int:
     try:
         args = _parser().parse_args(argv)
     except SystemExit as exc:
         return int(exc.code or 0)
+    if console_executor.missing_env():
+        profile = console_executor.profile_for(record_target(args))
+        if not console_executor.profile_bound(profile):
+            return subprocess.run(
+                console_executor.reexec_argv(profile, argv, module=SELF),
+                check=False,
+                env=console_executor.package_env(),
+            ).returncode
     try:
         return VERBS[args.verb](args, paths.repo_root())
     except (RecordError, KeyError) as exc:

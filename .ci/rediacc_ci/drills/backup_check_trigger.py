@@ -1,6 +1,6 @@
 """The paths whose change needs a backup receipt, the receipt itself, and the rule that judges it (box J4 of agent/plans/PLAN-backup-program.md).
 
-THE CLONE. This is the backup twin of the `vm:check` pair: `vm_check_trigger` (what is touched) and `vm_check_receipt` (what proves it) folded into one module, because the backup receipt has no phases or sides to keep apart. The git arithmetic is NOT cloned: `make_git`, `push_base`, the submodule range and the worktree blob hashing are imported from `vm_check_trigger`, so the two guards cannot disagree about what a push range or a worktree blob is. Only the path tables, the digest and the receipt are this module's own.
+THE CLONE. This is the backup twin of the `vm:check` pair: `rediacc_ci.proof.surfaces` (what is touched) and `vm_check_receipt` (what proves it) folded into one module, because the backup receipt has no phases or sides to keep apart. The git arithmetic is NOT cloned: `make_git`, `push_base`, the submodule range and the worktree blob hashing are imported from `rediacc_ci.proof.surfaces`, so the two guards cannot disagree about what a push range or a worktree blob is. Only the path tables, the digest and the receipt are this module's own.
 
 WHAT IS TOUCHED. Three path tables, one per repository, each entry either a directory prefix (ending in `/`) or an `fnmatch` pattern (`*` crosses `/`):
 
@@ -8,7 +8,7 @@ WHAT IS TOUCHED. Three path tables, one per repository, each entry either a dire
   RENET_PATHS     relative to private/renet: the backup, datastore and prune commands, the chunk store, delta, datastore, coldbackup, backupstate and prune packages, go.mod and go.sum
   ACCOUNT_PATHS   relative to private/account: the backup routes, services and DTO, their migrations, and `src/entry/on-premise.ts` (the I7 boot)
 
-Test files are excluded through `vm_check_trigger.excluded`, the same rule the vm-check trigger applies. A submodule whose gitlink moved is diffed inside the submodule; a range that cannot be computed is UNKNOWN, named in `Changed.unknown`, and counts as touched.
+Test files and documents are excluded through `rediacc_ci.proof.surfaces.excluded`, the same rule the vm-check trigger applies. A submodule whose gitlink moved is diffed inside the submodule; a range that cannot be computed is UNKNOWN, named in `Changed.unknown`, and counts as touched.
 
 THE KEY. A receipt admits a push when its tree IS the pushed tree, or when BOTH of these hold: its `inputs` digest equals the pushed tree's (version `backup-v1`: the sorted `ls-tree` lines of the console trigger files), and its two gitlinks equal the pushed tree's (`stale-gitlink` otherwise). The gitlinks are kept OUT of the digest on purpose: inside it a stale gitlink would read as `other-inputs`, and the gitlink rule would be a line no test could tell apart from the digest. A later commit outside the trigger keeps the key, so it costs no new drill run.
 
@@ -39,7 +39,7 @@ import tempfile
 import time
 from typing import TYPE_CHECKING, Any
 
-from rediacc_ci.drills import vm_check_trigger as vmt
+from rediacc_ci.proof import surfaces as vmt
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence

@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "about": "The one surface map of agent/plans/PLAN-tested-on-bench.md Design item 2, read only through rediacc_ci.proof.surfaces. Globs are console-relative in the Owns grammar (wl_planconc.normalize_owns, then glob_regex). A surface with a glob under a submodule lives in that submodule; its gitlink pointer joins the inputs digest.",
+  "submodules": ["private/renet", "private/account"],
+  "surfaces": {
+    "renet": {
+      "globs": [
+        "private/renet/cmd/**",
+        "private/renet/pkg/**",
+        "private/renet/proxy/**",
+        "private/renet/build.sh",
+        "private/renet/go.mod",
+        "private/renet/go.sum",
+        "private/renet/embed-assets.lock.json"
+      ],
+      "live": ["hostinger"],
+      "renet_build": true
+    },
+    "cli-remote": {
+      "globs": [
+        "packages/cli/src/remote/**",
+        "packages/cli/src/services/repo/repo-key-deployment.ts"
+      ],
+      "live": ["hostinger"],
+      "renet_build": true
+    },
+    "cli": {
+      "globs": ["packages/cli/src/**"],
+      "live": ["bench", "hostinger"],
+      "renet_build": false
+    },
+    "account": {
+      "globs": [
+        "private/account/{src,web,drizzle,scripts}/**",
+        "private/account/{package.json,package-lock.json,tsconfig.json,wrangler*.toml,dev.defaults.env,docker-compose.yml,Dockerfile}",
+        "packages/shared/src/**"
+      ],
+      "live": ["bench"],
+      "renet_build": false
+    },
+    "account-worker": {
+      "globs": ["workers/account/**"],
+      "live": ["bench"],
+      "renet_build": false
+    },
+    "proxy": {
+      "globs": ["workers/proxy/src/**", "workers/proxy/wrangler*.toml", "workers/proxy/Dockerfile"],
+      "live": ["bench"],
+      "renet_build": false
+    },
+    "www": {
+      "globs": ["packages/www/src/**", "workers/www/**"],
+      "live": ["bench"],
+      "renet_build": false
+    }
+  },
+  "exclude": [
+    "**/*_test.go",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/__tests__/**",
+    "**/testdata/**",
+    "**/tests/**",
+    "**/e2e/**",
+    "**/*.md"
+  ],
+  "tiers": {
+    "vm": {
+      "phases": {
+        "renet": {"surfaces": ["renet", "cli-remote"]},
+        "account": {"surfaces": ["account"]}
+      },
+      "instrument": {
+        ".ci/rediacc_ci/drills/license.py": ["account"],
+        ".ci/rediacc_ci/drills/universe.py": ["account"],
+        ".ci/rediacc_ci/drills/transfer.py": ["account"],
+        ".ci/rediacc_ci/drills/vm_check.py": ["renet", "account"],
+        ".ci/rediacc_ci/drills/lib.py": ["renet", "account"],
+        ".ci/rediacc_ci/drills/upgrade_converge.py": ["renet"],
+        ".ci/rediacc_ci/drills/tenant_isolation.py": ["renet"],
+        ".ci/rediacc_ci/drills/session_teardown.py": ["renet"],
+        ".ci/rediacc_ci/drills/converge_preflight.py": ["renet"],
+        ".ci/rediacc_ci/drills/gpu_grants.py": ["renet"],
+        ".ci/rediacc_ci/drills/vm_ssh.py": ["renet", "account"],
+        ".ci/rediacc_ci/drills/wire.py": ["renet", "account"]
+      }
+    },
+    "live": {
+      "baseline_at": null,
+      "targets": {
+        "bench": {"origin": "https://bench.rediacc.com"},
+        "hostinger": {"config": "eu-bench", "machines": ["hostinger"]}
+      },
+      "checks": {
+        "account-smoke": {
+          "targets": ["bench"],
+          "surfaces": ["account", "account-worker"],
+          "what": "/health and /.well-known/server-info on bench.rediacc.com answer; V5 fixes the argv"
+        },
+        "proxy-ready": {
+          "targets": ["bench"],
+          "surfaces": ["proxy"],
+          "what": "rediacc_ci.deploy.deploy_proxy --smoke-only against bench; V5 fixes the argv"
+        },
+        "www-smoke": {
+          "targets": ["bench"],
+          "surfaces": ["www"],
+          "what": "the bench www root answers 200; V5 names the URL"
+        },
+        "cli-bench": {
+          "targets": ["bench"],
+          "surfaces": ["cli"],
+          "what": "./rdc.sh --config eu-bench subscription status; V5 fixes the argv"
+        },
+        "renet-live": {
+          "targets": ["hostinger"],
+          "surfaces": ["renet", "cli-remote", "cli"],
+          "what": "per machine alias: surfaces.renet_identity, machine status with stale_binary empty, remote renet hash equal to the local sha256; V5 fixes the steps"
+        }
+      },
+      "pointer_only": ["private/renet", "private/account"]
+    }
+  }
+}

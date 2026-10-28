@@ -497,12 +497,14 @@ def test_a_missing_target_is_a_usage_error(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_missing_token_refuses_before_the_fetch(tmp_path: pathlib.Path) -> None:
+    """With the deploy-proxy profile already bound, a missing token is a refusal, not a second re-exec."""
     root = _fixture_root(tmp_path)
     proc, calls = _run(
         tmp_path,
         root,
         ("--target", "edge", "--region", "us", "--version", VERSION),
         drop_env=("CLOUDFLARE_API_TOKEN",),
+        REDIACC_BWS_PROFILES="deploy-proxy",
     )
     assert proc.returncode == 1
     assert proc.stderr == port.MISSING_AUTH_MSG + "\n"
@@ -646,6 +648,28 @@ def test_a_bench_run_without_its_profile_reexecutes_under_it(
     ]
     assert env is not None
     assert env["PYTHONPATH"].split(os.pathsep)[0] == port.PACKAGE_PARENT
+
+
+def test_an_edge_run_without_a_token_reexecutes_under_the_deploy_proxy_profile(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unbound and with no token, a stable or edge run hands itself to `bws_env exec --profile deploy-proxy`."""
+    root = _fixture_root(tmp_path)
+    monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    seen: list[list[str]] = []
+
+    def fake_run(argv: list[str], *, env: dict | None = None) -> int:
+        del env
+        seen.append(argv)
+        return 5
+
+    monkeypatch.setattr(port, "_run", fake_run)
+    args = ["--target", "edge", "--region", "eu", "--smoke-only"]
+    assert port.main(args) == 5
+    assert seen == [port.reexec_argv(args, port.PROFILE)]
+    assert seen[0][5] == "deploy-proxy"
 
 
 # ---- the version id ---------------------------------------------------------

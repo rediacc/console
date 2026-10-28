@@ -69,8 +69,8 @@ def profile_bound(profile: str) -> bool:
     return profile in carried
 
 
-def reexec_argv(profile: str, argv: list[str]) -> list[str]:
-    """This same run under one bws profile."""
+def reexec_argv(profile: str, argv: list[str], module: str = SELF) -> list[str]:
+    """This same run (or `module`'s, for a caller sharing the re-exec) under one bws profile."""
     return [
         sys.executable,
         "-m",
@@ -81,7 +81,7 @@ def reexec_argv(profile: str, argv: list[str]) -> list[str]:
         "--",
         sys.executable,
         "-m",
-        SELF,
+        module,
         *argv,
     ]
 
