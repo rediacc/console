@@ -6,8 +6,8 @@ A real local HTTP server stands in for the account Worker's POST /account/api/v1
 import json
 import subprocess
 import threading
-from typing import Any
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any
 
 import pytest
 

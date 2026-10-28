@@ -50,6 +50,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { globSync } from 'glob';
 import {
+  WK_BENCH_ORIGIN,
   WK_GH_API_BASE,
   WK_GH_ORIGIN,
   WK_GH_REPO,
@@ -99,7 +100,7 @@ const TREE_ALLOWLISTED_DOMAINS = new Set([
   // Cited once, docs/code-signing-guide.md:309, as attribution for the eSigner overage claim -- a citation, not an instruction, so the URL stays in prose.
   'billauer.co.il',
   // bench.rediacc.com - the bench account server sits behind a Cloudflare IP allowlist, so it answers 403 to any client outside the operator network (CI runners and dev hosts alike) while serving the operator normally. An IP-dependent block, not a dead page. The allowlist is per domain, so every bench.rediacc.com link is skipped, not only the one cited in docs/dev-environments.md as the `--server` target of the bench config. The IPs allowed through are managed by `.ci/rediacc_ci/ops/bench_access.py` and expire 7 days after they are added.
-  'bench.rediacc.com',
+  new URL(WK_BENCH_ORIGIN).host,
   'ariregister.rik.ee', // Estonia e-Business Register - intermittent from CI runners: TIMEOUT against the 15s budget on one run and 503 on the next (jobs 104615289932, 104616780132); answers 200 from a non-datacenter IP but slowly, 9.7s and 13.9s in three probes that also returned one 500, so it is unstable rather than dead
   'www.iso.org', // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
   'www.meity.gov.in', // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers

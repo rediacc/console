@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import {
   DEFAULT_DATASTORE_PATH,
   DEFAULT_NETWORK_ID,
@@ -537,7 +538,7 @@ test.describe
       expect(record.errors ?? []).toEqual([]);
       // The daemon must answer again on the repository's own socket.
       const info = await runner.executeViaBridge(
-        `sudo docker -H unix:///var/run/rediacc/docker-${record.network_id}.sock info --format '{{.ServerVersion}}'`
+        `sudo docker -H unix://${WK_RUNTIME_DIR}/docker-${record.network_id}.sock info --format '{{.ServerVersion}}'`
       );
       expect(info.code, `docker info after offline prune: ${info.stderr}`).toBe(0);
     });

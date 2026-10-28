@@ -1,4 +1,5 @@
 /** The pure authorized_keys planner (PLAN-ssh-key-source-ranges R1). */
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import {
   AccessKeyConflictError,
@@ -32,7 +33,7 @@ const EC_BLOB_PADDING_VARIANT =
 const HOSTED = { ipv4: ['104.28.0.0/16'], ipv6: ['2a09:bac0::/29'] };
 const RESTRICT = 'no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty,no-user-rc';
 const GATEWAY = (repo: string, key: string) =>
-  `command="/usr/bin/renet sandbox-gateway ${repo} --guid 6a1c2f0e-0000-4000-8000-00000000000${repo.length} --datastore /mnt/rediacc" ${key}`;
+  `command="/usr/bin/renet sandbox-gateway ${repo} --guid 6a1c2f0e-0000-4000-8000-00000000000${repo.length} --datastore ${WK_DATASTORE_PATH}" ${key}`;
 
 const PROBE_DESIRED: DesiredAccessKey = {
   name: 'console-probe',
