@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" ya existe. Restaura con otro nombre (--as) o elimina primero el repositorio existente.",
         "stats": "La restauración descargó {{fetched}} fragmentos ({{bytes}}), reutilizó {{reused}}, tomó {{known}} celdas del ancla y vació {{punched}} celdas obsoletas (tamaño de celda {{cellBytes}}).",
         "statsSeed": "Semilla: se partió de la imagen {{seed}} de {{guid}} (la sonda leyó {{probe}}).",
-        "statsSeedSkipped": "Semilla descartada: {{skipped}}"
+        "statsSeedSkipped": "Semilla descartada: {{skipped}}",
+        "optionPath": "Restaurar solo este archivo o directorio de la instantánea, sin restaurar todo el repositorio (requiere --at)",
+        "optionTo": "Directorio donde colocar la ruta restaurada (por defecto, la carpeta de restauraciones de la máquina para la instantánea)",
+        "toNeedsPath": "--to indica dónde se coloca una restauración con --path, así que añade también --path.",
+        "pathNeedsAt": "--path restaura un archivo o directorio de un momento concreto, así que añade también --at <hora|instantánea>.",
+        "pathConflict": "--path no se puede combinar con {{flag}}: restaura archivos en una carpeta y no crea ningún repositorio.",
+        "pathNeedsMachine": "\"{{place}}\" no es una máquina. Una restauración de ruta se ejecuta en una máquina: usa repo@<máquina> o pasa -m <máquina>.",
+        "pathNeedsCredential": "{{name}} no tiene credencial guardada en esta configuración, así que no se pueden abrir los archivos de la instantánea.",
+        "pathStarting": "Restaurando {{path}} de {{name}} desde la instantánea {{snapshot}}...",
+        "pathCompleted": "Restauración desde {{name}} completada",
+        "pathFailed": "No se pudo restaurar la ruta desde {{name}}",
+        "pathRestored": "Se restauraron {{files}} archivo(s), {{dirs}} carpeta(s) y {{symlinks}} enlace(s) ({{bytes}}) en {{to}}.",
+        "pathFetched": "Se obtuvieron {{selected}} de {{total}} celdas ({{bytes}}).",
+        "pathSkipped": "Se omitieron {{count}} entradas de dispositivo, tubería o socket, que una restauración de ruta no recrea.",
+        "pathNoListing": "La instantánea {{snapshot}} de {{name}} no admite restaurar una ruta. Restaura todo el repositorio con rdc backup restore --at y luego copia la ruta.",
+        "pathNoListingAbsent": "La instantánea {{snapshot}} de {{name}} no tiene listado de archivos guardado, así que no se puede restaurar una ruta. Restaura todo el repositorio con rdc backup restore --at y luego copia la ruta.",
+        "pathNoListingLiveMount": "La instantánea {{snapshot}} de {{name}} solo tiene un listado leído del montaje en vivo, que no ubica los archivos con exactitud. Haz una instantánea nueva, o restaura todo el repositorio con rdc backup restore --at y copia la ruta.",
+        "pathNoListingNoPositions": "El listado de la instantánea {{snapshot}} de {{name}} no incluye posiciones de archivos (es anterior a la restauración de rutas). Haz una instantánea nueva, o restaura todo el repositorio con rdc backup restore --at y copia la ruta."
       },
       "retention": {
         "clear": {

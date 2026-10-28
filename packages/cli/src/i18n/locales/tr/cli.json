@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin.",
         "stats": "Geri yükleme {{fetched}} parça getirdi ({{bytes}}), {{reused}} parçayı yeniden kullandı, {{known}} hücreyi çapadan aldı ve {{punched}} eski hücreyi boşalttı (hücre boyutu {{cellBytes}}).",
         "statsSeed": "Tohum: {{guid}} deposunun {{seed}} imajından başlandı (yoklama {{probe}} okudu).",
-        "statsSeedSkipped": "Tohum atlandı: {{skipped}}"
+        "statsSeedSkipped": "Tohum atlandı: {{skipped}}",
+        "optionPath": "Tüm depoyu geri yüklemeden, anlık görüntüden yalnızca bu dosyayı veya dizini geri yükle (--at gerekir)",
+        "optionTo": "Geri yüklenen yolun yerleştirileceği dizin (varsayılan: makinenin bu anlık görüntü için geri yükleme klasörü)",
+        "toNeedsPath": "--to, --path ile yapılan geri yüklemenin hedefini belirler; yanına --path de ekleyin.",
+        "pathNeedsAt": "--path bir dosyayı veya dizini belirli bir zamandan geri yükler; yanına --at <zaman|anlık görüntü> de ekleyin.",
+        "pathConflict": "--path, {{flag}} ile birlikte kullanılamaz: dosyaları bir klasöre geri yükler ve depo oluşturmaz.",
+        "pathNeedsMachine": "\"{{place}}\" bir makine değil. Yol geri yüklemesi bir makinede çalışır: repo@<makine> kullanın veya -m <makine> verin.",
+        "pathNeedsCredential": "{{name}} için bu yapılandırmada kayıtlı kimlik bilgisi yok, bu yüzden anlık görüntünün dosyaları açılamıyor.",
+        "pathStarting": "{{name}} deposunun {{path}} yolu {{snapshot}} anlık görüntüsünden geri yükleniyor...",
+        "pathCompleted": "{{name}} üzerinden geri yükleme tamamlandı",
+        "pathFailed": "Yol {{name}} deposundan geri yüklenemedi",
+        "pathRestored": "{{files}} dosya, {{dirs}} klasör ve {{symlinks}} bağlantı ({{bytes}}) {{to}} içine geri yüklendi.",
+        "pathFetched": "{{total}} hücrenin {{selected}} tanesi alındı ({{bytes}}).",
+        "pathSkipped": "Yol geri yüklemesinin yeniden oluşturmadığı {{count}} aygıt, boru veya soket girdisi atlandı.",
+        "pathNoListing": "{{name}} deposunun {{snapshot}} anlık görüntüsü yol geri yüklemesine uygun değil. Tüm depoyu rdc backup restore --at ile geri yükleyip yolu oradan kopyalayın.",
+        "pathNoListingAbsent": "{{name}} deposunun {{snapshot}} anlık görüntüsünde kayıtlı dosya listesi yok, bu yüzden yol geri yüklenemez. Tüm depoyu rdc backup restore --at ile geri yükleyip yolu oradan kopyalayın.",
+        "pathNoListingLiveMount": "{{name}} deposunun {{snapshot}} anlık görüntüsünde yalnızca çalışan bağlantı noktasından okunmuş bir liste var ve bu liste dosyaları tam olarak konumlandıramaz. Yeni bir anlık görüntü alın ya da tüm depoyu rdc backup restore --at ile geri yükleyip yolu kopyalayın.",
+        "pathNoListingNoPositions": "{{name}} deposunun {{snapshot}} anlık görüntüsündeki listede dosya konumları yok (yol geri yüklemesinden önce alınmış). Yeni bir anlık görüntü alın ya da tüm depoyu rdc backup restore --at ile geri yükleyip yolu kopyalayın."
       },
       "retention": {
         "clear": {

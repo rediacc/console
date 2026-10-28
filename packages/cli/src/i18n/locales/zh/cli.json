@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" 已存在。请使用其他名称恢复（--as），或先删除现有仓库。",
         "stats": "恢复获取了 {{fetched}} 个数据块({{bytes}}),复用了 {{reused}} 个,从锚点采用了 {{known}} 个单元格,并清空了 {{punched}} 个过期单元格(单元格大小 {{cellBytes}})。",
         "statsSeed": "种子:从 {{guid}} 的 {{seed}} 镜像开始(探测读取了 {{probe}})。",
-        "statsSeedSkipped": "已跳过种子:{{skipped}}"
+        "statsSeedSkipped": "已跳过种子:{{skipped}}",
+        "optionPath": "只从快照中恢复这个文件或目录，不恢复整个仓库（需要 --at）",
+        "optionTo": "存放已恢复路径的目录（默认为该快照在机器上的恢复文件夹）",
+        "toNeedsPath": "--to 用来指定 --path 恢复的存放位置，请同时加上 --path。",
+        "pathNeedsAt": "--path 恢复某个时间点的文件或目录，请同时加上 --at <时间|快照>。",
+        "pathConflict": "--path 不能与 {{flag}} 一起使用：它只把文件恢复到文件夹中，不会创建仓库。",
+        "pathNeedsMachine": "“{{place}}”不是机器。路径恢复在机器上运行：请使用 repo@<机器>，或传入 -m <机器>。",
+        "pathNeedsCredential": "此配置中没有 {{name}} 的已保存凭据，因此无法打开快照中的文件。",
+        "pathStarting": "正在从快照 {{snapshot}} 恢复 {{name}} 的 {{path}}...",
+        "pathCompleted": "已完成从 {{name}} 的恢复",
+        "pathFailed": "无法从 {{name}} 恢复该路径",
+        "pathRestored": "已将 {{files}} 个文件、{{dirs}} 个文件夹和 {{symlinks}} 个链接（{{bytes}}）恢复到 {{to}}。",
+        "pathFetched": "已获取 {{total}} 个单元中的 {{selected}} 个（{{bytes}}）。",
+        "pathSkipped": "已跳过 {{count}} 个设备、管道或套接字条目，路径恢复不会重建它们。",
+        "pathNoListing": "{{name}} 的快照 {{snapshot}} 无法用于路径恢复。请先用 rdc backup restore --at 恢复整个仓库，再把该路径复制出来。",
+        "pathNoListingAbsent": "{{name}} 的快照 {{snapshot}} 没有保存文件列表，因此无法恢复路径。请先用 rdc backup restore --at 恢复整个仓库，再把该路径复制出来。",
+        "pathNoListingLiveMount": "{{name}} 的快照 {{snapshot}} 只有从运行中挂载读取的列表，无法精确定位文件。请重新创建快照，或先用 rdc backup restore --at 恢复整个仓库再复制该路径。",
+        "pathNoListingNoPositions": "{{name}} 的快照 {{snapshot}} 的列表不含文件位置（它早于路径恢复功能）。请重新创建快照，或先用 rdc backup restore --at 恢复整个仓库再复制该路径。"
       },
       "retention": {
         "clear": {

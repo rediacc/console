@@ -398,6 +398,29 @@ export const CLI_CONTRACT: CliContract = {
           "label": "With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)"
         },
         {
+          "flags": "--path <file-or-dir>",
+          "long": "path",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionPath",
+          "label": "Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)"
+        },
+        {
+          "flags": "--to <dir>",
+          "long": "to",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionTo",
+          "label": "Directory to place the restored path under (default: the machine's restores folder for the snapshot)"
+        },
+        {
           "flags": "--up",
           "long": "up",
           "valueTaking": false,

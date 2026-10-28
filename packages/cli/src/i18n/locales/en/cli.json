@@ -1748,7 +1748,24 @@
         "streamUnknown": "Cannot tell which backup stream is this repo on its source machine (its backup verify failed, or it reports no committed snapshot that the index lists). Pass --any-stream to choose among every stream of this lineage.",
         "stats": "Restore fetched {{fetched}} chunks ({{bytes}}), reused {{reused}}, trusted {{known}} cells from the anchor and punched {{punched}} stale cells (cell size {{cellBytes}}).",
         "statsSeed": "Seed: started from the {{seed}} image of {{guid}} (probe read {{probe}}).",
-        "statsSeedSkipped": "Seed skipped: {{skipped}}"
+        "statsSeedSkipped": "Seed skipped: {{skipped}}",
+        "optionPath": "Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)",
+        "optionTo": "Directory to place the restored path under (default: the machine's restores folder for the snapshot)",
+        "toNeedsPath": "--to places a --path restore, so pass --path with it.",
+        "pathNeedsAt": "--path restores one file or directory from a point in time, so pass --at <time|snapshot> with it.",
+        "pathConflict": "--path cannot be combined with {{flag}}: it restores files into a folder and creates no repository.",
+        "pathNeedsMachine": "\"{{place}}\" is not a machine. A path restore runs on a machine: use repo@<machine> or pass -m <machine>.",
+        "pathNeedsCredential": "{{name}} has no stored credential in this config, so the snapshot's files cannot be opened.",
+        "pathStarting": "Restoring {{path}} of {{name}} from snapshot {{snapshot}}...",
+        "pathCompleted": "Restored from {{name}}",
+        "pathFailed": "Could not restore the path from {{name}}",
+        "pathRestored": "Restored {{files}} file(s), {{dirs}} folder(s) and {{symlinks}} link(s) ({{bytes}}) to {{to}}.",
+        "pathFetched": "Fetched {{selected}} of {{total}} cells ({{bytes}}).",
+        "pathSkipped": "Skipped {{count}} device, pipe or socket entries, which a path restore does not recreate.",
+        "pathNoListing": "Snapshot {{snapshot}} of {{name}} cannot serve a path restore. Restore the whole repository with rdc backup restore --at, then copy the path out.",
+        "pathNoListingAbsent": "Snapshot {{snapshot}} of {{name}} has no stored file listing, so a path restore is not possible. Restore the whole repository with rdc backup restore --at, then copy the path out.",
+        "pathNoListingLiveMount": "Snapshot {{snapshot}} of {{name}} has only a listing read from the live mount, which cannot locate files exactly. Take a new snapshot, or restore the whole repository with rdc backup restore --at and copy the path out.",
+        "pathNoListingNoPositions": "Snapshot {{snapshot}} of {{name}} has a listing without file positions (it predates path restore). Take a new snapshot, or restore the whole repository with rdc backup restore --at and copy the path out."
       },
       "retention": {
         "clear": {

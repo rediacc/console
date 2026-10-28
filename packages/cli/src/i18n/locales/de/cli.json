@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" existiert bereits. Stellen Sie unter einem anderen Namen wieder her (--as) oder löschen Sie zuerst das vorhandene Repository.",
         "stats": "Die Wiederherstellung hat {{fetched}} Chunks geladen ({{bytes}}), {{reused}} wiederverwendet, {{known}} Zellen dem Anker entnommen und {{punched}} veraltete Zellen geleert (Zellgröße {{cellBytes}}).",
         "statsSeed": "Seed: gestartet vom {{seed}}-Abbild von {{guid}} (Probe las {{probe}}).",
-        "statsSeedSkipped": "Seed übersprungen: {{skipped}}"
+        "statsSeedSkipped": "Seed übersprungen: {{skipped}}",
+        "optionPath": "Nur diese Datei oder dieses Verzeichnis aus dem Snapshot wiederherstellen, ohne das ganze Repository zurückzuspielen (braucht --at)",
+        "optionTo": "Verzeichnis, in dem der wiederhergestellte Pfad abgelegt wird (Standard: der Wiederherstellungsordner der Maschine für den Snapshot)",
+        "toNeedsPath": "--to legt das Ziel einer --path-Wiederherstellung fest, gib daher --path mit an.",
+        "pathNeedsAt": "--path stellt eine Datei oder ein Verzeichnis zu einem Zeitpunkt wieder her, gib daher --at <Zeit|Snapshot> mit an.",
+        "pathConflict": "--path lässt sich nicht mit {{flag}} kombinieren: Es stellt Dateien in einen Ordner wieder her und legt kein Repository an.",
+        "pathNeedsMachine": "\"{{place}}\" ist keine Maschine. Eine Pfad-Wiederherstellung läuft auf einer Maschine: nutze repo@<Maschine> oder übergib -m <Maschine>.",
+        "pathNeedsCredential": "{{name}} hat in dieser Konfiguration keine gespeicherten Zugangsdaten, daher lassen sich die Dateien des Snapshots nicht öffnen.",
+        "pathStarting": "Stelle {{path}} von {{name}} aus Snapshot {{snapshot}} wieder her...",
+        "pathCompleted": "Aus {{name}} wiederhergestellt",
+        "pathFailed": "Der Pfad konnte nicht aus {{name}} wiederhergestellt werden",
+        "pathRestored": "{{files}} Datei(en), {{dirs}} Ordner und {{symlinks}} Link(s) ({{bytes}}) nach {{to}} wiederhergestellt.",
+        "pathFetched": "{{selected}} von {{total}} Zellen abgerufen ({{bytes}}).",
+        "pathSkipped": "{{count}} Geräte-, Pipe- oder Socket-Einträge übersprungen, die eine Pfad-Wiederherstellung nicht neu anlegt.",
+        "pathNoListing": "Snapshot {{snapshot}} von {{name}} unterstützt keine Pfad-Wiederherstellung. Stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
+        "pathNoListingAbsent": "Snapshot {{snapshot}} von {{name}} hat keine gespeicherte Dateiliste, daher ist keine Pfad-Wiederherstellung möglich. Stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
+        "pathNoListingLiveMount": "Snapshot {{snapshot}} von {{name}} hat nur eine Dateiliste vom laufenden Mount, die Dateien nicht exakt verortet. Erstelle einen neuen Snapshot oder stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
+        "pathNoListingNoPositions": "Die Dateiliste von Snapshot {{snapshot}} von {{name}} enthält keine Dateipositionen (sie stammt aus der Zeit vor der Pfad-Wiederherstellung). Erstelle einen neuen Snapshot oder stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus."
       },
       "retention": {
         "clear": {

@@ -99,6 +99,10 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
     waived:
       'a destination is a named sub-entry INSIDE the strategy being edited, not one of the contract resource kinds',
   },
+  'backup restore --to': {
+    waived:
+      'a directory path on the target machine that receives the restored files, not a repository, machine or other contract resource',
+  },
   'repo merge --base': {
     waived:
       'a common-ancestor commit GUID for the three-way merge, not a repository ref, so FORMAT_OVERRIDES gives it format "guid" instead',

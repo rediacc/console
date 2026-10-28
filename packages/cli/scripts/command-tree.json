@@ -1646,6 +1646,18 @@
               "defaultValue": null
             },
             {
+              "flags": "--path <file-or-dir>",
+              "descriptionKey": "commands.backup.restore.optionPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--to <dir>",
+              "descriptionKey": "commands.backup.restore.optionTo",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--up",
               "descriptionKey": "commands.backup.restore.optionUp",
               "mandatory": false,

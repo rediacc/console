@@ -20,7 +20,7 @@ import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
-import { resolveLineage, runBrowseAt } from './backup-storage-browse.js';
+import { RENET_NO_LISTING_EXIT, resolveLineage, runBrowseAt } from './backup-storage-browse.js';
 import {
   isLiveMountListing,
   parseBrowseResult,
@@ -182,12 +182,6 @@ function registerBackupManifests(backup: Command): void {
       }
     });
 }
-
-/**
- * The renet `backup browse-at` verb exits 18 when the snapshot has no stored
- * listing. Propagated verbatim, like the quota refusal's 16.
- */
-const RENET_NO_LISTING_EXIT = 18;
 
 /**
  * `backup browse <repo-ref> [--path] [--at <time|snapshot>]` -- list what a repository

@@ -7,7 +7,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "1bc7440fe8b4a64b"
+sourceHash: "4cb0f9390ab77d0c"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2355,6 +2355,8 @@ rdc backup restore <artifact-ref> [options]
 | `--datastore <name>` | {{t:cli.commands.backup.restore.optionDatastore}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--at <time>` | {{t:cli.commands.backup.restore.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--any-stream` | {{t:cli.commands.backup.restore.optionAnyStream}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--path <file-or-dir>` | {{t:cli.commands.backup.restore.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--to <dir>` | {{t:cli.commands.backup.restore.optionTo}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.backup.restore.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--health-window <seconds>` | {{t:cli.options.healthWindow}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--health-timeout <seconds>` | {{t:cli.options.healthTimeout}} | {{t:cli.docs.optionLabels.no}} | - |

@@ -7,8 +7,11 @@ import { ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRefLocal } from '../utils/repo-target.js';
 
+/** The renet `backup browse-at` and `restore-path` verbs exit 18 when the snapshot's listing cannot serve the request. Propagated verbatim, like the quota refusal's 16. */
+export const RENET_NO_LISTING_EXIT = 18;
+
 /** The lineage (grand) GUID of a repo record: a fork shares its parent's lineage. */
-function lineageOf(repo: { grandGuid?: string; repositoryGuid: string }): string {
+export function lineageOf(repo: { grandGuid?: string; repositoryGuid: string }): string {
   return repo.grandGuid ?? repo.repositoryGuid;
 }
 

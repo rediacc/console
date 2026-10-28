@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" esiste già. Ripristina con un altro nome (--as) oppure elimina prima il repository esistente.",
         "stats": "Il ripristino ha scaricato {{fetched}} chunk ({{bytes}}), ne ha riusati {{reused}}, ha preso {{known}} celle dall'ancora e svuotato {{punched}} celle obsolete (dimensione cella {{cellBytes}}).",
         "statsSeed": "Seed: partito dall'immagine {{seed}} di {{guid}} (la sonda ha letto {{probe}}).",
-        "statsSeedSkipped": "Seed scartato: {{skipped}}"
+        "statsSeedSkipped": "Seed scartato: {{skipped}}",
+        "optionPath": "Ripristina solo questo file o questa cartella dallo snapshot, senza ripristinare l'intero repository (richiede --at)",
+        "optionTo": "Cartella in cui collocare il percorso ripristinato (predefinita: la cartella dei ripristini della macchina per lo snapshot)",
+        "toNeedsPath": "--to indica dove va un ripristino con --path, quindi aggiungi anche --path.",
+        "pathNeedsAt": "--path ripristina un file o una cartella a un certo momento, quindi aggiungi anche --at <ora|snapshot>.",
+        "pathConflict": "--path non si combina con {{flag}}: ripristina file in una cartella e non crea alcun repository.",
+        "pathNeedsMachine": "\"{{place}}\" non è una macchina. Il ripristino di un percorso gira su una macchina: usa repo@<macchina> oppure passa -m <macchina>.",
+        "pathNeedsCredential": "{{name}} non ha credenziali salvate in questa configurazione, quindi i file dello snapshot non si possono aprire.",
+        "pathStarting": "Ripristino di {{path}} di {{name}} dallo snapshot {{snapshot}}...",
+        "pathCompleted": "Ripristino da {{name}} completato",
+        "pathFailed": "Impossibile ripristinare il percorso da {{name}}",
+        "pathRestored": "Ripristinati {{files}} file, {{dirs}} cartelle e {{symlinks}} link ({{bytes}}) in {{to}}.",
+        "pathFetched": "Recuperate {{selected}} celle su {{total}} ({{bytes}}).",
+        "pathSkipped": "Saltate {{count}} voci di dispositivo, pipe o socket, che il ripristino di un percorso non ricrea.",
+        "pathNoListing": "Lo snapshot {{snapshot}} di {{name}} non consente il ripristino di un percorso. Ripristina l'intero repository con rdc backup restore --at, poi copia il percorso.",
+        "pathNoListingAbsent": "Lo snapshot {{snapshot}} di {{name}} non ha un elenco di file salvato, quindi il ripristino di un percorso non è possibile. Ripristina l'intero repository con rdc backup restore --at, poi copia il percorso.",
+        "pathNoListingLiveMount": "Lo snapshot {{snapshot}} di {{name}} ha solo un elenco letto dal montaggio attivo, che non individua i file con precisione. Crea un nuovo snapshot, oppure ripristina l'intero repository con rdc backup restore --at e copia il percorso.",
+        "pathNoListingNoPositions": "L'elenco dello snapshot {{snapshot}} di {{name}} non contiene le posizioni dei file (è precedente al ripristino di percorsi). Crea un nuovo snapshot, oppure ripristina l'intero repository con rdc backup restore --at e copia il percorso."
       },
       "retention": {
         "clear": {

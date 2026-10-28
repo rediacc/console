@@ -22,6 +22,7 @@ import { resolveRemoteName } from '../utils/remote-resolve.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { assertMachineExists } from './_validate.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
+import { assertRestorePathFlags, runRestorePath } from './backup-restore-path.js';
 import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
 import {
   parseRestoreStats,
@@ -89,6 +90,8 @@ interface RestoreOptions {
   machine?: string;
   datastore?: string;
   at?: string;
+  path?: string;
+  to?: string;
   anyStream?: boolean;
   up?: boolean;
   healthWindow?: string;
@@ -143,6 +146,8 @@ function registerBackupRestore(backup: Command): void {
     .option('--datastore <name>', t('commands.backup.restore.optionDatastore'))
     .option('--at <time>', t('commands.backup.restore.optionAt'))
     .option('--any-stream', t('commands.backup.restore.optionAnyStream'))
+    .option('--path <file-or-dir>', t('commands.backup.restore.optionPath'))
+    .option('--to <dir>', t('commands.backup.restore.optionTo'))
     .option('--up', t('commands.backup.restore.optionUp'))
     .option('--health-window <seconds>', t('options.healthWindow'))
     .option('--health-timeout <seconds>', t('options.healthTimeout'))
@@ -150,6 +155,12 @@ function registerBackupRestore(backup: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (artifactRef: string, options: RestoreOptions) => {
       try {
+        assertRestorePathFlags(options);
+        // One path out of a snapshot: no target record, network id or credential copy, so it branches before resolveRestoreTarget.
+        if (options.path && options.at) {
+          await restorePathRoute(artifactRef, { ...options, path: options.path, at: options.at });
+          return;
+        }
         const { ref, targetName, source } = await resolveRestoreTarget(artifactRef, options);
 
         const targetMachine = await resolveRestoreMachine(options);
@@ -217,6 +228,42 @@ function registerBackupRestore(backup: Command): void {
         handleError(error);
       }
     });
+}
+
+/** `restore --at <t> --path <p>`: resolve the ref's repo and machine, then hand off to `runRestorePath`. */
+async function restorePathRoute(
+  artifactRef: string,
+  options: RestoreOptions & { path: string; at: string }
+): Promise<void> {
+  const ref = parseRef(artifactRef);
+  if (!ref.place) {
+    throw new ValidationError(t('commands.backup.restore.placeRequired'));
+  }
+  const place = await resolveRemoteName(ref.place);
+  if (place.type === 'cluster') {
+    throw new ValidationError(t('commands.backup.restore.pathNeedsMachine', { place: ref.place }));
+  }
+  const repoKey = ref.tag ? `${ref.name}:${ref.tag}` : ref.name;
+  const machineName = options.machine ?? place.name;
+  await runRestorePath({
+    repoKey,
+    machineName,
+    at: options.at,
+    path: options.path,
+    to: options.to,
+    debug: options.debug,
+    resolveSnapshot: async (lineage, at) =>
+      resolveSnapshotAt(
+        lineage,
+        at,
+        await streamScopeFor({
+          at,
+          anyStream: options.anyStream ?? false,
+          source: { repoName: repoKey, machine: place.name },
+          debug: options.debug,
+        })
+      ),
+  });
 }
 
 /**
@@ -428,6 +475,24 @@ async function readSourceAnchor(
 }
 
 /**
+ * The stream scope `--at` resolves under, shared by the whole-image restore and `--path` so
+ * the two cannot pick different snapshots for one time. An explicit snapshot id is a
+ * deliberate choice and needs no scope; only a TIME does.
+ */
+async function streamScopeFor(args: {
+  at: string;
+  anyStream: boolean;
+  source: { repoName: string; machine: string };
+  debug?: boolean;
+}): Promise<StreamScope> {
+  if (args.anyStream || SNAPSHOT_ID_RE.test(args.at)) return { anyStream: true };
+  return {
+    anyStream: false,
+    anchorSnapshotId: await readSourceAnchor(args.source, args.debug),
+  };
+}
+
+/**
  * Run `backup_restore` for a point-in-time restore from the chunk store, and
  * unwind the just-registered record on failure exactly as the pull path does,
  * so a retry is not blocked by target-exists.
@@ -443,11 +508,7 @@ async function runChunkRestore(args: {
   debug?: boolean;
 }): Promise<boolean> {
   const { targetName, targetMachine, datastore, lineage, at, anyStream, source, debug } = args;
-  // An explicit snapshot id is a deliberate choice and needs no stream scope; only a TIME does.
-  const scope: StreamScope =
-    anyStream || SNAPSHOT_ID_RE.test(at)
-      ? { anyStream: true }
-      : { anyStream: false, anchorSnapshotId: await readSourceAnchor(source, debug) };
+  const scope = await streamScopeFor({ at, anyStream, source, debug });
   const snapshotId = await resolveSnapshotAt(lineage, at, scope);
 
   outputService.info(

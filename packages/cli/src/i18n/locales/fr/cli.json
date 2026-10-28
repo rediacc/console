@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" existe déjà. Restaurez sous un autre nom (--as) ou supprimez d'abord le dépôt existant.",
         "stats": "La restauration a récupéré {{fetched}} blocs ({{bytes}}), en a réutilisé {{reused}}, a repris {{known}} cellules de l'ancre et a vidé {{punched}} cellules périmées (taille de cellule {{cellBytes}}).",
         "statsSeed": "Graine : démarrage depuis l'image {{seed}} de {{guid}} (la sonde a lu {{probe}}).",
-        "statsSeedSkipped": "Graine écartée : {{skipped}}"
+        "statsSeedSkipped": "Graine écartée : {{skipped}}",
+        "optionPath": "Restaurer uniquement ce fichier ou ce dossier depuis l'instantané, sans restaurer tout le dépôt (nécessite --at)",
+        "optionTo": "Dossier dans lequel placer le chemin restauré (par défaut : le dossier de restauration de la machine pour cet instantané)",
+        "toNeedsPath": "--to indique où placer une restauration avec --path, ajoutez donc --path.",
+        "pathNeedsAt": "--path restaure un fichier ou un dossier à un instant donné, ajoutez donc --at <heure|instantané>.",
+        "pathConflict": "--path ne se combine pas avec {{flag}} : il restaure des fichiers dans un dossier et ne crée aucun dépôt.",
+        "pathNeedsMachine": "« {{place}} » n'est pas une machine. Une restauration de chemin s'exécute sur une machine : utilisez repo@<machine> ou passez -m <machine>.",
+        "pathNeedsCredential": "{{name}} n'a aucun identifiant stocké dans cette configuration, les fichiers de l'instantané ne peuvent donc pas être ouverts.",
+        "pathStarting": "Restauration de {{path}} de {{name}} depuis l'instantané {{snapshot}}...",
+        "pathCompleted": "Restauration depuis {{name}} terminée",
+        "pathFailed": "Impossible de restaurer le chemin depuis {{name}}",
+        "pathRestored": "{{files}} fichier(s), {{dirs}} dossier(s) et {{symlinks}} lien(s) restaurés ({{bytes}}) dans {{to}}.",
+        "pathFetched": "{{selected}} cellules récupérées sur {{total}} ({{bytes}}).",
+        "pathSkipped": "{{count}} entrées de type périphérique, tube ou socket ignorées : une restauration de chemin ne les recrée pas.",
+        "pathNoListing": "L'instantané {{snapshot}} de {{name}} ne permet pas de restaurer un chemin. Restaurez tout le dépôt avec rdc backup restore --at, puis copiez le chemin.",
+        "pathNoListingAbsent": "L'instantané {{snapshot}} de {{name}} n'a pas de liste de fichiers enregistrée, la restauration d'un chemin est donc impossible. Restaurez tout le dépôt avec rdc backup restore --at, puis copiez le chemin.",
+        "pathNoListingLiveMount": "L'instantané {{snapshot}} de {{name}} n'a qu'une liste lue sur le montage actif, qui ne localise pas les fichiers avec exactitude. Faites un nouvel instantané, ou restaurez tout le dépôt avec rdc backup restore --at puis copiez le chemin.",
+        "pathNoListingNoPositions": "La liste de l'instantané {{snapshot}} de {{name}} ne contient pas la position des fichiers (elle précède la restauration de chemin). Faites un nouvel instantané, ou restaurez tout le dépôt avec rdc backup restore --at puis copiez le chemin."
       },
       "retention": {
         "clear": {

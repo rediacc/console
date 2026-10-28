@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" on juba olemas. Taasta teise nime all (--as) või kustuta esmalt olemasolev hoidla.",
         "stats": "Taastamine tõmbas {{fetched}} tükki ({{bytes}}), kasutas uuesti {{reused}}, võttis ankrust {{known}} lahtrit ja tühjendas {{punched}} aegunud lahtrit (lahtri suurus {{cellBytes}}).",
         "statsSeed": "Seeme: alustati hoidla {{guid}} {{seed}} kujutisest (sond luges {{probe}}).",
-        "statsSeedSkipped": "Seeme jäeti vahele: {{skipped}}"
+        "statsSeedSkipped": "Seeme jäeti vahele: {{skipped}}",
+        "optionPath": "Taasta hetktõmmisest ainult see fail või kaust, taastamata kogu hoidlat (vajab --at)",
+        "optionTo": "Kaust, kuhu taastatud tee paigutatakse (vaikimisi masina taastamiskaust selle hetktõmmise jaoks)",
+        "toNeedsPath": "--to määrab --path taastamise sihtkoha, nii et lisa ka --path.",
+        "pathNeedsAt": "--path taastab faili või kausta kindlast ajahetkest, nii et lisa ka --at <aeg|hetktõmmis>.",
+        "pathConflict": "--path ei sobi kokku lipuga {{flag}}: see taastab failid kausta ega loo hoidlat.",
+        "pathNeedsMachine": "\"{{place}}\" ei ole masin. Tee taastamine jookseb masinas: kasuta repo@<masin> või anna -m <masin>.",
+        "pathNeedsCredential": "Hoidlal {{name}} pole selles seadistuses salvestatud mandaati, mistõttu hetktõmmise faile ei saa avada.",
+        "pathStarting": "Taastan hoidla {{name}} teed {{path}} hetktõmmisest {{snapshot}}...",
+        "pathCompleted": "Taastamine hoidlast {{name}} lõpetatud",
+        "pathFailed": "Teed ei õnnestunud hoidlast {{name}} taastada",
+        "pathRestored": "Taastatud {{files}} faili, {{dirs}} kausta ja {{symlinks}} linki ({{bytes}}) kataloogi {{to}}.",
+        "pathFetched": "Toodud {{selected}} lahtrit {{total}}-st ({{bytes}}).",
+        "pathSkipped": "Vahele jäeti {{count}} seadme-, toru- või pesakirjet, mida tee taastamine ei loo uuesti.",
+        "pathNoListing": "Hoidla {{name}} hetktõmmis {{snapshot}} ei sobi tee taastamiseks. Taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee sealt välja.",
+        "pathNoListingAbsent": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud faililoendit, seega tee taastamine ei ole võimalik. Taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee sealt välja.",
+        "pathNoListingLiveMount": "Hoidla {{name}} hetktõmmisel {{snapshot}} on ainult töötavast haakest loetud loend, mis ei leia faile täpselt üles. Tee uus hetktõmmis või taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee välja.",
+        "pathNoListingNoPositions": "Hoidla {{name}} hetktõmmise {{snapshot}} loendis pole failide asukohti (see on tee taastamisest vanem). Tee uus hetktõmmis või taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee välja."
       },
       "retention": {
         "clear": {

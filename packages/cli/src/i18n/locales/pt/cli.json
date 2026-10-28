@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" já existe. Restaure com outro nome (--as) ou elimine primeiro o repositório existente.",
         "stats": "A restauração baixou {{fetched}} chunks ({{bytes}}), reaproveitou {{reused}}, pegou {{known}} células da âncora e esvaziou {{punched}} células obsoletas (tamanho da célula {{cellBytes}}).",
         "statsSeed": "Semente: partiu da imagem {{seed}} de {{guid}} (a sonda leu {{probe}}).",
-        "statsSeedSkipped": "Semente descartada: {{skipped}}"
+        "statsSeedSkipped": "Semente descartada: {{skipped}}",
+        "optionPath": "Restaurar apenas este arquivo ou diretório do snapshot, sem restaurar o repositório inteiro (exige --at)",
+        "optionTo": "Diretório onde colocar o caminho restaurado (padrão: a pasta de restaurações da máquina para o snapshot)",
+        "toNeedsPath": "--to define onde fica uma restauração com --path, então informe também --path.",
+        "pathNeedsAt": "--path restaura um arquivo ou diretório de um ponto no tempo, então informe também --at <hora|snapshot>.",
+        "pathConflict": "--path não pode ser combinado com {{flag}}: ele restaura arquivos em uma pasta e não cria repositório.",
+        "pathNeedsMachine": "\"{{place}}\" não é uma máquina. A restauração de caminho roda em uma máquina: use repo@<máquina> ou passe -m <máquina>.",
+        "pathNeedsCredential": "{{name}} não tem credencial guardada nesta configuração, então os arquivos do snapshot não podem ser abertos.",
+        "pathStarting": "Restaurando {{path}} de {{name}} a partir do snapshot {{snapshot}}...",
+        "pathCompleted": "Restauração de {{name}} concluída",
+        "pathFailed": "Não foi possível restaurar o caminho de {{name}}",
+        "pathRestored": "{{files}} arquivo(s), {{dirs}} pasta(s) e {{symlinks}} link(s) restaurados ({{bytes}}) em {{to}}.",
+        "pathFetched": "{{selected}} de {{total}} células obtidas ({{bytes}}).",
+        "pathSkipped": "{{count}} entradas de dispositivo, pipe ou socket ignoradas, que a restauração de caminho não recria.",
+        "pathNoListing": "O snapshot {{snapshot}} de {{name}} não permite restaurar um caminho. Restaure o repositório inteiro com rdc backup restore --at e depois copie o caminho.",
+        "pathNoListingAbsent": "O snapshot {{snapshot}} de {{name}} não tem lista de arquivos guardada, então não dá para restaurar um caminho. Restaure o repositório inteiro com rdc backup restore --at e depois copie o caminho.",
+        "pathNoListingLiveMount": "O snapshot {{snapshot}} de {{name}} só tem uma lista lida da montagem ativa, que não localiza os arquivos com exatidão. Faça um novo snapshot ou restaure o repositório inteiro com rdc backup restore --at e copie o caminho.",
+        "pathNoListingNoPositions": "A lista do snapshot {{snapshot}} de {{name}} não traz as posições dos arquivos (é anterior à restauração de caminhos). Faça um novo snapshot ou restaure o repositório inteiro com rdc backup restore --at e copie o caminho."
       },
       "retention": {
         "clear": {

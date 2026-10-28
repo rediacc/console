@@ -75,7 +75,24 @@
         "targetExists": "\"{{name}}\" は既に存在します。別名で復元する（--as）か、先に既存のリポジトリを削除してください",
         "stats": "リストアで {{fetched}} 個のチャンク({{bytes}})を取得し、{{reused}} 個を再利用、アンカーから {{known}} セルを採用し、古い {{punched}} セルを空にしました(セルサイズ {{cellBytes}})。",
         "statsSeed": "シード: {{guid}} の {{seed}} イメージから開始しました(プローブの読み取り {{probe}})。",
-        "statsSeedSkipped": "シードをスキップ: {{skipped}}"
+        "statsSeedSkipped": "シードをスキップ: {{skipped}}",
+        "optionPath": "リポジトリ全体は復元せず、スナップショットからこのファイルまたはディレクトリだけを復元します（--at が必要）",
+        "optionTo": "復元したパスを置くディレクトリ（既定は、そのスナップショット用のマシン上の復元フォルダー）",
+        "toNeedsPath": "--to は --path による復元の保存先を指定します。--path も一緒に指定してください。",
+        "pathNeedsAt": "--path は特定時点のファイルまたはディレクトリを復元します。--at <時刻|スナップショット> も一緒に指定してください。",
+        "pathConflict": "--path は {{flag}} と併用できません。ファイルをフォルダーに復元するだけで、リポジトリは作成しません。",
+        "pathNeedsMachine": "「{{place}}」はマシンではありません。パスの復元はマシン上で実行します。repo@<マシン> を使うか、-m <マシン> を指定してください。",
+        "pathNeedsCredential": "この設定には {{name}} の保存済み認証情報がないため、スナップショットのファイルを開けません。",
+        "pathStarting": "{{name}} の {{path}} をスナップショット {{snapshot}} から復元しています...",
+        "pathCompleted": "{{name}} からの復元が完了しました",
+        "pathFailed": "{{name}} からパスを復元できませんでした",
+        "pathRestored": "ファイル {{files}} 件、フォルダー {{dirs}} 件、リンク {{symlinks}} 件（{{bytes}}）を {{to}} に復元しました。",
+        "pathFetched": "{{total}} セルのうち {{selected}} セルを取得しました（{{bytes}}）。",
+        "pathSkipped": "デバイス、パイプ、ソケットのエントリ {{count}} 件をスキップしました。パスの復元ではこれらは再作成されません。",
+        "pathNoListing": "{{name}} のスナップショット {{snapshot}} ではパスの復元ができません。rdc backup restore --at でリポジトリ全体を復元し、そこからパスをコピーしてください。",
+        "pathNoListingAbsent": "{{name}} のスナップショット {{snapshot}} には保存済みのファイル一覧がないため、パスの復元はできません。rdc backup restore --at でリポジトリ全体を復元し、そこからパスをコピーしてください。",
+        "pathNoListingLiveMount": "{{name}} のスナップショット {{snapshot}} にあるのは稼働中のマウントから読み取った一覧だけで、ファイルの位置を正確に特定できません。新しいスナップショットを取得するか、rdc backup restore --at でリポジトリ全体を復元してパスをコピーしてください。",
+        "pathNoListingNoPositions": "{{name}} のスナップショット {{snapshot}} の一覧にはファイルの位置情報がありません（パスの復元に対応する前のものです）。新しいスナップショットを取得するか、rdc backup restore --at でリポジトリ全体を復元してパスをコピーしてください。"
       },
       "retention": {
         "clear": {
