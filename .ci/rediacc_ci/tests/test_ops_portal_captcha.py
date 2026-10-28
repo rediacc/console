@@ -11,6 +11,7 @@ from rediacc_ci.ops import portal_captcha as pc
 REGIONS = [
     {"id": "eu", "domain": "eu.rediacc.com", "edgeDomain": "edge-eu.rediacc.com"},
     {"id": "us", "domain": "us.rediacc.com", "edgeDomain": "edge-us.rediacc.com"},
+    {"id": "asia", "domain": "asia.rediacc.com", "edgeDomain": "edge-asia.rediacc.com"},
 ]
 KEY = "0x4AAAAAACfixtureKey0001"
 PAGE = '<link rel="stylesheet" href="/account/assets/index-x.css"><script src="/account/assets/index-Ab1.js"></script>'
