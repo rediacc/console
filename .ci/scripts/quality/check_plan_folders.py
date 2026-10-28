@@ -963,16 +963,19 @@ def main(argv: list[str]) -> int:
                 print("✗ --move needs a plan path", file=sys.stderr)
                 return 2
             return move(root, target, config)
-        for verb in ("--keep", "--archive"):
-            if verb in argv:
-                target = _flag_value(argv, verb)
-                if not target:
-                    print("✗ %s needs a plan path" % verb, file=sys.stderr)
-                    return 2
-                asked = _flag_value(argv, "--asked")
-                if verb == "--keep":
-                    return keep(root, target, asked)
-                return archive(root, target, asked, config)
+        # Two explicit branches, not a loop over the verbs: check:ci-gate-tree-writes reads `if "--<verb>" in argv:` as the guard on archive(), and a loop variable hides it. --keep is checked first, as before.
+        if "--keep" in argv:
+            target = _flag_value(argv, "--keep")
+            if not target:
+                print("✗ --keep needs a plan path", file=sys.stderr)
+                return 2
+            return keep(root, target, _flag_value(argv, "--asked"))
+        if "--archive" in argv:
+            target = _flag_value(argv, "--archive")
+            if not target:
+                print("✗ --archive needs a plan path", file=sys.stderr)
+                return 2
+            return archive(root, target, _flag_value(argv, "--asked"), config)
         if "--retire-promoted" in argv:
             return retire_promoted(root)
         if "--sweep" in argv:

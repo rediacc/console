@@ -1,6 +1,6 @@
 """The live tier of agent/plans/PLAN-tested-on-bench.md Design items 1, 4 and 6: the check registry, the live row body on top of `receipt`'s envelope, the ledger read, the match and the judge `rediacc_ci.ops.live_proof verify` and `check:ci-plan-live-proof` share.
 
-THE REGISTRY. `tiers.live.checks` in `.ci/config/proof-tiers.json` maps a check id to its `targets`, the `surfaces` it covers, how its deploy is identified (`deploy`) and a list of `steps`, each a FIXED argv. The only parameters are values the map itself names: `{origin}` and `{config}` from `tiers.live.targets.<target>`, and `{machine}`, one alias of `tiers.live.targets.<target>.machines`, for a check marked `per_machine`. There are no free arguments: `parse_checks` refuses an unknown placeholder, a shell or a no-op as a step's program, and a surface no target of the check admits. `expand` is the only way to an argv, and `validate_row` re-expands a row's check and refuses any argv that differs, so a hand-edited command cannot pass.
+THE REGISTRY. `tiers.live.checks` in `.ci/config/proof-tiers.json` maps a check id to its `targets`, the `surfaces` it covers, how its deploy is identified (`deploy`) and a list of `steps`, each a FIXED argv. The only parameters are values the map itself names: `{origin}` (the value of the target's `origin_wk`, a key of `.ci/config/well-known.env`, never a literal URL) and `{config}` from `tiers.live.targets.<target>`, and `{machine}`, one alias of `tiers.live.targets.<target>.machines`, for a check marked `per_machine`. There are no free arguments: `parse_checks` refuses an unknown placeholder, a shell or a no-op as a step's program, and a surface no target of the check admits. `expand` is the only way to an argv, and `validate_row` re-expands a row's check and refuses any argv that differs, so a hand-edited command cannot pass.
 
 DEPLOY KINDS. `bench-cache`: the version `rediacc_ci.ops.deploy_bench` recorded in `.ci/cache/live-deploys/bench.json`, confirmed serving 100% through wrangler at check time (a uuid). `renet-hash`: the renet binary built from the head's renet pointer, confirmed byte for byte on each machine (`renet:<vcs.revision>@sha256:<64 hex>`). `tree`: a CLI run from the clean head tree itself (`cli:<head>`). `unrecorded`: nothing records which head the deployed version was cut from, so no run of that check can confirm a deploy and none is VERIFIED.
 
@@ -18,6 +18,7 @@ import json
 import re
 from typing import TYPE_CHECKING, Any
 
+from rediacc_ci import well_known as WK
 from rediacc_ci.proof import receipt as R
 from rediacc_ci.proof import surfaces as S
 
@@ -54,6 +55,8 @@ VERSION_RES = {
 DEPLOY_SURFACE = {BENCH_CACHE: "account", RENET_HASH: "renet", TREE: "cli", UNRECORDED: None}
 _PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
 _TARGET_KEYS = ("origin", "config")
+# A target's origin is stored as a well-known key (`origin_wk`), never as a literal URL, so check:ci-literal-sources keeps one definition of each origin in .ci/config/well-known.env.
+_ORIGIN_WK = "origin_wk"
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _ACCEPT = re.compile(r"^\s*(?:[-*]\s+)?Accept:\s*live-proof\s+(\S+)\s+(\S+)((?:\s+\S+)*)\s*$")
 _BOX_LINE = re.compile(r"^\s*[-*]\s+\[[ xX?>]\]\s")
@@ -190,6 +193,22 @@ def _parse_check(cid: str, raw: object, targets: dict[str, Any]) -> Check:
     return check
 
 
+def resolve_target(name: str, entry: dict[str, Any]) -> dict[str, Any]:
+    """`entry` with its `origin_wk` resolved through rediacc_ci.well_known into `origin`, the value `{origin}` fills. RegistryError for a literal `origin` (the URL belongs in .ci/config/well-known.env) or a key the registry does not declare."""
+    where = f"tiers.live.targets.{name}"
+    if "origin" in entry:
+        raise RegistryError(
+            f"{where}.origin is a literal; store {_ORIGIN_WK!r}, a key of {WK.REGISTRY_REL}"
+        )
+    out = {k: v for k, v in entry.items() if k != _ORIGIN_WK}
+    if _ORIGIN_WK in entry:
+        key = entry[_ORIGIN_WK]
+        if not (isinstance(key, str) and key in WK.VALUES):
+            raise RegistryError(f"{where}.{_ORIGIN_WK} {key!r} is not a key of {WK.REGISTRY_REL}")
+        out["origin"] = WK.VALUES[key]
+    return out
+
+
 def parse_checks(live: object) -> dict[str, Check]:
     """The registry of `tiers.live` (the map's `live` block), or RegistryError naming the first defect. An empty registry is a defect: a blind registry is never a quiet one."""
     if not isinstance(live, dict):
@@ -199,6 +218,7 @@ def parse_checks(live: object) -> dict[str, Check]:
         isinstance(targets, dict) and targets and all(isinstance(v, dict) for v in targets.values())
     ):
         raise RegistryError("tiers.live.targets is empty")
+    targets = {name: resolve_target(name, entry) for name, entry in targets.items()}
     raw = live.get("checks")
     if not (isinstance(raw, dict) and raw):
         raise RegistryError("tiers.live.checks is empty")
@@ -214,7 +234,7 @@ def target_entry(target: str) -> dict[str, Any]:
     entry = (S.MAP.live.get("targets") or {}).get(target)
     if not isinstance(entry, dict):
         raise RegistryError(f"{target!r} is not a live target")
-    return entry
+    return resolve_target(target, entry)
 
 
 def machines_for(check: Check, target: str, machine: str | None) -> tuple[str | None, ...]:

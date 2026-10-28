@@ -174,6 +174,15 @@ BROKEN_REGISTRIES: list[tuple[Callable[[dict[str, Any]], object], str]] = [
     (lambda m: m["checks"]["renet-live"].__setitem__("per_machine", False), "the only parameters"),
     (lambda m: m["targets"]["hostinger"].__setitem__("machines", []), "names no machines"),
     (lambda m: m["targets"]["hostinger"].pop("config"), "needs ['config']"),
+    (lambda m: m["targets"]["bench"].pop("origin_wk"), "needs ['origin']"),
+    (
+        lambda m: m["targets"]["bench"].__setitem__("origin_wk", "WK_NOT_A_KEY"),
+        "is not a key of",
+    ),
+    (
+        lambda m: m["targets"]["bench"].__setitem__("origin", "https://bench.example"),
+        "is a literal",
+    ),
     (
         lambda m: m["checks"]["cli-bench"]["steps"][0].__setitem__("expect", "renet-hash"),
         "has a renet-hash step",

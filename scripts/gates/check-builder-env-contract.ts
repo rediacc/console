@@ -99,6 +99,8 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
 /** The values `matrix.secretSuffix` takes in cd-deploy-account.yml. */
 const REGION_SUFFIXES = ['EU', 'US', 'ASIA'];
+/** The two channels a region-and-channel fan-in (`<PREFIX>_<SUFFIX>_<CHANNEL>`) expands over. */
+const CHANNEL_SUFFIXES = ['STABLE', 'EDGE'];
 
 interface Pair {
   workflow: string;
@@ -109,6 +111,8 @@ interface Pair {
   readFloor: number;
   /** Fewest `${!var}` fan-ins the builder is known to use. */
   fanInFloor: number;
+  /** Fewest `SUFFIXED_CHANNEL_PREFIXES` region-and-channel fan-ins the builder is known to use. */
+  channelFanInFloor: number;
 }
 
 /**
@@ -123,6 +127,7 @@ const PAIRS: Pair[] = [
     exportFloor: 35,
     readFloor: 25,
     fanInFloor: 4,
+    channelFanInFloor: 1,
   },
   {
     workflow: '.github/workflows/cd-deploy-worker.yml',
@@ -130,6 +135,7 @@ const PAIRS: Pair[] = [
     exportFloor: 20,
     readFloor: 20,
     fanInFloor: 0,
+    channelFanInFloor: 0,
   },
   {
     workflow: '.github/workflows/ci.yml',
@@ -137,6 +143,7 @@ const PAIRS: Pair[] = [
     exportFloor: 12,
     readFloor: 12,
     fanInFloor: 0,
+    channelFanInFloor: 0,
   },
 ];
 
@@ -248,6 +255,42 @@ export function builderFanIns(text: string): {
     for (const suffix of REGION_SUFFIXES) names.set(`${m[1]}_${suffix}`, line + 1);
   }
   return { names, templates };
+}
+
+/**
+ * Region-and-channel fan-ins, resolved. The port holds the prefixes in
+ * `SUFFIXED_CHANNEL_PREFIXES` and builds `<PREFIX>_<SUFFIX>_<STABLE|EDGE>` (the
+ * config server key since 153810bd1, one vault entry per region and channel).
+ * Expanding over the real regions and both channels gives the names the workflow
+ * step must export. The tuple is read in either layout ruff leaves it in: one
+ * entry per line, or a one-line `= ("A",)` for a single entry.
+ */
+export function builderChannelFanIns(text: string): {
+  names: Map<string, number>;
+  prefixes: string[];
+} {
+  const names = new Map<string, number>();
+  const prefixes: string[] = [];
+  const lines = text.split('\n');
+  const add = (prefix: string, line: number) => {
+    prefixes.push(prefix);
+    for (const suffix of REGION_SUFFIXES) {
+      for (const channel of CHANNEL_SUFFIXES) names.set(`${prefix}_${suffix}_${channel}`, line);
+    }
+  };
+  const oneLine = lines.findIndex((l) =>
+    /^SUFFIXED_CHANNEL_PREFIXES\b[^\n]*=\s*\(.*\)\s*$/.test(l)
+  );
+  if (oneLine >= 0) {
+    const body = lines[oneLine].slice(lines[oneLine].indexOf('('));
+    for (const m of body.matchAll(/"([A-Z][A-Z0-9_]*)"/g)) add(m[1], oneLine + 1);
+    return { names, prefixes };
+  }
+  for (const { line, text: row } of tupleLines(text, 'SUFFIXED_CHANNEL_PREFIXES')) {
+    const m = NAME_ENTRY.exec(row);
+    if (m) add(m[1], line + 1);
+  }
+  return { names, prefixes };
 }
 
 /**
@@ -494,6 +537,49 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     process.exit(1);
   }
 
+  // Region-and-channel fan-ins: both tuple layouts expand to region x channel, and a guard on the prefix is a fan-in RESULT, not an (unread) name.
+  for (const layout of [
+    'SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = ("CONFIG_KEY",)\n',
+    'SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = (\n    "CONFIG_KEY",\n)\n',
+  ]) {
+    const cf = builderChannelFanIns(layout);
+    if (
+      cf.prefixes.join(',') !== 'CONFIG_KEY' ||
+      cf.names.size !== 6 ||
+      !cf.names.has('CONFIG_KEY_ASIA_EDGE')
+    ) {
+      console.error(
+        `x instrument control: builderChannelFanIns() read ${JSON.stringify({ prefixes: cf.prefixes, names: [...cf.names.keys()] })} from ${JSON.stringify(layout)}; expected the one prefix CONFIG_KEY expanded to six region-and-channel names.`
+      );
+      process.exit(1);
+    }
+  }
+  if (
+    builderChannelFanIns('OTHER_PREFIXES: tuple[str, ...] = ("CONFIG_KEY",)\n').prefixes.length !==
+    0
+  ) {
+    console.error(
+      'x instrument control: builderChannelFanIns() read a tuple that is not SUFFIXED_CHANNEL_PREFIXES.'
+    );
+    process.exit(1);
+  }
+  const cfGuard = guardLabels(
+    'REQUIRED_NONEMPTY: tuple[str, ...] = (\n    "CONFIG_KEY",\n)\n',
+    new Map(),
+    new Set(['CONFIG_KEY'])
+  );
+  const cfUnread = guardLabels(
+    'REQUIRED_NONEMPTY: tuple[str, ...] = (\n    "CONFIG_KEY",\n)\n',
+    new Map(),
+    new Set()
+  );
+  if (cfGuard[0]?.varName !== null || cfUnread[0]?.varName !== '(unread)') {
+    console.error(
+      `x instrument control: guardLabels() read ${JSON.stringify({ cfGuard, cfUnread })}; a guard on a region-and-channel prefix must be a fan-in (varName null), and the same guard with no such prefix must stay (unread).`
+    );
+    process.exit(1);
+  }
+
   const wfFixture = [
     'jobs:',
     '  deploy:',
@@ -699,8 +785,17 @@ for (const pair of PAIRS) {
     continue;
   }
 
+  const chan = builderChannelFanIns(bText);
+  if (chan.prefixes.length < pair.channelFanInFloor) {
+    refusals.push(
+      `    ${pair.builder}: resolved ${chan.prefixes.length} SUFFIXED_CHANNEL_PREFIXES fan-in(s), floor is ${pair.channelFanInFloor}. The region-and-channel indirection is invisible to a find-and-replace; refusing rather than checking the easy names only.`
+    );
+    continue;
+  }
+
   const allReads = new Map(reads);
   for (const [n, l] of fan.names) if (!allReads.has(n)) allReads.set(n, l);
+  for (const [n, l] of chan.names) if (!allReads.has(n)) allReads.set(n, l);
   // The fan-in TEMPLATE variables (SUFFIX) are read; the constructed names
   // replace the indirection itself, which is a local variable and never appears.
 
@@ -733,7 +828,10 @@ for (const pair of PAIRS) {
     );
   }
 
-  const fanPrefixes = new Set(fan.templates.map((t) => t.replace(/_\$\{SUFFIX\}$/, '')));
+  const fanPrefixes = new Set([
+    ...fan.templates.map((t) => t.replace(/_\$\{SUFFIX\}$/, '')),
+    ...chan.prefixes,
+  ]);
   for (const g of guardLabels(bText, reads, fanPrefixes)) {
     totalGuards += 1;
     if (g.varName === null) continue; // a fan-in RESULT; its label is the Worker key
@@ -746,7 +844,7 @@ for (const pair of PAIRS) {
   }
 
   shape.push(
-    `    ${pair.workflow}:${step.stepLine} "${step.stepName}" (runs ${step.invokedAs === 'python-module' ? `the module ${pythonPortModule(pair.builder)}` : 'the file by path'}) exports ${step.names.size} -> ${pair.builder} reads ${reads.size} + ${fan.names.size} fan-in name(s) from ${fan.templates.length} template(s)`
+    `    ${pair.workflow}:${step.stepLine} "${step.stepName}" (runs ${step.invokedAs === 'python-module' ? `the module ${pythonPortModule(pair.builder)}` : 'the file by path'}) exports ${step.names.size} -> ${pair.builder} reads ${reads.size} + ${fan.names.size} fan-in name(s) from ${fan.templates.length} template(s) + ${chan.names.size} region-and-channel name(s) from ${chan.prefixes.length} prefix(es)`
   );
 }
 

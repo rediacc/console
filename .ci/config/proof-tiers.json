@@ -91,7 +91,7 @@
     "live": {
       "baseline_at": "2026-10-28",
       "targets": {
-        "bench": {"origin": "https://bench.rediacc.com"},
+        "bench": {"origin_wk": "WK_BENCH_ORIGIN"},
         "hostinger": {"config": "eu-bench", "machines": ["hostinger"]}
       },
       "checks": {
