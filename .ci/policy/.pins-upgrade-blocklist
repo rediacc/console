@@ -26,6 +26,4 @@ ci-node  # BLOCKER: the node images track the active LTS line 24; node 26 become
 
 node-alpine  # BLOCKER: the node images track the active LTS line 24; node 26 becomes LTS in late October 2026, and the move needs the CLI SEA build and the workers validated on 26, which the operator schedules (expires 2026-11-14)
 
-proxy-node  # BLOCKER: the node images track the active LTS line 24; node 26 becomes LTS in late October 2026, and the move needs the CLI SEA build and the workers validated on 26, which the operator schedules (expires 2026-11-14)
-
 renet-ubuntu  # BLOCKER: renet's runtime base tracks Ubuntu LTS 24.04; a 26.x base needs a renet rebuild and the KVM e2e distro matrix before it moves, which the operator schedules (expires 2026-11-14)

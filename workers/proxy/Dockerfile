@@ -14,10 +14,10 @@
 # repo root:
 #   docker build -f workers/proxy/Dockerfile .
 
-# Pinned by digest (the multi-arch index of node:24-slim), so a rebuild of one
+# Pinned by digest (the multi-arch index of node:26.12.0-slim), so a rebuild of one
 # release is the same base. `npm run pins -- bump image:proxy-node` moves the tag
 # and the digest together.
-FROM node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205
+FROM node:26.12.0-slim@sha256:e556a144463cc8dc53afe8de6d2fa0db5c132fd39ffa232c17641bd40df2bf11
 
 # The executor opens SSH itself (that is its entire job), and rsync backs the
 # renet binary staging path.
