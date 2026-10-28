@@ -1199,3 +1199,56 @@ def test_renet_identity_without_go_reads_no_build(world: World) -> None:
     got = trig.renet_identity(world.root, read_build=lambda _p: None)
     assert got["built"] == ""
     assert got["modified"] is None
+
+
+# ------------------------------------------------------------------ owns_surfaces: a plan's Owns against the map
+
+
+@pytest.mark.parametrize(
+    ("owns", "expected"),
+    [
+        (
+            ["packages/cli/src/**"],
+            {"cli-remote": ["packages/cli/src/**"], "cli": ["packages/cli/src/**"]},
+        ),
+        (["packages/cli/src/commands/repo.ts"], {"cli": ["packages/cli/src/commands/repo.ts"]}),
+        (["private/renet"], {}),
+        (["private/account"], {}),
+        (["private/renet/"], {"renet": ["private/renet/**"]}),
+        (["private/renet/cmd/**/*_test.go", "**/*.md", "docs/**"], {}),
+        (["packages/shared/src/x.ts"], {"account": ["packages/shared/src/x.ts"]}),
+        (
+            ["private/account/{src,web}/**"],
+            {"account": ["private/account/src/**", "private/account/web/**"]},
+        ),
+        ([".ci/rediacc_ci/proof/**", ".ci/rediacc_ci/drills/vm_check.py"], {}),
+        (
+            ["workers/proxy/src/**", "workers/account/**", "packages/www/src/**"],
+            {
+                "account-worker": ["workers/account/**"],
+                "proxy": ["workers/proxy/src/**"],
+                "www": ["packages/www/src/**"],
+            },
+        ),
+    ],
+)
+def test_owns_surfaces_reads_a_plan_header_like_the_guard(
+    owns: list[str], expected: dict[str, list[str]]
+) -> None:
+    got = trig.owns_surfaces(owns)
+    assert got == expected
+    assert list(got) == [n for n in trig.SURFACES if n in got], "map order"
+
+
+def test_owns_surfaces_lists_a_glob_once_per_surface() -> None:
+    """`private/renet/**` overlaps every renet glob; it is listed once, where the guard's loop would append it seven times."""
+    assert trig.owns_surfaces(["private/renet/**", "private/renet/**"]) == {
+        "renet": ["private/renet/**"]
+    }
+
+
+def test_owns_surfaces_drops_an_overlap_whose_witness_is_excluded() -> None:
+    """Control first: the raw overlap exists, and only the exclude check drops it."""
+    raw = trig.wl_planconc.owns_overlap(["packages/cli/src/**/*.test.ts"], ["packages/cli/src/**"])
+    assert raw, "owns_overlap alone sees the test glob inside the cli surface"
+    assert trig.owns_surfaces(["packages/cli/src/**/*.test.ts"]) == {}

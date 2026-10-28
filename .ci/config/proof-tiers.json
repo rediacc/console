@@ -97,27 +97,42 @@
         "account-smoke": {
           "targets": ["bench"],
           "surfaces": ["account", "account-worker"],
-          "what": "/health and /.well-known/server-info on bench.rediacc.com answer; V5 fixes the argv"
+          "deploy": "bench-cache",
+          "what": "the bench account Worker answers /health and /.well-known/server-info; the version recorded by deploy_bench is the one serving 100% at check time",
+          "steps": [
+            {"id": "health", "argv": ["curl", "-fsS", "--max-time", "30", "{origin}/account/api/v1/health"]},
+            {"id": "server-info", "argv": ["curl", "-fsS", "--max-time", "30", "{origin}/account/api/v1/.well-known/server-info"]}
+          ]
         },
         "proxy-ready": {
           "targets": ["bench"],
           "surfaces": ["proxy"],
-          "what": "rediacc_ci.deploy.deploy_proxy --smoke-only against bench; V5 fixes the argv"
-        },
-        "www-smoke": {
-          "targets": ["bench"],
-          "surfaces": ["www"],
-          "what": "the bench www root answers 200; V5 names the URL"
+          "deploy": "unrecorded",
+          "what": "deploy_proxy --smoke-only against bench: /v1/health 200, /v1/server-info 401 and /v1/ready on the newest deployment; no deploy record ties that version to a console head yet, so a run is NOT_VERIFIED not-live",
+          "steps": [
+            {"id": "smoke", "argv": ["python3", "-m", "rediacc_ci.deploy.deploy_proxy", "--target", "bench", "--smoke-only"], "timeout_s": 900}
+          ]
         },
         "cli-bench": {
           "targets": ["bench"],
           "surfaces": ["cli"],
-          "what": "./rdc.sh --config eu-bench subscription status; V5 fixes the argv"
+          "deploy": "tree",
+          "what": "the CLI built from the clean head tree reads its subscription from the bench account server through the eu-bench config",
+          "steps": [
+            {"id": "subscription", "argv": ["./rdc.sh", "--config", "eu-bench", "subscription", "status"]}
+          ]
         },
         "renet-live": {
           "targets": ["hostinger"],
           "surfaces": ["renet", "cli-remote", "cli"],
-          "what": "per machine alias: surfaces.renet_identity, machine status with stale_binary empty, remote renet hash equal to the local sha256; V5 fixes the steps"
+          "deploy": "renet-hash",
+          "per_machine": true,
+          "rebuild": ["./rdc.sh", "--version"],
+          "what": "per machine alias: bin/renet is the renet pointer unmodified (rebuilt once), machine status provisions it and reports stale_binary empty, and the remote renet hash equals the local sha256",
+          "steps": [
+            {"id": "status", "expect": "stale-binary-empty", "argv": ["./rdc.sh", "--config", "{config}", "machine", "status", "{machine}", "-o", "json"], "timeout_s": 900},
+            {"id": "hash", "expect": "renet-hash", "argv": ["./rdc.sh", "--config", "{config}", "term", "connect", "{machine}", "-c", "/usr/lib/rediacc/renet/current/renet hash"]}
+          ]
         }
       },
       "pointer_only": ["private/renet", "private/account"]

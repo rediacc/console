@@ -215,6 +215,20 @@ def submodule_hit(sub: str, rel: str) -> bool:
     return bool(surfaces_of(f"{sub}/{rel}"))
 
 
+def owns_surfaces(globs: Iterable[str]) -> dict[str, list[str]]:
+    """`{surface: [Owns glob, ...]}` for every surface a plan's `Owns:` globs hit, in map order, each glob listed once. A glob hits a surface when `wl_planconc.owns_overlap` finds a shared path that the map's excludes do not drop, so `**/*.md` hits nothing. A bare submodule path (`private/renet`) names the gitlink alone and overlaps no surface glob, while `private/renet/` normalises to `private/renet/**` and claims the code. The pre-edit guard `block_plan_without_depends`, the recorder and `check:ci-plan-live-proof` share this one reading."""
+    owns = list(globs)
+    hits: dict[str, list[str]] = {}
+    for name, surface in MAP.surfaces.items():
+        for mine, _theirs, witness in wl_planconc.owns_overlap(owns, surface.globs):
+            if excluded(witness):
+                continue
+            found = hits.setdefault(name, [])
+            if mine not in found:
+                found.append(mine)
+    return hits
+
+
 @dataclasses.dataclass(frozen=True)
 class Changed:
     """`hits` are the console-relative paths that need a VM run (submodule files carry the `private/renet/` or `private/account/` prefix), and `sides` the VM phases they and the unknown ranges select. `unknown` names each submodule range that could not be computed, as `<submodule> <sha>: <why>`; a caller counts it as touched. `surfaces` is every surface the change reaches, with a VM phase or not."""
