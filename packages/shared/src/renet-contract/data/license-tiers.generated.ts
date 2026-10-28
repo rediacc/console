@@ -19,6 +19,7 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "backup_pull": { tier: "full", pending: false },
   "backup_push": { tier: "full", pending: false },
   "backup_restore": { tier: "none", pending: false },
+  "backup_restore_path": { tier: "none", pending: false },
   "backup_snapshot": { tier: "none", pending: false },
   "backup_verify": { tier: "none", pending: false },
   "ceph_bootstrap_cluster": { tier: "create", pending: false },

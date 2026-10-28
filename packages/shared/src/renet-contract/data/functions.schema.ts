@@ -97,6 +97,14 @@ export const BackupRestoreParamsSchema = z.object({
   dryRun: z.boolean().default(false).optional().describe('Resolve the manifest chain and report what would be fetched; write nothing'),
 });
 
+/** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
+export const BackupRestorePathParamsSchema = z.object({
+  lineage: z.string().min(1).describe('Lineage (grand) GUID the snapshot belongs to'),
+  at: z.string().min(1).describe('Snapshot id to restore from (a TIME is resolved by the CLI, never here)'),
+  path: z.string().min(1).describe('File or directory to restore, relative to the repository root'),
+  to: z.string().optional().describe('Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>)'),
+});
+
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
 export const BackupSnapshotParamsSchema = z.object({
   reseed: z.boolean().default(false).optional().describe('Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)'),
@@ -668,6 +676,7 @@ export const FUNCTION_SCHEMAS = {
   backup_pull: BackupPullParamsSchema,
   backup_push: BackupPushParamsSchema,
   backup_restore: BackupRestoreParamsSchema,
+  backup_restore_path: BackupRestorePathParamsSchema,
   backup_snapshot: BackupSnapshotParamsSchema,
   backup_verify: BackupVerifyParamsSchema,
   ceph_client_mount: CephClientMountParamsSchema,

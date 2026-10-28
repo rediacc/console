@@ -114,6 +114,18 @@ export interface BackupRestoreParams {
   dryRun?: boolean;
 }
 
+/** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
+export interface BackupRestorePathParams {
+  /** Lineage (grand) GUID the snapshot belongs to */
+  lineage: string;
+  /** Snapshot id to restore from (a TIME is resolved by the CLI, never here) */
+  at: string;
+  /** File or directory to restore, relative to the repository root */
+  path: string;
+  /** Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>) */
+  to?: string;
+}
+
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
 export interface BackupSnapshotParams {
   /** Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota) */
@@ -861,6 +873,7 @@ export const RENET_FUNCTIONS = [
   'backup_pull',
   'backup_push',
   'backup_restore',
+  'backup_restore_path',
   'backup_snapshot',
   'backup_verify',
   'ceph_client_mount',
@@ -959,6 +972,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'backup_pull',
   'backup_push',
   'backup_restore',
+  'backup_restore_path',
   'backup_snapshot',
   'backup_verify',
   'ceph_bootstrap_cluster',
@@ -1133,6 +1147,7 @@ export type FunctionParamsMap = {
   backup_pull: BackupPullParams;
   backup_push: BackupPushParams;
   backup_restore: BackupRestoreParams;
+  backup_restore_path: BackupRestorePathParams;
   backup_snapshot: BackupSnapshotParams;
   backup_verify: BackupVerifyParams;
   ceph_client_mount: CephClientMountParams;
@@ -1239,6 +1254,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'backup_restore': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'backup_restore_path': {
     requirements: { machine: true, team: true, repository: true },
   },
   'backup_snapshot': {
@@ -1842,6 +1860,36 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'bool',
         default: 'false',
         help: 'Resolve the manifest chain and report what would be fetched; write nothing',
+      },
+    },
+  },
+  'backup_restore_path': {
+    name: 'backup_restore_path',
+    category: 'backup',
+    showInMenu: true,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      lineage: {
+        type: 'string',
+        required: true,
+        help: 'Lineage (grand) GUID the snapshot belongs to',
+        placeholder: 'the repo\'s grand GUID',
+      },
+      at: {
+        type: 'string',
+        required: true,
+        help: 'Snapshot id to restore from (a TIME is resolved by the CLI, never here)',
+        placeholder: 'e.g., 20260814T120000Z-0011223344556677',
+      },
+      path: {
+        type: 'string',
+        required: true,
+        help: 'File or directory to restore, relative to the repository root',
+        minLength: 1,
+      },
+      to: {
+        type: 'string',
+        help: 'Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>)',
       },
     },
   },
@@ -3563,6 +3611,7 @@ export const queueFunctions: QueueFunctionsType = {
   backup_pull: (params) => ({ functionName: 'backup_pull', params }),
   backup_push: (params) => ({ functionName: 'backup_push', params }),
   backup_restore: (params) => ({ functionName: 'backup_restore', params }),
+  backup_restore_path: (params) => ({ functionName: 'backup_restore_path', params }),
   backup_snapshot: (params) => ({ functionName: 'backup_snapshot', params }),
   backup_verify: (params) => ({ functionName: 'backup_verify', params }),
   ceph_client_mount: (params) => ({ functionName: 'ceph_client_mount', params }),
