@@ -154,6 +154,7 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "repository_create": { tier: "create", pending: false },
   "repository_delete": { tier: "none", pending: false },
   "repository_diff": { tier: "none", pending: false },
+  "repository_docker_prune": { tier: "none", pending: false },
   "repository_down": { tier: "none", pending: false },
   "repository_down_all": { tier: "none", pending: false },
   "repository_exec": { tier: "operate", pending: false },

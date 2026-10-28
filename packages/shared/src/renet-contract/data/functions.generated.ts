@@ -635,6 +635,20 @@ export interface RepositoryDiffParams {
   maxBytes?: number;
 }
 
+/** Report and reclaim a repository's Docker storage, orphan overlay2 directories included */
+export interface RepositoryDockerPruneParams {
+  /** Repository GUID (empty = the repository in context) */
+  name?: string;
+  /** Reclaim; without it the run only reports */
+  apply?: boolean;
+  /** Stop the daemon and quarantine orphan directories (requires apply) */
+  offline?: boolean;
+  /** Also remove tagged images no container uses */
+  allImages?: boolean;
+  /** Skip the fstrim after an apply */
+  noTrim?: boolean;
+}
+
 /** Stop repository services */
 export interface RepositoryDownParams {
   /** Shutdown options */
@@ -930,6 +944,7 @@ export const RENET_FUNCTIONS = [
   'repository_create',
   'repository_delete',
   'repository_diff',
+  'repository_docker_prune',
   'repository_down',
   'repository_down_all',
   'repository_exec',
@@ -1107,6 +1122,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_create',
   'repository_delete',
   'repository_diff',
+  'repository_docker_prune',
   'repository_down',
   'repository_down_all',
   'repository_exec',
@@ -1204,6 +1220,7 @@ export type FunctionParamsMap = {
   repository_create: RepositoryCreateParams;
   repository_delete: RepositoryDeleteParams;
   repository_diff: RepositoryDiffParams;
+  repository_docker_prune: RepositoryDockerPruneParams;
   repository_down: RepositoryDownParams;
   repository_down_all: RepositoryDownAllParams;
   repository_exec: RepositoryExecParams;
@@ -1426,6 +1443,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   },
   'repository_diff': {
     requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_docker_prune': {
+    requirements: { machine: true },
   },
   'repository_down': {
     requirements: { machine: true, team: true, repository: true },
@@ -3043,6 +3063,38 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'repository_docker_prune': {
+    name: 'repository_docker_prune',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      name: {
+        type: 'string',
+        help: 'Repository GUID (empty = the repository in context)',
+      },
+      apply: {
+        type: 'bool',
+        help: 'Reclaim; without it the run only reports',
+        options: ['true', 'false'],
+      },
+      offline: {
+        type: 'bool',
+        help: 'Stop the daemon and quarantine orphan directories (requires apply)',
+        options: ['true', 'false'],
+      },
+      allImages: {
+        type: 'bool',
+        help: 'Also remove tagged images no container uses',
+        options: ['true', 'false'],
+      },
+      noTrim: {
+        type: 'bool',
+        help: 'Skip the fstrim after an apply',
+        options: ['true', 'false'],
+      },
+    },
+  },
   'repository_down': {
     name: 'repository_down',
     category: 'repository',
@@ -3668,6 +3720,7 @@ export const queueFunctions: QueueFunctionsType = {
   repository_create: (params) => ({ functionName: 'repository_create', params }),
   repository_delete: (params) => ({ functionName: 'repository_delete', params }),
   repository_diff: (params) => ({ functionName: 'repository_diff', params }),
+  repository_docker_prune: (params) => ({ functionName: 'repository_docker_prune', params }),
   repository_down: (params) => ({ functionName: 'repository_down', params }),
   repository_down_all: (params) => ({ functionName: 'repository_down_all', params }),
   repository_exec: (params) => ({ functionName: 'repository_exec', params }),

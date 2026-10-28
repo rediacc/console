@@ -474,6 +474,15 @@ export const RepositoryDiffParamsSchema = z.object({
   maxBytes: z.number().int().optional().describe('Content-diff per-side read cap (default 1 MiB, ceiling 50 MiB)'),
 });
 
+/** Report and reclaim a repository's Docker storage, orphan overlay2 directories included */
+export const RepositoryDockerPruneParamsSchema = z.object({
+  name: z.string().optional().describe('Repository GUID (empty = the repository in context)'),
+  apply: z.boolean().optional().describe('Reclaim; without it the run only reports'),
+  offline: z.boolean().optional().describe('Stop the daemon and quarantine orphan directories (requires apply)'),
+  allImages: z.boolean().optional().describe('Also remove tagged images no container uses'),
+  noTrim: z.boolean().optional().describe('Skip the fstrim after an apply'),
+});
+
 /** Stop repository services */
 export const RepositoryDownParamsSchema = z.object({
   option: z.string().optional().describe('Shutdown options'),
@@ -733,6 +742,7 @@ export const FUNCTION_SCHEMAS = {
   repository_create: RepositoryCreateParamsSchema,
   repository_delete: RepositoryDeleteParamsSchema,
   repository_diff: RepositoryDiffParamsSchema,
+  repository_docker_prune: RepositoryDockerPruneParamsSchema,
   repository_down: RepositoryDownParamsSchema,
   repository_down_all: RepositoryDownAllParamsSchema,
   repository_exec: RepositoryExecParamsSchema,

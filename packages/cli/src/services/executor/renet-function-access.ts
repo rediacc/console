@@ -79,6 +79,7 @@ export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   repository_create: 'provision',
   repository_delete: 'provision',
   repository_diff: 'read-only',
+  repository_docker_prune: 'provision',
   repository_down: 'provision',
   repository_down_all: 'provision',
   repository_exec: 'provision',
