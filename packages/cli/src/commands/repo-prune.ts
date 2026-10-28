@@ -75,9 +75,18 @@ function validateFlags(ref: string | undefined, options: PruneOptions): void {
   if (ref && options.machine) {
     throw new ValidationError(t('commands.repo.refMachineConflict', { verb: 'prune' }));
   }
-  if (options.offline && !options.yes && isAgentEnvironment()) {
+  if (options.offline && !assumeYes(options) && isAgentEnvironment()) {
     throw new ValidationError(t('commands.repo.prune.offlineNeedsYes'));
   }
+}
+
+/**
+ * The root program owns `-y, --yes` and consumes it wherever it appears on the
+ * line, so this command's own option never fires; the root flag arrives as
+ * REDIACC_YES=1 (cli.ts preAction).
+ */
+function assumeYes(options: PruneOptions): boolean {
+  return options.yes === true || process.env.REDIACC_YES === '1';
 }
 
 function buildParams(guid: string, options: PruneOptions): Record<string, unknown> {
@@ -151,7 +160,7 @@ function renderRecords(entries: { label: string; record: PruneRecord }[], survey
 }
 
 function confirmOffline(label: string, options: PruneOptions): Promise<boolean> {
-  if (!options.offline || options.yes) return Promise.resolve(true);
+  if (!options.offline || assumeYes(options)) return Promise.resolve(true);
   outputService.warn(t('commands.repo.prune.downtimeNotice', { repository: label }));
   return askConfirm(t('commands.repo.prune.confirm', { repository: label }));
 }

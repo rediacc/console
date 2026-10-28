@@ -269,8 +269,9 @@ describe('backup retention', () => {
 
     await run(['retention', 'set', 'shop', '--keep-daily', '3', '--stream', 's-1']);
 
-    const [, init] = mockAccountServerFetch.mock.calls[0] as [string, { body: string }];
-    expect(JSON.parse(init.body)).toEqual({ lineageGuid: 'lin-1', streamId: 's-1', keepDaily: 3 });
+    // accountServerFetch serializes the body itself, so the command passes the object.
+    const [, init] = mockAccountServerFetch.mock.calls[0] as [string, { body: unknown }];
+    expect(init.body).toEqual({ lineageGuid: 'lin-1', streamId: 's-1', keepDaily: 3 });
   });
 
   it('clear --stream scopes the delete to that stream', async () => {
@@ -294,11 +295,11 @@ describe('backup retention', () => {
 
     const [url, init] = mockAccountServerFetch.mock.calls[0] as [
       string,
-      { method: string; body: string },
+      { method: string; body: unknown },
     ];
     expect(url).toBe('/account/api/v1/backups/retention');
     expect(init.method).toBe('PUT');
-    const body = JSON.parse(init.body) as Record<string, unknown>;
+    const body = init.body as Record<string, unknown>;
     // THE DEFECT: a flag mapped to the wrong field, or sent as a STRING. Zod would reject a string, but a mis-mapped field is accepted and silently changes which snapshots survive.
     expect(body).toEqual({ lineageGuid: 'lin-1', keepLast: 7, keepMonthly: 12 });
   });

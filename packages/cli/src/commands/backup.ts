@@ -168,6 +168,13 @@ function registerBackupRestore(backup: Command): void {
         const from = resolved.type === 'cluster' ? ref.place : resolved.name;
         const sourceType = 'machine';
 
+        // No `--at`: a repo with a chunk-store lineage has no artifact on a machine to pull (the pull dies on a missing repositories/<guid>), so the restore means "the newest snapshot", exactly `--at <now>`. A repo with no manifests keeps the pull of its `repo push` artifact.
+        const restoreAt =
+          options.at ??
+          ((await lineageHasSnapshots(source.grandGuid ?? source.repositoryGuid))
+            ? new Date().toISOString()
+            : undefined);
+
         // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and then dropped, the pull ran against the machine's default, so a restore the operator asked to land on a named datastore landed somewhere else. Record the placement as the birth record (the same field `repo create` writes) so every later verb derives the right mount, and declare it on the transfer
         // below.
         const placement = options.datastore
@@ -195,13 +202,13 @@ function registerBackupRestore(backup: Command): void {
 
         // `--at` selects a point in time, which only the CHUNK store can answer: it addresses a snapshot in a manifest chain, not an artifact on a machine or a storage remote. So the flag routes to `backup_restore` rather than `backup_pull`. It is a route, not a second user-facing command: growing `rdc backup restore-snapshot` beside this one would make the operator choose between
         // two verbs that mean the same thing.
-        const ok = options.at
+        const ok = restoreAt
           ? await runChunkRestore({
               targetName,
               targetMachine,
               datastore,
               lineage,
-              at: options.at,
+              at: restoreAt,
               anyStream: options.anyStream ?? false,
               source: { repoName: ref.name, machine: from },
               debug: options.debug,
@@ -365,6 +372,22 @@ async function runRestorePull(args: {
     t('commands.backup.restore.restored', { name: targetName, machine: targetMachine })
   );
   return true;
+}
+
+/**
+ * Whether the account index holds any snapshot of the lineage. An unreachable
+ * index or an unreadable answer is "no": the caller then takes the pull route,
+ * which is what restore did before the chunk store existed.
+ */
+async function lineageHasSnapshots(lineage: string): Promise<boolean> {
+  try {
+    const result = await accountServerFetch<BackupManifestsResponse>(
+      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
+    );
+    return result.manifests.length > 0; // a malformed answer throws into the catch
+  } catch {
+    return false;
+  }
 }
 
 /**

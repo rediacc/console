@@ -208,6 +208,9 @@ export function createCli(): Command {
       // Set --yes flag globally for prompt bypass
       if (opts.yes) {
         process.env.REDIACC_YES = '1';
+        // Commander gives -y to this root option wherever it appears, so a
+        // subcommand's own -y/--yes never fires; hand the value down.
+        actionCommand.setOptionValue('yes', true);
       }
       // Set --quiet mode to suppress informational output
       if (opts.quiet) {
