@@ -11,6 +11,7 @@
  */
 
 import { t } from '../../i18n/index.js';
+import { SshConnectError } from '../../remote/sftp/connect-error.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { formatDuration } from '../../utils/format.js';
@@ -593,11 +594,27 @@ class LocalExecutorService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const durationMs = Date.now() - startTime;
-      this.recordAudit(options, { success: false, exitCode: 1, durationMs, error: errorMessage });
+      this.recordAudit(options, {
+        success: false,
+        exitCode: error instanceof SshConnectError ? error.exitCode : 1,
+        durationMs,
+        error: errorMessage,
+      });
       // A CliExitError is a deliberate REFUSAL carrying its own exit code, its retryable flag and its next-actions. Flattening it into a generic
       // {exitCode: 1} result throws all of that away: a BUSY provisioning-lock
       // timeout (exit 15, retryable, "here is the pid holding it") arrived at the user as an anonymous exit 1. Let it through untouched.
       if (error instanceof CliExitError) throw error;
+      // A named connect failure keeps its code, exit code and guidance, so the console can tell an unreachable machine from a crash.
+      if (error instanceof SshConnectError) {
+        return {
+          success: false,
+          exitCode: error.exitCode,
+          error: errorMessage,
+          ...(error.errorCode ? { errorCode: error.errorCode } : {}),
+          ...(error.guidance ? { errorGuidance: error.guidance } : {}),
+          durationMs,
+        };
+      }
       return { success: false, exitCode: 1, error: errorMessage, durationMs };
     }
   }

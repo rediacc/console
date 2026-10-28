@@ -201,6 +201,27 @@ function remoteConfigError(error: unknown): CliError | undefined {
 }
 
 /**
+ * A named SSH connect failure (remote/sftp/connect-error.ts), matched by name like the remote-config errors so this module does not import the SFTP client.
+ */
+function sshConnectError(error: unknown): CliError | undefined {
+  if (!(error instanceof Error) || error.name !== 'SshConnectError') return undefined;
+  const named = error as Error & { exitCode?: number; retryable?: boolean; guidance?: string };
+  const network = named.exitCode === EXIT_CODES.NETWORK_ERROR;
+  return {
+    code: network ? ERROR_CODES.NETWORK_ERROR : ERROR_CODES.GENERAL_ERROR,
+    message: error.message,
+    exitCode: network ? EXIT_CODES.NETWORK_ERROR : EXIT_CODES.GENERAL_ERROR,
+    retryable: named.retryable === true,
+    ...(named.guidance && { guidance: named.guidance }),
+  };
+}
+
+/** The CliError for an error matched by name (remote-config or SSH connect), or undefined. */
+function namedCliError(error: unknown): CliError | undefined {
+  return remoteConfigError(error) ?? sshConnectError(error);
+}
+
+/**
  * Normalize various error types into a consistent CliError structure.
  */
 function normalizeError(error: unknown): CliError {
@@ -244,8 +265,8 @@ function normalizeError(error: unknown): CliError {
     };
   }
 
-  const remote = remoteConfigError(error);
-  if (remote) return remote;
+  const named = namedCliError(error);
+  if (named) return named;
 
   // Unknown error
   return {

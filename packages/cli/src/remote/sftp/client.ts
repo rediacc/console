@@ -10,6 +10,7 @@ import type { FileEntry, SFTPWrapper, Stats } from 'ssh2';
 import { type ConnectConfig, Client as SSHClient } from 'ssh2';
 import { fingerprint, keyBlobAlgorithm, parseKnownHosts } from '../../utils/host-keys.js';
 import type { FileInfo } from '../types/index.js';
+import { classifySshConnectFailure, SshConnectError } from './connect-error.js';
 
 /**
  * Configuration for SFTP client connection
@@ -63,8 +64,12 @@ export class SFTPClient {
   private sftp: SFTPWrapper | null = null;
   private connected = false as boolean;
 
-  constructor(private readonly config: SFTPClientConfig) {
-    this.ssh = new SSHClient();
+  /** `createClient` lets a test plant an ssh2 client; production takes the default. */
+  constructor(
+    private readonly config: SFTPClientConfig,
+    createClient: () => SSHClient = () => new SSHClient()
+  ) {
+    this.ssh = createClient();
   }
 
   /**
@@ -76,13 +81,17 @@ export class SFTPClient {
     }
 
     return new Promise((resolve, reject) => {
+      const port = this.config.port ?? DEFAULTS.SSH.PORT;
+      const readyTimeout = this.config.timeout ?? DEFAULTS.SSH.READY_TIMEOUT;
+      // ssh2 emits `connect` once the TCP socket is up; its absence is what separates an unanswered connect from a silent peer.
+      let tcpConnected = false;
       const connectConfig: ConnectConfig = {
         host: this.config.host,
-        port: this.config.port ?? DEFAULTS.SSH.PORT,
+        port,
         username: this.config.username,
         privateKey: this.config.privateKey,
         passphrase: this.config.passphrase,
-        readyTimeout: this.config.timeout ?? DEFAULTS.SSH.READY_TIMEOUT,
+        readyTimeout,
         keepaliveInterval: this.config.keepaliveInterval ?? DEFAULTS.SSH.KEEPALIVE_INTERVAL,
       };
 
@@ -99,6 +108,10 @@ export class SFTPClient {
           return trusted;
         };
       }
+
+      this.ssh.on('connect', () => {
+        tcpConnected = true;
+      });
 
       this.ssh.on('ready', () => {
         this.ssh.sftp((err, sftp) => {
@@ -118,7 +131,20 @@ export class SFTPClient {
           reject(new Error(this.hostKeyMismatchMessage(offeredKey)));
           return;
         }
-        reject(new Error(`SSH connection error: ${err.message}`));
+        const failure = err as Error & { level?: string; code?: string };
+        reject(
+          new SshConnectError({
+            kind: classifySshConnectFailure({
+              level: failure.level,
+              code: failure.code,
+              tcpConnected,
+            }),
+            host: this.config.host,
+            port,
+            timeoutMs: readyTimeout,
+            cause: err.message,
+          })
+        );
       });
 
       this.ssh.on('close', () => {

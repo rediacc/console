@@ -48,6 +48,7 @@ import { connectForJobs, followJobLogs, readJobStatus } from '../executor/job-re
 import { AuthError, type AuthVerifier } from './auth.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
 import type { ServeDeps } from './deps.js';
+import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
 import { isReadOnlyCommand, PolicyDenied, resolveGrandRepoMutation } from './policy.js';
 import { SessionError } from './sessions.js';
@@ -81,6 +82,13 @@ function statusFor(error: unknown): {
     status: 500,
     message: error instanceof Error ? error.message : 'The executor failed to run this command.',
   };
+}
+
+let sharedEgressReporter: ReturnType<typeof createEgressReporter> | undefined;
+/** The container tier's reporter, built on first use so a daemon never creates one. */
+function defaultEgressReporter(): ReturnType<typeof createEgressReporter> {
+  sharedEgressReporter ??= createEgressReporter();
+  return sharedEgressReporter;
 }
 
 export function createServeApp(deps: ServeDeps): Hono {
@@ -288,7 +296,8 @@ export function createServeApp(deps: ServeDeps): Hono {
         });
         return;
       }
-      const { result, functionName, machineName, stdout, stderr } = dispatched;
+      const { functionName, machineName, stdout, stderr } = dispatched;
+      let { result } = dispatched;
 
       // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
       await deps.audit?.({
@@ -312,6 +321,17 @@ export function createServeApp(deps: ServeDeps): Hono {
         durationMs: result.durationMs,
         destructive: entry.destructive ?? false,
       });
+
+      // An unanswered connect is reported through the account egress, the one path that works from a container whose route to the machine is dropped, and the answer decides the guidance. Awaited, so the report finishes before the result line.
+      if (
+        deps.mode === 'container' &&
+        !result.success &&
+        result.errorCode === EGRESS_UNREACHABLE_CODE
+      ) {
+        const report = deps.reportEgressUnreachable ?? defaultEgressReporter();
+        const answer = await report().catch(() => undefined);
+        result = { ...result, errorGuidance: egressGuidance(answer) };
+      }
 
       await write({
         kind: 'result',

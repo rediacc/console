@@ -12,6 +12,7 @@ import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDecision } from '@rediacc/shared/policy';
 import type { Executor } from '../executor/types.js';
 import type { AuthVerifier } from './auth.js';
+import type { EgressUnreachableAnswer } from './egress-report.js';
 import type { AuthorizeArgs } from './policy.js';
 import type { SessionPrincipal, SessionStore } from './sessions.js';
 
@@ -66,6 +67,13 @@ export interface ServeDeps {
    * reads its own enrolled config, leaves it unset.
    */
   recordGrant?: (sessionId: string, bearerToken: string) => Promise<void>;
+  /**
+   * Tell the account side that this executor's path to a machine never answered
+   * (container tier only). Never throws; answers undefined when no answer came
+   * back. Absent in container mode, the server uses the default reporter; in
+   * daemon mode it is never called.
+   */
+  reportEgressUnreachable?: () => Promise<EgressUnreachableAnswer | undefined>;
   /** Throws PolicyDenied when the principal may not run the command. */
   authorize: (args: AuthorizeArgs) => PolicyDecision;
   /** Ships one audit event per command. Awaited, so a killed process cannot lose it. */
