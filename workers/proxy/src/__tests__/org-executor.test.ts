@@ -153,6 +153,8 @@ interface HarnessOptions {
   storage?: Map<string, unknown>;
   /** Maps every org to this instance's id, so the conflict check is reached past the id check. */
   sameIdForEveryOrg?: boolean;
+  /** Storage keys whose `put` rejects. */
+  failPut?: string[];
 }
 
 function harness(options: HarnessOptions = {}): Harness {
@@ -173,6 +175,7 @@ function harness(options: HarnessOptions = {}): Harness {
     storage: {
       get: (key: string) => Promise.resolve(storage.get(key)),
       put: (key: string, value: unknown) => {
+        if (options.failPut?.includes(key)) return Promise.reject(new Error('put failed'));
         storage.set(key, structuredClone(value));
         return Promise.resolve();
       },
@@ -420,6 +423,22 @@ describe('review 5acbb97d', () => {
     const response = await h.executor.fetch(new Request('https://proxy/a'));
     expect(response.status).toBe(200);
     expect(await response.text()).toBe('from-app');
+  });
+
+  it('ccd9a210.1: an image-drift restart takes one lease, so a refusal after the stop cannot leave no container', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 'light');
+    h.container.images = { executor: IMAGE_V2 };
+    h.capacity.acquire.mockClear();
+    h.capacity.acquire
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValue({ ok: false, reason: 'full' });
+    expect(await h.executor.pin(ORG, 'light')).toEqual({ ok: true, size: 'light' });
+    expect(h.capacity.acquire).toHaveBeenCalledTimes(1);
+    expect(h.container.destroys).toEqual(['image-drift']);
+    expect(h.container.running).toBe(true);
+    expect((h.storage.get('executor') as ExecutorRecord).image).toBe(IMAGE_V2);
   });
 
   it('5acbb97d.3: a monitor() rejection during readiness releases the lease exactly once', async () => {
@@ -741,6 +760,32 @@ describe('exits', () => {
     h.container.exit(Object.assign(new Error('killed'), { exitCode: 137 }));
     await flush();
     expect(h.storage.has('oomHeavyAt')).toBe(true);
+  });
+
+  it('4ab1a051.4: a failed oomHeavyAt put still deletes the executor record', async () => {
+    const h = harness({ failPut: ['oomHeavyAt'] });
+    await h.ready;
+    await h.executor.pin(ORG, 'heavy');
+    expect(h.storage.has('executor')).toBe(true);
+    h.container.exit(Object.assign(new Error('killed'), { exitCode: 137 }));
+    await flush();
+    expect(h.storage.has('oomAt')).toBe(true);
+    expect(h.storage.has('executor')).toBe(false);
+    expect(h.capacity.release).toHaveBeenCalledWith(ORG);
+  });
+
+  it('4ab1a051.5: a clean exit after a heavy OOM keeps oomHeavyAt for its window', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 'heavy');
+    h.container.exit(Object.assign(new Error('killed'), { exitCode: 137 }));
+    await flush();
+    const flagged = h.storage.get('oomHeavyAt');
+    expect(flagged).toBeDefined();
+    await h.executor.pin(ORG, 'heavy');
+    h.container.exit();
+    await flush();
+    expect(h.storage.get('oomHeavyAt')).toBe(flagged);
   });
 
   it('a clean exit releases the slot, and the next pin starts again', async () => {

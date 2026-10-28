@@ -197,6 +197,7 @@ const durable = {
   pins: [] as [string, string][],
   answers: [] as PinAnswer[],
   pinThrows: false as boolean,
+  oomHeavyThrows: false as boolean,
   fetches: [] as string[],
 };
 
@@ -207,7 +208,10 @@ function orgExecutors(): Env['ORG_EXECUTOR'] {
       durable.gets.push(doId.name);
       return {
         oomAt: () => Promise.resolve(durable.oomAt),
-        oomHeavyAt: () => Promise.resolve(durable.oomHeavyAt),
+        oomHeavyAt: () =>
+          durable.oomHeavyThrows
+            ? Promise.reject(new Error('do unreachable'))
+            : Promise.resolve(durable.oomHeavyAt),
         pin: (orgId: string, size: string) => {
           durable.pins.push([orgId, size]);
           if (durable.pinThrows) return Promise.reject(new Error('do unreachable'));
@@ -253,6 +257,7 @@ describe('backend routing by EXECUTOR_BACKEND', () => {
     durable.pins = [];
     durable.answers = [];
     durable.pinThrows = false;
+    durable.oomHeavyThrows = false;
     durable.fetches = [];
   });
 
@@ -307,6 +312,7 @@ describe('sizing on the durable backend', () => {
     durable.pins = [];
     durable.answers = [];
     durable.pinThrows = false;
+    durable.oomHeavyThrows = false;
     durable.fetches = [];
   });
 
@@ -344,6 +350,14 @@ describe('sizing on the durable backend', () => {
     expect(response.status).toBe(200);
     expect(attrs['rediacc.proxy.size']).toBe('heavy');
     expect(attrs['rediacc.proxy.outcome']).toBe('oom-heavy');
+  });
+
+  it('4ab1a051.1: a Durable Object that cannot answer oomHeavyAt is served as forwarded', async () => {
+    durable.oomHeavyThrows = true;
+    const { ctx, attrs } = traced();
+    const response = await worker.fetch(call('rdt_high'), durableEnv(), ctx);
+    expect(response.status).toBe(200);
+    expect(attrs['rediacc.proxy.outcome']).toBe('forwarded');
   });
 
   it('a heavy OOM flag older than 7 days leaves the outcome forwarded', async () => {

@@ -248,7 +248,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   }
 
   /**
-   * Move a running container to the deployed image. The lease is secured before the old container is destroyed: a coordinator that refuses (or fails) leaves the old container serving and the drift is retried at a later pin, rather than leaving the org with no container. `start` then re-acquires, which the coordinator counts once per org.
+   * Move a running container to the deployed image. The lease is secured before the old container is destroyed: a coordinator that refuses (or fails) leaves the old container serving and the drift is retried at a later pin, rather than leaving the org with no container. The lease taken here is the one the new container runs on (`startLeased`), so no second acquire can fail once the old container is gone.
    */
   private async restartOnNewImage(running: ExecutorRecord): Promise<PinAnswer> {
     const lease = await this.acquireLease(running.orgId, running.size);
@@ -258,7 +258,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     }
     this.lastRenew = Date.now();
     await this.stopContainer('image-drift');
-    return this.start(running.orgId, running.size);
+    return this.startLeased(running.orgId, running.size);
   }
 
   /** Why `pin(orgId, size)` is refused, or undefined when it is admitted. */
@@ -455,7 +455,15 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     if (lease === 'failed') return refusal('EXECUTOR_START_FAILED', 'coordinator-failed');
     if (!lease.ok) return refusal('EXECUTOR_CAPACITY', lease.reason);
     this.lastRenew = Date.now();
+    return this.startLeased(orgId, size);
+  }
 
+  /** The start sequence after the lease is held: intercept, start, record, monitor, readiness. Releases the lease when the start fails. */
+  private async startLeased(orgId: string, size: ExecutorSize): Promise<PinAnswer> {
+    const container = this.ctx.container;
+    if (!container) return refusal('EXECUTOR_START_FAILED', 'no-container');
+    const image = this.currentImage();
+    if (image === undefined) return refusal('EXECUTOR_START_FAILED', 'no-image');
     const failure = await this.launch(container, orgId, size, image);
     if (failure === undefined) return { ok: true, size };
     await this.stopContainer(failure.reason);
@@ -537,9 +545,14 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
         await this.ctx.storage.put(OOM_KEY, now);
         if (wasSize === 'heavy') await this.ctx.storage.put(OOM_HEAVY_KEY, now);
       }
-      await this.ctx.storage.delete(RECORD_KEY);
     } catch {
       console.warn('proxy: org executor exit bookkeeping failed');
+    }
+    // The record goes whatever the OOM flags did: a dead container must never be recovered as running.
+    try {
+      await this.ctx.storage.delete(RECORD_KEY);
+    } catch {
+      console.warn('proxy: org executor record delete failed');
     }
     await this.releaseLease(orgId);
   }
