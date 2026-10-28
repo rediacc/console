@@ -122,6 +122,8 @@ export function sftpConfigForMachine(
     privateKey: sshPrivateKey,
     ...(machineName ? { machineName } : {}),
     ...(machine.knownHosts ? { knownHosts: machine.knownHosts } : {}),
+    // The machine's public IPv6 (`machine infra set --public-ipv6`) is the retry target when IPv4 never answers.
+    ...(machine.infra?.publicIPv6 ? { ipv6: machine.infra.publicIPv6 } : {}),
   };
 }
 

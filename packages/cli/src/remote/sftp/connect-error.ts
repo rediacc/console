@@ -82,9 +82,17 @@ export interface SshConnectErrorInit {
   timeoutMs: number;
   /** The ssh2 message, kept for `other` and for the detail of the named kinds. */
   cause: string;
+  /** The IPv6 retry after an unreachable primary address, when one was made and failed too. */
+  ipv6Attempt?: { host: string; cause: string };
 }
 
 function describeFailure(init: SshConnectErrorInit): string {
+  const base = describePrimary(init);
+  if (!init.ipv6Attempt) return base;
+  return `${base} The IPv6 address ${init.ipv6Attempt.host} was tried next and failed too: ${init.ipv6Attempt.cause}`;
+}
+
+function describePrimary(init: SshConnectErrorInit): string {
   const target = `${init.host}:${init.port}`;
   const seconds = Math.round(init.timeoutMs / 100) / 10;
   switch (init.kind) {
@@ -110,9 +118,13 @@ export class SshConnectError extends Error {
   readonly exitCode: number;
   readonly retryable: boolean;
   readonly guidance: string | undefined;
+  readonly ipv6Attempt: { host: string; cause: string } | undefined;
+  private readonly init: SshConnectErrorInit;
 
   constructor(init: SshConnectErrorInit) {
     super(describeFailure(init));
+    this.init = init;
+    this.ipv6Attempt = init.ipv6Attempt;
     this.name = 'SshConnectError';
     const info = KIND_INFO[init.kind];
     this.kind = init.kind;
@@ -123,5 +135,11 @@ export class SshConnectError extends Error {
     this.exitCode = info.exitCode;
     this.retryable = info.retryable;
     this.guidance = info.guidance;
+  }
+
+  /** The same failure, with the IPv6 retry that followed it and also failed. */
+  withIpv6Attempt(host: string, retryError: unknown): SshConnectError {
+    const cause = retryError instanceof Error ? retryError.message : String(retryError);
+    return new SshConnectError({ ...this.init, ipv6Attempt: { host, cause } });
   }
 }

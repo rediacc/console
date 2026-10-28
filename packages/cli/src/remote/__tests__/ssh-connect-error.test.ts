@@ -143,3 +143,124 @@ describe('SFTPClient.connect classification', () => {
     expect(error.errorCode).toBe('SSH_HANDSHAKE_TIMEOUT');
   });
 });
+
+describe('SFTPClient.connect IPv6 retry', () => {
+  const v4 = '192.0.2.10';
+  const v6 = '2001:db8::22';
+  type Outcome = 'unreachable' | 'refused' | 'auth' | 'ready';
+
+  const socketError = (message: string, code: string) =>
+    Object.assign(new Error(message), { level: 'client-socket', code });
+  const authError = () =>
+    Object.assign(new Error('All configured authentication methods failed'), {
+      level: 'client-authentication',
+    });
+
+  const OUTCOME_EVENTS: Record<Outcome, [string, unknown?][]> = {
+    unreachable: [['error', timeoutError()]],
+    refused: [['error', socketError('connect ECONNREFUSED', 'ECONNREFUSED')]],
+    auth: [['connect'], ['error', authError()]],
+    ready: [['connect'], ['ready']],
+  };
+
+  function emitOutcome(emitter: EventEmitter, outcome: Outcome): void {
+    for (const [event, payload] of OUTCOME_EVENTS[outcome]) emitter.emit(event, payload);
+  }
+
+  /** A planted ssh2 client per connect, scripted by the host it is asked to reach; records every host tried. */
+  function byHost(outcomes: Record<string, Outcome>) {
+    const tried: string[] = [];
+    const create = () => {
+      const emitter = new EventEmitter() as EventEmitter & {
+        connect: (c: { host: string }) => void;
+        end: () => void;
+        sftp: (cb: (err: Error | undefined, sftp: unknown) => void) => void;
+      };
+      emitter.connect = ({ host }) => {
+        tried.push(host);
+        setImmediate(() => emitOutcome(emitter, outcomes[host] ?? 'unreachable'));
+      };
+      emitter.end = () => undefined;
+      emitter.sftp = (cb) => cb(undefined, { end: () => undefined });
+      return emitter as unknown as SSHClient;
+    };
+    return { tried, create };
+  }
+
+  const noAaaa = () => Promise.resolve(undefined);
+
+  it('an unreachable IPv4 host is retried over the configured IPv6 address', async () => {
+    const { tried, create } = byHost({ [v4]: 'unreachable', [v6]: 'ready' });
+    const client = new SFTPClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa);
+    await client.connect();
+    expect(client.isConnected()).toBe(true);
+    expect(tried).toEqual([v4, v6]);
+  });
+
+  it('an unreachable hostname is retried over its AAAA record', async () => {
+    const { tried, create } = byHost({ 'm.example.test': 'unreachable', [v6]: 'ready' });
+    const asked: string[] = [];
+    const client = new SFTPClient({ ...base, host: 'm.example.test' }, create, (h) => {
+      asked.push(h);
+      return Promise.resolve(v6);
+    });
+    await client.connect();
+    expect(client.isConnected()).toBe(true);
+    expect(asked).toEqual(['m.example.test']);
+    expect(tried).toEqual(['m.example.test', v6]);
+  });
+
+  it('with no IPv6 address the original EGRESS_UNREACHABLE surfaces', async () => {
+    const { tried, create } = byHost({ [v4]: 'unreachable' });
+    const resolver = () => Promise.reject(new Error('an IP literal host must not be resolved'));
+    const error = await connectError(new SFTPClient({ ...base, host: v4 }, create, resolver));
+    expect(error.errorCode).toBe('EGRESS_UNREACHABLE');
+    expect(error.host).toBe(v4);
+    expect(error.ipv6Attempt).toBeUndefined();
+    expect(tried).toEqual([v4]);
+  });
+
+  it('a hostname without an AAAA record surfaces EGRESS_UNREACHABLE after one attempt', async () => {
+    const { tried, create } = byHost({});
+    const error = await connectError(
+      new SFTPClient({ ...base, host: 'm.example.test' }, create, noAaaa)
+    );
+    expect(error.errorCode).toBe('EGRESS_UNREACHABLE');
+    expect(tried).toEqual(['m.example.test']);
+  });
+
+  it('a failed IPv6 retry keeps the primary error and names the retry', async () => {
+    const { tried, create } = byHost({ [v4]: 'unreachable', [v6]: 'refused' });
+    const error = await connectError(
+      new SFTPClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa)
+    );
+    expect(error.errorCode).toBe('EGRESS_UNREACHABLE');
+    expect(error.host).toBe(v4);
+    expect(error.ipv6Attempt?.host).toBe(v6);
+    expect(error.message).toContain(`The IPv6 address ${v6} was tried next and failed too`);
+    expect(tried).toEqual([v4, v6]);
+  });
+
+  it.each<Outcome>(['refused', 'auth'])('a %s failure never retries over IPv6', async (outcome) => {
+    const { tried, create } = byHost({ [v4]: outcome, [v6]: 'ready' });
+    const error = await connectError(
+      new SFTPClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa)
+    );
+    expect(error.kind).toBe(outcome);
+    expect(tried).toEqual([v4]);
+  });
+
+  it('a late close from the replaced client leaves the IPv6 session connected', async () => {
+    const clients: EventEmitter[] = [];
+    const { create } = byHost({ [v4]: 'unreachable', [v6]: 'ready' });
+    const tracking = () => {
+      const c = create();
+      clients.push(c as unknown as EventEmitter);
+      return c;
+    };
+    const client = new SFTPClient({ ...base, host: v4, ipv6: v6 }, tracking, noAaaa);
+    await client.connect();
+    clients[0]?.emit('close');
+    expect(client.isConnected()).toBe(true);
+  });
+});

@@ -5,6 +5,8 @@
  * This is used by Electron for the direct file browser feature.
  */
 
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { FileEntry, SFTPWrapper, Stats } from 'ssh2';
 import { type ConnectConfig, Client as SSHClient } from 'ssh2';
@@ -38,7 +40,24 @@ export interface SFTPClientConfig {
   machineName?: string;
   /** Known hosts entries for host-key verification (OpenSSH format) */
   knownHosts?: string;
+  /**
+   * The machine's IPv6 address. A connect to `host` that never completes
+   * (EGRESS_UNREACHABLE) is retried once over it; some egress networks drop
+   * IPv4 to a host they reach over IPv6.
+   */
+  ipv6?: string;
 }
+
+/** A hostname's IPv6 (AAAA) address, or undefined when it has none. */
+export type Ipv6Resolver = (hostname: string) => Promise<string | undefined>;
+
+const resolveAaaa: Ipv6Resolver = async (hostname) => {
+  try {
+    return (await lookup(hostname, { family: 6 })).address;
+  } catch {
+    return undefined;
+  }
+};
 
 /**
  * SFTP Client for direct file operations over SSH
@@ -60,33 +79,68 @@ export interface SFTPClientConfig {
  * ```
  */
 export class SFTPClient {
-  private readonly ssh: SSHClient;
+  /** Replaced once by the IPv6 retry: an ssh2 client that failed to connect is never reused. */
+  private ssh: SSHClient;
   private sftp: SFTPWrapper | null = null;
   private connected = false as boolean;
 
-  /** `createClient` lets a test plant an ssh2 client; production takes the default. */
+  /** `createClient` and `resolveIpv6` let a test plant an ssh2 client and a resolver; production takes the defaults. */
   constructor(
     private readonly config: SFTPClientConfig,
-    createClient: () => SSHClient = () => new SSHClient()
+    private readonly createClient: () => SSHClient = () => new SSHClient(),
+    private readonly resolveIpv6: Ipv6Resolver = resolveAaaa
   ) {
     this.ssh = createClient();
   }
 
   /**
-   * Establish SSH connection and open SFTP subsystem
+   * Establish SSH connection and open SFTP subsystem.
+   *
+   * A connect that never completes (kind `unreachable`) is retried once over the
+   * machine's IPv6 address when it has one; every other failure is reported as is.
    */
   async connect(): Promise<void> {
     if (this.connected) {
       return;
     }
+    try {
+      await this.connectTo(this.config.host);
+    } catch (error) {
+      if (!(error instanceof SshConnectError) || error.kind !== 'unreachable') throw error;
+      const ipv6 = await this.ipv6Fallback();
+      if (!ipv6) throw error;
+      try {
+        this.ssh.end();
+      } catch {
+        // Best effort: the failed client is already closed.
+      }
+      this.ssh = this.createClient();
+      try {
+        await this.connectTo(ipv6);
+      } catch (retryError) {
+        throw error.withIpv6Attempt(ipv6, retryError);
+      }
+    }
+  }
 
+  /** The IPv6 address to retry over: the configured one, else the AAAA record of a hostname. */
+  private async ipv6Fallback(): Promise<string | undefined> {
+    const { host, ipv6 } = this.config;
+    if (ipv6 && ipv6 !== host) return ipv6;
+    if (isIP(host) !== 0) return undefined;
+    const resolved = await this.resolveIpv6(host);
+    return resolved && resolved !== host ? resolved : undefined;
+  }
+
+  private connectTo(host: string): Promise<void> {
+    const ssh = this.ssh;
     return new Promise((resolve, reject) => {
       const port = this.config.port ?? DEFAULTS.SSH.PORT;
       const readyTimeout = this.config.timeout ?? DEFAULTS.SSH.READY_TIMEOUT;
       // ssh2 emits `connect` once the TCP socket is up; its absence is what separates an unanswered connect from a silent peer.
       let tcpConnected = false;
       const connectConfig: ConnectConfig = {
-        host: this.config.host,
+        host,
         port,
         username: this.config.username,
         privateKey: this.config.privateKey,
@@ -109,14 +163,14 @@ export class SFTPClient {
         };
       }
 
-      this.ssh.on('connect', () => {
+      ssh.on('connect', () => {
         tcpConnected = true;
       });
 
-      this.ssh.on('ready', () => {
-        this.ssh.sftp((err, sftp) => {
+      ssh.on('ready', () => {
+        ssh.sftp((err, sftp) => {
           if (err) {
-            this.ssh.end();
+            ssh.end();
             reject(new Error(`Failed to open SFTP subsystem: ${err.message}`));
           } else {
             this.sftp = sftp;
@@ -126,7 +180,7 @@ export class SFTPClient {
         });
       });
 
-      this.ssh.on('error', (err) => {
+      ssh.on('error', (err) => {
         if (offeredKey) {
           reject(new Error(this.hostKeyMismatchMessage(offeredKey)));
           return;
@@ -139,7 +193,7 @@ export class SFTPClient {
               code: failure.code,
               tcpConnected,
             }),
-            host: this.config.host,
+            host,
             port,
             timeoutMs: readyTimeout,
             cause: err.message,
@@ -147,12 +201,14 @@ export class SFTPClient {
         );
       });
 
-      this.ssh.on('close', () => {
+      ssh.on('close', () => {
+        // A late close from the client the IPv6 retry replaced must not tear down the live session.
+        if (ssh !== this.ssh) return;
         this.connected = false;
         this.sftp = null;
       });
 
-      this.ssh.connect(connectConfig);
+      ssh.connect(connectConfig);
     });
   }
 
