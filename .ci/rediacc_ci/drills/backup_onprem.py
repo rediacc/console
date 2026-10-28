@@ -11,7 +11,11 @@ WHAT IT DOES, one claim per row:
   4. The backup routes are mounted (`GET /backups/usage` without a credential answers 401, never 404 for a missing route and never 503 `BACKUP_NOT_CONFIGURED`).
   5. The on-premise factory still leaves the admin surface out: the dev-only `/test` seam answers 404, and so does `/admin`.
 
-NOT PROVEN HERE, said plainly: a backup session needs a licence from a delegated deployment (a delegation cert from the upstream key), which this drill has no way to mint; the session, grant and restore legs run against the dev gateway in `rediacc_ci.drills.backup`.
+NOT PROVEN HERE, said plainly: a backup session needs a licence from a delegated deployment (a delegation cert from the upstream key), and this drill boots without one; the session, grant and restore legs run against the dev gateway in `rediacc_ci.drills.backup`. The recipe a live P14 run (PLAN-backup-program, the offline plane) proved for the delegated leg:
+  a. Register an account on the dev gateway and give it a subscription that can hold a cert.
+  b. Mint a throwaway Ed25519 pair (SPKI and PKCS8, base64) and `POST /account/api/v1/portal/delegation-certs` with `{subscriptionId, delegatedPublicKey: <SPKI>, validDays}` (`private/account/src/routes/portal-delegation-certs.ts`); the response's `cert` is the signed cert, signed by the gateway's DEV key.
+  c. Boot `src/entry/on-premise.ts` with `ACCOUNT_ED25519_PRIVATE_KEY`/`ACCOUNT_ED25519_PUBLIC_KEY` AND `ON_PREMISE_PRIVATE_KEY`/`ON_PREMISE_PUBLIC_KEY` all set to that pair, `DELEGATION_CERT_BASE64` set to the base64 of the `cert` JSON, and `UPSTREAM_PUBLIC_KEY` set to the DEV public key.
+  d. Register on the on-premise server. Boot adopts the cert (`src/services/onprem-subscription.service.ts`): the first registration, or the root org's existing subscription, takes the cert's subscriptionId, plan and limits, so its licences are covered by the embedded cert and a licence-checking renet carrying the DEV key accepts them.
 
 NO NEW ENVIRONMENT READS. The child inherits this process's environment (the same one `./run.sh drill` gives the dev gateway); every value it adds is set here, and the store credentials reach it through that environment and never through an argv.
 """
