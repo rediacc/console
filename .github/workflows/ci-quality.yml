@@ -1833,11 +1833,7 @@ jobs:
           AGENT_BROWSER_VERSION="$(sed -n 's/^ARG AGENT_BROWSER_VERSION=["'"'"']\{0,1\}\([0-9][^\"'"'"' ]*\).*/\1/p' .devcontainer/Dockerfile)"
           [ -n "$AGENT_BROWSER_VERSION" ] || { echo "AGENT_BROWSER_VERSION not found in .devcontainer/Dockerfile" >&2; exit 1; }
           before="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
-          cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false --before "${before}"
-          # The installed version is checked against the ARG line itself, not against the sed's result, so a misread fails here.
-          installed="$(agent-browser --version | awk '{print $NF}')"
-          grep -qxE "ARG AGENT_BROWSER_VERSION=[\"']?${installed//./\\.}[\"']?[[:space:]]*" .devcontainer/Dockerfile \
-            || { echo "agent-browser reports '$installed', which is not the ARG in .devcontainer/Dockerfile" >&2; exit 1; }
+          (cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false --before "${before}")
 
       # A silent-install failure (a broken postinstall, a PATH the shell that
       # ran npm install cannot see, a platform binary that never got selected)
@@ -1846,9 +1842,16 @@ jobs:
       # sweep named 2026-08-30. This makes the environment check its own
       # named, explicit step: a broken install fails HERE, with its real
       # cause, instead of two steps later as an unrelated-looking test error.
+      # It also checks the installed version against the ARG line itself, not against the install step's sed, so a misread fails here.
       - name: Verify agent-browser is functional
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: agent-browser --version
+        run: |
+          out="$(agent-browser --version)" || { echo "agent-browser --version failed after the install" >&2; exit 1; }
+          installed="${out##* }"
+          arg="$(grep -m1 '^ARG AGENT_BROWSER_VERSION=' .devcontainer/Dockerfile)"
+          arg="${arg#ARG AGENT_BROWSER_VERSION=}"; arg="${arg//[\"\' 	]/}"
+          [ "$installed" = "$arg" ] \
+            || { echo "agent-browser reports '$installed', the ARG in .devcontainer/Dockerfile is '$arg'" >&2; exit 1; }
 
       # Video assets under packages/www/public/assets/tutorials/ are gitignored (see
       # CLAUDE.md's Media Assets section) -- a fresh CI checkout has none of them, and
