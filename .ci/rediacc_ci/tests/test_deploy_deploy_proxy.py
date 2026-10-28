@@ -965,6 +965,46 @@ def test_a_deploy_with_no_previous_release_config_is_not_forward_only(
     assert "forward-only" not in json.loads(record.read_text())["rollback"]
 
 
+def _tagged_repo(tmp_path: pathlib.Path, tags: tuple[str, ...]) -> pathlib.Path:
+    repo = tmp_path / "tagged"
+    repo.mkdir()
+    env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "tag.gpgsign=false"]
+    subprocess.run([*git, "init", "-q"], cwd=repo, env=env, check=True)
+    subprocess.run(
+        [*git, "commit", "-q", "--allow-empty", "-m", "x"], cwd=repo, env=env, check=True
+    )
+    for tag in tags:
+        subprocess.run([*git, "tag", tag], cwd=repo, env=env, check=True)
+    return repo
+
+
+def test_the_previous_release_tag_is_older_than_the_release_not_just_different(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _tagged_repo(tmp_path, ("v1.2.0", "v1.3.0", "v1.10.0"))
+    assert port.previous_release_tag(repo, "1.3.0") == "v1.2.0"
+    assert port.previous_release_tag(repo, "1.10.0") == "v1.3.0"
+    assert port.previous_release_tag(repo, "1.2.0") is None
+    assert port.previous_release_tag(repo, "2.0.0") == "v1.10.0"
+    assert port.previous_release_tag(tmp_path / "nowhere", "2.0.0") is None
+
+
+def test_a_shallow_checkout_is_named_not_silently_treated_as_a_first_release(
+    tmp_path: pathlib.Path,
+) -> None:
+    full = _tagged_repo(tmp_path, ("v1.0.0",))
+    shallow = tmp_path / "shallow"
+    subprocess.run(
+        ["git", "clone", "-q", "--depth", "1", "file://%s" % full, str(shallow)],
+        check=True,
+        env={**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull},
+    )
+    assert port.shallow_checkout(shallow) is True
+    assert port.shallow_checkout(full) is False
+    assert port.shallow_checkout(tmp_path / "nowhere") is False
+
+
 def test_bench_is_forward_only_when_its_recorded_migration_tag_differs(
     tmp_path: pathlib.Path,
 ) -> None:
@@ -1082,7 +1122,7 @@ def test_the_bench_profile_binds_the_production_public_key_and_the_workers_token
 
 
 def test_the_deploy_proxy_profile_binds_the_production_key_and_the_artifact_reader() -> None:
-    profile = _profiles()[port.DEPLOY_PROFILE]
+    profile = _profiles()[port.PROFILE]
     assert {
         "CLOUDFLARE_API_TOKEN",
         "CLOUDFLARE_ACCOUNT_ID",

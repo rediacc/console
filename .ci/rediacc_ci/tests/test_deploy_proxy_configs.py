@@ -8,6 +8,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+import tomllib
 import typing
 
 import pytest
@@ -272,6 +273,14 @@ def test_a_missing_durable_entry_is_refused() -> None:
     )
     out = refusals(text, "eu")
     assert any("[[containers]] is ['ExecutorContainer']" in r for r in out), out
+
+
+def test_a_non_table_container_element_is_refused() -> None:
+    config = tomllib.loads(real("eu"))
+    assert not any("[[containers]] is" in r for r in pc._executor_refusals(config, TARGETS["eu"]))
+    config["containers"].append("stray")
+    out = pc._executor_refusals(config, TARGETS["eu"])
+    assert any("[[containers]] is" in r and "'stray'" in r for r in out), out
 
 
 def test_a_wrong_durable_image_is_refused() -> None:

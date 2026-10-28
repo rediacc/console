@@ -30,7 +30,7 @@ DURABLE SINK (`after --sink r2 --channel edge|stable`, plan local-release W2-D).
 
 WWW RECORD (`www-after`). `deploy_www` and `deploy_edge` take the version id before and after through `take_www_before` / `build_www_record` when `DEPLOY_RECORD_OUT` names a file (the record carries `smoke_rc: null`); `www-after --record F --smoke-rc N [--sink r2 --channel C]` fills the smoke rc, and writes the same key family with target `www-<channel>` and region `global`. No record holds a secret value: `refuse_secret_values` checks the serialized record against the secret-named variables of the environment before it is written.
 
-ENVIRONMENT. `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and for R2 `CLOUDFLARE_R2_ENDPOINT` plus `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: the names of the `deploy-proxy` profile in .ci/config/secret-supply.json. A bare local call re-executes itself under `bws_env exec --profile deploy-proxy` (bench: `deploy-proxy-bench`) when either Cloudflare variable is unset and that profile is not bound, as `console_executor` does; the target is `--target`, or the `target` of the `--before` or `--record` file the verb reads.
+ENVIRONMENT. `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and for R2 `CLOUDFLARE_R2_ENDPOINT` plus `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: the names of the `deploy-proxy` profile in .ci/config/secret-supply.json. A bare local call re-executes itself under `bws_env exec --profile deploy-proxy` (bench: `deploy-proxy-bench`) when either Cloudflare variable is unset and that profile is not bound, as `console_executor` does; the target is `--target`, or the `target` of the `--before` file the verb reads (`www-after`: its `--record` file).
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ PROXY_SUBDIR = ("workers", "proxy")
 ACCOUNT_REL = "/".join(ACCOUNT_SUBDIR)
 PROXY_REL = "/".join(PROXY_SUBDIR)
 
-# The last release each target's proxy passed its smoke on, outside `executor/` so executor_artifacts' version listing never sees it.
+# The last release (a plain X.Y.Z or an unreleased build's `X.Y.Z-branch.<hex>` label, see VERSION_RE) each target's proxy passed its smoke on, outside `executor/` so executor_artifacts' version listing never sees it.
 POINTER_PREFIX = "executor-deployments/"
 
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(-branch\.[0-9a-f]{7,40})?$")

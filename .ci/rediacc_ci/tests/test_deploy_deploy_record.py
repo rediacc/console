@@ -5,6 +5,7 @@ Nothing reaches Cloudflare or R2. The wrangler fake is `test_deploy_console_exec
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import stat
@@ -1044,6 +1045,18 @@ def test_reexec_reads_the_target_from_the_before_record(world, monkeypatch, tmp_
     assert dr.main(["rollback", "--before", str(before)]) == 0
     assert seen[0][5] == "deploy-proxy-bench"
     assert calls(world.log) == []
+
+
+def test_record_target_reads_record_only_for_www_after(tmp_path):
+
+    rec = tmp_path / "r.json"
+    rec.write_text(json.dumps({"target": "bench"}))
+    www = argparse.Namespace(verb="www-after", target=None, before=None, record=str(rec))
+    assert dr.record_target(www) == "bench"
+    other = argparse.Namespace(verb="bootstrap", target=None, before=None, record=str(rec))
+    assert dr.record_target(other) == ""
+    explicit = argparse.Namespace(verb="www-after", target="edge", before=None, record=str(rec))
+    assert dr.record_target(explicit) == "edge"
 
 
 @pytest.mark.usefixtures("world")

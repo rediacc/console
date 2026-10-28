@@ -14,7 +14,7 @@ THE VERSION ID. `wrangler deploy` output is teed to stdout and the `Current Vers
 
 THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 401, and `/v1/ready` 200 with `workerVersion` equal to the captured id, polled for up to READY_TIMEOUT_S, because "deploy success means the rollout started" and an old instance may answer first. `--smoke-only` skips the deploy and smokes the version the record (`--record`) names, else the newest deployment's. A fresh custom domain is retried past a cached NXDOMAIN and then pinned through DNS-over-HTTPS.
 
-THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the `backend` (`EXECUTOR_BACKEND`), the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The rollback (the deploy record of Design item 9 reads it). The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
+THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the `backend` (`EXECUTOR_BACKEND`), the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The deploy record of Design item 9 reads the rollback field. The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
 
 A DRY RUN (`--dry-run`) runs the config refusals and `wrangler deploy --dry-run --containers-rollout none` for any target, and needs no credentials, fetch or build. The `none` rollout is load-bearing: wrangler 4.152's dry run DOES build the container image (measured 2026-10-25, it failed on the unstaged `workers/proxy/stage/`), and `none` compiles the Worker without building or updating any container. The image itself is built and booted by check:ci-proxy-image-smoke.
 """
@@ -59,7 +59,6 @@ BENCH_REGION = "eu"
 BENCH_PROFILE = "deploy-proxy-bench"
 # The stable and edge profile: a bare local run with no CLOUDFLARE_API_TOKEN re-executes itself under it.
 PROFILE = "deploy-proxy"
-DEPLOY_PROFILE = "deploy-proxy"
 PROFILES_ENV = "REDIACC_BWS_PROFILES"
 
 # A fixed path in /tmp, as the bash original had it.
@@ -221,7 +220,7 @@ def rollback_command(config: str, previous: str | None) -> str:
 
 
 def forward_only_rollback(tag: str) -> str:
-    """The record's `rollback` for a deploy wrangler refuses to roll back: it crosses a Durable Object class lifecycle change."""
+    """The record's `rollback` for a deploy wrangler refuses to roll back: it crosses a Durable Object class lifecycle change. `tag` is the config's last migration tag (`v<n>`), or "migration change" for a config that now carries none."""
     return "forward-only: Durable Object class lifecycle change (%s); fix forward" % tag
 
 
@@ -253,13 +252,18 @@ def _git(repo_root: pathlib.Path, *args: str) -> str | None:
     return proc.stdout if proc.returncode == 0 else None
 
 
+def shallow_checkout(repo_root: pathlib.Path) -> bool:
+    """True when git says the checkout is shallow: its tag list and history are then incomplete, so an unreadable previous release is a missing fetch, not a first release."""
+    return (_git(repo_root, "rev-parse", "--is-shallow-repository") or "").strip() == "true"
+
+
 def previous_release_tag(repo_root: pathlib.Path, version: str | None) -> str | None:
-    """The newest `v*` tag other than this release's own, or None when git names none."""
-    listing = _git(repo_root, "tag", "--list", "v*", "--sort=-v:refname")
-    for tag in (listing or "").split():
-        if tag != "v%s" % version:
-            return tag
-    return None
+    """The newest `v*` tag older than this release, or None when git names none. When this release's own tag exists the answer is the one after it, so redeploying an old release never compares against a newer release's migrations; a release not yet tagged is newer than every tag."""
+    tags = (_git(repo_root, "tag", "--list", "v*", "--sort=-v:refname") or "").split()
+    own = "v%s" % version
+    if own in tags:
+        tags = tags[tags.index(own) + 1 :]
+    return tags[0] if tags else None
 
 
 def previous_release_migrations(
@@ -730,9 +734,13 @@ def main(argv: list[str]) -> int:
             current_tag, read_record_field(record_path, "migration_tag")
         )
     else:
-        forward_only = is_forward_only(
-            current_migrations, previous_release_migrations(repo_root, config, args.version)
-        )
+        previous_migrations = previous_release_migrations(repo_root, config, args.version)
+        if previous_migrations is None and shallow_checkout(repo_root):
+            log.warn(
+                "this is a shallow checkout, so the previous release's tags and [[migrations]] for %s are unreadable: the forward-only check is skipped and the rollback line assumes a plain rollback"
+                % config
+            )
+        forward_only = is_forward_only(current_migrations, previous_migrations)
     os.chdir(worker_dir)
     previous = deployed_version(config)
     log.step("Deploying %s and its container image (config: %s)..." % (spec.name, config))

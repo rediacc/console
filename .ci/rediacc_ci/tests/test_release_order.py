@@ -256,3 +256,13 @@ def test_r1_is_cli_behind_against_v2_4_0_with_real_git():
     )
     assert out is not None
     assert out.endswith("published v2.4.0 lacks them")
+
+
+def test_usage_names_the_module_not_an_environment_assignment(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit):
+        order.main(["--help"])
+    usage = capsys.readouterr().out.split("\n", 1)[0]
+    assert usage.startswith("usage: python3 -m " + order.SELF)
+    assert "PYTHONPATH=" not in usage

@@ -290,11 +290,15 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
         lambda argv, *_a, **_k: events.append(" ".join(argv[:5])) or "Current Version ID: " + VID,
     )
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: events.append("seed"))
+    recorded: list[tuple[str, str]] = []
     monkeypatch.setattr(
-        deploy_bench, "record_version", lambda _r, _o, _v=None: events.append("record")
+        deploy_bench,
+        "record_version",
+        lambda _r, out, live: (events.append("record"), recorded.append((out, live))),
     )
     monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a: (True, "live"))
     deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert recorded == [("Current Version ID: " + VID, "live")]
     assert events[-1] == "record"
     assert events[-2] == "seed"
     assert events[-3] == "npx --no-install wrangler secret bulk"
@@ -319,7 +323,7 @@ def _fake_identity(_root, surfaces):
 def test_a_parsed_version_id_writes_bench_json(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
     out = "Uploaded\nDeployed rediacc-account-bench\nCurrent Version ID: %s\n" % VID
-    got = deploy_bench.record_version(tmp_path, out)
+    got = deploy_bench.record_version(tmp_path, out, VID)
     written = json.loads((tmp_path / ".ci/cache/live-deploys/bench.json").read_text())
     assert written == got
     assert written["version_id"] == VID
@@ -340,7 +344,7 @@ def test_the_live_version_after_the_secrets_push_is_the_recorded_one(monkeypatch
 def test_output_without_a_version_id_is_a_named_error_and_writes_nothing(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
     with pytest.raises(deploy_bench.DeployError, match="Current Version ID"):
-        deploy_bench.record_version(tmp_path, "Deployed rediacc-account-bench\n")
+        deploy_bench.record_version(tmp_path, "Deployed rediacc-account-bench\n", VID)
     assert not (tmp_path / ".ci/cache/live-deploys/bench.json").exists()
 
 
@@ -349,8 +353,60 @@ def test_an_existing_bench_json_is_overwritten(monkeypatch, tmp_path):
     path = tmp_path / ".ci/cache/live-deploys/bench.json"
     path.parent.mkdir(parents=True)
     path.write_text('{"version_id": "old"}')
-    deploy_bench.record_version(tmp_path, "Current Version ID: " + VID)
+    deploy_bench.record_version(tmp_path, "Current Version ID: " + VID, VID)
     assert json.loads(path.read_text())["version_id"] == VID
+
+
+def test_a_blank_live_version_is_refused_not_replaced_by_the_printed_id(monkeypatch, tmp_path):
+    monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
+    for blank in ("", "  ", None):
+        with pytest.raises(deploy_bench.DeployError, match="live bench version"):
+            deploy_bench.record_version(tmp_path, "Current Version ID: " + VID, blank)
+    assert not (tmp_path / ".ci/cache/live-deploys/bench.json").exists()
+
+
+def test_a_missing_live_version_after_the_deploy_fails_the_deploy(monkeypatch, tmp_path):
+    worker = tmp_path / "workers" / "account"
+    worker.mkdir(parents=True)
+    (worker / deploy_bench.CONFIG).write_text("")
+    (worker / "node_modules").mkdir()
+    (tmp_path / "private/account/web/node_modules").mkdir(parents=True)
+    for name in (
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CF_GLOBAL_API_KEY",
+        "CF_API_KEY",
+        "CF_EMAIL",
+    ):
+        monkeypatch.setenv(name, "x")
+    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
+    monkeypatch.setattr(deploy_bench.cf_auth, "await_propagation", lambda _a: None)
+    monkeypatch.setattr(deploy_bench.bench_preflight, "lockfile", lambda _p: 0)
+    monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
+    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
+    monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
+    monkeypatch.setattr(deploy_bench, "_run", lambda *_a, **_k: "Current Version ID: " + VID)
+    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
+    wrote: list[str] = []
+    monkeypatch.setattr(deploy_bench, "record_version", lambda *_a: wrote.append("x"))
+    for answer in ((False, None), (True, None)):
+        monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a, a=answer: a)
+        with pytest.raises(deploy_bench.DeployError, match="no live version"):
+            deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert wrote == []
+
+
+def test_captured_output_is_echoed_as_it_arrives_and_returned(capsys, tmp_path):
+    out = deploy_bench._run(
+        ["python3", "-c", "import sys; print('a'); print('b', file=sys.stderr)"],
+        tmp_path,
+        "echo",
+        capture=True,
+    )
+    assert sorted(out.splitlines()) == ["a", "b"]
+    assert sorted(capsys.readouterr().out.splitlines()) == ["a", "b"]
+    with pytest.raises(deploy_bench.DeployError, match="exit 3"):
+        deploy_bench._run(["python3", "-c", "raise SystemExit(3)"], tmp_path, "x", capture=True)
 
 
 def _bench_env(monkeypatch, **overrides):

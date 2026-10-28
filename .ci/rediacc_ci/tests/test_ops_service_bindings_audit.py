@@ -129,3 +129,58 @@ def test_only_reads_just_the_named_config(tmp_path: pathlib.Path) -> None:
     assert [r["config"] for r in rep["bindings"]] == ["workers/account/wrangler.edge-eu.toml"]
     # Without `only`, the same unreadable sibling is no verdict.
     assert mod.audit(tmp_path, ENV, _fetch([]))["rc"] == mod.EX_UNAVAILABLE
+
+
+def test_side_region_maps_every_file_name() -> None:
+    sr = mod.side_region
+    pure = mod.pathlib.PurePosixPath
+    assert sr(pure("workers/proxy/wrangler.dev.toml")) == ("dev", "-")
+    assert "dev" in mod.LOCAL_SIDES
+    assert sr(pure("workers/account/wrangler.toml")) == ("stable", "-")
+    assert sr(pure("workers/account/wrangler.eu.toml")) == ("stable", "eu")
+    assert sr(pure("workers/account/wrangler.edge.toml")) == ("edge", "-")
+    assert sr(pure("workers/account/wrangler.edge-eu.toml")) == ("edge", "eu")
+    assert sr(pure("workers/account/wrangler.bench.toml")) == ("bench", "-")
+
+
+def test_root_wrangler_toml_is_stable(tmp_path: pathlib.Path) -> None:
+    acc = tmp_path / "workers" / "account"
+    acc.mkdir(parents=True)
+    (acc / "wrangler.toml").write_text('name = "rediacc-account"\n')
+    configs, _ = mod.load_configs(tmp_path)
+    assert [(c.side, c.region) for c in configs] == [("stable", "-")]
+
+
+def test_empty_config_tree_is_77_not_green(tmp_path: pathlib.Path) -> None:
+    (tmp_path / "workers").mkdir()
+    rep = mod.audit(tmp_path, ENV, _fetch(["x"]))
+    assert rep["rc"] == 77
+    assert "no deployable Worker config" in rep["error"]
+
+
+def test_non_object_api_body_is_77(tmp_path: pathlib.Path) -> None:
+    _tree(tmp_path)
+    bodies: list[typing.Any] = [[], None, "x"]
+    for body in bodies:
+
+        def fetch(_url: str, _token: str, b: typing.Any = body) -> typing.Any:
+            return b
+
+        assert mod.audit(tmp_path, ENV, fetch)["rc"] == 77
+
+
+def test_truncated_listing_is_77(tmp_path: pathlib.Path) -> None:
+    _tree(tmp_path)
+    full = {"success": True, "result": [{"id": "w%d" % i} for i in range(mod.PER_PAGE)]}
+    rep = mod.audit(tmp_path, ENV, lambda *_a: full)
+    assert rep["rc"] == 77
+    assert "pages" in rep["error"]
+
+
+def test_services_that_are_not_tables_is_77(tmp_path: pathlib.Path) -> None:
+    pr = tmp_path / "workers" / "proxy"
+    pr.mkdir(parents=True)
+    (pr / "wrangler.eu.toml").write_text('name = "rediacc-proxy-eu"\nservices = ["oops"]\n')
+    rep = mod.audit(tmp_path, ENV, _fetch(["x"]))
+    assert rep["rc"] == 77
+    assert "array of tables" in rep["error"]

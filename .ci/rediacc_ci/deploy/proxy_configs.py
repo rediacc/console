@@ -296,13 +296,19 @@ def _executor_refusals(config: dict, target: Target) -> list[str]:
     """The container, Durable Object and migration blocks: the legacy and durable entries together, or the durable entry alone once Phase 3 retires the legacy class."""
     out: list[str] = []
     raw = config.get("containers")
-    containers = [c for c in raw if isinstance(c, dict)] if isinstance(raw, list) else []
-    legacy = [c for c in containers if c.get("class_name") == CONTAINER_CLASS]
-    durable = [c for c in containers if c.get("class_name") == DURABLE_CLASS]
+    # A non-table element of an inline `containers = [...]` array stays in the count, so it matches neither class and refuses.
+    containers = raw if isinstance(raw, list) else []
+    tables = [c for c in containers if isinstance(c, dict)]
+    legacy = [c for c in tables if c.get("class_name") == CONTAINER_CLASS]
+    durable = [c for c in tables if c.get("class_name") == DURABLE_CLASS]
     if len(containers) != len(legacy) + len(durable) or len(durable) != 1 or len(legacy) > 1:
         out.append(
             "[[containers]] is %r, not the %s entry beside at most one %s entry"
-            % ([c.get("class_name") for c in containers], DURABLE_CLASS, CONTAINER_CLASS)
+            % (
+                [c.get("class_name") if isinstance(c, dict) else c for c in containers],
+                DURABLE_CLASS,
+                CONTAINER_CLASS,
+            )
         )
     for entry in legacy:
         for ckey, cvalue in (

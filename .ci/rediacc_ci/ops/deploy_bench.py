@@ -223,29 +223,36 @@ def _run(
     stdin: str | None = None,
     capture: bool = False,
 ) -> str:
-    """Run one step. With `capture` the combined output is returned (and echoed), else the return is empty."""
+    """Run one step. With `capture` the combined output is returned and echoed line by line as it arrives, else the return is empty."""
     if capture:
-        proc = subprocess.run(
+        lines: list[str] = []
+        with subprocess.Popen(
             argv,
             cwd=str(cwd),
             env=env,
-            input=stdin,
+            stdin=subprocess.PIPE if stdin is not None else None,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            check=False,
-        )
-        sys.stdout.write(proc.stdout or "")
-        sys.stdout.flush()
-    else:
-        proc = subprocess.run(
-            argv,
-            cwd=str(cwd),
-            env=env,
-            input=stdin,
-            text=True if stdin is not None else None,
-            check=False,
-        )
+        ) as popen:
+            if stdin is not None and popen.stdin is not None:
+                popen.stdin.write(stdin)
+                popen.stdin.close()
+            for line in popen.stdout or ():
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                lines.append(line)
+        if popen.returncode != 0:
+            raise DeployError("%s failed (exit %d)" % (what, popen.returncode))
+        return "".join(lines)
+    proc = subprocess.run(
+        argv,
+        cwd=str(cwd),
+        env=env,
+        input=stdin,
+        text=True if stdin is not None else None,
+        check=False,
+    )
     if proc.returncode != 0:
         raise DeployError("%s failed (exit %d)" % (what, proc.returncode))
     return (proc.stdout or "") if capture else ""
@@ -257,10 +264,12 @@ VERSION_RECORD = (".ci", "cache", "live-deploys", "bench.json")
 VERSION_PATTERN = re.compile(r"Current Version ID:\s*([0-9a-fA-F][0-9a-fA-F-]{7,})")
 
 
-def record_version(root, output: str, live_version: str | None = None) -> dict:
-    """Write `.ci/cache/live-deploys/bench.json` from `proof.receipt.identity` plus the version bench serves, and return it. DeployError, with nothing written, when the deploy `output` carries no `Current Version ID:`.
+def record_version(root, output: str, live_version: str) -> dict:
+    """Write `.ci/cache/live-deploys/bench.json` from `proof.receipt.identity` plus the version bench serves, and return it. DeployError, with nothing written, when the deploy `output` carries no `Current Version ID:` or `live_version` is empty.
 
-    `version_id` is `live_version`, the 100% version read after the secrets push, because `wrangler secret bulk` creates a newer version than the one `wrangler deploy` printed (measured 2026-10-28: deploy printed 0b4e20ac, bench served bb3e1ba3); `deployed_version_id` keeps the printed one. Without `live_version` both are the printed id."""
+    `version_id` is `live_version`, the 100% version read after the secrets push, because `wrangler secret bulk` creates a newer version than the one `wrangler deploy` printed (measured 2026-10-28: deploy printed 0b4e20ac, bench served bb3e1ba3); `deployed_version_id` keeps the printed one. `live_version` is required: a blank one is an error, never a silent fallback to the printed id."""
+    if not (live_version or "").strip():
+        raise DeployError("the live bench version is unknown, so no version is recorded")
     match = VERSION_PATTERN.search(output)
     if not match:
         raise DeployError(
@@ -269,7 +278,7 @@ def record_version(root, output: str, live_version: str | None = None) -> dict:
             % "/".join(VERSION_RECORD)
         )
     record = {
-        "version_id": live_version or match.group(1),
+        "version_id": live_version,
         "deployed_version_id": match.group(1),
         **receipt.identity(root, BENCH_SURFACES),
         "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -705,7 +714,12 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     log.info("Worker secrets pushed")
     _seed_and_report()
     # After the whole deploy, so a missing id fails a finished deploy rather than leaving secrets unpushed.
-    _, live_version = deploy_record.worker_version(worker_dir, CONFIG, WORKER_NAME)
+    exists, live_version = deploy_record.worker_version(worker_dir, CONFIG, WORKER_NAME)
+    if not exists or not live_version:
+        raise DeployError(
+            "wrangler reports no live version of %s after the deploy, so none is recorded"
+            % WORKER_NAME
+        )
     record_version(root, deploy_output, live_version)
     log.info("Bench version recorded in %s" % "/".join(VERSION_RECORD))
 

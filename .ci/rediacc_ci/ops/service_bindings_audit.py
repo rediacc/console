@@ -94,7 +94,10 @@ def load_configs(root: pathlib.Path, only: str | None = None) -> tuple[list[Conf
         if side in LOCAL_SIDES:
             continue
         configs.append(Config(str(rel), name, side, region))
-        for svc in data.get("services") or []:
+        services = data.get("services") or []
+        if not isinstance(services, list) or not all(isinstance(s, dict) for s in services):
+            raise AuditError("cannot read %s: `services` is not an array of tables" % rel)
+        for svc in services:
             service = str(svc.get("service") or "")
             if service and "@@" not in service:
                 bindings.append(
@@ -111,9 +114,12 @@ def _get(url: str, token: str) -> dict:
         proc = subprocess.run(argv, input=stdin, capture_output=True, text=True, check=False)
         if proc.returncode != 0:
             raise AuditError("curl exited %d" % proc.returncode)
-        return json.loads(proc.stdout)
+        body = json.loads(proc.stdout)
     except (OSError, ValueError) as exc:
         raise AuditError("Cloudflare API unreadable: %s" % type(exc).__name__) from None
+    if not isinstance(body, dict):
+        raise AuditError("Cloudflare API answered JSON that is not an object")
+    return body
 
 
 Fetch = typing.Callable[[str, str], dict]
@@ -126,12 +132,18 @@ def list_workers(account: str, token: str, fetch: Fetch = _get) -> set[str]:
             "%s/accounts/%s/workers/scripts?page=%d&per_page=%d" % (API, account, page, PER_PAGE),
             token,
         )
+        if not isinstance(body, dict):
+            raise AuditError("Cloudflare API answered JSON that is not an object")
         if not body.get("success", False):
             raise AuditError("Cloudflare API refused the Workers listing (success=false)")
         result = body.get("result") or []
         names.update(str(w.get("id") or "") for w in result if isinstance(w, dict))
         if len(result) < PER_PAGE:
             break
+    else:
+        raise AuditError(
+            "the Workers listing runs past %d pages: a partial list gives no verdict" % MAX_PAGES
+        )
     names.discard("")
     if not names:
         raise AuditError("the account lists ZERO Workers: wrong account or token, no verdict")
@@ -151,6 +163,8 @@ def audit(
         if not token or not account:
             raise AuditError("CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID unset or empty")
         configs, bindings = load_configs(root, only)
+        if not configs:
+            raise AuditError("no deployable Worker config found under workers/: no verdict")
         live = list_workers(account, token, fetch)
     except AuditError as exc:
         return {"rc": EX_UNAVAILABLE, "error": str(exc), "bindings": [], "not_deployed": []}

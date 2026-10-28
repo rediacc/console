@@ -271,7 +271,7 @@ def live_tag_commit(tag: str, root: pathlib.Path | None = None) -> str | None:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
-        prog="PYTHONPATH=.ci python3 -m " + SELF, description=__doc__.split("\n", 1)[0]
+        prog="python3 -m " + SELF, description=__doc__.split("\n", 1)[0]
     )
     parser.add_argument("--channel", required=True, choices=CHANNELS)
     parser.add_argument(

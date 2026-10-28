@@ -19,6 +19,8 @@ import subprocess
 import sys
 import typing
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_account as port
 from rediacc_ci.tests import differential as diff
@@ -26,8 +28,6 @@ from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
-
-    import pytest
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-account.sh"
@@ -675,3 +675,19 @@ def test_an_unreadable_own_config_still_refuses(tmp_path: pathlib.Path) -> None:
     assert new.returncode == 1
     assert "npx" not in calls
     assert "cannot read the Worker configs" in new.stderr
+
+
+def test_an_unreadable_sibling_config_never_blocks_a_config_without_bindings(
+    tmp_path: pathlib.Path,
+) -> None:
+    acc = tmp_path / "workers" / "account"
+    acc.mkdir(parents=True)
+    (acc / "wrangler.edge-eu.toml").write_text('name = "edge-rediacc-account-eu"\n')
+    (acc / "wrangler.edge-us.toml").write_text("not = = toml\n")
+
+    def no_api(_url: str, _token: str) -> dict:
+        raise AssertionError("a config with no [[services]] makes no API call")
+
+    port.check_services(tmp_path, "workers/account/wrangler.edge-eu.toml", {}, no_api)
+    with pytest.raises(port.ServiceBindingError, match="cannot read the Worker configs"):
+        port.check_services(tmp_path, "workers/account/wrangler.edge-us.toml", {}, no_api)

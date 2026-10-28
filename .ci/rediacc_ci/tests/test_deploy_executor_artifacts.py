@@ -136,6 +136,24 @@ def test_branch_label_is_accepted_everywhere_and_other_suffixes_are_not():
     assert ea.check_version(label) == label
 
 
+def test_branch_label_hex_length_boundaries():
+    for rx in (ea._VERSION_RE, deploy_proxy.VERSION_RE, deploy_record.VERSION_RE):
+        assert rx.match("2.4.0-branch." + "a" * 7)
+        assert rx.match("2.4.0-branch." + "a" * 40)
+        assert not rx.match("2.4.0-branch." + "a" * 6)
+        assert not rx.match("2.4.0-branch." + "a" * 41)
+
+
+def test_list_versions_never_returns_a_branch_label(r2, tmp_path):
+    """Retention reads list_versions, so a staged branch label must stay out of it and out of any prune."""
+    label = "2.4.0-branch.c0ffbb26fb69"
+    ea.stage("1.4.2", "deadbeef", make_sources(tmp_path / "a"))
+    ea.stage(label, "deadbeef", make_sources(tmp_path / "b"))
+    assert any(label in str(p) for p in r2.rglob("*"))
+    assert ea.list_versions() == ["1.4.2"]
+    assert ea.list_versions(complete_only=True) == ["1.4.2"]
+
+
 @pytest.mark.usefixtures("r2")
 def test_fetch_round_trips_and_verifies(tmp_path):
     sources = make_sources(tmp_path / "src")
