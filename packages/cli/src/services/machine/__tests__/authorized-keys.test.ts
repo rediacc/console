@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AccessKeyConflictError,
   type DesiredAccessKey,
+  DuplicateAccessKeyError,
   parseAuthorizedKeys,
   planAccessRewrite,
   renderAccessLine,
@@ -347,5 +348,42 @@ describe('planAccessRewrite edge cases', () => {
       ['unchanged', 'team', 9],
       ['remove', 'console-probe', 15],
     ]);
+  });
+});
+
+describe('planner input validation', () => {
+  const desired = (name: string, key: string): DesiredAccessKey => ({
+    name,
+    key,
+    ranges: HOSTED,
+    restrict: true,
+  });
+
+  it('refuses two names holding one blob, even spelled differently', () => {
+    const other = `ssh-ecdsa-sha2-nistp256 ${EC_BLOB_PADDING_VARIANT}`.replace(
+      'ssh-ecdsa-sha2-nistp256',
+      'ecdsa-sha2-nistp256'
+    );
+    const ec = `ecdsa-sha2-nistp256 ${EC_BLOB}`;
+    expect(() => planAccessRewrite([], [desired('a', ec), desired('b', ec)], CONFIG_ID)).toThrow(
+      DuplicateAccessKeyError
+    );
+    expect(() => planAccessRewrite([], [desired('a', ec), desired('b', other)], CONFIG_ID)).toThrow(
+      /access keys a and b declare the same public key/
+    );
+  });
+
+  it.each([
+    ['empty', ''],
+    ['with whitespace', 'my key'],
+    ['with a colon', 'a:b'],
+    ['uppercase', 'Laptop'],
+  ])('refuses a name that is %s', (_label, name) => {
+    expect(() => renderAccessLine({ ...desired(name, LAPTOP), configId: CONFIG_ID })).toThrow(
+      /not a valid resource name/
+    );
+    expect(() => planAccessRewrite([], [desired(name, LAPTOP)], CONFIG_ID)).toThrow(
+      /not a valid resource name/
+    );
   });
 });

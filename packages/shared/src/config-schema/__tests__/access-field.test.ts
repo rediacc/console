@@ -128,6 +128,17 @@ describe('access in the config', () => {
     expect(issues(access)).toEqual(['access keys ec and twin declare the same public key']);
   });
 
+  it('refuses an undecodable blob before the duplicate check can skip it', () => {
+    // canonicalKeyBlob returns null for such a blob and the duplicate check skips it, so the per-key schema must be what refuses it.
+    const bad = 'ssh-ed25519 AAAC3NzaC1lZDI1NTE5AAAAI!!!';
+    const result = issues({
+      sourceRanges: { ipv4: ['10.0.0.0/8'] },
+      keys: { a: { publicKey: bad }, b: { publicKey: bad } },
+    });
+    expect(result).toHaveLength(2);
+    for (const message of result) expect(message).toMatch(/not a valid OpenSSH key encoding/);
+  });
+
   it('refuses a stated type that differs from the blob', () => {
     const access = {
       sourceRanges: { ipv4: ['10.0.0.0/8'] },

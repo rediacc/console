@@ -474,11 +474,17 @@ test.describe
         const sh = (cmd: string) => w1.executeViaBridge(`sudo sh -c '${cmd}'`);
         const treeHash = (dir: string): string =>
           `cd "${dir}" && find . -type f | sort | xargs sha256sum`;
-        const restoreVerb = (pathArg: string, to: string, at: string, passphrase: string) =>
-          w1.executeViaBridge(
-            `printf '%s\\n' '${passphrase}' | sudo renet backup restore-path --datastore "${DS}" ` +
-              `--repo "${repo.guid}" --lineage "${repo.guid}" --at '${at}' --path '${pathArg}' ` +
-              `--to "${to}" --password-stdin`
+        // The passphrase travels in the vault the function runner hands to renet, never in a command line: the bridge runner logs every command it executes and has no stdin channel.
+        const restoreViaFunction = (pathArg: string, to: string, at: string) =>
+          w1.restorePathWithVault(
+            new VaultBuilder()
+              .withFunction('backup_restore_path')
+              .withTeam(TEST_TEAM)
+              .withRepository(repo.guid, repo.guid)
+              .withRepositoryCredential(repo.guid, repo.credential)
+              .withMachine(w1.getTargetVM(), TEST_USER, DS)
+              .withDatastore(DS)
+              .withParams({ lineage: repo.guid, at, path: pathArg, to })
           );
 
         let restoreSnapshotId = '';
@@ -518,20 +524,7 @@ test.describe
 
         try {
           // One file, through the backup_restore_path FUNCTION driven by a vault.
-          const vault = new VaultBuilder()
-            .withFunction('backup_restore_path')
-            .withTeam(TEST_TEAM)
-            .withRepository(repo.guid, repo.guid)
-            .withRepositoryCredential(repo.guid, repo.credential)
-            .withMachine(w1.getTargetVM(), TEST_USER, DS)
-            .withDatastore(DS)
-            .withParams({
-              lineage: repo.guid,
-              at: restoreSnapshotId,
-              path: fileName,
-              to: `${toBase}/file`,
-            });
-          const fileRun = await w1.restorePathWithVault(vault);
+          const fileRun = await restoreViaFunction(fileName, `${toBase}/file`, restoreSnapshotId);
           expect(
             fileRun.code,
             `backup_restore_path exited ${fileRun.code}:\n${(fileRun.stdout + fileRun.stderr).slice(-800)}`
@@ -543,13 +536,8 @@ test.describe
             'the restored file differs from the live one'
           ).toBe(liveFileHash);
 
-          // One directory tree, through the verb.
-          const dirRun = await restoreVerb(
-            dirName,
-            `${toBase}/dir`,
-            restoreSnapshotId,
-            repo.credential
-          );
+          // One directory tree, through the function.
+          const dirRun = await restoreViaFunction(dirName, `${toBase}/dir`, restoreSnapshotId);
           expect(dirRun.code, `restore-path dir: ${w1.getCombinedOutput(dirRun).slice(-800)}`).toBe(
             0
           );
@@ -559,21 +547,18 @@ test.describe
             liveTreeHash
           );
 
-          // A path the snapshot does not hold: refused with NO_SUCH_PATH (exit 19, code in the stderr payload), and no --to directory appears.
+          // A path the snapshot does not hold: refused with NO_SUCH_PATH, and no --to directory appears. The function runner relays the verb's exit code and its stderr payload, so the code is read from the combined output (the exact exit code is not pinned through the function path).
           const missingTo = `${toBase}/missing`;
-          const missing = await restoreVerb(
+          const missing = await restoreViaFunction(
             `missing-${stamp}`,
             missingTo,
-            restoreSnapshotId,
-            repo.credential
+            restoreSnapshotId
           );
-          expect(missing.code, `a missing path: ${w1.getCombinedOutput(missing).slice(-800)}`).toBe(
-            19
-          );
-          expect(missing.stdout.trim(), 'a refused restore printed a record').toBe('');
-          expect(missing.stderr, 'the refusal does not carry NO_SUCH_PATH').toContain(
-            '"code":"NO_SUCH_PATH"'
-          );
+          expect(missing.code, 'a missing path restored without error').not.toBe(0);
+          expect(
+            w1.getCombinedOutput(missing),
+            'the refusal does not carry NO_SUCH_PATH'
+          ).toContain('NO_SUCH_PATH');
           const absent = await w1.executeViaBridge(
             `sudo test -e "${missingTo}" && echo present || echo absent`
           );

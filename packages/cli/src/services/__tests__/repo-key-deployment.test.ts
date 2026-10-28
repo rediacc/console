@@ -57,7 +57,6 @@ vi.mock('../../utils/repo-executor.js', () => ({
 const DS = WK_DATASTORE_PATH;
 
 const PUB_KEY = `ssh-ed25519 ${'A'.repeat(60)} test@rediacc`;
-const KEY_PREFIX = PUB_KEY.slice(0, 50);
 
 describe('buildKeyDeploymentScript', () => {
   it('produces the exact deployment script (byte-identical snapshot)', () => {
@@ -69,14 +68,49 @@ describe('buildKeyDeploymentScript', () => {
       'SSH_DIR="$HOME/.ssh"',
       'AUTH_KEYS="$SSH_DIR/authorized_keys"',
       'mkdir -p "$SSH_DIR" && chmod 700 "$SSH_DIR"',
-      `KEY_PREFIX="${KEY_PREFIX}"`,
-      `if [ -f "$AUTH_KEYS" ] && grep -qF "$KEY_PREFIX" "$AUTH_KEYS"; then TEMP=$(mktemp) && grep -vF "$KEY_PREFIX" "$AUTH_KEYS" > "$TEMP" 2>/dev/null || true && mv "$TEMP" "$AUTH_KEYS"; fi`,
+      `KEY_BLOB="${PUB_KEY.split(' ')[1]}"`,
+      `if [ -f "$AUTH_KEYS" ] && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) f = 1 } END { exit !f }' "$AUTH_KEYS"; then TEMP=$(mktemp) && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) next } 1' "$AUTH_KEYS" > "$TEMP" && mv "$TEMP" "$AUTH_KEYS"; fi`,
       `echo 'command="${REMOTE_RENET_PATH} sandbox-gateway myrepo --guid guid-123 --datastore ${DS}" ${PUB_KEY}' >> "$AUTH_KEYS"`,
       'chmod 600 "$AUTH_KEYS"',
     ].join('; ');
 
     expect(script).toBe(expected);
     expect(script).toMatchSnapshot();
+  });
+
+  it('replaces only the line holding the same blob, not a key sharing its first 50 characters, in a real shell', () => {
+    const head = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI';
+    const keyA = `${head}AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`;
+    const keyB = `${head}AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB`;
+    expect(keyA.slice(0, 50)).toBe(keyB.slice(0, 50));
+    const home = mkdtempSync(join(tmpdir(), 'keydeploy-'));
+    try {
+      mkdirSync(join(home, '.ssh'));
+      const keys = join(home, '.ssh', 'authorized_keys');
+      const lineB = `command="renet sandbox-gateway other --guid g2 --datastore /mnt/x" ${keyB} other`;
+      writeFileSync(keys, `ssh-rsa team\n${lineB}\n`);
+
+      execFileSync('bash', ['-c', buildKeyDeploymentScript('repoa', keyA, 'g1', DS)], {
+        env: { ...process.env, HOME: home },
+      });
+      execFileSync('bash', ['-c', buildKeyDeploymentScript('repoa', keyA, 'g1', DS)], {
+        env: { ...process.env, HOME: home },
+      });
+
+      const lines = readFileSync(keys, 'utf8').trim().split('\n');
+      expect(lines).toContain(lineB);
+      expect(lines.filter((l) => l.includes(keyA))).toHaveLength(1);
+      expect(lines).toHaveLength(3);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a public key without a base64 blob', () => {
+    expect(() => buildKeyDeploymentScript('r', 'ssh-ed25519', 'g', DS)).toThrow(/no base64 blob/);
+    expect(() => buildKeyDeploymentScript('r', 'ssh-ed25519 a"b', 'g', DS)).toThrow(
+      /no base64 blob/
+    );
   });
 
   it('refuses to build a key line without a repository GUID', () => {

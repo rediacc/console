@@ -16,6 +16,9 @@ import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
 const GATEWAY_BIN = REMOTE_RENET_PATH;
 
 // The datastore is written into the command= entry, which sshd hands to a shell and which sits inside a single-quoted echo below, so only plain absolute path characters are admitted.
+// The blob is written into the script inside double quotes, so only base64 characters are admitted.
+const SAFE_KEY_BLOB = /^[A-Za-z0-9+/]+={0,2}$/;
+
 const SAFE_DATASTORE_PATH = /^\/[A-Za-z0-9._/-]+$/;
 
 /**
@@ -54,16 +57,22 @@ export function buildKeyDeploymentScript(
   }
   const guidFlag = ` --guid ${repositoryGuid}`;
   const keyLine = `command="${GATEWAY_BIN} sandbox-gateway ${repoName}${guidFlag} --datastore ${datastore}" ${sshPublicKey}`;
-  const keyPrefix = sshPublicKey.slice(0, 50);
+  // The whole key blob (the second field of the public key) identifies the key: a 50-character prefix of an ed25519 key holds only ~13 characters of key material, so two keys could delete each other's lines.
+  const keyBlob = sshPublicKey.trim().split(/\s+/)[1] ?? '';
+  if (!SAFE_KEY_BLOB.test(keyBlob)) {
+    throw new Error(
+      `refusing to deploy a repo key for ${repoName}: its public key has no base64 blob`
+    );
+  }
 
   return [
     'set -e',
     'SSH_DIR="$HOME/.ssh"',
     'AUTH_KEYS="$SSH_DIR/authorized_keys"',
     'mkdir -p "$SSH_DIR" && chmod 700 "$SSH_DIR"',
-    `KEY_PREFIX="${keyPrefix}"`,
-    // Remove old version if exists (by key prefix match)
-    `if [ -f "$AUTH_KEYS" ] && grep -qF "$KEY_PREFIX" "$AUTH_KEYS"; then TEMP=$(mktemp) && grep -vF "$KEY_PREFIX" "$AUTH_KEYS" > "$TEMP" 2>/dev/null || true && mv "$TEMP" "$AUTH_KEYS"; fi`,
+    `KEY_BLOB="${keyBlob}"`,
+    // Remove the old version if present: a line is the key's when one of its whitespace fields is exactly the blob (command= options never hold it)
+    `if [ -f "$AUTH_KEYS" ] && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) f = 1 } END { exit !f }' "$AUTH_KEYS"; then TEMP=$(mktemp) && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) next } 1' "$AUTH_KEYS" > "$TEMP" && mv "$TEMP" "$AUTH_KEYS"; fi`,
     // Append new key
     `echo '${keyLine}' >> "$AUTH_KEYS"`,
     'chmod 600 "$AUTH_KEYS"',
@@ -73,7 +82,7 @@ export function buildKeyDeploymentScript(
 /**
  * Deploy a repo's SSH public key to a machine's authorized_keys over an
  * established shared SSH session (team key, unsandboxed).
- * Idempotent, replaces existing key if prefix matches.
+ * Idempotent, replaces the existing line holding the same key blob.
  */
 export async function deployRepoKey(
   sftp: SFTPClient,

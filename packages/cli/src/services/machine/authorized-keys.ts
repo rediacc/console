@@ -111,6 +111,22 @@ export class AccessKeyConflictError extends Error {
   }
 }
 
+/** Two desired access keys carry one key blob: both would claim the same authorized_keys line. */
+export class DuplicateAccessKeyError extends Error {
+  readonly code = 'ACCESS_KEY_DUPLICATE_BLOB';
+  constructor(
+    readonly first: string,
+    readonly second: string
+  ) {
+    super(`access keys ${first} and ${second} declare the same public key`);
+    this.name = 'DuplicateAccessKeyError';
+  }
+}
+
+/** The marker's name field is read back by parseMarker as one non-blank token; the config's resource-name rule is the stricter form every real name already satisfies. */
+const ACCESS_KEY_NAME = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+const ACCESS_KEY_NAME_MAX = 63;
+
 const BASE64_BLOB = /^[A-Za-z0-9+/]+={0,2}$/;
 /** Key type tokens sshd accepts without options in front. */
 const KEY_TYPE =
@@ -254,6 +270,11 @@ function parsePublicKey(
  * IPv4 ranges first, then IPv6, each in declared order.
  */
 export function renderAccessLine(spec: AccessLineSpec): string {
+  if (spec.name.length > ACCESS_KEY_NAME_MAX || !ACCESS_KEY_NAME.test(spec.name)) {
+    throw new Error(
+      `access key name ${JSON.stringify(spec.name)} is not a valid resource name (lowercase alphanumeric and hyphens, at most ${ACCESS_KEY_NAME_MAX} characters): its marker would not be readable back`
+    );
+  }
   const { type, blob, comment } = parsePublicKey(spec.name, spec.key);
   const ranges = [...(spec.ranges.ipv4 ?? []), ...(spec.ranges.ipv6 ?? [])];
   if (ranges.length === 0) {
@@ -392,6 +413,12 @@ export function planAccessRewrite(
     blob: canonicalDesiredBlob(d.name, d.key),
     rendered: renderAccessLine({ ...d, configId }),
   }));
+  const owners = new Map<string, string>();
+  for (const w of wanted) {
+    const owner = owners.get(w.blob);
+    if (owner !== undefined && owner !== w.name) throw new DuplicateAccessKeyError(owner, w.name);
+    owners.set(w.blob, w.name);
+  }
   const state: PlanState = {
     parsed,
     prefix: configId.slice(0, CONFIG_ID_PREFIX_LENGTH),
