@@ -119,10 +119,11 @@ Two more facts shape the design. `luks.Device.GetDataOffset` (pkg/luks/resize.go
     (ticked) 2026-10-28T10:37:10Z by d778be9d: 2026-10-28 by d778be9d: renet 22fe263 (pointer in the next console commit); go test ./pkg/repodiff/ ./pkg/luks/ -run 'TestListEntries|TestParseDataOffset' rc=0 with no skips; go vet linux and darwin rc=0
 
   Owns: private/renet/pkg/repodiff/types.go, private/renet/pkg/repodiff/browse.go, private/renet/pkg/repodiff/extents_linux.go, private/renet/pkg/repodiff/mountset.go, private/renet/pkg/repodiff/browse_list_test.go, private/renet/pkg/luks/resize.go, private/renet/pkg/luks/luks_test.go. Accept: `cd private/renet && go test ./pkg/repodiff/ ./pkg/luks/ -run 'TestListEntries|TestParseDataOffset' -count=1` rc 0.
-- [ ] R2 [writer] Seal positions into staged listings only, and strip them from browse output (Design 1, last three bullets). `snapshotTOCListing` passes `RecordExtents: true` and stamps `LUKSDataOffset` on the staged branch. A strict-offset failure drops the extents and still seals. The live-mount branch carries neither. `browseAtSnapshot` clears all three fields. Tests in backup_snapshot_toc_test.go, through the existing opener seam:
+- [x] R2 [writer] Seal positions into staged listings only, and strip them from browse output (Design 1, last three bullets). `snapshotTOCListing` passes `RecordExtents: true` and stamps `LUKSDataOffset` on the staged branch. A strict-offset failure drops the extents and still seals. The live-mount branch carries neither. `browseAtSnapshot` clears all three fields. Tests in backup_snapshot_toc_test.go, through the existing opener seam:
   - A staged listing opened from the seal carries extents and the offset.
   - A live-mount listing carries neither.
   - An offset failure still seals a listing, without positions.
+    (ticked) 2026-10-28T10:58:57Z by d778be9d: commit:7c5a73bb3 (renet 18ecc8b) + perf 27326b22a (renet 7c3cf0a); go test ./cmd/renet/ -run 'TestSnapshotTOC|TestBrowseAt' rc=0
 
   In backup_browse_at_test.go: browse-at JSON never contains the extents key or the offset key, even when the sealed listing has them.
 
