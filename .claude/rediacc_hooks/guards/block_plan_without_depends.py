@@ -50,7 +50,7 @@ UNEXAMINED = (
     "edit passed UNEXAMINED. check:ci-plan-deps is the backstop."
 )
 
-HEADER = """BLOCKED: %s would be a live plan without a valid header (`Depends-On:`, or a Priority/Concurrency/Owns/Live-Proof line).
+HEADER = """BLOCKED: %s would be a live plan without a valid header (`Depends-On:` plus the Priority/Concurrency/Owns lines, and `Live-Proof:` when Owns hit a deployable surface).
 
 A plan does not start before the plans it needs are finished, so every live plan
 says what it needs, or says why it needs nothing:
@@ -384,14 +384,25 @@ def _live_findings(deps, conc, header, before_h, tree, rel, ev):
     is_new = before_h is None
     required = False
     owns = header.owns
-    if is_new and owns is not None and owns.globs and header.get(deps.LIVE_PROOF) is None:
+    proof = header.live_proof
+    was = before_h.get(deps.LIVE_PROOF) if before_h is not None else None
+    now = header.get(deps.LIVE_PROOF)
+    changed = now is not None and (was is None or was.value != now.value)
+    hits = {}
+    surface_live = {}
+    declared = proof is not None and not proof.none
+    if owns is not None and owns.globs and ((is_new and now is None) or (declared and changed)):
         try:
             hits = _owned_surfaces(conc, owns)
+            surface_live = {
+                name: surface.live
+                for name, surface in syspath.import_from_ci(SURFACES_MOD).MAP.surfaces.items()
+            }
         # The map raises its own MapError (a ValueError) at import; any failure is blindness, said aloud.
         except Exception as exc:
             ev.warn(UNMAPPED % (exc, rel))
             hits = {}
-        required = bool(hits)
+        required = is_new and now is None and bool(hits)
     out = deps.live_proof_findings(header, required)
     if required:
         out = [
@@ -403,10 +414,34 @@ def _live_findings(deps, conc, header, before_h, tree, rel, ev):
     if not is_new:
         had = set(deps.live_proof_findings(before_h, False))
         out = [f for f in out if f not in had]
-    proof = header.live_proof
-    was = before_h.get(deps.LIVE_PROOF) if before_h is not None else None
-    now = header.get(deps.LIVE_PROOF)
-    if proof is not None and proof.none and (was is None or was.value != now.value):
+    if declared and changed and hits:
+        # LP2 (PLAN-tested-on-bench item 2): every touched surface needs a declared target its
+        # `live` list admits, and every declared target must be admissible for a touched surface.
+        for name in sorted(hits):
+            if not set(proof.targets) & set(surface_live.get(name, ())):
+                out.append(
+                    (
+                        deps.LP_WAIVER,
+                        "%s: surface `%s` needs one of %s, declared %s"
+                        % (
+                            deps.LIVE_PROOF,
+                            name,
+                            ", ".join(surface_live.get(name, ())) or "(none)",
+                            ", ".join(proof.targets),
+                        ),
+                    )
+                )
+        usable = set().union(*(surface_live.get(n, ()) for n in hits))
+        for tok in proof.targets:
+            if tok not in usable:
+                out.append(
+                    (
+                        deps.LP_WAIVER,
+                        "%s: target `%s` is admissible for none of the touched surfaces (%s)"
+                        % (deps.LIVE_PROOF, tok, ", ".join(sorted(hits))),
+                    )
+                )
+    if proof is not None and proof.none and changed:
         import wl_planfile
 
         ok, why = deps.resolve_live_proof_waiver(

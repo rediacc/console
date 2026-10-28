@@ -1,7 +1,7 @@
 ---
 description: Drain the Promoted plans in agent/plans/QUEUE.md with parallel writers. Reads the generated progress table, classifies every open box of every unfinished Promoted plan (local now, live on bench/edge, live on hostinger, post-merge, operator, already done), then fans out writers on the local-now and bench/edge work with disjoint file ownership up to writer_cap, leases each, and keeps going until every open box is either ticked or genuinely waiting on something named. Free text after the command narrows it to matching plans.
 argument-hint: "[filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan]"
-allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(python3 -c:*)
+allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(python3 -c:*)
 ---
 
 ## The queue, gathered
@@ -10,7 +10,7 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git br
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 - Writer cap and turbo settings: !`sed -n '/^## Settings/,/^## /p' agent/plans/QUEUE.md | grep -E '^(writer_cap|turbo|turbo_push|batch_size|plan_concurrency|effort):' || echo '(no Settings section)'`
 - Promoted progress (generated): !`sed -n '/queue:progress:begin/,/queue:progress:end/p' agent/plans/QUEUE.md`
-- Live writer leases of this session: !`.claude/hooks/stop/worklist.py --list --open 2>/dev/null | grep -E '^\s*- \[>\]' | head -20 || echo '(none)'`
+- Live writer leases (every session's; the tag after the title names the owner): !`.claude/hooks/stop/worklist.py --list --open 2>/dev/null | grep -E '^\s*- \[>\]' | head -20 | grep . || echo '(none)'`
 - Filter: `$ARGUMENTS`
 
 ## What to do
@@ -26,7 +26,7 @@ Every Promoted plan whose row is not `done`, in table order (the order already p
 Fan out `Explore`/`general-purpose` agents (read-only; they do not count against the cap), one per plan or per group of small plans, model `sonnet`. Each returns, per open box: the 8-hex signature (from `.ci/config/plan-boxes.json` `open_sigs`), a one-line summary, and exactly one class:
 
 - **LOCAL-NOW**: code, tests, docs or config doable in this checkout now;
-- **LIVE-BENCH**: needs bench or edge (agents deploy both freely; `npm run login:bench` logs in headlessly; ops VMs via `./rdc.sh ops up`);
+- **LIVE-BENCH**: needs bench or edge (agents deploy bench freely, and edge per the deploy skill's own gates; `npm run login:bench` logs in headlessly; ops VMs via `./rdc.sh ops up`);
 - **LIVE-HOSTINGER**: needs the production hostinger machine (always available; through `eu-bench` or `eu-remote`);
 - **POST-MERGE**: needs `main`, a released CLI or renet, CD, a nightly, or the stable promote;
 - **OPERATOR**: needs an operator decision or operator-only access;
@@ -52,7 +52,7 @@ Spot-check against the artifact (rule 4), rerun its acceptance commands, regener
 
 ### 6. Live and parked boxes
 
-- LIVE-BENCH and LIVE-HOSTINGER boxes get a writer or the lead as soon as nothing in the tree they need is mid-edit (a vm:check or a drill rebuilds the CLI; no CLI writer runs beside one).
+- LIVE-BENCH boxes get a writer or the lead as soon as nothing in the tree they need is mid-edit (a vm:check or a drill rebuilds the CLI; no CLI writer runs beside one). A LIVE-HOSTINGER box is run by the lead after the box's own acceptance command is named in the writer brief; a writer does not change the production machine beyond that named command, and a step the plan does not name goes to the operator.
 - POST-MERGE boxes stay open and are named once in the report; they close after the merge.
 - OPERATOR boxes become one batched `AskUserQuestion` (recommended option first), never one question per box.
 

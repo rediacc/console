@@ -105,7 +105,7 @@ Per PLAN-executor-durable-object-policy, the executor is moving from the frozen 
 
 The deploy record `deploy-record-<target>-<region>.json` (worker names, version ids before and after, D1 bookmark, smoke rc, artifact manifest sha256s, rollback command) is written once to R2 under `release-records/`. Report it per section 7.
 
-On failure the entry rolls back in reverse order: disable the console executor (`wrangler secret delete EXECUTOR_MODE`), redeploy the previous proxy version from the record (nothing for a first deploy), then the account rollback and D1 restore commands are printed and stay human-run. Cloudflare documents no container rollback, so the previous proxy version is redeployed from its own config and fetched artifacts. A redeploy ends every executor session; the web client re-grants.
+On failure the entry rolls back in reverse order: disable the console executor (`wrangler secret delete EXECUTOR_MODE`), redeploy the previous proxy version from the record (nothing for a first deploy, and nothing for a `forward-only` record: a Phase 1 or Phase 3 deploy adds or removes a Durable Object class, so the fix is a forward deploy), then the account rollback and D1 restore commands are printed and stay human-run. Cloudflare documents no container rollback, so the previous proxy version is redeployed from its own config and fetched artifacts. A redeploy ends every executor session; the web client re-grants.
 
 Bench stays manual: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench` builds renet locally with the dev licence key, because the release renet cannot run under a bench executor.
 

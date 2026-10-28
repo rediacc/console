@@ -421,11 +421,47 @@ CASES = [
         True,
     ),
     (
-        "a new surface plan declaring bench",
+        "a new renet plan declaring only bench (not admissible for renet)",
         write(
             NEW, plan(dep=DEP, x=xlp(live="Live-Proof: bench -- the cli against bench.rediacc.com"))
         ),
+        True,
+    ),
+    (
+        "a new account plan declaring bench",
+        write(
+            NEW,
+            plan(
+                dep=DEP,
+                x=xlp(
+                    owns="private/account/src/**",
+                    live="Live-Proof: bench -- the account worker on bench",
+                ),
+            ),
+        ),
         False,
+    ),
+    (
+        "a new account plan declaring only hostinger (not admissible for account)",
+        write(
+            NEW,
+            plan(
+                dep=DEP,
+                x=xlp(
+                    owns="private/account/src/**",
+                    live="Live-Proof: hostinger -- the account worker there",
+                ),
+            ),
+        ),
+        True,
+    ),
+    (
+        "a new renet plan declaring bench and hostinger (bench admissible for no touched surface)",
+        write(
+            NEW,
+            plan(dep=DEP, x=xlp(live="Live-Proof: bench, hostinger -- the cli and renet halves")),
+        ),
+        True,
     ),
     (
         "a new surface plan declaring hostinger",
@@ -438,7 +474,13 @@ CASES = [
         "a new surface plan declaring both targets",
         write(
             NEW,
-            plan(dep=DEP, x=xlp(live="Live-Proof: bench, hostinger -- the cli and renet halves")),
+            plan(
+                dep=DEP,
+                x=xlp(
+                    owns="private/renet/cmd/**, private/account/src/**",
+                    live="Live-Proof: bench, hostinger -- the account and renet halves",
+                ),
+            ),
         ),
         False,
     ),

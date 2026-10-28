@@ -356,7 +356,7 @@ def _locked_refusal(path: str) -> str:
     return ""
 
 
-# THE PROCFS SEAM (the proc-table precedent in .ci/rediacc_ci/quality/hook_cross_os.py, scope release-run-procfs): the root is named once, here, and every read above builds its path from it. macOS has no procfs, so a hard-coded `/proc` there reads as "nothing is running" rather than failing; the root is a name a test or a platform with procfs elsewhere can move. THE OVERRIDE IS ADMISSION-SAFE: this module admits a push by what procfs says about a process, so a caller-chosen directory would let it forge that answer. The override therefore counts only when it is root-owned and closed to writes with every ancestor (`_locked_refusal`); anything else is ignored and the real `/proc` answers, which can only be the kernel's own word.
+# THE PROCFS SEAM (the proc-table precedent in .ci/rediacc_ci/quality/hook_cross_os.py, scope release-run-procfs): the root is named once, here, and every read above builds its path from it. macOS has no procfs, so a hard-coded `/proc` there cannot be read and the admission REFUSES (`admitted_pushes` raises, `entry_refusal` says it cannot be read) rather than reading as "nothing is running"; the root is a name a test or a platform with procfs elsewhere can move. THE OVERRIDE IS ADMISSION-SAFE: this module admits a push by what procfs says about a process, so a caller-chosen directory would let it forge that answer. The override therefore counts only when it is root-owned and closed to writes with every ancestor (`_locked_refusal`); anything else is ignored and the real `/proc` answers, which can only be the kernel's own word.
 PROCFS_ENV = "REDIACC_RELEASE_RUN_PROCFS"
 
 

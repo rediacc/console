@@ -21,9 +21,9 @@ Body-Sig: 12d105bce9902ad0
 ### ae9d3bec.1 [medium] scripts/rewrap-config-server-key.ts:81
 Anchor: in-diff
 Claim: The new rewrap() path re-seals stored secrets, but no test is added to the repo; the only verification is a one-off manual run under a temporary tsconfig that is not committed, so a later change to the sealing or AAD handling would not be caught.
-Resolution: open
+Resolution: not-a-bug | private/account/scripts/rewrap-config-server-key.ts was deleted by account 35f8262 with the legacy path it served; nothing cited remains (private/account/scripts/tsconfig.json:1) | d778be9d 2026-10-28T05:58:59Z
 
 ### ae9d3bec.2 [low] scripts/rewrap-config-server-key.ts:83
 Anchor: in-diff
 Claim: rewrap() does not reject duplicate store ids in one batch, so the same id can appear twice in the output and the caller must dedupe it.
-Resolution: open
+Resolution: not-a-bug | private/account/scripts/rewrap-config-server-key.ts was deleted by account 35f8262 with the legacy path it served; nothing cited remains (private/account/scripts/tsconfig.json:1) | d778be9d 2026-10-28T05:58:59Z

@@ -697,5 +697,12 @@ def test_a_procfs_override_that_is_not_root_locked_is_ignored(tmp_path: pathlib.
     assert RR._procfs_root({RR.PROCFS_ENV: str(fake)}) == default
     assert RR._procfs_root({RR.PROCFS_ENV: "relative/procfs"}) == default
     assert RR._procfs_root({RR.PROCFS_ENV: ""}) == default
-    # the other direction: a root-locked directory is honoured
-    assert RR._procfs_root({RR.PROCFS_ENV: "/usr/"}) == "/usr"
+    # the other direction: a root-locked directory is honoured. The host's /usr is not assumed
+    # root-owned and closed, so the directory is chosen from the same predicate the seam uses.
+    locked = next(
+        (d for d in ("/usr", "/etc", "/bin") if os.path.isdir(d) and not RR._locked_refusal(d)),
+        None,
+    )
+    if locked is None:
+        pytest.skip("no root-locked directory on this host")
+    assert RR._procfs_root({RR.PROCFS_ENV: locked + "/"}) == locked.rstrip("/")
