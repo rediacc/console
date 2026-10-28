@@ -83,7 +83,7 @@ export interface EgressEnv extends ForwardEnv {
 }
 
 /** The executor's report that it could not reach a machine: bodiless, with no query, answered by `AccountEgress` and never forwarded (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design items 3 and 7). */
-export const EGRESS_UNREACHABLE_PATH = '/executor/v1/egress-unreachable';
+const EGRESS_UNREACHABLE_PATH = '/executor/v1/egress-unreachable';
 
 /** The slice of an OrgExecutor stub the egress calls: only the report. */
 interface EgressReporter {

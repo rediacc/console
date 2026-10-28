@@ -23,7 +23,7 @@ export interface Deferred {
   reject: (error: unknown) => void;
 }
 
-export function deferred(): Deferred {
+function deferred(): Deferred {
   let resolve!: () => void;
   let reject!: (error: unknown) => void;
   const promise = new Promise<void>((res, rej) => {
@@ -35,7 +35,7 @@ export function deferred(): Deferred {
   return { promise, resolve, reject };
 }
 
-export function fakeId(name: string) {
+function fakeId(name: string) {
   return {
     name,
     equals: (other: { name?: string }) => other.name === name,
@@ -117,7 +117,7 @@ export class FakeContainer {
 }
 
 /** The issuer's `relocate`, whose answer each test sets. */
-export class FakeIssuer {
+class FakeIssuer {
   relocate = vi.fn(
     async (_orgId: string, fromPlacement: number): Promise<RelocateAnswer> => ({
       ok: true,

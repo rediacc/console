@@ -25,7 +25,7 @@ export const OOM_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 export type ExecutorTier = 'high' | 'standard';
 
 /** Why a size was chosen: `oom` cannot fall back to LIGHT, `tier` can. */
-export type SizeCause = 'oom' | 'tier' | 'none';
+type SizeCause = 'oom' | 'tier' | 'none';
 
 export interface SizeChoice {
   size: ExecutorSize;

@@ -56,13 +56,10 @@ import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } f
 import { INSTANCE_BY_SIZE } from './sizing';
 
 export {
-  ACCOUNT_EGRESS_ENTRYPOINT,
   ACCOUNT_EGRESS_HOST,
   COORDINATOR_TIMEOUT_MS,
   durationMs,
   type EgressReportAnswer,
-  EXECUTOR_IMAGE_KEY,
-  EXECUTOR_PORT,
   type ExecutorEgressProps,
   type ExecutorRecord,
   type ExecutorRefusalCode,
@@ -70,11 +67,13 @@ export {
   isOomExit,
   type OrgExecutorEnv,
   type PinAnswer,
-  READY_POLL_MS,
   READY_TIMEOUT_MS,
   RENEW_THROTTLE_MS,
   type RelocateAnswer,
 } from './org-executor-support';
+
+/** The size named in the out-of-memory log line when the container never reported one. */
+const UNKNOWN_SIZE = 'unknown';
 
 /** The per-org executor Durable Object. See the module comment. */
 export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
@@ -517,7 +516,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     this.draining = false;
     try {
       if (!result.clean && isOomExit(result.error)) {
-        console.warn(`proxy: org executor out of memory on ${wasSize ?? 'unknown'}`);
+        console.warn(`proxy: org executor out of memory on ${wasSize ?? UNKNOWN_SIZE}`);
         const now = Date.now();
         await this.ctx.storage.put(OOM_KEY, now);
         if (wasSize === 'heavy') await this.ctx.storage.put(OOM_HEAVY_KEY, now);

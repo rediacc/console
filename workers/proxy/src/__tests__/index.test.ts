@@ -214,7 +214,7 @@ describe('ExecutorContainer (B1)', () => {
 describe('the main module exports (wrangler deploy, workerd start)', () => {
   it('exports every bound Durable Object class and the AccountEgress entrypoint, and nothing that is not a class', async () => {
     const main = await import('../index');
-    // wrangler refuses a deploy whose bound Durable Objects are not exported ("Your Worker depends on the following Durable Objects, which are not exported in your entrypoint file"), and OrgExecutor reaches the egress through ctx.exports.AccountEgress.
+    // wrangler refuses a deploy whose bound Durable Objects are not exported (its error says the Worker depends on Durable Objects that the entrypoint file does not export), and OrgExecutor reaches the egress through ctx.exports.AccountEgress.
     for (const name of [
       'ExecutorContainer',
       'OrgExecutor',

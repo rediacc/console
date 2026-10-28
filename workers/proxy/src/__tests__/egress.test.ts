@@ -183,7 +183,7 @@ describe('AccountEgress entrypoint (props and containerId checks)', () => {
     const { env, seen, state } = setup();
     const reports: { id: string; orgId: string; placement: number }[] = [];
     const attrs: Record<string, unknown> = {};
-    const { EXECUTOR: _legacy, ...rest } = env;
+    const rest = Object.fromEntries(Object.entries(env).filter(([k]) => k !== 'EXECUTOR'));
     const durable = {
       ...rest,
       ORG_EXECUTOR: {

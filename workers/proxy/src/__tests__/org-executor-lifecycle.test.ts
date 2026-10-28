@@ -116,7 +116,7 @@ describe('recovery after a restart', () => {
 
   it('destroys a running container whose record names no placement, as unrecorded', async () => {
     const container = running();
-    const { placement: _dropped, ...legacy } = record;
+    const legacy = Object.fromEntries(Object.entries(record).filter(([k]) => k !== 'placement'));
     const storage = new Map<string, unknown>([
       ['org', { orgId: ORG, placement: 0 }],
       ['executor', legacy],

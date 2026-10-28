@@ -10,7 +10,7 @@ import { executorName, placementOf } from './placement';
 /** The host the container addresses the account server by; the intercept routes it to the egress entrypoint (src/index.ts, the `ExecutorContainer` comment, says why). */
 export const ACCOUNT_EGRESS_HOST = 'account.internal';
 /** The main-module export the intercept binds, through `ctx.exports` (Design A: per-instance props). */
-export const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
+const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
 /** `rdc serve` listens here. */
 export const EXECUTOR_PORT = 8080;
 /** The image key under `[containers.images]` in the wrangler config. */
@@ -97,7 +97,7 @@ export interface PinnedExecutor {
   placement: number;
 }
 
-export type EgressFactory = (options: { props: ExecutorEgressProps }) => Fetcher;
+type EgressFactory = (options: { props: ExecutorEgressProps }) => Fetcher;
 
 export type ExitResult = { clean: true } | { clean: false; error: unknown };
 
@@ -118,13 +118,18 @@ export function executorEnv(
   };
 }
 
-export const UNIT_MS: Record<string, number> = { s: 1_000, m: 60_000, h: 3_600_000 };
+const UNIT_MS: Record<string, number> = {
+  '': 1_000,
+  s: 1_000,
+  m: 60_000,
+  h: 3_600_000,
+};
 
 /** A `sleepAfter` literal (`'90s'`, `'2m'`, `'1h'`, or plain seconds) in milliseconds. */
 export function durationMs(value: string): number {
-  const match = /^(\d+)(s|m|h)?$/.exec(value);
+  const match = /^(\d+)(s|m|h|)$/.exec(value);
   if (!match) throw new Error(`invalid duration: ${value}`);
-  return Number.parseInt(match[1], 10) * UNIT_MS[match[2] ?? 's'];
+  return Number.parseInt(match[1], 10) * UNIT_MS[match[2]];
 }
 
 /** Whether a `monitor()` rejection is an out-of-memory exit: exit code 137, or an error naming OOM. */
