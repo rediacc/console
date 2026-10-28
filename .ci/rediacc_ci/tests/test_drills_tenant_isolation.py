@@ -12,7 +12,7 @@ import pytest
 
 from rediacc_ci.drills import tenant_isolation as ti
 from rediacc_ci.drills import vm_check, vm_ssh
-from rediacc_ci.drills import vm_check_receipt as receipt_mod
+from rediacc_ci.proof import vm_tier as receipt_mod
 from rediacc_ci.tests import test_drills_vm_check as harness
 from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
 

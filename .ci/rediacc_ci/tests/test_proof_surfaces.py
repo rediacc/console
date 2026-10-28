@@ -121,7 +121,7 @@ def world(tmp_path: pathlib.Path) -> World:
         (".ci/rediacc_ci/drills/universe.py", True),
         (".ci/rediacc_ci/drills/transfer.py", True),
         (".ci/rediacc_ci/proof/surfaces.py", False),
-        (".ci/rediacc_ci/drills/vm_check_receipt.py", False),
+        (".ci/rediacc_ci/proof/vm_tier.py", False),
         ("packages/cli/src/commands/repo.ts", False),
         ("packages/shared/src/x.ts", True),
         ("packages/cli/src/remote/README.md", False),
@@ -762,10 +762,8 @@ def test_every_drill_module_vm_check_runs_is_a_trigger() -> None:
     assert "upgrade_converge" in reached, reached
     assert "wire" in reached, reached
     for name in sorted(reached):
-        # The receipt module judges a run; it changes nothing on a VM, so it charges no side by design.
-        if name != "vm_check_receipt":
-            path = ".ci/rediacc_ci/drills/%s.py" % name
-            assert trig.console_sides(path), "%s is run by vm:check but charges no side" % path
+        path = ".ci/rediacc_ci/drills/%s.py" % name
+        assert trig.console_sides(path), "%s is run by vm:check but charges no side" % path
 
 
 def test_drill_imports_reads_absolute_relative_and_plain_import_spellings(

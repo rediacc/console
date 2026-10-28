@@ -1,4 +1,4 @@
-"""`rediacc_ci.drills.vm_check_receipt`: write, archive, read and the admit rule of the push guard.
+"""`rediacc_ci.proof.vm_tier`: write, archive, read and the admit rule of the push guard, at schema 3.
 
 Each case writes a real receipt file under a temporary root and judges it the way the guard does.
 """
@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from rediacc_ci.drills import vm_check_receipt as rc
+from rediacc_ci.proof import vm_tier as rc
 
 if TYPE_CHECKING:
     import pathlib
@@ -29,29 +29,25 @@ APTR = "9" * 40
 
 def make(**over: object) -> dict[str, Any]:
     base: dict[str, Any] = {
-        "schema": 2,
+        "tier": "vm",
+        "schema": 3,
         "status": rc.VERIFIED,
         "reason": None,
         "tree": TREE,
         "head": "e" * 40,
+        "dirty": False,
         "inputs": DIGEST,
-        "renet": {
-            "pointer": PTR,
-            "checkout": PTR,
-            "built": PTR,
-            "modified": False,
-            "deployed": PTR,
+        "surfaces": ["cli-remote", "renet"],
+        "submodules": {
+            "private/renet": {"pointer": PTR, "checkout": PTR, "modified": False},
+            "private/account": {"pointer": APTR, "checkout": APTR, "modified": False},
         },
+        "renet": {"built": PTR, "modified": False, "sha256": "f" * 64, "deployed": PTR},
         "phases": {
             "renet": {"required": True, "ran": True},
             "account": {"required": False, "ran": False},
         },
-        "account": {
-            "pointer": APTR,
-            "checkout": APTR,
-            "modified": False,
-            "gateway": {"mode": "reused", "port": 3000, "started": 1},
-        },
+        "gateway": {"mode": "reused", "port": 3000, "started": 1},
         "trigger": {"base": "origin/main", "via": "@{push}", "hits": ["x"], "sides": ["renet"]},
         "fleet": {"mode": "reused", "os": "ubuntu", "ips": ["1"], "landlock": {}},
         "forks": [],
@@ -126,7 +122,15 @@ def test_write_refuses_a_malformed_receipt_and_writes_nothing(tmp_path: pathlib.
     [
         {"status": "PASSED"},
         {"schema": 1},
-        {"schema": 3},
+        {"schema": 2},
+        {"schema": 4},
+        {"tier": "live"},
+        {"tier": None},
+        {"dirty": "no"},
+        {"inputs": "short"},
+        {"surfaces": ["gpu"]},
+        {"submodules": {}},
+        {"submodules": {"private/renet": {"pointer": PTR}, "private/account": {}}},
         {"tree": "../../etc/passwd"},
         {"status": rc.NOT_VERIFIED, "reason": None},
         {"status": rc.FAILED, "reason": {"detail": "no class"}},
@@ -134,12 +138,13 @@ def test_write_refuses_a_malformed_receipt_and_writes_nothing(tmp_path: pathlib.
         {"steps": "none"},
         {"steps": [{"id": "V1", "evidence": "x" * 201}]},
         {"renet": "abc"},
+        {"renet": {"built": PTR}},
         {"trigger": ["x"]},
         {"fleet": "reused"},
         {"teardown": True},
         {"forks": {}},
         {"phases": "all"},
-        {"account": "abc"},
+        {"gateway": "abc"},
         {"phases": {"renet": {"required": True, "ran": True}}},
         {
             "phases": {
@@ -147,9 +152,12 @@ def test_write_refuses_a_malformed_receipt_and_writes_nothing(tmp_path: pathlib.
                 "account": {"required": False, "ran": False},
             }
         },
-        {"account": {"pointer": APTR, "checkout": APTR, "modified": "no", "gateway": {}}},
-        {"account": {"pointer": APTR, "checkout": APTR, "modified": False, "gateway": []}},
-        {"account": {"pointer": APTR, "modified": False, "gateway": {}}},
+        {
+            "submodules": {
+                "private/renet": {"pointer": PTR, "checkout": PTR, "modified": False},
+                "private/account": {"pointer": APTR, "checkout": APTR, "modified": "no"},
+            }
+        },
         {"trigger": {"hits": [], "sides": ["gpu"]}},
         {"trigger": {"hits": []}},
     ],
@@ -184,7 +192,7 @@ def test_unreadable_files_read_as_absent(tmp_path: pathlib.Path) -> None:
     folder = tmp_path / ".ci/cache/vm-check"
     folder.mkdir(parents=True)
     (folder / "receipt.json").write_text("{not json")
-    (folder / f"{TREE}.json").write_text(json.dumps({"schema": 2}))
+    (folder / f"{TREE}.json").write_text(json.dumps({"schema": 3}))
     assert rc.read_latest(tmp_path) is None
     assert rc.read_archive(tmp_path, TREE) is None
     assert rc.read_archive(tmp_path, "../x") is None
@@ -228,6 +236,7 @@ def test_a_modified_build_refuses(tmp_path: pathlib.Path) -> None:
     rc.write(tmp_path, receipt)
     got = rc.admit(tmp_path, TREE, DIGEST, RENET)
     assert (got.ok, got.code) == (False, "modified-build")
+    assert rc.admit(tmp_path, TREE, DIGEST, ACCOUNT).code == "phase-missing"
 
 
 def test_a_build_that_is_not_the_pointer_refuses(tmp_path: pathlib.Path) -> None:
@@ -238,9 +247,9 @@ def test_a_build_that_is_not_the_pointer_refuses(tmp_path: pathlib.Path) -> None
     assert (got.ok, got.code) == (False, "build-mismatch")
 
 
-def test_a_missing_modified_flag_is_not_clean(tmp_path: pathlib.Path) -> None:
+def test_an_unknown_modified_flag_is_not_clean(tmp_path: pathlib.Path) -> None:
     receipt = make()
-    del receipt["renet"]["modified"]
+    receipt["renet"]["modified"] = None
     rc.write(tmp_path, receipt)
     assert rc.admit(tmp_path, TREE, DIGEST, RENET).code == "modified-build"
 
@@ -323,7 +332,7 @@ def test_verdict_carries_the_receipt(tmp_path: pathlib.Path) -> None:
     assert copy.deepcopy(got.receipt)["runId"] == "run-1"
 
 
-# ------------------------------------------------------------------ schema 2 and the phases
+# ------------------------------------------------------------------ schema 3 and the phases
 
 
 def phases(renet: tuple[bool, bool], account: tuple[bool, bool]) -> dict[str, Any]:
@@ -334,8 +343,8 @@ def phases(renet: tuple[bool, bool], account: tuple[bool, bool]) -> dict[str, An
 
 
 def account_receipt(**account: object) -> dict[str, Any]:
-    receipt = make(phases=phases((False, False), (True, True)))
-    receipt["account"].update(account)
+    receipt = make(phases=phases((False, False), (True, True)), surfaces=["account"])
+    receipt["submodules"]["private/account"].update(account)
     receipt["trigger"]["sides"] = ["account"]
     return receipt
 
@@ -346,8 +355,10 @@ def write_raw(root: pathlib.Path, name: str, receipt: dict[str, Any]) -> None:
     (folder / name).write_text(json.dumps(receipt), encoding="utf-8")
 
 
-def test_schema_is_two() -> None:
-    assert rc.SCHEMA == 2
+def test_schema_is_three_and_the_tier_is_vm() -> None:
+    assert rc.SCHEMA == 3
+    assert rc.TIER == "vm"
+    assert make()["tier"] == "vm"
 
 
 def test_a_schema_1_file_is_ignored_and_admit_reports_no_receipt(tmp_path: pathlib.Path) -> None:
@@ -365,9 +376,25 @@ def test_an_old_not_verified_receipt_cannot_back_an_escape(tmp_path: pathlib.Pat
     assert rc.read_latest(tmp_path) is None
 
 
-def test_write_refuses_a_schema_1_receipt(tmp_path: pathlib.Path) -> None:
-    with pytest.raises(ValueError, match="schema is 1"):
-        rc.write(tmp_path, make(schema=1))
+def test_a_schema_2_file_is_ignored_and_admit_reports_no_receipt(tmp_path: pathlib.Path) -> None:
+    """A schema 2 receipt (no envelope, top-level account block) neither admits nor backs an escape."""
+    old = make(schema=2)
+    for key in ("tier", "dirty", "surfaces", "submodules", "gateway"):
+        del old[key]
+    old["account"] = {"pointer": APTR, "checkout": APTR, "modified": False, "gateway": {}}
+    write_raw(tmp_path, rc.LATEST, old)
+    write_raw(tmp_path, f"{TREE}.json", old)
+    assert rc.read_latest(tmp_path) is None
+    assert rc.read_archive(tmp_path, TREE) is None
+    assert rc.admit(tmp_path, TREE, DIGEST, RENET).code == "no-receipt"
+    write_raw(tmp_path, rc.LATEST, make(schema=2))
+    assert rc.read_latest(tmp_path) is None
+
+
+@pytest.mark.parametrize("schema", [1, 2])
+def test_write_refuses_a_retired_schema(tmp_path: pathlib.Path, schema: int) -> None:
+    with pytest.raises(ValueError, match=f"schema is {schema}"):
+        rc.write(tmp_path, make(schema=schema))
 
 
 def test_a_renet_only_receipt_is_refused_phase_missing_for_account(tmp_path: pathlib.Path) -> None:
@@ -405,41 +432,72 @@ def test_a_full_receipt_admits_every_side(tmp_path: pathlib.Path) -> None:
 def test_an_account_checkout_that_is_not_the_pointer_refuses(tmp_path: pathlib.Path) -> None:
     rc.write(tmp_path, account_receipt(checkout="f" * 40))
     got = rc.admit(tmp_path, TREE, DIGEST, ACCOUNT)
-    assert (got.ok, got.code) == (False, "account-mismatch")
+    assert (got.ok, got.code) == (False, "checkout-mismatch")
+    assert "private/account" in got.message
 
 
 def test_a_null_account_pointer_is_a_mismatch_even_when_the_checkout_is_null(
     tmp_path: pathlib.Path,
 ) -> None:
     rc.write(tmp_path, account_receipt(pointer=None, checkout=None))
-    assert rc.admit(tmp_path, TREE, DIGEST, ACCOUNT).code == "account-mismatch"
+    assert rc.admit(tmp_path, TREE, DIGEST, ACCOUNT).code == "checkout-mismatch"
 
 
 def test_a_modified_account_checkout_refuses(tmp_path: pathlib.Path) -> None:
     rc.write(tmp_path, account_receipt(modified=True))
     got = rc.admit(tmp_path, TREE, DIGEST, ACCOUNT)
-    assert (got.ok, got.code) == (False, "modified-account")
+    assert (got.ok, got.code) == (False, "modified-checkout")
 
 
 def test_an_unknown_account_modified_flag_is_not_clean(tmp_path: pathlib.Path) -> None:
     rc.write(tmp_path, account_receipt(modified=None))
-    assert rc.admit(tmp_path, TREE, DIGEST, ACCOUNT).code == "modified-account"
+    assert rc.admit(tmp_path, TREE, DIGEST, ACCOUNT).code == "modified-checkout"
 
 
 def test_account_state_is_not_judged_when_the_push_has_no_account_side(
     tmp_path: pathlib.Path,
 ) -> None:
     receipt = make()
-    receipt["account"].update(checkout="f" * 40, modified=True)
+    receipt["submodules"]["private/account"].update(checkout="f" * 40, modified=True)
     rc.write(tmp_path, receipt)
     assert rc.admit(tmp_path, TREE, DIGEST, RENET).ok
 
 
-def test_the_renet_rules_still_come_before_the_side_rules(tmp_path: pathlib.Path) -> None:
+def test_renet_state_is_not_judged_when_the_push_has_no_renet_side(tmp_path: pathlib.Path) -> None:
+    """The account surface needs no renet build, so a renet checkout or build off its pointer does not refuse an account push."""
+    receipt = account_receipt()
+    receipt["renet"]["built"] = "f" * 40
+    receipt["submodules"]["private/renet"]["modified"] = True
+    rc.write(tmp_path, receipt)
+    assert rc.admit(tmp_path, TREE, DIGEST, ACCOUNT).ok
+
+
+def test_the_phase_rule_comes_before_the_identity_rules(tmp_path: pathlib.Path) -> None:
     receipt = make()
     receipt["renet"]["built"] = "f" * 40
     rc.write(tmp_path, receipt)
-    assert rc.admit(tmp_path, TREE, DIGEST, ACCOUNT).code == "build-mismatch"
+    assert rc.admit(tmp_path, TREE, DIGEST, ACCOUNT).code == "phase-missing"
+    assert rc.admit(tmp_path, TREE, DIGEST, RENET).code == "build-mismatch"
+
+
+def test_a_dirty_console_tree_refuses(tmp_path: pathlib.Path) -> None:
+    rc.write(tmp_path, make(dirty=True))
+    assert rc.admit(tmp_path, TREE, DIGEST, RENET).code == "dirty-tree"
+    rc.write(tmp_path, make(dirty=None))
+    assert rc.admit(tmp_path, TREE, DIGEST, RENET).code == "dirty-tree"
+
+
+def test_a_renet_checkout_that_is_not_the_pointer_or_is_modified_refuses(
+    tmp_path: pathlib.Path,
+) -> None:
+    receipt = make()
+    receipt["submodules"]["private/renet"]["checkout"] = "f" * 40
+    rc.write(tmp_path, receipt)
+    assert rc.admit(tmp_path, TREE, DIGEST, RENET).code == "checkout-mismatch"
+    receipt = make()
+    receipt["submodules"]["private/renet"]["modified"] = None
+    rc.write(tmp_path, receipt)
+    assert rc.admit(tmp_path, TREE, DIGEST, RENET).code == "modified-checkout"
 
 
 def test_validate_rejects_a_verified_receipt_whose_required_phase_did_not_run(

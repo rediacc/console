@@ -27,7 +27,7 @@ import pytest
 from rediacc_ci import paths, well_known
 from rediacc_ci.core import run_verbs
 from rediacc_ci.drills import vm_check
-from rediacc_ci.drills import vm_check_receipt as receipt_mod
+from rediacc_ci.proof import vm_tier as receipt_mod
 from rediacc_ci.well_known import DATASTORE_PATH
 
 if TYPE_CHECKING:
@@ -95,8 +95,8 @@ NOW = 1792000800.0
 
 MUTANTS = {
     "only-writes-receipt-json": (
-        "        if self.tree and (self.lock_lost or self.opts.only):\n",
-        "        if self.tree and self.lock_lost:\n",
+        "        if self.tree and self.inputs and (self.lock_lost or self.opts.only):\n",
+        "        if self.tree and self.inputs and self.lock_lost:\n",
     ),
     "skip-teardown": ("            self._teardown()\n", "            pass\n"),
     "pass-on-zero-steps": ("    if assertions == 0:\n", "    if False:\n"),
@@ -837,6 +837,8 @@ def run_check(
         environ=environ,
         inputs_fn=lambda _root: DIGEST,
         account_modified_fn=lambda _root: modified,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
         account_digest_fn=lambda _root: digest,
         u1_fn=stub_u1,
         extra_fns=STUB_EXTRA,
@@ -1129,9 +1131,14 @@ def scenario_account_only_runs_the_account_phase_and_no_renet_step(
         assert [r["verdict"] for r in _rows(receipt, step)] == ["ok"], (step, ids)
     assert not [i for i in ids if i in V_STEPS], ids
     # P1 still ran, so the receipt's renet build is the pointer.
-    assert receipt["renet"]["built"] == receipt["renet"]["pointer"] == PTR
-    assert receipt["account"]["pointer"] == receipt["account"]["checkout"] == APTR
-    assert receipt["account"]["modified"] is False
+    renet_sub = receipt["submodules"]["private/renet"]
+    assert receipt["renet"]["built"] == renet_sub["pointer"] == PTR
+    account_sub = receipt["submodules"]["private/account"]
+    assert account_sub["pointer"] == account_sub["checkout"] == APTR
+    assert account_sub["modified"] is False
+    assert receipt["tier"] == "vm"
+    assert receipt["schema"] == 3
+    assert receipt["surfaces"] == ["account"]
     assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).ok
     refused = receipt_mod.admit(world.root, TREE, DIGEST, {"renet", "account"})
     assert refused.code == "phase-missing", refused
@@ -1176,7 +1183,7 @@ def scenario_a_gateway_older_than_the_account_worktree_is_restarted(
     assert len(account.restarts) == 1, account.restarts
     assert account.restarts[0] == world.root / receipt_mod.CACHE_DIR / vm_check.GATEWAY_LOG
     assert account.detached == 1
-    gateway = receipt["account"]["gateway"]
+    gateway = receipt["gateway"]
     assert gateway["mode"] == "restarted", gateway
     assert gateway["started"] == int(GATEWAY_STARTED) + 600, gateway
     assert gateway["port"] == int(GATEWAY_PORT), gateway
@@ -1237,6 +1244,8 @@ def scenario_only_writes_no_receipt_json(m: types.ModuleType, tmp_path: pathlib.
         environ=environ,
         inputs_fn=lambda _root: DIGEST,
         account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
         account_digest_fn=lambda _root: ADIGEST,
         u1_fn=lambda check: check.check("U1", "stub U1", True),
         extra_fns=STUB_EXTRA,
@@ -1308,13 +1317,14 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
     assert receipt
     assert receipt_mod.validate(receipt) == []
     assert receipt["status"] == receipt_mod.VERIFIED
-    assert receipt["renet"] == {
+    assert receipt["renet"] == {"built": PTR, "modified": False, "sha256": "", "deployed": PTR}
+    assert receipt["submodules"]["private/renet"] == {
         "pointer": PTR,
         "checkout": PTR,
-        "built": PTR,
         "modified": False,
-        "deployed": PTR,
     }
+    assert receipt["dirty"] is False
+    assert receipt["inputs"] == DIGEST
     assert receipt["fleet"]["landlock"] == {"status": "enforced", "abi": "6"}
     assert receipt["teardown"] == {"ok": True, "leftovers": []}
     # Case 3: no --changed runs both phases, and the receipt admits either side and both.
@@ -1370,6 +1380,8 @@ def _run_only(tmp_path: pathlib.Path, world: World, only: str) -> tuple[int, str
         environ=environ,
         inputs_fn=lambda _root: DIGEST,
         account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
         account_digest_fn=lambda _root: ADIGEST,
         u1_fn=stub,
         extra_fns=STUB_EXTRA,
@@ -2192,7 +2204,7 @@ def test_a_renet_only_change_runs_no_suite_and_no_drill(tmp_path: pathlib.Path) 
         "renet": {"required": True, "ran": True},
     }
     assert not [i for i in _ids(receipt) if i.startswith("A")], _ids(receipt)
-    assert receipt["account"]["gateway"] == {"mode": None, "port": None, "started": None}
+    assert receipt["gateway"] == {"mode": None, "port": None, "started": None}
     assert account.restarts == []
     assert "A1-A2 not run" in out
     assert receipt_mod.admit(world.root, TREE, DIGEST, {"renet"}).ok
@@ -2318,7 +2330,7 @@ def test_with_no_record_the_gateway_is_started_recorded_and_left_running(
     assert rc == vm_check.EXIT_VERIFIED, out
     assert len(account.restarts) == 1
     assert account.detached == 1
-    assert receipt["account"]["gateway"]["mode"] == "started"
+    assert receipt["gateway"]["mode"] == "started"
     assert read_gateway_record(world.root)["account"] == ADIGEST
     assert "no healthy dev gateway answers; starting it" in out, out
     assert "dev gateway: started on port %s, left running" % GATEWAY_PORT in out, out
@@ -2333,7 +2345,7 @@ def test_a_matching_record_reuses_the_gateway(tmp_path: pathlib.Path) -> None:
     assert rc == vm_check.EXIT_VERIFIED, out
     assert account.restarts == []
     assert account.detached == 0
-    assert receipt["account"]["gateway"] == {
+    assert receipt["gateway"] == {
         "mode": "reused",
         "port": int(GATEWAY_PORT),
         "started": int(GATEWAY_STARTED),
@@ -2352,7 +2364,7 @@ def test_a_gateway_another_writer_restarted_is_restarted_once(tmp_path: pathlib.
     rc, out, receipt = run_check(tmp_path, world, account=account)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert len(account.restarts) == 1
-    assert receipt["account"]["gateway"]["mode"] == "restarted"
+    assert receipt["gateway"]["mode"] == "restarted"
     assert "is not the recorded one (started=1791999000" in out, out
 
 
@@ -2494,13 +2506,12 @@ def test_an_account_checkout_off_its_pointer_is_said_and_its_receipt_does_not_ad
     assert rc == vm_check.EXIT_VERIFIED, out
     assert "is not the pointer %s" % APTR[:12] in out, out
     assert "worktree is modified" in out, out
-    assert receipt["account"] == {
+    assert receipt["submodules"]["private/account"] == {
         "pointer": APTR,
         "checkout": "1" * 40,
         "modified": True,
-        "gateway": receipt["account"]["gateway"],
     }
-    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "account-mismatch"
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "checkout-mismatch"
 
 
 def test_an_uninitialized_account_submodule_records_no_checkout(tmp_path: pathlib.Path) -> None:
@@ -2508,10 +2519,10 @@ def test_an_uninitialized_account_submodule_records_no_checkout(tmp_path: pathli
     world = make_world(tmp_path, account_checked_out=False)
     rc, out, receipt = run_check(tmp_path, world, modified=None)
     assert rc == vm_check.EXIT_VERIFIED, out
-    assert receipt["account"]["checkout"] == ""
-    assert receipt["account"]["modified"] is None
+    assert receipt["submodules"]["private/account"]["checkout"] == ""
+    assert receipt["submodules"]["private/account"]["modified"] is None
     assert not [c for c in world.calls if c[0] == "git" and c[2].endswith("private/account")]
-    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "account-mismatch"
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "checkout-mismatch"
 
 
 def test_receipts_of_an_earlier_schema_are_said_to_no_longer_count(tmp_path: pathlib.Path) -> None:

@@ -637,7 +637,7 @@ def go_version_m(binary: pathlib.Path) -> str | None:
     return proc.stdout if proc.returncode == 0 else None
 
 
-def _sha256_file(path: pathlib.Path) -> str:
+def sha256_file(path: pathlib.Path) -> str:
     try:
         return hashlib.sha256(path.read_bytes()).hexdigest()
     except OSError:
@@ -673,6 +673,6 @@ def renet_identity(
         "checkout": checkout,
         "built": built,
         "modified": modified,
-        "sha256": _sha256_file(binary),
+        "sha256": sha256_file(binary),
         "rebuilt": rebuilt,
     }

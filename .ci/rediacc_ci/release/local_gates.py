@@ -6,7 +6,7 @@ Exit 0 when every gate admits, 1 with one `local-gates: <code>: <why>` line per 
 
 THE GATES, each a refusal unless it holds:
   ci-quick     a whole, green ci:quick receipt judged `HEAD^{tree}`: the push guard's own `read_receipt` (the per-tree copy `.ci/cache/receipts/<tree>.json` first, then the latest file) and `receipt_refusal`, imported the way `rediacc_ci.ci.gate_model` imports that guard, never copied.
-  vm-check     the vm:check trigger paths changed since the previous release tag (the highest-versioned `v*` tag reachable from HEAD, `git tag --merged HEAD --sort=-v:refname`) are admitted by a VERIFIED receipt, through `surfaces.changed_paths(root, <tag>, "push")` and `vm_check_receipt.admit`. No hit is "not required", and admits.
+  vm-check     the vm:check trigger paths changed since the previous release tag (the highest-versioned `v*` tag reachable from HEAD, `git tag --merged HEAD --sort=-v:refname`) are admitted by a VERIFIED receipt, through `surfaces.changed_paths(root, <tag>, "push")` and `vm_tier.admit`. No hit is "not required", and admits.
   backup       when the backup paths moved since that tag, a VERIFIED backup receipt covers the tree: `backup_check_trigger.check(root, "HEAD", base=<tag>)`, the reader the backup push guard and the git-level pre-push hook run. Exit 1 and 2 (cannot judge) both refuse (decision 4).
   clone        a fresh clone of HEAD with its submodules at `.ci/cache/release/<tree>/` is clean, names the tree, and every submodule sits at its gitlink, unmodified (decision 1). The shared checkout always carries other sessions' ledgers, so cleanliness is judged on the clone, which is also where the release builds. Each submodule is cloned from this checkout's own copy of it (`<root>/<path>`, else `<root>/.git/modules/<name>`), never from the network; a pointer commit the local copy lacks is a refusal. HEAD equal to origin/main (below) is what makes those pointers the merged ones.
   origin-main  a fresh `git fetch origin main` succeeded, and HEAD equals origin/main. A failed fetch refuses: a stale origin/main would pass vacuously.
@@ -35,8 +35,8 @@ from typing import Any
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_record
-from rediacc_ci.drills import backup_check_trigger, vm_check_receipt
-from rediacc_ci.proof import surfaces
+from rediacc_ci.drills import backup_check_trigger
+from rediacc_ci.proof import surfaces, vm_tier
 from rediacc_ci.release import check_soak_period, order
 
 SELF = "rediacc_ci.release.local_gates"
@@ -126,7 +126,7 @@ def vm_check_refusal(root: pathlib.Path, tree: str, base: str) -> Refusal | None
     changed = surfaces.changed_paths(root, base, "push", "HEAD")
     if not changed.touched:
         return None
-    verdict = vm_check_receipt.admit(root, tree, surfaces.inputs(root, tree), changed.sides)
+    verdict = vm_tier.admit(root, tree, surfaces.inputs(root, tree), changed.sides)
     if verdict.ok:
         return None
     shown = [*changed.hits[:5], *("(unknown) %s" % u for u in changed.unknown)]

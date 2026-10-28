@@ -10,7 +10,7 @@ EVERY PUSHED COMMIT IS JUDGED ON ITS OWN. A command can send several commits: tw
 
 `--mirror` IS REFUSED OUTRIGHT, touched or not. It sends every ref, deletes each remote ref missing here and forces each diverged one, so no receipt for one tree can speak for it. Only the escape admits it, and only as `not-runtime` or `deadline`: `vm-unavailable` names a NOT_VERIFIED attempt for one tree, which a push of every ref has none of. An unenumerable ref set is judged the same way.
 
-THE RECEIPT is judged by `vm_check_receipt.admit(root, tree, inputs(root, tree), sides)`: the pushed tree's archive, then `receipt.json`, then the newest archives. VERIFIED with the same tree or the same trigger digest, a renet build equal to the pointer and not modified, and the phase of every touched side run (`phase-missing` otherwise: a renet-only receipt does not admit an account range), admits. On the account side the receipt's account checkout must equal the pointer (`account-mismatch`) and be unmodified (`modified-account`). The digest (version 2) covers both submodule pointers. A later commit outside the trigger keeps the digest, so it costs no new VM run. Schema 1 receipts are a clean break: the receipt module does not read them, so one admits nothing and backs no escape (`no-receipt`).
+THE RECEIPT is judged by `rediacc_ci.proof.vm_tier.admit(root, tree, inputs(root, tree), sides)`: the pushed tree's archive, then `receipt.json`, then the newest archives. VERIFIED with the same tree or the same trigger digest, a renet build equal to the pointer and not modified, and the phase of every touched side run (`phase-missing` otherwise: a renet-only receipt does not admit an account range), admits. `receipt.identity_refusal` then judges the surfaces of the touched sides: a clean console tree (`dirty-tree`), each needed submodule checked out at its pointer (`checkout-mismatch`) and unmodified (`modified-checkout`). The digest (version 3) covers the pointer of each submodule a VM surface lives in. A later commit outside the trigger keeps the digest, so it costs no new VM run. Receipts of an earlier schema are a clean break: the receipt module reads only schema 3, so one admits nothing and backs no escape (`no-receipt`).
 
 THE ESCAPE is an environment assignment on the push itself, read from the shared lexer's walk (`run.env`) exactly as `TURBO_PUSH_REASON` is, so a prefix, an earlier `export` and `env NAME=value` count, and prose naming it does not:
 
@@ -78,7 +78,7 @@ ASKED_TOKEN_RE = re.compile(r"\s*\bASKED:\S*")
 # The minute the escape must spell; `wl_checks.ASKED_RE` is the same shape, and matching it here lets a malformed token be named before the transcript is read.
 ASKED_STRICT_RE = re.compile(r"\bASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z")
 TRIGGER_MOD = "rediacc_ci.proof.surfaces"
-RECEIPT_MOD = "rediacc_ci.drills.vm_check_receipt"
+RECEIPT_MOD = "rediacc_ci.proof.vm_tier"
 
 UNEXAMINED = "block-vm-unverified-push: %s; this push passed UNEXAMINED."
 
@@ -212,7 +212,7 @@ def plant_receipt(
     account_checkout=None,
     account_modified=False,
 ):
-    """Write a schema 2 receipt into `root`'s cache through the receipt module's own `write`, keyed on `tree` (HEAD's by default) with the trigger digest the guard will compute for it unless `inputs` overrides it.
+    """Write a schema 3 receipt into `root`'s cache through the receipt module's own `write`, keyed on `tree` (HEAD's by default) with the trigger digest the guard will compute for it unless `inputs` overrides it.
 
     `ran` names the phases a VERIFIED receipt ran (each also required); a FAILED or NOT_VERIFIED one ran none and required both. `reason_class` overrides the NOT_VERIFIED or FAILED class, `account_checkout` the account checkout (the pointer by default) and `account_modified` its modified flag.
     """
@@ -253,18 +253,31 @@ def plant_receipt(
         side: {"required": side in ran if verified else True, "ran": verified and side in ran}
         for side in receipt_mod.SIDES
     }
+    surfaces = sorted(
+        set().union(*(trigger.MAP.phases[side] for side, ph in phases.items() if ph["required"]))
+    )
     receipt = {
+        "tier": "vm",
         "schema": receipt_mod.SCHEMA,
         "status": status,
         "reason": reason,
         "tree": tree,
         "head": head,
+        "dirty": False,
         "inputs": inputs if inputs is not None else trigger.inputs(root, tree),
+        "surfaces": surfaces,
+        "submodules": {
+            RENET: {"pointer": pointer, "checkout": pointer, "modified": False},
+            ACCOUNT: {
+                "pointer": account_pointer,
+                "checkout": account_pointer if account_checkout is None else account_checkout,
+                "modified": account_modified,
+            },
+        },
         "renet": {
-            "pointer": pointer,
-            "checkout": pointer,
             "built": pointer if built is None else built,
             "modified": False,
+            "sha256": "0" * 64,
             "deployed": True,
         },
         "trigger": {
@@ -275,12 +288,7 @@ def plant_receipt(
         },
         "fleet": {"mode": "reused", "os": "ubuntu-24.04", "ips": [], "landlock": {}},
         "phases": phases,
-        "account": {
-            "pointer": account_pointer,
-            "checkout": account_pointer if account_checkout is None else account_checkout,
-            "modified": account_modified,
-            "gateway": {"mode": "reused", "port": 8787, "started": 1767225600},
-        },
+        "gateway": {"mode": "reused", "port": 8787, "started": 1767225600},
         "forks": [],
         "steps": steps,
         "teardown": {"ok": True, "leftovers": []},
@@ -293,15 +301,15 @@ def plant_receipt(
     return root
 
 
-def plant_schema_1(root):
-    """A VERIFIED receipt in the retired schema 1 shape for HEAD's tree, written raw (the receipt module's `write` refuses it): the guard must read it as no receipt at all."""
+def plant_retired(root, schema):
+    """A VERIFIED receipt in a retired schema shape (1 or 2) for HEAD's tree, written raw (the receipt module's `write` refuses it): the guard must read it as no receipt at all."""
     trigger = syspath.import_from_ci(TRIGGER_MOD)
     receipt_mod = syspath.import_from_ci(RECEIPT_MOD)
     root = pathlib.Path(root)
     tree = _git(root, "rev-parse", "HEAD^{tree}")
     pointer = _git(root, "rev-parse", "%s:%s" % (tree, RENET))
     receipt = {
-        "schema": 1,
+        "schema": schema,
         "status": "VERIFIED",
         "reason": None,
         "tree": tree,
@@ -319,11 +327,23 @@ def plant_schema_1(root):
         "forks": [],
         "steps": [{"id": "V1.1", "desc": "deploy renet", "rc": 0, "verdict": "PASS", "ms": 1}],
         "teardown": {"ok": True, "leftovers": []},
-        "runId": "fixture-run-schema-1",
+        "runId": "fixture-run-schema-%d" % schema,
         "startedAt": "2026-01-01T00:00:00Z",
         "finishedAt": "2026-01-01T00:01:00Z",
         "wallMs": 60000,
     }
+    if schema == 2:
+        receipt["trigger"]["sides"] = ["renet"]
+        receipt["phases"] = {
+            "renet": {"required": True, "ran": True},
+            "account": {"required": False, "ran": False},
+        }
+        receipt["account"] = {
+            "pointer": _git(root, "rev-parse", "%s:%s" % (tree, ACCOUNT)),
+            "checkout": _git(root, "rev-parse", "%s:%s" % (tree, ACCOUNT)),
+            "modified": False,
+            "gateway": {},
+        }
     folder = receipt_mod.receipt_dir(root)
     folder.mkdir(parents=True, exist_ok=True)
     data = json.dumps(receipt, indent=2, sort_keys=True) + "\n"
@@ -398,7 +418,8 @@ FIXTURES = {
     "vmc-account-missing-old": lambda p: world(p, account_missing_old=True),
     "vmc-renet-wide": lambda p: world(p, renet_files=("pkg/license/x.go",)),
     "vmc-renet-gomod": lambda p: world(p, renet_files=("go.mod",)),
-    "vmc-schema-1": lambda p: plant_schema_1(world(p, cli=True)),
+    "vmc-schema-1": lambda p: plant_retired(world(p, cli=True), 1),
+    "vmc-schema-2": lambda p: plant_retired(world(p, cli=True), 2),
 }
 
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [

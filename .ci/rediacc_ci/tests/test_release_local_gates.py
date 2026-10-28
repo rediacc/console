@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from rediacc_ci.release import local_gates as lg
-from rediacc_ci.tests.test_drills_vm_check_receipt import make as vm_receipt
-from rediacc_ci.tests.test_drills_vm_check_receipt import not_verified as vm_not_verified
+from rediacc_ci.tests.test_proof_vm_tier import make as vm_receipt
+from rediacc_ci.tests.test_proof_vm_tier import not_verified as vm_not_verified
 
 if TYPE_CHECKING:
     import pathlib
@@ -202,11 +202,11 @@ def test_vm_check_an_account_mismatch_refuses(tmp_path: pathlib.Path) -> None:
             "account": {"required": True, "ran": True},
         },
     )
-    receipt["account"]["checkout"] = "8" * 40
+    receipt["submodules"]["private/account"]["checkout"] = "8" * 40
     write_vm_receipt(root, receipt)
     got = lg.vm_check_refusal(root, tree_of(root), "v1.0.0")
     assert got is not None
-    assert "[account-mismatch]" in got.message
+    assert "[checkout-mismatch]" in got.message
 
 
 def test_vm_check_a_verified_receipt_admits(tmp_path: pathlib.Path) -> None:

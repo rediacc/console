@@ -1,6 +1,6 @@
 """The paths whose change needs a backup receipt, the receipt itself, and the rule that judges it (box J4 of agent/plans/PLAN-backup-program.md).
 
-THE CLONE. This is the backup twin of the `vm:check` pair: `rediacc_ci.proof.surfaces` (what is touched) and `vm_check_receipt` (what proves it) folded into one module, because the backup receipt has no phases or sides to keep apart. The git arithmetic is NOT cloned: `make_git`, `push_base`, the submodule range and the worktree blob hashing are imported from `rediacc_ci.proof.surfaces`, so the two guards cannot disagree about what a push range or a worktree blob is. Only the path tables, the digest and the receipt are this module's own.
+THE CLONE. This is the backup twin of the `vm:check` pair: `rediacc_ci.proof.surfaces` (what is touched) and `rediacc_ci.proof.vm_tier` (what proves it) folded into one module, because the backup receipt has no phases or sides to keep apart. The git arithmetic is NOT cloned: `make_git`, `push_base`, the submodule range and the worktree blob hashing are imported from `rediacc_ci.proof.surfaces`, so the two guards cannot disagree about what a push range or a worktree blob is. Only the path tables, the digest and the receipt are this module's own.
 
 WHAT IS TOUCHED. Three path tables, one per repository, each entry either a directory prefix (ending in `/`) or an `fnmatch` pattern (`*` crosses `/`):
 

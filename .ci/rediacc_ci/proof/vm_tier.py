@@ -1,8 +1,8 @@
-"""The `npm run vm:check` receipt: how it is written, archived, read and judged.
+"""The `npm run vm:check` receipt (the VM tier): how it is written, archived, read and judged.
 
 The latest receipt is `.ci/cache/vm-check/receipt.json`. Every write also archives it as `<tree>.json`, so a later run on another tree does not hide the receipt of an earlier push. `.ci/cache/` is gitignored.
 
-Schema 2 is a clean break. `SCHEMA` is 2, `validate` rejects any other schema, `_load` returns None for such a file, and `admit` reports `no-receipt` when only schema 1 receipts exist, so an old receipt (VERIFIED or NOT_VERIFIED) neither admits a push nor backs an escape. Old files stay on disk, unread.
+Schema 3 is the shared envelope of `rediacc_ci.proof.receipt` (`tier` is `vm`, then `tree`, `head`, `dirty`, `inputs`, `surfaces`, `submodules` and `renet`) plus the VM body: `reason`, `trigger`, `phases`, `gateway`, `fleet`, `forks`, `steps`, `teardown`, `runId`, `startedAt`, `finishedAt` and `wallMs`. The schema is a clean break. `SCHEMA` is 3, `validate` rejects any other schema, `_load` returns None for such a file, and `admit` reports `no-receipt` when only older receipts exist, so a schema 2 receipt (VERIFIED or NOT_VERIFIED) neither admits a push nor backs an escape. Old files stay on disk, unread.
 
 A run that lost the fleet lock (P0's `fleet-busy`) judged nothing, and a holder may still be running on the same tree, so its record never replaces `receipt.json` or a `<tree>.json` archive: `write_run_record` keeps it at `runs/<runId>/receipt.json` only, which no lookup here reads (VC7(a), 2026-10-20: a busy loser rewrote `receipt.json` while the holder ran, and had it finished last it would have replaced the holder's VERIFIED receipt).
 
@@ -10,30 +10,32 @@ The receipt folder also holds files that are not receipts (A0's `gateway.json` r
 
 A step row may carry `log` (the path of the kept full output) and `failedAssertions` (a drill's failed assertions, `<number> <description>`); the receipt may carry `runDir`, the directory of that evidence. All three are optional, and checked for shape when present.
 
-A schema 2 receipt records two phases (`phases.renet`, `phases.account`, each `{required, ran}`), the account submodule state (`account`: `pointer`, `checkout`, `modified`, `gateway`) and the sides the trigger found (`trigger.sides`). A VERIFIED receipt needs at least one phase that ran and every required phase ran.
+A receipt records two phases (`phases.renet`, `phases.account`, each `{required, ran}`) and the sides the trigger found (`trigger.sides`). A VERIFIED receipt needs at least one phase that ran and every required phase ran.
 
-`admit` is the rule the push guard applies. A receipt admits a push when its status is VERIFIED, its `tree` equals the pushed tree or its `inputs` digest equals the digest of the pushed tree, the renet it deployed (`renet.built`) is the renet the tree points at (`renet.pointer`), that build was not modified, every side the push touches (`sides`) had its phase run, and for the account side the checkout is the pointer and unmodified. A later commit outside the trigger paths keeps the `inputs` digest, so it costs no new VM run; any trigger blob or pointer move changes it.
+`admit` is the rule the push guard applies. A receipt admits a push when its status is VERIFIED, its `tree` equals the pushed tree or its `inputs` digest equals the digest of the pushed tree, every side the push touches (`sides`) had its phase run, and `receipt.identity_refusal` keeps the identity rules for the surfaces of those sides: a clean console tree, each needed submodule checked out at its pointer and unmodified, and a renet build that is the renet pointer and unmodified when a surface needs one. A later commit outside the trigger paths keeps the `inputs` digest, so it costs no new VM run; any trigger blob or pointer move changes it.
 """
 
 from __future__ import annotations
 
-import dataclasses
 import json
-import os
 import re
-import tempfile
 from typing import TYPE_CHECKING, Any
+
+from rediacc_ci.proof import receipt as R
+from rediacc_ci.proof import surfaces as S
 
 if TYPE_CHECKING:
     import pathlib
     from collections.abc import Collection
 
-SCHEMA = 2
-VERIFIED = "VERIFIED"
-FAILED = "FAILED"
-NOT_VERIFIED = "NOT_VERIFIED"
-STATUSES = (VERIFIED, FAILED, NOT_VERIFIED)
-SIDES = ("renet", "account")
+SCHEMA = 3
+TIER = "vm"
+VERIFIED = R.VERIFIED
+FAILED = R.FAILED
+NOT_VERIFIED = R.NOT_VERIFIED
+STATUSES = R.STATUSES
+SIDES = S.SIDES
+Verdict = R.Verdict
 CACHE_DIR = ".ci/cache/vm-check"
 LATEST = "receipt.json"
 RUNS_DIR = "runs"
@@ -41,18 +43,12 @@ EVIDENCE_MAX = 200
 ARCHIVE_SCAN_MAX = 50
 _TREE = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
 _RUN_ID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*")
-_REQUIRED = (
-    "schema",
-    "status",
+_BODY = (
     "reason",
-    "tree",
-    "head",
-    "inputs",
-    "renet",
     "trigger",
     "fleet",
     "phases",
-    "account",
+    "gateway",
     "forks",
     "steps",
     "teardown",
@@ -110,25 +106,6 @@ def _phase_errors(receipt: dict[str, Any], status: object) -> list[str]:
     return errors
 
 
-def _account_errors(account: object) -> list[str]:
-    if not isinstance(account, dict):
-        return []
-    errors = [
-        f"account is missing {k}"
-        for k in ("pointer", "checkout", "modified", "gateway")
-        if k not in account
-    ]
-    if (
-        "modified" in account
-        and account["modified"] is not None
-        and not isinstance(account["modified"], bool)
-    ):
-        errors.append("account.modified is not a boolean or null")
-    if "gateway" in account and not isinstance(account["gateway"], dict):
-        errors.append("account.gateway is not an object")
-    return errors
-
-
 def _sides_errors(trigger: object) -> list[str]:
     if not isinstance(trigger, dict):
         return []
@@ -139,31 +116,28 @@ def _sides_errors(trigger: object) -> list[str]:
 
 
 def validate(receipt: object) -> list[str]:
-    """Every way `receipt` departs from the schema, empty when it is well formed."""
+    """Every way `receipt` departs from schema 3, empty when it is well formed."""
+    errors = R.envelope_errors(receipt)
     if not isinstance(receipt, dict):
-        return ["receipt is not an object"]
-    errors = [f"missing field {k}" for k in _REQUIRED if k not in receipt]
+        return errors
+    errors.extend(f"missing field {k}" for k in _BODY if k not in receipt)
+    if receipt.get("tier") != TIER:
+        errors.append(f"tier is {receipt.get('tier')!r}, not {TIER!r}")
     if receipt.get("schema") != SCHEMA:
         errors.append(f"schema is {receipt.get('schema')!r}, not {SCHEMA}")
     status = receipt.get("status")
-    if status not in STATUSES:
-        errors.append(f"status {status!r} is not one of {', '.join(STATUSES)}")
     reason = receipt.get("reason")
     if status == VERIFIED and reason is not None:
         errors.append("a VERIFIED receipt carries no reason")
     if status in (FAILED, NOT_VERIFIED) and not (isinstance(reason, dict) and reason.get("class")):
         errors.append(f"a {status} receipt needs reason.class")
-    tree = receipt.get("tree")
-    if not isinstance(tree, str) or not _TREE.match(tree):
-        errors.append("tree is not a git object id")
     # admit reads these with .get, so a truthy non-object would raise instead of refusing.
     errors.extend(
         f"{key} is not an object"
-        for key in ("renet", "trigger", "fleet", "teardown", "phases", "account")
+        for key in ("trigger", "fleet", "teardown", "phases", "gateway")
         if key in receipt and not isinstance(receipt[key], dict)
     )
     errors.extend(_phase_errors(receipt, status))
-    errors.extend(_account_errors(receipt.get("account")))
     errors.extend(_sides_errors(receipt.get("trigger")))
     if "forks" in receipt and not isinstance(receipt["forks"], list):
         errors.append("forks is not a list")
@@ -197,19 +171,6 @@ def _step_errors(step: object) -> list[str]:
     return errors
 
 
-def _atomic(path: pathlib.Path, data: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(data)
-        os.replace(tmp, path)
-    except BaseException:
-        if os.path.exists(tmp):
-            os.unlink(tmp)
-        raise
-
-
 def write(root: pathlib.Path, receipt: dict[str, Any]) -> pathlib.Path:
     """Write the latest receipt and its `<tree>.json` archive. Raises ValueError on a receipt that fails `validate`, so a run never records a shape the guard cannot read."""
     errors = validate(receipt)
@@ -217,8 +178,8 @@ def write(root: pathlib.Path, receipt: dict[str, Any]) -> pathlib.Path:
         raise ValueError("invalid vm-check receipt: " + "; ".join(errors))
     data = json.dumps(receipt, indent=2, sort_keys=True) + "\n"
     out = receipt_dir(root)
-    _atomic(out / f"{receipt['tree']}.json", data)
-    _atomic(out / LATEST, data)
+    R.write_atomic(out / f"{receipt['tree']}.json", data)
+    R.write_atomic(out / LATEST, data)
     return out / LATEST
 
 
@@ -235,7 +196,7 @@ def write_run_record(root: pathlib.Path, receipt: dict[str, Any]) -> pathlib.Pat
     if errors or not isinstance(run_id, str):
         raise ValueError("invalid vm-check run record: " + "; ".join(errors))
     path = run_record_path(root, run_id)
-    _atomic(path, json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    R.write_atomic(path, json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     return path
 
 
@@ -278,16 +239,6 @@ def _candidates(root: pathlib.Path, tree: str) -> list[dict[str, Any]]:
     return found
 
 
-@dataclasses.dataclass(frozen=True)
-class Verdict:
-    """`ok` admits the push. `code` is one of ok, no-receipt, not-verified, failed, other-inputs, build-mismatch, modified-build, phase-missing, account-mismatch, modified-account. `message` is the sentence the guard shows."""
-
-    ok: bool
-    code: str
-    message: str
-    receipt: dict[str, Any] | None = None
-
-
 def _failed_step(receipt: dict[str, Any]) -> str:
     for step in receipt.get("steps", []):
         if isinstance(step, dict) and str(step.get("verdict", "")).upper().startswith("FAIL"):
@@ -296,7 +247,7 @@ def _failed_step(receipt: dict[str, Any]) -> str:
     return f"{reason.get('class')}: {reason.get('detail', '')}"
 
 
-def _judge_sides(receipt: dict[str, Any], sides: Collection[str]) -> Verdict | None:
+def _phase_missing(receipt: dict[str, Any], sides: Collection[str]) -> Verdict | None:
     phases = receipt.get("phases") or {}
     for side in SIDES:
         if side in sides and not (phases.get(side) or {}).get("ran"):
@@ -306,24 +257,12 @@ def _judge_sides(receipt: dict[str, Any], sides: Collection[str]) -> Verdict | N
                 f"the VERIFIED receipt did not run the {side} phase this push touches; run `npm run vm:check -- --changed`",
                 receipt,
             )
-    if "account" not in sides:
-        return None
-    account = receipt.get("account") or {}
-    if not account.get("pointer") or account.get("checkout") != account.get("pointer"):
-        return Verdict(
-            False,
-            "account-mismatch",
-            f"the account checkout {str(account.get('checkout'))[:12]} is not the pointer {str(account.get('pointer'))[:12]}",
-            receipt,
-        )
-    if account.get("modified") is not False:
-        return Verdict(
-            False,
-            "modified-account",
-            "the receipt's account checkout had uncommitted changes",
-            receipt,
-        )
     return None
+
+
+def sides_surfaces(sides: Collection[str]) -> frozenset[str]:
+    """The surfaces the VM phases `sides` cover."""
+    return frozenset().union(*(S.MAP.phases[side] for side in sides if side in S.MAP.phases))
 
 
 def _judge(
@@ -351,21 +290,12 @@ def _judge(
             f"the VERIFIED receipt (tree {receipt['tree'][:12]}) was taken with other trigger inputs than tree {tree[:12]}",
             receipt,
         )
-    renet = receipt.get("renet") or {}
-    if renet.get("built") != renet.get("pointer") or not renet.get("built"):
-        return Verdict(
-            False,
-            "build-mismatch",
-            f"the deployed renet {str(renet.get('built'))[:12]} is not the pointer {str(renet.get('pointer'))[:12]}",
-            receipt,
-        )
-    if renet.get("modified") is not False:
-        return Verdict(
-            False, "modified-build", "the receipt's renet build had uncommitted changes", receipt
-        )
-    sided = _judge_sides(receipt, sides)
-    if sided is not None:
-        return sided
+    missing = _phase_missing(receipt, sides)
+    if missing is not None:
+        return missing
+    refused = R.identity_refusal(receipt, sides_surfaces(sides))
+    if refused is not None:
+        return refused
     return Verdict(
         True, "ok", f"VERIFIED receipt {receipt['runId']} covers tree {tree[:12]}", receipt
     )
