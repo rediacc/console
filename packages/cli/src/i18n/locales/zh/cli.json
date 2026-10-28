@@ -342,6 +342,44 @@
       }
     },
     "config": {
+      "access": {
+        "add": {
+          "description": "添加访问密钥；若已存在则原地更新，并保留其机器绑定。此处指定的范围对该密钥在所有机器上生效，除非某个绑定设置了自己的范围；未指定范围时使用整个配置的范围",
+          "descriptionShort": "添加或更新访问密钥",
+          "optionNoRestrict": "仅写入 from=，不附加 no-forwarding、no-pty 和 no-user-rc 限制",
+          "optionPublicKey": "OpenSSH 公钥行，或包含公钥的文件路径",
+          "publicKeyUnreadable": "--public-key 既不是 OpenSSH 公钥行，也不是可读取的文件：{{value}}",
+          "success": "已添加访问密钥 \"{{key}}\"",
+          "updated": "已更新访问密钥 \"{{key}}\""
+        },
+        "argKey": "访问密钥名称",
+        "description": "管理配置的访问密钥：这类 SSH 公钥由 CLI 写入机器的 authorized_keys，并通过 from= 限制为已声明的 IPv4 和 IPv6 范围。先用 'machine access set' 将密钥绑定到机器，再用 'machine access push' 应用",
+        "descriptionShort": "管理限定来源地址范围的 SSH 密钥",
+        "emptyRangeFlag": "{{flag}} 至少需要一个 CIDR，但收到的是空值",
+        "keyNotFound": "未找到访问密钥 \"{{key}}\"",
+        "list": {
+          "description": "列出配置的访问密钥",
+          "noKeys": "此配置中没有访问密钥。请用 'config access add' 添加"
+        },
+        "optionHostedExecutor": "添加观测到的托管执行器出口范围（104.28.0.0/16 和 2a09:bac0::/29）",
+        "optionIpv4": "CIDR 格式的 IPv4 范围（逗号分隔，例如 203.0.113.0/24）",
+        "optionIpv6": "CIDR 格式的 IPv6 范围（逗号分隔，例如 2001:db8::/32）",
+        "ranges": {
+          "clearConflict": "--clear 不能与 --ipv4、--ipv6 或 --hosted-executor 同时使用",
+          "cleared": "已移除整个配置的来源范围",
+          "current": "整个配置的来源范围：{{ranges}}",
+          "description": "设置所有访问密钥使用的来源范围，除非密钥或其机器绑定设置了自己的范围。不带选项时显示当前范围",
+          "descriptionShort": "设置整个配置的来源范围",
+          "none": "未设置整个配置的来源范围",
+          "optionClear": "移除整个配置的范围",
+          "success": "已设置整个配置的来源范围：{{ranges}}"
+        },
+        "remove": {
+          "description": "从配置中移除访问密钥",
+          "pushHint": "它的行会保留在 {{machines}} 上，直到在那里运行 'machine access push'",
+          "success": "已移除访问密钥 \"{{key}}\""
+        }
+      },
       "audit": {
         "description": "查看配置审计日志(~/.config/rediacc/audit.log.jsonl 中的哈希链 JSONL)",
         "log": {
@@ -1248,6 +1286,38 @@
           "noGpus": "未检测到 GPU",
           "noDevices": "未定义任何 CDI 设备",
           "grantUnreadable": "无法读取“{{repository}}”的授权：{{error}}"
+        }
+      },
+      "access": {
+        "description": "将配置的访问密钥绑定到机器，并写入其 authorized_keys，每个密钥都限制在各自的来源范围内",
+        "descriptionShort": "管理安装在机器上的访问密钥",
+        "notBound": "访问密钥 \"{{key}}\" 未绑定到 \"{{name}}\"",
+        "optionKey": "访问密钥名称（参见 'config access list'）",
+        "push": {
+          "change": "{{action}} 第 {{line}} 行：{{key}}",
+          "description": "将绑定到机器的访问密钥写入其 authorized_keys，沿用已有的同密钥行，并删除此配置为已解除绑定的密钥写入的行。会拒绝导致 rdc 自身会话被锁在门外的更改；如果推送期间文件发生变化，则不写入任何内容",
+          "descriptionShort": "将机器的访问密钥写入其 authorized_keys",
+          "dryRun": "试运行：未向 \"{{name}}\" 上的 {{path}} 写入任何内容",
+          "optionDryRun": "显示更改但不写入",
+          "setupFailed": "向 {{name}} 推送访问密钥失败：{{error}}",
+          "success": "访问密钥已写入 \"{{name}}\" 上的 {{path}}",
+          "unchanged": "\"{{name}}\" 上的访问密钥已是最新（{{path}}）"
+        },
+        "remove": {
+          "description": "解除访问密钥与机器的绑定。下一次 'machine access push' 会删除它的行",
+          "success": "访问密钥 \"{{key}}\" 已与 \"{{name}}\" 解除绑定。请用 'machine access push {{name}}' 删除它的行"
+        },
+        "set": {
+          "clearConflict": "--clear-ranges 不能与 --ipv4 或 --ipv6 同时使用",
+          "description": "将访问密钥绑定到机器。此处指定的范围只在这台机器上替代密钥自身的范围。用 'machine access push' 应用",
+          "descriptionShort": "将访问密钥绑定到机器",
+          "optionClearRanges": "丢弃这台机器自己的范围，改用密钥或配置的范围",
+          "success": "访问密钥 \"{{key}}\" 已绑定到 \"{{name}}\"。请用 'machine access push {{name}}' 应用"
+        },
+        "show": {
+          "description": "显示绑定到机器的访问密钥，以及每个密钥在该机器上生效的范围",
+          "noKeys": "\"{{name}}\" 没有绑定任何访问密钥",
+          "path": "\"{{name}}\" 上用户 {{user}} 的 authorized_keys (~/.ssh/authorized_keys)"
         }
       }
     },

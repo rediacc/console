@@ -342,6 +342,44 @@
       }
     },
     "config": {
+      "access": {
+        "add": {
+          "description": "Lisa juurdepääsuvõti või uuenda olemasolevat kohapeal, säilitades selle masinaseosed. Siin antud vahemikud kehtivad võtmele igal masinal, kui seos ei määra enda omasid; vahemiketa kehtivad kogu konfiguratsiooni vahemikud",
+          "descriptionShort": "Lisa või uuenda juurdepääsuvõtit",
+          "optionNoRestrict": "Kirjuta ainult from=, ilma no-forwarding, no-pty ja no-user-rc piiranguteta",
+          "optionPublicKey": "OpenSSH avaliku võtme rida või selle sisuga faili tee",
+          "publicKeyUnreadable": "--public-key ei ole OpenSSH avaliku võtme rida ega loetav fail: {{value}}",
+          "success": "Juurdepääsuvõti \"{{key}}\" lisatud",
+          "updated": "Juurdepääsuvõti \"{{key}}\" uuendatud"
+        },
+        "argKey": "Juurdepääsuvõtme nimi",
+        "description": "Halda konfiguratsiooni juurdepääsuvõtmeid: avalikke SSH-võtmeid, mida CLI kirjutab masina authorized_keys faili from= piiranguga deklareeritud IPv4 ja IPv6 vahemikele. Seo võti masinaga käsuga 'machine access set' ja rakenda see käsuga 'machine access push'",
+        "descriptionShort": "Halda lähteaadresside vahemikega piiratud SSH-võtmeid",
+        "emptyRangeFlag": "{{flag}} vajab vähemalt ühte CIDR-i, kuid väärtus on tühi",
+        "keyNotFound": "Juurdepääsuvõtit \"{{key}}\" ei leitud",
+        "list": {
+          "description": "Loetle konfiguratsiooni juurdepääsuvõtmed",
+          "noKeys": "Selles konfiguratsioonis pole juurdepääsuvõtmeid. Lisa üks käsuga 'config access add'"
+        },
+        "optionHostedExecutor": "Lisa jälgitud hostitud täitja väljuva liikluse vahemikud (104.28.0.0/16 ja 2a09:bac0::/29)",
+        "optionIpv4": "IPv4 vahemikud CIDR-kujul (komadega eraldatud, nt 203.0.113.0/24)",
+        "optionIpv6": "IPv6 vahemikud CIDR-kujul (komadega eraldatud, nt 2001:db8::/32)",
+        "ranges": {
+          "clearConflict": "--clear ei sobi kokku valikutega --ipv4, --ipv6 ega --hosted-executor",
+          "cleared": "Konfiguratsiooni lähtevahemikud eemaldatud",
+          "current": "Konfiguratsiooni lähtevahemikud: {{ranges}}",
+          "description": "Määra lähtevahemikud, mida iga juurdepääsuvõti kasutab, kui võti või selle masinaseos ei määra enda omasid. Ilma valikuteta näitab neid",
+          "descriptionShort": "Määra kogu konfiguratsiooni lähtevahemikud",
+          "none": "Konfiguratsioonile pole lähtevahemikke määratud",
+          "optionClear": "Eemalda kogu konfiguratsiooni vahemikud",
+          "success": "Konfiguratsiooni lähtevahemikud määratud: {{ranges}}"
+        },
+        "remove": {
+          "description": "Eemalda juurdepääsuvõti konfiguratsioonist",
+          "pushHint": "Selle read jäävad alles: {{machines}}, kuni seal käivitatakse 'machine access push'",
+          "success": "Juurdepääsuvõti \"{{key}}\" eemaldatud"
+        }
+      },
       "audit": {
         "description": "Vaata konfiguratsiooni auditilogi (räsiaheldatud JSONL asukohas ~/.config/rediacc/audit.log.jsonl)",
         "log": {
@@ -1248,6 +1286,38 @@
           "noGpus": "GPU-sid ei tuvastatud",
           "noDevices": "CDI-seadmeid pole määratud",
           "grantUnreadable": "Hoidla \"{{repository}}\" õigust ei õnnestunud lugeda: {{error}}"
+        }
+      },
+      "access": {
+        "description": "Seo konfiguratsiooni juurdepääsuvõtmed masinaga ja kirjuta need selle authorized_keys faili, igaüks piiratud oma lähtevahemikega",
+        "descriptionShort": "Halda masinasse paigaldatud juurdepääsuvõtmeid",
+        "notBound": "Juurdepääsuvõti \"{{key}}\" ei ole seotud masinaga \"{{name}}\"",
+        "optionKey": "Juurdepääsuvõtme nimi (vt 'config access list')",
+        "push": {
+          "change": "{{action}} rida {{line}}: {{key}}",
+          "description": "Kirjuta masinaga seotud juurdepääsuvõtmed selle authorized_keys faili, võttes üle sama võtmega olemasoleva rea, ning eemalda selle konfiguratsiooni read võtmetele, mis enam seotud pole. Keeldub muudatusest, mis lukustaks rdc enda seansi välja, ega kirjuta midagi, kui fail muutus saatmise ajal",
+          "descriptionShort": "Kirjuta masina juurdepääsuvõtmed selle authorized_keys faili",
+          "dryRun": "Proovikäivitus: masinas \"{{name}}\" ei kirjutatud faili {{path}} midagi",
+          "optionDryRun": "Näita muudatusi kirjutamata",
+          "setupFailed": "Juurdepääsuvõtmete saatmine masinasse {{name}} ebaõnnestus: {{error}}",
+          "success": "Juurdepääsuvõtmed kirjutati masinas \"{{name}}\" faili {{path}}",
+          "unchanged": "Masina \"{{name}}\" juurdepääsuvõtmed on juba ajakohased ({{path}})"
+        },
+        "remove": {
+          "description": "Eemalda juurdepääsuvõtme seos masinaga. Järgmine 'machine access push' eemaldab selle rea",
+          "success": "Juurdepääsuvõtme \"{{key}}\" seos masinaga \"{{name}}\" eemaldatud. Eemalda selle rida käsuga 'machine access push {{name}}'"
+        },
+        "set": {
+          "clearConflict": "--clear-ranges ei sobi kokku valikutega --ipv4 ega --ipv6",
+          "description": "Seo juurdepääsuvõti masinaga. Siin antud vahemikud asendavad võtme vahemikud ainult sellel masinal. Rakenda käsuga 'machine access push'",
+          "descriptionShort": "Seo juurdepääsuvõti masinaga",
+          "optionClearRanges": "Loobu selle masina enda vahemikest, et kehtiksid võtme või konfiguratsiooni vahemikud",
+          "success": "Juurdepääsuvõti \"{{key}}\" seotud masinaga \"{{name}}\". Rakenda käsuga 'machine access push {{name}}'"
+        },
+        "show": {
+          "description": "Näita masinaga seotud juurdepääsuvõtmeid ja vahemikke, mis igaühele seal kehtivad",
+          "noKeys": "Masinaga \"{{name}}\" pole seotud ühtegi juurdepääsuvõtit",
+          "path": "Kasutaja {{user}} authorized_keys fail masinas \"{{name}}\" (~/.ssh/authorized_keys)"
         }
       }
     },

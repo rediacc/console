@@ -342,6 +342,44 @@
       }
     },
     "config": {
+      "access": {
+        "add": {
+          "description": "Bir erişim anahtarı ekle ya da mevcut olanı makine bağlarını koruyarak yerinde güncelle. Burada verilen aralıklar, bir bağ kendi aralığını belirlemedikçe anahtar için tüm makinelerde geçerlidir; aralık verilmezse yapılandırma genelindeki aralıklar uygulanır",
+          "descriptionShort": "Erişim anahtarı ekle veya güncelle",
+          "optionNoRestrict": "no-forwarding, no-pty ve no-user-rc kısıtlamaları olmadan yalnızca from= yaz",
+          "optionPublicKey": "OpenSSH açık anahtar satırı veya onu içeren dosyanın yolu",
+          "publicKeyUnreadable": "--public-key ne bir OpenSSH açık anahtar satırı ne de okunabilir bir dosya: {{value}}",
+          "success": "\"{{key}}\" erişim anahtarı eklendi",
+          "updated": "\"{{key}}\" erişim anahtarı güncellendi"
+        },
+        "argKey": "Erişim anahtarı adı",
+        "description": "Yapılandırmanın erişim anahtarlarını yönet: CLI'nın bir makinenin authorized_keys dosyasına, bildirilen IPv4 ve IPv6 aralıklarına from= kısıtlamasıyla yazdığı açık SSH anahtarları. Bir anahtarı 'machine access set' ile makineye bağla, sonra 'machine access push' ile uygula",
+        "descriptionShort": "Kaynak adres aralıklarıyla kısıtlanmış SSH anahtarlarını yönet",
+        "emptyRangeFlag": "{{flag}} için en az bir CIDR gerekir, boş değer verildi",
+        "keyNotFound": "\"{{key}}\" erişim anahtarı bulunamadı",
+        "list": {
+          "description": "Yapılandırmanın erişim anahtarlarını listele",
+          "noKeys": "Bu yapılandırmada erişim anahtarı yok. 'config access add' ile ekle"
+        },
+        "optionHostedExecutor": "Gözlemlenen barındırılan yürütücü çıkış aralıklarını ekle (104.28.0.0/16 ve 2a09:bac0::/29)",
+        "optionIpv4": "CIDR gösteriminde IPv4 aralıkları (virgülle ayrılmış, ör. 203.0.113.0/24)",
+        "optionIpv6": "CIDR gösteriminde IPv6 aralıkları (virgülle ayrılmış, ör. 2001:db8::/32)",
+        "ranges": {
+          "clearConflict": "--clear, --ipv4, --ipv6 veya --hosted-executor ile birlikte kullanılamaz",
+          "cleared": "Yapılandırma genelindeki kaynak aralıkları kaldırıldı",
+          "current": "Yapılandırma genelindeki kaynak aralıkları: {{ranges}}",
+          "description": "Anahtar veya makine bağı kendi aralığını belirlemedikçe her erişim anahtarının kullandığı kaynak aralıklarını belirle. Seçenek verilmezse aralıkları gösterir",
+          "descriptionShort": "Yapılandırma genelindeki kaynak aralıklarını belirle",
+          "none": "Yapılandırma genelinde kaynak aralığı belirlenmedi",
+          "optionClear": "Yapılandırma genelindeki aralıkları kaldır",
+          "success": "Yapılandırma genelindeki kaynak aralıkları belirlendi: {{ranges}}"
+        },
+        "remove": {
+          "description": "Bir erişim anahtarını yapılandırmadan kaldır",
+          "pushHint": "Satırları, orada 'machine access push' çalıştırılana kadar {{machines}} üzerinde kalır",
+          "success": "\"{{key}}\" erişim anahtarı kaldırıldı"
+        }
+      },
       "audit": {
         "description": "Yapılandırma denetim günlüğünü incele (~/.config/rediacc/audit.log.jsonl konumunda hash zincirli JSONL)",
         "log": {
@@ -1248,6 +1286,38 @@
           "noGpus": "GPU algılanmadı",
           "noDevices": "Tanımlı CDI cihazı yok",
           "grantUnreadable": "\"{{repository}}\" deposunun izni okunamadı: {{error}}"
+        }
+      },
+      "access": {
+        "description": "Yapılandırmanın erişim anahtarlarını bir makineye bağla ve her birini kaynak aralıklarıyla kısıtlayarak makinenin authorized_keys dosyasına yaz",
+        "descriptionShort": "Bir makineye kurulan erişim anahtarlarını yönet",
+        "notBound": "\"{{key}}\" erişim anahtarı \"{{name}}\" makinesine bağlı değil",
+        "optionKey": "Erişim anahtarı adı ('config access list' çıktısına bak)",
+        "push": {
+          "change": "{{action}} satır {{line}}: {{key}}",
+          "description": "Bir makineye bağlı erişim anahtarlarını authorized_keys dosyasına yaz, aynı anahtarı taşıyan mevcut satırı devral ve artık bağlı olmayan anahtarlara ait bu yapılandırmanın satırlarını sil. rdc'nin kendi oturumunun erişimini kesecek bir değişikliği reddeder; gönderim sırasında dosya değiştiyse hiçbir şey yazmaz",
+          "descriptionShort": "Makinenin erişim anahtarlarını authorized_keys dosyasına yaz",
+          "dryRun": "Deneme çalıştırması: \"{{name}}\" üzerindeki {{path}} dosyasına hiçbir şey yazılmadı",
+          "optionDryRun": "Değişiklikleri yazmadan göster",
+          "setupFailed": "{{name}} makinesine erişim anahtarı gönderimi başarısız oldu: {{error}}",
+          "success": "Erişim anahtarları \"{{name}}\" üzerindeki {{path}} dosyasına yazıldı",
+          "unchanged": "\"{{name}}\" üzerindeki erişim anahtarları zaten güncel ({{path}})"
+        },
+        "remove": {
+          "description": "Bir erişim anahtarının makineyle bağını kaldır. Sonraki 'machine access push' satırını siler",
+          "success": "\"{{key}}\" erişim anahtarının \"{{name}}\" makinesiyle bağı kaldırıldı. Satırını 'machine access push {{name}}' ile sil"
+        },
+        "set": {
+          "clearConflict": "--clear-ranges, --ipv4 veya --ipv6 ile birlikte kullanılamaz",
+          "description": "Bir erişim anahtarını makineye bağla. Burada verilen aralıklar, anahtarın aralıklarının yerine yalnızca bu makinede geçer. 'machine access push' ile uygula",
+          "descriptionShort": "Bir erişim anahtarını makineye bağla",
+          "optionClearRanges": "Bu makineye özel aralıkları bırak; böylece anahtarın veya yapılandırmanın aralıkları geçerli olur",
+          "success": "\"{{key}}\" erişim anahtarı \"{{name}}\" makinesine bağlandı. 'machine access push {{name}}' ile uygula"
+        },
+        "show": {
+          "description": "Bir makineye bağlı erişim anahtarlarını ve her birinin orada geçerli aralıklarını göster",
+          "noKeys": "\"{{name}}\" makinesine bağlı erişim anahtarı yok",
+          "path": "\"{{name}}\" üzerinde {{user}} kullanıcısının authorized_keys dosyası (~/.ssh/authorized_keys)"
         }
       }
     },

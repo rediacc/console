@@ -342,6 +342,44 @@
       }
     },
     "config": {
+      "access": {
+        "add": {
+          "description": "アクセスキーを追加する。既存のキーはマシンへの紐付けを保ったまま、その場で更新する。ここで指定した範囲は、紐付け側で個別に指定しない限り、すべてのマシンでそのキーに適用される。範囲を指定しない場合は設定全体の範囲が適用される",
+          "descriptionShort": "アクセスキーを追加または更新する",
+          "optionNoRestrict": "no-forwarding、no-pty、no-user-rc の制限を付けず、from= だけを書き込む",
+          "optionPublicKey": "OpenSSH 公開鍵の行、またはそれを含むファイルのパス",
+          "publicKeyUnreadable": "--public-key は OpenSSH 公開鍵の行でも読み取り可能なファイルでもありません: {{value}}",
+          "success": "アクセスキー \"{{key}}\" を追加しました",
+          "updated": "アクセスキー \"{{key}}\" を更新しました"
+        },
+        "argKey": "アクセスキー名",
+        "description": "設定のアクセスキーを管理する。アクセスキーは、CLI が宣言済みの IPv4 / IPv6 範囲への from= 制限付きでマシンの authorized_keys に書き込む SSH 公開鍵。 'machine access set' でキーをマシンに紐付け、 'machine access push' で反映する",
+        "descriptionShort": "ソースアドレス範囲に制限された SSH キーを管理する",
+        "emptyRangeFlag": "{{flag}} には CIDR を 1 つ以上指定してください（空の値が渡されました）",
+        "keyNotFound": "アクセスキー \"{{key}}\" が見つかりません",
+        "list": {
+          "description": "設定のアクセスキーを一覧表示する",
+          "noKeys": "この設定にアクセスキーはありません。 'config access add' で追加してください"
+        },
+        "optionHostedExecutor": "観測されたホスト型エグゼキューターの送信元範囲を追加する（104.28.0.0/16 と 2a09:bac0::/29）",
+        "optionIpv4": "CIDR 表記の IPv4 範囲（カンマ区切り。例: 203.0.113.0/24）",
+        "optionIpv6": "CIDR 表記の IPv6 範囲（カンマ区切り。例: 2001:db8::/32）",
+        "ranges": {
+          "clearConflict": "--clear は --ipv4、--ipv6、--hosted-executor と併用できません",
+          "cleared": "設定全体の送信元範囲を削除しました",
+          "current": "設定全体の送信元範囲: {{ranges}}",
+          "description": "キーやマシンへの紐付けで個別に指定しない限り、すべてのアクセスキーが使う送信元範囲を設定する。オプションなしの場合は現在の範囲を表示する",
+          "descriptionShort": "設定全体の送信元範囲を設定する",
+          "none": "設定全体の送信元範囲は未設定です",
+          "optionClear": "設定全体の範囲を削除する",
+          "success": "設定全体の送信元範囲を設定しました: {{ranges}}"
+        },
+        "remove": {
+          "description": "設定からアクセスキーを削除する",
+          "pushHint": "{{machines}} 上の該当行は、そこで 'machine access push' を実行するまで残ります",
+          "success": "アクセスキー \"{{key}}\" を削除しました"
+        }
+      },
       "audit": {
         "description": "設定監査ログを確認(~/.config/rediacc/audit.log.jsonl のハッシュチェーン JSONL)",
         "log": {
@@ -1248,6 +1286,38 @@
           "noGpus": "GPU は検出されませんでした",
           "noDevices": "CDI デバイスは定義されていません",
           "grantUnreadable": "「{{repository}}」の付与を読み取れませんでした: {{error}}"
+        }
+      },
+      "access": {
+        "description": "設定のアクセスキーをマシンに紐付け、それぞれの送信元範囲に制限したうえでマシンの authorized_keys に書き込む",
+        "descriptionShort": "マシンにインストールされたアクセスキーを管理する",
+        "notBound": "アクセスキー \"{{key}}\" は \"{{name}}\" に紐付けられていません",
+        "optionKey": "アクセスキー名（ 'config access list' を参照）",
+        "push": {
+          "change": "{{action}} {{line}} 行目: {{key}}",
+          "description": "マシンに紐付けられたアクセスキーをその authorized_keys に書き込み、同じキーの既存の行は引き継ぐ。紐付けが外れたキーについては、この設定が書いた行を削除する。rdc 自身のセッションが締め出される変更は拒否し、プッシュ中にファイルが変更された場合は何も書き込まない",
+          "descriptionShort": "マシンのアクセスキーを authorized_keys に書き込む",
+          "dryRun": "ドライラン: \"{{name}}\" 上の {{path}} には何も書き込んでいません",
+          "optionDryRun": "書き込まずに変更内容を表示する",
+          "setupFailed": "{{name}} へのアクセスキーのプッシュに失敗しました: {{error}}",
+          "success": "アクセスキーを \"{{name}}\" 上の {{path}} に書き込みました",
+          "unchanged": "\"{{name}}\" 上のアクセスキーはすでに最新です（{{path}}）"
+        },
+        "remove": {
+          "description": "アクセスキーとマシンの紐付けを解除する。次回の 'machine access push' でその行が削除される",
+          "success": "アクセスキー \"{{key}}\" と \"{{name}}\" の紐付けを解除しました。 'machine access push {{name}}' でその行を削除してください"
+        },
+        "set": {
+          "clearConflict": "--clear-ranges は --ipv4、--ipv6 と併用できません",
+          "description": "アクセスキーをマシンに紐付ける。ここで指定した範囲は、このマシンに限りキーの範囲より優先される。反映は 'machine access push' で行う",
+          "descriptionShort": "アクセスキーをマシンに紐付ける",
+          "optionClearRanges": "このマシン固有の範囲を破棄し、キーまたは設定の範囲を適用する",
+          "success": "アクセスキー \"{{key}}\" を \"{{name}}\" に紐付けました。 'machine access push {{name}}' で反映してください"
+        },
+        "show": {
+          "description": "マシンに紐付けられたアクセスキーと、そこで各キーに適用される範囲を表示する",
+          "noKeys": "\"{{name}}\" に紐付けられたアクセスキーはありません",
+          "path": "\"{{name}}\" 上のユーザー {{user}} の authorized_keys (~/.ssh/authorized_keys)"
         }
       }
     },

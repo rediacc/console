@@ -342,6 +342,44 @@
       }
     },
     "config": {
+      "access": {
+        "add": {
+          "description": "Añadir una clave de acceso, o actualizar una existente sin perder sus vínculos con máquinas. Los rangos indicados aquí se aplican a la clave en todas las máquinas, salvo que un vínculo defina los suyos; sin rangos se usan los de toda la configuración",
+          "descriptionShort": "Añadir o actualizar una clave de acceso",
+          "optionNoRestrict": "Escribir solo from=, sin las restricciones no-forwarding, no-pty y no-user-rc",
+          "optionPublicKey": "Línea de clave pública OpenSSH, o ruta a un archivo que la contenga",
+          "publicKeyUnreadable": "--public-key no es una línea de clave pública OpenSSH ni un archivo legible: {{value}}",
+          "success": "Clave de acceso \"{{key}}\" añadida",
+          "updated": "Clave de acceso \"{{key}}\" actualizada"
+        },
+        "argKey": "Nombre de la clave de acceso",
+        "description": "Gestionar las claves de acceso de la configuración: claves públicas SSH que la CLI escribe en el authorized_keys de una máquina con una restricción from= a los rangos IPv4 e IPv6 declarados. Vincula una clave a una máquina con 'machine access set' y aplícala con 'machine access push'",
+        "descriptionShort": "Gestionar claves SSH restringidas a rangos de direcciones de origen",
+        "emptyRangeFlag": "{{flag}} necesita al menos un CIDR, pero el valor está vacío",
+        "keyNotFound": "No se encontró la clave de acceso \"{{key}}\"",
+        "list": {
+          "description": "Listar las claves de acceso de la configuración",
+          "noKeys": "No hay claves de acceso en esta configuración. Añade una con 'config access add'"
+        },
+        "optionHostedExecutor": "Añadir los rangos de salida observados del ejecutor alojado (104.28.0.0/16 y 2a09:bac0::/29)",
+        "optionIpv4": "Rangos IPv4 en notación CIDR (separados por comas, p. ej., 203.0.113.0/24)",
+        "optionIpv6": "Rangos IPv6 en notación CIDR (separados por comas, p. ej., 2001:db8::/32)",
+        "ranges": {
+          "clearConflict": "--clear no se puede combinar con --ipv4, --ipv6 ni --hosted-executor",
+          "cleared": "Rangos de origen de la configuración eliminados",
+          "current": "Rangos de origen de la configuración: {{ranges}}",
+          "description": "Definir los rangos de origen que usan todas las claves de acceso, salvo que la clave o su vínculo con la máquina defina los suyos. Sin opciones, los muestra",
+          "descriptionShort": "Definir los rangos de origen de toda la configuración",
+          "none": "No hay rangos de origen definidos para la configuración",
+          "optionClear": "Eliminar los rangos de toda la configuración",
+          "success": "Rangos de origen de la configuración definidos: {{ranges}}"
+        },
+        "remove": {
+          "description": "Quitar una clave de acceso de la configuración",
+          "pushHint": "Sus líneas permanecen en {{machines}} hasta que se ejecute allí 'machine access push'",
+          "success": "Clave de acceso \"{{key}}\" eliminada"
+        }
+      },
       "audit": {
         "description": "Inspeccionar el registro de auditoría de configuración (JSONL encadenado por hash en ~/.config/rediacc/audit.log.jsonl)",
         "log": {
@@ -1248,6 +1286,38 @@
           "noGpus": "No se detectaron GPU",
           "noDevices": "No hay dispositivos CDI definidos",
           "grantUnreadable": "No se pudo leer la concesión de \"{{repository}}\": {{error}}"
+        }
+      },
+      "access": {
+        "description": "Vincular las claves de acceso de la configuración a una máquina y escribirlas en su authorized_keys, cada una restringida a sus rangos de origen",
+        "descriptionShort": "Gestionar las claves de acceso instaladas en una máquina",
+        "notBound": "La clave de acceso \"{{key}}\" no está vinculada a \"{{name}}\"",
+        "optionKey": "Nombre de la clave de acceso (consulta 'config access list')",
+        "push": {
+          "change": "{{action}} línea {{line}}: {{key}}",
+          "description": "Escribir en el authorized_keys de una máquina las claves de acceso vinculadas a ella, adoptando una línea existente con la misma clave, y eliminar las líneas de esta configuración de las claves que ya no están vinculadas. Rechaza un cambio que dejaría fuera la propia sesión de rdc y no escribe nada si el archivo cambió durante el envío",
+          "descriptionShort": "Escribir las claves de acceso de la máquina en su authorized_keys",
+          "dryRun": "Simulación: no se escribió nada en {{path}} de \"{{name}}\"",
+          "optionDryRun": "Mostrar los cambios sin escribir",
+          "setupFailed": "Falló el envío de claves de acceso a {{name}}: {{error}}",
+          "success": "Claves de acceso escritas en {{path}} de \"{{name}}\"",
+          "unchanged": "Las claves de acceso de \"{{name}}\" ya están al día ({{path}})"
+        },
+        "remove": {
+          "description": "Desvincular una clave de acceso de una máquina. El siguiente 'machine access push' elimina su línea",
+          "success": "Clave de acceso \"{{key}}\" desvinculada de \"{{name}}\". Elimina su línea con 'machine access push {{name}}'"
+        },
+        "set": {
+          "clearConflict": "--clear-ranges no se puede combinar con --ipv4 ni --ipv6",
+          "description": "Vincular una clave de acceso a una máquina. Los rangos indicados aquí sustituyen los de la clave solo en esta máquina. Aplícalo con 'machine access push'",
+          "descriptionShort": "Vincular una clave de acceso a una máquina",
+          "optionClearRanges": "Descartar los rangos propios de esta máquina, para que se apliquen los de la clave o los de la configuración",
+          "success": "Clave de acceso \"{{key}}\" vinculada a \"{{name}}\". Aplícala con 'machine access push {{name}}'"
+        },
+        "show": {
+          "description": "Mostrar las claves de acceso vinculadas a una máquina y los rangos que resuelve cada una allí",
+          "noKeys": "No hay claves de acceso vinculadas a \"{{name}}\"",
+          "path": "authorized_keys del usuario {{user}} en \"{{name}}\" (~/.ssh/authorized_keys)"
         }
       }
     },

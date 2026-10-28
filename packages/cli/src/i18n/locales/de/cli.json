@@ -342,6 +342,44 @@
       }
     },
     "config": {
+      "access": {
+        "add": {
+          "description": "Einen Zugriffsschlüssel hinzufügen oder einen vorhandenen an Ort und Stelle aktualisieren, wobei seine Maschinenbindungen erhalten bleiben. Hier angegebene Bereiche gelten für den Schlüssel auf jeder Maschine, sofern eine Bindung nicht eigene festlegt; ohne Bereiche gelten die der gesamten Konfiguration",
+          "descriptionShort": "Zugriffsschlüssel hinzufügen oder aktualisieren",
+          "optionNoRestrict": "Nur from= schreiben, ohne die Beschränkungen no-forwarding, no-pty und no-user-rc",
+          "optionPublicKey": "Zeile mit dem öffentlichen OpenSSH-Schlüssel oder Pfad zu einer Datei, die ihn enthält",
+          "publicKeyUnreadable": "--public-key ist weder eine Zeile mit einem öffentlichen OpenSSH-Schlüssel noch eine lesbare Datei: {{value}}",
+          "success": "Zugriffsschlüssel \"{{key}}\" hinzugefügt",
+          "updated": "Zugriffsschlüssel \"{{key}}\" aktualisiert"
+        },
+        "argKey": "Name des Zugriffsschlüssels",
+        "description": "Die Zugriffsschlüssel der Konfiguration verwalten: öffentliche SSH-Schlüssel, die die CLI mit einer from=-Beschränkung auf die festgelegten IPv4- und IPv6-Bereiche in die authorized_keys einer Maschine schreibt. Einen Schlüssel mit 'machine access set' an eine Maschine binden, dann mit 'machine access push' anwenden",
+        "descriptionShort": "SSH-Schlüssel verwalten, die auf Quelladressbereiche beschränkt sind",
+        "emptyRangeFlag": "{{flag}} braucht mindestens einen CIDR-Bereich, erhalten wurde ein leerer Wert",
+        "keyNotFound": "Zugriffsschlüssel \"{{key}}\" nicht gefunden",
+        "list": {
+          "description": "Zugriffsschlüssel der Konfiguration auflisten",
+          "noKeys": "Keine Zugriffsschlüssel in dieser Konfiguration. Mit 'config access add' einen hinzufügen"
+        },
+        "optionHostedExecutor": "Beobachtete Egress-Bereiche des Hosted Executors hinzufügen (104.28.0.0/16 und 2a09:bac0::/29)",
+        "optionIpv4": "IPv4-Bereiche in CIDR-Notation (kommagetrennt, z. B. 203.0.113.0/24)",
+        "optionIpv6": "IPv6-Bereiche in CIDR-Notation (kommagetrennt, z. B. 2001:db8::/32)",
+        "ranges": {
+          "clearConflict": "--clear lässt sich nicht mit --ipv4, --ipv6 oder --hosted-executor kombinieren",
+          "cleared": "Quellbereiche der Konfiguration entfernt",
+          "current": "Quellbereiche der Konfiguration: {{ranges}}",
+          "description": "Die Quellbereiche festlegen, die jeder Zugriffsschlüssel verwendet, sofern der Schlüssel oder seine Maschinenbindung nicht eigene festlegt. Ohne Optionen werden sie angezeigt",
+          "descriptionShort": "Quellbereiche für die gesamte Konfiguration festlegen",
+          "none": "Keine Quellbereiche für die Konfiguration festgelegt",
+          "optionClear": "Quellbereiche der gesamten Konfiguration entfernen",
+          "success": "Quellbereiche der Konfiguration festgelegt: {{ranges}}"
+        },
+        "remove": {
+          "description": "Einen Zugriffsschlüssel aus der Konfiguration entfernen",
+          "pushHint": "Seine Zeilen bleiben auf {{machines}}, bis dort 'machine access push' ausgeführt wird",
+          "success": "Zugriffsschlüssel \"{{key}}\" entfernt"
+        }
+      },
       "audit": {
         "description": "Konfigurations-Audit-Log inspizieren (hash-verkettete JSONL in ~/.config/rediacc/audit.log.jsonl)",
         "log": {
@@ -1248,6 +1286,38 @@
           "noGpus": "Keine GPUs erkannt",
           "noDevices": "Keine CDI-Geräte definiert",
           "grantUnreadable": "Die Freigabe von \"{{repository}}\" konnte nicht gelesen werden: {{error}}"
+        }
+      },
+      "access": {
+        "description": "Die Zugriffsschlüssel der Konfiguration an eine Maschine binden und in deren authorized_keys schreiben, jeweils auf ihre Quellbereiche beschränkt",
+        "descriptionShort": "Auf einer Maschine installierte Zugriffsschlüssel verwalten",
+        "notBound": "Zugriffsschlüssel \"{{key}}\" ist nicht an \"{{name}}\" gebunden",
+        "optionKey": "Name des Zugriffsschlüssels (siehe 'config access list')",
+        "push": {
+          "change": "{{action}} Zeile {{line}}: {{key}}",
+          "description": "Die an eine Maschine gebundenen Zugriffsschlüssel in deren authorized_keys schreiben, dabei eine vorhandene Zeile mit demselben Schlüssel übernehmen, und die Zeilen dieser Konfiguration für nicht mehr gebundene Schlüssel entfernen. Lehnt eine Änderung ab, die die eigene Sitzung von rdc aussperren würde, und schreibt nichts, wenn sich die Datei während des Pushs geändert hat",
+          "descriptionShort": "Die Zugriffsschlüssel der Maschine in ihre authorized_keys schreiben",
+          "dryRun": "Testlauf: nichts nach {{path}} auf \"{{name}}\" geschrieben",
+          "optionDryRun": "Änderungen anzeigen, ohne zu schreiben",
+          "setupFailed": "Push der Zugriffsschlüssel nach {{name}} fehlgeschlagen: {{error}}",
+          "success": "Zugriffsschlüssel nach {{path}} auf \"{{name}}\" geschrieben",
+          "unchanged": "Zugriffsschlüssel auf \"{{name}}\" sind bereits aktuell ({{path}})"
+        },
+        "remove": {
+          "description": "Einen Zugriffsschlüssel von einer Maschine lösen. Das nächste 'machine access push' entfernt seine Zeile",
+          "success": "Zugriffsschlüssel \"{{key}}\" von \"{{name}}\" gelöst. Seine Zeile entfernen mit 'machine access push {{name}}'"
+        },
+        "set": {
+          "clearConflict": "--clear-ranges lässt sich nicht mit --ipv4 oder --ipv6 kombinieren",
+          "description": "Einen Zugriffsschlüssel an eine Maschine binden. Hier angegebene Bereiche ersetzen die Bereiche des Schlüssels nur auf dieser Maschine. Mit 'machine access push' anwenden",
+          "descriptionShort": "Zugriffsschlüssel an eine Maschine binden",
+          "optionClearRanges": "Eigene Bereiche dieser Maschine verwerfen, sodass die Bereiche des Schlüssels oder der Konfiguration gelten",
+          "success": "Zugriffsschlüssel \"{{key}}\" an \"{{name}}\" gebunden. Anwenden mit 'machine access push {{name}}'"
+        },
+        "show": {
+          "description": "Die an eine Maschine gebundenen Zugriffsschlüssel und die dort jeweils geltenden Bereiche anzeigen",
+          "noKeys": "Keine Zugriffsschlüssel an \"{{name}}\" gebunden",
+          "path": "authorized_keys von Benutzer {{user}} auf \"{{name}}\" (~/.ssh/authorized_keys)"
         }
       }
     },

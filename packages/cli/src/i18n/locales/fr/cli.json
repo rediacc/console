@@ -342,6 +342,44 @@
       }
     },
     "config": {
+      "access": {
+        "add": {
+          "description": "Ajouter une clé d'accès, ou mettre à jour une clé existante sur place en conservant ses liaisons aux machines. Les plages indiquées ici s'appliquent à la clé sur toutes les machines, sauf si une liaison définit les siennes ; sans plages, celles de toute la configuration s'appliquent",
+          "descriptionShort": "Ajouter ou mettre à jour une clé d'accès",
+          "optionNoRestrict": "Écrire from= seul, sans les restrictions no-forwarding, no-pty et no-user-rc",
+          "optionPublicKey": "Ligne de clé publique OpenSSH, ou chemin d'un fichier qui la contient",
+          "publicKeyUnreadable": "--public-key n'est ni une ligne de clé publique OpenSSH ni un fichier lisible : {{value}}",
+          "success": "Clé d'accès \"{{key}}\" ajoutée",
+          "updated": "Clé d'accès \"{{key}}\" mise à jour"
+        },
+        "argKey": "Nom de la clé d'accès",
+        "description": "Gérer les clés d'accès de la configuration : des clés publiques SSH que la CLI écrit dans le authorized_keys d'une machine avec une restriction from= aux plages IPv4 et IPv6 déclarées. Lier une clé à une machine avec 'machine access set', puis l'appliquer avec 'machine access push'",
+        "descriptionShort": "Gérer les clés SSH restreintes à des plages d'adresses source",
+        "emptyRangeFlag": "{{flag}} requiert au moins un CIDR, mais la valeur est vide",
+        "keyNotFound": "Clé d'accès \"{{key}}\" introuvable",
+        "list": {
+          "description": "Lister les clés d'accès de la configuration",
+          "noKeys": "Aucune clé d'accès dans cette configuration. Ajoutez-en une avec 'config access add'"
+        },
+        "optionHostedExecutor": "Ajouter les plages de sortie observées de l'exécuteur hébergé (104.28.0.0/16 et 2a09:bac0::/29)",
+        "optionIpv4": "Plages IPv4 en notation CIDR (séparées par des virgules, p. ex. 203.0.113.0/24)",
+        "optionIpv6": "Plages IPv6 en notation CIDR (séparées par des virgules, p. ex. 2001:db8::/32)",
+        "ranges": {
+          "clearConflict": "--clear ne peut pas être combiné avec --ipv4, --ipv6 ou --hosted-executor",
+          "cleared": "Plages source de la configuration supprimées",
+          "current": "Plages source de la configuration : {{ranges}}",
+          "description": "Définir les plages source que chaque clé d'accès utilise, sauf si la clé ou sa liaison à la machine définit les siennes. Sans option, les affiche",
+          "descriptionShort": "Définir les plages source de toute la configuration",
+          "none": "Aucune plage source définie pour la configuration",
+          "optionClear": "Supprimer les plages de toute la configuration",
+          "success": "Plages source de la configuration définies : {{ranges}}"
+        },
+        "remove": {
+          "description": "Supprimer une clé d'accès de la configuration",
+          "pushHint": "Ses lignes restent sur {{machines}} jusqu'à l'exécution de 'machine access push' sur place",
+          "success": "Clé d'accès \"{{key}}\" supprimée"
+        }
+      },
       "audit": {
         "description": "Inspecter le journal d'audit de configuration (JSONL chaîné par hachage dans ~/.config/rediacc/audit.log.jsonl)",
         "log": {
@@ -1248,6 +1286,38 @@
           "noGpus": "Aucun GPU détecté",
           "noDevices": "Aucun périphérique CDI défini",
           "grantUnreadable": "L'autorisation de « {{repository}} » n'a pas pu être lue : {{error}}"
+        }
+      },
+      "access": {
+        "description": "Lier les clés d'accès de la configuration à une machine et les écrire dans son authorized_keys, chacune restreinte à ses plages source",
+        "descriptionShort": "Gérer les clés d'accès installées sur une machine",
+        "notBound": "La clé d'accès \"{{key}}\" n'est pas liée à \"{{name}}\"",
+        "optionKey": "Nom de la clé d'accès (voir 'config access list')",
+        "push": {
+          "change": "{{action}} ligne {{line}} : {{key}}",
+          "description": "Écrire dans le authorized_keys d'une machine les clés d'accès qui lui sont liées, en reprenant une ligne existante portant la même clé, et supprimer les lignes de cette configuration pour les clés qui ne sont plus liées. Refuse une modification qui verrouillerait la propre session de rdc, et n'écrit rien si le fichier a changé pendant le push",
+          "descriptionShort": "Écrire les clés d'accès de la machine dans son authorized_keys",
+          "dryRun": "Simulation : rien n'a été écrit dans {{path}} sur \"{{name}}\"",
+          "optionDryRun": "Afficher les modifications sans écrire",
+          "setupFailed": "Échec de l'envoi des clés d'accès vers {{name}} : {{error}}",
+          "success": "Clés d'accès écrites dans {{path}} sur \"{{name}}\"",
+          "unchanged": "Les clés d'accès de \"{{name}}\" sont déjà à jour ({{path}})"
+        },
+        "remove": {
+          "description": "Délier une clé d'accès d'une machine. Le prochain 'machine access push' supprime sa ligne",
+          "success": "Clé d'accès \"{{key}}\" déliée de \"{{name}}\". Supprimez sa ligne avec 'machine access push {{name}}'"
+        },
+        "set": {
+          "clearConflict": "--clear-ranges ne peut pas être combiné avec --ipv4 ou --ipv6",
+          "description": "Lier une clé d'accès à une machine. Les plages indiquées ici remplacent celles de la clé sur cette machine uniquement. À appliquer avec 'machine access push'",
+          "descriptionShort": "Lier une clé d'accès à une machine",
+          "optionClearRanges": "Abandonner les plages propres à cette machine, pour que celles de la clé ou de la configuration s'appliquent",
+          "success": "Clé d'accès \"{{key}}\" liée à \"{{name}}\". Appliquez-la avec 'machine access push {{name}}'"
+        },
+        "show": {
+          "description": "Afficher les clés d'accès liées à une machine et les plages auxquelles chacune correspond sur place",
+          "noKeys": "Aucune clé d'accès liée à \"{{name}}\"",
+          "path": "authorized_keys de l'utilisateur {{user}} sur \"{{name}}\" (~/.ssh/authorized_keys)"
         }
       }
     },

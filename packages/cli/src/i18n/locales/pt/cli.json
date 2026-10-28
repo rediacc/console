@@ -342,6 +342,44 @@
       }
     },
     "config": {
+      "access": {
+        "add": {
+          "description": "Adicionar uma chave de acesso ou atualizar uma existente no local, mantendo as suas associações a máquinas. Os intervalos indicados aqui aplicam-se à chave em todas as máquinas, a menos que uma associação defina os seus; sem intervalos, aplicam-se os de toda a configuração",
+          "descriptionShort": "Adicionar ou atualizar uma chave de acesso",
+          "optionNoRestrict": "Escrever apenas from=, sem as restrições no-forwarding, no-pty e no-user-rc",
+          "optionPublicKey": "Linha de chave pública OpenSSH, ou caminho de um ficheiro que a contenha",
+          "publicKeyUnreadable": "--public-key não é uma linha de chave pública OpenSSH nem um ficheiro legível: {{value}}",
+          "success": "Chave de acesso \"{{key}}\" adicionada",
+          "updated": "Chave de acesso \"{{key}}\" atualizada"
+        },
+        "argKey": "Nome da chave de acesso",
+        "description": "Gerir as chaves de acesso da configuração: chaves públicas SSH que a CLI escreve no authorized_keys de uma máquina com uma restrição from= aos intervalos IPv4 e IPv6 declarados. Associar uma chave a uma máquina com 'machine access set' e aplicá-la com 'machine access push'",
+        "descriptionShort": "Gerir chaves SSH restritas a intervalos de endereços de origem",
+        "emptyRangeFlag": "{{flag}} requer pelo menos um CIDR, mas o valor está vazio",
+        "keyNotFound": "Chave de acesso \"{{key}}\" não encontrada",
+        "list": {
+          "description": "Listar as chaves de acesso da configuração",
+          "noKeys": "Nenhuma chave de acesso nesta configuração. Adicione uma com 'config access add'"
+        },
+        "optionHostedExecutor": "Adicionar os intervalos de saída observados do executor alojado (104.28.0.0/16 e 2a09:bac0::/29)",
+        "optionIpv4": "Intervalos IPv4 em notação CIDR (separados por vírgulas, p. ex., 203.0.113.0/24)",
+        "optionIpv6": "Intervalos IPv6 em notação CIDR (separados por vírgulas, p. ex., 2001:db8::/32)",
+        "ranges": {
+          "clearConflict": "--clear não pode ser combinado com --ipv4, --ipv6 ou --hosted-executor",
+          "cleared": "Intervalos de origem da configuração removidos",
+          "current": "Intervalos de origem da configuração: {{ranges}}",
+          "description": "Definir os intervalos de origem que cada chave de acesso usa, a menos que a chave ou a sua associação à máquina defina os seus. Sem opções, mostra-os",
+          "descriptionShort": "Definir os intervalos de origem de toda a configuração",
+          "none": "Nenhum intervalo de origem definido para a configuração",
+          "optionClear": "Remover os intervalos de toda a configuração",
+          "success": "Intervalos de origem da configuração definidos: {{ranges}}"
+        },
+        "remove": {
+          "description": "Remover uma chave de acesso da configuração",
+          "pushHint": "As suas linhas permanecem em {{machines}} até 'machine access push' ser executado aí",
+          "success": "Chave de acesso \"{{key}}\" removida"
+        }
+      },
       "audit": {
         "description": "Inspeccionar o registo de auditoria da configuração (JSONL com cadeia de hashes em ~/.config/rediacc/audit.log.jsonl)",
         "log": {
@@ -1248,6 +1286,38 @@
           "noGpus": "Nenhuma GPU detetada",
           "noDevices": "Nenhum dispositivo CDI definido",
           "grantUnreadable": "Não foi possível ler a concessão de \"{{repository}}\": {{error}}"
+        }
+      },
+      "access": {
+        "description": "Associar as chaves de acesso da configuração a uma máquina e escrevê-las no seu authorized_keys, cada uma restrita aos seus intervalos de origem",
+        "descriptionShort": "Gerir as chaves de acesso instaladas numa máquina",
+        "notBound": "A chave de acesso \"{{key}}\" não está associada a \"{{name}}\"",
+        "optionKey": "Nome da chave de acesso (consulte 'config access list')",
+        "push": {
+          "change": "{{action}} linha {{line}}: {{key}}",
+          "description": "Escrever no authorized_keys de uma máquina as chaves de acesso associadas a ela, adotando uma linha existente com a mesma chave, e remover as linhas desta configuração das chaves que já não estão associadas. Recusa uma alteração que bloquearia a própria sessão do rdc e não escreve nada se o ficheiro mudou durante o envio",
+          "descriptionShort": "Escrever as chaves de acesso da máquina no seu authorized_keys",
+          "dryRun": "Simulação: nada escrito em {{path}} em \"{{name}}\"",
+          "optionDryRun": "Mostrar as alterações sem escrever",
+          "setupFailed": "Falha no envio das chaves de acesso para {{name}}: {{error}}",
+          "success": "Chaves de acesso escritas em {{path}} em \"{{name}}\"",
+          "unchanged": "As chaves de acesso em \"{{name}}\" já estão atualizadas ({{path}})"
+        },
+        "remove": {
+          "description": "Desassociar uma chave de acesso de uma máquina. O próximo 'machine access push' remove a sua linha",
+          "success": "Chave de acesso \"{{key}}\" desassociada de \"{{name}}\". Remova a sua linha com 'machine access push {{name}}'"
+        },
+        "set": {
+          "clearConflict": "--clear-ranges não pode ser combinado com --ipv4 ou --ipv6",
+          "description": "Associar uma chave de acesso a uma máquina. Os intervalos indicados aqui substituem os da chave apenas nesta máquina. Aplique com 'machine access push'",
+          "descriptionShort": "Associar uma chave de acesso a uma máquina",
+          "optionClearRanges": "Descartar os intervalos próprios desta máquina, para que se apliquem os da chave ou da configuração",
+          "success": "Chave de acesso \"{{key}}\" associada a \"{{name}}\". Aplique-a com 'machine access push {{name}}'"
+        },
+        "show": {
+          "description": "Mostrar as chaves de acesso associadas a uma máquina e os intervalos que cada uma tem aí",
+          "noKeys": "Nenhuma chave de acesso associada a \"{{name}}\"",
+          "path": "authorized_keys do utilizador {{user}} em \"{{name}}\" (~/.ssh/authorized_keys)"
         }
       }
     },
