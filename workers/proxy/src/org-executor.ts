@@ -9,245 +9,72 @@
  */
 
 import { DurableObject } from 'cloudflare:workers';
+import { capacityStub, type ExecutorCapacity, type ExecutorSize } from './capacity';
 import {
-  type AcquireAnswer,
-  capacityStub,
-  type ExecutorCapacity,
-  type ExecutorSize,
-} from './capacity';
-import { EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
-import type { ExecutorIssuerRpc } from './issued-token';
+  type ExecutorIdentity,
+  pinRefusal,
+  relocateOrg,
+  reportRefusal,
+} from './org-executor-relocate';
+import {
+  acquireLease,
+  bounded,
+  containerRequest,
+  durationMs,
+  type EgressReportAnswer,
+  EXECUTOR_IMAGE_KEY,
+  EXECUTOR_PORT,
+  type ExecutorRecord,
+  type ExitResult,
+  errorSummary,
+  executorEnv,
+  healthy,
+  isOomExit,
+  OOM_HEAVY_KEY,
+  OOM_KEY,
+  ORG_KEY,
+  type OrgExecutorEnv,
+  type PinAnswer,
+  type PinnedExecutor,
+  pinnedFrom,
+  READY_POLL_MS,
+  READY_TIMEOUT_MS,
+  RECORD_KEY,
+  RENEW_THROTTLE_MS,
+  RETIRED_KEY,
+  refusal,
+  refusalResponse,
+  registerEgress,
+  releaseLease,
+  type StartAnswer,
+  trackBody,
+  UNREACHABLE_AT_KEY,
+  UNREACHABLE_KEY,
+  wait,
+} from './org-executor-support';
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
 import { INSTANCE_BY_SIZE } from './sizing';
 
-/** The host the container addresses the account server by; the intercept routes it to the egress entrypoint (src/index.ts, the `ExecutorContainer` comment, says why). */
-export const ACCOUNT_EGRESS_HOST = 'account.internal';
-/** The main-module export the intercept binds, through `ctx.exports` (Design A: per-instance props). */
-export const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
-/** `rdc serve` listens here. */
-export const EXECUTOR_PORT = 8080;
-/** The image key under `[containers.images]` in the wrangler config. */
-export const EXECUTOR_IMAGE_KEY = 'executor';
-/** Readiness: poll every READY_POLL_MS for at most READY_TIMEOUT_MS. */
-export const READY_POLL_MS = 100;
-export const READY_TIMEOUT_MS = 20_000;
-/** A request renews the lease at most this often; the idle alarm renews while a request is in flight. */
-export const RENEW_THROTTLE_MS = 30_000;
-/** A coordinator or issuer call that takes longer than this counts as failed, and a failed coordinator refuses a start (fail closed). */
-export const COORDINATOR_TIMEOUT_MS = 5_000;
-/** An OOM-killed process exits with 128 + SIGKILL. */
-const OOM_EXIT_CODE = 137;
-
-const DEFAULT_REGION = 'eu';
-const RECORD_KEY = 'executor';
-const ORG_KEY = 'org';
-const OOM_KEY = 'oomAt';
-/** When an exit out of memory happened on a HEAVY container, the case with no larger size to escalate to. */
-const OOM_HEAVY_KEY = 'oomHeavyAt';
-/** The epoch-ms times of the egress-unreachable reports still inside UNREACHABLE_WINDOW_MS. */
-const UNREACHABLE_KEY = 'egressUnreachable';
-/** The time of the latest egress-unreachable report, which the pin answer reads as `egressUnreachableRecent`. */
-const UNREACHABLE_AT_KEY = 'egressUnreachableAt';
-/** Set once the issuer moved the org to another placement: `{ to }`, the placement it moved to. */
-const RETIRED_KEY = 'retired';
-
-/** The props the egress entrypoint receives: set only here, by Durable Object code, never by the container or the caller. The egress cross-checks `containerId === env.ORG_EXECUTOR.idFromName(executorName(orgId, placement)).toString()`. */
-export interface ExecutorEgressProps {
-  orgId: string;
-  placement: number;
-  containerId: string;
-}
-
-/** What the issuer's `relocate(orgId, fromPlacement)` answers (workers/account/src/index.ts, the `ExecutorIssuer` entrypoint). */
-export type RelocateAnswer =
-  | { ok: true; placement: number }
-  | { ok: false; reason: 'stale' | 'budget'; placement: number }
-  | { ok: false; reason: 'unknown-org' };
-
-/** The env slice OrgExecutor reads. */
-export interface OrgExecutorEnv {
-  ORG_EXECUTOR: { idFromName(name: string): DurableObjectId };
-  EXECUTOR_CAPACITY: DurableObjectNamespace<ExecutorCapacity>;
-  /** The account Worker's `ExecutorIssuer`, called only by `recordEgressUnreachable` at the threshold. Without it a report never relocates. */
-  ISSUER?: Pick<ExecutorIssuerRpc, 'relocate'>;
-  /** Region label, handed to the executor as REDIACC_REGION; `eu` when unset or empty. */
-  REGION?: string;
-}
-
-/** What a running container was started with, kept in Durable Object storage so a restarted instance can recover it. */
-export interface ExecutorRecord {
-  orgId: string;
-  placement: number;
-  size: ExecutorSize;
-  image: string;
-  startedAt: number;
-}
-
-/** The refusal codes the Worker relays: `EXECUTOR_CAPACITY` is a 503 with `Retry-After: 30`, `EXECUTOR_START_FAILED` a plain 503. `EXECUTOR_RELOCATED` means this instance retired: the Worker asks the issuer for the placement again. */
-export type ExecutorRefusalCode =
-  | 'EXECUTOR_CAPACITY'
-  | 'EXECUTOR_START_FAILED'
-  | 'EXECUTOR_RELOCATED';
-
-type Refusal = { ok: false; code: ExecutorRefusalCode; reason: string };
-
-/** A start's answer, before the pin adds the report flag. */
-type StartAnswer = { ok: true; size: ExecutorSize } | Refusal;
-
-/** The answer to `pin`. `size` is the size the container runs on, which stays the started size while it runs. `egressUnreachableRecent` is true while an egress-unreachable report is inside UNREACHABLE_WINDOW_MS, so the Worker needs no extra call to name the outcome. */
-export type PinAnswer =
-  | { ok: true; size: ExecutorSize; egressUnreachableRecent: boolean }
-  | Refusal;
-
-/** The answer to `recordEgressUnreachable`: the count inside the window and whether the org moved, or a refusal with its reason. */
-export type EgressReportAnswer =
-  | { ok: true; count: number; threshold: number; relocated: boolean }
-  | { ok: false; reason: string };
-
-/** Who this instance serves, set once by `pin` and kept in storage. */
-interface PinnedExecutor {
-  orgId: string;
-  placement: number;
-}
-
-type EgressFactory = (options: { props: ExecutorEgressProps }) => Fetcher;
-
-type ExitResult = { clean: true } | { clean: false; error: unknown };
-
-/**
- * The environment `rdc serve --mode container` boots with: exactly these four names, on both backends (src/index.ts `ExecutorContainer.pin` uses it too).
- *
- * REDIACC_TOKEN is the placeholder that authenticates nothing; the egress swaps it for the org's issued token, so no real token ever enters the container.
- */
-export function executorEnv(
-  env: Pick<OrgExecutorEnv, 'REGION'>,
-  orgId: string
-): Record<string, string> {
-  return {
-    REDIACC_TOKEN: EXECUTOR_TOKEN_PLACEHOLDER,
-    REDIACC_ACCOUNT_SERVER: `http://${ACCOUNT_EGRESS_HOST}`,
-    REDIACC_REGION: env.REGION === undefined || env.REGION === '' ? DEFAULT_REGION : env.REGION,
-    REDIACC_EXECUTOR_ORG_ID: orgId,
-  };
-}
-
-const UNIT_MS: Record<string, number> = { s: 1_000, m: 60_000, h: 3_600_000 };
-
-/** A `sleepAfter` literal (`'90s'`, `'2m'`, `'1h'`, or plain seconds) in milliseconds. */
-export function durationMs(value: string): number {
-  const match = /^(\d+)(s|m|h)?$/.exec(value);
-  if (!match) throw new Error(`invalid duration: ${value}`);
-  return Number.parseInt(match[1], 10) * UNIT_MS[match[2] ?? 's'];
-}
-
-/** Whether a `monitor()` rejection is an out-of-memory exit: exit code 137, or an error naming OOM. */
-export function isOomExit(error: unknown): boolean {
-  const code = (error as { exitCode?: unknown } | null | undefined)?.exitCode;
-  if (code === OOM_EXIT_CODE) return true;
-  let message = '';
-  if (error instanceof Error) message = error.message;
-  else if (typeof error === 'string') message = error;
-  return /\bOOM\b|out of memory|exit(?:ed)?(?: with)?(?: code)? 137\b/i.test(message);
-}
-
-function refusal(code: ExecutorRefusalCode, reason: string): Refusal {
-  console.warn(`proxy: org executor refused: ${reason}`);
-  return { ok: false, code, reason };
-}
-
-function refusalResponse(code: ExecutorRefusalCode): Response {
-  if (code === 'EXECUTOR_CAPACITY') {
-    return Response.json(
-      { error: 'No executor capacity is free right now.', code },
-      { status: 503, headers: { 'retry-after': '30' } }
-    );
-  }
-  if (code === 'EXECUTOR_RELOCATED') {
-    return Response.json({ error: "This org's executor has moved.", code }, { status: 503 });
-  }
-  return Response.json({ error: 'The executor could not be started.', code }, { status: 503 });
-}
-
-/** A stored pin, or undefined for anything that is not one. */
-function pinnedFrom(value: unknown): PinnedExecutor | undefined {
-  if (typeof value !== 'object' || value === null) return undefined;
-  const { orgId, placement } = value as Record<string, unknown>;
-  const valid = placementOf(placement);
-  if (typeof orgId !== 'string' || orgId === '' || valid === undefined) return undefined;
-  return { orgId, placement: valid };
-}
-
-const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** A coordinator or issuer call bounded by COORDINATOR_TIMEOUT_MS; a timeout rejects like any other failure. */
-async function bounded<T>(call: Promise<T>): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error('coordinator-timeout')), COORDINATOR_TIMEOUT_MS);
-  });
-  try {
-    return await Promise.race([call, timeout]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/**
- * The incoming request re-addressed to plain `http:`, keeping its method, headers, body and signal. A container TCP port speaks HTTP, so it refuses the `https://executor.internal/...` URL the proxy routes with; the replaced `@cloudflare/containers` library made the same swap before its port fetch.
- */
-function containerRequest(request: Request): Request {
-  const url = new URL(request.url);
-  url.protocol = 'http:';
-  return new Request(url, request);
-}
-
-/** The name and message of a caught error, for a log line. Never the request or its content. */
-function errorSummary(error: unknown): { name: string; message: string } {
-  if (error instanceof Error) return { name: error.name, message: error.message };
-  return { name: typeof error, message: String(error) };
-}
-
-/** Whether the executor's health route answers 2xx. A refused connection means it is not listening yet. */
-async function healthy(container: Container): Promise<boolean> {
-  try {
-    const response = await container.getTcpPort(EXECUTOR_PORT).fetch('http://container/v1/health');
-    await response.body?.cancel();
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-/** The response body, byte for byte, with `done` called once when it closes, errors or is cancelled, rather than when the headers arrive. */
-function trackBody(body: ReadableStream<Uint8Array>, done: () => void): ReadableStream<Uint8Array> {
-  const reader = body.getReader();
-  let finished = false;
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    done();
-  };
-  return new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      try {
-        const chunk = await reader.read();
-        if (chunk.done) {
-          finish();
-          controller.close();
-        } else {
-          controller.enqueue(chunk.value);
-        }
-      } catch (error) {
-        finish();
-        controller.error(error);
-      }
-    },
-    cancel(reason) {
-      finish();
-      return reader.cancel(reason);
-    },
-  });
-}
+export {
+  ACCOUNT_EGRESS_ENTRYPOINT,
+  ACCOUNT_EGRESS_HOST,
+  COORDINATOR_TIMEOUT_MS,
+  durationMs,
+  type EgressReportAnswer,
+  EXECUTOR_IMAGE_KEY,
+  EXECUTOR_PORT,
+  type ExecutorEgressProps,
+  type ExecutorRecord,
+  type ExecutorRefusalCode,
+  executorEnv,
+  isOomExit,
+  type OrgExecutorEnv,
+  type PinAnswer,
+  READY_POLL_MS,
+  READY_TIMEOUT_MS,
+  RENEW_THROTTLE_MS,
+  type RelocateAnswer,
+} from './org-executor-support';
 
 /** The per-org executor Durable Object. See the module comment. */
 export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
@@ -292,7 +119,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
    * The instance must be the Durable Object named `executorName(orgId, placement)`, and a second org or placement is refused, so an instance only ever serves its own. A retired instance refuses with `EXECUTOR_RELOCATED`.
    */
   async pin(orgId: string, placement: number, size: ExecutorSize): Promise<PinAnswer> {
-    const refused = this.pinRefusal(orgId, placement, size);
+    const refused = pinRefusal(this.identity(), orgId, placement, size);
     if (refused !== undefined) return refusal('EXECUTOR_START_FAILED', refused);
     if (this.isRetired()) return refusal('EXECUTOR_RELOCATED', 'retired');
     if (this.pinned === undefined) {
@@ -345,7 +172,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
    * Refused for an org or placement that is not this instance's.
    */
   async recordEgressUnreachable(orgId: string, placement: number): Promise<EgressReportAnswer> {
-    const refused = this.reportRefusal(orgId, placement);
+    const refused = reportRefusal(this.identity(), orgId, placement);
     if (refused !== undefined) {
       console.warn(`proxy: org executor egress report refused: ${refused}`);
       return { ok: false, reason: refused };
@@ -358,20 +185,6 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     });
     this.reporting = reporting;
     return reporting;
-  }
-
-  /** Why a report for `orgId` at `placement` is refused, or undefined when it is admitted. */
-  private reportRefusal(orgId: string, placement: number): string | undefined {
-    if (typeof orgId !== 'string' || orgId === '') return 'report-org-invalid';
-    if (placementOf(placement) === undefined) return 'report-placement-invalid';
-    if (!this.ctx.id.equals(this.env.ORG_EXECUTOR.idFromName(executorName(orgId, placement)))) {
-      return 'report-id-mismatch';
-    }
-    const pinned = this.pinned;
-    if (pinned !== undefined && (pinned.orgId !== orgId || pinned.placement !== placement)) {
-      return 'report-org-conflict';
-    }
-    return undefined;
   }
 
   /** Append the report, prune the window, and relocate at the threshold. */
@@ -395,32 +208,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     );
     if (count < UNREACHABLE_THRESHOLD) return answer(false);
 
-    const moved = await this.relocate(orgId, placement);
+    const moved = await relocateOrg(this.env.ISSUER, orgId, placement);
     if (moved === undefined) return answer(false);
     await this.retire(moved);
     return answer(true);
-  }
-
-  /** Ask the issuer to move the org off `placement`, bounded like the coordinator calls. Answers the placement it moved to, or undefined when it stays. */
-  private async relocate(orgId: string, placement: number): Promise<number | undefined> {
-    const issuer = this.env.ISSUER;
-    if (issuer === undefined) {
-      console.warn('proxy: org executor relocate refused: no-issuer');
-      return undefined;
-    }
-    let moved: RelocateAnswer;
-    try {
-      moved = await bounded(issuer.relocate(orgId, placement));
-    } catch {
-      console.warn('proxy: org executor relocate refused: failed');
-      return undefined;
-    }
-    if (moved.ok || moved.reason === 'stale') {
-      console.warn(`proxy: org executor relocated p${placement}->p${moved.placement}`);
-      return moved.placement;
-    }
-    console.warn(`proxy: org executor relocate refused: ${moved.reason}`);
-    return undefined;
   }
 
   /** Retire this instance: kept in storage so a restart stays retired, then drain. The request whose report caused the move still ends with its result line before the container goes. */
@@ -444,7 +235,12 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
    * Move a running container to the deployed image. The lease is secured before the old container is destroyed: a coordinator that refuses (or fails) leaves the old container serving and the drift is retried at a later pin, rather than leaving the org with no container. The lease taken here is the one the new container runs on (`startLeased`), so no second acquire can fail once the old container is gone.
    */
   private async restartOnNewImage(running: ExecutorRecord): Promise<StartAnswer> {
-    const lease = await this.acquireLease(running.orgId, running.placement, running.size);
+    const lease = await acquireLease(
+      this.capacity(),
+      running.orgId,
+      running.placement,
+      running.size
+    );
     if (lease === 'failed' || !lease.ok) {
       console.warn('proxy: org executor image restart deferred: no lease');
       return { ok: true, size: running.size };
@@ -452,21 +248,6 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     this.lastRenew = Date.now();
     await this.stopContainer('image-drift');
     return this.startLeased(running.orgId, running.placement, running.size);
-  }
-
-  /** Why `pin(orgId, placement, size)` is refused, or undefined when it is admitted. */
-  private pinRefusal(orgId: string, placement: number, size: ExecutorSize): string | undefined {
-    if (typeof orgId !== 'string' || orgId === '') return 'pin-org-invalid';
-    if (placementOf(placement) === undefined) return 'pin-placement-invalid';
-    if (!this.ctx.id.equals(this.env.ORG_EXECUTOR.idFromName(executorName(orgId, placement)))) {
-      return 'pin-id-mismatch';
-    }
-    const pinned = this.pinned;
-    if (pinned !== undefined && (pinned.orgId !== orgId || pinned.placement !== placement)) {
-      return 'pin-org-conflict';
-    }
-    if (size !== 'light' && size !== 'heavy') return 'pin-size-invalid';
-    return undefined;
   }
 
   /** When this org's executor last exited out of memory (epoch ms), or undefined. The Worker reads it to size the next start (src/sizing.ts `chooseSize`). */
@@ -547,7 +328,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     if (now - this.lastActivity >= idleMs) {
       const { orgId, placement } = this.record;
       await this.stopContainer('idle');
-      await this.releaseLease(orgId, placement);
+      await releaseLease(this.capacity(), orgId, placement);
       return;
     }
     await this.ctx.storage.setAlarm(this.lastActivity + idleMs);
@@ -556,6 +337,11 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** The image the deployed version names for the executor. */
   private currentImage(): string | undefined {
     return this.ctx.container?.images[EXECUTOR_IMAGE_KEY];
+  }
+
+  /** What the identity checks of src/org-executor-relocate.ts read, at the moment of the call. */
+  private identity(): ExecutorIdentity {
+    return { id: this.ctx.id, env: this.env, pinned: this.pinned };
   }
 
   private capacity(): DurableObjectStub<ExecutorCapacity> {
@@ -591,39 +377,11 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     const record = this.record;
     if (this.isRetired()) {
       await this.stopContainer('relocated');
-      if (record) await this.releaseLease(record.orgId, record.placement);
+      if (record) await releaseLease(this.capacity(), record.orgId, record.placement);
     } else {
       await this.stopContainer('lease-lost');
     }
     this.draining = false;
-  }
-
-  /** Ask the coordinator for a slot, failing closed: a throw or a timeout is a refusal, never an uncounted start. */
-  private async acquireLease(
-    orgId: string,
-    placement: number,
-    size: ExecutorSize
-  ): Promise<AcquireAnswer | 'failed'> {
-    try {
-      return await bounded(
-        this.capacity().acquire(executorName(orgId, placement), size) as Promise<AcquireAnswer>
-      );
-    } catch {
-      return 'failed';
-    }
-  }
-
-  private async releaseLease(
-    orgId: string | undefined,
-    placement: number | undefined
-  ): Promise<void> {
-    if (orgId === undefined || placement === undefined) return;
-    try {
-      await bounded(this.capacity().release(executorName(orgId, placement)));
-    } catch {
-      // The lease expires on its own after LEASE_MS.
-      console.warn('proxy: org executor release failed');
-    }
   }
 
   /**
@@ -658,7 +416,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** Acquire again a lease the coordinator no longer holds. A retired instance never does, so it cannot take a slot back. */
   private async reacquire(record: ExecutorRecord, now: number): Promise<boolean> {
     if (this.isRetired()) return false;
-    const again = await this.acquireLease(record.orgId, record.placement, record.size);
+    const again = await acquireLease(this.capacity(), record.orgId, record.placement, record.size);
     if (again === 'failed' || !again.ok) return false;
     this.lastRenew = now;
     return true;
@@ -671,7 +429,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     const image = this.currentImage();
     if (image === undefined) return refusal('EXECUTOR_START_FAILED', 'no-image');
 
-    const lease = await this.acquireLease(orgId, placement, size);
+    const lease = await acquireLease(this.capacity(), orgId, placement, size);
     if (lease === 'failed') return refusal('EXECUTOR_START_FAILED', 'coordinator-failed');
     if (!lease.ok) return refusal('EXECUTOR_CAPACITY', lease.reason);
     this.lastRenew = Date.now();
@@ -686,19 +444,19 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   ): Promise<StartAnswer> {
     const container = this.ctx.container;
     if (!container) {
-      await this.releaseLease(orgId, placement);
+      await releaseLease(this.capacity(), orgId, placement);
       return refusal('EXECUTOR_START_FAILED', 'no-container');
     }
     const image = this.currentImage();
     if (image === undefined) {
-      await this.releaseLease(orgId, placement);
+      await releaseLease(this.capacity(), orgId, placement);
       return refusal('EXECUTOR_START_FAILED', 'no-image');
     }
     const failure = await this.launch(container, { orgId, placement, size, image });
     if (failure === undefined) return { ok: true, size };
     await this.stopContainer(failure.reason);
     // A container that exited on its own during readiness has had its slot released by `onExit` already.
-    if (!failure.releasedByExit) await this.releaseLease(orgId, placement);
+    if (!failure.releasedByExit) await releaseLease(this.capacity(), orgId, placement);
     return refusal('EXECUTOR_START_FAILED', failure.reason);
   }
 
@@ -711,7 +469,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     let generation: number | undefined;
     try {
       // Registered before `start`, so no egress call can escape to DNS in between.
-      await this.registerEgress(container, orgId, placement);
+      await registerEgress(this.ctx, container, orgId, placement);
       this.generation += 1;
       this.exited = undefined;
       container.start({
@@ -738,20 +496,6 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** Whether the container of `generation` exited on its own (its `onExit` ran). */
   private exitedIn(generation: number): boolean {
     return this.generation === generation && this.exited !== undefined;
-  }
-
-  /** Route `account.internal` to the egress entrypoint with this instance's props. Registering again replaces the props without dropping open connections. */
-  private async registerEgress(
-    container: Container,
-    orgId: string,
-    placement: number
-  ): Promise<void> {
-    const factory = (this.ctx.exports as unknown as Record<string, EgressFactory | undefined>)[
-      ACCOUNT_EGRESS_ENTRYPOINT
-    ];
-    if (typeof factory !== 'function') throw new Error('egress-entrypoint-missing');
-    const props: ExecutorEgressProps = { orgId, placement, containerId: this.ctx.id.toString() };
-    await container.interceptOutboundHttp(ACCOUNT_EGRESS_HOST, factory({ props }));
   }
 
   /** Watch the current container's exit. A `monitor()` promise does not survive a Durable Object restart, so `recover` attaches it again. */
@@ -787,7 +531,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     } catch {
       console.warn('proxy: org executor record delete failed');
     }
-    await this.releaseLease(owner?.orgId, owner?.placement);
+    await releaseLease(this.capacity(), owner?.orgId, owner?.placement);
   }
 
   /** Poll the health route until it answers 2xx. An exit during the poll, or READY_TIMEOUT_MS passing, is a failed start. */
@@ -834,7 +578,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     if (!container?.running) {
       if (stored) {
         await this.ctx.storage.delete(RECORD_KEY);
-        await this.releaseLease(record?.orgId, record?.placement);
+        await releaseLease(this.capacity(), record?.orgId, record?.placement);
       }
       return;
     }
@@ -844,19 +588,19 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     }
     if (this.isRetired()) {
       await this.stopContainer('relocated');
-      await this.releaseLease(record.orgId, record.placement);
+      await releaseLease(this.capacity(), record.orgId, record.placement);
       return;
     }
     this.record = record;
     this.generation += 1;
     this.exited = undefined;
     try {
-      await this.registerEgress(container, record.orgId, record.placement);
+      await registerEgress(this.ctx, container, record.orgId, record.placement);
     } catch {
       console.warn('proxy: org executor intercept not re-registered');
     }
     this.attachMonitor(container);
-    const lease = await this.acquireLease(record.orgId, record.placement, record.size);
+    const lease = await acquireLease(this.capacity(), record.orgId, record.placement, record.size);
     if (lease === 'failed' || !lease.ok) {
       console.warn('proxy: org executor lease refused after restart; destroying');
       await this.stopContainer('lease-refused');
