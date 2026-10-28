@@ -1,25 +1,20 @@
-## SESSION d778be9d 2026-10-28T09:29:51Z
+## SESSION d778be9d 2026-10-28T10:18:06Z
 
-# STATE d778be9d (1023-1), 2026-10-28T09:32Z
+# STATE d778be9d (1023-1), 2026-10-28T10:20Z
 
-Branch 1023-1 unpushed, no PR (turbo batch-end). Commit by path, PR-TASK 9f92c43e, writers never commit, submodules first then pointer, gen-docs before commits touching .ci or shards.
+Branch 1023-1 unpushed, no PR (turbo batch-end). Commit by path, PR-TASK 9f92c43e, writers never commit, submodules first then pointer, gen-docs before commits touching .ci, shards or guards. Writer briefs need an `Owns:` line (and a `Plan:` line only when the Owns sit inside that plan's Owns) or the plan-concurrency guard refuses them.
 
 ## Big pieces
-- PLAN-executor-durable-object-policy: ruling "no staged soak" recorded (ff76eb9e9), L6 closed; stable approved ASKED:2026-10-28T07:56Z (local path). Wave STOPPED at bench L0: forward fix 2b65e8c7e works (org A passes on durable), org B unreachable even after relocation p0->p1; bench back on container cf313d1d. Operator: "Probe the egress, then decide" (writer a891187f, #a150016d).
-- PLAN-org-executor-connect-timeout-relocate: E1-E8 ticked (bd0fadabb); a34f050a7 carries the code on every serve path; relocation proven live on bench. E9/E10 open.
-- PLAN-tested-on-bench: V1-V5 done; V6 gate, V7 census, V8 pilot (ask for hostinger), V9 docs, V10 ledger integrity open.
-- PLAN-per-flavor-renet-binary-paths: done (5631d4144), P8 VERIFIED under the race.
-- PLAN-backup-program: 70 open; A1a waits on the first PR CI run (#0f8cdbd3).
-
-## Landed this context (latest)
-- Captcha incident: stable eu/us/asia portal rebuilt with the sitekey and redeployed under ASKED 07:56Z (a43d7f085); gates at deploy, ci:quick and a 6-hourly probe (760ca2d13).
-- Team-NULL configs readable (account 6366faf, a75e528ed); plan-mutex guard narrowed to Owns overlap (dfb34f9d6); env registry (a07548252).
+- Durable wave (PLAN-executor-durable-object-policy, ruling "no staged soak", stable approved ASKED:2026-10-28T07:56Z): STOPPED at bench L0. Cause found: Cloudflare egress 104.28.163.183/.92 never reach hostinger IPv4 (IPv6 works). IPv6 fallback committed fafbb7b60 (uses infra.publicIPv6). NEXT (#a150016d, queued): set `rdc machine infra set hostinger --public-ipv6 2a02:4780:c:e9b5::1` in the bench probe orgs' configs, redeploy bench durable, rerun E1 and the L0 drills, then the wave edge x3 + stable x3, E10, L7.
+- PLAN-backup-restore-path (N4b) committed 260efa5e6, Status executing: spawn R1/R3 writers (parallel), then R2, R4, R5, R6, L1 hostinger, R7.
+- PLAN-tested-on-bench: V6 gate written (uncommitted, see Next 1), V10 writer a2998a22 running (told of the .append false positive), V7 census, V8 hostinger pilot approved ASKED 2026-10-28 (#6595b14c).
 
 ## Delegated / running
-- a891187f (#a150016d): bench egress probe (egress IP, colo, nc 22/443, github:22), ends with bench on container and the debug route removed.
-- /writers-now classifiers a97c586b, a6cb03a9, a72378a4, a8bcdbef (read-only).
+- a2998a22 (#2d47505c): V10 ledger guard.
+- a317cfc9 (#2e6e442f): hermes prune on hostinger (operator approved; builder cache and dangling images only).
 
 ## Next action
-1. On the classifier reports: tick ALREADY-DONE boxes (investigate then tick), spawn writers on LOCAL-NOW batches with disjoint Owns up to writer_cap 15, one AskUserQuestion batch for OPERATOR boxes.
-2. On the egress probe report: present the finding and the fix, ask the operator before resuming the wave.
-3. Then ci:quick, backup push (TURBO_PUSH_REASON backup), PR with Operational-Reason, babysit.
+1. V6 (#629586d9): commit the gate files (.ci/scripts/quality/check_plan_live_proof.py, its test, package.json, gates.lock.json, lane-durations.json) after adding its manifest.ts entry after check:ci-plan-deps and the ci-quality.yml quality-branch step "Plan live proof"; set tiers.live.baseline_at "2026-10-28" and add tiers.live.checks.www-smoke (bench, www) in proof-tiers.json once the bench www Worker (#6dd4e3ff) exists, or mark www live none by ruling; fix Live-Proof lines of PLAN-backup-restore-path (add bench for account surface) and PLAN-org-executor-connect-timeout-relocate (add hostinger for cli-remote) with their LP boxes; shard:place, gen-docs, check:ci-gates-lock.
+2. CI (#25705d33): commit ci.yml cd-preflight ubuntu-slim; lead does pins bump toolchain:awscli, toolchain:wrangler, devcontainer:agent-browser; ci-obs-mirror dispatch evr=19.2.7-lp160.1.2 then pins bump os:opensuse-16.0-ceph; renet golang.org/x/net v0.62.0; release/local.py:1906 bare aws argv (check:ci-aws-resolver); proxy node:24-slim freshness.
+3. Citations (#a0f61e00): 11 left on box lines of the two new plans; supersede those boxes or teach the gate unique-basename resolution.
+4. Then ci:quick, backup push (TURBO_PUSH_REASON backup), PR with Operational-Reason, babysit.
