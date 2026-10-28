@@ -1864,20 +1864,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 19,
-      "done": 0,
+      "open": 17,
+      "done": 2,
       "open_sigs": [
         "0f30f980",
         "114951f1",
         "203c921c",
-        "2be92af1",
         "2e5d99e8",
         "2f44fc06",
         "38efe1b5",
         "40c6930d",
         "4803406f",
         "75d91648",
-        "76643438",
         "7a56a242",
         "7acacf6d",
         "9262ee30",
@@ -1887,7 +1885,10 @@
         "d221e989",
         "db8168ad"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "2be92af1",
+        "76643438"
+      ]
     },
     "agent/plans/PLAN-testing-surface-audit.md": {
       "status": "compacted",

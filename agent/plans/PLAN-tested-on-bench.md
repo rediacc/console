@@ -187,7 +187,7 @@ Worklist: pending -- filed at promotion
 
 ## Tasks
 
-- [ ] V1 [writer] The proof package core.
+- [x] V1 [writer] The proof package core.
   - `.ci/config/proof-tiers.json` holds `surfaces` (the item 2 table), `exclude`, `tiers.vm` (`phases`, `instrument`), and `tiers.live` (`baseline_at` unset until V6, `targets` with `hostinger.config: eu-bench` and `hostinger.machines`, `checks`, `pointer_only`).
   - `git mv` `drills/vm_check_trigger.py` to `proof/surfaces.py` and replace its constant tables with the loader. It gains glob matching through `wl_planconc.glob_regex` (with the `paths.on_sys_path(paths.hooks_stop_dir())` hop `check_plan_deps.py:113` uses), `Changed.surfaces`, digest `v3` taking a surface set, and `go_buildinfo` plus `renet_identity` moved from `vm_check.py:687`.
   - New `proof/receipt.py` holds the envelope, `Verdict`, `identity`, `identity_refusal` and `row_id`.
@@ -199,6 +199,7 @@ Worklist: pending -- filed at promotion
     - a v3 digest of a tree differs from its v2 digest;
     - a live-tier digest for `{account}` does not move when only the renet pointer moves;
     - one negative case per `identity_refusal` code.
+    (ticked) 2026-10-28T05:15:08Z by d778be9d: 2026-10-28 by d778be9d: commit:ba86b0dec; pytest test_proof_surfaces.py test_proof_receipt.py rc=0 (220 passed, with the renet compose and build.sh hits, shared to account, test/.md to nothing, owns_overlap parity, v3 vs v2 digest, account digest stable on a renet pointer move, one negative per identity_refusal code); importers, guard test (97 cases) and 574-test rerun rc=0
 - [ ] V2 [writer] Move the VM tier onto the family.
   - `git mv` `drills/vm_check_receipt.py` to `proof/vm_tier.py`, at schema 3 (envelope plus VM body; schema 2 is unread, the same clean break as before).
   - Then update every importer in the same commit: `drills/vm_check.py`, `drills/backup_check_trigger.py`, `release/local_gates.py`, `block_vm_unverified_push.py` (`TRIGGER_MOD`, `RECEIPT_MOD` and the mutant source lines), `block_backup_unverified_push.py`, the moved tests, `quality-pytest.json`, `lane-durations.json`, and the module names in CLAUDE.md, ops-vms.md, e2e-local.md and ci-gates.md.
@@ -247,7 +248,7 @@ Worklist: pending -- filed at promotion
 
 Kept byte for byte because a box is a durable record. Each closes, ticked with its evidence line, when the revised task that replaces it lands: first-draft V1 with revised V1, V2 with V3, V3 with V4, V4 with V5, V5 with V6, V6 with V7, V7 with V8, V8 with V9, and the first-draft LP-none with the revised LP-none.
 
-- [ ] V1 [writer] Engine core and config.
+- [x] V1 [writer] Engine core and config.
   - `.ci/config/live-proof.json`: `baseline_at` (unset until V5), `surfaces`, `checks`, `pointer_only`.
   - `rediacc_ci/quality/live_proof.py`, as pure functions:
     - `required(plan_header, owns) -> surfaces`
@@ -258,6 +259,7 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
     - `validate_row(row) -> problems`
     - `match(row, plan, sig, accept)`
   - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_quality_live_proof.py -q` rc=0. It covers the census rows above (required, exempt, pointer-only) and one negative test per `validate_row` problem.
+    (ticked) 2026-10-28T05:15:12Z by d778be9d: 2026-10-28 by d778be9d: superseded first-draft box, closed with revised V1 (sig 76643438) as the plan's first-draft note orders; commit:ba86b0dec
 - [ ] V2 [writer] The `Live-Proof:` grammar in `wl_plandeps`. It has the X-field shape and the 12-line window, and its `none -- <reason>` reason needs at least 12 characters. The pre-edit guard `block_plan_without_depends.py` refuses a new plan whose Owns hit a surface and that carries no Live-Proof line.
   - Accept: `python3 .claude/hooks/stop/test-plandeps.py` rc=0 and `python3 .claude/rediacc_hooks/guards/test-block_plan_without_depends.py` rc=0, with new cases for a missing, malformed, emphasized and out-of-window line.
 - [ ] V3 [writer] Bench version capture. `deploy_bench` parses `Current Version ID:` from the wrangler deploy output and writes `.ci/cache/live-deploys/bench.json` with `{version_id, head, tree, dirty, submodules, at}` and no secret values. An unparsed version id is a named DeployError after the deploy, never a silent skip.
