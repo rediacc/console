@@ -674,6 +674,14 @@ def target_segments(cmd: str, is_target: typing.Callable[[list], bool]) -> list[
     lexer = shellscan._Lexer(cmd)
     out: list[Segment] = []
 
+    # A COMMAND SUBSTITUTION RUNS ITS COMMANDS TOO (#736c233b): `R=$(timeout 5 git commit -m ...)` commits, and `shellscan._Walker.parts` walks it the same way. Its tokens came from this same lexer, so their offsets index `lexer.src` and the segment's span and heredocs stay right.
+    def walk_parts(parts):
+        for part in parts:
+            if part.sub is not None:
+                walk(shellscan._parse(part.sub))
+            if part.parts:
+                walk_parts(part.parts)
+
     def walk(items):
         for item in items:
             if item[0] != "pipe":
@@ -684,6 +692,8 @@ def target_segments(cmd: str, is_target: typing.Callable[[list], bool]) -> list[
                     walk(stage[1])
                     continue
                 all_words = [t for t in stage[1] if isinstance(t, shellscan._Word)]
+                for word in all_words:
+                    walk_parts(word.parts)
                 words, _ = shellscan._strip_prefixes(all_words)
                 if not words or not is_target(words):
                     continue

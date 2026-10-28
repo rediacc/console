@@ -160,6 +160,34 @@ for label, proof, blocked in [
     ),
 ]:
     case(label, 'git commit -m "style: reflow the tree\n\n%s"' % proof, repo, blocked)
+# #736c233b, reproduced 2026-10-28: `timeout 600 git commit -q -F <msg> -- <57 files>` was refused as carrying no proof while the same command without `timeout 600` was admitted. The message reader shlex-split the segment from the launcher on and never reached `-F`. Each launcher below is one `shellscan._strip_prefixes` resolves.
+PROVEN_MSG = os.path.join(scratch_dir(), "proven.txt")
+with open(PROVEN_MSG, "w", encoding="utf-8") as fh:
+    fh.write("style: reflow the tree\n\nshape-cluster diff: 0 files lost a shape\n")
+UNPROVEN_MSG = os.path.join(scratch_dir(), "unproven.txt")
+with open(UNPROVEN_MSG, "w", encoding="utf-8") as fh:
+    fh.write("style: reflow the tree\n")
+for label, command, blocked in [
+    (
+        "timeout 600 before a proven -F commit reads the message",
+        "timeout 600 git commit -q -F %s",
+        False,
+    ),
+    ("env X=1 before a proven -F commit reads the message", "env X=1 git commit -F %s", False),
+    ("nice -n 5 before a proven -F commit reads the message", "nice -n 5 git commit -F %s", False),
+    (
+        "CONTROL: timeout 600 before an unproven -F commit is blocked",
+        "timeout 600 git commit -F %s",
+        True,
+    ),
+]:
+    case(label, command % (PROVEN_MSG if not blocked else UNPROVEN_MSG), repo, blocked)
+case(
+    "CONTROL: a sentence mentioning git commit -F <proof file> proves nothing",
+    'echo remember git commit -F %s; git commit -m "style: reflow the tree"' % PROVEN_MSG,
+    repo,
+    True,
+)
 git(repo, "reset", "-q")  # unstage so the next case starts clean
 for name in os.listdir(repo):
     if name.startswith("f") and name.endswith(".py"):
