@@ -7,6 +7,7 @@ Depends-On: PLAN-token-ip-rebind.md -- T11 (config token refresh) reuses the log
 Priority: P0 -- proposed by AI. The operator asked whether this loop is "safe enough". It is not. Three confirmed defects cause silent data loss: repo network IDs wiped on every remote write (F3), concurrent edits reverted (F6), and a lost update on the server (F7). One makes deleting a machine, repo or storage impossible (F2). The protocol accepts rollback and cross-config blob swaps (F1).
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/account/src/services/config.service.ts, private/account/src/routes/configs.ts, private/account/src/middleware/config-token.ts, private/account/src/middleware/error-handler.ts (config-token newServerToken passthrough only), private/account/src/dto/config.dto.ts, private/account/src/db/config-schema.ts, private/account/drizzle/0055_*.sql, private/account/drizzle/meta/**, private/account/web/src/api/config-session.ts, private/account/web/src/api/config.ts, private/account/web/src/pages/RotateCekWizard.tsx, private/account/tests/integration/config-sync/** (new), private/account/tests/integration/config-envelope-v2.test.ts, packages/cli/src/adapters/remote-config-adapter.ts, packages/cli/src/adapters/remote-token-storage.ts, packages/cli/src/services/config/config-server-client.ts, packages/cli/src/services/config/remote-cache.ts, packages/cli/src/services/config/config-base.ts, packages/cli/src/services/config/resource-state.ts (RemoteResourceState only), packages/cli/src/commands/config-remote-enable.ts, packages/cli/src/adapters/__tests__/remote-*.test.ts, packages/cli/src/services/__tests__/remote-cache.test.ts, packages/cli/src/i18n/locales/*/cli.json, packages/shared/src/config-crypto/{selective,layers,hmac,types,commitments,constants}.ts, packages/shared/src/config-crypto/__tests__/**, packages/shared/src/config-schema/{payload,sensitivity,walker}.ts, packages/shared/src/config-crypto/rotation.ts, packages/shared/src/config-schema/__tests__/**, docs/DESIGN-CONFIG-STORAGE.md, packages/www/src/content/docs/*/config-storage.md
+Live-Proof: bench -- the config service, routes, migration and portal pages under private/account and the config crypto under packages/shared/src are the account surface (bench only), and the remote config adapter and cache under packages/cli/src are the cli surface, which bench admits too.
 Worklist: (the lead adds this with `worklist.py --add`)
 
 ## Status on 2026-09-26 (session d778be9d), before the plan was held
@@ -89,6 +90,8 @@ The submodule PR (A and C) merges first. The console PR (B, plus the pointer bum
     - delete a machine;
     - move A to a phone hotspot and run a command (it must refresh per D4);
     - rotate the CEK from the portal, and check that B reports "stale key, re-enroll".
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
 
 ## 0. What each key protects
 

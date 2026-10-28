@@ -2350,6 +2350,23 @@
     }
   },
   {
+    "id": "check:ci-plan-live-proof",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-plan-live-proof",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_plan_live_proof.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan live proof"
+    }
+  },
+  {
     "id": "check:ci-agent-session-archival",
     "env": {
       "GH_TOKEN": "${{ github.token }}"

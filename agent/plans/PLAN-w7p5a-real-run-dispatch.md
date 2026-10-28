@@ -8,6 +8,7 @@ Priority: P1 -- seed: Status in-progress, 2 open box(es), a recent operator orde
 Note (2026-10-25): The w7p5a real-run blockers gate, the `.w7p5a-real-run-blocklist` it cross-checked and their policy rows were retired in 912f2bf27 once every bash twin they blocked was deleted; the steps below that run that gate are a record of how the graduations were checked, not instructions to run it now.
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .ci/policy/.w7p5a-real-run-blocklist, .ci/shadow/w7p5a-status.json, .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py, .ci/cache/toolchain/uv-tools/bin/pytest, .ci/policy/.w7p5a-real-run-leg-blocklist, .ci/scripts/deploy/*.sh, .ci/scripts/release/*.sh, private/renet, .ci/cache/w7p5a-realrun, ./run.sh, .ci/rediacc_ci/deploy/*.py, .ci/rediacc_ci/quality/w7p5a_real_run_blockers.py, .claude/rediacc_hooks/guards/block_worktree_add.py, .ci/scripts/lib/release-state-validator.sh, .ci/config/constants.sh, .github/workflows/cd-stage.yml, .ci/config/secret-supply.json, .claude/rediacc_hooks/guards/block_host_toolchain_run.py, scripts/ops/lib/cf-auth.sh, .ci/docs/r2-setup.md, scripts/lib/shadow-gate.ts, workers/www/wrangler-migration-test.toml, workers/www, private/account/drizzle, .github/workflows/ct-tests.yml, .ci/shadow, .ci/cache/w7p5a-realrun/cfkit.py, .ci/cache/w7p5a-realrun/v1312, private/account, .ci/rediacc_ci/release/update_homebrew_tap.py, .ci/scripts/ci/initialize.sh, private/homebrew-tap
+Live-Proof: bench -- private/account/drizzle is the account surface and workers/www the www surface, and both admit bench only.
 
 ## The ask
 
@@ -86,6 +87,8 @@ The earlier text here (operator at the keyboard for every M-live path, and an au
 - [x] Full re-run of `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py` after all graduations to confirm no dry-run note accidentally claims a real run.
     (done 2026-09-24) `setsid --wait .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py`: 44 passed (4 failed before the EXPECTED_DRY_RUN_PATHS fix).
     (ticked) 2026-09-24T19:45:01Z by d778be9d: retroactive record: closed by 4729c0056 (2026-09-24) feat(ci): the w7p5a real-run executor finishes its dispatch, and two d -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
 
 ## Drafted commands and ledger-note templates, ready for operator sign-off
 

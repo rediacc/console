@@ -7,6 +7,7 @@ First-Seen: 2026-10-23
 Priority: P1 -- proposed by AI. If the repro confirms it, any repo (including a fork or a third-party template) can drive the system Docker daemon that runs `rediacc-proxy` (Traefik) and therefore every machine's routing, and through it start a privileged container on the host. That breaks the per-repo isolation renet's sandbox exists to provide.
 Concurrency: parallel
 Owns: private/renet/pkg/compose/validate.go, private/renet/pkg/compose/validate_test.go, private/renet/cmd/renet/daemon_containerd_exec.go (the RW bind list only), private/renet/docs/DOCKERD_SANDBOX.md
+Live-Proof: hostinger -- private/renet/pkg/compose/validate.go and private/renet/cmd/renet/daemon_containerd_exec.go are the renet surface, whose only live target is hostinger.
 Worklist: (the lead adds this with worklist.py --add)
 
 ## How it was found
@@ -41,6 +42,8 @@ On hostinger (2026-10-23), the observability repo's Alloy bound `/var/run/docker
     (ticked) 2026-10-25T00:12:07Z by d778be9d: already implemented by renet 3c3e1f59 (fix A: host /run and its daemon sockets refused on the hard tier in compose validation, not overridable by --unsafe; fix B: the containerd sandbox binds no host /run), carried into the gate by 031d303c and pinned for the sandbox by 6f5f15c0; proven live on fork vmcheck-base:b1probe net 8256 (3c3e1f59 body); tests rc=0 2026-10-25: go test ./pkg/compose -run TestValidate_(HostDaemonSocketBinds|DaemonSocketThroughVariable|OwnDockerSocket|OwnResolvedRuntimePaths|NonRuntimeBinds), ./pkg/dockerpolicy -run TestHardBindsAreDeniedEvenWithTheGrant|TestInternalDockerSocketBindIsHard, ./pkg/dockerproxy, ./cmd/renet -run TestSandboxNeverBindsHostRunOrCDIRun; private/renet/pkg/compose/validate_test.go:242
 - [x] T3 [R] Update `docs/DOCKERD_SANDBOX.md` with the outcome and the `${DOCKER_SOCKET}` guidance.
     (ticked) 2026-10-25T00:12:09Z by d778be9d: already done in renet 3c3e1f59: private/renet/docs/DOCKERD_SANDBOX.md:278 section Private /run and host daemon sockets gives the outcome, both layers and the ${DOCKER_SOCKET}:/var/run/docker.sock guidance, and :410 records the cross-repo limitation closed
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`
 
 ## T1 result (2026-10-23)
 

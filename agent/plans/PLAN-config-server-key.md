@@ -5,6 +5,7 @@ Depends-On: no-dep -- the eu stable-to-edge store mirror (worklist #046d4339) ru
 Priority: P1 -- security finding #caef1cc3: anyone with D1 read access recovers every org passphrase
 Concurrency: parallel -- boxes K1, K2, K4 and K5 own disjoint files; K3 and K6 follow
 Owns: private/account/src/services/config-server-key.ts, private/account/src/services/legacy-server-key.ts, private/account/src/services/config.service.ts, private/account/src/types/env.ts, private/account/src/app.ts, private/account/src/entry/node.ts, private/account/src/errors.ts, private/account/scripts/rewrap-config-server-key.ts, private/account/tests/unit/config-server-key.test.ts, private/account/tests/integration/config-server-key-migration.test.ts, .ci/rediacc_ci/deploy/set_account_worker_secrets.py, .ci/rediacc_ci/ops/deploy_bench.py, .ci/config/secret-supply.json (the account-secrets and deploy-bench profiles), .ci/config/bws-secret-map.json, .ci/config/python-env-registry.json, .github/workflows/cd-deploy-account.yml, .ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py, .ci/rediacc_ci/tests/test_deploy_account_secrets_local.py, .ci/rediacc_ci/ops/rewrap_config_server_key.py, .ci/rediacc_ci/tests/test_ops_rewrap_config_server_key.py, .ci/rediacc_ci/ops/mirror_config_store.py, .ci/rediacc_ci/tests/test_ops_mirror_config_store.py, .ci/scripts/quality/check_config_server_key_constant.py, docs/DESIGN-CONFIG-STORAGE.md
+Live-Proof: bench -- the config server key, its legacy unwrap and the rewrap script live under private/account/src and private/account/scripts, the account surface, whose only live target is bench.
 Owner: d778be9d
 First-Seen: 2026-10-27
 Worklist: #caef1cc3
@@ -55,6 +56,8 @@ Design memo: Plan agent aecb122b, 2026-10-27, summarized in the boxes below.
   - Correct `docs/DESIGN-CONFIG-STORAGE.md:989` and the layer-3 section.
   - Accept: the gate rc=0, the account vitest rc=0, and `grep -rn rediacc-config-server-dev-key private/account/src` returns only `config-server-key.ts`.
     (ticked) 2026-10-27T18:22:52Z by d778be9d: commit:a9603a30d (account 35f8262) legacy-server-key.ts and the rewrap tool deleted; openOrgPassphrase refuses an untagged row; check:ci-config-server-key-constant rc=0 and wired; DESIGN-CONFIG-STORAGE.md corrected; account vitest and check:ci-account-server rc=0; grep finds the dev constant only in config-server-key.ts
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
 
 ## Order
 

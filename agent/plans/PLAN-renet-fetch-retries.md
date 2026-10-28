@@ -7,6 +7,7 @@ First-Seen: 2026-09-17
 Priority: P3 -- a flake here costs a retry or a CI re-run, not a broken machine
 Concurrency: parallel -- the two boxes edit disjoint files; Owns: decides overlaps
 Owns: private/renet/pkg/infra/ceph/provisioner.go, private/renet/pkg/infra/ceph/prepare_script_test.go, private/renet/build.sh, private/renet/scripts/ci-test.sh
+Live-Proof: hostinger -- the fetch retries in private/renet/pkg/infra/ceph/provisioner.go and private/renet/build.sh are the renet surface, whose only live target is hostinger.
 
 renet PR #96 (rediacc/renet, a PRIVATE repo, so deliberately NOT hyperlinked here: check:ci-external-links reaches it unauthenticated and a private URL always reads as a 404 broken link) was closed without merging, and its inventory of unretried fetches is what this plan descends from. The inventory was keyed to line numbers, which drifted twice; this rewrite keys every site to a function or command, so it cannot decay the same way.
 
@@ -35,6 +36,8 @@ Validated against `private/renet` on 2026-10-23.
     (ticked) 2026-10-25T05:50:33Z by d778be9d: renet f2034e7: docker image inspect after image-pull-wait, TestPrereqScriptAbsentImageAfterPullFails; go test ./pkg/infra/ceph/... rc=0 Accept re-run 2026-10-26 from private/renet: gofmt -l pkg/infra/ceph prints nothing; go build -tags nolicense ./... rc=0; go vet -tags nolicense ./cmd/... ./pkg/... rc=0; go test -tags nolicense ./pkg/infra/ceph/... rc=0.
 - [x] Box B: give the bare `docker pull "$DOCKER_REGISTRY/rediacc/renet:latest"` in `private/renet/build.sh` and the bare `docker pull traefik:v3.7.16` in `private/renet/scripts/ci-test.sh` retry loops (5 attempts, 15s, matching `renderPullRetry`), each followed by a post-loop `docker image inspect` check that fails the step when the image is missing. The `docker pull "$image" || log_warn` line in `private/renet/scripts/ci-test.sh` already degrades rather than aborts and stays. Acceptance: from `private/renet`, `shfmt -i 4 -ci -d build.sh scripts/ci-test.sh` prints nothing, and `grep -n "image inspect" build.sh scripts/ci-test.sh` shows a check after each loop.
     (ticked) 2026-10-25T05:50:54Z by d778be9d: renet f2034e7: 5-attempt pull loops with a post-loop image inspect in build.sh and scripts/ci-test.sh; bash -n rc=0 Accept re-run 2026-10-26: shfmt -i 4 -ci -d build.sh scripts/ci-test.sh rc=0 with empty output (run in the devbox). The loops later moved into the shared helper scripts/pull-with-retry.sh (renet 9a0c631), whose post-pull docker image inspect sits at private/renet/scripts/pull-with-retry.sh:21 and is covered by private/renet/scripts/pull_with_retry_test.go; private/renet/build.sh:706 and private/renet/scripts/ci-test.sh:335 call it.
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`
 
 ## Verification
 

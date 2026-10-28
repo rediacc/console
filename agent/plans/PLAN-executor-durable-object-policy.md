@@ -8,6 +8,7 @@ Epic: executor-durable-object-policy
 Depends-On: PLAN-console-executor-multi-org.md#W1, PLAN-console-executor-multi-org.md#W2, PLAN-console-executor-multi-org.md#ML5 -- W1 and W2 wrote the per-org pin, egress and token cache that this plan rebuilds on the new class (both ticked). ML5 puts multi-org on the three stable targets, so no stable target takes both changes in one release. S1 runs on a scratch Worker and needs none of them, so its tick line carries DEPS-WAIVED with that reason. The live boxes L1 and later wait for ML5.
 Concurrency: exclusive -- the code boxes rewrite workers/proxy/src/index.ts and workers/proxy/src/egress.ts, which PLAN-console-executor-multi-org's W1 and W2 own. They also rewrite workers/proxy/wrangler*.toml, .ci/rediacc_ci/deploy/proxy_configs.py and .ci/scripts/quality/check_proxy_cost_guard.py, which worklist #9638ab6b holds uncommitted (Context item 9). No writer for this plan holds those files while a W box or #9638ab6b holds them.
 Owns: agent/plans/PLAN-executor-durable-object-policy.md, workers/proxy/src/**, workers/proxy/package.json, workers/proxy/package-lock.json, workers/proxy/wrangler*.toml, .ci/rediacc_ci/deploy/proxy_configs.py, .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/tests/test_deploy_proxy_configs.py, .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py, .ci/rediacc_ci/tests/goldens/twins/deploy.deploy-proxy.jsonl, .ci/scripts/quality/check_proxy_cost_guard.py, .ci/rediacc_ci/tests/test_check_proxy_cost_guard.py, .ci/rediacc_ci/quality/proxy_wrangler_dev_e2e.py, .ci/rediacc_ci/spikes/do_policy_spike.py (new), .ci/rediacc_ci/tests/test_spikes_do_policy_spike.py (new), private/account/src/services/executor-issuer.service.ts (route only), workers/account/src/index.ts (the route signature only), private/account/tests/integration/executor-issuer-route.test.ts, private/account/tests/integration/proxy-binding-wiring.test.ts, docs/observability/signals/proxy.md, .claude/skills/deploy/SKILL.md (the executor paragraph only), agent/plans/PLAN-console-executor-multi-org.md (relation lines only)
+Live-Proof: bench -- the executor issuer in private/account/src, workers/account/src/index.ts and the workers/proxy code and wrangler configs are the account, account-worker and proxy surfaces, whose only live target is bench.
 
 ## Operator rulings
 
@@ -415,6 +416,8 @@ Each box records:
   - Then run `npx wrangler containers delete <old application id>` per target, with the id read from `wrangler containers list` and recorded by its first 8 characters.
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: seven forward-only rows with smoke rc 0, and `npx wrangler containers list` per account names no `ExecutorContainer` application.
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
 
 ### Deadline
 

@@ -5,6 +5,7 @@ Priority: P1 -- a Worker with ENDPOINT and KEY_ID but no BUCKET or SECRET mints 
 Owner: d778be9d
 Updated: 2026-10-24
 Owns: private/account/src/services/backup-chunk-store.ts, private/account/tests/integration/backup-plane-selection.test.ts, private/account/tests/integration/cron-wiring.test.ts, .ci/rediacc_ci/ops/deploy_bench.py, .ci/rediacc_ci/tests/test_ops_cf_family.py, scripts/gates/check-backup-bucket-conformance.ts, docs/backup-storage/07-execution-record.md
+Live-Proof: bench -- the bucket requirement and presign change in private/account/src/services/backup-chunk-store.ts is the account surface, whose only live target is bench.
 Concurrency: parallel
 
 ## Why
@@ -36,6 +37,8 @@ Worklist #ca9be012 said Workers deploys push only three ACCOUNT_BACKUP_S3_* valu
     (ticked) 2026-10-24T13:53:22Z by d778be9d: d2953620b; npm run check:ci-backup-bucket-conformance rc=0 (7 deployments)
 - [x] B6: docs/backup-storage/07-execution-record.md:325 says deploy_bench pushes four values, the bucket derived from the binding. Accept: `grep -n "pushes four" docs/backup-storage/07-execution-record.md` rc=0
     (ticked) 2026-10-24T13:53:06Z by d778be9d: d2953620b; grep 'pushes four' 07-execution-record.md rc=0 at :325
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
 
 ## Risks
 

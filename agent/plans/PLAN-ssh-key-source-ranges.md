@@ -113,6 +113,10 @@ Operator, ASKED:2026-10-28T11:31Z, verbatim: "Yes widen (Add 2a09:bac0::/29) but
     (ticked) 2026-10-28T13:56:47Z by d778be9d: live 2026-10-28 ~14:05Z, outputs under Notes (agent/plans/PLAN-ssh-key-source-ranges.md:126): dry run [adopt line 15], push written:true, re-push unchanged, hostinger line 15 from="104.28.0.0/16,2a09:bac0::/29" + rdc-access marker, 17 lines, mode 600; each rdc call exit 0; step 7 not runnable (no profile binds the probe private key)
 - [x] X2 [live] Bench end-to-end, the Live-Proof run, after X1 and the bench `durable` deploy: `cd private/account/e2e && LIVE_CONSOLE_ORIGIN=https://bench.rediacc.com npx playwright test --config playwright.live.config.ts 27-90 27-91` rc 0; record the cli.command audit rows, the `wrangler tail` line showing the IPv6 retry reaching hostinger, and hostinger's `journalctl -u ssh` `Accepted publickey` from 2a09:bac*. Owns: agent/plans/PLAN-ssh-key-source-ranges.md. Accept: the command above rc 0.
     (ticked) 2026-10-28T14:01:31Z by d778be9d: npx playwright test --config playwright.live.config.ts 27-90 27-91 against https://bench.rediacc.com (durable 628b1496) exit 0: 2 passed (2.7m); outputs under Notes (agent/plans/PLAN-ssh-key-source-ranges.md:127)
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`
 
 ## Risks
 

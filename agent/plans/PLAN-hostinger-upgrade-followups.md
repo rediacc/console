@@ -7,6 +7,7 @@ First-Seen: 2026-10-23
 Priority: P1 -- asked by the operator 2026-10-23. The production proxy image `traefik:v3.6` was built with go1.25.7 (before the CVE-2026-111943 crypto/x509 eMudhra denylist in go1.26.10/1.27.3), the v3.6 line no longer gets releases, and v3.7.16 (2026-10-20) also fixes GHSA-hrpp-p4fc-wwf8.
 Concurrency: parallel
 Owns: private/renet/proxy/docker-compose.yml, private/renet/scripts/ci-test.sh, .ci/config/constants.sh (DEVBOX_PROXY_IMAGE only), .ci/rediacc_ci/core/devbox.py (DEVBOX_PROXY_IMAGE only), docs/agent-reference/local-env.md (the traefik tag only), packages/json/templates/monitoring/heartbeat/docker-compose.yaml, packages/json/templates/platforms/nextcloud-aio/docker-compose.yaml, agent/plans/PLAN-renet-run-docker-sock-isolation.md (new)
+Live-Proof: hostinger -- private/renet/proxy/docker-compose.yml is the renet surface, whose only live target is hostinger.
 Worklist: (the lead adds this with worklist.py --add)
 
 ## Context
@@ -31,3 +32,5 @@ During the hostinger upgrade (PHP php2shell, Node.js, GitLab CVE-2026-110264, NG
   - nextcloud-aio `${DOCKER_HOST:-/var/run/docker.sock}` -> `${DOCKER_SOCKET}`.
   - Verify: `npm run build -w packages/json` (catalog generation) and the template lint/test gates exit 0.
 - [ ] T3 [lead] Write `agent/plans/PLAN-renet-run-docker-sock-isolation.md` (write-up only, no fix; operator decision 2026-10-23).
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`

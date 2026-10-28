@@ -2262,6 +2262,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A PLAN THAT TOUCHES A DEPLOYABLE SURFACE CLOSES ONLY ON A LIVE RECEIPT (agent/plans/PLAN-tested-on-bench.md V6): its `Live-Proof:` header, one `LP-<target> [live]` box per declared target, and from tiers.live.baseline_at on a VERIFIED row in agent/ledgers/live-proof.jsonl for every LP box this branch ticks.
+    // NO `paths:` DELIBERATELY. LP5 recomputes the surface inputs digest from the surface code itself (private/renet, private/account, packages/cli, workers/**), and the gate imports check_plan_boxes, check_plan_implementation, wl_planrec and the worklist store, so a path table would let `--changed` drop it exactly when surface code moves after a receipt. Lane quality-branch for the merge-base its LP4 to LP6 need (fetch-depth 0, the PR head ref, GITHUB_BASE_REF); hand-written for its neighbours' reason (no `- id: setup` in that job).
+    id: 'check:ci-plan-live-proof',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
+    run: 'npm run check:ci-plan-live-proof',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_plan_live_proof.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Plan live proof',
+    },
+  },
+  {
     // The same question as its neighbour above, asked of the OTHER tree under agent/: a plan has had a folder, two clocks and a stub since the migration, while `agent/<session>/` had nothing at all. The Stop hook already computes which session directories are ABANDONED on every stop and deliberately moves none of them -- a hook that moved a peer's document as a side effect would
     // destroy the one guarantee the per-session split exists for -- so the label accumulated until 18 of 19 directories were unarchived, the oldest 43.9 days idle. This gate is the half that can be responsible: read-only, and its remedy is one `git mv` a human runs by name.
     // NO `paths:` DELIBERATELY. Whether a directory is overdue is a property of the CALENDAR, not of any diff, so an entry without paths is always selected; a path table here would make `--changed` drop the gate on every PR that does not happen to touch agent/, which is the one condition under which it does not fire. Lane quality-branch for its neighbours' reason: that job

@@ -878,7 +878,7 @@ def test_the_committed_map_parses_with_every_named_surface() -> None:
     }
     assert trig.SIDES == ("renet", "account")
     assert trig.MAP.phases["renet"] == {"renet", "cli-remote"}
-    assert trig.MAP.live["baseline_at"] is None
+    assert trig.MAP.live["baseline_at"] == "2026-10-28"
     assert trig.MAP.live["targets"]["hostinger"]["config"] == "eu-bench"
 
 
@@ -1252,3 +1252,10 @@ def test_owns_surfaces_drops_an_overlap_whose_witness_is_excluded() -> None:
     raw = trig.wl_planconc.owns_overlap(["packages/cli/src/**/*.test.ts"], ["packages/cli/src/**"])
     assert raw, "owns_overlap alone sees the test glob inside the cli surface"
     assert trig.owns_surfaces(["packages/cli/src/**/*.test.ts"]) == {}
+
+
+def test_the_naturalization_ledger_is_no_www_surface() -> None:
+    """packages/www/src/i18n/translations/.naturalized-hashes.json is read by the i18n gates only, never by the www build, so the map excludes it; a translation file beside it is still the www surface."""
+    ledger = "packages/www/src/i18n/translations/.naturalized-hashes.json"
+    assert trig.owns_surfaces([ledger]) == {}
+    assert "www" in trig.owns_surfaces(["packages/www/src/i18n/translations/en.json"])

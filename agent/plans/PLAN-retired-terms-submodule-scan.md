@@ -5,6 +5,7 @@ Priority: P2 -- stale retired-term text in submodules reaches no gate today
 Owner: d778be9d
 Updated: 2026-10-24
 Owns: .ci/rediacc_ci/quality/retired_terms.py, .ci/scripts/quality/check_retired_terms.py, .ci/config/retired-terms.json, .ci/rediacc_ci/tests/gates/test_gate_retired_terms.py, .github/workflows/ci-quality.yml, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, scripts/data/doc-registry.md, private/renet/CLAUDE.md, private/renet/docs/datastore/README.md, private/renet/pkg/kube/registry/zot.go, private/renet/cmd/renet/backup_stderr_test.go, private/renet/build.sh, private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_cold.go, private/renet/cmd/renet/coldlock_invariant_test.go, private/renet/pkg/infra/aptretry/aptretry.go, private/account/web/src/lib/resource-pages.ts, private/account/web/src/hooks/__tests__/usePickerOptions.test.tsx, private/account/web/src/lib/__tests__/resource-options.test.ts, private/elite/docker-compose.yml
+Live-Proof: bench, hostinger -- the zot registry, build.sh, backup snapshot and aptretry edits under private/renet are the renet surface, live on hostinger only, and private/account/web/src/lib/resource-pages.ts is the account surface, live on bench only.
 Concurrency: parallel
 Worklist: #2f9533de. Retirement context: agent/plans/PLAN-backup-program.md phase H.
 
@@ -52,6 +53,10 @@ Worklist: #2f9533de. Retirement context: agent/plans/PLAN-backup-program.md phas
     (ticked) 2026-10-24T13:53:20Z by d778be9d: landed in aa78e9680; check:ci-gate-bind, gates-lock, gen-manifest, lane-budget, retired-terms all rc=0
 - [x] X12: The module docstring (.ci/rediacc_ci/quality/retired_terms.py:1-54) and the header `why:` describe the file subject, the marker, file_baseline and exclusions. Accept: `npm run check:ci-retired-terms && PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_retired_terms.py -q` rc=0
     (ticked) 2026-10-24T13:53:21Z by d778be9d: landed in aa78e9680; check:ci-retired-terms rc=0 and test_gate_retired_terms.py rc=0 (32 passed)
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`
 
 Order: X1, then X2-X5 on the checker; X6-X9 in parallel, submodule commits first; X10 after X1, X4 and X6-X9; X11 and X12 last.
 

@@ -64,7 +64,8 @@
     "**/testdata/**",
     "**/tests/**",
     "**/e2e/**",
-    "**/*.md"
+    "**/*.md",
+    "**/.naturalized-hashes.json"
   ],
   "tiers": {
     "vm": {
@@ -88,7 +89,7 @@
       }
     },
     "live": {
-      "baseline_at": null,
+      "baseline_at": "2026-10-28",
       "targets": {
         "bench": {"origin": "https://bench.rediacc.com"},
         "hostinger": {"config": "eu-bench", "machines": ["hostinger"]}
@@ -120,6 +121,15 @@
           "what": "the CLI built from the clean head tree reads its subscription from the bench account server through the eu-bench config",
           "steps": [
             {"id": "subscription", "argv": ["./rdc.sh", "--config", "eu-bench", "subscription", "status"]}
+          ]
+        },
+        "www-smoke": {
+          "targets": ["bench"],
+          "surfaces": ["www"],
+          "deploy": "unrecorded",
+          "what": "no bench www Worker exists yet (workers/www carries wrangler.toml and wrangler.edge.toml only), so no deploy identity ties a served version to a console head: every run is NOT_VERIFIED not-live and writes no row; it meets LP7's coverage rule and cannot close a box until a bench www deploy is recorded",
+          "steps": [
+            {"id": "root", "argv": ["curl", "-fsS", "--max-time", "30", "{origin}/"]}
           ]
         },
         "renet-live": {

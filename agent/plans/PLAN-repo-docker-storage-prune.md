@@ -101,6 +101,10 @@ On hostinger the repo `hermes` held 277 overlay2 directories, 20.5 GB of them re
 - [ ] L2 [live] Hostinger, dry run only, under the operator ruling: `rdc repo prune -m hostinger --output json` across every mounted repository, no `--apply`. Owns: agent/plans/PLAN-repo-docker-storage-prune.md (the survey table under this box only). Accept: a table of repositories with every class count and its bytes, class E included; no write on the machine; a `live_proof` row filed.
 - [ ] L3 [live] Hostinger `--apply`, OPERATOR APPROVAL REQUIRED. DEFAULT: not run. Ask with the L2 table attached (repositories, reclaimable bytes, expected downtime each); on approval run `rdc repo prune <ref> --apply` online first, then `--offline -y` only for the repositories the operator names, in the window the operator chooses. Owns: none. Accept: the operator's ASKED ruling quoted here; for each approved repository a post-run dry run shows D, E, F1, F2, G and L at 0 and its services answer their health checks.
 - [ ] R7 [writer] Close: move this plan to agent/plans/_done/, citing the commits of R1-R6 and F1 and the L1 and L2 proof rows. Owns: agent/plans/PLAN-repo-docker-storage-prune.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
 
 ## Risks
 

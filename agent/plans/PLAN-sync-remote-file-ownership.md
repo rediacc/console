@@ -7,6 +7,7 @@ First-Seen: 2026-10-23
 Priority: P1 -- a first-time nested `--remote-file` upload leaves a directory the repo's own user cannot delete or modify (`rm -rf` fails with "Permission denied" in `rdc term connect`). The report saw it in two repos, so it is not repo-specific, and the only workaround needs root on the machine.
 Concurrency: parallel -- T1 to T3 edit the same CLI files (rsync.ts, repo-sync.ts), so one writer takes T1-T3 and T6 in order; T4 (the VM drill) starts after T3. The one cross-plan overlap is PLAN-renet-bridge-leftovers.md's packages/cli/src/commands/repo-*.ts glob, whose T11 and T14 already wait for this plan, so the guard's overlap rule covers it without a mutex
 Owns: packages/cli/src/remote/sync/rsync.ts, packages/cli/src/remote/sync/remote-parents.ts, packages/cli/src/remote/sync/index.ts, packages/cli/src/commands/repo-sync.ts, packages/cli/src/remote/sync/__tests__/remote-parents.test.ts, packages/cli/src/remote/sync/__tests__/rsync-args.test.ts, packages/cli/src/commands/__tests__/repo-sync.test.ts, .ci/rediacc_ci/drills/vm_check.py, .ci/rediacc_ci/tests/test_drills_vm_check.py, agent/plans/PLAN-sync-remote-file-ownership.md
+Live-Proof: hostinger -- the rsync and remote-parent code under packages/cli/src/remote/sync is the cli-remote surface, whose only live target is hostinger, and packages/cli/src/commands/repo-sync.ts is the cli surface, which renet-live on hostinger covers too.
 
 ## Context
 
@@ -98,6 +99,8 @@ T5 is the closure and runs last: T6 (directory mode, added after the first draft
     (ticked) 2026-10-23T15:43:02Z by d778be9d: commit:3bc245d00 packages/cli/src/commands/repo-sync.ts:364 one helper for both modes; live nested --remote a/b/c upload on a throwaway fork created a, a/b, a/b/c as rediacc:rediacc (vm:check VERIFIED); no rsync flag newer than --mkpath (3.2.3+) is relied on
 - [x] T5 [lead] Closure: run the verification set CLAUDE.md names for this change set, reproduce the bug once on the pre-fix tree (the new V1.5 row fails with `root:root`), re-run after the fix (it passes), and report the exit codes; the tree stays uncommitted per the operator's report unless the operator says otherwise -- Owns: agent/plans/PLAN-sync-remote-file-ownership.md. Accept: `npm run vm:check -- --changed` exits 0 on the fixed tree.
     (ticked) 2026-10-28T09:31:27Z by d778be9d: 2026-10-28 by d778be9d: npm run vm:check exit 0 VERIFIED (run vmc-10280549-dc77fb at bcd1529ce and again in the P8 run, 175 assertions 0 failed), which covers the V1.5 ownership rows at .ci/rediacc_ci/drills/vm_check.py:2405 and :2431; the earlier vm:check --changed run is recorded at T4 (3bc245d00, 52 assertions)
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`
 
 ### Acceptance on a real machine
 

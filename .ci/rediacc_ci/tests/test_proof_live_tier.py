@@ -120,7 +120,7 @@ def _account_row() -> dict[str, Any]:
 
 def test_the_committed_registry_parses_with_fixed_argv_only() -> None:
     checks = LT.registry()
-    assert set(checks) == {"account-smoke", "proxy-ready", "cli-bench", "renet-live"}
+    assert set(checks) == {"account-smoke", "proxy-ready", "cli-bench", "www-smoke", "renet-live"}
     for check in checks.values():
         for step in check.steps:
             assert step.argv[0] not in LT.REFUSED_PROGRAMS
@@ -130,9 +130,14 @@ def test_the_committed_registry_parses_with_fixed_argv_only() -> None:
     assert checks["account-smoke"].deploy == LT.BENCH_CACHE
 
 
-def test_no_check_covers_the_www_surface() -> None:
-    """www has no bench deployment (workers/www carries wrangler.toml and wrangler.edge.toml only), so the registry names no www check; that gap is the lead's to rule on, not invented here."""
-    assert all("www" not in c.surfaces for c in LT.registry().values())
+def test_the_only_www_check_is_unrecorded() -> None:
+    """www has no bench deployment (workers/www carries wrangler.toml and wrangler.edge.toml only), so the one check covering it, www-smoke, is `unrecorded`: it meets LP7's coverage rule and writes no VERIFIED row, so it can never close a box until a bench www deploy is recorded."""
+    covering = {cid: c for cid, c in LT.registry().items() if "www" in c.surfaces}
+    assert set(covering) == {"www-smoke"}
+    www = covering["www-smoke"]
+    assert www.deploy == LT.UNRECORDED
+    assert www.surfaces == {"www"}
+    assert tuple(www.targets) == ("bench",)
 
 
 BROKEN_REGISTRIES: list[tuple[Callable[[dict[str, Any]], object], str]] = [
