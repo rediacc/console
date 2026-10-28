@@ -1725,20 +1725,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 3,
+      "open": 5,
+      "done": 4,
       "open_sigs": [
         "1d4d78e1",
         "38d70bfe",
         "4b71c828",
         "5dedfb94",
-        "cfd016f3",
-        "fde13b60"
+        "cfd016f3"
       ],
       "done_sigs": [
         "25c164cb",
         "83df7d0e",
-        "966f84cd"
+        "966f84cd",
+        "fde13b60"
       ]
     },
     "agent/plans/PLAN-ssr-nav-locale.md": {
