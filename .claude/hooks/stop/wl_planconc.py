@@ -744,7 +744,9 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
         union: list[str] = []
         for s in sorted(xs):
             union.extend(_owns_of(xs[s]))
-        mine = narrowed_owns(declared, union) or tuple(union)
+        # A declared Owns line is the spawn's claim and is judged as written, also where it reaches outside the plan's Owns
+        # (operator ruling 2026-10-28, "Judge declared Owns"); a spawn that declares nothing is judged on the plan's whole Owns.
+        mine = tuple(declared) if declared else tuple(union)
         if mine != tuple(union):
             narrow_notes.append("this spawn on its declared Owns `%s`" % ", ".join(mine))
     else:

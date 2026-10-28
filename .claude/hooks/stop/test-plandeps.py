@@ -851,9 +851,9 @@ check(
     "overlap",
 )
 check(
-    "narrow s3: a declared glob OUTSIDE the plan's Owns narrows nothing",
-    sv({"PLAN-t.md"}, LIVE_P, declared=("src/t/**", "docs/elsewhere.md")).kind,
-    "overlap",
+    "narrow s3: a declared Owns reaching outside the plan's Owns is judged as declared (operator ruling 2026-10-28)",
+    sv({"PLAN-t.md"}, LIVE_P, declared=("src/t/**", "docs/elsewhere.md")).allow,
+    True,
 )
 check(
     "narrow s4: a wildcard under a literal dir that the plan does not own as `dir/**` narrows nothing",
