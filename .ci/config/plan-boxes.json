@@ -494,14 +494,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 6,
+      "open": 2,
+      "done": 7,
       "open_sigs": [
-        "08bf72af",
         "7d4b4cf0",
         "953e7cdf"
       ],
       "done_sigs": [
+        "08bf72af",
         "0b3782d7",
         "323dafd9",
         "37f7849e",
