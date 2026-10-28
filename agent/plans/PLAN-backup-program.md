@@ -493,7 +493,8 @@ Two holes went to another session on 2026-10-15 for an immediate fix: cross-tena
 - [x] P12: Cold mode: a strategy with --mode cold on a repo with a writer container. Accept: the restore shows no torn write (K6 by hand).
     (ticked) 2026-10-28T16:19:10Z by d778be9d: P12: --cold snapshot stopped the writer, restore on rediacc12 shows counter.log runs 1-182 with no gap and no torn write, rc=0
 - [ ] P13: Daemon upgrade: rebuild renet with a trivial change and run `./rdc.sh --dev machine setup <vm1>`. Accept: `daemons upgrade` restarted the hub, no container start time changed, C4 shows nothing stale.
-- [ ] P14: Offline plane: run the account server from entry/on-premise.ts with ACCOUNT_BACKUP_S3_PUBLIC_ENDPOINT set to an address the VMs reach, and repeat P5 against it. Accept: the snapshot commits.
+- [x] P14: Offline plane: run the account server from entry/on-premise.ts with ACCOUNT_BACKUP_S3_PUBLIC_ENDPOINT set to an address the VMs reach, and repeat P5 against it. Accept: the snapshot commits.
+    (ticked) 2026-10-28T18:00:31Z by d778be9d: P14 offline plane: on-premise entry on :4812 with a dev-signed delegation cert (account commit c7bf212), no DB edits; seed 289406976 bytes, unchanged rerun 0 bytes, backup manifests rc=0; renet ValidateRepoTwoLevel ACCEPTED subscription 3190f8db (control with another master REFUSED rc=1)
 - [ ] P15: Record both receipts for the final tree: `npm run vm:check -- --changed` and the backup receipt (J4). Accept: both VERIFIED with the tree hash.
 
 ### Phase Q: live cutover, stable EU, hostinger to rediacc-backups-eu
