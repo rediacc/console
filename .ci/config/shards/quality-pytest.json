@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-28T09:19:00.906Z",
+  "generatedAt": "2026-10-28T20:24:35.207Z",
   "legs": [
     {
       "index": 1,
@@ -545,6 +545,7 @@
         "pytest:.ci/rediacc_ci/tests/test_workflows.py",
         "pytest:.claude/rediacc_hooks/tests/test_bash_semantics.py",
         "pytest:.claude/rediacc_hooks/tests/test_block_commit_meta_env_expand.py",
+        "pytest:.claude/rediacc_hooks/tests/test_block_settled_questions.py",
         "pytest:.claude/rediacc_hooks/tests/test_bulk_review_records.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_backup_receipt.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_differential.py",
@@ -607,6 +608,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_nightly_retry_filters.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_pin_remedies.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_housekeeping.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_policy_path.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_positional_detector.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py",
