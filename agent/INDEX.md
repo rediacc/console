@@ -474,7 +474,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 45 | 0 | 6 | 6774 |
 | `agent/plans/PLAN-backup-program.md` | approved | 489 | 70 | 126 | 108303 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
-| `agent/plans/PLAN-backup-restore-path.md` | executing | 192 | 5 | 3 | 33546 |
+| `agent/plans/PLAN-backup-restore-path.md` | executing | 193 | 4 | 4 | 33778 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
 | `agent/plans/PLAN-backup-toc-exact-opt-in.md` | proposed | 69 | 8 | 0 | 11399 |
 | `agent/plans/PLAN-bump-k3s-upstream-1-36-4.md` | compacted | 35 | 0 | 0 | 2420 |

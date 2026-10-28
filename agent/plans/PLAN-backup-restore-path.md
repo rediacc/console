@@ -138,7 +138,8 @@ Two more facts shape the design. `luks.Device.GetDataOffset` (pkg/luks/resize.go
     (ticked) 2026-10-28T10:37:13Z by d778be9d: 2026-10-28 by d778be9d: renet 675a01f (pointer in the next console commit); go test ./pkg/chunkstore/ rc=0 including six restore_ranges tests, two planted defects caught; i18n locales and hashes current
 
   Owns: private/renet/pkg/chunkstore/download.go, private/renet/pkg/chunkstore/restore.go, private/renet/pkg/chunkstore/restore_ranges_test.go, private/renet/pkg/i18n/locales/**. Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestRestore' -count=1` rc 0.
-- [ ] R4 [writer] The engine, the verb and the function (Design 3 and 4). Add pkg/restorepath (plan.go, restorepath_linux.go, restorepath_other.go). Add cmd/renet/backup_restore_path.go with the `openSnapshotListing` factoring in backup_browse_at.go, the `backup_restore_path` FunctionDef, the TierNone tiermap row, the AddCommand and help line in cmd/renet/backup.go, and the i18n keys in every renet locale. Regenerate the renet contract.
+- [x] R4 [writer] The engine, the verb and the function (Design 3 and 4). Add pkg/restorepath (plan.go, restorepath_linux.go, restorepath_other.go). Add cmd/renet/backup_restore_path.go with the `openSnapshotListing` factoring in backup_browse_at.go, the `backup_restore_path` FunctionDef, the TierNone tiermap row, the AddCommand and help line in cmd/renet/backup.go, and the i18n keys in every renet locale. Regenerate the renet contract.
+    (ticked) 2026-10-28T12:06:32Z by d778be9d: commit:4261d5c09 (renet d7be08f, 2397a83, 79ee03c); sudo go test ./pkg/restorepath/... ./cmd/renet/ -run 'TestRestorePath|TestPlan|TestBackupRestorePath' rc=0 no SKIP; renet_types rc=0
 
   Tests in pkg/restorepath/plan_test.go (pure):
   - A file path selects one entry.

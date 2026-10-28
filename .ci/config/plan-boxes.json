@@ -320,19 +320,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 3,
+      "open": 4,
+      "done": 4,
       "open_sigs": [
         "094664ee",
         "6f475942",
         "a6aa3bb3",
-        "ea53c07a",
-        "faa10486"
+        "ea53c07a"
       ],
       "done_sigs": [
         "055c7d0d",
         "29fda24a",
-        "f13a4009"
+        "f13a4009",
+        "faa10486"
       ]
     },
     "agent/plans/PLAN-backup-restore-target-license.md": {
