@@ -44,11 +44,29 @@ export function isPathRoute(options: { path?: string }): boolean {
   return options.path !== undefined;
 }
 
+/** A given but blank value (an unset shell variable) refuses instead of falling back silently. */
+function assertNoBlankValues(
+  path: string,
+  to: string | undefined,
+  machine: string | undefined
+): void {
+  for (const [value, flag] of [
+    [path, '--path'],
+    [to, '--to'],
+    [machine, '-m'],
+  ] as const) {
+    if (value !== undefined && !value.trim()) {
+      throw new ValidationError(t('commands.backup.restore.pathEmpty', { flag }));
+    }
+  }
+}
+
 /** Refuses a bad flag combination before anything executes. */
 export function assertRestorePathFlags(options: {
   at?: string;
   path?: string;
   to?: string;
+  machine?: string;
   as?: string;
   datastore?: string;
   up?: boolean;
@@ -59,12 +77,7 @@ export function assertRestorePathFlags(options: {
     throw new ValidationError(t('commands.backup.restore.toNeedsPath'));
   }
   if (options.path === undefined) return;
-  if (!options.path.trim()) {
-    throw new ValidationError(t('commands.backup.restore.pathEmpty', { flag: '--path' }));
-  }
-  if (options.to !== undefined && !options.to.trim()) {
-    throw new ValidationError(t('commands.backup.restore.pathEmpty', { flag: '--to' }));
-  }
+  assertNoBlankValues(options.path, options.to, options.machine);
   if (!options.at) {
     throw new ValidationError(t('commands.backup.restore.pathNeedsAt'));
   }

@@ -196,6 +196,7 @@ describe('backup restore --path', () => {
     ['an empty --path', '--path', ['r@m1', '--at', SNAPSHOT, '--path', '']],
     ['a blank --path', '--path', ['r@m1', '--at', SNAPSHOT, '--path', '  ']],
     ['an empty --to', '--to', ['r@m1', '--at', SNAPSHOT, '--path', '/a', '--to', '']],
+    ['an empty -m', '-m', ['r@m1', '--at', SNAPSHOT, '--path', '/a', '-m', '']],
   ])('refuses %s naming the empty flag and executes nothing', async (_label, flag, argv) => {
     await expect(run(argv)).rejects.toThrow(
       `commands.backup.restore.pathEmpty ${JSON.stringify({ flag })}`

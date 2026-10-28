@@ -11,7 +11,8 @@
  *   enroll that addressed nothing visible (bench 2026-10-28: a token whose
  *   enroll could not see the org-wide config seeded a second one beside it), so
  *   it attaches to the single visible config the handoff did not name, and
- *   refuses otherwise. It never seeds there.
+ *   refuses otherwise; a headless enable never seeds there. Only an operator's
+ *   interactive "create new" pick seeds beside listed configs.
  * - pull succeeds but the store's synced content differs from non-empty local
  *   synced content → confirm before replacing it (`--force` skips; non-TTY
  *   aborts naming --force).
@@ -325,7 +326,8 @@ const CREATE_NEW = '__new__';
 /**
  * What enable addresses before its first pull: an existing entry (`attach`), a new entry the
  * operator chose beside the listed ones or on a store listed empty (`new`), or the handoff's
- * pointer as-is (`pointer`, headless with no --config-id), whose 404 is settled by the list later.
+ * pointer as-is (`pointer`: no explicit --config-id and no interactive pick, whether or not the
+ * handoff named an id), whose 404 is settled by the list later.
  */
 type AttachChoice =
   | { kind: 'attach'; entry: RemoteConfigEntry }
@@ -454,7 +456,7 @@ async function addressAndPull(
   opts: { configId?: string },
   buildAdapter: (p: RemoteConfig) => RemoteConfigAdapter
 ): Promise<Addressed> {
-  // Fresh-store handoffs carry no configId: mint one from the local config's own id (already a stable UUID); it is seeded only on an empty store.
+  // Fresh-store handoffs carry no configId: mint one from the local config's own id (already a stable UUID); it is seeded on an empty store, or beside listed configs only when the operator picked "create new" interactively.
   const minted: RemoteConfig = { ...remote, configId: remote.configId ?? local.id };
   const mintedAdapter = buildAdapter(minted);
   const attach = async (entry: RemoteConfigEntry): Promise<Addressed> => {
