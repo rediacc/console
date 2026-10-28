@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-28T20:24:35.207Z",
+  "generatedAt": "2026-10-28T20:50:51.581Z",
   "legs": [
     {
       "index": 1,
@@ -634,6 +634,7 @@
         "pytest:.ci/rediacc_ci/tests/test_build_linux_pkg.py",
         "pytest:.ci/rediacc_ci/tests/test_check_proxy_deploy_dry_run.py",
         "pytest:.ci/rediacc_ci/tests/test_check_pytest_jobs.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_agent_browser_pin.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_channel_for_event.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_job_succeeded.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_budget_report.py",
