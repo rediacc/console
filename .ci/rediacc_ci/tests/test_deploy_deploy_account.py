@@ -79,6 +79,8 @@ sys.stdout.write("added 1 package\\n")
 # A `wrangler` that is never invoked. Its only job is to be FOUND by `command -v` / `shutil.which`, which is half of the npm-install condition.
 FAKE_WRANGLER = "#!/usr/bin/python3\nraise SystemExit('the fake wrangler must never run')\n"
 
+FIXTURE_SITEKEY = "0x4AAAAAAAfixtureSiteKey01"
+
 BASE_ENV = {
     "CLOUDFLARE_API_TOKEN": "tok",
     "CLOUDFLARE_ACCOUNT_ID": "acct",
@@ -176,6 +178,14 @@ def _run_live(
     **extra: str,
 ):
     side = "old" if subject.suffix == ".sh" else "new"
+    assets = root / "workers" / "account" / "dist" / "account" / "assets"
+    planted = side == "new" and (root / "workers" / "account").is_dir() and not assets.exists()
+    if planted:
+        # A built portal that carries the sitekey, as a correct build leaves it. Only the live port reads it, and it is removed after the run, so the tree the golden key hashes stays the same.
+        assets.mkdir(parents=True)
+        (assets / "index-fixture.js").write_text(
+            'const k="%s";' % FIXTURE_SITEKEY, encoding="utf-8"
+        )
     call_log = tmp_path / f"{side}-calls.log"
     call_log.write_text("", encoding="utf-8")
     env = {
@@ -188,6 +198,8 @@ def _run_live(
         "REDIACC_CI_ROOT": str(root),
         "FAKE_CALL_LOG": str(call_log),
         **BASE_ENV,
+        # The live port proves the built portal carries the Turnstile sitekey before any write; the fixture root holds one that does.
+        "TURNSTILE_SITE_KEY": FIXTURE_SITEKEY,
     }
     env.update(extra)
     for name in drop_env:
@@ -203,6 +215,8 @@ def _run_live(
         timeout=120,
         input="",
     )
+    if planted:
+        shutil.rmtree(root / "workers" / "account" / "dist")
     return proc, call_log.read_text(encoding="utf-8")
 
 
@@ -691,3 +705,27 @@ def test_an_unreadable_sibling_config_never_blocks_a_config_without_bindings(
     port.check_services(tmp_path, "workers/account/wrangler.edge-eu.toml", {}, no_api)
     with pytest.raises(port.ServiceBindingError, match="cannot read the Worker configs"):
         port.check_services(tmp_path, "workers/account/wrangler.edge-us.toml", {}, no_api)
+
+
+def test_a_portal_without_the_sitekey_refuses_before_any_write(tmp_path: pathlib.Path) -> None:
+    """The 2026-10-28 stable incident: a keyless portal on disk (built for bench) must never be uploaded to a captcha-enforcing Worker."""
+    worker = tmp_path / "workers" / "account"
+    (worker / "dist" / "account" / "assets").mkdir(parents=True)
+    bundle = worker / "dist" / "account" / "assets" / "index-a.js"
+    bundle.write_text("const turnstileToken=undefined;", encoding="utf-8")
+    refusal = port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY})
+    assert refusal is not None
+    assert "carries no Turnstile sitekey" in refusal
+    bundle.write_text('const k="%s";' % FIXTURE_SITEKEY, encoding="utf-8")
+    assert port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}) is None
+
+
+def test_an_unbound_or_malformed_sitekey_refuses(tmp_path: pathlib.Path) -> None:
+    worker = tmp_path / "w"
+    assert "not bound" in (port.portal_sitekey_refusal(worker, {}) or "")
+    assert "does not look like" in (
+        port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": "abc"}) or ""
+    )
+    assert "no built portal" in (
+        port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}) or ""
+    )

@@ -50,6 +50,8 @@ K=5 LEDGER: `.ci/shadow/w7p6-deploy-account.observations.jsonl`.
 from __future__ import annotations
 
 import os
+import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -94,6 +96,40 @@ DB_NAME_NEEDLE = "database_name"
 # Blast radius today is zero: all seven `workers/account/wrangler.*.toml` files carry exactly one `database_name` line each, in the canonical shape.
 A_COMMENT_BECOMES_THE_DATABASE_NAME = True
 THE_LAST_QUOTE_WINS = True
+
+
+# A portal built without the Turnstile sitekey renders no widget while the Worker enforces
+# Turnstile, so every login answers "Captcha verification required" (stable eu/us/asia,
+# 2026-10-28: deploy_bench had rebuilt workers/account/dist/account for bench, which has no
+# captcha, and the next production deploy uploaded that keyless portal). This tool uploads
+# whatever dist is on disk, so it proves the dist carries the key before anything is written.
+SITEKEY_SHAPE = re.compile(r"^0x[0-9A-Za-z_-]{16,}$")
+PORTAL_ASSETS = ("dist", "account", "assets")
+REBUILD_HINT = (
+    'rebuild the portal with the key: (cd private/account/web && VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" '
+    "VITE_CI_MODE=false npx vite build --outDir ../../../workers/account/dist/account), under the "
+    "account-secrets-<region>-<stable|edge> profile"
+)
+
+
+def portal_sitekey_refusal(worker_dir: pathlib.Path, env: typing.Mapping[str, str]) -> str | None:
+    """None when the built portal under `dist/account/assets` carries the Turnstile sitekey the environment binds, else the refusal line."""
+    key = (env.get("TURNSTILE_SITE_KEY") or env.get("VITE_TURNSTILE_SITE_KEY") or "").strip()
+    if not key:
+        return "TURNSTILE_SITE_KEY is not bound, so the portal cannot be checked for the captcha widget; run under the account-secrets-<region>-<stable|edge> profile"
+    if not SITEKEY_SHAPE.match(key):
+        return "TURNSTILE_SITE_KEY does not look like a Turnstile sitekey (0x...)"
+    assets = worker_dir.joinpath(*PORTAL_ASSETS)
+    bundles = sorted(assets.glob("*.js")) if assets.is_dir() else []
+    if not bundles:
+        return "no built portal at %s; %s" % (assets, REBUILD_HINT)
+    for bundle in bundles:
+        if key in bundle.read_text(encoding="utf-8", errors="replace"):
+            return None
+    return (
+        "the built portal at %s carries no Turnstile sitekey, so login would show no captcha while the Worker enforces it; %s"
+        % (assets, REBUILD_HINT)
+    )
 
 
 def config_name(region: str, target: str) -> str:
@@ -263,6 +299,11 @@ def main(argv: list[str]) -> int:
     db_name = database_name(config)
     if not db_name:
         log.error("Could not read database_name from %s" % config)
+        return 1
+
+    refusal = portal_sitekey_refusal(worker_dir, os.environ)
+    if refusal:
+        log.error(refusal)
         return 1
 
     log.step("Deploying account worker: %s %s (%s)" % (target, region, config))
