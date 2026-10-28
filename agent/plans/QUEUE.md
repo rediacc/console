@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 29 plans done, 426 of 554 boxes done (76%).
+Promoted: 11 of 30 plans done, 426 of 563 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -113,6 +113,7 @@ Promoted: 11 of 29 plans done, 426 of 554 boxes done (76%).
 | 27 | PLAN-per-flavor-renet-binary-paths.md | 8/8 | done |
 | 28 | PLAN-org-executor-connect-timeout-relocate.md | 8/10 | 2 open |
 | 29 | PLAN-backup-restore-path.md | 4/8 | 4 open |
+| 30 | PLAN-ssh-key-source-ranges.md | 0/9 | 9 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -144,6 +145,7 @@ Promoted: 11 of 29 plans done, 426 of 554 boxes done (76%).
 27. agent/plans/PLAN-per-flavor-renet-binary-paths.md -- finding #950036d0 (2026-10-28, vm:check vmc-10280533-5ddf37 NOT_VERIFIED at A2.3): a plain ./rdc.sh flips the shared bin/renet flavor under the license drill; fix-in-session rule (CLAUDE.md rule 2), triage PLAN+SUBAGENT
 28. agent/plans/PLAN-org-executor-connect-timeout-relocate.md -- finding #a150016d (edge-us org B's executor never reaches its machine; org C on a new Durable Object passes); operator ASKED:2026-10-28T06:55Z "Ride this PR now"
 29. agent/plans/PLAN-backup-restore-path.md -- box N4b of PLAN-backup-program.md; operator ASKED 2026-10-28 "Plan it, ride this PR"; the sealed table of contents gains per-file extents, chunkstore a partial fetch, renet a restore-path verb
+30. agent/plans/PLAN-ssh-key-source-ranges.md -- operator ASKED 2026-10-28T11:31Z "make it rdc config based ... define IPv4 on rediacc config too, with IPv6"; the executor key's allowed source ranges live in the rdc config and rdc writes the authorized_keys from=; unblocks bench L0
 
 ## Generated
 
