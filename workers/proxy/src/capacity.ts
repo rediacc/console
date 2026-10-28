@@ -1,7 +1,7 @@
 /**
  * `ExecutorCapacity`: the per-target coordinator that admits at most the cap of executor containers (agent/plans/PLAN-executor-durable-object-policy.md Design item 3).
  *
- * The `durable_object` scheduling policy does not support `max_instances`, so the cap moves into code. One instance per target (`idFromName(CAPACITY_NAME)`, reached only through `capacityStub`) holds one lease row per org. A lease expires on its own after LEASE_MS, so a crashed or redeployed OrgExecutor frees its slot with no cleanup path, and the alarm sweeps what nobody renewed.
+ * The `durable_object` scheduling policy does not support `max_instances`, so the cap moves into code. One instance per target (`idFromName(CAPACITY_NAME)`, reached only through `capacityStub`) holds one lease row per executor name (src/placement.ts `executorName`), so two placements of one org are two rows. A lease expires on its own after LEASE_MS, so a crashed or redeployed OrgExecutor frees its slot with no cleanup path, and the alarm sweeps what nobody renewed.
  *
  * Every decision runs on the synchronous SQLite API with no `await` between the read that counts the holders and the write that admits one, so concurrent `acquire` calls cannot interleave inside a decision and never admit more than the cap.
  */
@@ -14,8 +14,8 @@ export const HARD_CAP = 25;
 export const HARD_HEAVY_CAP = 5;
 /** A lease's life: OrgExecutor's `sleepAfter` of 120 s plus 60 s of grace for a renew in flight. */
 export const LEASE_MS = 180_000;
-/** The name of the one coordinator instance per target. The suffix versions the table shape. */
-export const CAPACITY_NAME = 'capacity:v1';
+/** The name of the one coordinator instance per target. The suffix versions the table shape: v2 keys leases by executor name, not by org. */
+export const CAPACITY_NAME = 'capacity:v2';
 
 /** The instance size class a lease is counted under. `heavy` leases also count against the heavy sub-cap. */
 export type ExecutorSize = 'light' | 'heavy';
@@ -71,34 +71,35 @@ export class ExecutorCapacity extends DurableObject<CapacityEnv> {
     this.cap = capFrom(env.EXECUTOR_CAP, HARD_CAP);
     this.heavyCap = capFrom(env.EXECUTOR_HEAVY_CAP, HARD_HEAVY_CAP);
     this.sql.exec(
-      'CREATE TABLE IF NOT EXISTS leases (org_id TEXT PRIMARY KEY, size TEXT NOT NULL, expires_at INTEGER NOT NULL)'
+      'CREATE TABLE IF NOT EXISTS leases (executor TEXT PRIMARY KEY, size TEXT NOT NULL, expires_at INTEGER NOT NULL)'
     );
   }
 
   /**
-   * Take or renew the org's slot for LEASE_MS. Idempotent per org: a held org renews and is never counted twice, and it keeps its slot even when a lowered cap now sits below the holder count, because its container is already running. A held light org asking for heavy is refused `heavy-full` when the heavy slots are taken, and keeps its light lease.
+   * Take or renew the executor's slot for LEASE_MS. Idempotent per executor: a held executor renews and is never counted twice, and it keeps its slot even when a lowered cap now sits below the holder count, because its container is already running. A held light org asking for heavy is refused `heavy-full` when the heavy slots are taken, and keeps its light lease.
    */
-  async acquire(orgId: string, size: ExecutorSize): Promise<AcquireAnswer> {
-    if (typeof orgId !== 'string' || orgId === '') throw new TypeError('acquire: orgId required');
+  async acquire(executor: string, size: ExecutorSize): Promise<AcquireAnswer> {
+    if (typeof executor !== 'string' || executor === '')
+      throw new TypeError('acquire: executor required');
     // An unknown size would otherwise slip past the heavy sub-cap, so it is refused rather than counted as light.
     if (!isSize(size)) throw new TypeError('acquire: size must be light or heavy');
 
     const now = Date.now();
     this.sweep(now);
     const held = this.sql
-      .exec<{ size: string }>('SELECT size FROM leases WHERE org_id = ?', orgId)
+      .exec<{ size: string }>('SELECT size FROM leases WHERE executor = ?', executor)
       .toArray()[0];
     const { total, heavy } = this.tally(now);
 
     if (held === undefined && total >= this.cap) return { ok: false, reason: 'full' };
-    // A held heavy org keeps its heavy slot under a lowered heavy cap, as a held org keeps its slot under a lowered cap: its container already runs.
+    // A held heavy executor keeps its heavy slot under a lowered heavy cap, as a held executor keeps its slot under a lowered cap: its container already runs.
     if (size === 'heavy' && held?.size !== 'heavy' && heavy >= this.heavyCap) {
       return { ok: false, reason: 'heavy-full' };
     }
 
     this.sql.exec(
-      'INSERT INTO leases (org_id, size, expires_at) VALUES (?, ?, ?) ON CONFLICT(org_id) DO UPDATE SET size = excluded.size, expires_at = excluded.expires_at',
-      orgId,
+      'INSERT INTO leases (executor, size, expires_at) VALUES (?, ?, ?) ON CONFLICT(executor) DO UPDATE SET size = excluded.size, expires_at = excluded.expires_at',
+      executor,
       size,
       now + LEASE_MS
     );
@@ -108,25 +109,25 @@ export class ExecutorCapacity extends DurableObject<CapacityEnv> {
   }
 
   /** Extend a live lease by LEASE_MS. An expired lease is dropped rather than revived, because its slot may have been handed out at the last sweep. */
-  async renew(orgId: string): Promise<RenewAnswer> {
+  async renew(executor: string): Promise<RenewAnswer> {
     const now = Date.now();
     const held = this.sql
-      .exec<{ expires_at: number }>('SELECT expires_at FROM leases WHERE org_id = ?', orgId)
+      .exec<{ expires_at: number }>('SELECT expires_at FROM leases WHERE executor = ?', executor)
       .toArray()[0];
     if (held === undefined) return 'not-held';
     if (held.expires_at <= now) {
-      this.sql.exec('DELETE FROM leases WHERE org_id = ?', orgId);
+      this.sql.exec('DELETE FROM leases WHERE executor = ?', executor);
       await this.scheduleSweep();
       return 'not-held';
     }
-    this.sql.exec('UPDATE leases SET expires_at = ? WHERE org_id = ?', now + LEASE_MS, orgId);
+    this.sql.exec('UPDATE leases SET expires_at = ? WHERE executor = ?', now + LEASE_MS, executor);
     await this.scheduleSweep();
     return 'held';
   }
 
-  /** Give the org's slot back. Releasing a slot not held is a no-op, so an idle teardown racing an expiry needs no guard. */
-  async release(orgId: string): Promise<void> {
-    this.sql.exec('DELETE FROM leases WHERE org_id = ?', orgId);
+  /** Give the executor's slot back. Releasing a slot not held is a no-op, so an idle teardown racing an expiry needs no guard. */
+  async release(executor: string): Promise<void> {
+    this.sql.exec('DELETE FROM leases WHERE executor = ?', executor);
     await this.scheduleSweep();
   }
 

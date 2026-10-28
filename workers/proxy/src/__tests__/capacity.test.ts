@@ -28,6 +28,7 @@ import {
   HARD_HEAVY_CAP,
   LEASE_MS,
 } from '../capacity';
+import { executorName } from '../placement';
 
 const T0 = Date.UTC(2026, 9, 26, 12, 0, 0);
 
@@ -163,6 +164,32 @@ describe('the cap', () => {
   });
 });
 
+describe('lease keys', () => {
+  it('holds org-a:p0 and org-a:p1 as two slots', async () => {
+    const { cap } = coordinator();
+    expect(await cap.acquire(executorName('org-a', 0), 'light')).toEqual({ ok: true });
+    expect(await cap.acquire(executorName('org-a', 1), 'light')).toEqual({ ok: true });
+    expect(cap.count().total).toBe(2);
+  });
+
+  it('release of org-a:p0 leaves org-a:p1 held', async () => {
+    const { cap } = coordinator();
+    await cap.acquire(executorName('org-a', 0), 'light');
+    await cap.acquire(executorName('org-a', 1), 'light');
+    await cap.release(executorName('org-a', 0));
+    expect(cap.count().total).toBe(1);
+    expect(await cap.renew('org-a:p1')).toBe('held');
+    expect(await cap.renew('org-a:p0')).toBe('not-held');
+  });
+
+  it('counts two placements of one org against the cap as two', async () => {
+    const { cap } = coordinator({ EXECUTOR_CAP: '2' });
+    await cap.acquire('org-a:p0', 'light');
+    await cap.acquire('org-a:p1', 'light');
+    expect(await cap.acquire('org-b:p0', 'light')).toEqual({ ok: false, reason: 'full' });
+  });
+});
+
 describe('the lease', () => {
   it('frees a slot not renewed for 180 s at the next acquire', async () => {
     const { cap } = coordinator({ EXECUTOR_CAP: '1' });
@@ -294,7 +321,7 @@ describe('capacityStub', () => {
     capacityStub(namespace);
     capacityStub(namespace);
     expect(names).toEqual([CAPACITY_NAME, CAPACITY_NAME]);
-    expect(CAPACITY_NAME).toBe('capacity:v1');
+    expect(CAPACITY_NAME).toBe('capacity:v2');
   });
 });
 
@@ -307,7 +334,7 @@ describe('the coordinator is reached only through capacityStub', () => {
     expect(files.length).toBeGreaterThan(0);
     const offenders = files.filter((f) => {
       const text = readFileSync(join(root, f), 'utf8');
-      return /CAPACITY_NAME|capacity:v1|idFromName\(\s*['"`]capacity/.test(text);
+      return /CAPACITY_NAME|capacity:v[0-9]+|idFromName\(\s*['"`]capacity/.test(text);
     });
     expect(offenders).toEqual([]);
   });
