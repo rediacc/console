@@ -69,6 +69,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'machine provider': { plane: 'config' },
   'machine infra set': { plane: 'config' },
   'machine infra show': { plane: 'config' },
+  'machine access set': { plane: 'config' },
+  'machine access remove': { plane: 'config' },
+  'machine access show': { plane: 'config' },
   'machine infra cert status': { plane: 'config' },
   'machine infra cert clear': { plane: 'config' },
 

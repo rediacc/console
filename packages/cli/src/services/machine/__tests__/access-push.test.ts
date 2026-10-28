@@ -104,7 +104,7 @@ vi.mock('../../config/config-resources.js', () => ({
   },
 }));
 
-const { pushAccess, AccessFileChangedError, AccessLockoutError } = await import(
+const { pushAccess, buildSwapScript, AccessFileChangedError, AccessLockoutError } = await import(
   '../access-push.js'
 );
 
@@ -282,6 +282,64 @@ describe('pushAccess', () => {
     const report = await pushAccess('hostinger');
     expect(report.changes.map((c) => c.action)).toEqual(['remove']);
     expect(readFileSync(authorizedKeysPath(), 'utf8')).toBe(EXISTING);
+  });
+});
+
+describe('the lockout guard on removal (review c29ac396.1)', () => {
+  it('refuses ACCESS_LOCKOUT when dropping the binding would remove the session key’s last line', async () => {
+    access = probeAccess(SESSION.publicKey);
+    fake.sshConnection = '2a09:bac1:5540:28::3e4:28 51234 2a02:4780::1 22';
+    const adopted = await pushAccess('hostinger');
+    expect(adopted.changes.map((c) => c.action)).toEqual(['adopt']);
+    const before = readFileSync(authorizedKeysPath(), 'utf8');
+    vi.clearAllMocks();
+    access = undefined;
+
+    const error = await pushAccess('hostinger').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(AccessLockoutError);
+    expect(error).toMatchObject({
+      code: 'ACCESS_LOCKOUT',
+      keyName: 'console-probe',
+      removal: true,
+    });
+    expect(fakeSftp.writeFile).not.toHaveBeenCalled();
+    expect(fakeSftp.execStreaming).not.toHaveBeenCalled();
+    expect(readFileSync(authorizedKeysPath(), 'utf8')).toBe(before);
+  });
+
+  it('removes the session key’s marked line when another line still carries the key', async () => {
+    access = probeAccess(SESSION.publicKey);
+    fake.sshConnection = '2a09:bac1:5540:28::3e4:28 51234 2a02:4780::1 22';
+    await pushAccess('hostinger');
+    // A line added by hand after the adopt keeps the session key authorized.
+    writeFileSync(
+      authorizedKeysPath(),
+      `${readFileSync(authorizedKeysPath(), 'utf8')}${SESSION.publicKey} re-added\n`
+    );
+    access = undefined;
+
+    const report = await pushAccess('hostinger');
+    expect(report.changes.map((c) => c.action)).toEqual(['remove']);
+    expect(report.written).toBe(true);
+  });
+});
+
+describe('buildSwapScript (review c29ac396.2)', () => {
+  it('runs every preparatory step before the hash, so only the check separates the hash from the mv', () => {
+    const lines = buildSwapScript(
+      '/h/.ssh',
+      '/h/.ssh/authorized_keys',
+      '/h/.ssh/.t',
+      'absent'
+    ).split('\n');
+    const check = lines.findIndex((line) => line.includes('"$have" != "$want"'));
+    const hash = lines.findIndex((line) => line.includes('have=$(sum'));
+    const modes = lines.findIndex((line) => line.includes('chmod 600 "$t"'));
+    expect(check).toBeGreaterThan(hash);
+    expect(hash).toBe(check - 1);
+    expect(modes).toBeLessThan(hash);
+    expect(lines.slice(check + 1)).toEqual(['mv -f "$t" "$f"']);
   });
 });
 

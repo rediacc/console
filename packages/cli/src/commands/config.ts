@@ -15,6 +15,7 @@ import { registerAuditCommands } from './config/audit.js';
 import { registerCurrentCommand } from './config/current.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
+import { registerAccessCommands } from './config-access.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerRemoteCommands, rotateCek } from './config-remote.js';
 import { registerSSHCommands } from './config-ssh.js';
@@ -630,6 +631,7 @@ ${t('help.examples')}
 
   // Register nested sub-command groups
   registerSSHCommands(config, program);
+  registerAccessCommands(config, program);
   registerRemoteCommands(config);
   registerFieldCommands(config, program);
   registerEditCommands(config, program);

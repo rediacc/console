@@ -24,6 +24,7 @@ import { shellQuote } from '../../utils/shell-quote.js';
 import { configService } from '../config/config-resources.js';
 import {
   type AccessChange,
+  type AccessRewritePlan,
   type DesiredAccessKey,
   parseAuthorizedKeys,
   planAccessRewrite,
@@ -49,10 +50,27 @@ export interface AccessPushReport {
   changes: AccessChange[];
 }
 
+function lockoutMessage(
+  machine: string,
+  keyName: string,
+  clientAddress: string | undefined,
+  removal: boolean
+): string {
+  const own = `access key ${keyName} is the key this session authenticates with`;
+  if (removal) {
+    return `${own}, and pushing would remove its last line from authorized_keys on ${machine}; nothing was written`;
+  }
+  if (clientAddress === undefined) {
+    return `${own}, and the session's source address on ${machine} is unknown ($SSH_CONNECTION is empty); refusing to restrict it`;
+  }
+  return `${own}, and its ranges for ${machine} do not contain this session's source address ${clientAddress}; pushing would lock rdc out, so nothing was written`;
+}
+
 /**
- * The session's own key is a desired access key and the address sshd sees the
- * session coming from lies outside that key's ranges: the push would lock rdc
- * out of the machine, so nothing is written.
+ * The push would lock rdc out of the machine, so nothing is written: either the
+ * session's own key is a desired access key and the address sshd sees the
+ * session coming from lies outside that key's ranges, or (`removal`) the push
+ * removes the last authorized_keys line carrying the session's own key.
  */
 export class AccessLockoutError extends Error {
   readonly code = 'ACCESS_LOCKOUT';
@@ -60,13 +78,10 @@ export class AccessLockoutError extends Error {
   constructor(
     readonly machine: string,
     readonly keyName: string,
-    readonly clientAddress: string | undefined
+    readonly clientAddress: string | undefined,
+    readonly removal = false
   ) {
-    super(
-      clientAddress === undefined
-        ? `access key ${keyName} is the key this session authenticates with, and the session's source address on ${machine} is unknown ($SSH_CONNECTION is empty); refusing to restrict it`
-        : `access key ${keyName} is the key this session authenticates with, and its ranges for ${machine} do not contain this session's source address ${clientAddress}; pushing would lock rdc out, so nothing was written`
-    );
+    super(lockoutMessage(machine, keyName, clientAddress, removal));
     this.name = 'AccessLockoutError';
   }
 }
@@ -131,21 +146,59 @@ function rangesContain(ranges: SourceRanges, address: string): boolean {
   );
 }
 
+function lineBlob(blob: string | undefined): string | null {
+  return blob === undefined ? null : canonicalKeyBlob(blob);
+}
+
 /** Refuse when a desired key is the session's own and the session address is outside its ranges. */
-function assertNoLockout(
+function assertDesiredKeysReachable(
   machine: string,
   desired: DesiredAccessKey[],
   sessionBlobs: Set<string>,
   clientAddress: string | undefined
 ): void {
   for (const key of desired) {
-    const raw = parseOpenSshPublicKey(key.key.trim())?.blob;
-    const blob = raw === undefined ? null : canonicalKeyBlob(raw);
+    const blob = lineBlob(parseOpenSshPublicKey(key.key.trim())?.blob);
     if (blob === null || !sessionBlobs.has(blob)) continue;
     if (clientAddress === undefined || !rangesContain(key.ranges, clientAddress)) {
       throw new AccessLockoutError(machine, key.name, clientAddress);
     }
   }
+}
+
+/**
+ * Refuse when the plan removes a line carrying the session's own key and no
+ * line carrying it is left: a binding dropped from a key this config had
+ * adopted (the adopt dropped every unmarked duplicate, so the marked line is
+ * the session key's only line).
+ */
+function assertSessionKeyKept(
+  machine: string,
+  plan: AccessRewritePlan,
+  sessionBlobs: Set<string>,
+  clientAddress: string | undefined
+): void {
+  const removed = plan.changes.filter((change) => change.action === 'remove');
+  if (removed.length === 0) return;
+  const remaining = new Set(parseAuthorizedKeys(plan.text).map((line) => lineBlob(line.blob)));
+  for (const change of removed) {
+    const blob = lineBlob(parseAuthorizedKeys(change.text)[0]?.blob);
+    if (blob !== null && sessionBlobs.has(blob) && !remaining.has(blob)) {
+      throw new AccessLockoutError(machine, change.key, clientAddress, true);
+    }
+  }
+}
+
+/** Refuse any plan that would lock this session's key out of the machine. */
+function assertNoLockout(
+  machine: string,
+  desired: DesiredAccessKey[],
+  plan: AccessRewritePlan,
+  sessionBlobs: Set<string>,
+  clientAddress: string | undefined
+): void {
+  assertDesiredKeysReachable(machine, desired, sessionBlobs, clientAddress);
+  assertSessionKeyKept(machine, plan, sessionBlobs, clientAddress);
 }
 
 /** `$HOME` and the client address (field 1 of `$SSH_CONNECTION`) of the session. */
@@ -163,17 +216,24 @@ function parseSessionProbe(output: string): { home: string; clientAddress?: stri
  * hashes to `expected` (`absent` when it did not exist). On a mismatch the temp
  * file is removed and the script exits 3. Only paths and a hex digest are
  * interpolated, each shell-quoted; the file contents never reach the shell.
+ *
+ * The swap is not atomic. POSIX gives no conditional rename, and other writers
+ * of authorized_keys (ssh-copy-id, an editor, rdc's repo-key deployment) take no
+ * lock, so a write landing between the hash and the `mv` is overwritten. The
+ * check catches every change made while the push read, planned and uploaded,
+ * which is the window that lasts seconds; every preparatory step (modes) runs
+ * before the hash, so the residual window is the two adjacent commands
+ * `[ "$have" != "$want" ]` and `mv -f`.
  */
 export function buildSwapScript(dir: string, file: string, tmp: string, expected: string): string {
   return [
     'set -eu',
     `d=${shellQuote(dir)}; f=${shellQuote(file)}; t=${shellQuote(tmp)}; want=${shellQuote(expected)}`,
-    'if [ -e "$f" ]; then',
-    '  if command -v sha256sum >/dev/null 2>&1; then have=$(sha256sum < "$f"); else have=$(shasum -a 256 < "$f"); fi',
-    '  have=${have%% *}',
-    'else have=absent; fi',
+    'mkdir -p "$d"; chmod 700 "$d"; chmod 600 "$t"',
+    'if command -v sha256sum >/dev/null 2>&1; then sum() { sha256sum < "$1"; }; else sum() { shasum -a 256 < "$1"; }; fi',
+    'if [ -e "$f" ]; then have=$(sum "$f"); have=${have%% *}; else have=absent; fi',
     `if [ "$have" != "$want" ]; then rm -f "$t"; exit ${ACCESS_CAS_MISMATCH_EXIT}; fi`,
-    'mkdir -p "$d"; chmod 700 "$d"; chmod 600 "$t"; mv -f "$t" "$f"',
+    'mv -f "$t" "$f"',
   ].join('\n');
 }
 
@@ -205,6 +265,7 @@ export async function pushAccess(
     assertNoLockout(
       machineName,
       desired,
+      plan,
       sessionKeyBlobs(lease.sshPrivateKey, sshPublicKey),
       clientAddress
     );

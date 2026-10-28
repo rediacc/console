@@ -2534,6 +2534,221 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "config",
+        "access",
+        "add"
+      ],
+      "pathKey": "config access add",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.access.add.description",
+      "label": "Add an access key, or update an existing one in place while keeping its machine bindings. Ranges given here apply to the key on every machine unless a binding sets its own; without ranges the config-wide ranges apply",
+      "options": [
+        {
+          "flags": "--public-key <key>",
+          "long": "public-key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.config.access.add.optionPublicKey",
+          "label": "OpenSSH public key line, or a path to a file holding it"
+        },
+        {
+          "flags": "--hosted-executor",
+          "long": "hosted-executor",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionHostedExecutor",
+          "label": "Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)"
+        },
+        {
+          "flags": "--ipv4 <cidrs>",
+          "long": "ipv4",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv4",
+          "label": "IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)"
+        },
+        {
+          "flags": "--ipv6 <cidrs>",
+          "long": "ipv6",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv6",
+          "label": "IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)"
+        },
+        {
+          "flags": "--no-restrict",
+          "long": "no-restrict",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.add.optionNoRestrict",
+          "label": "Write from= alone, without the no-forwarding, no-pty and no-user-rc restrictions"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "key",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.config.access.argKey",
+          "label": "Access key name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "access",
+        "list"
+      ],
+      "pathKey": "config access list",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.access.list.description",
+      "label": "List the config's access keys",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "access",
+        "ranges"
+      ],
+      "pathKey": "config access ranges",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.access.ranges.description",
+      "label": "Set the source ranges every access key uses unless the key or its machine binding sets its own. Without options, show them",
+      "options": [
+        {
+          "flags": "--hosted-executor",
+          "long": "hosted-executor",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionHostedExecutor",
+          "label": "Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)"
+        },
+        {
+          "flags": "--ipv4 <cidrs>",
+          "long": "ipv4",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv4",
+          "label": "IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)"
+        },
+        {
+          "flags": "--ipv6 <cidrs>",
+          "long": "ipv6",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv6",
+          "label": "IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)"
+        },
+        {
+          "flags": "--clear",
+          "long": "clear",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.ranges.optionClear",
+          "label": "Remove the config-wide ranges"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "access",
+        "remove"
+      ],
+      "pathKey": "config access remove",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.access.remove.description",
+      "label": "Remove an access key from the config",
+      "options": [],
+      "positionals": [
+        {
+          "name": "key",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.config.access.argKey",
+          "label": "Access key name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
         "audit",
         "log"
       ],
@@ -5238,6 +5453,207 @@ export const CLI_CONTRACT: CliContract = {
       "machineOption": "machine",
       "repoOption": null,
       "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "access",
+        "push"
+      ],
+      "pathKey": "machine access push",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.access.push.description",
+      "label": "Write the access keys bound to a machine into its authorized_keys, adopting an existing line with the same key, and remove this config's lines for keys no longer bound. Refuses a change that would lock rdc's own session out, and writes nothing when the file changed during the push",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.access.push.optionDryRun",
+          "label": "Show the changes without writing"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "access",
+        "remove"
+      ],
+      "pathKey": "machine access remove",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "config",
+      "descriptionKey": "commands.machine.access.remove.description",
+      "label": "Unbind an access key from a machine. The next 'machine access push' removes its line",
+      "options": [
+        {
+          "flags": "--key <key>",
+          "long": "key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.machine.access.optionKey",
+          "label": "Access key name (see 'config access list')"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "access",
+        "set"
+      ],
+      "pathKey": "machine access set",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "config",
+      "descriptionKey": "commands.machine.access.set.description",
+      "label": "Bind an access key to a machine. Ranges given here replace the key's ranges on this machine only. Apply with 'machine access push'",
+      "options": [
+        {
+          "flags": "--key <key>",
+          "long": "key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.machine.access.optionKey",
+          "label": "Access key name (see 'config access list')"
+        },
+        {
+          "flags": "--ipv4 <cidrs>",
+          "long": "ipv4",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv4",
+          "label": "IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)"
+        },
+        {
+          "flags": "--ipv6 <cidrs>",
+          "long": "ipv6",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv6",
+          "label": "IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)"
+        },
+        {
+          "flags": "--clear-ranges",
+          "long": "clear-ranges",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.access.set.optionClearRanges",
+          "label": "Drop this machine's own ranges, so the key's or the config's ranges apply"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "access",
+        "show"
+      ],
+      "pathKey": "machine access show",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "config",
+      "descriptionKey": "commands.machine.access.show.description",
+      "label": "Show the access keys bound to a machine and the ranges each resolves to there",
+      "options": [],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
       "repoPositional": null
     },
     {

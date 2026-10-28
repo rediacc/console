@@ -256,14 +256,15 @@ class ConfigService extends ConfigServiceBase {
     const state = await this.getResourceState();
     const machines = state.getMachines();
     if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
-    delete machines[machineName];
-    await state.setMachines(machines);
-
-    // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4).
+    // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4). The
+    // bindings go first, so a failed prune leaves the machine in place instead of orphaned bindings.
     const access = (await this.getCurrent())?.access;
     if (Object.values(access?.keys ?? {}).some((key) => key.machines?.[machineName])) {
       await this.updateAccess((current) => dropAccessBindings(current, machineName));
     }
+
+    delete machines[machineName];
+    await state.setMachines(machines);
 
     // #89, third site of the class (see dropMachineObservations).
     await dropMachineObservations(this.getEffectiveConfigName(), machineName);

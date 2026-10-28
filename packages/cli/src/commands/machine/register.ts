@@ -18,7 +18,8 @@ import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/h
 import { shellQuote } from '../../utils/shell-quote.js';
 import { convergeAfterSetup } from './converge.js';
 
-async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
+/** Exported for tests: re-deploy repo keys, re-apply access keys, and push infra after a successful setup. */
+export async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
   // Deploy all per-repo SSH keys to the newly set up machine
   try {
     const deployed = await deployAllRepoKeys(name);
@@ -29,6 +30,22 @@ async function postSetupMachineTasks(name: string, debug?: boolean): Promise<voi
     // non-fatal, but visible: a repo whose key was not re-deployed keeps a line without --guid
     outputService.warn(
       `Repo SSH key deployment to ${name} failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  // Re-apply the config's access keys (PLAN-ssh-key-source-ranges Design 4): non-fatal, but visible, since a machine left without its access lines refuses the hosted executor.
+  try {
+    const { pushAccess } = await import('../../services/machine/access-push.js');
+    const report = await pushAccess(name);
+    if (report.written) {
+      outputService.info(t('commands.machine.access.push.success', { name, path: report.path }));
+    }
+  } catch (error) {
+    outputService.warn(
+      t('commands.machine.access.push.setupFailed', {
+        name,
+        error: error instanceof Error ? error.message : String(error),
+      })
     );
   }
 

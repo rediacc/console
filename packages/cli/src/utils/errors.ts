@@ -257,9 +257,41 @@ function sshConnectError(error: unknown): NamedCliError | undefined {
   };
 }
 
-/** The CliError for an error matched by name (remote-config or SSH connect), or undefined. */
+/**
+ * The access push's refusals (services/machine/access-push.ts, services/machine/authorized-keys.ts), matched by their
+ * `code` so this module does not import the SSH stack. Each code is its own stable string in the envelope. A lockout, a
+ * conflicting or duplicate key is the config's to fix (exit 2, not retryable); a file changed under the push is a race,
+ * so it exits 1 and is retryable.
+ */
+const ACCESS_ERRORS: Record<string, { exitCode: number; retryable: boolean }> = {
+  ACCESS_LOCKOUT: { exitCode: EXIT_CODES.INVALID_ARGUMENTS, retryable: false },
+  ACCESS_KEY_CONFLICT: { exitCode: EXIT_CODES.INVALID_ARGUMENTS, retryable: false },
+  ACCESS_KEY_DUPLICATE_BLOB: { exitCode: EXIT_CODES.INVALID_ARGUMENTS, retryable: false },
+  ACCESS_FILE_CHANGED: { exitCode: EXIT_CODES.GENERAL_ERROR, retryable: true },
+};
+
+/** The CliError for an access-push refusal, or undefined for any other error. */
+function accessError(error: unknown): CliError | undefined {
+  if (!(error instanceof Error)) return undefined;
+  const code = (error as Error & { code?: unknown }).code;
+  const entry =
+    typeof code === 'string' && Object.hasOwn(ACCESS_ERRORS, code)
+      ? ACCESS_ERRORS[code]
+      : undefined;
+  if (!entry) return undefined;
+  return {
+    code: code as string,
+    message: error.message,
+    exitCode: entry.exitCode,
+    retryable: entry.retryable,
+    // The message names the remedy (run the push again, fix the range or the key); the exit code's generic guidance would contradict it.
+    guidance: error.message,
+  };
+}
+
+/** The CliError for an error matched by name (remote-config or SSH connect) or by access-push code, or undefined. */
 function namedCliError(error: unknown): CliError | undefined {
-  return remoteConfigError(error) ?? sshConnectError(error);
+  return remoteConfigError(error) ?? sshConnectError(error) ?? accessError(error);
 }
 
 /**

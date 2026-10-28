@@ -7,7 +7,7 @@ order: 2
 language: en
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/en/cli.json
-sourceHash: "4cb0f9390ab77d0c"
+sourceHash: "ebac25b17c8e6fb1"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -470,6 +470,64 @@ rdc config rotate-cek [options]
 |------|-------------|----------|---------|
 | `--api-url <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 
+
+<a id="cli-local-config-access"></a>
+### 1.17 access
+
+{{t:cli.commands.config.access.description}}
+
+<a id="cli-local-config-access-add"></a>
+#### add
+
+{{t:cli.commands.config.access.add.description}}
+
+```bash
+rdc config access add <key> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--public-key <key>` | {{t:cli.commands.config.access.add.optionPublicKey}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--hosted-executor` | {{t:cli.commands.config.access.optionHostedExecutor}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ipv4 <cidrs>` | {{t:cli.commands.config.access.optionIpv4}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ipv6 <cidrs>` | {{t:cli.commands.config.access.optionIpv6}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-restrict` | {{t:cli.commands.config.access.add.optionNoRestrict}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-access-remove"></a>
+#### remove
+
+{{t:cli.commands.config.access.remove.description}}
+
+```bash
+rdc config access remove <key>
+```
+
+<a id="cli-local-config-access-ranges"></a>
+#### ranges
+
+{{t:cli.commands.config.access.ranges.description}}
+
+```bash
+rdc config access ranges [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--hosted-executor` | {{t:cli.commands.config.access.optionHostedExecutor}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ipv4 <cidrs>` | {{t:cli.commands.config.access.optionIpv4}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ipv6 <cidrs>` | {{t:cli.commands.config.access.optionIpv6}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--clear` | {{t:cli.commands.config.access.ranges.optionClear}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-config-access-list"></a>
+#### list
+
+{{t:cli.commands.config.access.list.description}}
+
+```bash
+rdc config access list
+```
 
 ---
 
@@ -1022,6 +1080,65 @@ rdc machine gpu list <name> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-access"></a>
+### 3.16 access
+
+{{t:cli.commands.machine.access.description}}
+
+<a id="cli-local-machine-access-set"></a>
+#### set
+
+{{t:cli.commands.machine.access.set.description}}
+
+```bash
+rdc machine access set <machine> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--key <key>` | {{t:cli.commands.machine.access.optionKey}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--ipv4 <cidrs>` | {{t:cli.commands.config.access.optionIpv4}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ipv6 <cidrs>` | {{t:cli.commands.config.access.optionIpv6}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--clear-ranges` | {{t:cli.commands.machine.access.set.optionClearRanges}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-access-remove"></a>
+#### remove
+
+{{t:cli.commands.machine.access.remove.description}}
+
+```bash
+rdc machine access remove <machine> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--key <key>` | {{t:cli.commands.machine.access.optionKey}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-machine-access-show"></a>
+#### show
+
+{{t:cli.commands.machine.access.show.description}}
+
+```bash
+rdc machine access show <machine>
+```
+
+<a id="cli-local-machine-access-push"></a>
+#### push
+
+{{t:cli.commands.machine.access.push.description}}
+
+```bash
+rdc machine access push <machine> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--dry-run` | {{t:cli.commands.machine.access.push.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

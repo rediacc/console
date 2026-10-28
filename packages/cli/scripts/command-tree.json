@@ -1016,6 +1016,109 @@
               ]
             }
           ]
+        },
+        {
+          "name": "access",
+          "descriptionKey": "commands.machine.access.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "set",
+              "descriptionKey": "commands.machine.access.set.description",
+              "options": [
+                {
+                  "flags": "--key <key>",
+                  "descriptionKey": "commands.machine.access.optionKey",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--ipv4 <cidrs>",
+                  "descriptionKey": "commands.config.access.optionIpv4",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--ipv6 <cidrs>",
+                  "descriptionKey": "commands.config.access.optionIpv6",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--clear-ranges",
+                  "descriptionKey": "commands.machine.access.set.optionClearRanges",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "machine",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "remove",
+              "descriptionKey": "commands.machine.access.remove.description",
+              "options": [
+                {
+                  "flags": "--key <key>",
+                  "descriptionKey": "commands.machine.access.optionKey",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "machine",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "show",
+              "descriptionKey": "commands.machine.access.show.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "machine",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "push",
+              "descriptionKey": "commands.machine.access.push.description",
+              "options": [
+                {
+                  "flags": "--dry-run",
+                  "descriptionKey": "commands.machine.access.push.optionDryRun",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "machine",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
         }
       ]
     },
@@ -4141,6 +4244,112 @@
             {
               "name": "remove",
               "descriptionKey": "commands.config.ssh.remove.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "access",
+          "descriptionKey": "commands.config.access.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "add",
+              "descriptionKey": "commands.config.access.add.description",
+              "options": [
+                {
+                  "flags": "--public-key <key>",
+                  "descriptionKey": "commands.config.access.add.optionPublicKey",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--hosted-executor",
+                  "descriptionKey": "commands.config.access.optionHostedExecutor",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--ipv4 <cidrs>",
+                  "descriptionKey": "commands.config.access.optionIpv4",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--ipv6 <cidrs>",
+                  "descriptionKey": "commands.config.access.optionIpv6",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--no-restrict",
+                  "descriptionKey": "commands.config.access.add.optionNoRestrict",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "key",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "remove",
+              "descriptionKey": "commands.config.access.remove.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "key",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "ranges",
+              "descriptionKey": "commands.config.access.ranges.description",
+              "options": [
+                {
+                  "flags": "--hosted-executor",
+                  "descriptionKey": "commands.config.access.optionHostedExecutor",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--ipv4 <cidrs>",
+                  "descriptionKey": "commands.config.access.optionIpv4",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--ipv6 <cidrs>",
+                  "descriptionKey": "commands.config.access.optionIpv6",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--clear",
+                  "descriptionKey": "commands.config.access.ranges.optionClear",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "list",
+              "descriptionKey": "commands.config.access.list.description",
               "options": [],
               "arguments": [],
               "subcommands": []

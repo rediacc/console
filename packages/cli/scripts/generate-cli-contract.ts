@@ -47,7 +47,6 @@ import {
   walkContractCommands,
 } from './lib/command-tree-lib.js';
 import { parseExampleValues } from './lib/example-parse.js';
-import { at } from './lib/table.js';
 import {
   collectClassificationProblems,
   resolveOptionFormat,
@@ -55,6 +54,7 @@ import {
   resolveOptionSensitive,
   resolveOptionTier,
 } from './lib/option-classification.js';
+import { at } from './lib/table.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -95,6 +95,8 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
     "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
   'config reconcile':
     "It queries every machine but writes the result into the CALLER's local state bucket; a remote executor would rebuild its own state and the caller would be none the wiser. Run it without --proxy.",
+  'machine access push':
+    "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
 
   // ── Caller-held secrets ───────────────────────────────────────────────
   'machine converge':
