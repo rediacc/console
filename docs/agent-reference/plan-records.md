@@ -111,3 +111,24 @@ points at must be at least the blob ratio times the record's size. That second h
 - `.ci/config/plan-boxes.json` is the committed second reading of every plan's boxes.
 - `docs/agent-reference/TRAPS.md` carries the two record traps: a derived title falling back to
 a slug, and a stale `Status:` header being a claim rather than evidence.
+
+## Live proof: a plan that touches a deployable surface
+
+A plan whose `Owns:` globs hit a deployable surface closes only on a live receipt from bench or hostinger. The design is `agent/plans/PLAN-tested-on-bench.md`; the surface map is `.ci/config/proof-tiers.json`, read through `.ci/rediacc_ci/proof/surfaces.py`. Deploy tooling and proof tooling are not surfaces, so a plan owning only those carries `Live-Proof: none`.
+
+**The header.** One anchored line inside the 12-line X window, parsed by `parse_live_proof` in `.claude/hooks/stop/wl_plandeps.py` (the same parser serves the pre-edit guard and the gate), in one of two forms:
+
+- `Live-Proof: bench|hostinger[, <target>...] -- <reason>` declares the targets. The reason needs at least 12 characters. `edge` and `stable` are refused by name.
+- `Live-Proof: none -- <reason>` is the opt-out. The reason must cite a ruling, either a closed worklist item (`#<id>`) or a committed operator quote (`"<quote>" in <path>`), resolved by `resolve_live_proof_waiver`. A `none` with no resolvable citation is refused.
+
+Every touched surface must be covered by one declared target that the surface admits (`surfaces.<name>.live` in the map). The VM tier and the live tier do not substitute for each other.
+
+**The box.** A plan that declares targets carries one `LP-<target> [live]` box per target, each with an `Accept: live-proof <target> <check-id> [args]` sub-line. The box closes only when a VERIFIED receipt row matches its plan, box signature, target and Accept line.
+
+**The verb.** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan <rel> --box <sig> --target bench|hostinger --check <id> [--write]` runs one registry check (`tiers.live.checks`, a fixed argv with no free arguments) and, with `--write`, appends the row to the committed ledger `agent/ledgers/live-proof.jsonl`. A dry run is the default, only a VERIFIED row is written, and a FAILED or NOT_VERIFIED run keeps its log in `.ci/cache/live-proof/` and writes nothing. There is no retroactive mode: every receipt is a fresh run. `verify [--plan <rel>]` re-judges the ledger locally with `proof.live_tier.validate_row`. Exit codes are in `.ci/rediacc_ci/ops/live_proof.py`: 0 VERIFIED, 1 FAILED or NOT_VERIFIED, 2 a request the registry or the plan refuses.
+
+**The receipt.** The envelope is shared by both tiers (`.ci/rediacc_ci/proof/receipt.py`): `tier`, `schema`, `status`, `tree`, `head`, `dirty`, `inputs`, `surfaces`, `submodules` and `renet`. The live body (`.ci/rediacc_ci/proof/live_tier.py`, schema 1) adds `id`, `at`, `by`, `plan`, `box`, `target`, `region`, `deploy` (`surface`, `worker`, `version_id`, `source`, `deployed_head`, `confirmed_live`), `check` (`id`, `args`, `argv`, `rc`, `duration_s`, `log_sha256`, `tail`) and `ladder` (`vm`). The `id` is `lp-` plus 12 hex of the row's hash. Deploy identity is read and confirmed live, never believed: bench through the version `deploy_bench` recorded and wrangler's 100% report, hostinger through the remote renet hash matching the local build's sha256.
+
+**The ladder.** For a row surface with a VM phase (renet, cli-remote, account) the recorder first requires `vm_tier.admit` to admit the head tree, so a VERIFIED `npm run vm:check -- --changed` receipt on the same tree comes before any live run, and the row records its run id in `ladder.vm`. CI cannot read the VM cache, so this is a recorder refusal and not a gate rule. The recorder also applies `receipt.identity_refusal` (dirty-tree, checkout-mismatch, modified-checkout, build-mismatch, modified-build, not-live) and refuses a secret shape in the row.
+
+**The LP rules.** LP1 (a required plan has no valid `Live-Proof:` line) and LP2 (a `none` whose ruling does not resolve) are implemented in `wl_plandeps.live_proof_findings`. The rest are the gate's, per the plan: LP3 (a missing or Accept-less `LP-<target>` box), LP4 (an LP box ticked with no matching VERIFIED, clean receipt), LP5 (an invalid receipt: head not an ancestor of the tick, inputs digest changed, deploy not at head or not confirmed live, bad version id or row id, secret shape), LP6 (a required plan finished without a valid receipt per target) and LP7 (vacuity: an empty map, zero required plans, an unregistered check id). LP4 to LP6 judge only transitions after `baseline_at`.
