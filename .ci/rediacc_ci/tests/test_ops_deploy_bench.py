@@ -285,13 +285,61 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: events.append("rotation"))
     monkeypatch.setattr(
-        deploy_bench, "_run", lambda argv, *_a, **_k: events.append(" ".join(argv[:5]))
+        deploy_bench,
+        "_run",
+        lambda argv, *_a, **_k: events.append(" ".join(argv[:5])) or "Current Version ID: " + VID,
     )
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: events.append("seed"))
+    monkeypatch.setattr(deploy_bench, "record_version", lambda _r, _o: events.append("record"))
     deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
-    assert events[-1] == "seed"
-    assert events[-2] == "npx --no-install wrangler secret bulk"
+    assert events[-1] == "record"
+    assert events[-2] == "seed"
+    assert events[-3] == "npx --no-install wrangler secret bulk"
     assert events.count("seed") == 1
+
+
+VID = "0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
+
+
+def _fake_identity(_root, surfaces):
+    return {
+        "tree": "t",
+        "head": "h",
+        "dirty": [],
+        "inputs": "i",
+        "surfaces": sorted(surfaces),
+        "submodules": {},
+        "renet": None,
+    }
+
+
+def test_a_parsed_version_id_writes_bench_json(monkeypatch, tmp_path):
+    monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
+    out = "Uploaded\nDeployed rediacc-account-bench\nCurrent Version ID: %s\n" % VID
+    got = deploy_bench.record_version(tmp_path, out)
+    written = json.loads((tmp_path / ".ci/cache/live-deploys/bench.json").read_text())
+    assert written == got
+    assert written["version_id"] == VID
+    assert written["head"] == "h"
+    assert written["surfaces"] == ["account", "account-worker"]
+    assert written["at"].endswith("Z")
+    assert set(written) >= {"version_id", "head", "tree", "dirty", "submodules", "at"}
+
+
+def test_output_without_a_version_id_is_a_named_error_and_writes_nothing(monkeypatch, tmp_path):
+    monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
+    with pytest.raises(deploy_bench.DeployError, match="Current Version ID"):
+        deploy_bench.record_version(tmp_path, "Deployed rediacc-account-bench\n")
+    assert not (tmp_path / ".ci/cache/live-deploys/bench.json").exists()
+
+
+def test_an_existing_bench_json_is_overwritten(monkeypatch, tmp_path):
+    monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
+    path = tmp_path / ".ci/cache/live-deploys/bench.json"
+    path.parent.mkdir(parents=True)
+    path.write_text('{"version_id": "old"}')
+    deploy_bench.record_version(tmp_path, "Current Version ID: " + VID)
+    assert json.loads(path.read_text())["version_id"] == VID
 
 
 def _bench_env(monkeypatch, **overrides):

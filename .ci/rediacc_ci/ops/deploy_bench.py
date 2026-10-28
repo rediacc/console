@@ -43,6 +43,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
+from rediacc_ci.proof import receipt
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
@@ -214,18 +215,63 @@ def secrets_payload() -> dict[str, str]:
 
 
 def _run(
-    argv: list[str], cwd, what: str, env: dict[str, str] | None = None, stdin: str | None = None
-) -> None:
-    proc = subprocess.run(
-        argv,
-        cwd=str(cwd),
-        env=env,
-        input=stdin,
-        text=True if stdin is not None else None,
-        check=False,
-    )
+    argv: list[str],
+    cwd,
+    what: str,
+    env: dict[str, str] | None = None,
+    stdin: str | None = None,
+    capture: bool = False,
+) -> str:
+    """Run one step. With `capture` the combined output is returned (and echoed), else the return is empty."""
+    if capture:
+        proc = subprocess.run(
+            argv,
+            cwd=str(cwd),
+            env=env,
+            input=stdin,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        sys.stdout.write(proc.stdout or "")
+        sys.stdout.flush()
+    else:
+        proc = subprocess.run(
+            argv,
+            cwd=str(cwd),
+            env=env,
+            input=stdin,
+            text=True if stdin is not None else None,
+            check=False,
+        )
     if proc.returncode != 0:
         raise DeployError("%s failed (exit %d)" % (what, proc.returncode))
+    return (proc.stdout or "") if capture else ""
+
+
+# The surfaces a bench deploy proves live, and where the recorder reads the deployed version.
+BENCH_SURFACES = ("account", "account-worker")
+VERSION_RECORD = (".ci", "cache", "live-deploys", "bench.json")
+VERSION_PATTERN = re.compile(r"Current Version ID:\s*([0-9a-fA-F][0-9a-fA-F-]{7,})")
+
+
+def record_version(root, output: str) -> dict:
+    """Write `.ci/cache/live-deploys/bench.json` from `proof.receipt.identity` plus the `Current Version ID:` of the wrangler deploy `output`, and return it. DeployError, with nothing written, when the output carries no id."""
+    match = VERSION_PATTERN.search(output)
+    if not match:
+        raise DeployError(
+            "the wrangler deploy output carries no 'Current Version ID:' line, so the deployed "
+            "version is not recorded in %s (the deploy itself is done and not rolled back)"
+            % "/".join(VERSION_RECORD)
+        )
+    record = {
+        "version_id": match.group(1),
+        **receipt.identity(root, BENCH_SURFACES),
+        "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    receipt.write_atomic(root.joinpath(*VERSION_RECORD), json.dumps(record, indent=2) + "\n")
+    return record
 
 
 # A D1 bookmark as `wrangler d1 time-travel info` prints it: three 8-hex groups and a long hex tail.
@@ -640,7 +686,9 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     log.info("Migrations applied")
 
     log.step("Deploying %s → https://%s" % (WORKER_NAME, DOMAIN))
-    _run([*wrangler.ARGV, "deploy", "--config", CONFIG], worker_dir, "wrangler deploy")
+    deploy_output = _run(
+        [*wrangler.ARGV, "deploy", "--config", CONFIG], worker_dir, "wrangler deploy", capture=True
+    )
     log.info("Worker deployed")
 
     _rotation_check(root)
@@ -652,6 +700,9 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     )
     log.info("Worker secrets pushed")
     _seed_and_report()
+    # After the whole deploy, so a missing id fails a finished deploy rather than leaving secrets unpushed.
+    record_version(root, deploy_output)
+    log.info("Bench version recorded in %s" % "/".join(VERSION_RECORD))
 
     print()
     log.info("bench is live: https://%s" % DOMAIN)
