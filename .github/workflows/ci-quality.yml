@@ -1830,10 +1830,13 @@ jobs:
         # The version is the devcontainer's ARG, the pin registry's site, so a bump moves CI with it.
         # The cutoff is computed BEFORE the cd, from the checkout: --before holds the live resolution to the release-age window.
         run: |
-          AGENT_BROWSER_VERSION="$(sed -n 's/^ARG AGENT_BROWSER_VERSION=["'"'"']\{0,1\}\([0-9][0-9.]*\).*/\1/p' .devcontainer/Dockerfile)"
+          AGENT_BROWSER_VERSION="$(sed -n 's/^ARG AGENT_BROWSER_VERSION=["'"'"']\{0,1\}\([0-9][^\"'"'"' ]*\).*/\1/p' .devcontainer/Dockerfile)"
           [ -n "$AGENT_BROWSER_VERSION" ] || { echo "AGENT_BROWSER_VERSION not found in .devcontainer/Dockerfile" >&2; exit 1; }
           before="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
           cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false --before "${before}"
+          # The installed version must be the one the devcontainer pins, so a sed that misreads the ARG fails here.
+          installed="$(agent-browser --version)"
+          case "$installed" in *"$AGENT_BROWSER_VERSION"*) ;; *) echo "agent-browser reports '$installed', want $AGENT_BROWSER_VERSION" >&2; exit 1 ;; esac
 
       # A silent-install failure (a broken postinstall, a PATH the shell that
       # ran npm install cannot see, a platform binary that never got selected)
