@@ -8,7 +8,11 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { AccessConfig, RdcState } from '@rediacc/shared/config-schema';
+import {
+  type AccessConfig,
+  bindingSourceRanges,
+  type RdcState,
+} from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import {
@@ -85,10 +89,11 @@ export function dropAccessBindings(access: AccessConfig, machineName: string): A
       Object.keys(machines).length === 0 &&
       key.sourceRanges === undefined &&
       access.sourceRanges === undefined;
+    const ownRanges = bindingSourceRanges(binding);
     keys[keyName] = {
       ...key,
       machines,
-      ...(orphaned && binding.sourceRanges ? { sourceRanges: binding.sourceRanges } : {}),
+      ...(orphaned && ownRanges ? { sourceRanges: ownRanges } : {}),
     };
   }
   return { ...access, keys };
@@ -259,7 +264,9 @@ class ConfigService extends ConfigServiceBase {
     // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4). The
     // bindings go first, so a failed prune leaves the machine in place instead of orphaned bindings.
     const access = (await this.getCurrent())?.access;
-    const bound = Object.values(access?.keys ?? {}).some((key) => key.machines?.[machineName]);
+    const bound = Object.values(access?.keys ?? {}).some(
+      (key) => key.machines?.[machineName] !== undefined
+    );
     if (bound) {
       await this.updateAccess((current) => dropAccessBindings(current, machineName));
     }

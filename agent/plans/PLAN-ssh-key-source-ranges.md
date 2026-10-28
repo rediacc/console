@@ -44,7 +44,7 @@ Operator, ASKED:2026-10-28T11:31Z, verbatim: "Yes widen (Add 2a09:bac0::/29) but
          "restrict": true,
          "sourceRanges": { "ipv4": [...], "ipv6": [...] },
          "machines": {
-           "hostinger": {},
+           "hostinger": true,
            "edge-box": { "sourceRanges": { "ipv6": ["2a09:bac0::/29"] } }
          }
        }
@@ -125,3 +125,4 @@ Operator, ASKED:2026-10-28T11:31Z, verbatim: "Yes widen (Add 2a09:bac0::/29) but
 
 - V1, 2026-10-28: `curl -s https://rdap.arin.net/registry/ip/104.28.0.0 | jq -r '.name,.startAddress,.endAddress'` gave `CLOUDFLARENET`, `104.16.0.0`, `104.31.255.255`; `curl -s https://rdap.db.ripe.net/ip/2a09:bac5:4e3e:270f::3e4:28 | jq -r '.name,.parentHandle'` gave `CLOUDFLAREWARP`, `2a09:bac0::/29`; `curl -s https://www.cloudflare.com/ips-v4` lists 173.245.48.0/20, 103.21.244.0/22, 103.22.200.0/22, 103.31.4.0/22, 141.101.64.0/18, 108.162.192.0/18, 190.93.240.0/20, 188.114.96.0/20, 197.234.240.0/22, 198.41.128.0/17, 162.158.0.0/15, 104.16.0.0/13, 104.24.0.0/14, 172.64.0.0/13 and 131.0.72.0/22, with no 104.28 entry: the two defaults are Cloudflare-owned observed egress, not the published proxy list.
 - Cloudflare docs research (2026-10-28): Containers document no egress range; `[containers.constraints] regions` can pin placement but its effect under `scheduling_policy = "durable_object"` and on the egress prefix is undocumented; Durable Object `locationHint` does not place the container ("Durable Objects and their associated Container instances are not guaranteed to run in the same location", developers.cloudflare.com/containers/platform-details/architecture/). Hostinger runs an automated reputation firewall (hostinger.com/support/blocked-ip-address-hostinger-firewall/) that fits the zero-SYN IPv4 drop of 104.28.163.183 and .92.
+- 2026-10-28 (#e6dbacc1): a plain binding is `true`, not `{}`. On the synced `eu-bench` config `machine access set hostinger --key console-probe` printed "bound" and kept no binding: the push no-op check (push-visibility.ts `normalize`) reads an empty object as no content, so `pushOnce` skipped the push and returned the unchanged base. The payload encoding itself carries `{}`. A binding with its own ranges stays `{ "sourceRanges": ... }`, and `{}` is now refused by the schema.

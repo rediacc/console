@@ -188,7 +188,7 @@ describe('config access', () => {
     await run('machine', 'access', 'set', 'hostinger', '--key', 'p');
     await run('config', 'access', 'add', 'p', '--public-key', PROBE, '--ipv4', '198.51.100.0/24');
     expect(h.state.access).toMatchObject({
-      keys: { p: { sourceRanges: { ipv4: ['198.51.100.0/24'] }, machines: { hostinger: {} } } },
+      keys: { p: { sourceRanges: { ipv4: ['198.51.100.0/24'] }, machines: { hostinger: true } } },
     });
   });
 
@@ -255,14 +255,38 @@ describe('machine access', () => {
       keys: { p: { machines: { hostinger: { sourceRanges: { ipv6: ['2a09:bac0::/29'] } } } } },
     });
     await run('machine', 'access', 'set', 'hostinger', '--key', 'p', '--clear-ranges');
-    expect(h.state.access).toMatchObject({ keys: { p: { machines: { hostinger: {} } } } });
+    expect(h.state.access).toMatchObject({ keys: { p: { machines: { hostinger: true } } } });
+  });
+
+  it('set without ranges writes a plain true binding and keeps an existing one as it was', async () => {
+    await run('machine', 'access', 'set', 'hostinger', '--key', 'p');
+    const keys = () => (h.state.access as { keys: Record<string, { machines?: unknown }> }).keys;
+    expect(keys().p.machines).toEqual({ hostinger: true });
+    await run('machine', 'access', 'set', 'hostinger', '--key', 'p', '--ipv6', '2a09:bac0::/29');
+    await run('machine', 'access', 'set', 'hostinger', '--key', 'p');
+    expect(keys().p.machines).toEqual({
+      hostinger: { sourceRanges: { ipv6: ['2a09:bac0::/29'] } },
+    });
+  });
+
+  it('show reports a machine-level binding as rangesFrom machine', async () => {
+    await run('machine', 'access', 'set', 'hostinger', '--key', 'p', '--ipv6', '2a09:bac0::/29');
+    await run('-o', 'json', 'machine', 'access', 'show', 'hostinger');
+    expect(h.printed.at(-1)?.data).toEqual([
+      {
+        key: 'p',
+        restrict: true,
+        sourceRanges: { ipv6: ['2a09:bac0::/29'] },
+        rangesFrom: 'machine',
+      },
+    ]);
   });
 
   it('remove drops a binding even when the machine no longer exists', async () => {
     await run('machine', 'access', 'set', 'hostinger', '--key', 'p');
     h.state.machines = {};
     await run('machine', 'access', 'remove', 'hostinger', '--key', 'p');
-    expect(h.state.access).toMatchObject({ keys: { p: { machines: {} } } });
+    expect((h.state.access as { keys: { p: { machines: unknown } } }).keys.p.machines).toEqual({});
   });
 
   it('show -o json reports the ranges each bound key resolves to', async () => {
@@ -296,6 +320,54 @@ describe('machine access', () => {
   it('push on an unknown machine refuses before connecting', async () => {
     await expect(run('machine', 'access', 'push', 'ghost')).rejects.toThrow(/not found/);
     expect(pushAccess).not.toHaveBeenCalled();
+  });
+});
+
+describe('a plain binding on a synced config (#e6dbacc1)', () => {
+  // Live on eu-bench: `machine access set hostinger --key console-probe` printed "bound", yet the
+  // config kept no binding. The old plain binding was `{}`, which the push no-op check
+  // (push-visibility.ts normalize) reads as no content, so the edit never left the device.
+  it('changes the synced projection and survives the real push/pull encoding', async () => {
+    const { bindAccessKey } = await import('../machine/access.js');
+    const { isNoopPush } = await import('../../services/config/push-visibility.js');
+    const { generateAesKey, generateCek } = await import('@rediacc/shared/config-crypto');
+    const { fullConfigToRdcConfig } = await import('@rediacc/shared/config-crypto/rotation');
+    const { buildConfigPushPayload, decryptConfigPullPayload } = await import(
+      '@rediacc/shared/config-schema'
+    );
+    const access = AccessSchema.parse({
+      sourceRanges: { ipv4: ['104.28.0.0/16'] },
+      keys: { 'console-probe': { publicKey: PROBE } },
+    });
+    const before = {
+      schemaVersion: 3,
+      id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
+      version: 4,
+      encryption: { mode: 'plaintext' },
+      resources: { machines: { hostinger: { ip: '72.61.137.225', user: 'muhammed' } } },
+      access,
+    } as Parameters<typeof isNoopPush>[0];
+    const after = { ...before, access: bindAccessKey(access, 'hostinger', 'console-probe', {}) };
+
+    expect(isNoopPush(after, before)).toBe(false);
+
+    const cek = await generateCek();
+    const sdkDerived = await generateAesKey();
+    const payload = await buildConfigPushPayload(after, {
+      storeId: 'store-1',
+      version: after.version + 1,
+      sdkEpoch: 1,
+      sdkDerived,
+      cek,
+    });
+    const pulled = fullConfigToRdcConfig(
+      await decryptConfigPullPayload(payload, {
+        cek,
+        sdkDerived,
+        binding: { storeId: 'store-1', configId: payload.envelope.id, teamId: null },
+      })
+    );
+    expect(pulled.access?.keys?.['console-probe']?.machines).toEqual({ hostinger: true });
   });
 });
 

@@ -40,11 +40,11 @@ function fullAccess() {
           ipv6: string[];
         },
         machines: {
-          hostinger: {},
+          hostinger: true,
           'edge-box': { sourceRanges: { ipv6: ['2a09:bac0::/29'] } },
         },
       },
-      'team-ops': { publicKey: KEY_EC, restrict: false, machines: { hostinger: {} } },
+      'team-ops': { publicKey: KEY_EC, restrict: false, machines: { hostinger: true } },
     },
   };
 }
@@ -85,7 +85,7 @@ describe('access in the config', () => {
   });
 
   it('refuses an access key that resolves to no source range', () => {
-    const noDefault = { keys: { k: { publicKey: KEY_A, machines: { hostinger: {} } } } };
+    const noDefault = { keys: { k: { publicKey: KEY_A, machines: { hostinger: true } } } };
     expect(issues(noDefault)[0]).toMatch(/access key k resolves to no source range/);
 
     const unbound = { keys: { k: { publicKey: KEY_A } } };
@@ -101,6 +101,17 @@ describe('access in the config', () => {
       },
     };
     expect(issues(perMachine)).toEqual([]);
+  });
+
+  it('a binding is true or carries its own ranges, never an empty object or false', () => {
+    const withBinding = (binding: unknown) => ({
+      sourceRanges: { ipv4: ['10.0.0.0/8'] },
+      keys: { k: { publicKey: KEY_A, machines: { hostinger: binding } } },
+    });
+    expect(issues(withBinding(true))).toEqual([]);
+    expect(issues(withBinding({ sourceRanges: { ipv4: ['10.1.0.0/16'] } }))).toEqual([]);
+    expect(issues(withBinding({}))).not.toEqual([]);
+    expect(issues(withBinding(false))).not.toEqual([]);
   });
 
   it('refuses an empty sourceRanges at any level', () => {
@@ -177,7 +188,7 @@ describe('access in the config', () => {
     expect(
       issues({
         sourceRanges: { ipv4: ['10.0.0.0/8'] },
-        keys: { k: { publicKey: KEY_B, machines: { 'Not OK': {} } } },
+        keys: { k: { publicKey: KEY_B, machines: { 'Not OK': true } } },
       })
     ).not.toEqual([]);
   });

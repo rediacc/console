@@ -148,7 +148,7 @@ describe('configService.addMachine — SSH config side effect', { timeout: 30000
     mockMachines = { m3: { ip: '9.9.9.9', user: 'u3', port: 22 } };
     mockAccess = {
       sourceRanges: { ipv4: ['104.28.0.0/16'] },
-      keys: { probe: { publicKey: 'ssh-ed25519 AAAA probe', machines: { m3: {} } } },
+      keys: { probe: { publicKey: 'ssh-ed25519 AAAA probe', machines: { m3: true } } },
     };
     mockSetMachinesError = new Error('disk full');
     const { configService } = await import('../config/config-resources.js');

@@ -8,6 +8,8 @@
 
 import {
   type AccessConfig,
+  type AccessKeyBinding,
+  bindingSourceRanges,
   resolveAccessSourceRanges,
   type SourceRanges,
 } from '@rediacc/shared/config-schema';
@@ -21,9 +23,10 @@ import { handleError, ValidationError } from '../../utils/errors.js';
 import { assertValidAccess, type RangeOptions, rangesFromOptions } from '../config-access.js';
 
 /**
- * Bind `keyName` to `machineName`. Given ranges replace the binding's own;
- * `clearRanges` drops them so the key's (or the config's) ranges apply; neither
- * keeps what the binding had.
+ * Bind `keyName` to `machineName`. Given ranges replace the binding's own
+ * (`{ sourceRanges }`); `clearRanges` drops them so the key's (or the config's)
+ * ranges apply (`true`); neither keeps what the binding had, and a new binding
+ * without ranges is `true`.
  */
 export function bindAccessKey(
   access: AccessConfig,
@@ -35,9 +38,9 @@ export function bindAccessKey(
   if (key === undefined) {
     throw new ValidationError(t('commands.config.access.keyNotFound', { key: keyName }));
   }
-  let binding = key.machines?.[machineName] ?? {};
+  let binding: AccessKeyBinding = key.machines?.[machineName] ?? true;
   if (options.ranges !== undefined) binding = { sourceRanges: options.ranges };
-  else if (options.clearRanges) binding = {};
+  else if (options.clearRanges) binding = true;
   return assertValidAccess({
     ...access,
     keys: {
@@ -75,7 +78,7 @@ export function unbindAccessKey(
 /** Where a binding's ranges come from: the binding, the key, or the config. */
 function rangesSource(access: AccessConfig, keyName: string, machineName: string): string {
   const key = access.keys?.[keyName];
-  if (key?.machines?.[machineName]?.sourceRanges) return 'machine';
+  if (bindingSourceRanges(key?.machines?.[machineName])) return 'machine';
   if (key?.sourceRanges) return 'key';
   return 'config';
 }

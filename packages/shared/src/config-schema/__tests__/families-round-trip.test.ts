@@ -99,8 +99,9 @@ function allFamiliesConfig(): RdcConfig {
       sourceRanges: { ipv4: ['104.28.0.0/16'], ipv6: ['2a09:bac0::/29'] },
       keys: {
         probe: {
-          publicKey: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f fixture',
-          machines: { m1: {} },
+          publicKey:
+            'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f fixture',
+          machines: { m1: true },
         },
       },
     },

@@ -104,9 +104,13 @@ vi.mock('../../config/config-resources.js', () => ({
   },
 }));
 
-const { pushAccess, buildSwapScript, AccessFileChangedError, AccessLockoutError } = await import(
-  '../access-push.js'
-);
+const {
+  pushAccess,
+  buildSwapScript,
+  desiredAccessKeys,
+  AccessFileChangedError,
+  AccessLockoutError,
+} = await import('../access-push.js');
 
 function sha256(text: string): string {
   return createHash('sha256').update(text).digest('hex');
@@ -119,7 +123,7 @@ function authorizedKeysPath(): string {
 function probeAccess(publicKey = PROBE.publicKey): Record<string, unknown> {
   return {
     sourceRanges: HOSTED,
-    keys: { 'console-probe': { publicKey, machines: { hostinger: {} } } },
+    keys: { 'console-probe': { publicKey, machines: { hostinger: true } } },
   };
 }
 
@@ -343,6 +347,27 @@ describe('buildSwapScript (review c29ac396.2)', () => {
   });
 });
 
+describe('desiredAccessKeys', () => {
+  it('a plain binding takes the key ranges and an object binding its own; unbound keys are skipped', () => {
+    const own = { ipv4: ['198.51.100.0/24'] };
+    const desired = desiredAccessKeys(
+      AccessSchema.parse({
+        sourceRanges: HOSTED,
+        keys: {
+          plain: { publicKey: PROBE.publicKey, machines: { hostinger: true } },
+          ranged: { publicKey: SESSION.publicKey, machines: { hostinger: { sourceRanges: own } } },
+          other: { publicKey: keyPair('other').publicKey, machines: { edge: true } },
+        },
+      }),
+      'hostinger'
+    );
+    expect(desired.map((d) => [d.name, d.ranges])).toEqual([
+      ['plain', HOSTED],
+      ['ranged', own],
+    ]);
+  });
+});
+
 describe('dropAccessBindings (machine remove)', () => {
   const load = async () =>
     (
@@ -357,14 +382,14 @@ describe('dropAccessBindings (machine remove)', () => {
       {
         sourceRanges: HOSTED,
         keys: {
-          a: { publicKey: PROBE.publicKey, machines: { hostinger: {}, edge: {} } },
-          b: { publicKey: SESSION.publicKey, machines: { edge: {} } },
+          a: { publicKey: PROBE.publicKey, machines: { hostinger: true, edge: true } },
+          b: { publicKey: SESSION.publicKey, machines: { edge: true } },
         },
       },
       'hostinger'
     );
-    expect(result.keys?.a.machines).toEqual({ edge: {} });
-    expect(result.keys?.b.machines).toEqual({ edge: {} });
+    expect(result.keys?.a.machines).toEqual({ edge: true });
+    expect(result.keys?.b.machines).toEqual({ edge: true });
   });
 
   it('a key whose only range was the dropped binding keeps that range on the key', async () => {
@@ -383,6 +408,19 @@ describe('dropAccessBindings (machine remove)', () => {
       machines: {},
       sourceRanges: ranges,
     });
+    expect(AccessSchema.safeParse(result).success).toBe(true);
+  });
+
+  it('a plain binding hands the key no range when the config supplies one', async () => {
+    const dropAccessBindings = await load();
+    const result = dropAccessBindings(
+      {
+        sourceRanges: HOSTED,
+        keys: { a: { publicKey: PROBE.publicKey, machines: { hostinger: true } } },
+      },
+      'hostinger'
+    );
+    expect(result.keys?.a).toEqual({ publicKey: PROBE.publicKey, machines: {} });
     expect(AccessSchema.safeParse(result).success).toBe(true);
   });
 });

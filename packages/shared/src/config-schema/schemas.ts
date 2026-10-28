@@ -744,8 +744,16 @@ const OpenSshPublicKeySchema = z.string().superRefine((value, ctx) => {
 
 const AccessKeyMachineSchema = z.object({
   /** Replaces the key's ranges whole for this machine. */
-  sourceRanges: SourceRangesSchema.optional(),
+  sourceRanges: SourceRangesSchema,
 });
+
+/**
+ * One machine binding: `true` when the key's (or the config's) ranges apply,
+ * `{ sourceRanges }` when the binding carries its own. A plain binding is a
+ * leaf, never `{}`: the push no-op check (push-visibility.ts `normalize`)
+ * reads an empty object as no content, so a `{}` binding was never pushed.
+ */
+const AccessKeyBindingSchema = z.union([z.literal(true), AccessKeyMachineSchema]);
 
 export const AccessKeySchema = z.object({
   publicKey: OpenSshPublicKeySchema,
@@ -757,11 +765,19 @@ export const AccessKeySchema = z.object({
   /** Replaces `access.sourceRanges` whole for this key. */
   sourceRanges: SourceRangesSchema.optional(),
   /** Machines (resources.machines names) this key is installed on. */
-  machines: z.record(resourceName, AccessKeyMachineSchema).optional(),
+  machines: z.record(resourceName, AccessKeyBindingSchema).optional(),
 });
 
 type SourceRanges = z.infer<typeof SourceRangesSchema>;
 type AccessKey = z.infer<typeof AccessKeySchema>;
+type AccessKeyBinding = z.infer<typeof AccessKeyBindingSchema>;
+
+/** The binding's own ranges, or undefined for a plain (`true`) binding. */
+export function bindingSourceRanges(
+  binding: AccessKeyBinding | undefined
+): SourceRanges | undefined {
+  return binding === undefined || binding === true ? undefined : binding.sourceRanges;
+}
 
 /**
  * The ranges one (key, machine) pair resolves to:
@@ -777,7 +793,7 @@ export function resolveAccessSourceRanges(
   const key = access.keys?.[keyName];
   if (key === undefined) return undefined;
   const machineLevel =
-    machineName === undefined ? undefined : key.machines?.[machineName]?.sourceRanges;
+    machineName === undefined ? undefined : bindingSourceRanges(key.machines?.[machineName]);
   return machineLevel ?? key.sourceRanges ?? access.sourceRanges;
 }
 
@@ -788,7 +804,7 @@ export function resolveAccessSourceRanges(
 function resolvesToNoRange(key: AccessKey, configRanges: SourceRanges | undefined): boolean {
   if ((key.sourceRanges ?? configRanges) !== undefined) return false;
   const bindings = Object.values(key.machines ?? {});
-  return bindings.length === 0 || bindings.some((m) => m.sourceRanges === undefined);
+  return bindings.length === 0 || bindings.some((m) => bindingSourceRanges(m) === undefined);
 }
 
 export const AccessSchema = z
@@ -826,7 +842,7 @@ export const AccessSchema = z
 type AccessConfig = z.infer<typeof AccessSchema>;
 type AccessKeyMachine = z.infer<typeof AccessKeyMachineSchema>;
 
-export type { AccessConfig, AccessKey, AccessKeyMachine, SourceRanges };
+export type { AccessConfig, AccessKey, AccessKeyBinding, AccessKeyMachine, SourceRanges };
 
 // =============================================================================
 // Top-level RdcConfig v3
