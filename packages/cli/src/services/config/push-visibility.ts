@@ -7,7 +7,7 @@
  */
 
 import { isDeepStrictEqual } from 'node:util';
-import { syncedDocument } from '@rediacc/shared/config-schema';
+import { buildPointer, metaForPointer, syncedDocument } from '@rediacc/shared/config-schema';
 import type {
   RemoteConfigAdapter,
   RemoteVersionInfo,
@@ -32,14 +32,38 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-/** Drop undefined values and empty objects, which the wire encoding never carries as content. */
-function normalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(normalize);
+function isEmptyObject(value: unknown): boolean {
+  return isPlainObject(value) && Object.keys(value).length === 0;
+}
+
+function isWholeStored(path: string[]): boolean {
+  return path.length > 0 && metaForPointer(buildPointer(path)) !== undefined;
+}
+
+/**
+ * The synced document as the push compares it. The wire carries the document as JSON
+ * (`buildConfigPushPayload` round-trips it through `JSON.stringify`), so an undefined value never
+ * travels and is dropped here too.
+ *
+ * A value at a pointer the sensitivity registry names is stored WHOLE: the walker treats it as one
+ * leaf, and a committed one gets one HMAC over all of it (`/policy`, `/access`,
+ * `/resources/storages`). An empty object inside it is content, so the value is kept exactly as
+ * JSON carries it: adding `{}` there changes the commitment and the push must go out.
+ *
+ * Elsewhere an empty object is dropped. It does travel on the wire, but it backs no committed leaf,
+ * and a pull rebuilds some as `{}` regardless (`fromFullConfig` writes empty `machines` and
+ * `repositories`), so keeping them would turn every pulled copy into a spurious push.
+ */
+function normalize(value: unknown, path: string[] = []): unknown {
+  // A whole-stored value is kept as JSON carries it, an empty `{}` at its root included.
+  if (value !== undefined && isWholeStored(path)) return JSON.parse(JSON.stringify(value));
+  if (Array.isArray(value)) return value.map((item, i) => normalize(item, [...path, String(i)]));
   if (!isPlainObject(value)) return value;
   const out: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(value)) {
-    const next = normalize(child);
-    if (next === undefined || (isPlainObject(next) && Object.keys(next).length === 0)) continue;
+    const childPath = [...path, key];
+    const next = normalize(child, childPath);
+    if (next === undefined || (isEmptyObject(next) && !isWholeStored(childPath))) continue;
     out[key] = next;
   }
   return out;

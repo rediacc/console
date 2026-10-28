@@ -89,6 +89,8 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'backup snapshots delete': { plane: 'other' },
 
   // ── repo: config-side ref and secret ops, and the local template catalog ─ The one git-like ref op that never leaves the config: it rewrites the repository's `branches` map. (`repo log`, `commit`, `checkout`, `merge`, `gc` and `fsck` all read or write objects on the machine.)
+  // Docker-storage classification and reclaim run through renet on the machine (`repository_docker_prune`).
+  'repo prune': { plane: 'machine' },
   'repo branch': { plane: 'config' },
   // The store IS the encrypted config (repo-secrets-store imports no executor or SSH). Values reach the machine later, via `repo up`.
   'repo secret': { plane: 'config' },

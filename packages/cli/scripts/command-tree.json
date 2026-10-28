@@ -2938,6 +2938,63 @@
           "subcommands": []
         },
         {
+          "name": "prune",
+          "descriptionKey": "commands.repo.prune.description",
+          "options": [
+            {
+              "flags": "--apply",
+              "descriptionKey": "commands.repo.prune.applyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--offline",
+              "descriptionKey": "commands.repo.prune.offlineOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--all-images",
+              "descriptionKey": "commands.repo.prune.allImagesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--no-trim",
+              "descriptionKey": "commands.repo.prune.noTrimOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "policy",
           "descriptionKey": "commands.repo.policy.description",
           "options": [],

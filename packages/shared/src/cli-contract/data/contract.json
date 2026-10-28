@@ -5483,6 +5483,7 @@
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Rewrites the machine's authorized_keys from the config's access bindings. Who can log in is an operator decision.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
@@ -5606,6 +5607,7 @@
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Binds an SSH key to a machine, which decides who `machine access push` lets in. Access changes are an operator decision.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -11054,6 +11056,122 @@
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": "fork-ref"
+    },
+    {
+      "path": [
+        "repo",
+        "prune"
+      ],
+      "pathKey": "repo prune",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.prune.description",
+      "label": "Classify a repository's Docker storage and reclaim it: unused images, build cache, stopped containers, and overlay2 directories no image or container references. A dry run unless --apply. --apply reclaims through the Docker API with the repository online; --apply --offline also stops the repository's Docker daemon for the run and quarantines the orphan directories. Without a ref, surveys every mounted repository on -m (dry run only)",
+      "options": [
+        {
+          "flags": "--apply",
+          "long": "apply",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.prune.applyOption",
+          "label": "Reclaim; without it the run only reports"
+        },
+        {
+          "flags": "--offline",
+          "long": "offline",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.prune.offlineOption",
+          "label": "Stop the repository's Docker daemon and quarantine orphan directories (requires --apply)"
+        },
+        {
+          "flags": "--all-images",
+          "long": "all-images",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.prune.allImagesOption",
+          "label": "Also remove tagged images no container uses"
+        },
+        {
+          "flags": "--no-trim",
+          "long": "no-trim",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.prune.noTrimOption",
+          "label": "Skip the fstrim after an apply"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.repo.machineOption",
+          "label": "Target machine name"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [

@@ -55,6 +55,8 @@ export const CMD = {
   REPO_ADMIN_AUTOSTART_DISABLE: 'repo admin autostart disable',
   REPO_RESIZE: 'repo resize',
   REPO_EXPAND: 'repo expand',
+  // Carries REPO_DOWN's guards: `--offline` stops the repository's Docker daemon, so it is as disruptive as `repo down`.
+  REPO_PRUNE: 'repo prune',
   REPO_PROMOTE: 'repo promote',
   REPO_TUNNEL: 'repo tunnel',
   REPO_EXEC: 'repo exec',

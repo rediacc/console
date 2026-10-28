@@ -7,7 +7,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "ebac25b17c8e6fb1"
+sourceHash: "b78034b10173b67a"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1799,8 +1799,28 @@ rdc repo trim [ref] [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-repo-prune"></a>
+### 6.21 prune
+
+{{t:cli.commands.repo.prune.description}}
+
+```bash
+rdc repo prune [ref] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--apply` | {{t:cli.commands.repo.prune.applyOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--offline` | {{t:cli.commands.repo.prune.offlineOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--all-images` | {{t:cli.commands.repo.prune.allImagesOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-trim` | {{t:cli.commands.repo.prune.noTrimOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-policy"></a>
-### 6.21 policy
+### 6.22 policy
 
 {{t:cli.commands.repo.policy.description}}
 
@@ -1841,7 +1861,7 @@ rdc repo policy get [ref] [options]
 
 
 <a id="cli-local-repo-push"></a>
-### 6.22 push
+### 6.23 push
 
 {{t:cli.commands.repo.push.description}}
 
@@ -1864,7 +1884,7 @@ rdc repo push <ref> [options]
 
 
 <a id="cli-local-repo-pull"></a>
-### 6.23 pull
+### 6.24 pull
 
 {{t:cli.commands.repo.pull.description}}
 
@@ -1886,7 +1906,7 @@ rdc repo pull <ref> [options]
 
 
 <a id="cli-local-repo-migrate"></a>
-### 6.24 migrate
+### 6.25 migrate
 
 {{t:cli.commands.repo.migrate.description}}
 
@@ -1908,7 +1928,7 @@ rdc repo migrate <ref> [options]
 
 
 <a id="cli-local-repo-sync"></a>
-### 6.25 sync
+### 6.26 sync
 
 {{t:cli.commands.repo.sync.description}}
 
@@ -1971,7 +1991,7 @@ rdc repo sync status <ref> [options]
 
 
 <a id="cli-local-repo-tunnel"></a>
-### 6.26 tunnel
+### 6.27 tunnel
 
 {{t:cli.commands.repo.tunnel.description}}
 
@@ -1988,7 +2008,7 @@ rdc repo tunnel <ref> [options]
 
 
 <a id="cli-local-repo-secret"></a>
-### 6.27 secret
+### 6.28 secret
 
 {{t:cli.commands.repo.secret.description}}
 
@@ -2050,7 +2070,7 @@ rdc repo secret unset <ref> [options]
 
 
 <a id="cli-local-repo-admin"></a>
-### 6.28 admin
+### 6.29 admin
 
 {{t:cli.commands.repo.admin.description}}
 
@@ -2222,7 +2242,7 @@ rdc repo admin template apply <ref> [options]
 
 
 <a id="cli-local-repo-promote"></a>
-### 6.29 promote
+### 6.30 promote
 
 {{t:cli.commands.repo.promote.description}}
 
@@ -2238,7 +2258,7 @@ rdc repo promote <fork-ref> [options]
 
 
 <a id="cli-local-repo-logs"></a>
-### 6.30 logs
+### 6.31 logs
 
 {{t:cli.commands.repo.logs.description}}
 
@@ -2256,7 +2276,7 @@ rdc repo logs <ref> [options]
 
 
 <a id="cli-local-repo-exec"></a>
-### 6.31 exec
+### 6.32 exec
 
 {{t:cli.commands.repo.exec.description}}
 
@@ -2273,7 +2293,7 @@ rdc repo exec <ref> <cmd...> [options]
 
 
 <a id="cli-local-repo-gpu"></a>
-### 6.32 gpu
+### 6.33 gpu
 
 {{t:cli.commands.repo.gpu.description}}
 

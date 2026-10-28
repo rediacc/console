@@ -14,6 +14,7 @@ import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
 import { registerRepoPolicyCommand } from './repo-policy.js';
 import { registerRepoPromoteCommand } from './repo-promote.js';
+import { registerRepoPruneCommand } from './repo-prune.js';
 import { registerRepoTrimCommand } from './repo-trim.js';
 
 /**
@@ -228,6 +229,9 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
 
   // repo trim [ref] (no ref = machine-wide, on -m)
   registerRepoTrimCommand(repo);
+
+  // repo prune [ref] (no ref = dry-run survey of every mounted repository, on -m)
+  registerRepoPruneCommand(repo);
 
   // repo policy set|get [ref] (no ref = machine-wide default, on -m)
   registerRepoPolicyCommand(repo);

@@ -147,6 +147,23 @@ PUSH_REASON_CHOICE = (
 # A sentence ABOUT push timing, not asking it: a speech verb before the timing ("should we explain when to push?") disarms it, the mention-vs-target class the CLAUSE anchor answers for the permission rule.
 PUSH_MENTION = r"(^|[^a-z])(explain|document|describe|record|note|report|mention|write)([^a-z]|$)"
 PUSH_TO_MAIN = r"^( [a-z_]+){0,2} to (origin )?main([^a-z]|$)"
+# ---- A NAMED COMMAND: `rdc machine access push` is a CLI verb, not the git act ----
+# Measured false positive, 2026-10-28 (#24fa4d53): a question asking whether the new `rdc machine access set` and `rdc machine access push` should be kept out of MCP, "the way `machine infra set|push` already are", was refused as a push-timing ask. `push` there is the last word of an rdc subcommand, and `already` after the second one read as a time word. A push (or PR) occurrence is
+# skipped when it sits inside a backtick span that does not start with `git` or `gh` (the span names some other program's command), or when it directly ends an unquoted `rdc <word>...` chain. `git push` in backticks, "push the branch" and every bare spelling of the ruling ("push now?") still count.
+NAMED_SPAN_GIT = r"^\s*(git|gh)(?![a-z_-])"
+NAMED_RDC_CHAIN = r"(^|[^a-z_-])rdc( [a-z_|-]+){1,3} $"
+
+
+def _named_command(sentence, start):
+    """True when the occurrence starting at `start` is a word of a non-git command name (see A NAMED COMMAND)."""
+    before = sentence[:start]
+    if before.count("`") % 2 == 1:
+        # The span runs from its opening backtick through the occurrence, so `gh pr create` reads its own `gh`.
+        span = sentence[before.rfind("`") + 1 :]
+        return not re.search(NAMED_SPAN_GIT, span)
+    return bool(re.search(NAMED_RDC_CHAIN, before))
+
+
 # A header that IS the action carries it, as HEADER_OBJECT does for the permission rule: "Push" over "Now, or after the batch?".
 PUSH_HEADER_TIMING = r"(^|[^a-z])(now|yet|when|whether|wait|later|until|first)([^a-z]|$)"
 
@@ -418,7 +435,7 @@ def _objects(sentence):
     for m in re.finditer(OBJECT, sentence):
         # Every OBJECT alternative contains a letter; `[^a-z]pr...` starts on the non-letter before it.
         core = m.start() + (0 if m.group(0)[0].isalpha() else 1)
-        if re.search(NOUN_MODIFIER, sentence[:core]):
+        if re.search(NOUN_MODIFIER, sentence[:core]) or _named_command(sentence, core):
             continue
         found.append((m.start(), m.end(), m.group(0)))
     return found
@@ -438,6 +455,8 @@ def _push_timing(sentence, header_object):
             else after
         )
         if re.search(NOUN_MODIFIER, before) or re.search(PUSH_NOUN_AFTER, after):
+            continue
+        if _named_command(sentence, m.start()):
             continue
         # A push to `main` is the protected-branch question, not a timing one: the permission rule answers it.
         if re.match(PUSH_TO_MAIN, after):

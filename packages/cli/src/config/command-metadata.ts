@@ -420,6 +420,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason:
       'Applies the infra block to the machine: provisions cloud resources, public DNS and TLS. It spends real money and changes what the world can reach.',
   },
+  // ★ OPERATOR-RULED (ASKED:2026-10-28T13:29Z, "Bar both from MCP"): EXCLUDE both. `access set` binds a key to a machine and `access push` writes that binding into the machine's authorized_keys, so an agent must not be able to widen or apply who can log in. `access show` stays callable.
+  'machine access set': {
+    mcpExcludeReason:
+      'Binds an SSH key to a machine, which decides who `machine access push` lets in. Access changes are an operator decision.',
+  },
+  'machine access push': {
+    mcpExcludeReason:
+      "Rewrites the machine's authorized_keys from the config's access bindings. Who can log in is an operator decision.",
+  },
   // ★ OPERATOR-RULED: the cert cache is KEY MATERIAL. `clear` DESTROYS it. Only `status`, which returns no material, is agent surface. (These are #61's trio: they were declared destructive precisely so the console would confirm them; that is not a licence to also hand them to an agent.)
   'machine infra cert pull': {
     mcpExcludeReason:
@@ -726,6 +735,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       requiredArgs: ['ref'],
       excludeOptions: ['debug', 'docker-volumes', 'machine'],
     },
+  },
+  // Same grand guard as `repo down`: `--offline` stops the repository's Docker daemon for the window. CLI-only, an agent never gets the daemon-stopping verb as an MCP tool.
+  'repo prune': {
+    grandGuard: true,
+    mcpExcludeReason:
+      "Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.",
   },
   // Size policy (auto-grow/auto-trim, rediacc/renet#76). Setting policy changes machine behavior (quota growth consent), CLI-only; reading is harmless but the JSON blob shape is CLI-oriented too.
   'repo policy': {

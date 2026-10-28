@@ -19,6 +19,7 @@ import {
   walkContractCommands,
 } from '../../../scripts/lib/command-tree-lib.js';
 import { cli } from '../../cli.js';
+import { getMcpExclusions } from '../command-metadata.js';
 import { COMMAND_PLANES, getCommandPlane, isInteractiveCommand } from '../command-planes.js';
 
 const resolver = createDescriptionResolver(loadLocale('en'));
@@ -123,8 +124,10 @@ describe('command plane coverage', () => {
     //
     // 176 -> 179, machine 99 -> 100, other 27 -> 29: `machine restart-services` rolls renet daemons on a machine, so it is a machine-plane leaf; `backup retention preview` and `backup snapshots delete` are accountServerFetch calls against the control plane, so `other` like their `retention` siblings.
     // 179 -> 188, config 50 -> 57, machine 100 -> 101, other 29 -> 30: `config access add|remove|ranges|list` and `machine access set|remove|show` edit only the config (PLAN-ssh-key-source-ranges C1); `machine access push` rewrites the machine's authorized_keys, so it is machine-plane. `subscription proxy-token` (17c55af8b) mints a token against the account server, so it is `other`; its commit did not update this record.
-    expect(COMMANDS.length).toBe(188);
-    expect(counts).toEqual({ config: 57, machine: 101, other: 30 });
+    //
+    // 188 -> 189, machine 101 -> 102: `repo prune` classifies and reclaims a repository's Docker storage through renet on the machine.
+    expect(COMMANDS.length).toBe(189);
+    expect(counts).toEqual({ config: 57, machine: 102, other: 30 });
   });
 
   it('records the interactive commands', () => {
@@ -172,7 +175,8 @@ describe('command plane coverage', () => {
     //
     // 95 -> 96: `machine restart-services` is machine-plane and non-interactive.
     // 96 -> 97: `machine access push` is machine-plane and non-interactive; the contract excludes it from proxying (an executor never rewrites its own access).
-    expect(machineNonInteractive.length).toBe(97);
+    // 97 -> 98: `repo prune` is machine-plane and non-interactive (the `--offline` confirmation is a plain prompt, skipped by -y).
+    expect(machineNonInteractive.length).toBe(98);
   });
 
   it('plane and interactive entries all point at real commands', () => {
@@ -185,5 +189,21 @@ describe('command plane coverage', () => {
         `COMMAND_PLANES entries that are not commands in the CLI tree: ${stale.join(', ')}`
       );
     }
+  });
+});
+
+/**
+ * Operator ruling ASKED:2026-10-28T13:29Z, "Bar both from MCP": `machine access set` binds a key to a machine and `machine access push` writes it into authorized_keys, so neither is an agent surface. `show` stays callable.
+ */
+describe('machine access MCP exclusion', () => {
+  const excluded = getMcpExclusions();
+
+  it('bars set and push from MCP with a reason', () => {
+    expect(excluded['machine access set']).toBeTruthy();
+    expect(excluded['machine access push']).toBeTruthy();
+  });
+
+  it('leaves show callable', () => {
+    expect(excluded).not.toHaveProperty('machine access show');
   });
 });
