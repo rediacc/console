@@ -50,6 +50,7 @@ import { getOpsManager, OpsManager } from './OpsManager';
 import { formatExecutionLog } from './outputRedaction';
 import { buildPasswordVault } from './passwordVault';
 import { feedStdin } from './stdinFeed';
+import { buildTokenVault } from './tokenVault';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
 
 const execAsync = promisify(exec);
@@ -736,7 +737,7 @@ export class RenetFunctionsTestRunner {
     add('--registries-yaml', opts.registriesYaml);
     add('--disable-components', opts.disableComponents);
     add('--node', opts.node);
-    add('--token', opts.token);
+    // opts.token never becomes a flag: testFunction routes a token-carrying call through a vault file on stdin.
     add('--ceph-pool', opts.cephPool);
     add('--ceph-cluster', opts.cephCluster);
     // datastore_* + cluster fork/migrate (identity-rewrite / node-label) params.
@@ -792,6 +793,14 @@ export class RenetFunctionsTestRunner {
       return this.runVaultJSON(
         opts.function,
         buildPasswordVault(opts, DEFAULT_NETWORK_ID),
+        opts.timeout
+      );
+    }
+    if (opts.token) {
+      // The join token rides in a vault file uploaded over stdin, never in a logged command line.
+      return this.runVaultJSON(
+        opts.function,
+        buildTokenVault(opts, DEFAULT_NETWORK_ID),
         opts.timeout
       );
     }
