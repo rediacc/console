@@ -533,10 +533,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 5,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
-        "721413cb",
         "b1ee5c7d"
       ],
       "done_sigs": [
@@ -544,7 +543,8 @@
         "3022db4c",
         "497bd19f",
         "5a66b9aa",
-        "5ac35d6c"
+        "5ac35d6c",
+        "721413cb"
       ]
     },
     "agent/plans/PLAN-config-server-key.md": {
@@ -902,11 +902,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 9,
+      "open": 2,
+      "done": 10,
       "open_sigs": [
         "4df60921",
-        "b9e9f08f",
         "eb12263c"
       ],
       "done_sigs": [
@@ -915,6 +914,7 @@
         "3cb5b506",
         "45956b61",
         "8920e043",
+        "b9e9f08f",
         "c8ad5a77",
         "d887f03c",
         "d9add0ec",
