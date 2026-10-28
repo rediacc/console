@@ -7,12 +7,12 @@ import {
   snapshotRecordViolations,
   verbIsRegistered,
 } from '../src/utils/backupStorage';
-import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import {
   announcePrerequisites,
   type PrerequisiteVerdict,
   resolvePrerequisites,
 } from '../src/utils/declaredSkip';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
 /**
@@ -558,8 +558,10 @@ test.describe
 
       const browseAtDirect = (at: string, passphrase = TEST_PASSWORD) =>
         runner.executeViaBridge(
-          `printf '%s\\n' '${passphrase}' | sudo renet backup browse-at --datastore "${DS}" ` +
-            `--repo "${REPO_GUID}" --lineage "${REPO_GUID}" --at '${at}' --password-stdin`
+          `sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${REPO_GUID}" --lineage "${REPO_GUID}" --at '${at}' --password-stdin`,
+          undefined,
+          { stdin: `${passphrase}\n` }
         );
 
       test('12. browse-at refuses a TIME by name, before any licence lookup or server call', async () => {

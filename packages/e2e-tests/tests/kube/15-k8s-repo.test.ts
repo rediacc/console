@@ -253,8 +253,11 @@ ${dataSource ?? ''}`;
     // Bring the kube repo up carrying its declared secret. Secrets ride the SAME CLI transport as the docker path: REDIACC_SECRET_<NAME> in the environment → collectEnvSecrets → SecretSet.Env → InjectSecrets → per-namespace Opaque Secret (wave3b). So the up call must carry the env var (bridge-once cannot).
     const repoUpWithSecret = async (name: string): Promise<ExecResult> =>
       w1.executeViaBridge(
-        `sudo env REDIACC_SECRET_APP_SECRET=${APP_SECRET_VALUE} renet repository up ` +
-          `--name ${name} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`
+        // The value arrives on stdin and xargs places it in the env, so it is not in the logged command text.
+        `sudo xargs -d '\n' -I{} env REDIACC_SECRET_APP_SECRET={} renet repository up ` +
+          `--name ${name} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`,
+        undefined,
+        { stdin: `${APP_SECRET_VALUE}\n` }
       );
 
     // A stopped k3s node leaves KERNEL mounts behind in TWO places: submounts UNDER the datastore mount (kubelet pod volumes) and containerd overlays mounted at /run/k3s/containerd/... whose lowerdir/upperdir point INTO the datastore (they hold it busy from OUTSIDE its path). `kube uninstall` (cgroup-kill) unwinds neither, so the datastore release is then CORRECTLY refused by the

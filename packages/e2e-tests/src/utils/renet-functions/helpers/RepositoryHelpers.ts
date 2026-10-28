@@ -8,7 +8,11 @@ import type { ExecResult } from '../types';
  */
 export class RepositoryHelpers {
   constructor(
-    private readonly executeViaBridge: (command: string, timeout?: number) => Promise<ExecResult>
+    private readonly executeViaBridge: (
+      command: string,
+      timeout?: number,
+      options?: { stdin?: string }
+    ) => Promise<ExecResult>
   ) {}
 
   /**
@@ -127,8 +131,8 @@ export class RepositoryHelpers {
     if (opts.base) cmd += ` --base "${opts.base}"`;
     if (opts.password) {
       cmd += ' --password-stdin';
-      // Pipe the credential so the three-way mount of base/ours/theirs can unlock.
-      return this.executeViaBridge(`printf '%s' '${opts.password}' | ${cmd}`);
+      // The credential rides on stdin so the three-way mount of base/ours/theirs can unlock.
+      return this.executeViaBridge(cmd, undefined, { stdin: opts.password });
     }
     return this.executeViaBridge(cmd);
   }

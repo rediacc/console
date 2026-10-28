@@ -372,8 +372,9 @@ test.describe
       expect(token, 'join token').toBeTruthy();
       const join = await w2.executeViaBridge(
         `sudo renet kube join --mount-path ${CTRL_MOUNT} --network-id ${AGT_NET} --role agent ` +
-          `--token ${token} --server https://${W1_IP}:6443 --bind-ip ${W2_IP}`,
-        540_000
+          `--token-stdin --server https://${W1_IP}:6443 --bind-ip ${W2_IP}`,
+        540_000,
+        { stdin: `${token}\n` }
       );
       expect(join.code, join.stderr).toBe(0);
       expect(await poll(() => readyNodeCount(KC).then((n) => n >= 2), 150_000)).toBe(true);
@@ -519,8 +520,9 @@ test.describe
       expect(token, 'fork join token (fresh CA)').toBeTruthy();
       const join = await w2.executeViaBridge(
         `sudo renet kube join --mount-path ${FORK_CTRL_MOUNT} --network-id ${FORK_NET} --role agent ` +
-          `--token ${token} --server https://${W1_FORK_IP}:6443 --bind-ip ${W2_IP}`,
-        540_000
+          `--token-stdin --server https://${W1_FORK_IP}:6443 --bind-ip ${W2_IP}`,
+        540_000,
+        { stdin: `${token}\n` }
       );
       expect(join.code, `fresh agent join: ${join.stderr}`).toBe(0);
       expect(await poll(() => readyNodeCount(FKC).then((n) => n >= 2), 150_000)).toBe(true);

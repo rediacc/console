@@ -237,16 +237,20 @@ test.describe
       );
       await w1.executeViaBridge(
         `sudo ${K3S} kubectl --kubeconfig ${KC} -n shop create secret generic rediacc-env ` +
-          `--from-literal=APP_SECRET=${APP_SECRET_VALUE} --dry-run=client -o yaml | ` +
-          `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`
+          `--from-file=APP_SECRET=/dev/stdin --dry-run=client -o yaml | ` +
+          `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`,
+        undefined,
+        { stdin: APP_SECRET_VALUE }
       );
       await kubectlParent(
         `-n shop label secret rediacc-env ${WK_INFRA_DOMAIN}/injected=true --overwrite`
       );
       await w1.executeViaBridge(
         `sudo ${K3S} kubectl --kubeconfig ${KC} -n shop create secret generic operator-db-pass ` +
-          `--from-literal=PASSWORD=hunter2 --dry-run=client -o yaml | ` +
-          `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`
+          `--from-file=PASSWORD=/dev/stdin --dry-run=client -o yaml | ` +
+          `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`,
+        undefined,
+        { stdin: 'hunter2' }
       );
       await w1.executeViaBridge(
         `sudo ${K3S} kubectl --kubeconfig ${KC} -n shop create configmap app-data ` +

@@ -443,8 +443,10 @@ test.describe
         // The CLI always sends the config's credential, so the wrong one is driven through the verb on the machine. Same arguments as the CLI's call; only the passphrase differs.
         const lineage = repo.guid;
         const wrong = await w1.executeViaBridge(
-          `printf '%s\\n' 'not-the-passphrase' | sudo renet backup browse-at --datastore "${DS}" ` +
-            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`
+          `sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`,
+          undefined,
+          { stdin: 'not-the-passphrase\n' }
         );
         expect(wrong.code, 'a wrong passphrase opened the listing').not.toBe(0);
         expect(wrong.code, 'a wrong passphrase must not read as NO_LISTING').not.toBe(18);

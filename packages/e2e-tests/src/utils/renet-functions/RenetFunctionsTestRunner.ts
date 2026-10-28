@@ -47,6 +47,8 @@ import { RepositoryMethods } from './methods/RepositoryMethods';
 import { SetupMethods } from './methods/SetupMethods';
 import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
+import { buildPasswordVault } from './passwordVault';
+import { feedStdin } from './stdinFeed';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
 
 const execAsync = promisify(exec);
@@ -396,7 +398,7 @@ export class RenetFunctionsTestRunner {
         maxBuffer: EXEC_MAX_BUFFER,
       });
       if (options?.stdin !== undefined) {
-        pending.child.stdin?.end(options.stdin);
+        feedStdin(pending.child.stdin, options.stdin);
       }
       const { stdout, stderr } = await pending;
       this.logExecutionResult(stdout, stderr, 0);
@@ -536,9 +538,7 @@ export class RenetFunctionsTestRunner {
     if (networkId) {
       flags += ` --network-id ${networkId}`;
     }
-    if (opts.password) {
-      flags += ` --password '${opts.password}'`;
-    }
+    // opts.password never becomes a flag: testFunction routes a password-carrying call through a vault file on stdin.
     if (opts.size) {
       flags += ` --size ${opts.size}`;
     }
@@ -781,6 +781,14 @@ export class RenetFunctionsTestRunner {
    */
   testFunction(opts: TestFunctionOptions): Promise<ExecResult> {
     // Use renet from PATH on the VM (deployed by InfrastructureManager) Always use --debug in e2e tests for full logging visibility
+    if (opts.password) {
+      // The passphrase rides in a vault file uploaded over stdin, never in a logged command line.
+      return this.runVaultJSON(
+        opts.function,
+        buildPasswordVault(opts, DEFAULT_NETWORK_ID),
+        opts.timeout
+      );
+    }
     let cmd = `renet functions once --test-mode --debug --function ${opts.function}`;
 
     cmd += this.buildCommonFlags(opts);
@@ -897,19 +905,27 @@ export class RenetFunctionsTestRunner {
    * available as CLI flags in test mode. The vault simulates what
    * middleware would construct for queue items.
    */
-  private async testFunctionWithVault(
+  private testFunctionWithVault(
     functionName: string,
     vault: VaultBuilder,
     timeout?: number
   ): Promise<ExecResult> {
-    // Write vault to temp file on TARGET VM (where renet runs)
-    const vaultPath = `/tmp/e2e-vault-${Date.now()}.json`;
-    const vaultJSON = vault.toJSON();
+    return this.runVaultJSON(functionName, vault.toJSON(), timeout);
+  }
 
-    // Use base64 encoding to avoid complex escaping through nested SSH
-    const base64JSON = Buffer.from(vaultJSON).toString('base64');
-    const uploadCmd = `echo ${base64JSON} | base64 -d > ${vaultPath}`;
-    const uploadResult = await this.executeViaBridge(uploadCmd, timeout);
+  /**
+   * Upload vault JSON to the target VM over stdin (it can hold repository credentials, so it never
+   * rides in the logged command text) and run the function against it.
+   */
+  private async runVaultJSON(
+    functionName: string,
+    vaultJSON: string,
+    timeout?: number
+  ): Promise<ExecResult> {
+    const vaultPath = `/tmp/e2e-vault-${Date.now()}.json`;
+    const uploadResult = await this.executeViaBridge(`umask 077 && cat > ${vaultPath}`, timeout, {
+      stdin: vaultJSON,
+    });
 
     if (uploadResult.code !== 0) {
       return uploadResult;
