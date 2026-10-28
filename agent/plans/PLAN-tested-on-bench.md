@@ -243,6 +243,8 @@ Worklist: pending -- filed at promotion
   - A "Live proof" section in `docs/agent-reference/plan-records.md`: the header, the LP box form, the verb, the envelope and live body, the ladder and the LP rules.
   - A "Proof tiers" paragraph in `docs/agent-reference/ci-gates.md`: one map, the VM and live tiers, and which judge reads which.
   - Accept: `npm run check:ci-plan-citations` rc=0 and the docs lint lane rc=0.
+- [ ] V10 [writer] Ledger integrity (review findings 2a2941c4.1 and 2a2941c4.5). CI judges `agent/ledgers/live-proof.jsonl` with no secrets and no network, and LP5 checks only that a row's `id` hashes to its content, so a hand-written row with a recomputed id and `verdict: PASS` would pass the gate. A pre-edit and pre-bash guard refuses any write to that ledger except the append `python3 -m rediacc_ci.ops.live_proof record --write` makes, and the recorder stamps each row with the run's log digest that `verify` re-reads from `.ci/cache/live-proof/` when present. An `LP-<target>` or `LP-none` box tick names the V6 gate's pass on the same tree.
+  - Accept: the guard's `test-*.py` rc=0 with a planted hand-appended row refused and a recorder append allowed; `pytest -q .ci/rediacc_ci/tests/test_ops_live_proof.py` rc=0 with a row whose log digest mismatches refused by `verify`.
 - [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface (proof tooling is excluded by item 2). V8 exercises the tooling end to end on both targets.
   - Accept: `npm run check:ci-plan-live-proof` rc=0 on the commit that ticks V8.
 
@@ -287,7 +289,7 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
 
 ## Operator rulings 2026-10-27 (answers to the questions below)
 
-1. Renet and every surface: the ruling to go with bench only, not edge, with the subscription command called after the EU config is copied to bench The live targets are bench (account, proxy, www, cli) and hostinger reached through the `eu-bench` rdc config (cli, renet), the EU stable store mirrored to bench. Edge is not a live-proof target; vm:check does not substitute. Every edge reference above is superseded by this ruling. Confirmed ASKED:2026-10-27T14:33Z: "Yes, bench + hostinger via eu-bench".
+1. Renet and every surface: the ruling to go with bench only, not edge, with the subscription command called after the EU config is copied to bench. The live targets are bench (account, proxy, www, cli) and hostinger reached through the `eu-bench` rdc config (cli, renet), the EU stable store mirrored to bench. Edge is not a live-proof target; vm:check does not substitute. Every edge reference above is superseded by this ruling. Confirmed ASKED:2026-10-27T14:33Z: "Yes, bench + hostinger via eu-bench".
 2. Opt-out: only with a ruling. `Live-Proof: none` passes only when it cites a closed worklist item or a committed operator quote.
 3. Backfill: fresh runs for all. No `--retro` receipts; the four closed plans each get a new live run, and V4 drops `record --retro`.
 4. Enforcement: LP1 to LP6 fail CI from the landing commit; forward-only judging keeps existing work green.
@@ -296,7 +298,7 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
 
 ## Questions for the operator (answered above)
 
-1. **Renet proof target.** Renet cannot run on bench or edge. Is a hostinger run (`./rdc.sh --config eu-edge`) mandatory for every renet-surface plan, or does a VERIFIED vm:check receipt for the same tree substitute?
+1. **Renet proof target.** Renet cannot run on bench or edge. Is a hostinger run (`./rdc.sh --config eu-edge`, moved to `eu-bench` by ruling 1) mandatory for every renet-surface plan, or does a VERIFIED vm:check receipt for the same tree substitute?
    Recommended default: hostinger is mandatory, and vm:check does not substitute, because it is a pre-push VM run, not a live one.
 2. **The `none` waiver.** May a plan whose Owns touch a deployable surface opt out with `Live-Proof: none -- <reason>` alone, or only under a resolvable operator ruling (a closed worklist item or a committed operator quote)?
    Recommended default: only under a resolvable ruling. A reason-only `none` is a silent bypass that the suppressions policy forbids.

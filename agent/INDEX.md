@@ -491,7 +491,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 185 | 0 | 7 | 25792 |
 | `agent/plans/PLAN-config-server-key.md` | approved | 74 | 0 | 6 | 10137 |
-| `agent/plans/PLAN-config-sync-hardening.md` | draft | 478 | 1 | 18 | 59500 |
+| `agent/plans/PLAN-config-sync-hardening.md` | draft | 478 | 1 | 18 | 59597 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 364 | 6 | 14 | 65434 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 89 | 0 | 18 | 33135 |
@@ -569,7 +569,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 128 | 1 | 5 | 19743 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 199 | 4 | 15 | 50012 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
-| `agent/plans/PLAN-tested-on-bench.md` | approved | 306 | 13 | 6 | 40582 |
+| `agent/plans/PLAN-tested-on-bench.md` | approved | 308 | 14 | 6 | 41500 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 416 | 1 | 9 | 38641 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
