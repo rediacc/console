@@ -62,25 +62,25 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 9 of 10 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/_done/PLAN-stop-hook-rulings-campaign.md -- 17 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-program.md -- 153 of 196 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 154 of 196 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 25 of 30 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1027 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1032 commit(s) on the branch, 1 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a9ac58251dafb4b41, worker:a2ea0cb8228b5f0a8.
-- Leased items: 4: #28f598cc (worker:a2ea0cb8228b5f0a8, d778be9d), #45787971 (worker:a9ac58251dafb4b41, d778be9d), #a150016d (worker:queue, d778be9d), #deed09fc (worker:af4fa9d302631116a, d778be9d).
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:a1f0b833bc08a3000, worker:af4fa9d302631116a, worker:af23255ad1df89eaf, worker:a4084c9ee6fb4a306.
+- Leased items: 5: #03eef97f (worker:af23255ad1df89eaf, d778be9d), #0fa80ed4 (worker:a4084c9ee6fb4a306, d778be9d), #a150016d (worker:queue, d778be9d), #deed09fc (worker:af4fa9d302631116a, d778be9d), #f82199e7 (worker:a1f0b833bc08a3000, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 2 of 31 plans done, 478 of 604 boxes done (79%).
+Promoted: 2 of 31 plans done, 479 of 604 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -114,7 +114,7 @@ Promoted: 2 of 31 plans done, 478 of 604 boxes done (79%).
 | 28 | PLAN-org-executor-connect-timeout-relocate.md | 8/12 | 4 open |
 | 29 | PLAN-backup-restore-path.md | 6/10 | 4 open |
 | 30 | PLAN-ssh-key-source-ranges.md | 9/11 | 2 open |
-| 31 | PLAN-repo-docker-storage-prune.md | 7/14 | 7 open |
+| 31 | PLAN-repo-docker-storage-prune.md | 8/14 | 6 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
