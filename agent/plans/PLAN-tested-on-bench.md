@@ -229,14 +229,16 @@ Worklist: pending -- filed at promotion
     - a planted secret in the tail refuses;
     - the row id round-trips.
     (ticked) 2026-10-28T09:31:52Z by d778be9d: 2026-10-28 by d778be9d: commit:b8f513f40; pytest test_proof_live_tier, test_ops_live_proof, test_proof_surfaces, test_proof_receipt, test_proof_vm_tier rc=0 (420 passed); 14 judges each broken once turned a test red; env reads registered in a07548252
-- [ ] V6 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py`.
+- [x] V6 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py`.
   - Rules LP1 to LP7, with every edge reference removed. LP7 also fires on a surface with an admissible target but no registry check.
   - The advisory line for `Live-Proof: none`, the gate metadata (`lane: quality-branch`, `selftest: true`), the `package.json` script `ci-plan-live-proof` and a lane-durations entry. Set `baseline_at` to the landing date.
   - Accept: `npm run ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent), and `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
-- [ ] V7 [lead] Migration.
+    (ticked) 2026-10-28T15:36:55Z by d778be9d: V6 gate in commit 39b555c05: check_plan_live_proof.py --selftest rc=0 (82 controls), test_gate_plan_live_proof.py in a 261-passed pytest run rc=0, baseline_at 2026-10-28, wired in ci-quality.yml quality-branch
+- [x] V7 [lead] Migration.
   - Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan. Re-run the item 7 census against the widened map first: renet now includes `proxy/**`, and account includes `packages/shared/src/**`.
   - Each `none` needs a ruling (ruling 2). Each zero-open-box plan gets a fresh-run LP box (ruling 3). Then regenerate `plan-boxes.json`.
   - Accept: `npm run ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings, `npm run check:ci-plan-boxes` rc=0, `npm run check:ci-plan-deps` rc=0.
+    (ticked) 2026-10-28T15:37:00Z by d778be9d: V7 migration in commit 39b555c05: 27 plans carry Live-Proof lines and 35 LP boxes; npm run check:ci-plan-live-proof rc=0 (28 required plans judged, no finding, 0 PENDING)
 - [ ] V8 [lead] Pilot: one real receipt on each target. Before running, ASK the operator to confirm a branch renet may be provisioned on hostinger (this restarts the router and daemons).
   - bench: PLAN-config-server-key's LP-bench box after its K3, with `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - hostinger: one renet-surface plan's LP-hostinger box through `renet-live` on `--config eu-bench`; candidate PLAN-hostinger-upgrade-followups T1, whose Traefik pin is renet-embedded. Run it after a VERIFIED `npm run vm:check -- --changed` on the same tree.
@@ -281,10 +283,12 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
     - `true` as a check refuses
     - the row id round-trips
     (ticked) 2026-10-28T14:59:04Z by d778be9d: superseded first-draft V4, closed with revised V5 (c5b50ba5, commit b8f513f40); test_ops_live_proof.py 37 passed: dirty tree, moved bench version, planted secret refuse
-- [ ] V5 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py` (LP1 to LP7, the advisory lines, the gate metadata block with `lane: quality-branch` and `selftest: true`), its `package.json` script `check:ci-plan-live-proof`, and a lane-durations entry. Set `baseline_at` to the landing date.
+- [x] V5 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py` (LP1 to LP7, the advisory lines, the gate metadata block with `lane: quality-branch` and `selftest: true`), its `package.json` script `check:ci-plan-live-proof`, and a lane-durations entry. Set `baseline_at` to the landing date.
   - Accept: `npm run ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent). `npm run ci-plan-live-proof` rc=0 on the landing tree, where it reports LP1 findings for the V6 set as expected until V6 lands in the same PR. `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
-- [ ] V6 [lead] Migration. Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan listed in Design item 7, then regenerate `plan-boxes.json`. Any `none` gets the waiver Question 2 settles. Retro rows only as Question 3 allows.
+    (ticked) 2026-10-28T15:36:58Z by d778be9d: superseded first-draft V5 gate, closed with the revised V6 (b80617d6) in commit 39b555c05; check:ci-plan-live-proof rc=0
+- [x] V6 [lead] Migration. Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan listed in Design item 7, then regenerate `plan-boxes.json`. Any `none` gets the waiver Question 2 settles. Retro rows only as Question 3 allows.
   - Accept: `npm run ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings; `npm run check:ci-plan-boxes` rc=0; `npm run check:ci-plan-deps` rc=0.
+    (ticked) 2026-10-28T15:37:03Z by d778be9d: superseded first-draft V6 migration, closed with the revised V7 (7acacf6d) in commit 39b555c05; check:ci-plan-live-proof rc=0
 - [ ] V7 [lead] Pilot: one real receipt end to end on bench and one on hostinger through `--config eu-bench`. Candidate: PLAN-config-server-key's live box, after its K3 provisioning. Run `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0, and `npm run ci-plan-live-proof` rc=0 on the commit that ticks it.
 - [ ] V8 [writer] Docs: a "Live proof" section in `docs/agent-reference/plan-records.md` covering the header, the LP box form, the verb, the receipt schema and the LP rules.
