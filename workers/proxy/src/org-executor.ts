@@ -38,6 +38,8 @@ const DEFAULT_REGION = 'eu';
 const RECORD_KEY = 'executor';
 const ORG_KEY = 'org';
 const OOM_KEY = 'oomAt';
+/** When an exit out of memory happened on a HEAVY container, the case with no larger size to escalate to. */
+const OOM_HEAVY_KEY = 'oomHeavyAt';
 
 /** The props the egress entrypoint receives: set only here, by Durable Object code, never by the container or the caller. The egress cross-checks `containerId === env.ORG_EXECUTOR.idFromName(orgId).toString()`. */
 export interface ExecutorEgressProps {
@@ -271,6 +273,11 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** When this org's executor last exited out of memory (epoch ms), or undefined. The Worker reads it to size the next start (src/sizing.ts `chooseSize`). */
   async oomAt(): Promise<number | undefined> {
     return await this.ctx.storage.get<number>(OOM_KEY);
+  }
+
+  /** When this org's executor last exited out of memory while HEAVY (epoch ms), or undefined. The Worker marks a request served on a heavy container with this flag as `oom-heavy`. */
+  async oomHeavyAt(): Promise<number | undefined> {
+    return await this.ctx.storage.get<number>(OOM_HEAVY_KEY);
   }
 
   /** Wait out any start or restart in progress. */
@@ -526,7 +533,9 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     try {
       if (!result.clean && isOomExit(result.error)) {
         console.warn(`proxy: org executor out of memory on ${wasSize ?? 'unknown'}`);
-        await this.ctx.storage.put(OOM_KEY, Date.now());
+        const now = Date.now();
+        await this.ctx.storage.put(OOM_KEY, now);
+        if (wasSize === 'heavy') await this.ctx.storage.put(OOM_HEAVY_KEY, now);
       }
       await this.ctx.storage.delete(RECORD_KEY);
     } catch {

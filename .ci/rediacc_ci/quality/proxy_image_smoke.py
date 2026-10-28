@@ -12,7 +12,7 @@ WHAT IT DOES. `docker build -f workers/proxy/Dockerfile .` from the repo root (t
 
   1. a fake account server, run with the image's own node, answering `/proxy/introspect`;
   2. the executor, from the image's own CMD, with REDIACC_TOKEN and REDIACC_ACCOUNT_SERVER set
-     exactly as the Worker's `executorEnvVars` sets them.
+     exactly as the Worker's `executorEnv` sets them.
 
 and asserts: the process is still running after boot; `/v1/health` answers 200; `/v1/server-info` answers 200 with `mode: "container"` and a `cliVersion` equal to the shipped renet's version; `POST /v1/session` with a caller token answers 200 after the executor introspected it with ITS OWN token; `renet version` runs inside the image. Every HTTP probe runs from inside the network (`docker exec` into the fake account's container), so nothing depends on host port publishing.
 
@@ -358,7 +358,7 @@ def observe(tag: str, suffix: str, manifest_version: str) -> dict:
             tag, "node", "-e", FAKE_ACCOUNT_JS,
             check=True,
         )  # fmt: skip
-        # The image's own CMD, with the two variables the Worker's executorEnvVars sets.
+        # The image's own CMD, with the two variables the Worker's executorEnv sets.
         _docker(
             "run", "-d", "--name", executor, "--network", net, "--network-alias", "executor",
             "-e", "REDIACC_TOKEN=" + EXECUTOR_TOKEN,

@@ -193,6 +193,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const durable = {
   gets: [] as string[],
   oomAt: undefined as number | undefined,
+  oomHeavyAt: undefined as number | undefined,
   pins: [] as [string, string][],
   answers: [] as PinAnswer[],
   pinThrows: false as boolean,
@@ -206,6 +207,7 @@ function orgExecutors(): Env['ORG_EXECUTOR'] {
       durable.gets.push(doId.name);
       return {
         oomAt: () => Promise.resolve(durable.oomAt),
+        oomHeavyAt: () => Promise.resolve(durable.oomHeavyAt),
         pin: (orgId: string, size: string) => {
           durable.pins.push([orgId, size]);
           if (durable.pinThrows) return Promise.reject(new Error('do unreachable'));
@@ -247,6 +249,7 @@ describe('backend routing by EXECUTOR_BACKEND', () => {
   beforeEach(() => {
     durable.gets = [];
     durable.oomAt = undefined;
+    durable.oomHeavyAt = undefined;
     durable.pins = [];
     durable.answers = [];
     durable.pinThrows = false;
@@ -300,6 +303,7 @@ describe('sizing on the durable backend', () => {
   beforeEach(() => {
     durable.gets = [];
     durable.oomAt = undefined;
+    durable.oomHeavyAt = undefined;
     durable.pins = [];
     durable.answers = [];
     durable.pinThrows = false;
@@ -330,6 +334,23 @@ describe('sizing on the durable backend', () => {
       ['org-a', 'heavy'],
       ['org-a', 'light'],
     ]);
+  });
+
+  it('a heavy container that ran out of memory within 7 days is served with outcome oom-heavy', async () => {
+    durable.oomAt = Date.now() - DAY_MS;
+    durable.oomHeavyAt = Date.now() - DAY_MS;
+    const { ctx, attrs } = traced();
+    const response = await worker.fetch(call('rdt_a'), durableEnv(), ctx);
+    expect(response.status).toBe(200);
+    expect(attrs['rediacc.proxy.size']).toBe('heavy');
+    expect(attrs['rediacc.proxy.outcome']).toBe('oom-heavy');
+  });
+
+  it('a heavy OOM flag older than 7 days leaves the outcome forwarded', async () => {
+    durable.oomHeavyAt = Date.now() - 8 * DAY_MS;
+    const { ctx, attrs } = traced();
+    await worker.fetch(call('rdt_high'), durableEnv(), ctx);
+    expect(attrs['rediacc.proxy.outcome']).toBe('forwarded');
   });
 
   it('with the heavy slots full, a high-tier org retries and runs light', async () => {

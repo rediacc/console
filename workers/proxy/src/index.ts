@@ -37,6 +37,7 @@ import {
   chooseSize,
   type ExecutorTier,
   heavyFullFallback,
+  oomRecent,
   type SizeChoice,
   tierOf,
 } from './sizing';
@@ -269,6 +270,7 @@ async function viaContainer(
 /** The slice of an OrgExecutor stub the Worker calls. */
 interface OrgExecutorStub {
   oomAt(): Promise<number | undefined>;
+  oomHeavyAt(): Promise<number | undefined>;
   pin(orgId: string, size: SizeChoice['size']): Promise<PinAnswer>;
   fetch(request: Request): Promise<Response>;
 }
@@ -293,6 +295,16 @@ async function pinSized(
   return await stub.pin(tenant.orgId, fallback);
 }
 
+/** Whether the org's heavy container ran out of memory within OOM_WINDOW_MS: nothing larger exists, so the request is still served and only the outcome says so. A Durable Object that cannot answer is not an OOM. */
+async function heavyOomRecent(stub: OrgExecutorStub, size: SizeChoice['size']): Promise<boolean> {
+  if (size !== 'heavy') return false;
+  try {
+    return oomRecent(await stub.oomHeavyAt(), Date.now());
+  } catch {
+    return false;
+  }
+}
+
 /** The `durable_object` backend: the org's OrgExecutor, sized, pinned and forwarded to. Every refusal is the coordinator's or the Durable Object's code, never a guess. */
 async function viaOrgExecutor(
   request: Request,
@@ -312,7 +324,10 @@ async function viaOrgExecutor(
   if (!answer.ok) return startRefused(answer.code, span);
   // The size the container runs on, which a running container keeps from its start.
   span?.setAttribute('rediacc.proxy.size', answer.size);
-  span?.setAttribute('rediacc.proxy.outcome', 'forwarded');
+  span?.setAttribute(
+    'rediacc.proxy.outcome',
+    (await heavyOomRecent(stub, answer.size)) ? 'oom-heavy' : 'forwarded'
+  );
   return stub.fetch(request);
 }
 

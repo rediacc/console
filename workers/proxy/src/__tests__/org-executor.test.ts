@@ -687,6 +687,9 @@ describe('recovery after a restart', () => {
     await flush();
     expect(h.capacity.release).toHaveBeenCalledWith(ORG);
     expect(h.storage.get('oomAt')).toBe(T0);
+    // The recovered record is heavy, so this OOM is also the heavy one.
+    expect(h.storage.get('oomHeavyAt')).toBe(T0);
+    expect(await h.executor.oomHeavyAt()).toBe(T0);
   });
 
   it('destroys a running container whose lease is refused after the restart', async () => {
@@ -721,6 +724,25 @@ describe('recovery after a restart', () => {
 });
 
 describe('exits', () => {
+  it('an OOM exit on a light container flags oomAt but not oomHeavyAt', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 'light');
+    h.container.exit(Object.assign(new Error('killed'), { exitCode: 137 }));
+    await flush();
+    expect(h.storage.has('oomAt')).toBe(true);
+    expect(h.storage.has('oomHeavyAt')).toBe(false);
+  });
+
+  it('an OOM exit on a heavy container also sets oomHeavyAt', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 'heavy');
+    h.container.exit(Object.assign(new Error('killed'), { exitCode: 137 }));
+    await flush();
+    expect(h.storage.has('oomHeavyAt')).toBe(true);
+  });
+
   it('a clean exit releases the slot, and the next pin starts again', async () => {
     const h = harness();
     await h.ready;
@@ -729,6 +751,7 @@ describe('exits', () => {
     await flush();
     expect(h.capacity.release).toHaveBeenCalledWith(ORG);
     expect(h.storage.has('oomAt')).toBe(false);
+    expect(h.storage.has('oomHeavyAt')).toBe(false);
     expect(await h.executor.pin(ORG, 'light')).toMatchObject({ ok: true });
     expect(h.container.starts).toHaveLength(2);
   });
