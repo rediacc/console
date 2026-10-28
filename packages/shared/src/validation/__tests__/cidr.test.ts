@@ -11,7 +11,7 @@ const OBSERVED = [
   '104.28.156.1',
   '2a09:bac1:5540:28::3e4:28',
   '2a09:bac5:4e3e:270f::3e4:28',
-];
+] as const;
 
 function issues(value: unknown): string[] {
   const result = SourceRangesSchema.safeParse(value);

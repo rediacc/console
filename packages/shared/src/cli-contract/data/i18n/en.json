@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "Config {{configId}} in store {{storeId}} failed its integrity check: the copy the server returned was not sealed for this config, team and version, or it was encrypted with a different key than your slot holds. Nothing was changed on this device. If the key differs, ask an admin to re-share the store key with this device from the portal (Config Storage > key slots).",
   "commands.config.remote.legacyEnvelope": "Config {{configId}} is still stored in the old envelope format. The next change pushed from this device upgrades it.",
   "commands.config.remote.masterPassword.change.description": "Change the master password: re-wrap the config key from this device's enrollment under a new password slot",
+  "commands.config.remote.masterPassword.change.descriptionShort": "Change the master password",
   "commands.config.remote.masterPassword.change.emailPrompt": "Account email",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "Account password",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "Repeat the new master password",

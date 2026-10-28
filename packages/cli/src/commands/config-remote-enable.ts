@@ -31,6 +31,7 @@ import {
 import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
+import { omitKey } from '../utils/omit-key.js';
 import { askChoice, askConfirm } from '../utils/prompt.js';
 import type { DeviceCredentials } from './config-remote-handoff.js';
 
@@ -430,7 +431,7 @@ async function pickEntry(entries: RemoteConfigEntry[]): Promise<RemoteConfigEntr
 /** Re-address a pointer at an existing store entry. */
 function pointerFor(pointer: RemoteConfig, entry: RemoteConfigEntry): RemoteConfig {
   // The team is exactly the entry's: a stale team from the handoff would scope the pull to a team the entry is not in.
-  const { teamId: _stale, ...withoutTeam } = pointer;
+  const withoutTeam = omitKey(pointer, 'teamId');
   return {
     ...withoutTeam,
     configId: entry.configId,

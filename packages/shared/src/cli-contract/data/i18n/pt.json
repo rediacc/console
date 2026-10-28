@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "A configuração {{configId}} no armazenamento {{storeId}} falhou na verificação de integridade: a cópia devolvida pelo servidor não foi selada para esta configuração, equipe e versão, ou foi cifrada com uma chave diferente da do seu slot. Nada foi alterado neste dispositivo. Se a chave for diferente, peça a um administrador que volte a compartilhar a chave do armazenamento com este dispositivo pelo portal (Armazenamento de configuração > slots de chave).",
   "commands.config.remote.legacyEnvelope": "A configuração {{configId}} ainda está guardada no formato de envelope antigo. A próxima alteração enviada por este dispositivo vai atualizá-la.",
   "commands.config.remote.masterPassword.change.description": "Alterar a password mestra: volta a embrulhar a chave da config a partir do registo deste dispositivo num novo password slot",
+  "commands.config.remote.masterPassword.change.descriptionShort": "Alterar a password mestra",
   "commands.config.remote.masterPassword.change.emailPrompt": "E-mail da conta",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "Password da conta",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "Repita a nova password mestra",

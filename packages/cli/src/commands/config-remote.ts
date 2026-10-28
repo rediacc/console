@@ -531,6 +531,7 @@ export function registerRemoteCommands(configCommand: Command): void {
     .command('master-password')
     .description(t('commands.config.remote.masterPassword.description'))
     .command('change')
+    .summary(t('commands.config.remote.masterPassword.change.descriptionShort'))
     .description(t('commands.config.remote.masterPassword.change.description'))
     .option(
       '--new-master-password-stdin',

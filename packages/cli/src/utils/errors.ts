@@ -43,7 +43,7 @@ type NamedCliError = CliError & { errorCode?: string };
 /**
  * A DispatchExit that keeps the named code and guidance of the failure that ended the command. The served result is built from it, so a command that opens its own SSH connection reports the same errorCode an executor.execute failure does. Still a DispatchExit, so every instanceof check on it holds.
  */
-export class DispatchFailure extends DispatchExit {
+class DispatchFailure extends DispatchExit {
   constructor(
     code: number,
     readonly errorCode: string,

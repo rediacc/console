@@ -39,6 +39,14 @@ import {
   type RenetInspectResult,
 } from './renet-inspect.js';
 import { withLocalProvisionLock } from './renet-provision-lock.js';
+import type {
+  CacheEntry,
+  InstallResult,
+  LocalHashMemo,
+  ProvisionContext,
+  ProvisionOptions,
+  ProvisionResult,
+} from './renet-provisioner-types.js';
 import { buildSlotPruneStep } from './renet-slot-prune.js';
 
 /** Root directory for versioned renet installs on remote machines */
@@ -90,77 +98,6 @@ export function buildRouterRefreshCommand(remoteRenetPath: string): string {
     ` && sudo ${shellQuote(remoteRenetPath)} proxy install >/dev/null 2>&1` +
     ` && sudo systemctl restart ${ROUTER_SERVICE} && echo RESTARTED || true`
   );
-}
-
-/** Result of a provisioning operation */
-interface ProvisionResult {
-  /** Whether provisioning succeeded */
-  success: boolean;
-  /** Action taken: uploaded new binary, verified existing, or failed */
-  action: 'uploaded' | 'verified' | 'failed' | 'version_rejected';
-  /** Detected architecture (undefined if detection failed) */
-  arch?: RenetArch;
-  /** Error message if failed */
-  error?: string;
-  /** Whether running services were restarted after binary update */
-  servicesRestarted?: boolean;
-  /**
-   * The router refresh this provision owed and did not run because the caller
-   * asked to defer it (`deferRouterRefresh`); the caller runs
-   * {@link RenetProvisionerService.refreshRouter} once its own work is done.
-   */
-  routerRefreshDue?: boolean;
-  /** Exact remote binary path that was verified or installed */
-  remotePath: string;
-}
-
-/** Cache entry for a provisioned host */
-interface CacheEntry {
-  hash: string;
-  arch: RenetArch;
-  provisionedAt: number;
-}
-
-/** Memoized SHA256 of a local binary, keyed by file identity */
-interface LocalHashMemo {
-  mtimeMs: number;
-  size: number;
-  hash: string;
-}
-
-interface InstallResult {
-  binaryUpdated: boolean;
-  currentUpdated: boolean;
-}
-
-/** Options for {@link RenetProvisionerService.provision}. */
-interface ProvisionOptions {
-  localBinaryPath?: string;
-  /** Restart running services after binary update. Default: false. */
-  restartServices?: boolean;
-  /**
-   * With `restartServices`, report the owed router refresh as
-   * `routerRefreshDue` instead of running it. The executor defers it past the
-   * runtime converge pass, so the router switches to the new socket layout only
-   * after the repo daemons moved there (agent/plans/PLAN-renet-runtime-converge.md,
-   * decision 2).
-   */
-  deferRouterRefresh?: boolean;
-  debug?: boolean;
-  /**
-   * Called only when the remote hash differs from the local one, immediately
-   * before the binary is staged. A throw aborts the provision before anything
-   * reaches the machine.
-   */
-  uploadGuard?: () => void | Promise<void>;
-}
-
-interface ProvisionContext {
-  arch: RenetArch;
-  binary: Buffer;
-  localHash: string;
-  cacheKey: string;
-  remoteInstallPath: string;
 }
 
 /**

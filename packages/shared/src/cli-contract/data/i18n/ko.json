@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "스토어 {{storeId}}의 구성 {{configId}}이(가) 무결성 검사를 통과하지 못했습니다. 서버가 돌려준 사본이 이 구성·팀·버전용으로 봉인되지 않았거나, 슬롯에 있는 키와 다른 키로 암호화되었습니다. 이 기기에서는 아무것도 변경되지 않았습니다. 키가 다르면 관리자에게 포털(구성 저장소 > 키 슬롯)에서 이 기기에 스토어 키를 다시 공유해 달라고 요청하세요.",
   "commands.config.remote.legacyEnvelope": "구성 {{configId}}이(가) 아직 이전 봉투 형식으로 저장되어 있습니다. 이 기기에서 다음 변경을 보내면 새 형식으로 업그레이드됩니다.",
   "commands.config.remote.masterPassword.change.description": "마스터 비밀번호 변경: 이 기기의 등록 정보에서 설정 키를 꺼내 새 비밀번호 슬롯으로 다시 감쌉니다",
+  "commands.config.remote.masterPassword.change.descriptionShort": "마스터 비밀번호 변경",
   "commands.config.remote.masterPassword.change.emailPrompt": "계정 이메일",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "계정 비밀번호",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "새 마스터 비밀번호 다시 입력",

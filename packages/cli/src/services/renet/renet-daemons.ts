@@ -65,7 +65,7 @@ export async function probeStaleRenetProcesses(
 }
 
 /** One container of a repository after its supervisor restart. */
-export interface RepoContainerHealth {
+interface RepoContainerHealth {
   id: string;
   name: string;
   /** docker state: running, exited, ..., or `missing` when the container is gone. */
@@ -78,7 +78,7 @@ export interface RepoContainerHealth {
  * A repository after its `rediacc-docker-N` supervisor restart: the containers that ran before it,
  * started again by renet, and whether each is running (and healthy where it has a healthcheck).
  */
-export interface RepoHealth {
+interface RepoHealth {
   unit: string;
   networkId: number;
   healthy: boolean;

@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "Gérer le mot de passe maître de ce membre (le password slot)",
           "change": {
+            "descriptionShort": "Changer le mot de passe maître",
             "description": "Changer le mot de passe maître : réencapsuler la clé de configuration depuis l'enrôlement de cet appareil sous un nouveau password slot",
             "emailPrompt": "E-mail du compte",
             "loginPasswordPrompt": "Mot de passe du compte",

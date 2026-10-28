@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "فشل فحص سلامة الإعداد {{configId}} في المخزن {{storeId}}: النسخة التي أعادها الخادم لم تُختم لهذا الإعداد والفريق والإصدار، أو شُفّرت بمفتاح غير المفتاح الذي تحمله خانتك. لم يتغير شيء على هذا الجهاز. إذا كان المفتاح مختلفًا، فاطلب من المسؤول إعادة مشاركة مفتاح المخزن مع هذا الجهاز من البوابة (تخزين الإعدادات > خانات المفاتيح).",
   "commands.config.remote.legacyEnvelope": "لا يزال الإعداد {{configId}} محفوظًا بتنسيق الغلاف القديم. سيرقّيه التغيير التالي الذي يرسله هذا الجهاز.",
   "commands.config.remote.masterPassword.change.description": "تغيير كلمة المرور الرئيسية: إعادة تغليف مفتاح الإعدادات من تسجيل هذا الجهاز ضمن فتحة كلمة مرور جديدة",
+  "commands.config.remote.masterPassword.change.descriptionShort": "تغيير كلمة المرور الرئيسية",
   "commands.config.remote.masterPassword.change.emailPrompt": "البريد الإلكتروني للحساب",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "كلمة مرور الحساب",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "أعد إدخال كلمة المرور الرئيسية الجديدة",

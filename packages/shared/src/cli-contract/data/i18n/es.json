@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "La configuración {{configId}} del almacén {{storeId}} no superó la comprobación de integridad: la copia que devolvió el servidor no se selló para esta configuración, equipo y versión, o se cifró con una clave distinta de la de tu ranura. No se cambió nada en este dispositivo. Si la clave es distinta, pide a un administrador que vuelva a compartir la clave del almacén con este dispositivo desde el portal (Almacenamiento de configuración > ranuras de clave).",
   "commands.config.remote.legacyEnvelope": "La configuración {{configId}} sigue guardada en el formato de sobre antiguo. El próximo cambio que envíe este dispositivo la actualizará.",
   "commands.config.remote.masterPassword.change.description": "Cambia la contraseña maestra: vuelve a envolver la clave de configuración del registro de este dispositivo bajo un nuevo password slot",
+  "commands.config.remote.masterPassword.change.descriptionShort": "Cambia la contraseña maestra",
   "commands.config.remote.masterPassword.change.emailPrompt": "Correo de la cuenta",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "Contraseña de la cuenta",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "Repite la nueva contraseña maestra",

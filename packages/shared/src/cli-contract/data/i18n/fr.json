@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "La configuration {{configId}} du magasin {{storeId}} a échoué au contrôle d'intégrité : la copie renvoyée par le serveur n'a pas été scellée pour cette configuration, cette équipe et cette version, ou elle a été chiffrée avec une autre clé que celle de votre emplacement. Rien n'a été modifié sur cet appareil. Si la clé diffère, demandez à un administrateur de repartager la clé du magasin avec cet appareil depuis le portail (Stockage de configuration > emplacements de clé).",
   "commands.config.remote.legacyEnvelope": "La configuration {{configId}} est encore stockée dans l'ancien format d'enveloppe. La prochaine modification envoyée depuis cet appareil la mettra à niveau.",
   "commands.config.remote.masterPassword.change.description": "Changer le mot de passe maître : réencapsuler la clé de configuration depuis l'enrôlement de cet appareil sous un nouveau password slot",
+  "commands.config.remote.masterPassword.change.descriptionShort": "Changer le mot de passe maître",
   "commands.config.remote.masterPassword.change.emailPrompt": "E-mail du compte",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "Mot de passe du compte",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "Répétez le nouveau mot de passe maître",

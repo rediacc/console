@@ -11,7 +11,7 @@
 
 export const EGRESS_UNREACHABLE_CODE = 'EGRESS_UNREACHABLE';
 export const EGRESS_REPORT_URL = 'http://account.internal/executor/v1/egress-unreachable';
-export const EGRESS_REPORT_DEADLINE_MS = 5000;
+const EGRESS_REPORT_DEADLINE_MS = 5000;
 
 export interface EgressUnreachableAnswer {
   count: number;

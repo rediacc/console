@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "ストア {{storeId}} の構成 {{configId}} は整合性チェックに失敗しました。サーバーが返したコピーは、この構成・チーム・バージョン向けに封印されたものではないか、スロットが保持する鍵とは別の鍵で暗号化されています。このデバイスでは何も変更されていません。鍵が異なる場合は、ポータルの「構成ストレージ > キースロット」から、このデバイスにストアの鍵を再共有するよう管理者に依頼してください。",
   "commands.config.remote.legacyEnvelope": "構成 {{configId}} はまだ古いエンベロープ形式で保存されています。このデバイスから次に変更を送信すると、新しい形式に更新されます。",
   "commands.config.remote.masterPassword.change.description": "マスターパスワードを変更: このデバイスの登録情報から設定キーを取り出し、新しいパスワードスロットで包み直す",
+  "commands.config.remote.masterPassword.change.descriptionShort": "マスターパスワードを変更する",
   "commands.config.remote.masterPassword.change.emailPrompt": "アカウントのメールアドレス",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "アカウントのパスワード",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "新しいマスターパスワードをもう一度入力",

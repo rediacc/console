@@ -6,6 +6,7 @@
  * `enable --master-password` runs) and unwraps it with PBKDF2 + HKDF + AES-GCM. Only I/O is mocked:
  * fetch (the cookie session), accountServerFetch (password-enroll), the adapter's enrollment.
  */
+import type { SlotKdfParams } from '@rediacc/shared/config-crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const STORE_ID = '11111111-1111-4111-8111-111111111111';
@@ -290,7 +291,7 @@ describe('changeMasterPassword', () => {
       'PUT /configs/slots/password',
     ]);
     // The slot the server holds opens with the new password, through enable --master-password's own read.
-    const slot = state.slot as { kdfParams: crypto.SlotKdfParams; wrappedCek: string };
+    const slot = state.slot as { kdfParams: SlotKdfParams; wrappedCek: string };
     const secret = await crypto.derivePasswordSlotSecret(NEW_PASSWORD, slot.kdfParams);
     const back = await crypto.unwrapCekForSlot(
       slot.wrappedCek,

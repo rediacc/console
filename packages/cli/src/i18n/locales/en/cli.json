@@ -386,6 +386,7 @@
         "masterPassword": {
           "description": "Manage this member's master password (the password key slot)",
           "change": {
+            "descriptionShort": "Change the master password",
             "description": "Change the master password: re-wrap the config key from this device's enrollment under a new password slot",
             "optionNewMasterPasswordStdin": "Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)",
             "newPasswordMissing": "The new master password is needed: pipe it with --new-master-password-stdin or set {{env}}.",

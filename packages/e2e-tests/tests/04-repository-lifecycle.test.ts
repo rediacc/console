@@ -397,7 +397,7 @@ test.describe('Repository Error Handling @bridge', () => {
  * self-installs (it arms from the daemon's StartForeground, not plain machine
  * setup — see private/renet CLAUDE.md "Autostart & auto-recovery").
  */
-const DOCKER_PRUNE_CLASSES = ['A', 'B', 'C', 'D', 'G', 'E', 'F1', 'F2', 'L', 'Q'];
+const DOCKER_PRUNE_CLASSES = ['A', 'B', 'C', 'D', 'G', 'E', 'F1', 'F2', 'L', 'Q'] as const;
 
 interface DockerPruneRecord {
   network_id: number;

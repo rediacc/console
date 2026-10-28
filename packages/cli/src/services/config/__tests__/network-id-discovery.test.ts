@@ -202,8 +202,13 @@ describe('network-ID conflicts', () => {
     expect(allocate).toHaveBeenCalledWith([2816, 2880]);
   });
 
-  it('runWithNetworkIdRetry retries exactly once on a refusal, with the new ID', async () => {
-    const { runWithNetworkIdRetry } = await import('../network-id-discovery.js');
+  function refusal(networkId: number): string {
+    return JSON.stringify({ code: 'network_id_in_use', message: 'held', network_id: networkId });
+  }
+
+  async function withRepoState(
+    body: (setRepositories: ReturnType<typeof vi.fn>) => Promise<void>
+  ): Promise<void> {
     const { configService } = await import('../config-resources.js');
     const keySpy = vi.spyOn(configService, 'getRepositoryKey').mockResolvedValue('z');
     const setRepositories = vi.fn();
@@ -211,20 +216,73 @@ describe('network-ID conflicts', () => {
       getRepositories: () => ({ z: { repositoryGuid: GUID, networkId: 2880 } }),
       setRepositories,
     } as never);
-    const refused = { success: false, exitCode: 17, durationMs: 1, stderr: inUse };
-    const run = vi.fn().mockResolvedValueOnce(refused).mockResolvedValueOnce(refused);
-    const result = await runWithNetworkIdRetry({
-      repoKey: 'z',
-      target: { machine: 'm' },
-      networkId: 2880,
-      run,
-      allocate: () => Promise.resolve(2944),
+    try {
+      await body(setRepositories);
+    } finally {
+      keySpy.mockRestore();
+      stateSpy.mockRestore();
+    }
+  }
+
+  // The allocator hands out the first multiple of 64 above everything in the floor.
+  const allocateAbove = (floor: number[]): Promise<number> =>
+    Promise.resolve(Math.max(0, ...floor) + 64);
+
+  it('runWithNetworkIdRetry moves past every refused ID and succeeds on the third', async () => {
+    const { runWithNetworkIdRetry } = await import('../network-id-discovery.js');
+    await withRepoState(async (setRepositories) => {
+      const refuse = (id: number) => ({
+        success: false,
+        exitCode: 17,
+        durationMs: 1,
+        stderr: refusal(id),
+      });
+      const run = vi
+        .fn()
+        .mockResolvedValueOnce(refuse(2816))
+        .mockResolvedValueOnce(refuse(2880))
+        .mockResolvedValueOnce({ success: true, exitCode: 0, durationMs: 1 });
+      const result = await runWithNetworkIdRetry({
+        repoKey: 'z',
+        target: { machine: 'm' },
+        networkId: 2816,
+        run,
+        allocate: allocateAbove,
+      });
+      expect(run.mock.calls.map((c) => c[0])).toEqual([2816, 2880, 2944]);
+      expect(setRepositories).toHaveBeenLastCalledWith({
+        z: { repositoryGuid: GUID, networkId: 2944 },
+      });
+      expect(result.success).toBe(true);
     });
-    expect(run.mock.calls.map((c) => c[0])).toEqual([2880, 2944]);
-    expect(setRepositories).toHaveBeenCalledWith({ z: { repositoryGuid: GUID, networkId: 2944 } });
-    expect(result.success).toBe(false);
-    keySpy.mockRestore();
-    stateSpy.mockRestore();
+  });
+
+  it('runWithNetworkIdRetry stops at the attempt cap and returns the last refusal', async () => {
+    const { runWithNetworkIdRetry, MAX_NETWORK_ID_ATTEMPTS } = await import(
+      '../network-id-discovery.js'
+    );
+    await withRepoState(async () => {
+      let next = 2816;
+      const run = vi.fn().mockImplementation(() => {
+        const id = next;
+        next += 64;
+        return Promise.resolve({
+          success: false,
+          exitCode: 17,
+          durationMs: 1,
+          stderr: refusal(id),
+        });
+      });
+      const result = await runWithNetworkIdRetry({
+        repoKey: 'z',
+        target: { machine: 'm' },
+        networkId: 2816,
+        run,
+        allocate: allocateAbove,
+      });
+      expect(run).toHaveBeenCalledTimes(MAX_NETWORK_ID_ATTEMPTS);
+      expect(result.success).toBe(false);
+    });
   });
 
   it('runWithNetworkIdRetry does not retry an unrelated failure', async () => {

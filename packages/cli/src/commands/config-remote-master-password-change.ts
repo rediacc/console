@@ -27,9 +27,9 @@ import { askInput, askPassword } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 
 /** The new master password, when not piped on stdin. Never argv. */
-export const NEW_STORE_MASTER_PASSWORD_ENV = 'REDIACC_NEW_STORE_MASTER_PASSWORD';
+const NEW_STORE_MASTER_PASSWORD_ENV = 'REDIACC_NEW_STORE_MASTER_PASSWORD';
 /** A TOTP code from a later 30-second step than REDIACC_LOGIN_TOTP, spent on the re-authentication. */
-export const LOGIN_TOTP_NEXT_ENV = 'REDIACC_LOGIN_TOTP_NEXT';
+const LOGIN_TOTP_NEXT_ENV = 'REDIACC_LOGIN_TOTP_NEXT';
 /** The portal's floor (ConfigKeySlots addPasswordSlot). */
 export const MIN_MASTER_PASSWORD_LENGTH = 8;
 
@@ -87,7 +87,7 @@ export async function resolveNewMasterPassword(fromStdin: boolean): Promise<stri
 }
 
 /** Account sign-in input: env first, a TTY prompt otherwise; a missing field is named, never guessed. */
-export async function resolveLoginInput(): Promise<PasswordLoginInput> {
+async function resolveLoginInput(): Promise<PasswordLoginInput> {
   const missing = (field: string) =>
     new ValidationError(t('commands.subscription.login.passwordMissing', { field }));
 
@@ -151,7 +151,7 @@ interface ErrorBody {
 }
 
 /** Elevate the cookie session (skipped while the account is already elevated). */
-export async function elevateSession(
+async function elevateSession(
   serverUrl: string,
   cookie: string,
   loginTotp: string | undefined

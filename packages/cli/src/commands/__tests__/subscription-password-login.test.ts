@@ -21,7 +21,7 @@ const SERVER = 'https://account.example.com';
 const PASSWORD = 'pw-SECRET-value-1';
 const CODE = '987654';
 const COOKIE = 'access_token=sess-abc';
-const ENV_KEYS = ['REDIACC_LOGIN_EMAIL', 'REDIACC_LOGIN_PASSWORD', 'REDIACC_LOGIN_TOTP'];
+const ENV_KEYS = ['REDIACC_LOGIN_EMAIL', 'REDIACC_LOGIN_PASSWORD', 'REDIACC_LOGIN_TOTP'] as const;
 
 function reply(body: unknown, status = 200, cookie?: string): Response {
   const headers = new Headers({ 'Content-Type': 'application/json' });

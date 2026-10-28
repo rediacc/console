@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "存储 {{storeId}} 中的配置 {{configId}} 未通过完整性校验：服务器返回的副本不是为此配置、团队和版本封装的，或者使用了与你的槽位所持密钥不同的密钥加密。此设备上未做任何更改。如果密钥不同，请让管理员在门户中（配置存储 > 密钥槽）将存储密钥重新共享给此设备。",
   "commands.config.remote.legacyEnvelope": "配置 {{configId}} 仍以旧的信封格式存储。此设备下一次推送更改时会将其升级。",
   "commands.config.remote.masterPassword.change.description": "更改主密码：将配置密钥从此设备的注册信息重新封装到新的密码槽位",
+  "commands.config.remote.masterPassword.change.descriptionShort": "更改主密码",
   "commands.config.remote.masterPassword.change.emailPrompt": "账户邮箱",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "账户密码",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "再次输入新的主密码",

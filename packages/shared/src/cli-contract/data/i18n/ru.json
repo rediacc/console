@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "Конфигурация {{configId}} в хранилище {{storeId}} не прошла проверку целостности: копия, которую вернул сервер, запечатана не для этой конфигурации, команды и версии, либо зашифрована другим ключом, чем тот, что хранит ваш слот. На этом устройстве ничего не изменено. Если ключ другой, попросите администратора заново предоставить ключ хранилища этому устройству через портал (Хранилище конфигураций > слоты ключей).",
   "commands.config.remote.legacyEnvelope": "Конфигурация {{configId}} всё ещё хранится в старом формате конверта. Следующее изменение, отправленное с этого устройства, обновит её.",
   "commands.config.remote.masterPassword.change.description": "Сменить мастер-пароль: заново упаковать ключ конфигурации из регистрации этого устройства в новый password slot",
+  "commands.config.remote.masterPassword.change.descriptionShort": "Сменить мастер-пароль",
   "commands.config.remote.masterPassword.change.emailPrompt": "Email аккаунта",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "Пароль аккаунта",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "Повторите новый мастер-пароль",

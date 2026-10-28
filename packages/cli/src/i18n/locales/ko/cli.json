@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "이 멤버의 마스터 비밀번호(비밀번호 슬롯) 관리",
           "change": {
+            "descriptionShort": "마스터 비밀번호 변경",
             "description": "마스터 비밀번호 변경: 이 기기의 등록 정보에서 설정 키를 꺼내 새 비밀번호 슬롯으로 다시 감쌉니다",
             "emailPrompt": "계정 이메일",
             "loginPasswordPrompt": "계정 비밀번호",

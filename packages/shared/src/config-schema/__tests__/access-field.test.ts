@@ -29,22 +29,23 @@ const KEY_EC =
   'ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKS5JSbceD1LDMpT/UfMWbZtMcYJm0y7URdoInpIEC1iujou1OXHlYVLheg5vzyAtv3mLhCzkXbiFQvbYbZQl7Y= ec';
 
 function fullAccess() {
+  const hosted: { ipv4: string[]; ipv6: string[] } = {
+    ipv4: [...HOSTED_EXECUTOR_SOURCE_RANGES.ipv4],
+    ipv6: [...HOSTED_EXECUTOR_SOURCE_RANGES.ipv6],
+  };
   return {
     sourceRanges: { ipv4: ['104.28.0.0/16'], ipv6: ['2a09:bac0::/29'] },
     keys: {
       'console-probe': {
         publicKey: KEY_A,
         restrict: true,
-        sourceRanges: structuredClone(HOSTED_EXECUTOR_SOURCE_RANGES) as {
-          ipv4: string[];
-          ipv6: string[];
-        },
+        sourceRanges: hosted,
         machines: {
-          hostinger: true,
+          hostinger: true as const,
           'edge-box': { sourceRanges: { ipv6: ['2a09:bac0::/29'] } },
         },
       },
-      'team-ops': { publicKey: KEY_EC, restrict: false, machines: { hostinger: true } },
+      'team-ops': { publicKey: KEY_EC, restrict: false, machines: { hostinger: true as const } },
     },
   };
 }

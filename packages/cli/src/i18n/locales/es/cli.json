@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "Gestiona la contraseña maestra de este miembro (el password slot)",
           "change": {
+            "descriptionShort": "Cambia la contraseña maestra",
             "description": "Cambia la contraseña maestra: vuelve a envolver la clave de configuración del registro de este dispositivo bajo un nuevo password slot",
             "emailPrompt": "Correo de la cuenta",
             "loginPasswordPrompt": "Contraseña de la cuenta",

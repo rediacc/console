@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "管理该成员的主密码（密码槽位）",
           "change": {
+            "descriptionShort": "更改主密码",
             "description": "更改主密码：将配置密钥从此设备的注册信息重新封装到新的密码槽位",
             "emailPrompt": "账户邮箱",
             "loginPasswordPrompt": "账户密码",

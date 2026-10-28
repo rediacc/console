@@ -190,7 +190,7 @@ const OpenSshPublicKeySchema = z.string().superRefine((value, ctx) => {
   if (parsed.comment?.includes(ACCESS_KEY_MARKER_PREFIX)) {
     ctx.addIssue({
       code: 'custom',
-      message: `publicKey comment must not contain ${ACCESS_KEY_MARKER_PREFIX}: rdc writes that marker itself`,
+      message: `publicKey comment must not contain ${ACCESS_KEY_MARKER_PREFIX}: the marker is written by the tool alone`,
     });
   }
 });

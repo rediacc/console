@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "La configurazione {{configId}} nell'archivio {{storeId}} non ha superato il controllo di integrità: la copia restituita dal server non è stata sigillata per questa configurazione, questo team e questa versione, oppure è stata cifrata con una chiave diversa da quella del tuo slot. Su questo dispositivo non è stato modificato nulla. Se la chiave è diversa, chiedi a un amministratore di condividere di nuovo la chiave dell'archivio con questo dispositivo dal portale (Archivio configurazioni > slot delle chiavi).",
   "commands.config.remote.legacyEnvelope": "La configurazione {{configId}} è ancora salvata nel vecchio formato di busta. La prossima modifica inviata da questo dispositivo la aggiornerà.",
   "commands.config.remote.masterPassword.change.description": "Cambia la password master: riavvolge la chiave della config dall'enrollment di questo dispositivo sotto un nuovo password slot",
+  "commands.config.remote.masterPassword.change.descriptionShort": "Cambia la password master",
   "commands.config.remote.masterPassword.change.emailPrompt": "Email dell'account",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "Password dell'account",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "Ripeti la nuova password master",

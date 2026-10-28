@@ -32,7 +32,7 @@ import {
 import { machineConnections } from './machine-connection.js';
 
 /** Exit code of the compare-and-swap exec when the live file no longer matches what was read. */
-export const ACCESS_CAS_MISMATCH_EXIT = 3;
+const ACCESS_CAS_MISMATCH_EXIT = 3;
 
 /** The hash recorded for an authorized_keys file that did not exist at read time. */
 const ABSENT = 'absent';
@@ -63,11 +63,11 @@ function lockoutMessage(
   if (clientAddress === undefined) {
     return `${own}, and the session's source address on ${machine} is unknown ($SSH_CONNECTION is empty); refusing to restrict it`;
   }
-  return `${own}, and its ranges for ${machine} do not contain this session's source address ${clientAddress}; pushing would lock rdc out, so nothing was written`;
+  return `${own}, and its ranges for ${machine} do not contain this session's source address ${clientAddress}; pushing would lock the CLI out, so nothing was written`;
 }
 
 /**
- * The push would lock rdc out of the machine, so nothing is written: either the
+ * The push would lock the CLI out of the machine, so nothing is written: either the
  * session's own key is a desired access key and the address sshd sees the
  * session coming from lies outside that key's ranges, or (`removal`) the push
  * removes the last authorized_keys line carrying the session's own key.
@@ -124,7 +124,7 @@ function sha256(data: Buffer): string {
 }
 
 /** Canonical blobs of the keys this session authenticates with: the private key's public half, and the configured public key. */
-export function sessionKeyBlobs(sshPrivateKey: string, sshPublicKey?: string): Set<string> {
+function sessionKeyBlobs(sshPrivateKey: string, sshPublicKey?: string): Set<string> {
   const blobs = new Set<string>();
   const parsed = ssh2.utils.parseKey(sshPrivateKey);
   const first = Array.isArray(parsed) ? parsed[0] : parsed;

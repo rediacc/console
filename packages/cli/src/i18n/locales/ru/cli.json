@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "Управление мастер-паролем этого участника (password slot)",
           "change": {
+            "descriptionShort": "Сменить мастер-пароль",
             "description": "Сменить мастер-пароль: заново упаковать ключ конфигурации из регистрации этого устройства в новый password slot",
             "emailPrompt": "Email аккаунта",
             "loginPasswordPrompt": "Пароль аккаунта",

@@ -78,7 +78,7 @@
         "statsSeedSkipped": "Seed übersprungen: {{skipped}}",
         "optionPath": "Nur diese Datei oder dieses Verzeichnis aus dem Snapshot wiederherstellen, ohne das ganze Repository zurückzuspielen (braucht --at)",
         "optionTo": "Verzeichnis, in dem der wiederhergestellte Pfad abgelegt wird (Standard: der Wiederherstellungsordner der Maschine für den Snapshot)",
-        "toNeedsPath": "--to legt das Ziel einer --path-Wiederherstellung fest, gib daher --path mit an.",
+        "toNeedsPath": "--to legt das Ziel einer Wiederherstellung mit --path fest, gib daher --path mit an.",
         "pathEmpty": "{{flag}} braucht einen Wert, er ist aber leer.",
         "pathNeedsAt": "--path stellt eine Datei oder ein Verzeichnis zu einem Zeitpunkt wieder her, gib daher --at <Zeit|Snapshot> mit an.",
         "pathConflict": "--path lässt sich nicht mit {{flag}} kombinieren: Es stellt Dateien in einen Ordner wieder her und legt kein Repository an.",
@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "Master-Passwort dieses Mitglieds verwalten (der Passwort-Slot)",
           "change": {
+            "descriptionShort": "Master-Passwort ändern",
             "description": "Master-Passwort ändern: den Config-Schlüssel aus der Registrierung dieses Geräts neu unter einem neuen Passwort-Slot verpacken",
             "emailPrompt": "E-Mail-Adresse des Kontos",
             "loginPasswordPrompt": "Passwort des Kontos",

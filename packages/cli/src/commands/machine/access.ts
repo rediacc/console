@@ -20,6 +20,7 @@ import { outputService } from '../../services/core/output.js';
 import type { AccessPushReport } from '../../services/machine/access-push.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
+import { omitKey } from '../../utils/omit-key.js';
 import { assertValidAccess, type RangeOptions, rangesFromOptions } from '../config-access.js';
 
 /**
@@ -54,11 +55,7 @@ export function bindAccessKey(
  * Drop the binding. The machine need not exist any more, so a binding left
  * behind by an interrupted `machine remove` can still be dropped.
  */
-export function unbindAccessKey(
-  access: AccessConfig,
-  machineName: string,
-  keyName: string
-): AccessConfig {
+function unbindAccessKey(access: AccessConfig, machineName: string, keyName: string): AccessConfig {
   const key = access.keys?.[keyName];
   if (key === undefined) {
     throw new ValidationError(t('commands.config.access.keyNotFound', { key: keyName }));
@@ -68,7 +65,7 @@ export function unbindAccessKey(
       t('commands.machine.access.notBound', { key: keyName, name: machineName })
     );
   }
-  const { [machineName]: _removed, ...machines } = key.machines;
+  const machines = omitKey(key.machines, machineName);
   return assertValidAccess({
     ...access,
     keys: { ...access.keys, [keyName]: { ...key, machines } },
@@ -84,7 +81,7 @@ function rangesSource(access: AccessConfig, keyName: string, machineName: string
 }
 
 /** One row per access key bound to `machineName`, with the ranges it resolves to there. */
-export function machineAccessRows(
+function machineAccessRows(
   access: AccessConfig | undefined,
   machineName: string
 ): Record<string, unknown>[] {
@@ -106,7 +103,7 @@ function formatRanges(ranges: SourceRanges | null | undefined): string {
 }
 
 /** The table-mode rendering of a push report: one line per change, then the outcome. */
-export function printPushReport(report: AccessPushReport, dryRun: boolean): void {
+function printPushReport(report: AccessPushReport, dryRun: boolean): void {
   for (const change of report.changes) {
     outputService.info(
       t('commands.machine.access.push.change', {

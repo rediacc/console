@@ -3,8 +3,9 @@ import { EventEmitter } from 'node:events';
 import { createServer, type Server } from 'node:net';
 import type { Client as SSHClient } from 'ssh2';
 import { afterEach, describe, expect, it } from 'vitest';
+import { seamedSftpClient } from '../../__tests__/sftp-client-seam.js';
 import { EXIT_CODES } from '../../types/index.js';
-import { SFTPClient } from '../sftp/client.js';
+import type { SFTPClient } from '../sftp/client.js';
 import {
   classifySshConnectFailure,
   SshConnectError,
@@ -102,7 +103,7 @@ describe('SFTPClient.connect classification', () => {
   });
 
   it('a timeout with no connect event is unreachable', async () => {
-    const client = new SFTPClient(
+    const client = seamedSftpClient(
       base,
       plantedClient((e) => e.emit('error', timeoutError()))
     );
@@ -113,7 +114,7 @@ describe('SFTPClient.connect classification', () => {
   });
 
   it('a timeout after the connect event is a handshake timeout', async () => {
-    const client = new SFTPClient(
+    const client = seamedSftpClient(
       base,
       plantedClient((e) => {
         e.emit('connect');
@@ -128,7 +129,7 @@ describe('SFTPClient.connect classification', () => {
     await new Promise<void>((r) => probe.listen(0, '127.0.0.1', r));
     const port = (probe.address() as { port: number }).port;
     await new Promise<void>((r) => probe.close(() => r()));
-    const error = await connectError(new SFTPClient({ ...base, host: '127.0.0.1', port }));
+    const error = await connectError(seamedSftpClient({ ...base, host: '127.0.0.1', port }));
     expect(error.kind).toBe('refused');
     expect(error.errorCode).toBe('SSH_REFUSED');
   });
@@ -138,7 +139,7 @@ describe('SFTPClient.connect classification', () => {
     servers.push(server);
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
     const port = (server.address() as { port: number }).port;
-    const error = await connectError(new SFTPClient({ ...base, host: '127.0.0.1', port }));
+    const error = await connectError(seamedSftpClient({ ...base, host: '127.0.0.1', port }));
     expect(error.kind).toBe('handshake-timeout');
     expect(error.errorCode).toBe('SSH_HANDSHAKE_TIMEOUT');
   });
@@ -191,7 +192,7 @@ describe('SFTPClient.connect IPv6 retry', () => {
 
   it('an unreachable IPv4 host is retried over the configured IPv6 address', async () => {
     const { tried, create } = byHost({ [v4]: 'unreachable', [v6]: 'ready' });
-    const client = new SFTPClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa);
+    const client = seamedSftpClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa);
     await client.connect();
     expect(client.isConnected()).toBe(true);
     expect(tried).toEqual([v4, v6]);
@@ -200,7 +201,7 @@ describe('SFTPClient.connect IPv6 retry', () => {
   it('an unreachable hostname is retried over its AAAA record', async () => {
     const { tried, create } = byHost({ 'm.example.test': 'unreachable', [v6]: 'ready' });
     const asked: string[] = [];
-    const client = new SFTPClient({ ...base, host: 'm.example.test' }, create, (h) => {
+    const client = seamedSftpClient({ ...base, host: 'm.example.test' }, create, (h) => {
       asked.push(h);
       return Promise.resolve(v6);
     });
@@ -213,7 +214,7 @@ describe('SFTPClient.connect IPv6 retry', () => {
   it('with no IPv6 address the original EGRESS_UNREACHABLE surfaces', async () => {
     const { tried, create } = byHost({ [v4]: 'unreachable' });
     const resolver = () => Promise.reject(new Error('an IP literal host must not be resolved'));
-    const error = await connectError(new SFTPClient({ ...base, host: v4 }, create, resolver));
+    const error = await connectError(seamedSftpClient({ ...base, host: v4 }, create, resolver));
     expect(error.errorCode).toBe('EGRESS_UNREACHABLE');
     expect(error.host).toBe(v4);
     expect(error.ipv6Attempt).toBeUndefined();
@@ -223,7 +224,7 @@ describe('SFTPClient.connect IPv6 retry', () => {
   it('a hostname without an AAAA record surfaces EGRESS_UNREACHABLE after one attempt', async () => {
     const { tried, create } = byHost({});
     const error = await connectError(
-      new SFTPClient({ ...base, host: 'm.example.test' }, create, noAaaa)
+      seamedSftpClient({ ...base, host: 'm.example.test' }, create, noAaaa)
     );
     expect(error.errorCode).toBe('EGRESS_UNREACHABLE');
     expect(tried).toEqual(['m.example.test']);
@@ -232,7 +233,7 @@ describe('SFTPClient.connect IPv6 retry', () => {
   it('a failed IPv6 retry keeps the primary error and names the retry', async () => {
     const { tried, create } = byHost({ [v4]: 'unreachable', [v6]: 'refused' });
     const error = await connectError(
-      new SFTPClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa)
+      seamedSftpClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa)
     );
     expect(error.errorCode).toBe('EGRESS_UNREACHABLE');
     expect(error.host).toBe(v4);
@@ -244,7 +245,7 @@ describe('SFTPClient.connect IPv6 retry', () => {
   it.each<Outcome>(['refused', 'auth'])('a %s failure never retries over IPv6', async (outcome) => {
     const { tried, create } = byHost({ [v4]: outcome, [v6]: 'ready' });
     const error = await connectError(
-      new SFTPClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa)
+      seamedSftpClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa)
     );
     expect(error.kind).toBe(outcome);
     expect(tried).toEqual([v4]);
@@ -258,7 +259,7 @@ describe('SFTPClient.connect IPv6 retry', () => {
       clients.push(c as unknown as EventEmitter);
       return c;
     };
-    const client = new SFTPClient({ ...base, host: v4, ipv6: v6 }, tracking, noAaaa);
+    const client = seamedSftpClient({ ...base, host: v4, ipv6: v6 }, tracking, noAaaa);
     await client.connect();
     clients[0]?.emit('close');
     expect(client.isConnected()).toBe(true);

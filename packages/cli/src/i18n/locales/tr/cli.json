@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "Bu üyenin ana parolasını yönetin (password slot)",
           "change": {
+            "descriptionShort": "Ana parolayı değiştirin",
             "description": "Ana parolayı değiştirin: yapılandırma anahtarını bu cihazın kaydından alıp yeni bir password slot altında yeniden sarar",
             "emailPrompt": "Hesap e-postası",
             "loginPasswordPrompt": "Hesap parolası",

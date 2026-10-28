@@ -11,7 +11,7 @@ describe('readRuntimeStatus on a renet older than the CLI (C12)', () => {
       'Command exited with code 1: Error: unknown flag: --policy\nUsage: renet runtime status'
     );
     await expect(
-      readRuntimeStatus(sftp, '/usr/bin/renet', '/mnt/rediacc', 'auto', 'server-1')
+      readRuntimeStatus(sftp, '/usr/bin/renet', '/mnt/rediacc', 'epoch', 'server-1')
     ).rejects.toThrow('renet on server-1 is older than this CLI; run machine setup');
   });
 

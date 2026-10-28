@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -148,7 +149,7 @@ function renderRecord(label: string, record: PruneRecord): void {
 
 function renderRecords(entries: { label: string; record: PruneRecord }[], survey: boolean): void {
   // A refused scan is a failed run: a script reads it from the exit code, whatever the output format.
-  if (entries.some((e) => e.record.refused)) process.exitCode = 1;
+  if (entries.some((e) => e.record.refused)) setExitCode(1);
   const format = getOutputFormat();
   if (format !== 'table') {
     // The record passes through unchanged: one object for a ref, an array for the machine-wide survey.

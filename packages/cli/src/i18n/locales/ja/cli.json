@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "このメンバーのマスターパスワード（パスワードスロット）を管理",
           "change": {
+            "descriptionShort": "マスターパスワードを変更する",
             "description": "マスターパスワードを変更: このデバイスの登録情報から設定キーを取り出し、新しいパスワードスロットで包み直す",
             "emailPrompt": "アカウントのメールアドレス",
             "loginPasswordPrompt": "アカウントのパスワード",

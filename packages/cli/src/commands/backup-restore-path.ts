@@ -129,6 +129,8 @@ const NO_LISTING_MESSAGES: Record<string, string> = {
   'live-mount': 'commands.backup.restore.pathNoListingLiveMount',
   'no-positions': 'commands.backup.restore.pathNoListingNoPositions',
 };
+/** Shown when the NO_LISTING payload names no known reason. */
+const NO_LISTING_FALLBACK = 'commands.backup.restore.pathNoListing';
 
 /**
  * Run `backup_restore_path` for `repoKey` on `machineName`. `resolveSnapshot` maps the
@@ -176,9 +178,7 @@ export async function runRestorePath(args: {
     // 18 is a distinct code, as with browse: "this snapshot cannot address the path" is not "it broke".
     if (result.exitCode === RENET_NO_LISTING_EXIT) {
       const key = NO_LISTING_MESSAGES[noListingReason(result)];
-      outputService.warn(
-        t(key ?? 'commands.backup.restore.pathNoListing', { name: repoKey, snapshot: snapshotId })
-      );
+      outputService.warn(t(key ?? NO_LISTING_FALLBACK, { name: repoKey, snapshot: snapshotId }));
       setExitCode(RENET_NO_LISTING_EXIT);
     }
     // Any other failure was rendered, with its exit code, by executeRepoFunction.

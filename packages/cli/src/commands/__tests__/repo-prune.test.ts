@@ -73,7 +73,7 @@ vi.mock('../_validate.js', () => ({ assertMachineExists: vi.fn().mockResolvedVal
 
 import { registerRepoPruneCommand } from '../repo-prune.js';
 
-const CLASS_KEYS = ['A', 'B', 'C', 'D', 'G', 'E', 'F1', 'F2', 'L', 'Q'];
+const CLASS_KEYS = ['A', 'B', 'C', 'D', 'G', 'E', 'F1', 'F2', 'L', 'Q'] as const;
 
 function record(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const classes: Record<string, unknown> = {};

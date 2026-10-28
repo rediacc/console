@@ -17,7 +17,7 @@ import {
 } from '@rediacc/shared/config-schema';
 
 /** The options written in front of a restricted access key: the set that passed live (round 4). */
-export const ACCESS_RESTRICT_OPTIONS = [
+const ACCESS_RESTRICT_OPTIONS = [
   'no-port-forwarding',
   'no-agent-forwarding',
   'no-X11-forwarding',
@@ -28,9 +28,9 @@ export const ACCESS_RESTRICT_OPTIONS = [
 /** Length of the config-id prefix in a marker. */
 const CONFIG_ID_PREFIX_LENGTH = 8;
 
-export type AuthorizedKeysLineKind = 'blank' | 'comment' | 'key' | 'unparsed';
+type AuthorizedKeysLineKind = 'blank' | 'comment' | 'key' | 'unparsed';
 
-export interface AccessMarker {
+interface AccessMarker {
   /** The first eight characters of the config id that wrote the line. */
   configPrefix: string;
   /** The access key's name in that config. */
@@ -70,13 +70,7 @@ export interface AccessLineSpec extends DesiredAccessKey {
   configId: string;
 }
 
-export type AccessChangeAction =
-  | 'update'
-  | 'unchanged'
-  | 'adopt'
-  | 'drop-duplicate'
-  | 'append'
-  | 'remove';
+type AccessChangeAction = 'update' | 'unchanged' | 'adopt' | 'drop-duplicate' | 'append' | 'remove';
 
 export interface AccessChange {
   /** The access key the change is for. */
@@ -149,7 +143,7 @@ function endOfOptions(text: string, start: number): number {
 }
 
 /** Split an options field on commas outside double quotes (sshd's own rule, `\"` escapes a quote). */
-export function tokenizeOptions(options: string): string[] {
+function tokenizeOptions(options: string): string[] {
   const tokens: string[] = [];
   let current = '';
   let quoted = false;

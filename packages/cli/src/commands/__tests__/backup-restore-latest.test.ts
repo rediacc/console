@@ -89,7 +89,7 @@ vi.mock('../../utils/errors.js', async () => {
 
 const { registerBackupCommands } = await import('../backup.js');
 
-async function run(argv: string[]): Promise<void> {
+async function run(argv: readonly string[]): Promise<void> {
   const program = new Command();
   program.exitOverride();
   registerBackupCommands(program);
@@ -97,7 +97,7 @@ async function run(argv: string[]): Promise<void> {
 }
 
 const fnCalls = () => mockExecute.mock.calls.map((c) => c[0].functionName);
-const ARGS = ['restore', 'm1:src', '--as', 'copy', '-m', 'm1', '--any-stream'];
+const ARGS = ['restore', 'm1:src', '--as', 'copy', '-m', 'm1', '--any-stream'] as const;
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -240,13 +240,14 @@ function toConflict(raw: Record<string, unknown>): NetworkIdConflict | undefined
 export async function nextNetworkIdAfterConflict(
   conflict: NetworkIdConflict,
   target: NetworkIdTarget,
-  allocate: (floor: number[]) => Promise<number> = allocateNetworkIdWithFloor
+  allocate: (floor: number[]) => Promise<number> = allocateNetworkIdWithFloor,
+  refused: number[] = []
 ): Promise<number> {
   if (conflict.code === 'network_id_mismatch' && conflict.persistedNetworkId !== undefined) {
     return conflict.persistedNetworkId;
   }
   const used = await targetFloor(target);
-  return allocate([...used, conflict.networkId]);
+  return allocate([...new Set([...used, ...refused, conflict.networkId])]);
 }
 
 /**
@@ -313,16 +314,26 @@ export async function rerunAfterNetworkIdConflict(input: {
   target: NetworkIdTarget;
   rerun: (networkId: number) => Promise<ExecuteResult>;
   allocate?: (floor: number[]) => Promise<number>;
+  /** IDs already refused earlier in this run, kept out of the next allocation. */
+  refused?: number[];
 }): Promise<ExecuteResult | undefined> {
   const conflict = parseNetworkIdConflict(input.failed);
   if (!conflict) return undefined;
-  const next = await nextNetworkIdAfterConflict(conflict, input.target, input.allocate);
+  const next = await nextNetworkIdAfterConflict(
+    conflict,
+    input.target,
+    input.allocate,
+    input.refused
+  );
   await recordNetworkId(input.repoKey, next);
   return input.rerun(next);
 }
 
+/** Attempts a create-like verb gets, the first included, on a shared machine whose IDs keep colliding. */
+export const MAX_NETWORK_ID_ATTEMPTS = 6;
+
 /**
- * Run a create-like verb (create, fork, restore) and, when renet refuses its network ID, retry it once on the next ID. Any other failure, or a second refusal, is returned as is.
+ * Run a create-like verb (create, fork, restore) and, when renet refuses its network ID, retry it on the next ID, up to {@link MAX_NETWORK_ID_ATTEMPTS} attempts. Every refused ID and the machine's used set stay out of each allocation. Any other failure, or the refusal of the last attempt, is returned as is.
  */
 export async function runWithNetworkIdRetry(input: {
   repoKey: string;
@@ -331,8 +342,19 @@ export async function runWithNetworkIdRetry(input: {
   run: (networkId: number) => Promise<ExecuteResult>;
   allocate?: (floor: number[]) => Promise<number>;
 }): Promise<ExecuteResult> {
-  const first = await input.run(input.networkId);
-  if (first.success) return first;
-  const retried = await rerunAfterNetworkIdConflict({ ...input, failed: first, rerun: input.run });
-  return retried ?? first;
+  const refused: number[] = [];
+  let result = await input.run(input.networkId);
+  for (let attempt = 1; attempt < MAX_NETWORK_ID_ATTEMPTS && !result.success; attempt++) {
+    const conflict = parseNetworkIdConflict(result);
+    if (conflict) refused.push(conflict.networkId);
+    const retried = await rerunAfterNetworkIdConflict({
+      ...input,
+      failed: result,
+      rerun: input.run,
+      refused,
+    });
+    if (!retried) break;
+    result = retried;
+  }
+  return result;
 }

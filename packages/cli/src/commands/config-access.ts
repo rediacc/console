@@ -20,6 +20,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { omitKey } from '../utils/omit-key.js';
 
 /** The range flags shared by `config access add|ranges` and `machine access set`. */
 export interface RangeOptions {
@@ -80,7 +81,7 @@ export function assertValidAccess(access: AccessConfig): AccessConfig {
 }
 
 /** `--public-key` takes the key line itself, or a path to a file holding it. */
-export async function readPublicKeyOption(value: string): Promise<string> {
+async function readPublicKeyOption(value: string): Promise<string> {
   const inline = value.trim();
   const type = parseOpenSshPublicKey(inline)?.type;
   if (type !== undefined && (ACCESS_KEY_TYPES as readonly string[]).includes(type)) return inline;
@@ -91,7 +92,7 @@ export async function readPublicKeyOption(value: string): Promise<string> {
   }
 }
 
-export interface AddAccessKeyInput {
+interface AddAccessKeyInput {
   publicKey: string;
   ranges?: SourceRanges;
   restrict: boolean;
@@ -101,13 +102,9 @@ export interface AddAccessKeyInput {
  * Add the key, or update an existing one in place (public key, restriction,
  * and its ranges when given), keeping its machine bindings.
  */
-export function addAccessKey(
-  access: AccessConfig,
-  name: string,
-  input: AddAccessKeyInput
-): AccessConfig {
+function addAccessKey(access: AccessConfig, name: string, input: AddAccessKeyInput): AccessConfig {
   const existing = access.keys?.[name];
-  const { restrict: _restrict, ...base } = existing ?? {};
+  const base = omitKey(existing ?? {}, 'restrict');
   const key = {
     ...base,
     publicKey: input.publicKey,
@@ -118,20 +115,17 @@ export function addAccessKey(
 }
 
 /** Drop the key; refuses an unknown one. */
-export function removeAccessKey(access: AccessConfig, name: string): AccessConfig {
+function removeAccessKey(access: AccessConfig, name: string): AccessConfig {
   if (access.keys?.[name] === undefined) {
     throw new ValidationError(t('commands.config.access.keyNotFound', { key: name }));
   }
-  const { [name]: _removed, ...keys } = access.keys;
+  const keys = omitKey(access.keys, name);
   return assertValidAccess({ ...access, keys });
 }
 
 /** Set (or with `undefined`, clear) the config-wide default ranges. */
-export function setDefaultRanges(
-  access: AccessConfig,
-  ranges: SourceRanges | undefined
-): AccessConfig {
-  const { sourceRanges: _old, ...rest } = access;
+function setDefaultRanges(access: AccessConfig, ranges: SourceRanges | undefined): AccessConfig {
+  const rest = omitKey(access, 'sourceRanges');
   return assertValidAccess(ranges ? { ...rest, sourceRanges: ranges } : rest);
 }
 
@@ -141,7 +135,7 @@ function formatRanges(ranges: SourceRanges | undefined): string {
 }
 
 /** One row per access key, for `config access list`. */
-export function accessKeyRows(access: AccessConfig | undefined): Record<string, unknown>[] {
+function accessKeyRows(access: AccessConfig | undefined): Record<string, unknown>[] {
   return Object.entries(access?.keys ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, key]) => {

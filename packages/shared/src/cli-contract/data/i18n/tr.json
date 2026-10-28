@@ -470,6 +470,7 @@
   "commands.config.remote.integrityFailed": "{{storeId}} deposundaki {{configId}} yapılandırması bütünlük denetiminden geçemedi: sunucunun döndürdüğü kopya bu yapılandırma, ekip ve sürüm için mühürlenmemiş ya da slotunuzdaki anahtardan farklı bir anahtarla şifrelenmiş. Bu cihazda hiçbir şey değiştirilmedi. Anahtar farklıysa bir yöneticiden depo anahtarını portal üzerinden bu cihazla yeniden paylaşmasını isteyin (Yapılandırma Depolama > anahtar slotları).",
   "commands.config.remote.legacyEnvelope": "{{configId}} yapılandırması hâlâ eski zarf biçiminde saklanıyor. Bu cihazdan gönderilecek bir sonraki değişiklik onu yükseltir.",
   "commands.config.remote.masterPassword.change.description": "Ana parolayı değiştirin: yapılandırma anahtarını bu cihazın kaydından alıp yeni bir password slot altında yeniden sarar",
+  "commands.config.remote.masterPassword.change.descriptionShort": "Ana parolayı değiştirin",
   "commands.config.remote.masterPassword.change.emailPrompt": "Hesap e-postası",
   "commands.config.remote.masterPassword.change.loginPasswordPrompt": "Hesap parolası",
   "commands.config.remote.masterPassword.change.newPasswordConfirm": "Yeni ana parolayı tekrar girin",

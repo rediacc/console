@@ -7,6 +7,7 @@
 
 import { type AccessConfig, bindingSourceRanges } from '@rediacc/shared/config-schema';
 import type { RdcConfig } from '../../types/index.js';
+import { omitKey } from '../../utils/omit-key.js';
 import { ConfigServiceBase } from './config-base.js';
 import { updateSyncedConfig } from './synced-write.js';
 
@@ -24,7 +25,7 @@ export function dropAccessBindings(access: AccessConfig, machineName: string): A
   for (const [keyName, key] of Object.entries(keys)) {
     const binding = key.machines?.[machineName];
     if (binding === undefined) continue;
-    const { [machineName]: _removed, ...machines } = key.machines ?? {};
+    const machines = omitKey(key.machines ?? {}, machineName);
     const orphaned =
       Object.keys(machines).length === 0 &&
       key.sourceRanges === undefined &&
@@ -60,7 +61,8 @@ export abstract class ConfigAccessService extends ConfigServiceBase {
     await this.requireSelfHosted(name);
     await updateSyncedConfig(name, (cfg) => {
       const next = edit(structuredClone(cfg.access ?? {}));
-      const { access: _dropped, ...rest } = cfg;
+      const rest = { ...cfg };
+      delete rest.access;
       if (next === undefined || isEmptyAccess(next)) return rest;
       return { ...rest, access: next };
     });

@@ -665,6 +665,7 @@
         "masterPassword": {
           "description": "Gestisci la password master di questo membro (il password slot)",
           "change": {
+            "descriptionShort": "Cambia la password master",
             "description": "Cambia la password master: riavvolge la chiave della config dall'enrollment di questo dispositivo sotto un nuovo password slot",
             "emailPrompt": "Email dell'account",
             "loginPasswordPrompt": "Password dell'account",
