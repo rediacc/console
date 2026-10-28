@@ -1068,9 +1068,9 @@ jobs:
     permissions:
       contents: read
     needs: [initialize]
-    # ubuntu-latest, not ubuntu-slim: the image ships the aws CLI the R2
-    # readers call; slim does not, and a missing aws is UNCHECKED (red).
-    runs-on: ubuntu-latest
+    # ubuntu-slim: the pinned aws CLI comes from setup-aws (AWS_BIN), not the
+    # runner image, the same shape as check-release-state.
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     if: >-
       always() &&
