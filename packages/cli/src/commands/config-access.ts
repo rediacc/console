@@ -36,6 +36,19 @@ function splitList(value: string | undefined): string[] {
     .filter((entry) => entry.length > 0);
 }
 
+/** A flag that was given but names no CIDR is a mistake, never "no ranges". */
+function assertRangeFlagsNamed(options: RangeOptions): void {
+  const given: [string, string | undefined][] = [
+    ['--ipv4', options.ipv4],
+    ['--ipv6', options.ipv6],
+  ];
+  for (const [flag, value] of given) {
+    if (value !== undefined && splitList(value).length === 0) {
+      throw new ValidationError(t('commands.config.access.emptyRangeFlag', { flag }));
+    }
+  }
+}
+
 /**
  * The ranges named by the flags, or undefined when none was given.
  * `--hosted-executor` seeds both lists with the observed hosted-executor egress
@@ -45,6 +58,7 @@ function splitList(value: string | undefined): string[] {
 export function rangesFromOptions(options: RangeOptions): SourceRanges | undefined {
   const ipv4 = new Set<string>(options.hostedExecutor ? HOSTED_EXECUTOR_SOURCE_RANGES.ipv4 : []);
   const ipv6 = new Set<string>(options.hostedExecutor ? HOSTED_EXECUTOR_SOURCE_RANGES.ipv6 : []);
+  assertRangeFlagsNamed(options);
   for (const entry of splitList(options.ipv4)) ipv4.add(entry);
   for (const entry of splitList(options.ipv6)) ipv6.add(entry);
   if (ipv4.size === 0 && ipv6.size === 0) return undefined;

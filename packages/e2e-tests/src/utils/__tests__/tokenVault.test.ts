@@ -58,7 +58,31 @@ describe('buildTokenVault', () => {
   });
 });
 
+describe('buildTokenVault non-string values', () => {
+  it('refuses a non-string value for a carried option rather than dropping it', () => {
+    const opts = { function: 'kube_join', token: TOKEN, writes: 5 } as unknown as Parameters<
+      typeof buildTokenVault
+    >[0];
+    expect(() => buildTokenVault(opts, '1')).toThrow(/writes/);
+  });
+});
+
 describe('testFunction with a token', () => {
+  it('refuses a call carrying both a password and a token instead of dropping the token', () => {
+    const runner = Object.create(RenetFunctionsTestRunner.prototype) as unknown as Pick<
+      RenetFunctionsTestRunner,
+      'testFunction'
+    >;
+    expect(() =>
+      runner.testFunction({
+        function: 'kube_join',
+        password: 'pw',
+        repository: 'r',
+        token: TOKEN,
+      })
+    ).toThrow(/token/);
+  });
+
   it('keeps the token out of every command and sends it on stdin', async () => {
     const { kube, calls } = spyRunner();
     await kube.kubeJoin({

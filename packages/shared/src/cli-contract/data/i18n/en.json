@@ -251,6 +251,7 @@
   "commands.config.access.argKey": "Access key name",
   "commands.config.access.description": "Manage the config's access keys: SSH public keys that the CLI writes into a machine's authorized_keys with a from= restriction to the declared IPv4 and IPv6 ranges. Bind a key to a machine with 'machine access set', then apply it with 'machine access push'",
   "commands.config.access.descriptionShort": "Manage SSH keys restricted to source address ranges",
+  "commands.config.access.emptyRangeFlag": "{{flag}} needs at least one CIDR, got an empty value",
   "commands.config.access.keyNotFound": "Access key \"{{key}}\" not found",
   "commands.config.access.list.description": "List the config's access keys",
   "commands.config.access.list.noKeys": "No access keys in this config. Add one with 'config access add'",

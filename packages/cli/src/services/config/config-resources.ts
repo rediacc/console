@@ -259,12 +259,19 @@ class ConfigService extends ConfigServiceBase {
     // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4). The
     // bindings go first, so a failed prune leaves the machine in place instead of orphaned bindings.
     const access = (await this.getCurrent())?.access;
-    if (Object.values(access?.keys ?? {}).some((key) => key.machines?.[machineName])) {
+    const bound = Object.values(access?.keys ?? {}).some((key) => key.machines?.[machineName]);
+    if (bound) {
       await this.updateAccess((current) => dropAccessBindings(current, machineName));
     }
 
     delete machines[machineName];
-    await state.setMachines(machines);
+    try {
+      await state.setMachines(machines);
+    } catch (error) {
+      // The machine stays, so its bindings come back: neither half of the removal is left applied.
+      if (bound && access) await this.updateAccess(() => access);
+      throw error;
+    }
 
     // #89, third site of the class (see dropMachineObservations).
     await dropMachineObservations(this.getEffectiveConfigName(), machineName);

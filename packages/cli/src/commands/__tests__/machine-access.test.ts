@@ -228,6 +228,20 @@ describe('machine access', () => {
     h.state.writes = 0;
   });
 
+  it('set with an empty --ipv4 refuses and writes nothing', async () => {
+    await expect(
+      run('machine', 'access', 'set', 'hostinger', '--key', 'p', '--ipv4', '')
+    ).rejects.toThrow(/--ipv4/);
+    expect(h.state.writes).toBe(0);
+  });
+
+  it('config access add with a blank --ipv6 refuses and writes nothing', async () => {
+    await expect(
+      run('config', 'access', 'add', 'q', '--public-key', PROBE, '--ipv6', ' , ')
+    ).rejects.toThrow(/--ipv6/);
+    expect(h.state.writes).toBe(0);
+  });
+
   it('set on an unknown machine refuses and writes nothing', async () => {
     await expect(run('machine', 'access', 'set', 'ghost', '--key', 'p')).rejects.toThrow(
       /Machine "ghost" not found/

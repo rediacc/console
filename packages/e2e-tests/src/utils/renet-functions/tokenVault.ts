@@ -27,6 +27,19 @@ const CONTROL_KEYS: ReadonlySet<string> = new Set([
   'timeout',
 ]);
 
+function carriedParams(record: Record<string, unknown>): Record<string, string | number | boolean> {
+  const params: Record<string, string | number | boolean> = {};
+  for (const [key, name] of Object.entries(PARAM_NAMES)) {
+    const value = record[key];
+    if (value === undefined || value === '') continue;
+    if (typeof value !== 'string') {
+      throw new Error(`token vault carries string options only; ${key} is ${typeof value}`);
+    }
+    params[name] = value;
+  }
+  return params;
+}
+
 /**
  * Build the vault a `renet functions once --vault-file` run reads in place of the flags, so a
  * join token travels in a file (uploaded over stdin) and never on a logged command line.
@@ -44,12 +57,7 @@ export function buildTokenVault(opts: TestFunctionOptions, defaultNetworkId: str
   if (unsupported.length > 0) {
     throw new Error(`token vault cannot carry: ${unsupported.join(', ')}`);
   }
-  const record = opts as unknown as Record<string, unknown>;
-  const params: Record<string, string | number | boolean> = {};
-  for (const [key, name] of Object.entries(PARAM_NAMES)) {
-    const value = record[key];
-    if (typeof value === 'string' && value !== '') params[name] = value;
-  }
+  const params = carriedParams(opts as unknown as Record<string, unknown>);
   const networkId = Number(opts.networkId ?? defaultNetworkId);
   if (networkId) params.network_id = networkId;
   if (opts.keepThirdParty) params.keep_third_party_secrets = true;

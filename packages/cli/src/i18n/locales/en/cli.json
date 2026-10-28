@@ -589,6 +589,7 @@
         "descriptionShort": "Manage SSH keys restricted to source address ranges",
         "description": "Manage the config's access keys: SSH public keys that the CLI writes into a machine's authorized_keys with a from= restriction to the declared IPv4 and IPv6 ranges. Bind a key to a machine with 'machine access set', then apply it with 'machine access push'",
         "argKey": "Access key name",
+        "emptyRangeFlag": "{{flag}} needs at least one CIDR, got an empty value",
         "keyNotFound": "Access key \"{{key}}\" not found",
         "optionHostedExecutor": "Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)",
         "optionIpv4": "IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)",
