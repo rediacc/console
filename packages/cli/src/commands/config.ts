@@ -390,7 +390,7 @@ ${t('help.examples')}
     .option('--server <url>', t('options.serverUrl'))
     .action(async (name: string | undefined, options) => {
       try {
-        const configName = name ?? DEFAULTS.CONTEXT.CONFIG_NAME;
+        const configName = name ?? configService.getEffectiveConfigName();
 
         // The default config auto-creates on first use; `config init` is for
         // named configs. A bare, flagless invocation teaches that and exits 2.

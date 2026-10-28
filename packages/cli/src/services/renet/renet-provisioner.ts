@@ -179,6 +179,8 @@ interface ProvisionContext {
  */
 class RenetProvisionerService {
   private readonly cache = new Map<string, CacheEntry>();
+  /** Hosts trusted from the persisted entry whose remote slot no mutating call has probed yet. */
+  private readonly unprobed = new Set<string>();
   private readonly inflight = new Map<string, Promise<ProvisionResult>>();
   /** Per-host arch memo so partial cache misses skip the remote `uname -m` exec */
   private readonly archByHost = new Map<string, RenetArch>();
@@ -202,7 +204,7 @@ class RenetProvisionerService {
   ): Promise<ProvisionResult> {
     const cacheKey = this.buildCacheKey(config);
     const verified = await this.lookupVerified(cacheKey, options?.localBinaryPath);
-    if (verified) {
+    if (verified && (await this.remoteSlotStillCurrent(config, cacheKey, verified, sharedSftp))) {
       return this.buildVerifiedResult(verified.arch, REMOTE_INSTALL_PATH);
     }
 
@@ -267,9 +269,9 @@ class RenetProvisionerService {
   private async lookupVerified(
     cacheKey: string,
     localBinaryPath: string | undefined
-  ): Promise<{ arch: RenetArch; hash: string } | null> {
+  ): Promise<{ arch: RenetArch; hash: string; fromDisk?: boolean } | null> {
     const cached = this.getFreshCacheEntry(cacheKey);
-    if (cached) return cached;
+    if (cached) return { ...cached, fromDisk: this.unprobed.has(cacheKey) };
     const persisted = await getFreshProvisionEntry(cacheKey, localBinaryPath ?? null).catch(
       () => null
     );
@@ -280,7 +282,49 @@ class RenetProvisionerService {
       provisionedAt: persisted.verifiedAt,
     });
     this.archByHost.set(cacheKey, persisted.arch);
-    return { arch: persisted.arch, hash: persisted.hash };
+    this.unprobed.add(cacheKey);
+    return { arch: persisted.arch, hash: persisted.hash, fromDisk: true };
+  }
+
+  /**
+   * A persisted entry only records what an earlier process (possibly another
+   * config) saw. A mutating call confirms with one exec that the slot and
+   * `current` still hold the recorded bytes; a replaced or moved slot drops
+   * the entry so the full path runs. A probe that cannot run counts as
+   * not current. In-process entries were proven by this process and skip it.
+   */
+  private async remoteSlotStillCurrent(
+    config: SFTPClientConfig,
+    cacheKey: string,
+    verified: { hash: string; fromDisk?: boolean },
+    sharedSftp: SFTPClient | undefined
+  ): Promise<boolean> {
+    if (verified.fromDisk !== true) return true;
+    const paths = { slot: REMOTE_INSTALL_PATH, current: REMOTE_CURRENT_PATH };
+    let current = false;
+    try {
+      const probes = await withSharedOrPooledSftp(sharedSftp, config, (sftp) =>
+        probeRemoteSlots(sftp, paths)
+      );
+      current = probes.slot.hash === verified.hash && probes.current.hash === verified.hash;
+    } catch {
+      current = false;
+    }
+    if (current) this.unprobed.delete(cacheKey);
+    else await this.forgetHost(config);
+    return current;
+  }
+
+  /**
+   * Drop what is remembered about a host's remote slot, in memory and on disk.
+   * Callers invoke it when a remote command exits 127 on the renet path: the
+   * binary the cache vouched for is gone.
+   */
+  async forgetHost(config: SFTPClientConfig): Promise<void> {
+    const cacheKey = this.buildCacheKey(config);
+    this.cache.delete(cacheKey);
+    this.unprobed.delete(cacheKey);
+    await dropProvisionEntry(cacheKey).catch(() => undefined);
   }
 
   /** Remember a proven-current host in memory and, best-effort, across processes. */
@@ -291,6 +335,7 @@ class RenetProvisionerService {
     sourcePath: string | undefined
   ): Promise<void> {
     this.cache.set(cacheKey, { hash, arch, provisionedAt: Date.now() });
+    this.unprobed.delete(cacheKey);
     await recordProvisionVerified(cacheKey, { hash, arch, sourcePath: sourcePath ?? null }).catch(
       reportStateWriteRefused
     );
@@ -596,6 +641,7 @@ class RenetProvisionerService {
    */
   clearCache(): void {
     this.cache.clear();
+    this.unprobed.clear();
     this.archByHost.clear();
     this.localHashMemo.clear();
     this.embeddedHashMemo.clear();
