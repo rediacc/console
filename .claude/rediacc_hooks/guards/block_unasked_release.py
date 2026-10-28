@@ -650,7 +650,10 @@ def _account_channel(rest):
 
 
 def _prefix_option(args, name):
-    """The last value an argparse option `name` takes in `args`, spelled in full or as any prefix of at least `--x` (`--tar eu`, `--targ=eu`), or "". argparse accepts a unique prefix by default (`allow_abbrev`), and `deploy_proxy`/`console_executor` keep that default (review 2e939f2a.2). NO AMBIGUITY CHECK IS MADE (review 7f22f490.1), and none is needed while no other long option of either parser starts with `--t`, which makes every prefix from `--t` up unique to `--target`; the harness reads both parsers' `add_argument` lines and fails when one does. Were a second `--t...` option added, an ambiguous prefix would make argparse exit before any deploy: reading it as `--target` could then admit a run that publishes nothing, never one that publishes stable. `account_secrets_local` parses exact words and exits 2 on any other, so a prefix there deploys nothing either."""
+    """The last value an argparse option `name` takes in `args`, spelled in full or as any prefix of at least `--x` (`--tar eu`, `--targ=eu`), or "".
+    argparse accepts a unique prefix by default (`allow_abbrev`), and `deploy_proxy`/`console_executor` keep that default (review 2e939f2a.2).
+    NO AMBIGUITY CHECK IS MADE (review 7f22f490.1), and none is needed while no other long option of either parser starts with `--t`, which makes every prefix from `--t` up unique to `--target`; the harness reads both parsers' `add_argument` lines and fails when one does. Were a second `--t...` option added, an ambiguous prefix would make argparse exit before any deploy: reading it as `--target` could then admit a run that publishes nothing, never one that publishes stable.
+    `account_secrets_local` parses exact words and exits 2 on any other, so a prefix there deploys nothing either."""
     found = ""
     for k, word in enumerate(args):
         if word == "--":

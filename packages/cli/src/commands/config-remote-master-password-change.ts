@@ -247,9 +247,7 @@ export async function verifyNewMasterPassword(
 
   let credentials: Awaited<ReturnType<typeof masterPasswordCredentials>>;
   try {
-    // The enroll route narrows a team-scoped token to configs of that team, so a config with no team
-    // is unreachable by configId from such a token (404). The store is what the verify compares, so
-    // the config is only named when it belongs to a team.
+    // The enroll route narrows a team-scoped token to configs of that team, so a config with no team is unreachable by configId from such a token (404). The store is what the verify compares, so the config is only named when it belongs to a team.
     credentials = await masterPasswordCredentials(
       apiUrl,
       remote.teamId ? remote.configId : undefined,
