@@ -1312,6 +1312,8 @@ export class RenetFunctionsTestRunner {
     this.backupMethods.pushWithVault(vault, timeout);
   pullWithVault = (vault: VaultBuilder, timeout?: number) =>
     this.backupMethods.pullWithVault(vault, timeout);
+  restorePathWithVault = (vault: VaultBuilder, timeout?: number) =>
+    this.backupMethods.restorePathWithVault(vault, timeout);
 
   // Helper Methods
   getCombinedOutput = (result: ExecResult) => this.testHelpers.getCombinedOutput(result);

@@ -143,4 +143,13 @@ export class BackupMethods {
   pullWithVault(vault: VaultBuilder, timeout?: number): Promise<ExecResult> {
     return this.testFunctionWithVault('backup_pull', vault, timeout);
   }
+
+  /**
+   * Restore one file or directory from a chunk-store snapshot with full vault configuration.
+   * The vault carries the repository credential (the passphrase) and the params
+   * lineage, at, path and, optionally, to.
+   */
+  restorePathWithVault(vault: VaultBuilder, timeout?: number): Promise<ExecResult> {
+    return this.testFunctionWithVault('backup_restore_path', vault, timeout);
+  }
 }
