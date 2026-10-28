@@ -1,9 +1,19 @@
 /**
- * The `accountEgress` named handler: the instance and org checks that run before the allowlist and before the issuer (agent/plans/PLAN-console-executor-multi-org.md box W1, MU1).
+ * The `accountEgress` named handler and the `AccountEgress` entrypoint (box W3, Design A): the instance and org checks that run before the allowlist and before the issuer (agent/plans/PLAN-console-executor-multi-org.md box W1, MU1).
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { accountEgress, EXECUTOR_TOKEN_PLACEHOLDER } from '../egress';
+
+vi.mock('cloudflare:workers', () => ({
+  WorkerEntrypoint: class {
+    constructor(
+      protected ctx: unknown,
+      protected env: unknown
+    ) {}
+  },
+}));
+
+import { AccountEgress, accountEgress, EXECUTOR_TOKEN_PLACEHOLDER } from '../egress';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
 
 const API = 'http://account.internal/account/api/v1';
@@ -137,6 +147,83 @@ describe('accountEgress identity checks', () => {
     expect(await response.json()).toMatchObject({
       reason: 'route-not-allowed',
     });
+    expect(state.issues).toEqual([]);
+    expect(seen).toEqual([]);
+  });
+});
+
+describe('AccountEgress entrypoint (props and containerId checks)', () => {
+  function entry(props: unknown) {
+    const { env, seen, state } = setup();
+    const { EXECUTOR: _legacy, ...rest } = env;
+    const durable = { ...rest, ORG_EXECUTOR: EXECUTOR };
+    const Ctor = AccountEgress as unknown as new (
+      ctx: unknown,
+      env: unknown
+    ) => { fetch(r: Request): Promise<Response> };
+    return { egress: new Ctor({ props }, durable), seen, state };
+  }
+  const refused: [string, unknown, string][] = [
+    ['no props', undefined, 'org-param-missing'],
+    ['empty props', {}, 'org-param-missing'],
+    ['an empty orgId', { orgId: '', containerId: 'id:' }, 'org-param-missing'],
+    ['a non-string orgId', { orgId: 7, containerId: 'id:7' }, 'org-param-missing'],
+    ['a missing containerId', { orgId: 'org-a' }, 'org-param-missing'],
+    [
+      "props naming another org's containerId",
+      { orgId: 'org-a', containerId: 'id:org-b' },
+      'container-org-mismatch',
+    ],
+    [
+      'a containerId that is not an id',
+      { orgId: 'org-a', containerId: '' },
+      'container-org-mismatch',
+    ],
+  ];
+  for (const [name, props, reason] of refused) {
+    it(`refuses ${name} with 403 before any issuer call`, async () => {
+      const { egress, seen, state } = entry(props);
+      const response = await egress.fetch(introspect());
+
+      expect(response.status).toBe(403);
+      expect(await response.json()).toMatchObject({ reason });
+      expect(state.issues).toEqual([]);
+      expect(state.fetches).toBe(0);
+      expect(seen).toEqual([]);
+    });
+  }
+
+  it('forwards for matching props with that org issued token only', async () => {
+    const { egress, seen, state } = entry({ orgId: 'org-a', containerId: 'id:org-a' });
+    const response = await egress.fetch(introspect());
+
+    expect(response.status).toBe(200);
+    expect(state.issues).toEqual(['org-a']);
+    expect(seen[0]?.headers.get('authorization')).toBe('Bearer rdt_for_org-a');
+  });
+
+  it('applies the allowlist after the checks pass', async () => {
+    const { egress, seen, state } = entry({ orgId: 'org-a', containerId: 'id:org-a' });
+    const response = await egress.fetch(new Request(`${API}/admin/users`));
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ reason: 'route-not-allowed' });
+    expect(state.issues).toEqual([]);
+    expect(seen).toEqual([]);
+  });
+
+  it('refuses a bearer call that is not the placeholder, before the issuer', async () => {
+    const { egress, seen, state } = entry({ orgId: 'org-a', containerId: 'id:org-a' });
+    const response = await egress.fetch(
+      new Request(`${API}/proxy/introspect`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer real-token' },
+        body: '{}',
+      })
+    );
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ reason: 'bearer-not-placeholder' });
     expect(state.issues).toEqual([]);
     expect(seen).toEqual([]);
   });

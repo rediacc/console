@@ -6,14 +6,16 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('cloudflare:workers', () => ({
-  DurableObject: class {
+vi.mock('cloudflare:workers', () => {
+  class Base {
     constructor(
       protected ctx: unknown,
       protected env: unknown
     ) {}
-  },
-}));
+  }
+  // WorkerEntrypoint: src/egress.ts, which org-executor.ts imports, extends it.
+  return { DurableObject: Base, WorkerEntrypoint: Base };
+});
 
 import type { AcquireAnswer, RenewAnswer } from '../capacity';
 import { EXECUTOR_TOKEN_PLACEHOLDER } from '../egress';

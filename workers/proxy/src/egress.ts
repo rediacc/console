@@ -11,7 +11,9 @@
  * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue(orgId)` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
  */
 
+import { WorkerEntrypoint } from 'cloudflare:workers';
 import { dropIssuedToken, type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
+import type { ExecutorEgressProps } from './org-executor';
 
 /** The value REDIACC_TOKEN carries in the container. It authenticates nothing anywhere; the egress swaps it for the issued token. */
 export const EXECUTOR_TOKEN_PLACEHOLDER = 'rediacc-executor-placeholder';
@@ -61,13 +63,22 @@ function routeOf(
   return undefined;
 }
 
-/** The env slice the egress reads. */
-export interface EgressEnv {
-  /** Only `idFromName` is used: the instance identity the egress cross-checks (agent/plans/PLAN-console-executor-multi-org.md, Design item 1.3). */
-  EXECUTOR: { idFromName(name: string): { toString(): string } };
+/** The env slice the forward reads, whichever backend the request came from. */
+export interface ForwardEnv {
   ACCOUNT_URL: string;
   ACCOUNT?: Fetcher;
   ISSUER?: Service<ExecutorIssuerRpc>;
+}
+
+/** The env slice the legacy `accountEgress` reads. */
+export interface EgressEnv extends ForwardEnv {
+  /** Only `idFromName` is used: the instance identity the egress cross-checks (agent/plans/PLAN-console-executor-multi-org.md, Design item 1.3). */
+  EXECUTOR: { idFromName(name: string): { toString(): string } };
+}
+
+/** The env slice `AccountEgress` reads: the same cross-check, against the `durable_object` backend's namespace. */
+export interface DurableEgressEnv extends ForwardEnv {
+  ORG_EXECUTOR: { idFromName(name: string): { toString(): string } };
 }
 
 /** Log a refusal by reason code, method and path only (never a header or a body), then answer it. */
@@ -79,7 +90,7 @@ function refuseEgress(reason: string, method: string, url: URL, status = 403): R
 /** The issued token's Authorization value for a request that presented exactly the placeholder, or the refusal. Refusals are decided before the issuer is asked. */
 async function issuedBearer(
   auth: string | null,
-  env: EgressEnv,
+  env: ForwardEnv,
   orgId: string
 ): Promise<string | { refused: string; status: number }> {
   if (auth === null) return { refused: 'bearer-missing', status: 403 };
@@ -130,12 +141,36 @@ export async function accountEgress(
 }
 
 /**
+ * The egress entrypoint for the `durable_object` backend (Design A): `OrgExecutor` binds it through `ctx.exports.AccountEgress({ props: { orgId, containerId } })` and `interceptOutboundHttp` routes `account.internal` to that stub.
+ *
+ * Props are set only by Durable Object code, so the container cannot choose them. A request is refused 403 before the allowlist and before the issuer when the props are absent or malformed (`org-param-missing`), or when `containerId` is not `env.ORG_EXECUTOR.idFromName(orgId).toString()` (`container-org-mismatch`): an instance can only ever obtain its own org's issued token. Everything after those checks is `forwardAccountEgress`, so the allowlist and the placeholder swap are the same code as on the legacy path.
+ *
+ * Not bound in any wrangler config (box G2 fences that): it is reached only through `ctx.exports`.
+ */
+export class AccountEgress extends WorkerEntrypoint<
+  DurableEgressEnv,
+  Partial<ExecutorEgressProps>
+> {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const { orgId, containerId } = this.ctx.props ?? {};
+    if (typeof orgId !== 'string' || orgId === '' || typeof containerId !== 'string') {
+      return refuseEgress('org-param-missing', request.method, url);
+    }
+    if (containerId !== this.env.ORG_EXECUTOR.idFromName(orgId).toString()) {
+      return refuseEgress('container-org-mismatch', request.method, url);
+    }
+    return await forwardAccountEgress(request, this.env, orgId);
+  }
+}
+
+/**
  * A 401 on a bearer route means the account server no longer accepts this org's cached token (a root block revoked it, or it was rotated): forget it and resend once with a freshly issued one, so the first call after an unblock does not fail (ML0 on bench, 2026-10-26: 2 of 8 probes within a minute of an unblock answered 401). A second 401 is returned as it is, and its token is forgotten too. The resend cannot duplicate a write: every bearer route answers 401 only from `apiTokenAuth`, before its handler runs (private/account/src/middleware/api-token.ts).
  */
 async function resendWithFreshToken(
   request: Request,
   url: URL,
-  env: EgressEnv,
+  env: ForwardEnv,
   orgId: string,
   headers: Headers,
   send: () => Promise<Response>
@@ -154,7 +189,7 @@ async function resendWithFreshToken(
 /** Forward one intercepted container request for the account server, when the allowlist admits it. */
 export async function forwardAccountEgress(
   request: Request,
-  env: EgressEnv,
+  env: ForwardEnv,
   orgId: string
 ): Promise<Response> {
   const url = new URL(request.url);
