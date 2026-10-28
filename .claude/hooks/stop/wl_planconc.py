@@ -725,9 +725,6 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
                 "no-owns",
                 ("%s declares no valid Owns; add it with `check_plan_deps.py --set-x`" % s,),
             )
-    for p in sorted(xl):
-        if xl[p].exclusive:
-            return Verdict(False, "mutex", (holder(p),))
     if serving and others:
         for s in sorted(xs):
             if xs[s].exclusive:
@@ -752,6 +749,11 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
             narrow_notes.append("this spawn on its declared Owns `%s`" % ", ".join(mine))
     else:
         mine = tuple(declared) if declared is not None else None
+    # A live exclusive plan is a mutex over ITS files (operator ruling 2026-10-28, "Fix the guard now"): it refuses a spawn whose
+    # Owns overlap the plan's whole Owns, or a spawn whose files are unknown, never a writer whose declared files are disjoint.
+    for p in sorted(xl):
+        if xl[p].exclusive and (mine is None or owns_overlap(mine, _owns_of(xl[p]))):
+            return Verdict(False, "mutex", (holder(p),))
     if mine is None:
         return Verdict(
             True,

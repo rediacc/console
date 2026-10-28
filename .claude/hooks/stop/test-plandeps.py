@@ -32,7 +32,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 319  # 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
+CONTROL_FLOOR = 320  # 319 before the 2026-10-28 disjoint-writer control (an exclusive plan refuses only an overlap); 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -752,6 +752,7 @@ XI = {
     "PLAN-g.md": px_("PLAN-g.md", owns=("src/f/b.py",)),
     "PLAN-h.md": px_("PLAN-h.md", owns=None),
     "PLAN-n.md": px_("PLAN-n.md", owns=(), none=True),
+    "PLAN-o.md": px_("PLAN-o.md", owns=("src/e/x.py",)),
 }
 xi = XI.__getitem__
 
@@ -762,10 +763,19 @@ def sv(serving, live, declared=None):
 
 LIVE_E = {"PLAN-e.md": ["writer a1b2c3d4 (general-purpose)"]}
 LIVE_F = {"PLAN-f.md": ["lease #abcd1234 worker:w1"]}
-check("verdict m1: a live exclusive refuses another plan", sv({"PLAN-f.md"}, LIVE_E).kind, "mutex")
+check(
+    "verdict m1: a live exclusive refuses a plan whose Owns overlap its own",
+    sv({"PLAN-o.md"}, LIVE_E).kind,
+    "mutex",
+)
 check(
     "verdict m1: the refusal names the holder",
-    "a1b2c3d4" in sv({"PLAN-f.md"}, LIVE_E).lines[0],
+    "a1b2c3d4" in sv({"PLAN-o.md"}, LIVE_E).lines[0],
+    True,
+)
+check(
+    "verdict m1b: a live exclusive admits a plan whose Owns are disjoint (operator ruling 2026-10-28)",
+    sv({"PLAN-f.md"}, LIVE_E).allow,
     True,
 )
 check("verdict m1c: nothing live allows", sv({"PLAN-f.md"}, {}).allow, True)
@@ -874,8 +884,8 @@ check(
     "overlap",
 )
 check(
-    "narrow m: an exclusive plan never narrows its mutex",
-    sv({"PLAN-f.md"}, LIVE_E, declared=("src/f/zz.py",)).kind,
+    "narrow m: an exclusive plan's mutex is judged on its whole Owns, so a declared path inside them is refused",
+    sv(set(), LIVE_E, declared=("src/e/zz.py",)).kind,
     "mutex",
 )
 
