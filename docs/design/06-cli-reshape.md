@@ -19,18 +19,20 @@ behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blo
 
 ## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
 
-This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **179 contract commands** (100 machine-plane, 50 config-plane, 29 other; 88 proxyCapable). `run` is hidden and held out of the contract.
+This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **189 contract commands** (105 machine-plane, 55 config-plane, 29 other; 93 proxyCapable). `run` is hidden and held out of the contract.
 
 ```
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek
+                access {add remove ranges list}
                 field {get set unset rotate list}    audit {log tail verify}
-                remote {enable disable status refresh versions restore}    ssh {set show remove}
+                remote {enable disable status refresh versions restore master-password {change}}    ssh {set show remove}
 rdc machine:    add remove list status setup scan-keys health prune converge restart-services
                 provision deprovision
+                access {set remove show push}
                 provider {add remove list}    gpu {list}
                 infra {set show push  cert {pull push status clear}}
 rdc datastore:  create list status attach detach fork snapshot {create list} resize delete
-rdc repo:       create up down status list delete fork push pull migrate promote
+rdc repo:       create up down status list delete fork push pull migrate promote prune
                 secret {get list set unset}    sync {upload download status}
                 cat diff logs exec tunnel
                 replicate {status remove refresh}          (the parent also runs: `replicate <ref>`)
@@ -53,7 +55,7 @@ rdc doctor | credits | update | serve | mcp serve | run (hidden)
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Fifteen differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last six are later additions.
+Nineteen differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last ten are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -72,6 +74,10 @@ Fifteen differences. The first six are deliberate and each is traceable to a rul
 | `machine` and `repo` with no `gpu` | `machine gpu list` + `repo gpu {grant revoke}` | PLAN-gpu-device-grants C1/C2: `machine gpu list` reads a machine's GPUs, CDI devices and the repositories each device is granted to; `repo gpu grant\|revoke` hand a repository a CDI device (or take it back) and mirror the grant into the config. All three run on the machine, so they are machine-plane and proxy-capable. |
 | `backup retention {set clear}` | `backup retention {set clear preview}` + `backup snapshots delete` | The backup-storage retention work: `retention preview` reads what the next sweep would delete and the space it frees without deleting anything, and `snapshots delete` is the manual single-snapshot delete that runs the same prune as the sweep. Both postdate this transcript. |
 | `machine` with no `restart-services` | `machine restart-services` | PLAN-renet-runtime-converge: restarts the renet daemons that still run a replaced binary, one unit at a time, each confirmed live on the installed binary before the next, and with `--include-docker` also each repository's supervisor. This transcript postdates it. |
+| `config` with no `access` | `config access {add remove ranges list}` | PLAN-ssh-key-source-ranges: the config-wide registry of SSH keys and their allowed IPv4 and IPv6 source ranges. `add --hosted-executor` attaches the ranges of the hosted executor; `ranges` edits a key's ranges and `list` reads them. |
+| `machine` with no `access` | `machine access {set remove show push}` | PLAN-ssh-key-source-ranges: assigns a key to a machine with per-machine range overrides, shows the access lines in effect, and `push` writes them to the machine (`--dry-run` previews; a push that would lock out the current session is refused). All four run on the machine side or edit the config, so they are machine-plane. |
+| `repo` with no `prune` | `repo prune` | PLAN-repo-docker-storage-prune: classifies a repository's Docker storage (unused images, build cache, stopped containers, orphan overlay2 directories) and reclaims it. It is a dry run unless `--apply`, and `--apply --offline` also stops the repository's daemon for the run. It runs on the machine, so it is machine-plane and proxy-capable. |
+| `config remote` with no `master-password` | `config remote master-password change` | Config storage: re-wraps the config key from the device's enrollment under a new password slot, after a re-authentication step, and verifies that the new password unlocks the store. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 
