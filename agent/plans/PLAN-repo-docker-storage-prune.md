@@ -13,7 +13,7 @@ Worklist: #18116150, #2065f8be, PR-TASK 9f92c43e
 
 ## Operator ruling
 
-ASKED:2026-10-28T12:0xZ, verbatim: "If you find that orphans for others at hostinger, than do not cleanup directly! Maybe we need to improve the prune command/support of rdc." <!-- style-ok -->
+ASKED:2026-10-28T11:21Z, verbatim: "If you find that orphans for others at hostinger, than do not cleanup directly! Maybe we need to improve the prune command/support of rdc." <!-- style-ok -->
 
 Binding points: nothing on hostinger is cleaned by hand or by an ad-hoc script; the fix is a supported rdc verb; any `--apply` on hostinger is its own operator decision (L3).
 
