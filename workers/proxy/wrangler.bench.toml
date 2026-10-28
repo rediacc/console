@@ -24,7 +24,7 @@ routes = [
 ACCOUNT_URL = "https://bench.rediacc.com"
 REGION = "eu"
 ENVIRONMENT = "bench"
-EXECUTOR_BACKEND = "container"
+EXECUTOR_BACKEND = "durable"
 EXECUTOR_CAP = "25"
 EXECUTOR_HEAVY_CAP = "5"
 

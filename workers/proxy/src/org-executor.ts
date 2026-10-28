@@ -192,6 +192,21 @@ async function bounded<T>(call: Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * The incoming request re-addressed to plain `http:`, keeping its method, headers, body and signal. A container TCP port speaks HTTP, so it refuses the `https://executor.internal/...` URL the proxy routes with; the replaced `@cloudflare/containers` library made the same swap before its port fetch.
+ */
+function containerRequest(request: Request): Request {
+  const url = new URL(request.url);
+  url.protocol = 'http:';
+  return new Request(url, request);
+}
+
+/** The name and message of a caught error, for a log line. Never the request or its content. */
+function errorSummary(error: unknown): { name: string; message: string } {
+  if (error instanceof Error) return { name: error.name, message: error.message };
+  return { name: typeof error, message: String(error) };
+}
+
 /** Whether the executor's health route answers 2xx. A refused connection means it is not listening yet. */
 async function healthy(container: Container): Promise<boolean> {
   try {
@@ -496,7 +511,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
         done();
         return refusalResponse('EXECUTOR_CAPACITY');
       }
-      const response = await container.getTcpPort(EXECUTOR_PORT).fetch(request);
+      const response = await container.getTcpPort(EXECUTOR_PORT).fetch(containerRequest(request));
       if (response.body === null) {
         done();
         return response;
@@ -506,9 +521,9 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
         statusText: response.statusText,
         headers: response.headers,
       });
-    } catch {
+    } catch (error) {
       done();
-      console.warn('proxy: org executor forward failed');
+      console.warn('proxy: org executor forward failed', errorSummary(error));
       return Response.json(
         { error: 'The executor did not answer.', code: 'EXECUTOR_UNREACHABLE' },
         { status: 502 }

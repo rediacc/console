@@ -66,9 +66,10 @@ ACCOUNT_BINDING = ("ACCOUNT", "CloudflareInternal")
 ISSUER_BINDING = ("ISSUER", "ExecutorIssuer")
 FORBIDDEN_TEXT = "EXECUTOR_TOKEN"
 # Per target, the three vars that route and bound the durable backend (PLAN-executor-durable-object-policy.md Design item 2). The backend flips one target at a time by editing BACKEND_BY_TARGET and regenerating; the caps are decimal strings the Worker parses.
-BACKEND_BY_TARGET: dict[str, str] = dict.fromkeys(
-    ("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "bench", "dev"), "container"
-)
+BACKEND_BY_TARGET: dict[str, str] = {
+    **dict.fromkeys(("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "dev"), "container"),
+    "bench": "durable",
+}
 CAP_BY_TARGET: dict[str, str] = dict.fromkeys(BACKEND_BY_TARGET, "25")
 HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(BACKEND_BY_TARGET, "5")
 EXECUTOR_VARS = ("EXECUTOR_BACKEND", "EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")

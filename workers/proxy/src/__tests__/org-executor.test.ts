@@ -79,6 +79,8 @@ class FakeContainer {
   intercepts: { host: string; binding: unknown }[] = [];
   monitors: Deferred[] = [];
   destroys: unknown[] = [];
+  /** Every URL the port was fetched with, readiness polls included. */
+  portUrls: string[] = [];
   health: () => Response | Promise<Response> = () => new Response('ok');
   app: (request: Request) => Response | Promise<Response> = () => new Response('from-app');
 
@@ -129,6 +131,11 @@ class FakeContainer {
     return {
       fetch: (input: Request | string): Promise<Response> => {
         const request = typeof input === 'string' ? new Request(input) : input;
+        this.portUrls.push(request.url);
+        // A container TCP port speaks plain HTTP, and workerd throws on an `https:` URL there.
+        if (new URL(request.url).protocol !== 'http:') {
+          return Promise.reject(new TypeError('container port fetch needs an http: URL'));
+        }
         if (new URL(request.url).pathname === '/v1/health') return Promise.resolve(this.health());
         return Promise.resolve(this.app(request));
       },
@@ -622,6 +629,63 @@ describe('proxying', () => {
     expect(response.status).toBe(207);
     expect(response.headers.get('x-from')).toBe('executor');
     expect(await response.text()).toBe('{"line":1}\n{"line":2}\n');
+  });
+
+  it('re-addresses the forward to http: with the same path, query, method, headers and body', async () => {
+    const h = harness();
+    await h.ready;
+    let seen: Request | undefined;
+    let seenBody = '';
+    h.container.app = async (request) => {
+      seen = request;
+      seenBody = await request.text();
+      return new Response('done');
+    };
+    await h.executor.pin(ORG, 0, 'light');
+    h.container.portUrls.length = 0;
+    const response = await h.executor.fetch(
+      new Request('https://executor.internal/v1/command?stream=1&x=a%20b', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-ndjson', 'x-trace': 't1' },
+        body: '{"cmd":"up"}',
+      })
+    );
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('done');
+    expect(h.container.portUrls).toHaveLength(1);
+    const forwarded = new URL(h.container.portUrls[0]);
+    expect(forwarded.protocol).toBe('http:');
+    expect(forwarded.host).toBe('executor.internal');
+    expect(forwarded.pathname).toBe('/v1/command');
+    expect(forwarded.search).toBe('?stream=1&x=a%20b');
+    expect(seen?.method).toBe('POST');
+    expect(seen?.headers.get('content-type')).toBe('application/x-ndjson');
+    expect(seen?.headers.get('x-trace')).toBe('t1');
+    expect(seenBody).toBe('{"cmd":"up"}');
+  });
+
+  it('logs the name and message of a failed forward and answers EXECUTOR_UNREACHABLE', async () => {
+    const h = harness();
+    await h.ready;
+    h.container.app = () => {
+      throw new RangeError('port went away');
+    };
+    await h.executor.pin(ORG, 0, 'light');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const response = await h.executor.fetch(
+        new Request('https://executor.internal/v1/command', { method: 'POST', body: 'secret-body' })
+      );
+      expect(response.status).toBe(502);
+      expect(await response.json()).toMatchObject({ code: 'EXECUTOR_UNREACHABLE' });
+      expect(warn).toHaveBeenCalledWith('proxy: org executor forward failed', {
+        name: 'RangeError',
+        message: 'port went away',
+      });
+      expect(JSON.stringify(warn.mock.calls)).not.toContain('secret-body');
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('renews the lease at a request start at most once per 30 s', async () => {
