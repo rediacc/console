@@ -1881,15 +1881,15 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 9,
+      "open": 1,
+      "done": 10,
       "open_sigs": [
-        "7c6e444b",
         "b9daaf63"
       ],
       "done_sigs": [
         "112b6afb",
         "6fcb8c6c",
+        "7c6e444b",
         "7c7b94bb",
         "83bffb55",
         "884debe2",
