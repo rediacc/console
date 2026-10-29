@@ -82,7 +82,7 @@
     },
     "agent/plans/PLAN-backup-local-image.md": {
       "status": "approved",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 14,
@@ -107,7 +107,7 @@
     },
     "agent/plans/PLAN-backup-meter-orphaned-chunks.md": {
       "status": "approved",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 3,
@@ -1420,7 +1420,7 @@
     },
     "agent/plans/PLAN-production-key-only.md": {
       "status": "approved",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 7,
@@ -1878,7 +1878,7 @@
     },
     "agent/plans/PLAN-snapshot-read-io-cap.md": {
       "status": "approved",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 1,

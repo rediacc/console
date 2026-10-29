@@ -1,6 +1,7 @@
 # PLAN: snapshot read and hash phase gets its own cap: a read token bucket and a hash worker count in renet, with gentle defaults on the verb and one knob family across the verb, the strategy and the unit
 
 Status: approved -- operator 2026-10-29 "Remember we must promote all the new plans!"; triaged BIG from worklist #bce6ed12 by session d778be9d on branch 1023-1
+Owner: d778be9d
 Priority: P1 -- On hostinger, the production machine, the read and hash phase of a snapshot is unbounded: the mautic retry peaked at load 11.41 and 56% iowait, and the hosting provider has taken this machine offline over CPU load before.
 Depends-On: no-dep -- the code boxes need nothing outside this plan; L1 and L2 run after R1-R4 and C1 land on the branch, on a production-keyed renet on hostinger
 Concurrency: parallel -- R (renet), C (CLI, unit generator, config schema), box I1 (CLI locales) and D (www docs) have disjoint Owns and run at the same time. No compile dependency links them: `executeRepoFunction` takes `params: Record<string, unknown>` (packages/cli/src/utils/repo-executor.ts:79-83), and the CLI tests mock `t`. L1 and L2 run after R and C land on the branch.
