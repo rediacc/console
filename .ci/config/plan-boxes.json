@@ -85,8 +85,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 1,
+      "open": 11,
+      "done": 3,
       "open_sigs": [
         "129cdf9a",
         "339bf791",
@@ -96,14 +96,14 @@
         "7692f2db",
         "85493dc7",
         "89621109",
-        "a7dd084e",
-        "ab5be0dc",
         "b00bc9df",
         "fa769782",
         "fcfb17fb"
       ],
       "done_sigs": [
-        "7e3d19ee"
+        "7e3d19ee",
+        "a7dd084e",
+        "ab5be0dc"
       ]
     },
     "agent/plans/PLAN-backup-meter-orphaned-chunks.md": {

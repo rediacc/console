@@ -310,19 +310,21 @@ R2's changes:
 
   Owns: private/renet/pkg/prune/datastore.go, private/renet/pkg/prune/identifiers.go, private/renet/pkg/prune/datastore_transfer_test.go (new), private/renet/pkg/list/storage_health.go, private/renet/pkg/list/types.go, private/renet/pkg/list/storage_health_transfer_test.go (new), private/renet (gitlink bump only), packages/shared/src/renet-contract/data/list-types.generated.ts (regenerated only), packages/cli/src/commands/machine/status.ts (renderPoolSummary only), packages/cli/src/commands/datastore-prune-parser.ts, packages/cli/src/commands/__tests__/machine-status-pool.test.ts (new), packages/cli/src/commands/__tests__/datastore-prune-pull-staging.test.ts (new). Accept: `cd private/renet && go test ./pkg/prune/ ./pkg/list/ -count=1` rc 0, and `cd packages/cli && npx vitest run src/commands/__tests__/machine-status-pool.test.ts src/commands/__tests__/datastore-prune-pull-staging.test.ts` rc 0.
 
-- [ ] X1 [writer] rsync.ts sibling (finding 1).
+- [x] X1 [writer] rsync.ts sibling (finding 1).
   - Export `getRsyncSSHCommand`.
   - Add `getRsyncVersionText()`, which runs `rsync --version` once and caches the result.
   - Add a comment at the `--verify` branch stating that `--inplace` implies `--partial`.
   - No behaviour change to repo sync.
+    (ticked) 2026-10-29T12:48:21Z by d778be9d: commit:741cfed5d
 
   Tests: every real-run argv from `buildRsyncArgs`, with and without `verify`, contains `--inplace`, and a dry run contains neither `--inplace` nor `--partial`. Control: a planted `verify` branch that also drops `--inplace` reds the test.
 
   Owns: packages/cli/src/remote/sync/rsync.ts, packages/cli/src/remote/sync/__tests__/rsync-inplace-partial.test.ts (new). Accept: `cd packages/cli && npx vitest run src/remote/sync/__tests__/rsync-inplace-partial.test.ts` rc 0.
 
-- [ ] S1 [writer] State file and preflight (Design 4, 5). Both are pure modules with no i18n; C1 renders their results.
+- [x] S1 [writer] State file and preflight (Design 4, 5). Both are pure modules with no i18n; C1 renders their results.
   - state.ts: `localImagePaths(dir, machine, name, tag)`, `readImageState`, `writeImageState` (atomic), `beginRun`, `completeRun`, `failRun`, `recordUpload`, `acquireLocalLock` and `releaseLocalLock`.
   - preflight.ts: `probeSparse(dir)`, `computeSpaceNeed({ apparent, allocated, localExists, localAllocated, sparse })`, `checkSpace(...)` returning `{ ok, need, free, reason? }`, and the FAT32 rule.
+    (ticked) 2026-10-29T12:48:24Z by d778be9d: commit:741cfed5d
 
   Tests:
   - a write interrupted between the temp write and the rename leaves the previous state readable;

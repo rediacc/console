@@ -471,7 +471,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
-| `agent/plans/PLAN-backup-local-image.md` | approved | 445 | 13 | 1 | 55874 |
+| `agent/plans/PLAN-backup-local-image.md` | approved | 447 | 11 | 3 | 56002 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 252 | 3 | 3 | 29713 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 48 | 1 | 6 | 7170 |
 | `agent/plans/PLAN-backup-program.md` | approved | 538 | 41 | 155 | 131248 |
