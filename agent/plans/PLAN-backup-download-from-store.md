@@ -1,6 +1,6 @@
 # PLAN: rdc backup download --store rebuilds a repo's encrypted image on a local path straight from the R2 chunk store, with no machine, updating by chunk hash
 
-Status: proposed -- operator 2026-10-29 answered "Go with changes, plan it" on the feasibility study (worklist #b76e7dcb); implementation waits for a second operator go
+Status: approved -- operator 2026-10-29 "Go: implement PLAN-backup-download-from-store" after the feasibility study (worklist #b76e7dcb)
 Depends-On: PLAN-backup-local-image.md, PLAN-backup-plane-shared-bucket-hardening.md
 Owner: d778be9d
 Priority: P2 -- downloads a lineage while its machine is down or deleted, puts no load on the machine and reaches any snapshot in history; it does not cover the loss of the bucket itself, which the machine-path download of PLAN-backup-local-image covers
