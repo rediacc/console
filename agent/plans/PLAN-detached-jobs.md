@@ -608,10 +608,11 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: packages/cli/src/i18n/locales/*/cli.json (non-en), packages/www/src/content/docs/*/proxy-and-executor.md, packages/www/src/content/docs/*/cli-application.md (regenerated only). Accept: `npm run check:i18n` rc 0.
   Amended (third round): follows every code box. The docs section also covers the attach window, the overlap warnings and refusals, the ticket steps and when they run while the client is away, the exceptions list, and spool retention.
 
-- [ ] J10 [lead] Durable Object: verify that no code change is needed. With every detachable run returning after start, `inFlight` falls to zero between polls and the alarm's idle branch applies unchanged (workers/proxy/src/org-executor.ts:327-346). Record the reading here; if L1 shows a poll that holds the lease past its body, the fix is filed under PLAN-executor-durable-object-policy's exclusive Owns, not here.
+- [x] J10 [lead] Durable Object: verify that no code change is needed. With every detachable run returning after start, `inFlight` falls to zero between polls and the alarm's idle branch applies unchanged (workers/proxy/src/org-executor.ts:327-346). Record the reading here; if L1 shows a poll that holds the lease past its body, the fix is filed under PLAN-executor-durable-object-policy's exclusive Owns, not here.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `npm run check:ci-proxy-cost-guard` rc 0.
   Amended (third round): the reading also covers the 20 s attach window, during which `inFlight` is 1 and the alarm renews as for any request.
     (live record 2026-10-29, d778be9d) J10 reading: workers/proxy/src/org-executor.ts:332 renews only while inFlight > 0, so a request that ends after its 20 s attach window (or with the result) lets inFlight fall to zero between polls and the idle branch applies unchanged; during the window inFlight is 1, as for any request. No change under workers/proxy/src. `npm run check:ci-proxy-cost-guard` rc 0 (16 containers at max_instances <= 25, sleepAfter <= 120 s, worst case 1967.35 USD a month under the 2100 limit).
+    (ticked) 2026-10-29T12:08:29Z by d778be9d: commit:ca9cf2625
 
 - [ ] J11 [lead] The VM proof for the renet change: `npm run vm:check -- --changed` VERIFIED on the tree carrying J1 and J3, as the push guard requires for the renet trigger paths.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt.
@@ -657,8 +658,9 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: each step's command, rc, timing and the job count recorded under "Live records"; steps 1, 2, 3, 5 and 6 rc 0 with one job per request id; step 4 rc 15.
 
-- [ ] J24 [lead] Settle the third-round trade-offs the operator has not ruled on (the attach window if L3b breaches its 10 % rule, the `reconcileBackupSchedules` nudge, the origin fields): record each answer under "Operator rulings, fourth round".
+- [x] J24 [lead] Settle the third-round trade-offs the operator has not ruled on (the attach window if L3b breaches its 10 % rule, the `reconcileBackupSchedules` nudge, the origin fields): record each answer under "Operator rulings, fourth round".
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0 and each answer quoted with its date.
+    (ticked) 2026-10-29T12:08:32Z by d778be9d: commit:afcb5c297
 
 
 - [ ] L2 [live] Cost after: the L0 commands again on the deployed branch, and the same three metrics over the new window with `PYTHONPATH=.ci python3 -m rediacc_ci.ops.proxy_job_cost --script rediacc-proxy-bench --from <ISO> --to <ISO>`. The expected result is Durable Object wall time per run falling from the run length to the sum of poll durations; the measured before and after go into "Live records" with the ratio.
