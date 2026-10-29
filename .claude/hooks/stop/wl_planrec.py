@@ -2268,14 +2268,16 @@ def append_investigation(root, row):
     path.parent.mkdir(parents=True, exist_ok=True)
     rec = dict(row)
     rec.setdefault("at", C.stamp_now())
-    # A re-run of the same --write (same box, tree, verdict, pointers and note) adds no testimony, only a duplicate line in the ledger; return the row already there.
+    # A re-run of the same --write (same box, tree, verdict, pointers and note) adds no testimony, only a duplicate line in the ledger; return the row already there. The read and the append sit under one outer flock (a sidecar of its own, since the append takes the ledger lock itself), so two identical runs at once cannot both miss the other.
     same = _investigation_identity(rec)
-    for prior in reversed(read_investigations(root)):
-        if prior.get("plan") == rec.get("plan") and prior.get("sig") == rec.get("sig"):
-            if _investigation_identity(prior) == same:
-                return prior
-            break
-    S._append_lines(str(path), _investigation_lock(path), [rec])
+    with open(_investigation_lock(path) + ".dedupe", "a") as guard:
+        S._flock(guard, getattr(S.fcntl, "LOCK_EX", 2))
+        for prior in reversed(read_investigations(root)):
+            if prior.get("plan") == rec.get("plan") and prior.get("sig") == rec.get("sig"):
+                if _investigation_identity(prior) == same:
+                    return prior
+                break
+        S._append_lines(str(path), _investigation_lock(path), [rec])
     return rec
 
 
