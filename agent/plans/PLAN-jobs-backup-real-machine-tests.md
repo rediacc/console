@@ -5,7 +5,7 @@ Depends-On: PLAN-detached-jobs.md#J4, PLAN-detached-jobs.md#J16
 Owner: d778be9d
 Priority: P1 -- every new renet piece on this branch is proven only against a temp dir, a fake argv or an httptest server; the only real-machine checks are one-off manual [live] boxes that leave no regression test behind
 Owns: agent/plans/PLAN-jobs-backup-real-machine-tests.md, packages/e2e-tests/tests/32-detached-jobs.test.ts (new), packages/e2e-tests/tests/26-backup-storage-cli.test.ts, packages/e2e-tests/tests/15-storage-backup.test.ts, packages/e2e-tests/tests/23-cli-migrate-routing.test.ts, packages/e2e-tests/playwright.config.ts, scripts/gates/check-e2e-coverage.ts, .ci/policy/.e2e-coverage-allowlist, .ci/rediacc_ci/drills/backup.py, .ci/rediacc_ci/drills/backup_renet.py, .ci/rediacc_ci/drills/backup_check_trigger.py, private/account/src/services/backup-storage.service.ts (a dev-only session TTL seam), private/account/tests/integration/backup-session-isolation.test.ts, private/account (gitlink bump only), agent/plans/PLAN-detached-jobs.md (the Accept lines of J4, J11 and J16 only), agent/plans/PLAN-backup-local-image.md (the Accept line of V1 only)
-Concurrency: exclusive -- the e2e VM fleet and the backup plane are shared, so one writer at a time drives suites on them; G1, A1 and X1 have no fleet use and may run beside it
+Concurrency: parallel -- G1, A1, D1 and X1 have disjoint files and no fleet use; E1-E4 and M1 drive the shared e2e VM fleet, so the lead runs at most one of those suites at a time
 Live-Proof: bench -- the only deployable change is the dev-only TTL seam in the account; a bench deploy proves the seam is refused outside the dev gateway
 Updated: 2026-10-29
 First-Seen: 2026-10-29
