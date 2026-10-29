@@ -477,6 +477,7 @@ describe('finalizeEnable --config-id (attach to an existing store entry)', () =>
         .mockRejectedValueOnce(new ConfigServerError('Config not found', 404))
         .mockResolvedValueOnce({ config: structuredClone(serverConfig), version: 1, sdkEpoch: 1 });
       await finalizeEnable(pendingRemote(undefined), CONFIG_NAME, { force: true });
+      expect(mockAdapterInstance.listConfigs).toHaveBeenCalled();
       expect(mockAdapterInstance.push).not.toHaveBeenCalled();
       expect(success).not.toHaveBeenCalled();
     } finally {
