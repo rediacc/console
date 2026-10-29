@@ -45,6 +45,8 @@ def _dev(renet: pathlib.Path, root: pathlib.Path, *args: str, license_env: bool 
     env = {k: v for k, v in os.environ.items() if k != "RDC_RENET_LICENSE"}
     env["PATH"] = f"{root / 'fakebin'}{os.pathsep}{env['PATH']}"
     env["FAKE_GO_LABEL"] = "new"
+    # build.sh refuses a keyless build (PLAN-production-key-only K4); an arbitrary value, never a real key.
+    env["ACCOUNT_ED25519_PUBLIC_KEY"] = "dGVzdC1vbmx5LW5vdC1hLWtleQ=="
     if license_env:
         env["RDC_RENET_LICENSE"] = "1"
     script = (

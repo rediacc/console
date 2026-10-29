@@ -260,14 +260,13 @@ def _table() -> tuple[Step, ...]:
         Step(
             "renet-key-gate",
             "builds",
-            # The clone has no DEV public-key cache (it is untracked), so the operator checkout's is named: without a DEV key the gate refuses. The path reaches the shell through the environment, never spliced into its text, so a checkout path holding `"`, `$` or a backtick stays one word (review 0e993d36.1); `sh -c` is only there to expand the renet glob.
+            # `sh -c` is only there to expand the renet glob. The gate needs no cache: retired keys are pinned in it by fingerprint (RETIRED_FINGERPRINTS).
             (
                 "sh",
                 "-c",
-                'exec env PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate --dev-cache "$DEV_CACHE" private/bin/renet-*',
+                "exec env PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate private/bin/renet-*",
             ),
             profiles=("release-local",),
-            env=(("DEV_CACHE", "{dev_cache}"),),
         ),
         # The assist starts as soon as the keyed renet set exists (local-release-assist.yml THE R2 CONTRACT): stage it, then dispatch.
         Step(
@@ -1178,7 +1177,6 @@ def base_context(root: pathlib.Path, regions: Sequence[str], workers_only: bool)
         account_pointer=account,
         repo=m.group(1) if m else "",
         clone=str(root / CLONE_REL / tree),
-        dev_cache=str(root / "private" / "account" / ".cache" / "public-keys.env"),
         workers_only="true" if workers_only else "",
         smoke_rc="-1",
         path=os.environ.get("PATH", ""),

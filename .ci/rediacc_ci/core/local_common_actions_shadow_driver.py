@@ -284,6 +284,9 @@ RUNNING = [
 ]
 GO_OLD = row("go", "version", out="go version go1.19.8 linux/amd64\n")
 
+# The key a build case hands ensure_renet_built through its environment, so the case reaches build.sh: a build with no key is refused since agent/plans/PLAN-production-key-only.md K3, and renet-no-key pins that refusal.
+KEYED = {"ACCOUNT_ED25519_PUBLIC_KEY": "shell-key"}
+
 SCENARIOS: dict[str, list[Case]] = {
     "deps": [
         Case(
@@ -675,6 +678,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "install-full",
             "ensure-docker-installed",
             setup=("renet_tree",),
+            env=KEYED,
             rows=[
                 DOCKER_DOWN,
                 row("sudo", "docker version", rc=1),
@@ -687,6 +691,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "install-renet-fails",
             "ensure-docker-installed",
             setup=("renet_tree",),
+            env=KEYED,
             rows=[
                 DOCKER_DOWN,
                 row("sudo", "docker version", rc=1),
@@ -770,7 +775,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "ensure-renet-built",
             setup=("renet_tree",),
             rows=[row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH)],
-            env={"DEBUG": "true"},
+            env={**KEYED, "DEBUG": "true"},
             repeat=2,
         ),
         Case(
@@ -792,8 +797,25 @@ SCENARIOS: dict[str, list[Case]] = {
             "ensure-renet-built",
             setup=("renet_tree",),
             rows=[row("build.sh", "dev --nolicense", rc=1, err="asset staging aborted\n")],
+            env=KEYED,
         ),
-        Case("renet-no-binary", "ensure-renet-built", setup=("renet_tree",)),
+        Case("renet-no-binary", "ensure-renet-built", setup=("renet_tree",), env=KEYED),
+        # No key anywhere: not in the environment, no cache, and no Bitwarden token in the sandbox's HOME. The build is refused before build.sh runs (agent/plans/PLAN-production-key-only.md K3).
+        Case("renet-no-key", "ensure-renet-built", setup=("renet_tree",)),
+        # RENET_KEYLESS is honoured only under GITHUB_ACTIONS=true: the first case builds keyless, the second is refused like renet-no-key.
+        Case(
+            "renet-keyless-ci",
+            "ensure-renet-built",
+            setup=("renet_tree",),
+            rows=[row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH)],
+            env={"RENET_KEYLESS": "1", "GITHUB_ACTIONS": "true"},
+        ),
+        Case(
+            "renet-keyless-local",
+            "ensure-renet-built",
+            setup=("renet_tree",),
+            env={"RENET_KEYLESS": "1"},
+        ),
         Case(
             "renet-darwin",
             "ensure-renet-built",

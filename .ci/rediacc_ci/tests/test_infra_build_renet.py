@@ -91,6 +91,9 @@ def _run(root: pathlib.Path, *argv: str, env_extra: dict[str, str] | None = None
         "HOME": str(root.parent),
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONPATH": str(ROOT / ".ci"),
+        # The CI keyless test build (agent/plans/PLAN-production-key-only.md K3): no account key, admitted only under GITHUB_ACTIONS.
+        "RENET_KEYLESS": "1",
+        "GITHUB_ACTIONS": "true",
         **(env_extra or {}),
     }
     proc = subprocess.run(

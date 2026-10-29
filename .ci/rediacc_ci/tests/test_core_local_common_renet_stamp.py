@@ -90,6 +90,9 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
         "LOCAL_ROOT_DIR": str(tmp_path),
         "RDC_RENET_LICENSE": "0",
         "ACCOUNT_ED25519_PUBLIC_KEY": "",
+        # A keyless build is the CI-only RENET_KEYLESS path since agent/plans/PLAN-production-key-only.md K3; without it the build is refused (or reads Bitwarden).
+        "RENET_KEYLESS": "1",
+        "GITHUB_ACTIONS": "true",
     }
     monkeypatch.setattr(local_common, "check_go_installed", lambda: None)
     builds = []
@@ -141,6 +144,9 @@ def _env(tmp_path, license_env):
         "LOCAL_ROOT_DIR": str(tmp_path),
         "RDC_RENET_LICENSE": license_env,
         "ACCOUNT_ED25519_PUBLIC_KEY": "",
+        # A keyless build is the CI-only RENET_KEYLESS path since agent/plans/PLAN-production-key-only.md K3; without it the build is refused (or reads Bitwarden).
+        "RENET_KEYLESS": "1",
+        "GITHUB_ACTIONS": "true",
     }
 
 

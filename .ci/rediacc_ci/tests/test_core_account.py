@@ -1271,9 +1271,11 @@ def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
     _, helpers_out, _ = drive_lifecycle("old", "helpers")
     assert "obs cleanup-kills-foreign foreign alive=0 signal=15" in helpers_out
     _, reset_out, _ = drive_lifecycle("old", "reset")
-    assert "obs whole side#2| len ACCOUNT_ED25519_PUBLIC_KEY=60" in reset_out
-    assert "obs push-fails tree| private/account/account.db file" in reset_out, (
-        "a failed push must leave the database alone"
+    # DB-only since agent/plans/PLAN-production-key-only.md K3: the database goes, and the stubbed `python3` (the tripwire for a `bws_env` push or cache refresh) records nothing.
+    assert "obs whole err#2| ✓ Removing account.db" in reset_out
+    assert "obs whole tree| private/account/account.db file" not in reset_out
+    assert not [line for line in reset_out.splitlines() if " side#" in line], (
+        "reset reached Bitwarden"
     )
 
 

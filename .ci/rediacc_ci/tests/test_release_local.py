@@ -1229,14 +1229,16 @@ def test_assist_cancel_refuses_loudly_when_the_run_cannot_be_stopped(
         local.assist_cancel(SHA, SINCE, wait=0, poll=0)
 
 
-def test_the_renet_key_gate_hands_the_dev_cache_to_sh_as_one_word(tmp_path: pathlib.Path) -> None:
-    """Review 0e993d36.1: a checkout path holding `"`, `$` or a backtick reaches the gate as one argument and expands nothing."""
+def test_the_renet_key_gate_names_only_the_renet_set_and_no_cache(tmp_path: pathlib.Path) -> None:
+    """PLAN-production-key-only K4: the gate pins retired keys by fingerprint, so the row hands it the renet glob alone, no `--dev-cache` and no cache path in its environment."""
     row = next(s for s in EDGE if s.id == "renet-key-gate")
-    hostile = str(tmp_path / 'a"b $(touch PWNED) `touch PWNED2` $HOME' / "public-keys.env")
-    ctx = local.Context(dev_cache=hostile, outcomes={})
+    ctx = local.Context(outcomes={})
     argv = local.child_argv(dataclasses_replace(row, profiles=()), ctx)
     env = local.child_env(dataclasses_replace(row, profiles=()), ctx, ROOT)
     assert argv[:2] == ["sh", "-c"]
+    assert "--dev-cache" not in argv[2]
+    assert "DEV_CACHE" not in env
+    assert all("public-keys.env" not in v for v in env.values())
     script = argv[2].replace(
         "exec env PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate",
         "exec printf '%s\\n'",
@@ -1247,9 +1249,7 @@ def test_the_renet_key_gate_hands_the_dev_cache_to_sh_as_one_word(tmp_path: path
     out = subprocess.run(
         ["sh", "-c", script], cwd=tmp_path, env=env, capture_output=True, text=True, check=True
     ).stdout.splitlines()
-    assert out == ["--dev-cache", hostile, "private/bin/renet-linux-amd64"]
-    assert not (tmp_path / "PWNED").exists()
-    assert not (tmp_path / "PWNED2").exists()
+    assert out == ["private/bin/renet-linux-amd64"]
 
 
 def test_assist_stage_in_empties_the_prefix_then_uploads_a_checked_renet_set(

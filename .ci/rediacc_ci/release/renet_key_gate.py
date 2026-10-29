@@ -1,15 +1,15 @@
 """Refuse a renet build that does not bake the production licence key.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate <binary>... [--image <ref>]... [--dev-cache <public-keys.env>]...
+    PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate <binary>... [--image <ref>]...
 
 The expected key is `ACCOUNT_ED25519_PUBLIC_KEY`, supplied by `bws_env exec` (PLAN-local-release W1-E). Every binary named, and every renet inside each `--image` (`/app/renet` and `/opt/renet/renet-linux-{amd64,arm64}`, copied out through `docker create`/`docker cp`), is read with `go version -m`, and the verdict is taken from its build info:
 
   * the `-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=` ldflag. Absent or empty means every licence reads as not installed;
-  * the DEV key's fingerprint, read from `private/account/.cache/public-keys.env` under this checkout, else from each `--dev-cache` path (the release clone has no cache, so `release:local` names the operator checkout's). `private/renet/build.sh` (`_account_key_ldflags`) bakes it with only a warning when the environment carries no key. With no DEV key readable the run refuses: an `ACCOUNT_ED25519_PUBLIC_KEY` holding the DEV key would then pass every DEV-baked binary as production;
+  * a retired key, by fingerprint (`RETIRED_FINGERPRINTS`): the DEV keypair parked by PLAN-production-key-only, so a stale binary baked with it is named as such rather than only as a key mismatch;
   * `-tags=nolicense`, a build with the licence checks compiled out;
   * any key other than the expected one.
 
-The expected key itself is refused when it is empty, malformed, or the DEV key. Only fingerprints are printed (renet's publicKeyId: the first 8 bytes of SHA-256 over the raw 32-byte key), never a key.
+The expected key itself is refused when it is empty, malformed, or retired. Only fingerprints are printed (renet's publicKeyId: the first 8 bytes of SHA-256 over the raw 32-byte key), never a key.
 
 The build-info reader here is the one `testrun/start_backup_plane.py --verify-renet` uses; that module imports it from here.
 
@@ -23,22 +23,21 @@ import binascii
 import dataclasses
 import hashlib
 import os
-import pathlib
 import re
 import subprocess
 import sys
 import tempfile
 from typing import TYPE_CHECKING
 
-from rediacc_ci import paths
 from rediacc_ci.well_known import RENET_REPO
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
 PUBLIC_KEY_ENV = "ACCOUNT_ED25519_PUBLIC_KEY"
-# `private/renet/build.sh` `_account_key_ldflags` reads the DEV key from here; it holds public keys only.
-DEV_KEY_CACHE = pathlib.Path("private") / "account" / ".cache" / "public-keys.env"
+# Fingerprints of retired licence keys. e7987a5718cad9a6 is the retired DEV keypair, parked by
+# PLAN-production-key-only (D5) and computed from the public-key cache before that plan rewrote it. A fingerprint, never a key.
+RETIRED_FINGERPRINTS: tuple[str, ...] = ("e7987a5718cad9a6",)
 # The linker symbol `build_renet.KEY_SYMBOL` sets. The value may be empty (`-X sym=`), which is matched so it can be named.
 BAKED_KEY = re.compile(
     r"github\.com/"
@@ -51,7 +50,7 @@ BUILD_TAGS = re.compile(r"^\s*build\s+-tags=(\S*)\s*$", re.MULTILINE)
 SPKI_ED25519_HEADER = bytes.fromhex("302a300506032b6570032100")
 # Where the renet image carries renet (private/renet/Dockerfile `COPY ... /app/renet`, `/opt/renet/...`).
 IMAGE_RENETS = ("/app/renet", "/opt/renet/renet-linux-amd64", "/opt/renet/renet-linux-arm64")
-USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate <binary>... [--image <ref>]... [--dev-cache <public-keys.env>]..."
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate <binary>... [--image <ref>]..."
 
 
 class KeyGateError(Exception):
@@ -127,28 +126,7 @@ def baked_public_key(
     return key
 
 
-def dev_fingerprint(root: pathlib.Path) -> str | None:
-    """The DEV key's fingerprint from the public-key cache, or None when there is no cache or no readable key in it."""
-    return dev_fingerprint_at(root / DEV_KEY_CACHE)
-
-
-def dev_fingerprint_at(cache: pathlib.Path) -> str | None:
-    """The DEV key's fingerprint from the public-key cache file `cache`, or None when it is absent or carries no readable key."""
-    try:
-        text = cache.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    for line in text.splitlines():
-        if line.startswith(PUBLIC_KEY_ENV + "="):
-            value = line[len(PUBLIC_KEY_ENV) + 1 :].strip().strip("'\"")
-            try:
-                return key_fingerprint(value) if value else None
-            except KeyGateError:
-                return None
-    return None
-
-
-def refusals(info: BuildInfo, want: str, dev: str | None) -> tuple[list[str], str | None]:
+def refusals(info: BuildInfo, want: str) -> tuple[list[str], str | None]:
     """Every reason `info` is refused, and the baked key's fingerprint (None when there is none to print)."""
     reasons: list[str] = []
     have: str | None = None
@@ -159,8 +137,8 @@ def refusals(info: BuildInfo, want: str, dev: str | None) -> tuple[list[str], st
             have = key_fingerprint(info.key)
         except KeyGateError as exc:
             reasons.append(f"baked key unreadable ({exc})")
-    if have is not None and dev is not None and have == dev:
-        reasons.append("DEV key")
+    if have is not None and have in RETIRED_FINGERPRINTS:
+        reasons.append(f"retired key {have}")
     elif have is not None and have != want:
         reasons.append(f"key {have} is not the production key {want}")
     if "nolicense" in info.tags:
@@ -171,7 +149,6 @@ def refusals(info: BuildInfo, want: str, dev: str | None) -> tuple[list[str], st
 def check_binary(
     binary: str,
     want: str,
-    dev: str | None,
     run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
     label: str | None = None,
 ) -> bool:
@@ -182,7 +159,7 @@ def check_binary(
     except KeyGateError as exc:
         print(f"REFUSED {name}: {exc}", flush=True)
         return False
-    reasons, have = refusals(info, want, dev)
+    reasons, have = refusals(info, want)
     version = info.version or "unset"
     if reasons:
         print(
@@ -208,7 +185,6 @@ def _docker(
 def check_image(
     image: str,
     want: str,
-    dev: str | None,
     run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
 ) -> bool:
     """Copy every renet out of `image` and check each one. A renet the image does not carry is refused, never skipped."""
@@ -242,7 +218,7 @@ def check_image(
                     )
                     ok = False
                     continue
-                ok = check_binary(local, want, dev, run, label=label) and ok
+                ok = check_binary(local, want, run, label=label) and ok
     finally:
         try:
             _docker(["rm", container], run)
@@ -251,17 +227,16 @@ def check_image(
     return ok
 
 
-def parse(argv: Sequence[str]) -> tuple[list[str], list[str], list[str]]:
+def parse(argv: Sequence[str]) -> tuple[list[str], list[str]]:
     binaries: list[str] = []
     images: list[str] = []
-    caches: list[str] = []
     i = 0
     while i < len(argv):
         arg = argv[i]
-        if arg in ("--image", "--dev-cache"):
+        if arg == "--image":
             if i + 1 >= len(argv) or not argv[i + 1]:
                 raise ValueError(f"{arg} needs a value")
-            (images if arg == "--image" else caches).append(argv[i + 1])
+            images.append(argv[i + 1])
             i += 2
             continue
         if arg.startswith("-"):
@@ -270,19 +245,19 @@ def parse(argv: Sequence[str]) -> tuple[list[str], list[str], list[str]]:
         i += 1
     if not binaries and not images:
         raise ValueError("name at least one renet binary or --image")
-    return binaries, images, caches
+    return binaries, images
 
 
-def expected_fingerprint(key: str, dev: str | None) -> str:
-    """The expected key's fingerprint; refuses an empty, malformed or DEV expected key."""
+def expected_fingerprint(key: str) -> str:
+    """The expected key's fingerprint; refuses an empty, malformed or retired expected key."""
     if not key:
         raise KeyGateError(
             f"{PUBLIC_KEY_ENV} is not set: run this under `bws_env exec` with the production key"
         )
     want = key_fingerprint(key)
-    if dev is not None and want == dev:
+    if want in RETIRED_FINGERPRINTS:
         raise KeyGateError(
-            f"{PUBLIC_KEY_ENV} is the DEV key ({want}): the gate compares against the production key"
+            f"{PUBLIC_KEY_ENV} is a retired key ({want}): the gate compares against the production key"
         )
     return want
 
@@ -291,34 +266,24 @@ def main(
     argv: Sequence[str], run: Callable[..., subprocess.CompletedProcess] = subprocess.run
 ) -> int:
     try:
-        binaries, images, caches = parse(argv)
+        binaries, images = parse(argv)
     except ValueError as exc:
         print(f"renet_key_gate: {exc}\n{USAGE}", file=sys.stderr)
         return 2
-    dev = dev_fingerprint(paths.repo_root())
-    for cache in caches:
-        dev = dev or dev_fingerprint_at(pathlib.Path(cache))
-    if dev is None:
-        print(
-            f"renet_key_gate: the DEV key is unknown (no readable {DEV_KEY_CACHE} here or at any --dev-cache), "
-            f"so a {PUBLIC_KEY_ENV} holding it could not be told from the production key; refusing",
-            file=sys.stderr,
-        )
-        return 1
     try:
-        want = expected_fingerprint(os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", ""), dev)
+        want = expected_fingerprint(os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", ""))
     except KeyGateError as exc:
         print(f"renet_key_gate: {exc}", file=sys.stderr)
         return 1
     print(
-        f"renet_key_gate: expected production key {want}; DEV key {dev}",
+        f"renet_key_gate: expected production key {want}; retired {', '.join(RETIRED_FINGERPRINTS)}",
         flush=True,
     )
     ok = True
     for binary in binaries:
-        ok = check_binary(binary, want, dev, run) and ok
+        ok = check_binary(binary, want, run) and ok
     for image in images:
-        ok = check_image(image, want, dev, run) and ok
+        ok = check_image(image, want, run) and ok
     if not ok:
         print("renet_key_gate: REFUSED", file=sys.stderr)
         return 1

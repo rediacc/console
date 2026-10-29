@@ -22,12 +22,12 @@ def _root(tmp_path):
     (root / "private" / "account" / "package.json").write_text("{}\n", encoding="utf-8")
     (root / ".ci" / "config").mkdir(parents=True)
     (root / ".ci" / "config" / "bws-secret-map.json").write_text(
-        '{"project": "p", "secrets": {"ACCOUNT_ED25519_PUBLIC_KEY_DEV": {"id": "1"}}}',
+        '{"project": "p", "secrets": {"ACCOUNT_ED25519_PUBLIC_KEY": {"id": "1"}}}',
         encoding="utf-8",
     )
     listing = [
-        {"key": "ACCOUNT_ED25519_PUBLIC_KEY_DEV", "value": "ed-pub-dev"},
-        {"key": "ACCOUNT_X25519_PUBLIC_KEY_DEV", "value": "x-pub-dev"},
+        {"key": "ACCOUNT_ED25519_PUBLIC_KEY", "value": "ed-pub-prod"},
+        {"key": "ACCOUNT_X25519_PUBLIC_KEY", "value": "x-pub-prod"},
     ]
     (root / "listing.json").write_text(json.dumps(listing), encoding="utf-8")
     fake = root / "bin" / "bws"
@@ -102,13 +102,13 @@ def test_a_token_only_env_file_is_tolerated_during_the_drain(tmp_path) -> None:
     assert _run(root, _env(root, tmp_path)) == 0
 
 
-def test_the_public_key_cache_holds_the_dev_keys_under_the_local_names(tmp_path) -> None:
+def test_the_public_key_cache_holds_the_production_public_keys_unaliased(tmp_path) -> None:
     root = _root(tmp_path)
     _token(tmp_path)
     assert _run(root, _env(root, tmp_path)) == 0
     cache = root / machine.PUBLIC_KEY_CACHE
     assert cache.read_text(encoding="utf-8") == (
-        "ACCOUNT_ED25519_PUBLIC_KEY=ed-pub-dev\nACCOUNT_X25519_PUBLIC_KEY=x-pub-dev\n"
+        "ACCOUNT_ED25519_PUBLIC_KEY=ed-pub-prod\nACCOUNT_X25519_PUBLIC_KEY=x-pub-prod\n"
     )
     assert stat.S_IMODE(cache.stat().st_mode) == 0o644
 
@@ -120,3 +120,18 @@ def test_an_unreachable_store_leaves_setup_green_and_says_so(tmp_path, capsys) -
     assert _run(root, _env(root, tmp_path)) == 0
     assert "Could not refresh" in capsys.readouterr().err
     assert not (root / machine.PUBLIC_KEY_CACHE).exists()
+
+
+def test_a_store_holding_only_the_retired_dev_entries_writes_no_cache(tmp_path, capsys) -> None:
+    """agent/plans/PLAN-production-key-only.md K3: setup reads the unsuffixed production names only. A store carrying just the `_DEV` spellings resolves nothing, so no cache is written; the production-names case above is the control."""
+    root = _root(tmp_path)
+    _token(tmp_path)
+    listing = [
+        {"key": "ACCOUNT_ED25519_PUBLIC_KEY_DEV", "value": "ed-pub-dev"},
+        {"key": "ACCOUNT_X25519_PUBLIC_KEY_DEV", "value": "x-pub-dev"},
+    ]
+    (root / "listing.json").write_text(json.dumps(listing), encoding="utf-8")
+    assert _run(root, _env(root, tmp_path)) == 0
+    assert "Could not refresh" in capsys.readouterr().err
+    assert not (root / machine.PUBLIC_KEY_CACHE).exists()
+    assert all("_DEV" not in spec and ">" not in spec for spec in machine.PUBLIC_KEY_SPECS)

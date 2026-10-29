@@ -7,7 +7,7 @@ WHO CALLS IT: nobody. It is an operator entry point, invoked by hand, and the on
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.build_server onprem
 
-PREREQUISITES ARE THE TWIN'S, unchanged: npm dependencies installed, both cross-compiled renet binaries present under `private/renet/bin/`, and either `ACCOUNT_ED25519_PUBLIC_KEY` in the environment or an `ACCOUNT_ED25519_PUBLIC_KEY=` line in the public-key cache `private/account/.cache/public-keys.env`, which `./run.sh setup` writes from Bitwarden. The twin read `private/account/.env`; that file is retired (agent/plans/PLAN-account-env-to-bws.md T15), and the cache has the same `KEY=value` shape, so the recorded goldens still describe this module byte for byte.
+PREREQUISITES ARE THE TWIN'S, unchanged: npm dependencies installed, both cross-compiled renet binaries present under `private/renet/bin/`, and either `ACCOUNT_ED25519_PUBLIC_KEY` in the environment or an `ACCOUNT_ED25519_PUBLIC_KEY=` line in the public-key cache `private/account/.cache/public-keys.env`, which `./run.sh setup` writes from the production Bitwarden entry (the one account keypair, agent/plans/PLAN-production-key-only.md). The twin read `private/account/.env`; that file is retired (agent/plans/PLAN-account-env-to-bws.md T15), and the cache has the same `KEY=value` shape, so the recorded goldens still describe this module byte for byte.
 
 PORT NOTES, each driven before it was written down.
 

@@ -4,20 +4,18 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import re
 import subprocess
-from typing import TYPE_CHECKING
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.build import build_renet
 from rediacc_ci.build import extract_renet_from_image as extract
 from rediacc_ci.release import local
 from rediacc_ci.release import renet_key_gate as gate
 from rediacc_ci.testrun import start_backup_plane as plane
 from rediacc_ci.well_known import RENET_REPO
-
-if TYPE_CHECKING:
-    import pathlib
 
 
 def spki(seed: bytes) -> str:
@@ -31,6 +29,8 @@ def fp(key: str) -> str:
 PROD = spki(b"production")
 DEV = spki(b"dev")
 OTHER = spki(b"other")
+# The real pinned set, read before the autouse fixture swaps in the synthetic DEV key.
+REAL_RETIRED = gate.RETIRED_FINGERPRINTS
 
 
 def buildinfo(
@@ -67,21 +67,27 @@ def fake_go(outputs: dict[str, str]):
     return run
 
 
-def verdict(info_text: str, dev: str | None = None) -> tuple[list[str], str | None]:
-    return gate.refusals(gate.parse_build_info(info_text), fp(PROD), dev)
+def verdict(info_text: str) -> tuple[list[str], str | None]:
+    return gate.refusals(gate.parse_build_info(info_text), fp(PROD))
+
+
+@pytest.fixture(autouse=True)
+def retired_dev(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The synthetic DEV key stands in for the real retired fingerprint, so no real fingerprint shapes a verdict here."""
+    monkeypatch.setattr(gate, "RETIRED_FINGERPRINTS", (fp(DEV),))
 
 
 # --------------------------------------------------------------------------- The verdicts
 
 
 def test_the_production_key_passes() -> None:
-    reasons, have = verdict(buildinfo(PROD), fp(DEV))
+    reasons, have = verdict(buildinfo(PROD))
     assert reasons == []
     assert have == fp(PROD)
 
 
 def test_no_key_ldflag_is_refused() -> None:
-    reasons, have = verdict(buildinfo(None), fp(DEV))
+    reasons, have = verdict(buildinfo(None))
     assert reasons == ["no key ldflag"]
     assert have is None
 
@@ -89,33 +95,33 @@ def test_no_key_ldflag_is_refused() -> None:
 def test_an_empty_key_is_refused() -> None:
     info = gate.parse_build_info(buildinfo(None, empty=True))
     assert info.key == ""
-    reasons, _ = gate.refusals(info, fp(PROD), fp(DEV))
+    reasons, _ = gate.refusals(info, fp(PROD))
     assert reasons == ["empty key"]
 
 
-def test_the_dev_key_is_refused_by_name() -> None:
-    reasons, have = verdict(buildinfo(DEV), fp(DEV))
-    assert reasons == ["DEV key"]
+def test_a_retired_key_is_refused_by_name() -> None:
+    reasons, have = verdict(buildinfo(DEV))
+    assert reasons == ["retired key %s" % fp(DEV)]
     assert have == fp(DEV)
 
 
 def test_another_key_is_refused_with_both_fingerprints() -> None:
-    reasons, _ = verdict(buildinfo(OTHER), fp(DEV))
+    reasons, _ = verdict(buildinfo(OTHER))
     assert reasons == ["key %s is not the production key %s" % (fp(OTHER), fp(PROD))]
 
 
 def test_nolicense_is_refused_even_with_the_production_key() -> None:
-    reasons, _ = verdict(buildinfo(PROD, tags="nolicense"), fp(DEV))
+    reasons, _ = verdict(buildinfo(PROD, tags="nolicense"))
     assert reasons == ["tags=nolicense"]
-    reasons, _ = verdict(buildinfo(PROD, tags="netgo,nolicense"), fp(DEV))
+    reasons, _ = verdict(buildinfo(PROD, tags="netgo,nolicense"))
     assert reasons == ["tags=nolicense"]
     # Must NOT fire on another tag.
-    reasons, _ = verdict(buildinfo(PROD, tags="netgo"), fp(DEV))
+    reasons, _ = verdict(buildinfo(PROD, tags="netgo"))
     assert reasons == []
 
 
 def test_a_malformed_baked_key_is_refused_without_printing_it() -> None:
-    reasons, have = verdict(buildinfo("bm90YWtleQ=="), fp(DEV))
+    reasons, have = verdict(buildinfo("bm90YWtleQ=="))
     assert have is None
     assert len(reasons) == 1
     assert reasons[0].startswith("baked key unreadable")
@@ -140,45 +146,38 @@ def test_fingerprint_matches_renet_for_raw_and_spki_keys() -> None:
         gate.key_fingerprint("bm90IGEga2V5")
 
 
-# --------------------------------------------------------------------------- The DEV fingerprint and the expected key
+# --------------------------------------------------------------------------- The retired fingerprints and the expected key
 
 
-def test_dev_fingerprint_reads_the_public_key_cache(tmp_path: pathlib.Path) -> None:
-    assert gate.dev_fingerprint(tmp_path) is None
-    cache = tmp_path / gate.DEV_KEY_CACHE
-    cache.parent.mkdir(parents=True)
-    cache.write_text("ACCOUNT_X25519_PUBLIC_KEY=x\nACCOUNT_ED25519_PUBLIC_KEY=%s\n" % DEV)
-    assert gate.dev_fingerprint(tmp_path) == fp(DEV)
-    cache.write_text("ACCOUNT_ED25519_PUBLIC_KEY=\n")
-    assert gate.dev_fingerprint(tmp_path) is None
+def test_the_retired_set_is_the_dev_fingerprint_and_only_fingerprints() -> None:
+    """PLAN-production-key-only D5: the parked DEV keypair, pinned as its 16-hex fingerprint, never a key; the production key (fb37f1ae16f8b7c0) is not in it."""
+    assert REAL_RETIRED == ("e7987a5718cad9a6",)
+    assert all(re.fullmatch(r"[0-9a-f]{16}", f) for f in REAL_RETIRED)
+    assert "fb37f1ae16f8b7c0" not in REAL_RETIRED
 
 
-def test_the_expected_key_must_be_set_and_not_the_dev_key() -> None:
-    assert gate.expected_fingerprint(PROD, fp(DEV)) == fp(PROD)
+def test_the_gate_reads_no_public_key_cache() -> None:
+    """The cache now holds the production key; reading it as "the DEV key" would refuse every release."""
+    for gone in ("DEV_KEY_CACHE", "dev_fingerprint", "dev_fingerprint_at"):
+        assert not hasattr(gate, gone)
+
+
+def test_the_expected_key_must_be_set_and_not_retired() -> None:
+    assert gate.expected_fingerprint(PROD) == fp(PROD)
     with pytest.raises(gate.KeyGateError, match="is not set"):
-        gate.expected_fingerprint("", fp(DEV))
-    with pytest.raises(gate.KeyGateError, match="DEV key"):
-        gate.expected_fingerprint(DEV, fp(DEV))
+        gate.expected_fingerprint("")
+    with pytest.raises(gate.KeyGateError, match="is a retired key"):
+        gate.expected_fingerprint(DEV)
     with pytest.raises(gate.KeyGateError):
-        gate.expected_fingerprint("bm90IGEga2V5", None)
+        gate.expected_fingerprint("bm90IGEga2V5")
 
 
 # --------------------------------------------------------------------------- main, end to end over the seams
 
 
-@pytest.fixture
-def dev_cache(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Path:
-    cache = tmp_path / gate.DEV_KEY_CACHE
-    cache.parent.mkdir(parents=True)
-    cache.write_text("ACCOUNT_ED25519_PUBLIC_KEY=%s\n" % DEV)
-    monkeypatch.setattr(gate.paths, "repo_root", lambda: tmp_path)
-    return tmp_path
-
-
 def test_main_reports_every_binary_and_refuses_on_any(
-    dev_cache, monkeypatch: pytest.MonkeyPatch, capsys
+    monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
-    del dev_cache
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", PROD)
     run = fake_go(
         {
@@ -193,17 +192,14 @@ def test_main_reports_every_binary_and_refuses_on_any(
     assert code == 1
     assert "ok      /b/prod: production key %s, version 1.2.3" % fp(PROD) in out.out
     assert "REFUSED /b/empty: empty key" in out.out
-    assert "REFUSED /b/dev: DEV key" in out.out
+    assert "REFUSED /b/dev: retired key %s" % fp(DEV) in out.out
     assert "REFUSED /b/nolicense: tags=nolicense" in out.out
     assert "REFUSED /b/missing: cannot read the build info" in out.out
     for key in (PROD, DEV):
         assert key not in out.out + out.err
 
 
-def test_main_passes_only_when_every_binary_passes(
-    dev_cache, monkeypatch: pytest.MonkeyPatch, capsys
-) -> None:
-    del dev_cache
+def test_main_passes_only_when_every_binary_passes(monkeypatch: pytest.MonkeyPatch, capsys) -> None:
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", PROD)
     assert (
         gate.main(["/b/a", "/b/b"], fake_go({"/b/a": buildinfo(PROD), "/b/b": buildinfo(PROD)}))
@@ -212,61 +208,43 @@ def test_main_passes_only_when_every_binary_passes(
     assert PROD not in capsys.readouterr().out
 
 
-def test_main_refuses_a_missing_or_dev_expected_key(
-    dev_cache, monkeypatch: pytest.MonkeyPatch, capsys
+def test_main_refuses_a_missing_or_retired_expected_key(
+    monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
-    del dev_cache
     monkeypatch.delenv("ACCOUNT_ED25519_PUBLIC_KEY", raising=False)
     assert gate.main(["/b/a"], fake_go({"/b/a": buildinfo(PROD)})) == 1
     assert "is not set" in capsys.readouterr().err
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", DEV)
     assert gate.main(["/b/a"], fake_go({"/b/a": buildinfo(DEV)})) == 1
     err = capsys.readouterr().err
-    assert "is the DEV key" in err
+    assert "is a retired key" in err
     assert DEV not in err
 
 
-def test_an_unknown_dev_key_refuses_rather_than_passing_a_dev_baked_binary(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys
+def test_main_refuses_a_retired_baked_key_and_passes_the_expected_one(
+    monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
-    """With no DEV cache, an expected key that IS the DEV key would pass a DEV build as production; the run refuses instead."""
-    monkeypatch.setattr(gate.paths, "repo_root", lambda: tmp_path)
-    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", DEV)
+    """K4: a binary baking a retired fingerprint is refused by name with no cache anywhere; control: the expected key passes."""
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", PROD)
     assert gate.main(["/b/a"], fake_go({"/b/a": buildinfo(DEV)})) == 1
     out = capsys.readouterr()
-    assert "the DEV key is unknown" in out.err
-    assert "production key" not in out.out
+    assert "REFUSED /b/a: retired key %s" % fp(DEV) in out.out
     assert DEV not in out.out + out.err
+    assert gate.main(["/b/a"], fake_go({"/b/a": buildinfo(PROD)})) == 0
+    assert "ok      /b/a: production key %s" % fp(PROD) in capsys.readouterr().out
 
 
-def test_a_dev_cache_named_on_the_command_line_is_read(
-    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys
-) -> None:
-    """The release clone has no cache; `--dev-cache` names the operator checkout's, and the DEV expected key is then refused by name."""
-    monkeypatch.setattr(gate.paths, "repo_root", lambda: tmp_path / "clone")
-    cache = tmp_path / "checkout" / "public-keys.env"
-    cache.parent.mkdir()
-    cache.write_text("ACCOUNT_ED25519_PUBLIC_KEY=%s\n" % DEV)
-    run = fake_go({"/b/a": buildinfo(PROD)})
-    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", DEV)
-    assert gate.main(["--dev-cache", str(cache), "/b/a"], run) == 1
-    assert "is the DEV key" in capsys.readouterr().err
-    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", PROD)
-    assert gate.main(["--dev-cache", str(cache), "/b/a"], run) == 0
-
-
-def test_the_local_release_names_the_checkouts_dev_cache() -> None:
+def test_the_local_release_hands_the_gate_no_cache() -> None:
     (row,) = [s for s in local.STEPS if s.id == "renet-key-gate"]
-    assert '--dev-cache "$DEV_CACHE"' in row.argv[-1]
-    assert ("DEV_CACHE", "{dev_cache}") in row.env
-    ctx = local.base_context(gate.paths.repo_root(), ["eu"], False)
-    assert ctx["dev_cache"] == str(gate.paths.repo_root() / gate.DEV_KEY_CACHE)
+    assert "--dev-cache" not in row.argv[-1]
+    assert all(name != "DEV_CACHE" for name, _ in row.env)
+    ctx = local.base_context(paths.repo_root(), ["eu"], False)
+    assert "dev_cache" not in ctx
 
 
 def test_a_missing_docker_is_a_refused_verdict_not_a_traceback(
-    dev_cache, monkeypatch: pytest.MonkeyPatch, capsys
+    monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
-    del dev_cache
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", PROD)
 
     def run(argv, **_kw):
@@ -284,14 +262,13 @@ def test_usage_errors_exit_2(capsys) -> None:
     assert gate.main([]) == 2
     assert gate.main(["--image"]) == 2
     assert gate.main(["--bogus"]) == 2
-    assert gate.main(["/b/a", "--dev-cache"]) == 2
+    assert gate.main(["/b/a", "--dev-cache", "x"]) == 2
     capsys.readouterr()
 
 
 def test_image_mode_copies_every_renet_and_removes_the_container(
-    dev_cache, monkeypatch: pytest.MonkeyPatch, capsys
+    monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
-    del dev_cache
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", PROD)
     docker: list[list[str]] = []
     copied: dict[str, str] = {}
@@ -313,7 +290,7 @@ def test_image_mode_copies_every_renet_and_removes_the_container(
     assert gate.main(["--image", "ghcr.io/x/renet:t"], run) == 1
     out = capsys.readouterr().out
     assert "ok      ghcr.io/x/renet:t:/app/renet: production key" in out
-    assert "REFUSED ghcr.io/x/renet:t:/opt/renet/renet-linux-amd64: DEV key" in out
+    assert "REFUSED ghcr.io/x/renet:t:/opt/renet/renet-linux-amd64: retired key %s" % fp(DEV) in out
     assert "REFUSED ghcr.io/x/renet:t:/opt/renet/renet-linux-arm64: not in the image" in out
     assert docker[0] == ["create", "ghcr.io/x/renet:t"]
     assert docker[-1] == ["rm", "cid123"]
@@ -337,7 +314,7 @@ def test_the_cached_path_ldflags_are_build_renets_and_pass_the_gate() -> None:
     info = gate.parse_build_info(text)
     assert info.key == PROD
     assert info.version == "2.5.0"
-    assert gate.refusals(info, fp(PROD), fp(DEV))[0] == []
+    assert gate.refusals(info, fp(PROD))[0] == []
     # And the cached path refuses rather than build without either input.
     assert extract.cross_refusal("cross", "2.5.0", PROD) is None
     assert extract.cross_refusal("cross", "", PROD) is not None

@@ -124,6 +124,8 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         if: steps.probe.outputs.exists == 'false'
+        env:
+          RENET_KEYLESS: "1"
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - name: Install renet
         if: steps.probe.outputs.exists == 'false'

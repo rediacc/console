@@ -413,11 +413,11 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
 # The account's retired local env files. `account-bws-bootstrap` refuses to continue while either still carries anything but the bootstrap token (PLAN-account-env-to-bws T20).
 RETIRED_ENV_FILES = ("private/account/.env", "private/account/.env.bench")
 
-# The PUBLIC-key cache the four build-time readers use (T15): the DEV keys, under the local names the readers expect.
+# The PUBLIC-key cache the build-time readers use (T15): the production public keys, unaliased. There is one account keypair for every build, gateway, bench and drill (agent/plans/PLAN-production-key-only.md), so the cache holds exactly what a released renet bakes.
 PUBLIC_KEY_CACHE = "private/account/.cache/public-keys.env"
 PUBLIC_KEY_SPECS = (
-    "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
-    "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY",
+    "ACCOUNT_ED25519_PUBLIC_KEY",
+    "ACCOUNT_X25519_PUBLIC_KEY",
 )
 
 
@@ -480,7 +480,7 @@ def _account_bws_bootstrap(ctx: Ctx) -> int:
     )
     if result.rc != 0:
         ctx.warn(
-            "Could not refresh %s from Bitwarden; a dev renet build will bake no licence key."
+            "Could not refresh %s from Bitwarden; ./rdc.sh reads the key from Bitwarden on its next renet build instead."
             % PUBLIC_KEY_CACHE
         )
         for line in result.err.strip().splitlines()[:4]:

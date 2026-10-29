@@ -129,6 +129,7 @@ jobs:
         id: build-renet
         if: steps.embed-cache.outputs.cache-hit != 'true'
         env:
+          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -228,6 +229,7 @@ jobs:
       - name: Build renet
         id: build-renet
         env:
+          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

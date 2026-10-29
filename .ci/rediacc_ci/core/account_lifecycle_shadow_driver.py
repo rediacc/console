@@ -32,8 +32,8 @@ THE SANDBOX LIVES AT ONE FIXED PATH ON BOTH SIDES, UNDER A LOCK
 `.ci/lib`, `.ci/config`, `.ci/rediacc_ci`, `.ci/scripts/lib`, `.devcontainer` and `scripts` are SYMLINKS back to this checkout, so the code under comparison is the tracked code. `private/account` is a real per-case fixture with its own `dev.defaults.env`, never the real submodule. Both sides run with `CONSOLE_ROOT_DIR`, `REDIACC_CI_ROOT` and `PYTHONPATH` pointing into it, so the
 `PYTHONPATH` the twin hands `bws_env` is the same string on both sides.
 
-STUBBED AND LOGGED: `docker`, `curl`, `npm`, `npx` (outside `dev`), `lsof`, `pgrep`, `kill` (the PROGRAM, which the twin reaches through `xargs`), `sleep`, `ss` (how `rediacc_ci.core.ports` probes, on both sides), `openssl`, `hostname`, and the `build-packages.sh` path stub. STUBBED, NOT LOGGED: `node` (`-v` and the cpu-features buildcheck answered, everything else passed to the real node), `date` (`+%s` frozen), and in the `reset` cases `python3`, whose two
-`bws_env` calls record themselves on the side channel with the LENGTH of each key they were handed, never a value. Everything else is the real program.
+STUBBED AND LOGGED: `docker`, `curl`, `npm`, `npx` (outside `dev`), `lsof`, `pgrep`, `kill` (the PROGRAM, which the twin reaches through `xargs`), `sleep`, `ss` (how `rediacc_ci.core.ports` probes, on both sides), `openssl`, `hostname`, and the `build-packages.sh` path stub. STUBBED, NOT LOGGED: `node` (`-v` and the cpu-features buildcheck answered, everything else passed to the real node), `date` (`+%s` frozen), and in the `reset` cases `python3`, a tripwire whose two
+`bws_env` rows (`store-from-env`, `cache-to`) would record themselves on the side channel with the LENGTH of each key they were handed, never a value; reset() calls neither since agent/plans/PLAN-production-key-only.md K3. Everything else is the real program.
 
 -----------------------------------------------------------------------------
 THE SCENARIOS
@@ -42,7 +42,7 @@ THE SCENARIOS
   stripe       `account_stripe_auto` with no key, no CLI, the happy path, stale listeners to kill, a thirty-sleep timeout, and a failing product sync (twin behaviour 5).
   credentials  `account_dev_credentials` never healthy, healthy late, an existing store, no store, a failed provisioning call, the silent deaths on an unreadable seed answer (twin behaviour 3) and a failing `hostname -I` (4), a JSON array answer, and a failing `openssl`.
   seed         `account_seed_demo`'s refusals, the four ways it finds a port, a non-200 answer with and without a JSON body, the dead "Could not reach" branch (twin behaviour 1), and no `jq`.
-  reset        `account_reset` whole, with the Bitwarden push failing, the cache refresh failing, no database files, an old node, and a failing `openssl`.
+  reset        `account_reset`, DB-only since agent/plans/PLAN-production-key-only.md K3: whole, no database files, and an old node it no longer checks. No case reaches Bitwarden.
   test         `account_test` passing arguments through, vitest failing, and no node.
   e2e          `account_test_e2e` finding its port three ways and not at all, a gateway that is not up, the webhook and sandbox switches, a failing install, and a failing Playwright run.
   dev          `account_dev` end to end: reusing a live RustFS, stopping a previous instance, no Docker with Stripe on, starting RustFS, RustFS never answering, Astro never starting, a pinned port that is busy, stale installs, a failing gateway, and a state file missing its key.
@@ -606,28 +606,10 @@ SCENARIOS: dict[str, list[Case]] = {
         Case("no-jq", "seed-demo", ["a@example.test"], hidden=("jq",)),
     ],
     "reset": [
+        # `python3` stays stubbed in every reset case as a TRIPWIRE: reset() calls no `bws_env` verb since agent/plans/PLAN-production-key-only.md K3, so any `store-from-env` or `cache-to` it made would land on the side channel and move the transcript.
         Case("whole", "reset", setup=("db_files",), python_stub=True),
-        Case(
-            "push-fails",
-            "reset",
-            setup=("db_files",),
-            python_stub=True,
-            rows=[row("python3", "-m rediacc_ci.core.bws_env store-from-env *", rc=1, sh=SIDE)],
-        ),
-        Case(
-            "cache-fails",
-            "reset",
-            python_stub=True,
-            rows=[row("python3", "-m rediacc_ci.core.bws_env cache-to *", rc=2, sh=SIDE)],
-        ),
         Case("no-db", "reset", python_stub=True),
         Case("old-node", "reset", python_stub=True, rows=[row("node", "-v", out="v16.20.2\n")]),
-        Case(
-            "openssl-fails",
-            "reset",
-            python_stub=True,
-            rows=[row("openssl", "rand -base64 48", rc=1, err="openssl: boom\n")],
-        ),
     ],
     "test": [
         Case("args", "test", ["--reporter", "dot", "src/a.test.ts"]),
