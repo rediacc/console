@@ -45,3 +45,12 @@ def test_archive_without_a_region_is_refused() -> None:
     code, lines, _rows = verb.run(["--archive"], ENV, lambda *_a, **_k: [])
     assert code == 2
     assert "--archive needs --region" in lines[0]
+
+
+def test_the_cd_owned_console_switch_is_never_an_extra() -> None:
+    live = [
+        {"name": "EXECUTOR_MODE", "type": "secret_text"},
+        {"name": "STALE_KEY", "type": "secret_text"},
+        {"name": "ACCOUNT_JWT_SECRET", "type": "secret_text"},
+    ]
+    assert verb.extras(live, ["ACCOUNT_JWT_SECRET"]) == ["STALE_KEY"]

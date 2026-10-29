@@ -34,6 +34,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
 from rediacc_ci.core import bws_env, https
+from rediacc_ci.deploy import console_executor
 from rediacc_ci.deploy import set_account_worker_secrets as pusher
 from rediacc_ci.well_known import CF_API_BASE
 
@@ -51,6 +52,9 @@ REGIONS_REL = "regions.json"
 # The binding type the secrets endpoint reports for a value set through `wrangler secret`. Other types on the list were not pushed by the bulk call and are never touched.
 TEXT_BINDING = "secret_text"
 ARCHIVE_PREFIX = "__ARCHIVE_"
+# CD owns the console switch (EXECUTOR_MODE): it is set after the proxy smoke and deleted by the rollback, so it is never an extra.
+# Deleting it would close a target's console executor.
+CD_OWNED = frozenset({console_executor.MODE_KEY})
 # Legacy Worker secret name -> the bws key that holds its successor. `{SUFFIX}` is the region's `secretSuffix`.
 LEGACY_BWS: dict[str, str] = {
     "API_KEY": "ACCOUNT_SERVER_API_KEY",
@@ -111,7 +115,7 @@ def load_workers(root: pathlib.Path | None = None) -> list[Row]:
 
 def extras(live: list[dict[str, object]], expected: list[str]) -> list[str]:
     """Live secret names (type secret_text) the deploy does not push, sorted."""
-    keep = set(expected)
+    keep = set(expected) | CD_OWNED
     return sorted(
         str(item.get("name"))
         for item in live
