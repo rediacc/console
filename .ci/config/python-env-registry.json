@@ -218,7 +218,6 @@
       "CONFIG_R2_ENDPOINT",
       "CONFIG_R2_SECRET_ACCESS_KEY",
       "GATEWAY_PORT",
-      "PYTHONPATH",
       "REDIACC_ACCOUNT_SERVER",
       "REDIACC_DEV_BIND",
       "ROOT_EMAIL",
@@ -268,6 +267,7 @@
     ".ci/rediacc_ci/core/local_common.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "CONSOLE_ROOT_DIR",
+      "GITHUB_ACTIONS",
       "HOME",
       "LANG",
       "LC_ALL",
@@ -281,6 +281,7 @@
       "REDIACC_IN_DEVBOX",
       "REDIACC_LANE",
       "REDIACC_NPM_RUNTIME",
+      "RENET_KEYLESS",
       "SCRIPT_ENTRYPOINT",
       "USER",
       "_DEVBOX_DOCKER"
@@ -680,6 +681,12 @@
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
       "CLOUDFLARE_API_TOKEN"
+    ],
+    ".ci/rediacc_ci/ops/backup_bucket_scope_probe.py": [
+      "*name",
+      "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+      "ACCOUNT_BACKUP_S3_ENDPOINT",
+      "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"
     ],
     ".ci/rediacc_ci/ops/backup_cutover_preflight.py": [
       "ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET",
