@@ -32,8 +32,9 @@ LEDGER = ("agent", "ledgers", "live-proof.jsonl")
 LOG_DIR = (".ci", "cache", "live-proof")
 TAIL_MAX = 20
 TAIL_LINE_MAX = 300
-# tail_of replaces email addresses in the captured check tail (wrangler's deployment listing carries `author_email`).
-EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9_.-]+\.[A-Za-z]{2,}")
+# tail_of replaces every `local@host` token in the captured check tail (wrangler's deployment listing carries `author_email`).
+# No TLD is required, so ci@localhost goes too; a package spec such as name@1.2.3 is redacted as well, which costs nothing in a tail.
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9_.-]+")
 DEFAULT_TIMEOUT_S = 600
 BENCH_CACHE = "bench-cache"
 RENET_HASH = "renet-hash"
