@@ -32,6 +32,8 @@ LEDGER = ("agent", "ledgers", "live-proof.jsonl")
 LOG_DIR = (".ci", "cache", "live-proof")
 TAIL_MAX = 20
 TAIL_LINE_MAX = 300
+# An email address in a captured line (wrangler's deployment listing carries `author_email`) never reaches the committed ledger.
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 DEFAULT_TIMEOUT_S = 600
 BENCH_CACHE = "bench-cache"
 RENET_HASH = "renet-hash"
@@ -344,9 +346,9 @@ def accept_of(text: str, line: int) -> Accept | None:
 
 
 def tail_of(log: str) -> list[str]:
-    """The last TAIL_MAX non-empty lines of an already scrubbed log, each clipped to TAIL_LINE_MAX characters."""
+    """The last TAIL_MAX non-empty lines of an already scrubbed log, email addresses replaced by `<email>`, each clipped to TAIL_LINE_MAX characters."""
     lines = [ln.rstrip() for ln in log.splitlines() if ln.strip()]
-    return [ln[:TAIL_LINE_MAX] for ln in lines[-TAIL_MAX:]]
+    return [EMAIL_RE.sub("<email>", ln)[:TAIL_LINE_MAX] for ln in lines[-TAIL_MAX:]]
 
 
 def secret_shapes(text: str) -> list[str]:

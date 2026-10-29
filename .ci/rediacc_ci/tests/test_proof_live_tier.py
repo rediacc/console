@@ -521,3 +521,10 @@ def test_matches_needs_every_accept_field() -> None:
     failed = copy.deepcopy(row)
     failed["check"]["rc"] = 2
     assert not LT.matches(failed, "agent/plans/PLAN-demo.md", "0f30f980", "bench", accept)
+
+
+def test_tail_of_replaces_email_addresses() -> None:
+    log = 'ok\n  "author_email": "someone@example.com",\nlast line\n'
+    tail = LT.tail_of(log)
+    assert not any("@example.com" in ln for ln in tail)
+    assert '  "author_email": "<email>",' in tail
