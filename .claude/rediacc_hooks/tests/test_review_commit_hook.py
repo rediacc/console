@@ -522,6 +522,29 @@ def test_a_commit_behind_an_unresolvable_dash_c_still_starts_its_review(world):
     assert world.wait_for(world.review_file(sha))
 
 
+def test_a_commit_behind_a_cd_that_returns_still_starts_its_review(world):
+    """#52978244: the event cwd is where the shell ENDED, so `cd sub && git commit ... && cd ..` resolved the bare `git commit` to the console and left the submodule commit unreviewed."""
+    sub = _submodule(world)
+    sha = world.commit("f.py", repo=sub)
+    rc, out, err, _t = world.hook("cd sub && git commit -m x -- f.py && cd ..")
+    assert rc == 0, err
+    assert "started for sub %s" % sha[:8] in _context(out)
+    assert world.wait_for(world.review_file(sha))
+
+
+def test_a_cd_into_a_non_submodule_still_starts_nothing(world):
+    """CONTROL for #52978244: checking every project repository on a cd must not widen membership; a gitignored repo is still excluded."""
+    _submodule(world, "registered")
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+    sha = world.commit("f.py", repo=other)
+    rc, out, err, _t = world.hook("cd growth && git commit -m x -- f.py && cd ..")
+    assert rc == 0, err
+    assert "growth" not in _context(out)
+    assert not world.review_file(sha).exists()
+
+
 def test_a_commit_in_a_nested_repo_that_is_not_a_submodule_starts_nothing(world):
     """2026-10-08: private/growth is a separate, gitignored repository inside the tree. Its commits were reviewed into this project's agent/reviews/, which filed the operator's private documents here; the operator ruled it excluded. Membership is `.gitmodules`, not location."""
     _submodule(world, "registered")
