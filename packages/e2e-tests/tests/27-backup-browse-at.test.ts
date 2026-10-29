@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
@@ -583,6 +584,175 @@ test.describe
             w1.getCombinedOutput(missing),
             'the refusal does not carry NO_SUCH_PATH'
           ).toContain('NO_SUCH_PATH');
+          const absent = await w1.executeViaBridge(
+            `sudo test -e "${missingTo}" && echo present || echo absent`
+          );
+          expect(absent.stdout, 'a refused restore created the --to directory').toContain('absent');
+        } finally {
+          await w1.executeViaBridge(`sudo rm -rf "${toBase}"`).catch(() => undefined);
+        }
+      });
+
+      test('3d. rdc backup restore --path fetches only the cells that cover the path, measured against the full-image plan', async () => {
+        // The N4b proof. A 64 MiB filler sits beside the target, so a path restore that fetched the whole image would fetch at least 16 more chunks than one that fetched the cells under the path. The full-image figure is the `--dry-run` plan's chunksWanted (a real full restore can reuse a seed and under-report). The snapshot is staged (autostart on while mounted), as 3c does, because restore-path refuses a listing walked from the live mount.
+        const root = `${DS}/mounts/${repo.guid}`;
+        const dirName = `n4b-dir-${stamp}`;
+        const fileName = `n4b-file-${stamp}.bin`;
+        const fillerName = `n4b-filler-${stamp}.bin`;
+        const toBase = `/tmp/n4b-to-${stamp}`;
+        const sh = (cmd: string) => w1.executeViaBridge(`sudo sh -c '${cmd}'`);
+        const treeHash = (dir: string): string =>
+          `cd "${dir}" && find . -type f | sort | xargs sha256sum`;
+        const filler = 64 * 1024 * 1024;
+        const fileBytes = 300000;
+        // Fewer chunks than the whole-image plan by at least the filler's cells (64 MiB / the largest cell the grid uses is 16 or more).
+        const marginCells = 16;
+
+        interface PathRecord {
+          snapshotId: string;
+          files: number;
+          bytesWritten: number;
+          cellsTotal: number;
+          cellsSelected: number;
+          chunksFetched: number;
+        }
+
+        let snapshotId = '';
+        let liveFileHash = '';
+        let liveTreeHash = '';
+        const mounted = await mountRepo();
+        expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
+        try {
+          const plant = await sh(
+            `mkdir -p "${root}/${dirName}/sub" && head -c ${fileBytes} /dev/urandom > "${root}/${fileName}" && ` +
+              `head -c 70000 /dev/urandom > "${root}/${dirName}/a.bin" && ` +
+              `head -c 5000 /dev/urandom > "${root}/${dirName}/sub/b.bin" && ` +
+              `head -c ${filler} /dev/urandom > "${root}/${fillerName}" && sync`
+          );
+          expect(plant.code, `planting: ${w1.getCombinedOutput(plant)}`).toBe(0);
+          const fileSum = await sh(`sha256sum "${root}/${fileName}"`);
+          const treeSum = await sh(treeHash(`${root}/${dirName}`));
+          expect(fileSum.code, `hashing the live file: ${fileSum.stderr}`).toBe(0);
+          expect(treeSum.code, `hashing the live tree: ${treeSum.stderr}`).toBe(0);
+          liveFileHash = fileSum.stdout.trim().split(/\s+/)[0] ?? '';
+          liveTreeHash = treeSum.stdout.trim();
+          expect(liveFileHash, 'no live file hash').toMatch(/^[0-9a-f]{64}$/);
+          expect(liveTreeHash.split('\n'), 'the live tree is not two files').toHaveLength(2);
+
+          const autostart = await w1.executeViaBridge(
+            `sudo renet repository autostart enable --name "${repo.guid}" ` +
+              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`,
+            undefined,
+            { stdin: `${repo.credential}\n` }
+          );
+          expect(
+            autostart.code,
+            `autostart enable: ${w1.getCombinedOutput(autostart).slice(-800)}`
+          ).toBe(0);
+          snapshotId = await snapshot();
+        } finally {
+          await disableAutostart().catch(() => undefined);
+          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+        }
+
+        try {
+          // Baseline: the full-image plan. Non-vacuity control, the filler must be in it.
+          const plan = await w1.executeViaBridge(
+            `sudo renet backup restore --repo "${randomUUID()}" --lineage "${repo.guid}" ` +
+              `--at "${snapshotId}" --datastore "${DS}" --dry-run`
+          );
+          expect(plan.code, `restore --dry-run: ${w1.getCombinedOutput(plan).slice(-800)}`).toBe(0);
+          const planLine = plan.stdout
+            .split('\n')
+            .reverse()
+            .find((line) => line.trim().startsWith('{'));
+          const planned = JSON.parse(planLine ?? '{}') as {
+            status?: string;
+            chunksWanted?: number;
+          };
+          expect(planned.status, `the dry run did not plan: ${plan.stdout.slice(-800)}`).toBe(
+            'planned'
+          );
+          const wanted = planned.chunksWanted ?? 0;
+          expect(
+            wanted,
+            'the full-image plan wants too few chunks: the filler is not in the baseline'
+          ).toBeGreaterThanOrEqual(marginCells);
+
+          const restorePath = async (pathArg: string, to: string) => {
+            const { result, json } = await cli.runJson<CliEnvelope<PathRecord>>([
+              'backup',
+              'restore',
+              `${REPO_NAME}@${M1}`,
+              '--at',
+              snapshotId,
+              '--path',
+              pathArg,
+              '--to',
+              to,
+            ]);
+            expect(
+              result.code,
+              `restore --path ${pathArg}: ${bothChannels(result).slice(-800)}`
+            ).toBe(0);
+            const record = json?.data;
+            expect(
+              record,
+              `no restore-path record: ${bothChannels(result).slice(-800)}`
+            ).toBeTruthy();
+            return record as PathRecord;
+          };
+          const expectFewerFetches = (record: PathRecord) => {
+            expect(record.snapshotId).toBe(snapshotId);
+            expect(record.chunksFetched, 'a path restore fetched nothing').toBeGreaterThanOrEqual(
+              1
+            );
+            expect(record.chunksFetched).toBeLessThanOrEqual(record.cellsSelected);
+            expect(record.cellsSelected).toBeLessThan(record.cellsTotal);
+            expect(
+              record.chunksFetched + marginCells,
+              `fetched ${record.chunksFetched} chunks against a full-image plan of ${wanted}`
+            ).toBeLessThanOrEqual(wanted);
+          };
+
+          // One file.
+          const fileRecord = await restorePath(fileName, `${toBase}/file`);
+          expect(fileRecord.files).toBe(1);
+          expect(fileRecord.bytesWritten).toBe(fileBytes);
+          expectFewerFetches(fileRecord);
+          const restoredFile = await sh(`sha256sum "${toBase}/file/${fileName}"`);
+          expect(restoredFile.code, `restored file: ${restoredFile.stderr}`).toBe(0);
+          expect(
+            restoredFile.stdout.trim().split(/\s+/)[0],
+            'the restored file differs from the live one'
+          ).toBe(liveFileHash);
+
+          // One directory tree.
+          const dirRecord = await restorePath(dirName, `${toBase}/dir`);
+          expectFewerFetches(dirRecord);
+          const restoredTree = await sh(treeHash(`${toBase}/dir/${dirName}`));
+          expect(restoredTree.code, `restored tree: ${restoredTree.stderr}`).toBe(0);
+          expect(restoredTree.stdout.trim(), 'the restored tree differs from the live one').toBe(
+            liveTreeHash
+          );
+
+          // A path the snapshot does not hold: NO_SUCH_PATH, nothing written.
+          const missingTo = `${toBase}/missing`;
+          const missing = await cli.run([
+            'backup',
+            'restore',
+            `${REPO_NAME}@${M1}`,
+            '--at',
+            snapshotId,
+            '--path',
+            `missing-${stamp}`,
+            '--to',
+            missingTo,
+          ]);
+          expect(missing.code, 'a missing path restored without error').not.toBe(0);
+          expect(bothChannels(missing), 'the refusal does not carry NO_SUCH_PATH').toContain(
+            'NO_SUCH_PATH'
+          );
           const absent = await w1.executeViaBridge(
             `sudo test -e "${missingTo}" && echo present || echo absent`
           );
