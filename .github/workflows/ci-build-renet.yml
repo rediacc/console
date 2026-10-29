@@ -484,6 +484,9 @@ jobs:
           go test -count=1 -v -run '^TestPunchHole' ./pkg/chunkstore/ | tee "$RUNNER_TEMP/punch.log"
           grep -q '^--- PASS: TestPunchHole_NativeZeroesOnlyTheRange' "$RUNNER_TEMP/punch.log"
           grep -q '^--- PASS: TestPunchHole_ZerosTheRangeAndKeepsTheSize' "$RUNNER_TEMP/punch.log"
+          # A skip here means the native filesystem could not punch, which is
+          # the failure this job exists to catch.
+          if grep -q '^--- SKIP: TestPunchHole' "$RUNNER_TEMP/punch.log"; then exit 1; fi
 
   # Cross-compile smoke: every GOOS/GOARCH target compiles WITHOUT the embed
   # payload (committed BPF .o objects satisfy linux; committed .gitkeep
