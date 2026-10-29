@@ -2046,6 +2046,33 @@
             }
           ],
           "subcommands": []
+        },
+        {
+          "name": "purge",
+          "descriptionKey": "commands.backup.purge.description",
+          "options": [
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
         }
       ]
     },

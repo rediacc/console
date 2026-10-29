@@ -7,7 +7,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "38ccbf527fdb2402"
+sourceHash: "c91b80f411edc734"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2821,6 +2821,21 @@ rdc backup upload <image-file> [options]
 | `--up` | {{t:cli.commands.backup.upload.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-verify` | {{t:cli.commands.backup.upload.optionSkipVerify}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-purge"></a>
+### 8.18 purge
+
+{{t:cli.commands.backup.purge.description}}
+
+```bash
+rdc backup purge <repo-ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

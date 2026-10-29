@@ -176,6 +176,13 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Deletes snapshots outright; like a retention mutation, a wrong call ' +
       'discards backups the operator meant to keep.',
   },
+  // Destructive: every snapshot of the lineage goes at once. Excluded from MCP like `snapshots delete`, and grand-guarded so an agent cannot purge a grand repository's backups without the operator's override.
+  'backup purge': {
+    grandGuard: true,
+    mcpExcludeReason:
+      'Deletes every stored snapshot of a repository at once; a wrong call ' +
+      'discards all of its backups.',
+  },
   'backup verify': {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },

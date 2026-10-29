@@ -332,6 +332,16 @@
         "resuming": "{{machine}} üzerindeki {{guid}} için bekleyen yükleme sürdürülüyor",
         "retrying": "Aktarım hatasından sonra yükleme yeniden deneniyor: {{error}}",
         "done": "{{name}}, {{machine}} makinesine {{guid}} olarak yüklendi"
+      },
+      "purge": {
+        "description": "Bir deponun depolanan tüm yedek anlık görüntülerini parça deposundan tek seferde siler. Deponun kendisi korunur.",
+        "notFound": "\"{{name}}\" deposu bu yapılandırmada yok.",
+        "forkRefused": "\"{{name}}\" bir fork ve yedek soyunu ana depoyla paylaşıyor; temizlik ana deponun yedeklerini de silerdi. Bunun yerine ana depoyu belirtin.",
+        "dryRun": "\"{{name}}\" deposunun yedekleri temizlenecek: soy {{lineage}}, {{count}} anlık görüntü, {{chunks}} parçada {{bytes}} depolanıyor.",
+        "nothingStored": "\"{{name}}\" deposunun depolanmış yedeği yok; temizlenecek bir şey yok.",
+        "confirm": "Bu işlem \"{{name}}\" deposunun depolanan {{count}} anlık görüntüsünün tamamını ({{bytes}}) siler ve geri alınamaz. Onaylamak için depo adını yazın:",
+        "success": "\"{{name}}\" deposunun {{count}} anlık görüntüsü temizlendi, {{bytes}} yer açıldı.",
+        "usageDelta": "Bu depo için depolanan: önce {{beforeChunks}} parçada {{beforeBytes}}, sonra {{afterChunks}} parçada {{afterBytes}}."
       }
     },
     "cluster": {

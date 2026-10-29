@@ -93,6 +93,7 @@ const DOMAIN_MODULES = new Map<string, string>([
   ['credits', 'commands/credits.ts'],
   ['datastore', 'commands/datastore.ts'],
   ['doctor', 'commands/doctor.ts'],
+  ['tools', 'commands/tools.ts'],
   ['job', 'commands/job.ts'],
   ['machine', 'commands/machine/index.ts'],
   ['mcp', 'commands/mcp/index.ts'],
@@ -114,6 +115,18 @@ const DOMAIN_MODULES = new Map<string, string>([
  * imports. Every entry here is a rule this gate stops enforcing.
  */
 const OVERRIDES = new Map<string, { expectMachineTouching: boolean; reason: string }>([
+  [
+    'tools',
+    {
+      expectMachineTouching: false,
+      reason:
+        'Graph says machine-touching via commands/tools.ts -> services/tofu/executor.ts. tools ' +
+        'only uses the executor to resolve and version-check the local OpenTofu binary ' +
+        '(resolveTofu); the executor module also runs tofu apply for machine provision, which ' +
+        'is the edge tools never traverses. Drop this override if the binary lookup moves out ' +
+        'of executor.ts.',
+    },
+  ],
   [
     'doctor',
     {

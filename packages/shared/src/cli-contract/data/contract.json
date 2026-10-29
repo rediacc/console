@@ -457,6 +457,64 @@
     {
       "path": [
         "backup",
+        "purge"
+      ],
+      "pathKey": "backup purge",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.purge.description",
+      "label": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.dryRun",
+          "label": "Show what would be done without making changes"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "reconcile"
       ],
       "pathKey": "backup reconcile",

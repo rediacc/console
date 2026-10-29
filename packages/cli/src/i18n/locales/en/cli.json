@@ -2122,6 +2122,16 @@
         "resuming": "Resuming the pending upload into {{guid}} on {{machine}}",
         "retrying": "Retrying the upload after a transfer failure: {{error}}",
         "done": "Uploaded {{name}} to {{machine}} as {{guid}}"
+      },
+      "purge": {
+        "description": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.",
+        "notFound": "Repository \"{{name}}\" is not in this config.",
+        "forkRefused": "\"{{name}}\" is a fork and shares its backup lineage with its parent, so a purge would delete the parent's backups too. Name the parent repository instead.",
+        "dryRun": "Would purge the backups of \"{{name}}\": lineage {{lineage}}, {{count}} snapshot(s), {{bytes}} stored in {{chunks}} chunk(s).",
+        "nothingStored": "\"{{name}}\" has no stored backups; nothing to purge.",
+        "confirm": "This deletes all {{count}} stored snapshot(s) of \"{{name}}\" ({{bytes}}) and cannot be undone. Type the repository name to confirm:",
+        "success": "Purged {{count}} snapshot(s) of \"{{name}}\" and freed {{bytes}}.",
+        "usageDelta": "Stored for this repository: {{beforeBytes}} in {{beforeChunks}} chunk(s) before, {{afterBytes}} in {{afterChunks}} chunk(s) after."
       }
     },
     "sync": {

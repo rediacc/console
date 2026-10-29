@@ -332,6 +332,16 @@
         "resuming": "A retomar o envio pendente para {{guid}} em {{machine}}",
         "retrying": "A tentar novamente o envio após uma falha de transferência: {{error}}",
         "done": "{{name}} enviado para {{machine}} como {{guid}}"
+      },
+      "purge": {
+        "description": "Apaga de uma vez todos os snapshots de backup armazenados de um repositório no armazenamento de blocos. O repositório em si é mantido.",
+        "notFound": "O repositório \"{{name}}\" não está nesta configuração.",
+        "forkRefused": "\"{{name}}\" é um fork e divide a linhagem de backups com o pai, então a limpeza apagaria também os backups do pai. Indique o repositório pai.",
+        "dryRun": "Os backups de \"{{name}}\" seriam limpos: linhagem {{lineage}}, {{count}} snapshot(s), {{bytes}} armazenados em {{chunks}} bloco(s).",
+        "nothingStored": "\"{{name}}\" não tem backups armazenados; não há nada a limpar.",
+        "confirm": "Isto apaga todos os {{count}} snapshot(s) armazenados de \"{{name}}\" ({{bytes}}) e não pode ser desfeito. Digite o nome do repositório para confirmar:",
+        "success": "{{count}} snapshot(s) de \"{{name}}\" limpo(s), {{bytes}} liberado(s).",
+        "usageDelta": "Armazenado para este repositório: antes {{beforeBytes}} em {{beforeChunks}} bloco(s), depois {{afterBytes}} em {{afterChunks}} bloco(s)."
       }
     },
     "cluster": {

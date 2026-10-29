@@ -133,8 +133,10 @@ describe('command plane coverage', () => {
     // 191 -> 193, machine 103 -> 105: `backup download` and `backup upload` (PLAN-backup-local-image C1) hold a renet session on the machine, so they keep the backup domain's machine plane; the contract keeps them off the proxy as client-side transfers.
     //
     // 193 -> 195, other 31 -> 33: `tools install` and `tools list` (PLAN-cli-tofu-toolchain T3) install and list local binaries on the workstation, never a machine.
-    expect(COMMANDS.length).toBe(195);
-    expect(counts).toEqual({ config: 57, machine: 105, other: 33 });
+    //
+    // 195 -> 196, other 33 -> 34: `backup purge` (PLAN-backup-download-from-store) deletes a lineage through accountServerFetch, so `other` like `backup snapshots delete`.
+    expect(COMMANDS.length).toBe(196);
+    expect(counts).toEqual({ config: 57, machine: 105, other: 34 });
   });
 
   it('records the interactive commands', () => {

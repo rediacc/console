@@ -82,6 +82,8 @@ export const CMD = {
   // Client-side image transfers (PLAN-backup-local-image): download only reads a reflink snapshot, upload registers a NEW repo behind the agent create-gate.
   BACKUP_DOWNLOAD: 'backup download',
   BACKUP_UPLOAD: 'backup upload',
+  // Deletes a grand repository's whole backup lineage from the chunk store; the repository itself is kept.
+  BACKUP_PURGE: 'backup purge',
   CLUSTER_CREATE: 'cluster create',
   CLUSTER_DESTROY: 'cluster destroy',
   CLUSTER_SCALE: 'cluster scale',

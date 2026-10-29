@@ -332,6 +332,16 @@
         "resuming": "{{machine}}의 {{guid}}로 보내던 대기 중인 업로드를 이어서 진행합니다",
         "retrying": "전송에 실패하여 업로드를 다시 시도합니다: {{error}}",
         "done": "{{name}}을(를) {{machine}}에 {{guid}}(으)로 업로드했습니다"
+      },
+      "purge": {
+        "description": "저장소에 저장된 백업 스냅샷을 청크 저장소에서 한 번에 모두 삭제합니다. 저장소 자체는 유지됩니다.",
+        "notFound": "저장소 \"{{name}}\"이(가) 이 구성에 없습니다.",
+        "forkRefused": "\"{{name}}\"은(는) 포크이며 백업 계보를 부모와 공유하므로 퍼지하면 부모의 백업도 삭제됩니다. 대신 부모 저장소를 지정하세요.",
+        "dryRun": "\"{{name}}\"의 백업을 퍼지할 예정입니다: 계보 {{lineage}}, 스냅샷 {{count}}개, 청크 {{chunks}}개에 {{bytes}} 저장됨.",
+        "nothingStored": "\"{{name}}\"에 저장된 백업이 없어 퍼지할 것이 없습니다.",
+        "confirm": "\"{{name}}\"에 저장된 스냅샷 {{count}}개({{bytes}})를 모두 삭제하며 되돌릴 수 없습니다. 확인하려면 저장소 이름을 입력하세요:",
+        "success": "\"{{name}}\"의 스냅샷 {{count}}개를 퍼지하고 {{bytes}}를 확보했습니다.",
+        "usageDelta": "이 저장소의 저장량: 퍼지 전 {{beforeBytes}}(청크 {{beforeChunks}}개), 퍼지 후 {{afterBytes}}(청크 {{afterChunks}}개)."
       }
     },
     "cluster": {

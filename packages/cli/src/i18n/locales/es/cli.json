@@ -332,6 +332,16 @@
         "resuming": "Reanudando la subida pendiente a {{guid}} en {{machine}}",
         "retrying": "Reintentando la subida tras un fallo de transferencia: {{error}}",
         "done": "{{name}} subido a {{machine}} como {{guid}}"
+      },
+      "purge": {
+        "description": "Borra de una vez todas las instantáneas de copia guardadas de un repositorio del almacén de fragmentos. El repositorio se conserva.",
+        "notFound": "El repositorio \"{{name}}\" no está en esta configuración.",
+        "forkRefused": "\"{{name}}\" es un fork y comparte su linaje de copias con el repositorio padre, así que la purga borraría también las copias del padre. Indica el repositorio padre.",
+        "dryRun": "Se purgarían las copias de \"{{name}}\": linaje {{lineage}}, {{count}} instantánea(s), {{bytes}} guardados en {{chunks}} fragmento(s).",
+        "nothingStored": "\"{{name}}\" no tiene copias guardadas; no hay nada que purgar.",
+        "confirm": "Esto borra las {{count}} instantánea(s) guardadas de \"{{name}}\" ({{bytes}}) y no se puede deshacer. Escribe el nombre del repositorio para confirmar:",
+        "success": "Se purgaron {{count}} instantánea(s) de \"{{name}}\" y se liberaron {{bytes}}.",
+        "usageDelta": "Guardado para este repositorio: antes {{beforeBytes}} en {{beforeChunks}} fragmento(s), después {{afterBytes}} en {{afterChunks}} fragmento(s)."
       }
     },
     "cluster": {

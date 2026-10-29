@@ -332,6 +332,16 @@
         "resuming": "Reprise de l'envoi en attente vers {{guid}} sur {{machine}}",
         "retrying": "Nouvelle tentative d'envoi après un échec de transfert : {{error}}",
         "done": "{{name}} envoyé sur {{machine}} sous {{guid}}"
+      },
+      "purge": {
+        "description": "Supprime d'un coup tous les instantanés de sauvegarde stockés d'un dépôt dans le magasin de blocs. Le dépôt lui-même est conservé.",
+        "notFound": "Le dépôt « {{name}} » n'existe pas dans cette configuration.",
+        "forkRefused": "« {{name}} » est un fork et partage sa lignée de sauvegardes avec son parent : la purge supprimerait aussi les sauvegardes du parent. Indiquez plutôt le dépôt parent.",
+        "dryRun": "Purge prévue des sauvegardes de « {{name}} » : lignée {{lineage}}, {{count}} instantané(s), {{bytes}} stockés dans {{chunks}} bloc(s).",
+        "nothingStored": "« {{name}} » n'a aucune sauvegarde stockée ; rien à purger.",
+        "confirm": "Cette opération supprime définitivement les {{count}} instantané(s) stockés de « {{name}} » ({{bytes}}). Saisissez le nom du dépôt pour confirmer :",
+        "success": "{{count}} instantané(s) de « {{name}} » purgé(s), {{bytes}} libéré(s).",
+        "usageDelta": "Stocké pour ce dépôt : {{beforeBytes}} dans {{beforeChunks}} bloc(s) avant, {{afterBytes}} dans {{afterChunks}} bloc(s) après."
       }
     },
     "cluster": {

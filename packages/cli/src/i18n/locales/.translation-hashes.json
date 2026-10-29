@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2252,
-    "sourceCommit": "566a14758174f81fa7eba87e25bc117ae5e96581"
+    "keyCount": 2260,
+    "sourceCommit": "59043d4db3a8fe8f82c23e9c3ec36d65e58617bb"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -57,6 +57,14 @@
     "commands.backup.manifests.description": "14c9566d",
     "commands.backup.manifests.empty": "b5b0c78e",
     "commands.backup.manifests.fetching": "f1015dd7",
+    "commands.backup.purge.confirm": "a7e956f1",
+    "commands.backup.purge.description": "ad367947",
+    "commands.backup.purge.dryRun": "5f48c659",
+    "commands.backup.purge.forkRefused": "24fe1559",
+    "commands.backup.purge.notFound": "89e2e8dc",
+    "commands.backup.purge.nothingStored": "99d836d5",
+    "commands.backup.purge.success": "96e8724d",
+    "commands.backup.purge.usageDelta": "07467548",
     "commands.backup.reconcile.argRepoRef": "447d1062",
     "commands.backup.reconcile.checkSkipped": "3c1c0151",
     "commands.backup.reconcile.columns.ledger": "c7d7a18a",

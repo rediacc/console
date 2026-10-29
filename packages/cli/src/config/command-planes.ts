@@ -89,6 +89,8 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // `preview` reads the policy and manifests through accountServerFetch; `snapshots delete` deletes manifests through it. Neither touches a machine.
   'backup retention preview': { plane: 'other' },
   'backup snapshots delete': { plane: 'other' },
+  // `purge` deletes a whole lineage through accountServerFetch, the same control-plane call as `snapshots delete`; no machine is reached.
+  'backup purge': { plane: 'other' },
 
   // ── repo: config-side ref and secret ops, and the local template catalog ─ The one git-like ref op that never leaves the config: it rewrites the repository's `branches` map. (`repo log`, `commit`, `checkout`, `merge`, `gc` and `fsck` all read or write objects on the machine.)
   // Docker-storage classification and reclaim run through renet on the machine (`repository_docker_prune`).
