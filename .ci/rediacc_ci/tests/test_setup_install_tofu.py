@@ -95,6 +95,12 @@ def test_devcontainer_tofu_install_cannot_fail_container_creation() -> None:
     command = re.search(r'"postCreateCommand":\s*"([^"]*)"', text)
     assert command is not None
     steps = command.group(1)
-    assert "{ ./rdc.sh tools install tofu || echo 'WARNING: rdc tools install tofu failed" in steps
+    # The whole group: the fallback is an echo to stderr (exit 0), so a failed install warns and the chain goes on to playwright; an `exit 1` or `false` in its place would fail container creation.
+    group = re.search(r"\{ \./rdc\.sh tools install tofu \|\| (?P<fallback>[^}]*); \} && ", steps)
+    assert group is not None, steps
+    fallback = group.group("fallback")
+    assert fallback.startswith("echo 'WARNING: rdc tools install tofu failed")
+    assert fallback.endswith(">&2")
+    assert not re.search(r"\b(exit|false|return)\b", fallback)
     assert "&& ./rdc.sh tools install tofu" not in steps
     assert steps.index("tools install tofu") < steps.index("playwright install chromium")
