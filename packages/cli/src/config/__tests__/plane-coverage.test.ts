@@ -126,8 +126,10 @@ describe('command plane coverage', () => {
     // 179 -> 188, config 50 -> 57, machine 100 -> 101, other 29 -> 30: `config access add|remove|ranges|list` and `machine access set|remove|show` edit only the config (PLAN-ssh-key-source-ranges C1); `machine access push` rewrites the machine's authorized_keys, so it is machine-plane. `subscription proxy-token` (17c55af8b) mints a token against the account server, so it is `other`; its commit did not update this record.
     //
     // 188 -> 189, machine 101 -> 102: `repo prune` classifies and reclaims a repository's Docker storage through renet on the machine.
-    expect(COMMANDS.length).toBe(189);
-    expect(counts).toEqual({ config: 57, machine: 102, other: 30 });
+    //
+    // 189 -> 190, other 30 -> 31: `backup reconcile` (PLAN-backup-meter-orphaned-chunks C1) is an accountServerFetch call that reconciles the backup ledger against the store, never a machine, so `other` like `backup usage`.
+    expect(COMMANDS.length).toBe(190);
+    expect(counts).toEqual({ config: 57, machine: 102, other: 31 });
   });
 
   it('records the interactive commands', () => {

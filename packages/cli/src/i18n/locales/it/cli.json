@@ -232,6 +232,35 @@
           "unbound": "Strategia di backup \"{{strategy}}\" dissociata dalla macchina \"{{machine}}\""
         }
       },
+      "reconcile": {
+        "description": "Riallinea il registro dei byte archiviati di un repository a ciò che lo store contiene davvero (non elimina mai un chunk)",
+        "argRepoRef": "Repository da riconciliare (predefinito: tutti quelli nell'ambito del token)",
+        "optionDryRun": "Mostra i valori senza modificare il registro",
+        "optionCheck": "Prova a vuoto che termina con codice 1 se il registro differisce dallo store",
+        "running": "Riconciliazione del registro di archiviazione...",
+        "empty": "Nessun lineage di backup da riconciliare.",
+        "truncated": "L'elenco è stato interrotto; riesegui per il resto.",
+        "driftFound": "Rilevato disallineamento del registro.",
+        "summary": "Registro {{ledger}}, store {{bucket}}, scostamento {{drift}}",
+        "columns": {
+          "lineage": "Linea",
+          "ledger": "Registro",
+          "observed": "Osservato",
+          "referenced": "Referenziato",
+          "unreferenced": "Non referenziato",
+          "status": "Stato"
+        },
+        "status": {
+          "applied": "registro riallineato",
+          "clean": "allineato",
+          "drift": "disallineato",
+          "unchanged": "invariato"
+        },
+        "skipped": {
+          "leased": "saltato: caricamento in corso",
+          "unreadable": "saltato: manifest illeggibile"
+        }
+      },
       "usage": {
         "description": "Mostra la quota di storage dei backup, i byte memorizzati e l'utilizzo per repository",
         "empty": "Nessun utilizzo di storage dei backup ancora registrato per repository.",

@@ -232,6 +232,35 @@
           "unbound": "\"{{strategy}}\" yedekleme stratejisinin \"{{machine}}\" makinesiyle bağlantısı kesildi"
         }
       },
+      "reconcile": {
+        "description": "Bir deponun depolanan bayt kaydını mağazadaki gerçek duruma getirir (hiçbir parçayı silmez)",
+        "argRepoRef": "Uzlaştırılacak depo (varsayılan: belirtecin kapsamındaki tüm depolar)",
+        "optionDryRun": "Kaydı değiştirmeden rakamları göster",
+        "optionCheck": "Kayıt mağazadan farklıysa 1 koduyla biten deneme çalıştırması",
+        "running": "Depolama kaydı uzlaştırılıyor...",
+        "empty": "Uzlaştırılacak yedek soyu yok.",
+        "truncated": "Liste yarıda kesildi; kalanı için yeniden çalıştırın.",
+        "driftFound": "Kayıt sapması bulundu.",
+        "summary": "Kayıt {{ledger}}, mağaza {{bucket}}, sapma {{drift}}",
+        "columns": {
+          "lineage": "Soy",
+          "ledger": "Kayıt",
+          "observed": "Gözlenen",
+          "referenced": "Başvurulan",
+          "unreferenced": "Başvurulmayan",
+          "status": "Durum"
+        },
+        "status": {
+          "applied": "kayıt düzeltildi",
+          "clean": "eşit",
+          "drift": "sapmış",
+          "unchanged": "değişmedi"
+        },
+        "skipped": {
+          "leased": "atlandı: yükleme sürüyor",
+          "unreadable": "atlandı: manifest okunamadı"
+        }
+      },
       "usage": {
         "description": "Yedek depolama kotasını, saklanan bayt sayısını ve depo başına kullanımı göster",
         "empty": "Depo başına yedek depolama kullanımı henüz kaydedilmedi.",

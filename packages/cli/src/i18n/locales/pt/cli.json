@@ -232,6 +232,35 @@
           "unbound": "Estratégia de cópia de segurança \"{{strategy}}\" desvinculada da máquina \"{{machine}}\""
         }
       },
+      "reconcile": {
+        "description": "Redefine o registro de bytes armazenados de um repositório para o que o armazenamento realmente contém (nunca apaga um fragmento)",
+        "argRepoRef": "Repositório a reconciliar (padrão: todos no escopo do token)",
+        "optionDryRun": "Mostrar os números sem alterar o registro",
+        "optionCheck": "Simulação que termina com código 1 quando o registro difere do armazenamento",
+        "running": "Reconciliando o registro de armazenamento...",
+        "empty": "Nenhuma linhagem de backup para reconciliar.",
+        "truncated": "A listagem foi interrompida; execute de novo para ver o restante.",
+        "driftFound": "Divergência no registro encontrada.",
+        "summary": "Registro {{ledger}}, armazenamento {{bucket}}, divergência {{drift}}",
+        "columns": {
+          "lineage": "Linhagem",
+          "ledger": "Registro",
+          "observed": "Observado",
+          "referenced": "Referenciado",
+          "unreferenced": "Sem referência",
+          "status": "Status"
+        },
+        "status": {
+          "applied": "registro ajustado",
+          "clean": "sincronizado",
+          "drift": "divergente",
+          "unchanged": "sem alteração"
+        },
+        "skipped": {
+          "leased": "ignorado: envio em andamento",
+          "unreadable": "ignorado: manifesto ilegível"
+        }
+      },
       "usage": {
         "description": "Mostrar a quota de armazenamento de cópias de segurança, os bytes armazenados e o uso por repositório",
         "empty": "Ainda não foi registado uso de armazenamento de cópias de segurança por repositório.",

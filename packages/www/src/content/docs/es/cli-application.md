@@ -7,7 +7,7 @@ order: 2
 language: es
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/es/cli.json
-sourceHash: "b78034b10173b67a"
+sourceHash: "6d24ac7155248546"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2492,6 +2492,7 @@ rdc backup restore <artifact-ref> [options]
 | `--datastore <name>` | {{t:cli.commands.backup.restore.optionDatastore}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--at <time>` | {{t:cli.commands.backup.restore.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--any-stream` | {{t:cli.commands.backup.restore.optionAnyStream}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-seed` | {{t:cli.commands.backup.restore.optionNoSeed}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--path <file-or-dir>` | {{t:cli.commands.backup.restore.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--to <dir>` | {{t:cli.commands.backup.restore.optionTo}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.backup.restore.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2596,6 +2597,10 @@ rdc backup snapshot <repo-ref> [options]
 | `--reseed` | {{t:cli.commands.backup.snapshot.optionReseed}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--dry-run` | {{t:cli.commands.backup.snapshot.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--cold` | {{t:cli.commands.backup.snapshot.optionCold}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <rate>` | {{t:cli.commands.backup.snapshot.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--parallelism <n>` | {{t:cli.commands.backup.snapshot.optionParallelism}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--read-bwlimit <rate>` | {{t:cli.commands.backup.snapshot.optionReadBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--hash-parallelism <n>` | {{t:cli.commands.backup.snapshot.optionHashParallelism}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2634,6 +2639,7 @@ rdc backup strategy set <strategy> [options]
 | `--cron <expression>` | {{t:cli.commands.backup.strategy.set.optionCron}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mode <mode>` | {{t:cli.commands.backup.strategy.set.optionMode}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--read-bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionReadBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include <repos>` | {{t:cli.commands.backup.strategy.set.optionInclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--exclude <repos>` | {{t:cli.commands.backup.strategy.set.optionExclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--retention <spec>` | {{t:cli.commands.backup.strategy.set.optionRetention}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2702,8 +2708,23 @@ rdc backup strategy list
 rdc backup strategy show [strategy]
 ```
 
+<a id="cli-local-backup-reconcile"></a>
+### 8.12 reconcile
+
+{{t:cli.commands.backup.reconcile.description}}
+
+```bash
+rdc backup reconcile [repo-ref] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--dry-run` | {{t:cli.commands.backup.reconcile.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--check` | {{t:cli.commands.backup.reconcile.optionCheck}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-backup-usage"></a>
-### 8.12 usage
+### 8.13 usage
 
 {{t:cli.commands.backup.usage.description}}
 
@@ -2712,7 +2733,7 @@ rdc backup usage
 ```
 
 <a id="cli-local-backup-verify"></a>
-### 8.13 verify
+### 8.14 verify
 
 {{t:cli.commands.backup.verify.description}}
 
@@ -2723,11 +2744,12 @@ rdc backup verify <repo-ref> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--deep` | {{t:cli.commands.backup.verify.optionDeep}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--store` | {{t:cli.commands.backup.verify.optionStore}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-backup-snapshots"></a>
-### 8.14 snapshots
+### 8.15 snapshots
 
 {{t:cli.commands.backup.snapshots.description}}
 

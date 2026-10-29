@@ -1163,6 +1163,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--read-bwlimit <limit>",
+                  "descriptionKey": "commands.backup.strategy.set.optionReadBwlimit",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--include <repos>",
                   "descriptionKey": "commands.backup.strategy.set.optionInclude",
                   "mandatory": false,
@@ -1446,6 +1452,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--store",
+              "descriptionKey": "commands.backup.verify.optionStore",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1526,6 +1538,30 @@
             {
               "flags": "--cold",
               "descriptionKey": "commands.backup.snapshot.optionCold",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bwlimit <rate>",
+              "descriptionKey": "commands.backup.snapshot.optionBwlimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--parallelism <n>",
+              "descriptionKey": "commands.backup.snapshot.optionParallelism",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--read-bwlimit <rate>",
+              "descriptionKey": "commands.backup.snapshot.optionReadBwlimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--hash-parallelism <n>",
+              "descriptionKey": "commands.backup.snapshot.optionHashParallelism",
               "mandatory": false,
               "defaultValue": null
             },
@@ -1682,6 +1718,33 @@
           ]
         },
         {
+          "name": "reconcile",
+          "descriptionKey": "commands.backup.reconcile.description",
+          "options": [
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.backup.reconcile.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--check",
+              "descriptionKey": "commands.backup.reconcile.optionCheck",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "list",
           "descriptionKey": "commands.backup.list.description",
           "options": [
@@ -1745,6 +1808,12 @@
             {
               "flags": "--any-stream",
               "descriptionKey": "commands.backup.restore.optionAnyStream",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--no-seed",
+              "descriptionKey": "commands.backup.restore.optionNoSeed",
               "mandatory": false,
               "defaultValue": null
             },

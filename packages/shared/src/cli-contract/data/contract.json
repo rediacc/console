@@ -318,6 +318,65 @@
     {
       "path": [
         "backup",
+        "reconcile"
+      ],
+      "pathKey": "backup reconcile",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.reconcile.description",
+      "label": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.reconcile.optionDryRun",
+          "label": "Report the figures without changing the ledger"
+        },
+        {
+          "flags": "--check",
+          "long": "check",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.reconcile.optionCheck",
+          "label": "Dry run that exits 1 when the ledger differs from the store"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "commands.backup.reconcile.argRepoRef",
+          "label": "Repository to reconcile (default: every repository in the token's scope)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "restore"
       ],
       "pathKey": "backup restore",

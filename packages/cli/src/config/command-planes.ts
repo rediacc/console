@@ -79,6 +79,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'backup strategy': { plane: 'config' },
   // `backup usage`/`backup manifests` are account-tunnel READS (accountServerFetch), not machine executor commands, control-plane, so `other` (like `subscription`). `backup verify` DOES reach a machine (backup_verify verb), so it keeps the backup-domain machine default.
   'backup usage': { plane: 'other' },
+  'backup reconcile': { plane: 'other' },
   'backup manifests': { plane: 'other' },
   // `backup retention` (and its set/clear children) is the same shape: it reads and writes the policy through accountServerFetch and never touches a machine. Without these entries it inherits the backup-domain MACHINE default and becomes proxyCapable, which would offer a policy that decides what gets DELETED for execution against the wrong target.
   'backup retention': { plane: 'other' },

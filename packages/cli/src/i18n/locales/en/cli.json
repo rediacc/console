@@ -2012,6 +2012,35 @@
           "notFound": "Backup strategy \"{{name}}\" not found"
         }
       },
+      "reconcile": {
+        "description": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
+        "argRepoRef": "Repository to reconcile (default: every repository in the token's scope)",
+        "optionDryRun": "Report the figures without changing the ledger",
+        "optionCheck": "Dry run that exits 1 when the ledger differs from the store",
+        "running": "Reconciling the storage ledger...",
+        "empty": "No backup lineages to reconcile.",
+        "truncated": "The listing was cut short; run again for the rest.",
+        "driftFound": "Ledger drift found.",
+        "summary": "Ledger {{ledger}}, store {{bucket}}, drift {{drift}}",
+        "columns": {
+          "lineage": "Lineage",
+          "ledger": "Ledger",
+          "observed": "Observed",
+          "referenced": "Referenced",
+          "unreferenced": "Unreferenced",
+          "status": "Status"
+        },
+        "status": {
+          "applied": "ledger reset",
+          "clean": "in sync",
+          "drift": "drifted",
+          "unchanged": "not changed"
+        },
+        "skipped": {
+          "leased": "skipped: upload in progress",
+          "unreadable": "skipped: manifest unreadable"
+        }
+      },
       "usage": {
         "description": "Show backup storage quota, stored bytes, and per-repo usage",
         "fetching": "Fetching backup storage usage...",

@@ -232,6 +232,35 @@
           "unbound": "Estrategia de respaldo \"{{strategy}}\" desvinculada de la máquina \"{{machine}}\""
         }
       },
+      "reconcile": {
+        "description": "Restablece el registro de bytes almacenados de un repositorio a lo que el almacén contiene realmente (nunca borra un fragmento)",
+        "argRepoRef": "Repositorio a conciliar (por defecto: todos los del alcance del token)",
+        "optionDryRun": "Mostrar las cifras sin modificar el registro",
+        "optionCheck": "Simulacro que termina con código 1 si el registro difiere del almacén",
+        "running": "Conciliando el registro de almacenamiento...",
+        "empty": "No hay linajes de copia de seguridad que conciliar.",
+        "truncated": "El listado se cortó; vuelve a ejecutarlo para el resto.",
+        "driftFound": "Se detectó una desviación en el registro.",
+        "summary": "Registro {{ledger}}, almacén {{bucket}}, desviación {{drift}}",
+        "columns": {
+          "lineage": "Linaje",
+          "ledger": "Registro",
+          "observed": "Observado",
+          "referenced": "Referenciado",
+          "unreferenced": "Sin referencia",
+          "status": "Estado"
+        },
+        "status": {
+          "applied": "registro restablecido",
+          "clean": "sincronizado",
+          "drift": "desviado",
+          "unchanged": "sin cambios"
+        },
+        "skipped": {
+          "leased": "omitido: subida en curso",
+          "unreadable": "omitido: manifiesto ilegible"
+        }
+      },
       "usage": {
         "description": "Mostrar la cuota de almacenamiento de copias de seguridad, los bytes almacenados y el uso por repositorio",
         "empty": "Aún no se ha registrado uso de almacenamiento de copias de seguridad por repositorio.",

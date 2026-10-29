@@ -232,6 +232,35 @@
           "unbound": "Stratégie de sauvegarde \"{{strategy}}\" dissociée de la machine \"{{machine}}\""
         }
       },
+      "reconcile": {
+        "description": "Remet le registre des octets stockés d'un dépôt à ce que le magasin contient réellement (ne supprime jamais un fragment)",
+        "argRepoRef": "Dépôt à réconcilier (par défaut : tous ceux du périmètre du jeton)",
+        "optionDryRun": "Afficher les chiffres sans modifier le registre",
+        "optionCheck": "Simulation qui se termine par le code 1 si le registre diffère du magasin",
+        "running": "Réconciliation du registre de stockage...",
+        "empty": "Aucune lignée de sauvegarde à réconcilier.",
+        "truncated": "Le listage a été interrompu ; relancez pour obtenir la suite.",
+        "driftFound": "Dérive du registre détectée.",
+        "summary": "Registre {{ledger}}, magasin {{bucket}}, dérive {{drift}}",
+        "columns": {
+          "lineage": "Lignée",
+          "ledger": "Registre",
+          "observed": "Observé",
+          "referenced": "Référencé",
+          "unreferenced": "Non référencé",
+          "status": "État"
+        },
+        "status": {
+          "applied": "registre corrigé",
+          "clean": "synchronisé",
+          "drift": "dérive",
+          "unchanged": "inchangé"
+        },
+        "skipped": {
+          "leased": "ignoré : envoi en cours",
+          "unreadable": "ignoré : manifeste illisible"
+        }
+      },
       "usage": {
         "description": "Afficher le quota de stockage des sauvegardes, les octets stockés et l'usage par dépôt",
         "empty": "Aucun usage de stockage de sauvegarde par dépôt encore enregistré.",

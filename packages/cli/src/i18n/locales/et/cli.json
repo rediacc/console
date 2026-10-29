@@ -232,6 +232,35 @@
           "unbound": "Varundusstrateegia \"{{strategy}}\" sidumine masinaga \"{{machine}}\" tühistati"
         }
       },
+      "reconcile": {
+        "description": "Lähtestab hoidla salvestatud baitide registri selleks, mida hoidla tegelikult sisaldab (ühtegi tükki ei kustutata kunagi)",
+        "argRepoRef": "Ühtlustatav hoidla (vaikimisi kõik loa ulatuses olevad)",
+        "optionDryRun": "Näita arve registrit muutmata",
+        "optionCheck": "Proovikäivitus, mis lõpeb koodiga 1, kui register erineb hoidlast",
+        "running": "Hoiustusregistri ühtlustamine...",
+        "empty": "Ühtlustatavaid varukoopia liine pole.",
+        "truncated": "Loend katkes; ülejäänu saamiseks käivita uuesti.",
+        "driftFound": "Registris leiti kõrvalekalle.",
+        "summary": "Register {{ledger}}, hoidla {{bucket}}, kõrvalekalle {{drift}}",
+        "columns": {
+          "lineage": "Liin",
+          "ledger": "Register",
+          "observed": "Leitud",
+          "referenced": "Viidatud",
+          "unreferenced": "Viitamata",
+          "status": "Olek"
+        },
+        "status": {
+          "applied": "register parandatud",
+          "clean": "kooskõlas",
+          "drift": "erineb",
+          "unchanged": "muutmata"
+        },
+        "skipped": {
+          "leased": "vahele jäetud: üleslaadimine käib",
+          "unreadable": "vahele jäetud: manifest ei loe"
+        }
+      },
       "usage": {
         "description": "Näita varukoopia salvestuskvooti, salvestatud baite ja kasutust hoidla kohta",
         "empty": "Hoidla kohta pole veel varukoopia salvestuskasutust registreeritud.",

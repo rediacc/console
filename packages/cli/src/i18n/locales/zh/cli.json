@@ -232,6 +232,35 @@
           "unbound": "备份策略 \"{{strategy}}\" 已从机器 \"{{machine}}\" 解绑"
         }
       },
+      "reconcile": {
+        "description": "将仓库的已存储字节台账重置为存储中的实际内容(绝不删除任何数据块)",
+        "argRepoRef": "要核对的仓库(默认:令牌范围内的所有仓库)",
+        "optionDryRun": "只显示数据,不修改台账",
+        "optionCheck": "试运行;台账与存储不一致时以退出码 1 结束",
+        "running": "正在核对存储台账...",
+        "empty": "没有需要核对的备份谱系。",
+        "truncated": "列表被中途截断;请再次运行以获取其余部分。",
+        "driftFound": "发现台账偏差。",
+        "summary": "台账 {{ledger}},存储 {{bucket}},偏差 {{drift}}",
+        "columns": {
+          "lineage": "谱系",
+          "ledger": "台账",
+          "observed": "实测",
+          "referenced": "已引用",
+          "unreferenced": "未引用",
+          "status": "状态"
+        },
+        "status": {
+          "applied": "台账已修正",
+          "clean": "一致",
+          "drift": "有偏差",
+          "unchanged": "未更改"
+        },
+        "skipped": {
+          "leased": "已跳过:上传进行中",
+          "unreadable": "已跳过:清单无法读取"
+        }
+      },
       "usage": {
         "description": "显示备份存储配额、已存储字节数和各仓库的使用情况",
         "empty": "尚未记录任何按仓库统计的备份存储使用情况。",

@@ -232,6 +232,35 @@
           "unbound": "Backup-Strategie \"{{strategy}}\" von Maschine \"{{machine}}\" gelöst"
         }
       },
+      "reconcile": {
+        "description": "Setzt das Speicher-Ledger eines Repositorys auf den tatsächlichen Stand des Stores zurück (löscht nie einen Chunk)",
+        "argRepoRef": "Abzugleichendes Repository (Standard: jedes Repository im Geltungsbereich des Tokens)",
+        "optionDryRun": "Zahlen nur anzeigen, ohne das Ledger zu ändern",
+        "optionCheck": "Probelauf, der mit 1 endet, wenn das Ledger vom Store abweicht",
+        "running": "Speicher-Ledger wird abgeglichen...",
+        "empty": "Keine Backup-Lineages zum Abgleichen.",
+        "truncated": "Die Auflistung wurde abgebrochen; für den Rest erneut ausführen.",
+        "driftFound": "Ledger-Abweichung gefunden.",
+        "summary": "Ledger {{ledger}}, Store {{bucket}}, Abweichung {{drift}}",
+        "columns": {
+          "lineage": "Verlauf",
+          "ledger": "Verbucht",
+          "observed": "Gefunden",
+          "referenced": "Referenziert",
+          "unreferenced": "Nicht referenziert",
+          "status": "Status"
+        },
+        "status": {
+          "applied": "Ledger zurückgesetzt",
+          "clean": "synchron",
+          "drift": "abweichend",
+          "unchanged": "unverändert"
+        },
+        "skipped": {
+          "leased": "übersprungen: Upload läuft",
+          "unreadable": "übersprungen: Manifest nicht lesbar"
+        }
+      },
       "usage": {
         "description": "Backup-Speicherkontingent, gespeicherte Bytes und Nutzung pro Repository anzeigen",
         "empty": "Noch keine Backup-Speichernutzung pro Repository erfasst.",

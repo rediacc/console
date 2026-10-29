@@ -801,13 +801,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 0,
+      "open": 17,
+      "done": 1,
       "open_sigs": [
         "1d17b634",
         "3095ef97",
         "34cbbf02",
-        "4bc1aed5",
         "561f92bc",
         "7692f2db",
         "86690927",
@@ -823,7 +822,9 @@
         "e25f1778",
         "e32825a7"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "4bc1aed5"
+      ]
     },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
       "status": "compacted",

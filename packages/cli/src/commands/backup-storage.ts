@@ -24,6 +24,7 @@ import { getOutputFormat, handleError, ValidationError } from '../utils/errors.j
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
+import { registerBackupReconcile } from './backup-reconcile.js';
 import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
 import { RENET_NO_LISTING_EXIT, resolveLineage, runBrowseAt } from './backup-storage-browse.js';
 import {
@@ -578,4 +579,5 @@ export function registerBackupStorageCommands(backup: Command): void {
   registerBackupSnapshot(backup);
   registerBackupRetention(backup);
   registerBackupSnapshots(backup);
+  registerBackupReconcile(backup);
 }

@@ -133,6 +133,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'backup usage': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  // Rewrites ledger rows (never deletes data) unless --dry-run or --check; re-running converges.
+  'backup reconcile': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
   'backup manifests': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
