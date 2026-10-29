@@ -8,7 +8,7 @@ tags:
 subcategory: data-protection
 order: 7
 language: et
-sourceHash: "df140be7490305b0"
+sourceHash: "243d934efa7d9d54"
 sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
@@ -92,7 +92,11 @@ rdc backup usage
 | `--dry-run` | Ainult planeeri: üleslaadimist ei toimu. Näitab, mis liiguks |
 | `--cold` | Peata konteinerid, külmuta, käivita uuesti, seejärel laadi üles. Ei saa kombineerida `--dry-run`-iga |
 | `--reseed` | Ära usalda kohalikku ankrut ja laadi üles täielik sisu. Laadib kõik uuesti üles ja arvestab kvoodi uuesti |
+| `--read-bwlimit <limit>` | Piirang sellele, kui kiiresti hetktõmmis kettalt kujutist loeb, samades ühikutes nagu `--bwlimit` (vaikimisi `50M`, `0` = piiranguta) |
+| `--hash-parallelism <n>` | Räsitööliste arv (vaikimisi `1`, `0` = üks protsessori kohta, kuni `16`) |
 | `--debug` | Luba detailne väljund |
+
+Üleslaadimise piirang ja lugemise piirang on eraldi. `--bwlimit` piirab saadetavat ning on vaikimisi piiranguta; `--read-bwlimit` piirab, kui kiiresti kujutist kettalt loetakse ja räsitakse. `ionice` mõjutab ainult BFQ I/O planeerijat, seega `mq-deadline` või `none` korral piirab ketta koormust lugemispiirang.
 
 ## Külmad hetktõmmised (`--cold`)
 
@@ -493,6 +497,7 @@ rdc backup strategy set weekly-cold \
 | `--cron <expression>` | Cron-avaldis (nt `"0 2 * * *"` päevaks kell 2) |
 | `--mode <hot\|cold>` | Varundamisrežiim |
 | `--bwlimit <limit>` | Ribalaiuse piirang üleslaadimiseks (nt `10M`) |
+| `--read-bwlimit <limit>` | Piirang sellele, kui kiiresti hetktõmmised kettalt kujutist loevad (nt `50M`, `0` = piiranguta). `none` eemaldab selle |
 | `--include <repos>` | Sellele strateegiale kuuluvad repositooriumid (komadega eraldatud) |
 | `--exclude <repos>` | Vahelejäetavad repositooriumid (komadega eraldatud) |
 | `--retention <spec>` | Hetktõmmiste säilitus, näiteks `last=7,daily=7,weekly=4,monthly=6`. `none` eemaldab selle |

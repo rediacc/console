@@ -95,6 +95,7 @@ export const BackupRestoreParamsSchema = z.object({
   lineage: z.string().min(1).describe('Lineage (grand) GUID the snapshot belongs to'),
   at: z.string().min(1).describe('Snapshot id to restore (a TIME is resolved by the CLI, never here)'),
   dryRun: z.boolean().default(false).optional().describe('Resolve the manifest chain and report what would be fetched; write nothing'),
+  noSeed: z.boolean().default(false).optional().describe('Fetch every chunk from the store instead of reusing local anchors or images'),
 });
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -112,6 +113,8 @@ export const BackupSnapshotParamsSchema = z.object({
   cold: z.boolean().default(false).optional().describe('Quiesce first: stop each repository\'s containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run'),
   bwlimit: z.string().optional().describe('Upload cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited'),
   parallelism: z.number().int().optional().describe('Concurrent chunk uploads (0 = engine default)'),
+  readBwlimit: z.string().optional().describe('Read cap for hashing and cell reads, same units as bwlimit. Empty = the verb default (50M); 0 = unlimited'),
+  hashParallelism: z.number().int().optional().describe('Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16'),
 });
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */

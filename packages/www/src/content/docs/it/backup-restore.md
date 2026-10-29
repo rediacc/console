@@ -8,7 +8,7 @@ tags:
 subcategory: data-protection
 order: 7
 language: it
-sourceHash: "df140be7490305b0"
+sourceHash: "243d934efa7d9d54"
 sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
@@ -92,7 +92,11 @@ rdc backup usage
 | `--dry-run` | Solo pianificazione: nessun caricamento. Riporta cosa verrebbe spostato |
 | `--cold` | Ferma i container, congela, riavvia, poi carica. Non combinabile con `--dry-run` |
 | `--reseed` | Non fidarti dell'ancora locale e carica un inventario completo. Ricarica tutto e riaddebita la quota |
+| `--read-bwlimit <limit>` | Limite alla velocità con cui lo snapshot legge l'immagine dal disco, nelle stesse unità di `--bwlimit` (predefinito `50M`, `0` = illimitato) |
+| `--hash-parallelism <n>` | Numero di worker di hashing (predefinito `1`, `0` = uno per CPU, fino a `16`) |
 | `--debug` | Abilita l'output dettagliato |
+
+Il limite di upload e quello di lettura sono separati. `--bwlimit` limita ciò che viene inviato ed è illimitato per impostazione predefinita; `--read-bwlimit` limita la velocità con cui l'immagine viene letta e sottoposta a hash dal disco. `ionice` agisce solo sullo scheduler di I/O BFQ, quindi con `mq-deadline` o `none` è il limite di lettura a contenere il carico del disco.
 
 ## Snapshot a Freddo (`--cold`)
 
@@ -493,6 +497,7 @@ rdc backup strategy set weekly-cold \
 | `--cron <expression>` | Espressione cron (ad es. `"0 2 * * *"` per ogni giorno alle 2:00) |
 | `--mode <hot\|cold>` | Modalità di backup |
 | `--bwlimit <limit>` | Limite di banda per i caricamenti (ad es. `10M`) |
+| `--read-bwlimit <limit>` | Limite alla velocità con cui gli snapshot leggono l'immagine dal disco (ad es. `50M`, `0` = illimitato). `none` lo rimuove |
 | `--include <repos>` | Repository coperti da questa strategia (separati da virgole) |
 | `--exclude <repos>` | Repository da saltare (separati da virgole) |
 | `--retention <spec>` | Conservazione degli snapshot, per esempio `last=7,daily=7,weekly=4,monthly=6`. `none` la rimuove |

@@ -147,21 +147,28 @@
         "success": "バックアップスケジュールを {{machine}} にデプロイしました"
       },
       "snapshot": {
+        "bwlimitInvalid": "--bwlimit には 100Mbps や 12.5M のような速度を指定してください。指定された値: \"{{value}}\"",
         "completed": "{{name}} のスナップショットを保存しました",
         "description": "チャンクストアへスナップショットをアップロードする: 初回は全インベントリ、以降は変更セルのみ",
         "failed": "{{name}} のスナップショットに失敗しました",
+        "hashParallelismInvalid": "--hash-parallelism には 0 以上の整数を指定してください (0 は CPU ごとに 1 つ)。指定された値: \"{{value}}\"",
         "optionBwlimit": "アップロード速度の上限。バイト毎秒、10進単位 (12.5M = 12.5 MB/s)、2進単位 (12Mi)、ビット (100Mbps) のいずれかで指定します。省略すると無制限です",
         "optionCold": "コンテナを停止して凍結し、再起動してからアップロードします。短い実停止と引き換えに、アプリケーション整合性のあるスナップショットが得られます。--dry-run とは併用できません",
         "optionDryRun": "計画のみ実行: アップロードは行わない。移動対象を報告する",
+        "optionHashParallelism": "同時にハッシュ計算するセル数 (既定値は 1。0 を指定すると CPU ごとに 1 つ、最大 16)",
         "optionParallelism": "同時にアップロードするチャンク数 (既定値は 4)",
+        "optionReadBwlimit": "ハッシュ計算とセル読み取りの速度上限。単位は --bwlimit と同じで、既定値は 50M、0 で無制限です",
         "optionReseed": "ローカルアンカーを信用せず、全インベントリを再アップロードする（すべて再アップロードし、クォータも再課金される）",
+        "parallelismInvalid": "--parallelism には正の整数を指定してください。指定された値: \"{{value}}\"",
         "quotaRefused": "{{name}} のスナップショットが拒否されました: ストレージクォータを超過しています。古いスナップショットを削除するか、クォータを引き上げてください",
+        "readBwlimitInvalid": "--read-bwlimit には 50M や 400Mbps のような速度を指定してください (0 は無制限)。指定された値: \"{{value}}\"",
         "starting": "{{name}} をチャンクストアにスナップショット中..."
       },
       "status": {
         "description": "リモートマシンのバックアップ状態とタイマー状態を表示"
       },
       "strategy": {
+        "bandwidthUnconvertible": "帯域幅の上限 \"{{value}}\" を変換できません ({{reason}})。バイト毎秒 (12500000)、10進バイト (12.5M)、2進バイト (12Mi)、ビット (100Mbps) のいずれかで指定してください。",
         "bind": {
           "alreadyBound": "バックアップ戦略 \"{{strategy}}\" は既にマシン \"{{machine}}\" に紐付けられています",
           "bound": "バックアップ戦略 \"{{strategy}}\" をマシン \"{{machine}}\" に紐付けました",
@@ -171,6 +178,7 @@
         "list": {
           "description": "すべてのバックアップ戦略を一覧表示"
         },
+        "readBandwidthUnconvertible": "読み取り帯域幅の上限 \"{{value}}\" を変換できません ({{reason}})。バイト毎秒 (50000000)、10進バイト (50M)、2進バイト (48Mi)、ビット (400Mbps) のいずれかで指定するか、無制限なら 0 を指定してください。",
         "remove": {
           "bound": "バックアップ戦略 \"{{strategy}}\" は削除できません。{{count}} 台のマシンがまだバインドしています: {{machines}}。",
           "boundNext": "先にそれらのマシンからバインドを解除するか、バインドごと削除してください。",
@@ -196,6 +204,8 @@
           "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
           "optionInclude": "これらのリポジトリのみバックアップ（カンマ区切りの名前）",
           "optionMode": "バックアップモード: \"hot\" はすべてを稼働させたままスナップショットを取得し、\"cold\" はスナップショット取得の瞬間だけコンテナを停止します",
+          "optionReadBwlimit": "この戦略のスナップショットの読み取り速度上限。単位は --bwlimit と同じで、none を指定すると解除します",
+          "readBwlimitStrategyOnly": "--read-bwlimit は戦略全体に適用されます (読み取りはマシン上でローカルに行われます)。--destination を外してください。",
           "saved": "バックアップ戦略の設定を保存しました",
           "optionRetention": "スナップショットの保持設定。例: last=7,daily=7,weekly=4,monthly=6(\"none\" で解除)",
           "retentionInvalid": "--retention \"{{value}}\" は 名前=件数 の組の一覧ではありません。名前は last、hourly、daily、weekly、monthly、yearly で、それぞれ 1 回だけ使え、件数は整数です。例: last=7,daily=7",

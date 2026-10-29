@@ -8,7 +8,7 @@ tags:
 subcategory: data-protection
 order: 7
 language: zh
-sourceHash: "df140be7490305b0"
+sourceHash: "243d934efa7d9d54"
 sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
@@ -93,7 +93,11 @@ rdc backup usage
 | `--dry-run` | 仅计划:不上传。报告会移动哪些内容 |
 | `--cold` | 停止容器,冻结,重启,然后上传。不能与 `--dry-run` 同时使用 |
 | `--reseed` | 不信任本地锚点,上传完整清单。重新上传所有内容并重新计入配额 |
+| `--read-bwlimit <limit>` | 快照从磁盘读取镜像的速度上限,单位与 `--bwlimit` 相同(默认 `50M`,`0` = 不限速) |
+| `--hash-parallelism <n>` | 哈希工作线程数(默认 `1`,`0` = 每个 CPU 一个,最多 `16`) |
 | `--debug` | 启用详细输出 |
+
+上传上限与读取上限相互独立。`--bwlimit` 限制发送量,默认不限速;`--read-bwlimit` 限制从磁盘读取并计算镜像哈希的速度。`ionice` 只对 BFQ I/O 调度器生效,因此在 `mq-deadline` 或 `none` 下,真正约束磁盘负载的是读取上限。
 
 ## 冷快照(`--cold`)
 
@@ -494,6 +498,7 @@ rdc backup strategy set weekly-cold \
 | `--cron <expression>` | cron 表达式(例如 `"0 2 * * *"` 表示每天凌晨 2 点) |
 | `--mode <hot\|cold>` | 备份模式 |
 | `--bwlimit <limit>` | 上传的带宽限制(例如 `10M`) |
+| `--read-bwlimit <limit>` | 快照从磁盘读取镜像的速度上限(例如 `50M`,`0` = 不限速)。`none` 表示清除 |
 | `--include <repos>` | 此策略覆盖的仓库(逗号分隔) |
 | `--exclude <repos>` | 要跳过的仓库(逗号分隔) |
 | `--retention <spec>` | 快照保留,例如 `last=7,daily=7,weekly=4,monthly=6`。`none` 表示移除 |

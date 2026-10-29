@@ -9,7 +9,9 @@
  */
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
+import { t } from '../../i18n/index.js';
 import type { BackupStrategyDestination } from '../../types/index.js';
+import { ValidationError } from '../../utils/errors.js';
 import type { ScheduledStrategy } from './backup-schedule-targets.js';
 
 /**
@@ -43,14 +45,26 @@ export function bandwidthToBytesPerSecond(limit: string | undefined): number | u
   if (!limit?.trim()) return undefined;
   const parsed = parseRate(limit.trim());
   if (typeof parsed === 'string') {
-    throw new Error(
-      `Bandwidth limit "${limit}" is not a size this can convert (${parsed}). ` +
-        'Use bytes/second (12500000), decimal bytes (12.5M), binary bytes (12Mi) or bits ' +
-        '(100Mbps). Refusing rather than dropping it, because dropping would silently remove ' +
-        'a cap you set.'
+    // Refused rather than dropped: dropping would silently remove a cap the operator set.
+    throw new ValidationError(
+      t('commands.backup.strategy.bandwidthUnconvertible', { value: limit, reason: parsed })
     );
   }
   return parsed === 0 ? undefined : parsed;
+}
+
+/**
+ * The read cap of a strategy, in bytes/second, or undefined when the strategy sets none. Unlike the upload cap, a literal zero is KEPT (returned as 0): it means "unlimited read" and must reach the unit as `--read-bwlimit 0`, because dropping it would reapply the verb's gentle default and silently undo what the operator asked for. An unparseable value throws.
+ */
+export function readCapBytesPerSecond(limit: string | undefined): number | undefined {
+  if (!limit?.trim()) return undefined;
+  const parsed = parseRate(limit.trim());
+  if (typeof parsed === 'string') {
+    throw new ValidationError(
+      t('commands.backup.strategy.readBandwidthUnconvertible', { value: limit, reason: parsed })
+    );
+  }
+  return parsed;
 }
 
 const DECIMAL_SCALE: Record<string, number> = { '': 1, k: 1e3, m: 1e6, g: 1e9, t: 1e12 };
@@ -151,6 +165,8 @@ export function strategyUnschedulableReason(
   if (reason) return reason;
   try {
     effectiveBandwidthLimit(strategy, destinations);
+    // A typo in the read cap must refuse the unit, never reach it as an unlimited read.
+    readCapBytesPerSecond(strategy.readBandwidthLimit);
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }

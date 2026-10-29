@@ -366,6 +366,8 @@ const BackupStrategyConfigSchema = z.object({
   mode: z.enum(['hot', 'cold']).optional(),
   enabled: z.boolean().optional(),
   bandwidthLimit: z.string().optional(),
+  /** Read cap for hashing and cell reads, strategy level only (the read is local to the machine). Same grammar as bandwidthLimit; 0 = unlimited. */
+  readBandwidthLimit: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
   retention: RetentionPolicySchema.optional(),

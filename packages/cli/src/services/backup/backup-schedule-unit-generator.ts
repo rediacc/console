@@ -19,6 +19,7 @@ import {
   assertStrategySchedulable,
   effectiveBandwidthLimit,
   invalidCronReason,
+  readCapBytesPerSecond,
   STRATEGY_UPLOAD_PARALLELISM,
 } from './backup-strategy-validate.js';
 
@@ -131,6 +132,9 @@ function buildChunkStoreCommand(
   const bwlimit = effectiveBandwidthLimit(strategy, destinations);
   if (bwlimit !== undefined) parts.push(`--bwlimit ${bwlimit}`);
   parts.push(`--parallelism ${STRATEGY_UPLOAD_PARALLELISM}`);
+  // The read cap is strategy level (the read is local, not tied to a destination) and is emitted ONLY when set, so every other unit gets the verb's gentle default and an older renet is not handed a flag it does not know. --hash-parallelism is never emitted: the verb default (1) stands.
+  const readCap = readCapBytesPerSecond(strategy.readBandwidthLimit);
+  if (readCap !== undefined) parts.push(`--read-bwlimit ${readCap}`);
   return parts.join(' ');
 }
 
@@ -195,7 +199,7 @@ function licenseRenewCommand(remoteRenetPath: string): string {
 }
 
 /**
- * A backup is background work and runs below the repositories it protects, on CPU and on disk: a hosting provider once took a machine offline over a backup's CPU load (operator order 2026-10-29). These are the unit-file form of the `nice -n 10 ionice -c 2 -n 7` prefix (best-effort I/O at its lowest level; the idle class can starve a snapshot without bound) that the renet function puts on an ad-hoc snapshot; the ad-hoc strategy run passes the same three properties to systemd-run.
+ * A backup is background work and runs below the repositories it protects, on CPU and on disk: a hosting provider once took a machine offline over a backup's CPU load (operator order 2026-10-29). These are the unit-file form of the `nice -n 10 ionice -c 2 -n 7` prefix (best-effort I/O at its lowest level; the idle class can starve a snapshot without bound) that the renet function puts on an ad-hoc snapshot; the ad-hoc strategy run passes the same three properties to systemd-run. The I/O properties are a no-op under the mq-deadline and none schedulers (the default on virtio and NVMe); there the read cap on the verb (`--read-bwlimit`) carries the bound.
  */
 export const LOW_PRIORITY_PROPERTIES = [
   'Nice=10',

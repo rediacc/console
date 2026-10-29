@@ -8,7 +8,7 @@ tags:
 subcategory: data-protection
 order: 7
 language: ko
-sourceHash: "df140be7490305b0"
+sourceHash: "243d934efa7d9d54"
 sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
@@ -93,7 +93,11 @@ rdc backup usage
 | `--dry-run` | 계획만: 업로드 없음. 무엇이 이동할지 보고 |
 | `--cold` | 컨테이너를 멈추고, 동결하고, 재시작한 뒤 업로드. `--dry-run`과 함께 쓸 수 없음 |
 | `--reseed` | 로컬 앵커를 신뢰하지 않고 전체 인벤토리를 업로드. 모든 것을 다시 업로드하고 할당량을 다시 소진 |
+| `--read-bwlimit <limit>` | 스냅샷이 디스크에서 이미지를 읽는 속도의 상한. 단위는 `--bwlimit`과 같음(기본값 `50M`, `0` = 무제한) |
+| `--hash-parallelism <n>` | 해시 워커 수(기본값 `1`, `0` = CPU당 하나, 최대 `16`) |
 | `--debug` | 상세 출력 활성화 |
+
+업로드 상한과 읽기 상한은 별개다. `--bwlimit`은 전송량을 제한하며 기본값은 무제한이다. `--read-bwlimit`은 이미지를 디스크에서 읽고 해시하는 속도를 제한한다. `ionice`는 BFQ I/O 스케줄러에만 영향을 주므로, `mq-deadline`이나 `none`에서는 읽기 상한이 디스크 부하를 제한한다.
 
 ## 콜드 스냅샷(`--cold`)
 
@@ -494,6 +498,7 @@ rdc backup strategy set weekly-cold \
 | `--cron <expression>` | cron 표현식(예: `"0 2 * * *"`는 매일 오전 2시) |
 | `--mode <hot\|cold>` | 백업 모드 |
 | `--bwlimit <limit>` | 업로드 대역폭 제한(예: `10M`) |
+| `--read-bwlimit <limit>` | 스냅샷이 디스크에서 이미지를 읽는 속도의 상한(예: `50M`, `0` = 무제한). `none`으로 해제 |
 | `--include <repos>` | 이 전략이 포함하는 저장소(쉼표로 구분) |
 | `--exclude <repos>` | 건너뛸 저장소(쉼표로 구분) |
 | `--retention <spec>` | 스냅샷 보존. 예: `last=7,daily=7,weekly=4,monthly=6`. `none`으로 제거 |

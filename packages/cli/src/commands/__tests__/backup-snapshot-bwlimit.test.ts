@@ -12,6 +12,7 @@ vi.mock('../../services/core/output.js', () => ({
 vi.mock('../../services/core/request-context.js', () => ({ setExitCode: vi.fn() }));
 vi.mock('../../services/backup/backup-runs-state.js', () => ({ recordBackupRun: vi.fn() }));
 vi.mock('../../utils/errors.js', () => ({
+  ValidationError: class ValidationError extends Error {},
   getOutputFormat: () => 'json',
   handleError: (error: unknown) => {
     throw error;
@@ -69,8 +70,12 @@ describe('backup snapshot carries the upload cap and parallelism to the renet fu
   });
 
   it('refuses an ambiguous rate or a bad parallelism before reaching the machine', async () => {
-    await expect(snapshot(['--bwlimit', '100Mb'])).rejects.toThrow(/Bandwidth limit "100Mb"/);
-    await expect(snapshot(['--parallelism', '0'])).rejects.toThrow(/--parallelism/);
+    await expect(snapshot(['--bwlimit', '100Mb'])).rejects.toThrow(
+      /commands\.backup\.strategy\.bandwidthUnconvertible/
+    );
+    await expect(snapshot(['--parallelism', '0'])).rejects.toThrow(
+      /commands\.backup\.snapshot\.parallelismInvalid/
+    );
     expect(mockExecute).not.toHaveBeenCalled();
   });
 });
@@ -84,5 +89,45 @@ describe('snapshotUploadParams refuses a blank or unparseable --bwlimit', () => 
     const { snapshotUploadParams } = await import('../backup-storage.js');
     expect(snapshotUploadParams({})).toEqual({});
     expect(snapshotUploadParams({ bwlimit: '100Mbps' })).toEqual({ bwlimit: '12500000' });
+  });
+});
+
+describe('backup snapshot carries the read cap and hash parallelism', () => {
+  beforeEach(() => {
+    mockExecute.mockReset();
+    mockExecute.mockResolvedValue({ success: true, exitCode: 0, stdout: '' });
+  });
+
+  it('sends --read-bwlimit 50M as bytes/second and --hash-parallelism 1 as a number', async () => {
+    await snapshot(['--read-bwlimit', '50M', '--hash-parallelism', '1']);
+    expect(sentParams()).toMatchObject({ read_bwlimit: '50000000', hash_parallelism: 1 });
+  });
+
+  it('sends --read-bwlimit 0 as the string 0 (unlimited), not as an omission', async () => {
+    await snapshot(['--read-bwlimit', '0', '--hash-parallelism', '0']);
+    expect(sentParams()).toMatchObject({ read_bwlimit: '0', hash_parallelism: 0 });
+  });
+
+  it('sends neither read param when neither flag is given', async () => {
+    await snapshot([]);
+    const params = sentParams();
+    expect(params).not.toHaveProperty('read_bwlimit');
+    expect(params).not.toHaveProperty('hash_parallelism');
+  });
+
+  it('refuses a bad rate, a blank rate or a bad count before reaching the machine', async () => {
+    await expect(snapshot(['--read-bwlimit', '100Mb'])).rejects.toThrow(
+      /commands\.backup\.strategy\.readBandwidthUnconvertible/
+    );
+    await expect(snapshot(['--read-bwlimit', ' '])).rejects.toThrow(
+      /commands\.backup\.snapshot\.readBwlimitInvalid/
+    );
+    await expect(snapshot(['--hash-parallelism', '-1'])).rejects.toThrow(
+      /commands\.backup\.snapshot\.hashParallelismInvalid/
+    );
+    await expect(snapshot(['--hash-parallelism', '1.5'])).rejects.toThrow(
+      /commands\.backup\.snapshot\.hashParallelismInvalid/
+    );
+    expect(mockExecute).not.toHaveBeenCalled();
   });
 });

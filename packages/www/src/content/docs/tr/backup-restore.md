@@ -8,7 +8,7 @@ tags:
 subcategory: data-protection
 order: 7
 language: tr
-sourceHash: "df140be7490305b0"
+sourceHash: "243d934efa7d9d54"
 sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
@@ -93,7 +93,11 @@ rdc backup usage
 | `--dry-run` | Yalnızca planlama: yükleme yok. Nelerin taşınacağını bildirir |
 | `--cold` | Konteynerleri durdur, dondur, yeniden başlat, sonra yükle. `--dry-run` ile birlikte kullanılamaz |
 | `--reseed` | Yerel çıpaya güvenme ve tüm envanteri yükle. Her şeyi yeniden yükler ve kotayı yeniden tüketir |
+| `--read-bwlimit <limit>` | Anlık görüntünün imajı diskten okuma hızının sınırı, `--bwlimit` ile aynı birimlerde (varsayılan `50M`, `0` = sınırsız) |
+| `--hash-parallelism <n>` | Karma (hash) işçisi sayısı (varsayılan `1`, `0` = CPU başına bir, en fazla `16`) |
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
+
+Yükleme sınırı ile okuma sınırı ayrıdır. `--bwlimit` gönderilen veriyi sınırlar ve varsayılan olarak sınırsızdır; `--read-bwlimit` imajın diskten okunup karmalanma hızını sınırlar. `ionice` yalnızca BFQ G/Ç zamanlayıcısını etkiler; bu yüzden `mq-deadline` veya `none` altında disk yükünü sınırlayan şey okuma sınırıdır.
 
 ## Soğuk Anlık Görüntüler (`--cold`)
 
@@ -494,6 +498,7 @@ rdc backup strategy set weekly-cold \
 | `--cron <expression>` | Cron ifadesi (örn. günlük saat 2'de için `"0 2 * * *"`) |
 | `--mode <hot\|cold>` | Yedekleme modu |
 | `--bwlimit <limit>` | Yüklemeler için bant genişliği sınırı (örn. `10M`) |
+| `--read-bwlimit <limit>` | Anlık görüntülerin imajı diskten okuma hızının sınırı (örn. `50M`, `0` = sınırsız). `none` sınırı kaldırır |
 | `--include <repos>` | Bu stratejinin kapsadığı depolar (virgülle ayrılmış) |
 | `--exclude <repos>` | Atlanacak depolar (virgülle ayrılmış) |
 | `--retention <spec>` | Anlık görüntü saklama süresi, örneğin `last=7,daily=7,weekly=4,monthly=6`. `none` kaldırır |

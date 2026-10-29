@@ -1936,16 +1936,26 @@
         "failed": "Snapshot failed for {{name}}",
         "quotaRefused": "Snapshot refused for {{name}}: storage quota exceeded. Prune old snapshots or raise the quota",
         "optionBwlimit": "Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited",
-        "optionParallelism": "Number of chunks uploaded at once (default 4)"
+        "optionParallelism": "Number of chunks uploaded at once (default 4)",
+        "optionReadBwlimit": "Read cap for hashing and cell reads: same units as --bwlimit; default 50M, 0 = unlimited",
+        "optionHashParallelism": "Cells hashed at once (default 1; 0 = one per CPU, up to 16)",
+        "bwlimitInvalid": "--bwlimit must be a rate such as 100Mbps or 12.5M, got \"{{value}}\".",
+        "parallelismInvalid": "--parallelism must be a positive integer, got \"{{value}}\".",
+        "readBwlimitInvalid": "--read-bwlimit must be a rate such as 50M or 400Mbps (0 = unlimited), got \"{{value}}\".",
+        "hashParallelismInvalid": "--hash-parallelism must be an integer of 0 or more (0 = one per CPU), got \"{{value}}\"."
       },
       "status": {
         "description": "Show backup status and timer state on a remote machine"
       },
       "strategy": {
         "description": "Manage named backup strategies (hot/cold modes, destinations, scheduling)",
+        "bandwidthUnconvertible": "Bandwidth limit \"{{value}}\" cannot be converted ({{reason}}). Use bytes/second (12500000), decimal bytes (12.5M), binary bytes (12Mi) or bits (100Mbps).",
+        "readBandwidthUnconvertible": "Read bandwidth limit \"{{value}}\" cannot be converted ({{reason}}). Use bytes/second (50000000), decimal bytes (50M), binary bytes (48Mi), bits (400Mbps) or 0 for unlimited.",
         "set": {
           "description": "Create or update a backup strategy",
           "optionBwlimit": "Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., \"6M\", \"500K\")",
+          "optionReadBwlimit": "Read cap for this strategy's snapshots: same units as --bwlimit; none clears it",
+          "readBwlimitStrategyOnly": "--read-bwlimit applies to the whole strategy (the read is local to the machine); drop --destination.",
           "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
           "optionDestination": "Destination name within the strategy. Creates a Rediacc chunk-store destination",
           "optionDisable": "Disable the strategy or destination",

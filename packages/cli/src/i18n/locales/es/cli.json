@@ -147,21 +147,28 @@
         "success": "Programación de respaldos desplegada en {{machine}}"
       },
       "snapshot": {
+        "bwlimitInvalid": "--bwlimit debe ser una velocidad como 100Mbps o 12.5M, y se recibió \"{{value}}\".",
         "completed": "Instantánea guardada para {{name}}",
         "description": "Subir una instantánea al almacenamiento fragmentado: primero el inventario completo, después las celdas modificadas",
         "failed": "Falló la instantánea de {{name}}",
+        "hashParallelismInvalid": "--hash-parallelism debe ser un entero igual o mayor que 0 (0 = uno por CPU), y se recibió \"{{value}}\".",
         "optionBwlimit": "Límite de subida: bytes por segundo, unidades decimales (12.5M = 12,5 MB/s), binarias (12Mi) o bits (100Mbps). Sin indicarlo no hay límite",
         "optionCold": "Detiene los contenedores, congela, reinicia y solo entonces sube. Cuesta un corte real breve a cambio de una instantánea coherente con la aplicación; no se puede combinar con --dry-run",
         "optionDryRun": "Solo planificar: sin subida. Informa qué se movería",
+        "optionHashParallelism": "Cuántas celdas se procesan con hash a la vez (1 por defecto; 0 = una por CPU, hasta 16)",
         "optionParallelism": "Cuántos fragmentos se suben a la vez (4 por defecto)",
+        "optionReadBwlimit": "Límite de lectura para el hash y la lectura de celdas: mismas unidades que --bwlimit; 50M por defecto, 0 = sin límite",
         "optionReseed": "Desconfiar del ancla local y subir un inventario completo (vuelve a subir todo y recarga la cuota)",
+        "parallelismInvalid": "--parallelism debe ser un entero positivo, y se recibió \"{{value}}\".",
         "quotaRefused": "Instantánea rechazada para {{name}}: cuota de almacenamiento superada. Elimina instantáneas antiguas o aumenta la cuota",
+        "readBwlimitInvalid": "--read-bwlimit debe ser una velocidad como 50M o 400Mbps (0 = sin límite), y se recibió \"{{value}}\".",
         "starting": "Creando instantánea de {{name}} en el almacenamiento fragmentado..."
       },
       "status": {
         "description": "Mostrar estado de respaldo y estado del temporizador en una máquina remota"
       },
       "strategy": {
+        "bandwidthUnconvertible": "No se puede convertir el límite de ancho de banda \"{{value}}\" ({{reason}}). Usa bytes por segundo (12500000), bytes decimales (12.5M), bytes binarios (12Mi) o bits (100Mbps).",
         "bind": {
           "alreadyBound": "La estrategia de respaldo \"{{strategy}}\" ya está vinculada a la máquina \"{{machine}}\"",
           "bound": "Estrategia de respaldo \"{{strategy}}\" vinculada a la máquina \"{{machine}}\"",
@@ -171,6 +178,7 @@
         "list": {
           "description": "Listar todas las estrategias de respaldo"
         },
+        "readBandwidthUnconvertible": "No se puede convertir el límite de lectura \"{{value}}\" ({{reason}}). Usa bytes por segundo (50000000), bytes decimales (50M), bytes binarios (48Mi), bits (400Mbps) o 0 para quitar el límite.",
         "remove": {
           "bound": "No se puede eliminar la estrategia de respaldo \"{{strategy}}\": {{count}} máquina(s) todavía la tienen vinculada: {{machines}}.",
           "boundNext": "Desvincúlala primero de esas máquinas, o elimínala junto con sus vínculos.",
@@ -196,6 +204,8 @@
           "optionExclude": "Excluir estos repos del respaldo (nombres separados por comas)",
           "optionInclude": "Respaldar solo estos repos (nombres separados por comas)",
           "optionMode": "Modo de respaldo: \"hot\" toma la instantánea con todo en marcha, \"cold\" detiene los contenedores durante el instante de la instantánea",
+          "optionReadBwlimit": "Límite de lectura para los snapshots de esta estrategia: mismas unidades que --bwlimit; none lo quita",
+          "readBwlimitStrategyOnly": "--read-bwlimit se aplica a toda la estrategia (la lectura es local a la máquina); quita --destination.",
           "saved": "Configuración de estrategia de respaldo guardada",
           "optionRetention": "Retención de instantáneas, por ejemplo last=7,daily=7,weekly=4,monthly=6 (\"none\" la quita)",
           "retentionInvalid": "--retention \"{{value}}\" no es una lista de pares nombre=cantidad. Los nombres son last, hourly, daily, weekly, monthly y yearly, cada uno una sola vez, y cada cantidad es un número entero, por ejemplo last=7,daily=7.",

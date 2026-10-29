@@ -147,21 +147,28 @@
         "success": "Planification de sauvegarde déployée sur {{machine}}"
       },
       "snapshot": {
+        "bwlimitInvalid": "--bwlimit doit être un débit comme 100Mbps ou 12.5M, reçu \"{{value}}\".",
         "completed": "Instantané enregistré pour {{name}}",
         "description": "Envoyer un instantané vers le stockage fragmenté : inventaire complet d'abord, cellules modifiées ensuite",
         "failed": "Échec de l'instantané pour {{name}}",
+        "hashParallelismInvalid": "--hash-parallelism doit être un entier supérieur ou égal à 0 (0 = un par CPU), reçu \"{{value}}\".",
         "optionBwlimit": "Plafond d'envoi : octets par seconde, unités décimales (12.5M = 12,5 Mo/s), binaires (12Mi) ou bits (100Mbps). Sans valeur, aucun plafond",
         "optionCold": "Arrête les conteneurs, fige, redémarre, puis téléverse. Coûte une brève coupure réelle en échange d'un instantané cohérent au niveau applicatif ; incompatible avec --dry-run",
         "optionDryRun": "Planifier seulement : aucun envoi. Indique ce qui serait déplacé",
+        "optionHashParallelism": "Nombre de cellules hachées en parallèle (1 par défaut ; 0 = une par CPU, jusqu'à 16)",
         "optionParallelism": "Nombre de blocs envoyés en parallèle (4 par défaut)",
+        "optionReadBwlimit": "Plafond de lecture pour le hachage et la lecture des cellules : mêmes unités que --bwlimit ; 50M par défaut, 0 = illimité",
         "optionReseed": "Ne pas faire confiance à l'ancre locale et renvoyer un inventaire complet (renvoie tout et recharge le quota)",
+        "parallelismInvalid": "--parallelism doit être un entier positif, reçu \"{{value}}\".",
         "quotaRefused": "Instantané refusé pour {{name}} : quota de stockage dépassé. Purgez d'anciens instantanés ou augmentez le quota",
+        "readBwlimitInvalid": "--read-bwlimit doit être un débit comme 50M ou 400Mbps (0 = illimité), reçu \"{{value}}\".",
         "starting": "Création de l'instantané de {{name}} vers le stockage fragmenté..."
       },
       "status": {
         "description": "Afficher l'état de sauvegarde et l'état du minuteur sur une machine distante"
       },
       "strategy": {
+        "bandwidthUnconvertible": "La limite de bande passante \"{{value}}\" ne peut pas être convertie ({{reason}}). Utilisez des octets par seconde (12500000), des octets décimaux (12.5M), des octets binaires (12Mi) ou des bits (100Mbps).",
         "bind": {
           "alreadyBound": "La stratégie de sauvegarde \"{{strategy}}\" est déjà associée à la machine \"{{machine}}\"",
           "bound": "Stratégie de sauvegarde \"{{strategy}}\" associée à la machine \"{{machine}}\"",
@@ -171,6 +178,7 @@
         "list": {
           "description": "Lister toutes les stratégies de sauvegarde"
         },
+        "readBandwidthUnconvertible": "La limite de bande passante en lecture \"{{value}}\" ne peut pas être convertie ({{reason}}). Utilisez des octets par seconde (50000000), des octets décimaux (50M), des octets binaires (48Mi), des bits (400Mbps) ou 0 pour illimité.",
         "remove": {
           "bound": "Impossible de supprimer la stratégie de sauvegarde \"{{strategy}}\" : {{count}} machine(s) la lient encore : {{machines}}.",
           "boundNext": "Déliez-la d'abord de ces machines, ou supprimez-la avec ses liaisons.",
@@ -196,6 +204,8 @@
           "optionExclude": "Exclure ces repos de la sauvegarde (noms séparés par des virgules)",
           "optionInclude": "Sauvegarder uniquement ces repos (noms séparés par des virgules)",
           "optionMode": "Mode de sauvegarde : \"hot\" prend le snapshot pendant que tout continue de tourner, \"cold\" arrête les conteneurs le temps de prendre le snapshot",
+          "optionReadBwlimit": "Plafond de lecture pour les snapshots de cette stratégie : mêmes unités que --bwlimit ; none le supprime",
+          "readBwlimitStrategyOnly": "--read-bwlimit s'applique à toute la stratégie (la lecture est locale à la machine) : retirez --destination.",
           "saved": "Configuration de la stratégie de sauvegarde enregistrée",
           "optionRetention": "Rétention des instantanés, par exemple last=7,daily=7,weekly=4,monthly=6 (« none » la retire)",
           "retentionInvalid": "--retention « {{value}} » n'est pas une liste de paires nom=nombre. Les noms valides sont last, hourly, daily, weekly, monthly et yearly, chacun une seule fois, et chaque nombre est un entier, par exemple last=7,daily=7.",

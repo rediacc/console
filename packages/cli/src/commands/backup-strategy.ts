@@ -106,6 +106,7 @@ export function buildStrategyUpdate(
     cron?: string;
     mode?: string;
     bwlimit?: string;
+    readBwlimit?: string;
     include?: string;
     exclude?: string;
     retention?: string;
@@ -122,6 +123,11 @@ export function buildStrategyUpdate(
   }
   if (enabled !== undefined) u.enabled = enabled;
   if (opts.bwlimit !== undefined) u.bandwidthLimit = opts.bwlimit;
+  // `none` clears the read cap, so the verb default applies again.
+  if (opts.readBwlimit !== undefined) {
+    u.readBandwidthLimit =
+      opts.readBwlimit.trim().toLowerCase() === 'none' ? undefined : opts.readBwlimit;
+  }
   // include/exclude are mutually exclusive; setting one clears the other.
   // An empty/"none" value clears the filter entirely.
   if (opts.include !== undefined) {
@@ -174,6 +180,7 @@ export async function applyBackupStrategyOptions(
     cron?: string;
     mode?: string;
     bwlimit?: string;
+    readBwlimit?: string;
     include?: string;
     exclude?: string;
     retention?: string;
@@ -183,6 +190,9 @@ export async function applyBackupStrategyOptions(
 ): Promise<void> {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
   const targetsDestination = Boolean(options.destination);
+  if (targetsDestination && options.readBwlimit !== undefined) {
+    throw new ValidationError(t('commands.backup.strategy.set.readBwlimitStrategyOnly'));
+  }
 
   // Strategy fields and destination fields are applied in the SAME call. This used to be an either/or, so creating a strategy with a destination took two invocations, and the first one, `set <new> --destination …`, silently produced a strategy with an empty schedule.
   //
@@ -290,6 +300,9 @@ function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
   outputService.info(`  Mode: ${mode}`);
   outputService.info(`  Enabled: ${strategy.enabled !== false}`);
   if (strategy.bandwidthLimit) outputService.info(`  Bandwidth limit: ${strategy.bandwidthLimit}`);
+  if (strategy.readBandwidthLimit) {
+    outputService.info(`  Read bandwidth limit: ${strategy.readBandwidthLimit}`);
+  }
   if (strategy.include) outputService.info(`  Include: ${strategy.include.join(', ')}`);
   if (strategy.exclude) outputService.info(`  Exclude: ${strategy.exclude.join(', ')}`);
   if (strategy.retention) {
@@ -355,6 +368,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
       ])
     )
     .option('--bwlimit <limit>', t('commands.backup.strategy.set.optionBwlimit'))
+    .option('--read-bwlimit <limit>', t('commands.backup.strategy.set.optionReadBwlimit'))
     .option('--include <repos>', t('commands.backup.strategy.set.optionInclude'))
     .option('--exclude <repos>', t('commands.backup.strategy.set.optionExclude'))
     .option('--retention <spec>', t('commands.backup.strategy.set.optionRetention'))

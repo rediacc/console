@@ -147,21 +147,28 @@
         "success": "Programmazione backup distribuita su {{machine}}"
       },
       "snapshot": {
+        "bwlimitInvalid": "--bwlimit deve essere una velocità come 100Mbps o 12.5M, ricevuto \"{{value}}\".",
         "completed": "Snapshot salvato per {{name}}",
         "description": "Carica uno snapshot su storage a chunk: prima l'inventario completo, poi le celle modificate",
         "failed": "Snapshot non riuscito per {{name}}",
+        "hashParallelismInvalid": "--hash-parallelism deve essere un intero pari o superiore a 0 (0 = uno per CPU), ricevuto \"{{value}}\".",
         "optionBwlimit": "Limite di caricamento: byte al secondo, unità decimali (12.5M = 12,5 MB/s), binarie (12Mi) o bit (100Mbps). Se omesso non c'è alcun limite",
         "optionCold": "Ferma i container, congela, riavvia e solo allora carica. Costa un breve fermo reale ma restituisce uno snapshot coerente a livello applicativo; non si può combinare con --dry-run",
         "optionDryRun": "Pianifica soltanto: nessun caricamento. Riporta cosa verrebbe spostato",
+        "optionHashParallelism": "Quante celle calcolare in hash in parallelo (predefinito 1; 0 = una per CPU, fino a 16)",
         "optionParallelism": "Quanti blocchi caricare in parallelo (predefinito 4)",
+        "optionReadBwlimit": "Limite di lettura per l'hashing e la lettura delle celle: stesse unità di --bwlimit; predefinito 50M, 0 = illimitato",
         "optionReseed": "Non fidarti dell'ancora locale e ricarica un inventario completo (ricarica tutto e riaddebita la quota)",
+        "parallelismInvalid": "--parallelism deve essere un intero positivo, ricevuto \"{{value}}\".",
         "quotaRefused": "Snapshot rifiutato per {{name}}: quota di storage superata. Elimina vecchi snapshot o aumenta la quota",
+        "readBwlimitInvalid": "--read-bwlimit deve essere una velocità come 50M o 400Mbps (0 = illimitato), ricevuto \"{{value}}\".",
         "starting": "Creazione dello snapshot di {{name}} su storage a chunk..."
       },
       "status": {
         "description": "Mostra lo stato del backup e dei timer su una macchina remota"
       },
       "strategy": {
+        "bandwidthUnconvertible": "Il limite di banda \"{{value}}\" non può essere convertito ({{reason}}). Usa byte al secondo (12500000), byte decimali (12.5M), byte binari (12Mi) o bit (100Mbps).",
         "bind": {
           "alreadyBound": "La strategia di backup \"{{strategy}}\" è già associata alla macchina \"{{machine}}\"",
           "bound": "Strategia di backup \"{{strategy}}\" associata alla macchina \"{{machine}}\"",
@@ -171,6 +178,7 @@
         "list": {
           "description": "Elenca tutte le strategie di backup"
         },
+        "readBandwidthUnconvertible": "Il limite di banda in lettura \"{{value}}\" non può essere convertito ({{reason}}). Usa byte al secondo (50000000), byte decimali (50M), byte binari (48Mi), bit (400Mbps) oppure 0 per nessun limite.",
         "remove": {
           "bound": "Impossibile rimuovere la strategia di backup \"{{strategy}}\": {{count}} macchinario/i la associano ancora: {{machines}}.",
           "boundNext": "Dissociala prima da quei macchinari, oppure rimuovila insieme alle sue associazioni.",
@@ -196,6 +204,8 @@
           "optionExclude": "Escludi questi repo dal backup (nomi separati da virgola)",
           "optionInclude": "Esegui il backup solo di questi repo (nomi separati da virgola)",
           "optionMode": "Modalità di backup: \"hot\" crea lo snapshot mentre tutto resta in esecuzione, \"cold\" ferma i container per il tempo dello snapshot",
+          "optionReadBwlimit": "Limite di lettura per gli snapshot di questa strategia: stesse unità di --bwlimit; none lo rimuove",
+          "readBwlimitStrategyOnly": "--read-bwlimit vale per l'intera strategia (la lettura è locale alla macchina): rimuovi --destination.",
           "saved": "Configurazione della strategia di backup salvata",
           "optionRetention": "Conservazione degli snapshot, ad esempio last=7,daily=7,weekly=4,monthly=6 (\"none\" la rimuove)",
           "retentionInvalid": "--retention \"{{value}}\" non è un elenco di coppie nome=numero. I nomi validi sono last, hourly, daily, weekly, monthly e yearly, ciascuno una sola volta, e ogni numero è un intero, ad esempio last=7,daily=7.",

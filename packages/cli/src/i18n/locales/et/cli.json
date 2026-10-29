@@ -147,21 +147,28 @@
         "success": "Varukoopia ajakava juurutatud masinasse {{machine}}"
       },
       "snapshot": {
+        "bwlimitInvalid": "--bwlimit peab olema kiirus, näiteks 100Mbps või 12.5M, aga saadi \"{{value}}\".",
         "completed": "Hetktõmmis salvestatud hoidlale {{name}}",
         "description": "Lae hetktõmmis chunk-hoidlasse: esmalt täielik inventuur, seejärel muutunud rakud",
         "failed": "Hetktõmmis ebaõnnestus hoidlale {{name}}",
+        "hashParallelismInvalid": "--hash-parallelism peab olema täisarv alates 0-st (0 = üks protsessori kohta), aga saadi \"{{value}}\".",
         "optionBwlimit": "Üleslaadimise piirang: baite sekundis, kümnendühikutes (12.5M = 12,5 MB/s), kahendühikutes (12Mi) või bittides (100Mbps). Määramata jättes piirangut pole",
         "optionCold": "Peatab konteinerid, külmutab, käivitab uuesti ja alles siis laadib üles. Maksab lühikese päris katkestuse, aga annab rakendusega kooskõlas oleva hetktõmmise; koos võtmega --dry-run ei tööta",
         "optionDryRun": "Ainult planeeri: üleslaadimist ei toimu. Näitab, mis liiguks",
+        "optionHashParallelism": "Korraga räsitavate lahtrite arv (vaikimisi 1; 0 = üks protsessori kohta, kuni 16)",
         "optionParallelism": "Korraga üles laaditavate tükkide arv (vaikimisi 4)",
+        "optionReadBwlimit": "Räsimise ja lahtrite lugemise kiiruspiir: samad ühikud mis --bwlimit; vaikimisi 50M, 0 = piiranguta",
         "optionReseed": "Ära usalda kohalikku ankrut ja lae üles täielik inventuur (laeb kõik uuesti üles ja arvestab kvoodi uuesti)",
+        "parallelismInvalid": "--parallelism peab olema positiivne täisarv, aga saadi \"{{value}}\".",
         "quotaRefused": "Hetktõmmis lükati tagasi hoidlale {{name}}: salvestuskvoot ületatud. Kärbi vanu hetktõmmiseid või tõsta kvooti",
+        "readBwlimitInvalid": "--read-bwlimit peab olema kiirus, näiteks 50M või 400Mbps (0 = piiranguta), aga saadi \"{{value}}\".",
         "starting": "{{name}} hetktõmmise tegemine chunk-hoidlasse..."
       },
       "status": {
         "description": "Näitab varukoopia olekut ja taimeri olekut kaugmasinal"
       },
       "strategy": {
+        "bandwidthUnconvertible": "Ribalaiuse piiri \"{{value}}\" ei saa teisendada ({{reason}}). Kasuta baite sekundis (12500000), kümnendbaite (12.5M), kahendbaite (12Mi) või bitte (100Mbps).",
         "bind": {
           "alreadyBound": "Varundusstrateegia \"{{strategy}}\" on juba seotud masinaga \"{{machine}}\"",
           "bound": "Varundusstrateegia \"{{strategy}}\" seoti masinaga \"{{machine}}\"",
@@ -171,6 +178,7 @@
         "list": {
           "description": "Loetle kõik varundusstrateegiad"
         },
+        "readBandwidthUnconvertible": "Lugemise ribalaiuse piiri \"{{value}}\" ei saa teisendada ({{reason}}). Kasuta baite sekundis (50000000), kümnendbaite (50M), kahendbaite (48Mi), bitte (400Mbps) või 0 piirangu puudumiseks.",
         "remove": {
           "bound": "Varundusstrateegiat \"{{strategy}}\" ei saa eemaldada: seda seob veel {{count}} masinat: {{machines}}.",
           "boundNext": "Lahuta see esmalt nendest masinatest või eemalda see koos sidumistega.",
@@ -196,6 +204,8 @@
           "optionExclude": "Jäta need hoidlad varundusest välja (komaga eraldatud nimed)",
           "optionInclude": "Varunda ainult need hoidlad (komaga eraldatud nimed)",
           "optionMode": "Varundusrežiim: \"hot\" teeb hetktõmmise, kui kõik töötab edasi, \"cold\" peatab konteinerid hetktõmmise tegemise ajaks",
+          "optionReadBwlimit": "Selle strateegia hetktõmmiste lugemispiir: samad ühikud mis --bwlimit; none eemaldab selle",
+          "readBwlimitStrategyOnly": "--read-bwlimit kehtib kogu strateegiale (lugemine toimub masinas kohapeal); jäta --destination ära.",
           "saved": "Varundussettrateegia konfiguratsioon salvestatud",
           "optionRetention": "Hetktõmmiste säilitus, näiteks last=7,daily=7,weekly=4,monthly=6 (\"none\" eemaldab selle)",
           "retentionInvalid": "--retention \"{{value}}\" ei ole nimi=arv paaride loend. Nimed on last, hourly, daily, weekly, monthly ja yearly, igaüks üks kord, ja iga arv on täisarv, näiteks last=7,daily=7.",

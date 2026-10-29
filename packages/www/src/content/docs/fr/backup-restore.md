@@ -8,7 +8,7 @@ tags:
 subcategory: data-protection
 order: 7
 language: fr
-sourceHash: "df140be7490305b0"
+sourceHash: "243d934efa7d9d54"
 sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
@@ -92,7 +92,11 @@ rdc backup usage
 | `--dry-run` | Planification seule : pas d'envoi. Indique ce qui serait déplacé |
 | `--cold` | Arrêter les conteneurs, geler, redémarrer, puis envoyer. Ne se combine pas avec `--dry-run` |
 | `--reseed` | Ne pas faire confiance à l'ancre locale et envoyer un inventaire complet. Renvoie tout et recharge le quota |
+| `--read-bwlimit <limit>` | Plafond de la vitesse à laquelle l'instantané lit l'image sur le disque, dans les mêmes unités que `--bwlimit` (par défaut `50M`, `0` = illimité) |
+| `--hash-parallelism <n>` | Nombre de workers de hachage (par défaut `1`, `0` = un par CPU, jusqu'à `16`) |
 | `--debug` | Activer la sortie détaillée |
+
+Le plafond d'envoi et le plafond de lecture sont distincts. `--bwlimit` limite ce qui est envoyé et est illimité par défaut ; `--read-bwlimit` limite la vitesse à laquelle l'image est lue et hachée depuis le disque. `ionice` n'agit que sur l'ordonnanceur d'E/S BFQ : avec `mq-deadline` ou `none`, c'est le plafond de lecture qui borne la charge du disque.
 
 ## Instantanés à froid (`--cold`)
 
@@ -493,6 +497,7 @@ rdc backup strategy set weekly-cold \
 | `--cron <expression>` | Expression cron (p. ex. `"0 2 * * *"` pour tous les jours à 2h du matin) |
 | `--mode <hot\|cold>` | Mode de sauvegarde |
 | `--bwlimit <limit>` | Limite de bande passante pour les chargements (p. ex. `10M`) |
+| `--read-bwlimit <limit>` | Plafond de la vitesse à laquelle les instantanés lisent l'image sur le disque (p. ex. `50M`, `0` = illimité). `none` le supprime |
 | `--include <repos>` | Dépôts couverts par cette stratégie (séparés par des virgules) |
 | `--exclude <repos>` | Dépôts à ignorer (séparés par des virgules) |
 | `--retention <spec>` | Rétention des instantanés, par exemple `last=7,daily=7,weekly=4,monthly=6`. `none` la retire |

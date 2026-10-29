@@ -8,7 +8,7 @@ tags:
 subcategory: data-protection
 order: 7
 language: ja
-sourceHash: "df140be7490305b0"
+sourceHash: "243d934efa7d9d54"
 sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
@@ -94,7 +94,11 @@ rdc backup usage
 | `--dry-run` | 計画のみ: アップロードなし。何が移動するかを報告する |
 | `--cold` | コンテナを停止し、凍結し、再起動してからアップロードする。`--dry-run`とは併用できない |
 | `--reseed` | ローカルアンカーを信用せず、全インベントリをアップロードする。すべてを再アップロードしクォータを再課金する |
+| `--read-bwlimit <limit>` | スナップショットがディスクからイメージを読む速度の上限。単位は `--bwlimit` と同じ(デフォルト `50M`、`0` = 無制限) |
+| `--hash-parallelism <n>` | ハッシュワーカー数(デフォルト `1`、`0` = CPUごとに1つ、最大 `16`) |
 | `--debug` | 詳細出力を有効化 |
+
+アップロード上限と読み取り上限は別物である。`--bwlimit` は送信量を制限し、デフォルトでは無制限。`--read-bwlimit` はイメージをディスクから読み取りハッシュ化する速度を制限する。`ionice` が効くのは BFQ I/O スケジューラだけなので、`mq-deadline` または `none` ではディスク負荷を抑えるのは読み取り上限になる。
 
 ## コールドスナップショット(`--cold`)
 
@@ -495,6 +499,7 @@ rdc backup strategy set weekly-cold \
 | `--cron <expression>` | cron式(例: `"0 2 * * *"` で毎日午前2時) |
 | `--mode <hot\|cold>` | バックアップモード |
 | `--bwlimit <limit>` | アップロードの帯域幅制限(例: `10M`) |
+| `--read-bwlimit <limit>` | スナップショットがディスクからイメージを読む速度の上限(例: `50M`、`0` = 無制限)。`none` で解除 |
 | `--include <repos>` | この戦略が対象とするリポジトリ(カンマ区切り) |
 | `--exclude <repos>` | スキップするリポジトリ(カンマ区切り) |
 | `--retention <spec>` | スナップショットの保持。例: `last=7,daily=7,weekly=4,monthly=6`。`none` で削除 |

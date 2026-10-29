@@ -147,21 +147,28 @@
         "success": "Yedekleme zamanlaması {{machine}} makinesine dağıtıldı"
       },
       "snapshot": {
+        "bwlimitInvalid": "--bwlimit 100Mbps veya 12.5M gibi bir hız olmalıdır, \"{{value}}\" verildi.",
         "completed": "{{name}} için anlık görüntü kaydedildi",
         "description": "Parça depolamaya bir anlık görüntü yükle: önce tam envanter, sonra değişen hücreler",
         "failed": "{{name}} için anlık görüntü başarısız oldu",
+        "hashParallelismInvalid": "--hash-parallelism 0 veya daha büyük bir tam sayı olmalıdır (0 = CPU başına bir), \"{{value}}\" verildi.",
         "optionBwlimit": "Yükleme hızı sınırı: saniyede bayt, ondalık birimler (12.5M = 12,5 MB/s), ikili birimler (12Mi) ya da bit (100Mbps). Verilmezse sınır uygulanmaz",
         "optionCold": "Konteynerleri durdurur, dondurur, yeniden başlatır ve ancak ondan sonra yükler. Kısa ama gerçek bir kesinti karşılığında uygulama tutarlı bir anlık görüntü verir; --dry-run ile birlikte kullanılamaz",
         "optionDryRun": "Yalnızca planla: yükleme yapılmaz. Nelerin taşınacağını bildirir",
+        "optionHashParallelism": "Aynı anda karması alınacak hücre sayısı (varsayılan 1; 0 = CPU başına bir, en fazla 16)",
         "optionParallelism": "Aynı anda yüklenecek parça sayısı (varsayılan 4)",
+        "optionReadBwlimit": "Karma ve hücre okuma hız sınırı: --bwlimit ile aynı birimler; varsayılan 50M, 0 = sınırsız",
         "optionReseed": "Yerel çıpaya güvenme ve tam envanteri yeniden yükle (her şeyi yeniden yükler ve kotayı yeniden düşer)",
+        "parallelismInvalid": "--parallelism pozitif bir tam sayı olmalıdır, \"{{value}}\" verildi.",
         "quotaRefused": "{{name}} için anlık görüntü reddedildi: depolama kotası aşıldı. Eski anlık görüntüleri temizleyin veya kotayı artırın",
+        "readBwlimitInvalid": "--read-bwlimit 50M veya 400Mbps gibi bir hız olmalıdır (0 = sınırsız), \"{{value}}\" verildi.",
         "starting": "{{name}} parça depolamaya anlık görüntü olarak alınıyor..."
       },
       "status": {
         "description": "Uzak makinede yedekleme durumunu ve zamanlayıcı durumunu göster"
       },
       "strategy": {
+        "bandwidthUnconvertible": "\"{{value}}\" bant genişliği sınırı dönüştürülemiyor ({{reason}}). Saniyede bayt (12500000), ondalık bayt (12.5M), ikili bayt (12Mi) veya bit (100Mbps) kullanın.",
         "bind": {
           "alreadyBound": "\"{{strategy}}\" yedekleme stratejisi zaten \"{{machine}}\" makinesine bağlı",
           "bound": "\"{{strategy}}\" yedekleme stratejisi \"{{machine}}\" makinesine bağlandı",
@@ -171,6 +178,7 @@
         "list": {
           "description": "Tüm yedekleme stratejilerini listele"
         },
+        "readBandwidthUnconvertible": "\"{{value}}\" okuma bant genişliği sınırı dönüştürülemiyor ({{reason}}). Saniyede bayt (50000000), ondalık bayt (50M), ikili bayt (48Mi), bit (400Mbps) veya sınırsız için 0 kullanın.",
         "remove": {
           "bound": "\"{{strategy}}\" yedekleme stratejisi kaldırılamıyor: {{count}} makine hâlâ onu bağlıyor: {{machines}}.",
           "boundNext": "Önce bu makinelerden bağlantısını kaldırın veya bağlantılarıyla birlikte kaldırın.",
@@ -196,6 +204,8 @@
           "optionExclude": "Bu depoları yedeklemeden hariç tut (virgülle ayrılmış adlar)",
           "optionInclude": "Yalnızca bu depoları yedekle (virgülle ayrılmış adlar)",
           "optionMode": "Yedekleme modu: \"hot\" her şey çalışırken anlık görüntü alır, \"cold\" görüntü alınırken konteynerleri durdurur",
+          "optionReadBwlimit": "Bu stratejinin snapshot'ları için okuma hız sınırı: --bwlimit ile aynı birimler; none sınırı kaldırır",
+          "readBwlimitStrategyOnly": "--read-bwlimit stratejinin tamamı için geçerlidir (okuma makinede yerel yapılır); --destination parametresini kaldırın.",
           "saved": "Yedekleme stratejisi yapılandırması kaydedildi",
           "optionRetention": "Anlık görüntü saklama, örneğin last=7,daily=7,weekly=4,monthly=6 (\"none\" kaldırır)",
           "retentionInvalid": "--retention \"{{value}}\" ad=sayı çiftlerinden oluşan bir liste değil. Geçerli adlar last, hourly, daily, weekly, monthly ve yearly'dir, her biri bir kez kullanılır ve her sayı tam sayı olmalıdır, örneğin last=7,daily=7.",

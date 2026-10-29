@@ -137,7 +137,11 @@ rdc backup usage
 | `--dry-run` | Plan only: no upload. Reports what would move |
 | `--cold` | Stop the containers, freeze, restart, then upload. Cannot be combined with `--dry-run` |
 | `--reseed` | Distrust the local anchor and upload a full inventory. Re-uploads everything and re-charges quota |
+| `--read-bwlimit <limit>` | Cap on how fast the snapshot reads the image from disk, in the same units as `--bwlimit` (default `50M`, `0` = unlimited) |
+| `--hash-parallelism <n>` | Number of hashing workers (default `1`, `0` = one per CPU, up to `16`) |
 | `--debug` | Enable verbose output |
+
+The upload cap and the read cap are separate. `--bwlimit` limits what is sent and is unlimited by default; `--read-bwlimit` limits how fast the image is read and hashed from disk. `ionice` affects only the BFQ I/O scheduler, so under `mq-deadline` or `none` the read cap is what bounds disk load.
 
 ## Cold Snapshots (`--cold`)
 
@@ -570,6 +574,7 @@ rdc backup strategy set weekly-cold \
 | `--cron <expression>` | Cron expression (e.g. `"0 2 * * *"` for daily at 2 AM) |
 | `--mode <hot\|cold>` | Backup mode |
 | `--bwlimit <limit>` | Bandwidth limit for uploads (e.g. `10M`) |
+| `--read-bwlimit <limit>` | Cap on how fast snapshots read the image from disk (e.g. `50M`, `0` = unlimited). `none` clears it |
 | `--include <repos>` | Repositories this strategy covers (comma-separated) |
 | `--exclude <repos>` | Repositories to skip (comma-separated) |
 | `--retention <spec>` | Snapshot retention, for example `last=7,daily=7,weekly=4,monthly=6`. `none` removes it |

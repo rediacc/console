@@ -4,7 +4,9 @@ import {
   buildBackupCommands,
   generateServiceUnit,
 } from '../../services/backup/backup-schedule-unit-generator.js';
+import { strategyUnschedulableReason } from '../../services/backup/backup-strategy-validate.js';
 import {
+  applyBackupStrategyOptions,
   buildDestination,
   buildStrategyUpdate,
   parseRepoFilter,
@@ -166,4 +168,35 @@ describe('strategy retention (F4)', () => {
       expect(() => parseRetentionOption(raw)).toThrow(/--retention/);
     }
   );
+});
+
+describe('strategy read cap (--read-bwlimit)', () => {
+  it('stores the value as readBandwidthLimit and leaves it alone when not passed', () => {
+    expect(buildStrategyUpdate({ readBwlimit: '50M' }, undefined).readBandwidthLimit).toBe('50M');
+    expect('readBandwidthLimit' in buildStrategyUpdate({ cron: '0 * * * *' }, undefined)).toBe(
+      false
+    );
+  });
+
+  it('clears the cap on none', () => {
+    const u = buildStrategyUpdate({ readBwlimit: 'none' }, undefined);
+    expect('readBandwidthLimit' in u).toBe(true);
+    expect(u.readBandwidthLimit).toBeUndefined();
+  });
+
+  it('is refused together with --destination, because the read is not tied to a destination', async () => {
+    await expect(
+      applyBackupStrategyOptions('s', { destination: 'd', readBwlimit: '50M' })
+    ).rejects.toThrow(/applies to the whole strategy/);
+  });
+
+  it('makes a strategy with an unparseable read cap unschedulable, and accepts 0 and 50M', () => {
+    const base = { destinations: [], schedule: '0 * * * *' };
+    expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: 'fast' })).toMatch(
+      /Read bandwidth limit "fast"/
+    );
+    expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: '100Mb' })).toBeDefined();
+    expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: '50M' })).toBeUndefined();
+    expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: '0' })).toBeUndefined();
+  });
 });

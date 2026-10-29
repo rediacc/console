@@ -163,6 +163,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/mode': { kind: 'public' },
   '/resources/backupStrategies/*/enabled': { kind: 'public' },
   '/resources/backupStrategies/*/bandwidthLimit': { kind: 'public' },
+  '/resources/backupStrategies/*/readBandwidthLimit': { kind: 'public' },
   '/resources/backupStrategies/*/include': { kind: 'public' },
   '/resources/backupStrategies/*/exclude': { kind: 'public' },
   // Per-repo cadence override (G10): repo ref -> cron, scheduling topology like `schedule`.

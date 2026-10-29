@@ -112,6 +112,8 @@ export interface BackupRestoreParams {
   at: string;
   /** Resolve the manifest chain and report what would be fetched; write nothing */
   dryRun?: boolean;
+  /** Fetch every chunk from the store instead of reusing local anchors or images */
+  noSeed?: boolean;
 }
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -138,6 +140,10 @@ export interface BackupSnapshotParams {
   bwlimit?: string;
   /** Concurrent chunk uploads (0 = engine default) */
   parallelism?: number;
+  /** Read cap for hashing and cell reads, same units as bwlimit. Empty = the verb default (50M); 0 = unlimited */
+  readBwlimit?: string;
+  /** Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16 */
+  hashParallelism?: number;
 }
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */
@@ -979,7 +985,7 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'dev';
+export const RENET_FUNCTIONS_VERSION = 'v2.3.2-192-gcd82f93';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
@@ -1885,6 +1891,11 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: 'false',
         help: 'Resolve the manifest chain and report what would be fetched; write nothing',
       },
+      noSeed: {
+        type: 'bool',
+        default: 'false',
+        help: 'Fetch every chunk from the store instead of reusing local anchors or images',
+      },
     },
   },
   'backup_restore_path': {
@@ -1945,6 +1956,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       parallelism: {
         type: 'int',
         help: 'Concurrent chunk uploads (0 = engine default)',
+      },
+      readBwlimit: {
+        type: 'string',
+        help: 'Read cap for hashing and cell reads, same units as bwlimit. Empty = the verb default (50M); 0 = unlimited',
+      },
+      hashParallelism: {
+        type: 'int',
+        help: 'Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16',
       },
     },
   },

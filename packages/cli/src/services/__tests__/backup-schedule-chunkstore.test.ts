@@ -163,6 +163,40 @@ describe('scheduled backups to the chunk store', () => {
     expect(adhoc).toContain('--bwlimit 12500000 --parallelism 2');
   });
 
+  it('emits --read-bwlimit in bytes/second in the unit and the ad-hoc run only when the strategy sets it', () => {
+    const s = strategy({ readBandwidthLimit: '50M' });
+    const { serviceContent } = generateServiceUnit('s', s, [hosted()], DATASTORE, RENET);
+    expect(serviceContent).toContain('--parallelism 2 --read-bwlimit 50000000');
+    const { commands } = buildBackupCommands(s, [hosted()], DATASTORE, RENET);
+    expect(buildAdhocSystemdRun('rediacc-backup-s-adhoc', commands)).toContain(
+      '--read-bwlimit 50000000'
+    );
+  });
+
+  it('keeps a read cap of 0 as --read-bwlimit 0 (unlimited), never dropping it to the verb default', () => {
+    const { commands } = buildBackupCommands(
+      strategy({ readBandwidthLimit: '0' }),
+      [hosted()],
+      DATASTORE,
+      RENET
+    );
+    expect(commands[0]).toContain('--read-bwlimit 0');
+  });
+
+  it('emits no --read-bwlimit without one, and never emits --hash-parallelism', () => {
+    for (const s of [strategy(), strategy({ readBandwidthLimit: '50M', bandwidthLimit: '6M' })]) {
+      const { commands } = buildBackupCommands(s, [hosted()], DATASTORE, RENET);
+      expect(commands[0]).not.toContain('--hash-parallelism');
+      if (!s.readBandwidthLimit) expect(commands[0]).not.toContain('--read-bwlimit');
+    }
+  });
+
+  it('REFUSES an unparseable read cap rather than emitting an unlimited read', () => {
+    expect(() =>
+      buildBackupCommands(strategy({ readBandwidthLimit: 'fast' }), [hosted()], DATASTORE, RENET)
+    ).toThrow(/Read bandwidth limit "fast"/);
+  });
+
   it('passes a plain byte count straight through', () => {
     const { commands } = buildBackupCommands(
       strategy({ bandwidthLimit: '1048576' }),
@@ -182,7 +216,7 @@ describe('scheduled backups to the chunk store', () => {
     // Dropping it would silently lift a cap the operator set deliberately, an unmetered backup saturating the uplink, with nothing in the logs.
     expect(() =>
       buildBackupCommands(strategy({ bandwidthLimit: 'fast' }), [hosted()], DATASTORE, RENET)
-    ).toThrow(/Bandwidth limit "fast" is not a size/);
+    ).toThrow(/Bandwidth limit "fast" cannot be converted/);
   });
 
   it('takes ONE snapshot per run whatever the number of destinations (G3)', () => {

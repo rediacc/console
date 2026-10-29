@@ -14,10 +14,13 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
-import { bandwidthToBytesPerSecond } from '../services/backup/backup-strategy-validate.js';
+import {
+  bandwidthToBytesPerSecond,
+  readCapBytesPerSecond,
+} from '../services/backup/backup-strategy-validate.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
-import { getOutputFormat, handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
@@ -426,19 +429,31 @@ const RENET_QUOTA_REFUSED_EXIT = 16;
 /**
  * The upload knobs of `backup snapshot`, as the renet function takes them. The rate is converted here, with the strategy's own parser, so a typo is refused before any SSH is opened; renet receives bytes/second. Before this the verb had no way to carry a cap at all and every ad-hoc snapshot uploaded at line rate.
  */
-export function snapshotUploadParams(options: { bwlimit?: string; parallelism?: string }): {
+export function snapshotUploadParams(options: {
+  bwlimit?: string;
+  parallelism?: string;
+  readBwlimit?: string;
+  hashParallelism?: string;
+}): {
   bwlimit?: string;
   parallelism?: number;
+  read_bwlimit?: string;
+  hash_parallelism?: number;
 } {
-  const params: { bwlimit?: string; parallelism?: number } = {};
+  const params: {
+    bwlimit?: string;
+    parallelism?: number;
+    read_bwlimit?: string;
+    hash_parallelism?: number;
+  } = {};
   if (options.bwlimit !== undefined) {
     // A given --bwlimit must name a rate: a blank one (an unset shell variable) is refused, never
     // read as "no cap".
     const bytesPerSecond =
       options.bwlimit.trim() === '' ? undefined : bandwidthToBytesPerSecond(options.bwlimit);
     if (bytesPerSecond === undefined) {
-      throw new Error(
-        `--bwlimit must be a rate such as 100Mbps or 12.5M, got "${options.bwlimit}"`
+      throw new ValidationError(
+        t('commands.backup.snapshot.bwlimitInvalid', { value: options.bwlimit })
       );
     }
     params.bwlimit = String(bytesPerSecond);
@@ -446,9 +461,32 @@ export function snapshotUploadParams(options: { bwlimit?: string; parallelism?: 
   if (options.parallelism !== undefined) {
     const n = Number(options.parallelism);
     if (!Number.isInteger(n) || n < 1) {
-      throw new Error(`--parallelism must be a positive integer, got "${options.parallelism}"`);
+      throw new ValidationError(
+        t('commands.backup.snapshot.parallelismInvalid', { value: options.parallelism })
+      );
     }
     params.parallelism = n;
+  }
+  if (options.readBwlimit !== undefined) {
+    // 0 is a real value here (unlimited read) and is sent as '0': omitting it would reapply the verb's gentle default. A blank or unparseable rate is refused.
+    const raw = options.readBwlimit.trim();
+    const bytesPerSecond = raw === '' ? undefined : readCapBytesPerSecond(raw);
+    if (bytesPerSecond === undefined) {
+      throw new ValidationError(
+        t('commands.backup.snapshot.readBwlimitInvalid', { value: options.readBwlimit })
+      );
+    }
+    params.read_bwlimit = String(bytesPerSecond);
+  }
+  if (options.hashParallelism !== undefined) {
+    const raw = options.hashParallelism.trim();
+    const n = Number(raw);
+    if (raw === '' || !Number.isInteger(n) || n < 0) {
+      throw new ValidationError(
+        t('commands.backup.snapshot.hashParallelismInvalid', { value: options.hashParallelism })
+      );
+    }
+    params.hash_parallelism = n;
   }
   return params;
 }
@@ -468,6 +506,8 @@ function registerBackupSnapshot(backup: Command): void {
     .option('--cold', t('commands.backup.snapshot.optionCold'))
     .option('--bwlimit <rate>', t('commands.backup.snapshot.optionBwlimit'))
     .option('--parallelism <n>', t('commands.backup.snapshot.optionParallelism'))
+    .option('--read-bwlimit <rate>', t('commands.backup.snapshot.optionReadBwlimit'))
+    .option('--hash-parallelism <n>', t('commands.backup.snapshot.optionHashParallelism'))
     .option('--debug', t('options.debug'))
     .action(
       async (
@@ -478,6 +518,8 @@ function registerBackupSnapshot(backup: Command): void {
           cold?: boolean;
           bwlimit?: string;
           parallelism?: string;
+          readBwlimit?: string;
+          hashParallelism?: string;
           debug?: boolean;
         }
       ) => {

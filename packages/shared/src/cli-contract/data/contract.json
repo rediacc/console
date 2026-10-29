@@ -995,6 +995,28 @@
           "label": "Number of chunks uploaded at once (default 4)"
         },
         {
+          "flags": "--read-bwlimit <rate>",
+          "long": "read-bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionReadBwlimit",
+          "label": "Read cap for hashing and cell reads: same units as --bwlimit; default 50M, 0 = unlimited"
+        },
+        {
+          "flags": "--hash-parallelism <n>",
+          "long": "hash-parallelism",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionHashParallelism",
+          "label": "Cells hashed at once (default 1; 0 = one per CPU, up to 16)"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -1330,6 +1352,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionBwlimit",
           "label": "Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., \"6M\", \"500K\")"
+        },
+        {
+          "flags": "--read-bwlimit <limit>",
+          "long": "read-bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionReadBwlimit",
+          "label": "Read cap for this strategy's snapshots: same units as --bwlimit; none clears it"
         },
         {
           "flags": "--include <repos>",
