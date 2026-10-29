@@ -48,3 +48,55 @@ repository_up_all
 # This entry expires itself: the gate REJECTS an allowlisted name that becomes
 # covered, so the day a suite really drives it, this line fails until deleted.
 machine_uninstall
+
+# ---------------------------------------------------------------------------
+# Bridge functions. Since box G1 of agent/plans/PLAN-jobs-backup-real-machine-tests.md
+# the forward check covers every name in RENET_BRIDGE_FUNCTIONS (renet's whole
+# command Registry, internal and experimental verbs included), not only the
+# public RENET_FUNCTIONS. The entries below are the bridge verbs no live suite
+# exercised on the day the check widened, each with the reason it cannot be
+# covered yet. The same rules hold: an entry that becomes covered, or whose verb
+# leaves the Registry, fails the gate until it is deleted.
+# ---------------------------------------------------------------------------
+
+# BLOCKER: repository_migrate and repository_gc are dispatched only by the CLI job plans (packages/cli/src/services/jobs/plans.ts:121 and :308); their real-machine regression is box M1 of agent/plans/PLAN-jobs-backup-real-machine-tests.md (suite 23: migrate deletes the source only after the target is up, gc keeps a candidate mounted between list and delete), which waits on agent/plans/PLAN-detached-jobs.md J4 (verb tails) and J16 (repo-verb conversions) to land the job path it tests. M1 deletes these two lines.
+repository_gc
+repository_migrate
+
+# BLOCKER: the bring-up steps of `rdc cluster provision` (packages/cli/src/services/cluster/cluster-provision.ts:182-251). On the CI fleet `renet ops up` bootstraps ceph on the ceph VMs before any suite runs (packages/provisioning/src/ops/OpsVMLifecycle.ts:82), and cluster-provision.ts:223 skips all three verbs when a mon already answers, so reaching them needs ceph VMs that come up without ceph, which the shared ceph suites (playwright.ceph*.config.ts) cannot run on.
+ceph_bootstrap_cluster
+ceph_cluster_create
+ceph_install_prerequisites
+
+# BLOCKER: dispatched only from the CLI's cluster services behind `rdc cluster provision|join|fork` and `rdc repo replicate|release` (packages/cli/src/services/cluster/cluster-ceph.ts:81, cluster-kube.ts:189 and :226, cluster-provision.ts:323, cluster-fork.ts:617, repo-replicate.ts:215 and :224, repo-replicate-ops.ts:140, :211, :288 and :465, repo-release.ts:249 and :283). The live k8s suites (15, 16, 17) drive renet through the bridge, not through rdc, and the one rdc-driven case (suite 24 `cluster fork`) is in its VM tier, which ct-tests.yml excludes with --grep-invert "licensing on the fleet"; these paths are proven only against a mocked dispatch in packages/cli/src/services/cluster/__tests__/.
+ceph_client_config_export
+ceph_client_config_install
+datastore_forget
+datastore_volumes_close
+datastore_volumes_open
+kube_apply
+kube_delete
+
+# BLOCKER: reached only through rdc (`rdc datastore snapshot list` at packages/cli/src/commands/datastore.ts:585 and cluster-snapshot.ts:109; `rdc machine prune` at packages/cli/src/commands/machine/prune.ts:110, which builds `renet prune`) and the job plans (plans.ts:554, :663, :729). No live suite runs either command and no harness method dispatches either verb: DatastoreMethods.ts carries datastore_snapshot_create and _delete only, and SystemCheckMethods.ts no prune. Covering them is a harness method each plus a case in suite 16 (snapshot list) and suite 01 (prune --dry-run).
+datastore_snapshot_list
+network_prune
+
+# BLOCKER: internal ceph verbs that no console code dispatches at all: no CLI command, no harness method in CephMethods.ts, no workflow. The CI ceph cluster is created and torn down by `renet ops up` and `ops down`, never through ceph_cluster_destroy, and destroying it from a suite would take down the cluster every other ceph suite shares. Each needs a caller (or deletion from renet's Registry in pkg/functions/commands/ceph.go) before a suite can exercise it as the product does.
+ceph_clone_cleanup
+ceph_cluster_dashboard
+ceph_cluster_destroy
+ceph_cluster_status
+
+# BLOCKER: LEGACY ports of the retired C++ bridge's bash_renet_wait_for_docker, bash_renet_ensure_ips, bash_renet_cleanup_ips and bash_renet_get_ps_status (private/renet/pkg/functions/commands/daemon.go), which no console code dispatches: no CLI path, no harness method, no workflow. A suite cannot exercise them as the product does because the product never calls them; the open question is deleting them from the Registry, which is renet work outside this allowlist.
+daemon_wait_docker
+network_cleanup_ips
+network_ensure_ips
+network_ps_status
+
+# BLOCKER: VisibilityExperimental CRIU verbs (private/renet/pkg/functions/commands/backup.go) with no harness method: BackupMethods.ts dispatches checkpoint_create and checkpoint_restore only, and suite 10 names these three solely in its header comment, which the gate strips. No console code calls them either; each needs a BackupMethods method and a suite-10 case beside the create and restore syntax checks.
+checkpoint_check_compat
+checkpoint_cleanup
+checkpoint_validate
+
+# BLOCKER: KubeMethods.ts:157 declares kubeUpgrade and RenetFunctionsTestRunner.ts:1182 delegates to it, but no live test calls it, and no CLI command upgrades a k3s node, so nothing in CI dispatches the verb. Covering it is a case in suite 15 (playwright.k8s.config.ts) that upgrades the installed node and asserts the cluster answers healthy afterwards.
+kube_upgrade

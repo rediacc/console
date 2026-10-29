@@ -23,7 +23,8 @@ This gate has two halves:
     Phase 3 below, unchanged. It scans ALL e2e sources, dark files included,
     because a dead file calling a deleted verb is still a rot signal, and the
     oracle here is RENET_BRIDGE_FUNCTIONS (the dispatcher's full registry),
-    which the forward TypeScript half deliberately does not use.
+    which the forward TypeScript half also covers since
+    PLAN-jobs-backup-real-machine-tests G1.
 
 Usage:
   python3 -m rediacc_ci.quality.e2e_coverage
@@ -39,7 +40,7 @@ The forward half walks live -> e2e: "is every renet function exercised?" That is
 how `datastore_init` / `mount` / `unmount`, `datastore_ceph_{init,fork,unfork}`
 and `kube_csi_template` outlived their own removal in P1 and only surfaced when the Tests + Infra tier finally ran (it is gated behind the upstream gates, so it had not executed once all campaign).
 
-The oracle is RENET_BRIDGE_FUNCTIONS: every name in the dispatcher's Registry, internal verbs included. RENET_FUNCTIONS (the forward half's subject) is the PUBLIC surface and omits them, and the bridge drives mostly internal verbs (`datastore_*`, `machine_check_*`, `daemon_*`), so it cannot answer this question. A schema-derived list cannot either: a verb may be registered WITHOUT
+The oracle is RENET_BRIDGE_FUNCTIONS: every name in the dispatcher's Registry, internal verbs included. RENET_FUNCTIONS (the forward half's original subject; G1 widened it to the bridge list) is the PUBLIC surface and omits them, and the bridge drives mostly internal verbs (`datastore_*`, `machine_check_*`, `daemon_*`), so it cannot answer this question. A schema-derived list cannot either: a verb may be registered WITHOUT
 a schema (`ceph_clone_create` is) and still dispatch fine. This half stays scanning ALL files.
 
 Every `function: 'name'` literal in the harness IS a dispatch. That is how `src/utils/renet-functions/methods/*.ts` name the verb they send to `functions once`.
