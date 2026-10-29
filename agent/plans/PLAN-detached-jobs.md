@@ -376,10 +376,11 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   It also names every other plan whose Owns cover a converted command file, so the lead can amend the Concurrency line, and confirms or corrects the target-up channel of `repository_migrate` (section 14).
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0, `python3 .ci/scripts/quality/check_plan_deps.py` rc 0, and the row count in the "Machine-plane job audit" section equals the output of `awk -F'"' '/"pathKey"/{p=$4} /^      "plane"/{if($4=="machine")n++} END{print n}' packages/shared/src/cli-contract/data/contract.generated.ts`.
 
-- [ ] J1 [writer] renet: `job start --request-id` (idempotent start), `job logs --max-lines` and `--with-status` (Design 9). Changes:
+- [x] J1 [writer] renet: `job start --request-id` (idempotent start), `job logs --max-lines` and `--with-status` (Design 9). Changes:
   - the request id lands in `jobs.Status` and a lookup by request id returns the existing handle;
   - the logs reader stops after k complete lines and appends the status trailer;
   - help text for both flags.
+    (ticked) 2026-10-29T11:26:20Z by d778be9d: commit:2d1a1b193
 
   Tests: a second start with the same request id starts no second unit (fake systemd-run seam) and prints the first handle; `--max-lines 2` on a 5-line spool returns 2 lines and `--with-status` adds exactly one trailer line whose state matches the status file; control: without the flags the output is byte-identical to today's.
 
@@ -611,13 +612,15 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt.
   Amended (third round): the tree carries J1b, J1c and J3b as well.
 
-- [ ] J12 [writer] Cost measurement module: `.ci/rediacc_ci/ops/proxy_job_cost.py --script <name> --from <ISO> --to <ISO>` prints Durable Object requests and wall time (sum, p50, p99) and container active seconds for one script over a window, importing the GraphQL transport from cf_usage_report rather than copying it. The dataset and field names (`durableObjectsInvocationsAdaptiveGroups` with wall time, `containersMetricsAdaptiveGroups`) are hypotheses to confirm against the live API first (CLAUDE.md rule 3).
+- [x] J12 [writer] Cost measurement module: `.ci/rediacc_ci/ops/proxy_job_cost.py --script <name> --from <ISO> --to <ISO>` prints Durable Object requests and wall time (sum, p50, p99) and container active seconds for one script over a window, importing the GraphQL transport from cf_usage_report rather than copying it. The dataset and field names (`durableObjectsInvocationsAdaptiveGroups` with wall time, `containersMetricsAdaptiveGroups`) are hypotheses to confirm against the live API first (CLAUDE.md rule 3).
+    (ticked) 2026-10-29T11:26:24Z by d778be9d: commit:e7b2d599e
 
   Tests: a recorded GraphQL response yields the expected sums; an empty response exits 2, never 0; a GraphQL error exits 2; control: a response with one row prints that row.
 
   Owns: .ci/rediacc_ci/ops/proxy_job_cost.py (new), .ci/rediacc_ci/tests/test_ops_proxy_job_cost.py (new). Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_proxy_job_cost.py` rc 0.
 
-- [ ] J23 [writer] Latency measurement script: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.job_latency --rdc <path> --config <name> --runs 20 -- <rdc args>` runs one command N times and prints wall time p50, p95 and max, plus the `rediacc.job.start_latency_ms` attribute when the run prints it under `--debug`. It also compares two result files (`--compare before.json after.json`) and prints the deltas.
+- [x] J23 [writer] Latency measurement script: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.job_latency --rdc <path> --config <name> --runs 20 -- <rdc args>` runs one command N times and prints wall time p50, p95 and max, plus the `rediacc.job.start_latency_ms` attribute when the run prints it under `--debug`. It also compares two result files (`--compare before.json after.json`) and prints the deltas.
+    (ticked) 2026-10-29T11:26:59Z by d778be9d: commit:e7b2d599e
 
   Tests: a fake rdc with recorded durations yields the expected percentiles; a non-zero rc in any run exits 2; `--compare` prints the delta; control: one run prints one sample.
 
