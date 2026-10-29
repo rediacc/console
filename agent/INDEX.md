@@ -476,7 +476,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 253 | 3 | 3 | 30626 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 34 | 1 | 4 | 6072 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 48 | 1 | 6 | 7170 |
-| `agent/plans/PLAN-backup-program.md` | approved | 553 | 41 | 155 | 144282 |
+| `agent/plans/PLAN-backup-program.md` | approved | 556 | 38 | 158 | 145054 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 201 | 4 | 6 | 35604 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -490,7 +490,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 44 | 3 | 6 | 7007 |
+| `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 45 | 3 | 6 | 7396 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | approved | 404 | 5 | 25 | 60141 |
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 107 | 3 | 7 | 38443 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |

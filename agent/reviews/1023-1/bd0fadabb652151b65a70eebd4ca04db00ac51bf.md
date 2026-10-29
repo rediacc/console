@@ -21,12 +21,12 @@ Body-Sig: a71e66e3535f5538
 ### bd0fadab.1 [low] agent/plans/PLAN-org-executor-connect-timeout-relocate.md:215
 Anchor: in-diff
 Claim: The E4 tick cites commit be5d60799, but the commit message attributes E4 to 872e964a7 (with account f195a55 and efb5eaf); be5d60799 is the commit it gives for E7-E8, so the E4 evidence trail points at the wrong commit.
-Resolution: open
+Resolution: fixed acd803e50a79aa842e18c28191c7dff3b420728a | d778be9d 2026-10-29T22:39:16Z
 
 ### bd0fadab.2 [low] .ci/config/plan-boxes.json:1106
 Anchor: in-diff
 Claim: The new record marks the plan as 'executing' with 8 done boxes from the E1-E8 ticks, and those ticks rest on a self-asserted DEPS-WAIVED note rather than a checked gate, so the CI record certifies code boxes whose dependency waiver nothing verifies.
-Resolution: open
+Resolution: not-a-bug | agent/plans/PLAN-org-executor-connect-timeout-relocate.md:1 the json mirrors the tick state, check_plan_deps rc=0, and the waiver is stated in the tick | d778be9d 2026-10-29T22:39:46Z
 
 ### bd0fadab.3 [low] agent/plans/QUEUE.md:74
 Anchor: in-diff
