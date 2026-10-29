@@ -546,15 +546,17 @@ function printSnapshotRecord(stdout: string | undefined): void {
   if (record.hashWorkers) {
     outputService.info(t('commands.backup.snapshot.hashWorkers', { workers: record.hashWorkers }));
   }
-  // cpuQuota is null where no ceiling was enforced. A limit of 100 asks for no ceiling, so it prints nothing; below 100 a null quota means the machine has no systemd-run, and the summary must say so rather than print a limit that did not bind.
-  if (record.cpuLimitPercent && record.cpuLimitPercent < 100) {
+  // An enforced quota is always printed. A null quota below 100 means the machine has no systemd-run, and the summary must say so rather than print a limit that did not bind; at 100 no ceiling was asked for, so nothing is printed.
+  if (record.cpuLimitPercent && record.cpuQuota) {
     outputService.info(
-      record.cpuQuota
-        ? t('commands.backup.snapshot.cpuLimit', {
-            percent: record.cpuLimitPercent,
-            quota: record.cpuQuota,
-          })
-        : t('commands.backup.snapshot.cpuLimitUnenforced', { percent: record.cpuLimitPercent })
+      t('commands.backup.snapshot.cpuLimit', {
+        percent: record.cpuLimitPercent,
+        quota: record.cpuQuota,
+      })
+    );
+  } else if (record.cpuLimitPercent && record.cpuLimitPercent < 100) {
+    outputService.info(
+      t('commands.backup.snapshot.cpuLimitUnenforced', { percent: record.cpuLimitPercent })
     );
   }
 }

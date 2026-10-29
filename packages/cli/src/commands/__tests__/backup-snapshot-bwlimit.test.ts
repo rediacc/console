@@ -202,6 +202,9 @@ describe('the snapshot summary prints the CPU limit', () => {
     const noCeiling = await run({ cpuLimitPercent: 100, cpuQuota: null });
     expect(noCeiling).not.toContain('commands.backup.snapshot.cpuLimitUnenforced');
     expect(noCeiling).not.toContain('commands.backup.snapshot.cpuLimit');
+    expect(await run({ cpuLimitPercent: 100, cpuQuota: '800%' })).toContain(
+      'commands.backup.snapshot.cpuLimit'
+    );
     vi.doUnmock('../../utils/errors.js');
   });
 });
