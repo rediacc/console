@@ -611,6 +611,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 - [ ] J10 [lead] Durable Object: verify that no code change is needed. With every detachable run returning after start, `inFlight` falls to zero between polls and the alarm's idle branch applies unchanged (workers/proxy/src/org-executor.ts:327-346). Record the reading here; if L1 shows a poll that holds the lease past its body, the fix is filed under PLAN-executor-durable-object-policy's exclusive Owns, not here.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `npm run check:ci-proxy-cost-guard` rc 0.
   Amended (third round): the reading also covers the 20 s attach window, during which `inFlight` is 1 and the alarm renews as for any request.
+    (live record 2026-10-29, d778be9d) J10 reading: workers/proxy/src/org-executor.ts:332 renews only while inFlight > 0, so a request that ends after its 20 s attach window (or with the result) lets inFlight fall to zero between polls and the idle branch applies unchanged; during the window inFlight is 1, as for any request. No change under workers/proxy/src. `npm run check:ci-proxy-cost-guard` rc 0 (16 containers at max_instances <= 25, sleepAfter <= 120 s, worst case 1967.35 USD a month under the 2100 limit).
 
 - [ ] J11 [lead] The VM proof for the renet change: `npm run vm:check -- --changed` VERIFIED on the tree carrying J1 and J3, as the push guard requires for the renet trigger paths.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt.
