@@ -69,11 +69,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1262 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1267 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:afc71e7f084a62df5, worker:ade4aaf74ea857583, worker:a5073067717e785eb.
-- Leased items: 4: #863660ef (worker:afc71e7f084a62df5, d778be9d), #a150016d (worker:queue, d778be9d), #c1daec55 (worker:ade4aaf74ea857583, d778be9d), #dbc32b2a (worker:a5073067717e785eb, d778be9d).
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:afc71e7f084a62df5, worker:a5073067717e785eb, worker:ad2cee676655b6632.
+- Leased items: 4: #863660ef (worker:afc71e7f084a62df5, d778be9d), #a150016d (worker:queue, d778be9d), #a529867c (worker:ad2cee676655b6632, d778be9d), #dbc32b2a (worker:a5073067717e785eb, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
