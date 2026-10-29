@@ -26,4 +26,4 @@ Resolution: fixed 59043d4db3a8fe8f82c23e9c3ec36d65e58617bb | d778be9d 2026-10-29
 ### 7b1bcec4.2 [low] .ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py:138
 Anchor: in-diff
 Claim: The control test's pytest.raises accepts any AssertionError or FileNotFoundError, so it also passes when build.sh fails for an unrelated reason (non-zero exit trips the returncode assert), and does not prove that the planted collapsed directory is the cause.
-Resolution: open
+Resolution: fixed f57d518c1fb76eaa06c105077a059733512795e9 | d778be9d 2026-10-29T19:52:01Z

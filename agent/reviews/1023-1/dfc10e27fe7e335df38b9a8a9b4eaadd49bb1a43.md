@@ -21,14 +21,14 @@ Body-Sig: 7b9e2976f695cd8b
 ### dfc10e27.1 [medium] .ci/rediacc_ci/tests/test_drills_backup_license.py:150
 Anchor: in-diff
 Claim: The unanchored text.replace(", n, o", "") runs on all normalized output, so if the port ever stops listing legs n and o, the differential still passes; this diff adds no test that the port itself still prints them.
-Resolution: open
+Resolution: fixed f57d518c1fb76eaa06c105077a059733512795e9 | d778be9d 2026-10-29T19:52:12Z
 
 ### dfc10e27.2 [low] .ci/rediacc_ci/tests/test_drills_backup_license.py:150
 Anchor: in-diff
 Claim: The replace matches raw substrings with no token boundary, so ",n,o" also strips the start of a longer token such as ",n,option", leaving "tion" behind; and a list where n and o come first ("n, o, a") is not normalized and still fails.
-Resolution: open
+Resolution: fixed f57d518c1fb76eaa06c105077a059733512795e9 | d778be9d 2026-10-29T19:52:12Z
 
 ### dfc10e27.3 [low] .ci/rediacc_ci/tests/test_drills_backup_license.py:149
 Anchor: in-diff
 Claim: The comment hard-codes the commit hash 581206c7b as the reason for the port-only legs, which will go stale and does not say what to change when the bash twin's leg list changes.
-Resolution: open
+Resolution: fixed f57d518c1fb76eaa06c105077a059733512795e9 | d778be9d 2026-10-29T19:52:12Z
