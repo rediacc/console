@@ -413,6 +413,18 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
       w.refused
     );
     add(
+      'wrangler: the workers/account lockfile gets the canonical pass under the pinned npm, so npm ci accepts the moved pin',
+      (w.plan?.steps ?? []).some(
+        (st) =>
+          st.cwd === 'workers/account' &&
+          st.writes.some((x) => x.file === 'workers/account/package-lock.json') &&
+          st.run ===
+            `npx -y npm@${envVal(env, 'NPM_VERSION')} install --package-lock-only --ignore-scripts`
+      ),
+      (w.plan?.steps ?? []).map((st) => `${st.cwd}: ${st.run}`).join(' | ') ||
+        (w.refused ?? 'no steps')
+    );
+    add(
       'wrangler: the workers/account/package.json pin moves with it',
       (textOf(w.plan, 'workers/account/package.json') ?? '').includes(
         `"wrangler": "${patchOf(wr)}"`

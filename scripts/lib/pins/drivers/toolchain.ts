@@ -40,6 +40,7 @@ import {
   type Release,
 } from '../driver.js';
 import { idName, type PinEntry, type PinScope } from '../registry.js';
+import { pinnedNpm } from './npm.js';
 import { checkSites, digestFor, hashSites } from './toolchain-plan.js';
 import {
   byNewest,
@@ -202,6 +203,22 @@ export function createToolchainDriver(
             { repo: s.repo, file: path.posix.join(dir, 'go.mod') },
             { repo: s.repo, file: path.posix.join(dir, 'go.sum') },
           ],
+        });
+      }
+    }
+    // A package.json site (toolchain:wrangler's workers/account/package.json) leaves its lockfile naming the old
+    // version unless the lockfile pass runs in that directory, so npm ci refuses the pair and the old tool stays installed.
+    if (entry.id !== 'toolchain:npm') {
+      for (const s of entry.sites.filter(
+        (x) => x.file === 'package.json' || x.file.endsWith('/package.json')
+      )) {
+        const dir = path.posix.dirname(s.file);
+        const lock = path.posix.join(dir, 'package-lock.json');
+        steps.push({
+          label: `canonical lockfile pass for ${s.repo === '.' ? '' : `${s.repo}/`}${lock} after the ${s.file} rewrite`,
+          run: `npx -y npm@${pinnedNpm(ctx.root)} install --package-lock-only --ignore-scripts`,
+          cwd: path.posix.join(s.repo, dir === '.' ? '' : dir),
+          writes: [{ repo: s.repo, file: lock }],
         });
       }
     }

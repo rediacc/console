@@ -126,7 +126,7 @@ function loadPlan(ctx: DriverContext, flags: string[]): NpmPlanJson {
 const q = (s: string): string => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
 
 /** The pinned npm version (.devcontainer/toolchain.env NPM_VERSION) of the tree being bumped. */
-function pinnedNpm(root: string): string {
+export function pinnedNpm(root: string): string {
   const tc = path.join(root, '.devcontainer/toolchain.env');
   const m = fs.existsSync(tc) ? /^NPM_VERSION=(\S+)$/m.exec(fs.readFileSync(tc, 'utf8')) : null;
   if (!m)
