@@ -751,8 +751,8 @@
                   "defaultValue": null
                 },
                 {
-                  "flags": "--token <token>",
-                  "descriptionKey": "commands.machine.provider.add.optionToken",
+                  "flags": "--token-env <var>",
+                  "descriptionKey": "commands.machine.provider.add.optionTokenEnv",
                   "mandatory": true,
                   "defaultValue": null
                 },

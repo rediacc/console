@@ -1232,8 +1232,9 @@
           "optionSshKeyFormat": "カスタム: SSH キーの形式（inline_list または resource_id）",
           "optionSshKeyResource": "カスタム: SSH キー用の OpenTofu リソースタイプ",
           "optionSshUser": "新規 VM 用の SSH ユーザー名（デフォルト: root）",
-          "optionToken": "クラウドプロバイダーの API トークン",
-          "success": "クラウドプロバイダー \"{{name}}\" を追加しました（{{provider}}）"
+          "success": "クラウドプロバイダー \"{{name}}\" を追加しました（{{provider}}）",
+          "optionTokenEnv": "プロバイダーの API トークンを保持する環境変数の名前。トークン自体はコマンドラインに渡しません",
+          "tokenEnvEmpty": "環境変数 {{name}} が未設定か空です。プロバイダーの API トークンを設定してください"
         },
         "description": "自動マシンプロビジョニング用クラウドプロバイダーを管理する",
         "list": {

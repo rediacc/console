@@ -1232,8 +1232,9 @@
           "optionSshKeyFormat": "커스텀: SSH 키 형식 (inline_list 또는 resource_id)",
           "optionSshKeyResource": "커스텀: SSH 키의 OpenTofu 리소스 유형",
           "optionSshUser": "새 VM의 SSH 사용자 이름 (기본값: root)",
-          "optionToken": "클라우드 공급자의 API 토큰",
-          "success": "클라우드 공급자 \"{{name}}\" 추가 완료 ({{provider}})"
+          "success": "클라우드 공급자 \"{{name}}\" 추가 완료 ({{provider}})",
+          "optionTokenEnv": "공급자 API 토큰을 담은 환경 변수 이름입니다. 토큰 자체는 명령줄에 넣지 않습니다",
+          "tokenEnvEmpty": "환경 변수 {{name}}이(가) 설정되지 않았거나 비어 있습니다. 공급자 API 토큰으로 설정하세요"
         },
         "description": "자동화된 머신 프로비저닝을 위한 클라우드 공급자를 관리합니다",
         "list": {

@@ -1232,8 +1232,9 @@
           "optionSshKeyFormat": "自定义：SSH 密钥格式（inline_list 或 resource_id）",
           "optionSshKeyResource": "自定义：SSH 密钥的 OpenTofu 资源类型",
           "optionSshUser": "新虚拟机的 SSH 用户名（默认：root）",
-          "optionToken": "云服务提供商的 API 令牌",
-          "success": "已添加云提供商 \"{{name}}\"（{{provider}}）"
+          "success": "已添加云提供商 \"{{name}}\"（{{provider}}）",
+          "optionTokenEnv": "保存云服务商 API 令牌的环境变量名；令牌本身绝不会出现在命令行中",
+          "tokenEnvEmpty": "环境变量 {{name}} 未设置或为空；请将其设为云服务商的 API 令牌"
         },
         "description": "管理用于自动配置机器的云服务提供商",
         "list": {

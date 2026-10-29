@@ -832,8 +832,9 @@
           "optionSshKeyFormat": "Custom: SSH key format (inline_list or resource_id)",
           "optionSshKeyResource": "Custom: OpenTofu resource type for SSH keys",
           "optionSshUser": "SSH username for new VMs (default: root)",
-          "optionToken": "API token for the cloud provider",
-          "success": "Cloud provider \"{{name}}\" added ({{provider}})"
+          "success": "Cloud provider \"{{name}}\" added ({{provider}})",
+          "optionTokenEnv": "Name of the environment variable holding the provider API token; the token itself never goes on the command line",
+          "tokenEnvEmpty": "Environment variable {{name}} is unset or empty; set it to the provider API token"
         },
         "description": "Manage cloud providers for automated machine provisioning",
         "list": {

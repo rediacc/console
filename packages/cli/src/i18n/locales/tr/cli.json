@@ -1232,8 +1232,9 @@
           "optionSshKeyFormat": "Özel: SSH anahtar biçimi (inline_list veya resource_id)",
           "optionSshKeyResource": "Özel: SSH anahtarları için OpenTofu kaynak türü",
           "optionSshUser": "Yeni VM'ler için SSH kullanıcı adı (varsayılan: root)",
-          "optionToken": "Bulut sağlayıcı için API anahtarı",
-          "success": "\"{{name}}\" bulut sağlayıcısı eklendi ({{provider}})"
+          "success": "\"{{name}}\" bulut sağlayıcısı eklendi ({{provider}})",
+          "optionTokenEnv": "Sağlayıcı API belirtecini tutan ortam değişkeninin adı; belirtecin kendisi asla komut satırına yazılmaz",
+          "tokenEnvEmpty": "{{name}} ortam değişkeni tanımlı değil veya boş; sağlayıcı API belirtecine ayarlayın"
         },
         "description": "Otomatik makine oluşturma için bulut sağlayıcıları yönet",
         "list": {

@@ -30,9 +30,21 @@ function applyCustomProviderFields(
   }
 }
 
+/**
+ * Read the provider API token from the environment variable --token-env names. The token never
+ * travels on argv, which every local user can read from /proc/<pid>/cmdline.
+ */
+function readTokenFromEnv(varName: string): string {
+  const value = process.env[varName];
+  if (!value?.trim()) {
+    throw new Error(t('commands.machine.provider.add.tokenEnvEmpty', { name: varName }));
+  }
+  return value.trim();
+}
+
 /** Build a CloudProviderConfig from CLI options. */
 function buildProviderConfig(options: Record<string, string | undefined>): CloudProviderConfig {
-  const config: CloudProviderConfig = { apiToken: options.token! };
+  const config: CloudProviderConfig = { apiToken: readTokenFromEnv(options.tokenEnv!) };
 
   if (options.provider) config.provider = options.provider;
   if (options.source) config.source = options.source;
@@ -57,7 +69,7 @@ export function registerProviderCommands(machine: Command, program: Command): vo
     .description(t('commands.machine.provider.add.description'))
     .option('--provider <source>', t('commands.machine.provider.add.optionProvider'))
     .option('--source <source>', t('commands.machine.provider.add.optionSource'))
-    .requiredOption('--token <token>', t('commands.machine.provider.add.optionToken'))
+    .requiredOption('--token-env <var>', t('commands.machine.provider.add.optionTokenEnv'))
     .option('--region <region>', t('commands.machine.provider.add.optionRegion'))
     .option('--type <type>', t('commands.machine.provider.add.optionInstanceType'))
     .option('--image <image>', t('commands.machine.provider.add.optionImage'))

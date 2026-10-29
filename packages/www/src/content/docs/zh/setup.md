@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 3
 language: zh
-sourceHash: "a0f69282724c27ea"
+sourceHash: "b79c049c4f216e1a"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -204,7 +204,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ```bash
 rdc machine provider add my-linode \
   --provider linode/linode \
-  --token $LINODE_API_TOKEN \
+  --token-env LINODE_API_TOKEN \
   --region us-east \
   --type g6-standard-2
 ```
@@ -213,7 +213,7 @@ rdc machine provider add my-linode \
 |--------|----------|-------------|
 | `--provider <source>` | 是* | 已知的提供商来源（例如 `linode/linode`、`hetznercloud/hcloud`） |
 | `--source <source>` | 是* | 自定义 OpenTofu 提供商来源（用于未知提供商） |
-| `--token <token>` | 是 | 云服务提供商的 API 令牌 |
+| `--token-env <var>` | 是 | 保存云服务商 API 令牌的环境变量名；令牌本身绝不会出现在命令行中 |
 | `--region <region>` | 否 | 新机器的默认区域 |
 | `--type <type>` | 否 | 默认实例类型/规格 |
 | `--image <image>` | 否 | 默认操作系统镜像 |

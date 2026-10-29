@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2249,
-    "sourceCommit": "ccdc91de49ff90cc2980266c130c173d0eb56250"
+    "keyCount": 2250,
+    "sourceCommit": "95a124a7c34b859184f1dc1ba80f38e8f548f01d"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -978,8 +978,9 @@
     "commands.machine.provider.add.optionSshKeyFormat": "698ea2ba",
     "commands.machine.provider.add.optionSshKeyResource": "323e1364",
     "commands.machine.provider.add.optionSshUser": "b9d9941b",
-    "commands.machine.provider.add.optionToken": "430bb703",
+    "commands.machine.provider.add.optionTokenEnv": "ab6aab23",
     "commands.machine.provider.add.success": "303f1150",
+    "commands.machine.provider.add.tokenEnvEmpty": "54f67489",
     "commands.machine.provider.description": "9aebfc48",
     "commands.machine.provider.list.description": "7f89a1de",
     "commands.machine.provider.list.noProviders": "4b45c07a",

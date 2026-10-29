@@ -200,7 +200,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ```bash
 rdc machine provider add my-linode \
   --provider linode/linode \
-  --token $LINODE_API_TOKEN \
+  --token-env LINODE_API_TOKEN \
   --region us-east \
   --type g6-standard-2
 ```
@@ -209,7 +209,7 @@ rdc machine provider add my-linode \
 |--------|----------|-------------|
 | `--provider <source>` | Yes* | Known provider source (e.g., `linode/linode`, `hetznercloud/hcloud`) |
 | `--source <source>` | Yes* | Custom OpenTofu provider source (for unknown providers) |
-| `--token <token>` | Yes | API token for the cloud provider |
+| `--token-env <var>` | Yes | Name of the environment variable holding the provider API token; the token itself never goes on the command line |
 | `--region <region>` | No | Default region for new machines |
 | `--type <type>` | No | Default instance type/size |
 | `--image <image>` | No | Default OS image |

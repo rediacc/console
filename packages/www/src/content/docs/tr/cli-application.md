@@ -7,7 +7,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "f2024793579921d1"
+sourceHash: "38ccbf527fdb2402"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -944,7 +944,7 @@ rdc machine provider add <name> [options]
 |------|-------------|----------|---------|
 | `--provider <source>` | {{t:cli.commands.machine.provider.add.optionProvider}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--source <source>` | {{t:cli.commands.machine.provider.add.optionSource}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--token <token>` | {{t:cli.commands.machine.provider.add.optionToken}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--token-env <var>` | {{t:cli.commands.machine.provider.add.optionTokenEnv}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--region <region>` | {{t:cli.commands.machine.provider.add.optionRegion}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--type <type>` | {{t:cli.commands.machine.provider.add.optionInstanceType}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--image <image>` | {{t:cli.commands.machine.provider.add.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |

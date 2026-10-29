@@ -7043,16 +7043,15 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Custom OpenTofu provider source (e.g., vultr/vultr)"
         },
         {
-          "flags": "--token <token>",
-          "long": "token",
+          "flags": "--token-env <var>",
+          "long": "token-env",
           "valueTaking": true,
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
           "tier": "common",
-          "sensitive": true,
-          "descriptionKey": "commands.machine.provider.add.optionToken",
-          "label": "API token for the cloud provider"
+          "descriptionKey": "commands.machine.provider.add.optionTokenEnv",
+          "label": "Name of the environment variable holding the provider API token; the token itself never goes on the command line"
         },
         {
           "flags": "--region <region>",

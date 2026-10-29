@@ -1232,8 +1232,9 @@
           "optionSshKeyFormat": "Personnalisé : format de clé SSH (inline_list ou resource_id)",
           "optionSshKeyResource": "Personnalisé : type de ressource OpenTofu pour les clés SSH",
           "optionSshUser": "Nom d'utilisateur SSH pour les nouvelles VMs (par défaut : root)",
-          "optionToken": "Jeton API pour le fournisseur cloud",
-          "success": "Fournisseur cloud \"{{name}}\" ajouté ({{provider}})"
+          "success": "Fournisseur cloud \"{{name}}\" ajouté ({{provider}})",
+          "optionTokenEnv": "Nom de la variable d'environnement qui contient le jeton d'API du fournisseur ; le jeton lui-même ne passe jamais par la ligne de commande",
+          "tokenEnvEmpty": "La variable d'environnement {{name}} est absente ou vide ; donnez-lui le jeton d'API du fournisseur"
         },
         "description": "Gérer les fournisseurs cloud pour le provisionnement automatique de machines",
         "list": {

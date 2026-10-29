@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 3
 language: ko
-sourceHash: "a0f69282724c27ea"
+sourceHash: "b79c049c4f216e1a"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -204,7 +204,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ```bash
 rdc machine provider add my-linode \
   --provider linode/linode \
-  --token $LINODE_API_TOKEN \
+  --token-env LINODE_API_TOKEN \
   --region us-east \
   --type g6-standard-2
 ```
@@ -213,7 +213,7 @@ rdc machine provider add my-linode \
 |------|------|------|
 | `--provider <source>` | 예* | 알려진 공급자 소스(예: `linode/linode`, `hetznercloud/hcloud`) |
 | `--source <source>` | 예* | 사용자 정의 OpenTofu 공급자 소스(알 수 없는 공급자용) |
-| `--token <token>` | 예 | 클라우드 공급자 API 토큰 |
+| `--token-env <var>` | 예 | 공급자 API 토큰을 담은 환경 변수 이름입니다. 토큰 자체는 명령줄에 넣지 않습니다 |
 | `--region <region>` | 아니오 | 새 머신의 기본 리전 |
 | `--type <type>` | 아니오 | 기본 인스턴스 타입/크기 |
 | `--image <image>` | 아니오 | 기본 OS 이미지 |

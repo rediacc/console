@@ -1232,8 +1232,9 @@
           "optionSshKeyFormat": "مخصص: تنسيق مفتاح SSH (inline_list أو resource_id)",
           "optionSshKeyResource": "مخصص: نوع مورد OpenTofu لمفاتيح SSH",
           "optionSshUser": "اسم مستخدم SSH للأجهزة الافتراضية الجديدة (الافتراضي: root)",
-          "optionToken": "رمز API للمزود السحابي",
-          "success": "تمت إضافة مزوّد السحابة \"{{name}}\" ({{provider}})"
+          "success": "تمت إضافة مزوّد السحابة \"{{name}}\" ({{provider}})",
+          "optionTokenEnv": "اسم متغير البيئة الذي يحمل رمز API الخاص بالمزوّد؛ لا يُمرَّر الرمز نفسه في سطر الأوامر أبدًا",
+          "tokenEnvEmpty": "متغير البيئة {{name}} غير معيّن أو فارغ؛ عيّنه إلى رمز API الخاص بالمزوّد"
         },
         "description": "إدارة المزودين السحابيين لتوفير الأجهزة تلقائياً",
         "list": {

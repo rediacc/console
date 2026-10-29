@@ -1232,8 +1232,9 @@
           "optionSshKeyFormat": "Kohandatud: SSH-võtme vorming (inline_list või resource_id)",
           "optionSshKeyResource": "Kohandatud: OpenTofu ressursitüüp SSH-võtmetele",
           "optionSshUser": "SSH-kasutajanimi uutele virtuaalmasinatele (vaikimisi: root)",
-          "optionToken": "API-tõend pilveteenusepakkujale",
-          "success": "Pilveteenusepakkuja \"{{name}}\" lisatud ({{provider}})"
+          "success": "Pilveteenusepakkuja \"{{name}}\" lisatud ({{provider}})",
+          "optionTokenEnv": "Teenusepakkuja API-märki sisaldava keskkonnamuutuja nimi; märki ennast ei panda kunagi käsureale",
+          "tokenEnvEmpty": "Keskkonnamuutuja {{name}} on määramata või tühi; määra selle väärtuseks teenusepakkuja API-märk"
         },
         "description": "Halda pilveteenusepakkujaid masinate automaatprovisionimiseks",
         "list": {

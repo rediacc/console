@@ -1232,8 +1232,9 @@
           "optionSshKeyFormat": "Benutzerdefiniert: SSH-Schlüsselformat (inline_list oder resource_id)",
           "optionSshKeyResource": "Benutzerdefiniert: OpenTofu-Ressourcentyp für SSH-Schlüssel",
           "optionSshUser": "SSH-Benutzername für neue VMs (Standard: root)",
-          "optionToken": "API-Token für den Cloud-Provider",
-          "success": "Cloud-Anbieter \"{{name}}\" hinzugefügt ({{provider}})"
+          "success": "Cloud-Anbieter \"{{name}}\" hinzugefügt ({{provider}})",
+          "optionTokenEnv": "Name der Umgebungsvariable mit dem API-Token des Anbieters; das Token selbst steht nie in der Befehlszeile",
+          "tokenEnvEmpty": "Die Umgebungsvariable {{name}} ist nicht gesetzt oder leer; setzen Sie sie auf das API-Token des Anbieters"
         },
         "description": "Cloud-Provider für automatische Maschinenbereitstellung verwalten",
         "list": {
