@@ -295,8 +295,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       this.inFlight -= 1;
       void this.afterRequest();
     };
-    // Which step threw, so a storage or lease error is not logged as a failed forward (review
-    // 2b65e8c7.2). The caller's answer is the same either way, a 502; only a failure at 'touch' or 'lease' proves nothing reached the executor, while 'forward' can throw after the request was delivered (reading the response), so the executor may have run the command.
+    // Which step threw. The caller's answer is a 502 whichever it was, and every stage logs under the one fixed forward-failure string so the alert covers a touch or lease failure too (each ends in an unanswered request); the stage rides as a field, because only a failure at 'touch' or 'lease' proves nothing reached the executor, while 'forward' can throw after delivery (reading the response), so the executor may have run the command.
     let stage: 'touch' | 'lease' | 'forward' = 'touch';
     try {
       await this.touch();

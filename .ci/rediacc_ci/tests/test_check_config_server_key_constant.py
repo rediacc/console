@@ -12,6 +12,8 @@ import subprocess
 import sys
 import typing
 
+import pytest
+
 from rediacc_ci import paths
 
 if typing.TYPE_CHECKING:
@@ -23,6 +25,8 @@ HOME = "private/account/src/services/config-server-key.ts"
 
 
 def _load():
+    # The gate imports its sibling `_cipath` shim, which a script run finds beside itself; an in-process load needs the gate's directory on the path, or the file only passes when an earlier test happened to put it there.
+    paths.on_sys_path(GATE.parent)
     spec = importlib.util.spec_from_file_location("check_config_server_key_constant", GATE)
     assert spec is not None
     assert spec.loader is not None
@@ -117,6 +121,14 @@ def test_nothing_to_scan_cannot_run(tmp_path) -> None:
     proc = _run("--root", str(tmp_path))
     assert proc.returncode == 77
     assert "CANNOT RUN" in proc.stderr
+
+
+def test_the_real_floors_refuse_a_fixture_sized_corpus(tmp_path) -> None:
+    """The default (no --root) run scans at MIN_SOURCES and MIN_ACCOUNT_SRC; a fixture tree that passes at floor 1 must be refused at those, or the real floors would be decoration."""
+    root = _tree(tmp_path)
+    assert gate.scan(str(root), 1, 1)["sources"] == 3
+    with pytest.raises(gate.CannotRunError, match="VACUOUS"):
+        gate.scan(str(root), gate.MIN_SOURCES, gate.MIN_ACCOUNT_SRC)
 
 
 def test_home_findings_accepts_the_live_shape() -> None:

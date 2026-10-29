@@ -425,8 +425,10 @@ def main(argv: list[str]) -> int:
             print("  %s" % m, file=sys.stderr)
         return 1
     root = args.root or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    # The floors describe THIS repository; a --root tree is a caller-built fixture of a handful of files, scanned at floor 1 like the selftest. CI never passes --root, so the real run keeps both floors.
+    floors = (MIN_SOURCES, MIN_ACCOUNT_SRC) if args.root is None else (1, 1)
     try:
-        result = scan(root, MIN_SOURCES, MIN_ACCOUNT_SRC)
+        result = scan(root, *floors)
     except CannotRunError as exc:
         print("%sCANNOT RUN%s config-server-key-constant: %s" % (YELLOW, NC, exc), file=sys.stderr)
         return EXIT_CANNOT_RUN
@@ -456,8 +458,8 @@ def main(argv: list[str]) -> int:
             result["repos"],
             result["account_src"],
             HOME_REPO,
-            MIN_SOURCES,
-            MIN_ACCOUNT_SRC,
+            floors[0],
+            floors[1],
             result["guarded"],
             len(result["exempt"]),
         )

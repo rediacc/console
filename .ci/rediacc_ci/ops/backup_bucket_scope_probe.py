@@ -1,7 +1,7 @@
 """Prove one channel's backup key pair is scoped to its own regional backup buckets and nothing else.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile backup-push-<channel> -- \\
-      python3 -m rediacc_ci.ops.backup_bucket_scope_probe --channel stable|edge|bench [--region eu|us|asia ...]
+      PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_bucket_scope_probe --channel stable|edge|bench [--region eu|us|asia ...]
 
 WHY IT EXISTS. Each channel's Workers presign backup grants with a key pair minted as Object Read and Write on that channel's backup buckets only (agent/plans/_done/PLAN-backup-credential-isolation.md B5-B8). Nothing proved the scope after minting: a pair minted account-wide would serve every backup flow identically and pass every functional check. This probe asks R2 itself (agent/plans/PLAN-backup-plane-shared-bucket-hardening.md C1).
 
@@ -71,17 +71,28 @@ class Target:
 
 
 def _regions(root) -> dict[str, dict]:
-    with open(root / "regions.json", encoding="utf-8") as fh:
-        return {r["id"]: r for r in json.load(fh)["regions"]}
+    path = root / "regions.json"
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return {r["id"]: r for r in json.load(fh)["regions"]}
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise ConfigError("%s unreadable: %s" % (path, type(exc).__name__)) from exc
 
 
 def _bench_config_bucket(root) -> Bucket:
     path = root.joinpath(*pbc.WORKER_DIR) / pbc.BENCH_CONFIG
-    with open(path, "rb") as fh:
-        doc = tomllib.load(fh)
+    try:
+        with open(path, "rb") as fh:
+            doc = tomllib.load(fh)
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise ConfigError("%s unreadable: %s" % (path, type(exc).__name__)) from exc
     for bucket in doc.get("r2_buckets") or []:
         if bucket.get("binding") == CONFIG_BINDING:
-            return Bucket(bucket.get("bucket_name") or "", bucket.get("jurisdiction") or "")
+            name = bucket.get("bucket_name")
+            # An empty name would send the LIST to the account root, where a 403 proves nothing about any bucket.
+            if not name:
+                raise ConfigError("%s binds %s with no bucket_name" % (path, CONFIG_BINDING))
+            return Bucket(name, bucket.get("jurisdiction") or "")
     raise ConfigError("%s binds no %s bucket" % (path, CONFIG_BINDING))
 
 
@@ -117,7 +128,10 @@ def targets(channel: str, regions: list[str] | None, root=None) -> list[Target]:
     out = []
     for region in chosen:
         entry = known[region]
-        config = entry["r2"] if channel == "stable" else entry["edgeR2"]
+        field = "r2" if channel == "stable" else "edgeR2"
+        config = entry.get(field)
+        if not isinstance(config, dict) or not config.get("name"):
+            raise ConfigError("regions.json region %s has no %s.name" % (region, field))
         jurisdiction = entry.get("r2Jurisdiction") or ""
         out.append(
             Target(
@@ -212,13 +226,13 @@ class Probe:
             flush=True,
         )
 
-    def _call(self, region, bucket, verb, method, path, body=b""):
-        """(status, body), or None after printing a no-verdict line for a transport error. The error text never carries the URL's query or headers: only the exception class is printed."""
+    def _call(self, region, bucket, verb, method, path, body=b"", verdict=UNKNOWN):
+        """(status, body), or None after printing a line (no-verdict unless `verdict` says otherwise) for a transport error. The error text never carries the URL's query or headers: only the exception class is printed."""
         try:
             return self._send(method, bucket, path, body)
         except OSError as exc:
             self._line(
-                UNKNOWN, region, bucket, verb, "---", "transport error (%s)" % type(exc).__name__
+                verdict, region, bucket, verb, "---", "transport error (%s)" % type(exc).__name__
             )
             return None
 
@@ -272,7 +286,7 @@ class Probe:
 
     def _lifecycle(self, t: Target) -> None:
         """Read-only: what GET ?lifecycle answers on the own bucket, so a left-behind probe object is reported with its fate."""
-        got = self._call(t.region, t.own, "LIFECYCLE", "GET", "?lifecycle")
+        got = self._call(t.region, t.own, "LIFECYCLE", "GET", "?lifecycle", verdict=NOTE)
         if got is None:
             return
         status, body = got

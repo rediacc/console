@@ -472,9 +472,16 @@ def check_c(report: Report, root: str) -> bool:
 
 # What counts as checking the build's exit code in the Python port: the `_run(["./build.sh", "dev", ...], ...)` call compared against 0 in an `if`. The argv may carry more elements after "dev" (the per-flavor `renet_flavor.build_flag(flavor)` since the flavor split); a regex that pinned the argv to exactly two elements stopped matching the live call and turned D red on correct code. (The bash twin accepted four spellings, `if ! (...)`, `) ||` and `|| {`; none exists in the port.)
 BUILD_CALL = r'_run\(\["\./build\.sh", "dev"(?:, [^\]\n]+)?\][^\n]*\)'
-BUILD_GUARD_RE = re.compile(r"if %s\s*!=\s*0:" % BUILD_CALL, re.MULTILINE)
-# The D control's mutation: the same guarded call, captured so the plant can keep the call and drop the check.
-BUILD_GUARD_PLANT_RE = re.compile(r"if (%s)\s*!=\s*0:" % BUILD_CALL)
+# Two guarded shapes: the inline `if _run([...]) != 0:`, and the status kept in a name and tested on the next line (`rc = _run([...])` then `if rc != 0:`), which ensure_renet_built uses since it hands build.sh's own status to its caller (review 6de769e7.2).
+BUILD_GUARD_RE = re.compile(
+    r"if %s\s*!=\s*0:|(?P<v>\w+)\s*=\s*%s\n[ \t]*if (?P=v)\s*!=\s*0:" % (BUILD_CALL, BUILD_CALL),
+    re.MULTILINE,
+)
+# The D control's mutation: keep the call, drop the comparison, in either shape.
+BUILD_GUARD_PLANT_RE = re.compile(
+    r"if (?P<inline>%s)\s*!=\s*0:|(?P<named>\w+\s*=\s*%s\n[ \t]*)if \w+\s*!=\s*0:"
+    % (BUILD_CALL, BUILD_CALL)
+)
 
 
 def check_d(report: Report, file: pathlib.Path) -> bool:
@@ -603,6 +610,10 @@ def python_function_body(text: str, name: str) -> str:
                 out.append(line)
             continue
         if line.strip() == "" or line[:1] in (" ", "\t"):
+            out.append(line)
+            continue
+        # A signature wrapped over several lines closes with `) -> T:` at column 0; that line is still the def, not the next top-level statement.
+        if line.startswith(")") and line.rstrip().endswith(":"):
             out.append(line)
             continue
         break
@@ -813,9 +824,14 @@ def main(argv: list[str] | None = None) -> int:
         # D-control: restore the unchecked invocation.
         lc_broken = tmpdir / "lc-broken.py"
         lc_text = read_text(local_common_py)
-        # Keep the call, drop the comparison: `if _run([...]) != 0:` becomes `_run([...])` then `if False:`. Exactly one site must change, or the control proves nothing.
+        # Keep the call, drop the comparison: `if _run([...]) != 0:` becomes `_run([...])` then `if False:`, and `rc = _run([...])` keeps its call while `if rc != 0:` becomes `if False:`. Exactly one site must change, or the control proves nothing.
         lc_mutated, d_hits = BUILD_GUARD_PLANT_RE.subn(
-            lambda m: "%s\n    if False:" % m.group(1), lc_text
+            lambda m: (
+                "%s\n    if False:" % m.group("inline")
+                if m.group("inline")
+                else "%sif False:" % m.group("named")
+            ),
+            lc_text,
         )
         lc_broken.write_text(lc_mutated, encoding="utf-8")
         if d_hits != 1 or BUILD_GUARD_RE.search(read_text(lc_broken)):

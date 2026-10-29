@@ -77,3 +77,24 @@ def test_machine_py_hard_codes_no_tool_version() -> None:
     body = source[source.index("def _install_tofu") : source.index("RETIRED_ENV_FILES")]
     assert not re.search(r"\d+\.\d+\.\d+", body)
     assert not re.search(r"\b[0-9a-f]{64}\b", body)
+
+
+def test_a_null_pinned_version_fails_the_step(tmp_path, monkeypatch, capsys) -> None:
+    listing = "x\n" + json.dumps({"success": True, "data": {"pinned": {"tofu": None}, "tools": []}})
+    ctx = _ctx(tmp_path, monkeypatch, FAKE_LIST_OUT=listing)
+    assert machine._install_tofu(ctx) == 1
+    err = capsys.readouterr().err
+    assert "did not report the pinned tofu version" in err
+    assert "None installed" not in err
+
+
+def test_devcontainer_tofu_install_cannot_fail_container_creation() -> None:
+    text = pathlib.Path(paths.from_root(".devcontainer/devcontainer.json")).read_text(
+        encoding="utf-8"
+    )
+    command = re.search(r'"postCreateCommand":\s*"([^"]*)"', text)
+    assert command is not None
+    steps = command.group(1)
+    assert "{ ./rdc.sh tools install tofu || true; } && " in steps
+    assert "&& ./rdc.sh tools install tofu" not in steps
+    assert steps.index("tools install tofu") < steps.index("playwright install chromium")

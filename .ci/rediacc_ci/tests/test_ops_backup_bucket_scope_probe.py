@@ -200,3 +200,56 @@ def test_sigv4_uses_jurisdiction_endpoint_for_eu():
     probe_mod.probe("stable", found, ENV, transport, out=out, now=NOW)
     assert urls
     assert all(".eu.r2.cloudflarestorage.com/" in u for u in urls)
+
+
+def test_lifecycle_transport_error_does_not_change_the_exit():
+    own = _own_name()
+    fake = FakeS3({own}, override={("DELETE", own): 403})
+
+    def transport(method, url, body, headers):
+        if url.endswith("?lifecycle"):
+            raise OSError("reset")
+        return fake(method, url, body, headers)
+
+    rc, out = _run(transport)
+    assert rc == 0, out
+    assert "LIFECYCLE" in out
+    assert "NO-VERDICT" not in out
+
+
+def test_unreadable_regions_json_is_a_config_error(tmp_path):
+    (tmp_path / "regions.json").write_text("{not json", encoding="utf-8")
+    with pytest.raises(probe_mod.ConfigError):
+        probe_mod.targets("stable", None, root=tmp_path)
+    with pytest.raises(probe_mod.ConfigError):
+        probe_mod.targets("stable", None, root=tmp_path / "absent")
+
+
+@pytest.mark.parametrize("channel", ["stable", "edge"])
+def test_region_without_bucket_entry_is_a_config_error(tmp_path, channel):
+    (tmp_path / "regions.json").write_text(
+        '{"regions": [{"id": "eu", "r2": {"name": "a"}}]}', encoding="utf-8"
+    )
+    if channel == "stable":
+        (tmp_path / "regions.json").write_text('{"regions": [{"id": "eu"}]}', encoding="utf-8")
+    with pytest.raises(probe_mod.ConfigError):
+        probe_mod.targets(channel, ["eu"], root=tmp_path)
+
+
+def test_main_maps_config_errors_to_exit_2(monkeypatch):
+    monkeypatch.setattr(
+        probe_mod, "targets", lambda *_a, **_k: (_ for _ in ()).throw(probe_mod.ConfigError("x"))
+    )
+    assert probe_mod.main(["--channel", "stable"], environ=ENV) == 2
+
+
+def test_bench_config_bucket_without_name_is_a_config_error(tmp_path):
+    worker = tmp_path.joinpath(*probe_mod.pbc.WORKER_DIR)
+    worker.mkdir(parents=True)
+    (worker / probe_mod.pbc.BENCH_CONFIG).write_text(
+        '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\n', encoding="utf-8"
+    )
+    with pytest.raises(probe_mod.ConfigError, match="no bucket_name"):
+        probe_mod._bench_config_bucket(tmp_path)
+    with pytest.raises(probe_mod.ConfigError):
+        probe_mod._bench_config_bucket(tmp_path / "absent")

@@ -271,6 +271,11 @@ def check(ctx: Ctx, constants: dict[str, str], started: float | None = None) -> 
         ctx.say("  deps        STALE (dependencies and native modules pending)")
         pending += 1
 
+    # NOT COUNTED, like go: the pin is compiled into the CLI, and asking it means `./rdc.sh`, which builds the CLI and renet first, so `--check` could not stay read-only. The step is a no-op once the pinned version is in rdc's tools dir.
+    ctx.say(
+        "  tofu        setup runs ./rdc.sh tools install tofu (no-op once the pin is installed)"
+    )
+
     image = constants.get("DEVBOX_IMAGE", "")
     if facts.get("image") == "1":
         ctx.say("  image       present (%s)" % image)
@@ -433,9 +438,11 @@ def _install_tofu(ctx: Ctx) -> int:
     version = ""
     if listed.rc == 0:
         try:
-            version = str(json.loads(listed.out[listed.out.index("{") :])["data"]["pinned"]["tofu"])
+            pinned = json.loads(listed.out[listed.out.index("{") :])["data"]["pinned"]["tofu"]
         except (ValueError, KeyError, TypeError):
-            version = ""
+            pinned = None
+        # A JSON null or a non-string must not become the text "None".
+        version = pinned if isinstance(pinned, str) else ""
     if not version:
         ctx.error("rdc tools list did not report the pinned tofu version (rc=%d)" % listed.rc)
         return 1

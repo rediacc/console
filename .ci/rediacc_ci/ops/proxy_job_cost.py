@@ -1,7 +1,7 @@
 """Cost of one proxy Worker script over a window: Durable Object requests and wall time, and container active seconds.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile cf-usage-report -- \
-        python3 -m rediacc_ci.ops.proxy_job_cost --script rediacc-proxy-bench \
+        PYTHONPATH=.ci python3 -m rediacc_ci.ops.proxy_job_cost --script rediacc-proxy-bench \
         --from 2026-10-29T10:00:00Z --to 2026-10-29T11:00:00Z
 
 WHY IT EXISTS (agent/plans/PLAN-detached-jobs.md, J12). The detached-job protocol changes how long a proxy Durable Object stays busy, so L0 and L5 compare these numbers before and after.
