@@ -178,7 +178,7 @@ Most of this exists already, and A1 pins it with tests:
     - apply sets the ledger to 9 and the aggregate to the sum of the lineage rows;
     - a live lease gives `skipped:"leased"`;
     - a `backup:read` token cannot apply;
-    - another team's lineage gives 403.
+    - another team's lineage gives 404, as every scoped route answers (requireLineageInScope in private/account/src/routes/backups.ts).
     - Today every call is 404.
   - T6 guard, which passes today and pins D6 across the extraction: a chunk referenced by a committed manifest, uploaded by a superseded run and older than the grace, is never deleted.
 
