@@ -300,7 +300,10 @@ export function looksLikeBuilder(text: string, file = ''): boolean {
     process.exit(1);
   }
   if (
-    looksLikeBuilder('KEYS = (\n    ("API_KEY", "api"),\n)\n\nX = [*wrangler.ARGV, "secret", "put"]\n', 'z.py') ||
+    looksLikeBuilder(
+      'KEYS = (\n    ("API_KEY", "api"),\n)\n\nX = [*wrangler.ARGV, "secret", "put"]\n',
+      'z.py'
+    ) ||
     looksLikeBuilder('# see `npx wrangler secret bulk` for how deploys push secrets\n') ||
     looksLikeBuilder("jq -n '{\n  API_KEY: $a,\n}' > payload.json\n") ||
     looksLikeBuilder('assert argv("n") == ["npx", "wrangler", "secret", "bulk"]\n', 'test_x.py') ||
