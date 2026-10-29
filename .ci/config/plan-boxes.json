@@ -110,17 +110,18 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
+      "open": 5,
+      "done": 1,
       "open_sigs": [
-        "564c2d2d",
         "566ed3a4",
         "b45ef8a8",
         "b4fd892f",
         "d36ccec3",
         "fd8547ed"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "564c2d2d"
+      ]
     },
     "agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md": {
       "status": "executing",

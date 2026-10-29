@@ -143,7 +143,7 @@ Most of this exists already, and A1 pins it with tests:
 
 ## Boxes
 
-- [ ] A1 [writer, account] Server-side metering of every stored chunk.
+- [x] A1 [writer, account] Server-side metering of every stored chunk.
   Changes:
   - Migration private/account/drizzle/0069_backup_lineage_reconcile_due.sql (+ drizzle/meta/_journal.json) adding `backup_lineage_usage.reconcile_due_at` and `backup_upload_leases.machine_id`, and both columns in src/db/schema.ts (backupLineageUsage and backupUploadLeases only).
   - backup.dto.ts:
@@ -161,6 +161,7 @@ Most of this exists already, and A1 pins it with tests:
     - `sweepExpired` sets `reconcile_due_at` for each expired lease's lineage before deleting it.
   - routes/backups.ts: `POST /reconcile`.
   - src/errors.ts: `BACKUP_RECONCILE_TOO_LARGE`.
+    (ticked) 2026-10-29T10:03:59Z by d778be9d: commit:c7106b415
 
   Tests (new tests/integration/backup-meter-orphaned-chunks.test.ts, in-memory store and SQLite). Each test except the last fails on the current tree:
   - T1 killed then retried, with supersede:
