@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 38 plans done, 522 of 704 boxes done (74%).
+Promoted: 3 of 39 plans done, 522 of 713 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -122,6 +122,7 @@ Promoted: 3 of 38 plans done, 522 of 704 boxes done (74%).
 | 36 | PLAN-backup-local-image.md | 7/14 | 7 open |
 | 37 | PLAN-backup-plane-shared-bucket-hardening.md | 0/5 | 5 open |
 | 38 | PLAN-jobs-backup-real-machine-tests.md | 0/10 | 10 open |
+| 39 | PLAN-cli-tofu-toolchain.md | 0/9 | 9 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -162,6 +163,7 @@ Promoted: 3 of 38 plans done, 522 of 704 boxes done (74%).
 36. agent/plans/PLAN-backup-local-image.md -- operator 2026-10-29 ASKED (all four Recommended) + "you are promoting the new plans, right?": rdc backup download/upload of the encrypted repo image to a local path or external drive, in-place weekly update, fresh snapshot per run, prune fixes
 37. agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- operator 2026-10-29 ASKED (Implement all, promote): size-bounded presigned uploads, the unused R2 JWT minter removed, a per-bucket R2 token with a scope probe
 38. agent/plans/PLAN-jobs-backup-real-machine-tests.md -- operator 2026-10-29 "make a new plan for the missing tests": real-machine e2e for jobs and backup, the two gates that cannot fail on them, the expired-session account pin, drill legs p and q
+39. agent/plans/PLAN-cli-tofu-toolchain.md -- operator 2026-10-29 ASKED (Install command + doctor, Pin provider hashes, PATH-only fallback): rdc tools install tofu with baked checksums, doctor Tools section, provider lock hashes, shared plugin cache
 
 ## Generated
 

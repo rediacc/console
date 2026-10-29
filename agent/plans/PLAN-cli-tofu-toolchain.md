@@ -1,0 +1,38 @@
+# PLAN: rdc installs a pinned, checksum-verified OpenTofu itself (rdc tools install tofu), doctor reports missing local tools, and cloud providers are pinned by hash
+
+Status: approved -- operator 2026-10-29 "we must also think about other machines (customers') so maybe rdc doctor warn or maybe rdc install local may install?"; ASKED answers: Install command + doctor, Pin provider hashes, PATH-only fallback (worklist #9a7c3258)
+Depends-On: no-dep -- the CLI tools service, the pins leaf and doctor need nothing outside this plan
+Owner: d778be9d
+Priority: P1 -- `rdc machine provision` fails on every host without tofu ("Neither OpenTofu (tofu) nor Terraform (terraform) is installed", packages/cli/src/services/tofu/executor.ts:69-79), which blocked the R2-to-Linode DR proof on 2026-10-29; customers on Linux, macOS and Windows hit the same wall with an unpinned manual install
+Owns: agent/plans/PLAN-cli-tofu-toolchain.md, .ci/config/pins.json (the cli-tool:opentofu and tofu provider leaves only), scripts/pins/**, packages/cli/src/services/tools/** (new), packages/cli/src/commands/tools.ts (new), packages/cli/src/commands/__tests__/tools*.test.ts (new), packages/cli/src/services/tofu/executor.ts, packages/cli/src/services/tofu/tf-generator.ts, packages/cli/src/services/tofu/provider-registry.json, packages/cli/src/services/tofu/__tests__/**, packages/cli/src/commands/doctor.ts, packages/cli/src/commands/__tests__/doctor*.test.ts, packages/cli/src/cli.ts (one register call), packages/cli/src/i18n/locales/*/cli.json, packages/shared/src/cli-contract/data/** (regenerated only), packages/www/src/content/docs/*/cli-application.md (regenerated only), .devcontainer/toolchain.env, .devcontainer/Dockerfile, run.sh (the setup step that calls rdc tools install tofu)
+Concurrency: parallel -- the tools service, doctor and the pins leaf have disjoint files; T3 waits for T1's generated constants
+Live-Proof: bench -- the DR proof of PLAN-backup-program provisions a temporary bench-side Linode through this install path, which is the live proof that a fresh host can provision
+Updated: 2026-10-29
+First-Seen: 2026-10-29
+Worklist: #9a7c3258, PR-TASK 9f92c43e
+
+## Finding (read-only investigation, 2026-10-29)
+
+- Lookup: TofuExecutor.resolveBinary tries `tofu version` then `terraform version` on PATH with no version floor (executor.ts:69-79); provisioning calls it first (provision.ts:109, cluster-provision.ts:128).
+- No plugin cache: each machine's work dir `<configDir>/tofu/<machine>/` re-downloads its provider on `init`; the 31 providers in provider-registry.json carry only `~>` ranges and no lock hashes.
+- rsync is not embedded locally either (remote/sync/rsync.ts:21-37); the SEA embeds only renet (.ci/rediacc_ci/build/prepare_cli_assets.py:128-140). `rdc doctor` exists (commands/doctor.ts:507) but checks neither tofu nor rsync, and its commandExists shells out to `which`, which Windows lacks (doctor.ts:44-50).
+- Pins: `.ci/config/pins.json` leaves model a release-age pin with per-platform sha256 sites (toolchain:shfmt at :1869-1941); no leaf has Windows checksum roles yet, and the pins driver verifies no signatures.
+- The provider token in main.tf.json was world-readable; fixed in 1e9a72f02 (0700 dir, 0600 file).
+
+## Decisions (operator, 2026-10-29)
+
+1. Delivery: an explicit `rdc tools install tofu` plus a doctor check; no embedding, no lazy download.
+2. Providers: lock hashes committed through a pins leaf, plus a shared plugin cache.
+3. Terraform: accepted only when the user installed it on PATH; rdc never installs or bundles it (BUSL); both engines need a version floor.
+
+## Boxes
+
+- [ ] T1 [opus] Pins leaf `cli-tool:opentofu`: an exact version at least 1440 minutes old, sha256 sites for linux, darwin and windows on amd64 and arm64 (new Windows roles in the driver), and a generated TS constants file the CLI imports, so the checksums ship inside rdc. Accept: `npm run pins -- lockfiles` and the pins gates rc 0, and a changed checksum fails the pins check.
+- [ ] T2 [opus] The pins driver verifies the OpenTofu release SHA256SUMS against its cosign signature at bump time, refusing a bump whose signature does not verify. Accept: the pins driver tests rc 0, with a tampered SUMS file refused.
+- [ ] T3 [opus] packages/cli/src/services/tools: platform map, download over HTTPS, sha256 check against the T1 constants before anything is extracted, zip/tar extraction, atomic placement into rdc's tools dir (`@rediacc/shared/paths`), and `rdc tools install|list` with i18n in 13 locales. A checksum mismatch deletes the download and refuses. Accept: `cd packages/cli && npx vitest run src/commands/__tests__/tools` rc 0, covering the bad-checksum refusal, an interrupted download, and Windows paths.
+- [ ] T4 Executor lookup order: REDIACC_TOFU, then rdc's tools dir, then tofu on PATH, then terraform on PATH; a version floor for both; the not-installed error names `rdc tools install tofu`; TF_PLUGIN_CACHE_DIR set to a shared cache dir. Accept: `npx vitest run src/services/tofu` rc 0.
+- [ ] T5 Doctor gains a Tools section (tofu with its version and source, rsync), and commandExists uses a cross-platform lookup instead of `which`. Accept: `npx vitest run src/commands/__tests__/doctor` rc 0, with a Windows-path case.
+- [ ] T6 [opus] Provider pinning: a pins leaf carrying `.terraform.lock.hcl` hashes for every provider in provider-registry.json, written into each machine's work dir before `init`, so `tofu init` refuses an unpinned provider build. Accept: the provider-lock test rc 0, and a lock file with a changed hash makes `tofu init` fail in the test fixture.
+- [ ] T7 Dev wiring: `./run.sh setup` and the devcontainer call `rdc tools install tofu`, so dev uses the customer path and keeps no second copy of the pin. Accept: `./run.sh setup` on a host without tofu leaves `rdc tools list` showing the pinned version, rc 0.
+- [ ] T8 Regenerate the CLI contract and docs for the new verb. Accept: `npm run check:ci-cli-contract`, `npm run check:cli-docs` and `npm run check:i18n` rc 0.
+- [ ] L1 [live] On this workstation (no tofu installed): `rdc tools install tofu`, then the approved R2-to-Linode DR proof provisions `dr-mail` with `--no-infra`, and `machine deprovision` removes it. Accept: provision and deprovision rc 0, with the Linode id, region and teardown recorded.
