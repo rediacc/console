@@ -362,7 +362,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0 and `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
     (ticked) 2026-10-29T10:19:43Z by d778be9d: commit:53e96d940 J0 audit section in the plan; citations and deps gates show no finding
 
-- [ ] J0b [lead] Machine-plane job audit, read-only: one table row per machine-plane command in packages/shared/src/cli-contract/data/contract.generated.ts (102 at 2026-10-29). That is the ten covered verbs of J0 (re-checked), the 75 others listed under "The 84 `detachable` commands" (including machine setup, machine provision, the datastore verbs, the cluster verbs, repo resize, repo gc and repo prune), the five `job *` verbs and the thirteen non-proxyable commands. Columns:
+- [x] J0b [lead] Machine-plane job audit, read-only: one table row per machine-plane command in packages/shared/src/cli-contract/data/contract.generated.ts (102 at 2026-10-29). That is the ten covered verbs of J0 (re-checked), the 75 others listed under "The 84 `detachable` commands" (including machine setup, machine provision, the datastore verbs, the cluster verbs, repo resize, repo gc and repo prune), the five `job *` verbs and the thirteen non-proxyable commands. Columns:
   1. command, and its CLI entry file:line;
   2. machine calls in order (renet function, raw renet subcommand, SFTP, systemctl or local subprocess);
   3. single-job form (single call, precondition fold, command-kind, compound function, successor) or the section 24 exception and its reason;
@@ -372,6 +372,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   7. retention class (section 22);
   8. `-b` today;
   9. the conversion box (J4, J16-J20).
+    (ticked) 2026-10-29T11:34:34Z by d778be9d: commit:dc503e38b
 
   It also names every other plan whose Owns cover a converted command file, so the lead can amend the Concurrency line, and confirms or corrects the target-up channel of `repository_migrate` (section 14).
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0, `python3 .ci/scripts/quality/check_plan_deps.py` rc 0, and the row count in the "Machine-plane job audit" section equals the output of `awk -F'"' '/"pathKey"/{p=$4} /^      "plane"/{if($4=="machine")n++} END{print n}' packages/shared/src/cli-contract/data/contract.generated.ts`.
@@ -485,7 +486,8 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: packages/cli/src/commands/repo-fork.ts, packages/cli/src/commands/repo-backup.ts, packages/cli/src/commands/repo-migrate.ts, packages/cli/src/commands/backup.ts, packages/cli/src/commands/backup-ops.ts, packages/cli/src/commands/backup-storage.ts (the snapshot action only), packages/cli/src/commands/__tests__/job-tails.test.ts (new). Accept: `cd packages/cli && npx vitest run src/commands/__tests__/job-tails.test.ts` rc 0, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
   Amended (third round): follows J0b, J3b and J15 as well. Finalizers are J15 steps (`runJob` with `on: success|failure`). `repo migrate` uses the `repository_migrate` compound job, which J1b's allow-list or a renet function provides, as J0b decides. `repo up`, `repo down`, `repo checkout`, `repo commit` and `backup restore-path` join this box's verbs, with packages/cli/src/commands/repo.ts, packages/cli/src/commands/repo-branching.ts and packages/cli/src/commands/backup-restore-path.ts added to its Owns.
 
-- [ ] J5 [writer] Ticket store, `rdc job list` and `rdc job wait`, the optional `-m`, and the finished notice (Design 6, 7, 8). Adds the en locale keys for these strings.
+- [x] J5 [writer] Ticket store, `rdc job list` and `rdc job wait`, the optional `-m`, and the finished notice (Design 6, 7, 8). Adds the en locale keys for these strings.
+    (ticked) 2026-10-29T11:39:12Z by d778be9d: commit:cd565de8b
 
   Tests: two processes appending concurrently lose no ticket; the store file is 0600 and its directory 0700; no planted vault or env value appears in the file; `job wait` resumes from `lastSeenLine` and exits with the job's code; the notice prints on stderr only and once per ticket; a `jobs/` file never shows up in `rdc config list`; control: with no tickets the notice makes zero machine calls.
 
