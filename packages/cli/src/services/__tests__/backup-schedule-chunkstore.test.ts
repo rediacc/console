@@ -145,7 +145,8 @@ describe('scheduled backups to the chunk store', () => {
       RENET
     );
     expect(serviceContent).toContain('\nNice=10\n');
-    expect(serviceContent).toContain('\nIOSchedulingClass=idle\n');
+    expect(serviceContent).toContain('\nIOSchedulingClass=best-effort\n');
+    expect(serviceContent).toContain('\nIOSchedulingPriority=7\n');
     expect(serviceContent).toContain('--bwlimit 12500000 --parallelism 2');
 
     const { commands } = buildBackupCommands(
@@ -156,7 +157,9 @@ describe('scheduled backups to the chunk store', () => {
     );
     const adhoc = buildAdhocSystemdRun('rediacc-backup-s-adhoc', commands);
     expect(adhoc).toMatch(/^sudo systemd-run --unit=rediacc-backup-s-adhoc --remain-after-exit /);
-    expect(adhoc).toContain('-p Nice=10 -p IOSchedulingClass=idle');
+    expect(adhoc).toContain(
+      '-p Nice=10 -p IOSchedulingClass=best-effort -p IOSchedulingPriority=7'
+    );
     expect(adhoc).toContain('--bwlimit 12500000 --parallelism 2');
   });
 

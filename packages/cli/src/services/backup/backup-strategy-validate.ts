@@ -89,17 +89,18 @@ export const STRATEGY_UPLOAD_PARALLELISM = 2;
 /**
  * The cap one strategy run uploads at, in bytes/second, or undefined for none.
  *
- * A destination's own `bandwidthLimit` overrides the strategy's (the precedence `backup strategy show` prints). One run is ONE upload whatever the number of destinations, so the tightest effective cap among them wins: honouring a looser one would break the tighter one's promise. Before this the run read only the strategy-level field, so `backup strategy set s --destination d --bwlimit 6M` stored a cap no unit ever applied.
+ * Every cap that is set binds, the strategy's and each destination's, and one run is ONE upload whatever the number of destinations, so the tightest cap of them all wins: a looser destination cap never lifts the strategy's. Before this the run read only the strategy-level field, so `backup strategy set s --destination d --bwlimit 6M` stored a cap no unit ever applied.
  */
 export function effectiveBandwidthLimit(
   strategy: { bandwidthLimit?: string },
   destinations: { bandwidthLimit?: string }[]
 ): number | undefined {
-  const caps = destinations
-    .map((d) => bandwidthToBytesPerSecond(d.bandwidthLimit ?? strategy.bandwidthLimit))
+  // Every cap that is set binds: the strategy's and each destination's. A looser destination cap
+  // never lifts the strategy's, and the run takes the tightest of them all.
+  const caps = [strategy.bandwidthLimit, ...destinations.map((d) => d.bandwidthLimit)]
+    .map((v) => bandwidthToBytesPerSecond(v))
     .filter((v): v is number => v !== undefined);
-  if (caps.length > 0) return Math.min(...caps);
-  return bandwidthToBytesPerSecond(strategy.bandwidthLimit);
+  return caps.length > 0 ? Math.min(...caps) : undefined;
 }
 
 /** Why a cron expression cannot become an OnCalendar line, or undefined when it can. */

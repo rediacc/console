@@ -2,7 +2,10 @@
  * The rate grammar, row for row with renet's private/renet/pkg/bwrate/bwrate_test.go. The CLI converts a strategy's or a flag's rate to bytes/second before renet sees it, and renet parses the same strings when an operator types the verb by hand; if the two tables drift, one cap means two speeds.
  */
 import { describe, expect, it } from 'vitest';
-import { bandwidthToBytesPerSecond } from '../backup/backup-strategy-validate.js';
+import {
+  bandwidthToBytesPerSecond,
+  effectiveBandwidthLimit,
+} from '../backup/backup-strategy-validate.js';
 
 const OK: [string, number | undefined][] = [
   ['', undefined],
@@ -37,5 +40,24 @@ describe('bandwidth rate grammar (mirrors renet pkg/bwrate)', () => {
 
   it.each(BAD)('refuses %s', (input) => {
     expect(() => bandwidthToBytesPerSecond(input)).toThrow(/Bandwidth limit/);
+  });
+});
+
+describe('effectiveBandwidthLimit: every set cap binds and the tightest wins', () => {
+  it('keeps the strategy cap when a destination cap is looser', () => {
+    expect(effectiveBandwidthLimit({ bandwidthLimit: '100Mbps' }, [{ bandwidthLimit: '1G' }])).toBe(
+      12_500_000
+    );
+  });
+  it('takes a destination cap tighter than the strategy cap', () => {
+    expect(effectiveBandwidthLimit({ bandwidthLimit: '100Mbps' }, [{ bandwidthLimit: '6M' }])).toBe(
+      6_000_000
+    );
+  });
+  it('applies the strategy cap to destinations without one', () => {
+    expect(effectiveBandwidthLimit({ bandwidthLimit: '12.5M' }, [{}, {}])).toBe(12_500_000);
+  });
+  it('is unlimited only when no cap is set anywhere', () => {
+    expect(effectiveBandwidthLimit({}, [{}])).toBeUndefined();
   });
 });
