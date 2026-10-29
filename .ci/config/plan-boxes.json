@@ -1324,6 +1324,30 @@
         "fe98f8bf"
       ]
     },
+    "agent/plans/PLAN-production-key-only.md": {
+      "status": "approved",
+      "owner": "unowned",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 1,
+      "open_sigs": [
+        "03025314",
+        "0e69a80c",
+        "30316aea",
+        "32036b55",
+        "48ac90a9",
+        "70f30a71",
+        "7f85bab7",
+        "bae1627f",
+        "c0e271b1",
+        "ddb2599f",
+        "e1ffe36e"
+      ],
+      "done_sigs": [
+        "16197a06"
+      ]
+    },
     "agent/plans/PLAN-promote-mutation-runner.md": {
       "status": "compacted",
       "owner": "99ccf057",

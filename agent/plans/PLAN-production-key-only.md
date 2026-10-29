@@ -177,12 +177,13 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: .ci/rediacc_ci/core/bws_env.py, scripts/ops/bws-map-refresh.py, .ci/scripts/quality/check_bws_map.py, .ci/rediacc_ci/tests/test_core_bws_env.py, .ci/rediacc_ci/tests/gates/test_gate_bws_env.py, .ci/rediacc_ci/tests/gates/test_gate_bws_map.py, .ci/rediacc_ci/tests/test_core_bws_env_park.py (new). Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_core_bws_env.py .ci/rediacc_ci/tests/test_core_bws_env_park.py .ci/rediacc_ci/tests/gates/test_gate_bws_env.py .ci/rediacc_ci/tests/gates/test_gate_bws_map.py` rc 0, and `npm run check:ci-bws-map` rc 0.
 
-- [ ] K2 [writer] Profiles, bench and prune. Changes:
+- [x] K2 [writer] Profiles, bench and prune. Changes:
   - secret-supply.json: `account-dev` (:279-284) and `backup-plane` (:315-320) bind the six unsuffixed names. `deploy-bench` (:327-332) binds the six unaliased. Each `why` is rewritten (production key, operator 2026-10-29).
   - `BENCH_LEGACY_BWS` maps API_KEY, JWT_SECRET and X25519_* to the unsuffixed names (prune_worker_secrets.py:73-82, docstring :17).
   - deploy_bench.py docstring :25.
   - backup_onprem.py:16-17 wording.
   - region_consistency_offline.py `_check_bench_profile` asserts that bench binds exactly the six signing/session store names every regional profile binds, unaliased.
+    (ticked) 2026-10-29T08:07:23Z by d778be9d: commit:bfc0eeee3 profiles bind the production six; 63 pytest, check:ci-region-consistency and check:ci-secret-supply rc 0
 
   Tests:
   - test_ops_deploy_bench.py:491-498 pins the unaliased six.
