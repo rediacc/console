@@ -1858,22 +1858,23 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 0,
+      "open": 2,
+      "done": 9,
       "open_sigs": [
+        "7c6e444b",
+        "b9daaf63"
+      ],
+      "done_sigs": [
         "112b6afb",
         "6fcb8c6c",
-        "7c6e444b",
         "7c7b94bb",
         "83bffb55",
         "884debe2",
         "9da781a9",
         "9f4cc8b1",
         "a63d1aaf",
-        "ae0adefa",
-        "b9daaf63"
-      ],
-      "done_sigs": []
+        "ae0adefa"
+      ]
     },
     "agent/plans/PLAN-ssh-key-source-ranges.md": {
       "status": "executing",

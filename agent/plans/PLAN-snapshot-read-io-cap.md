@@ -75,7 +75,7 @@ First-Seen: 2026-10-29
 
 ### R: renet (writer R)
 
-- [ ] R1. Pace and bound the read in chunkstore.
+- [x] R1. Pace and bound the read in chunkstore.
   - Owns: private/renet/pkg/chunkstore/hash.go, private/renet/pkg/chunkstore/hash_readcap_test.go (new), private/renet/pkg/chunkstore/pipeline_linux.go, private/renet/pkg/chunkstore/uploader.go, private/renet/pkg/chunkstore/uploader_readcap_test.go (new), private/renet/pkg/chunkstore/ratelimit.go
   - `PlanOptions` (private/renet/pkg/chunkstore/pipeline_linux.go:24) gains `ReadBytesPerSecond int64` and `HashWorkers int`. `buildPlan` threads them into `incrementalCells` and `rehashAllCells`, and from there into `HashCells`, which now takes a small `HashOptions` struct. `HashOptions{}` keeps today's behaviour, so the zero value changes nothing for library callers.
   - `hashCellsN` builds one `newRateLimiter(ReadBytesPerSecond)` that all its workers share. `hashCellInto` reads each cell in 1 MiB slices (a new `readSlice` constant, documented beside `paceSlice`). Before each `ReadAt` it waits on the limiter, and it feeds each slice into a streaming `sha256.New()`. The digest is byte-identical to the current one, and the device never sees a burst larger than 1 MiB per worker.
@@ -88,8 +88,9 @@ First-Seen: 2026-10-29
     - `TestHashCells_SlicedDigestMatchesWholeCell`: same hashes as `HashCell`, including the short last cell.
     - `TestUpload_ReadCapPacesCellReads`: a fake control plane, with sleep accounted on the fake clock.
   - Accept: `cd /home/developer/console/private/renet && go test ./pkg/chunkstore/ -run 'TestHashCells_(ReadCap|Parallelism|SlicedDigest)|TestUpload_ReadCap' -count=1` rc 0, and `go test ./pkg/chunkstore/ -count=1` rc 0.
+    (ticked) 2026-10-29T09:53:36Z by d778be9d: commit:9875bdd04
 
-- [ ] R2. Add the verb flags and record the values.
+- [x] R2. Add the verb flags and record the values.
   - Owns: private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_bwlimit_test.go
   - Register `--read-bwlimit` as a `rateFlag` whose default value is 50,000,000, with help text "Read cap for hashing and cell reads ...; 0 = unlimited". Register `--hash-parallelism` as an int defaulting to 1, with help text "0 = one per CPU, up to 16". Both go beside :155-158.
   - Read them next to :207-208. Add `ReadCap int64` and `HashWorkers int` to `snapshotRunOptions` (:400-409) and set them at :349-363.
@@ -100,8 +101,9 @@ First-Seen: 2026-10-29
     - `TestBackupSnapshot_ReadKnobDefaults`: with no argv, the values are 50,000,000 and 1. `--read-bwlimit 0` gives unlimited, `--read-bwlimit 400Mbps` gives 50,000,000, and `--read-bwlimit 100Mb` is refused.
     - `TestBackupSnapshot_ReadKnobsReachPlanAndUpload`: `planOptionsFor` and the upload options carry both values.
   - Accept: `cd /home/developer/console/private/renet && go test ./cmd/renet/ -run 'TestBackupSnapshot_(UnitAndHandTypedArgvCarryTheCap|ReadKnob)' -count=1` rc 0.
+    (ticked) 2026-10-29T09:53:39Z by d778be9d: commit:9875bdd04
 
-- [ ] R3. Carry the knobs through the function builder.
+- [x] R3. Carry the knobs through the function builder.
   - Owns: private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_snapshot_bwlimit_test.go
   - Add params `read_bwlimit` (ParamString, same grammar as `bwlimit`) and `hash_parallelism` (ParamInt) beside :191-192.
   - In `Build` (:731-748):
@@ -111,15 +113,17 @@ First-Seen: 2026-10-29
     - Both values go into the log fields.
   - Tests: extend the existing file. `read_bwlimit=100Mbps` gives `--read-bwlimit 12500000`. `read_bwlimit=0` gives `--read-bwlimit 0`. Unset gives no flag. `hash_parallelism=-1` is refused. The low-priority prefix stays first.
   - Accept: `cd /home/developer/console/private/renet && go test ./pkg/functions/commands/ -run TestBackupSnapshot -count=1` rc 0.
+    (ticked) 2026-10-29T09:53:41Z by d778be9d: commit:9875bdd04
 
-- [ ] R4. Regenerate the renet contract and run the renet gate.
+- [x] R4. Regenerate the renet contract and run the renet gate.
   - Owns: packages/shared/src/renet-contract/data/functions.schema.ts, packages/shared/src/renet-contract/data/functions.generated.ts
   - Regenerate with `renet functions generate-types` (the invocation in .ci/rediacc_ci/quality/renet_types.py:174-186), so that `read_bwlimit` and `hash_parallelism` appear next to `parallelism` (packages/shared/src/renet-contract/data/functions.schema.ts:114).
   - Accept: `npm run check:ci-renet-types` rc 0, and `npm run check:ci-renet` rc 0.
+    (ticked) 2026-10-29T09:53:44Z by d778be9d: commit:9875bdd04
 
 ### C: CLI plus unit generator (writer C)
 
-- [ ] C1. Add the knobs to `rdc backup snapshot`.
+- [x] C1. Add the knobs to `rdc backup snapshot`.
   - Owns: packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/__tests__/backup-snapshot-bwlimit.test.ts
   - Note: the verb lives in backup-storage.ts, not commands/backup.ts.
   - Extend `snapshotUploadParams` (:429-454) to take `readBwlimit` and `hashParallelism`:
@@ -133,8 +137,9 @@ First-Seen: 2026-10-29
     - Omitting both sends neither param.
     - `--read-bwlimit 100Mb` and `--hash-parallelism -1` are refused before `executeRepoFunction`.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-snapshot-bwlimit.test.ts` rc 0.
+    (ticked) 2026-10-29T09:53:46Z by d778be9d: commit:9875bdd04
 
-- [ ] C2. Add the strategy field and `backup strategy set --read-bwlimit`.
+- [x] C2. Add the strategy field and `backup strategy set --read-bwlimit`.
   - Owns: packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/commands/backup-strategy.ts, packages/cli/src/commands/__tests__/backup-strategy.test.ts, packages/cli/src/services/backup/backup-strategy-validate.ts
   - Add `readBandwidthLimit: z.string().optional()` to `BackupStrategyConfigSchema` (packages/shared/src/config-schema/schemas.ts:363-374), and classify `/resources/backupStrategies/*/readBandwidthLimit` as public (packages/shared/src/config-schema/sensitivity.ts:165).
   - In backup-strategy.ts:
@@ -147,8 +152,9 @@ First-Seen: 2026-10-29
     - `--destination d --read-bwlimit` is refused, because the read cap is strategy level only.
     - An unparseable value makes the strategy unschedulable.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-strategy.test.ts` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
+    (ticked) 2026-10-29T09:53:48Z by d778be9d: commit:9875bdd04
 
-- [ ] C3. Emit the read cap from the unit generator and the strategy `systemd-run`.
+- [x] C3. Emit the read cap from the unit generator and the strategy `systemd-run`.
   - Owns: packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts
   - `buildChunkStoreCommand` (:112-135) appends `--read-bwlimit <bytes/s>` after `--parallelism` when `strategy.readBandwidthLimit` is set, and emits nothing otherwise. The generated scheduled unit and the ad-hoc `systemd-run` (:207-213) both pick it up from that one function.
   - The doc comment on `LOW_PRIORITY_PROPERTIES` (:198) gains one sentence: the properties are a no-op under mq-deadline and none, and the cap on the verb carries the bound there.
@@ -157,24 +163,27 @@ First-Seen: 2026-10-29
     - A strategy without one renders no `--read-bwlimit`.
     - `--hash-parallelism` is never rendered.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-schedule-chunkstore.test.ts src/services/__tests__/backup-schedule.test.ts` rc 0.
+    (ticked) 2026-10-29T09:53:51Z by d778be9d: commit:9875bdd04
 
 ### I: CLI locales (writer I)
 
-- [ ] I1. Add the three new option strings in all 13 CLI locales (ar, de, en, es, et, fr, it, ja, ko, pt, ru, tr, zh).
+- [x] I1. Add the three new option strings in all 13 CLI locales (ar, de, en, es, et, fr, it, ja, ko, pt, ru, tr, zh).
   - Owns: packages/cli/src/i18n/locales/*/cli.json, packages/cli/src/i18n/locales/.translation-hashes.json
   - Keys: `commands.backup.snapshot.optionReadBwlimit`, `commands.backup.snapshot.optionHashParallelism`, `commands.backup.strategy.set.optionReadBwlimit`. They sit next to the existing `optionBwlimit` and `optionParallelism` (en/cli.json:1938-1939).
   - Each English value names the default, for example "Read cap for hashing: same units as --bwlimit; default 50M, 0 = unlimited" and "Cells hashed at once (default 1; 0 = one per CPU)".
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders` rc 0.
+    (ticked) 2026-10-29T09:53:53Z by d778be9d: commit:9875bdd04
 
 ### D: docs (writer D)
 
-- [ ] D1. Document the read cap and the scheduler caveat.
+- [x] D1. Document the read cap and the scheduler caveat.
   - Owns: packages/www/src/content/docs/*/backup-restore.md
   - In the chunk-store snapshot section (en :115-151 and its counterparts), add `--read-bwlimit` and `--hash-parallelism` with their defaults, plus a short paragraph:
     - the upload cap and the read cap are separate;
     - ionice affects only BFQ, so the read cap is what bounds disk load under mq-deadline or none.
   - Add `--read-bwlimit` to the `backup strategy set` option table (en :566-576) in all 13 locales.
   - Accept: `npm run check:cli-docs && npm run validate:cli-docs -w @rediacc/www && npm run check:ci-i18n-docs-untranslated && npm run check:ci-docs-structure-parity` rc 0.
+    (ticked) 2026-10-29T09:53:55Z by d778be9d: commit:9875bdd04
 
 ### L: live proof on hostinger (lead)
 
