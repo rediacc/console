@@ -173,7 +173,7 @@ class LocalExecutorService {
       }
     }
 
-    // A job still running past its window may already have created repos, but the identity refresh needs the finished repo on disk, so the `identityRefresh` plan step runs it when the job is seen to finish.
+    // A job still running past its window may already have created repos, but the identity refresh needs the finished repo on disk. The `identityRefresh` plan step (packages/cli/src/services/jobs/plans.ts) is meant to run it when the job is seen to finish; the step runner is not wired to repo verbs until PLAN-detached-jobs J16, so until then a backgrounded create refreshes no identity.
     if (result.success && result.state !== 'running' && !options.deferIdentityRefresh) {
       await maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
     }

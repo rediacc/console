@@ -95,6 +95,6 @@ def test_devcontainer_tofu_install_cannot_fail_container_creation() -> None:
     command = re.search(r'"postCreateCommand":\s*"([^"]*)"', text)
     assert command is not None
     steps = command.group(1)
-    assert "{ ./rdc.sh tools install tofu || true; } && " in steps
+    assert "{ ./rdc.sh tools install tofu || echo 'WARNING: rdc tools install tofu failed" in steps
     assert "&& ./rdc.sh tools install tofu" not in steps
     assert steps.index("tools install tofu") < steps.index("playwright install chromium")

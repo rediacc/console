@@ -128,8 +128,8 @@ describe('pending steps', () => {
     expect(dueSteps({ steps: migrate, stepsDone: [] }, 'running', [])).toHaveLength(0);
   });
 
-  it('a repo create plan refreshes identity when the job is seen to finish, carrying the size it licenses', () => {
-    // A --background create returns before the repo exists, so the refresh rides the ticket instead of the call.
+  it('the repo create plan names identityRefresh, and the step accepts the size it licenses', () => {
+    // The plan table and the step's declared params only: the producer that fills these params for a --background create arrives with PLAN-detached-jobs J16, whose Accept carries that test.
     expect(JOB_PLANS['repo create'].steps).toContain('identityRefresh');
     const step = planStep('identityRefresh', {
       function: 'repository_create',

@@ -131,6 +131,16 @@ def test_the_real_floors_refuse_a_fixture_sized_corpus(tmp_path) -> None:
         gate.scan(str(root), gate.MIN_SOURCES, gate.MIN_ACCOUNT_SRC)
 
 
+def test_main_floors_are_real_on_the_repository_and_one_on_a_fixture(tmp_path) -> None:
+    """main() picks the floors: the default run (this repository) scans at MIN_SOURCES and MIN_ACCOUNT_SRC, and only a --root fixture scans at 1 and 1."""
+    fixture = _run("--root", str(_tree(tmp_path)))
+    assert fixture.returncode == 0, fixture.stderr
+    assert "(floors 1 and 1)" in fixture.stdout
+    real = _run()
+    assert real.returncode == 0, real.stderr
+    assert "(floors %d and %d)" % (gate.MIN_SOURCES, gate.MIN_ACCOUNT_SRC) in real.stdout
+
+
 def test_home_findings_accepts_the_live_shape() -> None:
     """The real config-server-key.ts, read not written: its shape is the one the gate expects."""
     text = (paths.repo_root() / HOME).read_text(encoding="utf-8")
