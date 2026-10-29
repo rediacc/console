@@ -123,9 +123,7 @@ def bench_expected(root: pathlib.Path | None = None) -> list[str]:
     base = paths.repo_root() if root is None else root
     text = base.joinpath(offline.BENCH_DEPLOY_REL).read_text(encoding="utf-8")
     keys = offline.bench_payload_keys(text)
-    # An extractor that stops matching deploy_bench would yield too few names, and every live
-    # bench secret would read as an extra that --delete removes. Below the regional key count
-    # (bench pushes the same set), refuse rather than guess.
+    # An extractor that stops matching deploy_bench would yield too few names, and every live bench secret would read as an extra that --delete removes. Below the regional key count (bench pushes the same set), refuse rather than guess.
     if len(keys) < len(expected_names()):
         raise ValueError(
             "deploy_bench payload yielded %d key(s), fewer than the %d a regional deploy pushes; failing closed, no verdict"
