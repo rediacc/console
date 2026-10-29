@@ -274,12 +274,13 @@ R2's changes:
 - [ ] P0 [lead] Plan lint. Run the two gates on this file.
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0 and `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
 
-- [ ] R1 [writer] renet `backup export` and `backup import` (Design 2, 8).
+- [x] R1 [writer] renet `backup export` and `backup import` (Design 2, 8).
   - Both are new cobra commands in their own files, registered in private/renet/cmd/renet/backup.go.
   - Both share a session core: the stdin line reader, the idle timer and the signal handling with the deferred-until-thaw rule.
   - export: lock, checkpoint, snapshot, ready line, `sha256` with hole skipping and the read cap, cleanup on every exit path.
   - import: exclusive lock, staging create, resume or seed, space check, `finalize` (hash, `verifyRepositoryIntegrity`, owner and mode, rename), `discard`.
   - Help strings use `i18n.T` keys only if the renet extract baseline test demands them, which brings the locale files into this box.
+    (ticked) 2026-10-29T12:43:48Z by d778be9d: commit:12717d20a
 
   Tests:
   - export against a temp datastore with a fake snapshotter seam prints one parseable ready line and leaves no `.snapshot-*` after each of EOF, `quit`, SIGHUP and a 1-second idle timeout;

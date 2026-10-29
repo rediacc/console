@@ -85,8 +85,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 0,
+      "open": 13,
+      "done": 1,
       "open_sigs": [
         "129cdf9a",
         "339bf791",
@@ -94,7 +94,6 @@
         "5c59f4aa",
         "5e91f886",
         "7692f2db",
-        "7e3d19ee",
         "85493dc7",
         "89621109",
         "a7dd084e",
@@ -103,7 +102,9 @@
         "fa769782",
         "fcfb17fb"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "7e3d19ee"
+      ]
     },
     "agent/plans/PLAN-backup-meter-orphaned-chunks.md": {
       "status": "approved",
@@ -1881,16 +1882,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 10,
+      "open": 3,
+      "done": 11,
       "open_sigs": [
-        "1cbdff34",
         "8c7c85d4",
         "b9daaf63",
         "e990ac90"
       ],
       "done_sigs": [
         "112b6afb",
+        "1cbdff34",
         "6fcb8c6c",
         "7c6e444b",
         "7c7b94bb",

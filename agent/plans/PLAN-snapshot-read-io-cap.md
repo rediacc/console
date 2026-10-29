@@ -236,10 +236,11 @@ Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answer
 - A snapshot runs under a hard CPU ceiling, expressed as a share of all cores: default 50 %, which on an 8-core machine is `CPUQuota=400%`. The kernel enforces it, so it holds whatever the repo size, unlike a load-average rule.
 - The hostinger seed stops on CPU, not load: backup CPU above 50 % of all cores for three samples in a row.
 
-- [ ] R5. renet: run backup_snapshot inside a transient systemd scope with CPUQuota.
+- [x] R5. renet: run backup_snapshot inside a transient systemd scope with CPUQuota.
   - Owns: private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_snapshot_bwlimit_test.go, private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_bwlimit_test.go
   - The backup_snapshot function takes `cpu_limit` (a percent of all cores, 1-100, default 50) and wraps the verb in `systemd-run --scope --quiet -p CPUQuota=<percent x nproc>%` inside the existing nice and ionice prefix. Where systemd-run is absent it falls back to the current prefix and records that in the record (`cpuQuota: null`). The verb records `cpuLimitPercent` and `cpuQuota` in its record.
   - Accept: `cd private/renet && go test ./pkg/functions/commands/ -run TestBackupSnapshot -count=1 && go test ./cmd/renet/ -run TestBackupSnapshot -count=1` rc 0.
+    (ticked) 2026-10-29T12:43:44Z by d778be9d: commit:12717d20a
 - [ ] C4. CLI: `rdc backup snapshot --cpu-limit <percent>`, a strategy-level `cpuLimit`, and CPUQuota on the scheduled unit and the ad-hoc systemd-run.
   - Owns: packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/backup-strategy.ts, packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/i18n/locales/*/cli.json, and their tests
   - The unit carries `CPUQuota=<percent x nproc>%`, with nproc read on the machine at schedule time; the snapshot summary prints the CPU limit.
