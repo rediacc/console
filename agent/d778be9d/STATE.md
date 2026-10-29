@@ -1,23 +1,24 @@
-## SESSION d778be9d 2026-10-28T19:58:37Z
+## SESSION d778be9d 2026-10-29T06:55:18Z
 
-# d778be9d STATE (2026-10-28 ~20:50Z, branch 1023-1, unpushed, no PR)
+# STATE d778be9d (2026-10-29 ~07:15Z), branch 1023-1, unpushed
 
 ## Big pieces
-- PLAN-backup-program hostinger -> R2 cutover (Q0-Q16) behind the merge; Q1 = push, PR, merge, stable promote (#2dcb8bae).
-- ci:quick green: 9 triage groups committed (599bb20a2, 528cd9098, c7023a465, 8959ce941, cc75046f3, b4f5f01ea, renet aeff68a, 853f506ee); leftovers delegated.
+- PLAN-backup-program (41 open): hostinger cutover to R2 at 100 Mbps; gap boxes K10/K11/N4b/S5/S12 code landing.
+- PLAN-org-executor-connect-timeout-relocate: E9 bench rerun with the reachability probe, then E10.
+- Region consistency (operator 2026-10-29): 7-target secrets/buckets + check:ci-region-consistency.
+
+## Operator orders (2026-10-29)
+Brave, long term, local deploys, never lose repo data; hostinger backups 100 Mbps, nice/ionice, probe first, one repo at a time, Q11 last, Q11 text from measured numbers.
+
+## Done this context
+stable EU deployed (RELEASE_ASKED 06:21Z) fdb7d553 then ce7596d0, prev a1476077, D1 restore before 06:21Z; edge EU 0bf24b3f. Commits 5bce4385a (probe E11-E14), e8a1e28d4 + account 3fabea6 (K11), account 8237ac0 + 30dac34, 58af6cad6 (N4b). hostinger Q2-Q4 done, strategy not bound.
 
 ## Delegated
-- aed0d6f2b88c30a77 #512bb704: builder-env-contract patch, check_plan_folders branches, proof-tiers:94 WK lookup; owns scripts/gates/check-builder-env-contract.ts, .ci/scripts/quality/check_plan_folders.py, .ci/rediacc_ci/proof/live_tier.py, .ci/config/proof-tiers.json + tests; accept those gates rc=0.
-- a4896bac56892e683 #736c233b: guard message reader sees -F behind timeout/env; owns .claude/rediacc_hooks PSC + block_unproven_bulk_transform + tests; accept guard tests + check:ci-hook-integrity rc=0.
-- bg shell b4mz8ixen #cced1ae5: L3 prune apply loop on hostinger (mail..miscellaneous), log /tmp/l3-loop.log, final dry run /tmp/l3-after.json. mautic done (E100, 12.5s, 1.8GB).
-
-## Operator orders in force
-- 17:36Z "I allow for all Blocking the cutover" (#2dcb8bae). Stable only via promote-stable.yml from main with RELEASE_ASKED from a fresh AskUserQuestion (<=300 s).
-- L3 apply all safe repos (#cced1ae5, skip hermes); bump proxy node:24-slim to newest major (#79e545c4).
+- add0931a9e064484a #97c844e9: region matrix + gate + provisioning (/tmp/writers-now/region-*.md). Accept: gate selftest + offline run.
+- a61842cb7ce9e18bf #2cfdf712 (worktree): bwlimit/parallelism/nice through backup_snapshot, CLI, strategy timer; diffs /tmp/bwlimit-renet.diff, /tmp/bwlimit-console.diff.
 
 ## Next action
-1. When the prune loop exits: read /tmp/l3-loop.log and /tmp/l3-after.json, record per repo, tick L3 (sig from the tool's own list, NOT a survey; verify the label). Then fix #90ed58ba (prune cancels its own stop after a renet sync) via a renet/CLI writer.
-2. As each delegated agent reports: spot-check, commit by literal path (no `timeout` prefix on bulk commits), tick with the sha.
-3. Leftover literal-sources in CLI tests (authorized-keys.test.ts:35, runtime-status-skew.test.ts, 04-repository-lifecycle.test.ts:540, check-external-links.ts:102), test_ops_deploy_bench.py I001, node bump via npm run pins -- bump --major.
-4. Regenerates: gate-bind --write; shard:place quality-pytest and test-renet-go; enumeration-vacuity --write-baseline; pins bumps (agent-browser, awscli, wrangler). After 2026-10-29T00:00Z: renet go get golang.org/x/net@v0.62.0.
-5. Rerun ci:quick + vm:check --changed on a still tree; record LP-hostinger 7692f2db; push; PR with Operational-Reason; babysit; merge; stable promote with a fresh ASKED.
+1. Commit the staged W1 drill legs + W4 K10 files once the region agent's files settle (gen-docs reads the whole tree); paths: backup.py, backup_check_trigger.py, legs n/o tests, quality-pytest.json, ct-backup-perf.yml, suite 31 files, chunkCliHarness.ts, check-e2e-coverage.ts, check-shard-manifest-coverage.ts, env-manifest.json, doc-registry.md, 07-port-brief.md.
+2. bwlimit report: apply diffs, go test + vitest, commit renet then pointer; resume cutover agent afc71e7f084a62df5 at Q5 (mail:bp-probe at 100 Mbps, record rate + hostinger CPU/load), then single repos, then Q11.
+3. Region report: commit gate, create missing buckets, push secrets (stable us/asia need RELEASE_ASKED).
+4. E9 after the backup writers. S6 #53b05748 fires 2026-10-31T07:07Z.
