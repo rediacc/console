@@ -240,6 +240,14 @@ def offline_plants() -> list[
                 ),
             ),
         ),
+        (
+            "profile: bench JWT secret from the DEV name",
+            ("bench", "profile"),
+            prof(
+                "deploy-bench",
+                lambda p: swap(p["required"], "ACCOUNT_JWT_SECRET", "ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET"),
+            ),
+        ),
         ("profile: a key the bench payload stops pushing", ("bench", "profile"), bench_payload),
         ("profile: a deleted regional profile", ("edge-asia", "profile"), drop_profile),
         ("benign: reordered R2 blocks", None, reorder),

@@ -14,7 +14,7 @@ The PUT is an unmeasured step for the ASSETS binding (only the DELETE was measur
 
 Run: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- python3 -m rediacc_ci.ops.prune_worker_secrets --region eu --target stable`
 
-BENCH. `--region bench` selects the bench account Worker (its name read from `workers/account/wrangler.bench.toml`, the file `deploy_bench` deploys with). Its expected set is the key set of `deploy_bench.secrets_payload()`, read with the region-consistency gate's own extractor, and its legacy names map through `BENCH_LEGACY_BWS`, because bench binds the DEV X25519 pair, JWT secret and server API key, the unsuffixed production ED25519 pair and the `_BENCH` Turnstile secret (`.ci/config/secret-supply.json`, `deploy-bench`). Bench is never part of `--region all`: it is chosen by name. Profile for a bench run: `deploy-workers` (Cloudflare token, account id) plus the bws store read the archive needs.
+BENCH. `--region bench` selects the bench account Worker (its name read from `workers/account/wrangler.bench.toml`, the file `deploy_bench` deploys with). Its expected set is the key set of `deploy_bench.secrets_payload()`, read with the region-consistency gate's own extractor, and its legacy names map through `BENCH_LEGACY_BWS`, because bench binds the six unsuffixed production signing and session names and the `_BENCH` Turnstile secret (`.ci/config/secret-supply.json`, `deploy-bench`). Bench is never part of `--region all`: it is chosen by name. Profile for a bench run: `deploy-workers` (Cloudflare token, account id) plus the bws store read the archive needs.
 
 Options: `--region eu|us|asia|bench|all` (default all; `all` excludes bench), `--target stable|edge|all` (default all), `--archive` (archive then delete; needs an explicit `--region`; prefer it to a bare `--delete`), `--dry-run` (with `--archive`: report which names have a bws value, write nothing), `--delete` (needs an explicit `--region`; prints each deleted name, keeps no copy), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
 
@@ -70,14 +70,14 @@ LEGACY_BWS: dict[str, str] = {
     "TURNSTILE_SECRET_KEY": "CLOUDFLARE_TURNSTILE_SECRET_KEY",
     "OTLP_CLIENT_CREDENTIALS": "OBS_OTLP_CREDENTIALS_{SUFFIX}",
 }
-# The same legacy names on the bench Worker, whose successors come from the deploy-bench profile's bindings (secret-supply.json): DEV X25519 pair, JWT secret and server API key, the unsuffixed production ED25519 pair, the bench Turnstile secret.
+# The same legacy names on the bench Worker, whose successors come from the deploy-bench profile's bindings (secret-supply.json): the six unsuffixed production signing and session names and the bench Turnstile secret.
 BENCH_LEGACY_BWS: dict[str, str] = {
-    "API_KEY": "ACCOUNT_SERVER_API_KEY_DEV",
-    "JWT_SECRET": "ACCOUNT_JWT_SECRET_DEV",
+    "API_KEY": "ACCOUNT_SERVER_API_KEY",
+    "JWT_SECRET": "ACCOUNT_JWT_SECRET",
     "ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
     "ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
-    "X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY_DEV",
-    "X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY_DEV",
+    "X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY",
+    "X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY",
     "TURNSTILE_SECRET_KEY": "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH",
 }
 BENCH = "bench"

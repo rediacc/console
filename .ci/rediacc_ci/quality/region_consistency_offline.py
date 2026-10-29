@@ -55,6 +55,15 @@ BENCH_FAMILIES = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY",
 )
+# The six signing and session store names every regional profile binds and bench binds the same way, unaliased (production key, operator 2026-10-29).
+BENCH_UNALIASED = (
+    "ACCOUNT_ED25519_PRIVATE_KEY",
+    "ACCOUNT_ED25519_PUBLIC_KEY",
+    "ACCOUNT_X25519_PRIVATE_KEY",
+    "ACCOUNT_X25519_PUBLIC_KEY",
+    "ACCOUNT_SERVER_API_KEY",
+    "ACCOUNT_JWT_SECRET",
+)
 # Vars each channel's account toml carries beyond REGION / WEBAUTHN_RP_ID / WEBAUTHN_ORIGIN, with the value where it is fixed.
 CHANNEL_VARS: dict[str, dict[str, str | None]] = {
     STABLE: {},
@@ -508,6 +517,16 @@ def _check_bench_profile(t: Target, prof: dict, suffixes: set[str]) -> list[Find
         for family in BENCH_FAMILIES
         if "%s_%s>%s" % (family, t.suffix, family) not in specs
     ]
+    f.extend(
+        Finding(t.id, "profile", "%s does not bind %s unaliased" % (t.profile, n))
+        for n in BENCH_UNALIASED
+        if n not in specs
+    )
+    f.extend(
+        Finding(t.id, "profile", "%s binds `%s`, which must be the unaliased production name" % (t.profile, spec))
+        for spec in specs
+        if ">" in spec and spec.split(">")[1] in BENCH_UNALIASED
+    )
     foreign = [*sorted(suffixes - {t.suffix}), pusher.CHANNEL_STABLE, pusher.CHANNEL_EDGE]
     stores = [s.split(">")[0] for s in specs]
     f.extend(

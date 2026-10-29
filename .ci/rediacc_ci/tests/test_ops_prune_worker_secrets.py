@@ -118,7 +118,7 @@ def test_bench_extras_are_the_seven_legacy_names_and_each_maps_to_a_bws_key() ->
     live += [{"name": "__ARCHIVE_OLD", "type": "secret_text"}]
     assert verb.extras(live, verb.expected_for(row)) == legacy
     assert all(verb.bws_key(n, "", "bench") for n in legacy)
-    assert verb.bws_key("JWT_SECRET", "", "bench") == "ACCOUNT_JWT_SECRET_DEV"
+    assert verb.bws_key("JWT_SECRET", "", "bench") == "ACCOUNT_JWT_SECRET"
 
 
 def test_run_region_bench_lists_the_extras_and_never_all() -> None:

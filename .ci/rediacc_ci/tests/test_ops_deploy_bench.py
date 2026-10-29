@@ -483,19 +483,22 @@ def _deploy_bench_profile() -> dict:
     return supply["consumers"]["deploy-bench"]
 
 
-def test_bench_signs_licences_with_the_production_ed25519_pair():
-    """Operator ruling 2026-10-27: the licence signer is the unsuffixed production pair the edge and stable account-secrets profiles bind, never the DEV one."""
-    required = _deploy_bench_profile()["required"]
-    assert "ACCOUNT_ED25519_PRIVATE_KEY" in required
-    assert "ACCOUNT_ED25519_PUBLIC_KEY" in required
-    assert not any(line.startswith("ACCOUNT_ED25519_") and "_DEV" in line for line in required)
+SIX = (
+    "ACCOUNT_ED25519_PRIVATE_KEY",
+    "ACCOUNT_ED25519_PUBLIC_KEY",
+    "ACCOUNT_X25519_PRIVATE_KEY",
+    "ACCOUNT_X25519_PUBLIC_KEY",
+    "ACCOUNT_SERVER_API_KEY",
+    "ACCOUNT_JWT_SECRET",
+)
 
 
-def test_bench_keeps_the_dev_x25519_envelope_key():
-    """The X25519 pair is the E2E envelope key every bench config already holds as its e2ePublicKey; it is not the licence signer and stays DEV."""
+def test_bench_binds_the_six_unaliased_production_names():
+    """Operator rulings 2026-10-27 and 2026-10-29: bench binds the unsuffixed production signing and session names, never a `_DEV` one."""
     required = _deploy_bench_profile()["required"]
-    assert "ACCOUNT_X25519_PRIVATE_KEY_DEV > ACCOUNT_X25519_PRIVATE_KEY" in required
-    assert "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY" in required
+    for name in SIX:
+        assert name in required
+    assert not any(line.startswith(SIX) and "_DEV" in line for line in required)
 
 
 # --------------------------------------------------------------------------- The keyless bench portal never lands where production uploads from (2026-10-28) ---------------------------------------------------------------------------
