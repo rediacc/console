@@ -1,25 +1,21 @@
-## SESSION d778be9d 2026-10-29T11:20:38Z
+## SESSION d778be9d 2026-10-29T12:00:59Z
 
-# STATE d778be9d (2026-10-29T11:2xZ, branch 1023-1, unpushed, turbo batch-end)
+# STATE d778be9d (2026-10-29T12:0xZ, branch 1023-1, unpushed, turbo batch-end)
 
 ## Big pieces
-- PLAN-detached-jobs (QUEUE 33): amended af9ea490f (every machine command one job, 20 s attach, ticket steps, overlap class matrix); wave 1 running.
-- PLAN-backup-program (QUEUE 2): hostinger seed resumed (read cap passed L1).
-- PLAN-backup-local-image (QUEUE 36): promoted, no writers yet.
-
-## Done this context
-- Timeout fix d6ea91581; K3+K4 824f3bd7b; --no-seed 70f55f7c0; read cap cd82f93/9875bdd04, L1 passed (29bbd48cd); metering A1/R1/C1 landed (8bb2a14cc, account d124c0d); -b refuses ten unsafe verbs (53e96d940); snapshot record + repo delete retry (fca380390); promote message (afcb5c297).
+- PLAN-detached-jobs (QUEUE 33): J0, J0b, J1 (renet ea953b6), J1b (renet 866187a), J5 (cd565de8b), J12+J23 (e7b2d599e) ticked; wave 2 running.
+- PLAN-backup-program (QUEUE 2): hostinger seed resumed with --parallelism 1 (operator ruling), from erpnext.
+- PLAN-backup-local-image (QUEUE 36): promoted, writers after the detached-jobs executor lands.
 
 ## Delegated
-- afc71e7f084a62df5 #863660ef: hostinger seed: L2 demo-heartbeat then bulk; stop rule baseload+3.5 x3; records above Q12 in PLAN-backup-program.
-- afd28f8f5673d8c39 #783310da: J0b audit -> /tmp/j0b-audit.md; lead pastes into plan, ticks J0b, amends Concurrency.
-- ad68dacd45d9886af #4c830529: J1 renet in worktree; lead copies files (never patch), renet commit then pointer.
-- ad818f284efbed01c #85a41674: J5 ticket store in worktree; lead copies files, regenerates cli contract and docs.
-- acd3297bac9f1dfbb #f6dbb39d: J12 + J23 python tools in main tree.
+- afc71e7f084a62df5 #863660ef: hostinger seed erpnext..demo-stackoverflow, --bwlimit 100Mbps --parallelism 1, stop baseload+3.5 x3; records above Q12.
+- af294e4ec7e8de6a6 #b5310f59 #97e7e247: J1c + lock-class alignment + 866187a3 findings, renet worktree. Land by committing in the worktree clone, cherry-pick onto main renet in /tmp/rclone-fix, ff private/renet, pointer commit.
+- a70c3474d33dfbde7 #06ea7ea8: J2/J2b/J3/J3b contract + executor, CLI worktree. Copy files (check drift vs main; merge locales by key), regenerate contract and docs, commit.
+- a9eb7a59256d10697 #5680b50a: J15 steps + runJob, CLI worktree; same landing.
 
 ## Next action
-1. Settle the open per-commit review findings now (a5fbc437 x4, afcb5c29 x2, fca38039 x2, and any on af9ea490, 29bbd48c): fix or mark with path:line evidence, then --review-commit.
-2. As each delegated report lands: spot-check, accept, copy worktree files (no +++ /dev/null), regenerate, commit by path (submodule first), --plan-investigate + --plan-tick, close the item.
-3. Wave 2: J1b after J1; J2b, J3, J3b after J0b; J15 after J1b+J5; then J16-J20, J6/J6b, J8/J8b, J21, J22, J9; tick J24 (fourth-round rulings recorded in afcb5c297).
-4. PLAN-backup-local-image writers once the detached-jobs executor files are free.
+1. Settle open findings now: d4e96d17 (2), 866187a3 goes to af294e (do not duplicate), d1e8edcb and 65243dc8 if any; fix or mark with path:line, then --review-commit.
+2. Land each wave-2 report: spot-check, accept, land as above, --plan-investigate + --plan-tick, close the item.
+3. Then wave 3: J4 and J16-J20 conversions (after J3b and J15), J6/J6b proxy, J8/J8b MCP, J21 status, J22 BACKGROUND_UNSAFE removal, J9 docs, J7 web console; tick J24 (fourth-round rulings in afcb5c297).
+4. PLAN-backup-local-image writers; PLAN-snapshot-read-io-cap remaining L2 is ticked? check.
 5. Metering L0 step 4 after 2026-10-30T03:30Z (#533d7a65); S6 default from 2026-10-31T06:00Z (#53b05748).
