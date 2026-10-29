@@ -19,7 +19,7 @@ interface McpMeta {
   descriptionOverride?: string;
   /** Commander options (long names without --) to exclude from the MCP Zod schema. */
   excludeOptions?: string[];
-  /** Commander positional args that are optional in CLI but required in MCP. */
+  /** Commander positional args, or options by long name, that are optional in CLI but required in MCP. */
   requiredArgs?: string[];
   /** Always append these raw argv fragments to the command (e.g., ['--force']). */
   appendArgs?: string[];
@@ -60,13 +60,14 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['follow', 'debug'],
     },
   },
-  // `--timeout` is a required field in the MCP schema (the flag takes `<duration>`), so a call always bounds the wait; the tool is on the write budget (the longest) because a wait runs until its timeout, not for one quick read. Callers keep the duration under it.
+  // `--timeout` is a required field in the MCP schema (requiredArgs), so a call always bounds the wait; the tool is on the write budget (the longest) because a wait runs until its timeout, not for one quick read. Callers keep the duration under it.
   'job wait': {
     mcp: {
       destructive: false,
       idempotent: true,
       timeout: 'write',
       excludeOptions: ['debug'],
+      requiredArgs: ['timeout'],
       descriptionOverride:
         'Wait for a detached job to finish and return its outcome. timeout is required and must stay under 5m; a job still running at the timeout keeps running and can be waited on again',
     },

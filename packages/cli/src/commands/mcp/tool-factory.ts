@@ -78,7 +78,7 @@ function flagToSchemaKey(long: string): string {
 /**
  * Does a value-taking option take a REQUIRED value (`<v>`) rather than an
  * optional one (`[v]`)? The contract collapses both into `valueTaking`, so the
- * distinction, which decides whether the derived field is required, is read
+ * distinction, which decides whether a mandatory option's field is required, is read
  * back off the raw Commander flags string the contract carries verbatim. This is
  * exactly Commander's own `Option.required`.
  */
@@ -98,13 +98,14 @@ function deriveArgType(pos: ContractPositional, isRequired: boolean): z.ZodType 
 }
 
 /** Derive a Zod type for a single contract option. */
-function deriveOptionType(opt: ContractOption): z.ZodType {
+function deriveOptionType(opt: ContractOption, forceRequired = false): z.ZodType {
   if (!opt.valueTaking) return z.boolean().optional().describe(opt.label);
   const base =
     opt.choices && opt.choices.length > 0
       ? z.enum(opt.choices as [string, ...string[]]).describe(opt.label)
       : z.string().describe(opt.label);
-  return takesRequiredValue(opt) ? base : base.optional();
+  // An option is a required field only when the CLI itself requires it (mandatory) or the tool's requiredArgs names it; `<v>` alone says the flag needs a value WHEN given, not that the flag must be given.
+  return takesRequiredValue(opt) && (opt.mandatory || forceRequired) ? base : base.optional();
 }
 
 /**
@@ -126,10 +127,10 @@ function deriveSchema(
 
   for (const opt of options) {
     const key = flagToSchemaKey(opt.long);
-    if (!argNames.has(key)) schema[key] = deriveOptionType(opt);
+    if (!argNames.has(key)) schema[key] = deriveOptionType(opt, requiredSet.has(opt.long));
   }
 
-  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo verb exposes both, make BOTH optional MCP fields, a value-taking option otherwise derives to a REQUIRED field, so exposing both would demand both. The auto-deriver can't express "exactly one", so the runtime (resolveRepoTarget) enforces it and returns a clear error for neither/both.
+  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo verb exposes both, make BOTH optional MCP fields, so a requiredArgs entry or a mandatory flag can never make the pair demand both. The auto-deriver can't express "exactly one", so the runtime (resolveRepoTarget) enforces it and returns a clear error for neither/both.
   if ('machine' in schema && 'cluster' in schema) {
     schema.machine = (schema.machine as z.ZodType).optional();
     schema.cluster = (schema.cluster as z.ZodType).optional();
