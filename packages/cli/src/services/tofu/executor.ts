@@ -6,7 +6,7 @@
  */
 
 import { type ExecFileOptions, execFile } from 'node:child_process';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { writeStderr, writeStdout } from '../core/request-context.js';
 
@@ -21,10 +21,17 @@ export class TofuExecutor {
 
   constructor(private readonly workDir: string) {}
 
-  /** Write main.tf.json to the work directory. */
+  /**
+   * Write main.tf.json to the work directory. The config carries the provider API token and the
+   * state tofu writes beside it carries resource secrets, so the directory is 0700 and the file
+   * 0600 (chmod as well, since mkdir and writeFile modes apply only on creation).
+   */
   async writeConfig(config: Record<string, unknown>): Promise<void> {
-    await mkdir(this.workDir, { recursive: true });
-    await writeFile(join(this.workDir, 'main.tf.json'), JSON.stringify(config, null, 2));
+    await mkdir(this.workDir, { recursive: true, mode: 0o700 });
+    await chmod(this.workDir, 0o700);
+    const file = join(this.workDir, 'main.tf.json');
+    await writeFile(file, JSON.stringify(config, null, 2), { mode: 0o600 });
+    await chmod(file, 0o600);
   }
 
   /** Run `tofu init`. */
