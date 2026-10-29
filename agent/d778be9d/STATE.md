@@ -1,21 +1,20 @@
-## SESSION d778be9d 2026-10-29T12:00:59Z
+## SESSION d778be9d 2026-10-29T12:46:52Z
 
-# STATE d778be9d (2026-10-29T12:0xZ, branch 1023-1, unpushed, turbo batch-end)
+# STATE d778be9d (2026-10-29T13:1xZ, branch 1023-1, unpushed, turbo batch-end)
 
 ## Big pieces
-- PLAN-detached-jobs (QUEUE 33): J0, J0b, J1 (renet ea953b6), J1b (renet 866187a), J5 (cd565de8b), J12+J23 (e7b2d599e) ticked; wave 2 running.
-- PLAN-backup-program (QUEUE 2): hostinger seed resumed with --parallelism 1 (operator ruling), from erpnext.
-- PLAN-backup-local-image (QUEUE 36): promoted, writers after the detached-jobs executor lands.
+- PLAN-detached-jobs (33): done J0 J0b J1 J1b J1c J5 J10 J12 J15 J23 J24. J2/J2b/J3/J3b finished in worktree .claude/worktrees/agent-a70c3474d33dfbde7 (agent resumed to fix 74 broken tests); LAND ONLY AFTER THE HOSTINGER SEED ENDS (it switches every executor call to jobs). Plan agent build list (14 units R1-R8, C1-C8, L1) is in agent aa8738744cfa49009's report; spawn after J3b lands.
+- PLAN-snapshot-read-io-cap (34): R1-R5 C1-C3 I1 D1 L1 done; CPU ceiling ruling (50 % of cores, CPUQuota) R5 landed renet ccd12cb+881ded4; C4 queued (#3f3bf224, blocked by detached-jobs Owns on backup-storage.ts); L2 and L3 live.
+- PLAN-backup-local-image (36): R1 landed renet 174a1cb; X1+S1 done in worktree .claude/worktrees/agent-ac660471adf2ea20d (copy rsync.ts, services/backup-image/state.ts, preflight.ts and their tests; hold T1's four red test files there until C1).
+- PLAN-backup-program (2): seed under the CPU rule (busy > 50 % x3), now also CPUQuota=400% via renet R5.
 
 ## Delegated
-- afc71e7f084a62df5 #863660ef: hostinger seed erpnext..demo-stackoverflow, --bwlimit 100Mbps --parallelism 1, stop baseload+3.5 x3; records above Q12.
-- af294e4ec7e8de6a6 #b5310f59 #97e7e247: J1c + lock-class alignment + 866187a3 findings, renet worktree. Land by committing in the worktree clone, cherry-pick onto main renet in /tmp/rclone-fix, ff private/renet, pointer commit.
-- a70c3474d33dfbde7 #06ea7ea8: J2/J2b/J3/J3b contract + executor, CLI worktree. Copy files (check drift vs main; merge locales by key), regenerate contract and docs, commit.
-- a9eb7a59256d10697 #5680b50a: J15 steps + runJob, CLI worktree; same landing.
+- afc71e7f084a62df5 #863660ef: hostinger seed observability, gitlab, nextcloud, miscellaneous, demo-stackoverflow.
+- a70c3474d33dfbde7 #06ea7ea8: fix the 74 tests in its worktree; land after the seed.
+- a6a84342893530c1b #b9eb0267: renet i18n regression (54 job literals), ccd12cbf.2, darwin vet; land via scratch clone /tmp/rclone-fix + ff private/renet + pointer.
 
 ## Next action
-1. Settle open findings now: d4e96d17 (2), 866187a3 goes to af294e (do not duplicate), d1e8edcb and 65243dc8 if any; fix or mark with path:line, then --review-commit.
-2. Land each wave-2 report: spot-check, accept, land as above, --plan-investigate + --plan-tick, close the item.
-3. Then wave 3: J4 and J16-J20 conversions (after J3b and J15), J6/J6b proxy, J8/J8b MCP, J21 status, J22 BACKGROUND_UNSAFE removal, J9 docs, J7 web console; tick J24 (fourth-round rulings in afcb5c297).
-4. PLAN-backup-local-image writers; PLAN-snapshot-read-io-cap remaining L2 is ticked? check.
-5. Metering L0 step 4 after 2026-10-30T03:30Z (#533d7a65); S6 default from 2026-10-31T06:00Z (#53b05748).
+1. Land X1+S1 now: copy the files from the ac660471 worktree (check drift), run vitest on rsync-inplace-partial, state, preflight, tsc and biome; commit; tick X1 and S1.
+2. Settle open findings: 174a1cb9 (3), 59fdb8e0, f6620184 (2).
+3. When the seed ends: land the executor (copy, drift check, locales by key, regenerate contract and docs, the full CLI suite), tick J2 J2b J3 J3b, then spawn C4 and the Plan agent's build-now units.
+4. Metering L0 step 4 after 2026-10-30T03:30Z (#533d7a65); S6 default from 2026-10-31T06:00Z, cron 08:07Z (#53b05748).
