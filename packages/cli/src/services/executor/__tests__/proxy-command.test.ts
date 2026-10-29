@@ -16,7 +16,12 @@ import {
   ProxyStreamTruncatedError,
   ProxyVersionMismatchError,
 } from '../proxy-client.js';
-import { assertDetachable, assertProxyCapable, paramsFromCommand } from '../proxy-command.js';
+import {
+  assertDetachable,
+  assertProxyCapable,
+  BACKGROUND_UNSAFE,
+  paramsFromCommand,
+} from '../proxy-command.js';
 
 /**
  * Parse argv with a throwaway Commander tree and hand back the action command.
@@ -122,18 +127,9 @@ describe('assertDetachable', () => {
   });
 
   it('refuses a detachable verb that is unsafe with --background, naming why', () => {
-    for (const verb of [
-      'repo up',
-      'repo fork',
-      'repo checkout',
-      'repo commit',
-      'repo push',
-      'repo pull',
-      'repo migrate',
-      'backup snapshot',
-      'backup restore',
-      'backup verify',
-    ]) {
+    // Iterates the table itself: a renamed verb (getCommand undefined) or one the contract stops marking detachable fails here instead of silently leaving the table.
+    expect(Object.keys(BACKGROUND_UNSAFE).length).toBeGreaterThanOrEqual(10);
+    for (const verb of Object.keys(BACKGROUND_UNSAFE)) {
       const entry = getCommand(verb);
       expect(entry?.detachable, verb).toBe(true);
       expect(() => assertDetachable(verb, entry), verb).toThrow(/cannot run with --background yet/);

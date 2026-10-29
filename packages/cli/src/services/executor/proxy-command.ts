@@ -59,22 +59,11 @@ export function assertProxyCapable(
 }
 
 /**
- * Refuse `--background` for a command that cannot become a detached job.
- *
- * Mirrors assertProxyCapable and derives its message from the same
- * `proxyBlockedReason`, because `detachable` is `proxyCapable` minus jobs: a
- * command that cannot be proxied cannot be detached for the same reasons (it
- * needs a terminal, or transfers local files, or writes the caller's own
- * config), and a `rdc job *` command manages jobs rather than doing machine
- * work, so backgrounding one is circular. No new validation invariant: the
- * message is composed here from fields the contract already carries.
- */
-/**
  * Detachable verbs that `--background` must still refuse locally, with the reason, until agent/plans/PLAN-detached-jobs.md (J2, J3) runs each as one terminal job.
  *
  * `--background` detaches EVERY machine call of the verb with follow off, probes included (executor-factory's backgroundDecorator). For these verbs that is unsafe, per the J0 audit in that plan: a later call starts before the earlier job finishes, a probe answers empty and fails open, or a local step records a result that has not happened. `repo migrate -b` deletes the source while its delta push still reads it. The proxy path is unaffected: it detaches and follows each call to completion.
  */
-const BACKGROUND_UNSAFE: Record<string, string> = {
+export const BACKGROUND_UNSAFE: Record<string, string> = {
   'repo up': 'runs its probe and its DNS, certificate and URL steps before the containers are up',
   'repo fork':
     'refreshes the identity and re-renders backup units before the fork exists, and its legacy up leg races the fork',
@@ -89,6 +78,11 @@ const BACKGROUND_UNSAFE: Record<string, string> = {
   'backup verify': 'records and prints "verified" before anything is verified',
 };
 
+/**
+ * Refuse `--background` for a command that cannot become a detached job.
+ *
+ * Two checks, in order. A detachable verb named in BACKGROUND_UNSAFE is refused with its reason, because `--background` detaches every machine call of a verb with follow off. Otherwise the message derives from the contract's `proxyBlockedReason`, since `detachable` is `proxyCapable` minus jobs: a command that cannot be proxied cannot be detached for the same reasons (it needs a terminal, transfers local files, or writes the caller's own config), and a `rdc job *` command manages jobs rather than doing machine work, so backgrounding one is circular.
+ */
 export function assertDetachable(commandPath: string, entry: ContractCommand | undefined): void {
   const unsafe = BACKGROUND_UNSAFE[commandPath];
   if (entry?.detachable && unsafe) {
