@@ -497,11 +497,12 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: packages/cli/src/services/jobs/** (new), packages/cli/src/commands/job.ts, packages/cli/src/commands/__tests__/job-wait.test.ts (new), packages/cli/src/commands/__tests__/job-tickets.test.ts (new), packages/cli/src/cli.ts (the finished-notice lines only), packages/cli/src/i18n/locales/en/cli.json. Accept: `cd packages/cli && npx vitest run src/services/jobs src/commands/__tests__/job-wait.test.ts src/commands/__tests__/job-tickets.test.ts` rc 0, and `npm run check:ci-i18n-cli-key-usage` rc 0.
   Amended (third round): a `starting` record is appended before every start (section 16), and `job wait` resolves a ticket stuck at `starting` through `job list --request-id`.
 
-- [ ] J15 [writer] Ticket steps and `runJob`. After J1b and J5. Changes:
+- [x] J15 [writer] Ticket steps and `runJob`. After J1b and J5. Changes:
   - packages/cli/src/services/jobs/steps.ts holds the registry, packages/cli/src/services/jobs/run-job.ts holds `runJob(call, steps)`, packages/cli/src/services/jobs/attach.ts holds `JOB_ATTACH_WINDOW_MS`, and packages/cli/src/services/jobs/plans.ts holds the converted-verb registry (sections 15, 18, 25);
   - steps are stored in the spool with `--steps` and claimed with `job claim`, and the ticket mirrors `step-done`;
   - the config gate;
   - triggers from the attach finish, the reattach, `job wait` and the notice (interactive text runs only, 20 s budget; otherwise the "steps pending" line).
+    (ticked) 2026-10-29T12:22:37Z by d778be9d: commit:59fdb8e06
 
   Tests:
   - two observers in parallel (a `job wait` and a notice) run a success step exactly once;

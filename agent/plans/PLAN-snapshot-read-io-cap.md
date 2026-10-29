@@ -228,3 +228,23 @@ First-Seen: 2026-10-29
 
 - Ad-hoc upload default (ASKED 2026-10-29, "No, keep unlimited by default"): `rdc backup snapshot` keeps an unlimited `--bwlimit` default; only scheduled strategies and explicit flags cap the upload. The read cap defaults of this plan (50M, one hash worker) are unaffected.
 - Acceptance bound: hostinger has 8 cores (nproc, recorded in PLAN-backup-program), so the 4.0 peak-load bound of L1 and L2 stands.
+
+## Operator ruling, CPU ceiling (2026-10-29)
+
+Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answered: "can't we have a limit for cpu usage? For example upto 50% of the all cores? Mean and baseline is difficult to understand for end users. btw 50% is not a problem." <!-- style-ok -->
+
+- A snapshot runs under a hard CPU ceiling, expressed as a share of all cores: default 50 %, which on an 8-core machine is `CPUQuota=400%`. The kernel enforces it, so it holds whatever the repo size, unlike a load-average rule.
+- The hostinger seed stops on CPU, not load: backup CPU above 50 % of all cores for three samples in a row.
+
+- [ ] R5. renet: run backup_snapshot inside a transient systemd scope with CPUQuota.
+  - Owns: private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_snapshot_bwlimit_test.go, private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_bwlimit_test.go
+  - The backup_snapshot function takes `cpu_limit` (a percent of all cores, 1-100, default 50) and wraps the verb in `systemd-run --scope --quiet -p CPUQuota=<percent x nproc>%` inside the existing nice and ionice prefix. Where systemd-run is absent it falls back to the current prefix and records that in the record (`cpuQuota: null`). The verb records `cpuLimitPercent` and `cpuQuota` in its record.
+  - Accept: `cd private/renet && go test ./pkg/functions/commands/ -run TestBackupSnapshot -count=1 && go test ./cmd/renet/ -run TestBackupSnapshot -count=1` rc 0.
+- [ ] C4. CLI: `rdc backup snapshot --cpu-limit <percent>`, a strategy-level `cpuLimit`, and CPUQuota on the scheduled unit and the ad-hoc systemd-run.
+  - Owns: packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/backup-strategy.ts, packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/i18n/locales/*/cli.json, and their tests
+  - The unit carries `CPUQuota=<percent x nproc>%`, with nproc read on the machine at schedule time; the snapshot summary prints the CPU limit.
+  - Accept: `cd packages/cli && npx vitest run src/commands/__tests__/backup-snapshot-bwlimit.test.ts src/commands/__tests__/backup-strategy.test.ts src/services/__tests__/backup-schedule-chunkstore.test.ts` rc 0, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
+- [ ] L3. hostinger: a capped snapshot of one remaining repo shows backup CPU at or below 50 % of all cores in every sample, with the record carrying cpuQuota=400%.
+  - Owns: none in the tree.
+  - Accept: the seed driver run for that repo rc 0, with the per-sample CPU figures recorded under this box.
+
