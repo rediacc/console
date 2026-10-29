@@ -124,6 +124,22 @@
         "b4fd892f"
       ]
     },
+    "agent/plans/PLAN-backup-plane-shared-bucket-hardening.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "06492e4e",
+        "0dd37fd7",
+        "2a858fea",
+        "b75e70c6",
+        "db7a591c"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md": {
       "status": "executing",
       "owner": "d778be9d",

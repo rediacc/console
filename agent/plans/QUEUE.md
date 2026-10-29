@@ -69,18 +69,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1224 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1234 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:abdf7d8d4c4354840, worker:aa55a3b81d826843e, worker:afc71e7f084a62df5.
-- Leased items: 4: #1916639f (worker:abdf7d8d4c4354840, d778be9d), #863660ef (worker:afc71e7f084a62df5, d778be9d), #a150016d (worker:queue, d778be9d), #d0532120 (worker:aa55a3b81d826843e, d778be9d).
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:afc71e7f084a62df5, worker:a454337ebecb242b2, worker:aaa2c0feeada298a2.
+- Leased items: 5: #23d00a2d (worker:aaa2c0feeada298a2, d778be9d), #6a34a60d (worker:a454337ebecb242b2, d778be9d), #863660ef (worker:afc71e7f084a62df5, d778be9d), #a150016d (worker:queue, d778be9d), #cc02a5d7 (worker:aaa2c0feeada298a2, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 37 plans done, 522 of 694 boxes done (75%).
+Promoted: 3 of 38 plans done, 522 of 704 boxes done (74%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -121,6 +121,7 @@ Promoted: 3 of 37 plans done, 522 of 694 boxes done (75%).
 | 35 | PLAN-backup-meter-orphaned-chunks.md | 3/6 | 3 open |
 | 36 | PLAN-backup-local-image.md | 7/14 | 7 open |
 | 37 | PLAN-backup-plane-shared-bucket-hardening.md | 0/5 | 5 open |
+| 38 | PLAN-jobs-backup-real-machine-tests.md | 0/10 | 10 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -160,6 +161,7 @@ Promoted: 3 of 37 plans done, 522 of 694 boxes done (75%).
 35. agent/plans/PLAN-backup-meter-orphaned-chunks.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; 6.58 GB of chunks a killed run uploaded are in R2 but not in backup usage; bill them at commit, reconcile verb, repair hostinger
 36. agent/plans/PLAN-backup-local-image.md -- operator 2026-10-29 ASKED (all four Recommended) + "you are promoting the new plans, right?": rdc backup download/upload of the encrypted repo image to a local path or external drive, in-place weekly update, fresh snapshot per run, prune fixes
 37. agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- operator 2026-10-29 ASKED (Implement all, promote): size-bounded presigned uploads, the unused R2 JWT minter removed, a per-bucket R2 token with a scope probe
+38. agent/plans/PLAN-jobs-backup-real-machine-tests.md -- operator 2026-10-29 "make a new plan for the missing tests": real-machine e2e for jobs and backup, the two gates that cannot fail on them, the expired-session account pin, drill legs p and q
 
 ## Generated
 

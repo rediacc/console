@@ -31,8 +31,10 @@ A local run resets the whole fleet: global setup runs `renet ops up --force --pa
 
 - the case is selected: its prefix matches a project, and it is not under an
 ignored subdirectory
-- `check:ci-e2e-coverage` — **both directions**: every shipped renet verb is
-exercised by a suite CI runs, and no test dispatches a verb renet dropped
+- `check:ci-e2e-coverage` — **both directions**: every RENET_FUNCTIONS name is
+exercised by a suite CI runs, and no test dispatches a verb renet dropped; a
+bridge-only function (RENET_BRIDGE_FUNCTIONS, e.g. repository_migrate) is
+invisible to it until PLAN-jobs-backup-real-machine-tests G1 lands
 - **the job that runs YOUR file** green: `ct-tests.yml` has fourteen, from
 `test-e2e-workers` to `test-e2e-ceph`, `test-e2e-k8s` and `test-fork-isolation`
 
