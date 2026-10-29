@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseSync, visitorKeys } from 'oxc-parser';
 import type { Argument, CallExpression, Node, ObjectExpression } from 'oxc-parser';
+import { parseSync, visitorKeys } from 'oxc-parser';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -57,6 +57,10 @@ const LEDGER: Record<string, string[]> = {
   'services/executor/job-remote.ts::connectForJobs::acquireRemoteRenet': ['<forwarded>'],
   // Forwarded from renetAccessFor(functionName): RENET_FUNCTION_ACCESS decides, pinned by renet-function-access.test.ts.
   'services/executor/local-executor.ts::provisionFn::acquireRemoteRenet': ['<forwarded>'],
+  // `rdc job wait` and the finished-while-away notice: they follow a job and read its status, which an observer must never do by replacing the machine's binary.
+  'services/jobs/remote-deps.ts::withConnection::connectForJobs': ['read-only'],
+  // `renet job claim` writes a step marker into the spool of a job the machine's own renet already ran, so that renet has `job claim`; an observer (the notice, `job wait`) claiming steps must not provision.
+  'services/jobs/run-job.ts::liveClaimExec::connectForJobs': ['read-only'],
   'services/machine/machine-status.ts::fetchMachineStatus::acquireRemoteRenet': ['read-only'],
   'services/machine/machine-status.ts::fetchRepoLicenseDetail::acquireRemoteRenet': ['read-only'],
   'services/provision/infra-provision.ts::pushInfraConfig::acquireRemoteRenet': ['provision'],

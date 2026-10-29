@@ -11,6 +11,13 @@ export {
   type RenetFunctionName,
   type TypedFunctionPayload,
 } from './data/functions.generated.js';
+// Data Zod validation
+export {
+  FUNCTION_REQUIREMENTS,
+  getValidationErrors,
+  isValidParams,
+  safeValidateFunctionParams,
+} from './data/index.js';
 // Licensing tiers (generated from renet's tier map, the single source of truth). Consumers must DERIVE the answer from here rather than restating it: the CLI used to keep its own prefix rule and it had already drifted, claiming every backup_* function was licensed when renet licenses none of them.
 export {
   isPendingLicenseDecision,
@@ -19,13 +26,6 @@ export {
   type LicenseTierEntry,
   requiresLicense,
 } from './data/license-tiers.generated.js';
-// Data Zod validation
-export {
-  FUNCTION_REQUIREMENTS,
-  getValidationErrors,
-  isValidParams,
-  safeValidateFunctionParams,
-} from './data/index.js';
 // Type exports
 export type {
   // V2 Types

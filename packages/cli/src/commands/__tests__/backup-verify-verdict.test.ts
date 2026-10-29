@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parseVerifyVerdict } from '../backup-storage-parser.js';
 
 // REGRESSION, found on a live fleet 2026-08-15: `rdc backup verify` exited 0
