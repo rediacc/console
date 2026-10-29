@@ -21,6 +21,7 @@ import {
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
+import { formatBytes } from '../utils/format.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
@@ -492,6 +493,50 @@ export function snapshotUploadParams(options: {
   return params;
 }
 
+/** The fields of renet's BackupSnapshotRecord that the summary reads. */
+interface SnapshotRecord {
+  status: string;
+  snapshotId?: string;
+  imageBytes?: number;
+  rehashReason?: string;
+  readCapBps?: number;
+  hashWorkers?: number;
+  chunksUploaded?: number;
+  bytesUploaded?: number;
+  durationMs?: number;
+}
+
+/** Print the record renet emitted: the object under json, a short summary in a table. A missing record prints nothing, so a successful run never turns into a crash. */
+function printSnapshotRecord(stdout: string | undefined): void {
+  const record = parseVerifyVerdict(stdout) as SnapshotRecord | undefined;
+  if (!record) return;
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(record, format);
+    return;
+  }
+  outputService.info(
+    t('commands.backup.snapshot.summary', {
+      id: record.snapshotId ?? t('commands.backup.snapshot.dryRunLabel'),
+      image: formatBytes(record.imageBytes ?? 0),
+      bytes: formatBytes(record.bytesUploaded ?? 0),
+      chunks: record.chunksUploaded ?? 0,
+      seconds: ((record.durationMs ?? 0) / 1000).toFixed(1),
+    })
+  );
+  if (record.rehashReason) {
+    outputService.info(t('commands.backup.snapshot.rehashReason', { reason: record.rehashReason }));
+  }
+  if (record.readCapBps) {
+    outputService.info(
+      t('commands.backup.snapshot.readCap', { cap: formatBytes(record.readCapBps) })
+    );
+  }
+  if (record.hashWorkers) {
+    outputService.info(t('commands.backup.snapshot.hashWorkers', { workers: record.hashWorkers }));
+  }
+}
+
 /**
  * `backup snapshot <repo> [--reseed] [--dry-run]`, upload a chunk-store
  * snapshot. This is the write side of the chunk path: the first run uploads the
@@ -538,7 +583,8 @@ function registerBackupSnapshot(backup: Command): void {
               cold: options.cold ?? false,
               ...uploadParams,
             },
-            { debug: options.debug },
+            // captureOutput: the record carries rehashReason, readCapBps, hashWorkers and the snapshot id, which nothing else exposes; without it the step detector drops the verb's JSON and the run prints nothing.
+            { debug: options.debug, captureOutput: true },
             {
               starting: t('commands.backup.snapshot.starting', { name: repoKey }),
               completed: t('commands.backup.snapshot.completed', { name: repoKey }),
@@ -558,6 +604,7 @@ function registerBackupSnapshot(backup: Command): void {
             }
             await recordBackupRun(repoKey, { kind: 'snapshot', status: runStatus });
           }
+          if (result.success) printSnapshotRecord(result.stdout);
           if (quotaRefused) {
             outputService.warn(t('commands.backup.snapshot.quotaRefused', { name: repoKey }));
             setExitCode(RENET_QUOTA_REFUSED_EXIT);

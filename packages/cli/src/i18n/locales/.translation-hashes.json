@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2124,
-    "sourceCommit": "8bb2a14ccec9b2f2923f109de6006cd25571c7e0"
+    "keyCount": 2130,
+    "sourceCommit": "dd31941198efbccf8c5655a3b1cb9c410d3fce7f"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -144,8 +144,10 @@
     "commands.backup.snapshot.bwlimitInvalid": "0e85a5c2",
     "commands.backup.snapshot.completed": "40be5fa7",
     "commands.backup.snapshot.description": "11cac068",
+    "commands.backup.snapshot.dryRunLabel": "5fb84b10",
     "commands.backup.snapshot.failed": "c6beabd5",
     "commands.backup.snapshot.hashParallelismInvalid": "504796a6",
+    "commands.backup.snapshot.hashWorkers": "4ca80a38",
     "commands.backup.snapshot.optionBwlimit": "f8e3db3b",
     "commands.backup.snapshot.optionCold": "1f552c3c",
     "commands.backup.snapshot.optionDryRun": "b4e0818b",
@@ -156,7 +158,10 @@
     "commands.backup.snapshot.parallelismInvalid": "d79981cb",
     "commands.backup.snapshot.quotaRefused": "35aa45d4",
     "commands.backup.snapshot.readBwlimitInvalid": "ae4e7aaa",
+    "commands.backup.snapshot.readCap": "fdbecb62",
+    "commands.backup.snapshot.rehashReason": "012b8f41",
     "commands.backup.snapshot.starting": "f739c227",
+    "commands.backup.snapshot.summary": "570ce177",
     "commands.backup.snapshots.delete.description": "74ffb2b1",
     "commands.backup.snapshots.delete.notInRepo": "a35856e1",
     "commands.backup.snapshots.delete.success": "bd281bef",
@@ -1197,6 +1202,7 @@
     "commands.repo.delete.completed": "62ef4b3e",
     "commands.repo.delete.configRetained": "44db3127",
     "commands.repo.delete.configRetainedElsewhere": "fd3e8a37",
+    "commands.repo.delete.configSaveFailed": "6b0d2e51",
     "commands.repo.delete.confirm": "23edef10",
     "commands.repo.delete.description": "930f3fc9",
     "commands.repo.delete.descriptionShort": "546db59d",

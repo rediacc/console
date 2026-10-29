@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
+import { findUnreachable, RemoteWriteFailedClosedError } from '../adapters/remote-config-errors.js';
 import { t } from '../i18n/index.js';
 import {
   generateConnectionName,
@@ -20,8 +21,9 @@ import {
 import { outputService } from '../services/core/output.js';
 import { writeStdout } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { ERROR_CODES } from '../types/errors.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
-import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
+import { CliExitError, notFound, stateMismatch } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -392,7 +394,31 @@ export async function handleDeleteSuccess(
   } else {
     outputService.success(t('commands.repo.delete.completed'));
   }
-  await settleConfigEntry(name, machineName, repoConfig, archiveConfig);
+  // ORDER: machine first, config second, and the pair is made safe by retry instead of by swapping. Config-first would risk the worse half-state: a config with no entry for an image that still exists on the machine (an orphaned encrypted volume nothing can name or reach). Machine-first leaves at worst an entry whose image is gone, and the retry converges: the presence probe in resolveRepoRef reports the image absent, the machine dispatch is skipped, and this settle step runs again.
+  try {
+    await settleConfigEntry(name, machineName, repoConfig, archiveConfig);
+  } catch (error) {
+    const retry = [
+      'rdc repo delete',
+      name,
+      archiveConfig && '--archive-config',
+      purgeBackups && '--purge-backups',
+      '-y',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const networkDown = error instanceof RemoteWriteFailedClosedError || !!findUnreachable(error);
+    throw new CliExitError(
+      networkDown ? ERROR_CODES.NETWORK_ERROR : ERROR_CODES.GENERAL_ERROR,
+      t('commands.repo.delete.configSaveFailed', {
+        repository: name,
+        machine: machineName,
+        reason: error instanceof Error ? error.message : String(error),
+        command: retry,
+      }),
+      { retryable: true }
+    );
+  }
   await reconcileBackupSchedules(machineName);
   await settleCloudBackups(name, repoConfig, purgeBackups);
   await settleRepoLicense(name, repoConfig);
