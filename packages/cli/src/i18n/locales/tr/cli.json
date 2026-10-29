@@ -63,6 +63,8 @@
         "optionAs": "Geri yüklenen depo için ad (varsayılan: artefakt adı)",
         "optionAt": "Belirli bir zamana geri yükle: bir anlık görüntü kimliği veya RFC3339 saati (parça depolamadan geri yükleme)",
         "optionDatastore": "Bu adlandırılmış veri deposuna geri yükle (bağlı olduğu makine onu barındırır)",
+        "noSeedNeedsSnapshot": "--no-seed, parça deposundaki bir anlık görüntüden geri yüklemelere uygulanır ve bu deponun hiç anlık görüntüsü yok.",
+        "optionNoSeed": "Yerel çapaları veya depo imajlarını yeniden kullanmak yerine her parçayı depodan getir (deponun okunabildiğini kanıtlar)",
         "optionUp": "Aktarımdan sonra geri yüklenen depoyu dağıt",
         "placementExclusive": "Yalnızca bir yerleşim bayrağı geçirin: --machine veya --datastore.",
         "placementRequired": "Nereye geri yükleneceğini belirtin: --machine <m> (docker) veya --datastore <d> (adlandırılmış veri deposu).",

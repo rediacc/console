@@ -63,6 +63,8 @@
         "optionAs": "Nome para o repositório restaurado (por omissão, o nome do artefacto)",
         "optionAt": "Restaurar um ponto no tempo: um ID de snapshot ou uma hora RFC3339 (restauro a partir do armazenamento fragmentado)",
         "optionDatastore": "Restaurar para este datastore com nome (é alojado pela máquina a que está anexado)",
+        "noSeedNeedsSnapshot": "--no-seed aplica-se a restaurações a partir de um snapshot do armazenamento de fragmentos, e este repositório não tem nenhum.",
+        "optionNoSeed": "Buscar cada fragmento no armazenamento em vez de reutilizar âncoras locais ou imagens do repositório (prova que o armazenamento é legível)",
         "optionUp": "Implementar o repositório restaurado após a transferência",
         "placementExclusive": "Passe exatamente uma flag de localização: --machine ou --datastore.",
         "placementRequired": "Indique onde restaurar: --machine <m> (docker) ou --datastore <d> (datastore com nome).",

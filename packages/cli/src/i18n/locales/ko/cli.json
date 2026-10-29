@@ -63,6 +63,8 @@
         "optionAs": "복원된 저장소의 이름 (기본값: 아티팩트 이름)",
         "optionAt": "특정 시점으로 복원: 스냅샷 ID 또는 RFC3339 시각 (청크 스토리지 복원)",
         "optionDatastore": "이 이름 지정 데이터스토어로 복원합니다 (어태치된 머신이 호스팅)",
+        "noSeedNeedsSnapshot": "--no-seed는 청크 스토어 스냅샷에서 복원할 때 적용되며, 이 저장소에는 스냅샷이 없습니다.",
+        "optionNoSeed": "로컬 앵커나 저장소 이미지를 재사용하지 않고 모든 청크를 스토어에서 가져옵니다 (스토어를 읽을 수 있음을 증명합니다)",
         "optionUp": "전송 후 복원된 저장소를 배포합니다",
         "placementExclusive": "배치 플래그는 --machine 또는 --datastore 중 하나만 지정하세요",
         "placementRequired": "복원 위치를 지정하세요: --machine <m> (Docker) 또는 --datastore <d> (이름 지정 데이터스토어)",

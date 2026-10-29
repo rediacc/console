@@ -63,6 +63,8 @@
         "optionAs": "恢复后仓库的名称（默认使用产物名称）",
         "optionAt": "恢复到某个时间点：快照 ID 或 RFC3339 时间（分块存储恢复）",
         "optionDatastore": "恢复到此命名数据存储中（由其挂接的机器承载）",
+        "noSeedNeedsSnapshot": "--no-seed 适用于从块存储快照恢复，而此仓库没有快照。",
+        "optionNoSeed": "从存储中获取每个数据块，而不是复用本地锚点或仓库镜像（可证明存储可读）",
         "optionUp": "传输完成后部署恢复的仓库",
         "placementExclusive": "只能传入一个放置标志：--machine 或 --datastore。",
         "placementRequired": "请指明恢复位置：--machine <m>（Docker）或 --datastore <d>（命名数据存储）。",

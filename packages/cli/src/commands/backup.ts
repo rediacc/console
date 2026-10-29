@@ -93,6 +93,8 @@ interface RestoreOptions {
   path?: string;
   to?: string;
   anyStream?: boolean;
+  /** Commander stores `--no-seed` as `seed: false` (true when the flag is absent). */
+  seed?: boolean;
   up?: boolean;
   healthWindow?: string;
   healthTimeout?: string;
@@ -146,6 +148,7 @@ function registerBackupRestore(backup: Command): void {
     .option('--datastore <name>', t('commands.backup.restore.optionDatastore'))
     .option('--at <time>', t('commands.backup.restore.optionAt'))
     .option('--any-stream', t('commands.backup.restore.optionAnyStream'))
+    .option('--no-seed', t('commands.backup.restore.optionNoSeed'))
     .option('--path <file-or-dir>', t('commands.backup.restore.optionPath'))
     .option('--to <dir>', t('commands.backup.restore.optionTo'))
     .option('--up', t('commands.backup.restore.optionUp'))
@@ -174,6 +177,10 @@ function registerBackupRestore(backup: Command): void {
           ((await lineageHasSnapshots(source.grandGuid ?? source.repositoryGuid))
             ? new Date().toISOString()
             : undefined);
+        // Only a snapshot restore has seeds to skip; refuse before the target is registered rather than ignore the flag.
+        if (options.seed === false && !restoreAt) {
+          throw new ValidationError(t('commands.backup.restore.noSeedNeedsSnapshot'));
+        }
 
         // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and then dropped, the pull ran against the machine's default, so a restore the operator asked to land on a named datastore landed somewhere else. Record the placement as the birth record (the same field `repo create` writes) so every later verb derives the right mount, and declare it on the transfer
         // below.
@@ -210,6 +217,7 @@ function registerBackupRestore(backup: Command): void {
               lineage,
               at: restoreAt,
               anyStream: options.anyStream ?? false,
+              noSeed: options.seed === false,
               source: { repoName: ref.name, machine: from },
               debug: options.debug,
             })
@@ -529,10 +537,12 @@ async function runChunkRestore(args: {
   lineage: string;
   at: string;
   anyStream: boolean;
+  noSeed: boolean;
   source: { repoName: string; machine: string };
   debug?: boolean;
 }): Promise<boolean> {
-  const { targetName, targetMachine, datastore, lineage, at, anyStream, source, debug } = args;
+  const { targetName, targetMachine, datastore, lineage, at, anyStream, noSeed, source, debug } =
+    args;
   const scope = await streamScopeFor({ at, anyStream, source, debug });
   const snapshotId = await resolveSnapshotAt(lineage, at, scope);
 
@@ -544,7 +554,13 @@ async function runChunkRestore(args: {
     functionName: 'backup_restore',
     machineName: targetMachine,
     datastore,
-    params: { repository: targetName, lineage, at: snapshotId, dry_run: false },
+    params: {
+      repository: targetName,
+      lineage,
+      at: snapshotId,
+      dry_run: false,
+      no_seed: noSeed,
+    },
     debug,
     // The record on stdout carries the restore's measurements; without capture they are dropped.
     captureOutput: true,

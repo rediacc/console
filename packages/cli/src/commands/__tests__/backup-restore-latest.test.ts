@@ -134,3 +134,30 @@ describe('backup restore without --at', () => {
     expect(fnCalls()).toContain('backup_pull');
   });
 });
+
+describe('backup restore --no-seed', () => {
+  const snapshots = {
+    manifests: [{ snapshotId: 'snap-new', streamId: 's', createdAt: '2020-02-01T00:00:00.000Z' }],
+  };
+  const restoreParams = () =>
+    mockExecute.mock.calls.find((c) => c[0].functionName === 'backup_restore')?.[0].params;
+
+  it('sends no_seed: true to backup_restore', async () => {
+    mockFetch.mockResolvedValue(snapshots);
+    await run([...ARGS, '--no-seed']);
+    expect(restoreParams().no_seed).toBe(true);
+  });
+
+  it('sends no_seed: false without the flag', async () => {
+    mockFetch.mockResolvedValue(snapshots);
+    await run(ARGS);
+    expect(restoreParams().no_seed).toBe(false);
+  });
+
+  it('refuses the flag before registering anything when there is no snapshot to restore', async () => {
+    mockFetch.mockResolvedValue({ manifests: [] });
+    await expect(run([...ARGS, '--no-seed'])).rejects.toThrow('noSeedNeedsSnapshot');
+    expect(mockAddRepository).not.toHaveBeenCalled();
+    expect(fnCalls()).toEqual([]);
+  });
+});

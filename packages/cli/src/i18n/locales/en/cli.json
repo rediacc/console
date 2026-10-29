@@ -1843,6 +1843,8 @@
         "optionAs": "Name for the restored repository (defaults to the artifact name)",
         "optionAt": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)",
         "optionDatastore": "Restore into this named datastore (its attached machine hosts it)",
+        "noSeedNeedsSnapshot": "--no-seed applies to restores from a chunk-store snapshot, and this repository has none.",
+        "optionNoSeed": "Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)",
         "optionUp": "Deploy the restored repository after the transfer",
         "placeRequired": "A restore artifact must name where it lives: use repo@place (for example shop:nightly@backup-1).",
         "placementExclusive": "Pass exactly one placement flag: --machine or --datastore.",

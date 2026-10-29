@@ -63,6 +63,8 @@
         "optionAs": "Nome per il repository ripristinato (predefinito: il nome dell'artefatto)",
         "optionAt": "Ripristina a un punto nel tempo: un ID di snapshot o un orario RFC3339 (ripristino da storage a chunk)",
         "optionDatastore": "Ripristina in questo datastore con nome (la macchina a cui è collegato lo ospita)",
+        "noSeedNeedsSnapshot": "--no-seed vale per i ripristini da uno snapshot dello chunk store, e questo repository non ne ha.",
+        "optionNoSeed": "Recupera ogni chunk dallo store invece di riutilizzare ancore locali o immagini del repository (dimostra che lo store è leggibile)",
         "optionUp": "Distribuisci il repository ripristinato dopo il trasferimento",
         "placementExclusive": "Passa esattamente un flag di posizionamento: --machine oppure --datastore.",
         "placementRequired": "Indica dove ripristinare: --machine <m> (docker) oppure --datastore <d> (datastore con nome).",

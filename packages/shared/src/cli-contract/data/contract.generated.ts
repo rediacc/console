@@ -398,6 +398,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)"
         },
         {
+          "flags": "--no-seed",
+          "long": "no-seed",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionNoSeed",
+          "label": "Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)"
+        },
+        {
           "flags": "--path <file-or-dir>",
           "long": "path",
           "valueTaking": true,

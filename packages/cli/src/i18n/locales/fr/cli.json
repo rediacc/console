@@ -63,6 +63,8 @@
         "optionAs": "Nom du dépôt restauré (par défaut : le nom de l'artefact)",
         "optionAt": "Restaurer à un instant donné : un identifiant d'instantané ou une heure RFC3339 (restauration depuis le stockage fragmenté)",
         "optionDatastore": "Restaurer dans ce datastore nommé (sa machine attachée l'héberge)",
+        "noSeedNeedsSnapshot": "--no-seed s'applique aux restaurations depuis un instantané du magasin de fragments, et ce dépôt n'en a aucun.",
+        "optionNoSeed": "Récupérer chaque fragment depuis le magasin au lieu de réutiliser les ancres locales ou les images du dépôt (prouve que le magasin est lisible)",
         "optionUp": "Déployer le dépôt restauré après le transfert",
         "placementExclusive": "Passez exactement un indicateur de placement : --machine ou --datastore.",
         "placementRequired": "Indiquez où restaurer : --machine <m> (docker) ou --datastore <d> (datastore nommé).",

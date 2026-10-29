@@ -63,6 +63,8 @@
         "optionAs": "Name für das wiederhergestellte Repository (Standard: Artefaktname)",
         "optionAt": "Zu einem Zeitpunkt wiederherstellen: eine Snapshot-ID oder eine RFC3339-Zeit (Chunk-Store-Wiederherstellung)",
         "optionDatastore": "In diesen benannten Datenspeicher wiederherstellen (dessen angehängte Maschine hostet ihn)",
+        "noSeedNeedsSnapshot": "--no-seed gilt für Wiederherstellungen aus einem Chunk-Store-Snapshot, und dieses Repository hat keinen.",
+        "optionNoSeed": "Jeden Chunk aus dem Speicher abrufen, statt lokale Anker oder Repository-Abbilder wiederzuverwenden (beweist, dass der Speicher lesbar ist)",
         "optionUp": "Das wiederhergestellte Repository nach der Übertragung bereitstellen",
         "placementExclusive": "Geben Sie genau ein Platzierungs-Flag an: --machine oder --datastore.",
         "placementRequired": "Geben Sie an, wohin wiederhergestellt werden soll: --machine <m> (Docker) oder --datastore <d> (benannter Datenspeicher).",

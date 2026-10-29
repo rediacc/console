@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2090,
-    "sourceCommit": "e8a1e28d489743158173c2972b5088837d9d3cef"
+    "keyCount": 2092,
+    "sourceCommit": "2bc0ae0a38f39d6b2c35b6b28634a5370d15968e"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -49,10 +49,12 @@
     "commands.backup.restore.examples.asNewRepo": "4fd5a0ce",
     "commands.backup.restore.examples.basic": "2f262886",
     "commands.backup.restore.failed": "9aa9d821",
+    "commands.backup.restore.noSeedNeedsSnapshot": "7163da9f",
     "commands.backup.restore.optionAnyStream": "35f8afb7",
     "commands.backup.restore.optionAs": "9db21279",
     "commands.backup.restore.optionAt": "d588a339",
     "commands.backup.restore.optionDatastore": "98313260",
+    "commands.backup.restore.optionNoSeed": "2ffe3b1f",
     "commands.backup.restore.optionPath": "f64565a5",
     "commands.backup.restore.optionTo": "a5d02950",
     "commands.backup.restore.optionUp": "af3ea910",

@@ -63,6 +63,8 @@
         "optionAs": "Taastatud hoidla nimi (vaikimisi artefakti nimi)",
         "optionAt": "Taasta ajahetk: hetktõmmise ID või RFC3339 aeg (chunk-hoidla taastamine)",
         "optionDatastore": "Taasta sellesse nimega andmehoidlasse (seda majutab hoidla ühendatud masin)",
+        "noSeedNeedsSnapshot": "--no-seed kehtib taastamisel tükipoe hetktõmmisest ja sellel hoidlal pole ühtegi.",
+        "optionNoSeed": "Too iga tükk poest, selle asemel et taaskasutada kohalikke ankruid või hoidla tõmmiseid (tõestab, et pood on loetav)",
         "optionUp": "Juuruta taastatud hoidla pärast ülekannet",
         "placementExclusive": "Anna täpselt üks asukohalipp: --machine või --datastore.",
         "placementRequired": "Määra, kuhu taastada: --machine <m> (docker) või --datastore <d> (nimega andmehoidla).",
