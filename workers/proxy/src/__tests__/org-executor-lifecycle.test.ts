@@ -257,10 +257,12 @@ describe('exits', () => {
 
 describe('relocation', () => {
   const MINUTE = 60_000;
+  /** A public machine address; the harness's probe sockets answer it with an SSH banner, so each report counts. */
+  const TARGET = { host: '203.0.113.7', port: 22 };
 
   function report(h: Harness, at: number) {
     vi.setSystemTime(at);
-    return h.executor.recordEgressUnreachable(ORG, 0);
+    return h.executor.recordEgressUnreachable(ORG, 0, TARGET);
   }
 
   it('three reports within 10 minutes relocate once; the instance retires and drains after the open stream', async () => {
@@ -276,6 +278,8 @@ describe('relocation', () => {
       count: 1,
       threshold: 3,
       relocated: false,
+      counted: true,
+      probe: 'reachable',
     });
     expect(await report(h, T0 + 2 * MINUTE)).toMatchObject({ count: 2, relocated: false });
     expect(h.issuer.relocate).not.toHaveBeenCalled();
@@ -284,6 +288,8 @@ describe('relocation', () => {
       count: 3,
       threshold: 3,
       relocated: true,
+      counted: true,
+      probe: 'reachable',
     });
     expect(h.issuer.relocate).toHaveBeenCalledTimes(1);
     expect(h.issuer.relocate).toHaveBeenCalledWith(ORG, 0);
@@ -372,7 +378,7 @@ describe('relocation', () => {
     vi.useFakeTimers();
     vi.setSystemTime(T0 + 4 * MINUTE);
     h.issuer.relocate.mockImplementationOnce(() => new Promise<RelocateAnswer>(() => undefined));
-    const pending = h.executor.recordEgressUnreachable(ORG, 0);
+    const pending = h.executor.recordEgressUnreachable(ORG, 0, TARGET);
     await vi.advanceTimersByTimeAsync(COORDINATOR_TIMEOUT_MS + 1);
     expect(await pending).toMatchObject({ relocated: false });
     expect(h.storage.has('retired')).toBe(false);

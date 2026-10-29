@@ -311,3 +311,165 @@ describe('review 5acbb97d', () => {
     expect(h.container.starts).toHaveLength(1);
   });
 });
+
+describe('reachability gate on egress-unreachable reports (PLAN-org-executor-connect-timeout-relocate E13)', () => {
+  const MINUTE = 60_000;
+  const TARGET = { host: '203.0.113.7', port: 22 };
+
+  function report(
+    h: ReturnType<typeof harness>,
+    at: number,
+    target: { host: string; port: number } | 'none' = TARGET
+  ) {
+    vi.setSystemTime(at);
+    return h.executor.recordEgressUnreachable(ORG, 0, target === 'none' ? undefined : target);
+  }
+
+  it('three reports whose target answers the Worker with a banner relocate once', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    expect(await report(h, T0 + MINUTE)).toMatchObject({
+      count: 1,
+      counted: true,
+      probe: 'reachable',
+    });
+    expect(await report(h, T0 + 3 * MINUTE)).toMatchObject({ count: 2, counted: true });
+    expect(await report(h, T0 + 5 * MINUTE)).toEqual({
+      ok: true,
+      count: 3,
+      threshold: 3,
+      relocated: true,
+      counted: true,
+      probe: 'reachable',
+    });
+    expect(h.issuer.relocate).toHaveBeenCalledTimes(1);
+    expect(h.probes).toEqual([
+      { hostname: '203.0.113.7', port: 22 },
+      { hostname: '203.0.113.7', port: 22 },
+      { hostname: '203.0.113.7', port: 22 },
+    ]);
+  });
+
+  it('three reports whose target never greets the Worker never relocate and leave no stored count', async () => {
+    const h = harness({ banner: ['end'] });
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    for (const minute of [1, 3, 5]) {
+      expect(await report(h, T0 + minute * MINUTE)).toEqual({
+        ok: true,
+        count: 0,
+        threshold: 3,
+        relocated: false,
+        counted: false,
+        probe: 'target-unreachable',
+      });
+    }
+    expect(h.issuer.relocate).not.toHaveBeenCalled();
+    expect(h.storage.has('egressUnreachable')).toBe(false);
+    expect(h.storage.has('egressUnreachableAt')).toBe(false);
+    expect(h.probes).toHaveLength(3);
+    expect(await h.executor.pin(ORG, 0, 'light')).toMatchObject({ egressUnreachableRecent: false });
+  });
+
+  it('a reset after opened, or a non-SSH reply, does not count either', async () => {
+    const h = harness({ banner: [{ reject: new Error('reset') }] });
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    expect(await report(h, T0)).toMatchObject({ counted: false, probe: 'target-unreachable' });
+    h.setBanner(['HTTP/1.1 200 OK\r\n']);
+    expect(await report(h, T0 + 2 * MINUTE)).toMatchObject({
+      counted: false,
+      probe: 'target-unreachable',
+    });
+    expect(h.storage.has('egressUnreachable')).toBe(false);
+  });
+
+  it('a verdict is cached for 60 s per host and port', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    await report(h, T0);
+    expect(await report(h, T0 + 59_999)).toMatchObject({ counted: true, probe: 'reachable' });
+    expect(h.probes).toHaveLength(1);
+    h.setBanner(['end']);
+    // Another port on the same host is its own entry, so it is probed.
+    expect(await report(h, T0 + 59_999, { host: '203.0.113.7', port: 2222 })).toMatchObject({
+      counted: false,
+      probe: 'target-unreachable',
+    });
+    expect(h.probes).toHaveLength(2);
+    expect(await report(h, T0 + 60_000)).toMatchObject({
+      counted: false,
+      probe: 'target-unreachable',
+    });
+    expect(h.probes).toHaveLength(3);
+    // A cached closed-port verdict does not count either.
+    expect(await report(h, T0 + 61_000)).toMatchObject({
+      counted: false,
+      probe: 'target-unreachable',
+    });
+    expect(h.probes).toHaveLength(3);
+  });
+
+  it('at most 6 probes per window; past the cap a report is skipped and does not count', async () => {
+    const h = harness({ banner: ['end'] });
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    for (let i = 0; i < 6; i++) {
+      await report(h, T0 + i * 1000, { host: `203.0.113.${10 + i}`, port: 22 });
+    }
+    expect(h.probes).toHaveLength(6);
+    h.setBanner(['SSH-2.0-x']);
+    expect(await report(h, T0 + 7000, { host: '203.0.113.99', port: 22 })).toMatchObject({
+      counted: false,
+      probe: 'skipped',
+    });
+    expect(h.probes).toHaveLength(6);
+    expect(h.storage.has('egressUnreachable')).toBe(false);
+    // Once the first probes leave the 10-minute window, probing resumes.
+    expect(
+      await report(h, T0 + 10 * MINUTE + 1000, { host: '203.0.113.99', port: 22 })
+    ).toMatchObject({
+      counted: true,
+      probe: 'reachable',
+    });
+    expect(h.probes).toHaveLength(7);
+  });
+
+  it('a report with no target is skipped: no probe, no count', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    for (const minute of [1, 2, 3]) {
+      expect(await report(h, T0 + minute * MINUTE, 'none')).toMatchObject({
+        count: 0,
+        relocated: false,
+        counted: false,
+        probe: 'skipped',
+      });
+    }
+    expect(h.probes).toHaveLength(0);
+    expect(h.issuer.relocate).not.toHaveBeenCalled();
+    expect(h.storage.has('egressUnreachable')).toBe(false);
+  });
+
+  it('logs the verdict, reason and placement, never the address', async () => {
+    const warn = vi.mocked(console.warn);
+    const h = harness({ banner: ['end'] });
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    await report(h, T0);
+    await report(h, T0 + 1000);
+    await report(h, T0 + 2000, 'none');
+    const lines = warn.mock.calls.map((c) => c.join(' '));
+    expect(lines).toContain(
+      'proxy: org executor reachability probe target-unreachable (no-banner) at p0'
+    );
+    expect(lines).toContain(
+      'proxy: org executor reachability probe target-unreachable (cached) at p0'
+    );
+    expect(lines).toContain('proxy: org executor reachability probe skipped (no-target) at p0');
+    expect(lines.join('\n')).not.toContain('203.0.113.7');
+  });
+});

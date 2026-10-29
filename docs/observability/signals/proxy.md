@@ -32,7 +32,7 @@ Attributes set on the active span by `fetch`:
 | `rediacc.region` | The Worker's `REGION` var |
 | `deployment.environment` | The Worker's `ENVIRONMENT` var |
 | `rediacc.probe` | UUID from `X-Rediacc-Probe`, when present |
-| `rediacc.proxy.outcome` | `health`, `refused:<reason>` (among them `refused:route-placement-missing`, a 503 when `route` answers no valid placement), `forwarded`, `capacity`, `start-failed`, `oom-heavy`, `egress-unreachable` or `relocated` |
+| `rediacc.proxy.outcome` | `health`, `refused:<reason>` (among them `refused:route-placement-missing`, a 503 when `route` answers no valid placement, and `refused:report-target-invalid` or `refused:report-target-refused` for an egress-unreachable report whose target is refused before any probe), `forwarded`, `capacity`, `start-failed`, `oom-heavy`, `egress-unreachable`, `target-unreachable` (an egress-unreachable report the reachability probe did not count) or `relocated` |
 
 A request carrying a valid probe UUID also writes one log line, `telemetry-probe <uuid>` (lower case), so the delivery check finds the trace and the log of the same request.
 
@@ -93,8 +93,9 @@ Per PLAN-executor-durable-object-policy, the executor leaves the `Container` cla
 
 Per PLAN-org-executor-connect-timeout-relocate, an org whose executor container cannot reach its machine moves to a new Durable Object. The executor's name is `<orgId>:p<placement>`, and the placement is the D1 column `organizations.executor_placement`, which `ExecutorIssuer.route` answers with the org. The Worker refuses a route answer without a valid placement as `refused:route-placement-missing` (503) and never guesses 0, so the account Worker with migration 0068 deploys before the proxy on every target.
 
-- **Report.** An SSH connect that never gets a TCP answer ends in `EGRESS_UNREACHABLE`, and `rdc serve` posts a bodiless `POST http://account.internal/executor/v1/egress-unreachable`. `AccountEgress` answers it itself, from the calling instance's `recordEgressUnreachable`, and sends nothing to `ACCOUNT` or the issuer. Its span records `egress-unreachable`, or `relocated` when that report moved the org.
-- **Threshold.** Three reports inside a 10-minute window (`UNREACHABLE_THRESHOLD`, `UNREACHABLE_WINDOW_MS`) make the instance call `ExecutorIssuer.relocate(orgId, placement)`. That call bumps `executor_placement` by compare-and-set, at most once per 30 minutes per org. A `budget` answer leaves the org where it is.
+- **Report.** An SSH connect that never gets a TCP answer ends in `EGRESS_UNREACHABLE`, and `rdc serve` posts `POST http://account.internal/executor/v1/egress-unreachable` with the JSON body `{ host, port }` of the machine it never reached. `AccountEgress` answers it itself, from the calling instance's `recordEgressUnreachable`, and sends nothing to `ACCOUNT` or the issuer. Its span records `egress-unreachable`, `target-unreachable` when the report did not count, or `relocated` when that report moved the org.
+- **Reachability probe.** A Cloudflare container sees a TCP reset as a timeout, so a machine with a closed port looks like blocked egress from inside it (bench, 2026-10-28). Before a report counts, the instance connects to the reported target itself with `cloudflare:sockets` and waits 4 seconds for an SSH banner, reading at most 256 bytes and writing nothing. Only a banner (`probe: reachable`) counts toward the threshold. Anything else (`target-unreachable`: a reset, a silent port, a non-SSH reply or a timeout) answers `counted: false` and leaves the stored count alone, and the executor tells the user the machine did not answer from outside either. A verdict is cached for 60 seconds per host and port, at most 6 probes run per instance per 10-minute window, and a report past that cap or with no target is `skipped` and does not count. The egress refuses a body over 512 bytes or not a `{ host, port }` object as 400 `report-target-invalid`, and localhost, a private, loopback, link-local or CGNAT address, or port 25 as 403 `report-target-refused`, both before any RPC. The probe log line names the verdict, its reason and the placement, never the address.
+- **Threshold.** Three counted reports inside a 10-minute window (`UNREACHABLE_THRESHOLD`, `UNREACHABLE_WINDOW_MS`) make the instance call `ExecutorIssuer.relocate(orgId, placement)`. That call bumps `executor_placement` by compare-and-set, at most once per 30 minutes per org. A `budget` answer leaves the org where it is.
 - **Retired object.** After a move the old instance refuses every pin with `EXECUTOR_RELOCATED`, never re-acquires its capacity lease, and stops its container once nothing is in flight, so the request whose report caused the move still ends with its result line. The Worker answers `EXECUTOR_RELOCATED` by asking `route` once more and re-routing once when the placement went up, else 503 `EXECUTOR_START_FAILED`.
 - **Forwarded outcome.** A request forwarded while the instance's latest report is inside the window records `egress-unreachable` in place of `forwarded`.
 - **Legacy backend.** `ExecutorContainer` has no relocation. Its `accountEgress` refuses the report as `route-not-allowed`, and the executor falls back to its no-answer guidance, so the named error still reaches the user.
@@ -102,6 +103,8 @@ Per PLAN-org-executor-connect-timeout-relocate, an org whose executor container 
 The log lines carry the placement and the count, never an org id:
 
 ```
+proxy: org executor reachability probe reachable (banner) at p0
+proxy: org executor reachability probe target-unreachable (timeout) at p0
 proxy: org executor egress unreachable 2/3 at p0
 proxy: org executor relocated p0->p1
 proxy: org executor relocate refused: budget

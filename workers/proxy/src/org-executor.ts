@@ -5,7 +5,7 @@
  *
  * The Worker calls `pin(orgId, placement, size)` with the org and placement `ExecutorIssuer.route` named, then forwards the request with `fetch`. Every refusal is an answer with a code, never error text for the Worker to guess at.
  *
- * Relocation (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design item 5): the executor reports a machine it cannot reach through `recordEgressUnreachable`. At UNREACHABLE_THRESHOLD reports within UNREACHABLE_WINDOW_MS the instance asks the issuer to bump the org's placement, and on success it retires: `pin` refuses with `EXECUTOR_RELOCATED`, the lease is never re-acquired, and the container stops once nothing is in flight. The retired instance never touches the new name, so the new instance is placed the way a fresh org's is.
+ * Relocation (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design item 5): the executor reports a machine it cannot reach through `recordEgressUnreachable`, which counts the report only when the Worker itself reaches that machine's SSH banner (src/reachability.ts). At UNREACHABLE_THRESHOLD counted reports within UNREACHABLE_WINDOW_MS the instance asks the issuer to bump the org's placement, and on success it retires: `pin` refuses with `EXECUTOR_RELOCATED`, the lease is never re-acquired, and the container stops once nothing is in flight. The retired instance never touches the new name, so the new instance is placed the way a fresh org's is.
  */
 
 import { DurableObject } from 'cloudflare:workers';
@@ -13,7 +13,10 @@ import { capacityStub, type ExecutorCapacity, type ExecutorSize } from './capaci
 import {
   type ExecutorIdentity,
   pinRefusal,
+  ReachabilityGate,
+  recentCount,
   relocateOrg,
+  reportAnswer,
   reportRefusal,
 } from './org-executor-relocate';
 import {
@@ -53,6 +56,7 @@ import {
   wait,
 } from './org-executor-support';
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
+import type { ProbeTarget } from './reachability';
 import { INSTANCE_BY_SIZE } from './sizing';
 
 export {
@@ -100,6 +104,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   private unreachableAt: number | undefined;
   /** The report being counted, which a concurrent report waits on, so the issuer is asked at most once per crossing. */
   private reporting: Promise<EgressReportAnswer> | undefined;
+  /** Decides whether a report counts: the Worker's own probe of the reported machine (src/reachability.ts). */
+  private readonly reachability = new ReachabilityGate();
   /** Bumped on every start and deliberate destroy, so a stale `monitor()` settlement is ignored. */
   private generation = 0;
   /** How the current generation's container exited, once it has. */
@@ -166,11 +172,15 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   }
 
   /**
-   * Count one egress-unreachable report from this instance's container. Below UNREACHABLE_THRESHOLD reports within UNREACHABLE_WINDOW_MS it only counts. At the threshold it asks the issuer to move the org to the next placement: on `ok` or `stale` (another caller moved it already) the instance retires and drains; on `budget` or a failure the org stays where it is.
+   * Count one egress-unreachable report from this instance's container, once the Worker itself has reached `target`'s SSH banner (src/reachability.ts): a machine that is down or has a closed port is not this executor's problem, so its report answers `counted: false` with the probe verdict and leaves the stored count alone. Below UNREACHABLE_THRESHOLD counted reports within UNREACHABLE_WINDOW_MS it only counts. At the threshold it asks the issuer to move the org to the next placement: on `ok` or `stale` (another caller moved it already) the instance retires and drains; on `budget` or a failure the org stays where it is.
    *
-   * Refused for an org or placement that is not this instance's.
+   * Refused for an org or placement that is not this instance's. An undefined target is never probed, so it never counts.
    */
-  async recordEgressUnreachable(orgId: string, placement: number): Promise<EgressReportAnswer> {
+  async recordEgressUnreachable(
+    orgId: string,
+    placement: number,
+    target?: ProbeTarget
+  ): Promise<EgressReportAnswer> {
     const refused = reportRefusal(this.identity(), orgId, placement);
     if (refused !== undefined) {
       console.warn(`proxy: org executor egress report refused: ${refused}`);
@@ -179,38 +189,38 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     while (this.reporting !== undefined) {
       await this.reporting.catch(() => undefined);
     }
-    const reporting = this.countReport(orgId, placement).finally(() => {
+    const reporting = this.countReport(orgId, placement, target).finally(() => {
       if (this.reporting === reporting) this.reporting = undefined;
     });
     this.reporting = reporting;
     return reporting;
   }
 
-  /** Append the report, prune the window, and relocate at the threshold. */
-  private async countReport(orgId: string, placement: number): Promise<EgressReportAnswer> {
-    const now = Date.now();
+  /** Probe the target, and only on `reachable` append the report, prune the window, and relocate at the threshold. */
+  private async countReport(
+    orgId: string,
+    placement: number,
+    target: ProbeTarget | undefined
+  ): Promise<EgressReportAnswer> {
     const stored = (await this.ctx.storage.get<number[]>(UNREACHABLE_KEY)) ?? [];
+    if (this.isRetired()) return reportAnswer(recentCount(stored, Date.now()), true, 'skipped');
+    const probe = await this.reachability.verdict(target, placement);
+    const now = Date.now();
+    if (probe !== 'reachable') return reportAnswer(recentCount(stored, now), false, probe);
     const recent = [...stored, now].filter((at) => unreachableRecent(at, now));
     this.unreachableAt = now;
     await this.ctx.storage.put(UNREACHABLE_KEY, recent);
     await this.ctx.storage.put(UNREACHABLE_AT_KEY, now);
     const count = recent.length;
-    const answer = (relocated: boolean): EgressReportAnswer => ({
-      ok: true,
-      count,
-      threshold: UNREACHABLE_THRESHOLD,
-      relocated,
-    });
-    if (this.isRetired()) return answer(true);
     console.warn(
       `proxy: org executor egress unreachable ${count}/${UNREACHABLE_THRESHOLD} at p${placement}`
     );
-    if (count < UNREACHABLE_THRESHOLD) return answer(false);
+    if (count < UNREACHABLE_THRESHOLD) return reportAnswer(count, false, probe);
 
     const moved = await relocateOrg(this.env.ISSUER, orgId, placement);
-    if (moved === undefined) return answer(false);
+    if (moved === undefined) return reportAnswer(count, false, probe);
     await this.retire(moved);
-    return answer(true);
+    return reportAnswer(count, true, probe);
   }
 
   /** Retire this instance: kept in storage so a restart stays retired, then drain. The request whose report caused the move still ends with its result line before the container goes. */

@@ -604,14 +604,16 @@ class LocalExecutorService {
       // {exitCode: 1} result throws all of that away: a BUSY provisioning-lock
       // timeout (exit 15, retryable, "here is the pid holding it") arrived at the user as an anonymous exit 1. Let it through untouched.
       if (error instanceof CliExitError) throw error;
-      // A named connect failure keeps its code, exit code and guidance, so the console can tell an unreachable machine from a crash.
+      // A named connect failure keeps its code, exit code and guidance, so the console can tell an unreachable machine from a crash. An unanswered connect (EGRESS_UNREACHABLE) also carries its address, which `rdc serve` names in the egress report for the proxy to probe.
       if (error instanceof SshConnectError) {
+        const connectTarget = { host: error.host, port: error.port };
         return {
           success: false,
           exitCode: error.exitCode,
           error: errorMessage,
           ...(error.errorCode ? { errorCode: error.errorCode } : {}),
           ...(error.guidance ? { errorGuidance: error.guidance } : {}),
+          ...(error.kind === 'unreachable' ? { connectTarget } : {}),
           durationMs,
         };
       }

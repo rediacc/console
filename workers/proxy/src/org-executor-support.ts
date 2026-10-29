@@ -6,6 +6,7 @@ import type { AcquireAnswer, ExecutorCapacity, ExecutorSize } from './capacity';
 import { EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
 import type { ExecutorIssuerRpc } from './issued-token';
 import { executorName, placementOf } from './placement';
+import type { ProbeVerdict } from './reachability';
 
 /** The host the container addresses the account server by; the intercept routes it to the egress entrypoint (src/index.ts, the `ExecutorContainer` comment, says why). */
 export const ACCOUNT_EGRESS_HOST = 'account.internal';
@@ -86,9 +87,17 @@ export type PinAnswer =
   | { ok: true; size: ExecutorSize; egressUnreachableRecent: boolean }
   | Refusal;
 
-/** The answer to `recordEgressUnreachable`: the count inside the window and whether the org moved, or a refusal with its reason. */
+/** The answer to `recordEgressUnreachable`: the count inside the window, whether the org moved, and whether this report counted with the probe verdict that decided it, or a refusal with its reason. */
 export type EgressReportAnswer =
-  | { ok: true; count: number; threshold: number; relocated: boolean }
+  | {
+      ok: true;
+      count: number;
+      threshold: number;
+      relocated: boolean;
+      /** Whether this report was added to the count: only a `reachable` probe counts. */
+      counted: boolean;
+      probe: ProbeVerdict;
+    }
   | { ok: false; reason: string };
 
 /** Who this instance serves, set once by `pin` and kept in storage. */

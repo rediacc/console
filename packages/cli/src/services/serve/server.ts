@@ -322,15 +322,18 @@ export function createServeApp(deps: ServeDeps): Hono {
         destructive: entry.destructive ?? false,
       });
 
-      // An unanswered connect is reported through the account egress, the one path that works from a container whose route to the machine is dropped, and the answer decides the guidance. Awaited, so the report finishes before the result line.
+      // An unanswered connect is reported through the account egress, the one path that works from a container whose route to the machine is dropped, and the answer decides the guidance. Only a result that names the address it never reached is reported, since the proxy probes that address before the report counts. Awaited, so the report finishes before the result line.
+      const { connectTarget, ...served } = result;
+      result = served;
       if (
         deps.mode === 'container' &&
         !result.success &&
-        result.errorCode === EGRESS_UNREACHABLE_CODE
+        result.errorCode === EGRESS_UNREACHABLE_CODE &&
+        connectTarget
       ) {
         const report = deps.reportEgressUnreachable ?? defaultEgressReporter();
-        const answer = await report().catch(() => undefined);
-        result = { ...result, errorGuidance: egressGuidance(answer) };
+        const answer = await report(connectTarget).catch(() => undefined);
+        result = { ...result, errorGuidance: egressGuidance(answer, connectTarget) };
       }
 
       await write({

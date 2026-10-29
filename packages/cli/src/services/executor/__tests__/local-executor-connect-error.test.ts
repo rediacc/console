@@ -99,18 +99,34 @@ describe('LocalExecutorService.execute with a failed SSH connect', () => {
     expect(result.errorGuidance).toBeTruthy();
   });
 
-  it('answers SSH_REFUSED for a refused connect', async () => {
+  it('carries the unanswered address as connectTarget, for the egress report', async () => {
+    acquireFor.mockRejectedValue(
+      new SshConnectError({
+        kind: 'unreachable',
+        host: '203.0.113.9',
+        port: 2222,
+        timeoutMs: 10000,
+        cause: 'x',
+      })
+    );
+    const result = await run();
+    expect(result.connectTarget).toEqual({ host: '203.0.113.9', port: 2222 });
+  });
+
+  it('answers SSH_REFUSED for a refused connect, with no connectTarget', async () => {
     acquireFor.mockRejectedValue(connectError('refused'));
     const result = await run();
     expect(result).toMatchObject({ exitCode: 6, errorCode: 'SSH_REFUSED' });
+    expect(result).not.toHaveProperty('connectTarget');
   });
 
-  it('keeps exit 1 and no code for a plain Error', async () => {
+  it('keeps exit 1, no code and no connectTarget for a plain Error', async () => {
     acquireFor.mockRejectedValue(new Error('disk on fire'));
     const result = await run();
     expect(result.exitCode).toBe(1);
     expect(result.errorCode).toBeUndefined();
     expect(result.error).toBe('disk on fire');
+    expect(result).not.toHaveProperty('connectTarget');
   });
 });
 

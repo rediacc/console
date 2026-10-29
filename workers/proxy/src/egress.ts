@@ -19,6 +19,7 @@ import { WorkerEntrypoint } from 'cloudflare:workers';
 import { dropIssuedToken, type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
 import type { EgressReportAnswer, ExecutorEgressProps } from './org-executor';
 import { executorName, placementOf } from './placement';
+import { type ProbeTarget, probeTarget, type TargetRefusal } from './reachability';
 import { activeSpan } from './span';
 
 /** The value REDIACC_TOKEN carries in the container. It authenticates nothing anywhere; the egress swaps it for the issued token. */
@@ -82,12 +83,62 @@ export interface EgressEnv extends ForwardEnv {
   EXECUTOR: { idFromName(name: string): { toString(): string } };
 }
 
-/** The executor's report that it could not reach a machine: bodiless, with no query, answered by `AccountEgress` and never forwarded (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design items 3 and 7). */
+/** The executor's report that it could not reach a machine: a JSON `{ host, port }` body (or none, from an older executor), no query, answered by `AccountEgress` and never forwarded (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design items 3 and 7, and E13). */
 const EGRESS_UNREACHABLE_PATH = '/executor/v1/egress-unreachable';
+/** The most of a report body read; a longer one is refused as `report-target-invalid`. */
+const MAX_REPORT_BODY_BYTES = 512;
 
 /** The slice of an OrgExecutor stub the egress calls: only the report. */
 interface EgressReporter {
-  recordEgressUnreachable(orgId: string, placement: number): Promise<EgressReportAnswer>;
+  recordEgressUnreachable(
+    orgId: string,
+    placement: number,
+    target?: ProbeTarget
+  ): Promise<EgressReportAnswer>;
+}
+
+/** The body as text, or undefined once it passes `max` bytes. */
+async function boundedText(request: Request, max: number): Promise<string | undefined> {
+  if (request.body === null) return '';
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) {
+      await reader.cancel().catch(() => undefined);
+      return undefined;
+    }
+    chunks.push(value);
+  }
+  const joined = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(joined);
+}
+
+/** The report's target: undefined for an empty body, else the admitted `{ host, port }` or why it is refused. */
+async function reportTarget(request: Request): Promise<ProbeTarget | TargetRefusal | undefined> {
+  let text: string | undefined;
+  try {
+    text = await boundedText(request, MAX_REPORT_BODY_BYTES);
+  } catch {
+    return { refused: 'report-target-invalid' };
+  }
+  if (text === undefined) return { refused: 'report-target-invalid' };
+  if (text.trim() === '') return undefined;
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return { refused: 'report-target-invalid' };
+  }
+  return probeTarget(value);
 }
 
 /** The env slice `AccountEgress` reads: the same cross-check, against the `durable_object` backend's namespace, and the report on the calling instance itself. */
@@ -162,7 +213,7 @@ export async function accountEgress(
  *
  * Props are set only by Durable Object code, so the container cannot choose them. A request is refused 403 before the allowlist and before the issuer when the props are absent or malformed (`org-param-missing`), or when `containerId` is not `env.ORG_EXECUTOR.idFromName(executorName(orgId, placement)).toString()` (`container-org-mismatch`): an instance can only ever obtain its own org's issued token, and only report for itself.
  *
- * After those checks, `POST /executor/v1/egress-unreachable` with no query is answered here: `recordEgressUnreachable` on the calling instance, `{ count, threshold, relocated }` back to the executor, and the span outcome `egress-unreachable` (or `relocated` when the report moved the org). It never reaches ACCOUNT and never calls the issuer. Everything else is `forwardAccountEgress`, so the allowlist and the placeholder swap are the same code as on the legacy path.
+ * After those checks, `POST /executor/v1/egress-unreachable` with no query is answered here. Its body, at most 512 bytes of JSON `{ host, port }`, names the machine the executor could not reach: a malformed one is 400 `report-target-invalid` and a private or loopback address, localhost or port 25 is 403 `report-target-refused`, both before any RPC; an empty body is a report with no target, which never counts. An admitted report is `recordEgressUnreachable` on the calling instance, `{ count, threshold, relocated, counted, probe }` back to the executor, and the span outcome `relocated` when the report moved the org, `target-unreachable` when it did not count, else `egress-unreachable`. It never reaches ACCOUNT and never calls the issuer. Everything else is `forwardAccountEgress`, so the allowlist and the placeholder swap are the same code as on the legacy path.
  *
  * Not bound in any wrangler config (box G2 fences that): it is reached only through `ctx.exports`.
  */
@@ -191,34 +242,49 @@ export class AccountEgress extends WorkerEntrypoint<
       url.pathname === EGRESS_UNREACHABLE_PATH &&
       url.search === ''
     ) {
-      return await this.reportUnreachable(self, orgId, valid, url);
+      return await this.reportUnreachable(request, self, orgId, valid, url);
     }
     return await forwardAccountEgress(request, this.env, orgId);
   }
 
-  /** Count the report on the calling instance and answer the executor without `ok`. A refused report is a 403 with its reason, an instance that cannot be reached a 503. */
+  /** Count the report on the calling instance and answer the executor without `ok`. A refused target is a 400 or 403 with no RPC, a refused report a 403 with its reason, an instance that cannot be reached a 503. */
   private async reportUnreachable(
+    request: Request,
     self: { toString(): string },
     orgId: string,
     placement: number,
     url: URL
   ): Promise<Response> {
     const span = activeSpan(this.ctx);
+    const target = await reportTarget(request);
+    if (target !== undefined && 'refused' in target) {
+      span?.setAttribute('rediacc.proxy.outcome', `refused:${target.refused}`);
+      const status = target.refused === 'report-target-invalid' ? 400 : 403;
+      return refuseEgress(target.refused, 'POST', url, status);
+    }
     let answer: EgressReportAnswer;
     try {
-      answer = await this.env.ORG_EXECUTOR.get(self).recordEgressUnreachable(orgId, placement);
+      answer = await this.env.ORG_EXECUTOR.get(self).recordEgressUnreachable(
+        orgId,
+        placement,
+        target
+      );
     } catch {
       span?.setAttribute('rediacc.proxy.outcome', 'egress-unreachable');
       return refuseEgress('report-failed', 'POST', url, 503);
     }
-    span?.setAttribute(
-      'rediacc.proxy.outcome',
-      answer.ok && answer.relocated ? 'relocated' : 'egress-unreachable'
-    );
+    span?.setAttribute('rediacc.proxy.outcome', reportOutcome(answer));
     if (!answer.ok) return refuseEgress(answer.reason, 'POST', url);
-    const { count, threshold, relocated } = answer;
-    return Response.json({ count, threshold, relocated });
+    const { count, threshold, relocated, counted, probe } = answer;
+    return Response.json({ count, threshold, relocated, counted, probe });
   }
+}
+
+/** The span outcome of an answered report. */
+function reportOutcome(answer: EgressReportAnswer): string {
+  if (!answer.ok) return 'egress-unreachable';
+  if (answer.relocated) return 'relocated';
+  return answer.counted ? 'egress-unreachable' : 'target-unreachable';
 }
 
 /**

@@ -3,10 +3,13 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
-    // `cloudflare:workers` exists only inside workerd; modules that import it load against this stub.
+    // `cloudflare:workers` and `cloudflare:sockets` exist only inside workerd; modules that import them load against these stubs.
     alias: {
       'cloudflare:workers': fileURLToPath(
         new URL('./src/__tests__/cloudflare-workers-stub.ts', import.meta.url)
+      ),
+      'cloudflare:sockets': fileURLToPath(
+        new URL('./src/__tests__/cloudflare-sockets-stub.ts', import.meta.url)
       ),
     },
   },

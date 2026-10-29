@@ -178,7 +178,14 @@ describe('AccountEgress entrypoint (props and containerId checks)', () => {
   /** The entrypoint over ORG_EXECUTOR, whose stubs answer `recordEgressUnreachable` with `report` (or throw when it is an Error). */
   function entry(
     props: unknown,
-    report: EgressReportAnswer | Error = { ok: true, count: 1, threshold: 3, relocated: false }
+    report: EgressReportAnswer | Error = {
+      ok: true,
+      count: 1,
+      threshold: 3,
+      relocated: false,
+      counted: true,
+      probe: 'reachable',
+    }
   ) {
     const { env, seen, state } = setup();
     const reports: { id: string; orgId: string; placement: number }[] = [];
@@ -310,14 +317,40 @@ describe('AccountEgress entrypoint (props and containerId checks)', () => {
   });
 });
 
-function unreachable(path = '/executor/v1/egress-unreachable', method = 'POST'): Request {
-  return new Request(`http://account.internal${path}`, { method });
+const TARGET = { host: '203.0.113.7', port: 22 };
+
+function unreachable(
+  path = '/executor/v1/egress-unreachable',
+  method = 'POST',
+  body: string | undefined = JSON.stringify(TARGET)
+): Request {
+  return new Request(`http://account.internal${path}`, {
+    method,
+    ...(method === 'POST' && body !== undefined
+      ? { body, headers: { 'content-type': 'application/json' } }
+      : {}),
+  });
+}
+
+/** An answered report, counted on a reachable probe unless overridden. */
+function answered(
+  over: Partial<Extract<EgressReportAnswer, { ok: true }>> = {}
+): EgressReportAnswer {
+  return {
+    ok: true,
+    count: 1,
+    threshold: 3,
+    relocated: false,
+    counted: true,
+    probe: 'reachable',
+    ...over,
+  };
 }
 
 describe('AccountEgress egress-unreachable report route', () => {
   function entry(report: EgressReportAnswer | Error) {
     const { env, seen, state } = setup();
-    const reports: { id: string; orgId: string; placement: number }[] = [];
+    const reports: { id: string; orgId: string; placement: number; target?: unknown }[] = [];
     const attrs: Record<string, unknown> = {};
     const accountCalls = { count: 0 };
     const durable = {
@@ -332,8 +365,8 @@ describe('AccountEgress egress-unreachable report route', () => {
       ORG_EXECUTOR: {
         ...EXECUTOR,
         get: (id: { toString(): string }) => ({
-          recordEgressUnreachable: (orgId: string, placement: number) => {
-            reports.push({ id: id.toString(), orgId, placement });
+          recordEgressUnreachable: (orgId: string, placement: number, target?: unknown) => {
+            reports.push({ id: id.toString(), orgId, placement, target });
             return report instanceof Error ? Promise.reject(report) : Promise.resolve(report);
           },
         }),
@@ -353,12 +386,20 @@ describe('AccountEgress egress-unreachable report route', () => {
   }
 
   it('calls recordEgressUnreachable once on its own instance, makes zero ACCOUNT and zero ISSUER calls, and answers without ok', async () => {
-    const t = entry({ ok: true, count: 2, threshold: 3, relocated: false });
+    const t = entry(answered({ count: 2 }));
     const response = await t.egress.fetch(unreachable());
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ count: 2, threshold: 3, relocated: false });
-    expect(t.reports).toEqual([{ id: 'id:org-a:p0', orgId: 'org-a', placement: 0 }]);
+    expect(await response.json()).toEqual({
+      count: 2,
+      threshold: 3,
+      relocated: false,
+      counted: true,
+      probe: 'reachable',
+    });
+    expect(t.reports).toEqual([
+      { id: 'id:org-a:p0', orgId: 'org-a', placement: 0, target: TARGET },
+    ]);
     expect(t.accountCalls.count).toBe(0);
     expect(t.seen).toEqual([]);
     expect(t.state.issues).toEqual([]);
@@ -368,10 +409,16 @@ describe('AccountEgress egress-unreachable report route', () => {
   });
 
   it('records relocated on the span when the report moved the org', async () => {
-    const t = entry({ ok: true, count: 3, threshold: 3, relocated: true });
+    const t = entry(answered({ count: 3, relocated: true }));
     const response = await t.egress.fetch(unreachable());
 
-    expect(await response.json()).toEqual({ count: 3, threshold: 3, relocated: true });
+    expect(await response.json()).toEqual({
+      count: 3,
+      threshold: 3,
+      relocated: true,
+      counted: true,
+      probe: 'reachable',
+    });
     expect(t.attrs['rediacc.proxy.outcome']).toBe('relocated');
     expect(t.accountCalls.count).toBe(0);
     expect(t.state.issues).toEqual([]);
@@ -401,7 +448,7 @@ describe('AccountEgress egress-unreachable report route', () => {
       unreachable('/executor/v1/egress-unreachable', 'GET'),
       unreachable('/executor/v1/egress-unreachable?org=org-b'),
     ]) {
-      const t = entry({ ok: true, count: 1, threshold: 3, relocated: false });
+      const t = entry(answered());
       const response = await t.egress.fetch(request);
 
       expect(response.status).toBe(403);
@@ -409,5 +456,85 @@ describe('AccountEgress egress-unreachable report route', () => {
       expect(t.reports).toEqual([]);
       expect(t.accountCalls.count).toBe(0);
     }
+  });
+
+  it('a report the probe did not count records target-unreachable and passes the verdict through', async () => {
+    const t = entry(answered({ count: 0, counted: false, probe: 'target-unreachable' }));
+    const response = await t.egress.fetch(unreachable());
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      count: 0,
+      threshold: 3,
+      relocated: false,
+      counted: false,
+      probe: 'target-unreachable',
+    });
+    expect(t.attrs['rediacc.proxy.outcome']).toBe('target-unreachable');
+  });
+
+  it('no body, or an empty one, is a report with no target', async () => {
+    const bodiless = new Request('http://account.internal/executor/v1/egress-unreachable', {
+      method: 'POST',
+    });
+    for (const request of [bodiless, unreachable(undefined, 'POST', '')]) {
+      const t = entry(answered({ count: 0, counted: false, probe: 'skipped' }));
+      const response = await t.egress.fetch(request);
+
+      expect(response.status).toBe(200);
+      expect(t.reports).toHaveLength(1);
+      expect(t.reports[0]).toMatchObject({ id: 'id:org-a:p0', orgId: 'org-a', placement: 0 });
+      expect(t.reports[0].target).toBeUndefined();
+      expect(t.attrs['rediacc.proxy.outcome']).toBe('target-unreachable');
+    }
+  });
+
+  const invalid: [string, string][] = [
+    ['bad JSON', '{"host":'],
+    ['a body that is not an object', '"203.0.113.7"'],
+    ['a missing port', JSON.stringify({ host: '203.0.113.7' })],
+    ['a port out of range', JSON.stringify({ host: '203.0.113.7', port: 70000 })],
+    [
+      'a body over 512 bytes',
+      JSON.stringify({ host: '203.0.113.7', port: 22, pad: 'x'.repeat(600) }),
+    ],
+  ];
+  it.each(invalid)('%s is 400 report-target-invalid with no RPC', async (_name, body) => {
+    const t = entry(answered());
+    const response = await t.egress.fetch(unreachable(undefined, 'POST', body));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ reason: 'report-target-invalid' });
+    expect(t.reports).toEqual([]);
+    expect(t.accountCalls.count).toBe(0);
+    expect(t.attrs['rediacc.proxy.outcome']).toBe('refused:report-target-invalid');
+  });
+
+  const refusedTargets: [string, unknown][] = [
+    ['a private IPv4 host', { host: '192.168.1.10', port: 22 }],
+    ['loopback', { host: '127.0.0.1', port: 22 }],
+    ['localhost', { host: 'localhost', port: 22 }],
+    ['IPv6 loopback', { host: '::1', port: 22 }],
+    ['port 25', { host: '203.0.113.7', port: 25 }],
+  ];
+  it.each(refusedTargets)('%s is 403 report-target-refused with no RPC', async (_name, body) => {
+    const t = entry(answered());
+    const response = await t.egress.fetch(unreachable(undefined, 'POST', JSON.stringify(body)));
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ reason: 'report-target-refused' });
+    expect(t.reports).toEqual([]);
+    expect(t.accountCalls.count).toBe(0);
+    expect(t.attrs['rediacc.proxy.outcome']).toBe('refused:report-target-refused');
+  });
+
+  it('never logs the reported address', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const t = entry(answered());
+    await t.egress.fetch(
+      unreachable(undefined, 'POST', JSON.stringify({ host: '10.1.2.3', port: 22 }))
+    );
+    await t.egress.fetch(unreachable());
+    expect(warn.mock.calls.flat().join(' ')).not.toMatch(/10\.1\.2\.3|203\.0\.113\.7/);
   });
 });

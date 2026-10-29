@@ -169,6 +169,10 @@ export interface ExecuteResult {
   errorCode?: string;
   /** Actionable guidance for operators or automation */
   errorGuidance?: string;
+  /**
+   * The machine address an `EGRESS_UNREACHABLE` connect never got an answer from. Set only for that code; `rdc serve` sends it in the egress-unreachable report and removes it before the result line is written.
+   */
+  connectTarget?: { host: string; port: number };
   /** Structured repo-license reason from renet, when available */
   licenseFailureReason?: string;
   /** Total execution duration in milliseconds (includes SSH, provisioning, etc.) */
