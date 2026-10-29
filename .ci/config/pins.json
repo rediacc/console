@@ -1936,6 +1936,171 @@
       "literals": []
     },
     {
+      "id": "cli-tool:opentofu",
+      "kind": "leaf",
+      "name": "OpenTofu",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "opentofu/opentofu",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "version",
+          "match": "^  version: '(?<value>[^']+)',$",
+          "label": "OPENTOFU_PIN.version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "version",
+          "match": "/releases/download/v(?<value>[0-9][^/']*)/tofu_",
+          "label": "OPENTOFU_PIN asset URL release directories",
+          "expect": 6
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "version",
+          "match": "/tofu_(?<value>[0-9][^_']*)_[a-z]+_[a-z0-9]+\\.zip'",
+          "label": "OPENTOFU_PIN asset URL file names",
+          "expect": 6
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:linux-amd64",
+          "match": "^    'linux-amd64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['linux-amd64'].sha256",
+          "asset": "tofu_{version}_linux_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:linux-arm64",
+          "match": "^    'linux-arm64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['linux-arm64'].sha256",
+          "asset": "tofu_{version}_linux_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:darwin-amd64",
+          "match": "^    'darwin-amd64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['darwin-amd64'].sha256",
+          "asset": "tofu_{version}_darwin_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:darwin-arm64",
+          "match": "^    'darwin-arm64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['darwin-arm64'].sha256",
+          "asset": "tofu_{version}_darwin_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:windows-amd64",
+          "match": "^    'windows-amd64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['windows-amd64'].sha256",
+          "asset": "tofu_{version}_windows_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:windows-arm64",
+          "match": "^    'windows-arm64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['windows-arm64'].sha256",
+          "asset": "tofu_{version}_windows_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "version",
+          "match": "^[0-9a-f]{64}  tofu_(?<value>[^_]+)_linux_amd64\\.zip$",
+          "label": "the recorded signed SHA256SUMS",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:linux-amd64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_linux_amd64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, linux-amd64",
+          "asset": "tofu_{version}_linux_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:linux-arm64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_linux_arm64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, linux-arm64",
+          "asset": "tofu_{version}_linux_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:darwin-amd64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_darwin_amd64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, darwin-amd64",
+          "asset": "tofu_{version}_darwin_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:darwin-arm64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_darwin_arm64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, darwin-arm64",
+          "asset": "tofu_{version}_darwin_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:windows-amd64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_windows_amd64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, windows-amd64",
+          "asset": "tofu_{version}_windows_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:windows-arm64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_windows_arm64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, windows-arm64",
+          "asset": "tofu_{version}_windows_arm64.zip",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
       "id": "toolchain:shellcheck",
       "kind": "leaf",
       "name": "ShellCheck",

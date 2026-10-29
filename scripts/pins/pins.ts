@@ -106,6 +106,7 @@ import {
 } from '../lib/pins/txn.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { REPO_ROOT } from '../lib/repo-root.js';
+import { signedReleaseSelftest } from './signed-release-cases.js';
 
 // ---- the run's world ------------------------------------------------------------------------
 
@@ -1380,6 +1381,11 @@ const directTxn = (fx: Fx, stamp: string, runner: Runner, m: Mutant | undefined)
 });
 
 const CASES: Record<string, Case> = {
+  // The cosign-signed checksum path (scripts/pins/signed-release.ts, T2) and the OpenTofu pin it feeds (T1).
+  // It reads no fixture tree and honours no core mutant, so a forced PINS_MUTANT skips it; its own mutants run inside.
+  async 'signed-release'(m) {
+    return m === undefined ? signedReleaseSelftest() : [];
+  },
   async soak(m) {
     const fx = fixtureTree();
     const r = await runCli(['status', 'embed:tool', '--json'], withMutant(fx, m));

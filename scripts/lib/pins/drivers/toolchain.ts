@@ -21,15 +21,26 @@
  *                   in the site's `asset`, downloaded from awscli.amazonaws.com and hashed, since
  *                   AWS publishes no sha256 beside them.
  *   wrangler        the npm registry for the version in constants.sh.
+ *   cli-tool:opentofu  GitHub releases for the version; every sha256 from the release SHA256SUMS
+ *                   after its cosign keyless signature verified (scripts/pins/signed-release.ts),
+ *                   which is recorded beside the pin, into the generated constants rdc ships.
  *
  * `toolchain:node` has a `none` source (the Node major is the operator's), and answers "not compared".
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { WK_GO_DL_BASE } from '../../../../packages/shared/src/config/well-known.generated.js';
+import {
+  type CosignRunner,
+  EVIDENCE_FILES,
+  signedReleaseOf,
+  systemCosign,
+  verifySignedRelease,
+} from '../../../pins/signed-release.js';
 import { NotCompared, UnreadableListing } from '../../upstream.js';
 import {
   type DriverContext,
+  type FileWrite,
   type Inspection,
   leafCurrent,
   type PinDriver,
@@ -121,7 +132,9 @@ function expandScope(root: string, scope: PinScope): Array<{ repo: string; file:
 
 export function createToolchainDriver(
   up: Upstream,
-  mutant: ToolchainMutant | null = null
+  mutant: ToolchainMutant | null = null,
+  /** Runs cosign for a pin whose checksums are signed (scripts/pins/signed-release.ts); a selftest passes a stand-in. */
+  cosign: CosignRunner = systemCosign()
 ): PinDriver {
   async function goReleases(entry: PinEntry, current: string | null): Promise<Found[]> {
     const who = entry.name;
@@ -251,9 +264,36 @@ export function createToolchainDriver(
       const current = leafCurrent(entry, ctx);
       const values: Record<string, string> = { version: to.version };
       const hashed = hashSites(entry);
+      // A pin whose upstream signs its SHA256SUMS takes every digest from that file, and only after
+      // the signature verified; the verified files are recorded beside the pin (signed-release.ts).
+      const signed = signedReleaseOf(entry.id);
+      const evidence: FileWrite[] = [];
       if (hashed.length > 0) {
         const hit = (await foundFor(entry, current)).find((r) => r.version === to.version);
         const digests = new Map(hit?.digests ?? []);
+        if (signed) {
+          const assets = [
+            ...new Set(
+              hashed.flatMap((s) => (s.asset ? [s.asset.replaceAll('{version}', to.version)] : []))
+            ),
+          ];
+          const v = await verifySignedRelease(
+            entry.id,
+            signed,
+            to.version,
+            assets,
+            digests,
+            up,
+            cosign
+          );
+          for (const [a, d] of v.digests) digests.set(a, d);
+          for (const [k, name] of Object.entries(EVIDENCE_FILES))
+            evidence.push({
+              repo: '.',
+              file: `${signed.evidence}/${name}`,
+              after: v.files[k as keyof typeof EVIDENCE_FILES],
+            });
+        }
         // An asset named by a full URL (AWS's versioned aws CLI installers) has no published
         // digest anywhere, so it is downloaded and hashed; a release asset keeps the API digest.
         for (const site of hashed) {
@@ -272,7 +312,21 @@ export function createToolchainDriver(
           }
         }
       }
-      const { writes, changes } = planLeafSites(entry, values, ctx);
+      const planned = planLeafSites(entry, values, ctx);
+      // The recorded files replace whole what the site rewrites made of the old ones.
+      const recorded = new Set(evidence.map((w) => w.file));
+      const writes = [
+        ...planned.writes.filter((w) => w.repo !== '.' || !recorded.has(w.file)),
+        ...evidence,
+      ];
+      const changes = [
+        ...planned.changes,
+        ...(signed
+          ? [
+              `${signed.evidence}: the cosign-verified SHA256SUMS, signature and certificate of ${to.version}`,
+            ]
+          : []),
+      ];
       return { entry, from: current, to, writes, steps: stepsFor(entry, to, ctx), changes };
     } catch (err) {
       throw refusal(err);
