@@ -21,9 +21,9 @@ Body-Sig: 3677d2bc96fdd1eb
 ### b3efa495.1 [low] scripts/lib/pins/drivers/toolchain.ts:219
 Anchor: in-diff
 Claim: pinnedNpm(ctx.root) runs inside the new loop, so toolchain:wrangler planning now throws PlanRefused when .devcontainer/toolchain.env lacks NPM_VERSION, where it previously planned without that file; the commit does not mention this behaviour change.
-Resolution: open
+Resolution: fixed d4117edbab022f0e6ac3834c5df13033fa49bfc0 | d778be9d 2026-10-29T18:09:31Z
 
 ### b3efa495.2 [low] scripts/lib/pins/drivers/toolchain.ts:221
 Anchor: in-diff
 Claim: The loop does not check that a package-lock.json exists beside a package.json site, so a future non-npm entry whose directory has no lockfile would get a newly created lockfile declared in writes, with no test covering that case.
-Resolution: open
+Resolution: fixed d4117edbab022f0e6ac3834c5df13033fa49bfc0 | d778be9d 2026-10-29T18:09:32Z
