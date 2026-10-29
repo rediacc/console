@@ -86,7 +86,7 @@ export interface ExecuteOptions {
    * this, because it holds no config.
    */
   extraMachines?: Record<string, ExtraMachine>;
-  /** Timeout in milliseconds (default: 10 minutes) */
+  /** Timeout in milliseconds; unset, renet cancels at 10 minutes except for the data-moving verbs resolveRenetTimeoutMs names */
   timeout?: number;
   /** Enable debug output */
   debug?: boolean;

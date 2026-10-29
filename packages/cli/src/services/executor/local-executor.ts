@@ -54,7 +54,12 @@ import {
   resolveLicenseFailure,
 } from './license-recovery.js';
 import { createQuietStderrPump, shouldEchoRelayLive } from './output-lines.js';
-import { buildRemoteRenetCommand, detectEnvironment, resolveEnvSecrets } from './renet-command.js';
+import {
+  buildRemoteRenetCommand,
+  detectEnvironment,
+  resolveEnvSecrets,
+  resolveRenetTimeoutMs,
+} from './renet-command.js';
 import { renetAccessFor } from './renet-function-access.js';
 import type { RenetLaunch } from './renet-launch.js';
 import {
@@ -220,11 +225,13 @@ class LocalExecutorService {
     eventsMode?: boolean,
     otlpCreds?: { user: string; pass: string } | null,
     envSecrets?: Record<string, string>,
-    kubeconfig?: string
+    kubeconfig?: string,
+    timeoutMs?: number
   ): RenetLaunch {
     return buildRemoteRenetCommand({
       remoteRenetPath,
       eventsMode,
+      timeoutMs,
       isDevelopment: detectEnvironment() === 'development',
       telemetryDisabled: isTelemetryDisabled(),
       otlpCreds,
@@ -253,7 +260,8 @@ class LocalExecutorService {
       options.eventsMode,
       otlpCreds,
       envSecrets,
-      kubeconfig
+      kubeconfig,
+      resolveRenetTimeoutMs(options.functionName, options.timeout)
     );
     // Events mode streams NDJSON, not text. Reconstruct the real stdout from the events (below) instead of accumulating the raw stream: handing an event stream straight to parseCapturedJson is the pre-existing --proxy bug (#31).
     const collector = options.eventsMode ? createJobOutputCollector() : undefined;

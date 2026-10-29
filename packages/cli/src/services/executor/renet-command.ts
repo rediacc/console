@@ -74,14 +74,38 @@ export function buildRenetEnv(params: RenetEnvParams): RenetEnv {
  * precedence over any credentials the caller may have pre-fetched.
  */
 export function buildRemoteRenetCommand(
-  params: RenetEnvParams & { remoteRenetPath: string; eventsMode?: boolean }
+  params: RenetEnvParams & { remoteRenetPath: string; eventsMode?: boolean; timeoutMs?: number }
 ): RenetLaunch {
-  const { remoteRenetPath, eventsMode, ...envParams } = params;
+  const { remoteRenetPath, eventsMode, timeoutMs, ...envParams } = params;
   const eventsFlag = eventsMode ? ' --events' : '';
+  const timeoutFlag = timeoutMs ? ` --timeout ${timeoutMs}ms` : '';
   return sudoRenet(
     buildRenetEnv(envParams),
-    `${shellQuote(remoteRenetPath)} execute --executor local${eventsFlag}`
+    `${shellQuote(remoteRenetPath)} execute --executor local${eventsFlag}${timeoutFlag}`
   );
+}
+
+/** The ceiling for a verb whose run time grows with the data it moves. */
+export const DATA_TRANSFER_TIMEOUT_MS = 24 * 60 * 60 * 1000;
+
+const DATA_TRANSFER_FUNCTIONS = new Set([
+  'backup_snapshot',
+  'backup_push',
+  'backup_pull',
+  'backup_restore',
+  'backup_restore_path',
+  'backup_verify',
+]);
+
+/**
+ * The `--timeout` a renet run carries. Both `renet execute` and `renet job start` cancel at 10 minutes when none is passed, which killed a foreground snapshot of a 6.6 GB repo at 12.5 MB/s with `signal: terminated` (2026-10-29, hostinger seed). A data-moving backup verb gets a ceiling sized for the transfer instead; an explicit caller value always wins.
+ */
+export function resolveRenetTimeoutMs(
+  functionName: string,
+  explicitMs: number | undefined
+): number | undefined {
+  if (explicitMs) return explicitMs;
+  return DATA_TRANSFER_FUNCTIONS.has(functionName) ? DATA_TRANSFER_TIMEOUT_MS : undefined;
 }
 
 /**

@@ -27,7 +27,12 @@ import {
   versionSkewWarning,
 } from './job-client.js';
 import { followJobLogs, readJobStatus, renderJobEvent } from './job-remote.js';
-import { buildRenetEnv, detectEnvironment, resolveEnvSecrets } from './renet-command.js';
+import {
+  buildRenetEnv,
+  detectEnvironment,
+  resolveEnvSecrets,
+  resolveRenetTimeoutMs,
+} from './renet-command.js';
 import { capReason } from './renet-output.js';
 import type { ExecuteOptions, ExecuteResult } from './types.js';
 
@@ -156,7 +161,7 @@ async function startJob(
       envSecrets,
       kubeconfig,
     }),
-    timeoutMs: options.timeout,
+    timeoutMs: resolveRenetTimeoutMs(options.functionName, options.timeout),
     debug: options.debug,
   });
 
