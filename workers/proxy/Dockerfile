@@ -18,6 +18,8 @@
 # release is the same base. `npm run pins -- bump image:proxy-node` moves the tag
 # and the digest together.
 FROM node:26.12.0-slim@sha256:e556a144463cc8dc53afe8de6d2fa0db5c132fd39ffa232c17641bd40df2bf11
+# Drill marker (PLAN-executor-durable-object-policy L0 drill 3, operator ruling 2026-10-29): a label change forces a new image upload.
+LABEL com.rediacc.drill="l0-drill3-20261029"
 
 # The executor opens SSH itself (that is its entire job), and rsync backs the
 # renet binary staging path.
