@@ -86,7 +86,7 @@ R2 pricing used here: Class A (LIST, PUT) $4.50/M with 1M free per month; Class 
 ### D3. renet names the run it replaces: `supersedesSnapshotId`
 - At the start of `Upload`, when `opts.Journal.Upload` names a different snapshot id with `ManifestCommitted == false`, that snapshot was the machine's earlier run and is dead. renet sends it as `supersedesSnapshotId` on every grant request of the new run.
 - The account then:
-  - deletes that lease when it is in the same subscription and lineage, that snapshot has no manifest row, and the lease was minted by the same machine identity as the new grant (a lease from another machine is left to expire), which releases its quota hold from `computeUsed`;
+  - deletes that lease when it is in the same subscription and lineage, that snapshot has no manifest row, and the lease was minted by the same machine as the new grant: `backup_upload_leases` gains a `machine_id` column in migration 0069, written from `principal.machineId` (the storage session principal, private/account/src/services/backup-storage.service.ts:128) when the lease is upserted, and compared with the new grant's `principal.machineId`; a lease from another machine, or a pre-0069 lease with no `machine_id`, is left to expire, which releases its quota hold from `computeUsed`;
   - sets `reconcile_due_at`.
 - A superseded id that names another lineage, or a committed snapshot, is ignored and logged, not refused, so a stale journal never blocks a backup.
 - Safety rests on one renet run per repository per machine. R1 verifies that an exclusion exists for the whole snapshot and adds a flock on the journal file if none does.
@@ -145,7 +145,7 @@ Most of this exists already, and A1 pins it with tests:
 
 - [ ] A1 [writer, account] Server-side metering of every stored chunk.
   Changes:
-  - Migration private/account/drizzle/0069_backup_lineage_reconcile_due.sql (+ drizzle/meta/_journal.json) adding `reconcile_due_at`, and the column in src/db/schema.ts (backupLineageUsage only).
+  - Migration private/account/drizzle/0069_backup_lineage_reconcile_due.sql (+ drizzle/meta/_journal.json) adding `backup_lineage_usage.reconcile_due_at` and `backup_upload_leases.machine_id`, and both columns in src/db/schema.ts (backupLineageUsage and backupUploadLeases only).
   - backup.dto.ts:
     - `supersedesSnapshotId: snapshotIdSchema.optional()` on `backupGrantRequest`;
     - `reconciled` optional on `backupCommitResponse`;
