@@ -43,12 +43,8 @@ def _root(tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 def _clean(tmp_path: pathlib.Path) -> pathlib.Path:
-    """The copy, with the one difference the real tree carries today (bench invocation logs) aligned."""
-    root = _root(tmp_path)
-    text = (root / BENCH_TOML).read_text(encoding="utf-8")
-    if "invocation_logs = true" in text:
-        _plant(root, BENCH_TOML, "invocation_logs = true", "invocation_logs = false")
-    return root
+    """The copy of the real tree, unaltered: it is consistent since bench's invocation logs were aligned (581206c7b)."""
+    return _root(tmp_path)
 
 
 def _gate(*args: str) -> harness.RunResult:

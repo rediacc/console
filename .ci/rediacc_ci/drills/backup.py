@@ -1897,7 +1897,8 @@ class Backup:
         """Assert a store answer is a refusal, and log the exact code so a store-specific status (403 vs 400) is on the record."""
         self.d.note("%s: the store answered %d" % (desc, code))
         self.d.last_cmd = desc
-        self.av(self.accepted(code), False, "%s is REFUSED (not 2xx)" % desc)
+        # A refusal is a 4xx answer to the request itself; a 5xx or a dropped connection (code 0) is a failing store, not a bound that held.
+        self.av(400 <= code < 500, True, "%s is REFUSED with a 4xx (got %d)" % (desc, code))
 
     def leg_n_bounded_put(self) -> None:
         d = self.d
