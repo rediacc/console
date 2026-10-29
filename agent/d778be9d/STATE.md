@@ -1,26 +1,15 @@
-## SESSION d778be9d 2026-10-29T19:13:39Z
+## SESSION d778be9d 2026-10-29T20:07:04Z
 
-# STATE d778be9d (branch 1023-1, pushed by the operator as a backup at ~20:10Z, turbo batch-end)
+# STATE d778be9d (operator away until morning, #d910962b)
 
 ## Big pieces
-- The operator is away until morning (#d910962b): complete the Promoted work; park anything critical as [?] with a DEFAULT for the ask command.
-- Seed DONE (a57d4ca22): ten repos in R2 (277.2 GB). hermes is snapshotting detached (setsid; /tmp/hermes.out and /tmp/hermes.err; started at /tmp/hermes-start).
-- Purge: writer ad949c8c22a4122eb adds `rdc backup purge <repo>` (keeps the repo). Then measure R2 and usage, purge demo-stackoverflow's backups, measure again (#c93e3389).
-- J2-J3b port (#06ea7ea8): writer aa856f16b6adefd3a ports onto 1023-1, then J6 wiring (steps on #06ea7ea8).
-- Hardening R1 landed (e14f4f48a, renet 7e6a6f1). Hostinger still runs renet a8a51be. Release renet to hostinger (rdc machine setup hostinger, or any mutating rdc call) before the stable EU account deploy (#707f08ca, authorized), then reconcile per PLAN-backup-meter-orphaned-chunks L2.
-- Review debt (#624b71f3): share E (#dbc32b2a) running; A and B (renet) next; the lead share has 61 left.
-- Store download: renet half writer ad2cee676655b6632 (#a529867c); account half queued (#0646d8e7) behind share E; CLI C1 after both.
-- Before the PR: backup drills for the receipt (#869dbd51).
+- J2-J3b landed (last commit). Next: J6 wiring (steps on #06ea7ea8), tick J2/J2b/J3/J3b boxes.
+- Store-download account half DONE in /tmp/account-a1r (writer report: route POST /backups/restore-session, scope backup:restore, migration 0070); land it: copy the listed account files + web ApiTokens/apiTokens.json locales, plus the one-line `| 'backup:restore'` in packages/shared/src/subscription/types.ts from worktree agent-aca5289589a2ffc6e; run account suite; commit; pointer. Then CLI C1 writer.
+- Share E landed f57d518c1; 599bb20a.3 (import order, test_ops_deploy_bench.py) still open.
+- CD gap: cd-deploy-account.yml "Deploy account Worker" env needs TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}; fix before the stable deploy.
+- Purge done (d4d28f0df), hermes seeded. Purge-timeout bug #152b786f.
+- Hostinger renet already synced by the hermes run. Next: stable EU deploy via CI/CD with RELEASE_ASKED (#707f08ca), then reconcile.
+- Renet findings shares A/B, lead share (#624b71f3), backup drills (#869dbd51) remain.
 
 ## Next action
-1. Land each writer report: spot-check, copy with a drift check, regenerate, run tests, commit by path, mark findings, and tick.
-2. After the purge verb lands: run the demo-stackoverflow purge measurement and record it in PLAN-backup-program.
-3. After hermes commits: record it the same way as the other repos.
-4. Spawn renet shares A and B in scratch clones once the store-download renet writer reports (both edit cmd/renet).
-5. Release renet to hostinger, then the stable EU deploy via CI/CD with RELEASE_ASKED (deploy skill), then the reconcile.
-
-## Delegated
-- a5073067717e785eb / #dbc32b2a / findings share E
-- ad2cee676655b6632 / #a529867c / renet fetch-image and punch
-- ad949c8c22a4122eb / #c93e3389 / rdc backup purge
-- aa856f16b6adefd3a / #06ea7ea8 / J2-J3b port
+1. Land the store-download account half. 2. Fix the CD gap. 3. Stable EU deploy + reconcile. 4. J6, C1, shares A/B.
