@@ -69,18 +69,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1152 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1153 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a1a6e14882c64057d.
-- Leased items: 2: #0bc3dcfd (worker:a2a3c3657bf878a3f, d778be9d), #bce6ed12 (worker:a1a6e14882c64057d, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a54dc2aaf0e289d85, worker:a1c595ecddc848de4.
+- Leased items: 3: #04ed3057 (worker:a54dc2aaf0e289d85, d778be9d), #0bc3dcfd (worker:a2a3c3657bf878a3f, d778be9d), #7a1092ca (worker:a1c595ecddc848de4, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 36 plans done, 502 of 665 boxes done (75%).
+Promoted: 3 of 36 plans done, 502 of 686 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -116,7 +116,7 @@ Promoted: 3 of 36 plans done, 502 of 665 boxes done (75%).
 | 30 | PLAN-ssh-key-source-ranges.md | 9/11 | 2 open |
 | 31 | PLAN-repo-docker-storage-prune.md | 10/14 | 4 open |
 | 32 | PLAN-production-key-only.md | 5/12 | 7 open |
-| 33 | PLAN-detached-jobs.md | 1/18 | 17 open |
+| 33 | PLAN-detached-jobs.md | 1/39 | 38 open |
 | 34 | PLAN-snapshot-read-io-cap.md | 9/11 | 2 open |
 | 35 | PLAN-backup-meter-orphaned-chunks.md | 3/6 | 3 open |
 | 36 | PLAN-backup-local-image.md | 0/14 | 14 open |
