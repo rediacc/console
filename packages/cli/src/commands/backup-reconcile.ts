@@ -139,7 +139,8 @@ function reportResult(res: ReconcileResponse, dryRun: boolean): Promise<void> | 
 function reportCheck(res: ReconcileResponse): void {
   const table = getOutputFormat() === 'table';
   const skipped = res.lineages.filter((l) => l.skipped);
-  if (skipped.length > 0 && table) {
+  // The skip warning goes to stderr in every format: under -o json the lineages are in the printed response too, but a script reading only the exit code would otherwise see a clean 0 with nothing checked.
+  if (skipped.length > 0) {
     outputService.warn(
       t('commands.backup.reconcile.checkSkipped', {
         lineages: skipped.map((l) => `${l.lineageGuid} (${l.skipped})`).join(', '),

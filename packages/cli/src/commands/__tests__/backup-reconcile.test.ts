@@ -158,6 +158,16 @@ describe('backup reconcile', () => {
     );
   });
 
+  it('--check names skipped lineages under json output too', async () => {
+    outputFormat.value = 'json';
+    mockFetch.mockResolvedValue(
+      response({ lineages: [lineage({ lineageGuid: 'busy-1', skipped: 'leased' })] })
+    );
+    await run(['--check']);
+    expect(mockSetExitCode).not.toHaveBeenCalled();
+    expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped');
+  });
+
   it('--check still fails on a reconcilable lineage next to a skipped one', async () => {
     mockFetch.mockResolvedValue(
       response({
