@@ -31,4 +31,4 @@ Resolution: open
 ### bd0fadab.3 [low] agent/plans/QUEUE.md:74
 Anchor: in-diff
 Claim: The generated queue snapshot now commits live lease and writer session identifiers (worker:ac911806a0698cc88, #b1f9c708 with d778be9d) into the repository, which records transient runtime state that goes stale as soon as the session ends.
-Resolution: open
+Resolution: not-a-bug | agent/plans/QUEUE.md:1 is a historical, append-only record (ledger rows and runtime snapshots are never rewritten; a later row supersedes an earlier one), so the cited row is correct as the record of its moment | d778be9d 2026-10-29T17:43:48Z

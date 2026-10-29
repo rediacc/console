@@ -21,4 +21,4 @@ Body-Sig: 20d3c5db265a41e9
 ### e3dc004c.1 [low] private/renet:1
 Anchor: in-diff
 Claim: The message says the review records for the nine findings 'ride this commit', but the diff and stat touch only the private/renet gitlink, so no review record or other file in this commit can be checked here.
-Resolution: open
+Resolution: not-a-bug | agent/reviews/1023-1/e3dc004c90ff00be5dfeb6aa98c64e69cc394beb.md:1 records this gitlink-only bump; the submodule commit it points at carries its own per-commit review record on this branch, where its content is reviewed | d778be9d 2026-10-29T17:44:09Z
