@@ -412,10 +412,11 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
   Owns: private/renet/cmd/renet/job_commands.go, private/renet/cmd/renet/job_commands_test.go, private/renet/pkg/jobs/jobs.go, private/renet/pkg/jobs/jobs_test.go, private/renet/pkg/jobs/logs.go, private/renet/pkg/jobs/logs_test.go, private/renet/pkg/jobs/overlap.go (new), private/renet/pkg/jobs/overlap_test.go (new), private/renet/pkg/jobs/steps.go (new), private/renet/pkg/jobs/steps_test.go (new), private/renet (gitlink bump only). Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/jobs/` rc 0, and `cd private/renet && go vet ./cmd/renet/ ./pkg/jobs/` rc 0.
 
-- [ ] J1c [writer] renet retention, unit cleanup and the jobs section. After J1b. Changes:
+- [x] J1c [writer] renet retention, unit cleanup and the jobs section. After J1b. Changes:
   - opportunistic GC in `job start` under the lock, at most hourly, with the retention classes, the count and size cap, and the pending-steps hold (section 22);
   - `stopUnit` on a terminal job at the first status read or GC;
   - `renet list all` gains a `jobs` section: live jobs plus those finished in the last hour, with origin (section 19).
+    (ticked) 2026-10-29T12:17:23Z by d778be9d: commit:2308cbe89
 
   Tests:
   - a spool of 2100 terminal jobs is cut to the cap, oldest first;
