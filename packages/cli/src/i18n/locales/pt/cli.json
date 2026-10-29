@@ -165,6 +165,7 @@
         "dryRunLabel": "simulação",
         "rehashReason": "Motivo do novo hash: {{reason}}",
         "readCap": "Limite de leitura: {{cap}}/s",
+        "readCapUnlimited": "Limite de leitura: ilimitado",
         "hashWorkers": "Processos de hash: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit deve ser uma taxa como 50M ou 400Mbps (0 = sem limite), mas foi recebido \"{{value}}\".",
         "starting": "A criar snapshot de {{name}} para o armazenamento fragmentado..."

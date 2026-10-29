@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "Instantánea rechazada para {{name}}: cuota de almacenamiento superada. Elimina instantáneas antiguas o aumenta la cuota",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit debe ser una velocidad como 50M o 400Mbps (0 = sin límite), y se recibió \"{{value}}\".",
   "commands.backup.snapshot.readCap": "Límite de lectura: {{cap}}/s",
+  "commands.backup.snapshot.readCapUnlimited": "Límite de lectura: sin límite",
   "commands.backup.snapshot.rehashReason": "Motivo del nuevo hash: {{reason}}",
   "commands.backup.snapshot.starting": "Creando instantánea de {{name}} en el almacenamiento fragmentado...",
   "commands.backup.snapshot.summary": "Snapshot {{id}}: imagen de {{image}}, {{bytes}} subidos en {{chunks}} fragmentos, {{seconds}} s",

@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "Snapshot für {{name}} verweigert: Speicherkontingent überschritten. Alte Snapshots bereinigen oder Kontingent erhöhen",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit muss eine Rate wie 50M oder 400Mbps sein (0 = unbegrenzt), erhalten: \"{{value}}\".",
   "commands.backup.snapshot.readCap": "Lesegrenze: {{cap}}/s",
+  "commands.backup.snapshot.readCapUnlimited": "Lesegrenze: unbegrenzt",
   "commands.backup.snapshot.rehashReason": "Grund für erneutes Hashing: {{reason}}",
   "commands.backup.snapshot.starting": "{{name}} wird in den Chunk-Store gesichert...",
   "commands.backup.snapshot.summary": "Snapshot {{id}}: Abbild {{image}}, {{bytes}} in {{chunks}} Chunks hochgeladen, Dauer {{seconds}} s",

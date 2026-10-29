@@ -1941,6 +1941,7 @@
         "dryRunLabel": "dry run",
         "rehashReason": "Rehash reason: {{reason}}",
         "readCap": "Read cap: {{cap}}/s",
+        "readCapUnlimited": "Read cap: unlimited",
         "hashWorkers": "Hash workers: {{workers}}",
         "optionBwlimit": "Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited",
         "optionParallelism": "Number of chunks uploaded at once (default 4)",

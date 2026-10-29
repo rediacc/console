@@ -10,7 +10,7 @@ RUN. Each run is `<rdc> --config <name> [--debug] <rdc args>`, timed with a mono
 
 COMPARE. `--compare before.json after.json` prints `metric before after delta` for p50, p95 and max wall time (and the start latency when both files carry it), the delta being after minus before.
 
-EXIT. 0 printed; 2 when any run exits non-zero (its rc and the tail of its stderr are named; no result is written or printed), on a missing or unreadable file, or on bad arguments. A result file is never written for a failed run.
+EXIT. 0 printed; 2 when any run exits non-zero (its rc and the tail of its stderr are named; no result is written or printed), on a missing, unreadable or incomplete result file, an unwritable `--out`, or on bad arguments (nothing is printed when the write fails). A result file is never written for a failed run.
 """
 
 from __future__ import annotations
@@ -79,7 +79,8 @@ def measure(
         if rc != 0:
             tail = " | ".join(stderr.strip().splitlines()[-3:])
             raise LatencyError("run %d of %d exited %d: %s" % (index, runs, rc, tail))
-        starts.extend(float(m) for m in _START.findall(stdout + "\n" + stderr))
+        if debug:
+            starts.extend(float(m) for m in _START.findall(stdout + "\n" + stderr))
     result: dict = {
         "command": argv,
         "runs": runs,
@@ -110,8 +111,10 @@ def format_result(result: dict) -> list[str]:
 def _load(path: str) -> dict:
     try:
         data = json.loads(Path(path).read_text())
-        for key in KEYS:
-            float(data["wall"][key])
+        sections = ["wall"] + (["start_latency"] if "start_latency" in data else [])
+        for section in sections:
+            for key in KEYS:
+                float(data[section][key])
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise LatencyError("cannot read result file %s: %s" % (path, exc)) from None
     return data
@@ -175,10 +178,14 @@ def main(
     except LatencyError as exc:
         print("job_latency: %s" % exc, file=sys.stderr)
         return 2
+    if args.out:
+        try:
+            Path(args.out).write_text(json.dumps(result, indent=2) + "\n")
+        except OSError as exc:
+            print("job_latency: cannot write %s: %s" % (args.out, exc), file=sys.stderr)
+            return 2
     for line in format_result(result):
         print(line, file=out)
-    if args.out:
-        Path(args.out).write_text(json.dumps(result, indent=2) + "\n")
     return 0
 
 

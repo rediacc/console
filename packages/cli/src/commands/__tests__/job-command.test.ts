@@ -54,7 +54,7 @@ describe('rdc job command surface', () => {
    */
   it('gc requires --machine; the others take it optionally', () => {
     const gc = jobCommand(program, 'gc').options.find((o) => o.long === '--machine');
-    expect(gc?.required || gc?.mandatory, 'job gc --machine is optional').toBe(true);
+    expect(gc?.mandatory, 'job gc --machine must be mandatory').toBe(true);
 
     for (const verb of ['list', 'status', 'logs', 'cancel', 'wait']) {
       const machine = jobCommand(program, verb).options.find((o) => o.long === '--machine');

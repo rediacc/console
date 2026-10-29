@@ -165,6 +165,7 @@
         "dryRunLabel": "تشغيل تجريبي",
         "rehashReason": "سبب إعادة التجزئة: {{reason}}",
         "readCap": "حد القراءة: {{cap}}/ثانية",
+        "readCapUnlimited": "حد القراءة: غير محدود",
         "hashWorkers": "عمليات التجزئة المتوازية: {{workers}}",
         "readBwlimitInvalid": "يجب أن يكون --read-bwlimit سرعة مثل 50M أو 400Mbps (0 = بلا حدّ)، لكن القيمة المُدخلة هي \"{{value}}\".",
         "starting": "جارٍ أخذ لقطة لـ \"{{name}}\" إلى التخزين المجزّأ..."

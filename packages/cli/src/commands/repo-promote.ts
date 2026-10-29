@@ -28,7 +28,12 @@ interface PromoteOptions {
   skipRouterRestart?: boolean;
 }
 
-/** Typed failure for a config save that fails after the machine promote. ORDER: machine first, config second. Unlike `repo delete`, the retry cannot converge: promote swaps two images that both still exist afterwards, so no presence probe can tell "already promoted" from "not yet", and re-running promote would swap the data BACK. The error therefore names a precise manual config fix and forbids the re-run. */
+/**
+ * Typed failure for a config save that fails after the machine promote.
+ * ORDER: machine first, config second. The retry cannot converge here (unlike `repo delete`):
+ * promote swaps two images that both still exist, so re-running would swap the data back.
+ * The error names the manual config fix and forbids the re-run.
+ */
 function configSaveFailure(error: unknown, params: Record<string, string>): CliExitError {
   const networkDown = error instanceof RemoteWriteFailedClosedError || !!findUnreachable(error);
   return new CliExitError(

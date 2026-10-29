@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "Snapshot refused for {{name}}: storage quota exceeded. Prune old snapshots or raise the quota",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit must be a rate such as 50M or 400Mbps (0 = unlimited), got \"{{value}}\".",
   "commands.backup.snapshot.readCap": "Read cap: {{cap}}/s",
+  "commands.backup.snapshot.readCapUnlimited": "Read cap: unlimited",
   "commands.backup.snapshot.rehashReason": "Rehash reason: {{reason}}",
   "commands.backup.snapshot.starting": "Snapshotting {{name}} to chunk storage...",
   "commands.backup.snapshot.summary": "Snapshot {{id}}: image {{image}}, uploaded {{bytes}} in {{chunks}} chunks, took {{seconds}}s",

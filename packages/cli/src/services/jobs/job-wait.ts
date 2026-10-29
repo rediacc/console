@@ -32,7 +32,7 @@ export interface JobWaitDeps {
 }
 
 export type WaitOutcome =
-  | { kind: 'finished'; status: Pick<JobStatus, 'state' | 'exit_code'>; exitCode: number }
+  | { kind: 'finished'; status: Pick<JobStatus, 'state' | 'exit_code' | 'error'>; exitCode: number }
   | { kind: 'timeout' }
   | { kind: 'interrupted' }
   | { kind: 'unresolved' }

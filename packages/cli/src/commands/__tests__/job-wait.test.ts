@@ -96,6 +96,17 @@ describe('rdc job wait', () => {
     expect(store.tickets()[0]).toMatchObject({ state: 'failed', exitCode: 9, acknowledged: true });
   });
 
+  it('names the failure reason of a job that did not succeed', async () => {
+    readStatus.mockResolvedValue({
+      job_id: JOB_ID,
+      state: 'failed',
+      exit_code: 9,
+      error: 'disk full on /mnt',
+    });
+    await run('wait', JOB_ID);
+    expect(out.warn.mock.calls.map((c) => String(c[0])).join('\n')).toContain('disk full on /mnt');
+  });
+
   it('exits 0 for a succeeded job', async () => {
     await run('wait', JOB_ID);
     expect(process.exitCode ?? 0).toBe(0);

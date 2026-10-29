@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "رُفضت اللقطة لـ \"{{name}}\": تم تجاوز حصة التخزين. احذف لقطات قديمة أو ارفع الحصة",
   "commands.backup.snapshot.readBwlimitInvalid": "يجب أن يكون --read-bwlimit سرعة مثل 50M أو 400Mbps (0 = بلا حدّ)، لكن القيمة المُدخلة هي \"{{value}}\".",
   "commands.backup.snapshot.readCap": "حد القراءة: {{cap}}/ثانية",
+  "commands.backup.snapshot.readCapUnlimited": "حد القراءة: غير محدود",
   "commands.backup.snapshot.rehashReason": "سبب إعادة التجزئة: {{reason}}",
   "commands.backup.snapshot.starting": "جارٍ أخذ لقطة لـ \"{{name}}\" إلى التخزين المجزّأ...",
   "commands.backup.snapshot.summary": "اللقطة {{id}}: حجم الصورة {{image}}، تم رفع {{bytes}} في {{chunks}} قطعة، استغرق {{seconds}} ثانية",

@@ -89,6 +89,25 @@ describe('backup snapshot prints the record renet emits', () => {
     expect(text).toContain('"workers":3');
   });
 
+  it('an unlimited read cap (0) prints "unlimited", an absent one prints nothing', async () => {
+    const withCap = (cap: number | undefined) => ({ ...record, readCapBps: cap });
+    mockExecute.mockResolvedValue({
+      success: true,
+      exitCode: 0,
+      stdout: `${JSON.stringify(withCap(0))}\n`,
+    });
+    await snapshot();
+    expect(infoText()).toContain('commands.backup.snapshot.readCapUnlimited');
+    vi.mocked(outputService.info).mockClear();
+    mockExecute.mockResolvedValue({
+      success: true,
+      exitCode: 0,
+      stdout: `${JSON.stringify(withCap(undefined))}\n`,
+    });
+    await snapshot();
+    expect(infoText()).not.toContain('readCap');
+  });
+
   it('json output is the record', async () => {
     state.format = 'json';
     await snapshot();

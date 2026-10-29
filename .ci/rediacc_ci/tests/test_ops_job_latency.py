@@ -107,6 +107,34 @@ def test_debug_collects_start_latency():
     assert "start_latency_ms samples=4 p50_ms=20.5 p95_ms=40.5 max_ms=40.5" in out
 
 
+def test_no_debug_ignores_start_latency_lines():
+    clock = FakeClock([0.01] * 2)
+    rc, out = _main([*BASE, "--runs", "2", "x"], clock, stdout="rediacc.job.start_latency_ms=5.0\n")
+    assert rc == 0
+    assert "start_latency" not in out
+    assert "--debug" not in clock.last_argv
+
+
+def test_compare_missing_start_latency_key_exits_2(tmp_path, capsys):
+    wall = {"p50": 1.0, "p95": 2.0, "max": 3.0}
+    good = tmp_path / "good.json"
+    good.write_text(json.dumps({"wall": wall, "start_latency": wall}))
+    bad = tmp_path / "bad.json"
+    bad.write_text(json.dumps({"wall": wall, "start_latency": {"p50": 1.0}}))
+    rc, out = _main(["--compare", str(good), str(bad)], FakeClock([]))
+    assert rc == 2
+    assert out == ""
+    assert "cannot read result file" in capsys.readouterr().err
+
+
+def test_unwritable_out_exits_2_without_traceback(tmp_path, capsys):
+    target = tmp_path / "no-such-dir" / "r.json"
+    rc, out = _main([*BASE, "--runs", "1", "--out", str(target), "x"], FakeClock([0.1]))
+    assert rc == 2
+    assert out == ""
+    assert "cannot write" in capsys.readouterr().err
+
+
 def test_real_subprocess_fake_rdc(tmp_path):
     script = tmp_path / "rdc"
     script.write_text('#!/bin/sh\necho "rediacc.job.start_latency_ms: 12.5" >&2\nexit 0\n')

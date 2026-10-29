@@ -347,7 +347,11 @@ function reportWaitOutcome(outcome: WaitOutcome, jobId: string, machine: string)
         outputService.success(t('commands.job.finished.succeeded', { jobId }));
       } else {
         outputService.warn(
-          t('commands.job.finished.other', { jobId, state: outcome.status.state, error: '' })
+          t('commands.job.finished.other', {
+            jobId,
+            state: outcome.status.state,
+            error: outcome.status.error ?? '',
+          })
         );
       }
       setExitCode(outcome.exitCode);

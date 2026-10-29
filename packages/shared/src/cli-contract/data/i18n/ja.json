@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "{{name}} のスナップショットが拒否されました: ストレージクォータを超過しています。古いスナップショットを削除するか、クォータを引き上げてください",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit には 50M や 400Mbps のような速度を指定してください (0 は無制限)。指定された値: \"{{value}}\"",
   "commands.backup.snapshot.readCap": "読み取り上限: {{cap}}/秒",
+  "commands.backup.snapshot.readCapUnlimited": "読み取り上限: 無制限",
   "commands.backup.snapshot.rehashReason": "再ハッシュの理由: {{reason}}",
   "commands.backup.snapshot.starting": "{{name}} をチャンクストアにスナップショット中...",
   "commands.backup.snapshot.summary": "スナップショット {{id}}: イメージ {{image}}、{{chunks}} チャンク・{{bytes}} をアップロード、所要時間 {{seconds}} 秒",

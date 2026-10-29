@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "Снимок для {{name}} отклонен: превышена квота хранилища. Удалите старые снимки или увеличьте квоту",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit должен быть скоростью вида 50M или 400Mbps (0 = без ограничения), получено \"{{value}}\".",
   "commands.backup.snapshot.readCap": "Лимит чтения: {{cap}}/с",
+  "commands.backup.snapshot.readCapUnlimited": "Лимит чтения: без ограничений",
   "commands.backup.snapshot.rehashReason": "Причина повторного хеширования: {{reason}}",
   "commands.backup.snapshot.starting": "Создание снимка {{name}} в блочном хранилище...",
   "commands.backup.snapshot.summary": "Снимок {{id}}: образ {{image}}, загружено {{bytes}} ({{chunks}} блоков), заняло {{seconds}} с",

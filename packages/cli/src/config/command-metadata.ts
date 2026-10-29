@@ -60,8 +60,16 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['follow', 'debug'],
     },
   },
+  // `--timeout` is a required field in the MCP schema (the flag takes `<duration>`), so a call always bounds the wait; the tool is on the write budget (the longest) because a wait runs until its timeout, not for one quick read. Callers keep the duration under it.
   'job wait': {
-    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'write',
+      excludeOptions: ['debug'],
+      descriptionOverride:
+        'Wait for a detached job to finish and return its outcome. timeout is required and must stay under 5m; a job still running at the timeout keeps running and can be waited on again',
+    },
   },
   'job cancel': {
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },

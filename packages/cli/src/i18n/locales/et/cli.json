@@ -165,6 +165,7 @@
         "dryRunLabel": "proovikäivitus",
         "rehashReason": "Uuesti räsimise põhjus: {{reason}}",
         "readCap": "Lugemispiir: {{cap}}/s",
+        "readCapUnlimited": "Lugemispiir: piiramatu",
         "hashWorkers": "Räsimise töölised: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit peab olema kiirus, näiteks 50M või 400Mbps (0 = piiranguta), aga saadi \"{{value}}\".",
         "starting": "{{name}} hetktõmmise tegemine chunk-hoidlasse..."

@@ -527,7 +527,10 @@ function printSnapshotRecord(stdout: string | undefined): void {
   if (record.rehashReason) {
     outputService.info(t('commands.backup.snapshot.rehashReason', { reason: record.rehashReason }));
   }
-  if (record.readCapBps) {
+  // 0 is an explicit "no cap"; only an absent field means the record did not report one.
+  if (record.readCapBps === 0) {
+    outputService.info(t('commands.backup.snapshot.readCapUnlimited'));
+  } else if (record.readCapBps) {
     outputService.info(
       t('commands.backup.snapshot.readCap', { cap: formatBytes(record.readCapBps) })
     );

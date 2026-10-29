@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "{{name}} 的快照被拒绝：存储配额已超出。请清理旧快照或提高配额",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit 必须是 50M 或 400Mbps 这样的速率（0 表示不限速），当前为 \"{{value}}\"。",
   "commands.backup.snapshot.readCap": "读取上限：{{cap}}/秒",
+  "commands.backup.snapshot.readCapUnlimited": "读取上限：无限制",
   "commands.backup.snapshot.rehashReason": "重新哈希原因：{{reason}}",
   "commands.backup.snapshot.starting": "正在将 {{name}} 快照到分块存储...",
   "commands.backup.snapshot.summary": "快照 {{id}}：镜像 {{image}}，已上传 {{bytes}}（{{chunks}} 个数据块），耗时 {{seconds}} 秒",

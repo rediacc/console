@@ -92,8 +92,13 @@ describe('repo promote after a config save failure', () => {
 
   it('a non-network save failure exits with the general error code (red on old code)', async () => {
     cfg.add.mockRejectedValue(new Error('disk full'));
-    await expect(run()).rejects.toMatchObject({ code: 'GENERAL_ERROR' });
+    await expect(run()).rejects.toMatchObject({ code: 'GENERAL_ERROR', retryable: false });
     expect(cfg.remove).not.toHaveBeenCalled();
+    const err = failures.handled[0] as Error;
+    expect(err.message).toContain('commands.repo.promote.configSaveFailed');
+    expect(err.message).toContain('"fork":"mautic:test"');
+    expect(err.message).toMatch(/"backup":"mautic:pre-promote-\d{8}"/);
+    expect(err.message).toContain('disk full');
   });
 
   it('the normal path promotes, settles the config and reconciles, rc 0', async () => {

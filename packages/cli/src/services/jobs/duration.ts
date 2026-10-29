@@ -1,9 +1,13 @@
-/** Parse `--timeout`: "90", "90s", "5m", "2h". A bare number is seconds. Returns milliseconds. */
+/** Node clamps a timer above 2^31-1 ms (about 24.8 days) to 1 ms, so a larger wait would fire at once. */
+const MAX_TIMER_MS = 2 ** 31 - 1;
+
+/** Parse `--timeout`: "90", "90s", "5m", "2h". A bare number is seconds. Returns milliseconds, or undefined when malformed or beyond the timer limit. */
 export function parseWaitTimeoutMs(raw: string): number | undefined {
   const match = /^(\d+)\s*([smh]?)$/.exec(raw.trim());
   if (!match) return undefined;
   const unit = { '': 1000, s: 1000, m: 60_000, h: 3_600_000 }[match[2]] ?? 1000;
-  return Number.parseInt(match[1], 10) * unit;
+  const ms = Number.parseInt(match[1], 10) * unit;
+  return ms > MAX_TIMER_MS ? undefined : ms;
 }
 
 /** "45s", "12m", "3h", "2d": the coarsest unit that is at least one. */

@@ -165,6 +165,7 @@
         "dryRunLabel": "试运行",
         "rehashReason": "重新哈希原因：{{reason}}",
         "readCap": "读取上限：{{cap}}/秒",
+        "readCapUnlimited": "读取上限：无限制",
         "hashWorkers": "哈希线程数：{{workers}}",
         "readBwlimitInvalid": "--read-bwlimit 必须是 50M 或 400Mbps 这样的速率（0 表示不限速），当前为 \"{{value}}\"。",
         "starting": "正在将 {{name}} 快照到分块存储..."

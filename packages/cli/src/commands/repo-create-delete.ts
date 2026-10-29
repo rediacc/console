@@ -395,6 +395,7 @@ export async function handleDeleteSuccess(
     outputService.success(t('commands.repo.delete.completed'));
   }
   // ORDER: machine first, config second, and the pair is made safe by retry instead of by swapping. Config-first would risk the worse half-state: a config with no entry for an image that still exists on the machine (an orphaned encrypted volume nothing can name or reach). Machine-first leaves at worst an entry whose image is gone, and the retry converges: the presence probe in resolveRepoRef reports the image absent, the machine dispatch is skipped, and this settle step runs again.
+  // The steps after this save (backup schedule reconcile, cloud backup settle, license settle) are deliberately DEFERRED to the retry rather than run before the throw: all three read the config entry this save settles (retention, archive and license state hang off it), so running them against an unsettled entry would act on stale state. The retry converges to this same function with the image absent, and runs them then.
   try {
     await settleConfigEntry(name, machineName, repoConfig, archiveConfig);
   } catch (error) {

@@ -44,8 +44,9 @@ vi.mock('../../remote/vscode/index.js', () => ({
   removePersistedKeys: vi.fn(),
   removeSSHConfigEntry: vi.fn(),
 }));
+const reconcile = vi.hoisted(() => ({ fn: vi.fn() }));
 vi.mock('../../services/backup/repo-change-hook.js', () => ({
-  reconcileBackupSchedules: vi.fn(() => Promise.resolve()),
+  reconcileBackupSchedules: reconcile.fn,
 }));
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
@@ -82,6 +83,9 @@ describe('repo delete converges after a partial failure', () => {
   beforeEach(() => {
     failures.handled.length = 0;
     settle.entry.mockReset().mockResolvedValue(undefined);
+    settle.backups.mockReset().mockResolvedValue(undefined);
+    settle.license.mockReset().mockResolvedValue(undefined);
+    reconcile.fn.mockReset().mockResolvedValue(undefined);
     resolve.exec
       .mockReset()
       .mockResolvedValue({ success: true, stdout: '', stderr: '', exitCode: 0 });
@@ -101,6 +105,10 @@ describe('repo delete converges after a partial failure', () => {
     const err = failures.handled[0] as Error;
     expect(err.message).toContain('commands.repo.delete.configSaveFailed');
     expect(err.message).toContain('rdc repo delete mautic:readcap -y');
+    // The steps after the config save are deferred to the retry (see handleDeleteSuccess).
+    expect(reconcile.fn).not.toHaveBeenCalled();
+    expect(settle.backups).not.toHaveBeenCalled();
+    expect(settle.license).not.toHaveBeenCalled();
   });
 
   it('a retry whose image is already gone skips the machine and still settles the config, rc 0', async () => {
@@ -113,6 +121,10 @@ describe('repo delete converges after a partial failure', () => {
       expect.anything(),
       false
     );
+    // The retry runs the steps the failed save skipped.
+    expect(reconcile.fn).toHaveBeenCalledWith('hostinger');
+    expect(settle.backups).toHaveBeenCalledTimes(1);
+    expect(settle.license).toHaveBeenCalledTimes(1);
     expect(failures.handled).toHaveLength(0);
   });
 

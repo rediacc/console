@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "Instantané refusé pour {{name}} : quota de stockage dépassé. Purgez d'anciens instantanés ou augmentez le quota",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit doit être un débit comme 50M ou 400Mbps (0 = illimité), reçu \"{{value}}\".",
   "commands.backup.snapshot.readCap": "Limite de lecture : {{cap}}/s",
+  "commands.backup.snapshot.readCapUnlimited": "Limite de lecture : illimitée",
   "commands.backup.snapshot.rehashReason": "Motif du nouveau hachage : {{reason}}",
   "commands.backup.snapshot.starting": "Création de l'instantané de {{name}} vers le stockage fragmenté...",
   "commands.backup.snapshot.summary": "Snapshot {{id}} : image de {{image}}, {{bytes}} envoyés en {{chunks}} blocs, {{seconds}} s",

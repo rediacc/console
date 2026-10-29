@@ -165,6 +165,7 @@
         "dryRunLabel": "simulation",
         "rehashReason": "Motif du nouveau hachage : {{reason}}",
         "readCap": "Limite de lecture : {{cap}}/s",
+        "readCapUnlimited": "Limite de lecture : illimitée",
         "hashWorkers": "Processus de hachage : {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit doit être un débit comme 50M ou 400Mbps (0 = illimité), reçu \"{{value}}\".",
         "starting": "Création de l'instantané de {{name}} vers le stockage fragmenté..."

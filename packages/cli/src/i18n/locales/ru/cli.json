@@ -165,6 +165,7 @@
         "dryRunLabel": "пробный запуск",
         "rehashReason": "Причина повторного хеширования: {{reason}}",
         "readCap": "Лимит чтения: {{cap}}/с",
+        "readCapUnlimited": "Лимит чтения: без ограничений",
         "hashWorkers": "Потоков хеширования: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit должен быть скоростью вида 50M или 400Mbps (0 = без ограничения), получено \"{{value}}\".",
         "starting": "Создание снимка {{name}} в блочном хранилище..."

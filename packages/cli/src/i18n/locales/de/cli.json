@@ -165,6 +165,7 @@
         "dryRunLabel": "Testlauf",
         "rehashReason": "Grund für erneutes Hashing: {{reason}}",
         "readCap": "Lesegrenze: {{cap}}/s",
+        "readCapUnlimited": "Lesegrenze: unbegrenzt",
         "hashWorkers": "Hash-Worker: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit muss eine Rate wie 50M oder 400Mbps sein (0 = unbegrenzt), erhalten: \"{{value}}\".",
         "starting": "{{name}} wird in den Chunk-Store gesichert..."

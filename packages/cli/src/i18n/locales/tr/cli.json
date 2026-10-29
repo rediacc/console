@@ -165,6 +165,7 @@
         "dryRunLabel": "deneme çalıştırması",
         "rehashReason": "Yeniden karma nedeni: {{reason}}",
         "readCap": "Okuma sınırı: {{cap}}/sn",
+        "readCapUnlimited": "Okuma sınırı: sınırsız",
         "hashWorkers": "Karma işçisi sayısı: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit 50M veya 400Mbps gibi bir hız olmalıdır (0 = sınırsız), \"{{value}}\" verildi.",
         "starting": "{{name}} parça depolamaya anlık görüntü olarak alınıyor..."

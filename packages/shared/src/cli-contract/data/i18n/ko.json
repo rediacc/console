@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "{{name}}의 스냅샷이 거부되었습니다: 스토리지 쿼터를 초과했습니다. 오래된 스냅샷을 정리하거나 쿼터를 늘리세요",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit에는 50M이나 400Mbps 같은 속도를 지정해야 합니다(0은 무제한). 입력값: \"{{value}}\"",
   "commands.backup.snapshot.readCap": "읽기 상한: {{cap}}/초",
+  "commands.backup.snapshot.readCapUnlimited": "읽기 상한: 무제한",
   "commands.backup.snapshot.rehashReason": "재해시 사유: {{reason}}",
   "commands.backup.snapshot.starting": "{{name}}을(를) 청크 스토리지에 스냅샷하는 중...",
   "commands.backup.snapshot.summary": "스냅샷 {{id}}: 이미지 {{image}}, 청크 {{chunks}}개({{bytes}}) 업로드, 소요 시간 {{seconds}}초",

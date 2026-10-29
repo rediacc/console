@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "Hetktõmmis lükati tagasi hoidlale {{name}}: salvestuskvoot ületatud. Kärbi vanu hetktõmmiseid või tõsta kvooti",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit peab olema kiirus, näiteks 50M või 400Mbps (0 = piiranguta), aga saadi \"{{value}}\".",
   "commands.backup.snapshot.readCap": "Lugemispiir: {{cap}}/s",
+  "commands.backup.snapshot.readCapUnlimited": "Lugemispiir: piiramatu",
   "commands.backup.snapshot.rehashReason": "Uuesti räsimise põhjus: {{reason}}",
   "commands.backup.snapshot.starting": "{{name}} hetktõmmise tegemine chunk-hoidlasse...",
   "commands.backup.snapshot.summary": "Hetktõmmis {{id}}: kujutis {{image}}, üles laaditud {{bytes}} ({{chunks}} tükki), kestus {{seconds}} s",

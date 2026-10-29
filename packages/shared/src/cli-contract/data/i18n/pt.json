@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "Snapshot recusado para {{name}}: quota de armazenamento excedida. Elimine snapshots antigos ou aumente a quota",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit deve ser uma taxa como 50M ou 400Mbps (0 = sem limite), mas foi recebido \"{{value}}\".",
   "commands.backup.snapshot.readCap": "Limite de leitura: {{cap}}/s",
+  "commands.backup.snapshot.readCapUnlimited": "Limite de leitura: ilimitado",
   "commands.backup.snapshot.rehashReason": "Motivo do novo hash: {{reason}}",
   "commands.backup.snapshot.starting": "A criar snapshot de {{name}} para o armazenamento fragmentado...",
   "commands.backup.snapshot.summary": "Snapshot {{id}}: imagem de {{image}}, {{bytes}} enviados em {{chunks}} blocos, {{seconds}} s",

@@ -165,6 +165,7 @@
         "dryRunLabel": "드라이 런",
         "rehashReason": "재해시 사유: {{reason}}",
         "readCap": "읽기 상한: {{cap}}/초",
+        "readCapUnlimited": "읽기 상한: 무제한",
         "hashWorkers": "해시 작업자 수: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit에는 50M이나 400Mbps 같은 속도를 지정해야 합니다(0은 무제한). 입력값: \"{{value}}\"",
         "starting": "{{name}}을(를) 청크 스토리지에 스냅샷하는 중..."

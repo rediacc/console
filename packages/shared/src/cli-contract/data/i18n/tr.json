@@ -151,6 +151,7 @@
   "commands.backup.snapshot.quotaRefused": "{{name}} için anlık görüntü reddedildi: depolama kotası aşıldı. Eski anlık görüntüleri temizleyin veya kotayı artırın",
   "commands.backup.snapshot.readBwlimitInvalid": "--read-bwlimit 50M veya 400Mbps gibi bir hız olmalıdır (0 = sınırsız), \"{{value}}\" verildi.",
   "commands.backup.snapshot.readCap": "Okuma sınırı: {{cap}}/sn",
+  "commands.backup.snapshot.readCapUnlimited": "Okuma sınırı: sınırsız",
   "commands.backup.snapshot.rehashReason": "Yeniden karma nedeni: {{reason}}",
   "commands.backup.snapshot.starting": "{{name}} parça depolamaya anlık görüntü olarak alınıyor...",
   "commands.backup.snapshot.summary": "Anlık görüntü {{id}}: imaj {{image}}, {{chunks}} parçada {{bytes}} yüklendi, süre {{seconds}} sn",

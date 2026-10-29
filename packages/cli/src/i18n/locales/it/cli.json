@@ -165,6 +165,7 @@
         "dryRunLabel": "simulazione",
         "rehashReason": "Motivo del nuovo hash: {{reason}}",
         "readCap": "Limite di lettura: {{cap}}/s",
+        "readCapUnlimited": "Limite di lettura: illimitato",
         "hashWorkers": "Worker di hash: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit deve essere una velocità come 50M o 400Mbps (0 = illimitato), ricevuto \"{{value}}\".",
         "starting": "Creazione dello snapshot di {{name}} su storage a chunk..."

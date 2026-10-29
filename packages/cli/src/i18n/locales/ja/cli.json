@@ -165,6 +165,7 @@
         "dryRunLabel": "ドライラン",
         "rehashReason": "再ハッシュの理由: {{reason}}",
         "readCap": "読み取り上限: {{cap}}/秒",
+        "readCapUnlimited": "読み取り上限: 無制限",
         "hashWorkers": "ハッシュワーカー数: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit には 50M や 400Mbps のような速度を指定してください (0 は無制限)。指定された値: \"{{value}}\"",
         "starting": "{{name}} をチャンクストアにスナップショット中..."
