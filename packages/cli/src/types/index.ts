@@ -38,6 +38,7 @@ export { createEmptyRdcConfig, hasRemoteConfig } from '@rediacc/shared/config-sc
  * for grep-continuity with existing call sites.
  */
 type SSHContent = NonNullable<NonNullable<RdcConfig['credentials']>['ssh']>;
+
 export type { SSHContent };
 
 // ============================================================================
@@ -89,6 +90,8 @@ export const EXIT_CODES = {
   HEALTH_GATE_FAILED: 13,
   INFRA_FAILED: 14,
   BUSY: 15,
+  /** A follow was lost (transport gone, or `job wait --timeout` expired) while the job keeps running and its ticket is kept. 16 is the first number past the refusal classes. */
+  FOLLOW_LOST: 16,
   DETACHED: 130,
 } as const;
 

@@ -1011,7 +1011,9 @@
         "empty": "Masinas {{machine}} pole ühtegi tööd.",
         "examples": {
           "basic": "Loetle masina tööd."
-        }
+        },
+        "machineOption": "Sihtmasina nimi (jäta ära, et näha selle konfiguratsiooni pooleliolevate tööde pileteid)",
+        "emptyTickets": "Selles konfiguratsioonis pole pooleliolevaid töid."
       },
       "logs": {
         "description": "Taasesita või jälgi eraldiseisva töö sündmuslogi",
@@ -1031,7 +1033,26 @@
           "basic": "Kuva ühe töö olek."
         }
       },
-      "summary": "Halda masina eraldiseisvaid töid"
+      "summary": "Halda masina eraldiseisvaid töid",
+      "machineRequired": "Selles konfiguratsioonis pole tööle {{jobId}} piletit. Anna valikuga -m <machine> teada, kus see töötab.",
+      "ticketMachineOption": "Sihtmasina nimi (valikuline, kui konfiguratsioonis on töö pilet olemas)",
+      "wait": {
+        "description": "Jätka töö jälgimist selle pileti alusel, kinnita see ja lõpeta töö väljumiskoodiga",
+        "timeoutOption": "Lõpeta ootamine selle aja järel (30s, 5m, 2h; üksik arv tähendab sekundeid). Töö jätkab tööd.",
+        "invalidTimeout": "--timeout peab olema kestus nagu 30s, 5m või 2h (saadi \"{{value}}\")",
+        "timedOut": "Töö {{jobId}} ootamine lõpetati. See töötab endiselt masinas {{machine}}. Jätka käsuga: rdc job wait {{jobId}}",
+        "detached": "Töö {{jobId}} küljest lahti ühendatud. See töötab endiselt masinas {{machine}} ning seda EI tühistatud. Jätka käsuga: rdc job wait {{jobId}}",
+        "startingUnresolved": "Tööl {{jobId}} pole veel töö ID-d: selle käivitust ei kinnitatud kunagi ja see renet ei oska seda päringu ID järgi leida.",
+        "proxyUnsupported": "Töö {{jobId}} käivitati proksi kaudu ning proksipileti jälgimine pole selles ehituses saadaval.",
+        "examples": {
+          "basic": "Oota töö lõppu ja lõpeta selle väljumiskoodiga."
+        }
+      },
+      "notice": {
+        "succeeded": "Töö {{jobId}} ({{what}}) õnnestus {{age}} tagasi. Üksikasjad: rdc job logs {{jobId}}",
+        "failed": "Töö {{jobId}} ({{what}}) ebaõnnestus {{age}} tagasi väljumiskoodiga {{exitCode}}. Üksikasjad: rdc job logs {{jobId}}",
+        "cancelled": "Töö {{jobId}} ({{what}}) tühistati {{age}} tagasi. Üksikasjad: rdc job logs {{jobId}}"
+      }
     },
     "machine": {
       "add": {

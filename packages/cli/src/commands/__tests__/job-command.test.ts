@@ -46,21 +46,21 @@ describe('rdc job command surface', () => {
     expect(job).toBeDefined();
 
     const verbs = job?.commands.map((c) => c.name()).sort();
-    expect(verbs).toEqual(['cancel', 'gc', 'list', 'logs', 'status']);
+    expect(verbs).toEqual(['cancel', 'gc', 'list', 'logs', 'status', 'wait']);
   });
 
   /**
-   * Every verb acts on ONE machine, so -m is required. Without it the command
-   * would have no idea whose spool to read.
+   * `gc` acts on ONE machine's spool, so -m stays required. The verbs that address a job (and `list`, which then lists this config's tickets) take -m optionally: a local ticket supplies the machine.
    */
-  it('every verb requires --machine', () => {
-    for (const verb of ['list', 'status', 'logs', 'cancel', 'gc']) {
+  it('gc requires --machine; the others take it optionally', () => {
+    const gc = jobCommand(program, 'gc').options.find((o) => o.long === '--machine');
+    expect(gc?.required || gc?.mandatory, 'job gc --machine is optional').toBe(true);
+
+    for (const verb of ['list', 'status', 'logs', 'cancel', 'wait']) {
       const machine = jobCommand(program, verb).options.find((o) => o.long === '--machine');
 
       expect(machine, `job ${verb} is missing --machine`).toBeDefined();
-      expect(machine?.required || machine?.mandatory, `job ${verb} --machine is optional`).toBe(
-        true
-      );
+      expect(machine?.mandatory, `job ${verb} --machine must be optional`).toBe(false);
     }
   });
 
@@ -74,7 +74,7 @@ describe('rdc job command surface', () => {
    * implementations. It now asserts the contract instead.
    */
   it('addresses a single job by name exactly where one job is meant', () => {
-    for (const verb of ['status', 'logs', 'cancel']) {
+    for (const verb of ['status', 'logs', 'cancel', 'wait']) {
       const args = jobCommand(program, verb).registeredArguments;
       expect(
         args.map((a) => a.name()),

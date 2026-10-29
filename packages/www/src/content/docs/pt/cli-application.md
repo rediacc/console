@@ -7,7 +7,7 @@ order: 2
 language: pt
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/pt/cli.json
-sourceHash: "6d24ac7155248546"
+sourceHash: "1d46abfa0b5b6497"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2346,7 +2346,7 @@ rdc job list [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.job.list.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-job-status"></a>
@@ -2360,7 +2360,7 @@ rdc job status <job-id> [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.job.ticketMachineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-job-logs"></a>
@@ -2374,7 +2374,7 @@ rdc job logs <job-id> [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.job.ticketMachineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-f, --follow` | {{t:cli.commands.job.logs.followOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--since-line <n>` | {{t:cli.commands.job.logs.sinceLineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2391,7 +2391,7 @@ rdc job cancel <job-id> [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.job.ticketMachineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2409,6 +2409,21 @@ rdc job gc [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--older-than <duration>` | {{t:cli.commands.job.gc.olderThanOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-job-wait"></a>
+### 7.6 wait
+
+{{t:cli.commands.job.wait.description}}
+
+```bash
+rdc job wait <job-id> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.job.ticketMachineOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--timeout <duration>` | {{t:cli.commands.job.wait.timeoutOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

@@ -53,8 +53,8 @@
           "options": [
             {
               "flags": "-m, --machine <name>",
-              "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "descriptionKey": "commands.job.list.machineOption",
+              "mandatory": false,
               "defaultValue": null
             }
           ],
@@ -67,8 +67,8 @@
           "options": [
             {
               "flags": "-m, --machine <name>",
-              "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "descriptionKey": "commands.job.ticketMachineOption",
+              "mandatory": false,
               "defaultValue": null
             }
           ],
@@ -88,8 +88,8 @@
           "options": [
             {
               "flags": "-m, --machine <name>",
-              "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "descriptionKey": "commands.job.ticketMachineOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -127,13 +127,40 @@
           "options": [
             {
               "flags": "-m, --machine <name>",
-              "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "descriptionKey": "commands.job.ticketMachineOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "-y, --yes",
               "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "job-id",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "wait",
+          "descriptionKey": "commands.job.wait.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.job.ticketMachineOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--timeout <duration>",
+              "descriptionKey": "commands.job.wait.timeoutOption",
               "mandatory": false,
               "defaultValue": null
             }

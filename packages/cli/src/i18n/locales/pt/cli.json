@@ -1011,7 +1011,9 @@
         "empty": "Nenhum job em {{machine}}.",
         "examples": {
           "basic": "Lista os jobs de uma máquina."
-        }
+        },
+        "machineOption": "Nome da máquina de destino (omita para listar os tickets de jobs pendentes desta configuração)",
+        "emptyTickets": "Nenhum job pendente nesta configuração."
       },
       "logs": {
         "description": "Reproduz ou acompanha o log de eventos de um job desanexado",
@@ -1031,7 +1033,26 @@
           "basic": "Mostra o estado de um job."
         }
       },
-      "summary": "Gerencia jobs desanexados em uma máquina"
+      "summary": "Gerencia jobs desanexados em uma máquina",
+      "machineRequired": "Não há ticket do job {{jobId}} nesta configuração. Indique com -m <machine> onde ele é executado.",
+      "ticketMachineOption": "Nome da máquina de destino (opcional quando esta configuração guarda um ticket do job)",
+      "wait": {
+        "description": "Retomar o acompanhamento de um job a partir do seu ticket, confirmá-lo e sair com o código de saída do job",
+        "timeoutOption": "Parar de esperar após esse tempo (30s, 5m, 2h; um número sozinho são segundos). O job continua em execução.",
+        "invalidTimeout": "--timeout deve ser uma duração como 30s, 5m ou 2h (recebido \"{{value}}\")",
+        "timedOut": "A espera pelo job {{jobId}} foi interrompida. Ele continua em execução em {{machine}}. Retome com: rdc job wait {{jobId}}",
+        "detached": "Desconectado do job {{jobId}}. Ele continua em execução em {{machine}} e NÃO foi cancelado. Retome com: rdc job wait {{jobId}}",
+        "startingUnresolved": "O job {{jobId}} ainda não tem ID: o início dele nunca foi confirmado e este renet não consegue localizá-lo pelo ID da requisição.",
+        "proxyUnsupported": "O job {{jobId}} foi iniciado pelo proxy, e acompanhar um ticket do proxy não está disponível nesta versão.",
+        "examples": {
+          "basic": "Esperar um job terminar e sair com o código de saída dele."
+        }
+      },
+      "notice": {
+        "succeeded": "O job {{jobId}} ({{what}}) foi concluído com sucesso há {{age}}. Detalhes: rdc job logs {{jobId}}",
+        "failed": "O job {{jobId}} ({{what}}) falhou com o código de saída {{exitCode}} há {{age}}. Detalhes: rdc job logs {{jobId}}",
+        "cancelled": "O job {{jobId}} ({{what}}) foi cancelado há {{age}}. Detalhes: rdc job logs {{jobId}}"
+      }
     },
     "machine": {
       "add": {

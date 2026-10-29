@@ -2385,7 +2385,9 @@
         "empty": "No jobs on {{machine}}.",
         "examples": {
           "basic": "List the jobs on a machine."
-        }
+        },
+        "machineOption": "Target machine name (omit to list this config's pending job tickets)",
+        "emptyTickets": "No pending jobs for this config."
       },
       "status": {
         "description": "Show a detached job's status",
@@ -2423,6 +2425,25 @@
       "finished": {
         "succeeded": "Job {{jobId}} succeeded.",
         "other": "Job {{jobId}} {{state}}. {{error}}"
+      },
+      "machineRequired": "No ticket for job {{jobId}} in this config. Pass -m <machine> to say where it runs.",
+      "ticketMachineOption": "Target machine name (optional when this config holds a ticket for the job)",
+      "wait": {
+        "description": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",
+        "timeoutOption": "Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.",
+        "invalidTimeout": "--timeout must be a duration such as 30s, 5m or 2h (got \"{{value}}\")",
+        "timedOut": "Stopped waiting for job {{jobId}}. It is still running on {{machine}}. Resume with: rdc job wait {{jobId}}",
+        "detached": "Detached from job {{jobId}}. It is still running on {{machine}} and was NOT cancelled. Resume with: rdc job wait {{jobId}}",
+        "startingUnresolved": "Job {{jobId}} has no job id yet: its start was never confirmed, and this renet cannot look it up by request id.",
+        "proxyUnsupported": "Job {{jobId}} was started through the proxy, and following a proxy ticket is not available in this build.",
+        "examples": {
+          "basic": "Wait for a job to finish and exit with its exit code."
+        }
+      },
+      "notice": {
+        "succeeded": "Job {{jobId}} ({{what}}) succeeded {{age}} ago. Details: rdc job logs {{jobId}}",
+        "failed": "Job {{jobId}} ({{what}}) failed with exit code {{exitCode}} {{age}} ago. Details: rdc job logs {{jobId}}",
+        "cancelled": "Job {{jobId}} ({{what}}) was cancelled {{age}} ago. Details: rdc job logs {{jobId}}"
       }
     }
   },

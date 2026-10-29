@@ -128,8 +128,10 @@ describe('command plane coverage', () => {
     // 188 -> 189, machine 101 -> 102: `repo prune` classifies and reclaims a repository's Docker storage through renet on the machine.
     //
     // 189 -> 190, other 30 -> 31: `backup reconcile` (PLAN-backup-meter-orphaned-chunks C1) is an accountServerFetch call that reconciles the backup ledger against the store, never a machine, so `other` like `backup usage`.
-    expect(COMMANDS.length).toBe(190);
-    expect(counts).toEqual({ config: 57, machine: 102, other: 31 });
+    //
+    // 190 -> 191, machine 102 -> 103: `job wait` (PLAN-detached-jobs J5) resumes following a job on its machine, so it is machine-plane like its `job` siblings.
+    expect(COMMANDS.length).toBe(191);
+    expect(counts).toEqual({ config: 57, machine: 103, other: 31 });
   });
 
   it('records the interactive commands', () => {
@@ -178,7 +180,8 @@ describe('command plane coverage', () => {
     // 95 -> 96: `machine restart-services` is machine-plane and non-interactive.
     // 96 -> 97: `machine access push` is machine-plane and non-interactive; the contract excludes it from proxying (an executor never rewrites its own access).
     // 97 -> 98: `repo prune` is machine-plane and non-interactive (the `--offline` confirmation is a plain prompt, skipped by -y).
-    expect(machineNonInteractive.length).toBe(98);
+    // 98 -> 99: `job wait` (PLAN-detached-jobs J5) is machine-plane and non-interactive, like `job logs --follow`.
+    expect(machineNonInteractive.length).toBe(99);
   });
 
   it('plane and interactive entries all point at real commands', () => {

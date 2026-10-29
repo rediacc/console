@@ -33,6 +33,12 @@ import {
   runCommandThroughProxy,
 } from './services/executor/proxy-command.js';
 import {
+  finishNotice,
+  shouldRunNotice,
+  startNoticeCheck,
+} from './services/jobs/finished-notice.js';
+import { liveNoticeDeps } from './services/jobs/remote-deps.js';
+import {
   initContainerTelemetry,
   isContainerServe,
 } from './services/telemetry/container-telemetry.js';
@@ -235,6 +241,22 @@ export function createCli(): Command {
         setBackgroundRequested(true);
       }
 
+      // Finished-while-away notice (Design 8): a bounded check of this config's pending job tickets, printed on stderr in postAction.
+      if (
+        shouldRunNotice({
+          commandPath: commandPathOf(actionCommand),
+          quiet: Boolean(opts.quiet),
+          format: effectiveFormat,
+          inExecutorRequest: currentRequestContext() !== undefined,
+        })
+      ) {
+        try {
+          startNoticeCheck(liveNoticeDeps());
+        } catch {
+          // a config name the store rejects never blocks the command
+        }
+      }
+
       // Run the command at a remote executor instead of here. Explicit opt-in only: an inferred mode was what made the retired cloud adapter leak conditionals through every layer.
       //
       // Interception is at the COMMAND, not deeper. A command's action body reads and writes local config on its way to the executor seam, and a proxy client holds no config, so intercepting at the seam meant dying with "Repository not found in context" before the wire was ever touched. This hook runs before every action, so exiting here means the local action never runs at all,
@@ -341,6 +363,7 @@ export function createCli(): Command {
 
       // Flush audit events (fire-and-forget, timeout-bounded)
       await auditService.flush(serverOptionOf(actionCommand));
+      await finishNotice();
     });
 
   // Register all command groups

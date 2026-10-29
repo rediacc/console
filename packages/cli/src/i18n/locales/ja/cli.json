@@ -1011,7 +1011,9 @@
         "empty": "{{machine}} にジョブはありません。",
         "examples": {
           "basic": "マシン上のジョブを一覧表示する"
-        }
+        },
+        "machineOption": "対象マシン名(省略すると、この設定の保留中ジョブのチケットを一覧表示)",
+        "emptyTickets": "この設定に保留中のジョブはありません。"
       },
       "logs": {
         "description": "デタッチジョブのイベントログを再生またはフォロー",
@@ -1031,7 +1033,26 @@
           "basic": "1つのジョブのステータスを表示する"
         }
       },
-      "summary": "マシン上のデタッチジョブを管理"
+      "summary": "マシン上のデタッチジョブを管理",
+      "machineRequired": "この設定にはジョブ {{jobId}} のチケットがありません。実行場所を -m <machine> で指定してください。",
+      "ticketMachineOption": "対象マシン名(この設定にジョブのチケットがあれば省略可)",
+      "wait": {
+        "description": "チケットをもとにジョブの追跡を再開し、確認済みにしてジョブの終了コードで終了する",
+        "timeoutOption": "この時間が経過したら待機をやめる(30s、5m、2h。数字のみは秒)。ジョブは実行され続けます。",
+        "invalidTimeout": "--timeout には 30s、5m、2h のような時間を指定してください(受け取った値: \"{{value}}\")",
+        "timedOut": "ジョブ {{jobId}} の待機を中止しました。{{machine}} 上で引き続き実行中です。再開するには: rdc job wait {{jobId}}",
+        "detached": "ジョブ {{jobId}} からデタッチしました。ジョブは {{machine}} 上で引き続き実行中であり、キャンセルはされていません。再開するには: rdc job wait {{jobId}}",
+        "startingUnresolved": "ジョブ {{jobId}} にはまだジョブ ID がありません。開始が確認されておらず、この renet はリクエスト ID から検索できません。",
+        "proxyUnsupported": "ジョブ {{jobId}} はプロキシ経由で開始されました。プロキシのチケットの追跡は、このビルドでは利用できません。",
+        "examples": {
+          "basic": "ジョブの完了を待ち、そのジョブの終了コードで終了する。"
+        }
+      },
+      "notice": {
+        "succeeded": "ジョブ {{jobId}}({{what}})は {{age}} 前に成功しました。詳細: rdc job logs {{jobId}}",
+        "failed": "ジョブ {{jobId}}({{what}})は {{age}} 前に終了コード {{exitCode}} で失敗しました。詳細: rdc job logs {{jobId}}",
+        "cancelled": "ジョブ {{jobId}}({{what}})は {{age}} 前にキャンセルされました。詳細: rdc job logs {{jobId}}"
+      }
     },
     "machine": {
       "add": {

@@ -370,6 +370,9 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
       descriptionKey: 'commands.job.logs.examples.follow',
     },
   ],
+  'job wait': [
+    { command: 'rdc job wait 12345', descriptionKey: 'commands.job.wait.examples.basic' },
+  ],
   'job cancel': [
     {
       command: 'rdc job cancel 12345 -m prod-1',
@@ -441,6 +444,7 @@ export const COMMAND_KEYWORDS: Record<string, readonly string[]> = {
   'job list': ['ls', 'jobs', 'tasks', 'queue'],
   'job status': ['info', 'state', 'progress', 'inspect'],
   'job logs': ['log', 'tail', 'output'],
+  'job wait': ['follow', 'resume', 'block', 'attach'],
   'job cancel': ['kill', 'stop', 'abort', 'terminate'],
   // ── config / server / diagnostics ────────────────────────────────────────
   'config init': ['setup', 'create', 'configure', 'profile'],

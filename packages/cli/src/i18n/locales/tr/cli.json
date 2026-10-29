@@ -1011,7 +1011,9 @@
         "empty": "{{machine}} üzerinde görev yok.",
         "examples": {
           "basic": "Bir makinedeki görevleri listele."
-        }
+        },
+        "machineOption": "Hedef makine adı (bu yapılandırmanın bekleyen görev biletlerini listelemek için boş bırakın)",
+        "emptyTickets": "Bu yapılandırmada bekleyen görev yok."
       },
       "logs": {
         "description": "Bağımsız bir görevin olay günlüğünü yeniden oynatır veya canlı izler",
@@ -1031,7 +1033,26 @@
           "basic": "Tek bir görevin durumunu göster."
         }
       },
-      "summary": "Bir makinedeki bağımsız görevleri yönetin"
+      "summary": "Bir makinedeki bağımsız görevleri yönetin",
+      "machineRequired": "Bu yapılandırmada {{jobId}} görevi için bilet yok. Nerede çalıştığını -m <machine> ile belirtin.",
+      "ticketMachineOption": "Hedef makine adı (bu yapılandırmada görevin bileti varsa isteğe bağlı)",
+      "wait": {
+        "description": "Bir görevi biletinden devam ederek izlemeye al, ardından onayla ve görevin çıkış koduyla çık",
+        "timeoutOption": "Bu süre sonunda beklemeyi bırak (30s, 5m, 2h; yalnız sayı saniye demektir). Görev çalışmaya devam eder.",
+        "invalidTimeout": "--timeout 30s, 5m veya 2h gibi bir süre olmalıdır (alınan: \"{{value}}\")",
+        "timedOut": "{{jobId}} görevini beklemek bırakıldı. Görev hâlâ {{machine}} üzerinde çalışıyor. Devam etmek için: rdc job wait {{jobId}}",
+        "detached": "{{jobId}} görevinden ayrıldı. Görev hâlâ {{machine}} üzerinde çalışıyor ve İPTAL EDİLMEDİ. Devam etmek için: rdc job wait {{jobId}}",
+        "startingUnresolved": "{{jobId}} görevinin henüz görev kimliği yok: başlatıldığı hiç doğrulanmadı ve bu renet onu istek kimliğiyle bulamıyor.",
+        "proxyUnsupported": "{{jobId}} görevi proxy üzerinden başlatıldı ve proxy biletini izleme bu derlemede kullanılamıyor.",
+        "examples": {
+          "basic": "Bir görevin bitmesini bekle ve onun çıkış koduyla çık."
+        }
+      },
+      "notice": {
+        "succeeded": "{{jobId}} görevi ({{what}}) {{age}} önce başarıyla tamamlandı. Ayrıntılar: rdc job logs {{jobId}}",
+        "failed": "{{jobId}} görevi ({{what}}) {{age}} önce {{exitCode}} çıkış koduyla başarısız oldu. Ayrıntılar: rdc job logs {{jobId}}",
+        "cancelled": "{{jobId}} görevi ({{what}}) {{age}} önce iptal edildi. Ayrıntılar: rdc job logs {{jobId}}"
+      }
     },
     "machine": {
       "add": {

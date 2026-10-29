@@ -60,6 +60,9 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['follow', 'debug'],
     },
   },
+  'job wait': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
   'job cancel': {
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
   },

@@ -5222,14 +5222,14 @@ export const CLI_CONTRACT: CliContract = {
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "kinds": [
             "machine"
           ],
           "tier": "common",
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.job.ticketMachineOption",
+          "label": "Target machine name (optional when this config holds a ticket for the job)"
         },
         {
           "flags": "-y, --yes",
@@ -5368,14 +5368,14 @@ export const CLI_CONTRACT: CliContract = {
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "kinds": [
             "machine"
           ],
           "tier": "common",
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.job.list.machineOption",
+          "label": "Target machine name (omit to list this config's pending job tickets)"
         }
       ],
       "positionals": [],
@@ -5437,14 +5437,14 @@ export const CLI_CONTRACT: CliContract = {
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "kinds": [
             "machine"
           ],
           "tier": "common",
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.job.ticketMachineOption",
+          "label": "Target machine name (optional when this config holds a ticket for the job)"
         },
         {
           "flags": "-f, --follow",
@@ -5549,14 +5549,14 @@ export const CLI_CONTRACT: CliContract = {
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "kinds": [
             "machine"
           ],
           "tier": "common",
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.job.ticketMachineOption",
+          "label": "Target machine name (optional when this config holds a ticket for the job)"
         }
       ],
       "positionals": [
@@ -5586,6 +5586,85 @@ export const CLI_CONTRACT: CliContract = {
         "state",
         "progress",
         "inspect"
+      ],
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "job",
+        "wait"
+      ],
+      "pathKey": "job wait",
+      "domain": "job",
+      "group": "EXECUTION",
+      "plane": "machine",
+      "descriptionKey": "commands.job.wait.description",
+      "label": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.job.ticketMachineOption",
+          "label": "Target machine name (optional when this config holds a ticket for the job)"
+        },
+        {
+          "flags": "--timeout <duration>",
+          "long": "timeout",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
+          "descriptionKey": "commands.job.wait.timeoutOption",
+          "label": "Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running."
+        }
+      ],
+      "positionals": [
+        {
+          "name": "job-id",
+          "kind": "job-id",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.job.idOption",
+          "label": "Job ID"
+        }
+      ],
+      "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc job wait 12345",
+          "values": {
+            "job-id": "12345"
+          },
+          "descriptionKey": "commands.job.wait.examples.basic",
+          "label": "Wait for a job to finish and exit with its exit code."
+        }
+      ],
+      "keywords": [
+        "follow",
+        "resume",
+        "block",
+        "attach"
       ],
       "destructive": false,
       "idempotent": true,

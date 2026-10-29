@@ -1011,7 +1011,9 @@
         "empty": "Aucun job sur {{machine}}.",
         "examples": {
           "basic": "Lister les jobs d'une machine."
-        }
+        },
+        "machineOption": "Nom de la machine cible (à omettre pour lister les tickets de jobs en attente de cette configuration)",
+        "emptyTickets": "Aucun job en attente pour cette configuration."
       },
       "logs": {
         "description": "Rejouer ou suivre le journal d'événements d'un job détaché",
@@ -1031,7 +1033,26 @@
           "basic": "Afficher le statut d'un job."
         }
       },
-      "summary": "Gérer les jobs détachés sur une machine"
+      "summary": "Gérer les jobs détachés sur une machine",
+      "machineRequired": "Aucun ticket pour le job {{jobId}} dans cette configuration. Indiquez avec -m <machine> où il s'exécute.",
+      "ticketMachineOption": "Nom de la machine cible (facultatif quand cette configuration détient un ticket pour le job)",
+      "wait": {
+        "description": "Reprendre le suivi d'un job à partir de son ticket, puis l'acquitter et quitter avec le code de sortie du job",
+        "timeoutOption": "Cesser d'attendre après cette durée (30s, 5m, 2h ; un nombre seul compte en secondes). Le job continue de s'exécuter.",
+        "invalidTimeout": "--timeout doit être une durée comme 30s, 5m ou 2h (reçu : \"{{value}}\")",
+        "timedOut": "Attente du job {{jobId}} interrompue. Il s'exécute toujours sur {{machine}}. Reprise avec : rdc job wait {{jobId}}",
+        "detached": "Détaché du job {{jobId}}. Il s'exécute toujours sur {{machine}} et n'a PAS été annulé. Reprise avec : rdc job wait {{jobId}}",
+        "startingUnresolved": "Le job {{jobId}} n'a pas encore d'identifiant : son démarrage n'a jamais été confirmé, et ce renet ne sait pas le retrouver par identifiant de requête.",
+        "proxyUnsupported": "Le job {{jobId}} a été démarré via le proxy, et le suivi d'un ticket proxy n'est pas disponible dans cette version.",
+        "examples": {
+          "basic": "Attendre la fin d'un job et quitter avec son code de sortie."
+        }
+      },
+      "notice": {
+        "succeeded": "Le job {{jobId}} ({{what}}) a réussi il y a {{age}}. Détails : rdc job logs {{jobId}}",
+        "failed": "Le job {{jobId}} ({{what}}) a échoué avec le code de sortie {{exitCode}} il y a {{age}}. Détails : rdc job logs {{jobId}}",
+        "cancelled": "Le job {{jobId}} ({{what}}) a été annulé il y a {{age}}. Détails : rdc job logs {{jobId}}"
+      }
     },
     "machine": {
       "add": {

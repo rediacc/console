@@ -1011,7 +1011,9 @@
         "empty": "{{machine}} 上没有任务。",
         "examples": {
           "basic": "列出某台机器上的任务。"
-        }
+        },
+        "machineOption": "目标机器名称(省略则列出此配置中待处理的任务凭据)",
+        "emptyTickets": "此配置没有待处理的任务。"
       },
       "logs": {
         "description": "回放或跟踪分离任务的事件日志",
@@ -1031,7 +1033,26 @@
           "basic": "显示单个任务的状态。"
         }
       },
-      "summary": "管理机器上的分离任务"
+      "summary": "管理机器上的分离任务",
+      "machineRequired": "此配置中没有任务 {{jobId}} 的凭据。请用 -m <machine> 指明它运行在哪台机器上。",
+      "ticketMachineOption": "目标机器名称(此配置持有该任务的凭据时可省略)",
+      "wait": {
+        "description": "根据凭据继续跟踪任务,随后确认并以该任务的退出码退出",
+        "timeoutOption": "超过此时长后不再等待(30s、5m、2h;纯数字表示秒)。任务会继续运行。",
+        "invalidTimeout": "--timeout 必须是 30s、5m 或 2h 这样的时长(收到 \"{{value}}\")",
+        "timedOut": "已停止等待任务 {{jobId}}。它仍在 {{machine}} 上运行。继续等待请执行:rdc job wait {{jobId}}",
+        "detached": "已与任务 {{jobId}} 断开。它仍在 {{machine}} 上运行,并且没有被取消。继续等待请执行:rdc job wait {{jobId}}",
+        "startingUnresolved": "任务 {{jobId}} 还没有任务 ID:它的启动从未得到确认,而此 renet 无法按请求 ID 查找。",
+        "proxyUnsupported": "任务 {{jobId}} 是通过代理启动的,当前版本不支持跟踪代理凭据。",
+        "examples": {
+          "basic": "等待任务结束,并以其退出码退出。"
+        }
+      },
+      "notice": {
+        "succeeded": "任务 {{jobId}}({{what}})已于 {{age}} 前成功完成。详情:rdc job logs {{jobId}}",
+        "failed": "任务 {{jobId}}({{what}})已于 {{age}} 前失败,退出码 {{exitCode}}。详情:rdc job logs {{jobId}}",
+        "cancelled": "任务 {{jobId}}({{what}})已于 {{age}} 前取消。详情:rdc job logs {{jobId}}"
+      }
     },
     "machine": {
       "add": {

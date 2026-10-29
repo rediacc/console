@@ -1011,7 +1011,9 @@
         "empty": "No hay trabajos en {{machine}}.",
         "examples": {
           "basic": "Lista los trabajos de una máquina."
-        }
+        },
+        "machineOption": "Nombre de la máquina de destino (omítelo para listar los tickets de trabajos pendientes de esta configuración)",
+        "emptyTickets": "No hay trabajos pendientes en esta configuración."
       },
       "logs": {
         "description": "Reproduce o sigue el registro de eventos de un trabajo independiente",
@@ -1031,7 +1033,26 @@
           "basic": "Muestra el estado de un trabajo."
         }
       },
-      "summary": "Administra trabajos independientes en una máquina"
+      "summary": "Administra trabajos independientes en una máquina",
+      "machineRequired": "No hay ningún ticket del trabajo {{jobId}} en esta configuración. Indica con -m <machine> dónde se ejecuta.",
+      "ticketMachineOption": "Nombre de la máquina de destino (opcional si esta configuración guarda un ticket del trabajo)",
+      "wait": {
+        "description": "Retomar el seguimiento de un trabajo a partir de su ticket, darlo por visto y salir con el código de salida del trabajo",
+        "timeoutOption": "Dejar de esperar pasado este tiempo (30s, 5m, 2h; un número solo son segundos). El trabajo sigue ejecutándose.",
+        "invalidTimeout": "--timeout debe ser una duración como 30s, 5m o 2h (se recibió \"{{value}}\")",
+        "timedOut": "Se dejó de esperar al trabajo {{jobId}}. Sigue ejecutándose en {{machine}}. Retómalo con: rdc job wait {{jobId}}",
+        "detached": "Desconectado del trabajo {{jobId}}. Sigue ejecutándose en {{machine}} y NO se canceló. Retómalo con: rdc job wait {{jobId}}",
+        "startingUnresolved": "El trabajo {{jobId}} aún no tiene ID de trabajo: su inicio nunca se confirmó y este renet no puede buscarlo por ID de solicitud.",
+        "proxyUnsupported": "El trabajo {{jobId}} se inició a través del proxy, y seguir un ticket del proxy no está disponible en esta compilación.",
+        "examples": {
+          "basic": "Esperar a que un trabajo termine y salir con su código de salida."
+        }
+      },
+      "notice": {
+        "succeeded": "El trabajo {{jobId}} ({{what}}) finalizó correctamente hace {{age}}. Detalles: rdc job logs {{jobId}}",
+        "failed": "El trabajo {{jobId}} ({{what}}) falló con el código de salida {{exitCode}} hace {{age}}. Detalles: rdc job logs {{jobId}}",
+        "cancelled": "El trabajo {{jobId}} ({{what}}) se canceló hace {{age}}. Detalles: rdc job logs {{jobId}}"
+      }
     },
     "machine": {
       "add": {

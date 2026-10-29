@@ -1011,7 +1011,9 @@
         "empty": "Keine Jobs auf {{machine}}.",
         "examples": {
           "basic": "Die Jobs auf einer Maschine auflisten."
-        }
+        },
+        "machineOption": "Name der Zielmaschine (weglassen, um die offenen Job-Tickets dieser Konfiguration aufzulisten)",
+        "emptyTickets": "Keine offenen Jobs in dieser Konfiguration."
       },
       "logs": {
         "description": "Gibt das Ereignisprotokoll eines entkoppelten Jobs wieder oder verfolgt es live",
@@ -1031,7 +1033,26 @@
           "basic": "Den Status eines Jobs anzeigen."
         }
       },
-      "summary": "Entkoppelte Jobs auf einem Rechner verwalten"
+      "summary": "Entkoppelte Jobs auf einem Rechner verwalten",
+      "machineRequired": "Für Job {{jobId}} gibt es in dieser Konfiguration kein Ticket. Mit -m <machine> angeben, wo er läuft.",
+      "ticketMachineOption": "Name der Zielmaschine (optional, wenn diese Konfiguration ein Ticket für den Job hält)",
+      "wait": {
+        "description": "Einen Job anhand seines Tickets weiterverfolgen, ihn dann quittieren und mit dem Exit-Code des Jobs beenden",
+        "timeoutOption": "Nach dieser Zeit nicht mehr warten (30s, 5m, 2h; eine nackte Zahl gilt als Sekunden). Der Job läuft weiter.",
+        "invalidTimeout": "--timeout muss eine Dauer wie 30s, 5m oder 2h sein (erhalten: \"{{value}}\")",
+        "timedOut": "Das Warten auf Job {{jobId}} wurde beendet. Er läuft weiterhin auf {{machine}}. Fortsetzen mit: rdc job wait {{jobId}}",
+        "detached": "Vom Job {{jobId}} getrennt. Er läuft weiterhin auf {{machine}} und wurde NICHT abgebrochen. Fortsetzen mit: rdc job wait {{jobId}}",
+        "startingUnresolved": "Job {{jobId}} hat noch keine Job-ID: Sein Start wurde nie bestätigt, und dieses renet kann ihn nicht über die Request-ID nachschlagen.",
+        "proxyUnsupported": "Job {{jobId}} wurde über den Proxy gestartet, und das Verfolgen eines Proxy-Tickets ist in diesem Build nicht verfügbar.",
+        "examples": {
+          "basic": "Auf das Ende eines Jobs warten und mit dessen Exit-Code beenden."
+        }
+      },
+      "notice": {
+        "succeeded": "Job {{jobId}} ({{what}}) war vor {{age}} erfolgreich. Details: rdc job logs {{jobId}}",
+        "failed": "Job {{jobId}} ({{what}}) ist vor {{age}} mit Exit-Code {{exitCode}} fehlgeschlagen. Details: rdc job logs {{jobId}}",
+        "cancelled": "Job {{jobId}} ({{what}}) wurde vor {{age}} abgebrochen. Details: rdc job logs {{jobId}}"
+      }
     },
     "machine": {
       "add": {
