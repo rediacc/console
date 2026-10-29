@@ -475,12 +475,15 @@ jobs:
       # (PLAN-backup-download-from-store R2).
       - name: Test chunkstore hole punching (native syscalls)
         shell: bash
-        # A -run pattern that matches nothing exits 0, so the step also requires
-        # the test's own PASS line (GitHub's bash runs with -eo pipefail).
+        # Every TestPunchHole* test that compiles on the OS runs (punch_native_test.go
+        # and fetch_plane_test.go's ZerosTheRange). A -run pattern that matches
+        # nothing exits 0, so the step also requires both PASS lines (GitHub's
+        # bash runs with -eo pipefail).
         run: |
           cd private/renet
-          go test -count=1 -v -run '^TestPunchHole_NativeZeroesOnlyTheRange$' ./pkg/chunkstore/ | tee "$RUNNER_TEMP/punch.log"
+          go test -count=1 -v -run '^TestPunchHole' ./pkg/chunkstore/ | tee "$RUNNER_TEMP/punch.log"
           grep -q '^--- PASS: TestPunchHole_NativeZeroesOnlyTheRange' "$RUNNER_TEMP/punch.log"
+          grep -q '^--- PASS: TestPunchHole_ZerosTheRangeAndKeepsTheSize' "$RUNNER_TEMP/punch.log"
 
   # Cross-compile smoke: every GOOS/GOARCH target compiles WITHOUT the embed
   # payload (committed BPF .o objects satisfy linux; committed .gitkeep
