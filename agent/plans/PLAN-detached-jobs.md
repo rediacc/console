@@ -389,7 +389,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: private/renet/cmd/renet/job_commands.go, private/renet/cmd/renet/job_commands_test.go, private/renet/pkg/jobs/jobs.go, private/renet/pkg/jobs/jobs_test.go, private/renet (the gitlink bump only). Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/jobs/` rc 0, and `cd private/renet && go vet ./cmd/renet/ ./pkg/jobs/` rc 0.
   Amended (third round): the request lookup goes through J1b's `O_EXCL` index under the start lock, not a spool scan; J1 may land the flag and J1b the index.
 
-- [ ] J1b [writer] renet attach, origin, overlap and steps. After J1. Changes:
+- [x] J1b [writer] renet attach, origin, overlap and steps. After J1. Changes:
   - `job start --attach <dur>` streams events and a status trailer in the same exec, with 50 ms status checks for the first 2 s (section 15);
   - the start lock and the request index `.requests/<id>` created with `O_EXCL` (section 17);
   - `--origin <json>` (1 KiB cap) and `SUDO_USER` recorded as `origin` in `status.json`;
@@ -397,6 +397,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   - `job start --steps <json>` writing `steps.json`, and `job claim --id --steps` with `O_EXCL` claim and done markers (section 18);
   - command-kind jobs `job start --command setup|list-all|backup-unit --args <json>` against a fixed allow-list (section 14);
   - `job list --active` and `job list --request-id`.
+    (ticked) 2026-10-29T11:57:08Z by d778be9d: commit:65243dc8a
 
   Tests:
   - two concurrent starts with one request id spawn one unit (fake systemd-run seam, goroutines);
