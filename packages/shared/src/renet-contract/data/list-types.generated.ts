@@ -6,7 +6,7 @@
 // Machine status types from 'renet list all --json'
 // ============================================
 
-export const LIST_TYPES_VERSION = 'v2.3.2-192-gcd82f93';
+export const LIST_TYPES_VERSION = 'v2.3.2-199-g3044e03';
 
 /** Storage/memory capacity information */
 export interface DiskInfo {
@@ -307,12 +307,40 @@ export interface HealthDriftSummary {
   updated_at: string;
 }
 
+/** Who started a detached job and through which client */
+export interface JobOrigin {
+  actor?: string;
+  client?: string;
+  config_id?: string;
+  config_name?: string;
+  ssh_user?: string;
+  version?: string;
+}
+
+/** One detached job: live, or finished in the last hour */
+export interface JobInfo {
+  attach: string;
+  command?: string;
+  error?: string;
+  exit_code?: number;
+  finished_at?: string;
+  function?: string;
+  job_id: string;
+  lock_class: string;
+  machine?: string;
+  origin?: JobOrigin;
+  repo_guid?: string;
+  started_at: string;
+  state: string;
+}
+
 /** Complete machine status from 'renet list all --json' */
 export interface ListResult {
   backup_coverage?: BackupCoverage;
   block_devices: BlockDevice[];
   containers?: ContainersResult;
   health_drift?: HealthDriftSummary;
+  jobs: JobInfo[];
   license_statuses?: LicenseStatusEntry[];
   network?: NetworkInfo;
   repositories: RepositoryInfo[];
