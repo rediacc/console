@@ -798,3 +798,13 @@ Third-round note: there is no narrowing (J2b). All 75 become jobs per J0b's rows
 8. `repo checkout` and `repo commit` reach `repository_fork` through `handleForkAction` (`packages/cli/src/commands/repo-branching.ts:175`) but are not in the plan's `JOB_VERBS`, so under the new design they would run a job without accepting `-b`.
 9. `readSourceAnchor` is a `backup_verify` job needed by `backup restore --at <time>` and by the restore-path route. Under `-b` it blocks `--at` with `streamUnknown`. Design 3 already says to follow such probes. The J3 test hook must distinguish the probe from the terminal job by `captureOutput`, not by function name.
 10. Fork's `repository_fork` is the only create-tier job function (`packages/shared/src/renet-contract/data/license-tiers.generated.ts:162`). Under `-b` its identity refresh runs before the fork exists, so it needs the finalizer (`packages/cli/src/commands/repo-fork.ts:512`).
+
+## Operator rulings, fourth round (2026-10-29)
+
+Asked 2026-10-29 after the third-round amendment, all four Recommended options chosen:
+
+- Attach window: "20 s (Recommended)". `JOB_ATTACH_WINDOW_MS = 20_000`; it returns to the operator only if L3b finds more than 10 % of short commands over it.
+- Overlap: "Class matrix (Recommended)". Exclusive meeting exclusive or shared on the same repo refuses with exit 15 and the attach hint; shared with shared warns; reads and scheduled units only warn; no override flag.
+- Client-side steps while the client is away: "Accept, make it visible (Recommended)". No nudge; `rdc job list` and the notice show pending steps, and the spool keeps the step plan 7 days.
+- Origin: "Full origin (Recommended)". Client kind, rdc version, the sudo user, the config name and short id, and the account actor on the proxy and console paths.
+

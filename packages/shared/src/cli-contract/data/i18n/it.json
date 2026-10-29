@@ -1383,6 +1383,7 @@
   "commands.repo.policy.set.trimIntervalOption": "Ore minime tra trim automatici (predefinito 24)",
   "commands.repo.promote.backupInfo": "I vecchi dati di produzione sono stati conservati come: {{backup}}",
   "commands.repo.promote.completed": "Takeover completato. Il repo grand ha ora i dati del fork.",
+  "commands.repo.promote.configSaveFailed": "La promozione di \"{{fork}}\" in \"{{grand}}\" è terminata su \"{{machine}}\", ma non è stato possibile salvare la configurazione: {{reason}}. Non rieseguire promote: scambierebbe di nuovo i dati. Non si perde nulla. Per sistemare la configurazione, rinomina la voce \"{{fork}}\" in repositories in \"{{backup}}\" nel file di configurazione (se esistono entrambe, elimina \"{{fork}}\").",
   "commands.repo.promote.confirm": "Promuovere \"{{fork}}\" in produzione come \"{{grand}}\"? I dati di produzione attuali vengono preservati come fork di backup.",
   "commands.repo.promote.description": "Sostituisce i dati del repo grand con i dati di un fork. Il grand conserva la propria identità (GUID, networkId, domini, autostart, catena di backup) ma acquisisce i dati aggiornati del fork. I vecchi dati di produzione vengono conservati come fork di backup. Usalo per: testare un aggiornamento sul fork, verificarlo, poi eseguire il takeover in produzione.",
   "commands.repo.promote.descriptionShort": "Sostituisce i dati di produzione con i dati del fork",

@@ -1383,6 +1383,7 @@
   "commands.repo.policy.set.trimIntervalOption": "Horas mínimas entre trims automáticos (padrão 24)",
   "commands.repo.promote.backupInfo": "Dados de produção antigos preservados como: {{backup}}",
   "commands.repo.promote.completed": "Takeover concluído. O repositório pai tem agora os dados do fork.",
+  "commands.repo.promote.configSaveFailed": "A promoção de \"{{fork}}\" para \"{{grand}}\" terminou em \"{{machine}}\", mas não foi possível salvar a configuração: {{reason}}. Não execute promote novamente: ele trocaria os dados de volta. Nada se perde. Para acertar a configuração, renomeie a entrada \"{{fork}}\" de repositories para \"{{backup}}\" no arquivo de configuração (se ambas existirem, exclua \"{{fork}}\").",
   "commands.repo.promote.confirm": "Promover \"{{fork}}\" para produção como \"{{grand}}\"? Os dados de produção atuais são preservados como um fork de backup.",
   "commands.repo.promote.description": "Substituir os dados do repositório pai pelos dados de um fork. O pai mantém a sua identidade (GUID, networkId, domínios, arranque automático, cadeia de cópia de segurança) mas recebe os dados actualizados do fork. Os dados de produção antigos são preservados como fork de cópia de segurança. Utilização: testar actualização no fork, verificar, e depois fazer takeover para produção.",
   "commands.repo.promote.descriptionShort": "Substituir os dados de produção pelos dados do fork",

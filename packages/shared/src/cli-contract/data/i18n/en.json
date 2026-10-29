@@ -1383,6 +1383,7 @@
   "commands.repo.policy.set.trimIntervalOption": "Minimum hours between automatic trims (default 24)",
   "commands.repo.promote.backupInfo": "Old production data preserved as: {{backup}}",
   "commands.repo.promote.completed": "Promote complete. The production repo now has the fork's data.",
+  "commands.repo.promote.configSaveFailed": "Promote of \"{{fork}}\" into \"{{grand}}\" finished on \"{{machine}}\", but the config could not be saved: {{reason}}. Do not re-run promote: it would swap the data back. Nothing is lost. To settle the config, rename the repositories entry \"{{fork}}\" to \"{{backup}}\" in the config file (if both exist, delete \"{{fork}}\").",
   "commands.repo.promote.confirm": "Promote \"{{fork}}\" into production as \"{{grand}}\"? The current production data is preserved as a backup fork.",
   "commands.repo.promote.description": "Make a validated fork the production repository under its parent name. The parent keeps its identity (GUID, networkId, domains, autostart, backup chain) and receives the fork's data; the old production data is preserved as a backup fork. Use it to test an upgrade on a fork, verify it, then promote. Pass an explicit <name>:<tag> for the fork; a bare ref resolves to the parent and is rejected with \"not a fork\". Promote never fetches bytes: use 'repo push' or 'backup restore' for that.",
   "commands.repo.promote.descriptionShort": "Make a validated fork the production repository under its parent name",

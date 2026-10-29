@@ -1383,6 +1383,7 @@
   "commands.repo.policy.set.trimIntervalOption": "自動トリムの最小間隔（時間、デフォルト 24）",
   "commands.repo.promote.backupInfo": "古い本番データの保存先: {{backup}}",
   "commands.repo.promote.completed": "引き継ぎが完了しました。グランドリポジトリはフォークのデータを取得しました。",
+  "commands.repo.promote.configSaveFailed": "\"{{fork}}\" から \"{{grand}}\" へのプロモートは \"{{machine}}\" で完了しましたが、設定を保存できませんでした: {{reason}}。promote を再実行しないでください。データが元に戻ってしまいます。失われたものはありません。設定を整えるには、設定ファイルの repositories にあるエントリ \"{{fork}}\" を \"{{backup}}\" に名前変更してください (両方ある場合は \"{{fork}}\" を削除)。",
   "commands.repo.promote.confirm": "\"{{fork}}\" を \"{{grand}}\" として本番へ引き継ぎますか？現在の本番データはバックアップフォークとして保存されます。",
   "commands.repo.promote.description": "グランドリポジトリのデータをフォークのデータで置き換えます。グランドはその ID（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持しつつ、フォークの更新されたデータを取得します。古い本番データはバックアップフォークとして保存されます。使用方法: フォークでアップグレードをテスト → 確認 → 本番への引き継ぎ。",
   "commands.repo.promote.descriptionShort": "本番データをフォークのデータで置き換える",

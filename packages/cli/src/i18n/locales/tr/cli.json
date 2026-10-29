@@ -1839,6 +1839,7 @@
       "promote": {
         "backupInfo": "Eski üretim verileri şu şekilde saklandı: {{backup}}",
         "completed": "Devralma tamamlandı. Grand depo artık çatalın verilerine sahip.",
+        "configSaveFailed": "\"{{fork}}\" için \"{{grand}}\" üzerine promote işlemi \"{{machine}}\" makinesinde tamamlandı, ancak yapılandırma kaydedilemedi: {{reason}}. promote komutunu yeniden çalıştırmayın: verileri geri takas eder. Hiçbir şey kaybolmadı. Yapılandırmayı düzeltmek için yapılandırma dosyasında repositories altındaki \"{{fork}}\" girdisini \"{{backup}}\" olarak yeniden adlandırın (ikisi de varsa \"{{fork}}\" girdisini silin).",
         "confirm": "\"{{fork}}\" öğesini \"{{grand}}\" olarak üretime terfi ettir? Mevcut üretim verisi bir yedek fork olarak korunur.",
         "description": "Grand deponun verilerini bir çatalın verileriyle değiştir. Grand, kimliğini (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri) korur ancak çatalın güncellenmiş verilerini alır. Eski üretim verileri yedek çatal olarak saklanır. Kullanım: çatalda yükseltmeyi test et → doğrula → üretime devir.",
         "descriptionShort": "Üretim verilerini çatal verileriyle değiştir",

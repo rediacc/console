@@ -1383,6 +1383,7 @@
   "commands.repo.policy.set.trimIntervalOption": "Mindestabstand in Stunden zwischen automatischen Trims (Standard 24)",
   "commands.repo.promote.backupInfo": "Alte Produktionsdaten gespeichert als: {{backup}}",
   "commands.repo.promote.completed": "Übernahme abgeschlossen. Grand-Repository hat jetzt die Fork-Daten.",
+  "commands.repo.promote.configSaveFailed": "Die Promotion von \"{{fork}}\" nach \"{{grand}}\" ist auf \"{{machine}}\" abgeschlossen, aber die Konfiguration konnte nicht gespeichert werden: {{reason}}. Promote nicht erneut ausführen: Es würde die Daten zurücktauschen. Es geht nichts verloren. Zum Abschluss in der Konfigurationsdatei den Eintrag \"{{fork}}\" unter repositories in \"{{backup}}\" umbenennen (existieren beide, \"{{fork}}\" löschen).",
   "commands.repo.promote.confirm": "Soll \"{{fork}}\" als \"{{grand}}\" in die Produktion befördert werden? Die aktuellen Produktionsdaten werden als Backup-Fork erhalten.",
   "commands.repo.promote.description": "Daten des Grand-Repositorys durch Daten eines Forks ersetzen. Das Grand-Repository behält seine Identität (GUID, networkId, Domains, Autostart, Backup-Kette), erhält aber die aktualisierten Daten des Forks. Die alten Produktionsdaten werden als Backup-Fork gespeichert. Verwendung: Upgrade im Fork testen → prüfen → Übernahme in die Produktion.",
   "commands.repo.promote.descriptionShort": "Produktionsdaten durch Fork-Daten ersetzen",

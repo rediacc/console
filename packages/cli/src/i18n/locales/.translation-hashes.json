@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2130,
+    "keyCount": 2131,
     "sourceCommit": "dd31941198efbccf8c5655a3b1cb9c410d3fce7f"
   },
   "hashes": {
@@ -1391,6 +1391,7 @@
     "commands.repo.policy.set.trimIntervalOption": "c0f0f354",
     "commands.repo.promote.backupInfo": "25175124",
     "commands.repo.promote.completed": "658b6f7a",
+    "commands.repo.promote.configSaveFailed": "5db72e0f",
     "commands.repo.promote.confirm": "72df23bc",
     "commands.repo.promote.description": "87b2792f",
     "commands.repo.promote.descriptionShort": "bd95df2f",

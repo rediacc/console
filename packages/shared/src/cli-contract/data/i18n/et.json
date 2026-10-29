@@ -1383,6 +1383,7 @@
   "commands.repo.policy.set.trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)",
   "commands.repo.promote.backupInfo": "Vanad tootmisandmed säilitati nimega: {{backup}}",
   "commands.repo.promote.completed": "Ülevõtmine lõpetatud. Põhihoidlal on nüüd forgi andmed.",
+  "commands.repo.promote.configSaveFailed": "\"{{fork}}\" edutamine nimeks \"{{grand}}\" lõppes masinas \"{{machine}}\", kuid seadistust ei õnnestunud salvestada: {{reason}}. Ära käivita promote uuesti: see vahetaks andmed tagasi. Midagi ei lähe kaotsi. Seadistuse korda tegemiseks nimeta seadistusfailis repositories kirje \"{{fork}}\" ümber nimeks \"{{backup}}\" (kui mõlemad on olemas, kustuta \"{{fork}}\").",
   "commands.repo.promote.confirm": "Kas ülendada \"{{fork}}\" tootmisse kui \"{{grand}}\"? Praegused tootmisandmed säilitatakse varukoopiaforgina.",
   "commands.repo.promote.description": "Asenda põhihoidla (grand) andmed forgi andmetega. Põhihoidla säilitab oma identiteedi (GUID, networkId, domeenid, autostart, varukoopiaahel), kuid saab forgi täiendatud andmed. Vanad tootmisandmed säilitatakse varukoopiaforgi kujul. Kasutus: testi uuendust forgil, kontrolli, seejärel tee takeover tootmisele.",
   "commands.repo.promote.descriptionShort": "Asenda tootmisandmed forgi andmetega",

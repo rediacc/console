@@ -1383,6 +1383,7 @@
   "commands.repo.policy.set.trimIntervalOption": "Heures minimales entre trims automatiques (défaut 24)",
   "commands.repo.promote.backupInfo": "Anciennes données de production conservées sous : {{backup}}",
   "commands.repo.promote.completed": "Prise de contrôle terminée. Le dépôt principal contient maintenant les données du fork.",
+  "commands.repo.promote.configSaveFailed": "La promotion de \"{{fork}}\" vers \"{{grand}}\" est terminée sur \"{{machine}}\", mais la configuration n'a pas pu être enregistrée : {{reason}}. Ne relancez pas promote : il réinverserait les données. Rien n'est perdu. Pour régler la configuration, renommez l'entrée \"{{fork}}\" de repositories en \"{{backup}}\" dans le fichier de configuration (si les deux existent, supprimez \"{{fork}}\").",
   "commands.repo.promote.confirm": "Promouvoir \"{{fork}}\" en production sous le nom \"{{grand}}\" ? Les données de production actuelles sont conservées comme fork de sauvegarde.",
   "commands.repo.promote.description": "Remplacer les données du dépôt principal par les données d'un fork. Le principal conserve son identité (GUID, networkId, domaines, démarrage automatique, chaîne de sauvegardes) mais obtient les données mises à jour du fork. Les anciennes données de production sont conservées comme fork de sauvegarde. Utilisation : tester la mise à niveau sur le fork → vérifier → prise de contrôle en production.",
   "commands.repo.promote.descriptionShort": "Remplacer les données de production par les données du fork",
