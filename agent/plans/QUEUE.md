@@ -69,18 +69,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1112 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1124 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:afc71e7f084a62df5.
-- Leased items: 2: #863660ef (worker:afc71e7f084a62df5, d778be9d), #dc48c829 (worker:adae9c04719e9ff00, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:ae4b91cfb591ba8b8, worker:afc71e7f084a62df5.
+- Leased items: 4: #0bc3dcfd (worker:ae4b91cfb591ba8b8, d778be9d), #3b154ea0 (worker:a5cb26861d0ce16fa, d778be9d), #863660ef (worker:afc71e7f084a62df5, d778be9d), #bce6ed12 (worker:afa1cb99b746d4338, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 32 plans done, 485 of 616 boxes done (78%).
+Promoted: 3 of 32 plans done, 489 of 616 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -115,7 +115,7 @@ Promoted: 3 of 32 plans done, 485 of 616 boxes done (78%).
 | 29 | PLAN-backup-restore-path.md | 6/10 | 4 open |
 | 30 | PLAN-ssh-key-source-ranges.md | 9/11 | 2 open |
 | 31 | PLAN-repo-docker-storage-prune.md | 10/14 | 4 open |
-| 32 | PLAN-production-key-only.md | 1/12 | 11 open |
+| 32 | PLAN-production-key-only.md | 5/12 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -161,11 +161,14 @@ Promoted: 3 of 32 plans done, 485 of 616 boxes done (78%).
 5. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 6. agent/plans/PLAN-retired-terms-submodule-scan.md -- P2, executing, in progress (12 of 14 boxes ticked)
 7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-8. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-9. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-10. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
-11. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-12. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-13. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-14. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+8. agent/plans/PLAN-backup-meter-orphaned-chunks.md -- P1, approved, not started
+9. agent/plans/PLAN-detached-jobs.md -- P1, approved, not started
+10. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+11. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+12. agent/plans/PLAN-snapshot-read-io-cap.md -- P1, approved, not started
+13. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
+14. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+15. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+16. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+17. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->

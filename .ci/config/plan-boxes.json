@@ -80,6 +80,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-backup-meter-orphaned-chunks.md": {
+      "status": "approved",
+      "owner": "unowned",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "564c2d2d",
+        "566ed3a4",
+        "b45ef8a8",
+        "b4fd892f",
+        "d36ccec3",
+        "fd8547ed"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md": {
       "status": "executing",
       "owner": "d778be9d",
@@ -753,6 +770,35 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-detached-jobs.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 18,
+      "done": 0,
+      "open_sigs": [
+        "1d17b634",
+        "3095ef97",
+        "34cbbf02",
+        "4bc1aed5",
+        "561f92bc",
+        "7692f2db",
+        "86690927",
+        "87e959e9",
+        "96717f6c",
+        "9be13bd8",
+        "a116dd8b",
+        "a7f33c86",
+        "b00bc9df",
+        "b29a4a04",
+        "d02d75ce",
+        "d4cf00e3",
+        "e25f1778",
+        "e32825a7"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1329,23 +1375,23 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 1,
+      "open": 7,
+      "done": 5,
       "open_sigs": [
         "03025314",
-        "0e69a80c",
         "30316aea",
         "32036b55",
         "48ac90a9",
-        "70f30a71",
         "7f85bab7",
-        "bae1627f",
         "c0e271b1",
-        "ddb2599f",
         "e1ffe36e"
       ],
       "done_sigs": [
-        "16197a06"
+        "0e69a80c",
+        "16197a06",
+        "70f30a71",
+        "bae1627f",
+        "ddb2599f"
       ]
     },
     "agent/plans/PLAN-promote-mutation-runner.md": {
@@ -1780,6 +1826,28 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-snapshot-read-io-cap.md": {
+      "status": "approved",
+      "owner": "unowned",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "112b6afb",
+        "6fcb8c6c",
+        "7c6e444b",
+        "7c7b94bb",
+        "83bffb55",
+        "884debe2",
+        "9da781a9",
+        "9f4cc8b1",
+        "a63d1aaf",
+        "ae0adefa",
+        "b9daaf63"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-ssh-key-source-ranges.md": {

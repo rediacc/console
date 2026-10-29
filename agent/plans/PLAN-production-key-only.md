@@ -2,9 +2,9 @@
 
 Status: approved -- operator 2026-10-29: "we can make the production key primary and get rid of the development key. we already have bws/bitwarden and we almost always need it. So, keeping separate development keys make things difficult to manage. This is also valid for private/account not just for private/renet. ... [the development keys may be renamed on the Bitwarden side with a __ (double underscore) prefix]" In ## Generated until the operator promotes it.
 Priority: P1 -- `./rdc.sh` baked the cached DEV key into renet (private/renet/build.sh:414-436), `machine setup` put that binary on hostinger, and a backup snapshot failed with "no installed repository license" (private/renet/cmd/renet/backup_snapshot.go:437-440), because hostinger's licences are signed by the production key and renet looks a licence up only under the fingerprint of the key it baked (private/renet/pkg/license/preferred.go:21-28, :38-43).
-Depends-On: none for the code boxes. PLAN-per-flavor-renet-binary-paths.md (owns build.sh and local_common.py) has 0 open boxes. PLAN-local-release.md (owns renet_key_gate.py and release/local.py) has 2 open boxes, and K4 waits for its writer lease on those two files. PLAN-config-server-key.md (owns the deploy-bench profile and deploy_bench.py) has 1 open box, and K2 waits for its lease on those lines.
+Depends-On: no-dep -- the code boxes need nothing outside this plan. PLAN-per-flavor-renet-binary-paths.md (owns build.sh and local_common.py) has 0 open boxes. PLAN-local-release.md (owns renet_key_gate.py and release/local.py) has 2 open boxes, and K4 waits for its writer lease on those two files. PLAN-config-server-key.md (owns the deploy-bench profile and deploy_bench.py) has 1 open box, and K2 waits for its lease on those lines.
 Concurrency: parallel -- K1, K2, K3, K4 and K5 have disjoint Owns and run at the same time. L1 (the bws park) runs after K1-K3 land on the branch and right before the merge. K6 (map refresh plus the no-DEV gate) follows L1 in the same PR. L2-L4 follow the merge. One line of .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py (owned by PLAN-executor-durable-object-policy, exclusive) changes in K6, and only under that plan's lease.
-Owns: agent/plans/PLAN-production-key-only.md, plus each box's Owns below
+Owns: agent/plans/PLAN-production-key-only.md, .ci/rediacc_ci/core/bws_env.py, scripts/ops/bws-map-refresh.py, .ci/scripts/quality/check_bws_map.py, .ci/rediacc_ci/tests/test_core_bws_env.py, .ci/rediacc_ci/tests/gates/test_gate_bws_env.py, .ci/rediacc_ci/tests/gates/test_gate_bws_map.py, .ci/config/secret-supply.json, .ci/rediacc_ci/ops/prune_worker_secrets.py, .ci/rediacc_ci/ops/deploy_bench.py, .ci/rediacc_ci/drills/backup_onprem.py, .ci/rediacc_ci/quality/region_consistency_offline.py, .ci/rediacc_ci/quality/region_consistency_controls.py, .ci/rediacc_ci/tests/test_ops_deploy_bench.py, .ci/rediacc_ci/tests/test_ops_prune_worker_secrets.py, .ci/rediacc_ci/core/account_lifecycle.py, .ci/rediacc_ci/core/account_lifecycle_shadow_driver.py, .ci/rediacc_ci/tests/goldens/twins/lib.account.jsonl, .ci/rediacc_ci/setup/machine.py, .ci/rediacc_ci/core/local_common.py, .ci/rediacc_ci/core/local_common_actions_shadow_driver.py, .ci/rediacc_ci/ops/build_server.py, .ci/rediacc_ci/tests/test_setup_account_bws.py, .ci/rediacc_ci/tests/test_core_local_common_renet_key.py, private/renet/build.sh, private/renet, .github/workflows/ci-vm-bake.yml, .github/workflows/ct-backup-perf.yml, .github/workflows/ct-e2e-probe.yml, .github/workflows/ci-ops-test.yml, .github/workflows/ct-tests.yml, .ci/rediacc_ci/release/renet_key_gate.py, .ci/rediacc_ci/release/local.py, .ci/rediacc_ci/tests/test_release_renet_key_gate.py, .ci/rediacc_ci/tests/test_release_local.py, private/account/CLAUDE.md, private/account, docs/agent-reference/local-env.md, .ci/config/bws-secret-map.json, .ci/config/bws-unrequested.json, .ci/config/env-manifest.json, scripts/data/doc-registry.md, .ci/scripts/quality/check_no_dev_keys.py, .ci/rediacc_ci/quality/no_dev_keys.py, .ci/rediacc_ci/tests/gates/test_gate_no_dev_keys.py, package.json, .ci/config/gate-costs.json, .ci/config/lane-durations.json, `check:ci-bws-map`
 Live-Proof: bench, hostinger -- bench is the account/account-worker surface's live target, and it is redeployed with the production six in L2. hostinger is the renet surface's target: L3 proves a production-keyed renet takes a snapshot there.
 First-Seen: 2026-10-29
 
@@ -163,12 +163,13 @@ There are two account keypairs today. Production is one keypair, the same for al
 
 ## Tasks
 
-- [ ] K1 [writer] bws plumbing. Changes:
+- [x] K1 [writer] bws plumbing. Changes:
   - `CACHE_STORE_NAMES` maps each name to itself only (bws_env.py:218-227), and the comment is rewritten.
   - Add `PARKED_RE` and the `park` verb (Design 5).
   - `load`, `exec` and `cache-to` refuse any `__`-prefixed spec.
   - bws-map-refresh drops parked names.
   - check_bws_map gets assertion 16: no mapped or bound name is parked. Its :1392 fixture becomes `AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID`.
+    (ticked) 2026-10-29T09:01:19Z by d778be9d: commit:d3b47b367
 
   Tests:
   - `cache-to` refuses `ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY` and writes nothing. Control: the unaliased name is written 0644.
@@ -192,12 +193,13 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: .ci/config/secret-supply.json (account-dev, backup-plane, deploy-bench only), .ci/rediacc_ci/ops/prune_worker_secrets.py, .ci/rediacc_ci/ops/deploy_bench.py (docstring only), .ci/rediacc_ci/drills/backup_onprem.py (docstring only), .ci/rediacc_ci/quality/region_consistency_offline.py, .ci/rediacc_ci/quality/region_consistency_controls.py, .ci/rediacc_ci/tests/test_ops_deploy_bench.py, .ci/rediacc_ci/tests/test_ops_prune_worker_secrets.py, .ci/rediacc_ci/tests/gates/test_gate_region_consistency.py. Accept: those pytest files rc 0, `npm run check:ci-secret-supply` and `npm run check:ci-region-consistency` rc 0.
 
-- [ ] K3 [writer] Reset, setup and the `./rdc.sh` key path. Changes:
+- [x] K3 [writer] Reset, setup and the `./rdc.sh` key path. Changes:
   - `reset()` loses the mint, the push and the cache refresh (account_lifecycle.py:78-89, :1115-1145). It only deletes the dev DB files and says the keys are production and untouched.
   - The twin rows are updated (shadow driver :621, :910; goldens/twins/lib.account.jsonl:8, regenerated by its documented path).
   - `PUBLIC_KEY_SPECS` becomes the two unsuffixed public names (machine.py:416-421).
   - `ensure_renet_built` resolves env, then cache, then `bws_env.load`, then refuses (local_common.py:1369-1379; Design 1). The shadow rows are adjusted.
   - build_server.py docstring :10.
+    (ticked) 2026-10-29T09:01:22Z by d778be9d: commit:824f3bd7b
 
   Tests:
   - reset never runs `store-from-env` (a recording runner) and still removes the four DB files.
@@ -206,12 +208,13 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: .ci/rediacc_ci/core/account_lifecycle.py, .ci/rediacc_ci/core/account_lifecycle_shadow_driver.py, .ci/rediacc_ci/tests/goldens/twins/lib.account.jsonl, .ci/rediacc_ci/setup/machine.py, .ci/rediacc_ci/core/local_common.py (ensure_renet_built key resolution only), .ci/rediacc_ci/core/local_common_actions_shadow_driver.py, .ci/rediacc_ci/ops/build_server.py (docstring only), .ci/rediacc_ci/tests/test_setup_account_bws.py, .ci/rediacc_ci/tests/test_core_local_common_renet_key.py (new), .ci/rediacc_ci/tests/test_core_account_lifecycle_reset.py (new). Accept: those tests and the account-lifecycle twin test rc 0.
 
-- [ ] K4 [writer] renet fails closed (gate G2) and the release gate. Changes:
+- [x] K4 [writer] renet fails closed (gate G2) and the release gate. Changes:
   - build.sh `_account_key_ldflags` (:409-446) reads env only. Empty means exit 1 unless `RENET_KEYLESS=1` with `GITHUB_ACTIONS=true`. The cache read and the DEV warnings go away.
   - Add `./build.sh key-ldflags`, which prints the flag or fails, as the test seam.
   - Add `RENET_KEYLESS: "1"` to each keyless step: ci-vm-bake.yml:127, ct-backup-perf.yml:141, ct-e2e-probe.yml:133 and :232, ci-ops-test.yml:81 and :272, ct-tests.yml:315, :491, :729 and every later `infra.build_renet --nolicense` that runs before a plane key exists. The writer audits each one. ct-backup-perf.yml:223 keeps the plane key.
   - renet_key_gate drops `DEV_KEY_CACHE`, `--dev-cache` and `dev_fingerprint*` and gains `RETIRED_FINGERPRINTS` (D5).
   - release/local.py:1181 drops `dev_cache`.
+    (ticked) 2026-10-29T09:01:24Z by d778be9d: commit:824f3bd7b
 
   Tests (new test_renet_build_key_required.py driving `bash private/renet/build.sh key-ldflags`):
   - Env unset plus a cache file holding a key gives rc 1 with no output on stdout. This proves no cache fallback.
@@ -223,10 +226,11 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: private/renet/build.sh, private/renet (gitlink bump only), .github/workflows/ci-vm-bake.yml, .github/workflows/ct-backup-perf.yml, .github/workflows/ct-e2e-probe.yml, .github/workflows/ci-ops-test.yml, .github/workflows/ct-tests.yml (the RENET_KEYLESS env lines only), .ci/rediacc_ci/release/renet_key_gate.py, .ci/rediacc_ci/release/local.py (dev_cache only), .ci/rediacc_ci/tests/test_release_renet_key_gate.py, .ci/rediacc_ci/tests/test_release_local.py, .ci/rediacc_ci/tests/test_renet_build_key_required.py (new). Accept: those pytest files rc 0. A CI run of ct-tests on the branch shows the keyless legs green and a local `env -u ACCOUNT_ED25519_PUBLIC_KEY ./private/renet/build.sh dev` exiting 1.
 
-- [ ] K5 [writer] Docs.
+- [x] K5 [writer] Docs.
   - private/account/CLAUDE.md:62, :66, :75: the production six, reset is DB-only, bench binds the production six, plus a paragraph stating the Design 2 risk and containment.
   - docs/agent-reference/local-env.md:140-170: the key comes from bws through `./rdc.sh`. No paste and no `ACCOUNT_ED25519_PUBLIC_KEY=` prefix are needed. A build without it fails.
   - private/renet/CLAUDE.md build table: `dev` needs `ACCOUNT_ED25519_PUBLIC_KEY`, and rdc.sh supplies it.
+    (ticked) 2026-10-29T09:01:26Z by d778be9d: commit:efdb3cd51
 
   Owns: private/account/CLAUDE.md, private/account (gitlink bump only), docs/agent-reference/local-env.md, private/renet/CLAUDE.md. Accept: `npm run check:ci-docs` (or the doc lint lane that covers these files) rc 0.
 
