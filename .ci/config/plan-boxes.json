@@ -2128,16 +2128,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 9,
-      "open_sigs": [
-        "b00bc9df"
-      ],
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
       "done_sigs": [
         "3cee36fd",
         "4cb49d45",
         "8b4161ce",
         "a65f7c80",
+        "b00bc9df",
         "ba2c9c8c",
         "cbf8530c",
         "ce14776f",
