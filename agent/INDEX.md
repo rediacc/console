@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 243 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 244 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 48 | 1 | 6 | 7170 |
-| `agent/plans/PLAN-backup-program.md` | approved | 518 | 41 | 155 | 114978 |
+| `agent/plans/PLAN-backup-program.md` | approved | 528 | 41 | 155 | 121458 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 200 | 4 | 6 | 35209 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -532,6 +532,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-preflight.md` | approved | 190 | 1 | 8 | 30347 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 34 | 3 | 0 | 3707 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
+| `agent/plans/PLAN-production-key-only.md` | approved | 288 | 12 | 0 | 32562 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 410 | 9 | 26 | 70218 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
@@ -708,4 +709,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
-243 plan(s), 177 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+244 plan(s), 178 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
