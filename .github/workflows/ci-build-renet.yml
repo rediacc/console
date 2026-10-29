@@ -469,6 +469,14 @@ jobs:
         shell: bash
         run: cd private/renet && go test -race -count=1 ./pkg/procwalk/...
 
+      # The chunkstore hole punch twins (darwin F_PUNCHHOLE, windows
+      # FSCTL_SET_ZERO_DATA) behind rdc backup download --store's incremental
+      # update; like procwalk they run only on their native OS
+      # (PLAN-backup-download-from-store R2).
+      - name: Test chunkstore hole punching (native syscalls)
+        shell: bash
+        run: cd private/renet && go test -count=1 -run TestPunchHole ./pkg/chunkstore/
+
   # Cross-compile smoke: every GOOS/GOARCH target compiles WITHOUT the embed
   # payload (committed BPF .o objects satisfy linux; committed .gitkeep
   # placeholders satisfy the go:embed globs; darwin/windows resolve pkg/ebpf
